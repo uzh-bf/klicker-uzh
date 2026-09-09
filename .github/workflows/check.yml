@@ -71,6 +71,11 @@ jobs:
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
 
+      - name: Check Next.js development configuration and readiness
+        run: |
+          node --test ./util/next-pages-development-config.test.mjs
+          pnpm run test:dev-runtime
+
       - name: Check workspace dependency mount generation
         run: node --test ./util/generate-dependency-mounts.test.mjs
 

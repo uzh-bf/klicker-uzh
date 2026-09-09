@@ -1,8 +1,8 @@
+import { createHash, randomUUID } from 'node:crypto'
 import {
   ElementImportReceiptState,
   ImportMediaStagingState,
 } from '@klicker-uzh/prisma/client'
-import { createHash, randomUUID } from 'node:crypto'
 import type { ContextWithUser } from '../lib/context.js'
 import {
   assertElementImportTokenUnexpired,
@@ -52,7 +52,10 @@ function createSelectionDigest(selectedElementRefs: readonly string[]) {
 export function prepareElementImportSelection(selectedElementRefs: string[]) {
   const normalizedSelectedElementRefs = Array.from(
     new Set(selectedElementRefs)
-  ).sort()
+  ).sort((left, right) => {
+    if (left === right) return 0
+    return left < right ? -1 : 1
+  })
   if (
     normalizedSelectedElementRefs.length === 0 ||
     normalizedSelectedElementRefs.length > MAX_IMPORT_EXPORT_ELEMENTS ||
