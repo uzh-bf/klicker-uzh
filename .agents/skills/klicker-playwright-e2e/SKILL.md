@@ -61,9 +61,22 @@ config rejects direct local invocations before global setup, and the
 devcontainer cannot store Playwright browser binaries. GitHub Actions is the
 explicit exception and keeps running in the official Playwright container.
 
-The launcher starts the full devrouter profile, including response-api and both
-Hatchet workers. Ensure the response processor is not running with
+The launcher defaults to the full devrouter profile, including response-api and
+both Hatchet workers. Focused activity runs may explicitly request
+`pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
+The caller owns profile sufficiency; the launcher does not infer profiles from
+test arguments or preserve an arbitrary previous narrow selection. Put launcher
+options before Playwright arguments; an explicit `--` ends their prefix.
+`--print-env` also reconciles the selected runtime and can start services.
+`--show-report` cannot be combined with a runtime profile.
+Ensure the response processor is not running with
 `ASSESSMENT_MODE=true` when validating live quiz mode.
+
+For a focused test against an existing synthetic database, the explicit local
+options `--runtime-profile chat --preserve-database` may precede Playwright
+arguments. This skips global reset/seed only; selected specs still perform
+their own fixture writes and cleanup. Inspect those fixtures before opting in.
+CI and ordinary invocations retain their existing setup behavior.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
@@ -92,6 +105,7 @@ render of the starter grid.
 
 ## Fast Failure Triage
 
+- Nested development routes returning 404 despite existing source files can indicate overlapping Next.js route scans. Compare the live development pages manifest with dynamic source routes and verify the Pages-only development configuration; see `docs/solutions/runtime-error/next-development-route-scans-overlap.md`. Do not mask missing routes with longer test timeouts or treat an incomplete inventory as cache damage.
 - `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `pnpm playwright:host -- --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
