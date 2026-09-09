@@ -1362,7 +1362,10 @@ export async function updateChatbotRevisionMetadata(
   return await stageRevision(args, normalizeRevisionMetadata(args), ctx)
 }
 
-function normalizeRevisionModelSettings(args: RevisionModelPolicyInput) {
+export async function updateChatbotRevisionModelSettings(
+  args: RevisionExpectedArgs & UpdateChatbotModelSettingsArgs,
+  ctx: ContextWithUser
+) {
   const modelRegistry = getChatModelRegistry()
   const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
   const allowedModelIds = dedupeStrings(args.allowedModelIds)
@@ -1405,18 +1408,15 @@ function normalizeRevisionModelSettings(args: RevisionModelPolicyInput) {
     reasoningMap[entry.modelId] = efforts
   }
 
-  return {
-    modelSelection: args.modelSelection,
-    allowedModelIds,
-    allowedReasoningEffortsByModel: reasoningMap,
-  }
-}
-
-export async function updateChatbotRevisionModelSettings(
-  args: RevisionExpectedArgs & UpdateChatbotModelSettingsArgs,
-  ctx: ContextWithUser
-) {
-  return await stageRevision(args, normalizeRevisionModelSettings(args), ctx)
+  return await stageRevision(
+    args,
+    {
+      modelSelection: args.modelSelection,
+      allowedModelIds,
+      allowedReasoningEffortsByModel: reasoningMap,
+    },
+    ctx
+  )
 }
 
 function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
