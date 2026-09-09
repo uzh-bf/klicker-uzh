@@ -41,7 +41,11 @@ function context(userId = ownerId, client = prisma): ContextWithUser {
   return {
     prisma: client,
     emitter: new EventEmitter(),
-    featureFlags: { isEnabled: () => true, refresh: async () => {} },
+    featureFlags: {
+      isEnabled: () => true,
+      getAiBetaDecision: () => 'enabled',
+      refresh: async () => {},
+    },
     user: {
       sub: userId,
       role: DB.UserRole.USER,

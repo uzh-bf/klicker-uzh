@@ -9,8 +9,12 @@ import {
 } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { resolveOwnerPreviewModel } from '@/src/lib/ownerPreviewPolicy'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
-import { getModelsForChatbot } from '@/src/lib/server/chatModelRegistry'
+import {
+  getAutomaticModelId,
+  getModelsForChatbot,
+} from '@/src/lib/server/chatModelRegistry'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -22,10 +26,12 @@ import {
   readBoundedJson,
   validateManageChatRequest,
 } from '@/src/lib/server/manageChatRequest'
+import { REQUIRED_MCP_UNAVAILABLE_CODE } from '@/src/lib/server/mcpRuntimePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -51,6 +57,8 @@ const previewOptionsSchema = z.object({
     .max(100)
     .transform((value) => value.toLowerCase())
     .default('tutor'),
+  selectedModel: z.string().trim().min(1).max(100).optional(),
+  reasoningEffort: z.string().trim().min(1).max(100).nullable().optional(),
 })
 
 function isRequiredMcp(parameters: unknown): boolean {
@@ -132,11 +140,11 @@ export async function POST(
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
+      owner: { select: { aiFeaturesEnabled: true } },
       course: {
         select: { displayName: true },
       },
       mcpConfigurations: {
-        where: { isEnabled: true },
         include: { mcpServer: true },
         orderBy: { priority: 'asc' },
       },
@@ -144,6 +152,12 @@ export async function POST(
   })
   if (!chatbot) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
+  }
+  if (!chatbot.owner.aiFeaturesEnabled) {
+    return NextResponse.json(
+      { error: 'Account AI approval is required for preview' },
+      { status: 403 }
+    )
   }
 
   const modeOptions = resolveEffectiveChatModeOptions(
@@ -178,6 +192,45 @@ export async function POST(
       { status: 503 }
     )
   }
+
+  const models = getModelsForChatbot(chatbot).map((model) => {
+    return {
+      ...model,
+      // getModelsForChatbot applies the saved reasoning allow-list and keeps
+      // the normalized capabilities under supportedReasoningEfforts. The
+      // preview helper uses the public ModelOption name for the same list.
+      allowedReasoningEfforts: model.supportedReasoningEfforts,
+    }
+  })
+  const modelResolution = resolveOwnerPreviewModel({
+    modelSelection: chatbot.modelSelection,
+    models,
+    automaticModelId: getAutomaticModelId(chatbot.allowedModelIds),
+    requestedModelId: options.data.selectedModel,
+    requestedReasoningEffort: options.data.reasoningEffort,
+  })
+  if (!modelResolution.model) {
+    const isExplicitStudentModelRequest =
+      chatbot.modelSelection && options.data.selectedModel !== undefined
+    const status =
+      modelResolution.reason === 'MODEL_UNAVAILABLE' &&
+      !isExplicitStudentModelRequest
+        ? 503
+        : 400
+    return NextResponse.json(
+      {
+        error:
+          modelResolution.reason === 'MODEL_UNAVAILABLE'
+            ? 'Model is not available for this chatbot'
+            : modelResolution.reason === 'REASONING_EFFORT_NOT_SUPPORTED'
+              ? 'This model does not support reasoning effort selection'
+              : 'Reasoning effort is not available for this model',
+      },
+      { status }
+    )
+  }
+
+  const { model: selectedModel, reasoningEffort } = modelResolution
 
   const kbConfigurations: MCPServerWithConfig[] = modeConfigurations
     .filter(
@@ -238,6 +291,21 @@ export async function POST(
 
   try {
     const toolNames = Object.keys(tools)
+    const quizzerDocQueryToolName =
+      selectedMode === 'quizzer'
+        ? toolNames.find(isDocQueryToolName)
+        : undefined
+
+    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
+      await closeMcpTools()
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
     const systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
@@ -247,18 +315,6 @@ export async function POST(
         standardModeConfig: chatbot.standardModeConfig,
       }
     )
-    const baseModels = getModelsForChatbot(chatbot).filter(
-      (model) => model.usageClass === 'BASE'
-    )
-    const selectedModel =
-      baseModels.find((model) => model.fallback) ?? baseModels[0]
-    if (!selectedModel) {
-      await closeMcpTools()
-      return NextResponse.json(
-        { error: 'No base model is available for preview' },
-        { status: 503 }
-      )
-    }
 
     const modelMessages = await convertToModelMessages(parsed.messages, {
       ignoreIncompleteToolCalls: true,
@@ -291,10 +347,27 @@ export async function POST(
             // stateless: this route never writes threads or messages.
             store: getOpenAIResponsesStore(),
           }),
+          ...(reasoningEffort && reasoningEffort !== 'none'
+            ? {
+                reasoningEffort,
+                reasoningSummary: 'auto' as const,
+              }
+            : {}),
         },
       },
       stopWhen: isStepCount(5),
       toolChoice: 'auto',
+      prepareStep: quizzerDocQueryToolName
+        ? ({ stepNumber }) =>
+            stepNumber === 0
+              ? {
+                  toolChoice: {
+                    type: 'tool' as const,
+                    toolName: quizzerDocQueryToolName,
+                  },
+                }
+              : {}
+        : undefined,
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
       onEnd: closeMcpTools,
@@ -325,7 +398,7 @@ export async function POST(
           ? {
               chatMode: selectedMode,
               modelId: selectedModel.id,
-              reasoningEffort: 'none',
+              reasoningEffort,
             }
           : undefined,
     })

@@ -33,6 +33,7 @@ function buildDeniedBetaContext(state: 'missing' | 'off' | 'throwing') {
   } else {
     ctx.featureFlags = {
       refresh: async () => {},
+      getAiBetaDecision: () => 'disabled',
       isEnabled: () => {
         if (state === 'throwing') throw new Error('Synthetic evaluator failure')
         return false

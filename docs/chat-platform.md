@@ -147,7 +147,7 @@ The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards
 
 The embedded lecturer assistant is a separate route family under `src/app/api/manage/`. It verifies the lecturer's NextAuth cookie, mints a short-lived internal bearer token for `apps/mcp-lecturer`, and confirms signed draft proposals through the authenticated chat route. This is an internal service exchange, not an OAuth client flow; the complete trust boundary is documented in [Auth Model](./auth-model.md#lecturer-mcp-and-manage-assistant).
 
-**One gate with two conditions covers the assistant, and it is enforced server side.** `isManageAiEnabled` in `src/lib/server/featureFlags.ts` requires the `ai-beta` GrowthBook flag _and_ the account's `aiFeaturesEnabled` column, which records that an administrator has a cost center to bill the resulting model usage to. It covers the launcher in `apps/frontend-manage` (`src/components/Layout.tsx`, `src/components/assistant/ManageAssistantWidget.tsx`), the `/manage` page in `apps/chat`, `POST /api/manage/chat`, the lecturer MCP tools that route loads, and `POST /api/manage/proposals/confirm` — so a proposal token minted while the gate was open stops being redeemable the moment either condition is withdrawn. The API routes evaluate it per request, so hiding the launcher is not what protects them.
+**The assistant gate is enforced server side.** `getManageAiCapability` in `src/lib/server/featureFlags.ts` first requires the account's live `aiFeaturesEnabled` approval and `betaEnabled` preference, then evaluates the `ai-beta` GrowthBook decision. An absent database approval or preference immediately disables access; an unusable flag decision returns temporary unavailability rather than an authorization denial. It covers the launcher in `apps/frontend-manage` (`src/components/Layout.tsx`, `src/components/assistant/ManageAssistantWidget.tsx`), the `/manage` page in `apps/chat`, `POST /api/manage/chat`, the lecturer MCP tools that route loads, and `POST /api/manage/proposals/confirm`. A previously minted proposal token does not bypass this gate. Database revocation applies on the next request; an explicit refreshed flag denial applies immediately, while failed refreshes follow the bounded process-local grace described in [Feature flags](./feature-flags.md). The API routes evaluate the gate per request, so hiding the launcher is not what protects them.
 
 The entitlement is read live from the database rather than from the session token, so withdrawing it takes effect on the next request instead of at the lecturer's next sign-in. It is administered by email on the Manage admin panel (`setAiFeatures`), separately from `privatePreview`: one decides which unreleased features an account may see, the other whether it may spend model budget.
 
@@ -182,7 +182,7 @@ Before the inventory is passed to the model, the adapter keeps only the known re
 for `unavailable`; unknown or mismatched tools fail closed so service-version
 skew cannot contradict the advertised capability.
 
-Evaluation fails closed. An unconfigured or unreachable GrowthBook yields `false` for every flag, which is what makes a dark deploy safe: an image built before the `NEXT_PUBLIC_GROWTHBOOK_*` repository variables were set carries no SDK connection and shows nothing. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
+Generic boolean evaluation fails closed. The backend-owned AI capability instead distinguishes denial from dependency unavailability: missing SDK configuration, an absent `ai-beta` definition, or an unusable payload yields `temporarilyUnavailable` for accounts with both live AI approval and beta opt-in. This denies protected operations but can leave a visible disabled AI surface. Provision matching browser/server connections and register `ai-beta` with a false default before deploying that capability; missing configuration is not a silent dark-deploy mechanism. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
 
 The two chat surfaces also differ in how they handle a missing model key. The participant route falls back to `apiKey: process.env.OPENAI_API_KEY || 'no-key'` (`src/app/api/chatbots/[chatbotId]/chat/route.ts`), which the local LiteLLM proxy accepts, while `createManageAssistantModel` (`src/app/api/manage/chat/route.ts`) throws `OPENAI_API_KEY is required for the Manage assistant`. The devcontainer sets `OPENAI_BASE_URL` but no `OPENAI_API_KEY`, so the Manage assistant returns 500 there until the variable is set ([Getting Started](./getting-started.md#failure-signatures-fresh-clone--wrong-state)).
 
@@ -1035,17 +1035,23 @@ from forcing horizontal overflow in containers narrower than 230px (mobile and
 embedded mode).
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
-"No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
+"No results" is claimed only for an explicitly empty source collection, never from the number
+of displayable citations. A cancelled call leaves the
 literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
 its result, and labelling that as an empty search would be a lie.
 
-Expanding the chip no longer dumps raw JSON for a successful doc_query: `getDocQueryPanelContent`
-(same file, pure, tested in `test/tool-fallback-doc-query.test.ts`) yields a friendly panel — the
-model's search query (parsed defensively from the possibly-streaming args JSON by
-`parseDocQueryArgsQuery`) plus a "results appear as sources below" hint keyed on the parsed-`done`
-state. The raw tool-name/args/result path is preserved wherever the friendly panel would lie or be
-empty: non-doc_query tools, running/failed calls, unparseable results, and the doneEmpty +
-unreadable-args combination (which would otherwise render a blank panel).
+The expanded RAG panel displays readable chunks grouped by source, with full-text disclosure,
+original source links when supplied, and each chunk's own locator. `docQueryResult.ts` interprets
+retrieval independently of citation eligibility. Previously excluded unnamed sources remain
+unnumbered, preserving historical citation associations. Group citation badges use the shared
+message source context rather than restarting numbering for each tool call.
+
+Documents-mode `source_url` takes precedence over a safe public `reference` for navigation only;
+it does not change legacy identity or deduplication. Internal ingestion endpoints and unsafe URLs
+never become source links. Missing provenance stays unavailable; document text is not an origin
+metadata channel. Unknown locator semantics preserve the original link without inventing a jump
+target. RAG error and unknown states use friendly disclosure without raw provider payloads;
+unrelated tools retain their existing fallback.
 
 ## Streamed Markdown math
 

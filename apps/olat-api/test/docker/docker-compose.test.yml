@@ -16,10 +16,12 @@ services:
       - ../../../../.devcontainer/disposable-test-init.sql:/docker-entrypoint-initdb.d/20-disposable-test-init.sql:ro
 
   test:
+    working_dir: '${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}'
     build:
       context: ../..
       dockerfile: test/docker/Dockerfile.test
     environment:
+      OLAT_TEST_WORKSPACE: '${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}'
       DATABASE_URL: postgresql://klicker_test:klicker@postgres:5432/klicker_test
       SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@postgres:5432/klicker_test_shadow
       CI: ${CI:-false}
@@ -27,7 +29,9 @@ services:
       PNPM_HOME: '/tmp/.pnpm'
       OLAT_API_KEY: 'test-key'
     volumes:
-      - ../../../../:/usr/src/app
+      # pnpm records workspace locations during the host install. Keep that
+      # absolute location unchanged inside the Linux CI container.
+      - '${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}:${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}'
     depends_on:
       postgres:
         condition: service_healthy

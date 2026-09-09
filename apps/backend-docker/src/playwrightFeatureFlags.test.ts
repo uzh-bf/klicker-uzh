@@ -217,3 +217,122 @@ test('Playwright flags target scoped synthetic actors and test controller', () =
   )
   assert.equal(result.status, 0, result.stderr)
 })
+
+test('Playwright flags preserve the configured analytics fixture', () => {
+  const safeFetchPreload = `data:text/javascript,${encodeURIComponent(`
+    globalThis.analyticsEnabled = true
+    globalThis.fetch = async (input) => {
+      if (String(input) !== 'http://127.0.0.1:4010/api/features/sdk-test') {
+        throw new Error('Unexpected fixture request')
+      }
+      return Response.json({ features: {
+        'learning-analytics': { defaultValue: globalThis.analyticsEnabled },
+        'ai-beta': { defaultValue: true },
+      } })
+    }
+  `)}`
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--import',
+      safeFetchPreload,
+      '--import',
+      fixture,
+      '--input-type=module',
+      '-e',
+      `
+      import assert from 'node:assert/strict'
+      import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
+      const flags = new NodeFeatureFlagClient({
+        apiHost: process.env.GROWTHBOOK_API_HOST,
+        clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
+        environment: 'test', refreshIntervalMs: 0,
+      })
+      const actor = { id: 'another-synthetic-user', actorType: 'user' }
+      assert.equal(await flags.initialize(), true)
+      assert.equal(flags.isEnabled('learning-analytics', actor), true)
+      assert.equal(flags.isEnabled('ai-beta', actor), false)
+      const lecturer = {
+        id: '76047345-3801-4628-ae7b-adbebcfe8821', actorType: 'user',
+      }
+      await fetch('https://growthbook.test/__test/learning-analytics?enabled=false', {
+        method: 'POST',
+      })
+      await flags.refresh()
+      assert.equal(flags.isEnabled('learning-analytics', lecturer), false)
+      assert.equal(flags.isEnabled('learning-analytics', actor), true)
+      globalThis.analyticsEnabled = false
+      await flags.refresh()
+      assert.equal(flags.isEnabled('learning-analytics', actor), false)
+      flags.destroy()
+    `,
+    ],
+    {
+      env: {
+        ...process.env,
+        NODE_ENV: 'test',
+        GROWTHBOOK_API_HOST: 'http://127.0.0.1:4010',
+        GROWTHBOOK_CLIENT_KEY: 'sdk-test',
+      },
+      encoding: 'utf8',
+    }
+  )
+  assert.equal(result.status, 0, result.stderr)
+})
+
+for (const preload of [false, true]) {
+  test(`Fixture HTTP routes require explicit preload (${preload})`, () => {
+    const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: 'test' }
+    delete env.GROWTHBOOK_API_HOST
+    const result = spawnSync(
+      process.execPath,
+      [
+        ...(preload ? ['--import', fixture] : []),
+        '--input-type=module',
+        '-e',
+        `
+        import assert from 'node:assert/strict'
+        import { once } from 'node:events'
+        import express from 'express'
+        const app = express()
+        app.get('/ordinary', (_req, res) => res.json({ ordinary: true }))
+        const server = app.listen(0, '127.0.0.1')
+        await once(server, 'listening')
+        const base = 'http://127.0.0.1:' + server.address().port
+        const controller = base + '/__growthbook__/__test/learning-analytics'
+        const features = base + '/__growthbook__/api/features/sdk-test'
+        try {
+          assert.deepEqual(await (await fetch(base + '/ordinary')).json(), { ordinary: true })
+          if (!${preload}) {
+            assert.equal((await fetch(features)).status, 404)
+            assert.equal((await fetch(controller)).status, 404)
+            assert.equal((await fetch(controller + '?enabled=true', { method: 'POST' })).status, 404)
+          } else {
+            assert.equal((await fetch(features)).status, 200)
+            const initial = await fetch(controller)
+            assert.equal(initial.headers.get('cache-control'), 'no-store')
+            assert.deepEqual(await initial.json(), { enabled: true })
+            const changed = await fetch(controller + '?enabled=false', { method: 'POST' })
+            assert.deepEqual(await changed.json(), { enabled: false })
+            const payload = await (await fetch(features)).json()
+            assert.equal(payload.features['learning-analytics'].rules[0].force, false)
+            for (const query of ['', '?enabled=invalid', '?enabled=true&enabled=false', '?enabled=true&other=false']) {
+              assert.equal((await fetch(controller + query, { method: 'POST' })).status, 400)
+            }
+            assert.equal((await fetch(controller + '?enabled=true')).status, 400)
+            assert.equal((await fetch(controller, { method: 'DELETE' })).status, 405)
+            assert.deepEqual(await (await fetch(controller)).json(), { enabled: false })
+            await fetch(controller + '?enabled=true', { method: 'POST' })
+            assert.deepEqual(await (await fetch(controller)).json(), { enabled: true })
+          }
+        } finally {
+          server.closeAllConnections()
+          await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+        }
+        `,
+      ],
+      { env, encoding: 'utf8', timeout: 15000 }
+    )
+    assert.equal(result.status, 0, result.stderr || result.stdout)
+  })
+}

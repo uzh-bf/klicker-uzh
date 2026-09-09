@@ -51,6 +51,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
     userOneCtx = ctx1
     userOneCtx.featureFlags = {
       refresh: async () => {},
+      getAiBetaDecision: () => 'enabled',
       isEnabled: (key) => key === 'ai-beta',
     } as NonNullable<ContextWithUser['featureFlags']>
     userTwoCtx = ctx2

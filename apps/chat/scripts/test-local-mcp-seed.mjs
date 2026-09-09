@@ -3,6 +3,12 @@ import { realpathSync } from 'node:fs'
 import { isDeepStrictEqual } from 'node:util'
 import { decrypt } from '@klicker-uzh/util'
 import pg from 'pg'
+import {
+  assertDisposableDatabaseIdentity,
+  assertNoPostgresEnvironmentOverrides,
+  disposableDatabaseIdentityQuery,
+  validateDisposableDatabaseUrl,
+} from '../../../packages/prisma/src/disposableDatabase.ts'
 
 import {
   LOCAL_CHATBOT_ID,
@@ -44,7 +50,8 @@ function validateRuntimeContext() {
     'invalid working directory'
   )
 
-  const databaseUrl = process.env.DATABASE_URL
+  assertNoPostgresEnvironmentOverrides()
+  const databaseUrl = validateDisposableDatabaseUrl(process.env.DATABASE_URL)
   requireTrue(
     typeof databaseUrl === 'string' && databaseUrl.length > 0,
     'missing database URL'
@@ -512,6 +519,39 @@ async function main() {
     'LOCAL_MCP_SEED_TEST=1 is required'
   )
   validateRuntimeContext()
+  for (const mismatch of [
+    { database: 'retained' },
+    { login: 'owner' },
+    { role: 'owner' },
+    { marker: null },
+    { privileged: true },
+  ]) {
+    const queries = []
+    await assert.rejects(() =>
+      repairLocalMcpSeed(
+        {
+          async query(sql) {
+            queries.push(sql)
+            return {
+              rows: [
+                {
+                  database: 'klicker_test',
+                  login: 'klicker_test',
+                  role: 'klicker_test',
+                  marker: 'klicker-disposable-test-v1',
+                  privileged: false,
+                  ...mismatch,
+                },
+              ],
+            }
+          },
+        },
+        SYNTHETIC_TOKEN_A,
+        () => false
+      )
+    )
+    assert.deepEqual(queries, [disposableDatabaseIdentityQuery])
+  }
 
   let client
   try {
@@ -521,6 +561,9 @@ async function main() {
     })
     client.on('error', () => {})
     await client.connect()
+    assertDisposableDatabaseIdentity(
+      (await client.query(disposableDatabaseIdentityQuery)).rows
+    )
     await client.query('SET search_path TO pg_temp')
     await runAcceptance(client)
     await runMissingParentAcceptance(client)

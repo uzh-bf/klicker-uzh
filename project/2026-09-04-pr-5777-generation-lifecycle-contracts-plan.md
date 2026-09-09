@@ -2,6 +2,811 @@
 
 ## Approval summary
 
+### Current delivery ownership — 2026-09-09
+
+Approved target integration is in progress on `rs/local-kb-ingestion-retrieval`.
+All sixteen conflict paths are resolved; both executors are closed. Main owns
+integration and verification. The
+resolved host launcher passes 28/28 tests, and the merged offline local-stack
+suite passes 71/71 in the existing task container. The merged workspace
+definitions required `pnpm install --frozen-lockfile`; it passed with no
+lockfile change. All 63 resolved Chat regressions and 66 normalization/MCP
+regressions pass. Chat type-checking passes after rebuilding the updated
+feature-flags package. Host launcher/profile checks pass 44/44 and the complete
+host CI contract suite passes 69/69. Both shell runtime/profile suites pass;
+their synthetic initializer fixture now stubs the separately tested dependency
+generator. Single-KB preview fixtures use the existing `kb_id` contract, while
+the multi-KB fixture retains `kb_ids`. Focused Biome passes. No application/provider restart, work
+submission, consent acceptance, retained-data change or deployment occurred.
+The runtime stays retained under the user's manual-verification lease; no new
+live ingestion or retrieval acceptance is claimed. Draft publication remains
+pending integrated checks and final review. The older approval-wait and active
+review notes below are historical and superseded by this receipt.
+
+User approved target integration after the merge-authority clarification.
+The in-progress normal merge targets `origin/v3-ai@c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da`.
+Three dirty documentation files were preserved in stash
+`64a976f76f1cc23b80ea7d9a76f7e62dac2ec685` and restored without dropping that backup.
+Upstream predecessor follow-ups supersede the old fixture-route and profile
+interception implementations: test routes now live only in the explicit
+preload, profile failure uses ManageFeatureFlagProfile, and persistence fixtures
+include getAiBetaDecision. Upstream AI eligibility cases and profile-loading
+guard are preserved. These decisions follow the merged predecessor's receipts
+at this target, including its test-only route separation and hosted corrections.
+The current source extension and its historical evidence remain preserved here;
+upstream predecessor history remains available in the target revision.
+
+Managed-status review is complete with no source defect. Its advisory coverage
+gap is corrected in `3d60f6933c`: returned status, malformed JSON, command
+failure, unknown status and invalid drift shape are asserted. All 28 focused
+tests pass; Biome, diff checks and staged redacted gitleaks pass. Both reviewers
+are closed. At that checkpoint target integration awaited approval. The user
+subsequently approved the task-branch merge described above; merging the
+eventual PR into its target remains outside this authority.
+
+Authority clarification: the active goal explicitly excludes merges. The trial
+merge changed no branch or working files; performing target integration now
+requires clarification despite the ordinary standing target-integration rule.
+Request only a normal merge of `origin/v3-ai@c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da`
+into `rs/local-kb-ingestion-retrieval`, preserving existing work and resolving
+the 16 conflicts. This does not authorize merging the eventual PR into v3-ai,
+force-pushing, restarting providers, submitting work or deleting data.
+
+Publication reconciliation: no PR exists for `rs/local-kb-ingestion-retrieval`.
+GitHub confirms the predecessor PR #5777 is merged into v3-ai as
+`9f805e9e55dfc2b318ea2e0a27cab39b23abaa71`. Current `origin/v3-ai` is
+`c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da`. A trial merge (no branch, index or
+working-file changes) reports 16 conflicting paths, including newer citation
+rendering and host-launcher changes plus inherited predecessor code. Deliberate
+target integration is required before full-package review to avoid a stale
+publication diff. Preserve the three dirty documentation paths first; do not
+discard them or force-push. The full offline local-stack suite passes 71/71.
+The approved source stage ends at reviewed draft publication, not live AI
+acceptance; browser consent remains a separately gated live-proof limitation.
+
+Managed application observation is committed at `4690a9cc80`. The 28 focused
+tests, Biome and staged redacted scan pass; no runtime mutation occurred.
+The two-file range `87fa252762..4690a9cc80` is under paired review: simplifier
+`01a083c9-140f-7e60-929f-ee4f7227f42f` and slice reviewer
+`01a083c9-1515-7553-8e23-051d2f965d08`. Main owns only documentation and
+integration while these read-only passes run. Source/CI readiness must not be
+presented as live ingestion or retrieval acceptance. Consent-gated browser
+acceptance, full-package review and draft publication remain outstanding.
+
+The correction review is DONE on `b7601de..87fa252`; both shutdown findings
+are resolved and the reviewer is closed. Main owns the next managed-status
+integration because it shares the lifecycle module and final readiness seam.
+The uncommitted status change binds Devrouter observation to the prepared local
+context, checkout and workspace, reports managed status/readiness separately,
+and leaves AI qualification false. All 28 focused tests pass with synthetic
+runners, including stopped/profile-drift and foreign identity cases. Biome
+passes with one pre-existing informational suggestion. No live service status,
+lifecycle mutation or provider call ran. This new slice still requires commit
+and review; browser consent and final publication remain open.
+
+The lifecycle correction is committed at `87fa252762`. The independent review
+found that incomplete resume or stop attempts blocked supported shutdown. Main
+reproduced the failed-resume case before fixing it. Shutdown now remains
+available for incomplete attempts after ownership verification, but retains
+the evidence and cannot authorize another resume. Other evidence errors remain
+blocking. All 28 focused Node 24 tests pass; Biome, diff checks and staged
+redacted gitleaks pass. Container checks replace the host aggregate hook for
+this commit. The same reviewer is checking this correction; no new reviewer
+was started. No real lifecycle operation or provider call occurred.
+
+Continuation after the user's MR !134 merge approval: remote fetch succeeds;
+`rs/local-kb-ingestion-retrieval` has no configured upstream and is 214 ahead,
+8 behind `origin/v3`. The simplifier completed and main accepted its sole
+finding: extract repeated infrastructure receipt validation into one private
+helper while preserving both traversal loops and directory checks. That narrow
+uncommitted correction passes all 27 synthetic preparation/launcher tests in
+the existing container and `git diff --check`. The existing slice reviewer
+remains running; no replacement reviewer was started. Retained workspace data
+and services are unchanged. Managed observation, browser consent acceptance,
+integrated final review and draft publication are still pending.
+
+Current review checkpoint: resume is committed at
+`b7601de3a10c32672662101f350151d23b79f356`, with 27 focused tests passing.
+A stop before the initial successful startup no longer supplies resume evidence
+for that later startup. The unreviewed tooling range
+`d63b69c8a96b732e8a580ee1de49bfb1f53655fc..b7601de3a10c32672662101f350151d23b79f356`
+is now under the paired reviews: simplifier
+`01a083b8-2009-72e1-ba48-2fb15b623e87` and slice reviewer
+`01a083b8-213f-7c71-8bcd-e01d3bf39acc`. All 17 changed paths are included.
+No writer is active on those source paths. Main retains documentation and
+integration. The slice commit used the recorded focused container-check split;
+no real start, stop, resume or provider call ran. Managed-runtime status wiring,
+review disposition, consent-gated browser acceptance and final publication remain.
+
+Resume implementation ownership returned to main after the existing executor
+continued redesigning through the narrowing checkpoint. The child is shut down;
+its partial helpers were preserved and integrated, not replaced by another
+worker. The CLI now accepts explicit resume after completed preparation, startup
+and current-cycle stop evidence. Successful cycles preserve storage; concurrent
+operations and failed-resume replay are refused. All 27 focused preparation and
+launcher tests pass with synthetic runners. No real lifecycle operation ran.
+This slice remains uncommitted and needs main diff inspection and the required
+reviews; stop-failure evidence semantics remain to be checked before commit.
+
+Broader verification on 2026-09-09: the container aggregate stops at the known
+host-only Devrouter contract test, not a branch assertion failure. Running that
+complete CI contract suite on the host passes 69/69. The remaining container
+aggregate passes, including 40/40 Turbo check tasks, lint, Syncpack, agent-doc
+validation, Git identity tests, removed-artifact checks, schema mirroring and
+host-launcher unit tests. GraphQL regeneration produces no tracked SDL drift.
+Formatting is verified separately on the committed citation and Blob slices.
+
+Manage Blob routing is committed at `e12419b961`. The four-file slice includes
+the Blob route in Manage, binds it to Azurite in the host runtime contract and
+rejects missing or unexpected managed bindings. The existing 16 host contract
+tests pass, including actual installed-Devrouter profile planning. Focused
+Biome, YAML Prettier, identity validation and staged redacted gitleaks pass.
+The aggregate host hook was replaced by these focused checks at this checkpoint;
+full source verification remains due. No runtime configuration was applied.
+
+Retained-citation tooling is committed at `df6cfaeb2c`. The five-file slice
+contains the isolated host-launcher mode, local-origin/fixture validation,
+separate Playwright config/spec and TypeScript inclusion. It does not install,
+start, seed or submit work. Fourteen launcher tests, Playwright TypeScript,
+focused Biome/Prettier, identity validation and staged redacted gitleaks pass.
+The host pre-commit hook was skipped for this checkpoint using focused container
+verification; this is not a claim that the full aggregate hook passed.
+Required slice review and simplification remain due after the active resume
+writer finishes. Browser acceptance still fails at the existing consent overlay;
+the test preserves that failure rather than bypassing consent.
+
+Current reconciliation, 2026-09-09: GitLab confirms provider MR !134 is merged
+at squash commit `69fa7f9200fc17bdb30b9cd792ea4d0e0a907012`; its reviewed-head
+pipeline 660884 succeeded. This dependency is already included in the local
+source package. The task branch is `rs/local-kb-ingestion-retrieval`, has no
+upstream shown by status, and is 211 commits ahead and 8 behind `origin/v3` after
+fetch. Target resolution remains required before publication; this drift alone
+does not require integration.
+
+Provider health probes are now committed at `e8a2ca5f41`.
+Fresh offline verification passes 20 provider-composition tests in the existing
+Node 24 container, 16 runtime-contract tests on the host, and 14 retained-launcher
+tests in the container. Staged and unstaged diffs pass whitespace checks.
+The provider mapping child completed and was closed; its source inspection
+distinguishes API liveness from dependency readiness. No endpoint was probed.
+GitHub reports no open PR for this task branch; draft publication is still due.
+Existing child
+`01a0839a-8b96-7372-b5b8-cde36204322b` has not returned a terminal result.
+Safe resume, managed application observation, final review and draft
+publication are unfinished. The retained citation test is blocked by the
+disclaimer overlay; no consent write or new provider operation has occurred.
+Earlier chronological receipts below retain historical states and do not
+supersede this checkpoint.
+
+Fresh retained-runtime readback: Devrouter `status --repo` resolves this exact
+checkout to workspace `rs-generation-lifecycle-contract`, Compose project
+`default-rs-6d40c`, and reports `ready` with no drift. Desired and active resources
+match profile `ai,chat,email,live-quiz,manage`. The `klicker-dev` process is running;
+Postgres, Azurite, Hatchet and the five selected optional services report healthy.
+The deterministic local MCP process is stopped. This is managed workspace
+observation only, not external ingestion or real retrieval qualification.
+The retained workspace remains running under the user's manual-verification
+lease. No lifecycle transition or data mutation was requested by this readback.
+
+Continuation, 2026-09-09: lifecycle review completed with verification concerns,
+not a source defect. Commit `8222fa673b` fixes formatting and extends the existing
+synthetic lifecycle test to reject remote Docker contexts before mutation and
+refuse successful shutdown when a provider remains running. Commit `d63b69c8a9`
+adds explicit expected-service readiness: missing, duplicate, stopped, starting,
+unhealthy and unreported-health services cannot produce `infrastructureHealthy`.
+The same service selection drives start and status; managed application and AI
+qualification remain explicitly false. All 16 affected Node 24 tests pass,
+focused Biome passes with one pre-existing informational suggestion, and diff
+checks plus the redacted scan pass. The existing slice reviewer is performing
+one correction pass on these two commits. No real lifecycle command ran.
+
+Retained citation launcher verification passes its 14 tests and the 16 host
+runtime-contract tests. The latter must run on the host: the container attempt
+failed because host Devrouter is intentionally absent there, then passed with
+installed host Devrouter 0.0.61. Playwright TypeScript and four-file Biome checks
+pass. Browser execution remains outstanding; these checks do not establish live
+retrieval or persistence. The retained fixture helper is create-only and must
+not be replayed to run the rendering check. Resume support, managed runtime
+observation, integrated review and draft publication remain incomplete.
+
+Retained browser proof, 2026-09-09: the repository host launcher executed exactly
+one retained-citation test against the existing synthetic thread. It passed in
+6.4 seconds, including source-card rendering, internal-reference suppression,
+citation-to-card linkage, accessible label and reload. Its request guard blocked
+external origins and refused non-read methods; the test observed zero attempted
+writes. Local signing configuration passed directly between processes without
+printing or saving it. No fixture preparation, query or provider call ran.
+The source-card screenshot is under the ignored Playwright test-results folder.
+Main's image inspection found the disclaimer overlay covering the source card,
+so this pass does not establish user-visible citation acceptance. The test now
+requires pointer reachability using a trial click that dispatches no action.
+The corrected browser run failed as expected: the dialog-overlay disclaimer
+intercepts pointer events on the source card. The test now bounds that check to
+ten seconds instead of consuming the full one-minute test timeout. Accepting
+the disclaimer would write consent and is outside this read-only proof. No
+fresh ingestion or model generation is established.
+
+Lifecycle correction review completed with one composition-readiness concern.
+Main verified cached Hatchet and Crawl4AI image metadata: neither supplies an
+inherited healthcheck, so the current full infrastructure health flag cannot
+become true. Explicit supported readiness probes remain to be implemented and
+verified; do not weaken the flag to accept running containers as healthy. The
+five-service claim in the review also includes scraping, ingestion API and Doc
+Processing; inherited checks for those images have not yet been inspected.
+
+Infrastructure lifecycle is committed at `d79d103a1a`: explicit start, provider
+status and data-preserving stop with matching preparation, generated config,
+local context, provider labels and managed result checks. The complete offline
+suite passes 69 tests before the final managed identity guard; its affected
+16 tests pass afterward. Redacted diff scan passes. Runtime calls are fake in
+these tests; no actual start or stop occurred. The simplifier completed with no
+justified reduction. Slice reviewer `01a0837e-f55d-7330-aeda-a02c7ab44423` is
+active on this exact three-file slice; do not replace it. Resume support, complete status qualification,
+remaining citation integration, integrated final review and draft publication
+remain incomplete. Documentation is being aligned in the same worktree.
+
+Historical pre-commit checkpoint: credential-free start integration verifies
+completed preparation and unchanged provider composition/routing, requires the
+recorded local Docker context, claims one start attempt, starts backing/API
+services and then the managed manage/chat profile. No queue consumer, callback
+worker, dispatcher or model-dependent reader is selected. The 15 preparation
+tests pass using synthetic runners, including failure retention and no
+migration/seed behavior. Stop/status wiring, fresh candidate-source checks,
+integrated reviews and publication remain unfinished. No real start ran.
+The setup correction reviewer returned DONE with no new findings; its report is
+`project/_local/reviews/2026-09-09-local-kb-setup-correction-review.md`.
+The provider mapper is completed. Main compared its older ingestion baseline to
+the pinned `69fa7f92` revision: only profile selection and citation display-name
+handling changed, not its mapped startup entrypoints. Those earlier children are terminal.
+
+Recovery continuation: setup review completed with two findings. Provider
+observation now rejects ignored state, with a synthetic ignored-bytecode
+regression. Application setup now waits for Blob health before schema/seed;
+the generated Azurite healthcheck expects its unauthenticated HTTP 403 response.
+The complete offline selection passes 67 tests in the retained Node 24 toolchain,
+including executable HTTP probe success/failure and Blob failure before seeding.
+The corrections are committed at `1695852591`; the redacted diff scan passes.
+The host hooks use the established container-check split; no full build is
+claimed. These corrections do not establish live readiness. No service startup,
+database change, ingestion submission or paid request occurred. The provider
+source immutability between observations is not guaranteed, but setup now repeats
+source checks immediately before provider storage and managed initialization.
+The provider startup mapper subsequently completed; its findings are reconciled above.
+
+Managed hook preservation is committed at `c3db8c8c96`: isolated bootstrap
+suppresses reset/seed/token rewrites, restores generated service settings after
+ordinary defaults, and excludes retained signer/graph configuration and the
+deterministic MCP fixture. Ordinary startup remains the default. The fake-command
+lifecycle suite, environment test, shell syntax, diff and staged redacted scan
+pass. No real process or database was changed. These five paths are now committed
+and still need integrated review with lifecycle wiring.
+
+Setup simplifier completed and is closed. Main accepted removal of the unused
+storage context return value, while preserving the persisted context receipt;
+all 14 preparation tests pass. That two-line correction landed in `1695852591`. Report:
+`project/_local/reviews/2026-09-09-local-kb-setup-simplifier.md`.
+The setup slice review and correction pass subsequently completed, as recorded above.
+
+Explicit setup integration is committed at
+`8fcbcc710ecdb8434a717b9c1f95be7685e9f199`. The CLI verifies pins and fresh
+provider source observations before exclusive preparation. Managed setup uses
+the route-free profile, validates the exact linked checkout/profile result,
+attaches isolated Blob routing and runs guarded schema/seed/CORS setup once.
+The standard linked overlay remains explicitly listed for Devrouter ownership
+validation, while its content stays empty. The internal Blob endpoint now uses
+the assigned namespaced alias accepted by the existing CORS setup guard.
+All 66 offline tests pass; the fake lifecycle suite, Biome, diff and redacted
+gitleaks checks pass. No actual setup, database mutation or provider activation
+occurred. Slice reviewer `01a08362-0291-7d03-9cb8-a94b38db41bd` is reviewing
+the exact six-file range from `f9818cbbcf`; reuse this live child.
+Normal start/stop, readiness reporting, integrated verification and draft
+publication remain unfinished. The retained runtime lease and data are unchanged.
+
+Namespace integration correction is committed at `f9818cbbcf`. Managed aliases,
+host entries and Blob URL use required Compose WORKSPACE substitution supplied
+by Devrouter, not an identity guessed before first ensure. Provider routing is
+written separately after a linked setup result supplies the assigned identity.
+Initial source checks require detached linked-worktree metadata. The complete
+64-test offline suite and subsequent 30-test focused candidate-assertion run
+pass; the fake-command lifecycle suite also passes. Biome and redacted gitleaks
+pass, with only the pre-existing template informational suggestion retained.
+The configured advisor and installer reviewer completed and are closed/terminal.
+Their findings and dispositions are recorded in
+`project/_local/reviews/2026-09-09-local-kb-installer-slice-review.md`.
+No actual setup or provider process ran. The next implementation is the explicit
+setup/start/stop command integration; the source package is not yet published.
+
+Installer checkpoint: commit `81a4c6c0dd4ef48cc35136e4d8fd31075d9f27f5`
+adds the initial checkout preflight and guarded managed-configuration installer.
+All 13 focused preparation tests and the complete 64-test offline selection pass
+in Node 24, including refusal of changed input and interrupted-attempt replay.
+Biome, diff checks and redacted gitleaks
+pass. The commit uses the existing host/container hook split; no full build is
+claimed. Only synthetic temporary fixtures were modified by verification.
+Simplifier `01a0834e-6a4c-7903-98b9-c4f742e137cd` completed with no justified
+reductions and is closed; its report is in
+`project/_local/reviews/2026-09-09-local-kb-installer-simplifier.md`.
+Slice reviewer `01a0834e-6b0f-7641-b923-c548c928575b` owns the exact two-file range.
+Explorer `01a08348-8182-71f1-b553-033004fbee0f` completed and is closed.
+Main verified that only first `ensure` claims the collision-safe workspace
+identity; `workspace ls` cannot supply that final value beforehand. Devrouter's
+`managedComposeEnvironment` supplies the claimed `WORKSPACE` and
+`DEVROUTER_WORKSPACE` to Compose. Proposed integration uses required Compose
+substitution, then the exact ensure readback for provider route attachment.
+The configured read-only Claude consultation in host session `85713` completed;
+its verified advice is applied in the correction above. The slice reviewer also
+completed. No child remains active from this installer pass. CLI lifecycle
+integration and final delivery remain open.
+
+2026-09-09 continuation: the complete offline local-stack selection passes
+59/59 tests in the retained Node 24 toolchain. The new uncommitted checkout
+preflight rejects an attached branch, a different candidate, and tracked,
+untracked or ignored state before creating the preparation claim. Its focused
+suite passes 10/10; Biome and whitespace checks pass. No installer or lifecycle
+command was executed. Configuration installation, lifecycle integration and
+integrated review remain open; this is not runtime acceptance or publication.
+The existing runtime and all other pending source changes remain preserved.
+
+2026-09-09 managed configuration is committed at
+`dc2491ac0f39820ea040007d2b3246f52434da15`. It renders separate runtime-only
+application configuration without changing source inputs, excludes duplicate
+backing services and deterministic MCP, and removes inherited upstream AI keys.
+The complete offline selection passes 58 tests before the final key-exclusion
+assertion; the affected 17-test configuration suite passes afterward. Biome and
+redacted gitleaks pass. Simplification completed without recommendations;
+correctness review `01a08338-73a0-77d3-8dad-cec305ca8730` completed on the
+exact two-file slice with no actionable findings. The report is retained at
+`project/_local/reviews/2026-09-09-local-kb-managed-configuration-slice-review.md`.
+This renderer is not an installed or running stack.
+
+The setup-order inspection found that ordinary Prisma/seed commands require the
+repository's marked, non-privileged `klicker_test` identity. The correction in
+commit `0b585cc335` generates that role and shadow database with a distinct
+local password; SQL reads it through psql's environment rather than containing
+the value. All 15 focused configuration/preparation tests pass, including the
+actual repository URL validator. No database was accessed. Setup still needs a
+route-free managed phase before schema/seed and app startup. Commit `59fc0e71f0`
+adds the isolated-only setup profile with no application routes or processes;
+start must not run initialization steps. Exact checkout installation and lifecycle wiring
+remain incomplete. Existing retained data, runtime and pending source edits are
+preserved. Advisor consultation remains unavailable due the recorded quota.
+
+2026-09-09 configuration integration checkpoint: the complete offline selection
+passes 56 tests and the fake-command lifecycle suite passes. This is not live
+ingestion evidence. Fresh fetch leaves `rs/local-kb-ingestion-retrieval` without
+an upstream, 198 commits ahead and eight behind default `origin/v3`; no target
+integration occurred. Main verified Devrouter reads only the standard
+`.devcontainer/devcontainer.json` and forces `docker-compose.devrouter.yml` for
+linked checkouts. An environment override cannot select the isolated topology.
+The proposed generated configuration in a fresh runtime-only checkout still
+needs its design disposition. Claude advisor failed before work with a session
+quota limit; no advice or final review is claimed, and no runtime was changed.
+
+The missing `doc-query.env` is corrected with explicit local Milvus and mounted
+tool settings. Main extended preparation coverage to verify every provider
+environment file after synthetic Hatchet token delivery. The test reproduced
+the missing file before the correction and now passes; the integrated offline
+selection passes 57/57. Redacted gitleaks reports no leaks in the four-file
+configuration follow-up. The executor completed and is closed. Main verified
+the pinned reader's `validate_model_provider_environment` still requires
+`OPENAI_API_KEY`; this credential-free stage does not qualify AI retrieval.
+No dummy key or fallback was added. Existing staged runtime/browser work remains
+preserved. Managed wiring, executable lifecycle, review and draft publication
+remain incomplete. The prior configuration simplifier is no longer available
+through native lifecycle; reuse its persisted result rather than respawning it
+solely because its child handle is absent.
+
+2026-09-09 isolated environment preservation: the opt-in hooks snapshot required
+service settings in shell memory and restore them after default loading and URL
+rewrites. They do not source retained token/graph/signer files in isolated mode.
+Generated Klicker settings now include its isolated database/shadow database and
+the three distinct managed Redis service names. The shared hook helper rejects
+missing settings without printing values. The lifecycle fake-command suite and
+six focused configuration/environment tests pass, including equals signs and
+multiline values. These are offline fixture checks, not runtime startup proof.
+Managed overlay/profile generation, explicit setup completion and delivery remain.
+
+2026-09-09 runtime-only hook implementation: opt-in
+`KLICKER_LOCAL_KB_RUNTIME_ONLY=1` suppresses post-create reset/push/seed and
+token-file rewriting while preserving install/build. Post-start suppresses
+Blob initialization, rejects an absent setup token without local fallback,
+and rejects profiles selecting deterministic MCP. Ordinary mode stays default.
+The lifecycle regression suite passes in the retained Node 24 toolchain with
+temporary fake-command fixtures; shell syntax and diff checks pass. The final
+MCP-profile guard is pending the next focused rerun. No retained cache, database,
+token or process was modified. Endpoint/environment preservation and generated
+managed configuration remain pending; the mode is not yet a supported startup
+command. The multi-mode skill guides reuse of existing lifecycle hooks.
+
+Managed-runtime mapper completed and is closed. Main verified the load-bearing
+findings in current files: `baseServices` always starts managed Postgres/Azurite/
+Hatchet; post-create resets/pushes/seeds; post-start re-sources defaults and
+initializes Blob storage. Therefore a Compose overlay alone cannot provide the
+approved runtime-only behavior. Continue with an isolated, explicit managed
+configuration and lifecycle mode, preserving ordinary profiles unchanged and
+keeping provider-owned backing stores on the provider project's network.
+No topology or runtime was changed by the mapping. Configuration simplifier
+`01a0831e-3b95-7fb2-a5d7-ba1b79f89530` owns the committed configuration slice;
+await its existing result. Main owns the lifecycle integration seam.
+
+2026-09-09 configuration slice committed at
+`14ae989245816b89a79ff5baa24dc1c61649fbdc`, eleven local-KB source/test paths only.
+All 55 offline local-stack tests pass; Biome passes the eleven paths with two
+informational template suggestions. Redacted gitleaks finds no leaks in the
+43 KB slice diff. The commit used the documented host/container hook split,
+not a claimed full build; other staged/unstaged work is preserved. Native
+simplification is dispatched on the exact new range. The predecessor renderer
+simplifier is terminal and closed. Managed-runtime mapper remains active;
+an explicit narrowing interruption requested its existing findings without
+more discovery. No publication, runtime mutation or paid request occurred.
+
+2026-09-09 integrated offline verification: the complete local-stack selection
+passes 55/55 tests in the retained Node 24 container, covering the CLI's current
+read-only behavior, source checks, composition, private configuration, Hatchet
+wrapper, preparation, ownership checks and process identity. This does not
+qualify executable full-stack startup or ingestion. The integration guide now
+explicitly distinguishes resource-PDF parsing from the Doc Processing CPU
+override. The existing managed-runtime mapper remains non-terminal after a
+bounded wait; one narrowing follow-up requested its minimum usable findings.
+Do not replace or duplicate it. Retained services and data are unchanged.
+
+2026-09-09 full storage coverage: exclusive preparation now writes the complete
+`providers.compose.json` as well as bootstrap. Setup checks the complete project's
+volume set, including retrieval storage, before any Docker mutation. The host
+runner is asynchronous, bounded, and does not forward ambient service keys or
+Docker endpoint overrides; captured output is not logged. Tests still inject
+fake runners. Twelve focused tests, Biome and diff checks pass; no live provider
+setup or paid request ran. Managed-app mapper
+`01a08312-c979-70e1-b34b-73203436225b` has not returned a terminal result; keep
+that owner. CLI/managed binding and review/publication remain incomplete.
+
+2026-09-09 integration continuation: after explicit provider migrations, the
+setup sequence starts only prepared Hatchet, captures its existing token through
+container exec, and delivers it to the exclusive private worker environment.
+No token is printed or added to a container startup command. Twelve focused
+setup/preflight tests pass with synthetic runner output; Biome and diff checks
+pass. No real setup/start/exec operation was performed. Native read-only mapper
+`01a08312-c979-70e1-b34b-73203436225b` owns the minimum managed Devrouter overlay
+and lifecycle-hook mapping; main owns launcher integration. Await that same
+mapper rather than starting duplicate investigation. Source publication remains
+pending completion of managed binding and the required reviews.
+
+2026-09-09 ownership preflight: provider storage setup now observes the selected
+local Docker context before its first command and pins that context for every
+subsequent command. It rejects remote endpoints, existing project containers
+(including stopped containers), project networks and exact owned-volume
+collisions. Ambient Docker endpoint overrides and service credentials are not
+forwarded to the reader. Failed observations never qualify setup. All twelve
+focused preflight/preparation tests pass with fake Docker readers/runners;
+Biome and diff checks pass. No live Docker inventory or mutation ran in these
+tests. Fresh Git fetch succeeded; `rs/local-kb-ingestion-retrieval` still has no
+upstream and is 197 ahead/eight behind default `origin/v3`; no integration ran.
+Real CLI integration, managed-app binding, review and draft publication remain.
+
+2026-09-09 provider setup sequence: bootstrap now includes only backing and
+explicit ingestion/document migration services, with no worker-token dependency.
+The storage initializer serializes Postgres readiness, Hatchet setup, ingestion
+migrations and document setup through an injected host Compose runner. An
+exclusive attempt directory prevents replay after either success or failure;
+provider error output is not relayed, and storage success does not create the
+full prepared-runtime receipt. Seven focused preparation tests pass using a
+fake runner, including failure short-circuiting and replay refusal. Biome and
+diff checks pass. The CLI ownership preflight and real runner integration are
+still pending; no Docker command, migration or provider process was executed.
+
+2026-09-09 setup continuation: exclusive configuration preparation now writes
+an owner-only `bootstrap.compose.json` for the isolated backing services. This
+keeps bootstrap independent of worker token files that do not exist until
+Hatchet setup succeeds. The focused preparation suite passes all five tests,
+including existence of every bootstrap environment file, project identity and
+private file mode. Diff checks pass. No Compose command was executed; startup
+integration and publication remain open in the same approved source package.
+
+Latest offline verification: all 29 preparation, isolated-configuration,
+local-configuration and scraping-composition tests pass in the existing Node 24
+container. Hatchet token delivery now has an exclusive owner-only file writer
+and regression coverage for malformed output and overwrite refusal. Worker
+renderers consume that file; migration/setup services do not require it.
+This is source wiring only: no token was minted or runtime initialized.
+The image wait is resolved by merged MR !134 and successful pipeline 660898.
+Setup/start integration, managed Klicker binding, provider-native validation,
+review and draft publication remain unfinished. Keep the retained runtime and
+data unchanged under the user's manual-verification lease.
+
+Project mapping completed and its child is closed. The generated project file
+now selects Milvus, 1536-dimensional embeddings and durable Azure Blob artifacts;
+preparation writes the exact worker-registry filename. Nine focused tests pass.
+Local scraper client URL/key pairing is added and awaits the final focused rerun.
+The mapper revealed that resource PDFs use ingestion's `parse_pdf_bytes`, not
+Doc Processing; main verified `source_snapshot.py` at merged `69fa7f9`.
+The CPU profile fix is therefore not evidence for the resource-PDF path.
+Contract receipt: `project/_local/reviews/2026-09-08-local-kb-project-mapping.md`.
+Configuration remains uncommitted; startup, token delivery, managed-app binding,
+native provider validation, final review and publication are still incomplete.
+
+Artifact configuration continuation: the provider's resource-upsert service
+requires durable artifact storage. Its existing Azure Blob backend accepts
+`AZURE_STORAGE_CONNECTION_STRING`; the generated ingestion environment now
+points this at the same isolated Azurite account as Klicker. The eight focused
+configuration/preparation tests pass, including account/key/endpoint agreement.
+Biome passes with one informational suggestion. The project YAML still needs
+to select this backend, and setup must prepare its container before worker
+activation. No storage container was created and no ingestion was submitted.
+
+Renderer correctness inspection completed with concerns; main accepted the
+missing direct startup edges and corrected ingestion/Postgres, worker/Hatchet
+and scraping/Crawl4AI ordering. Doc Query reaches object storage through Milvus;
+the unsupported direct Blob graph dependency was removed. All 27 combined
+configuration, preparation and composition tests pass in the retained Node 24
+workspace. Focused Biome and diff checks pass. The report and dispositions are
+in `project/_local/reviews/2026-09-08-local-kb-renderers-correctness.md`; the
+completed inspector is closed. The project-configuration mapper remains active.
+Changes remain in the existing uncommitted configuration/correction slice.
+No runtime start, stop, submission or external AI request occurred.
+
+Configuration continuation: generated Doc Query v3 configuration now requires
+Chat's ES256 `X-Doc-Query-Scope-Token`, binds its `kb_id` claim, and enforces
+`resource_active: true` with no caller-controlled filters. Exclusive preparation
+generates a fresh P-256 pair, keeps the signing key in owner-only `chat.env`,
+and writes only the public key into the reader configuration. All eight focused
+Node 24 configuration/preparation tests pass, including generated key-pair and
+issuer/audience agreement. Focused Biome passes with two existing informational
+template suggestions; diff checks pass. These source changes remain uncommitted
+in the configuration slice. No retained data, runtime setup, ingestion or paid
+request was touched. The same two mapping/review children below remain active.
+Fresh GitLab readback confirms post-merge pipeline 660898 is terminal success.
+
+Renderer slice committed at `efe997fcd910ef604ad96fa7bfe3b2a401ef3ad3`:
+ten provider/backing renderer and contract-test files only. All 27 focused
+tests pass in the retained Node 24 container, Biome passes ten files, and the
+redacted host diff scan passes after a narrow annotation for the verified
+scraper Git-revision false positive. Host hooks were split; no full build is
+claimed. Other staged and unstaged work remains preserved. Native simplifier
+completed with one test-fixture consolidation suggestion, persisted under
+`project/_local/reviews/2026-09-08-local-kb-renderers-simplifier.md` and pending
+disposition. Trusted read-only correctness inspector
+`01a082e5-6a54-7420-9b88-a00268d59d87` is active; external-hosted inspection was
+excluded for the private cross-provider scope. Project mapping child
+`01a082d9-11fc-7cc3-ba4c-b002a3758cb8` remains active. No publication or runtime
+mutation occurred; configuration, lifecycle and final qualification remain.
+
+Provider pin integration: both image jobs in post-merge pipeline 660898 passed.
+Registry readback confirms revision `69fa7f9200fc17bdb30b9cd792ea4d0e0a907012`
+for API digest `sha256:b08d8407bee77a403eb344dcf2e7ebde3d6256844294256ff9ca88b4f148e762`
+and worker digest `sha256:d89004b91d6f97aed23aa143c44d08f91583b01b3039961ba11e80c5416368cf`.
+The local renderer now pins this matching pair and source revision. All 23
+focused composition/configuration/preparation tests pass in Node 24.16.0.
+No images were pulled or services started. The clean provider source checkout
+must still match this revision before future runtime qualification. This
+supersedes the image-wait receipts below; lifecycle and project configuration
+integration remain pending, with the same active mapping child.
+
+Latest provider receipt: the user merged MR !134. GitLab confirms squash commit
+`69fa7f9200fc17bdb30b9cd792ea4d0e0a907012` on `main`. The rebased reviewed source
+head `af67e5cd420ace9129bea62b98032b70d1e14150` passed all nine jobs in pipeline
+660884. Post-merge push pipeline 660898 is running; both API and worker image
+jobs were still pending at readback. Keep the existing local provider revision
+and image digests until both matching artifacts are verified. The user approved
+continuing local source integration after the merge; no runtime restart,
+ingestion submission, paid query, or deployment was performed in this receipt.
+This supersedes the historical draft and failed-CI state immediately below.
+
+Local continuation: the generated ingestion environment now explicitly selects
+`DOC_PROCESSING_COMPUTE=cpu`, `DOC_PROCESSING_PROCESSING_PROFILE=default` and
+`DOC_PROCESSING_PICTURE_DESCRIPTION=off`. All seven configuration/preparation
+tests pass in the retained source-resolved Node 24.16.0 container; focused Biome
+formatting and diff checks pass. These files remain uncommitted with the existing
+configuration slice. The launcher remains non-executable and no service startup
+or provider request occurred. The existing manual-verification runtime lease
+remains unchanged. Explorer `01a082d9-11fc-7cc3-ba4c-b002a3758cb8` owns the bounded
+read-only project-configuration contract mapping; await that same child.
+Pipeline 660898 remains running; verified image digests are still required
+before changing provider pins. Configuration completion, lifecycle integration,
+browser evidence and integrated review/publication remain unfinished.
+
+Provider source delivery is published as draft [MR !134 — explicit document
+processing profile](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/134)
+against `main`, at verified local/remote head
+`70ca945b19c020b806aa501825626a1b2834f84f`. Simplifier and compatibility review
+found no issues. Final review found only an omitted integration-guide row;
+the documentation-only follow-up corrects it without changing tested code.
+Pipeline 660878 failed before executing source checks: job 2092224 reports
+`runner_system_failure` while pulling the Python image (`unable to lease content:
+lease does not exist`). Downstream tests and image build were skipped. No retry,
+merge, image publication or deployment was performed. The local launcher remains
+on its previous provider pin until matching verified artifacts exist.
+
+Provider verification now passes in the separately approved isolated Python
+3.12.12 container: all 80 parsing tests, focused Ruff lint and formatting, and
+Pyrefly on the changed parsing module (zero errors). Dependencies came from the
+unchanged lockfile through the approved `ai-generic-stg` operator mapping of
+`GITLAB_READ_API_TOKEN` to `UV_INDEX_AI_INFRASTRUCTURE_PASSWORD` for the install
+process only. The download network was disconnected before tests. Haystack
+telemetry was disabled, source was read-only, and temporary dependency storage
+was container-owned. One formatter-only correction landed in the provider file.
+All three task-created test containers are verified exited, with no deletion;
+the final verifier has zero attached networks. No ingestion or AI request ran.
+Required source review, commits and draft publication remain pending. This
+supersedes the provider-test-environment blocker below, not full-stack readiness.
+
+Current verification receipt: the Devrouter owner supplied the built CLI at
+`/Users/rschlae/Git/personal/devrouter/trees/rs/lifecycle-history-rollover/dist/devrouter.js`,
+verified against merged history-rollover fix `7d2fcba38a716afce54a67d9a861fa5b2850e6a3`.
+Canonical execution through that path succeeds without restarting the retained
+runtime. All 36 offline local-stack tests pass, including the latest private-file
+permission changes. The installed global CLI was not updated. These results
+supersede the historical lifecycle-blocked test receipts below.
+
+The CPU-profile executor completed the provider parsing module and focused tests;
+main inspected the diff and closed the child. Provider tests and review remain
+pending. The retained Klicker container has no `python3`, `pytest` or `ruff`, and
+the provider checkout is not mounted there. Restored Devrouter access does not
+supply a provider test environment. Do not substitute host tests, install private
+dependencies or create another runtime implicitly. The launcher retains its old
+provider pin and is not executable. No ingestion, paid calls or data changes ran.
+
+The user approved separating the local ingestion/retrieval follow-up from the
+published generation lifecycle PR. The active branch is now
+`rs/local-kb-ingestion-retrieval` at `604879791fc1251a3f18901f6eb0e6a71741a06e`,
+in the same retained `trees/rs/generation-lifecycle-contracts` worktree. It has
+no upstream yet. PR #5777 remains open and non-draft on its published
+`rs/generation-lifecycle-contracts@c69e4014739800bf3108ddb49372d73c7e25cefd`,
+targeting `v3-ai`. Do not push the local original branch: it contains the
+follow-up commits and diverges from that published head. Fresh fetch shows
+the local candidate 196 commits ahead and eight behind default `origin/v3`.
+This is not authority to integrate the default branch or mutate PR #5777.
+
+The pending retained-test launcher now requires a plain local origin without
+userinfo, query, fragment or path, plus explicit fixture UUIDs. Its 14 host
+Node 24 tests pass. The combined host launcher/profile/config suite passes
+38 tests; the five isolated helper suites pass 23 tests in the source-resolved
+retained app container. Formatting and the container Playwright TypeScript
+check pass. The executor replaced the retained-citation spec's prose assertions
+with source-card identity, citation-target linkage, accessibility and nonempty
+assistant-content checks. Main inspected the result; the mutation guard remains
+intact. Browser execution is still unverified. These are offline checks, not an
+ingestion or retrieval proof.
+
+Concrete service rendering and lifecycle integration remain unfinished.
+Read-only inspection of ingestion source `d46282848100beec5a1f571e0cc9b091dcdd4179`
+confirms its runtime images expose Python/uvicorn, not the host `uv run`
+entrypoint currently inventoried by the launcher. The worker image build also
+requires private-index BuildKit secrets. Resolve image commands and defer
+credentialed provisioning to the separately approved runtime stage; do not
+silently run the host commands in those images. No provider build, service
+restart, credential access, paid call or data mutation occurred. The retained
+runtime remains under its existing manual-verification lease.
+
+Source progress: `util/local-kb/ingestion-compose.mjs` now renders the pinned
+ingestion API, callback, eight workers and a separately profiled migration
+service. Host `glab` readback confirmed both exact-revision image digests. The
+fragment mounts matched provider source read-only, disables automatic schema
+initialization, defines bounded local resources and references future private
+local configuration files. Compose accepts its schema with environment/path
+resolution disabled; no files were provisioned and no service was started.
+The isolated plan exposes this fragment only for its pinned provider revision,
+while keeping `executable: false` and the outstanding integration blockers.
+Twelve focused configuration/provider tests and eight host CLI/source tests
+pass. Remaining work includes concrete backing/scraping/retrieval/document
+processing services, generated environment/configuration, lifecycle execution,
+browser verification and package review. This is not full-stack readiness.
+
+The follow-up now also renders Postgres, Redis, Blob storage and Hatchet in
+`backingCompose`. Volume names derive from the validated isolated configuration;
+services publish no host ports. The installed Hatchet image metadata confirms
+its working directory is `/` and its default command is `./entrypoint.sh`.
+The renderer overrides that command with the existing explicit setup/start
+wrapper. Fourteen container configuration/command/wrapper tests and eight host
+CLI tests pass. Docker Compose accepts the combined backing/ingestion fragments
+with environment and path resolution disabled. No container, volume, environment
+file or database was created. The remaining provider mapping is still owned by
+the existing read-only explorer; no replacement was launched.
+
+Provider mapping completed with concerns. Main verified the scraper native
+Uvicorn command, Doc Query strict-config behavior and Doc Processing explicit
+setup against committed source. The scraper renderer is now assigned to one
+executor with only its new renderer/test files writable. Main added the Milvus,
+etcd and MinIO fragment using ingestion's checked-in standalone versions and
+added a dedicated owned metadata volume. Doc Query is pinned to the published
+`80313c4f` ARM image digest and explicitly profiled for later AI capability;
+missing local tool configuration must fail rather than use bundled defaults.
+Seventeen focused container configuration/preparation tests pass. These new
+fragments remain source-only and await combined rendering and review.
+
+The Doc Processing checkout `cc8f598d` has no matching published image tag.
+The published `7979ac6b` CPU image exists; a committed-range comparison shows
+no differences in Dockerfile, application source, pyproject or lockfile.
+Its ACA CPU tag is AMD64, not ARM, as confirmed by the checked-in build job.
+Do not use that tag as an ARM image or claim exact-checkout publication.
+
+Subsequent registry readback found the same merged revision's separate ARM
+CPU image (`latest-7979ac6b`, digest `19b1105f...a8bf5e8`). The Doc Processing
+renderer uses that immutable digest with shared local extracts, disabled
+auto-initialization and picture descriptions off. Main corrected a typo in
+the executor's Crawl4AI image namespace through the same executor, inspected
+the correction and closed the completed child. The combined `providerCompose`
+now includes all external provider/service fragments when revisions match.
+Docker Compose accepts it with private environment/path resolution disabled;
+22 container contract/preparation tests and eight host CLI tests pass.
+Generated configuration, managed-app binding, executable lifecycle, browser
+verification, committed reviews and draft publication still remain. No new
+runtime, image pull, setup, submission or paid request occurred.
+
+The pure local configuration renderer now rejects missing, inherited, extra,
+non-string and injectable credential inputs without including values in errors.
+Two focused tests pass in the retained source-resolved container: credential
+pairing across clients/servers and malformed-input rejection. Focused Biome
+formatting passes with one informational template-literal suggestion, and
+`git diff --check` passes. No real credentials or environment files were
+generated. This renderer remains incomplete and unwired: project/tool
+configuration, Hatchet token delivery, upstream injection, browser Blob origin
+and managed-app binding still need implementation and verification. The
+launcher remains `executable: false`; these tests do not qualify provider
+configuration names or establish end-to-end readiness. The existing retained
+runtime lease remains unchanged.
+
+Latest source continuation: exclusive configuration preparation now generates
+fresh local service credentials only in its claimed directory and refuses a
+second attempt. The helper does not mark infrastructure prepared or expose a
+CLI setup action. Six focused tests passed before the bind-mount permission
+correction; its follow-up run was interrupted, and recovery now fails before
+test execution with `Lifecycle transition is blocked.` Do not clear the lock
+or claim the latest test revision passed. Host Node 24 syntax and diff checks
+remain available. Secret environment files remain owner-only; non-secret
+registry and database-name initialization files are readable by non-root
+container users beneath the private host directory.
+
+A substantive PDF compatibility gate is now verified. Ingestion
+`d4628284` selects `max_quality_t4` for PDF/Office inputs in
+`steps/parsing/doc_processing.py:332-347`. Doc Processing `7979ac6b`
+classifies that profile as GPU-only, and `processing_service.py:139-157`
+rejects it with CPU compute. The planned local CPU image therefore cannot
+fulfil the PDF path unchanged. An explicit ingestion profile override would
+need a separately approved provider-source change and local extraction-quality
+trade-off; do not silently substitute another parser or redirect to a remote GPU.
+
+The resumed read-only provider mapper completed with concerns. Main verified
+the strict reader's inline ES256 public-key configuration contract and the
+resource workflow's trusted `kb_id`/`resource_active` metadata. Local retrieval
+must filter signed KB scope and active resources, not reuse the bundled
+course-pilot filter. Both sides use `text-embedding-3-small` at 1536 dimensions;
+the reader does not specify a dimensions override. No upstream capability or
+retrieval execution is established by this mapping. The completed child is
+closed; no replacement or duplicate mapping is needed.
+
+The user approved the provider-source extension for an explicit local CPU
+profile on 2026-09-08. The clean pinned provider worktree is unchanged. The new
+`data-ingestion/trees/rs/local-cpu-document-profile` worktree branches from
+`origin/main@d46282848100beec5a1f571e0cc9b091dcdd4179`; executor
+`01a08259-ba7e-74c0-9cec-22670e6bf153` owns only the parsing module and existing
+parsing tests. Main owns docs, integration, reviews and draft delivery.
+Unset configuration must preserve existing production selection; local CPU
+processing requires an explicit supported profile and may change extraction
+quality. No deployment, submissions or paid calls are authorized. Container
+checks still fail before execution with `Lifecycle transition is blocked`.
+Main also corrected the local Milvus allowlist to the provider's verified
+`database:collection` contract instead of an HTTP endpoint. Do not switch the
+launcher to an unpublished provider image or claim source readiness yet.
+
+The repository-wide container `check:all` stopped at the installed-Devrouter
+profile test: `No executable host Devrouter found`. The isolated reproduction
+passes 15 profile tests and fails only that host-tool check. The complete
+`check:playwright-ci` selection passes all 69 tests on host Node 24 with installed
+Devrouter 0.0.60. Other parallel checks were cancelled by the aggregate failure,
+so their exit 137 output is not a proved source regression or an OOM diagnosis.
+Do not install Devrouter into the managed container or claim the aggregate
+passed; use the required host/container verification split.
+
+The follow-up static aggregate also exposed `check:format` running lint-staged
+inside the container. It failed during its Git hide/restore sequence for the
+partially staged host launcher. Main restored exactly the prior nine-line URL
+validation diff and verified the other pending paths remain present. No stash
+was applied or deleted. Do not rerun Git-mutating hooks in the container; run
+focused formatters there and keep Git operations on the host. The cancelled
+type/lint runs remain unqualified. A fresh host launcher/local-stack run passed
+22 tests, and the focused container Biome check passed without changes. This
+slice is not yet committed or reviewed.
+
 ### Isolated local KB test stack — approved source execution extension
 
 Build a reproducible local Klicker, ingestion and retrieval stack without
@@ -31,12 +836,13 @@ infrastructure health, provider process readiness and external AI capability.
 
 #### Execution details: isolation contract
 
-Continue implementation in `trees/rs/generation-lifecycle-contracts`, branch
-`rs/generation-lifecycle-contracts`, targeting the existing draft PR's `v3-ai`
-base. After reconciling the parallel task-branch corrections, the branch is
-twelve commits ahead of its tracking branch and 189 ahead/eight behind default
-`origin/v3`. Default-branch drift alone does not require integration. Preserve
-the recovery stashes and all existing uncommitted work.
+Continue implementation in `trees/rs/generation-lifecycle-contracts`, on
+`rs/local-kb-ingestion-retrieval`, as approved in the current delivery ownership
+receipt above. The earlier lifecycle branch and its published PR are not this
+follow-up's publication target. The follow-up has no upstream yet; fresh refs
+still place it 196 commits ahead and eight behind default `origin/v3`.
+Default-branch drift alone does not require integration. Preserve the recovery
+stashes and all existing uncommitted work.
 
 The proposed runtime-only checkout is `trees/rs/local-kb-isolated-e2e` under
 this repository; it does not exist at planning time. Create it only in the

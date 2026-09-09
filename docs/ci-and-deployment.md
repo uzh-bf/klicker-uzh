@@ -119,11 +119,46 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
+- **Hatchet worker runtime contract**: the base chart and both environment overlays render separate per-pod identities and slot budgets for the general, regular-response, and assessment workers. General, regular-response, and assessment workers expose named ports 8001, 8002, and 8003 respectively, plus `/healthz` liveness, `/readyz` readiness, and a 90-second termination grace period (`deploy/charts/klicker-uzh-v3/templates/deployment-hatchet-workers.yaml`). This is desired-state evidence; it does not prove a deployed or live worker. See [Async & Workers](./async-and-workers.md#worker-runtime-contract).
+- **Hatchet worker disruption budgets**: staging sets `minAvailable: 0` for all three singleton worker Deployments so voluntary node drains can proceed, while production keeps one general worker and two workers in each response-processing mode available. The base chart defaults each worker budget to one. The render gate verifies these worker-only values and that the assessment backend keeps its independent floor of two.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 - **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
 - **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
 - **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state. The readiness layer requires both ingestion kill switches; the activation layer requires those false-valued keys to be absent. Both layers require the exact cluster-local ingestion and source-gateway endpoints, both graph kill switches, response-processor isolation, and no ingestion secret keys in ConfigMaps.
+
+### Replica ownership
+
+Every rendered Deployment has exactly one replica owner. A static Deployment
+sets `spec.replicas` from its Git-owned `replicaCount`. An autoscaled Deployment
+leaves `spec.replicas` out and is targeted by exactly one HPA or KEDA scaler. A
+Deployment must never combine the two ownership models or have more than one
+scaler target.
+
+Only PWA, Manage, and GraphQL may declare an `autoscaling` stanza. Their current
+HPA templates scale on CPU utilization only; memory utilization is intentionally
+excluded because retained Node.js heap can keep that metric elevated after load
+subsides. Every other workload is statically owned and must not declare an
+unused autoscaling stanza.
+
+LTI is intentionally static in the chart base and both environment overlays:
+the base keeps `replicaCount: 2`, staging sets `replicaCount: 1`, and production
+sets `replicaCount: 2`. No LTI scaler or LTI autoscaling stanza is rendered.
+
+When external ArgoCD desired-state configuration permits replica differences
+for an active autoscaler, the exception must name the exact scaler target and
+the exact `/spec/replicas` field. W1 does not add or change an ArgoCD ignore
+rule, and static LTI has no replica ignore. ArgoCD `Healthy` describes resource
+health; it does not mean the application is `Synced`. Check application sync
+status and resource-level drift separately.
+
+Run `pnpm run check:klicker-replica-ownership` as the focused chart gate when
+values or replica-owner templates change. The command renders base, staging,
+production, and a synthetic all-three-HPA configuration. CI provisions Helm in
+the shared codebase workflow. It runs the same gate for pushes to `v3` and
+`v3*`, and when a pull request is opened, synchronized, or reopened. The gate
+also rejects unsupported autoscaling stanzas in the base, staging, and
+production values files.
 
 ## Deployment migrations
 

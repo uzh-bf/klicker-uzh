@@ -60,8 +60,60 @@ Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
 from a broken control without implying that lecturers can enable it themselves.
 
+### AI capability states
+
+The backend-owned capability for Knowledge Bases, generation, and Manage assistants
+has three states. Chatbot authoring keeps its separate upstream gate.
+
+| State                    | Meaning                                                      | Manage behavior                                    |
+| ------------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+| `enabled`                | Live database entitlement and `ai-beta` both allow the actor | AI navigation and protected operations are enabled |
+| `disabled`               | The entitlement is absent or false, or GrowthBook denies it  | AI navigation is hidden and operations are denied  |
+| `temporarilyUnavailable` | Entitlement is true but no usable GrowthBook answer is ready | AI navigation stays visible but disabled; retry    |
+
+The backend reads `User.aiFeaturesEnabled` and `User.betaEnabled` live before
+GrowthBook evaluation. Both must be exactly `true`; an absent account, revoked
+approval, or beta opt-out denies immediately, including during a payload outage.
+Unreadable database state never grants access. The trusted `betaEnabled` value
+is included in the sanitized evaluation attributes and the stale-allowance key.
+
+The shared Node adapter gives `ai-beta` a named 15-minute bounded-stale policy
+only for the same sanitized actor whose decision was previously validated as
+`true` while that payload was fresh. A newly seen actor, newly started process,
+missing payload, or expired payload is `temporarilyUnavailable`; a newly
+refreshed `false` applies immediately. These actor allowances are process-local,
+cleared when the payload is replaced, and never persisted or logged. Generic
+`isEnabled` retains its 120-second stale limit, so `learning-analytics` and
+other flags and the separate chatbot-authoring gate do not inherit the longer
+AI grace. Changing the beta preference invalidates the prior actor allowance.
+
+Manage keeps the last capability only in React memory. It does not persist an
+actor identifier or decision, does not poll while healthy, and schedules retries only
+while temporarily unavailable with jittered backoff capped at 60 seconds. It
+also revalidates on browser focus and when the browser comes online, including
+while healthy. Each event can issue one capability request and live account
+read; concurrent requests are coalesced within the controller. Authentication
+errors stop recovery rather than entering the outage retry loop. Capability
+queries do not reuse Apollo cache entries or deduplicated requests across
+identity lifetimes. Only the query controller resets; application children
+remain mounted while the profile resolves. A recovery
+re-enables the existing menu without a full reload. Profile or authentication
+failure is treated as an absent identity, so cached profile or capability data
+is not presented for the next user and the AI entry remains hidden and fail
+closed.
+
+Protected AI operations distinguish the cause of a denial:
+
+| Boundary                                  | Explicit denial                         | Temporary GrowthBook outage          |
+| ----------------------------------------- | --------------------------------------- | ------------------------------------ |
+| GraphQL AI operations                     | `AI_BETA_ACCESS_REQUIRED`               | `AI_FEATURE_TEMPORARILY_UNAVAILABLE` |
+| Chat `/manage` page                       | Existing unavailable/not-found response | Dedicated unavailable page state     |
+| Chat `POST /api/manage/chat`              | HTTP `403`                              | HTTP `503` with `Retry-After: 30`    |
+| Chat `POST /api/manage/proposals/confirm` | HTTP `403`                              | HTTP `503` with `Retry-After: 30`    |
+| Chat `GET /api/manage/capabilities`       | HTTP `403`                              | HTTP `503` with `Retry-After: 30`    |
+
 Manage mounts the browser provider at the application root with anonymous
-attributes, then updates it after `QUserProfile` resolves to target the
+attributes, then updates it after `QManageFeatureFlagProfile` resolves to target the
 authenticated lecturer by stable `User.id`, role, actor type, and environment.
 It does not expose the provider as ready until that authenticated identity is
 available, so an initially anonymous evaluation cannot unlock a protected
@@ -242,10 +294,15 @@ flags.isEnabled(featureKey, requestAttributes)
 lifecycle so a long-running backend never serves a silently stale definition:
 it fetches with an abortable two-second deadline, polls every 30 seconds
 (`GROWTHBOOK_REFRESH_INTERVAL_MS` override), deduplicates overlapping refreshes,
-and marks the client healthy only after a validated payload update. A payload
-becomes unusable 120 seconds after the last successful refresh; every
-evaluation fails closed before initialization, while stale, and after
-`destroy()`. A direct client setting of zero disables polling, so it is only
+and marks the client healthy only after a validated payload update. For generic
+boolean evaluation, a payload
+becomes unusable 120 seconds after the last successful refresh. The AI-specific
+`getAiBetaDecision` may reuse a previously enabled decision for the same actor
+and payload generation for at most 15 minutes after the last successful refresh,
+provided that decision was earned while the payload was fresh. Otherwise it
+reports temporary unavailability. Evaluations fail closed before initialization
+and after `destroy()`. A direct client setting of zero disables polling, so it is
+only
 suitable for consumers that call `refresh()` themselves. The backend requires
 `GROWTHBOOK_REFRESH_INTERVAL_MS` to be positive and falls back to 30 seconds
 when it is zero or invalid, preventing an unattended startup payload from
@@ -278,7 +335,7 @@ chart makes the Kubernetes-deployed Node workloads configuration-ready:
 
 - `GROWTHBOOK_ENV` comes from `global.deploymentEnvironment`; the checked-in
   environment values set it to `staging` or `production`.
-- backend GraphQL, OLAT API, LTI, both response APIs, and all three Hatchet
+- backend GraphQL, backend assessment, Chat, OLAT API, LTI, both response APIs, and all three Hatchet
   worker Deployments optionally import
   `<rendered-chart-fullname>-secret-growthbook`.
 - that externally provisioned Secret contains exactly
@@ -292,9 +349,40 @@ enabling the first backend flag, then restart the affected workloads so
 environment-variable values are re-read. Secrets remain external to this
 public repository; never add their values to Helm files or documentation.
 
-Auth and Chat receive the public browser configuration only. If either hybrid
-Next.js app later evaluates a server-side flag, add the shared GrowthBook Secret
-to that Deployment in the same change that initializes the Node adapter.
+Auth receives public browser configuration only. Chat also initializes the
+Node adapter and consumes the shared GrowthBook Secret; include its pods when
+rotating the server SDK configuration.
+
+## Diagnosing unavailable AI
+
+First distinguish an expired login from an AI dependency failure. An
+`Unauthorized` GraphQL response requires login, not a feature-flag retry.
+For an authenticated account, verify live beta opt-in and AI approval before
+investigating GrowthBook. A closed database gate returns `disabled` without
+evaluating the flag.
+
+For `temporarilyUnavailable`, check the values-free backend startup status
+(`configured`, `healthy`) and `[feature-flags] payload availability` transition
+logs. Verify SDK configuration presence, environment alignment, endpoint
+reachability and a boolean `ai-beta` definition without printing keys or
+payloads. Capability-query transport and database failures can also cause the
+same browser presentation. These checks require access to the affected
+environment; a healthy application probe does not prove GrowthBook health.
+
+Grace is process-local and limited to actors evaluated true against the current
+fresh payload. Every successful replacement clears allowances. GraphQL and
+Chat, or different replicas, can disagree during an outage; the accepting
+service's own gate always decides whether an operation runs. The 15-minute
+bound is not a guaranteed grace period for every user or every AI surface.
+Generic boolean callers, including chatbot authoring, retain their shorter
+policy. Do not widen or share grace without a separate authorization decision.
+
+During an outage, changing a flag requires reachable GrowthBook. The live
+per-account approval and beta preference remain immediate stop controls on
+the next protected request. Source rollback requires rebuilding and deploying
+compatible backend, Chat and Manage revisions; merely restarting a floating
+image tag does not select an older image. Rollout and rollback are separately
+authorized operations, not part of these diagnostic checks.
 
 ## Beta preference and rollout ownership
 
@@ -387,10 +475,11 @@ No live rule or saved-group contents were verified for this change.
 - An invalid non-empty environment performs no fetch and evaluates boolean
   flags false, even if the remote definition would match the actor or default
   to true.
-- Network or unusable-payload initialization leaves unavailable flags false;
-  the Node adapter keeps a validated cached payload only within its two-minute
-  stale bound, while a missing, expired, or unusable payload stays on the false
-  fallback.
+- Network or unusable-payload initialization leaves generic flags false. The
+  Node adapter keeps a validated cached payload only within its two-minute
+  stale bound for generic evaluation; `getAiBetaDecision` gives only a
+  previously enabled `ai-beta` decision the separate 15-minute bound and
+  reports `temporarilyUnavailable` outside it.
 - A hung Node request is aborted at the adapter deadline and is not retained in
   GrowthBook's shared fetch cache, so the next scheduled refresh can recover.
 - Healthy backend definitions refresh every 30 seconds by default. Revocations
@@ -403,6 +492,10 @@ No live rule or saved-group contents were verified for this change.
   two evaluations disagree, a backend `false` always denies. A browser `false`
   may still hide the feature when the backend result is true; a backend `true`
   never bypasses existing authentication and resource permissions.
+- For `ai-beta`, an explicit backend denial and an unavailable GrowthBook
+  decision use separate capability states and public error contracts. Only the
+  unavailable state preserves a visible, disabled Manage entry for recovery;
+  neither state authorizes a protected operation.
 - Feature definitions and targeting rules are managed in GrowthBook. Ordinary
   SDK evaluation never uses the optional management API key; the beta
   preference path uses only the read-only SDK payload and has no management
@@ -445,7 +538,10 @@ No live rule or saved-group contents were verified for this change.
    and are not defined by this feature-flag contract.
 5. Confirm the public GrowthBook endpoint allows the real Klicker browser
    origins and the internal endpoint is reachable from the target namespace.
-6. Build/deploy with no active flag first. Inspect a frontend bundle/runtime
+6. Before deploying the AI capability adapter, register `ai-beta` with a boolean
+   false default and provision its server SDK connection. Missing configuration
+   or an absent feature definition makes opted-in, approved accounts visibly
+   unavailable rather than silently hiding AI. Inspect a frontend bundle/runtime
    request and a backend pod's variable names without printing credential
    values, then enable the first flag in staging.
 

@@ -26,6 +26,76 @@ Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatche
 
 Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setupClient`): `HATCHET_CLIENT_HOST_PORT` for gRPC worker and event traffic, and `HATCHET_API_URL` for HTTP API operations such as programmatic scheduled runs. Both must target the same Hatchet installation. A healthy worker proves only the gRPC path; publication and delayed aggregation can still fail if the HTTP URL points to a retired service.
 
+## Worker runtime contract
+
+Each worker pod owns a separate Hatchet identity and slot budget. The slot
+values are per pod, not deployment-wide totals. The base chart defines the
+shared runtime defaults; the STG/PRD overlays only override values that differ
+by environment. The merged values render into the worker-specific ConfigMaps.
+
+| Mode             | Worker name                                    | Non-durable slots | Durable slots | Workflow collection                                             |
+| ---------------- | ---------------------------------------------- | ----------------: | ------------: | --------------------------------------------------------------- |
+| General          | `hatchet-worker-general`                       |               100 |          1000 | `HATCHET_WORKFLOWS` selection, defaulting to all prepared tasks |
+| Regular response | `hatchet-worker-response-processor`            |               100 |          1000 | Authenticated and anonymous response processing                 |
+| Assessment       | `hatchet-worker-response-processor-assessment` |               100 |          1000 | Assessment response processing and aggregation                  |
+
+These explicit values preserve the effective defaults of the pinned Hatchet
+TypeScript SDK 1.9.4: 100 non-durable slots and 1000 durable slots per pod.
+W2 therefore makes no capacity reduction or throughput claim. W3 must measure
+queue depth, task duration, retries, and resource consumption before changing
+these values or deriving KEDA targets.
+
+The response processor selects regular versus assessment mode from
+`ASSESSMENT_MODE === 'true'`. `HATCHET_WORKER_NAME` is a per-deployment
+override: never provide one shared value to both response processor
+Deployments, because the mode-specific identities preserve their distinct
+capacity contracts. The other runtime settings are `HATCHET_WORKER_SLOTS`,
+`HATCHET_WORKER_DURABLE_SLOTS`, `HATCHET_WORKER_HEALTH_PORT`, and
+`HATCHET_WORKER_STARTUP_TIMEOUT_MS`.
+
+During a rolling replacement, queued work routed to the former shared
+assessment identity may need the normal Hatchet retry or replay path. W2 does
+not migrate live assignments between worker identities.
+
+The general worker keeps its existing `HATCHET_WORKFLOWS` selection. Unknown
+keys are warned about and filtered; an unset or empty value selects all
+prepared tasks. The response processor keeps the exact regular and assessment
+workflow collections declared in
+`apps/hatchet-worker-response-processor/src/index.ts`.
+
+## Health and termination
+
+The shared runtime in `packages/hatchet/src/worker-runtime.ts` serves two local
+HTTP endpoints. General workers use port 8001, regular-response workers use
+8002, and assessment workers use 8003 by default:
+
+- `/healthz` is the liveness endpoint. It returns 200 while the process is
+  starting, ready, or draining, and 503 after a fault or stop.
+- `/readyz` is the intake-readiness endpoint. It returns 200 only in the ready
+  state and 503 while starting, draining, faulted, or stopped.
+
+On `SIGTERM` or `SIGINT`, the runtime first enters `draining`, which makes the
+pod unready before the SDK termination path runs. `/readyz` is a rollout and
+observability signal; it is not an independent Hatchet intake control. The
+actual intake boundary is the pinned SDK's listener-unregister path while it
+finishes its stop sequence. Kubernetes gives each worker 90 seconds through
+`terminationGracePeriodSeconds`; if the SDK does not finish within that
+window, the platform may terminate the process and the workflow system's retry
+behavior must make the work safe to retry. W2 makes no exactly-once claim.
+
+The Helm chart maps `/healthz` to liveness and `/readyz` to readiness for all
+three worker Deployments. A startup failure can close the health server in the
+same turn that it marks the process faulted, so a probe is not guaranteed to
+observe the transient fault response before the process exits.
+
+Worker PodDisruptionBudgets are explicit per environment. Staging sets
+`minAvailable: 0` for all three single-replica workers, so a voluntary node
+drain can evict them without a PDB deadlock; this provides no worker
+availability guarantee during that disruption. Production keeps one general
+worker and two regular-response and assessment workers available. The base
+chart defaults all three worker budgets to one. These values do not change
+replica ownership or replica counts.
+
 ## Response ingest (`apps/response-api`)
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.

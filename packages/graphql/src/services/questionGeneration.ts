@@ -399,7 +399,7 @@ async function resumePreparingQuestionBuild(
   try {
     await dispatchPreparingQuestionBuild(build, runtime, leaseOwner, ctx)
   } catch (error) {
-    return recordBuildFailure(build.id, error, ctx, leaseOwner)
+    return await recordBuildFailure(build.id, error, ctx, leaseOwner)
   } finally {
     await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
   }

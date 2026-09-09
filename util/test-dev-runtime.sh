@@ -132,6 +132,9 @@ INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
 MKCERT_CAROOT="$TEST_ROOT/mkcert"
 mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
 cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
+# Dependency generation has its own contract tests; this fixture isolates TLS
+# initialization and shared-store volume handling from workspace discovery.
+write_file "$INIT_ROOT/../util/generate-dependency-mounts.mjs" 'process.exit(0)'
 write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
 export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
 
