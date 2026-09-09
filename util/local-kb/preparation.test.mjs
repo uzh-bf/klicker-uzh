@@ -487,7 +487,31 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
   )
   assert.equal(writes.length, 0)
   foreign = false
-  const status = await inspectPreparedInfrastructure(config, revision, docker)
+  const managedObservation = {
+    dockerContext: 'synthetic-local',
+    repo: {
+      path: checkout,
+      valid: true,
+      managedRuntime: {
+        mode: 'managed',
+        workspace: 'synthetic-runtime',
+        status: 'ready',
+        profile: 'manage,chat',
+        activeProfile: 'manage,chat',
+        drift: [],
+      },
+    },
+  }
+  const observeManaged = async (args) => {
+    assert.deepEqual(args, ['status', '--repo', checkout, '--json'])
+    return JSON.stringify(managedObservation)
+  }
+  const status = await inspectPreparedInfrastructure(
+    config,
+    revision,
+    docker,
+    observeManaged
+  )
   assert.deepEqual(status.providers, [
     { service: 'postgres', state: 'running', health: 'unreported' },
   ])
@@ -530,11 +554,51 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
     const result = await inspectPreparedInfrastructure(
       config,
       revision,
-      observation
+      observation,
+      observeManaged
     )
     assert.equal(result.infrastructureHealthy, condition === 'healthy')
     assert.equal(result.aiQualified, false)
-    assert.equal(result.managedRuntimeObserved, false)
+    assert.equal(result.managedRuntimeObserved, true)
+    assert.equal(result.managedRuntimeReady, true)
+  }
+  for (const change of [
+    { status: 'stopped' },
+    { status: 'drifted', drift: ['synthetic drift'] },
+    { profile: 'local-kb-setup', activeProfile: 'local-kb-setup' },
+    { activeProfile: undefined },
+  ]) {
+    const observation = structuredClone(managedObservation)
+    Object.assign(observation.repo.managedRuntime, change)
+    const result = await inspectPreparedInfrastructure(
+      config,
+      revision,
+      docker,
+      async () => JSON.stringify(observation)
+    )
+    assert.equal(result.managedRuntimeObserved, true)
+    assert.equal(result.managedRuntimeReady, false)
+    assert.equal(result.aiQualified, false)
+  }
+  for (const change of [
+    (value) => {
+      value.dockerContext = 'other'
+    },
+    (value) => {
+      value.repo.path = '/synthetic/other'
+    },
+    (value) => {
+      value.repo.managedRuntime.workspace = 'other'
+    },
+  ]) {
+    const observation = structuredClone(managedObservation)
+    change(observation)
+    await assert.rejects(
+      inspectPreparedInfrastructure(config, revision, docker, async () =>
+        JSON.stringify(observation)
+      ),
+      /observation is unavailable or mismatched/
+    )
   }
   assert.equal(writes.length, 0)
   await assert.rejects(

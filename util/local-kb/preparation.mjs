@@ -846,10 +846,37 @@ const infrastructureServices = [
 export async function inspectPreparedInfrastructure(
   config,
   candidateRevision,
-  runDocker = runLocalDocker
+  runDocker = runLocalDocker,
+  runManaged = runLocalManaged
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   const providers = await observeOwnedProviders(config, runtime, runDocker)
+  let managed
+  try {
+    const observation = JSON.parse(
+      await runManaged(['status', '--repo', runtime.checkout, '--json'])
+    )
+    managed = observation.repo?.managedRuntime
+    if (
+      observation.dockerContext !== runtime.context ||
+      observation.repo?.path !== runtime.checkout ||
+      observation.repo?.valid !== true ||
+      managed?.mode !== 'managed' ||
+      managed.workspace !== runtime.workspace ||
+      ![
+        'ready',
+        'starting',
+        'stopped',
+        'drifted',
+        'failed-transition',
+      ].includes(managed.status) ||
+      !Array.isArray(managed.drift)
+    ) {
+      throw new Error()
+    }
+  } catch {
+    throw new Error('Managed runtime observation is unavailable or mismatched.')
+  }
   const infrastructure = infrastructureServices.map((service) => {
     const instances = providers.filter((row) => row.service === service)
     if (instances.length === 0) return { service, status: 'missing' }
@@ -867,7 +894,13 @@ export async function inspectPreparedInfrastructure(
     infrastructureHealthy: infrastructure.every(
       ({ status }) => status === 'healthy'
     ),
-    managedRuntimeObserved: false,
+    managedRuntimeObserved: true,
+    managedRuntimeStatus: managed.status,
+    managedRuntimeReady:
+      managed.status === 'ready' &&
+      managed.profile === 'manage,chat' &&
+      managed.activeProfile === 'manage,chat' &&
+      managed.drift.length === 0,
     aiQualified: false,
   }
 }
