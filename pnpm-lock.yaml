@@ -12,7 +12,7 @@ overrides:
   next@>=15.0.0 <15.5.16: 15.5.18
   systeminformation@>=4.17.0 <=5.31.5: 5.31.6
 
-packageExtensionsChecksum: sha256-IZSGxMKJ6bxrQCcZw2eCUPIT3OBl7gYz0eAp3s6ZxoM=
+packageExtensionsChecksum: sha256-s/ooLXnMhO2/8mE41K9oqC0IHe6a+O640oG3HJJvnNk=
 
 importers:
 
@@ -29769,6 +29769,7 @@ snapshots:
       '@radix-ui/react-toggle': 1.1.9(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@radix-ui/react-toggle-group': 1.1.10(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@radix-ui/react-tooltip': 1.2.7(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tailwindcss/aspect-ratio': 0.4.2(tailwindcss@4.3.3)
       '@tailwindcss/postcss': 4.3.3
       class-variance-authority: 0.7.1
       clsx: 2.1.1
@@ -29835,6 +29836,7 @@ snapshots:
       '@radix-ui/react-toggle': 1.1.9(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@radix-ui/react-toggle-group': 1.1.10(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@radix-ui/react-tooltip': 1.2.7(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tailwindcss/aspect-ratio': 0.4.2(tailwindcss@4.3.3)
       '@tailwindcss/postcss': 4.3.3
       class-variance-authority: 0.7.1
       clsx: 2.1.1

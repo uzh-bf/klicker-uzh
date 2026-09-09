@@ -61,6 +61,10 @@ overrides:
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
 
 packageExtensions:
+  # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
+  '@uzh-bf/design-system@4.1.8':
+    dependencies:
+      '@tailwindcss/aspect-ratio': 0.4.2
   'recharts@2.15.3':
     peerDependencies:
       '@types/react': '*'
