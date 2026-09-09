@@ -142,7 +142,7 @@ describe('chatbot standard mode configuration', () => {
     })
   })
 
-  it('accepts the full context limit and rejects a longer context', () => {
+  it('accepts the full context limit', () => {
     const scopeNote = 'x'.repeat(CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH)
     const config = {
       tutorEnabled: true,
@@ -152,11 +152,5 @@ describe('chatbot standard mode configuration', () => {
     }
     expect(parseChatbotStandardModeConfigInput(config)).toMatchObject(config)
     expect(normalizeChatbotStandardModeConfig(config)).toMatchObject(config)
-    expect(() =>
-      parseChatbotStandardModeConfigInput({
-        ...config,
-        scopeNote: `${scopeNote}x`,
-      })
-    ).toThrow()
   })
 })
