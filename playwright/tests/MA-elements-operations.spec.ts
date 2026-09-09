@@ -194,7 +194,12 @@ async function clearAndTypeEditor(page: Page, testId: string, text: string) {
   const editor = page.getByTestId(testId)
   await editor.click()
   await editor.clear()
+  // The Slate model settles asynchronously; typing before the editor is
+  // verifiably empty can append to the previous content (CI observed saved
+  // values like "Choice 2Choice NEW 2").
+  await expect(editor).toHaveText('')
   await editor.pressSequentially(text)
+  await expect(editor).toHaveText(text)
 }
 
 async function saveElementModal(page: Page) {
