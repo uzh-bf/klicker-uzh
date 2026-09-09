@@ -4806,8 +4806,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Credit-Einstellungen für Teilnehmende wurden gespeichert.',
       chatbotCreditPolicySaveError:
         'Die Credit-Einstellungen für Teilnehmende konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
-      chatbotCreditPolicyReadonly:
-        'Die Credit-Einstellungen für Teilnehmende können nur im Entwurfsstatus oder nach einer Ablehnung bearbeitet werden.',
       chatbotSetupReviewTitle: 'Prüfen und einreichen',
       chatbotSetupReviewDescriptionLong:
         'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an. Für Änderungen können Sie die anderen Bereiche öffnen.',

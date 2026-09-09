@@ -132,6 +132,43 @@ delivery; identifying a running container alone is insufficient.
 
 ### Extension progress
 
+- Current checkpoint, 2026-09-09: implementation and target integration are
+  committed through `769cd462fa`. The final review covered the complete range
+  from `c939ab348a`, including migration equivalence, revision isolation,
+  authorization, credit locks, UI, and tests. Its six findings are addressed in
+  the current correction: omit the redundant disclaimer identity argument,
+  route review credit editing to Usage, test sequential disclaimer saves and
+  revoked feature access, remove unreachable credit read-only UI and copy,
+  gate withdrawal, and allow the legacy approval document to carry a revision
+  token. There is no reject operation document to update. Retain the optional
+  all-sections credits accordion because the component still supports that
+  mode; the active workspace uses its separate Usage editor.
+- Devrouter 0.0.62 restores canonical tooling access without recreating the
+  retained runtime. The Devrouter owner confirms that no further recovery
+  command is required and that separate exec calls must run sequentially.
+  Configuration drift and the missing historical stop baseline remain known
+  lifecycle limitations; do not restart or rewrite ownership to clear them.
+  Keep the exact `rs/pr-5771-cost-controls` checkout and `feat-ai-cost-controls`
+  runtime running through the user's next testing checkpoint.
+- Correction verification: the five-file GraphQL run passed 226 of 227 tests;
+  the remaining test expected an obsolete access-error code after target
+  integration. Its corrected feature-gate suite passes all 15 tests. Focused
+  production build passes all 11 tasks, and serial build/check/lint passes all
+  13 tasks. The first combined development-environment build/check attempt hit
+  duplicate generated Next.js types; the production build and separate checks
+  pass without a source workaround. Earlier unaffected root and credit checks
+  retain their evidence below.
+- The existing authenticated in-app Browser verifies consecutive disclaimer
+  saves and persistence after reload, then the review's Edit credits button
+  opens the editable Usage form. The synthetic disclaimer title is restored;
+  Benibot remains published with saved revision 12, and live credits remain
+  100 / WEEKLY / 50 / 100. No revision was approved. Automatic approval review
+  rejected the separate agent-browser login's password-in-arguments method;
+  no retry or credential transfer was used. German revision visual proof and
+  the full reset-based Playwright run remain unverified. Final correction
+  review, task-branch push, and current-head hosted checks remain before merge
+  readiness; this checkpoint does not claim the remote PR is conflict-free.
+
 - 2026-09-08: User approved retaining the live chatbot while revising all existing
   lecturer-facing setup fields. No implementation of revisions is complete yet.
 - Planner construction and two-round hardening completed with APPROVED after

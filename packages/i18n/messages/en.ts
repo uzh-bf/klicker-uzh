@@ -4707,8 +4707,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotCreditPolicySaveSuccess: 'Participant credit settings saved.',
       chatbotCreditPolicySaveError:
         'Could not save participant credit settings. Please try again.',
-      chatbotCreditPolicyReadonly:
-        'Participant credit settings can only be edited while the chatbot is a draft or has been rejected.',
       chatbotSetupReviewTitle: 'Review and submit',
       chatbotSetupReviewDescriptionLong:
         'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',

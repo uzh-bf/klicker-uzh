@@ -171,8 +171,6 @@ function ChatbotCreditPolicy({
   const clearSaveSuccess = useCallback(() => setSaveSuccess(false), [])
   const editable = isChatbotRevisionEditable(chatbot)
   const revisionPending = isChatbotRevisionPending(chatbot)
-  const formVisible =
-    editable || revisionPending || chatbot.status === ChatbotStatus.Paused
   const formDisabled =
     !editable ||
     publicationPending ||
@@ -184,17 +182,6 @@ function ChatbotCreditPolicy({
       onNavigationStateChange({ dirty: false, pending: false })
     }
   }, [editable, onNavigationStateChange])
-
-  if (!formVisible) {
-    return (
-      <div className="space-y-4">
-        <UserNotification>
-          {t('manage.resources.chatbotCreditPolicyReadonly')}
-        </UserNotification>
-        <ChatbotCreditPolicySummary chatbot={chatbot} />
-      </div>
-    )
-  }
 
   const revisionValues = getChatbotRevisionValues(chatbot)
   const initialValues: CreditPolicyFormValues = {

@@ -1110,6 +1110,29 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.reload()
     await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('25')
     await navigateToSetupStep(page, 'review')
+    await page.getByTestId('chatbot-setup-edit-credits').click()
+    await expect(page.getByTestId('chatbot-credit-policy-form')).toBeVisible()
+    await navigateToSetupStep(page, 'disclaimer')
+    const originalDisclaimerId = live.disclaimerId
+    for (const title of [
+      'First revised disclaimer',
+      'Second revised disclaimer',
+    ]) {
+      await page.getByTestId('chatbot-disclaimer-title').fill(title)
+      await page.getByTestId('save-chatbot-disclaimer').click()
+      await expect
+        .poll(async () => {
+          const saved = await prisma.chatbot.findUniqueOrThrow({
+            where: { id: chatbot.id },
+          })
+          return {
+            liveDisclaimerId: saved.disclaimerId,
+            draftTitle: saved.draftConfig?.disclaimerTitle,
+          }
+        })
+        .toEqual({ liveDisclaimerId: originalDisclaimerId, draftTitle: title })
+    }
+    await navigateToSetupStep(page, 'review')
     await fillPublicationRequest(page, 'Revised synthetic study support.')
     await page.getByTestId('request-chatbot-publication').click()
     await expect

@@ -35,29 +35,29 @@ import ChatbotCreditPolicy from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
 import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
+import {
+  getChatbotMutationErrorKey,
+  isChatbotRevisionConflict,
+} from './chatbotErrorMessages'
 import { canUseChatbotOwnerPreview } from './chatbotOwnerPreviewAccess'
 import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
+import {
+  ChatbotRevisionConflictNotice,
+  ChatbotRevisionStatusNotice,
+  type ChatbotRevisionValues,
+  getChatbotRevisionValues,
+  getChatbotRevisionVersion,
+  isChatbotRevisionEditable,
+  isChatbotRevisionPending,
+  type RevisionChatbot,
+  useChatbotRevisionReload,
+} from './chatbotRevision'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
 import type {
   ChatbotNavigationState,
   ChatbotSetupStep,
   ChatbotWorkspaceView,
 } from './chatbotWorkspace'
-import {
-  type ChatbotRevisionValues,
-  ChatbotRevisionConflictNotice,
-  ChatbotRevisionStatusNotice,
-  getChatbotRevisionValues,
-  getChatbotRevisionVersion,
-  isChatbotRevisionEditable,
-  isChatbotRevisionPending,
-  useChatbotRevisionReload,
-  type RevisionChatbot,
-} from './chatbotRevision'
-import {
-  getChatbotMutationErrorKey,
-  isChatbotRevisionConflict,
-} from './chatbotErrorMessages'
 
 type ChatbotModelPolicy = Pick<
   ChatbotRevisionValues,
@@ -774,6 +774,7 @@ function ChatbotDetails({
               publishingAuthorizationError={publishingAuthorizationError}
               onNavigateSection={(section) => {
                 if (section === 'modes') onNavigate('behavior')
+                if (section === 'credits') onNavigate('usage')
                 if (section === 'disclaimer') {
                   onNavigate('disclaimer')
                 }

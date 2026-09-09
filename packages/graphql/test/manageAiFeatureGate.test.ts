@@ -171,7 +171,7 @@ describe('Manage AI feature gate', () => {
         ctx
       )
     ).rejects.toMatchObject({
-      extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
+      extensions: { code: 'FORBIDDEN' },
     })
     expect(findUnique).toHaveBeenCalledTimes(1)
   })

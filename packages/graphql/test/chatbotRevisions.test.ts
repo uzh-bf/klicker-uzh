@@ -347,6 +347,71 @@ describe('chatbot authoring revision transitions', () => {
     ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_EDIT_CONFLICT' } })
   })
 
+  it('uses the revision version for sequential disclaimer saves', async () => {
+    const bot = await seed()
+
+    await service.saveChatbotDisclaimer(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: bot.revisionVersion,
+        title: 'First replacement',
+        introText: 'First replacement introduction.',
+      },
+      owner
+    )
+    const first = await read(bot.id)
+    expect(first).toMatchObject({
+      disclaimerId: bot.disclaimerId,
+      revisionStatus: ChatbotStatus.DRAFT,
+      revisionVersion: 1,
+      draftConfig: {
+        disclaimerTitle: 'First replacement',
+        disclaimerIntroText: 'First replacement introduction.',
+      },
+    })
+
+    await service.saveChatbotDisclaimer(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: first.revisionVersion,
+        title: 'Second replacement',
+        introText: 'Second replacement introduction.',
+      },
+      owner
+    )
+    const second = await read(bot.id)
+    expect(second).toMatchObject({
+      disclaimerId: bot.disclaimerId,
+      revisionStatus: ChatbotStatus.DRAFT,
+      revisionVersion: 2,
+      draftConfig: {
+        disclaimerTitle: 'Second replacement',
+        disclaimerIntroText: 'Second replacement introduction.',
+      },
+    })
+    expect(second.draftConfig?.disclaimerId).not.toBe(bot.disclaimerId)
+
+    await expect(
+      service.saveChatbotDisclaimer(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: second.revisionVersion,
+          expectedDisclaimerId: bot.disclaimerId,
+          title: 'Stale replacement',
+          introText: 'Stale replacement introduction.',
+        },
+        owner
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'CHATBOT_DISCLAIMER_CONFLICT' },
+    })
+    expect(await read(bot.id)).toMatchObject({
+      disclaimerId: bot.disclaimerId,
+      revisionVersion: 2,
+      draftConfig: { disclaimerTitle: 'Second replacement' },
+    })
+  })
+
   it('leaves a changed disclaimer unlinked until approval', async () => {
     const bot = await seed()
     await service.saveChatbotDisclaimer(
@@ -417,5 +482,34 @@ describe('chatbot authoring revision transitions', () => {
       )
     ).rejects.toMatchObject({ extensions: { code: 'CHATBOT_NOT_EDITABLE' } })
     expect((await read(bot.id)).status).toBe(ChatbotStatus.PAUSED)
+  })
+
+  it('blocks withdrawal when the ai-beta flag is revoked', async () => {
+    const bot = await seed()
+    await service.updateChatbot(
+      { id: bot.id, name: 'Revised', expectedRevisionVersion: 0 },
+      owner
+    )
+    await submit(bot.id, 1)
+
+    const revokedOwner: ContextWithUser = {
+      ...owner,
+      featureFlags: {
+        ...owner.featureFlags,
+        isEnabled: () => false,
+      } as NonNullable<ContextWithUser['featureFlags']>,
+    }
+
+    await expect(
+      service.withdrawChatbotRevision(
+        { chatbotId: bot.id, expectedRevisionVersion: 2 },
+        revokedOwner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    expect(await read(bot.id)).toMatchObject({
+      status: ChatbotStatus.PUBLISHED,
+      revisionStatus: ChatbotStatus.PENDING_APPROVAL,
+      revisionVersion: 2,
+    })
   })
 })

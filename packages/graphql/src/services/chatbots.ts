@@ -1515,6 +1515,7 @@ export async function withdrawChatbotRevision(
   args: RevisionExpectedArgs,
   ctx: ContextWithUser
 ) {
+  await requireFeatureFlagAccess(ctx, 'ai-beta')
   return await ctx.prisma.$transaction(async (tx) => {
     await lockChatbotRevision(tx, args.chatbotId)
     const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)

@@ -35,11 +35,6 @@ import {
   getChatbotMutationErrorKey,
   isChatbotRevisionConflict,
 } from './chatbotErrorMessages'
-import type {
-  ChatbotNavigationState,
-  ChatbotSetupStep,
-} from './chatbotWorkspace'
-import { setupSteps } from './chatbotWorkspace'
 import {
   ChatbotRevisionConflictNotice,
   ChatbotRevisionStatusNotice,
@@ -49,9 +44,14 @@ import {
   getChatbotRevisionVersion,
   isChatbotRevisionEditable,
   isChatbotRevisionPending,
-  useChatbotRevisionReload,
   type RevisionChatbot,
+  useChatbotRevisionReload,
 } from './chatbotRevision'
+import type {
+  ChatbotNavigationState,
+  ChatbotSetupStep,
+} from './chatbotWorkspace'
+import { setupSteps } from './chatbotWorkspace'
 
 const metadataEditableStatuses = [
   ChatbotStatus.Draft,
@@ -1074,11 +1074,6 @@ function ChatbotAuthoring({
                           variables: {
                             chatbotId: chatbot.id,
                             expectedRevisionVersion: revisionVersion,
-                            expectedDisclaimerId: getChatbotAuthoringRevision(
-                              chatbot
-                            )
-                              ? null
-                              : (disclaimer?.id ?? null),
                             title: normalizedValues.title,
                             introText: normalizedValues.introText,
                           },
