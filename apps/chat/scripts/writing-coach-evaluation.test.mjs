@@ -7,18 +7,6 @@ import {
   validateCurrentBaseUsage,
 } from './writing-coach-evaluation.mjs'
 
-function monthStartInZurich(monthOffset = 0) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Zurich',
-    year: 'numeric',
-    month: 'numeric',
-  }).formatToParts(new Date())
-  const year = Number(parts.find((part) => part.type === 'year').value)
-  const month = Number(parts.find((part) => part.type === 'month').value)
-  const date = new Date(Date.UTC(year, month - 1 + monthOffset, 1))
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-01`
-}
-
 test('database client requires the repository disposable database guard', async () => {
   await assert.rejects(
     createDatabaseClient({
@@ -29,7 +17,7 @@ test('database client requires the repository disposable database guard', async 
 })
 
 test('fallback budget validation requires the exact current month with remaining budget', () => {
-  const currentMonthStart = monthStartInZurich()
+  const currentMonthStart = '2026-09-01'
   assert.doesNotThrow(() =>
     validateCurrentBaseUsage({
       monthStart: currentMonthStart,
@@ -41,7 +29,7 @@ test('fallback budget validation requires the exact current month with remaining
   assert.throws(
     () =>
       validateCurrentBaseUsage({
-        monthStart: monthStartInZurich(-1),
+        monthStart: '2026-08-01',
         currentMonthStart,
         budget: '10',
         used: '2',

@@ -1,19 +1,12 @@
 'use client'
 
 import * as SelectPrimitive from '@radix-ui/react-select'
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  GraduationCapIcon,
-  LightbulbIcon,
-  ListChecksIcon,
-  PencilLineIcon,
-  SparklesIcon,
-} from 'lucide-react'
+import { CheckIcon, ChevronDownIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import {
   formatModeLabel,
   getModeDescription,
+  getModeIcon,
   resolveSelectedMode,
 } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
@@ -21,22 +14,8 @@ import { useWritingCoachIsCustom } from './mode-options-context'
 
 function ModeIcon({ mode, className }: { mode: string; className?: string }) {
   const writingCoachIsCustom = useWritingCoachIsCustom()
-  if (mode === 'writing-coach' && !writingCoachIsCustom) {
-    return <PencilLineIcon aria-hidden="true" className={className} />
-  }
-  if (mode === 'tutor') {
-    return <GraduationCapIcon aria-hidden="true" className={className} />
-  }
-
-  if (mode === 'explainer') {
-    return <LightbulbIcon aria-hidden="true" className={className} />
-  }
-
-  if (mode === 'quizzer') {
-    return <ListChecksIcon aria-hidden="true" className={className} />
-  }
-
-  return <SparklesIcon aria-hidden="true" className={className} />
+  const Icon = getModeIcon(mode, writingCoachIsCustom)
+  return <Icon aria-hidden="true" className={className} />
 }
 
 export function ModeSwitcher({
