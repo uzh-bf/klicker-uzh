@@ -904,7 +904,6 @@ async function loginStudentPassword(page: Page, username: string) {
   await page.context().clearCookies()
   await page.goto('about:blank').catch(() => undefined)
   await page.goto(process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN, {
-    waitUntil: 'commit',
     timeout: 300_000,
   })
   await page.evaluate(() => {
@@ -915,6 +914,8 @@ async function loginStudentPassword(page: Page, username: string) {
   })
   await page.getByTestId('username-field').fill(username)
   await page.getByTestId('password-field').fill(STUDENT_PASSWORD)
+  await expect(page.getByTestId('username-field')).toHaveValue(username)
+  await expect(page.getByTestId('password-field')).toHaveValue(STUDENT_PASSWORD)
   await expect(page.getByTestId('submit-login')).toBeEnabled()
   await page.getByTestId('submit-login').click()
   await expect(page.getByTestId('homepage')).toBeVisible()
@@ -2081,8 +2082,18 @@ test.describe('Part 2: Randomized group creation', () => {
       await openStudentCourse(page, COURSE2.displayName)
       await openStudentGroupTab(page)
       await page.getByTestId('student-course-create-group').click()
-      await page.getByTestId('enter-random-group-pool').click()
-      await expect(page.getByTestId('leave-random-group-pool')).toBeVisible()
+      const enterPool = page.getByTestId('enter-random-group-pool')
+      const leavePool = page.getByTestId('leave-random-group-pool')
+      // A previous attempt may have enrolled this student before failing later.
+      // Leave first so every attempt still exercises entering the pool.
+      if (testInfo.retry > 0) {
+        await expect(enterPool.or(leavePool)).toBeVisible()
+        if (await leavePool.isVisible()) {
+          await leavePool.click()
+        }
+      }
+      await enterPool.click()
+      await expect(leavePool).toBeVisible()
     }
   })
 

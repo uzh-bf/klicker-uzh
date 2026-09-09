@@ -267,6 +267,8 @@ export default {
     },
     sources: {
       title: 'Sources',
+      cited: 'Cited in this answer',
+      otherRetrieved: 'Other retrieved material ({count})',
       page: 'p. {page}',
       video: 'Video',
       image: 'Image',

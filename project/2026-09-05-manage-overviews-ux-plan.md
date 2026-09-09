@@ -74,6 +74,41 @@ Use new worktree's manage profile for Manage/auth/API visual inspection and the 
 No new deps, schemas, API changes, generic abstraction or wiki sprawl. Existing frontend convention doc updated only if this stack changes a documented UI convention; otherwise plan plus evidence sufficient. Add focused screenshots under local project evidence, no real person data.
 ## Progress
 
+### Recovered dependency mounts and live Manage proof, 2026-09-09
+
+Source devrouter aacf9ea completes app-only dependency-volume recovery. The
+replacement app is c99907df732a10b8646985501c01e9dc8e347d58b0f73474f828acd4c6353b7c.
+All retained sidecar IDs and volumes remain preserved; bootstrap runs without
+initialization arguments. Docker normalizes OomKillDisable false to null on
+first start; the reviewed proof exception admits only that exact change.
+The installer initially skipped empty package volumes because pnpm's optimistic
+repeat-install check returns before force handling. Explicit frozen install with
+that shortcut disabled installed 3834 packages. Recovery journal and receipt
+are completed. Aquinas passed the source correction reviews.
+
+Canonical ensure --repair reports ready, ten routes, healthy dependencies,
+running workers and no drift. Delegated local lecturer login, course overview
+and Testkurs detail pass browser inspection. Screenshots live under
+project/_local/visuals/2026-09-09-recovery. Course detail is usable at 390px;
+existing global header clipping remains. At consumer head 6fdd50acfce,
+the full release build passes all 23 tasks; typechecks pass all 35 tasks and
+lint passes all seven tasks. Host-only launcher and CI checks pass separately.
+Hook equivalents run in their owning host/container environments. Canonical
+stop reports success, the provider reports Stopped, and exact source routes
+are zero. Browser session is closed. The existing draft PR now carries this
+head; hosted CI and GitGuardian remain separate readiness gates.
+
+The latest target integration resolves origin/v3 cbcede79718e8e60ff04d3f8376ab6a3f4bb64ed
+because the draft PR has merge conflicts. Main owns integration and final proof.
+The resolution retains the routed student login URL and upstream navigation
+completion, combines Auth providers readiness with Pages manifest readiness,
+and moves the manifest regression fixture to Manage's actual probe contract.
+Upstream Chat changes remain upstream-owned. The previously passing UI checks
+are earlier-head evidence; current integration verification is in progress.
+Canonical normal ensure owns the startup; no replacement or data reset is
+requested by this continuation.
+
+
 ### Verified runtime release, 2026-09-08 21:31 CEST
 
 Canonical stop succeeded after temporarily selecting the exact recorded source

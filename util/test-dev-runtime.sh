@@ -53,6 +53,9 @@ write_file "$ROOT/packages/example/package.json" '{"name":"example"}'
 for app in "${NEXT_APPS[@]}"; do
   write_file "$ROOT/apps/$app/package.json" "{\"name\":\"$app\"}"
   write_file "$ROOT/apps/$app/next.config.mjs" 'export default {}'
+  if [ "$app" != chat ]; then
+    write_file "$ROOT/apps/$app/src/pages/item/[id]/index.tsx" 'export default true'
+  fi
 done
 write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = true'
 write_file "$ROOT/apps/auth/src/pages/index.tsx" 'export default true'
@@ -73,6 +76,7 @@ url="${!#}"
 printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
 case "$url" in
   */api/auth/providers) printf "200\tapplication/json" ;;
+  */_devPagesManifest.json) printf "{\"pages\":[\"/item/[id]\"]}\n200\tapplication/json" ;;
   */api/chatbots/*) printf "401\tapplication/json" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
@@ -132,6 +136,9 @@ INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
 MKCERT_CAROOT="$TEST_ROOT/mkcert"
 mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
 cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
+# Dependency generation has its own contract suite; isolate certificate and
+# shared-volume initialization in this fixture.
+write_file "$INIT_ROOT/../util/generate-dependency-mounts.mjs" 'process.exit(0)'
 write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
 export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
 
@@ -205,6 +212,7 @@ mkdir -p \
   "$ROOT/util"
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
+cp "$REPO_ROOT/util/check-dev-pages-manifest.mjs" "$ROOT/util/check-dev-pages-manifest.mjs"
 bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
 if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
   bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
@@ -496,7 +504,11 @@ READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
 : >"$CURL_LOG"
 unset READINESS_APPS
 bash "$RUNTIME_SCRIPT" doctor >/dev/null
-assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '6'
+assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '9'
+
+: >"$CURL_LOG"
+READINESS_APPS=auth DEV_TURBO_TASK=dev:test bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" 'http://localhost:3010/api/auth/providers'
 
 cp "$REPO_ROOT/util/profile-resolver.sh" "$ROOT/util/profile-resolver.sh"
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"

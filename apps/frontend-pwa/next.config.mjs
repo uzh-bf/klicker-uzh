@@ -8,6 +8,7 @@ let nextConfig = {
   ...getNextBaseConfig({
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
     NODE_ENV: process.env.NODE_ENV,
+    pagesRouterOnly: true,
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
 }
