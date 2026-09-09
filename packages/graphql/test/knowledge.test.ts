@@ -2756,6 +2756,23 @@ describe('Integration tests for knowledge base CRUD', () => {
         userOneCtx
       )
     ).resolves.toBeDefined()
+    await prisma.kBResource.updateMany({
+      where: { kbId: enlarged.id },
+      data: { sizeBytes: MAX_KB_SOURCE_SIZE_BYTES },
+    })
+    const measuredMetrics = (await getKb({ id: enlarged.id }, userOneCtx))
+      .metrics
+    expect(measuredMetrics.quotaSizeBytes).toBe(91 * MAX_KB_SOURCE_SIZE_BYTES)
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: enlarged.id,
+          title: 'Synthetic measured-capacity URL',
+          url: 'https://example.com/measured-capacity',
+        },
+        userOneCtx
+      )
+    ).resolves.toBeDefined()
     await prisma.kB.update({
       where: { id: enlarged.id },
       data: { storageLimitMiB: null },
