@@ -85,6 +85,16 @@ After PR #5633 merges and is fetched: revalidate merged seams, create the fresh 
 
 ## Progress
 
+### Review and CI follow-up on 2026-09-08
+
+The post-reset advisor completed on 2026-09-09. Main verified its scope recommendation against the attachment writer, FinanceWiki configuration writer, MCP scope equality check, and cited deployment commit. Preserve the target's single-binding preview scope and reject the request to forward all attachment rows: actual multi-KB scope lives in MCP parameters, not multiple enabled attachment rows. The cited deployment commit is documentation-only. Supporting that configuration in owner preview is a separate pre-existing limitation, not part of capture. The local scope correction is accepted; final integrated review remains required before publication. The focused browser runtime is stopped with its exact container exited and zero routes.
+
+Published head `cca5d6ff661dcc412c4b5197b03e400553467a71` includes the authorized target integration. The full 26-task production build and both focused Chromium capture/review tests pass; the capture transport remains mocked. These results supersede the pending browser statement below.
+
+The current local correction documents the GraphQL receipt verification key and preserves the integrated target's single-KB preview scope while detecting multiple bindings for capture rejection. Its 23 preview-route tests, Chat type check, and focused Biome check pass. Publication remains pending reconciliation of conflicting multi-KB review advice. The bounded Claude advisor returned a terminal session-limit error without advice; it must not be counted as review evidence.
+
+Exact-head CI finished with a failure in the inherited unsaved-authoring browser test: the test waits for a Manage confirmation after opening a preview tab. A read-only source investigation recommends foregrounding Manage before that interaction. With the one-line correction, the focused Chromium test passes locally in 6.5 seconds, retaining both confirmation and discard assertions. This is local verification; corrected-head CI remains pending publication. GitGuardian flags three inherited disposable CI database/test occurrences; values-free triage is recorded in PR comment `5591489498`. No detector suppression or history rewrite is authorized or applied. Final AI review remains pending. Merge, deployment, and live activation remain withheld.
+
 ### Target update authorized on 2026-09-08
 
 The user explicitly authorized another target integration after the baseline browser fixes landed. This supersedes the earlier no-further-integration checkpoint. The integrated target is `9f805e9e55dfc2b318ea2e0a27cab39b23abaa71` on `origin/v3-ai`, including the feature-access and header repair in PR #5808. Seven conflicts preserve saved preview model policy, capture receipts, source lineage, and the upstream Knowledge/Behavior layout. New capture links open Knowledge with the response-example accordion expanded and the candidate focused.

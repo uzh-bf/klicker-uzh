@@ -156,6 +156,8 @@ export async function POST(
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },
         select: { kbId: true },
+        orderBy: { id: 'asc' },
+        // A second binding makes capture ambiguous; preview still uses one KB.
         take: 2,
       },
       mcpConfigurations: {
@@ -282,7 +284,7 @@ export async function POST(
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
-      kbIds: chatbot.knowledgeBases.map(({ kbId }) => kbId),
+      kbIds: chatbot.knowledgeBases.slice(0, 1).map(({ kbId }) => kbId),
       sessionId: randomUUID(),
     })
     tools = mcpToolsHandle.tools

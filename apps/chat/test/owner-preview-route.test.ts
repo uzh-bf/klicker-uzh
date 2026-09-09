@@ -470,6 +470,7 @@ describe('POST owner preview chat', () => {
           knowledgeBases: {
             where: { isEnabled: true, kb: { deletedAt: null } },
             select: { kbId: true },
+            orderBy: { id: 'asc' },
             take: 2,
           },
         }),
@@ -496,6 +497,12 @@ describe('POST owner preview chat', () => {
 
     expect(mocks.issuePreviewResponseExampleReceipt).toHaveBeenCalledWith(
       expect.objectContaining({ kbId: undefined })
+    )
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({
+        kbIds: knowledgeBases.slice(0, 1).map(({ kbId }) => kbId),
+      })
     )
   })
 
