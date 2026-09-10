@@ -303,3 +303,31 @@ cannot run inside the managed consumer image. Container check, lint, syncpack,
 agent guidance, Git-identity tests, removed-artifact and Prisma-sync checks pass.
 Host workflow/runtime tests pass (68 tests); host launcher tests pass (31 tests)
 with host access for workspace discovery. No application source has changed.
+
+### Implementation and integration evidence — 2026-09-10
+
+Committed extraction: 529c0ea1d; unused fixture bookkeeping removed in dbbb28fd9.
+The three review writers now live in questionReviewLifecycle.ts. No test hook,
+schema change, accounting write, provider policy or public API was introduced.
+Before extraction, 39 tests passed through public review/polling service callers.
+After extraction, 109 tests pass across review, lease, accounting, dispatch,
+completion and start-failure suites. The fixture type corrections retain the
+same tested behavior; GraphQL check and unchanged tracked SDL pass.
+
+GLM produced the initial test harness, then failed terminally with HTTP503,
+no available targets for glm-5.3-flash. Main completed the bounded implementation.
+Simplifier reviewed b41e0946e..529c0ea1d and found only the unused cleanup set;
+main verified and applied that removal. Independent integrity review continues
+on a trusted Luna fallback, preserving the same complete scope.
+
+Target integration uses origin/v3-ai at 352f47fd7443d93aa5720e863d6285b801cceebe
+because final verification must include the newer chatbot/schema and CI changes.
+The merge has no conflicts. Canonical runtime reconciliation reports no drift;
+109 lifecycle tests and 99 host tests pass on the integrated tree. All 40 package
+checks pass with concurrency 1. The existing parallel check launches Prisma build
+and check generation together and hit EEXIST; serial execution removes that race
+without changing repository configuration. The pre-integration full build passed
+all 26 tasks. Integrated checks, lint, validators and the full 26-task build
+also pass. The normal target merge is committed as 161b6dea7.
+Source verification is complete; independent integrity/final review and hosted
+CI remain pending before completed delivery can be claimed.
