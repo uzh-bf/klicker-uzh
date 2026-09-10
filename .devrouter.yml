@@ -21,11 +21,12 @@
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.0.55
+  version: 0.0.62
 project:
   name: klicker-uzh
 managedRuntime:
   devcontainer:
+    prepareCommand: [node, util/generate-dependency-mounts.mjs]
     # Managed base: the DevPod primary `app` is implicit; postgres serves
     # post-create reset/push/seed, Azurite is an app dependency, and Hatchet is
     # boot-critical for the backend.

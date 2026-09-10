@@ -50,7 +50,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.59 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -100,7 +100,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.0.55. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.59. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -113,6 +113,8 @@ keeps detached-state recovery fail-closed while prior containers still exist.
 Version 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime,
 and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct
 retained-runtime configuration and mount comparison.
+Version 0.0.58 runs the host dependency-mount generator before Compose inspection.
+It does not apply changed mounts to retained containers.
 
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
@@ -156,6 +158,39 @@ this exact checkout, uses its namespaced HTTPS routes, and discovers the
 workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
+
+The default starts the full profile. For focused activity tests, request the
+required profile union explicitly before the Playwright arguments:
+
+```bash
+pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
+```
+
+The caller must include every profile the selected tests need; the launcher
+does not infer them from spec names or reuse a previous narrow selection.
+Place `--runtime-profile` and `--print-env` before other arguments, or use `--`
+to end the launcher-option prefix. `--print-env` still reconciles the runtime
+and can start services. `--show-report` does not accept a runtime profile.
+
+The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
+reports stale dependency links instead of installing before the host launcher
+can control the lifecycle. On a cold host run, when the Playwright CLI is
+missing, the launcher stops this exact checkout, performs the filtered frozen
+install, builds the host Prisma and shared-types test dependencies, prepares
+the required browser, and only then reconciles the devcontainer. A warm run
+does not stop the checkout or install packages. `--print-env` still reconciles
+the checkout and resolves its environment without dependency preparation.
+`--show-report` never reconciles the devcontainer; if it needs a cold install,
+that exact checkout may remain stopped after preparation.
+
+When the Playwright CLI is missing, invoke the launcher directly with the
+pinned host Node (`volta run node ./util/run-playwright-host.mjs ...`) so it
+can stop the exact checkout before installing. If the CLI exists but dependency
+links are stale, stop that exact checkout first and run the existing filtered
+frozen install explicitly; the launcher does not repair a warm dependency tree.
+The outer `pnpm playwright:host` entrypoint is still the normal warm-run
+command, but pnpm's fail-closed policy intentionally stops it before the
+launcher when its own dependency validation detects a stale workspace.
 
 Direct local Playwright commands fail before global setup, and this container
 sets its Playwright browser path to a non-directory target. Do not run Playwright
@@ -372,10 +407,29 @@ disabled and the rest of the DevPod still starts normally.
 ## Notes
 
 - The root `node_modules` is a named volume because pnpm hoists native packages
-  into `node_modules/.pnpm`. Playwright, Prisma, and shared types also have
-  package-level volumes. Those prevent the Linux install from overwriting the
-  host Playwright runner's Darwin dependency links. The dependency stamp
-  prevents reuse after lockfile or workspace-manifest changes.
+  into `node_modules/.pnpm`. Every workspace package listed by
+  `pnpm-workspace.yaml` also has its own project-scoped `node_modules` volume;
+  the existing Playwright, Prisma, and shared-types volume names remain stable.
+  These mounts keep host and container dependency links separate, including
+  the host Playwright runner's Darwin dependencies. The
+  dependency stamp prevents reuse after lockfile or workspace-manifest
+  changes.
+- Dependency mounts are generated into ignored
+  `.devcontainer/docker-compose.dependencies.yml`. The host needs the pinned
+  Node and pnpm toolchain, but no installed project dependencies. The generator
+  uses `pnpm list --recursive --depth -1 --json`, so workspace additions,
+  removals and exclusions do not require another handwritten mount list.
+  Devrouter invokes it through `managedRuntime.devcontainer.prepareCommand`;
+  native Dev Container initialization invokes the same script before Compose.
+  For read-only Compose inspection before first startup, explicitly run
+  `node util/generate-dependency-mounts.mjs` first. Diagnostics do not generate it.
+  Generation failures abort startup and retain the previous output; unchanged
+  output is not rewritten.
+- Generating updated configuration does not change mounts in an existing
+  container. Devrouter 0.0.59 does not support warm mount reconciliation.
+  Do not recreate or reset a retained workspace to apply a package addition or
+  removal. Keep its data intact and resolve the supported lifecycle procedure
+  separately. Unchanged package inventories retain the same volume names.
 - `/pnpm/.pnpm-store` is the only machine-shared cache. The external Docker
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL

@@ -39,6 +39,8 @@ hatchet:
   workers:
     general:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: '047f147261bd'
@@ -47,6 +49,9 @@ hatchet:
         pullPolicy: Always
         tag: v3-ai
       resources:
+        requests:
+          cpu: 50m
+          memory: 384Mi
         limits:
           memory: 2Gi
       affinity:
@@ -64,6 +69,8 @@ hatchet:
 
     responseProcessor:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: '047f147261bd'
@@ -71,6 +78,13 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
         tag: v3-ai
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 512Mi
+
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -86,6 +100,8 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: '047f147261bd'
@@ -93,6 +109,13 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
         tag: v3-ai
+      resources:
+        requests:
+          cpu: 50m
+          memory: 192Mi
+        limits:
+          memory: 256Mi
+
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -125,9 +148,6 @@ auth:
     rollout.klicker.uzh.ch/release: '047f147261bd'
 
   replicaCount: 1
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -168,7 +188,7 @@ auth:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 192Mi
     limits:
       cpu: 200m
       memory: 200Mi
@@ -185,6 +205,7 @@ chat:
 
   telemetry:
     enabled: false
+    environment: 'staging'
 
   automaticModels:
     primaryId: auto
@@ -298,9 +319,6 @@ chat:
         output: 30.0
   replicaCount: 1
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -340,7 +358,7 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 250Mi
+      memory: 320Mi
     limits:
       cpu: 200m
       memory: 768Mi
@@ -523,10 +541,10 @@ frontendManage:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 192Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 256Mi
 
 frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
@@ -540,9 +558,6 @@ frontendControl:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
     tag: v3-ai
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -577,7 +592,7 @@ frontendControl:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 128Mi
     limits:
       cpu: 200m
       memory: 200Mi
@@ -678,8 +693,8 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 100m
+      memory: 384Mi
     limits:
       memory: 1Gi
 
@@ -694,9 +709,6 @@ olatApi:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
     tag: v3-ai
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -731,7 +743,7 @@ olatApi:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 128Mi
     limits:
       cpu: 200m
       memory: 200Mi
@@ -797,9 +809,6 @@ responseApi:
     tag: v3-ai
     pullPolicy: Always
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -833,7 +842,7 @@ responseApi:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 128Mi
     limits:
       cpu: 200m
       memory: 200Mi
@@ -844,8 +853,6 @@ assessment:
     podAnnotations:
       rollout.klicker.uzh.ch/release: '047f147261bd'
     replicaCount: 1
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -908,8 +915,6 @@ assessment:
     podAnnotations:
       rollout.klicker.uzh.ch/release: '047f147261bd'
     replicaCount: 1
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -987,9 +992,6 @@ assessment:
       rollout.klicker.uzh.ch/release: '047f147261bd'
     replicaCount: 1
 
-    autoscaling:
-      enabled: false
-
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -1041,7 +1043,7 @@ assessment:
     resources:
       requests:
         cpu: 50m
-        memory: 50Mi
+        memory: 128Mi
       limits:
         cpu: 200m
         memory: 200Mi

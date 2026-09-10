@@ -6,6 +6,7 @@ const withNextIntl = createNextIntlPlugin('./src/types/i18n.ts')
 /** @type {import('next').NextConfig} */
 const nextConfig = getNextBaseConfig({
   NODE_ENV: process.env.NODE_ENV,
+  pagesRouterOnly: true,
   NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
 })
 

@@ -146,6 +146,17 @@ function authenticatedServer(overrides: Record<string, unknown> = {}) {
     authType: 'bearer',
     authSecret: SYNTHETIC_AUTH_SECRET,
     parameters: { ...LOCAL_FIXTURE_MARKER },
+    passChatbotId: false,
+    ...overrides,
+  })
+}
+
+function scopeTokenServer(overrides: Record<string, unknown> = {}) {
+  return legacyServer({
+    authType: 'scope_token',
+    authSecret: null,
+    parameters: null,
+    passChatbotId: false,
     ...overrides,
   })
 }
@@ -168,10 +179,26 @@ function legacyConfigs() {
   return [seedConfig('tutor'), seedConfig('explainer')]
 }
 
-function authenticatedConfigs() {
+function authenticatedConfigs(isEnabled: [boolean, boolean] = [true, true]) {
   return [
-    seedConfig('tutor', { parameters: { ...LOCAL_SCOPE } }),
-    seedConfig('explainer', { parameters: { ...LOCAL_SCOPE } }),
+    seedConfig('tutor', {
+      isEnabled: isEnabled[0],
+      parameters: { ...LOCAL_SCOPE },
+    }),
+    seedConfig('explainer', {
+      isEnabled: isEnabled[1],
+      parameters: { ...LOCAL_SCOPE },
+    }),
+  ]
+}
+
+function scopeTokenConfigs(
+  parameters: Record<string, unknown> | null = null,
+  isEnabled: [boolean, boolean] = [true, false]
+) {
+  return [
+    seedConfig('tutor', { isEnabled: isEnabled[0], parameters }),
+    seedConfig('explainer', { isEnabled: isEnabled[1], parameters }),
   ]
 }
 
@@ -322,21 +349,48 @@ describe('assertLocalSeedOwnership', () => {
     ).not.toThrow()
   })
 
-  test('accepts the exact marked authenticated seed', () => {
+  test.each([
+    ['null parameters', null],
+    ['empty parameters', {}],
+  ])('accepts the exact scope_token seed with %s', (_label, parameters) => {
     expect(() =>
-      assertLocalSeedOwnership(authenticatedServer(), authenticatedConfigs())
+      assertLocalSeedOwnership(
+        scopeTokenServer({ parameters }),
+        scopeTokenConfigs(parameters)
+      )
     ).not.toThrow()
+  })
+
+  test('accepts the marked authenticated seed with disabled configs', () => {
+    expect(() =>
+      assertLocalSeedOwnership(
+        authenticatedServer(),
+        authenticatedConfigs([true, false])
+      )
+    ).not.toThrow()
+  })
+
+  test('rejects a disabled legacy configuration', () => {
+    expectOwnershipConflict(legacyServer(), [
+      seedConfig('tutor', { isEnabled: false }),
+      ...legacyConfigs().slice(1),
+    ])
   })
 
   test.each([
     ['legacy', legacyServer(), legacyConfigs()],
-    ['authenticated', authenticatedServer(), authenticatedConfigs()],
+    ['scope_token', scopeTokenServer(), scopeTokenConfigs(null, [true, false])],
+    [
+      'authenticated',
+      authenticatedServer(),
+      authenticatedConfigs([true, false]),
+    ],
   ])('rejects an additional chatbot consumer for the %s seed', (_label, server, configs) => {
     expectOwnershipConflict(server, [
       ...configs,
       seedConfig('tutor', {
         chatbotId: SYNTHETIC_OTHER_CHATBOT_ID,
-        parameters: server.authType === 'none' ? null : { ...LOCAL_SCOPE },
+        parameters: server.authType === 'bearer' ? { ...LOCAL_SCOPE } : null,
       }),
     ])
   })
@@ -353,6 +407,51 @@ describe('assertLocalSeedOwnership', () => {
       }),
       ...authenticatedConfigs().slice(1),
     ])
+    expectOwnershipConflict(scopeTokenServer(), [
+      seedConfig('tutor', { parameters: { scope: 'synthetic-other-scope' } }),
+      ...scopeTokenConfigs().slice(1),
+    ])
+  })
+
+  test('rejects changed scope_token ownership fields', () => {
+    const validConfigs = scopeTokenConfigs(null, [true, false])
+    const cases: Array<
+      [string, Record<string, unknown>, Array<Record<string, unknown>>]
+    > = [
+      [
+        'changed owner',
+        {},
+        [
+          seedConfig('tutor', {
+            ownerId: '86158456-2802-5739-bf8c-bee9dcff9932',
+          }),
+          ...validConfigs.slice(1),
+        ],
+      ],
+      ['changed URL', { url: 'http://localhost:2417/mcp' }, validConfigs],
+      [
+        'additional allowed tool',
+        {},
+        [
+          seedConfig('tutor', { allowedTools: ['doc_query', 'other_tool'] }),
+          ...validConfigs.slice(1),
+        ],
+      ],
+      [
+        'credential-bearing scope_token server',
+        { authSecret: SYNTHETIC_AUTH_SECRET },
+        validConfigs,
+      ],
+      [
+        'scope_token chatbot ID forwarding enabled',
+        { passChatbotId: true },
+        validConfigs,
+      ],
+    ]
+
+    for (const [_label, serverOverrides, configs] of cases) {
+      expectOwnershipConflict(scopeTokenServer(serverOverrides), configs)
+    }
   })
 
   test('rejects server and configuration changes outside the owned seed', () => {
@@ -415,11 +514,11 @@ describe('assertLocalSeedOwnership', () => {
         ],
       ],
       [
-        'disabled configuration',
+        'nonboolean configuration state',
         {},
         [
           seedConfig('tutor', {
-            isEnabled: false,
+            isEnabled: 'enabled',
             parameters: { ...LOCAL_SCOPE },
           }),
           ...authenticatedConfigs().slice(1),

@@ -368,8 +368,9 @@ test('accepts equivalent runtime plans with different JSON property order', () =
     `#!/usr/bin/env node
 const { writeFileSync } = require('node:fs')
 const args = process.argv.slice(2)
-if (args[0] === '-V') {
-  process.stdout.write('Installed CLI version: 0.0.46\\nLocal repo version (test fixture): 0.0.46\\n')
+if (args.includes('-V')) {
+  console.log('Installed CLI version: 0.0.55')
+  console.log('Local repo version (fixture): 0.0.55')
   process.exit(0)
 }
 const output = args[args.indexOf('--output') + 1]

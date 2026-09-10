@@ -108,7 +108,15 @@ hatchet:
   workers:
     general:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-general
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8001
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
@@ -118,19 +126,21 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
 
     responseProcessor:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8002
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
@@ -140,19 +150,21 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
 
     responseProcessorAssessment:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor-assessment
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8003
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
@@ -162,12 +174,6 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
@@ -198,12 +204,6 @@ auth:
     limits:
       memory: 400Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -215,6 +215,8 @@ chat:
   priorityClassName: production-workload
   accountUsageEnforcementEnabled: false
   lifecycleWritersEnabled: false
+  # Allows active requests and pending trace exports time to drain on shutdown.
+  terminationGracePeriodSeconds: 90
 
   replicaCount: 1
 
@@ -223,7 +225,9 @@ chat:
     storeResponses: false
 
   telemetry:
-    enabled: true
+    enabled: false
+    baseUrl: ''
+    environment: ''
 
   mcp:
     key: ''
@@ -254,12 +258,6 @@ chat:
     limits:
       memory: 400Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -405,7 +403,6 @@ frontendPWA:
     minReplicas: 3
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -441,10 +438,9 @@ frontendManage:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -477,13 +473,6 @@ frontendControl:
       memory: 200Mi
     limits:
       memory: 1000Mi
-
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -559,10 +548,9 @@ backendGraphql:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -621,12 +609,6 @@ lti:
     limits:
       memory: 500Mi
 
-  autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -661,12 +643,6 @@ olatApi:
     limits:
       memory: 1000Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -702,12 +678,6 @@ responseApi:
     limits:
       memory: 256Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -745,12 +715,6 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 3
-      maxReplicas: 10
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
@@ -784,12 +748,6 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
@@ -825,12 +783,6 @@ assessment:
       limits:
         memory: 256Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 

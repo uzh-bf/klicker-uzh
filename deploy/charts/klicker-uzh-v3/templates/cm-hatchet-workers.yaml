@@ -14,6 +14,11 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_WORKER_NAME: {{ .Values.hatchet.workers.general.workerName | quote }}
+  HATCHET_WORKER_SLOTS: {{ .Values.hatchet.workers.general.nonDurableSlots | quote }}
+  HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.general.durableSlots | quote }}
+  HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.general.healthPort | quote }}
+  HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.general.startupTimeoutMs | quote }}
   {{- if .Values.hatchet.kbIngestion.workerDisabled }}
   KB_INGESTION_WORKER_DISABLED: {{ .Values.hatchet.kbIngestion.workerDisabled | quote }}
   {{- end }}
@@ -52,6 +57,11 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_WORKER_NAME: {{ .Values.hatchet.workers.responseProcessor.workerName | quote }}
+  HATCHET_WORKER_SLOTS: {{ .Values.hatchet.workers.responseProcessor.nonDurableSlots | quote }}
+  HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.responseProcessor.durableSlots | quote }}
+  HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.responseProcessor.healthPort | quote }}
+  HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.responseProcessor.startupTimeoutMs | quote }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -62,4 +72,9 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  HATCHET_WORKER_NAME: {{ .Values.hatchet.workers.responseProcessorAssessment.workerName | quote }}
+  HATCHET_WORKER_SLOTS: {{ .Values.hatchet.workers.responseProcessorAssessment.nonDurableSlots | quote }}
+  HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.responseProcessorAssessment.durableSlots | quote }}
+  HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.responseProcessorAssessment.healthPort | quote }}
+  HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.responseProcessorAssessment.startupTimeoutMs | quote }}
   ASSESSMENT_MODE: 'true'
