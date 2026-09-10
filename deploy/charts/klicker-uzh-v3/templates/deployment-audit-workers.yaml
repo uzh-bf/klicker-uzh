@@ -31,6 +31,7 @@ spec:
         app.kubernetes.io/component: assessment-audit-worker
         azure.workload.identity/use: 'true'
     spec:
+      terminationGracePeriodSeconds: 90
       serviceAccountName: {{ required "assessmentAudit.worker.serviceAccountName is required when assessment audit is enabled" .Values.assessmentAudit.worker.serviceAccountName }}
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.assessmentAudit.worker.priorityClassName }}
       securityContext:
@@ -54,19 +55,22 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
           ports:
+            - name: health
+              containerPort: 8001
+              protocol: TCP
             - name: metrics
               containerPort: 9464
               protocol: TCP
           readinessProbe:
             httpGet:
-              path: /healthz
-              port: metrics
+              path: /readyz
+              port: health
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /healthz
-              port: metrics
+              port: health
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
