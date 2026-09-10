@@ -339,7 +339,7 @@ describe('question review decision lifecycle', () => {
       {
         buildId,
         decision,
-        warningsAcknowledged: true,
+        warningsAcknowledged: decision === 'APPROVE',
       },
       await reviewContext(runtime)
     )
@@ -353,7 +353,7 @@ describe('question review decision lifecycle', () => {
     const review = await reviewBuild()
     expect(review.gate).toBe(gate)
     expect(review.decision).toBe(decision)
-    expect(review.warningsAcknowledged).toBe(true)
+    expect(review.warningsAcknowledged).toBe(decision === 'APPROVE')
     expect(review.reviewerId).toBe(ownerId)
     expect(review.artifact).toEqual(artifact)
     expect(review.reviewedAt).toBeInstanceOf(Date)
@@ -370,7 +370,7 @@ describe('question review decision lifecycle', () => {
           question_build_id: buildId,
           decision: decision === 'APPROVE' ? 'approve' : 'reject',
           reviewed_by: ownerId,
-          acknowledge_warnings: true,
+          acknowledge_warnings: decision === 'APPROVE',
         }),
       }),
       `question-build:${buildId}`,
@@ -691,6 +691,7 @@ describe('question review dispatch recovery', () => {
     if (status !== 'RUNNING') {
       expect(result.completedAt).toBeInstanceOf(Date)
       expect(result.errorRetryable).toBe(false)
+      expect(result.stage).toBe('failed')
     }
     expect(runtime.review).not.toHaveBeenCalled()
     expect(runtime.findRunByQuestionReview).toHaveBeenCalledWith(
