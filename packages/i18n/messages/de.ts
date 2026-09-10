@@ -268,6 +268,11 @@ export default {
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
       imageAnalyzed: 'Bild analysiert',
     },
+    courseImages: {
+      source: '{title} · Seite {page}',
+      unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
+      retry: 'Bild erneut laden',
+    },
     sources: {
       title: 'Quellen',
       page: 'S. {page}',

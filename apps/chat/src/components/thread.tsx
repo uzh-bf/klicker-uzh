@@ -75,6 +75,7 @@ import {
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
 import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
+import { CourseImagesSection } from './course-images-section'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
@@ -1574,6 +1575,7 @@ const AssistantMessage: FC = () => {
         <ImageAnalyzedChip />
         <MessageSourcesProvider value={messageSources}>
           <AssistantMessageParts />
+          {showSources && <CourseImagesSection />}
           {showSources && <SourcesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />

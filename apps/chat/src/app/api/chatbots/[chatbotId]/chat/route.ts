@@ -25,6 +25,11 @@ import {
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import {
+  courseImageStoreConfigured,
+  readCourseImage,
+} from '@/src/lib/server/courseImageStore'
+import { withCourseImageTool } from '@/src/lib/server/courseImageTools'
+import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
@@ -1093,6 +1098,9 @@ export async function POST(
       throw error
     }
 
+    if (scopedKbIds?.length && courseImageStoreConfigured()) {
+      mcpTools = withCourseImageTool(mcpTools, scopedKbIds, readCourseImage)
+    }
     const toolNames = Object.keys(mcpTools || {})
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer'

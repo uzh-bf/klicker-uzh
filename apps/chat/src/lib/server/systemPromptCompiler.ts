@@ -139,5 +139,8 @@ export function compileSystemPrompt(
   const coursePolicy = withCoursePolicyContract(inputContext, context.toolNames)
   const outputFormat = withOutputFormatContract(coursePolicy)
   const citations = withCitationContract(outputFormat, context.toolNames)
-  return withLanguageStyleContract(citations)
+  const images = context.toolNames.includes('show_course_image')
+    ? `${citations}\n\nCourse images: only when the student explicitly requests an image or diagram, search course material, then call show_course_image with a returned visual_assets asset_id. The UI displays the selected original image with its source page. Do not output Markdown image URLs or claim you inspected the pixels. If no suitable asset is available, say so; never fabricate an image reference.`
+    : citations
+  return withLanguageStyleContract(images)
 }

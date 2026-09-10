@@ -1,6 +1,7 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalEnv": [
+    "CHAT_COURSE_IMAGE_STORE_PATH",
     "API_DOMAIN",
     "APP_CONTROL_DOMAIN",
     "APP_CONTROL_SUBDOMAIN",

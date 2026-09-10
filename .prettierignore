@@ -64,3 +64,6 @@ pnpm-lock.yaml
 **/*.py
 **/*.txt
 **/.codex/
+
+# Processor artifacts are addressed by hashes of their exact bytes.
+apps/chat/scripts/fixtures/course-images/e4/
