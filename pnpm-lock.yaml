@@ -516,6 +516,9 @@ importers:
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
+      '@klicker-uzh/prisma-data':
+        specifier: workspace:*
+        version: link:../../packages/prisma-data
       '@tailwindcss/postcss':
         specifier: ~4.3.3
         version: 4.3.3

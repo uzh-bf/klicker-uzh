@@ -58,6 +58,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "~3.3.5",
     "@klicker-uzh/graphql": "workspace:*",
+    "@klicker-uzh/prisma-data": "workspace:*",
     "@tailwindcss/postcss": "~4.3.3",
     "@tailwindcss/typography": "~0.5.19",
     "@types/node": "^24.10.1",
