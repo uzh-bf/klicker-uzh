@@ -336,13 +336,19 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     } else {
       const config = resolveLocalKbConfig(process.env)
       if (command === 'plan') {
+        let commands
+        try {
+          commands = providerCommands(config)
+        } catch {
+          commands = { unsupported: 'isolated-configuration-required' }
+        }
         console.log(
           JSON.stringify(
             {
-              ...providerCommands(config),
+              ...commands,
               executable: false,
               blockers: [
-                'Prepared state, process ownership and queue safety must be verified before execution.',
+                'Launcher bindings require the isolated local-KB configuration and must be verified before execution.',
               ],
             },
             null,

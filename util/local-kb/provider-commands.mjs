@@ -1,166 +1,171 @@
 import { join } from 'node:path'
 
-// Use the provider's individual entrypoints: its convenience fleet launcher
-// applies migrations before serving, which belongs to explicit setup only.
-export function providerCommands(config) {
-  const root = (name) => {
-    const provider = config.roots.find((entry) => entry.name === name)
-    if (!provider) throw new Error(`Missing ${name} provider.`)
-    return provider.path
-  }
-  const port = (name) => {
-    const endpoint = config.health.find((entry) => entry.name === name)
-    if (!endpoint) throw new Error(`Missing ${name} endpoint.`)
-    return new URL(endpoint.url).port
-  }
-  const ingestionRoot = root('ingestion')
-  const ingestionApi = join(ingestionRoot, 'modules/ingestion-api')
-  const ingestion = join(ingestionRoot, 'modules/ingestion')
-  const docProcessing = root('docProcessing')
-  const uv = (cwd, args, env = {}) => ({
-    cwd,
-    executable: 'uv',
-    args: ['run', '--frozen', '--no-sync', ...args],
-    env: { PYTHON_DOTENV_DISABLED: '1', ...env },
-  })
-  const docProcessingCommand = (args) =>
-    uv(docProcessing, args, { DOC_PROCESSING_AUTO_INITIALIZE: '0' })
+// Provider-owned launchers are the supported local lifecycle contract.
+// Klicker assembles explicit launcher invocations with instance, source
+// revision and private state bindings; it owns no provider service assembly.
+// Setup alone initializes schemas and credentials, so start commands never
+// migrate and stop commands never remove state.
+const LIFECYCLE_ORDER = ['ingestion', 'scraping', 'docProcessing', 'retrieval']
+
+// The ingestion launcher starts provider-owned backing services (pgvector,
+// Hatchet, Azurite, Milvus) on ports the isolated configuration does not
+// model. The plan records the exact missing bindings instead of inventing
+// port allocations. All other lifecycle commands are fully derivable.
+const INGESTION_DEPLOYMENT_INPUTS = [
+  'state-dsn',
+  'pgvector-port',
+  'hatchet-http-port',
+  'hatchet-grpc-port',
+  'milvus-port',
+  'milvus-attu-port',
+  'openai-base-url',
+]
+
+function unboundDeployment(requiredInputs) {
   return {
-    // Explicit preparation is supported, but startup still requires proof
-    // that its storage belongs to this stack and setup completed successfully.
-    blockedProviders: [
-      {
-        name: 'docProcessing',
-        reason: 'isolated-storage-preparation-unverified',
-        requires: ['isolated-prepared-storage', 'local-api-key'],
-        command: docProcessingCommand([
-          'uvicorn',
-          'doc_processing.main:app',
-          '--host',
-          '127.0.0.1',
-          '--port',
-          port('docProcessing'),
-          '--workers',
-          '1',
-        ]),
-      },
-      {
-        name: 'docProcessing-hatchet-worker',
-        reason: 'isolated-storage-preparation-unverified',
-        requires: ['isolated-prepared-storage', 'local-api-key'],
-        command: docProcessingCommand(['doc-processing-hatchet-worker']),
-      },
-      {
-        name: 'docProcessing-callback-worker',
-        reason: 'isolated-storage-preparation-unverified',
-        requires: ['isolated-prepared-storage', 'local-api-key'],
-        command: docProcessingCommand(['doc-processing-callback-worker']),
-      },
+    blocked: true,
+    reason: 'unbound-deployment-inputs',
+    requires: [...requiredInputs],
+  }
+}
+
+export function providerCommands(config) {
+  const identity = config.project?.identity
+  if (!identity || !config.providers) {
+    throw new Error(
+      'Launcher bindings require the isolated local-KB configuration.'
+    )
+  }
+  const stateRoot = config.project.runtimeCheckoutPath + '/.local-kb/state'
+  const endpointPort = (name) => new URL(config.endpoints[name].url).port
+  const revision = (name) => config.providers[name].revision
+  const stateDir = (name) => join(stateRoot, name)
+  // The ingestion launcher requires the config directory to be the state
+  // directory's project-configs child; the same convention keeps every
+  // provider's derived configuration in one owned place.
+  const configDir = (name) => join(stateDir(name), 'project-configs')
+  const command = (name, args) => ({
+    cwd: config.providers[name].sourcePath,
+    executable: 'uv',
+    args: [
+      'run',
+      '--frozen',
+      '--no-sync',
+      'python',
+      'scripts/local_launcher.py',
+      ...args,
     ],
-    setup: {
-      docProcessing: docProcessingCommand([
-        'python',
-        '-m',
-        'doc_processing.setup',
+    env: { PYTHON_DOTENV_DISABLED: '1' },
+  })
+
+  const ingestionState = stateDir('ingestion')
+  const ingestionIdentity = [
+    '--strict',
+    '--instance',
+    identity,
+    '--state-dir',
+    ingestionState,
+    '--config-dir',
+    configDir('ingestion'),
+  ]
+  const ingestion = {
+    lifecycle: {
+      setup: unboundDeployment(INGESTION_DEPLOYMENT_INPUTS),
+      start: unboundDeployment(INGESTION_DEPLOYMENT_INPUTS),
+      status: command('ingestion', ['status', ...ingestionIdentity]),
+      stop: command('ingestion', ['stop', ...ingestionIdentity]),
+    },
+  }
+
+  const scrapingState = stateDir('scraping')
+  const scrapingIdentity = [
+    '--instance',
+    identity,
+    '--state-root',
+    scrapingState,
+  ]
+  const scraping = {
+    lifecycle: {
+      setup: command('scraping', [
+        'setup',
+        ...scrapingIdentity,
+        '--api-port',
+        endpointPort('scraping'),
+        '--crawl4ai-port',
+        endpointPort('crawl4ai'),
       ]),
-      migrations: uv(ingestionRoot, [
-        '--project',
-        ingestionApi,
-        'python',
-        '-m',
-        'ingestion_api.migrations',
+      start: command('scraping', ['start', ...scrapingIdentity]),
+      status: command('scraping', ['status', ...scrapingIdentity]),
+      stop: command('scraping', ['stop', ...scrapingIdentity]),
+    },
+  }
+
+  const docProcessingState = stateDir('docProcessing')
+  const docProcessingArgs = (verb) => [
+    verb,
+    '--state-root',
+    docProcessingState,
+    '--instance-id',
+    identity,
+    '--source-revision',
+    revision('docProcessing'),
+  ]
+  const docProcessing = {
+    lifecycle: {
+      setup: command('docProcessing', [
+        ...docProcessingArgs('setup'),
+        '--owner-id',
+        identity,
+      ]),
+      start: command('docProcessing', [
+        ...docProcessingArgs('start'),
+        '--owner-id',
+        identity,
+        '--mode',
+        'worker',
+      ]),
+      status: command('docProcessing', docProcessingArgs('status')),
+      stop: command('docProcessing', [
+        ...docProcessingArgs('stop'),
+        '--owner-id',
+        identity,
       ]),
     },
-    start: [
-      {
-        name: 'ingestion-api',
-        ...uv(
-          ingestionRoot,
-          [
-            '--project',
-            ingestionApi,
-            'uvicorn',
-            'ingestion_api.app:create_app',
-            '--factory',
-            '--host',
-            '127.0.0.1',
-            '--port',
-            port('ingestion'),
-          ],
-          { INGESTION_STATE_ENSURE_SCHEMA: 'false' }
-        ),
-      },
-      ...[
-        'cpu_worker',
-        'db_worker',
-        'durable_control_worker',
-        'llm_worker',
-        'embedding_worker',
-        'catalog_apply_worker',
-        'resource_dispatcher',
-        'resource_fetch_worker',
-      ].map((worker) => ({
-        name: worker,
-        ...uv(
-          ingestionRoot,
-          [
-            '--project',
-            ingestion,
-            'python',
-            '-m',
-            `ingestion.workers.${worker}`,
-          ],
-          { INGESTION_STATE_ENSURE_SCHEMA: 'false' }
-        ),
-      })),
-      {
-        name: 'callback',
-        ...uv(
-          ingestionRoot,
-          [
-            '--project',
-            ingestionApi,
-            'python',
-            '-m',
-            'ingestion_api.producer_webhook_main',
-          ],
-          { INGESTION_PRODUCER_WEBHOOK_METRICS_PORT: port('callback') }
-        ),
-      },
-      {
-        name: 'scraping',
-        ...uv(root('scraping'), ['web-scraping-api'], {
-          UVICORN_HOST: '127.0.0.1',
-          UVICORN_PORT: port('scraping'),
-          WEB_SCRAPING_EXECUTION_MODE: 'inline',
-          WEB_SCRAPING_CACHE_SWEEP_INTERVAL_SECONDS: '0',
-        }),
-      },
-      {
-        name: 'retrieval',
-        ...uv(
-          root('retrieval'),
-          [
-            'uvicorn',
-            '--app-dir',
-            'src',
-            'mcp_server:create_app',
-            '--factory',
-            '--host',
-            '127.0.0.1',
-            '--port',
-            port('retrieval'),
-          ],
-          {
-            DOC_QUERY_RESPONSE_MODE: 'documents',
-            RETRIEVAL_QUERY_EXPANSION_ENABLED: 'false',
-            RETRIEVAL_MAX_RETRIES: '0',
-            RERANKER_TYPE: 'none',
-            HAYSTACK_CONTENT_TRACING_ENABLED: 'false',
-            LANGFUSE_TRACING_ENABLED: 'false',
-          }
-        ),
-      },
-    ],
+  }
+
+  const retrievalState = stateDir('retrieval')
+  const retrievalArgs = (verb) => [
+    verb,
+    '--instance',
+    identity,
+    '--source-revision',
+    revision('retrieval'),
+    '--state-dir',
+    retrievalState,
+    '--config-dir',
+    configDir('retrieval'),
+    '--bind',
+    '127.0.0.1',
+    '--port',
+    endpointPort('retrieval'),
+  ]
+  const retrieval = {
+    lifecycle: {
+      setup: command('retrieval', retrievalArgs('setup')),
+      start: command('retrieval', retrievalArgs('start')),
+      status: command('retrieval', retrievalArgs('status')),
+      stop: command('retrieval', retrievalArgs('stop')),
+    },
+  }
+
+  return {
+    lifecycleOrder: [...LIFECYCLE_ORDER],
+    stopOrder: [...LIFECYCLE_ORDER].reverse(),
+    providers: {
+      ingestion,
+      scraping,
+      docProcessing,
+      retrieval,
+    },
   }
 }

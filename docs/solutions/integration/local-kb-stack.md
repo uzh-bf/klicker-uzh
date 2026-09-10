@@ -21,11 +21,18 @@ health response therefore does not establish end-to-end readiness.
 
 ## Current tooling boundary
 
-`util/local-kb-stack.mjs plan` describes provider commands using explicit provider
-paths in the environment. It returns exit code 2 and `executable: false` because
-service rendering and lifecycle integration are incomplete. It does not run the
-commands it prints. `status` probes the selected endpoints but never promotes
-reachability to full readiness.
+Provider lifecycle commands are launcher invocations. The isolated plan binds
+each provider's launcher with an explicit instance, source revision and private
+state path, orders setup, and reverses stop. Ingestion setup and start remain
+blocked until the provider-owned backing allocations it requires (state DSN,
+pgvector, Hatchet, Milvus and OpenAI-compatible bindings) are supplied
+explicitly; ingestion status and stop and every scraping, Doc Processing and
+Doc Query command are fully derivable. The environment-only
+`util/local-kb-stack.mjs plan` cannot derive those bindings and reports
+`unsupported: isolated-configuration-required`. Both plan forms return exit
+code 2 with `executable: false`; no plan runs the commands it prints.
+`status` probes the selected endpoints but never promotes reachability to full
+readiness.
 
 To inspect a full isolated configuration, use an explicit JSON input matching
 `resolveIsolatedConfig` in `util/local-kb/isolated-config.mjs`:

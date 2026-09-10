@@ -60,6 +60,16 @@ not runtime state; Git retains the removed files. Provider implementation is
 owned by Popper for ingestion and Banach for Doc Processing. Main owns consumer
 integration. No runtime startup, shutdown or work submission occurred.
 
+2026-09-10 progress: provider facades are committed in their repositories -
+data-ingestion tasks published as MR !136 (task commits patch-equivalent on the
+branch; remote also carries upstream Office fixes), Doc Processing worker mode
+at b6448bf with completed simplification and risk reviews, scraping facade at
+1771693, Doc Query at d6e13ae awaiting a captured integrated review. The
+consumer configuration model now records milvus, milvusMetadata and
+objectBacking under ingestion ownership with retrieval as vector consumer; all
+62 local-stack tests pass. The thin launcher-invocation integration, provider
+final reviews, draft publication and target-integration ruling remain.
+
 ### Current delivery ownership — 2026-09-09
 
 The target integration is committed at `54814574493fd98990733c593e90f22cff976203`.

@@ -138,7 +138,14 @@ test('config plan resolves a full synthetic input and rejects remote endpoints s
   assert.ok(plan.dependencyGraph.nodes.docQuery)
   assert.ok(plan.mutableState.docQuery)
   assert.equal(plan.sourceMounts.retrieval.readOnly, true)
-  assert.ok(plan.providerCommands.start.length > 0)
+  assert.equal(
+    plan.providerCommands.providers.ingestion.lifecycle.setup.blocked,
+    true
+  )
+  assert.equal(
+    plan.providerCommands.providers.docProcessing.lifecycle.start.cwd,
+    plan.providers.docProcessing.sourcePath
+  )
   assert.deepEqual(plan.backingCompose.services.hatchet.command, ['start'])
   assert.equal(
     plan.backingCompose.volumes.postgres.name,

@@ -21,9 +21,9 @@ import { isDeepStrictEqual } from 'node:util'
  */
 
 const PROVIDER_STATE_KEYS = {
-  ingestion: ['ingestionOutbox'],
+  ingestion: ['ingestionOutbox', 'milvus', 'milvusMetadata', 'objectBacking'],
   scraping: ['scraperCache'],
-  retrieval: ['milvus', 'milvusMetadata', 'objectBacking', 'docQuery'],
+  retrieval: ['docQuery'],
   docProcessing: ['documentProcessing'],
 }
 const PROVIDER_NAMES = Object.keys(PROVIDER_STATE_KEYS)
@@ -37,9 +37,9 @@ const STATE_OWNERS = {
   blob: 'blob',
   ingestionOutbox: 'ingestion',
   scraperCache: 'scraping',
-  milvus: 'docQuery',
-  milvusMetadata: 'docQuery',
-  objectBacking: 'docQuery',
+  milvus: 'ingestion',
+  milvusMetadata: 'ingestion',
+  objectBacking: 'ingestion',
   callback: 'callback',
   docQuery: 'docQuery',
   documentProcessing: 'docProcessing',
@@ -151,16 +151,16 @@ const GRAPH_NODES = [
     ['objectBacking', 'milvusMetadata'],
     'milvus',
     'milvus',
-    'retrieval',
+    'ingestion',
   ],
-  ['milvusMetadata', 'state-service', [], null, 'milvusMetadata', 'retrieval'],
+  ['milvusMetadata', 'state-service', [], null, 'milvusMetadata', 'ingestion'],
   [
     'objectBacking',
     'state-service',
     [],
     'objectBacking',
     'objectBacking',
-    'retrieval',
+    'ingestion',
   ],
   [
     'docQuery',

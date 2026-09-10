@@ -185,6 +185,12 @@ test('resolves two independent stacks with complete provider and state ownership
   assert.equal(first.providers.docProcessing.identity, 'docProcessing')
   assert.equal(first.providers.docProcessing.clean, true)
   assert.equal(first.mutableState.documentProcessing.owner, 'docProcessing')
+  for (const name of ['milvus', 'milvusMetadata', 'objectBacking']) {
+    assert.equal(first.mutableState[name].owner, 'ingestion')
+    assert.equal(first.dependencyGraph.nodes[name].provider, 'ingestion')
+    assert.ok(first.providers.ingestion.stateKeys.includes(name))
+    assert.ok(!first.providers.retrieval.stateKeys.includes(name))
+  }
   assert.equal(first.mutableState.documentProcessing.generated, true)
   assert.equal(first.sourceMounts.docProcessing.readOnly, true)
   assert.ok(first.roots.some(({ name }) => name === 'docProcessing'))
@@ -462,11 +468,26 @@ test('keeps roots and health compatible with supported provider commands', () =>
   const config = resolveIsolatedConfig(makeInput('a'))
   const commands = providerCommands(config)
 
-  assert.ok(commands.setup.migrations.args.includes('ingestion_api.migrations'))
-  assert.ok(commands.start.length >= 12)
+  assert.deepEqual(commands.lifecycleOrder, [
+    'ingestion',
+    'scraping',
+    'docProcessing',
+    'retrieval',
+  ])
+  assert.deepEqual(commands.stopOrder, [
+    'retrieval',
+    'docProcessing',
+    'scraping',
+    'ingestion',
+  ])
+  assert.equal(commands.providers.ingestion.lifecycle.setup.blocked, true)
+  assert.equal(
+    commands.providers.retrieval.lifecycle.start.cwd,
+    config.providers.retrieval.sourcePath
+  )
   assert.ok(
-    commands.start.every(
-      (command) => command.env.PYTHON_DOTENV_DISABLED === '1'
+    commands.providers.retrieval.lifecycle.start.args.includes(
+      'scripts/local_launcher.py'
     )
   )
   assert.equal(
