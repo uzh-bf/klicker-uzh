@@ -1139,9 +1139,7 @@ export async function POST(
     const toolNames = Object.keys(mcpTools || {})
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? docQueryToolName
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await failOrDiscardUnstartedClaim('mcp.quizzer')
