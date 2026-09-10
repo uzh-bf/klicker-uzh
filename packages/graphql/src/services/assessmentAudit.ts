@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
-  AzureTableAppendSink,
   AzureImmutableAuditMediaStore,
+  AzureTableAppendSink,
   baselinePartPayloadSchema,
   collectAssessmentAuditMonitorSnapshot,
   createAzureAuditClients,
@@ -11,8 +11,8 @@ import {
   parseCanonicalAuditEnvelope,
   readAzureAuditStorageConfig,
   recordAssessmentAuditDispatcherSuccess,
-  recordAssessmentAuditMonitorSuccess,
   recordAssessmentAuditMediaPolicySuccess,
+  recordAssessmentAuditMonitorSuccess,
   renewActiveAssessmentMediaPolicies,
 } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'

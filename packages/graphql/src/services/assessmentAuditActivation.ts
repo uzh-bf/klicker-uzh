@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import {
-  AzureBlobAuditMediaSource,
-  AzureImmutableAuditMediaStore,
   type AuditActor,
   type AuditEventDraft,
   type AuditMediaSource,
   type AuditTransactionClient,
+  AzureBlobAuditMediaSource,
+  AzureImmutableAuditMediaStore,
   type BaselinePartPayload,
   type BaselineRootPayload,
   buildAssessmentBaseline,
+  canonicalizeJson,
   captureAssessmentMedia,
   createAzureAuditClients,
   createAzureAuditCredential,
@@ -16,18 +17,17 @@ import {
   discoverBaselineMediaReferences,
   emitAuditEvents,
   extractBaselineMediaUrls,
-  canonicalizeJson,
   type ImmutableAuditMediaStore,
+  type RolloutBaselinePayload,
   readAzureAuditStorageConfig,
   retentionBatchFor,
-  type RolloutBaselinePayload,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
-import * as DB from '@klicker-uzh/prisma/client'
 import type { Prisma } from '@klicker-uzh/prisma/client'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
-  assessmentBaselineMarkdown,
   type AssessmentBaselineSnapshot,
+  assessmentBaselineMarkdown,
   buildAssessmentBaselineContents,
 } from './assessmentAuditBaseline.js'
 

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { parseCanonicalAuditEnvelope } from '@klicker-uzh/audit'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import type { AssessmentAuditMediaDependencies } from '../src/services/assessmentAuditActivation.js'
@@ -29,12 +29,14 @@ describe('assessment audit rollout', () => {
   let userIds: string[]
   let liveQuizIds: string[]
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await requireDisposableDatabase(prisma)
     userIds = []
     liveQuizIds = []
   })
 
   afterEach(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.assessmentAuditOutboxEvent.deleteMany({
       where: { liveQuizId: { in: liveQuizIds } },
     })

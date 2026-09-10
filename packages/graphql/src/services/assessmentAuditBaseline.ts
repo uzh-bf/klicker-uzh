@@ -1,5 +1,5 @@
-import { hashCanonicalValue } from '@klicker-uzh/audit'
 import type { AssessmentBaselineContent } from '@klicker-uzh/audit'
+import { hashCanonicalValue } from '@klicker-uzh/audit'
 import type {
   ElementData,
   ElementInstanceOptions,

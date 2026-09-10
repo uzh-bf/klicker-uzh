@@ -1,11 +1,11 @@
 import { type TokenCredential } from '@azure/identity'
 import { BlobClient } from '@azure/storage-blob'
+import type { OwnedBaselineMediaReference } from '../baseline/media-references.js'
 import type {
   AuditMediaSource,
   AuditMediaSourceResult,
 } from '../media/capture.js'
 import { assertAllowedKlickerMediaSource } from '../media/content-address.js'
-import type { OwnedBaselineMediaReference } from '../baseline/media-references.js'
 
 export class AzureBlobAuditMediaSource implements AuditMediaSource {
   private readonly credential: TokenCredential

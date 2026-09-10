@@ -6,12 +6,12 @@ import {
   type RolloutBaselinePayload,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
-import * as DB from '@klicker-uzh/prisma/client'
 import type { Prisma } from '@klicker-uzh/prisma/client'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
-  activateAssessmentAudit,
   type AssessmentAuditMediaDependencies,
   type AssessmentAuditRolloutObservation,
+  activateAssessmentAudit,
   assessmentIsSelectedForAuditActivation,
   readAssessmentAuditRolloutConfig,
 } from './assessmentAuditActivation.js'

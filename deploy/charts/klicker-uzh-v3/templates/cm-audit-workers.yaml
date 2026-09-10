@@ -32,6 +32,7 @@ data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
   HATCHET_WORKFLOWS: renewAssessmentAuditMediaPolicies
+  HATCHET_WORKER_HEALTH_PORT: '8001'
   ASSESSMENT_AUDIT_WORKER_ENABLED: 'true'
   ASSESSMENT_AUDIT_WORKER_ROLE: media-policy
   ASSESSMENT_AUDIT_METRICS_PORT: '9464'

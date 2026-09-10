@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { DisplayMode, type ElementData } from '@klicker-uzh/types'
 import { describe, expect, it } from 'vitest'
-import { buildAssessmentBaselineContents } from '../src/services/assessmentAuditBaseline.js'
 import {
   assessmentIsSelectedForAuditActivation,
   readAssessmentAuditRolloutConfig,
 } from '../src/services/assessmentAuditActivation.js'
+import { buildAssessmentBaselineContents } from '../src/services/assessmentAuditBaseline.js'
 
 describe('assessment audit baseline snapshot mapping', () => {
   it('whitelists effective assessment, scoring, eligibility and permission state', () => {

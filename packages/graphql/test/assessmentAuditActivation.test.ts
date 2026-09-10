@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import {
-  type EventType,
   buildAssessmentBaselinePart,
   createTrustedAuditContext,
+  type EventType,
   emitAuditEvents,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { activeAssessmentMediaReferences } from '../src/services/assessmentAudit.js'
 import {
   type AssessmentAuditMediaDependencies,
   persistPreparedAssessmentAuditActivation,
@@ -15,7 +16,6 @@ import {
   prepareAssessmentAuditActivation,
   prepareReopeningAssessmentAuditActivation,
 } from '../src/services/assessmentAuditActivation.js'
-import { activeAssessmentMediaReferences } from '../src/services/assessmentAudit.js'
 
 const unavailableMedia: AssessmentAuditMediaDependencies = {
   allowedHosts: ['test.blob.core.windows.net'],
@@ -36,6 +36,7 @@ describe('assessment audit activation', () => {
   let liveQuizId: string
 
   beforeEach(async () => {
+    await requireDisposableDatabase(prisma)
     userId = randomUUID()
     liveQuizId = randomUUID()
     const identity = userId.replaceAll('-', '')
@@ -61,6 +62,7 @@ describe('assessment audit activation', () => {
   })
 
   afterEach(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.assessmentAuditOutboxEvent.deleteMany({
       where: { liveQuizId },
     })
