@@ -192,14 +192,29 @@ async function expectRecoveredSCQuestionContent(page: Page, title: string) {
 
 async function clearAndTypeEditor(page: Page, testId: string, text: string) {
   const editor = page.getByTestId(testId)
+  const editorText = () =>
+    editor.evaluate((el) => {
+      const clone = el.cloneNode(true) as HTMLElement
+      clone
+        .querySelectorAll('[data-slate-placeholder]')
+        .forEach((node) => node.remove())
+      return (clone.textContent ?? '').replace(/[\u200b\ufeff]/g, '').trim()
+    })
   await editor.click()
   await editor.clear()
-  // The Slate model settles asynchronously; typing before the editor is
-  // verifiably empty can append to the previous content (CI observed saved
-  // values like "Choice 2Choice NEW 2").
-  await expect(editor).toHaveText('')
+  // Slate can miss a single select-all + delete when its selection state is
+  // stale, leaving the previous content in place. Retry the deletion until
+  // the editor is verifiably empty before typing (CI observed saved values
+  // like "Choice 2Choice NEW 2" when typing started on unremoved content).
+  await expect
+    .poll(async () => {
+      await page.keyboard.press('ControlOrMeta+a')
+      await page.keyboard.press('Backspace')
+      return editorText()
+    })
+    .toBe('')
   await editor.pressSequentially(text)
-  await expect(editor).toHaveText(text)
+  await expect.poll(editorText).toBe(text)
 }
 
 async function saveElementModal(page: Page) {
