@@ -200,6 +200,12 @@ const configPlanLimitations = [
     description:
       'Config plan runs no provider commands, probes, filesystem writes, setup, or lifecycle operations.',
   },
+  {
+    id: 'provider-launcher-projection',
+    status: 'unverified',
+    description:
+      'providerCommands projects each launcher invocation from the contract recorded in util/local-kb/provider-launcher-contract.mjs; config plan does not probe a provider checkout, and the consumer-owned Compose assembly remains the executable lifecycle until it is retired.',
+  },
 ]
 
 function readConfigPlanInput(path) {

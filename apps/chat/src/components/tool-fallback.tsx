@@ -228,6 +228,7 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
       <button
         type="button"
         data-cy="chat-tool-call-toggle"
+        data-tool-kind={isDocQuery ? 'doc-query' : 'other'}
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
         className={twMerge(

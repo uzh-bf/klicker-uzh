@@ -43,10 +43,9 @@ async function assertCitationRendering(page: Page) {
 
   const retrievalChip = page
     .getByTestId('chat-tool-call-toggle')
-    .filter({ has: page.locator('svg.lucide-search') })
+    .and(page.locator('[data-tool-kind="doc-query"]'))
     .first()
   await expect(retrievalChip).toBeVisible()
-  await expect(retrievalChip.locator('svg.lucide-search')).toHaveCount(1)
 
   const citation = page.getByTestId('chat-citation')
   await expect(citation).toHaveCount(1)

@@ -436,10 +436,6 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       ...runtime.environment,
       [HOST_RUNNER_ENV]: '1',
     }
-    preserveLocalDatabase({
-      ...hostEnvironment,
-      KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: '0',
-    })
     assertPlaywrightHostBoundary({
       cwd: dependencies.cwd,
       env: hostEnvironment,

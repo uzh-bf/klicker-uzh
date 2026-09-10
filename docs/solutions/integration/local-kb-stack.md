@@ -21,13 +21,23 @@ health response therefore does not establish end-to-end readiness.
 
 ## Current tooling boundary
 
-Provider lifecycle commands are launcher invocations. The isolated plan binds
-each provider's launcher with an explicit instance, source revision and private
-state path, orders setup, and reverses stop. Ingestion setup and start remain
-blocked until the provider-owned backing allocations it requires (state DSN,
-pgvector, Hatchet, Milvus and OpenAI-compatible bindings) are supplied
-explicitly; ingestion status and stop and every scraping, Doc Processing and
-Doc Query command are fully derivable. The environment-only
+The isolated plan projects provider lifecycle commands as launcher invocations:
+each launcher is bound with an explicit instance, source revision and private
+state path, setup is ordered from the declared dependency graph, and stop is
+reversed. The projection is not yet the executable lifecycle, because the
+consumer-owned Compose assembly in `util/local-kb/preparation.mjs` still starts
+and stops the provider containers. Every plan form returns `executable: false`;
+retiring that assembly is the condition for making the launcher bindings
+authoritative. The flag contract is recorded from the provider facades at fixed
+revisions in `util/local-kb/provider-launcher-contract.mjs` rather than probed
+live.
+
+Ingestion setup and start remain blocked until the provider-owned backing
+allocations their launcher requires (state DSN, pgvector, Hatchet, Azurite,
+Milvus and OpenAI-compatible bindings) are supplied explicitly. The Doc Query
+commands that validate a vector-store URI and a model gateway from their own
+environment are blocked for the same reason. Ingestion status and stop, plus
+every scraping and Doc Processing command, are derivable. The environment-only
 `util/local-kb-stack.mjs plan` cannot derive those bindings and reports
 `unsupported: isolated-configuration-required`. Both plan forms return exit
 code 2 with `executable: false`; no plan runs the commands it prints.

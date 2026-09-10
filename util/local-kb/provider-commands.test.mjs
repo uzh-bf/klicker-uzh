@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { resolveLocalKbConfig } from '../local-kb-stack.mjs'
 import { resolveIsolatedConfig } from './isolated-config.mjs'
-import { providerCommands } from './provider-commands.mjs'
+import { IDENTITY_FLAGS, providerCommands } from './provider-commands.mjs'
+import { LAUNCHER_CONTRACTS } from './provider-launcher-contract.mjs'
 
 const providerRevisions = {
   ingestion: 'd'.repeat(40),
@@ -69,6 +70,7 @@ test('binds explicit launcher identity and revision for derivable providers', ()
     const lifecycle = commands.providers[provider].lifecycle
     for (const verb of ['setup', 'start', 'status', 'stop']) {
       const entry = lifecycle[verb]
+      if (entry.blocked) continue
       assert.equal(entry.cwd, config.providers[provider].sourcePath)
       assert.equal(entry.executable, 'uv')
       assert.ok(entry.args.includes('--frozen'))
@@ -86,15 +88,22 @@ test('binds explicit launcher identity and revision for derivable providers', ()
     '--mode',
     'worker',
   ])
-  const retrievalSetup = commands.providers.retrieval.lifecycle.setup.args
-  assert.ok(retrievalSetup.includes(providerRevisions.retrieval))
+  const retrievalStop = commands.providers.retrieval.lifecycle.stop.args
+  assert.ok(retrievalStop.includes(providerRevisions.retrieval))
   const retrievalPort = new URL(config.endpoints.retrieval.url).port
-  assert.deepEqual(retrievalSetup.slice(retrievalSetup.indexOf('--bind')), [
+  assert.deepEqual(retrievalStop.slice(retrievalStop.indexOf('--bind')), [
     '--bind',
     '127.0.0.1',
     '--port',
     retrievalPort,
   ])
+  // The retrieval launcher serves the tool registry the consumer writes into
+  // .local-kb/doc-query-tools, not a state-directory child.
+  const retrievalConfigIndex = retrievalStop.indexOf('--config-dir')
+  assert.deepEqual(
+    retrievalStop.slice(retrievalConfigIndex, retrievalConfigIndex + 2),
+    ['--config-dir', '/synthetic/checkouts/a/runtime/.local-kb/doc-query-tools']
+  )
   const scrapingSetup = commands.providers.scraping.lifecycle.setup.args
   assert.deepEqual(scrapingSetup.slice(scrapingSetup.indexOf('--api-port')), [
     '--api-port',
@@ -116,20 +125,13 @@ test('blocks ingestion deployment on unmodeled provider-owned inputs', () => {
   for (const verb of ['setup', 'start']) {
     assert.equal(lifecycle[verb].blocked, true)
     assert.equal(lifecycle[verb].reason, 'unbound-deployment-inputs')
-    assert.deepEqual(lifecycle[verb].requires, [
-      'state-dsn',
-      'pgvector-port',
-      'hatchet-http-port',
-      'hatchet-grpc-port',
-      'milvus-port',
-      'milvus-attu-port',
-      'openai-base-url',
-    ])
   }
   for (const verb of ['status', 'stop']) {
     const args = lifecycle[verb].args
-    assert.equal(args[5], verb)
-    assert.ok(args.includes('--strict'))
+    // The launcher declares --strict on its top-level parser, which argparse
+    // requires before the verb.
+    assert.equal(args[5], '--strict')
+    assert.equal(args[6], verb)
     assert.ok(args.includes(config.project.identity))
   }
   const stateDir = '/synthetic/checkouts/b/runtime/.local-kb/state/ingestion'
@@ -139,20 +141,28 @@ test('blocks ingestion deployment on unmodeled provider-owned inputs', () => {
   )
 })
 
-test('orders setup and reverses stop without migration or state removal', () => {
-  const { commands } = resolveFixture('a')
-  assert.deepEqual(commands.lifecycleOrder, [
+test('orders setup from the dependency graph and reverses stop', () => {
+  const { config, commands } = resolveFixture('a')
+  const order = commands.lifecycleOrder
+  assert.deepEqual(order, [
     'scraping',
-    'ingestion',
-    'docProcessing',
-    'retrieval',
-  ])
-  assert.deepEqual(commands.stopOrder, [
-    'retrieval',
     'docProcessing',
     'ingestion',
-    'scraping',
+    'retrieval',
   ])
+  assert.deepEqual([...order].reverse(), commands.stopOrder)
+  const nodes = config.dependencyGraph.nodes
+  for (const [name, node] of Object.entries(nodes)) {
+    if (!node.provider) continue
+    for (const dependency of node.dependsOn) {
+      const source = nodes[dependency]?.provider
+      if (!source || source === node.provider) continue
+      assert.ok(
+        order.indexOf(source) < order.indexOf(node.provider),
+        name + ' depends on ' + source + ', which must start first'
+      )
+    }
+  }
   for (const provider of Object.values(commands.providers)) {
     for (const entry of Object.values(provider.lifecycle)) {
       if (entry.blocked) continue
@@ -161,6 +171,75 @@ test('orders setup and reverses stop without migration or state removal', () => 
       assert.equal(/ compose down | volume rm | docker rm /.test(argv), false)
     }
   }
+})
+
+test('emits only flags the provider facade declares', () => {
+  const { commands } = resolveFixture('a')
+  for (const [name, provider] of Object.entries(commands.providers)) {
+    const contract = LAUNCHER_CONTRACTS[name]
+    for (const [verb, entry] of Object.entries(provider.lifecycle)) {
+      if (entry.blocked) continue
+      const accepted = contract.verbs[verb]
+      // Flags before the facade path belong to the uv invocation.
+      const cli = entry.args.slice(
+        entry.args.indexOf('scripts/local_launcher.py') + 1
+      )
+      for (const flag of cli.filter((arg) => arg.startsWith('--'))) {
+        assert.ok(
+          contract.globalFlags.includes(flag) ||
+            accepted.required.includes(flag) ||
+            accepted.optional.includes(flag),
+          name + ' ' + verb + ' emits undeclared flag ' + flag
+        )
+      }
+      for (const flag of contract.globalFlags)
+        assert.ok(
+          entry.args.indexOf(flag) < entry.args.indexOf(verb),
+          name + ' ' + verb + ' must place ' + flag + ' before the verb'
+        )
+    }
+  }
+})
+
+test('emits every provider-required flag for derivable commands', () => {
+  const { commands } = resolveFixture('a')
+  for (const [name, provider] of Object.entries(commands.providers)) {
+    const contract = LAUNCHER_CONTRACTS[name]
+    for (const [verb, entry] of Object.entries(provider.lifecycle)) {
+      if (entry.blocked) continue
+      for (const flag of contract.verbs[verb].required)
+        assert.ok(
+          entry.args.includes(flag),
+          name + ' ' + verb + ' omits required ' + flag
+        )
+    }
+  }
+})
+
+test('records unbound ingestion inputs beyond the launcher identity', () => {
+  const { commands } = resolveFixture('a')
+  const ingestion = commands.providers.ingestion.lifecycle
+  const setupInputs = LAUNCHER_CONTRACTS.ingestion.verbs.setup.required
+    .filter((flag) => !IDENTITY_FLAGS.has(flag))
+    .map((flag) => flag.slice(2))
+  assert.ok(setupInputs.length > 0)
+  for (const verb of ['setup', 'start']) {
+    // Start cannot run before setup established the same bindings.
+    assert.deepEqual(ingestion[verb].requires, setupInputs)
+  }
+})
+
+test('records the retrieval bindings its launcher validates', () => {
+  const { commands } = resolveFixture('a')
+  const lifecycle = commands.providers.retrieval.lifecycle
+  for (const verb of ['setup', 'start', 'status']) {
+    assert.equal(lifecycle[verb].blocked, true)
+    assert.equal(lifecycle[verb].reason, 'unbound-deployment-inputs')
+    assert.deepEqual(lifecycle[verb].requires, [
+      ...LAUNCHER_CONTRACTS.retrieval.environment,
+    ])
+  }
+  assert.equal(lifecycle.stop.blocked, undefined)
 })
 
 test('requires the isolated configuration for launcher bindings', () => {

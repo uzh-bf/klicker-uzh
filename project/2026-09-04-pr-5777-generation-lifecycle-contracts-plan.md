@@ -98,6 +98,29 @@ Query retry f258c2d..d6e13ae, scraping simplifier, risk and final on
 the private UZH GitLab provider diffs to an external reviewer route -
 then provider pushes, draft MRs and the separately gated
 target-integration ruling.
+2026-09-10 final review and corrections: the integrated final review on
+c939ab34..8c91a03166 returned findings and all six were dispositioned. The
+plan no longer claims to have replaced the consumer-owned Compose assembly.
+provider-commands.mjs, the local-KB stack solution page, ADR 0018 and the
+slice receipt now state that the launcher bindings are a non-executable
+projection while the Compose path remains the lifecycle that runs, and
+configPlan.limitations records it. The flag contract is recorded from the
+provider facades in util/local-kb/provider-launcher-contract.mjs, which
+exposed three real contract defects: ingestion --strict was emitted after the
+verb where argparse rejects it, the ingestion requires list omitted
+web-scraping-base-url, azurite-port and milvus-health-port, and retrieval
+--config-dir pointed at an empty state-directory child instead of the
+.local-kb/doc-query-tools registry the consumer populates. Retrieval setup,
+start and status are now recorded as blocked on the vector-store URI and
+model gateway its launcher validates. lifecycleOrder is derived topologically
+from dependencyGraph as scraping, docProcessing, ingestion, retrieval, which
+satisfies the ingestionWorkers edges to both scraping and documentProcessing.
+The dead KLICKER_PLAYWRIGHT_PRESERVE_DATABASE guard in the retained-citations
+branch of util/run-playwright-host.mjs was removed, and the retained spec
+selects the retrieval chip through an app-owned data-tool-kind attribute.
+70/70 local-stack tests, Biome and Prettier pass on the corrected head.
+Remaining gates: provider-side final reviews, provider pushes and draft MRs,
+then the separately gated target-integration ruling.
 
 ### Current delivery ownership — 2026-09-09
 

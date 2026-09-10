@@ -1,37 +1,96 @@
 import { join } from 'node:path'
 
-// Provider-owned launchers are the supported local lifecycle contract.
-// Klicker assembles explicit launcher invocations with instance, source
-// revision and private state bindings; it owns no provider service assembly.
-// Setup alone initializes schemas and credentials, so start commands never
-// migrate and stop commands never remove state.
-const LIFECYCLE_ORDER = ['scraping', 'ingestion', 'docProcessing', 'retrieval']
-
-// The ingestion launcher starts provider-owned backing services (pgvector,
-// Hatchet, Azurite, Milvus) on ports the isolated configuration does not
-// model. The plan records the exact missing bindings instead of inventing
-// port allocations. All other lifecycle commands are fully derivable.
-const INGESTION_DEPLOYMENT_INPUTS = [
-  'state-dsn',
-  'pgvector-port',
-  'hatchet-http-port',
-  'hatchet-grpc-port',
-  'milvus-port',
-  'milvus-attu-port',
-  'openai-base-url',
+// The isolated plan projects each provider's supported local lifecycle as an
+// explicit launcher invocation bound to an instance, a source revision and a
+// private state path. The projection is not yet the executable lifecycle: the
+// consumer-owned Compose assembly in ./preparation.mjs still starts and stops
+// the provider containers, and `configPlan` marks its output non-executable.
+// Retiring that assembly is the condition for making these bindings
+// authoritative. Setup alone initializes schemas and credentials, so start
+// commands never migrate and stop commands never remove state.
+const PROVIDER_BASE_ORDER = [
+  'scraping',
+  'docProcessing',
+  'ingestion',
+  'retrieval',
 ]
 
-function unboundDeployment() {
+// Flags every launcher derives from the isolated configuration itself.
+export const IDENTITY_FLAGS = new Set([
+  '--instance',
+  '--state-dir',
+  '--config-dir',
+  '--source-revision',
+  '--state-root',
+  '--instance-id',
+])
+
+// The ingestion launcher starts provider-owned backing services (pgvector,
+// Hatchet, Azurite, Milvus) on allocations the isolated configuration does not
+// model, and needs the scraping base URL and model gateway it does not carry.
+// The plan records the exact missing bindings instead of inventing values.
+const INGESTION_DEPLOYMENT_INPUTS = [
+  'state-dsn',
+  'web-scraping-base-url',
+  'openai-base-url',
+  'hatchet-http-port',
+  'hatchet-grpc-port',
+  'pgvector-port',
+  'azurite-port',
+  'milvus-port',
+  'milvus-health-port',
+  'milvus-attu-port',
+]
+
+// The retrieval launcher validates a vector-store URI and an OpenAI-compatible
+// base URL from its own process environment. The isolated configuration models
+// the store's health endpoint rather than the store address, so both bindings
+// stay recorded instead of derived.
+const RETRIEVAL_DEPLOYMENT_INPUTS = ['milvus-uri', 'openai-base-url']
+
+function unboundDeployment(requires) {
   return {
     blocked: true,
     reason: 'unbound-deployment-inputs',
-    requires: [...INGESTION_DEPLOYMENT_INPUTS],
+    requires: [...requires],
   }
+}
+
+// Provider order follows the declared dependency graph, so the plan cannot
+// contradict a modeled dependency. Nodes without a provider are backing
+// services, which the backing renderer starts before any provider.
+function providerOrder(config) {
+  const nodes = config.dependencyGraph.nodes
+  const dependencies = Object.fromEntries(
+    PROVIDER_BASE_ORDER.map((name) => [name, new Set()])
+  )
+  for (const node of Object.values(nodes)) {
+    const owner = node.provider
+    if (!owner || !dependencies[owner]) continue
+    for (const name of node.dependsOn) {
+      const source = nodes[name]?.provider
+      if (source && source !== owner) dependencies[owner].add(source)
+    }
+  }
+  const ordered = []
+  const pending = [...PROVIDER_BASE_ORDER]
+  while (pending.length > 0) {
+    const index = pending.findIndex((name) =>
+      [...dependencies[name]].every((dependency) =>
+        ordered.includes(dependency)
+      )
+    )
+    if (index === -1) {
+      throw new Error('Provider dependency graph contains a cycle.')
+    }
+    ordered.push(...pending.splice(index, 1))
+  }
+  return ordered
 }
 
 export function providerCommands(config) {
   const identity = config.project?.identity
-  if (!identity || !config.providers) {
+  if (!identity || !config.providers || !config.dependencyGraph) {
     throw new Error(
       'Launcher bindings require the isolated local-KB configuration.'
     )
@@ -43,14 +102,16 @@ export function providerCommands(config) {
       'Project identity exceeds the launcher instance limit of 48 characters.'
     )
   }
-  const stateRoot = config.project.runtimeCheckoutPath + '/.local-kb/state'
+  const runtimeRoot = config.project.runtimeCheckoutPath + '/.local-kb'
+  const stateRoot = join(runtimeRoot, 'state')
   const endpointPort = (name) => new URL(config.endpoints[name].url).port
   const revision = (name) => config.providers[name].revision
   const stateDir = (name) => join(stateRoot, name)
-  // The ingestion launcher requires the config directory to be the state
-  // directory's project-configs child; the same convention keeps every
-  // provider's derived configuration in one owned place.
-  const configDir = (name) => join(stateDir(name), 'project-configs')
+  // The ingestion launcher rejects any config directory other than its own
+  // state directory's project-configs child. The retrieval launcher serves the
+  // tool registry the consumer writes into .local-kb/doc-query-tools.
+  const ingestionConfigDir = join(stateDir('ingestion'), 'project-configs')
+  const retrievalConfigDir = join(runtimeRoot, 'doc-query-tools')
   const command = (name, args) => ({
     cwd: config.providers[name].sourcePath,
     executable: 'uv',
@@ -65,22 +126,24 @@ export function providerCommands(config) {
     env: { PYTHON_DOTENV_DISABLED: '1' },
   })
 
-  const ingestionState = stateDir('ingestion')
-  const ingestionIdentity = [
+  // The ingestion launcher declares --strict on its top-level parser, so it
+  // must precede the verb; argparse rejects it after the subcommand.
+  const ingestionArgs = (verb) => [
     '--strict',
+    verb,
     '--instance',
     identity,
     '--state-dir',
-    ingestionState,
+    stateDir('ingestion'),
     '--config-dir',
-    configDir('ingestion'),
+    ingestionConfigDir,
   ]
   const ingestion = {
     lifecycle: {
-      setup: unboundDeployment(),
-      start: unboundDeployment(),
-      status: command('ingestion', ['status', ...ingestionIdentity]),
-      stop: command('ingestion', ['stop', ...ingestionIdentity]),
+      setup: unboundDeployment(INGESTION_DEPLOYMENT_INPUTS),
+      start: unboundDeployment(INGESTION_DEPLOYMENT_INPUTS),
+      status: command('ingestion', ingestionArgs('status')),
+      stop: command('ingestion', ingestionArgs('stop')),
     },
   }
 
@@ -140,7 +203,6 @@ export function providerCommands(config) {
     },
   }
 
-  const retrievalState = stateDir('retrieval')
   const retrievalArgs = (verb) => [
     verb,
     '--instance',
@@ -148,9 +210,9 @@ export function providerCommands(config) {
     '--source-revision',
     revision('retrieval'),
     '--state-dir',
-    retrievalState,
+    stateDir('retrieval'),
     '--config-dir',
-    configDir('retrieval'),
+    retrievalConfigDir,
     '--bind',
     '127.0.0.1',
     '--port',
@@ -158,16 +220,17 @@ export function providerCommands(config) {
   ]
   const retrieval = {
     lifecycle: {
-      setup: command('retrieval', retrievalArgs('setup')),
-      start: command('retrieval', retrievalArgs('start')),
-      status: command('retrieval', retrievalArgs('status')),
+      setup: unboundDeployment(RETRIEVAL_DEPLOYMENT_INPUTS),
+      start: unboundDeployment(RETRIEVAL_DEPLOYMENT_INPUTS),
+      status: unboundDeployment(RETRIEVAL_DEPLOYMENT_INPUTS),
       stop: command('retrieval', retrievalArgs('stop')),
     },
   }
 
+  const lifecycleOrder = providerOrder(config)
   return {
-    lifecycleOrder: [...LIFECYCLE_ORDER],
-    stopOrder: [...LIFECYCLE_ORDER].reverse(),
+    lifecycleOrder,
+    stopOrder: [...lifecycleOrder].reverse(),
     providers: {
       ingestion,
       scraping,
