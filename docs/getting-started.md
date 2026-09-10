@@ -119,7 +119,7 @@ Post-create publishes a fixed container-local completion marker only after the
 destructive bootstrap and generated runtime inputs succeed; post-start checks
 that marker before it reads those inputs or starts a process. If the marker is
 missing or malformed, treat the workspace as incompletely bootstrapped and use
-the canonical stop/recovery path. A warm profile switch never manufactures the
+the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the
 marker or reruns database bootstrap. The `ROOT` contract in
 [post-create](../.devcontainer/post-create.sh) and
 [post-start](../.devcontainer/post-start.sh) canonicalizes
@@ -135,7 +135,8 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.55`.
+The consumer version is pinned in `.devrouter.yml`; this pin covers normal
+managed startup, not the separately reviewed retained-recovery callback.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
@@ -156,8 +157,9 @@ fingerprints the dependency graph, checked-out commit, Next.js route structure,
 and app configuration. A true managed start preserves each worktree's
 `.next/dev` output, while a changed dependency fingerprint refreshes the
 persistent `node_modules` volume with a frozen, local-first install.
-Unauthenticated Chat must answer `401 application/json` on a
-nested API route; the shell pages of auth, PWA, manage, and control must answer
+Auth must answer `200 application/json` at `/api/auth/providers` so its
+catch-all sign-in route is checked, not only its homepage. Unauthenticated Chat
+must answer `401 application/json` on a nested API route; the shell pages of PWA, manage, and control must answer
 `2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
 and `live-quiz` requires live general and response-processor worker descendants
 of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing

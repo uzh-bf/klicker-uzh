@@ -1,12 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
-  type Chatbot,
   ChatbotStatus,
   type LocaleType,
-  MUpdateChatbotStandardModeConfigDocument,
-  QGetChatbotsInfoWithStandardModesDocument,
-  SaveChatbotDisclaimerDocument,
-  UpdateChatbotDocument,
+  MSaveChatbotRevisionDocument,
+  QGetChatbotsInfoWithAuthoringRevisionsDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
@@ -27,9 +24,27 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
+import ChatbotCreditPolicy, {
+  ChatbotCreditPolicySummary,
+} from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
-import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
+import {
+  getChatbotMutationErrorKey,
+  isChatbotRevisionConflict,
+} from './chatbotErrorMessages'
+import {
+  ChatbotRevisionConflictNotice,
+  ChatbotRevisionStatusNotice,
+  FormikInitialValuesSynchronizer,
+  getChatbotAuthoringRevision,
+  getChatbotRevisionValues,
+  getChatbotRevisionVersion,
+  isChatbotRevisionEditable,
+  isChatbotRevisionPending,
+  type RevisionChatbot,
+  useChatbotRevisionReload,
+} from './chatbotRevision'
 import type {
   ChatbotNavigationState,
   ChatbotSetupStep,
@@ -42,7 +57,11 @@ const metadataEditableStatuses = [
   ChatbotStatus.Published,
 ]
 
-const disclaimerEditableStatuses = [ChatbotStatus.Draft, ChatbotStatus.Rejected]
+const disclaimerEditableStatuses = [
+  ChatbotStatus.Draft,
+  ChatbotStatus.Rejected,
+  ChatbotStatus.Published,
+]
 
 type StandardMode = 'tutor' | 'explainer' | 'quizzer'
 
@@ -56,8 +75,10 @@ type StandardModeFormValues = {
   scopeNote: string
 }
 
-function getStandardModeFormValues(chatbot: Chatbot): StandardModeFormValues {
-  const config = chatbot.standardModeConfig
+function getStandardModeFormValues(
+  chatbot: RevisionChatbot
+): StandardModeFormValues {
+  const config = getChatbotRevisionValues(chatbot).standardModeConfig
 
   return {
     tutorEnabled: config?.tutorEnabled ?? true,
@@ -311,7 +332,7 @@ function ChatbotAuthoring({
   onNavigateSection,
   onNavigationStateChange,
 }: {
-  chatbot: Chatbot
+  chatbot: RevisionChatbot
   step: ChatbotSetupStep
   sections?: readonly ChatbotSetupStep[]
   publishingAuthorized: boolean
@@ -321,16 +342,15 @@ function ChatbotAuthoring({
   onNavigationStateChange: (state: ChatbotNavigationState) => void
 }) {
   const t = useTranslations()
-  const [updateChatbot] = useMutation(UpdateChatbotDocument)
-  const [updateStandardModeConfig] = useMutation(
-    MUpdateChatbotStandardModeConfigDocument
-  )
-  const [saveDisclaimer] = useMutation(SaveChatbotDisclaimerDocument)
+  const [saveRevision] = useMutation(MSaveChatbotRevisionDocument)
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadataSuccess, setMetadataSuccess] = useState(false)
   const [modeError, setModeError] = useState<string | null>(null)
   const [modeSuccess, setModeSuccess] = useState(false)
   const [disclaimerError, setDisclaimerError] = useState<string | null>(null)
+  const [revisionConflict, setRevisionConflict] = useState(false)
+  const { loading: revisionReloading, reload: reloadRevision } =
+    useChatbotRevisionReload()
   const [openSections, setOpenSections] = useState<ChatbotSetupStep[]>([step])
   const [metadataNavigationState, setMetadataNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
@@ -338,17 +358,35 @@ function ChatbotAuthoring({
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [disclaimerNavigationState, setDisclaimerNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [creditNavigationState, setCreditNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [publicationNavigationState, setPublicationNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const visibleSections = sections ?? setupSteps
   const clearMetadataSuccess = useCallback(() => setMetadataSuccess(false), [])
   const clearModeSuccess = useCallback(() => setModeSuccess(false), [])
 
-  const metadataEditable = metadataEditableStatuses.includes(chatbot.status)
+  const revisionValues = getChatbotRevisionValues(chatbot)
+  const revisionVersion = getChatbotRevisionVersion(chatbot)
+  const revisionPending = isChatbotRevisionPending(chatbot)
+  const metadataEditable = isChatbotRevisionEditable(chatbot)
   const modeEditable = metadataEditable
-  const disclaimerEditable = disclaimerEditableStatuses.includes(chatbot.status)
+  const disclaimerEditable = metadataEditable
+  const creditEditable = metadataEditable
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
+  const disclaimerInitialValues = {
+    title:
+      revisionValues.disclaimerTitle ??
+      (disclaimer?.id
+        ? ''
+        : t('manage.resources.chatbotDisclaimerSuggestedTitle')),
+    introText:
+      revisionValues.disclaimerIntroText ??
+      (disclaimer?.id
+        ? ''
+        : t('manage.resources.chatbotDisclaimerSuggestedIntro')),
+  }
   const modeReviewItems = [
     {
       mode: 'tutor' as const,
@@ -366,16 +404,17 @@ function ChatbotAuthoring({
       enabled: standardModeConfig.quizzerEnabled,
     },
   ]
-  const editorKey = `${chatbot.id}:${disclaimer?.id ?? 'new'}`
   const published = chatbot.status === ChatbotStatus.Published
   const setupDirty =
     metadataNavigationState.dirty ||
     modeNavigationState.dirty ||
-    disclaimerNavigationState.dirty
+    disclaimerNavigationState.dirty ||
+    creditNavigationState.dirty
   const setupPending =
     metadataNavigationState.pending ||
     modeNavigationState.pending ||
-    disclaimerNavigationState.pending
+    disclaimerNavigationState.pending ||
+    creditNavigationState.pending
   const publicationPending = publicationNavigationState.pending
 
   const openSection = useCallback(
@@ -402,15 +441,18 @@ function ChatbotAuthoring({
         metadataNavigationState.dirty ||
         modeNavigationState.dirty ||
         disclaimerNavigationState.dirty ||
+        creditNavigationState.dirty ||
         publicationNavigationState.dirty,
       pending:
         metadataNavigationState.pending ||
         modeNavigationState.pending ||
         disclaimerNavigationState.pending ||
+        creditNavigationState.pending ||
         publicationNavigationState.pending,
     })
   }, [
     disclaimerNavigationState,
+    creditNavigationState,
     metadataNavigationState,
     modeNavigationState,
     onNavigationStateChange,
@@ -427,7 +469,15 @@ function ChatbotAuthoring({
     if (!disclaimerEditable) {
       setDisclaimerNavigationState({ dirty: false, pending: false })
     }
-  }, [disclaimerEditable, metadataEditable, modeEditable])
+    if (!creditEditable) {
+      setCreditNavigationState({ dirty: false, pending: false })
+    }
+  }, [creditEditable, disclaimerEditable, metadataEditable, modeEditable])
+
+  const reloadAfterConflict = useCallback(async () => {
+    await reloadRevision()
+    setRevisionConflict(false)
+  }, [reloadRevision])
 
   return (
     <div className="space-y-6" data-cy="chatbot-authoring">
@@ -510,11 +560,10 @@ function ChatbotAuthoring({
                 </div>
                 {metadataEditable ? (
                   <Formik
-                    enableReinitialize
                     validateOnMount
                     initialValues={{
-                      name: chatbot.name,
-                      description: chatbot.description ?? '',
+                      name: revisionValues.name,
+                      description: revisionValues.description ?? '',
                     }}
                     validationSchema={Yup.object({
                       name: Yup.string()
@@ -524,20 +573,29 @@ function ChatbotAuthoring({
                     onSubmit={async (values, { resetForm }) => {
                       setMetadataError(null)
                       setMetadataSuccess(false)
+                      setRevisionConflict(false)
                       const normalizedValues = {
                         name: values.name.trim(),
                         description: values.description.trim(),
                       }
                       try {
-                        await updateChatbot({
+                        await saveRevision({
                           variables: {
-                            id: chatbot.id,
-                            name: normalizedValues.name,
-                            description: normalizedValues.description || null,
+                            chatbotId: chatbot.id,
+                            expectedRevisionVersion: revisionVersion,
+                            input: {
+                              metadata: {
+                                name: normalizedValues.name,
+                                description:
+                                  normalizedValues.description || null,
+                                avatar: revisionValues.avatar,
+                              },
+                            },
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithStandardModesDocument,
+                              query:
+                                QGetChatbotsInfoWithAuthoringRevisionsDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -551,6 +609,9 @@ function ChatbotAuthoring({
                           openSection('disclaimer')
                         }
                       } catch (error) {
+                        if (isChatbotRevisionConflict(error)) {
+                          setRevisionConflict(true)
+                        }
                         setMetadataError(
                           t(getChatbotMutationErrorKey(error, 'metadata'))
                         )
@@ -559,6 +620,12 @@ function ChatbotAuthoring({
                   >
                     {({ dirty, isSubmitting }) => (
                       <Form className="space-y-4">
+                        <FormikInitialValuesSynchronizer
+                          initialValues={{
+                            name: revisionValues.name,
+                            description: revisionValues.description ?? '',
+                          }}
+                        />
                         <FormikInteractionEffects
                           onDirty={clearMetadataSuccess}
                         />
@@ -568,17 +635,35 @@ function ChatbotAuthoring({
                           onChange={setMetadataNavigationState}
                         />
                         <RequiredFormikTextField
-                          disabled={isSubmitting || publicationPending}
+                          disabled={
+                            isSubmitting ||
+                            publicationPending ||
+                            revisionPending
+                          }
                           name="name"
                           label={t('manage.resources.chatbotName')}
                           testId="chatbot-name"
                         />
                         <FormikTextareaField
-                          disabled={isSubmitting || publicationPending}
+                          disabled={
+                            isSubmitting ||
+                            publicationPending ||
+                            revisionPending
+                          }
                           name="description"
                           label={t('manage.resources.chatbotDescription')}
                           data={{ cy: 'chatbot-description' }}
                         />
+                        {revisionConflict ? (
+                          <ChatbotRevisionConflictNotice
+                            message={t(
+                              'manage.resources.chatbotRevisionConflict'
+                            )}
+                            onReload={() => void reloadAfterConflict()}
+                            reloading={revisionReloading}
+                            testId="chatbot-revision-reload-metadata"
+                          />
+                        ) : null}
                         {metadataError ? (
                           <div role="alert">
                             <UserNotification type="error">
@@ -592,7 +677,11 @@ function ChatbotAuthoring({
                               ? t('manage.resources.saveChatbotMetadata')
                               : t('manage.resources.chatbotSetupSave')
                           }
-                          disabled={isSubmitting || publicationPending}
+                          disabled={
+                            isSubmitting ||
+                            publicationPending ||
+                            revisionPending
+                          }
                           loading={isSubmitting}
                           savingLabel={t('manage.resources.chatbotSetupSaving')}
                           success={published && metadataSuccess}
@@ -645,7 +734,6 @@ function ChatbotAuthoring({
                 </div>
                 {modeEditable ? (
                   <Formik<StandardModeFormValues>
-                    enableReinitialize
                     validateOnMount
                     initialValues={standardModeConfig}
                     validate={(values) => {
@@ -666,14 +754,16 @@ function ChatbotAuthoring({
                       setModeError(null)
                       setModeSuccess(false)
                       try {
-                        await updateStandardModeConfig({
+                        await saveRevision({
                           variables: {
                             chatbotId: chatbot.id,
-                            config: values,
+                            expectedRevisionVersion: revisionVersion,
+                            input: { standardModeConfig: values },
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithStandardModesDocument,
+                              query:
+                                QGetChatbotsInfoWithAuthoringRevisionsDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -681,6 +771,9 @@ function ChatbotAuthoring({
                         resetForm({ values })
                         setModeSuccess(true)
                       } catch (error) {
+                        if (isChatbotRevisionConflict(error)) {
+                          setRevisionConflict(true)
+                        }
                         setModeError(
                           t(getChatbotMutationErrorKey(error, 'standardMode'))
                         )
@@ -695,10 +788,13 @@ function ChatbotAuthoring({
                       setFieldValue,
                     }) => {
                       const controlsDisabled =
-                        isSubmitting || publicationPending
+                        isSubmitting || publicationPending || revisionPending
 
                       return (
                         <Form className="space-y-4">
+                          <FormikInitialValuesSynchronizer
+                            initialValues={standardModeConfig}
+                          />
                           <FormikInteractionEffects
                             onDirty={clearModeSuccess}
                           />
@@ -709,7 +805,7 @@ function ChatbotAuthoring({
                           />
                           <div className="space-y-1">
                             <FormikTextareaField
-                              disabled={controlsDisabled}
+                              disabled={controlsDisabled || revisionPending}
                               name="scopeNote"
                               label={t('manage.resources.chatbotFraming')}
                               placeholder={t(
@@ -730,6 +826,7 @@ function ChatbotAuthoring({
                               )}
                               disabled={
                                 controlsDisabled ||
+                                revisionPending ||
                                 (values.tutorEnabled &&
                                   !values.explainerEnabled)
                               }
@@ -752,6 +849,7 @@ function ChatbotAuthoring({
                               )}
                               disabled={
                                 controlsDisabled ||
+                                revisionPending ||
                                 (values.explainerEnabled &&
                                   !values.tutorEnabled)
                               }
@@ -772,7 +870,7 @@ function ChatbotAuthoring({
                               description={t(
                                 'manage.resources.chatbotModeQuizzerDescription'
                               )}
-                              disabled={controlsDisabled}
+                              disabled={controlsDisabled || revisionPending}
                               enabled={values.quizzerEnabled}
                               mode="quizzer"
                               onChange={(enabled) => {
@@ -801,6 +899,16 @@ function ChatbotAuthoring({
                               'manage.resources.chatbotModeQuizzerCapabilityNote'
                             )}
                           </p>
+                          {revisionConflict ? (
+                            <ChatbotRevisionConflictNotice
+                              message={t(
+                                'manage.resources.chatbotRevisionConflict'
+                              )}
+                              onReload={() => void reloadAfterConflict()}
+                              reloading={revisionReloading}
+                              testId="chatbot-revision-reload-modes"
+                            />
+                          ) : null}
                           {modeError ? (
                             <div role="alert">
                               <UserNotification type="error">
@@ -923,25 +1031,8 @@ function ChatbotAuthoring({
                 </div>
                 {disclaimerEditable ? (
                   <Formik
-                    key={editorKey}
-                    enableReinitialize
                     validateOnMount
-                    initialValues={{
-                      title:
-                        disclaimer?.title ??
-                        (disclaimer?.id
-                          ? ''
-                          : t(
-                              'manage.resources.chatbotDisclaimerSuggestedTitle'
-                            )),
-                      introText:
-                        disclaimer?.introText ??
-                        (disclaimer?.id
-                          ? ''
-                          : t(
-                              'manage.resources.chatbotDisclaimerSuggestedIntro'
-                            )),
-                    }}
+                    initialValues={disclaimerInitialValues}
                     validationSchema={Yup.object({
                       title: Yup.string()
                         .trim()
@@ -978,22 +1069,30 @@ function ChatbotAuthoring({
                         introText: values.introText.trim(),
                       }
                       try {
-                        await saveDisclaimer({
+                        await saveRevision({
                           variables: {
                             chatbotId: chatbot.id,
-                            expectedDisclaimerId: disclaimer?.id ?? null,
-                            title: normalizedValues.title,
-                            introText: normalizedValues.introText,
+                            expectedRevisionVersion: revisionVersion,
+                            input: {
+                              disclaimer: {
+                                title: normalizedValues.title,
+                                introText: normalizedValues.introText,
+                              },
+                            },
                           },
                           refetchQueries: [
                             {
-                              query: QGetChatbotsInfoWithStandardModesDocument,
+                              query:
+                                QGetChatbotsInfoWithAuthoringRevisionsDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
                         })
                         resetForm({ values: normalizedValues })
                       } catch (error) {
+                        if (isChatbotRevisionConflict(error)) {
+                          setRevisionConflict(true)
+                        }
                         setDisclaimerError(
                           t(getChatbotMutationErrorKey(error, 'disclaimer'))
                         )
@@ -1007,20 +1106,35 @@ function ChatbotAuthoring({
 
                       return (
                         <Form className="space-y-4">
+                          <FormikInitialValuesSynchronizer
+                            initialValues={disclaimerInitialValues}
+                          />
                           <FormikInteractionEffects />
                           <NavigationStateReporter
-                            dirty={dirty || !disclaimer?.id}
+                            dirty={
+                              dirty ||
+                              (!disclaimer?.id &&
+                                !getChatbotAuthoringRevision(chatbot))
+                            }
                             pending={isSubmitting}
                             onChange={setDisclaimerNavigationState}
                           />
                           <RequiredFormikTextField
-                            disabled={isSubmitting || publicationPending}
+                            disabled={
+                              isSubmitting ||
+                              publicationPending ||
+                              revisionPending
+                            }
                             name="title"
                             label={t('manage.resources.chatbotDisclaimerTitle')}
                             testId="chatbot-disclaimer-title"
                           />
                           <DisclaimerIntroField
-                            disabled={isSubmitting || publicationPending}
+                            disabled={
+                              isSubmitting ||
+                              publicationPending ||
+                              revisionPending
+                            }
                             editorId={`chatbot-disclaimer-intro-${chatbot.id}`}
                             errorId={`chatbot-disclaimer-intro-error-${chatbot.id}`}
                             labelId={`chatbot-disclaimer-intro-label-${chatbot.id}`}
@@ -1035,7 +1149,11 @@ function ChatbotAuthoring({
                               </p>
                               <Button
                                 type="button"
-                                disabled={isSubmitting || publicationPending}
+                                disabled={
+                                  isSubmitting ||
+                                  publicationPending ||
+                                  revisionPending
+                                }
                                 onClick={() => {
                                   if (!values.title.trim()) {
                                     void setFieldValue(
@@ -1085,7 +1203,8 @@ function ChatbotAuthoring({
                                 'manage.resources.chatbotDisclaimerPreviewDescription'
                               )}
                             </p>
-                            {!disclaimer?.id ? (
+                            {!disclaimer?.id &&
+                            !getChatbotAuthoringRevision(chatbot) ? (
                               <UserNotification
                                 data={{
                                   cy: 'chatbot-disclaimer-suggested-unsaved',
@@ -1103,7 +1222,11 @@ function ChatbotAuthoring({
                           </div>
                           <SetupStepFooter
                             action={t('manage.resources.chatbotSetupSave')}
-                            disabled={isSubmitting || publicationPending}
+                            disabled={
+                              isSubmitting ||
+                              publicationPending ||
+                              revisionPending
+                            }
                             loading={isSubmitting}
                             savingLabel={t(
                               'manage.resources.chatbotSetupSaving'
@@ -1120,11 +1243,60 @@ function ChatbotAuthoring({
                       {t('manage.resources.chatbotDisclaimerReadonly')}
                     </UserNotification>
                     <ChatbotDisclaimerPreview
-                      title={disclaimer?.title ?? ''}
-                      introText={disclaimer?.introText ?? ''}
+                      title={revisionValues.disclaimerTitle ?? ''}
+                      introText={revisionValues.disclaimerIntroText ?? ''}
                     />
                   </>
                 )}
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        ) : null}
+
+        {visibleSections.includes('credits') ? (
+          <AccordionItem
+            value="credits"
+            className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+            data-cy="chatbot-setup-item-credits"
+          >
+            <AccordionTrigger
+              className="py-3 hover:no-underline"
+              data-cy="chatbot-setup-trigger-credits"
+            >
+              <span className="flex flex-col gap-1">
+                <span>{t('manage.resources.chatbotSetupCredits')}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {t('manage.resources.chatbotSetupCreditsDescription')}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent forceMount>
+              <section
+                hidden={!openSections.includes('credits')}
+                className="space-y-4"
+                data-cy="chatbot-setup-credits"
+              >
+                <div>
+                  <H4>{t('manage.resources.chatbotSetupCreditsTitle')}</H4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {t('manage.resources.chatbotSetupCreditsDescriptionLong')}
+                  </p>
+                </div>
+                <ChatbotCreditPolicy
+                  chatbot={chatbot}
+                  publicationPending={publicationPending}
+                  onNavigationStateChange={setCreditNavigationState}
+                  onRevisionConflict={() => setRevisionConflict(true)}
+                  onSaved={() => openSection('review')}
+                />
+                {revisionConflict ? (
+                  <ChatbotRevisionConflictNotice
+                    message={t('manage.resources.chatbotRevisionConflict')}
+                    onReload={() => void reloadAfterConflict()}
+                    reloading={revisionReloading}
+                    testId="chatbot-revision-reload-credits"
+                  />
+                ) : null}
               </section>
             </AccordionContent>
           </AccordionItem>
@@ -1243,7 +1415,7 @@ function ChatbotAuthoring({
                         className="mt-1 text-gray-900"
                         data-cy="chatbot-review-name"
                       >
-                        {chatbot.name}
+                        {revisionValues.name}
                       </dd>
                     </div>
                     <div>
@@ -1264,7 +1436,7 @@ function ChatbotAuthoring({
                         {t('manage.resources.chatbotDescription')}
                       </dt>
                       <dd className="mt-1 whitespace-pre-wrap text-gray-900">
-                        {chatbot.description?.trim() ||
+                        {revisionValues.description?.trim() ||
                           t('shared.generic.unknown')}
                       </dd>
                     </div>
@@ -1287,16 +1459,16 @@ function ChatbotAuthoring({
                     </Button>
                   </div>
                   <h6 className="font-medium text-gray-900">
-                    {disclaimer?.title ||
+                    {revisionValues.disclaimerTitle ||
                       t('manage.resources.chatbotDisclaimerTitlePlaceholder')}
                   </h6>
                   <div
                     className="mt-2 text-sm text-gray-700"
                     data-cy="chatbot-review-disclaimer"
                   >
-                    {disclaimer?.introText ? (
+                    {revisionValues.disclaimerIntroText ? (
                       <Markdown
-                        content={disclaimer.introText}
+                        content={revisionValues.disclaimerIntroText}
                         withProse
                         className={{ root: 'prose prose-sm max-w-none' }}
                       />
@@ -1304,6 +1476,24 @@ function ChatbotAuthoring({
                       t('manage.resources.chatbotDisclaimerIntroPlaceholder')
                     )}
                   </div>
+                </div>
+
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h5 className="font-semibold text-gray-900">
+                      {t('manage.resources.chatbotSetupCreditsTitle')}
+                    </h5>
+                    <Button
+                      type="button"
+                      onClick={() => openSection('credits')}
+                      data={{ cy: 'chatbot-setup-edit-credits' }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotSetupEdit')}
+                      </Button.Label>
+                    </Button>
+                  </div>
+                  <ChatbotCreditPolicySummary chatbot={chatbot} />
                 </div>
 
                 <UserNotification>
@@ -1321,6 +1511,7 @@ function ChatbotAuthoring({
                     setupDirty={setupDirty}
                     setupPending={setupPending}
                     onNavigationStateChange={setPublicationNavigationState}
+                    onRevisionConflict={() => setRevisionConflict(true)}
                   />
                 </div>
               </section>

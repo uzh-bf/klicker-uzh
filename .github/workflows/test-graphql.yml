@@ -4,7 +4,10 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    # ready_for_review is intentionally absent: this suite runs the same jobs
+    # for draft and ready PRs, and the transition fires on an unchanged head,
+    # so listing it would only re-run validation that already passed.
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -240,17 +243,15 @@ jobs:
   # so this job can be used as a required check in branch protection.
   test-graphql-status:
     needs: [filter, test-graphql]
-    if: always()
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.filter.result != 'cancelled' &&
+      needs.test-graphql.result != 'cancelled'
     runs-on: ubuntu-latest
     steps:
       - name: Check result
         run: |
-          # A run cancelled by concurrency (duplicate push, quick re-push) must not
-          # leave a red required check behind: the surviving run is the real signal.
-          if [ "${{ needs.filter.result }}" = "cancelled" ] || [ "${{ needs.test-graphql.result }}" = "cancelled" ]; then
-            echo "Superseded by a newer run; jobs were cancelled by concurrency."
-            exit 0
-          fi
           if [ "${{ needs.filter.result }}" != "success" ]; then
             echo "Filter job failed: ${{ needs.filter.result }}"
             exit 1

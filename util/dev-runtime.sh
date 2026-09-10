@@ -175,7 +175,7 @@ valid_next_app() {
 
 probe_url() {
   case "$1" in
-    auth) echo 'http://localhost:3010/' ;;
+    auth) echo 'http://localhost:3010/api/auth/providers' ;;
     chat) echo "$CHAT_PROBE_URL" ;;
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
@@ -186,14 +186,15 @@ probe_url() {
   esac
 }
 
-# Chat proves its nested dynamic API route graph through the authentication
-# contract above. Pages apps first prove their dynamic development inventory,
+# Auth and Chat prove their dynamic API route graphs through authentication
+# endpoints. Pages apps first prove their dynamic development inventory,
 # then a committed shell page without database content. A shell 404 cannot be
 # a legitimate data-driven miss, but an incomplete inventory is not cache damage.
 probe_mode() {
   case "$1" in
+    auth) echo 'auth-providers-json' ;;
     chat) echo 'auth-json' ;;
-    auth | frontend-control | frontend-manage | frontend-pwa)
+    frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
     mcp-lecturer) echo 'health-text' ;;
@@ -380,7 +381,7 @@ classify_response() {
       echo "ready: HTTP $status redirect"
       return 0
     fi
-  elif [ "$mode" = 'health-json' ]; then
+  elif [ "$mode" = 'health-json' ] || [ "$mode" = 'auth-providers-json' ]; then
     if [ "$status" = '200' ] && [[ "$content_type" == application/json* ]]; then
       echo "ready: HTTP $status $content_type"
       return 0
@@ -593,7 +594,7 @@ Usage:
   util/dev-runtime.sh prepare <dependency-filter> [dependency-filter...]
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json|health-text> <status> <content-type>
+  util/dev-runtime.sh classify-response <auth-json|auth-providers-json|html-shell|health-json|health-text> <status> <content-type>
   util/dev-runtime.sh probe-app <runtime-app>
   util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor
