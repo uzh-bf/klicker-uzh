@@ -5,7 +5,7 @@ import { join } from 'node:path'
 // revision and private state bindings; it owns no provider service assembly.
 // Setup alone initializes schemas and credentials, so start commands never
 // migrate and stop commands never remove state.
-const LIFECYCLE_ORDER = ['ingestion', 'scraping', 'docProcessing', 'retrieval']
+const LIFECYCLE_ORDER = ['scraping', 'ingestion', 'docProcessing', 'retrieval']
 
 // The ingestion launcher starts provider-owned backing services (pgvector,
 // Hatchet, Azurite, Milvus) on ports the isolated configuration does not
@@ -21,11 +21,11 @@ const INGESTION_DEPLOYMENT_INPUTS = [
   'openai-base-url',
 ]
 
-function unboundDeployment(requiredInputs) {
+function unboundDeployment() {
   return {
     blocked: true,
     reason: 'unbound-deployment-inputs',
-    requires: [...requiredInputs],
+    requires: [...INGESTION_DEPLOYMENT_INPUTS],
   }
 }
 
@@ -34,6 +34,13 @@ export function providerCommands(config) {
   if (!identity || !config.providers) {
     throw new Error(
       'Launcher bindings require the isolated local-KB configuration.'
+    )
+  }
+  // Every launcher validates its instance identity with a 48-character
+  // ceiling; fail the plan before an oversized project identity reaches one.
+  if (identity.length > 48) {
+    throw new Error(
+      'Project identity exceeds the launcher instance limit of 48 characters.'
     )
   }
   const stateRoot = config.project.runtimeCheckoutPath + '/.local-kb/state'
@@ -70,8 +77,8 @@ export function providerCommands(config) {
   ]
   const ingestion = {
     lifecycle: {
-      setup: unboundDeployment(INGESTION_DEPLOYMENT_INPUTS),
-      start: unboundDeployment(INGESTION_DEPLOYMENT_INPUTS),
+      setup: unboundDeployment(),
+      start: unboundDeployment(),
       status: command('ingestion', ['status', ...ingestionIdentity]),
       stop: command('ingestion', ['stop', ...ingestionIdentity]),
     },

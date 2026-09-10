@@ -336,12 +336,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     } else {
       const config = resolveLocalKbConfig(process.env)
       if (command === 'plan') {
-        let commands
-        try {
-          commands = providerCommands(config)
-        } catch {
-          commands = { unsupported: 'isolated-configuration-required' }
-        }
+        // Environment paths alone cannot bind launcher instances, revisions
+        // or state directories; only the isolated configuration can.
+        const commands = { unsupported: 'isolated-configuration-required' }
         console.log(
           JSON.stringify(
             {

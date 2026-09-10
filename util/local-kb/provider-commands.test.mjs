@@ -80,6 +80,7 @@ test('binds explicit launcher identity and revision for derivable providers', ()
   const docStart = commands.providers.docProcessing.lifecycle.start.args
   assert.equal(docStart[5], 'start')
   assert.ok(docStart.includes(identity))
+  assert.ok(docStart.includes('--owner-id'))
   assert.ok(docStart.includes(providerRevisions.docProcessing))
   assert.deepEqual(docStart.slice(docStart.indexOf('--mode')), [
     '--mode',
@@ -141,16 +142,16 @@ test('blocks ingestion deployment on unmodeled provider-owned inputs', () => {
 test('orders setup and reverses stop without migration or state removal', () => {
   const { commands } = resolveFixture('a')
   assert.deepEqual(commands.lifecycleOrder, [
-    'ingestion',
     'scraping',
+    'ingestion',
     'docProcessing',
     'retrieval',
   ])
   assert.deepEqual(commands.stopOrder, [
     'retrieval',
     'docProcessing',
-    'scraping',
     'ingestion',
+    'scraping',
   ])
   for (const provider of Object.values(commands.providers)) {
     for (const entry of Object.values(provider.lifecycle)) {
@@ -172,5 +173,15 @@ test('requires the isolated configuration for launcher bindings', () => {
   assert.throws(
     () => providerCommands(simple),
     /isolated local-KB configuration/
+  )
+})
+
+test('rejects identities beyond the launcher instance limit', () => {
+  const input = makeInput('a')
+  input.projectIdentity = 'a'.repeat(49)
+  const config = resolveIsolatedConfig(input)
+  assert.throws(
+    () => providerCommands(config),
+    /launcher instance limit of 48 characters/
   )
 })

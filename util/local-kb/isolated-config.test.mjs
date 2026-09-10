@@ -468,27 +468,9 @@ test('keeps roots and health compatible with supported provider commands', () =>
   const config = resolveIsolatedConfig(makeInput('a'))
   const commands = providerCommands(config)
 
-  assert.deepEqual(commands.lifecycleOrder, [
-    'ingestion',
-    'scraping',
-    'docProcessing',
-    'retrieval',
-  ])
-  assert.deepEqual(commands.stopOrder, [
-    'retrieval',
-    'docProcessing',
-    'scraping',
-    'ingestion',
-  ])
-  assert.equal(commands.providers.ingestion.lifecycle.setup.blocked, true)
   assert.equal(
     commands.providers.retrieval.lifecycle.start.cwd,
     config.providers.retrieval.sourcePath
-  )
-  assert.ok(
-    commands.providers.retrieval.lifecycle.start.args.includes(
-      'scripts/local_launcher.py'
-    )
   )
   assert.equal(
     config.roots.find(({ name }) => name === 'docProcessing').readOnly,

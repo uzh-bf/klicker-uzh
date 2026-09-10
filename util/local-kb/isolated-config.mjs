@@ -14,8 +14,9 @@ import { isDeepStrictEqual } from 'node:util'
  *
  * The returned object is a validation model, not rendered Compose/devrouter
  * configuration. No filesystem, Git, network, provider, or secret access
- * occurs here. Roots and health are arrays for provider-commands.mjs;
- * providers, sourceMounts, and mutableState are keyed lifecycle data.
+ * occurs here. Roots and health are arrays for plan and inspection
+ * consumers; providers, sourceMounts, and mutableState are keyed lifecycle
+ * data. Launcher bindings derive from project, providers, and endpoints.
  * Doc Processing is an explicit, local-only but unqualified capability until
  * main's integration layer supplies its concrete local service.
  */
