@@ -27,7 +27,7 @@ Ancestry includes both pinned parents and audit includes staging ancestor. Migra
 
 ## Progress
 
-Local preparation complete; final independent risk review pending. Normal maintenance and audit merges published as drafts #5881 and #5883; narrow trusted-CI draft #5882. Private infrastructure draft !557 remains unmerged. Exact controlled source/infra identities and operational blockers are in completion.md and CUTOVER-APPROVAL.md. Shared refs and live controls remain untouched by this task. Synthetic verification runtime stopped with source-matched provider status and zero routes; data retained.
+Local preparation complete; independent risk review passed on ae2e21c15. Normal maintenance and audit merges published as drafts #5881 and #5883; narrow trusted-CI draft #5882. Private infrastructure draft !557 remains unmerged. Exact controlled source/infra identities and operational blockers are in completion.md and CUTOVER-APPROVAL.md. Shared refs and live controls remain untouched by this task. Synthetic verification runtime stopped with source-matched provider status and zero routes; data retained.
 
 ### Delegation map and operational gates
 
@@ -55,4 +55,4 @@ Planner round 1: accepted all four findings and made the obligations above expli
 - Simplifier: native simplifier, immutable committed implementation range after checks; acceptance behavior-preserving simplification disposition; unavailable route blocks that gate.
 - Risk and final review: native final-reviewer explicitly selected for this task to preserve the no-paid-external-call boundary. It reviews the complete committed integration/control range and verification with security/data/architecture lenses; missing route or incomplete scope blocks qualification. No external slice-reviewer or CLI paid provider is used.
 
-Maintenance includes the later published 1d85533 build correction through normal ancestry. Maintenance candidate 5b63ea881 and audit merge 0fadf15c12 have identical trees. Both contain pinned stable 492e5f1e and maintenance 1d85533; audit also contains current stg-release 1d85533. SQL preservation and two live ledgers verified; independent Analytics ledger remains unavailable. Simplifier found no justified reduction; final risk review pending.
+Maintenance includes the later published 1d85533 build correction through normal ancestry. Maintenance candidate 5b63ea881 and audit merge 0fadf15c12 have identical trees. Both contain pinned stable 492e5f1e and maintenance 1d85533; audit also contains current stg-release 1d85533. SQL preservation and two live ledgers verified; independent Analytics ledger remains unavailable. Simplifier found no justified reduction; final risk review passed on ae2e21c15.
