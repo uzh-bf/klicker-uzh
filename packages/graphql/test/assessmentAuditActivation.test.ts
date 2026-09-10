@@ -320,7 +320,7 @@ describe('assessment audit activation', () => {
     ).toBe(0)
   })
 
-  it('streams each immutable media reference once for active-policy renewal', async () => {
+  it('streams repeated immutable media references for active-policy renewal', async () => {
     const baselineId = randomUUID()
     const mediaId = randomUUID()
     const contentHash = 'a'.repeat(64)
@@ -384,6 +384,7 @@ describe('assessment audit activation', () => {
       if (reference.contentHash === contentHash) references.push(reference)
     }
     expect(references).toEqual([
+      { blobName: `sha256/${contentHash}`, contentHash },
       { blobName: `sha256/${contentHash}`, contentHash },
     ])
   })

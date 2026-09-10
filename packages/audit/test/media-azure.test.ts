@@ -8,6 +8,7 @@ import {
   AuditMediaConflictError,
   AzureImmutableAuditMediaStore,
   auditMediaContentAddress,
+  renewActiveAssessmentMediaPolicies,
   sha256Hex,
 } from '../src/index.js'
 
@@ -113,6 +114,41 @@ afterEach(async () => {
 })
 
 describe('Azure immutable audit media store', () => {
+  it.each([
+    false,
+    true,
+  ])('preserves the longest horizon for shared media (active first: %s)', async (activeFirst) => {
+    const container = new MemoryMediaContainer()
+    const now = new Date('2026-09-10T00:00:00.000Z')
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient,
+      () => now
+    )
+    const input = await mediaFixture(Buffer.from('shared assessment media'))
+    input.retainUntil = new Date('2027-03-01T00:00:00.000Z')
+    await store.createFromFile(input)
+    const active = { blobName: input.blobName, contentHash: input.contentHash }
+    const completed = { ...active, retainUntil: input.retainUntil }
+    async function* references() {
+      yield* activeFirst ? [active, completed] : [completed, active]
+    }
+
+    const summary = await renewActiveAssessmentMediaPolicies({
+      references: references(),
+      store,
+      now,
+    })
+
+    expect(summary).toMatchObject({
+      inspected: 2,
+      extended: 1,
+      alreadySufficient: 1,
+    })
+    expect(container.stored.get(input.blobName)?.expiresOn).toEqual(
+      new Date('2027-10-01T00:00:00.000Z')
+    )
+  })
+
   it('creates, locks, verifies, and identically replays media', async () => {
     const container = new MemoryMediaContainer()
     const store = new AzureImmutableAuditMediaStore(

@@ -35,19 +35,48 @@ Two independent read-only review passes were used. The standards recheck
 accepted the database-guard, worker-probe, and test-runner fixes. The main review
 also found and fixed missing guards in the GraphQL activation/rollout suites.
 
-One source finding remains: **P2 — unbounded media-reference accumulation**.
+The conflict-resolution review found **P2 — unbounded media-reference accumulation**.
 `packages/graphql/src/services/assessmentAudit.ts:activeAssessmentMediaReferences`
 collects every unique reference in a Map before yielding. Pagination does not
 bound the retained Map, contrary to the documented streaming claim; the
 media-policy worker has a 256 MiB limit. Use bounded streaming/deduplication and
 verify shared-media retention horizons and hash-conflict handling. This was not
-changed as part of conflict resolution.
+changed as part of conflict resolution. **Resolved in the subsequent local fix:**
+references now yield immediately from bounded keyset pages, with stateless
+content-address validation. Repeated references preserve each scope's horizon;
+the storage adapter extends monotonically. Independent re-review found no P1/P2
+issues in this fix. Four enumeration regressions and both shared-horizon ordering
+tests pass. The changed database integration assertion also passes in the
+subsequent approved disposable-database run below.
 
-The following pre-existing history issue blocks the new CI identity gate:
+The following pre-existing history issue blocked the new CI identity gate:
 three audit commits still use `CI fixture <ci@example.invalid>` as author:
 `493c4c1dd` (finalize implementation), `7764ae830` (launch readiness), and
 `576ebbf3d` (evidence coverage). Correct attribution needs confirmation; the
 review did not silently assign these historical commits to another person.
+After explicit approval, the three authors were corrected to the configured Git
+identity; the outgoing identity check passes. The resulting tip is `07d8b9893`
+(before the uncommitted streaming fix), with an unchanged code tree.
+
+### Streaming-fix verification update
+
+- Audit non-PostgreSQL suites: **94 passed**, including Azurite conformance.
+- GraphQL media enumeration, baseline, and producer suites: **14 passed**.
+- GraphQL and audit typechecks: **passed** after correcting a new test annotation.
+- Scoped build: **12/12 successful** (8 cached); GraphQL Rollup still emits the
+  previously observed Pothos typing and circular-dependency warnings. Separate
+  GraphQL typechecking passes; the build is not warning-free.
+- Review and test results apply to the local integrated fix, not remote CI.
+
+### Approved database verification update
+
+The repository bootstrap helper created previously absent, marked `klicker_test`
+and `klicker_test_shadow` databases with a restricted test login. The retained
+database was not reset, migrated, or relabeled. Schema push alone reproduced two
+missing-CHECK failures; full guarded migration replay installed the SQL constraints.
+The final serial run passed **106 audit tests, 23 GraphQL audit tests, and 26
+submission-processor integration tests**. These supersede the earlier database
+verification gap below. They do not establish live Azure or browser readiness.
 
 ## Spec review
 
@@ -103,10 +132,7 @@ Total: **164 distinct passing tests**. Repeated runs are not double-counted.
 
 ## Next steps
 
-1. Confirm correct attribution for the three fixture-authored commits and
-   repair the outgoing history without changing another person's authorship.
-2. Address bounded media-policy enumeration with regression coverage.
-3. Propagate applicable verification fixes to their owning layers; verify each
+1. Propagate applicable verification fixes to their owning layers; verify each
    layer, publish with safe leases, and inspect fresh CI.
-4. Provision an explicitly approved disposable test environment and run the
+2. Provision an explicitly approved disposable test environment and run the
    PostgreSQL suites, then complete staging and browser gates before release.

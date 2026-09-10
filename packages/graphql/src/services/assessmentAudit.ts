@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import {
   AzureImmutableAuditMediaStore,
   AzureTableAppendSink,
+  auditMediaContentAddress,
   baselinePartPayloadSchema,
   collectAssessmentAuditMonitorSnapshot,
   createAzureAuditClients,
@@ -103,10 +104,6 @@ export async function* activeAssessmentMediaReferences(
     'assessmentAuditScope' | 'assessmentAuditOutboxEvent'
   >
 ) {
-  const references = new Map<
-    string,
-    { contentHash: string; retainUntil?: Date }
-  >()
   let scopeCursor: { liveQuizId: string; lifecycleEpoch: number } | undefined
   while (true) {
     const scopes = await client.assessmentAuditScope.findMany({
@@ -155,25 +152,19 @@ export async function* activeAssessmentMediaReferences(
               scope.retentionAnchorAt === null
                 ? undefined
                 : retentionBatchFor(scope.retentionAnchorAt)
-            const previous = references.get(media.blobName)
             if (
-              previous !== undefined &&
-              previous.contentHash !== media.contentHash
+              media.blobName !== auditMediaContentAddress(media.contentHash)
             ) {
               throw new Error(
                 `Assessment media blob ${media.blobName} has conflicting content hashes`
               )
             }
-            if (
-              previous === undefined ||
-              (retainUntil !== undefined &&
-                (previous.retainUntil === undefined ||
-                  retainUntil.getTime() > previous.retainUntil.getTime()))
-            ) {
-              references.set(media.blobName, {
-                contentHash: media.contentHash,
-                ...(retainUntil === undefined ? {} : { retainUntil }),
-              })
+            // Stream duplicates: the store never shortens retention, and each
+            // scope must retain its horizon without an unbounded deduplication map.
+            yield {
+              blobName: media.blobName,
+              contentHash: media.contentHash,
+              ...(retainUntil === undefined ? {} : { retainUntil }),
             }
           }
         }
@@ -185,10 +176,6 @@ export async function* activeAssessmentMediaReferences(
       liveQuizId: lastScope.liveQuizId,
       lifecycleEpoch: lastScope.lifecycleEpoch,
     }
-  }
-
-  for (const [blobName, reference] of references) {
-    yield { blobName, ...reference }
   }
 }
 

@@ -382,11 +382,20 @@ delete operations.
 `AuditRetentionIndex` contains an append-only reverse index from immutable media
 versions to the assessment scopes that reference them. This includes baseline
 media parts and media captured or replaced by a covered source-element change.
-The daily media-policy
-worker streams active scope references from baseline-part outbox evidence and
-extends each version's locked policy to the current semester retention horizon.
-It never shortens an existing policy. Terminal-scope extension is added when
-the lifecycle producers write the completion anchor in Layer 4.
+The daily media-policy worker streams covered scope references from baseline-part
+outbox evidence in keyset pages (100 scopes, 250 events). It validates each
+content-address binding before yielding, without a global deduplication map.
+Repeated references are intentional: renewal counters count references, not
+unique blobs. This trades additional idempotent storage reads for memory bounded
+by the current pages. Each reference carries its scope's completion-based horizon;
+an unfinished scope uses the current semester horizon. The store never shortens
+an existing policy, so shared media retains the longest requested horizon
+regardless of processing order.
+
+For local database-backed audit tests, initialize a verified disposable database
+through the guarded migration reset, not schema push alone: the migration SQL
+installs CHECK constraints that Prisma's schema push cannot express. Never reset
+or mark an existing retained database to make the test guard pass.
 
 ## Operations
 
