@@ -1,6 +1,6 @@
-import { createLogger } from '@klicker-uzh/logging/node'
-import type { IncomingMessage, ServerResponse } from 'node:http'
 import { EventEmitter } from 'node:events'
+import type { IncomingMessage, ServerResponse } from 'node:http'
+import { createLogger } from '@klicker-uzh/logging/node'
 import { describe, expect, it } from 'vitest'
 import { responseApiServiceName } from '../src/logger.js'
 import { beginNodeRequest } from '../src/requestLogging.js'

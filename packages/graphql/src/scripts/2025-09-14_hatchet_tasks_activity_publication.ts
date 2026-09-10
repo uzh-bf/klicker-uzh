@@ -1,6 +1,6 @@
 import {
-  getKBGraphTerminalResult,
   createHatchetClient,
+  getKBGraphTerminalResult,
   prepareHatchetTasks,
 } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'

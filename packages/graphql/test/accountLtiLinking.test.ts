@@ -1,5 +1,5 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import { createLogger } from '@klicker-uzh/logging/node'
+import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { signJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'

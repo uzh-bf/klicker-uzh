@@ -16,7 +16,6 @@ import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { registerKBHttpRoutes } from './kbHttpRoutes.js'
-import { createRequire } from 'node:module'
 import { logger } from './logger.js'
 import { requestLoggingMiddleware } from './requestLogging.js'
 

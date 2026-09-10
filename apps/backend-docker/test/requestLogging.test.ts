@@ -1,6 +1,6 @@
+import { EventEmitter } from 'node:events'
 import { createLogger } from '@klicker-uzh/logging/node'
 import type { Request, Response } from 'express'
-import { EventEmitter } from 'node:events'
 import { describe, expect, it, vi } from 'vitest'
 import { backendServiceName } from '../src/logger.js'
 import { requestLoggingMiddleware } from '../src/requestLogging.js'
@@ -19,6 +19,7 @@ function harness(path = '/api/graphql') {
   const req = {
     method: 'POST',
     path,
+    route: { path },
     originalUrl: `${path}?token=private`,
     headers: {
       'x-request-id': 'request-1',
@@ -41,6 +42,25 @@ function harness(path = '/api/graphql') {
 }
 
 describe('requestLoggingMiddleware', () => {
+  it.each([
+    '/api/ingestion/resources/:resourceId/versions/:resourceVersion',
+    '/api/webhooks/kb-ingestion',
+  ])('records the matched KB route template %s', (route) => {
+    const test = harness('/private-resource-id')
+    requestLoggingMiddleware(test.root)(test.req, test.res, vi.fn())
+    test.req.route = { path: route }
+    ;(test.res as unknown as EventEmitter).emit('finish')
+    expect(test.records[0]).toMatchObject({ http: { route } })
+    expect(JSON.stringify(test.records)).not.toContain('private-resource-id')
+  })
+
+  it('uses a bounded fallback for unmatched paths', () => {
+    const test = harness('/private-resource-id')
+    requestLoggingMiddleware(test.root)(test.req, test.res, vi.fn())
+    ;(test.res as unknown as EventEmitter).emit('finish')
+    expect(test.records[0]).toMatchObject({ http: { route: '/unmatched' } })
+  })
+
   it('binds safe request context and records GraphQL completion once', () => {
     const test = harness()
     const next = vi.fn()

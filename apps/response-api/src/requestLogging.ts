@@ -1,9 +1,9 @@
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import {
-  resolveRequestContext,
   type RequestContext,
+  resolveRequestContext,
 } from '@klicker-uzh/logging/request'
-import type { IncomingMessage, ServerResponse } from 'node:http'
 
 export type ResponseApiRoute = '/AddResponse' | '/healthz' | '/'
 

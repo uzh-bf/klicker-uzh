@@ -14,8 +14,8 @@ import {
   settleKbKnowledgeGraphResult,
 } from '@klicker-uzh/graphql'
 import {
-  getKBGraphTerminalResult,
   createHatchetClient,
+  getKBGraphTerminalResult,
   prepareHatchetTasks,
 } from '@klicker-uzh/hatchet'
 import { resolveRequestContext } from '@klicker-uzh/logging/request'

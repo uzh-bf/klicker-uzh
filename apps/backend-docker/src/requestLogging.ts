@@ -1,9 +1,17 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import {
-  resolveRequestContext,
   type RequestContext,
+  resolveRequestContext,
 } from '@klicker-uzh/logging/request'
 import type { RequestHandler } from 'express'
+
+const LOGGED_ROUTES = new Set([
+  '/healthz',
+  '/api/graphql',
+  '/api/ingestion/resources/:resourceId/versions/:resourceVersion',
+  '/api/webhooks/kb-ingestion',
+  '/__growthbook__/api/features/sdk-test',
+])
 
 declare global {
   namespace Express {
@@ -25,7 +33,6 @@ export function requestLoggingMiddleware(root: AppLogger): RequestHandler {
     })
     const log = root.child(requestContext)
     const startedAt = performance.now()
-    const route = req.path === '/healthz' ? '/healthz' : '/api/graphql'
 
     req.locals = {
       ...req.locals,
@@ -34,8 +41,13 @@ export function requestLoggingMiddleware(root: AppLogger): RequestHandler {
     }
     res.setHeader('x-request-id', requestContext.requestId)
 
-    if (route !== '/healthz') {
+    if (req.path !== '/healthz') {
       res.once('finish', () => {
+        const matchedRoute = req.route?.path
+        const route =
+          typeof matchedRoute === 'string' && LOGGED_ROUTES.has(matchedRoute)
+            ? matchedRoute
+            : '/unmatched'
         const level = res.statusCode >= 500 ? 'error' : 'info'
         log[level](
           {

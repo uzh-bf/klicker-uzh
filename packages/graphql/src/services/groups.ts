@@ -1,4 +1,3 @@
-import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementInstanceResults,
@@ -23,6 +22,7 @@ import {
   uniqueNamesGenerator,
 } from 'unique-names-generator'
 import { v4 as uuidv4 } from 'uuid'
+import type { ElementInstanceOptions, ResponseInput } from '@/ops.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import {
   splitGroupsFinal,
