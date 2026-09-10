@@ -263,6 +263,36 @@ describe('KB ingestion dispatch', () => {
     )
   })
 
+  it.each([
+    { status: KBResourceStatus.FAILED },
+    { ingestionAttemptId: 'superseded-attempt' },
+    { resourceVersion: 4 },
+    { externalOperationId: OPERATION_ID },
+  ])('rechecks the current attempt under the KB lock (%j)', async (change) => {
+    const resource = {
+      status: KBResourceStatus.QUEUED,
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 3,
+      contentSha256: CONTENT_SHA256,
+      mimeType: 'text/plain',
+      sizeBytes: 1024,
+      externalOperationId: null,
+    }
+    const prisma = dispatchPrisma(resource)
+    prisma.kBResource.findFirst.mockResolvedValue({
+      ...resource,
+      ...change,
+      kb: { storageLimitMiB: null },
+    })
+    const apiClient = client()
+    const result = await dispatchKBIngestion(input, {
+      prisma: prisma as never,
+      client: apiClient,
+    })
+    expect(result).toBe(change.externalOperationId)
+    expect(apiClient.acceptResource).not.toHaveBeenCalled()
+  })
+
   it('returns an already correlated operation without another API call', async () => {
     const prisma = dispatchPrisma({
       status: KBResourceStatus.PROCESSING,
@@ -362,16 +392,21 @@ describe('KB ingestion dispatch', () => {
   })
 
   it.each([
-    null,
-    4096,
-  ])('uses the KB storage allowance before dispatch (%s MiB)', async (storageLimitMiB) => {
+    { storageLimitMiB: null, cached: false },
+    { storageLimitMiB: 4096, cached: false },
+    { storageLimitMiB: null, cached: true },
+    { storageLimitMiB: 4096, cached: true },
+  ])('uses the current KB storage allowance before dispatch ($storageLimitMiB MiB, cached: $cached)', async ({
+    storageLimitMiB,
+    cached,
+  }) => {
     const prisma = dispatchPrisma(
       {
         status: KBResourceStatus.QUEUED,
         ingestionAttemptId: ATTEMPT_ID,
         resourceVersion: 3,
-        contentSha256: null,
-        mimeType: null,
+        contentSha256: cached ? CONTENT_SHA256 : null,
+        mimeType: cached ? 'text/plain' : null,
         sizeBytes: 1000,
         externalOperationId: null,
         kb: { deletedAt: null, storageLimitMiB },
