@@ -355,3 +355,21 @@ Root typecheck includes the Playwright compiler surface through its package `che
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
 For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+## Local recovery regression checks
+
+`pnpm run test:dev-runtime` runs the shell process/readiness regressions,
+the HTTP readiness deadline tests, and `util/test-recover-bootstrap.sh`.
+The recovery suite uses synthetic commands and temporary files, checks pinned
+consumer sources and mounted-source refusal, and never invokes real Docker or
+initializes a database. The existing runtime CI step runs this command.
+
+The MCP parent-repair acceptance suite is a separate manual integration check:
+inside the provisioned self-contained container at `/workspaces/klicker-uzh`,
+run `LOCAL_MCP_SEED_TEST=1 node apps/chat/scripts/test-local-mcp-seed.mjs`
+after building its util dependency. It requires the local PostgreSQL connection in the process
+environment and builds temporary mirror tables on that connection. It verifies
+restoration and rollback using synthetic fixtures, not production tables.
+It is not currently scheduled in CI; a passing shell recovery check does not
+claim MCP transaction coverage. Do not print connection strings or supply
+remote/production database credentials to this command.

@@ -8,9 +8,22 @@ const OPEN_EVENT =
   "github.event_name != 'pull_request' || github.event.action != 'closed'"
 const EXECUTION_EVENT =
   "github.event_name != 'pull_request' || (github.event.action != 'closed' && github.event.pull_request.draft != true)"
-const CLOSED_EVENT =
+const CANCEL_EVENT =
   "github.event_name == 'pull_request' && (github.event.action == 'converted_to_draft' || github.event.action == 'closed')"
-const TELEMETRY_EVENT = `always() && (${OPEN_EVENT}) && (github.event_name != 'pull_request' || github.event.pull_request.draft != true)`
+
+function hasExactPermissions(actual, expected) {
+  if (actual === null || actual === undefined || typeof actual !== 'object')
+    return false
+  const actualKeys = Object.keys(actual).sort()
+  const expectedKeys = Object.keys(expected).sort()
+  return (
+    actualKeys.length === expectedKeys.length &&
+    actualKeys.every(
+      (key, index) =>
+        key === expectedKeys[index] && actual[key] === expected[key]
+    )
+  )
+}
 
 function validateCallerLifecycle(caller) {
   const issues = []
@@ -20,10 +33,11 @@ function validateCallerLifecycle(caller) {
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
+    !caller.on.pull_request.types.includes('converted_to_draft') ||
     caller.concurrency !== undefined
   ) {
     issues.push(
-      'caller must preserve workflow identity and handle closed PRs without workflow concurrency'
+      'caller must preserve workflow identity and handle closed and converted-to-draft PRs without workflow concurrency'
     )
   }
   for (const [name, job] of Object.entries(jobs)) {
@@ -41,18 +55,53 @@ function validateCallerLifecycle(caller) {
   if (execution?.if !== EXECUTION_EVENT) {
     issues.push('execution must exclude closed and draft PR events')
   }
-  if (jobs['test-playwright-status']?.if !== `always() && (${OPEN_EVENT})`) {
+  const status = jobs['test-playwright-status']
+  const expectedStatusIf = `always() && !cancelled() && needs.test-playwright-execution.result != 'cancelled' && (${OPEN_EVENT})`
+  if (status?.if !== expectedStatusIf) {
     issues.push(
-      'test-playwright-status must retain always() and exclude closed PR events'
-    )
-  }
-  if (jobs['playwright-queue-telemetry']?.if !== TELEMETRY_EVENT) {
-    issues.push(
-      'playwright-queue-telemetry must retain always(), exclude closed PR events, and skip drafts'
+      'status must always report open events while excluding cancellation'
     )
   }
   if (
-    close?.if !== CLOSED_EVENT ||
+    !hasExactPermissions(status?.permissions, { actions: 'read' }) ||
+    status?.['runs-on'] !== 'ubuntu-latest' ||
+    status?.container !== undefined ||
+    status?.services !== undefined ||
+    status?.steps?.some((step) => step.uses?.startsWith('actions/checkout@'))
+  ) {
+    issues.push(
+      'status must be hosted, checkout-free, and have only actions: read permission'
+    )
+  }
+  const queueStep = status?.steps?.find((step) => step.id === 'queue_telemetry')
+  if (queueStep?.if !== 'always() && !cancelled()') {
+    issues.push(
+      'queue telemetry must run for every non-cancelled status report'
+    )
+  }
+  if (queueStep?.['continue-on-error'] !== true) {
+    issues.push('queue telemetry must be best effort')
+  }
+  const queueUpload = status?.steps?.find(
+    (step) => step.name === 'Upload queue telemetry'
+  )
+  if (
+    queueUpload?.if !==
+    "always() && !cancelled() && steps.queue_telemetry.outcome != 'skipped'"
+  ) {
+    issues.push('queue telemetry upload must be cancellation-aware')
+  }
+  if (queueUpload?.['continue-on-error'] !== true) {
+    issues.push('queue telemetry upload must be best effort')
+  }
+  if (queueUpload?.with?.['if-no-files-found'] !== 'ignore') {
+    issues.push('queue telemetry upload must ignore a missing report')
+  }
+  if (jobs['playwright-queue-telemetry'] !== undefined) {
+    issues.push('queue telemetry must be part of the status job')
+  }
+  if (
+    close?.if !== CANCEL_EVENT ||
     close.needs !== undefined ||
     close['runs-on'] !== 'ubuntu-latest' ||
     close['timeout-minutes'] !== 5 ||
@@ -65,7 +114,7 @@ function validateCallerLifecycle(caller) {
     close.steps[0].run !== ':'
   ) {
     issues.push(
-      'close cancellation must be an independent permission-free hosted no-op'
+      'draft conversion and close cancellation must be an independent permission-free hosted no-op'
     )
   }
   return issues
@@ -109,8 +158,10 @@ function namedSteps(text) {
 function validatePublicPlaywrightWorkflow(root) {
   const issues = []
   const caller = readWorkflow(root, 'test-playwright.yml', issues)
+  let callerParsed
   try {
-    issues.push(...validateCallerLifecycle(YAML.parse(caller)))
+    callerParsed = YAML.parse(caller)
+    issues.push(...validateCallerLifecycle(callerParsed))
   } catch {
     issues.push('caller lifecycle policy must be valid YAML')
   }
@@ -119,6 +170,12 @@ function validatePublicPlaywrightWorkflow(root) {
     'public-pr-playwright-shards.yml',
     issues
   )
+  let publicParsed
+  try {
+    publicParsed = YAML.parse(publicWorkflow)
+  } catch {
+    issues.push('public reusable workflow policy must be valid YAML')
+  }
   const seedWorkflow = readWorkflow(root, 'playwright-cache-seed.yml', issues)
   const publicActions = [
     readAction(root, 'playwright-build', issues),
@@ -152,8 +209,27 @@ function validatePublicPlaywrightWorkflow(root) {
     }
   }
 
-  if (!/^permissions:\s*\n\s+contents:\s+read\s*$/m.test(publicWorkflow)) {
-    issues.push('public workflow must grant only contents: read')
+  if (
+    publicParsed?.permissions !== undefined ||
+    publicParsed?.jobs?.prepare?.permissions !== undefined
+  ) {
+    issues.push(
+      'trusted preparation must inherit caller permissions for compatibility'
+    )
+  }
+  for (const name of [
+    'build-and-compile-hosted',
+    'build-and-compile-public-pr',
+    'test-playwright-hosted',
+    'test-playwright-public-pr',
+  ]) {
+    if (
+      !hasExactPermissions(publicParsed?.jobs?.[name]?.permissions, {
+        contents: 'read',
+      })
+    ) {
+      issues.push(`${name} must have only contents: read permission`)
+    }
   }
 
   const checkoutCount = (
@@ -251,23 +327,18 @@ function validatePublicPlaywrightWorkflow(root) {
     )
   }
 
-  const queueJobStart = caller.indexOf('  playwright-queue-telemetry:')
-  if (queueJobStart === -1) {
-    issues.push('caller must define the playwright-queue-telemetry job')
-  } else {
-    const queueJob = caller.slice(queueJobStart)
-    if (!queueJob.includes('runs-on: ubuntu-latest')) {
-      issues.push('queue telemetry must run on GitHub-hosted Ubuntu')
-    }
-    if (!queueJob.includes('permissions:\n      actions: read')) {
-      issues.push('queue telemetry must have only actions: read permission')
-    }
-    if (queueJob.includes('actions/checkout@')) {
-      issues.push('queue telemetry must not check out repository code')
-    }
-    if (queueJob.includes('public-pr-arm64')) {
-      issues.push('queue telemetry must not target the public runner pool')
-    }
+  const executionPermissions =
+    callerParsed?.jobs?.['test-playwright-execution']?.permissions
+  if (
+    !hasExactPermissions(executionPermissions, {
+      contents: 'read',
+      actions: 'read',
+      'pull-requests': 'read',
+    })
+  ) {
+    issues.push(
+      'caller execution must forward contents, actions, and pull-requests read permissions'
+    )
   }
 
   if (

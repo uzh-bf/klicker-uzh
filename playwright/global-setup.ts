@@ -601,15 +601,18 @@ export default async function globalSetup() {
     console.log(
       `[global-setup] Seed snapshot restore ${result.status} (${result.elapsedMs ?? 0}ms): ${result.message}`
     )
-    if (result.status === 'restored') return
     if (result.status === 'error') {
       throw new Error(`Seed snapshot restore failed: ${result.message}`)
+    }
+    if (result.status === 'restored') {
+      console.log('[global-setup] Done.')
+      return
     }
   }
 
   console.log('[global-setup] Ensuring database views...')
-  const seedStartedAt = Date.now()
   await ensureDatabaseViews()
+  const seedStartedAt = Date.now()
   console.log('[global-setup] Cleaning up database...')
   await cleanupDatabase()
   console.log('[global-setup] Seeding database...')
@@ -618,8 +621,11 @@ export default async function globalSetup() {
     `[global-setup] Cleanup and seed completed in ${Date.now() - seedStartedAt}ms.`
   )
   if (seedSnapshotEnvironment()) {
+    // The seed itself succeeded; a failed capture only means the next run
+    // cannot reuse it, so report it loudly without failing the setup.
     const result = captureSeedSnapshot()
-    console.log(
+    const report = result.status === 'captured' ? console.log : console.warn
+    report(
       `[global-setup] Seed snapshot capture ${result.status}: ${result.message}`
     )
   }

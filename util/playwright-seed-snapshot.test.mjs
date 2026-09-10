@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -8,6 +14,7 @@ import {
   composeRestoreSql,
   computeSeedSnapshotKey,
   DISPOSABLE_DATABASE,
+  DISPOSABLE_MARKER,
   restoreSeedSnapshot,
   snapshotEnvironmentState,
 } from './playwright-seed-snapshot.mjs'
@@ -53,6 +60,7 @@ function createDockerRunner({
   schemaDump = schemaOnlyDump,
   dump = fullDump,
   restoreStatus = 0,
+  dumpStatus = 0,
   version = '150008',
   calls = [],
 } = {}) {
@@ -62,6 +70,13 @@ function createDockerRunner({
       return { status: 0, stdout: version + '\n', stderr: '' }
     }
     if (args.includes('pg_dump')) {
+      if (dumpStatus !== 0) {
+        return {
+          status: dumpStatus,
+          stdout: '',
+          stderr: 'synthetic dump failure',
+        }
+      }
       if (args.includes('--schema-only')) {
         return { status: 0, stdout: schemaDump, stderr: '' }
       }
@@ -170,7 +185,7 @@ test('restore SQL keeps one guarded transaction and strips unsafe dump lines', (
   assert.equal(sql.match(/COMMIT;/g)?.length, 1)
   assert.ok(sql.includes('SET LOCAL lock_timeout'))
   assert.ok(sql.includes("current_database() <> '" + DISPOSABLE_DATABASE + "'"))
-  assert.ok(sql.includes('klicker-disposable-test-v1'))
+  assert.ok(sql.includes(DISPOSABLE_MARKER))
   assert.ok(
     sql.includes(
       'rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls'
@@ -346,7 +361,7 @@ test('restore failures surface as errors instead of partial continuation', () =>
       cacheRoot,
     })
     assert.equal(failed.status, 'error')
-    assert.ok(failed.message.includes('left the previous state intact'))
+    assert.ok(failed.message.includes('synthetic failure'))
 
     const badVersion = restoreSeedSnapshot({
       env: baseEnvironment,
@@ -354,6 +369,26 @@ test('restore failures surface as errors instead of partial continuation', () =>
       cacheRoot,
     })
     assert.equal(badVersion.status, 'error')
+  })
+})
+
+test('capture failures report an error and leave no reusable snapshot key', () => {
+  withCacheRoot((cacheRoot) => {
+    const result = captureSeedSnapshot({
+      env: baseEnvironment,
+      runDocker: createDockerRunner({ dumpStatus: 1 }),
+      cacheRoot,
+    })
+    assert.equal(result.status, 'error')
+    assert.ok(result.message.includes('synthetic dump failure'))
+    assert.equal(existsSync(join(cacheRoot, 'key.json')), false)
+
+    const miss = restoreSeedSnapshot({
+      env: baseEnvironment,
+      runDocker: createDockerRunner(),
+      cacheRoot,
+    })
+    assert.equal(miss.status, 'miss')
   })
 })
 

@@ -123,7 +123,14 @@ function createInferenceHarness({
   return {
     pathExists,
     readDirectory: () => [...specFiles].sort(),
-    readFile: readFile ?? (() => JSON.stringify(manifest)),
+    readFile:
+      readFile ??
+      ((path) => {
+        if (path.endsWith('/playwright/profiles.json')) {
+          return JSON.stringify(manifest)
+        }
+        throw new Error(`unexpected synthetic file: ${path}`)
+      }),
   }
 }
 
@@ -970,16 +977,28 @@ test('explicit runtime profiles win over spec-file inference', () => {
   ])
 })
 
+function readPhaseTimings(logs) {
+  const line = logs.find((entry) => entry.includes('elapsed preparation='))
+  assert.ok(line, 'phase timing line missing')
+  return Object.fromEntries(
+    [...line.matchAll(/(preparation|runtime|browser)=([\d.]+)ms/g)].map(
+      ([, phase, value]) => [phase, Number(value)]
+    )
+  )
+}
+
 test('phase timings are reported for successful and failed runs', () => {
   const success = createLauncherHarness()
   runPlaywrightHost(['A-login.spec.ts'], success.dependencies)
-  assert.ok(
-    success.logs.some((line) =>
-      line.includes(
-        'elapsed preparation=100.0ms runtime=100.0ms browser=100.0ms'
-      )
-    )
-  )
+  const completed = readPhaseTimings(success.logs)
+  assert.deepEqual(Object.keys(completed).sort(), [
+    'browser',
+    'preparation',
+    'runtime',
+  ])
+  assert.ok(completed.preparation > 0)
+  assert.ok(completed.runtime > 0)
+  assert.ok(completed.browser > 0)
 
   const failure = createLauncherHarness({
     failWhen: ({ command, args }) =>
@@ -989,11 +1008,10 @@ test('phase timings are reported for successful and failed runs', () => {
     () => runPlaywrightHost(['A-login.spec.ts'], failure.dependencies),
     /synthetic launcher failure/
   )
-  assert.ok(
-    failure.logs.some((line) =>
-      line.includes('elapsed preparation=100.0ms runtime=100.0ms browser=0.0ms')
-    )
-  )
+  const aborted = readPhaseTimings(failure.logs)
+  assert.ok(aborted.preparation > 0)
+  assert.ok(aborted.runtime > 0)
+  assert.equal(aborted.browser, 0)
 })
 
 test('cold runs complete builds and browser preparation before reconciliation', () => {

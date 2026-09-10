@@ -103,7 +103,7 @@ on conversion/closure. The status reports a draft skip explicitly and rejects an
 unexpected skipped, cancelled or failed execution for ready PRs. A cancelled
 run never proves success without verified supersession. The ready reporter requires
 full mode, should_run=true, a valid route and the complete eight-shard matrix.
-Exercise its executable decision logic, not only YAML string matching. Drafts skip queue telemetry.
+Exercise its executable decision logic, not only YAML string matching. Queue telemetry stays a best-effort step of the status job for every non-cancelled report, including drafts.
 Preserve push behavior, trusted reusable workflow provenance, runner restrictions,
 permissions and the required status name. Do not introduce pull_request_target.
 

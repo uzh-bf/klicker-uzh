@@ -124,12 +124,38 @@ test('lifecycle policy rejects cancellation outside the exact conversion/closed-
     'status on close': (w) => {
       w.jobs['test-playwright-status'].if = 'always()'
     },
-    'telemetry on close': (w) => {
-      w.jobs['playwright-queue-telemetry'].if = 'always()'
-    },
-    'telemetry on draft': (w) => {
-      w.jobs['playwright-queue-telemetry'].if =
+    'status missing cancellation guard': (w) => {
+      w.jobs['test-playwright-status'].if =
         "always() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
+    },
+    'status missing dependency guard': (w) => {
+      w.jobs['test-playwright-status'].if =
+        "always() && !cancelled() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
+    },
+    'telemetry missing cancellation guard': (w) => {
+      w.jobs['test-playwright-status'].steps.find(
+        (step) => step.id === 'queue_telemetry'
+      ).if = "always() && needs.test-playwright-execution.result == 'failure'"
+    },
+    'telemetry not best effort': (w) => {
+      delete w.jobs['test-playwright-status'].steps.find(
+        (step) => step.id === 'queue_telemetry'
+      )['continue-on-error']
+    },
+    'telemetry upload on cancellation': (w) => {
+      w.jobs['test-playwright-status'].steps.find(
+        (step) => step.name === 'Upload queue telemetry'
+      ).if = 'always()'
+    },
+    'standalone telemetry job': (w) => {
+      w.jobs['playwright-queue-telemetry'] = {
+        if: 'always()',
+      }
+    },
+    'missing converted_to_draft trigger': (w) => {
+      w.on.pull_request.types = w.on.pull_request.types.filter(
+        (type) => type !== 'converted_to_draft'
+      )
     },
     'elevated token': (w) => {
       w.jobs['cancel-closed-pr'].permissions = { actions: 'write' }
@@ -198,24 +224,25 @@ function runStatusReporter(t, overrides = {}) {
         ...overrides,
       },
       encoding: 'utf8',
+      timeout: 120_000,
     }
   )
+  const metadataPath = path.join(directory, 'playwright-run-metadata.txt')
   return {
     ...result,
     output: `${result.stdout}${result.stderr}`,
-    metadata: Object.fromEntries(
-      fs
-        .readFileSync(
-          path.join(directory, 'playwright-run-metadata.txt'),
-          'utf8'
+    metadata: fs.existsSync(metadataPath)
+      ? Object.fromEntries(
+          fs
+            .readFileSync(metadataPath, 'utf8')
+            .trim()
+            .split('\n')
+            .map((line) => {
+              const separator = line.indexOf('=')
+              return [line.slice(0, separator), line.slice(separator + 1)]
+            })
         )
-        .trim()
-        .split('\n')
-        .map((line) => {
-          const separator = line.indexOf('=')
-          return [line.slice(0, separator), line.slice(separator + 1)]
-        })
-    ),
+      : {},
   }
 }
 
@@ -313,6 +340,34 @@ test('status reporter executes draft skip and strict ready decisions', (t) => {
     assert.equal(push.metadata.is_pull_request, 'false')
     assert.equal(push.metadata.execution_result, 'success')
     assert.equal(push.metadata.should_run, SHOULD_RUN)
+  }
+})
+
+test('status reporter accepts equivalent-run reuse only for numeric push runs', (t) => {
+  const reused = runStatusReporter(t, {
+    IS_PULL_REQUEST: 'false',
+    ROUTE: 'hosted',
+    SHOULD_RUN: 'unknown',
+    MODE: 'unknown',
+    SHARD_MATRIX: '',
+    DUPLICATE_RUN_ID: '123',
+    GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+  })
+  assert.equal(reused.status, 0, reused.output)
+  assert.equal(reused.metadata.duplicate_run_id, '123')
+
+  const rejected = {
+    'non-numeric run id': {
+      IS_PULL_REQUEST: 'false',
+      ROUTE: 'hosted',
+      DUPLICATE_RUN_ID: '123abc',
+    },
+    'pull request reuse': { DUPLICATE_RUN_ID: '123' },
+  }
+  for (const [name, overrides] of Object.entries(rejected)) {
+    const result = runStatusReporter(t, overrides)
+    assert.equal(result.status, 1, `${name}: ${result.output}`)
+    assert.equal(result.metadata.duplicate_run_id, overrides.DUPLICATE_RUN_ID)
   }
 })
 

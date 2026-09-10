@@ -40,6 +40,8 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: read
+      actions: read
+      pull-requests: read
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
       route_hint: auto
@@ -49,14 +51,20 @@ jobs:
   # group so a stale reporter cannot block the current invocation.
   test-playwright-status:
     needs: test-playwright-execution
-    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed')
+    if: >-
+      always() &&
+      !cancelled() &&
+      needs.test-playwright-execution.result != 'cancelled' &&
+      (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      actions: read
     steps:
       - name: Check result
         shell: bash
         env:
+          DUPLICATE_RUN_ID: ${{ needs.test-playwright-execution.outputs.duplicate_run_id }}
           EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
           ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
@@ -73,6 +81,7 @@ jobs:
             printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
             printf 'is_pull_request=%s\n' "${IS_PULL_REQUEST:-unknown}"
             printf 'is_draft=%s\n' "${IS_DRAFT:-unknown}"
+            printf 'duplicate_run_id=%s\n' "${DUPLICATE_RUN_ID:-}"
             printf 'execution_result=%s\n' "$EXECUTION_RESULT"
           } > playwright-run-metadata.txt
 
@@ -108,6 +117,21 @@ jobs:
           if [ "$ROUTE" != 'hosted' ] && [ "$ROUTE" != 'public-pr' ]; then
             echo 'Playwright execution returned an invalid route.'
             exit 1
+          fi
+          # Equivalent validation reuse is push-only. A pull request must
+          # prove its own execution plan below.
+          if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
+            if [ "${IS_PULL_REQUEST:-false}" = 'true' ]; then
+              echo 'Pull request execution cannot reuse equivalent validation.'
+              exit 1
+            fi
+            if ! [[ "$DUPLICATE_RUN_ID" =~ ^[0-9]+$ ]]; then
+              echo 'Invalid equivalent validation run ID.'
+              exit 1
+            fi
+            echo "Equivalent PR validation passed in run $DUPLICATE_RUN_ID."
+            echo "- Reused validation: [run $DUPLICATE_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$DUPLICATE_RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
           # Push verification keeps its existing selector behavior. Ready PRs
@@ -167,24 +191,21 @@ jobs:
           echo 'Playwright execution passed.'
 
       - name: Upload run metadata
-        if: always()
+        if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-run-metadata
           path: playwright-run-metadata.txt
           retention-days: 7
 
-  # Queue inspection is deliberately hosted and checkout-free. It has only
-  # actions: read permission and never runs on the public self-hosted pool.
-  playwright-queue-telemetry:
-    needs: [test-playwright-execution, test-playwright-status]
-    if: always() && (github.event_name != 'pull_request' || github.event.action != 'closed') && (github.event_name != 'pull_request' || github.event.pull_request.draft != true)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      actions: read
-    steps:
+      # Queue inspection is best effort, hosted, and checkout-free. It runs
+      # for every non-cancelled open-event status report, including failures.
       - name: Collect current-run queue telemetry
+        id: queue_telemetry
+        if: >-
+          always() &&
+          !cancelled()
+        continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ github.token }}
@@ -230,25 +251,20 @@ jobs:
                   per_page: 100,
                 }
               )
-              const records = jobs
-                .filter(
-                  (job) =>
-                    !job.name.toLowerCase().includes('queue-telemetry')
-                )
-                .map((job) => ({
-                  jobClass: jobClass(job.name),
-                  status: job.status ?? 'unknown',
-                  conclusion: job.conclusion ?? null,
-                  runner: job.runner_name ?? null,
-                  queueSeconds: secondsBetween(
-                    job.created_at,
-                    job.started_at
-                  ),
-                  durationSeconds: secondsBetween(
-                    job.started_at,
-                    job.completed_at
-                  ),
-                }))
+              const records = jobs.map((job) => ({
+                jobClass: jobClass(job.name),
+                status: job.status ?? 'unknown',
+                conclusion: job.conclusion ?? null,
+                runner: job.runner_name ?? null,
+                queueSeconds: secondsBetween(
+                  job.created_at,
+                  job.started_at
+                ),
+                durationSeconds: secondsBetween(
+                  job.started_at,
+                  job.completed_at
+                ),
+              }))
               const queueSeconds = records
                 .map((record) => record.queueSeconds)
                 .filter((value) => value !== null)
@@ -290,10 +306,14 @@ jobs:
               .write()
 
       - name: Upload queue telemetry
-        if: always()
+        if: >-
+          always() &&
+          !cancelled() &&
+          steps.queue_telemetry.outcome != 'skipped'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: playwright-queue-telemetry
           path: playwright-queue-telemetry.json
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 7
