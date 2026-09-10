@@ -3,11 +3,7 @@ import {
   faPlayCircle,
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import {
-  faBolt,
-  faUser,
-  faWandMagicSparkles,
-} from '@fortawesome/free-solid-svg-icons'
+import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
@@ -123,6 +119,41 @@ function Header({
         badge: 'bg-green-700 hover:bg-green-800',
       },
     },
+    ...(showBroaderAi
+      ? [
+          {
+            key: 'knowledge-bases-item',
+            disabled: aiCapability !== 'enabled',
+            type: 'link' as const,
+            label: t('kb.title'),
+            onClick: () => router.push('/resources/knowledgeBases'),
+            badge: t('manage.general.betaFeatures'),
+            data: { cy: 'knowledge-bases' },
+            className: {
+              label: 'bg-opacity-100',
+              text: 'mr-8',
+              badge: 'bg-green-700 hover:bg-green-800',
+            },
+          },
+        ]
+      : []),
+    ...(canAuthorChatbots
+      ? [
+          {
+            key: 'chatbots-item',
+            type: 'link' as const,
+            label: t('manage.resources.chatbots'),
+            onClick: () => router.push('/resources/chatbots'),
+            badge: t('manage.general.betaFeatures'),
+            data: { cy: 'chatbots' },
+            className: {
+              label: 'bg-opacity-100',
+              text: 'mr-8',
+              badge: 'bg-green-700 hover:bg-green-800',
+            },
+          },
+        ]
+      : []),
   ]
 
   const leftNavigation: NavigationItemProps[] = [
@@ -131,7 +162,8 @@ function Header({
       key: 'library-menubar-item',
       label: t('manage.general.library'),
       onClick: () => router.push('/'),
-      active: router.pathname === '/',
+      active:
+        router.pathname === '/' || router.pathname === '/elements/generate',
       data: { cy: 'library' },
     },
     {
@@ -160,7 +192,9 @@ function Header({
         router.pathname === '/resources/answerCollections' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||
-        router.pathname === '/resources/mediaLibrary',
+        router.pathname === '/resources/mediaLibrary' ||
+        router.pathname.startsWith('/resources/knowledgeBases') ||
+        router.pathname.startsWith('/resources/chatbots'),
       notification:
         pendingRequestData &&
         pendingRequestData.countCatalogSharingRequests !== 0,
@@ -172,81 +206,6 @@ function Header({
       },
     },
   ]
-
-  const aiNavigation: NavigationDropdownItemProps = {
-    type: 'dropdown',
-    key: 'ai-menubar-item',
-    label: t('manage.general.ai'),
-    icon: faWandMagicSparkles,
-    disabled: aiCapability !== 'enabled' && !canAuthorChatbots,
-    active:
-      router.pathname.startsWith('/resources/knowledgeBases') ||
-      router.pathname === '/resources/chatbots' ||
-      router.pathname === '/elements/generate',
-    elements: [
-      ...(showBroaderAi
-        ? [
-            {
-              key: 'element-generation-item',
-              disabled: aiCapability !== 'enabled',
-              type: 'link' as const,
-              label: t('manage.elementGeneration.title'),
-              onClick: () => router.push('/elements/generate'),
-              badge: t('manage.general.betaFeatures'),
-              data: { cy: 'element-generation' },
-              className: {
-                label: 'bg-opacity-100',
-                text: 'mr-8',
-                badge: 'bg-green-700 hover:bg-green-800',
-              },
-            },
-            {
-              key: 'knowledge-bases-item',
-              disabled: aiCapability !== 'enabled',
-              type: 'link' as const,
-              label: t('kb.title'),
-              onClick: () => router.push('/resources/knowledgeBases'),
-              badge: t('manage.general.betaFeatures'),
-              data: { cy: 'knowledge-bases' },
-              className: {
-                label: 'bg-opacity-100',
-                text: 'mr-8',
-                badge: 'bg-green-700 hover:bg-green-800',
-              },
-            },
-          ]
-        : []),
-      ...(canAuthorChatbots
-        ? [
-            {
-              key: 'chatbots-item',
-              type: 'link' as const,
-              label: t('manage.resources.chatbots'),
-              onClick: () => router.push('/resources/chatbots'),
-              badge: t('manage.general.betaFeatures'),
-              data: { cy: 'chatbots' },
-              className: {
-                label: 'bg-opacity-100',
-                text: 'mr-8',
-                badge: 'bg-green-700 hover:bg-green-800',
-              },
-            },
-          ]
-        : []),
-    ],
-    data: { cy: 'ai' },
-    className: {
-      trigger:
-        aiCapability === 'temporarilyUnavailable'
-          ? 'data-disabled:pointer-events-auto'
-          : undefined,
-      icon: 'text-orange-400',
-      content: 'flex flex-col gap-0.5',
-    },
-  }
-  const aiMenu = (
-    <Navigation items={[aiNavigation]} className={{ root: 'shadow-none' }} />
-  )
 
   const analyticsElements: NavigationDropdownItemProps['elements'] = [
     ...(courses?.slice(0, 5).map<NavigationSubmenuProps>((course) => ({
@@ -401,18 +360,6 @@ function Header({
             items={leftNavigation}
             className={{ root: 'shadow-none' }}
           />
-          {aiCapability === 'temporarilyUnavailable' && !canAuthorChatbots ? (
-            <Tooltip
-              tooltip={t('manage.ai.temporarilyUnavailableDescription')}
-              delay={0}
-              dataContent={{ cy: 'ai-disabled-reason' }}
-              className={{ tooltip: 'z-30' }}
-            >
-              {aiMenu}
-            </Tooltip>
-          ) : showBroaderAi || canAuthorChatbots ? (
-            aiMenu
-          ) : null}
           {learningAnalyticsEnabled ? (
             analyticsMenu
           ) : (

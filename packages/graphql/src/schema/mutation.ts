@@ -7,8 +7,8 @@ import * as ActivitiesService from '../services/activities.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
-import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseDeletionService from '../services/courseDeletion.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
 import * as ElementService from '../services/elements.js'
@@ -119,8 +119,7 @@ import {
   AnswerCollectionEntry,
   ChatAccountUsageOverviewRef,
   Chatbot,
-  ChatbotReasoningConfigInput,
-  ChatbotStandardModeConfigInput,
+  ChatbotRevisionSaveInputRef,
 } from './resource.js'
 import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
 import {
@@ -1498,56 +1497,90 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      updateChatbotModelSettings: t.withAuth(asChatbotAuthor).field({
+      saveChatbotRevision: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
         args: {
           chatbotId: t.arg.string({ required: true }),
-          modelSelection: t.arg.boolean({ required: true }),
-          allowedModelIds: t.arg.stringList({ required: true }),
-          allowedReasoningEffortsByModel: t.arg({
-            type: [ChatbotReasoningConfigInput],
-            required: false,
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
           }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbotModelSettings(args, ctx)
-        },
-      }),
-
-      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          chatbotId: t.arg.string({ required: true }),
-          modelSelection: t.arg.boolean({ required: true }),
-          allowedModelIds: t.arg.stringList({ required: true }),
-          allowedReasoningEffortsByModel: t.arg({
-            type: [ChatbotReasoningConfigInput],
-            required: false,
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
-        },
-      }),
-
-      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          chatbotId: t.arg.string({ required: true }),
-          config: t.arg({
-            type: ChatbotStandardModeConfigInput,
+          input: t.arg({
+            type: ChatbotRevisionSaveInputRef,
             required: true,
           }),
         },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbotStandardModeConfig(
-            args,
-            ctx
-          )
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.saveChatbotRevision(args, ctx),
+      }),
+
+      submitChatbotRevision: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
         },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.submitChatbotRevision(args, ctx),
+      }),
+
+      withdrawChatbotRevision: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.withdrawChatbotRevision(args, ctx),
+      }),
+
+      approveChatbotRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.approveChatbotRevision(args, ctx),
+      }),
+
+      rejectChatbotRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          comment: t.arg.string({
+            required: true,
+            validate: { minLength: 1, regex: /\S/ },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.rejectChatbotRevision(args, ctx),
       }),
 
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
@@ -1579,86 +1612,6 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.createChatbot(args, ctx)
-        },
-      }),
-
-      updateChatbot: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({
-            required: false,
-            validate: { minLength: 1 },
-          }),
-          description: t.arg.string({ required: false }),
-          avatar: t.arg.string({ required: false }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbot(args, ctx)
-        },
-      }),
-
-      saveChatbotDisclaimer: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          chatbotId: t.arg.string({ required: true }),
-          expectedDisclaimerId: t.arg.string({ required: false }),
-          title: t.arg.string({ required: true }),
-          introText: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.saveChatbotDisclaimer(args, ctx)
-        },
-      }),
-
-      requestChatbotPublication: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          useCase: t.arg.string({
-            required: true,
-            validate: { minLength: 1, maxLength: 2000 },
-          }),
-          expectedStudentCount: t.arg.int({
-            required: true,
-            validate: { min: 1 },
-          }),
-          proposedCredits: t.arg.int({
-            required: true,
-            validate: { min: 1 },
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.requestChatbotPublication(args, ctx)
-        },
-      }),
-
-      approveChatbotPublication: t.withAuth(asAdmin).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.approveChatbotPublication(args, ctx)
-        },
-      }),
-
-      rejectChatbotPublication: t.withAuth(asAdmin).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          comment: t.arg.string({
-            required: true,
-            validate: { minLength: 1, regex: /\S/ },
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.rejectChatbotPublication(args, ctx)
         },
       }),
 

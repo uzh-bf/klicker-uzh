@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/i18n",
-  "version": "3.4.0-alpha.74",
+  "version": "3.4.0-alpha.75",
   "files": [
     "index.ts",
     "routing.ts",
@@ -8,11 +8,13 @@
     "messages/"
   ],
   "devDependencies": {
+    "next": "~16.3.4",
+    "react": "~19.2.8",
+    "react-dom": "~19.2.8",
     "typescript": "~6.0.3"
   },
   "peerDependencies": {
-    "next": "^16.2.11",
-    "next-intl": "^4.13.0"
+    "next-intl": "^4.13.7"
   },
   "engines": {
     "node": "=24"

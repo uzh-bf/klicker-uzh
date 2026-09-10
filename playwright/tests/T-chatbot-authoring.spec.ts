@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
 import { test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
@@ -83,11 +84,14 @@ async function createChatbot(
 
 async function navigateToSetupStep(
   page: Parameters<typeof fillEditorField>[0],
-  step: 'basics' | 'modes' | 'disclaimer' | 'review'
+  step: 'basics' | 'modes' | 'disclaimer' | 'credits' | 'review'
 ) {
   const url = new URL(page.url())
   if (step === 'modes') {
     url.searchParams.set('view', 'behavior')
+    url.searchParams.delete('step')
+  } else if (step === 'credits') {
+    url.searchParams.set('view', 'usage')
     url.searchParams.delete('step')
   } else if (step === 'disclaimer') {
     url.searchParams.set('view', 'disclaimer')
@@ -97,8 +101,14 @@ async function navigateToSetupStep(
     url.searchParams.set('step', step)
   }
   await page.goto(url.toString())
-  await expect(page.getByTestId(`chatbot-setup-trigger-${step}`)).toBeVisible()
-  await expect(page.getByTestId(`chatbot-setup-${step}`)).toBeVisible()
+  if (step === 'credits') {
+    await expect(page.getByTestId('chatbot-credit-policy-form')).toBeVisible()
+  } else {
+    await expect(
+      page.getByTestId(`chatbot-setup-trigger-${step}`)
+    ).toBeVisible()
+    await expect(page.getByTestId(`chatbot-setup-${step}`)).toBeVisible()
+  }
 }
 
 async function expectSetupTriggers(page: Page) {
@@ -159,13 +169,63 @@ async function seedPublicationChatbot({
       ownerId: USER_ID_TEST,
       courseId: COURSE_ID_TEST,
       status,
+      publishedAt:
+        status === 'PUBLISHED' || status === 'PAUSED'
+          ? new Date('2026-01-01T12:00:00Z')
+          : undefined,
       disclaimerId: disclaimer?.id,
       publicationUseCase:
         status === 'DRAFT' ? undefined : 'Initial synthetic use case',
       expectedStudentCount: status === 'DRAFT' ? undefined : 20,
       creditInitialCredits: 10,
+      creditResetPeriod: 'WEEKLY',
+      creditResetAmount: 10,
+      creditMaxCredits: 100,
       reviewComment,
     },
+  })
+}
+
+async function approveRevision(page: Page, id: string, version: number) {
+  const persisted = JSON.parse(
+    await readFile(
+      new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+      'utf8'
+    )
+  ) as Record<string, string>
+  // GraphQL is served by the API app, not by the manage frontend origin.
+  // The API derives the JWT from a cookie only when the request origin
+  // matches a known app subdomain, so send the session token from the
+  // browser context's cookie jar as a Bearer token instead.
+  const apiOrigin = process.env.APP_ORIGIN_API ?? 'http://127.0.0.1:3000'
+  const sessionToken = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'next-auth.session-token'
+  )?.value
+  if (!sessionToken) throw new Error('No lecturer session token in context')
+  const response = await page.request.post(`${apiOrigin}/api/graphql`, {
+    headers: {
+      'x-graphql-yoga-csrf': 'true',
+      authorization: `Bearer ${sessionToken}`,
+    },
+    data: {
+      operationName: 'MApproveChatbotRevision',
+      variables: { id, expectedRevisionVersion: version },
+      extensions: {
+        persistedQuery: {
+          version: 1,
+          sha256Hash: persisted.MApproveChatbotRevision,
+        },
+      },
+    },
+  })
+  expect(response.ok()).toBeTruthy()
+  const result = await response.json()
+  expect(result.errors).toBeUndefined()
+  expect(result.data.approveChatbotRevision).toMatchObject({
+    id,
+    status: 'PUBLISHED',
+    revisionStatus: null,
+    authoringRevision: null,
   })
 }
 
@@ -174,7 +234,6 @@ async function fillPublicationRequest(page: Page, useCase: string) {
   await page
     .getByTestId('chatbot-publication-expected-student-count')
     .fill('40')
-  await page.getByTestId('chatbot-publication-proposed-credits').fill('25')
 }
 
 test('Disabled AI beta blocks the direct authoring route before its queries', async ({
@@ -190,7 +249,7 @@ test('Disabled AI beta blocks the direct authoring route before its queries', as
     )
   ) as Record<string, string>
   const protectedNames = [
-    'GetChatbotsInfo',
+    'QGetChatbotsInfoWithAuthoringRevisions',
     'GetChatModelRegistry',
     'GetChatbotPublishingCapability',
   ]
@@ -298,6 +357,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     const previewPage = await previewPagePromise
     await expect(previewPage).toHaveURL(
       `${process.env.URL_CHAT ?? URL_CHAT}/preview/${chatbotId}`
+    )
+
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue(
+      'Unsaved title'
     )
 
     const discardNavigationDialogPromise = page
@@ -410,28 +473,34 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       const requestBody = postData
         ? (JSON.parse(postData) as {
             operationName?: string
-            variables?: Record<string, unknown> & {
-              config?: Record<string, unknown>
+            variables?: {
+              input?: {
+                metadata?: Record<string, unknown>
+                modelPolicy?: Record<string, unknown>
+                standardModeConfig?: Record<string, unknown>
+                disclaimer?: Record<string, unknown>
+              }
             }
           })
         : undefined
       const operationName = requestBody?.operationName
-      if (operationName === 'MUpdateChatbotStandardModeConfig') {
-        modeConfigVariables = requestBody?.variables?.config
-      }
-      if (operationName === 'MUpdateChatbotModelPolicy') {
-        modelPolicyVariables = requestBody?.variables
+      const input = requestBody?.variables?.input
+      if (operationName === 'MSaveChatbotRevision') {
+        modeConfigVariables = input?.standardModeConfig
+        modelPolicyVariables = input?.modelPolicy
       }
       const requestGate =
-        operationName === 'MUpdateChatbotModelPolicy'
-          ? modelSettingsRequestGate
-          : operationName === 'MUpdateChatbotStandardModeConfig'
-            ? modeRequestGate
-            : operationName === 'UpdateChatbot'
-              ? metadataRequestGate
-              : operationName === 'SaveChatbotDisclaimer'
-                ? disclaimerRequestGate
-                : undefined
+        operationName !== 'MSaveChatbotRevision'
+          ? undefined
+          : input?.modelPolicy
+            ? modelSettingsRequestGate
+            : input?.standardModeConfig
+              ? modeRequestGate
+              : input?.metadata
+                ? metadataRequestGate
+                : input?.disclaimer
+                  ? disclaimerRequestGate
+                  : undefined
 
       if (!requestGate) {
         await route.continue()
@@ -784,6 +853,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     const legacyScopeNote = 'Legacy framing. '.repeat(20).trim()
     expect(legacyScopeNote.length).toBeGreaterThan(200)
     const prisma = await getPrisma()
+    // Model a chatbot from before authoring revisions: clear the saved
+    // snapshot so the UI reads the live columns directly, as it does for
+    // rows that never had a revision.
     await prisma.chatbot.update({
       where: { id: firstChatbotId },
       data: {
@@ -796,6 +868,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
           languageOfInstruction: null,
           scopeNote: legacyScopeNote,
         },
+        draftConfig: Prisma.DbNull,
+        revisionStatus: null,
+        revisionVersion: 0,
       },
     })
     await page.reload()
@@ -855,6 +930,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await page.getByTestId('chatbot-setup-trigger-review').click()
     await expect(page.getByTestId('chatbot-setup-review')).toBeVisible()
 
+    await navigateToSetupStep(page, 'credits')
+    await page.getByTestId('chatbot-credit-initial').fill('25')
+    await page.getByTestId('chatbot-credit-reset-amount').fill('15')
+    await page.getByTestId('chatbot-credit-maximum').fill('100')
+    await page.getByTestId('save-chatbot-credit-policy').click()
+    await expect(page.getByTestId('save-chatbot-credit-policy')).toBeDisabled()
+    await navigateToSetupStep(page, 'review')
+
     await fillPublicationRequest(
       page,
       'Support students with a synthetic study aid.'
@@ -862,21 +945,23 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     const submitButton = page.getByTestId('request-chatbot-publication')
     await expect(submitButton).toBeEnabled()
 
+    await page.getByTestId('chatbot-setup-edit-basics').click()
     await expect(page.getByTestId('chatbot-setup-basics')).toBeVisible()
     await page
       .getByTestId('chatbot-description')
       .fill('Unsaved metadata must block publication.')
     await expect(submitButton).toBeDisabled()
     await expect(
-      page.getByText(
-        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.'
-      )
+      page.getByTestId('chatbot-publication-unsaved-setup')
     ).toBeVisible()
 
     const metadataSaveGate = createRequestGate()
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
-      if (request.postDataJSON()?.operationName !== 'UpdateChatbot') {
+      if (
+        request.postDataJSON()?.operationName !== 'MSaveChatbotRevision' ||
+        !request.postDataJSON()?.variables?.input?.metadata
+      ) {
         await route.continue()
         return
       }
@@ -895,9 +980,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     // submit button so late edits cannot diverge from the submitted payload.
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
-      if (
-        request.postDataJSON()?.operationName !== 'RequestChatbotPublication'
-      ) {
+      if (request.postDataJSON()?.operationName !== 'MSubmitChatbotRevision') {
         await route.continue()
         return
       }
@@ -915,9 +998,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toBeDisabled()
     await expect(
       page.getByTestId('chatbot-publication-expected-student-count')
-    ).toBeDisabled()
-    await expect(
-      page.getByTestId('chatbot-publication-proposed-credits')
     ).toBeDisabled()
     const pendingNavigationUrl = page.url()
     const pendingNavigationAlertPromise = page
@@ -954,9 +1034,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-publication-expected-student-count')
     ).toHaveCount(0)
-    await expect(
-      page.getByTestId('chatbot-publication-proposed-credits')
-    ).toHaveCount(0)
 
     const prisma = await getPrisma()
     const chatbot = await prisma.chatbot.findFirst({
@@ -967,6 +1044,11 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         publicationUseCase: true,
         expectedStudentCount: true,
         creditInitialCredits: true,
+        creditResetPeriod: true,
+        creditResetAmount: true,
+        creditMaxCredits: true,
+        revisionVersion: true,
+        draftConfig: true,
       },
     })
     expect(chatbot).toMatchObject({
@@ -974,13 +1056,13 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       publicationUseCase: 'Support students with a synthetic study aid.',
       expectedStudentCount: 40,
       creditInitialCredits: 25,
+      creditResetPeriod: 'WEEKLY',
+      creditResetAmount: 15,
+      creditMaxCredits: 100,
     })
 
     if (!chatbot) throw new Error('Expected the publication chatbot to exist')
-    await prisma.chatbot.update({
-      where: { id: chatbot.id },
-      data: { status: 'PUBLISHED' },
-    })
+    await approveRevision(page, chatbot.id, chatbot.revisionVersion)
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbot.id}`
     )
@@ -994,9 +1076,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect(publishedPreview).toContainText('Student Responsibility')
     await expect(publishedPreview).toContainText('Data Protection')
+    // A published chatbot renders the resubmission form instead of the
+    // readonly panel, so the approved publication values appear prefilled.
+    await expect(page.getByTestId('chatbot-publication-use-case')).toHaveValue(
+      'Support students with a synthetic study aid.'
+    )
     await expect(
-      page.getByTestId('chatbot-publication-readonly')
-    ).toContainText('Support students with a synthetic study aid.')
+      page.getByTestId('chatbot-publication-expected-student-count')
+    ).toHaveValue('40')
     await navigateToSetupStep(page, 'review')
     await expect
       .poll(() => new URL(page.url()).searchParams.get('step'))
@@ -1018,6 +1105,141 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
     ).toHaveCount(0)
+  })
+
+  test('revises published credits without changing live policy until approval', async ({
+    page,
+  }) => {
+    await setPublishingAuthorization(true)
+    const chatbot = await seedPublicationChatbot({
+      name: `${CHATBOT_PREFIX} Revision`,
+      status: 'PUBLISHED',
+      withDisclaimer: true,
+    })
+    await page.goto(
+      `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbot.id}&view=usage`
+    )
+    await page.getByTestId('chatbot-credit-initial').fill('25')
+    await page.getByTestId('chatbot-credit-reset-amount').fill('15')
+    await page.getByTestId('save-chatbot-credit-policy').click()
+    const prisma = await getPrisma()
+    await expect
+      .poll(async () => {
+        const saved = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+        })
+        return saved.draftConfig?.creditInitialCredits
+      })
+      .toBe(25)
+    const live = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
+    })
+    expect(live).toMatchObject({
+      status: 'PUBLISHED',
+      creditInitialCredits: 10,
+      creditResetAmount: 10,
+    })
+    await page.reload()
+    await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('25')
+    await navigateToSetupStep(page, 'review')
+    await page.getByTestId('chatbot-setup-edit-credits').click()
+    await expect(page.getByTestId('chatbot-credit-policy-form')).toBeVisible()
+    await navigateToSetupStep(page, 'disclaimer')
+    const originalDisclaimerId = live.disclaimerId
+    for (const title of [
+      'First revised disclaimer',
+      'Second revised disclaimer',
+    ]) {
+      await page.getByTestId('chatbot-disclaimer-title').fill(title)
+      await page.getByTestId('save-chatbot-disclaimer').click()
+      await expect
+        .poll(async () => {
+          const saved = await prisma.chatbot.findUniqueOrThrow({
+            where: { id: chatbot.id },
+          })
+          return {
+            liveDisclaimerId: saved.disclaimerId,
+            draftTitle: saved.draftConfig?.disclaimerTitle,
+          }
+        })
+        .toEqual({ liveDisclaimerId: originalDisclaimerId, draftTitle: title })
+    }
+    await navigateToSetupStep(page, 'review')
+    await fillPublicationRequest(page, 'Revised synthetic study support.')
+    await page.getByTestId('request-chatbot-publication').click()
+    await expect
+      .poll(async () => {
+        const pending = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+        })
+        return pending.revisionStatus
+      })
+      .toBe('PENDING_APPROVAL')
+    await navigateToSetupStep(page, 'credits')
+    await expect(page.getByTestId('chatbot-credit-initial')).toBeDisabled()
+    const pending = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
+    })
+    expect(pending).toMatchObject({
+      status: 'PUBLISHED',
+      creditInitialCredits: 10,
+      creditResetAmount: 10,
+    })
+    await navigateToSetupStep(page, 'review')
+    await page.getByTestId('withdraw-chatbot-revision').click()
+    await expect
+      .poll(async () => {
+        const withdrawn = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+        })
+        return withdrawn.revisionStatus
+      })
+      .toBe('DRAFT')
+    await navigateToSetupStep(page, 'credits')
+    await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('25')
+    await page.getByTestId('chatbot-credit-initial').fill('30')
+    await page.getByTestId('save-chatbot-credit-policy').click()
+    await expect
+      .poll(async () => {
+        const saved = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+        })
+        return saved.draftConfig?.creditInitialCredits
+      })
+      .toBe(30)
+    await navigateToSetupStep(page, 'review')
+    await fillPublicationRequest(page, 'Revised synthetic study support.')
+    await page.getByTestId('request-chatbot-publication').click()
+    await expect
+      .poll(async () => {
+        const resubmitted = await prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+        })
+        return resubmitted.revisionStatus
+      })
+      .toBe('PENDING_APPROVAL')
+    const resubmitted = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
+    })
+    expect(resubmitted.revisionVersion).toBeGreaterThan(pending.revisionVersion)
+    await approveRevision(page, chatbot.id, resubmitted.revisionVersion)
+    const approved = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
+    })
+    expect(approved).toMatchObject({
+      status: 'PUBLISHED',
+      creditInitialCredits: 30,
+      creditResetAmount: 15,
+      draftConfig: null,
+      revisionStatus: null,
+    })
+    expect(approved.publishedAt).toEqual(chatbot.publishedAt)
+    await page.reload()
+    // The credit editor mounts on the usage view, not on the review step
+    // the page was left on after the resubmission.
+    await navigateToSetupStep(page, 'credits')
+    await expect(page.getByTestId('chatbot-credit-initial')).toHaveValue('30')
+    await expect(page.getByTestId('chatbot-credit-initial')).toBeEnabled()
   })
 
   test('shows the full read-only preview and publication details for a paused chatbot', async ({

@@ -73,6 +73,9 @@ jobs:
       - name: Check staging release contracts
         run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
 
+      - name: Check CI queue policy
+        run: node --test .github/scripts/ci-equivalent-run.test.cjs .github/scripts/ci-obsolete-runs.test.cjs .github/scripts/ci-event-gates.test.cjs
+
       - name: Check Playwright CI contracts
         run: pnpm run check:playwright-ci
 
@@ -81,6 +84,11 @@ jobs:
 
       - name: Check local KB lifecycle contracts
         run: pnpm run check:local-kb
+
+      - name: Check Next.js development configuration and readiness
+        run: |
+          node --test ./util/next-pages-development-config.test.mjs
+          pnpm run test:dev-runtime
 
       - name: Check workspace dependency mount generation
         run: node --test ./util/generate-dependency-mounts.test.mjs

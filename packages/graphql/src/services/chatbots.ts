@@ -1,6 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { Prisma } from '@klicker-uzh/prisma/client'
-import type { ChatbotStandardModeConfigInput } from '@klicker-uzh/types'
+import { Prisma, type PrismaClient } from '@klicker-uzh/prisma/client'
+import type {
+  ChatbotAuthoringRevision,
+  ChatbotAuthoringRevisionProjection,
+  ChatbotStandardModeConfigInput,
+} from '@klicker-uzh/types'
 import {
   CHAT_BASE_MODEL_ID,
   getChatModelAutoPolicyIssues,
@@ -19,6 +23,11 @@ import {
   isFeatureFlagEnabled,
   requireFeatureFlagAccess,
 } from '../lib/featureFlags.js'
+import {
+  type ChatbotCreditPolicy,
+  MAX_SIGNED_INT32,
+  normalizeAndValidateCreditPolicy,
+} from './chatbotCreditPolicy.js'
 
 const chatModelSchema = z
   .object({
@@ -214,17 +223,6 @@ const disclaimerMarkdownParser = unified()
   .use(remarkGfm)
   .use(remarkMath)
 
-const metadataAndModelEditableStatuses: DB.ChatbotStatus[] = [
-  DB.ChatbotStatus.DRAFT,
-  DB.ChatbotStatus.REJECTED,
-  DB.ChatbotStatus.PUBLISHED,
-]
-
-const disclaimerEditableStatuses: DB.ChatbotStatus[] = [
-  DB.ChatbotStatus.DRAFT,
-  DB.ChatbotStatus.REJECTED,
-]
-
 function chatbotError(message: string, code: string) {
   return new GraphQLError(message, { extensions: { code } })
 }
@@ -284,24 +282,6 @@ function validateDisclaimerContent(title: string, introText: string) {
         )
       }
     }
-  }
-}
-
-function assertMetadataAndModelEditable(status: DB.ChatbotStatus) {
-  if (!metadataAndModelEditableStatuses.includes(status)) {
-    throw chatbotError(
-      `Cannot edit chatbot metadata or model settings from status ${status}`,
-      'CHATBOT_NOT_EDITABLE'
-    )
-  }
-}
-
-function assertDisclaimerEditable(status: DB.ChatbotStatus) {
-  if (!disclaimerEditableStatuses.includes(status)) {
-    throw chatbotError(
-      `Cannot edit chatbot disclaimer from status ${status}`,
-      'CHATBOT_NOT_EDITABLE'
-    )
   }
 }
 
@@ -448,6 +428,7 @@ const chatbotOwnerSelect = {
   avatar: true,
   systemPrompts: true,
   standardModeConfig: true,
+  draftConfig: true,
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
@@ -460,16 +441,39 @@ const chatbotOwnerSelect = {
   expectedStudentCount: true,
   reviewComment: true,
   publishedAt: true,
+  disclaimerId: true,
+  revisionStatus: true,
+  revisionVersion: true,
+  creditResetPeriodChangedAt: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.ChatbotSelect
 
 type ChatbotWithOwnerCourse = {
+  id: string
+  ownerId?: string
+  name: string
+  description: string | null
+  avatar: string | null
   systemPrompts: unknown
   standardModeConfig: unknown
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
+  creditInitialCredits: number
+  creditResetPeriod: DB.CreditResetPeriod
+  creditResetAmount: number
+  creditMaxCredits: number
+  status: DB.ChatbotStatus
+  publicationUseCase: string | null
+  expectedStudentCount: number | null
+  reviewComment: string | null
+  publishedAt: Date | null
+  draftConfig: unknown
+  revisionStatus: DB.ChatbotStatus | null
+  revisionVersion: number
+  disclaimerId: string | null
+  creditResetPeriodChangedAt: Date | null
   course: { id: string; name: string } | null
 }
 
@@ -526,7 +530,11 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
   chatbot: T,
   options: { resolveLegacyFixedPolicy?: boolean } = {}
 ) {
-  const { systemPrompts, ...chatbotWithoutSystemPrompts } = chatbot
+  const {
+    systemPrompts,
+    draftConfig: _draftConfig,
+    ...chatbotWithoutSystemPrompts
+  } = chatbot
   const resolveLegacyFixedPolicy = options.resolveLegacyFixedPolicy ?? true
 
   return {
@@ -543,8 +551,1053 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
     allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
       chatbot.allowedReasoningEffortsByModel
     ),
+    authoringRevision: projectAuthoringRevision(chatbot),
+    revisionStatus: chatbot.revisionStatus ?? null,
+    revisionVersion: chatbot.revisionVersion ?? 0,
     courses: chatbot.course ? [chatbot.course] : [],
   }
+}
+
+type ChatbotDisclaimerRevisionSource = {
+  id: string
+  name: string
+  description: string | null
+  title: string
+  introText: string | null
+  mediaUrl: string | null
+  mediaType: string | null
+}
+
+type ChatbotRevisionRecord = ChatbotWithOwnerCourse & {
+  ownerId: string
+  disclaimer: ChatbotDisclaimerRevisionSource | null
+  owner: { aiFeaturesEnabled: boolean }
+}
+
+const chatbotRevisionSelect = {
+  ...chatbotOwnerSelect,
+  ownerId: true,
+  course: { select: { id: true, name: true } },
+  disclaimer: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      title: true,
+      introText: true,
+      mediaUrl: true,
+      mediaType: true,
+    },
+  },
+  owner: { select: { aiFeaturesEnabled: true } },
+} satisfies Prisma.ChatbotSelect
+
+type RevisionPrismaClient = PrismaClient | Prisma.TransactionClient
+
+const REVISION_CONFLICT_MESSAGE = 'Chatbot revision changed since it was loaded'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function cloneJson(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((entry) => cloneJson(entry))
+  if (!isRecord(value)) return value
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entry]) => entry !== undefined)
+      .map(([key, entry]) => [key, cloneJson(entry)])
+  )
+}
+
+function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
+  if (!isRecord(value)) return null
+
+  if (typeof value.name !== 'string') return null
+  if (value.description !== null && typeof value.description !== 'string') {
+    return null
+  }
+  if (value.avatar !== null && typeof value.avatar !== 'string') return null
+  if (
+    value.standardModeConfig !== null &&
+    value.standardModeConfig !== undefined &&
+    !isRecord(value.standardModeConfig)
+  ) {
+    return null
+  }
+  if (typeof value.modelSelection !== 'boolean') return null
+  if (
+    !Array.isArray(value.allowedModelIds) ||
+    value.allowedModelIds.some((modelId) => typeof modelId !== 'string')
+  ) {
+    return null
+  }
+
+  let allowedReasoningEffortsByModel: Record<string, string[]> | null = null
+  if (
+    value.allowedReasoningEffortsByModel !== null &&
+    value.allowedReasoningEffortsByModel !== undefined
+  ) {
+    if (!isRecord(value.allowedReasoningEffortsByModel)) return null
+    const entries = Object.entries(value.allowedReasoningEffortsByModel)
+    if (
+      entries.some(
+        ([, efforts]) =>
+          !Array.isArray(efforts) ||
+          efforts.some((effort) => typeof effort !== 'string')
+      )
+    ) {
+      return null
+    }
+    allowedReasoningEffortsByModel = Object.fromEntries(
+      entries.map(([modelId, efforts]) => [modelId, [...(efforts as string[])]])
+    )
+  }
+
+  const creditValues = [
+    value.creditInitialCredits,
+    value.creditResetAmount,
+    value.creditMaxCredits,
+  ]
+  if (
+    creditValues.some(
+      (credit) => typeof credit !== 'number' || !Number.isInteger(credit)
+    )
+  ) {
+    return null
+  }
+  if (
+    typeof value.creditResetPeriod !== 'string' ||
+    !Object.values(DB.CreditResetPeriod).includes(
+      value.creditResetPeriod as DB.CreditResetPeriod
+    )
+  ) {
+    return null
+  }
+
+  const nullableStringFields = [
+    value.disclaimerTitle,
+    value.disclaimerIntroText,
+    value.publicationUseCase,
+  ]
+  if (
+    nullableStringFields.some(
+      (field) => field !== null && typeof field !== 'string'
+    )
+  ) {
+    return null
+  }
+  if (
+    value.expectedStudentCount !== null &&
+    value.expectedStudentCount !== undefined &&
+    (typeof value.expectedStudentCount !== 'number' ||
+      !Number.isInteger(value.expectedStudentCount))
+  ) {
+    return null
+  }
+  if (
+    value.disclaimerId !== null &&
+    value.disclaimerId !== undefined &&
+    typeof value.disclaimerId !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    name: value.name,
+    description: value.description,
+    avatar: value.avatar,
+    standardModeConfig:
+      value.standardModeConfig === null ||
+      value.standardModeConfig === undefined
+        ? null
+        : (cloneJson(
+            value.standardModeConfig
+          ) as ChatbotAuthoringRevision['standardModeConfig']),
+    modelSelection: value.modelSelection,
+    allowedModelIds: [...value.allowedModelIds] as string[],
+    allowedReasoningEffortsByModel,
+    creditInitialCredits: value.creditInitialCredits as number,
+    creditResetPeriod: value.creditResetPeriod as DB.CreditResetPeriod,
+    creditResetAmount: value.creditResetAmount as number,
+    creditMaxCredits: value.creditMaxCredits as number,
+    disclaimerTitle: value.disclaimerTitle as string | null,
+    disclaimerIntroText: value.disclaimerIntroText as string | null,
+    publicationUseCase: value.publicationUseCase as string | null,
+    expectedStudentCount:
+      value.expectedStudentCount === undefined
+        ? null
+        : (value.expectedStudentCount as number | null),
+    disclaimerId:
+      value.disclaimerId === undefined
+        ? null
+        : (value.disclaimerId as string | null),
+  }
+}
+
+function buildRevisionFromLive(
+  chatbot: ChatbotRevisionRecord
+): ChatbotAuthoringRevision {
+  return {
+    name: chatbot.name,
+    description: chatbot.description,
+    avatar: chatbot.avatar,
+    // Keep the persisted representation intact. The owner projection applies
+    // the legacy display fallback without rewriting the live configuration.
+    standardModeConfig: cloneJson(
+      chatbot.standardModeConfig
+    ) as ChatbotAuthoringRevision['standardModeConfig'],
+    modelSelection: chatbot.modelSelection,
+    allowedModelIds: [...chatbot.allowedModelIds],
+    allowedReasoningEffortsByModel: cloneJson(
+      chatbot.allowedReasoningEffortsByModel
+    ) as ChatbotAuthoringRevision['allowedReasoningEffortsByModel'],
+    creditInitialCredits: chatbot.creditInitialCredits,
+    creditResetPeriod: chatbot.creditResetPeriod,
+    creditResetAmount: chatbot.creditResetAmount,
+    creditMaxCredits: chatbot.creditMaxCredits,
+    disclaimerTitle: chatbot.disclaimer?.title ?? null,
+    disclaimerIntroText: chatbot.disclaimer?.introText ?? null,
+    publicationUseCase: chatbot.publicationUseCase,
+    expectedStudentCount: chatbot.expectedStudentCount,
+    disclaimerId: chatbot.disclaimer?.id ?? chatbot.disclaimerId,
+  }
+}
+
+function revisionProjection(
+  chatbot: ChatbotWithOwnerCourse,
+  revision: ChatbotAuthoringRevision,
+  status: DB.ChatbotStatus,
+  version: number,
+  reviewComment: string | null
+): ChatbotAuthoringRevisionProjection {
+  const { disclaimerId: _disclaimerId, ...safeRevision } = revision
+  const reasoningEntries = parseAllowedReasoningEffortsByModel(
+    revision.allowedReasoningEffortsByModel
+  )
+
+  return {
+    ...safeRevision,
+    standardModeConfig: normalizeChatbotStandardModeConfig(
+      revision.standardModeConfig,
+      chatbot.systemPrompts
+    ),
+    allowedReasoningEffortsByModel:
+      reasoningEntries.length > 0
+        ? Object.fromEntries(
+            reasoningEntries.map(({ modelId, efforts }) => [modelId, efforts])
+          )
+        : null,
+    version,
+    status,
+    reviewComment,
+    chatbotId: chatbot.id,
+  }
+}
+
+function projectAuthoringRevision(
+  chatbot: ChatbotWithOwnerCourse
+): ChatbotAuthoringRevisionProjection | null {
+  if (chatbot.draftConfig === null || chatbot.draftConfig === undefined) {
+    return null
+  }
+  const revision = parseStoredRevision(chatbot.draftConfig)
+  if (!revision) return null
+
+  return revisionProjection(
+    chatbot,
+    revision,
+    chatbot.revisionStatus ?? DB.ChatbotStatus.DRAFT,
+    chatbot.revisionVersion ?? 0,
+    chatbot.reviewComment ?? null
+  )
+}
+
+async function readChatbotRevision(
+  prisma: RevisionPrismaClient,
+  chatbotId: string,
+  ownerId?: string
+): Promise<ChatbotRevisionRecord | null> {
+  return (await prisma.chatbot.findFirst({
+    where: ownerId ? { id: chatbotId, ownerId } : { id: chatbotId },
+    select: chatbotRevisionSelect,
+  })) as ChatbotRevisionRecord | null
+}
+
+async function lockChatbotRevision(
+  prisma: Prisma.TransactionClient,
+  chatbotId: string
+) {
+  await prisma.$queryRaw<{ id: string }[]>(
+    Prisma.sql`SELECT "id" FROM "public"."Chatbot" WHERE "id" = ${chatbotId}::uuid FOR UPDATE`
+  )
+}
+
+function assertExpectedRevisionVersion(
+  currentVersion: number,
+  expectedRevisionVersion: number | null | undefined
+) {
+  if (
+    typeof expectedRevisionVersion !== 'number' ||
+    !Number.isInteger(expectedRevisionVersion) ||
+    expectedRevisionVersion < 0 ||
+    currentVersion !== expectedRevisionVersion
+  ) {
+    throw chatbotError(REVISION_CONFLICT_MESSAGE, 'CHATBOT_EDIT_CONFLICT')
+  }
+}
+
+function assertRevisionEditable(chatbot: ChatbotRevisionRecord) {
+  if (
+    chatbot.status === DB.ChatbotStatus.PAUSED ||
+    chatbot.status === DB.ChatbotStatus.PENDING_APPROVAL ||
+    chatbot.revisionStatus === DB.ChatbotStatus.PAUSED ||
+    chatbot.revisionStatus === DB.ChatbotStatus.PENDING_APPROVAL
+  ) {
+    throw chatbotError(
+      'Chatbot revision is not editable in its current status',
+      'CHATBOT_NOT_EDITABLE'
+    )
+  }
+  if (
+    ![
+      DB.ChatbotStatus.DRAFT,
+      DB.ChatbotStatus.REJECTED,
+      DB.ChatbotStatus.PUBLISHED,
+    ].includes(chatbot.status)
+  ) {
+    throw chatbotError(
+      'Chatbot revision is not editable in its current status',
+      'CHATBOT_NOT_EDITABLE'
+    )
+  }
+}
+
+function isLegacyPendingRevision(chatbot: ChatbotRevisionRecord) {
+  return (
+    chatbot.status === DB.ChatbotStatus.PENDING_APPROVAL &&
+    chatbot.revisionStatus === null &&
+    chatbot.revisionVersion === 0 &&
+    chatbot.draftConfig === null
+  )
+}
+
+function getRevisionSnapshot(chatbot: ChatbotRevisionRecord) {
+  const snapshot =
+    chatbot.draftConfig === null || chatbot.draftConfig === undefined
+      ? buildRevisionFromLive(chatbot)
+      : parseStoredRevision(chatbot.draftConfig)
+  if (!snapshot) {
+    throw chatbotError(
+      'Saved chatbot revision is invalid and must be edited again',
+      'BAD_USER_INPUT'
+    )
+  }
+  return snapshot
+}
+
+function revisionInput(revision: ChatbotAuthoringRevision) {
+  return cloneJson(revision) as ChatbotAuthoringRevision
+}
+
+function revisionSaveStatus(chatbot: ChatbotRevisionRecord) {
+  return chatbot.revisionStatus === DB.ChatbotStatus.REJECTED
+    ? DB.ChatbotStatus.REJECTED
+    : DB.ChatbotStatus.DRAFT
+}
+
+function revisionLiveData(
+  revision: ChatbotAuthoringRevision
+): Prisma.ChatbotUncheckedUpdateInput {
+  return {
+    name: revision.name,
+    description: revision.description,
+    avatar: revision.avatar,
+    standardModeConfig:
+      revision.standardModeConfig === null
+        ? Prisma.JsonNull
+        : (revision.standardModeConfig as PrismaJson.PrismaChatbotStandardModeConfig),
+    modelSelection: revision.modelSelection,
+    allowedModelIds: revision.allowedModelIds,
+    allowedReasoningEffortsByModel:
+      revision.allowedReasoningEffortsByModel === null
+        ? Prisma.JsonNull
+        : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
+    creditInitialCredits: revision.creditInitialCredits,
+    creditResetPeriod: revision.creditResetPeriod,
+    creditResetAmount: revision.creditResetAmount,
+    creditMaxCredits: revision.creditMaxCredits,
+    publicationUseCase: revision.publicationUseCase,
+    expectedStudentCount: revision.expectedStudentCount,
+    disclaimerId: revision.disclaimerId,
+  }
+}
+
+async function saveRevisionSnapshot(
+  tx: Prisma.TransactionClient,
+  chatbot: ChatbotRevisionRecord,
+  revision: ChatbotAuthoringRevision,
+  status: DB.ChatbotStatus = revisionSaveStatus(chatbot),
+  reviewComment: string | null | undefined = undefined,
+  liveStatus: DB.ChatbotStatus | undefined = undefined
+) {
+  await tx.chatbot.update({
+    where: { id: chatbot.id },
+    data: {
+      ...(chatbot.status !== DB.ChatbotStatus.PUBLISHED
+        ? revisionLiveData(revision)
+        : {}),
+      draftConfig: revisionInput(revision),
+      revisionStatus: status,
+      revisionVersion: { increment: 1 },
+      ...(liveStatus === undefined ? {} : { status: liveStatus }),
+      ...(reviewComment === undefined ? {} : { reviewComment }),
+    },
+  })
+
+  const updated = await readChatbotRevision(tx, chatbot.id)
+  if (!updated) return null
+  return shapeChatbotResponse(updated)
+}
+
+function normalizeRevisionReasoningMap(
+  revision: ChatbotAuthoringRevision
+): Record<string, string[]> | null {
+  if (revision.allowedReasoningEffortsByModel === null) return null
+  return Object.fromEntries(
+    Object.entries(revision.allowedReasoningEffortsByModel).map(
+      ([modelId, efforts]) => [modelId, dedupeStrings(efforts)]
+    )
+  )
+}
+
+function validateRevisionModelConfig(revision: ChatbotAuthoringRevision) {
+  const modelRegistry = getChatModelRegistry()
+  const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
+  const unknownAllowedModelIds = dedupeStrings(revision.allowedModelIds).filter(
+    (modelId) => !modelById.has(modelId)
+  )
+  if (unknownAllowedModelIds.length > 0) {
+    throw chatbotError(
+      `Unknown model id(s): ${unknownAllowedModelIds.join(', ')}`,
+      'BAD_USER_INPUT'
+    )
+  }
+
+  for (const [modelId, efforts] of Object.entries(
+    revision.allowedReasoningEffortsByModel ?? {}
+  )) {
+    const model = modelById.get(modelId)
+    if (!model) {
+      throw chatbotError(
+        `Unknown model id in reasoning config: ${modelId}`,
+        'BAD_USER_INPUT'
+      )
+    }
+    if (!model.supportsReasoning) {
+      throw chatbotError(
+        `Model ${modelId} does not support configurable reasoning efforts`,
+        'BAD_USER_INPUT'
+      )
+    }
+    const unsupportedEfforts = dedupeStrings(efforts).filter(
+      (effort) => !model.supportedReasoningEfforts.includes(effort)
+    )
+    if (unsupportedEfforts.length > 0) {
+      throw chatbotError(
+        `Unsupported reasoning effort(s) for ${modelId}: ${unsupportedEfforts.join(', ')}`,
+        'BAD_USER_INPUT'
+      )
+    }
+    if (dedupeStrings(efforts).length === 0) {
+      throw chatbotError(
+        `At least one reasoning effort must be configured for model: ${modelId}`,
+        'BAD_USER_INPUT'
+      )
+    }
+  }
+}
+
+function validateCompleteRevision(
+  revision: ChatbotAuthoringRevision,
+  requirePublicationFields: boolean
+) {
+  if (revision.name.trim().length === 0) {
+    throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
+  }
+
+  if (revision.standardModeConfig !== null) {
+    try {
+      parseChatbotStandardModeConfigInput(revision.standardModeConfig)
+    } catch (error) {
+      throw chatbotError(
+        error instanceof Error
+          ? error.message
+          : 'Invalid standard mode configuration',
+        'BAD_USER_INPUT'
+      )
+    }
+  }
+
+  validateRevisionModelConfig(revision)
+  const normalizedPolicy = normalizeAndValidateCreditPolicy({
+    creditInitialCredits: revision.creditInitialCredits,
+    creditResetPeriod: revision.creditResetPeriod,
+    creditResetAmount: revision.creditResetAmount,
+    creditMaxCredits: revision.creditMaxCredits,
+  })
+
+  const normalizedRevision = {
+    ...revision,
+    ...normalizedPolicy,
+    allowedReasoningEffortsByModel: normalizeRevisionReasoningMap(revision),
+  }
+
+  if (requirePublicationFields) {
+    const useCase = normalizedRevision.publicationUseCase
+    if (
+      typeof useCase !== 'string' ||
+      useCase.trim().length < 1 ||
+      useCase.trim().length > 2000
+    ) {
+      throw chatbotError(
+        'useCase must be between 1 and 2000 characters long',
+        'BAD_USER_INPUT'
+      )
+    }
+    if (
+      typeof normalizedRevision.expectedStudentCount !== 'number' ||
+      !Number.isInteger(normalizedRevision.expectedStudentCount) ||
+      normalizedRevision.expectedStudentCount < 1 ||
+      normalizedRevision.expectedStudentCount > MAX_SIGNED_INT32
+    ) {
+      throw chatbotError(
+        'expectedStudentCount must be a positive signed 32-bit integer',
+        'BAD_USER_INPUT'
+      )
+    }
+
+    if (
+      !normalizedRevision.disclaimerId ||
+      typeof normalizedRevision.disclaimerTitle !== 'string' ||
+      typeof normalizedRevision.disclaimerIntroText !== 'string'
+    ) {
+      throw chatbotError(
+        'A complete disclaimer is required before publication',
+        'CHATBOT_DISCLAIMER_REQUIRED'
+      )
+    }
+    try {
+      validateDisclaimerContent(
+        normalizeDisclaimerText(normalizedRevision.disclaimerTitle),
+        normalizeDisclaimerText(normalizedRevision.disclaimerIntroText)
+      )
+    } catch {
+      throw chatbotError(
+        'A complete disclaimer is required before publication',
+        'CHATBOT_DISCLAIMER_REQUIRED'
+      )
+    }
+
+    normalizedRevision.publicationUseCase = useCase.trim()
+  }
+
+  return normalizedRevision
+}
+
+type RevisionModelPolicyInput = {
+  modelSelection: boolean
+  allowedModelIds: string[]
+  allowedReasoningEffortsByModel?: Array<{
+    modelId: string
+    efforts: string[]
+  }> | null
+}
+
+type RevisionDisclaimerInput = {
+  expectedDisclaimerId?: string | null
+  title: string
+  introText: string
+}
+
+// Omitted sections retain the saved revision. Metadata patches individual fields;
+// other supplied sections use their existing complete-section normalization.
+export type ChatbotRevisionSaveInput = {
+  metadata?: {
+    name?: string | null
+    description?: string | null
+    avatar?: string | null
+  } | null
+  modelPolicy?: RevisionModelPolicyInput | null
+  standardModeConfig?: ChatbotStandardModeConfigInput | null
+  creditPolicy?: ChatbotCreditPolicy | null
+  disclaimer?: RevisionDisclaimerInput | null
+}
+
+export async function saveChatbotRevision(
+  args: {
+    chatbotId: string
+    expectedRevisionVersion: number
+    input: ChatbotRevisionSaveInput
+  },
+  ctx: ContextWithUser
+) {
+  if (
+    !Number.isInteger(args.expectedRevisionVersion) ||
+    args.expectedRevisionVersion < 0
+  ) {
+    throw chatbotError(REVISION_CONFLICT_MESSAGE, 'CHATBOT_EDIT_CONFLICT')
+  }
+  const { input } = args
+  const sections = [
+    'metadata',
+    'modelPolicy',
+    'standardModeConfig',
+    'creditPolicy',
+    'disclaimer',
+  ] as const
+  if (
+    !input ||
+    sections.some((section) => input[section] === null) ||
+    !sections.some((section) => input[section] !== undefined)
+  ) {
+    throw chatbotError(
+      'Provide at least one non-null revision section',
+      'BAD_USER_INPUT'
+    )
+  }
+  if (
+    input.metadata &&
+    (input.metadata.name === null ||
+      (input.metadata.name === undefined &&
+        input.metadata.description === undefined &&
+        input.metadata.avatar === undefined))
+  ) {
+    throw chatbotError(
+      'Provide metadata fields; name cannot be null',
+      'BAD_USER_INPUT'
+    )
+  }
+  const patch: Partial<ChatbotAuthoringRevision> = {
+    ...(input.metadata ? normalizeRevisionMetadata(input.metadata) : {}),
+    ...(input.modelPolicy
+      ? normalizeRevisionModelPolicy(input.modelPolicy)
+      : {}),
+    ...(input.standardModeConfig
+      ? {
+          standardModeConfig: parseRevisionStandardModeConfig(
+            input.standardModeConfig
+          ),
+        }
+      : {}),
+    ...(input.creditPolicy
+      ? normalizeAndValidateCreditPolicy(input.creditPolicy)
+      : {}),
+  }
+  const disclaimer = input.disclaimer
+  await requireFeatureFlagAccess(ctx, 'ai-beta')
+  return await ctx.prisma.$transaction(async (tx) => {
+    await lockChatbotRevision(tx, args.chatbotId)
+    const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
+    if (!chatbot) return null
+
+    assertRevisionEditable(chatbot)
+    assertExpectedRevisionVersion(
+      chatbot.revisionVersion,
+      args.expectedRevisionVersion
+    )
+
+    const current = getRevisionSnapshot(chatbot)
+    let next = { ...current, ...patch }
+    if (disclaimer) {
+      const title = normalizeDisclaimerText(disclaimer.title)
+      const introText = normalizeDisclaimerText(disclaimer.introText)
+      validateDisclaimerContent(title, introText)
+      const currentDisclaimerId = current.disclaimerId ?? chatbot.disclaimerId
+      if (
+        disclaimer.expectedDisclaimerId !== undefined &&
+        disclaimer.expectedDisclaimerId !== currentDisclaimerId
+      ) {
+        throw chatbotError(
+          'Chatbot disclaimer changed since it was loaded',
+          'CHATBOT_DISCLAIMER_CONFLICT'
+        )
+      }
+
+      if (
+        current.disclaimerTitle !== title ||
+        current.disclaimerIntroText !== introText
+      ) {
+        const replacement = await tx.chatbotDisclaimer.create({
+          data: {
+            name: chatbot.disclaimer?.name ?? `${chatbot.name} disclaimer`,
+            description: chatbot.disclaimer?.description ?? null,
+            title,
+            introText,
+            mediaUrl: chatbot.disclaimer?.mediaUrl ?? null,
+            mediaType: chatbot.disclaimer?.mediaType ?? null,
+            ownerId: ctx.user.sub,
+          },
+          select: { id: true },
+        })
+
+        next = {
+          ...next,
+          disclaimerId: replacement.id,
+          disclaimerTitle: title,
+          disclaimerIntroText: introText,
+        }
+      }
+    }
+    if (next.name === '') {
+      throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
+    }
+    return await saveRevisionSnapshot(tx, chatbot, next)
+  })
+}
+
+type RevisionExpectedArgs = {
+  chatbotId: string
+  expectedRevisionVersion: number
+}
+
+type AdminRevisionExpectedArgs = {
+  id: string
+  expectedRevisionVersion: number
+}
+
+export async function getChatbotPendingRevision(
+  args: { id: string; expectedRevisionVersion?: number | null },
+  ctx: ContextWithUser
+) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+  const chatbot = await readChatbotRevision(ctx.prisma, args.id)
+  if (!chatbot) return null
+
+  if (
+    chatbot.revisionStatus !== DB.ChatbotStatus.PENDING_APPROVAL &&
+    !isLegacyPendingRevision(chatbot)
+  ) {
+    throw chatbotError(
+      'Chatbot does not have a pending revision',
+      'CHATBOT_REVISION_NOT_PENDING'
+    )
+  }
+  if (
+    args.expectedRevisionVersion !== undefined &&
+    args.expectedRevisionVersion !== null
+  ) {
+    if (chatbot.revisionVersion !== args.expectedRevisionVersion) {
+      throw chatbotError(REVISION_CONFLICT_MESSAGE, 'CHATBOT_EDIT_CONFLICT')
+    }
+  }
+
+  return revisionProjection(
+    chatbot,
+    getRevisionSnapshot(chatbot),
+    chatbot.revisionStatus ?? DB.ChatbotStatus.PENDING_APPROVAL,
+    chatbot.revisionVersion,
+    chatbot.reviewComment
+  )
+}
+
+function normalizeRevisionMetadata(
+  args: NonNullable<ChatbotRevisionSaveInput['metadata']>
+) {
+  return {
+    ...(args.name !== undefined && args.name !== null
+      ? { name: args.name }
+      : {}),
+    ...(args.description !== undefined
+      ? { description: args.description }
+      : {}),
+    ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
+  }
+}
+
+function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
+  const modelRegistry = getChatModelRegistry()
+  const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
+  const allowedModelIds = dedupeStrings(args.allowedModelIds)
+  if (allowedModelIds.some((modelId) => !modelById.has(modelId))) {
+    throw chatbotError('Unknown model id in model policy', 'BAD_USER_INPUT')
+  }
+  const selectedModels = allowedModelIds
+    .map((modelId) => modelById.get(modelId))
+    .filter((model): model is ChatModelCapability => model !== undefined)
+  if (
+    (args.modelSelection && selectedModels.length === 0) ||
+    (!args.modelSelection && selectedModels.length !== 1)
+  ) {
+    throw chatbotError(
+      args.modelSelection
+        ? 'Participant model selection requires at least one active model'
+        : 'Fixed model policy requires exactly one active model',
+      'BAD_USER_INPUT'
+    )
+  }
+
+  const normalizedReasoningConfig = normalizeStrictReasoningConfig(
+    args,
+    selectedModels,
+    modelById
+  )
+  if (
+    !args.modelSelection &&
+    selectedModels[0]?.supportsReasoning &&
+    normalizedReasoningConfig[0]?.efforts.length !== 1
+  ) {
+    throw chatbotError(
+      `Fixed model policy requires exactly one reasoning effort for model: ${selectedModels[0].id}`,
+      'BAD_USER_INPUT'
+    )
+  }
+
+  return {
+    modelSelection: args.modelSelection,
+    allowedModelIds,
+    allowedReasoningEffortsByModel:
+      normalizedReasoningConfig.length > 0
+        ? Object.fromEntries(
+            normalizedReasoningConfig.map(({ modelId, efforts }) => [
+              modelId,
+              efforts,
+            ])
+          )
+        : null,
+  }
+}
+
+function parseRevisionStandardModeConfig(
+  input: ChatbotStandardModeConfigInput
+) {
+  try {
+    return parseChatbotStandardModeConfigInput(input)
+  } catch (error) {
+    throw chatbotError(
+      error instanceof Error
+        ? error.message
+        : 'Invalid standard mode configuration',
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
+export async function submitChatbotRevision(
+  args: RevisionExpectedArgs & {
+    useCase: string
+    expectedStudentCount: number
+  },
+  ctx: ContextWithUser
+) {
+  await requireFeatureFlagAccess(ctx, 'ai-beta')
+
+  return await ctx.prisma.$transaction(async (tx) => {
+    await lockChatbotRevision(tx, args.chatbotId)
+    const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
+    if (!chatbot) return null
+    await tx.$queryRaw(
+      Prisma.sql`SELECT "id" FROM "public"."User" WHERE "id" = ${ctx.user.sub}::uuid FOR SHARE`
+    )
+    const owner = await tx.user.findUniqueOrThrow({
+      where: { id: ctx.user.sub },
+      select: { aiFeaturesEnabled: true },
+    })
+    if (!owner.aiFeaturesEnabled) {
+      throw chatbotError(
+        'Account is not approved for chatbot publishing',
+        'CHATBOT_PUBLISHING_NOT_AUTHORIZED'
+      )
+    }
+    assertRevisionEditable(chatbot)
+    assertExpectedRevisionVersion(
+      chatbot.revisionVersion,
+      args.expectedRevisionVersion
+    )
+    const revision = getRevisionSnapshot(chatbot)
+    revision.publicationUseCase = args.useCase
+    revision.expectedStudentCount = args.expectedStudentCount
+    const completeRevision = validateCompleteRevision(revision, true)
+    const currentStatus = chatbot.status
+    if (
+      currentStatus !== DB.ChatbotStatus.DRAFT &&
+      currentStatus !== DB.ChatbotStatus.REJECTED &&
+      currentStatus !== DB.ChatbotStatus.PUBLISHED
+    ) {
+      throw chatbotError(
+        `Cannot submit revision from status ${currentStatus}`,
+        'CHATBOT_NOT_EDITABLE'
+      )
+    }
+
+    return await saveRevisionSnapshot(
+      tx,
+      chatbot,
+      completeRevision,
+      DB.ChatbotStatus.PENDING_APPROVAL,
+      null,
+      currentStatus === DB.ChatbotStatus.PUBLISHED
+        ? DB.ChatbotStatus.PUBLISHED
+        : DB.ChatbotStatus.PENDING_APPROVAL
+    )
+  })
+}
+
+export async function withdrawChatbotRevision(
+  args: RevisionExpectedArgs,
+  ctx: ContextWithUser
+) {
+  await requireFeatureFlagAccess(ctx, 'ai-beta')
+  return await ctx.prisma.$transaction(async (tx) => {
+    await lockChatbotRevision(tx, args.chatbotId)
+    const chatbot = await readChatbotRevision(tx, args.chatbotId, ctx.user.sub)
+    if (!chatbot) return null
+    if (chatbot.revisionStatus !== DB.ChatbotStatus.PENDING_APPROVAL) {
+      throw chatbotError(
+        'Chatbot revision is not pending approval',
+        'CHATBOT_REVISION_NOT_PENDING'
+      )
+    }
+    assertExpectedRevisionVersion(
+      chatbot.revisionVersion,
+      args.expectedRevisionVersion
+    )
+
+    const updated = await tx.chatbot.update({
+      where: { id: chatbot.id },
+      data: {
+        status:
+          chatbot.status === DB.ChatbotStatus.PENDING_APPROVAL
+            ? DB.ChatbotStatus.DRAFT
+            : chatbot.status,
+        revisionStatus: DB.ChatbotStatus.DRAFT,
+        revisionVersion: { increment: 1 },
+      },
+    })
+    const shaped = await readChatbotRevision(tx, updated.id)
+    return shaped ? shapeChatbotResponse(shaped) : null
+  })
+}
+
+export async function rejectChatbotRevision(
+  args: AdminRevisionExpectedArgs & { comment: string },
+  ctx: ContextWithUser
+) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  return await ctx.prisma.$transaction(async (tx) => {
+    await lockChatbotRevision(tx, args.id)
+    const chatbot = await readChatbotRevision(tx, args.id)
+    if (!chatbot) return null
+    const comment = args.comment.trim()
+    if (!comment) {
+      throw chatbotError('Review comment must not be empty', 'BAD_USER_INPUT')
+    }
+    if (
+      chatbot.revisionStatus !== DB.ChatbotStatus.PENDING_APPROVAL &&
+      !isLegacyPendingRevision(chatbot)
+    ) {
+      throw chatbotError(
+        'Chatbot revision is not pending approval',
+        'CHATBOT_REVISION_NOT_PENDING'
+      )
+    }
+    assertExpectedRevisionVersion(
+      chatbot.revisionVersion,
+      args.expectedRevisionVersion
+    )
+    const revision = getRevisionSnapshot(chatbot)
+    const saved = await tx.chatbot.update({
+      where: { id: chatbot.id },
+      data: {
+        draftConfig: revisionInput(revision),
+        revisionStatus: DB.ChatbotStatus.REJECTED,
+        revisionVersion: { increment: 1 },
+        reviewComment: comment,
+        status:
+          chatbot.status === DB.ChatbotStatus.PENDING_APPROVAL
+            ? DB.ChatbotStatus.REJECTED
+            : chatbot.status,
+      },
+    })
+    const shaped = await readChatbotRevision(tx, saved.id)
+    return shaped ? shapeChatbotResponse(shaped) : null
+  })
+}
+
+export async function approveChatbotRevision(
+  args: AdminRevisionExpectedArgs,
+  ctx: ContextWithUser
+) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  return await ctx.prisma.$transaction(async (tx) => {
+    await lockChatbotRevision(tx, args.id)
+    const chatbot = await readChatbotRevision(tx, args.id)
+    if (!chatbot) return null
+    if (chatbot.status === DB.ChatbotStatus.PAUSED) {
+      throw chatbotError(
+        'Paused chatbots cannot be approved',
+        'CHATBOT_NOT_EDITABLE'
+      )
+    }
+    const legacyPending = isLegacyPendingRevision(chatbot)
+    if (
+      chatbot.revisionStatus !== DB.ChatbotStatus.PENDING_APPROVAL &&
+      !legacyPending
+    ) {
+      throw chatbotError(
+        'Chatbot revision is not pending approval',
+        'CHATBOT_REVISION_NOT_PENDING'
+      )
+    }
+    assertExpectedRevisionVersion(
+      chatbot.revisionVersion,
+      args.expectedRevisionVersion
+    )
+    await tx.$queryRaw(
+      Prisma.sql`SELECT "id" FROM "public"."User" WHERE "id" = ${chatbot.ownerId}::uuid FOR SHARE`
+    )
+    const owner = await tx.user.findUniqueOrThrow({
+      where: { id: chatbot.ownerId },
+      select: { aiFeaturesEnabled: true },
+    })
+    if (!owner.aiFeaturesEnabled) {
+      throw chatbotError(
+        'Account is no longer approved for chatbot publishing',
+        'CHATBOT_PUBLISHING_NOT_AUTHORIZED'
+      )
+    }
+
+    const revision = getRevisionSnapshot(chatbot)
+    const completeRevision = validateCompleteRevision(revision, true)
+    const periodChanged =
+      completeRevision.creditResetPeriod !== chatbot.creditResetPeriod
+    const updateData: Prisma.ChatbotUncheckedUpdateInput = {
+      ...revisionLiveData(completeRevision),
+      draftConfig: Prisma.JsonNull,
+      revisionStatus: null,
+      revisionVersion: { increment: 1 },
+      reviewComment: null,
+      status: DB.ChatbotStatus.PUBLISHED,
+      publishedAt: chatbot.publishedAt ?? new Date(),
+      ...(periodChanged ? { creditResetPeriodChangedAt: new Date() } : {}),
+    }
+
+    const updated = await tx.chatbot.update({
+      where: { id: chatbot.id },
+      data: updateData,
+      select: chatbotRevisionSelect,
+    })
+    return shapeChatbotResponse(updated as ChatbotRevisionRecord)
+  })
 }
 
 export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
@@ -727,151 +1780,8 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
   })
 }
 
-type UpdateChatbotModelSettingsArgs = {
-  chatbotId: string
-  modelSelection: boolean
-  allowedModelIds: string[]
-  allowedReasoningEffortsByModel?: Array<{
-    modelId: string
-    efforts: string[]
-  }> | null
-}
-
-export async function updateChatbotModelSettings(
-  args: UpdateChatbotModelSettingsArgs,
-  ctx: ContextWithUser
-) {
-  await requireFeatureFlagAccess(ctx, 'ai-beta')
-  const chatbot = await ctx.prisma.chatbot.findFirst({
-    where: {
-      id: args.chatbotId,
-      ownerId: ctx.user.sub,
-    },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
-  })
-
-  if (!chatbot) {
-    return null
-  }
-
-  assertMetadataAndModelEditable(chatbot.status)
-
-  const modelRegistry = getChatModelRegistry()
-  const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
-
-  const normalizedAllowedModelIds = dedupeStrings(args.allowedModelIds)
-  const unknownAllowedModelIds = normalizedAllowedModelIds.filter(
-    (modelId) => !modelById.has(modelId)
-  )
-  if (unknownAllowedModelIds.length > 0) {
-    throw chatbotError(
-      `Unknown model id(s): ${unknownAllowedModelIds.join(', ')}`,
-      'BAD_USER_INPUT'
-    )
-  }
-
-  const seenReasoningModelIds = new Set<string>()
-  const normalizedReasoningMap: Record<string, string[]> = {}
-
-  for (const entry of args.allowedReasoningEffortsByModel ?? []) {
-    const model = modelById.get(entry.modelId)
-    if (!model) {
-      throw chatbotError(
-        `Unknown model id in reasoning config: ${entry.modelId}`,
-        'BAD_USER_INPUT'
-      )
-    }
-    if (!model.supportsReasoning) {
-      throw chatbotError(
-        `Model ${entry.modelId} does not support configurable reasoning efforts`,
-        'BAD_USER_INPUT'
-      )
-    }
-    if (seenReasoningModelIds.has(entry.modelId)) {
-      throw chatbotError(
-        `Duplicate reasoning configuration for model: ${entry.modelId}`,
-        'BAD_USER_INPUT'
-      )
-    }
-    seenReasoningModelIds.add(entry.modelId)
-
-    const supportedSet = new Set(model.supportedReasoningEfforts)
-    const requestedSet = new Set<string>()
-    const unsupportedEfforts: string[] = []
-    for (const effort of entry.efforts) {
-      if (supportedSet.has(effort)) {
-        requestedSet.add(effort)
-      } else if (!unsupportedEfforts.includes(effort)) {
-        unsupportedEfforts.push(effort)
-      }
-    }
-    if (unsupportedEfforts.length > 0) {
-      throw chatbotError(
-        `Unsupported reasoning effort(s) for ${entry.modelId}: ${unsupportedEfforts.join(', ')}`,
-        'BAD_USER_INPUT'
-      )
-    }
-    if (requestedSet.size === 0) {
-      throw chatbotError(
-        `At least one reasoning effort must be configured for model: ${entry.modelId}`,
-        'BAD_USER_INPUT'
-      )
-    }
-
-    const dedupedEfforts = model.supportedReasoningEfforts.filter((effort) =>
-      requestedSet.has(effort)
-    )
-    const isFullModelDefault =
-      dedupedEfforts.length === model.supportedReasoningEfforts.length
-
-    if (!isFullModelDefault) {
-      normalizedReasoningMap[entry.modelId] = dedupedEfforts
-    }
-  }
-
-  const updated = await ctx.prisma.$transaction(async (tx) => {
-    const transition = await tx.chatbot.updateMany({
-      where: {
-        id: chatbot.id,
-        ownerId: ctx.user.sub,
-        status: { in: metadataAndModelEditableStatuses },
-      },
-      data: {
-        modelSelection: args.modelSelection,
-        allowedModelIds: normalizedAllowedModelIds,
-        allowedReasoningEffortsByModel:
-          Object.keys(normalizedReasoningMap).length > 0
-            ? (normalizedReasoningMap as Prisma.InputJsonValue)
-            : Prisma.DbNull,
-      },
-    })
-
-    if (transition.count === 0) {
-      throw chatbotError(
-        'Chatbot model settings could not be saved because its status changed',
-        'CHATBOT_EDIT_CONFLICT'
-      )
-    }
-
-    return await tx.chatbot.findUniqueOrThrow({
-      where: { id: chatbot.id },
-      select: {
-        ...chatbotOwnerSelect,
-        course: { select: { id: true, name: true } },
-      },
-    })
-  })
-
-  return shapeChatbotResponse(updated, { resolveLegacyFixedPolicy: false })
-}
-
-type UpdateChatbotModelPolicyArgs = UpdateChatbotModelSettingsArgs
-
 function normalizeStrictReasoningConfig(
-  args: UpdateChatbotModelPolicyArgs,
+  args: RevisionModelPolicyInput,
   selectedModels: ChatModelCapability[],
   modelById: Map<string, ChatModelCapability>
 ) {
@@ -949,114 +1859,6 @@ function normalizeStrictReasoningConfig(
     .map(([modelId, efforts]) => ({ modelId, efforts }))
 }
 
-export async function updateChatbotModelPolicy(
-  args: UpdateChatbotModelPolicyArgs,
-  ctx: ContextWithUser
-) {
-  const chatbot = await ctx.prisma.chatbot.findFirst({
-    where: {
-      id: args.chatbotId,
-      ownerId: ctx.user.sub,
-    },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
-  })
-
-  if (!chatbot) return null
-
-  assertMetadataAndModelEditable(chatbot.status)
-
-  const modelRegistry = getChatModelRegistry()
-  const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
-  const normalizedAllowedModelIds = dedupeStrings(args.allowedModelIds)
-  const unknownAllowedModelIds = normalizedAllowedModelIds.filter(
-    (modelId) => !modelById.has(modelId)
-  )
-  if (unknownAllowedModelIds.length > 0) {
-    throw chatbotError(
-      `Unknown model id(s): ${unknownAllowedModelIds.join(', ')}`,
-      'BAD_USER_INPUT'
-    )
-  }
-
-  const selectedModels = normalizedAllowedModelIds
-    .map((modelId) => modelById.get(modelId))
-    .filter((model): model is ChatModelCapability => model !== undefined)
-
-  if (args.modelSelection) {
-    if (selectedModels.length === 0) {
-      throw chatbotError(
-        'Participant model selection requires at least one active model',
-        'BAD_USER_INPUT'
-      )
-    }
-  } else if (selectedModels.length !== 1) {
-    throw chatbotError(
-      'Fixed model policy requires exactly one active model',
-      'BAD_USER_INPUT'
-    )
-  }
-
-  const normalizedReasoningConfig = normalizeStrictReasoningConfig(
-    args,
-    selectedModels,
-    modelById
-  )
-
-  if (
-    !args.modelSelection &&
-    selectedModels[0]?.supportsReasoning &&
-    normalizedReasoningConfig[0]?.efforts.length !== 1
-  ) {
-    throw chatbotError(
-      `Fixed model policy requires exactly one reasoning effort for model: ${selectedModels[0].id}`,
-      'BAD_USER_INPUT'
-    )
-  }
-
-  const updated = await ctx.prisma.$transaction(async (tx) => {
-    const transition = await tx.chatbot.updateMany({
-      where: {
-        id: chatbot.id,
-        ownerId: ctx.user.sub,
-        status: { in: metadataAndModelEditableStatuses },
-      },
-      data: {
-        modelSelection: args.modelSelection,
-        allowedModelIds: normalizedAllowedModelIds,
-        allowedReasoningEffortsByModel:
-          normalizedReasoningConfig.length > 0
-            ? (Object.fromEntries(
-                normalizedReasoningConfig.map(({ modelId, efforts }) => [
-                  modelId,
-                  efforts,
-                ])
-              ) as Prisma.InputJsonValue)
-            : Prisma.DbNull,
-      },
-    })
-
-    if (transition.count === 0) {
-      throw chatbotError(
-        'Chatbot model policy could not be saved because its status changed',
-        'CHATBOT_EDIT_CONFLICT'
-      )
-    }
-
-    return await tx.chatbot.findUniqueOrThrow({
-      where: { id: chatbot.id },
-      select: {
-        ...chatbotOwnerSelect,
-        course: { select: { id: true, name: true } },
-      },
-    })
-  })
-
-  return shapeChatbotResponse(updated)
-}
-
 type CreateChatbotArgs = {
   name: string
   description?: string | null
@@ -1114,488 +1916,4 @@ export async function createChatbot(
   })
 
   return shapeChatbotResponse(created)
-}
-
-type UpdateChatbotArgs = {
-  id: string
-  name?: string | null
-  description?: string | null
-  avatar?: string | null
-}
-
-export async function updateChatbot(
-  args: UpdateChatbotArgs,
-  ctx: ContextWithUser
-) {
-  // Ownership guard: a failed ownerId-scoped lookup returns null rather than a
-  // throw, so a non-owner cannot distinguish "not yours" from "does not exist".
-  const existing = await ctx.prisma.chatbot.findFirst({
-    where: { id: args.id, ownerId: ctx.user.sub },
-    select: { id: true, status: true },
-  })
-  if (!existing) {
-    return null
-  }
-
-  assertMetadataAndModelEditable(existing.status)
-
-  if (args.name === '') {
-    throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
-  }
-
-  const updated = await ctx.prisma.$transaction(async (tx) => {
-    const transition = await tx.chatbot.updateMany({
-      where: {
-        id: existing.id,
-        ownerId: ctx.user.sub,
-        status: { in: metadataAndModelEditableStatuses },
-      },
-      data: {
-        // name is a required column, so only overwrite it when a value is given.
-        ...(args.name != null ? { name: args.name } : {}),
-        // description/avatar are nullable: an explicit null clears them, an
-        // omitted (undefined) arg leaves them untouched.
-        ...(args.description !== undefined
-          ? { description: args.description }
-          : {}),
-        ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
-      },
-    })
-
-    if (transition.count === 0) {
-      throw chatbotError(
-        'Chatbot metadata could not be saved because its status changed',
-        'CHATBOT_EDIT_CONFLICT'
-      )
-    }
-
-    return await tx.chatbot.findUniqueOrThrow({
-      where: { id: existing.id },
-      select: {
-        ...chatbotOwnerSelect,
-        course: { select: { id: true, name: true } },
-      },
-    })
-  })
-
-  return shapeChatbotResponse(updated)
-}
-
-type UpdateChatbotStandardModeConfigArgs = {
-  chatbotId: string
-  config: ChatbotStandardModeConfigInput
-}
-
-export async function updateChatbotStandardModeConfig(
-  args: UpdateChatbotStandardModeConfigArgs,
-  ctx: ContextWithUser
-) {
-  const chatbot = await ctx.prisma.chatbot.findFirst({
-    where: { id: args.chatbotId, ownerId: ctx.user.sub },
-    select: { id: true, status: true },
-  })
-
-  if (!chatbot) {
-    return null
-  }
-
-  assertMetadataAndModelEditable(chatbot.status)
-
-  let standardModeConfig: ReturnType<typeof parseChatbotStandardModeConfigInput>
-  try {
-    standardModeConfig = parseChatbotStandardModeConfigInput(args.config)
-  } catch (error) {
-    throw chatbotError(
-      error instanceof Error
-        ? error.message
-        : 'Invalid standard mode configuration',
-      'BAD_USER_INPUT'
-    )
-  }
-
-  const updated = await ctx.prisma.$transaction(async (tx) => {
-    const transition = await tx.chatbot.updateMany({
-      where: {
-        id: chatbot.id,
-        ownerId: ctx.user.sub,
-        status: { in: metadataAndModelEditableStatuses },
-      },
-      data: {
-        standardModeConfig:
-          standardModeConfig as PrismaJson.PrismaChatbotStandardModeConfig,
-      },
-    })
-
-    if (transition.count === 0) {
-      throw chatbotError(
-        'Chatbot standard mode settings could not be saved because its status changed',
-        'CHATBOT_EDIT_CONFLICT'
-      )
-    }
-
-    return await tx.chatbot.findUniqueOrThrow({
-      where: { id: chatbot.id },
-      select: {
-        ...chatbotOwnerSelect,
-        course: { select: { id: true, name: true } },
-      },
-    })
-  })
-
-  return shapeChatbotResponse(updated)
-}
-
-type SaveChatbotDisclaimerArgs = {
-  chatbotId: string
-  expectedDisclaimerId?: string | null
-  title: string
-  introText: string
-}
-
-export async function saveChatbotDisclaimer(
-  args: SaveChatbotDisclaimerArgs,
-  ctx: ContextWithUser
-) {
-  return await ctx.prisma.$transaction(async (tx) => {
-    const chatbot = await tx.chatbot.findFirst({
-      where: { id: args.chatbotId, ownerId: ctx.user.sub },
-      select: {
-        ...chatbotOwnerSelect,
-        course: { select: { id: true, name: true } },
-        disclaimer: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            title: true,
-            introText: true,
-            mediaUrl: true,
-            mediaType: true,
-          },
-        },
-      },
-    })
-
-    if (!chatbot) {
-      return null
-    }
-
-    assertDisclaimerEditable(chatbot.status)
-
-    if (args.expectedDisclaimerId === undefined) {
-      throw chatbotError(
-        'expectedDisclaimerId must be provided, using null when no disclaimer is linked',
-        'BAD_USER_INPUT'
-      )
-    }
-
-    const expectedDisclaimerId = args.expectedDisclaimerId
-    const currentDisclaimerId = chatbot.disclaimer?.id ?? null
-    if (expectedDisclaimerId !== currentDisclaimerId) {
-      throw chatbotError(
-        'Chatbot disclaimer changed since it was loaded',
-        'CHATBOT_DISCLAIMER_CONFLICT'
-      )
-    }
-
-    const title = normalizeDisclaimerText(args.title)
-    const introText = normalizeDisclaimerText(args.introText)
-    validateDisclaimerContent(title, introText)
-
-    if (
-      chatbot.disclaimer &&
-      normalizeDisclaimerText(chatbot.disclaimer.title) === title &&
-      normalizeDisclaimerText(chatbot.disclaimer.introText ?? '') === introText
-    ) {
-      return shapeChatbotResponse(chatbot)
-    }
-
-    const replacement = await tx.chatbotDisclaimer.create({
-      data: {
-        name: chatbot.disclaimer?.name ?? `${chatbot.name} disclaimer`,
-        description: chatbot.disclaimer?.description ?? null,
-        title,
-        introText,
-        mediaUrl: chatbot.disclaimer?.mediaUrl ?? null,
-        mediaType: chatbot.disclaimer?.mediaType ?? null,
-        ownerId: ctx.user.sub,
-      },
-      select: { id: true },
-    })
-
-    const transition = await tx.chatbot.updateMany({
-      where: {
-        id: chatbot.id,
-        ownerId: ctx.user.sub,
-        status: { in: disclaimerEditableStatuses },
-        disclaimerId: expectedDisclaimerId,
-      },
-      data: { disclaimerId: replacement.id },
-    })
-
-    if (transition.count === 0) {
-      throw chatbotError(
-        'Chatbot disclaimer changed since it was loaded',
-        'CHATBOT_DISCLAIMER_CONFLICT'
-      )
-    }
-
-    const updated = await tx.chatbot.findUniqueOrThrow({
-      where: { id: chatbot.id },
-      select: {
-        ...chatbotOwnerSelect,
-        course: { select: { id: true, name: true } },
-      },
-    })
-
-    return shapeChatbotResponse(updated)
-  })
-}
-
-type RequestChatbotPublicationArgs = {
-  id: string
-  useCase: string
-  expectedStudentCount: number
-  proposedCredits: number
-}
-
-export async function requestChatbotPublication(
-  args: RequestChatbotPublicationArgs,
-  ctx: ContextWithUser
-) {
-  // Ownership/existence first: a non-owner gets null (not found) and never
-  // learns anything about the account capability below.
-  const chatbot = await ctx.prisma.chatbot.findFirst({
-    where: { id: args.id, ownerId: ctx.user.sub },
-    select: {
-      id: true,
-      status: true,
-      disclaimer: { select: { title: true, introText: true } },
-    },
-  })
-  if (!chatbot) {
-    return null
-  }
-
-  if (typeof args.useCase !== 'string') {
-    throw new GraphQLError('useCase must be between 1 and 2000 characters long')
-  }
-  const normalizedUseCase = args.useCase.trim()
-  if (normalizedUseCase.length < 1 || normalizedUseCase.length > 2000) {
-    throw new GraphQLError('useCase must be between 1 and 2000 characters long')
-  }
-
-  const isPositiveSignedInt32 = (value: unknown): value is number =>
-    typeof value === 'number' &&
-    Number.isInteger(value) &&
-    value >= 1 &&
-    value <= 2_147_483_647
-
-  if (!isPositiveSignedInt32(args.expectedStudentCount)) {
-    throw new GraphQLError(
-      'expectedStudentCount must be a positive signed 32-bit integer'
-    )
-  }
-  if (!isPositiveSignedInt32(args.proposedCredits)) {
-    throw new GraphQLError(
-      'proposedCredits must be a positive signed 32-bit integer'
-    )
-  }
-
-  // Account-level capability gate (D1, ADR 0020): read the live User row, never
-  // a JWT claim — ops flips this flag out of band after the token was issued.
-  const owner = await ctx.prisma.user.findUniqueOrThrow({
-    where: { id: ctx.user.sub },
-    select: { aiFeaturesEnabled: true },
-  })
-  if (!owner.aiFeaturesEnabled) {
-    throw new GraphQLError('Account is not approved for chatbot publishing')
-  }
-
-  // Only a DRAFT or a previously REJECTED bot may (re-)enter review.
-  if (
-    chatbot.status !== DB.ChatbotStatus.DRAFT &&
-    chatbot.status !== DB.ChatbotStatus.REJECTED
-  ) {
-    throw new GraphQLError(
-      `Cannot request publication from status ${chatbot.status}`
-    )
-  }
-
-  if (!chatbot.disclaimer) {
-    throw chatbotError(
-      'A complete disclaimer is required before publication',
-      'CHATBOT_DISCLAIMER_REQUIRED'
-    )
-  }
-  const disclaimerTitle = normalizeDisclaimerText(chatbot.disclaimer.title)
-  const disclaimerIntro = normalizeDisclaimerText(
-    chatbot.disclaimer.introText ?? ''
-  )
-  try {
-    validateDisclaimerContent(disclaimerTitle, disclaimerIntro)
-  } catch (error) {
-    if (!(error instanceof GraphQLError)) {
-      throw error
-    }
-    throw chatbotError(
-      'A complete disclaimer is required before publication',
-      'CHATBOT_DISCLAIMER_REQUIRED'
-    )
-  }
-
-  const transition = await ctx.prisma.chatbot.updateMany({
-    where: {
-      id: chatbot.id,
-      ownerId: ctx.user.sub,
-      status: {
-        in: [DB.ChatbotStatus.DRAFT, DB.ChatbotStatus.REJECTED],
-      },
-      owner: { aiFeaturesEnabled: true },
-    },
-    data: {
-      status: DB.ChatbotStatus.PENDING_APPROVAL,
-      publicationUseCase: normalizedUseCase,
-      expectedStudentCount: args.expectedStudentCount,
-      reviewComment: null, // clear any prior rejection note on re-request
-      // Proposed credit budget (gated cost class, D2): flat model — initial =
-      // reset amount = max = proposedCredits; the reset period keeps its
-      // configured value. Student-inert until PUBLISHED (S4 gates access).
-      creditInitialCredits: args.proposedCredits,
-      creditResetAmount: args.proposedCredits,
-      creditMaxCredits: args.proposedCredits,
-    },
-  })
-
-  if (transition.count === 0) {
-    throw new GraphQLError(
-      'Chatbot publication request could not be completed because its status or account capability changed concurrently'
-    )
-  }
-
-  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbot.id },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
-  })
-
-  return shapeChatbotResponse(updated)
-}
-
-export async function approveChatbotPublication(
-  args: { id: string },
-  ctx: ContextWithUser
-) {
-  // Service-level admin check (D3): the schema layer already gates on asAdmin,
-  // but service tests bypass Pothos, so this is the check the admin-authz test
-  // exercises.
-  if (ctx.user.role !== DB.UserRole.ADMIN) {
-    throw new GraphQLError('Not authorized')
-  }
-
-  const chatbot = await ctx.prisma.chatbot.findUnique({
-    where: { id: args.id },
-    select: {
-      id: true,
-      status: true,
-      publishedAt: true,
-      // Re-check the owner's account-level publishing capability at approval
-      // time (S3 review): the manual queue can sit for days, and ops may revoke
-      // aiFeaturesEnabled while a request is pending. Checking only at
-      // request time would let an unaware admin publish a bot under an account
-      // that no longer holds the capability. See ADR 0020 (two-tier approval).
-      owner: { select: { aiFeaturesEnabled: true } },
-    },
-  })
-  if (!chatbot) {
-    return null
-  }
-  if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
-    throw new GraphQLError(`Cannot approve from status ${chatbot.status}`)
-  }
-  if (!chatbot.owner.aiFeaturesEnabled) {
-    throw new GraphQLError(
-      'Account is no longer approved for chatbot publishing'
-    )
-  }
-
-  const transition = await ctx.prisma.chatbot.updateMany({
-    where: {
-      id: chatbot.id,
-      status: DB.ChatbotStatus.PENDING_APPROVAL,
-      owner: { aiFeaturesEnabled: true },
-    },
-    data: {
-      status: DB.ChatbotStatus.PUBLISHED,
-      // Stamp the first go-live only; a later re-approval keeps the original.
-      publishedAt: chatbot.publishedAt ?? new Date(),
-      reviewComment: null,
-    },
-  })
-  if (transition.count === 0) {
-    throw new GraphQLError(
-      'Chatbot approval could not be completed because its status or account capability changed'
-    )
-  }
-
-  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbot.id },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
-  })
-
-  return shapeChatbotResponse(updated)
-}
-
-export async function rejectChatbotPublication(
-  args: { id: string; comment: string },
-  ctx: ContextWithUser
-) {
-  if (ctx.user.role !== DB.UserRole.ADMIN) {
-    throw new GraphQLError('Not authorized')
-  }
-
-  const chatbot = await ctx.prisma.chatbot.findUnique({
-    where: { id: args.id },
-    select: { id: true, status: true },
-  })
-  if (!chatbot) {
-    return null
-  }
-  if (args.comment.trim().length === 0) {
-    throw new GraphQLError('Review comment must not be empty')
-  }
-  if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
-    throw new GraphQLError(`Cannot reject from status ${chatbot.status}`)
-  }
-
-  const transition = await ctx.prisma.chatbot.updateMany({
-    where: {
-      id: chatbot.id,
-      status: DB.ChatbotStatus.PENDING_APPROVAL,
-    },
-    data: {
-      status: DB.ChatbotStatus.REJECTED,
-      reviewComment: args.comment,
-    },
-  })
-  if (transition.count === 0) {
-    throw new GraphQLError(
-      'Chatbot rejection could not be completed because its status changed'
-    )
-  }
-
-  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbot.id },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
-  })
-
-  return shapeChatbotResponse(updated)
 }

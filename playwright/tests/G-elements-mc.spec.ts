@@ -12,7 +12,6 @@ import { expect, test } from '../util/fixtures.js'
 import {
   addAnswerChoices,
   clearEditorField,
-  clearRichTextField,
   deleteElement,
   fillAnswerField,
   fillEditorField,
@@ -52,7 +51,7 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing an answer disables save
-    await clearRichTextField(page.getByTestId('insert-answer-field-1'))
+    await clearEditorField(page, 'insert-answer-field-1')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillAnswerField(page, 1, MC.choices[1])
     await page.getByTestId('insert-question-title').click()

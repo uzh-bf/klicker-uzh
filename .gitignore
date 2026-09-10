@@ -76,6 +76,8 @@ output/
 .devcontainer/.hatchet.env
 .devcontainer/.local-kb-services.env
 .local-kb/
+.devcontainer/.hatchet.env.tmp.*
+packages/graphql/.env.tmp.*
 .devcontainer/.runtime/
 # Devrouter-generated selective Dev Container config (runtime state, not source)
 .devcontainer/devcontainer.devrouter.json

@@ -16,39 +16,23 @@ import { expect, test } from '../util/fixtures.js'
 test('CLEANUP', cleanupTest)
 
 test.describe('AI beta management navigation gate', () => {
-  test('shows Knowledge Bases and Chatbots under a top-level AI menu next to Resources and Analytics when the gate is open', async ({
+  test('opens Knowledge Bases and Chatbots from Resources and generates elements from the library', async ({
     loginLecturer,
     page,
   }) => {
     await loginLecturer()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
-    // The AI entrypoint sits between Resources and Analytics in the bar.
     const navigation = page.getByTestId('navigation')
-    await expect(navigation.getByTestId('resources')).toBeVisible()
-    await expect(navigation.getByTestId('ai')).toBeVisible()
-    await expect(navigation.getByTestId('analytics')).toBeVisible()
-    const resourcesPosition = await navigation
-      .getByTestId('resources')
-      .evaluate((el) => el.getBoundingClientRect().left)
-    const aiPosition = await navigation
-      .getByTestId('ai')
-      .evaluate((el) => el.getBoundingClientRect().left)
-    const analyticsPosition = await navigation
-      .getByTestId('analytics')
-      .evaluate((el) => el.getBoundingClientRect().left)
-    expect(resourcesPosition).toBeLessThan(aiPosition)
-    expect(aiPosition).toBeLessThan(analyticsPosition)
+    await expect(navigation.getByTestId('ai')).not.toBeAttached()
+    await page.getByTestId('generate-elements').click()
+    await expect(page).toHaveURL(/\/elements\/generate$/)
+    await navigation.getByTestId('library').click()
+    await expect(page.getByTestId('homepage')).toBeVisible()
 
-    // Knowledge Bases and Chatbots moved out of the Resources dropdown.
     await navigation.getByTestId('resources').click()
     await expect(page.getByTestId('answer-collections')).toBeVisible()
-    await expect(page.getByTestId('knowledge-bases')).not.toBeAttached()
-    await expect(page.getByTestId('chatbots')).not.toBeAttached()
-    await page.keyboard.press('Escape')
-
-    // The AI menu carries both entries.
-    await navigation.getByTestId('ai').click()
+    await expect(page.getByTestId('element-generation')).not.toBeAttached()
     await expect(page.getByTestId('knowledge-bases')).toBeVisible()
     await expect(page.getByTestId('chatbots')).toBeVisible()
 
@@ -57,9 +41,11 @@ test.describe('AI beta management navigation gate', () => {
     await expect(page).toHaveURL(/\/resources\/knowledgeBases$/)
     await expect(page.getByTestId('knowledge-base-list')).toBeVisible()
 
-    await page.getByTestId('ai').click()
+    await page.getByTestId('resources').click()
     await page.getByTestId('chatbots').click()
-    await expect(page).toHaveURL(/\/resources\/chatbots$/)
+    await expect(page).toHaveURL(
+      (url) => url.pathname === '/resources/chatbots'
+    )
     await expect(page.getByTestId('chatbot-list')).toBeVisible()
   })
 
@@ -86,7 +72,7 @@ test.describe('AI beta management navigation gate', () => {
       await expect(page.getByTestId('homepage')).toBeVisible()
 
       const navigation = page.getByTestId('navigation')
-      await navigation.getByTestId('ai').click()
+      await navigation.getByTestId('resources').click()
       await expect(page.getByTestId('knowledge-bases')).not.toBeAttached()
       await expect(page.getByTestId('chatbots')).toBeVisible()
       await page.getByTestId('chatbots').click()

@@ -159,6 +159,19 @@ workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
+The default starts the full profile. For focused activity tests, request the
+required profile union explicitly before the Playwright arguments:
+
+```bash
+pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
+```
+
+The caller must include every profile the selected tests need; the launcher
+does not infer them from spec names or reuse a previous narrow selection.
+Place `--runtime-profile` and `--print-env` before other arguments, or use `--`
+to end the launcher-option prefix. `--print-env` still reconciles the runtime
+and can start services. `--show-report` does not accept a runtime profile.
+
 The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
 reports stale dependency links instead of installing before the host launcher
 can control the lifecycle. On a cold host run, when the Playwright CLI is
@@ -302,7 +315,8 @@ custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
 
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
-a nested API route, the committed shell pages of auth, PWA, manage, and control
+a nested API route. Auth must answer `200 application/json` at
+`/api/auth/providers`; the committed shell pages of PWA, manage, and control
 must answer `2xx` HTML or a redirect, and Response API must answer `200`
 JSON at `/healthz`. Profiles that include live-quiz workers also require one
 live runtime process for each worker below the exact managed Turbo root. The
@@ -456,3 +470,50 @@ disabled and the rest of the DevPod still starts normally.
   seeded or synthetic content and expect the extra calls to add latency/cost.
 - Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
   fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.
+
+## Guarded retained-runtime recovery
+
+Use `devrouter ensure <checkout>` for normal startup. Use
+`devrouter ensure <checkout> --repair` only for a persisted degraded runtime.
+A healthy stopped runtime needs normal `ensure`, not repair. If an ordinary
+restart is appropriate, stop the exact checkout with `devrouter stop <checkout>`
+and confirm its provider is stopped and its routes are gone before restarting.
+
+The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
+the separately reviewed devrouter retained-recovery implementation. It is not
+an ordinary startup hook or a command to invoke manually. The repository-pinned
+0.0.59 release does not provide this recovery contract. The recovery performed
+for this branch used devrouter source revision
+`aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
+`recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact
+container identities and digest-bound journal. This is source-version evidence,
+not a claim that the contract is available in a published release. Confirm a
+release provides that contract before changing the repository version pin.
+
+The callback requires the provider to inject exact 64-character application
+and PostgreSQL container IDs. It assumes the canonical container mount
+`/workspaces/klicker-uzh`. Both restricted disposable databases must already be
+provisioned and marked; the callback explicitly initializes their schema and
+synthetic seeds after verifying their identities. This path therefore requires
+approval for that initialization. It never marks an existing retained database
+as disposable. The provisioning helper defaults to bootstrap login `klicker`
+for CI; the retained local environment explicitly selects the allow-listed
+`klicker-prod` login. Neither is the restricted `klicker_test` application login.
+
+The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
+When one of those files changes, review the semantic change and refresh its pin
+in the same commit. Run `pnpm run test:dev-runtime` to catch pin drift before
+publication. A pin failure must never be bypassed by deleting the guard.
+
+| Failure                                                               | Next action                                                                                                                                        |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Recovery source changed` or a mounted-source mismatch                | Compare the exact reviewed host and mounted files; update a pin only after reviewing the changed procedure.                                        |
+| `Repair requires a persisted degraded managed runtime`                | Use normal `ensure` for a stopped healthy runtime.                                                                                                 |
+| `Lifecycle worker completion is unknown` or an operation-request lock | Preserve the existing operation and inspect its owner/journal through devrouter; do not clear locks or start competing operations.                 |
+| `Managed stop Compose file identity changed`                          | Compare recorded and current source configuration through the provider's recovery preview; do not bypass identity checks with raw Docker commands. |
+| Disposable identity or schema refusal                                 | Stop initialization and verify configuration and marked identities without exposing connection strings; do not reset or reseed blindly.            |
+
+A partial recovery journal records work already performed. Resume only through
+the owning recovery command and its reviewed preview; repeating replacement
+can lose writable-layer data. If the installed tool lacks the required command,
+stop at that capability boundary instead of substituting raw Docker mutations.

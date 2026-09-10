@@ -1,0 +1,24 @@
+mutation MSubmitChatbotRevision(
+  $chatbotId: String!
+  $expectedRevisionVersion: Int!
+  $useCase: String!
+  $expectedStudentCount: Int!
+) {
+  submitChatbotRevision(
+    chatbotId: $chatbotId
+    expectedRevisionVersion: $expectedRevisionVersion
+    useCase: $useCase
+    expectedStudentCount: $expectedStudentCount
+  ) {
+    id
+    status
+    revisionStatus
+    revisionVersion
+    publicationUseCase
+    expectedStudentCount
+    reviewComment
+    authoringRevision {
+      ...ChatbotAuthoringRevisionData
+    }
+  }
+}

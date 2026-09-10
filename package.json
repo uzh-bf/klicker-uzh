@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.4.0-alpha.74",
+  "version": "3.4.0-alpha.75",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -26,6 +26,7 @@
     "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
+    "@babel/core": "~7.28.3",
     "@biomejs/biome": "~2.5.2",
     "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
@@ -114,7 +115,7 @@
     "syncpack:mismatches": "syncpack list-mismatches",
     "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "syncpack:update": "syncpack update",
-    "test:dev-runtime": "bash ./util/test-dev-runtime.sh && node --test ./util/dev-runtime-readiness.test.mjs",
+    "test:dev-runtime": "bash ./util/test-dev-runtime.sh && node --test ./util/dev-runtime-readiness.test.mjs && bash ./util/test-recover-bootstrap.sh",
     "test:growthbook": "node ./playwright/util/mockGrowthBookServer.mjs",
     "test:profile-resolver": "bash ./util/test-profile-resolver.sh",
     "test:run": "turbo run test:run",
