@@ -204,7 +204,7 @@ chat:
     storeResponses: true
 
   telemetry:
-    enabled: false
+    enabled: true
     environment: 'staging'
 
   automaticModels:

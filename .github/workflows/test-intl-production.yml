@@ -1,0 +1,46 @@
+name: Production translation context
+on:
+  pull_request:
+    branches: [v3, v3-ai]
+    # ready_for_review is intentionally absent: this smoke runs the same jobs
+    # for draft and ready PRs, and the transition fires on an unchanged head,
+    # so listing it would only re-run validation that already passed.
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/frontend-pwa/**'
+      - 'apps/frontend-manage/**'
+      - 'apps/frontend-control/**'
+      - 'apps/auth/**'
+      - 'apps/chat/**'
+      - 'packages/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.npmrc'
+      - 'turbo.json'
+      - 'tsconfig.json'
+      - '.github/workflows/test-intl-production.yml'
+      - '.github/scripts/intl-production-smoke.mjs'
+      - '.github/fixtures/intl-production/**'
+      - 'util/test-intl-resolution.mjs'
+permissions:
+  contents: read
+concurrency:
+  group: intl-production-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  intl-production-smoke:
+    name: intl-production-smoke (${{ matrix.app }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [frontend-pwa, frontend-manage]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Build and render through the production provider
+        run: node .github/scripts/intl-production-smoke.mjs '${{ matrix.app }}' '${{ github.event.pull_request.head.sha }}'

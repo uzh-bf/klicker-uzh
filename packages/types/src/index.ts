@@ -14,6 +14,7 @@ import type {
 
 // ----- HATCHET (WORKER/TASK) TYPES -----
 export * from './assessmentReport.js'
+export * from './chatbotAuthoringRevision.js'
 export * from './chatbotStandardModeConfig.js'
 export * from './hatchet.js'
 
