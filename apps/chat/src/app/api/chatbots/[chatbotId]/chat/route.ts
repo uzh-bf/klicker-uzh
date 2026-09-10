@@ -41,6 +41,7 @@ import {
   getLangfuseAiSdkIntegration,
   isAiTelemetryEnabled,
   LANGFUSE_CHAT_TRACE_NAME,
+  registerLangfuseTelemetry,
 } from '@/src/lib/server/langfuseTracing'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
@@ -550,6 +551,7 @@ export async function POST(
   const { chatbotId } = await params
   const requestId = randomUUID()
   const requestStartedAtMs = Date.now()
+  await registerLangfuseTelemetry()
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) {
     return authResult.response
