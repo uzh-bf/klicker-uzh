@@ -70,6 +70,20 @@ objectBacking under ingestion ownership with retrieval as vector consumer; all
 62 local-stack tests pass. The thin launcher-invocation integration, provider
 final reviews, draft publication and target-integration ruling remain.
 
+2026-09-10 thin integration: `providerCommands` now emits explicit launcher
+invocations bound to the isolated instance, source revision and private state
+paths with setup order and reverse stop. Ingestion setup and start stay
+blocked on its provider-owned backing allocations; ingestion status and stop
+plus scraping, Doc Processing and Doc Query are fully derivable. Committed
+at `99160c2074a5e3a59346f15b83394ab8c8c80944` with 65/65 local-stack tests,
+Biome and Prettier. The host pre-commit hook was replaced by its documented
+equivalent checks after GIT_DIR, sandboxed-pnpm and Node 26 artifacts; the
+worktree git wedge is the documented fsmonitor daemon state worked around
+with `core.fsmonitor=false`. Remaining gates: provider final reviews
+(Doc Processing range 5a0979af..b6448bf, Doc Query retry at d6e13ae,
+scraping simplifier, risk and final on 7eadb3a6..1771693), then provider
+pushes, draft MRs and the separately gated target-integration ruling.
+
 ### Current delivery ownership — 2026-09-09
 
 The target integration is committed at `54814574493fd98990733c593e90f22cff976203`.
