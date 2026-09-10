@@ -53,7 +53,8 @@ function startAuditMetricsServer(): void {
 }
 
 async function main() {
-  const auditWorkerEnabled = process.env.ASSESSMENT_AUDIT_WORKER_ENABLED === 'true'
+  const auditWorkerEnabled =
+    process.env.ASSESSMENT_AUDIT_WORKER_ENABLED === 'true'
   const integrationState = auditWorkerEnabled
     ? { ingestionDisabled: true, graphDisabled: true }
     : validateKBWorkerConfiguration()

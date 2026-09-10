@@ -57,11 +57,11 @@ import './schema/subscription.js'
 //   })
 // }
 
-import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
   handleDispatchAssessmentAuditOutbox,
   handleMonitorAssessmentAudit,
 } from './services/assessmentAudit.js'
+import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
