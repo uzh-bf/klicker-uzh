@@ -163,20 +163,6 @@ const EVENT_FAMILIES = [
   },
   {
     events: [
-      'ASSESSMENT_PARTICIPANT_ELIGIBILITY_CHANGED',
-      'ASSESSMENT_LECTURER_PERMISSION_CHANGED',
-    ],
-    tier: 'LAUNCH',
-    emissionPath: 'LANE_1_OUTBOX',
-    evidenceClass: 'AUTHORITATIVE',
-    criticality: 'CRITICAL',
-    allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
-    ownerPackage: '@klicker-uzh/graphql',
-    producer: 'assessment eligibility and permission services',
-    durabilityPoint: 'eligibility/permission transaction commit',
-  },
-  {
-    events: [
       'ASSESSMENT_SESSION_STARTED',
       'ASSESSMENT_SESSION_RESUMED',
       'ASSESSMENT_SESSION_ENDED',
@@ -189,6 +175,20 @@ const EVENT_FAMILIES = [
     ownerPackage: '@klicker-uzh/graphql',
     producer: 'LiveQuiz runtime session transitions',
     durabilityPoint: 'runtime transition transaction commit',
+  },
+  {
+    events: [
+      'ASSESSMENT_PARTICIPANT_ELIGIBILITY_CHANGED',
+      'ASSESSMENT_LECTURER_PERMISSION_CHANGED',
+    ],
+    tier: 'LAUNCH',
+    emissionPath: 'LANE_1_OUTBOX',
+    evidenceClass: 'AUTHORITATIVE',
+    criticality: 'CRITICAL',
+    allowedRecordedVia: ['TRANSACTIONAL_OUTBOX'],
+    ownerPackage: '@klicker-uzh/graphql',
+    producer: 'assessment eligibility and permission services',
+    durabilityPoint: 'eligibility/permission transaction commit',
   },
   {
     events: ['ASSESSMENT_ACTION_REJECTED'],

@@ -77,6 +77,43 @@ type RetentionEntity = {
 
 const AUDIT_EXPORT_READ_CONCURRENCY = 8
 
+type EvidenceFailureReason =
+  | 'RETENTION_INDEX_MISSING'
+  | 'LOCATOR_MISSING'
+  | 'EVIDENCE_MISSING'
+  | 'VERIFICATION_FAILED'
+
+class MissingAuditEntityError extends Error {
+  constructor(
+    readonly reason: EvidenceFailureReason,
+    message: string
+  ) {
+    super(message)
+  }
+}
+
+async function readRequiredEntity<T extends object>(
+  client: AuditTableReaderClientPort,
+  partitionKey: string,
+  rowKey: string,
+  reason: EvidenceFailureReason,
+  label: string
+): Promise<TableEntityResult<T>> {
+  try {
+    return await client.getEntity<T>(partitionKey, rowKey)
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'statusCode' in error &&
+      error.statusCode === 404
+    ) {
+      throw new MissingAuditEntityError(reason, `Audit ${label} is missing`)
+    }
+    throw error
+  }
+}
+
 function assertString(value: unknown, name: string): asserts value is string {
   if (typeof value !== 'string' || value === '') {
     throw new Error(`Audit evidence ${name} is invalid`)
@@ -188,18 +225,24 @@ export class AzureTableAuditReader {
   }
 
   async verifyEvent(eventId: string): Promise<VerifiedAuditEvidence> {
-    const locator = await this.clients.locator.getEntity<LocatorEntity>(
+    const locator = await readRequiredEntity<LocatorEntity>(
+      this.clients.locator,
       auditLocatorPartitionKey(eventId),
-      eventId
+      eventId,
+      'LOCATOR_MISSING',
+      'locator'
     )
     assertLocator(locator)
     if (locator.eventId !== eventId) {
       throw new Error('Audit locator identity mismatch')
     }
 
-    const root = await this.clients.evidence.getEntity<RootEntity>(
+    const root = await readRequiredEntity<RootEntity>(
+      this.clients.evidence,
       locator.evidencePartitionKey,
-      locator.evidenceRootRowKey
+      locator.evidenceRootRowKey,
+      'EVIDENCE_MISSING',
+      'event root'
     )
     assertRoot(root)
     if (
@@ -214,9 +257,12 @@ export class AzureTableAuditReader {
     const chunks: Uint8Array[] = []
     for (let index = 0; index < root.chunkCount; index += 1) {
       const rowKey = `c|${eventId}|${String(index).padStart(6, '0')}`
-      const chunk = await this.clients.evidence.getEntity<ChunkEntity>(
+      const chunk = await readRequiredEntity<ChunkEntity>(
+        this.clients.evidence,
         locator.evidencePartitionKey,
-        rowKey
+        rowKey,
+        'EVIDENCE_MISSING',
+        `chunk ${index}`
       )
       const content = readBinary(chunk.content)
       if (
@@ -255,9 +301,12 @@ export class AzureTableAuditReader {
       String(locator.lifecycleEpoch),
       shard,
     ].join('|')
-    const retention = await this.clients.retentionIndex.getEntity<RetentionEntity>(
+    const retention = await readRequiredEntity<RetentionEntity>(
+      this.clients.retentionIndex,
       retentionPartitionKey,
-      'event|' + eventId
+      'event|' + eventId,
+      'RETENTION_INDEX_MISSING',
+      'retention index'
     )
     assertRetention(retention, eventId)
     if (
@@ -280,11 +329,7 @@ export class AzureTableAuditReader {
     ) {
       throw new Error('Audit scope does not match its locator')
     }
-    if (
-      retention.participantId !== undefined &&
-      envelope.scope.participantId !== undefined &&
-      retention.participantId !== envelope.scope.participantId
-    ) {
+    if (retention.participantId !== envelope.scope.participantId) {
       throw new Error('Audit retention participant scope does not match')
     }
 
@@ -315,6 +360,30 @@ export class AzureTableAuditReader {
       }
     )) {
       assertString(entity.eventId, 'retention eventId')
+      eventIds.add(entity.eventId)
+    }
+    // Cross-check the independent locator inventory. Enumerating only the
+    // retention index would silently omit evidence when an index row is lost.
+    const locatorFilter = odata`liveQuizId eq ${input.liveQuizId}`
+    for await (const entity of this.clients.locator.listEntities<LocatorEntity>(
+      {
+        queryOptions: {
+          filter:
+            input.lifecycleEpoch === undefined
+              ? locatorFilter
+              : `${locatorFilter} and ${odata`lifecycleEpoch eq ${input.lifecycleEpoch}`}`,
+          select: ['eventId', 'liveQuizId', 'lifecycleEpoch'],
+        },
+      }
+    )) {
+      if (
+        entity.liveQuizId !== input.liveQuizId ||
+        (input.lifecycleEpoch !== undefined &&
+          entity.lifecycleEpoch !== input.lifecycleEpoch)
+      ) {
+        continue
+      }
+      assertString(entity.eventId, 'locator eventId')
       eventIds.add(entity.eventId)
     }
     return [...eventIds].sort()
@@ -391,23 +460,24 @@ export class AzureTableAuditReader {
           return { eventId, evidence: await this.verifyEvent(eventId) }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
-          let reason: 'RETENTION_INDEX_MISSING' | 'VERIFICATION_FAILED' =
-            'VERIFICATION_FAILED'
-          if (/retention index/i.test(message)) {
-            reason = 'RETENTION_INDEX_MISSING'
-          }
+          const reason =
+            error instanceof MissingAuditEntityError
+              ? error.reason
+              : 'VERIFICATION_FAILED'
           return { eventId, failure: { eventId, reason, detail: message } }
         }
       }
     )
     const verified = results
-      .filter((result): result is Extract<ExportResult, { evidence: unknown }> =>
-        'evidence' in result
+      .filter(
+        (result): result is Extract<ExportResult, { evidence: unknown }> =>
+          'evidence' in result
       )
       .map((result) => result.evidence)
     const failures = results
-      .filter((result): result is Extract<ExportResult, { failure: unknown }> =>
-        'failure' in result
+      .filter(
+        (result): result is Extract<ExportResult, { failure: unknown }> =>
+          'failure' in result
       )
       .map((result) => result.failure)
     const participantScoped =

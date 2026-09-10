@@ -6,16 +6,16 @@ import type {
   VerifiedAuditEvidence,
 } from '../azure/table-reader.js'
 import {
-  type BaselinePartPayload,
-  type BaselineRootPayload,
-} from '../contract/payloads/coverage.js'
-import { canonicalizeJson } from '../canonical/canonicalize.js'
-import { hashCanonicalValue } from '../canonical/hash.js'
-import {
   aggregateAssessmentBaselineParts,
   assessmentBaselinePartKey,
   compareAssessmentBaselineParts,
 } from '../baseline/parts.js'
+import { canonicalizeJson } from '../canonical/canonicalize.js'
+import { hashCanonicalValue } from '../canonical/hash.js'
+import type {
+  BaselinePartPayload,
+  BaselineRootPayload,
+} from '../contract/payloads/coverage.js'
 
 export type BaselineReconstructionStatus =
   | 'COMPLETE'
@@ -64,6 +64,7 @@ export type AuditExportDocument = {
       | 'BASELINE_MISSING'
       | 'BASELINE_INCOMPLETE'
       | 'BASELINE_CONFLICTED'
+      | 'EVIDENCE_INCOMPLETE'
       | 'RETENTION_INDEX_MISSING'
       | 'DURABLE_ROLLOUT_GAP'
       | 'NO_ROLLOUT_RECORD'
@@ -199,11 +200,12 @@ function verifyBaseline(
   const duplicateKeys = issues.some((issue) =>
     issue.startsWith('duplicate part key')
   )
-  const status: BaselineReconstructionStatus = issues.length === 0
-    ? 'COMPLETE'
-    : missingParts && !duplicateKeys
-      ? 'INCOMPLETE'
-      : 'CONFLICTED'
+  const status: BaselineReconstructionStatus =
+    issues.length === 0
+      ? 'COMPLETE'
+      : missingParts && !duplicateKeys
+        ? 'INCOMPLETE'
+        : 'CONFLICTED'
   return {
     baselineId,
     lifecycleEpoch,
@@ -250,7 +252,11 @@ function collectBaselineReconstructions(
 
   const allKeys = new Set([...roots.keys(), ...partsByBaseline.keys()])
   for (const key of allKeys) {
+    if (groups.has(key)) continue
     const [epoch, baselineId] = key.split('|')
+    if (baselineId === undefined) {
+      throw new Error('Invalid audit baseline grouping key')
+    }
     const numericEpoch = Number(epoch)
     const root = roots.get(key)
     const parts = partsByBaseline.get(key) ?? []
@@ -333,7 +339,7 @@ function exportStatuses(
     const payload = envelope.payload as Record<string, unknown>
     return payload.coverageState !== 'COVERED'
   })
-  const activationCovered = evidence.some(({ envelope }) => {
+  const coveredActivations = evidence.filter(({ envelope }) => {
     if (
       envelope.eventType !== 'ASSESSMENT_AUDIT_ACTIVATED' &&
       envelope.eventType !== 'ASSESSMENT_ROLLOUT_BASELINE_RECORDED'
@@ -343,6 +349,25 @@ function exportStatuses(
     const payload = envelope.payload as Record<string, unknown>
     return payload.coverageState === 'COVERED'
   })
+  // A baseline in another lifecycle (or for another activation in the same
+  // lifecycle) cannot establish coverage for this activation.
+  const activationCovered =
+    coveredActivations.length > 0 &&
+    coveredActivations.every(({ envelope }) =>
+      completeBaselines.some(
+        (baseline) =>
+          baseline.lifecycleEpoch === envelope.scope.lifecycleEpoch &&
+          baseline.baselineId ===
+            (envelope.payload as Record<string, unknown>).baselineId
+      )
+    ) &&
+    evidence.every(({ envelope }) =>
+      coveredActivations.some(
+        (activation) =>
+          activation.envelope.scope.lifecycleEpoch ===
+          envelope.scope.lifecycleEpoch
+      )
+    )
   const participantEventCount =
     participantId === undefined
       ? 0
@@ -364,19 +389,13 @@ function exportStatuses(
     coverageStatus = 'RETENTION_INDEX_MISSING'
   } else if (!hasBaselineEvidence) {
     baselineStatus = 'MISSING'
-    coverageStatus = rolloutGap
-      ? 'DURABLE_ROLLOUT_GAP'
-      : 'BASELINE_MISSING'
+    coverageStatus = rolloutGap ? 'DURABLE_ROLLOUT_GAP' : 'BASELINE_MISSING'
   } else if (incompleteBaselines.length > 0) {
     baselineStatus = 'INCOMPLETE'
-    coverageStatus = rolloutGap
-      ? 'DURABLE_ROLLOUT_GAP'
-      : 'BASELINE_INCOMPLETE'
+    coverageStatus = rolloutGap ? 'DURABLE_ROLLOUT_GAP' : 'BASELINE_INCOMPLETE'
   } else if (conflictedBaselines.length > 0) {
     baselineStatus = 'CONFLICTED'
-    coverageStatus = rolloutGap
-      ? 'DURABLE_ROLLOUT_GAP'
-      : 'BASELINE_CONFLICTED'
+    coverageStatus = rolloutGap ? 'DURABLE_ROLLOUT_GAP' : 'BASELINE_CONFLICTED'
   } else if (hasCompleteBaseline) {
     baselineStatus = 'PRESENT'
     coverageStatus = rolloutGap
@@ -390,11 +409,19 @@ function exportStatuses(
   }
 
   const limitations: string[] = []
+  if (verificationFailures.length > 0) {
+    limitations.push('EVENT_VERIFICATION_FAILED')
+    if (coverageStatus === 'COVERED') coverageStatus = 'EVIDENCE_INCOMPLETE'
+  }
   if (rolloutGap) {
     limitations.push('ROLLOUT_GAP_RECORDED')
   }
   if (!activationCovered && hasCompleteBaseline) {
-    limitations.push('ACTIVATION_EVIDENCE_MISSING')
+    limitations.push(
+      coveredActivations.length > 0
+        ? 'ACTIVATION_BASELINE_MISMATCH'
+        : 'ACTIVATION_EVIDENCE_MISSING'
+    )
   }
   if (hasAnyBaselineIssue) {
     limitations.push('BASELINE_RECONSTRUCTION_ISSUES')

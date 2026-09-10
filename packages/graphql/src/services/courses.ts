@@ -1,4 +1,5 @@
 import {
+  type AuditEventDraft,
   emitCoveredParticipantEligibilityChange,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
@@ -28,7 +29,19 @@ import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
-import { assessmentAuditParticipantOperation } from './assessmentAuditProducers.js'
+import { loadAssessmentAuditSnapshot } from './assessmentAuditActivation.js'
+import type { AssessmentBaselineSnapshot } from './assessmentAuditBaseline.js'
+import {
+  assessmentAuditParticipantOperation,
+  assessmentAuditUserOperation,
+  assessmentResponseSnapshot,
+  buildAssessmentMutationAuditDrafts,
+  emitAssessmentLecturerPermissionChanges,
+  emitCoveredAssessmentAuditEvents,
+  loadAssessmentLecturerPermissionState,
+  recordAssessmentActionRejectedForUser,
+} from './assessmentAuditProducers.js'
+import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
 import {
   calculateAssessmentCourseScores,
   getInstanceAvailablePoints,
@@ -1096,8 +1109,7 @@ async function upsertResponseAppliedCorrection(
     availableCorrectnessPoints: number
     availableBonusPoints: number
   },
-  tx: PrismaTransactionClient,
-  ctx: ContextWithUser
+  tx: PrismaTransactionClient
 ) {
   // upsert live quiz response with the corrected points
   const lqr = await tx.liveQuizResponse.upsert({
@@ -1142,7 +1154,7 @@ async function upsertResponseAppliedCorrection(
   })
 
   // update applied correction entry
-  const appliedCorrection = await tx.appliedPointCorrection.create({
+  await tx.appliedPointCorrection.create({
     data: {
       // awarded and deducted points (true as award, false as deduction, null as no change)
       awardedBasePoints:
@@ -1172,11 +1184,96 @@ async function upsertResponseAppliedCorrection(
     },
   })
 
+  return { before: response ?? null, after: lqr }
+}
+
+function pointCorrectionAuditDraft(input: {
+  before: DB.LiveQuizResponse | null
+  after: DB.LiveQuizResponse
+  instance: DB.ElementInstance & { elementBlock: DB.ElementBlock }
+  producerOperationId: string
+}): AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'> | null {
+  const before =
+    input.before === null
+      ? null
+      : assessmentResponseSnapshot({
+          response: input.before,
+          elementType: input.instance.elementType,
+        })
+  const after = assessmentResponseSnapshot({
+    response: input.after,
+    elementType: input.instance.elementType,
+  })
   return {
-    message: {
-      info: `[INFO] [Correct Assessment Points Instance] User ${ctx.user.sub} corrected points for participant ${lqr.participantId} on instance ${instance.id}. Deducted points: base ${appliedCorrection.deductedBasePoints}, correctness ${appliedCorrection.deductedCorrectnessPoints}, bonus ${appliedCorrection.deductedBonusPoints}. Awarded points: base ${appliedCorrection.awardedBasePoints}, correctness ${appliedCorrection.awardedCorrectnessPoints}, bonus ${appliedCorrection.awardedBonusPoints}.`,
+    eventType: 'ASSESSMENT_POINTS_CORRECTED',
+    producerOperationId: input.producerOperationId,
+    scope: {
+      participantId: input.after.participantId,
+      elementInstanceId: input.instance.id,
+      blockId: input.instance.elementBlock.id,
+      elementId: input.instance.elementId,
+    },
+    payload: {
+      participantId: input.after.participantId,
+      responseId: input.after.id,
+      before,
+      after,
+      algorithmVersion: undefined,
+      reasonCode: 'LECTURER_POINT_CORRECTION',
     },
   }
+}
+
+async function recordRejectedAssessmentPointCorrection(input: {
+  ctx: ContextWithUser
+  liveQuizId: string
+  reasonCode: string
+}) {
+  try {
+    await recordAssessmentActionRejectedForUser({
+      client: input.ctx.prisma,
+      userId: input.ctx.user.sub,
+      liveQuizId: input.liveQuizId,
+      actionType: 'ASSESSMENT_POINT_CORRECTION',
+      reasonCode: input.reasonCode,
+      requiredPermission: 'ADMIN',
+    })
+  } catch (error) {
+    console.error('Failed to record rejected assessment point correction', {
+      liveQuizId: input.liveQuizId,
+      errorType: error instanceof Error ? error.name : 'unknown',
+    })
+  }
+}
+
+async function emitPointCorrectionAuditEvents(input: {
+  tx: Pick<DB.Prisma.TransactionClient, 'assessmentAuditScope'>
+  auditTx: Parameters<typeof emitCoveredAssessmentAuditEvents>[0]['auditTx']
+  liveQuizId: string
+  courseId: string
+  userId: string
+  correlationId: string
+  drafts: readonly (AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'> | null)[]
+}) {
+  const drafts = input.drafts.filter(
+    (draft): draft is AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'> =>
+      draft !== null
+  )
+  drafts.sort((left, right) =>
+    left.producerOperationId.localeCompare(right.producerOperationId)
+  )
+  return emitCoveredAssessmentAuditEvents({
+    tx: input.tx,
+    auditTx: input.auditTx,
+    liveQuizId: input.liveQuizId,
+    courseId: input.courseId,
+    operation: assessmentAuditUserOperation({
+      userId: input.userId,
+      requiredPermission: 'ADMIN',
+      correlationId: input.correlationId,
+    }),
+    drafts,
+  })
 }
 
 export async function correctAssessmentPointsInstance(
@@ -1279,12 +1376,13 @@ export async function correctAssessmentPointsInstance(
     include: { elementBlock: { include: { liveQuiz: true } } },
   })
 
-  if (
-    !instance ||
-    !instance.elementBlock ||
-    !instance.elementBlock.liveQuiz.courseId
-  )
+  if (!instance || !instance.elementBlock || !instance.elementBlock.liveQuiz)
     return null
+
+  const elementBlock = instance.elementBlock
+  const liveQuiz = elementBlock.liveQuiz
+  const courseId = liveQuiz.courseId
+  if (courseId === null) return null
 
   // compute the achievable points for this instance
   const {
@@ -1293,28 +1391,22 @@ export async function correctAssessmentPointsInstance(
     bonusPoints: availableBonusPoints,
   } = getInstanceAvailablePoints({
     instance,
-    activityBasePoints: instance.elementBlock.liveQuiz.defaultPoints,
-    activityCorrectnessPoints:
-      instance.elementBlock.liveQuiz.defaultCorrectPoints,
-    activityBonusPoints: instance.elementBlock.liveQuiz.maxBonusPoints,
+    activityBasePoints: liveQuiz.defaultPoints,
+    activityCorrectnessPoints: liveQuiz.defaultCorrectPoints,
+    activityBonusPoints: liveQuiz.maxBonusPoints,
+  })
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
   })
 
   // if the points of a single participant should be modified, fetch the corresponding response and update it
   if (scope === PointCorrectionType.SINGLE && participantId) {
-    const response = await ctx.prisma.liveQuizResponse.findUnique({
-      where: {
-        instanceId_elementBlockExecution_participantId: {
-          instanceId,
-          elementBlockExecution: instance.elementBlock.execution,
-          participantId,
-        },
-      },
-    })
-
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1343,13 +1435,21 @@ export async function correctAssessmentPointsInstance(
           include: { correctedBy: true, participant: true, instance: true },
         })
 
-        const logObject = await upsertResponseAppliedCorrection(
+        const correctionResult = await upsertResponseAppliedCorrection(
           {
             correctionId: correction.id,
             instance: instance as DB.ElementInstance & {
               elementBlock: DB.ElementBlock
             },
-            response,
+            response: await tx.liveQuizResponse.findUnique({
+              where: {
+                instanceId_elementBlockExecution_participantId: {
+                  instanceId,
+                  elementBlockExecution: elementBlock.execution,
+                  participantId,
+                },
+              },
+            }),
             participantId,
             awardBasePoints,
             awardCorrectnessPoints,
@@ -1361,17 +1461,35 @@ export async function correctAssessmentPointsInstance(
             availableCorrectnessPoints,
             availableBonusPoints,
           },
-          tx,
-          ctx
+          tx
         )
 
-        // add an audit log entry for the correction
-        await ctx.tasks.createAuditLogEntry.runNoWait([logObject])
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: elementBlock.liveQuizId,
+          courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: [
+            pointCorrectionAuditDraft({
+              before: correctionResult.before,
+              after: correctionResult.after,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
+              },
+              producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+            }),
+          ],
+        })
 
         // return the correction to display it to the lecturer
         return correction
       },
-      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+      {
+        timeout: 300000,
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+      } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1379,17 +1497,9 @@ export async function correctAssessmentPointsInstance(
 
   // if the points of all participating students should be modified, fetch all responses with a participantId and update them
   if (scope === PointCorrectionType.PARTICIPATING) {
-    // find all live quiz responses for the given instance (excluding the ones generated through corrections with null as a response)
-    const responses = await ctx.prisma.liveQuizResponse.findMany({
-      where: {
-        instanceId,
-        elementBlockExecution: instance.elementBlock.execution,
-        correctionOnly: false,
-      },
-    })
-
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1418,12 +1528,20 @@ export async function correctAssessmentPointsInstance(
         })
 
         // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
+        const responses = await tx.liveQuizResponse.findMany({
+          where: {
+            instanceId,
+            elementBlockExecution: elementBlock.execution,
+            correctionOnly: false,
+          },
+        })
 
         // loop over all responses and update them with the corrected points
         await Promise.all(
           responses.map(async (response) => {
-            const logObject = await upsertResponseAppliedCorrection(
+            const correctionResult = await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
                 instance: instance as DB.ElementInstance & {
@@ -1441,22 +1559,38 @@ export async function correctAssessmentPointsInstance(
                 availableCorrectnessPoints,
                 availableBonusPoints,
               },
-              tx,
-              ctx
+              tx
             )
 
-            // add the log object to the list of log entries
-            logEntries.push(logObject)
+            const draft = pointCorrectionAuditDraft({
+              before: correctionResult.before,
+              after: correctionResult.after,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
+              },
+              producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+            })
+            if (draft !== null) correctionDrafts.push(draft)
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: elementBlock.liveQuizId,
+          courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         // return the correction to display it to the lecturer
         return correction
       },
-      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+      {
+        timeout: 300000,
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+      } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1467,31 +1601,9 @@ export async function correctAssessmentPointsInstance(
     scope === PointCorrectionType.ALL_COURSE ||
     scope === PointCorrectionType.MULTIPLE
   ) {
-    // find all participants of the course and the corresponding responses for the given instance
-    const participations = await ctx.prisma.participation.findMany({
-      where: {
-        courseId: instance.elementBlock.liveQuiz.courseId!,
-        participantId:
-          scope === PointCorrectionType.MULTIPLE
-            ? { in: participantIds! }
-            : undefined,
-      },
-      include: {
-        participant: {
-          include: {
-            liveQuizResponses: {
-              where: {
-                instanceId,
-                elementBlockExecution: instance.elementBlock.execution,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1524,18 +1636,47 @@ export async function correctAssessmentPointsInstance(
         })
 
         // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
+        const [participations, responses] = await Promise.all([
+          tx.participation.findMany({
+            where: {
+              courseId,
+              participantId:
+                scope === PointCorrectionType.MULTIPLE
+                  ? { in: participantIds! }
+                  : undefined,
+            },
+            select: { participantId: true },
+          }),
+          tx.liveQuizResponse.findMany({
+            where: {
+              instanceId,
+              elementBlockExecution: elementBlock.execution,
+              correctionOnly: false,
+              participantId:
+                scope === PointCorrectionType.MULTIPLE
+                  ? { in: participantIds! }
+                  : undefined,
+            },
+          }),
+        ])
+        const responseByParticipant = new Map(
+          responses.map((response) => [response.participantId, response])
+        )
 
         // loop over all responses and update them with the corrected points
         await Promise.all(
           participations.map(async (participation) => {
-            const logEntry = await upsertResponseAppliedCorrection(
+            const correctionResult = await upsertResponseAppliedCorrection(
               {
                 correctionId: correction.id,
                 instance: instance as DB.ElementInstance & {
                   elementBlock: DB.ElementBlock
                 },
-                response: participation.participant.liveQuizResponses[0],
+                response: responseByParticipant.get(
+                  participation.participantId
+                ),
                 participantId: participation.participantId,
                 awardBasePoints,
                 awardCorrectnessPoints,
@@ -1547,22 +1688,38 @@ export async function correctAssessmentPointsInstance(
                 availableCorrectnessPoints,
                 availableBonusPoints,
               },
-              tx,
-              ctx
+              tx
             )
 
-            // push the log object to the list of log entries
-            logEntries.push(logEntry)
+            const draft = pointCorrectionAuditDraft({
+              before: correctionResult.before,
+              after: correctionResult.after,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
+              },
+              producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+            })
+            if (draft !== null) correctionDrafts.push(draft)
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: elementBlock.liveQuizId,
+          courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         // return the correction to display it to the lecturer
         return correction
       },
-      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+      {
+        timeout: 300000,
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+      } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1604,6 +1761,11 @@ export async function correctAssessmentPointsLiveQuiz(
 ) {
   // if the scope is set to a single participant, but no participant is provided, return early
   if (scope === PointCorrectionType.SINGLE && !participantId) {
+    await recordRejectedAssessmentPointCorrection({
+      ctx,
+      liveQuizId,
+      reasonCode: 'MISSING_PARTICIPANT',
+    })
     return null
   }
 
@@ -1612,6 +1774,11 @@ export async function correctAssessmentPointsLiveQuiz(
     scope === PointCorrectionType.MULTIPLE &&
     (!participantIds || participantIds.length === 0)
   ) {
+    await recordRejectedAssessmentPointCorrection({
+      ctx,
+      liveQuizId,
+      reasonCode: 'MISSING_PARTICIPANTS',
+    })
     return null
   }
 
@@ -1636,6 +1803,11 @@ export async function correctAssessmentPointsLiveQuiz(
       typeof deductBonusPoints === 'undefined' ||
       deductBonusPoints === false)
   ) {
+    await recordRejectedAssessmentPointCorrection({
+      ctx,
+      liveQuizId,
+      reasonCode: 'NO_POINT_CHANGE',
+    })
     return null
   }
 
@@ -1645,6 +1817,11 @@ export async function correctAssessmentPointsLiveQuiz(
     (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
     (awardBonusPoints === true && deductBonusPoints === true)
   ) {
+    await recordRejectedAssessmentPointCorrection({
+      ctx,
+      liveQuizId,
+      reasonCode: 'CONFLICTING_POINT_CHANGE',
+    })
     return null
   }
 
@@ -1673,7 +1850,15 @@ export async function correctAssessmentPointsLiveQuiz(
     },
   })
 
-  if (!liveQuiz || !liveQuiz.courseId) return null
+  if (!liveQuiz || !liveQuiz.courseId) {
+    await recordRejectedAssessmentPointCorrection({
+      ctx,
+      liveQuizId,
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_NOT_AUTHORIZED',
+    })
+    return null
+  }
+  const courseId = liveQuiz.courseId
 
   // compute the available points for the instances (and aggregated for the entire quiz)
   const availablePoints = liveQuiz.blocks.reduce<{
@@ -1701,13 +1886,18 @@ export async function correctAssessmentPointsLiveQuiz(
 
     return blockAcc
   }, {})
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
 
   // if the points of a single participant should be modified, fetch the corresponding response and update it
   if (scope === PointCorrectionType.SINGLE && participantId) {
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1742,7 +1932,8 @@ export async function correctAssessmentPointsLiveQuiz(
         })
 
         // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all instances and update the corresponding responses with the corrected points
         await Promise.all(
@@ -1766,7 +1957,7 @@ export async function correctAssessmentPointsLiveQuiz(
                   },
                 })
 
-                const logEntry = await upsertResponseAppliedCorrection(
+                const correctionResult = await upsertResponseAppliedCorrection(
                   {
                     correctionId: correction.id,
                     instance: { ...instance, elementBlock: block },
@@ -1782,23 +1973,37 @@ export async function correctAssessmentPointsLiveQuiz(
                     availableCorrectnessPoints,
                     availableBonusPoints,
                   },
-                  tx,
-                  ctx
+                  tx
                 )
 
-                // push the log object to the list of log entries
-                logEntries.push(logEntry)
+                const draft = pointCorrectionAuditDraft({
+                  before: correctionResult.before,
+                  after: correctionResult.after,
+                  instance: { ...instance, elementBlock: block },
+                  producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+                })
+                if (draft !== null) correctionDrafts.push(draft)
               })
             )
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: liveQuiz.id,
+          courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         return correction
       },
-      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+      {
+        timeout: 300000,
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+      } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1806,50 +2011,52 @@ export async function correctAssessmentPointsLiveQuiz(
 
   // if the points of all participating students should be modified, fetch all responses with a participantId and update them
   if (scope === PointCorrectionType.PARTICIPATING) {
-    // fetch the live quiz again, this time including all responses
-    const quizWithResponses = await ctx.prisma.liveQuiz.findUnique({
-      where: { id: liveQuiz.id },
-      include: {
-        blocks: {
-          include: { elements: { include: { liveQuizResponses: true } } },
-        },
-      },
-    })
-
-    if (!quizWithResponses) return null
-
-    // create a map between the participant ids and the instances they have answered with their responses
-    const participantResponseMap = quizWithResponses.blocks.reduce<{
-      [pId: string]: { [instanceId: number]: DB.LiveQuizResponse }
-    }>((blockAcc, block) => {
-      block.elements.forEach((instance) => {
-        instance.liveQuizResponses
-          .filter(
-            (response) => response.elementBlockExecution === block.execution
-          )
-          .forEach((response) => {
-            if (!blockAcc[response.participantId]) {
-              blockAcc[response.participantId] = {}
-            }
-
-            blockAcc[response.participantId]![instance.id] = response
-          })
-      })
-      return blockAcc
-    }, {})
-
-    // exclude all participants that only have null responses (only corrections, but no actual submission)
-    const filteredParticipantResponseMap = Object.fromEntries(
-      Object.entries(participantResponseMap).filter(([, instanceResponseMap]) =>
-        Object.values(instanceResponseMap).some(
-          (lqr) => lqr.correctionOnly === false
-        )
-      )
-    )
-
     // update the responses of all participants that have submitted at least one response to the live quiz
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
+        // Read the quiz response set under the same serializable transaction
+        // that creates corrections and writes corrected responses. Otherwise a
+        // response arriving between the read and write could be omitted.
+        const quizWithResponses = await tx.liveQuiz.findUnique({
+          where: { id: liveQuiz.id },
+          include: {
+            blocks: {
+              include: { elements: { include: { liveQuizResponses: true } } },
+            },
+          },
+        })
+        if (!quizWithResponses) return null
+
+        // Create a map between participant IDs and their current responses,
+        // excluding participants with correction-only records.
+        const participantResponseMap = quizWithResponses.blocks.reduce<{
+          [pId: string]: { [instanceId: number]: DB.LiveQuizResponse }
+        }>((blockAcc, block) => {
+          block.elements.forEach((instance) => {
+            instance.liveQuizResponses
+              .filter(
+                (response) => response.elementBlockExecution === block.execution
+              )
+              .forEach((response) => {
+                if (!blockAcc[response.participantId]) {
+                  blockAcc[response.participantId] = {}
+                }
+
+                blockAcc[response.participantId]![instance.id] = response
+              })
+          })
+          return blockAcc
+        }, {})
+        const filteredParticipantResponseMap = Object.fromEntries(
+          Object.entries(participantResponseMap).filter(
+            ([, instanceResponseMap]) =>
+              Object.values(instanceResponseMap).some(
+                (lqr) => lqr.correctionOnly === false
+              )
+          )
+        )
+
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1877,12 +2084,12 @@ export async function correctAssessmentPointsLiveQuiz(
           include: { correctedBy: true, liveQuiz: true },
         })
 
-        // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all instances and participants to upsert all relevant responses
         await Promise.all(
-          liveQuiz.blocks.map(async (block) => {
+          quizWithResponses.blocks.map(async (block) => {
             await Promise.all(
               block.elements.map(async (instance) => {
                 const {
@@ -1896,28 +2103,33 @@ export async function correctAssessmentPointsLiveQuiz(
                     async ([pId, instanceResponseMap]) => {
                       const response = instanceResponseMap[instance.id]
 
-                      const logEntry = await upsertResponseAppliedCorrection(
-                        {
-                          correctionId: correction.id,
-                          instance: { ...instance, elementBlock: block },
-                          response,
-                          participantId: pId,
-                          awardBasePoints,
-                          awardCorrectnessPoints,
-                          awardBonusPoints,
-                          deductBasePoints,
-                          deductCorrectnessPoints,
-                          deductBonusPoints,
-                          availableBasePoints,
-                          availableCorrectnessPoints,
-                          availableBonusPoints,
-                        },
-                        tx,
-                        ctx
-                      )
+                      const correctionResult =
+                        await upsertResponseAppliedCorrection(
+                          {
+                            correctionId: correction.id,
+                            instance: { ...instance, elementBlock: block },
+                            response,
+                            participantId: pId,
+                            awardBasePoints,
+                            awardCorrectnessPoints,
+                            awardBonusPoints,
+                            deductBasePoints,
+                            deductCorrectnessPoints,
+                            deductBonusPoints,
+                            availableBasePoints,
+                            availableCorrectnessPoints,
+                            availableBonusPoints,
+                          },
+                          tx
+                        )
 
-                      // push the log object to the list of log entries
-                      logEntries.push(logEntry)
+                      const draft = pointCorrectionAuditDraft({
+                        before: correctionResult.before,
+                        after: correctionResult.after,
+                        instance: { ...instance, elementBlock: block },
+                        producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+                      })
+                      if (draft !== null) correctionDrafts.push(draft)
                     }
                   )
                 )
@@ -1926,12 +2138,22 @@ export async function correctAssessmentPointsLiveQuiz(
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: liveQuiz.id,
+          courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         return correction
       },
-      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+      {
+        timeout: 300000,
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+      } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -1942,21 +2164,24 @@ export async function correctAssessmentPointsLiveQuiz(
     scope === PointCorrectionType.ALL_COURSE ||
     scope === PointCorrectionType.MULTIPLE
   ) {
-    // get all participations of the course, including the linked participants
-    const participations = await ctx.prisma.participation.findMany({
-      where: {
-        courseId: liveQuiz.courseId,
-        participantId:
-          scope === PointCorrectionType.MULTIPLE
-            ? { in: participantIds! }
-            : undefined,
-      },
-      include: { participant: true },
-    })
-
     // update the responses of all participants in the course
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
+    const createdCorrection = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
+        // Read the participation set under the same serializable transaction
+        // that creates corrections and responses. This prevents a concurrent
+        // eligibility change from being silently omitted from the proof.
+        const participations = await tx.participation.findMany({
+          where: {
+            courseId,
+            participantId:
+              scope === PointCorrectionType.MULTIPLE
+                ? { in: participantIds! }
+                : undefined,
+          },
+          select: { participantId: true },
+        })
+
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
@@ -1988,8 +2213,8 @@ export async function correctAssessmentPointsLiveQuiz(
           include: { correctedBy: true, participants: true, liveQuiz: true },
         })
 
-        // initialize the audit log entries that should be executed
-        const logEntries: { message: { info: string } }[] = []
+        const correctionDrafts: AuditEventDraft<'ASSESSMENT_POINTS_CORRECTED'>[] =
+          []
 
         // loop over all instances and participants to upsert all relevant responses
         await Promise.all(
@@ -2015,28 +2240,35 @@ export async function correctAssessmentPointsLiveQuiz(
                       },
                     })
 
-                    const logEntry = await upsertResponseAppliedCorrection(
-                      {
-                        correctionId: correction.id,
-                        instance: { ...instance, elementBlock: block },
-                        response,
-                        participantId: pId,
-                        awardBasePoints,
-                        awardCorrectnessPoints,
-                        awardBonusPoints,
-                        deductBasePoints,
-                        deductCorrectnessPoints,
-                        deductBonusPoints,
-                        availableBasePoints,
-                        availableCorrectnessPoints,
-                        availableBonusPoints,
-                      },
-                      tx,
-                      ctx
-                    )
+                    const correctionResult =
+                      await upsertResponseAppliedCorrection(
+                        {
+                          correctionId: correction.id,
+                          instance: { ...instance, elementBlock: block },
+                          response,
+                          participantId: pId,
+                          awardBasePoints,
+                          awardCorrectnessPoints,
+                          awardBonusPoints,
+                          deductBasePoints,
+                          deductCorrectnessPoints,
+                          deductBonusPoints,
+                          availableBasePoints,
+                          availableCorrectnessPoints,
+                          availableBonusPoints,
+                        },
+                        tx
+                      )
 
-                    // push the log object to the list of log entries
-                    logEntries.push(logEntry)
+                    const draft = pointCorrectionAuditDraft({
+                      before: correctionResult.before,
+                      after: correctionResult.after,
+                      instance: instance as DB.ElementInstance & {
+                        elementBlock: DB.ElementBlock
+                      },
+                      producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
+                    })
+                    if (draft !== null) correctionDrafts.push(draft)
                   })
                 )
               })
@@ -2044,12 +2276,22 @@ export async function correctAssessmentPointsLiveQuiz(
           })
         )
 
-        // create the collected audit log entries
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+        await emitPointCorrectionAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: liveQuiz.id,
+          courseId,
+          userId: ctx.user.sub,
+          correlationId: auditOperation.correlationId,
+          drafts: correctionDrafts,
+        })
 
         return correction
       },
-      { timeout: 300000 } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
+      {
+        timeout: 300000,
+        isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,
+      } // 5 min timeout to ensure success for the moment -> until asynchronous execution is available
     )
 
     return createdCorrection
@@ -2838,114 +3080,182 @@ export async function updateCourseSettings(
       ? (isAssessmentEnabled ?? undefined)
       : undefined
 
-  const updatedCourse = await ctx.prisma.course.update({
-    where: { id },
-    data: {
-      name: name ?? undefined,
-      displayName: displayName ?? undefined,
-      description,
-      language: language ?? DB.Locale.en,
-      color: color ?? undefined,
-      startDate: currentStartDatePast || !startDate ? undefined : startDate,
-      endDate: endDate ?? undefined,
-      // only enable group creation or disable it if there are no groups
-      isGroupCreationEnabled:
-        isGroupCreationEnabled || !containsGroups
-          ? (isGroupCreationEnabled ?? false)
-          : undefined,
-      groupDeadlineDate: groupDeadlineDate ?? undefined,
-      notificationEmail: notificationEmail ?? undefined,
-      // only enable gamification or disable it if there are no activities or groups
-      isGamificationEnabled: newGamificationSetting,
-      // set assessment mode - if enabling, remove PIN
-      isAssessmentEnabled: isAssessmentEnabled ?? undefined,
-      pinCode: isAssessmentEnabled ? null : undefined,
-      // reset the random assignment tracking if the group deadline is extended
-      randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
-      // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
-      groupAssignmentPoolEntries:
-        !isGroupCreationEnabled && !containsGroups
-          ? { deleteMany: {} }
-          : undefined,
-      // if the gamification or assessment setting was changed, update all activities assigned to the course
-      ...(newGamificationSetting || newAssessmentSetting
-        ? {
-            liveQuizzes: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
-                  },
-                },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
-              },
-            },
-            practiceQuizzes: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
-                  },
-                },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
-              },
-            },
-            microLearnings: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
-                  },
-                },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
-              },
-            },
-            groupActivities: {
-              updateMany: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      DB.PublicationStatus.DRAFT,
-                      DB.PublicationStatus.SCHEDULED,
-                      DB.PublicationStatus.PUBLISHED,
-                    ],
-                  },
-                },
-                data: {
-                  isGamificationEnabled: newGamificationSetting,
-                  isAssessmentEnabled: newAssessmentSetting,
-                },
-              },
-            },
-          }
-        : {}),
+  const auditLiveQuizzes = await ctx.prisma.liveQuiz.findMany({
+    where: {
+      courseId: id,
+      isDeleted: false,
+      status: {
+        in: [
+          DB.PublicationStatus.DRAFT,
+          DB.PublicationStatus.SCHEDULED,
+          DB.PublicationStatus.PUBLISHED,
+        ],
+      },
     },
+    select: { id: true, isAssessmentEnabled: true },
   })
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
+  const updatedCourse = await runInAuditTransaction(
+    ctx.prisma,
+    async (tx, auditTx) => {
+      const beforeSnapshots = new Map<
+        string,
+        AssessmentBaselineSnapshot | null
+      >(
+        await Promise.all(
+          auditLiveQuizzes.map(
+            async (liveQuiz) =>
+              [
+                liveQuiz.id,
+                await loadAssessmentAuditSnapshot(tx, liveQuiz.id),
+              ] as const
+          )
+        )
+      )
+      const updatedCourse = await tx.course.update({
+        where: { id },
+        data: {
+          name: name ?? undefined,
+          displayName: displayName ?? undefined,
+          description,
+          language: language ?? DB.Locale.en,
+          color: color ?? undefined,
+          startDate: currentStartDatePast || !startDate ? undefined : startDate,
+          endDate: endDate ?? undefined,
+          // only enable group creation or disable it if there are no groups
+          isGroupCreationEnabled:
+            isGroupCreationEnabled || !containsGroups
+              ? (isGroupCreationEnabled ?? false)
+              : undefined,
+          groupDeadlineDate: groupDeadlineDate ?? undefined,
+          notificationEmail: notificationEmail ?? undefined,
+          // only enable gamification or disable it if there are no activities or groups
+          isGamificationEnabled: newGamificationSetting,
+          // set assessment mode - if enabling, remove PIN
+          isAssessmentEnabled: isAssessmentEnabled ?? undefined,
+          pinCode: isAssessmentEnabled ? null : undefined,
+          // reset the random assignment tracking if the group deadline is extended
+          randomAssignmentFinalized: !newGroupDeadlinePast ? false : undefined,
+          // if group creation is disabled and there are no groups, remove all participants from the random assignment pool
+          groupAssignmentPoolEntries:
+            !isGroupCreationEnabled && !containsGroups
+              ? { deleteMany: {} }
+              : undefined,
+          // if the gamification or assessment setting was changed, update all activities assigned to the course
+          ...(newGamificationSetting || newAssessmentSetting
+            ? {
+                liveQuizzes: {
+                  updateMany: {
+                    where: {
+                      isDeleted: false,
+                      status: {
+                        in: [
+                          DB.PublicationStatus.DRAFT,
+                          DB.PublicationStatus.SCHEDULED,
+                          DB.PublicationStatus.PUBLISHED,
+                        ],
+                      },
+                    },
+                    data: {
+                      isGamificationEnabled: newGamificationSetting,
+                      isAssessmentEnabled: newAssessmentSetting,
+                    },
+                  },
+                },
+                practiceQuizzes: {
+                  updateMany: {
+                    where: {
+                      isDeleted: false,
+                      status: {
+                        in: [
+                          DB.PublicationStatus.DRAFT,
+                          DB.PublicationStatus.SCHEDULED,
+                          DB.PublicationStatus.PUBLISHED,
+                        ],
+                      },
+                    },
+                    data: {
+                      isGamificationEnabled: newGamificationSetting,
+                      isAssessmentEnabled: newAssessmentSetting,
+                    },
+                  },
+                },
+                microLearnings: {
+                  updateMany: {
+                    where: {
+                      isDeleted: false,
+                      status: {
+                        in: [
+                          DB.PublicationStatus.DRAFT,
+                          DB.PublicationStatus.SCHEDULED,
+                          DB.PublicationStatus.PUBLISHED,
+                        ],
+                      },
+                    },
+                    data: {
+                      isGamificationEnabled: newGamificationSetting,
+                      isAssessmentEnabled: newAssessmentSetting,
+                    },
+                  },
+                },
+                groupActivities: {
+                  updateMany: {
+                    where: {
+                      isDeleted: false,
+                      status: {
+                        in: [
+                          DB.PublicationStatus.DRAFT,
+                          DB.PublicationStatus.SCHEDULED,
+                          DB.PublicationStatus.PUBLISHED,
+                        ],
+                      },
+                    },
+                    data: {
+                      isGamificationEnabled: newGamificationSetting,
+                      isAssessmentEnabled: newAssessmentSetting,
+                    },
+                  },
+                },
+              }
+            : {}),
+        },
+      })
+
+      for (const liveQuiz of auditLiveQuizzes) {
+        const before = beforeSnapshots.get(liveQuiz.id)
+        const after = await loadAssessmentAuditSnapshot(tx, liveQuiz.id)
+        if (before !== null && before !== undefined && after !== null) {
+          await emitCoveredAssessmentAuditEvents({
+            tx,
+            auditTx,
+            liveQuizId: liveQuiz.id,
+            courseId: after.courseId,
+            operation: auditOperation,
+            drafts: buildAssessmentMutationAuditDrafts({
+              before,
+              after,
+              producerOperationId: `${auditOperation.correlationId}:course-settings:${liveQuiz.id}`,
+            }),
+          })
+        }
+      }
+      return updatedCourse
+    }
+  )
+
+  if (newAssessmentSetting === true) {
+    for (const liveQuiz of auditLiveQuizzes) {
+      if (!liveQuiz.isAssessmentEnabled) {
+        await activateNewAssessmentAuditIfSelected({
+          client: ctx.prisma,
+          liveQuizId: liveQuiz.id,
+        })
+      }
+    }
+  }
 
   return updatedCourse
 }
@@ -3486,8 +3796,14 @@ export async function removeCourse(
   }
 
   // remove direct permission and recompute derived permissions for this course and user
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        courseId: id,
+        subjectUserIds: [ctx.user.sub],
+      })
       // remove the direct permission of the user on the course
       await prisma.course.update({
         where: { id },
@@ -3510,6 +3826,22 @@ export async function removeCourse(
         { courseId: id, userId: ctx.user.sub },
         prisma
       )
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        courseId: id,
+        subjectUserIds: [ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'course-permission-removed',
+      })
     },
     { timeout: 60000 }
   )

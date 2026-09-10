@@ -54,6 +54,8 @@ export function submissionOutcomePayloadSchema(stage: SubmissionStage) {
       responseId: z.number().int().positive().optional(),
       duplicateOfResponseId: z.number().int().positive().optional(),
       answerStateHash: sha256Schema.optional(),
+      elementBlockExecution: z.number().int().nonnegative().optional(),
+      answer: normalizedAnswerSchema.optional(),
       validationRulesVersion: z.string().min(1).optional(),
       scoringAlgorithmVersion: z.string().min(1).optional(),
       correctness: z.enum(['CORRECT', 'PARTIAL', 'WRONG']).optional(),
@@ -86,6 +88,7 @@ export function submissionOutcomePayloadSchema(stage: SubmissionStage) {
       }
       if (['PERSISTED', 'SCORED'].includes(stage)) {
         require('responseId', `${stage} requires responseId`)
+        require('answer', `${stage} requires normalized answer`)
       }
       if (stage === 'SCORED') {
         require('scoringAlgorithmVersion', 'SCORED requires scoringAlgorithmVersion')
@@ -142,7 +145,13 @@ export function responseChangePayloadSchema(
     .object({
       participantId: uuidSchema,
       responseId: z.number().int().positive(),
-      before: responseSnapshotSchema,
+      // A correction can create the first persisted response for a participant
+      // (for example when a lecturer awards points before the participant has
+      // submitted). In that case there is no prior response snapshot.
+      before:
+        change === 'CORRECTED'
+          ? responseSnapshotSchema.nullable()
+          : responseSnapshotSchema,
       after: change === 'DELETED' ? z.null() : responseSnapshotSchema,
       reasonCode: stableCodeSchema,
       algorithmVersion:
@@ -150,7 +159,10 @@ export function responseChangePayloadSchema(
     })
     .strict()
     .superRefine((value, context) => {
-      if (value.before.responseId !== value.responseId) {
+      if (
+        value.before !== null &&
+        value.before.responseId !== value.responseId
+      ) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['before', 'responseId'],
@@ -166,6 +178,7 @@ export function responseChangePayloadSchema(
       }
       if (
         value.after !== null &&
+        value.before !== null &&
         JSON.stringify(value.before) === JSON.stringify(value.after)
       ) {
         context.addIssue({

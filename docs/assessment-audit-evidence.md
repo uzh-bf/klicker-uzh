@@ -20,6 +20,15 @@ and the delivery order lives in the
 
 ## Current implementation boundary
 
+The producer layer includes lifecycle/session, permission, correction, bulk,
+course-copy activation, baseline-reservation, and export-integrity hardening.
+Course copies are activated after the enclosing transaction commits. Tests
+cross-check the launch producer registry against its actual source locations,
+including bulk operations in `activities.ts`. These are wiring checks, not a
+substitute for behavioral integration tests. Keep rollout disabled until the
+submission layer and staging pilot are verified; the baseline layer alone is
+not a deployable complete assessment-audit feature.
+
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
 path, Layer 3 baseline/media primitives, and the Layer 4 lecturer/system
 producer boundary. It validates and canonicalizes

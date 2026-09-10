@@ -61,7 +61,10 @@ const producerSources = {
   },
   'assessment bulk services and workers': {
     durabilityPoint: 'per-effect transaction commit',
-    paths: ['packages/graphql/src/services/courses.ts'],
+    paths: [
+      'packages/graphql/src/services/activities.ts',
+      'packages/graphql/src/services/courses.ts',
+    ],
   },
   'assessment report service': {
     durabilityPoint: 'report transaction commit',

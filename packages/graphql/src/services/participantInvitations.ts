@@ -426,68 +426,68 @@ async function autoAcceptInvitation(
   return runInAuditTransaction(
     prismaClient,
     async (tx, auditTx) => {
-    const eligibleParticipantIds = await findEligibleParticipantIds(
-      email,
-      emailMode,
-      tx
-    )
-
-    if (!isSoleEligibleParticipant(eligibleParticipantIds, participantId)) {
-      return null
-    }
-
-    // Create the invitation as ACCEPTED
-    const invitation = await tx.participantInvitation.create({
-      data: {
+      const eligibleParticipantIds = await findEligibleParticipantIds(
         email,
-        courseId,
-        status: InvitationStatus.ACCEPTED,
-        participantId,
-        acceptedAt: new Date(),
-        matriculationNumber,
-      },
-    })
+        emailMode,
+        tx
+      )
 
-    const previous = await tx.participation.findUnique({
-      where: {
-        courseId_participantId: {
+      if (!isSoleEligibleParticipant(eligibleParticipantIds, participantId)) {
+        return null
+      }
+
+      // Create the invitation as ACCEPTED
+      const invitation = await tx.participantInvitation.create({
+        data: {
+          email,
           courseId,
+          status: InvitationStatus.ACCEPTED,
           participantId,
+          acceptedAt: new Date(),
+          matriculationNumber,
         },
-      },
-      select: { isActive: true },
-    })
-
-    // Create or update participation
-    await tx.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId,
-        },
-      },
-      create: {
-        courseId,
-        participantId,
-      },
-      update: {},
-    })
-
-    if (previous?.isActive !== true) {
-      await emitCoveredParticipantEligibilityChange({
-        tx,
-        auditTx,
-        courseId,
-        participantId,
-        eligible: true,
-        actor: { kind: 'SYSTEM' },
-        correlationId,
-        occurredAt,
-        producerOperationId: `${correlationId}:auto-accepted-eligibility`,
       })
-    }
 
-    return invitation.id
+      const previous = await tx.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId,
+          },
+        },
+        select: { isActive: true },
+      })
+
+      // Create or update participation
+      await tx.participation.upsert({
+        where: {
+          courseId_participantId: {
+            courseId,
+            participantId,
+          },
+        },
+        create: {
+          courseId,
+          participantId,
+        },
+        update: {},
+      })
+
+      if (previous?.isActive !== true) {
+        await emitCoveredParticipantEligibilityChange({
+          tx,
+          auditTx,
+          courseId,
+          participantId,
+          eligible: true,
+          actor: { kind: 'SYSTEM' },
+          correlationId,
+          occurredAt,
+          producerOperationId: `${correlationId}:auto-accepted-eligibility`,
+        })
+      }
+
+      return invitation.id
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
   )

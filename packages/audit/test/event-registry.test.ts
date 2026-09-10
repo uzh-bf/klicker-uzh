@@ -152,4 +152,37 @@ describe('assessment audit event registry', () => {
       requiresSubmissionId: false,
     })
   })
+
+  it('keeps launch lifecycle and session transitions launch-gating', () => {
+    for (const eventType of [
+      'ASSESSMENT_PUBLISHED',
+      'ASSESSMENT_STARTED',
+      'ASSESSMENT_PAUSED',
+      'ASSESSMENT_RESUMED',
+      'ASSESSMENT_COMPLETED',
+      'ASSESSMENT_REOPENED',
+      'ASSESSMENT_CANCELLED',
+      'ASSESSMENT_RESET',
+      'ASSESSMENT_SESSION_STARTED',
+      'ASSESSMENT_SESSION_RESUMED',
+      'ASSESSMENT_SESSION_ENDED',
+    ] as const) {
+      expect(EVENT_REGISTRY[eventType].tier).toBe('LAUNCH')
+    }
+    for (const eventType of [
+      'ASSESSMENT_PUBLISHED',
+      'ASSESSMENT_STARTED',
+      'ASSESSMENT_PAUSED',
+      'ASSESSMENT_RESUMED',
+      'ASSESSMENT_COMPLETED',
+      'ASSESSMENT_REOPENED',
+      'ASSESSMENT_CANCELLED',
+      'ASSESSMENT_RESET',
+    ] as const) {
+      expect(EVENT_REGISTRY[eventType]).toMatchObject({
+        evidenceClass: 'AUTHORITATIVE',
+        criticality: 'CRITICAL',
+      })
+    }
+  })
 })

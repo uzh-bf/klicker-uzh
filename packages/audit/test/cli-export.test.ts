@@ -1,7 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
 import {
   type AssessmentBaselineContent,
   buildAssessmentBaseline,
@@ -34,7 +34,7 @@ function exportReader(
   }
 }
 
-function baselineEvidence() {
+function baselineEvidence(lifecycleEpoch = 1) {
   const baselineId = randomUUID()
   const capturedAt = '2026-08-12T10:00:00.000Z'
   const contents: AssessmentBaselineContent[] = [
@@ -82,7 +82,7 @@ function baselineEvidence() {
     recordedAt: capturedAt,
     actor: { kind: 'SYSTEM' },
     authorization: { decision: 'ALLOWED', authScope: 'SYSTEM' },
-    scope: { liveQuizId: LIVE_QUIZ_ID, lifecycleEpoch: 1 },
+    scope: { liveQuizId: LIVE_QUIZ_ID, lifecycleEpoch },
     correlationId: CORRELATION_ID,
   })
   const rootRecord = createCanonicalAuditEvent(context, {
@@ -107,11 +107,7 @@ function baselineEvidence() {
       activatedAt: capturedAt,
     },
   })
-  return [
-    ...partRecords,
-    rootRecord,
-    activation,
-  ].map((record) => ({
+  return [...partRecords, rootRecord, activation].map((record) => ({
     ...record,
     status: 'VERIFIED' as const,
     sealStatus: 'UNSEALED' as const,
@@ -245,10 +241,28 @@ describe('owner audit export', () => {
     })
   })
 
+  it.each([
+    1, 2,
+  ])('does not combine an unrelated baseline and activation in epoch %s', async (epoch) => {
+    const complete = baselineEvidence()
+    const unrelated = baselineEvidence(epoch)
+    const document = await buildAuditExport({
+      reader: exportReader([
+        ...complete,
+        ...unrelated.filter(
+          ({ envelope }) => envelope.eventType === 'ASSESSMENT_AUDIT_ACTIVATED'
+        ),
+      ]),
+      liveQuizId: LIVE_QUIZ_ID,
+    })
+    expect(document.verification.coverageStatus).toBe('BASELINE_MISSING')
+  })
+
   it('reports BASELINE_INCOMPLETE when parts are missing', async () => {
     const evidence = baselineEvidence()
     const rootRecord = evidence.find(
-      ({ envelope }) => envelope.eventType === 'ASSESSMENT_BASELINE_ROOT_RECORDED'
+      ({ envelope }) =>
+        envelope.eventType === 'ASSESSMENT_BASELINE_ROOT_RECORDED'
     )!
     const activation = evidence.find(
       ({ envelope }) => envelope.eventType === 'ASSESSMENT_AUDIT_ACTIVATED'
@@ -263,15 +277,18 @@ describe('owner audit export', () => {
       baselineStatus: 'INCOMPLETE',
       coverageStatus: 'BASELINE_INCOMPLETE',
     })
-    expect(document.verification.baselineReconstructions[0].status).toBe(
+    expect(document.verification.baselineReconstructions[0]?.status).toBe(
       'INCOMPLETE'
     )
   })
 
-  it('reports BASELINE_CONFLICTED when a part key is duplicated', async () => {
+  it.each([
+    'ASSESSMENT_BASELINE_PART_RECORDED',
+    'ASSESSMENT_BASELINE_ROOT_RECORDED',
+  ])('reports BASELINE_CONFLICTED when %s is duplicated', async (eventType) => {
     const evidence = baselineEvidence()
     const partRecord = evidence.find(
-      ({ envelope }) => envelope.eventType === 'ASSESSMENT_BASELINE_PART_RECORDED'
+      ({ envelope }) => envelope.eventType === eventType
     )!
     const document = await buildAuditExport({
       reader: exportReader([...evidence, partRecord]),
@@ -285,12 +302,29 @@ describe('owner audit export', () => {
     })
   })
 
+  it('does not claim coverage when other event verification fails', async () => {
+    const document = await buildAuditExport({
+      reader: exportReader(baselineEvidence(), [
+        {
+          eventId: randomUUID(),
+          reason: 'VERIFICATION_FAILED',
+          detail: 'synthetic provider failure',
+        },
+      ]),
+      liveQuizId: LIVE_QUIZ_ID,
+    })
+    expect(document.verification).toMatchObject({
+      evidenceStatus: 'PARTIAL',
+      coverageStatus: 'EVIDENCE_INCOMPLETE',
+    })
+  })
+
   it('reports RETENTION_INDEX_MISSING when an event fails retention verification', async () => {
     const evidence = baselineEvidence()
     const document = await buildAuditExport({
       reader: exportReader(evidence, [
         {
-          eventId: evidence[0].envelope.eventId,
+          eventId: evidence[0]!.envelope.eventId,
           reason: 'RETENTION_INDEX_MISSING',
           detail: 'Audit retention index for event is invalid',
         },

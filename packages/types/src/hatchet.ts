@@ -193,6 +193,10 @@ export interface PreparedHatchetTasks {
     Record<string, never>,
     { success: boolean }
   >
+  renewAssessmentAuditMediaPolicies: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {
