@@ -1,0 +1,19 @@
+{
+  "baseline": "492e5f1e4302167557336488d4a2ee009cbb67de",
+  "invalidatedBy": "880987ffa122ac2d3364516fd217421929b27e76",
+  "currentCount": 69,
+  "proposedCount": 69,
+  "added": [],
+  "removed": [],
+  "changed": [
+    "ConfigMap/app-klicker-klicker-uzh-v2-config-chat",
+    "ConfigMap/app-klicker-klicker-uzh-v2-config-hatchet-worker-general",
+    "ConfigMap/app-klicker-klicker-uzh-v2-config-hatchet-worker-response-processor",
+    "ConfigMap/app-klicker-klicker-uzh-v2-config-hatchet-worker-response-processor-assessment",
+    "Deployment/app-klicker-klicker-uzh-v2-lti",
+    "Deployment/app-klicker-klicker-uzh-v2-chat",
+    "Deployment/app-klicker-klicker-uzh-v2-hatchet-worker-general",
+    "Deployment/app-klicker-klicker-uzh-v2-hatchet-worker-response-processor",
+    "Deployment/app-klicker-klicker-uzh-v2-hatchet-worker-response-processor-assessment"
+  ]
+}

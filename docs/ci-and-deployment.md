@@ -312,3 +312,14 @@ The superseded annotation mechanism and its incident context remain in
 [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
 Production is unchanged: it stays on `v3`, receives no global image parameter,
 and promotes by hand-editing pinned tags in `deploy/env-uzh-prd/values.yaml`.
+
+For read-only receipt validation, run
+`node .github/scripts/validate-prd-candidate.cjs <receipt.json>` with
+`CANDIDATE_SHA`, `PRD_APPROVED_MAINTENANCE_SHA`, and
+`PRD_APPROVED_RECEIPT_SHA256` supplied from the independent operator decision.
+The receipt contains `sourceBranch`, `sourceSha`, `configurationSha256`,
+`migrationInventorySha256`, `capabilityStateSha256`, and `artifacts` entries
+with unique `workload` names and digest-qualified `image` identities, including
+`migrator`. This validator checks the selected receipt; it does not grant
+approval or enforce GitHub/Argo write permissions. Integration into the actual
+protected activation path remains a G0 cutover prerequisite.

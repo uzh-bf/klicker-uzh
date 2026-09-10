@@ -71,7 +71,7 @@ jobs:
         run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
 
       - name: Check staging release contracts
-        run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
+        run: node --test .github/scripts/stg-release-ref-promotion.test.cjs .github/scripts/stg-release-promoter.test.js .github/scripts/validate-prd-candidate.test.cjs
 
       - name: Check CI queue policy
         run: node --test .github/scripts/ci-equivalent-run.test.cjs .github/scripts/ci-obsolete-runs.test.cjs .github/scripts/ci-event-gates.test.cjs
