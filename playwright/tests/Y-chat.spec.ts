@@ -3924,6 +3924,17 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
   test('A delayed response for a superseded graph keeps the newer selection', async ({
     page,
   }) => {
+    // Order the two responses without relying on wall-clock timing: the
+    // superseded response is released only once the newer graph was picked.
+    let releaseSuperseded = () => {}
+    const supersededReleased = new Promise<void>((resolve) => {
+      releaseSuperseded = resolve
+    })
+    let markSupersededDelivered = () => {}
+    const supersededDelivered = new Promise<void>((resolve) => {
+      markSupersededDelivered = resolve
+    })
+
     await page.route(
       `**/api/chatbots/${CHATBOT_ID}/knowledge-graph*`,
       async (route) => {
@@ -3935,13 +3946,18 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
           return
         }
 
-        // Superseded request: resolves late, after the participant moved on.
+        // Superseded request: answers only after the newer graph was picked.
         if (kbId === GRAPH_ALPHA) {
-          await new Promise((resolve) => setTimeout(resolve, 1_500))
+          await Promise.race([
+            supersededReleased,
+            new Promise((resolve) => setTimeout(resolve, 15_000)),
+          ])
           await route.fulfill({ status: 409, json: selectionRequired() })
+          markSupersededDelivered()
           return
         }
 
+        releaseSuperseded()
         await route.fulfill({
           status: 200,
           json: publishedGraph(GRAPH_BETA, BETA_NODE),
@@ -3972,8 +3988,9 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
       page.getByTestId('knowledge-graph-loaded-nodes')
     ).toContainText(BETA_NODE)
 
-    // Wait past the superseded response so a late reset would already have landed.
-    await page.waitForTimeout(2_500)
+    // The superseded selection answered only after the newer one was in place.
+    await supersededDelivered
+    await page.waitForTimeout(750)
 
     await expect(choice).toContainText('Graph Beta')
     await expect(page.getByTestId('knowledge-graph-viewer')).toBeVisible()
