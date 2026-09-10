@@ -8,10 +8,10 @@ import { toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
+import Layout from '../components/Layout'
 
 function EditProfile({
   participantToken,

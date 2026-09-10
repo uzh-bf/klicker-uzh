@@ -1,18 +1,17 @@
-import { verifyJWT } from '@klicker-uzh/util'
-import { toast } from '@uzh-bf/design-system'
-import generatePassword from 'generate-password'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
-import nookies from 'nookies'
-
 import { useMutation } from '@apollo/client'
-import Layout from '@components/Layout'
 import CreateAccountForm from '@components/forms/CreateAccountForm'
+import Layout from '@components/Layout'
 import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
+import { verifyJWT } from '@klicker-uzh/util'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
+import { toast } from '@uzh-bf/design-system'
+import generatePassword from 'generate-password'
+import { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 
 interface Props {
   signedLtiData?: string

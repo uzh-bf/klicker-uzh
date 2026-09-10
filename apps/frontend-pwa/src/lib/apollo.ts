@@ -13,11 +13,11 @@ import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
 import { RetryLink } from '@apollo/client/link/retry'
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions'
 import hashes from '@klicker-uzh/graphql/dist/client.json'
-import { getStoredAuthToken } from '@klicker-uzh/util/client-auth'
 import {
   propagationHeaders,
   type RequestContext,
 } from '@klicker-uzh/logging/request'
+import { getStoredAuthToken } from '@klicker-uzh/util/client-auth'
 import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'

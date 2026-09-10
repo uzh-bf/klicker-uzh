@@ -209,7 +209,13 @@ describe('required MCP chat preflight', () => {
     expect(response.status).toBe(503)
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ sessionId: 'thread-owned' })
+      expect.objectContaining({ sessionId: 'thread-owned' }),
+      {},
+      'account',
+      expect.objectContaining({
+        info: expect.any(Function),
+        error: expect.any(Function),
+      })
     )
   })
 
@@ -351,6 +357,8 @@ describe('required MCP chat preflight', () => {
         kbIds: [KB_ID],
         sessionId: 'thread-1',
       },
+      {},
+      'account',
       expect.objectContaining({
         info: expect.any(Function),
         error: expect.any(Function),

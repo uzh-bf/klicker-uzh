@@ -20,8 +20,8 @@ import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import { sanitizeChatLogContext } from '@/src/lib/server/chatLogging'
+import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
@@ -57,14 +57,14 @@ import {
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import {
+  getRouteLogger,
+  withRouteLogging,
+} from '@/src/lib/server/requestLogging'
+import {
   createResponseExampleSearchTool,
   loadResponseExampleRuntimeSkill,
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
 } from '@/src/lib/server/responseExampleRuntime'
-import {
-  getRouteLogger,
-  withRouteLogging,
-} from '@/src/lib/server/requestLogging'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
@@ -625,12 +625,10 @@ async function handlePOST(
       : null
 
   if (sanitizedChatContext && authChatbot && !chatContext) {
-    console.warn('Ignoring chat context for unrelated course', {
-      requestId,
-      chatbotId,
-      contextCourseId: sanitizedChatContext.courseId,
-      chatbotCourseId: authChatbot.courseId,
-    })
+    log.warn(
+      { event: 'chat.context.rejected', outcome: 'unrelated_course' },
+      'Ignoring chat context for unrelated course'
+    )
   }
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
@@ -1115,13 +1113,19 @@ async function handlePOST(
 
     let mcpTools: ToolSet
     try {
-      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
-        chatbotId,
-        participantId,
-        authMode,
-        kbIds: scopedKbIds,
-        sessionId: mcpScopeSessionId,
-      }, {}, 'account', log)
+      mcpToolsHandle = await getAggregatedMCPTools(
+        mcpServersWithConfigs,
+        {
+          chatbotId,
+          participantId,
+          authMode,
+          kbIds: scopedKbIds,
+          sessionId: mcpScopeSessionId,
+        },
+        {},
+        'account',
+        log
+      )
       mcpTools = mcpToolsHandle.tools
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
@@ -1149,9 +1153,12 @@ async function handlePOST(
         role: 'included',
       })
       if (Object.hasOwn(mcpTools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
-        console.warn(
-          'Response-example skill name conflicts with an existing tool; continuing without response examples',
-          { requestId, chatbotId }
+        log.warn(
+          {
+            event: 'chat.response_examples.unavailable',
+            outcome: 'tool_name_conflict',
+          },
+          'Continuing without response examples'
         )
       } else {
         const responseExampleTool =
@@ -1163,9 +1170,9 @@ async function handlePOST(
         responseExampleProjectionDigest = responseExampleSkill.projectionDigest
       }
     } catch (error) {
-      console.warn(
-        'Response-example skill loading failed; continuing without response examples',
-        { requestId, chatbotId, error }
+      log.warn(
+        { event: 'chat.response_examples.unavailable', outcome: 'load_failed' },
+        'Continuing without response examples'
       )
     }
 
@@ -1199,13 +1206,12 @@ async function handlePOST(
           candidateCount: practiceCandidateCount,
         })
       } catch (error) {
-        console.warn(
-          'Student practice lookup failed; continuing without quiz candidates',
+        log.warn(
           {
-            requestId,
-            chatbotId,
-            error,
-          }
+            event: 'chat.student_practice.unavailable',
+            outcome: 'lookup_failed',
+          },
+          'Continuing without quiz candidates'
         )
       }
     }

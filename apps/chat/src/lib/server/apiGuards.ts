@@ -1,9 +1,3 @@
-import {
-  PWA_CHAT_EMBED_SESSION_COOKIE,
-  PWA_CHAT_EMBED_SESSION_SCOPE,
-} from '@/src/lib/pwaEmbedAuth'
-import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
-import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
@@ -13,6 +7,12 @@ import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  PWA_CHAT_EMBED_SESSION_COOKIE,
+  PWA_CHAT_EMBED_SESSION_SCOPE,
+} from '@/src/lib/pwaEmbedAuth'
+import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
+import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 import { getRouteLogger } from './requestLogging'
 
 export type { AuthMode }
@@ -37,7 +37,8 @@ type ParticipantIdentity = {
 // scoped token from sessionStorage and attaches it to API calls. Raw
 // participant_token header fallback remains unsupported.
 export async function getParticipantId(
-  req: NextRequest
+  req: NextRequest,
+  log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
   const headerToken = extractBearerToken(req.headers.get('authorization'))
   const chatGuestCookieToken = req.cookies.get('chat_participant_token')?.value
@@ -48,7 +49,13 @@ export async function getParticipantId(
         return { participantId: payload.sub, authMode: 'anonymous' }
       }
     } catch (error) {
-      console.error('Chat guest token verification failed:', error)
+      log.info(
+        {
+          event: 'chat.authentication.rejected',
+          outcome: 'invalid_guest_token',
+        },
+        'Rejected chat guest token'
+      )
       // Fall through to PWA embed / participant_token below.
     }
   }
@@ -68,7 +75,13 @@ export async function getParticipantId(
         },
       }
     } catch (error) {
-      console.error('PWA embed session token verification failed:', error)
+      log.info(
+        {
+          event: 'chat.authentication.rejected',
+          outcome: 'invalid_embed_token',
+        },
+        'Rejected PWA embed token'
+      )
       // Fall through to header / participant_token below.
     }
   }
@@ -78,7 +91,10 @@ export async function getParticipantId(
     if (headerIdentity) return headerIdentity
   }
 
-  return getParticipantIdFromToken(req.cookies.get('participant_token')?.value)
+  return getParticipantIdFromToken(
+    req.cookies.get('participant_token')?.value,
+    log
+  )
 }
 
 export async function getParticipantIdFromToken(

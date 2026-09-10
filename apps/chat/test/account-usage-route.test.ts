@@ -140,6 +140,7 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
+  registerLangfuseTelemetry: vi.fn(async () => undefined),
   flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
   getChatTraceContext: mocks.getChatTraceContext,
   getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
@@ -588,9 +589,12 @@ describe('account usage chat route', () => {
     expect(streamCallbacks()).not.toHaveProperty(
       'tools.search_response_examples'
     )
-    expect(console.warn).toHaveBeenCalledWith(
-      'Response-example skill loading failed; continuing without response examples',
-      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    expect(mocks.logRecords).toContainEqual(
+      expect.objectContaining({
+        event: 'chat.response_examples.unavailable',
+        outcome: 'load_failed',
+        correlationId: expect.any(String),
+      })
     )
   })
 
@@ -670,9 +674,12 @@ describe('account usage chat route', () => {
         },
       })
     )
-    expect(console.warn).toHaveBeenCalledWith(
-      'Response-example skill name conflicts with an existing tool; continuing without response examples',
-      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    expect(mocks.logRecords).toContainEqual(
+      expect.objectContaining({
+        event: 'chat.response_examples.unavailable',
+        outcome: 'tool_name_conflict',
+        correlationId: expect.any(String),
+      })
     )
   })
 

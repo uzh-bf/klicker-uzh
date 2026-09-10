@@ -10,8 +10,8 @@ import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
 
 function MicroLearningsOverview({
   isInactive,

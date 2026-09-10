@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   consumeStream,
@@ -30,6 +31,7 @@ import { REQUIRED_MCP_UNAVAILABLE_CODE } from '@/src/lib/server/mcpRuntimePolicy
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
@@ -67,9 +69,10 @@ function isRequiredMcp(parameters: unknown): boolean {
   )
 }
 
-export async function POST(
+async function handlePOST(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string }> }
+  { params }: { params: Promise<{ chatbotId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId } = await params
   const auth = await withOwnerPreviewAuth(chatbotId)
@@ -276,10 +279,10 @@ export async function POST(
     tools = mcpToolsHandle.tools
   } catch (error) {
     await closeMcpTools()
-    console.error('Owner preview MCP discovery failed:', {
-      chatbotId,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    log.error(
+      { event: 'chat.preview.tools.unavailable' },
+      'Owner preview MCP discovery failed'
+    )
     return NextResponse.json(
       { error: 'Required chatbot tools are unavailable' },
       { status: 503 }
@@ -371,10 +374,10 @@ export async function POST(
       onAbort: closeMcpTools,
       onError: async (error) => {
         await closeMcpTools()
-        console.error('Owner preview stream failed:', {
-          chatbotId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          { event: 'chat.preview.stream.failed' },
+          'Owner preview stream failed'
+        )
       },
     })
 
@@ -384,10 +387,10 @@ export async function POST(
       consumeSseStream: consumeStream,
       onError: (error) => {
         void closeMcpTools()
-        console.error('Owner preview UI stream failed:', {
-          chatbotId,
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        log.error(
+          { event: 'chat.preview.ui_stream.failed' },
+          'Owner preview UI stream failed'
+        )
         return 'Chatbot preview request failed'
       },
       messageMetadata: ({ part }) =>
@@ -401,13 +404,24 @@ export async function POST(
     })
   } catch (error) {
     await closeMcpTools()
-    console.error('Owner preview request failed:', {
-      chatbotId,
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    log.error(
+      { event: 'chat.preview.request.failed' },
+      'Owner preview request failed'
+    )
     return NextResponse.json(
       { error: 'Chatbot preview request failed' },
       { status: 500 }
     )
   }
+}
+
+export function POST(
+  req: NextRequest,
+  context: { params: Promise<{ chatbotId: string }> }
+) {
+  return withRouteLogging(
+    req,
+    '/api/manage/chatbots/:chatbotId/preview/chat',
+    (log) => handlePOST(req, context, log)
+  )
 }

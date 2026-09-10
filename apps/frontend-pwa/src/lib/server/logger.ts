@@ -1,12 +1,12 @@
 import {
+  type AppLogger,
   createLogger,
   toSafeError,
-  type AppLogger,
 } from '@klicker-uzh/logging/node'
 import {
-  resolveRequestContext,
   type DiagnosticHeader,
   type RequestContext,
+  resolveRequestContext,
 } from '@klicker-uzh/logging/request'
 
 const service =

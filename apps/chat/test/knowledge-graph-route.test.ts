@@ -5,6 +5,22 @@ import type {
 import { NextRequest, NextResponse } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const loggingRecords = vi.hoisted(() => [] as Record<string, unknown>[])
+
+vi.mock('@/src/lib/server/logger', async () => {
+  const { createLogger } = await import('@klicker-uzh/logging/node')
+  return {
+    logger: createLogger(
+      { service: 'chat-test', environment: 'production' },
+      {
+        write: (line) => {
+          loggingRecords.push(JSON.parse(line))
+        },
+      }
+    ),
+  }
+})
+
 const boundaries = vi.hoisted(() => ({
   getPublishedKnowledgeGraphForChatbot: vi.fn(),
   isKnowledgeGraphNotPublishedError: vi.fn(),
@@ -98,6 +114,7 @@ async function callRoute(search: string) {
 }
 
 beforeEach(() => {
+  loggingRecords.length = 0
   vi.resetAllMocks()
   boundaries.withChatbotAuth.mockResolvedValue({
     participantId: 'participant-id',
@@ -267,11 +284,13 @@ describe('participant knowledge graph route', () => {
         code: 'KNOWLEDGE_GRAPH_TEMPORARILY_UNAVAILABLE',
         error: 'Knowledge graph is temporarily unavailable',
       })
-      expect(consoleError).toHaveBeenCalledWith(
-        'Participant knowledge graph read failed',
-        { chatbotId, operation: 'overview' }
+      expect(loggingRecords).toContainEqual(
+        expect.objectContaining({
+          event: 'chat.knowledge_graph.read.failed',
+          correlationId: expect.any(String),
+        })
       )
-      expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
+      expect(JSON.stringify(loggingRecords)).not.toMatch(
         /secret|private\.example|redis:\/\//
       )
     } finally {

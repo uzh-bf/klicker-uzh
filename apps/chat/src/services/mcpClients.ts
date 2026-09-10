@@ -396,10 +396,13 @@ async function loadServerTools(
     try {
       await activeClient.close()
     } catch (error) {
-      console.warn('Failed to close MCP client', {
-        server: server.name,
-        errorType: error instanceof Error ? error.name : typeof error,
-      })
+      log.warn(
+        {
+          event: 'chat.mcp.close.failed',
+          err: toSafeError('MCP client close failed'),
+        },
+        'Failed to close MCP client'
+      )
     }
   }
 
@@ -428,7 +431,13 @@ async function loadServerTools(
     if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
       assertDocQueryRequestScope(config.parameters, context.kbIds)
     }
-    client = await createMCPClient(server, context, options, context.authMode, log)
+    client = await createMCPClient(
+      server,
+      context,
+      options,
+      context.authMode,
+      log
+    )
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -515,7 +524,10 @@ export async function getAggregatedMCPTools(
   authMode: AuthMode = 'account',
   log: AppLogger = getRouteLogger()
 ): Promise<MCPToolsHandle> {
-  log.info({ event: 'chat.mcp.load.started', serverCount: serversWithConfigs.length }, 'Loading MCP tools')
+  log.info(
+    { event: 'chat.mcp.load.started', serverCount: serversWithConfigs.length },
+    'Loading MCP tools'
+  )
 
   const { context, options } = normalizeMCPRequest(
     contextOrChatbotId,
@@ -554,7 +566,8 @@ export async function getAggregatedMCPTools(
       const serverHandle = await loadServerTools(
         serverWithConfig,
         context,
-        options
+        options,
+        log
       )
       serverHandles.push(serverHandle)
       const runtimePolicy = parseMCPRuntimePolicy(
@@ -607,7 +620,10 @@ export async function getMCPTools(
   authMode: AuthMode,
   log: AppLogger = getRouteLogger()
 ): Promise<MCPToolsHandle> {
-  log.info({ event: 'chat.mcp.configuration.selected', outcome: 'legacy_environment' }, 'Selected legacy MCP configuration')
+  log.info(
+    { event: 'chat.mcp.configuration.selected', outcome: 'legacy_environment' },
+    'Selected legacy MCP configuration'
+  )
 
   const mcpKey = process.env.MCP_KEY
   const mcpUrl = process.env.MCP_URL
@@ -643,7 +659,13 @@ export async function getMCPTools(
     )
     return serverHandle
   } catch (error) {
-    log.error({ event: 'chat.mcp.load.failed', err: toSafeError(new Error('MCP tool loading failed')) }, 'Failed to load MCP tools')
+    log.error(
+      {
+        event: 'chat.mcp.load.failed',
+        err: toSafeError('MCP tool loading failed'),
+      },
+      'Failed to load MCP tools'
+    )
     return { tools: {}, close: async () => {} }
   }
 }

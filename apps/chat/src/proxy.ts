@@ -1,7 +1,7 @@
 import { routing } from '@klicker-uzh/i18n'
-import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { createEdgeLogger } from '@klicker-uzh/logging/edge'
 import { resolveRequestContext } from '@klicker-uzh/logging/request'
+import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -227,7 +227,10 @@ export async function proxy(request: NextRequest) {
   try {
     await jwtVerify(participantToken, new TextEncoder().encode(appSecret))
   } catch {
-    log.warn({ event: 'participant_token.invalid', outcome: 'redirect' }, 'Invalid participant token')
+    log.warn(
+      { event: 'participant_token.invalid', outcome: 'redirect' },
+      'Invalid participant token'
+    )
     return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
