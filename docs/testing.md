@@ -266,9 +266,11 @@ Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
 `public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
-across the two-host public pool; pushes, fork PRs, drafts, bots, private
-repositories, and
-disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+across the two-host public pool; pushes, fork PRs, bots, private
+repositories, and disabled rollouts keep all eight shards on GitHub-hosted
+runners. Draft PRs never enter either route: the caller skips the reusable
+execution workflow and `test-playwright-status` reports an explicit successful
+skip, so no Playwright worker is allocated until the PR is marked ready. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
 public-PR routes to be selected. The workflow tars the five `.next` trees before
