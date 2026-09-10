@@ -68,6 +68,9 @@ jobs:
       - name: Check CI queue policy
         run: node --test .github/scripts/ci-equivalent-run.test.cjs .github/scripts/ci-obsolete-runs.test.cjs .github/scripts/ci-event-gates.test.cjs
 
+      - name: Validate deployment candidate controls
+        run: node --test .github/scripts/stg-release-promoter.test.js .github/scripts/validate-prd-candidate.test.cjs
+
       - name: Check Playwright CI contracts
         run: pnpm run check:playwright-ci
 
