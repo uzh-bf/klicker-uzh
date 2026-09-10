@@ -687,6 +687,41 @@ describe('account usage chat route', () => {
     expect(prepareStep({ stepNumber: 1 })).toEqual({})
   })
 
+  test('forces first-step course retrieval in modes with the citation contract', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          quizzer: { prompt: 'Ask course questions.' },
+        },
+        mcpConfigurations: [
+          {
+            chatMode: 'tutor',
+            isEnabled: true,
+            priority: 0,
+            allowedTools: ['doc_query'],
+            parameters: null,
+            mcpServer: { id: 'server-1' },
+          },
+        ],
+      })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
+
+    const response = await POST(createRequest({ selectedMode: 'tutor' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+    }) => unknown
+    expect(prepareStep({ stepNumber: 0 })).toEqual({
+      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+    })
+    expect(prepareStep({ stepNumber: 1 })).toEqual({})
+  })
+
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
