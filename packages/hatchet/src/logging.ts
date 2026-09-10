@@ -140,9 +140,11 @@ export function createHatchetLoggerFactory(root: AppLogger): LogConstructor {
   return (context: string, logLevel?: LogLevel) => {
     // Context logger calls are the task-owned path. Other SDK channels retain
     // Hatchet's native output and are not silently reclassified as app events.
-    return context === 'ctx'
-      ? taskLogger
-      : new DefaultHatchetLogger(context, logLevel)
+    if (context === 'ctx') return taskLogger
+    const logger = new DefaultHatchetLogger(context, logLevel)
+    // Preserve the worker-thread watch-message guard used by the native client.
+    // Hatchet 1.9.4 dispatches untyped development messages to logger.undefined.
+    return Object.assign(logger, { undefined: () => undefined })
   }
 }
 

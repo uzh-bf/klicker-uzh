@@ -42,6 +42,13 @@ function fakeHatchetContext() {
 }
 
 describe('withHatchetTaskLogging', () => {
+  it('ignores untyped development messages in native SDK channels', () => {
+    const { logger, records } = testLogger()
+    const nativeLogger = createHatchetLoggerFactory(logger)('worker')
+    expect(Reflect.get(nativeLogger, 'undefined')()).toBeUndefined()
+    expect(records).toEqual([])
+  })
+
   it.each([
     'started',
     'completed',
