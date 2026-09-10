@@ -1837,15 +1837,12 @@ importers:
       '@klicker-uzh/grading':
         specifier: workspace:*
         version: link:../grading
-<<<<<<<
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../knowledge-graph
-=======
       '@klicker-uzh/logging':
         specifier: workspace:*
         version: link:../logging
->>>>>>>
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
