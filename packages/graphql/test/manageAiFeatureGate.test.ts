@@ -1,3 +1,4 @@
+import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
 import { describe, expect, test, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
@@ -8,7 +9,7 @@ import {
 } from '../src/lib/manageAiFeatureGate.js'
 import {
   getManageChatModelRegistry,
-  updateChatbotModelSettings,
+  saveChatbotRevision,
 } from '../src/services/chatbots.js'
 
 function createContext(
@@ -143,14 +144,44 @@ describe('Manage AI feature gate', () => {
   test('denies chatbot authoring before reading chatbot data', async () => {
     const { ctx } = createContext(true, 'disabled')
     await expect(
-      updateChatbotModelSettings(
+      saveChatbotRevision(
         {
-          allowedModelIds: [],
           chatbotId: 'chatbot-1',
-          modelSelection: true,
+          expectedRevisionVersion: 0,
+          input: {
+            modelPolicy: {
+              allowedModelIds: ['auto'],
+              modelSelection: false,
+            },
+          },
         },
         ctx
       )
     ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+  })
+
+  test('keeps chatbot credit-policy mutations behind the gate', async () => {
+    const { ctx, findUnique } = createContext(true)
+
+    await expect(
+      saveChatbotRevision(
+        {
+          chatbotId: 'chatbot-1',
+          expectedRevisionVersion: 0,
+          input: {
+            creditPolicy: {
+              creditInitialCredits: 2,
+              creditResetPeriod: CreditResetPeriod.MONTHLY,
+              creditResetAmount: 2,
+              creditMaxCredits: 2,
+            },
+          },
+        },
+        ctx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'FORBIDDEN' },
+    })
+    expect(findUnique).toHaveBeenCalledTimes(1)
   })
 })

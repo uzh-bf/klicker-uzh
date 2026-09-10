@@ -128,6 +128,7 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
+  ChatbotAuthoringRevision,
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
@@ -1675,6 +1676,21 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatbotPendingRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: ChatbotAuthoringRevision,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: false,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.getChatbotPendingRevision(args, ctx)
         },
       }),
 

@@ -183,6 +183,9 @@ model Chatbot {
   /// [PrismaChatbotStandardModeConfig]
   standardModeConfig Json?
 
+  /// [PrismaChatbotAuthoringRevision]
+  draftConfig Json?
+
   // Credit configuration per chatbot
   creditInitialCredits Int               @default(1)
   creditResetPeriod    CreditResetPeriod @default(WEEKLY)
@@ -210,6 +213,13 @@ model Chatbot {
   expectedStudentCount Int? // lecturer's expected student count, set on a publication request
   reviewComment        String?       @db.Text // team comment on a rejected request; cleared on re-request
   publishedAt          DateTime? // when the chatbot was first approved for publication
+
+  // Revision lifecycle is orthogonal to the live chatbot status. Published
+  // bots keep serving from the live columns while a saved revision is under
+  // authoring or review.
+  revisionStatus                ChatbotStatus?
+  revisionVersion               Int          @default(0)
+  creditResetPeriodChangedAt    DateTime?
 
   // Relations
   mcpConfigurations ChatbotMCPConfig[]

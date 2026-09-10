@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  ApolloError,
-  useApolloClient,
-  useMutation,
-  useQuery,
-} from '@apollo/client'
+import { useApolloClient, useMutation, useQuery } from '@apollo/client'
 import type {
   GetKbKnowledgeGraphNeighborsQuery,
   GetKbKnowledgeGraphOverviewQuery,
@@ -76,13 +71,43 @@ function toKnowledgeGraphResponse(
   }
 }
 
+type GraphErrorDetails = {
+  code?: string
+  remainingMinorUnits?: number
+}
+
+function getGraphErrorDetails(error: unknown): GraphErrorDetails | null {
+  if (!error || typeof error !== 'object') return null
+
+  const extensions = (error as { extensions?: Record<string, unknown> })
+    .extensions
+  if (extensions) {
+    const code =
+      typeof extensions.code === 'string' ? extensions.code : undefined
+    const remainingMinorUnits =
+      typeof extensions.remainingMinorUnits === 'number'
+        ? extensions.remainingMinorUnits
+        : undefined
+    if (code || remainingMinorUnits !== undefined) {
+      return { code, remainingMinorUnits }
+    }
+  }
+
+  for (const key of ['graphQLErrors', 'errors'] as const) {
+    const nestedErrors = (error as Record<string, unknown>)[key]
+    if (!Array.isArray(nestedErrors)) continue
+
+    for (const nestedError of nestedErrors) {
+      const details = getGraphErrorDetails(nestedError)
+      if (details?.code) return details
+    }
+  }
+
+  return null
+}
+
 function normalizeGraphError(error: unknown): never {
-  if (
-    error instanceof ApolloError &&
-    error.graphQLErrors.some((graphQLError) =>
-      String(graphQLError.extensions?.code ?? '').startsWith('KB_GRAPH_')
-    )
-  ) {
+  if (getGraphErrorDetails(error)?.code?.startsWith('KB_GRAPH_')) {
     throw new KnowledgeGraphUnavailableError()
   }
 
@@ -257,6 +282,15 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     selectedEstimate,
     config?.quotaCurrency
   )
+  const formattedRemainingQuota = formatMinorUnits(
+    format,
+    config?.remainingSemesterQuotaMinorUnits,
+    config?.quotaCurrency
+  )
+  const insufficientQuota =
+    selectedEstimate != null &&
+    config?.remainingSemesterQuotaMinorUnits != null &&
+    selectedEstimate > config.remainingSemesterQuotaMinorUnits
 
   useEffect(() => {
     if (config?.qualityTier != null && !isActive) {
@@ -314,7 +348,9 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   }
 
   const handleRebuild = async () => {
-    if (isRebuilding || isActive || !config?.isEnabled) return
+    if (isRebuilding || isActive || !config?.isEnabled || insufficientQuota) {
+      return
+    }
 
     setOperationError(null)
     try {
@@ -336,9 +372,31 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
         )
       }
       await refetch()
-    } catch {
+    } catch (error) {
       console.error('Failed to rebuild KB knowledge graph', { kbId })
-      setOperationError(t('kb.graphBuildError'))
+      const details = getGraphErrorDetails(error)
+      if (details?.code === 'KB_GRAPH_QUOTA_EXCEEDED') {
+        setOperationError(
+          t('kb.graphQuotaInsufficient', {
+            estimate: formattedSelectedEstimate,
+            remaining: formatMinorUnits(
+              format,
+              details.remainingMinorUnits ??
+                config.remainingSemesterQuotaMinorUnits,
+              config.quotaCurrency
+            ),
+          })
+        )
+        try {
+          await refetch()
+        } catch {
+          console.warn('Failed to refresh KB graph quota after rejection', {
+            kbId,
+          })
+        }
+      } else {
+        setOperationError(t('kb.graphBuildError'))
+      }
     }
   }
 
@@ -430,9 +488,10 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   label={t('kb.graphQualityTierLabel')}
                   items={tierItems}
                   value={selectedTier}
-                  onChange={(value) =>
+                  onChange={(value) => {
+                    setOperationError(null)
                     setSelectedTier(value as KbGraphQualityTier)
-                  }
+                  }}
                   disabled={
                     isActive ||
                     isRebuilding ||
@@ -447,7 +506,8 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   disabled={
                     isActive ||
                     !config.isEnabled ||
-                    !config.costConfigurationReady
+                    !config.costConfigurationReady ||
+                    insufficientQuota
                   }
                   onClick={() => void handleRebuild()}
                   data={{ cy: 'kb-knowledge-graph-rebuild' }}
@@ -462,6 +522,18 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
               <p className="mt-3 text-xs text-slate-500">
                 {t('kb.graphBuildCost', { amount: formattedSelectedEstimate })}
               </p>
+              {insufficientQuota ? (
+                <p
+                  className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                  role="status"
+                  data-cy="kb-knowledge-graph-quota-insufficient"
+                >
+                  {t('kb.graphQuotaInsufficient', {
+                    estimate: formattedSelectedEstimate,
+                    remaining: formattedRemainingQuota,
+                  })}
+                </p>
+              ) : null}
               <div
                 className="mt-3 grid gap-2 border-t border-slate-200 pt-3 text-sm text-slate-700 sm:grid-cols-2"
                 data-cy="kb-knowledge-graph-cost"

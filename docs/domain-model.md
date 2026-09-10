@@ -61,15 +61,20 @@ are created only by local and test setup, not by a production caller.
 `DRAFT`, `PENDING_APPROVAL`, `REJECTED`, `PUBLISHED`, or `PAUSED`; participants
 can access only a published chatbot when a `Participation` exists for the
 owning course. Publication approval is separate from account-level AI usage
-authorization.
+authorization. Published setup edits are saved in `draftConfig` with a separate
+`revisionStatus` and monotonic `revisionVersion`. Students use the live fields
+until the exact pending revision is approved; approval preserves identity,
+history, balances, and the original publication date. See
+[ADR 0043](./adr/0043-review-chatbot-revisions-before-activation.md).
 
 The nullable `Chatbot.standardModeConfig` JSON value stores the constrained
 Tutor, Explainer, and Quizzer configuration: three explicit mode flags plus
 course name, subject domain, language of instruction, and an optional scope
-note. The owner-only `updateChatbotStandardModeConfig` mutation accepts full
-replacements in `DRAFT`, `REJECTED`, and `PUBLISHED`, requires Tutor or
-Explainer to remain enabled, and uses a status compare-and-set so a concurrent
-lifecycle transition cannot be overwritten. Tutor and Explainer do not require
+note. The owner-only `saveChatbotRevision` mutation accepts full replacements
+through its `standardModeConfig` section in editable first-publication or
+revision states, requires Tutor or Explainer to remain enabled, and fences every save with the authoring
+version so a concurrent submission cannot be overwritten. Published changes
+remain staged until approval. Tutor and Explainer do not require
 a knowledge base; Quizzer remains independently configurable but is filtered by
 the safe course-material capability gate. Missing or malformed persisted values
 derive all three flags from legacy mode opt-outs/defaults, while valid legacy
@@ -79,9 +84,9 @@ Manage projection exposes the combined effective settings, never raw
 options, never this owner configuration or raw system prompts. The chat compiler
 keeps the platform scaffolding authoritative. New chatbots have a fixed `auto`
 model policy with no reasoning entries. The strict owner-only
-`updateChatbotModelPolicy` mutation enforces fixed versus participant-choice
-cardinality and model-specific reasoning invariants; the previous model
-settings mutation remains available for rolling clients. Legacy fixed rows
+`saveChatbotRevision` mutation enforces fixed versus participant-choice
+cardinality and model-specific reasoning invariants through its `modelPolicy`
+section. Granular save mutations are removed. Legacy fixed rows
 resolve through the `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics, and
 retired-only lists use Luna without a migration. Manage exposes one optional
 Chatbot framing field with a 200-character UI limit. The persisted parser
@@ -140,7 +145,7 @@ Graph quota, AI credentials, and billing are separate concerns. Klicker enforces
 
 Element generation spends from that same lecturer-semester quota. Each initial question/flashcard dispatch and each flashcard retry reserves one configured fixed price in a separate `ElementGenerationSpend`; the provider dispatch UUID is the idempotency key. Klicker validates deterministic coordinates first, claims the spend immediately before the provider call, and settles it only after acceptance or exact-run recovery. A definite failure before the claim releases it. An uncertain claimed outcome retains the reservation and fences redispatch while the provider index becomes consistent; after a 15-minute grace, only a definitive empty exact-attempt lookup releases the hold. Review and incomplete-publication events add no spend. The lecturer config keeps persisted quota currency separate from historical graph-build cost and reports quota currency/limit drift as unavailable. This accounting contract is recorded in [ADR 0013](./adr/0013-klicker-reserves-and-settles-graph-cost.md). For UZH-issued credentials, sensitive lecturer-to-cost-account information stays outside the Klicker database and is maintained manually in a spreadsheet for the beta. BYOK lecturers are billed by their own provider, while Klicker quota controls still apply. AI-provider credentials are a reusable platform concern shared by every AI feature, not part of the knowledge-graph model. Consumer applications retain only opaque handles and safe status; the generic custody and runtime-resolution design remains a separate work item.
 
-The lecturer sees the cost boundary before spending: estimated maximum cost, remaining semester quota, and worst-case resulting balance. After Catalyst settles the build, the lecturer sees actual usage and cost. BYOK is identified as provider-billed; UZH-issued usage is identified as semester-billed.
+The lecturer sees the cost boundary before spending: estimated maximum cost, remaining semester quota, and worst-case resulting balance. The client disables a build whose selected estimate exceeds the displayed remaining quota, while the reservation remains authoritative and returns the current remaining amount if a concurrent spend causes a rejection. Both cases show the estimate and remaining quota as one actionable explanation. After Catalyst settles the build, the lecturer sees actual usage and cost. BYOK is identified as provider-billed; UZH-issued usage is identified as semester-billed.
 
 The initial release is explicitly a beta and may open after the existing system tests and internal production canary pass. Curated real-model evaluation is a beta learning loop rather than an entry gate: Catalyst versions 30–50 reviewed, non-personal goldens from approved or synthetic sources and starts with local reports. That evidence gates widening, general availability, and graph-quality claims, as recorded in [ADR 0014](./adr/0014-beta-learns-before-quality-thresholds.md).
 
