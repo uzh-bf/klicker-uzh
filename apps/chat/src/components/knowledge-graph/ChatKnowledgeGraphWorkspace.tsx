@@ -1,13 +1,13 @@
 'use client'
 
-import { authedFetch } from '@/src/lib/client/authedFetch'
-import { useChatStore } from '@/src/stores/chatStore'
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState, useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { authedFetch } from '@/src/lib/client/authedFetch'
+import { useChatStore } from '@/src/stores/chatStore'
 import { ChatKnowledgeGraphViewer } from './ChatKnowledgeGraphViewer'
 
 type KnowledgeGraphFetch = (
@@ -75,30 +75,13 @@ function knowledgeGraphUrl(
   return `/api/chatbots/${encodeURIComponent(chatbotId)}/knowledge-graph?${searchParams.toString()}`
 }
 
-async function publicationStatus(
-  response: Response
-): Promise<PublicationStatus | undefined> {
-  try {
-    const body = (await response.json()) as { publicationStatus?: unknown }
-    return typeof body.publicationStatus === 'string' &&
-      PUBLICATION_STATUSES.has(body.publicationStatus as PublicationStatus)
-      ? (body.publicationStatus as PublicationStatus)
-      : undefined
-  } catch {
-    return undefined
-  }
-}
-
 async function readKnowledgeGraphResponse(
   url: string,
   fetcher: KnowledgeGraphFetch
 ): Promise<KnowledgeGraphResponse> {
   const response = await fetcher(url)
   if (response.status === 409) {
-    const body: unknown = await response
-      .clone()
-      .json()
-      .catch(() => null)
+    const body: unknown = await response.json().catch(() => null)
     if (
       isRecord(body) &&
       body.code === 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED' &&
@@ -115,7 +98,11 @@ async function readKnowledgeGraphResponse(
       )
     }
     throw new ChatKnowledgeGraphUnavailableError(
-      await publicationStatus(response)
+      isRecord(body) &&
+        typeof body.publicationStatus === 'string' &&
+        PUBLICATION_STATUSES.has(body.publicationStatus as PublicationStatus)
+        ? (body.publicationStatus as PublicationStatus)
+        : undefined
     )
   }
   if (response.status === 403) {
