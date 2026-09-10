@@ -2,7 +2,7 @@
 
 | Package                     | State                                          | Owner                                      | Next action / acceptance                                                                                                         |
 | --------------------------- | ---------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| B0 source consistency       | active                                         | main integrator                            | Finish local merge checks and ordinary drafts; shared refs await CUTOVER-APPROVAL                                                |
+| B0 source consistency       | active                                         | main integrator                            | Drafts #5881/#5882/#5883 published; local checks pass; finish independent review, then exact blocked cutover packet                                                |
 | I0/L3 incident health       | blocked on operator verification               | production operator + independent verifier | Concurrent worker repair merged; verify all replacement workers and preserved accepted jobs without new AI dispatch              |
 | L1 containment              | unresolved                                     | policy owner                               | Verify entitled/admin/direct API denial and worker dispatch; live ingestion disabled flag is absent                              |
 | G0 production authority     | partially prepared                             | release owner                              | Integrate independently approved receipt validation into actual protected writer; prove ordinary credentials cannot activate PRD |
@@ -12,6 +12,6 @@
 | T2 acceptance               | partial isolated proof                         | independent QA                             | 16 login tests pass; broaden selected candidate core/negative suite under separate safe production-smoke scope                   |
 | H1 history                  | open existing root                             | Chat owner                                 | Requalify existing PR 5676 on maintenance after approved routing                                                                 |
 | T3/T5 optional docs/capture | subsequent scope                               | existing owners                            | Consider audit routing; no implementation authorized here                                                                        |
-| Audit integration           | prepared next step                             | integrator/audit owner                     | Merge accepted maintenance candidate forward without audit-feature additions                                                     |
+| Audit integration           | draft published                             | integrator/audit owner                     | PR #5883 contains maintenance candidate and current stg-release; shared merge waits for exact approval                                                     |
 
 No later roadmap implementation is authorized by this ledger. B0 must not claim incident closure from source preparation.

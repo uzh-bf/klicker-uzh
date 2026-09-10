@@ -147,7 +147,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 ## Deployment values (facts, not procedures)
 
 - **stg** (`*.klicker.stg.df-app.ch`): the committed values retain `v3-ai` as their no-override fallback and keep all rollout annotations during the stability window. At Phase 1 activation, the Application will track `stg-release`; ArgoCD will resolve that ref to a commit and pass `$ARGOCD_APP_REVISION` as the forced-string Helm parameter `global.imageTag`, which overrides all 18 first-party image tags without editing the values file. See [Staging promotion](#staging-promotion) below.
-- **prd** (`*.klicker.uzh.ch`): pinned version tags and `replicaCount: 2` for web/API services. Production stays on `v3`, receives no `global.imageTag` parameter, and keeps the existing release-tag flow.
+- **prd** (`*.klicker.uzh.ch`): pinned version tags and `replicaCount: 2` for web/API services. The existing controller still tracks `v3` until an approved handover to `v3-ai`; production receives no `global.imageTag` parameter and keeps independently approved artifact pins. See [ADR 0044](adr/0044-maintenance-audit-and-stable-release-lines.md).
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
@@ -269,8 +269,8 @@ Keep the evidence layers separate:
 
 Operational notes:
 
-- Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. It falls back to
-  `v3` in the trusted workflow expression when unset. The promoter requires
+- Set `STG_SOURCE_BRANCH` explicitly to the approved supported `v3*` source
+  (`v3-audit` after the approved handover). An unset selector fails closed. The promoter requires
   that resolved input and does not query repository variables itself. Promotion
   fails closed unless the branch has the exact trusted publisher inventory and
   full-SHA tags.
@@ -310,16 +310,19 @@ remain byte-identical to the frozen parent.
 
 The superseded annotation mechanism and its incident context remain in
 [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
-Production is unchanged: it stays on `v3`, receives no global image parameter,
-and promotes by hand-editing pinned tags in `deploy/env-uzh-prd/values.yaml`.
+Production keeps independently approved pins in `deploy/env-uzh-prd/values.yaml`
+and receives no global image parameter. Its current `v3` controller source is
+handed over to `v3-ai` only through the approved transition in ADR 0044.
 
 For read-only receipt validation, run
 `node .github/scripts/validate-prd-candidate.cjs <receipt.json>` with
 `CANDIDATE_SHA`, `PRD_APPROVED_MAINTENANCE_SHA`, and
-`PRD_APPROVED_RECEIPT_SHA256` supplied from the independent operator decision.
+`PRD_APPROVED_RECEIPT_SHA256` and `PRD_APPROVED_WORKLOADS_JSON` supplied from
+the independent operator decision. The JSON array names the complete expected
+workload inventory; missing, unexpected or duplicate workloads fail closed.
 The receipt contains `sourceBranch`, `sourceSha`, `configurationSha256`,
 `migrationInventorySha256`, `capabilityStateSha256`, and `artifacts` entries
 with unique `workload` names and digest-qualified `image` identities, including
-`migrator`. This validator checks the selected receipt; it does not grant
+`backend` and `migrator`. This validator checks the selected receipt; it does not grant
 approval or enforce GitHub/Argo write permissions. Integration into the actual
 protected activation path remains a G0 cutover prerequisite.

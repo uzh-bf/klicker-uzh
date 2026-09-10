@@ -27,7 +27,7 @@ Ancestry includes both pinned parents and audit includes staging ancestor. Migra
 
 ## Progress
 
-C0 active. Repository-local worktree trees/rs/consistency-cleanup-20260910 on rs/consistency-cleanup-20260910. Primary has three unrelated untracked readiness reports, preserved. df-cloud primary has dirty submodules, preserved. PRD app-klicker tracks v3, auto prune/self-heal, Synced at stable SHA but health Progressing. STG selection v3-ai and automatic promotion true; neither changed. Planner review pending. Local implementation authorized; cutover withheld.
+Local preparation complete; final independent risk review pending. Normal maintenance and audit merges published as drafts #5881 and #5883; narrow trusted-CI draft #5882. Private infrastructure draft !557 remains unmerged. Exact controlled source/infra identities and operational blockers are in completion.md and CUTOVER-APPROVAL.md. Shared refs and live controls remain untouched by this task. Synthetic verification runtime stopped with source-matched provider status and zero routes; data retained.
 
 ### Delegation map and operational gates
 
@@ -55,4 +55,4 @@ Planner round 1: accepted all four findings and made the obligations above expli
 - Simplifier: native simplifier, immutable committed implementation range after checks; acceptance behavior-preserving simplification disposition; unavailable route blocks that gate.
 - Risk and final review: native final-reviewer explicitly selected for this task to preserve the no-paid-external-call boundary. It reviews the complete committed integration/control range and verification with security/data/architecture lenses; missing route or incomplete scope blocks qualification. No external slice-reviewer or CLI paid provider is used.
 
-Maintenance pin updated after concurrent publication to 5cb1e445df5b41496b0051850c94031dbdc956df. Merge of pinned stable prepared without conflicts and remains uncommitted. 195 migration files preserved, including every stable and incident file; live ledgers and committed ancestry still pending. Isolated runtime running after documented port override; frozen install/checks active.
+Maintenance includes the later published 1d85533 build correction through normal ancestry. Maintenance candidate 5b63ea881 and audit merge 0fadf15c12 have identical trees. Both contain pinned stable 492e5f1e and maintenance 1d85533; audit also contains current stg-release 1d85533. SQL preservation and two live ledgers verified; independent Analytics ledger remains unavailable. Simplifier found no justified reduction; final risk review pending.

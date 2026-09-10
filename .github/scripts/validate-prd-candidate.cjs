@@ -9,6 +9,7 @@ function validateProductionCandidate({
   approvedSha,
   receiptBytes,
   approvedReceiptSha256,
+  expectedWorkloads,
 }) {
   assert.match(
     approvedSha || '',
@@ -70,6 +71,17 @@ function validateProductionCandidate({
       'artifact must be pinned by digest'
     )
   }
+  assert.ok(
+    Array.isArray(expectedWorkloads) && expectedWorkloads.length > 1,
+    'an independently selected complete workload inventory is required'
+  )
+  assert.equal(new Set(expectedWorkloads).size, expectedWorkloads.length)
+  assert.deepEqual(
+    [...names].sort(),
+    [...expectedWorkloads].sort(),
+    'artifacts must exactly match the approved workload inventory'
+  )
+  assert.ok(names.has('backend'), 'backend application digest is required')
   assert.ok(names.has('migrator'), 'migrator digest is required')
   return receipt
 }
@@ -81,6 +93,9 @@ if (require.main === module) {
       approvedSha: process.env.PRD_APPROVED_MAINTENANCE_SHA,
       approvedReceiptSha256: process.env.PRD_APPROVED_RECEIPT_SHA256,
       receiptBytes: fs.readFileSync(process.argv[2]),
+      expectedWorkloads: JSON.parse(
+        process.env.PRD_APPROVED_WORKLOADS_JSON || 'null'
+      ),
     })
     console.log(
       'Exact production candidate receipt validated; deployment remains separately authorized.'
