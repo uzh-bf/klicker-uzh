@@ -652,7 +652,10 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('forces Quizzer course retrieval only on the first model step', async () => {
+  test.each([
+    'tutor',
+    'quizzer',
+  ] as const)('forces %s course retrieval only on the first model step', async (selectedMode) => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         systemPrompts: {
@@ -661,7 +664,7 @@ describe('account usage chat route', () => {
         },
         mcpConfigurations: [
           {
-            chatMode: 'quizzer',
+            chatMode: selectedMode,
             isEnabled: true,
             priority: 0,
             allowedTools: ['doc_query'],
@@ -673,42 +676,7 @@ describe('account usage chat route', () => {
     )
     mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
 
-    const response = await POST(createRequest({ selectedMode: 'quizzer' }), {
-      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
-    })
-
-    expect(response.status).toBe(200)
-    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
-      stepNumber: number
-    }) => unknown
-    expect(prepareStep({ stepNumber: 0 })).toEqual({
-      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
-    })
-    expect(prepareStep({ stepNumber: 1 })).toEqual({})
-  })
-
-  test('forces first-step course retrieval in modes with the citation contract', async () => {
-    mocks.chatbotFindUnique.mockResolvedValueOnce(
-      chatbot({
-        systemPrompts: {
-          tutor: { prompt: 'Use course material.' },
-          quizzer: { prompt: 'Ask course questions.' },
-        },
-        mcpConfigurations: [
-          {
-            chatMode: 'tutor',
-            isEnabled: true,
-            priority: 0,
-            allowedTools: ['doc_query'],
-            parameters: null,
-            mcpServer: { id: 'server-1' },
-          },
-        ],
-      })
-    )
-    mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
-
-    const response = await POST(createRequest({ selectedMode: 'tutor' }), {
+    const response = await POST(createRequest({ selectedMode }), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
