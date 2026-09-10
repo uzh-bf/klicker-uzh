@@ -1,4 +1,4 @@
-query GetKbChatbotBindingsWithKnowledgeBases($kbId: ID!) {
+query QGetKbChatbotBindingsWithKnowledgeBases($kbId: ID!) {
   getKbChatbotBindings(kbId: $kbId) {
     chatbotId
     chatbotName

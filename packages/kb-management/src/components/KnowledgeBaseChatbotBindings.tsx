@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@apollo/client'
 import {
   AttachKbToChatbotDocument,
   DetachKbFromChatbotDocument,
-  GetKbChatbotBindingsWithKnowledgeBasesDocument,
+  QGetKbChatbotBindingsWithKnowledgeBasesDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -28,7 +28,7 @@ function KnowledgeBaseChatbotBindings({
     string | undefined
   >()
   const { data, loading, error } = useQuery(
-    GetKbChatbotBindingsWithKnowledgeBasesDocument,
+    QGetKbChatbotBindingsWithKnowledgeBasesDocument,
     {
       variables: { kbId },
     }
@@ -61,7 +61,7 @@ function KnowledgeBaseChatbotBindings({
 
   const refetchQueries = [
     {
-      query: GetKbChatbotBindingsWithKnowledgeBasesDocument,
+      query: QGetKbChatbotBindingsWithKnowledgeBasesDocument,
       variables: { kbId },
     },
     { query: QGetChatbotsInfoWithKnowledgeBasesDocument },

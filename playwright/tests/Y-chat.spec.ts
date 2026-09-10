@@ -3926,6 +3926,10 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
   }) => {
     // Order the two responses without relying on wall-clock timing: the
     // superseded response is released only once the newer graph was picked.
+    let markSupersededStarted = () => {}
+    const supersededStarted = new Promise<void>((resolve) => {
+      markSupersededStarted = resolve
+    })
     let releaseSuperseded = () => {}
     const supersededReleased = new Promise<void>((resolve) => {
       releaseSuperseded = resolve
@@ -3948,6 +3952,7 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
 
         // Superseded request: answers only after the newer graph was picked.
         if (kbId === GRAPH_ALPHA) {
+          markSupersededStarted()
           await Promise.race([
             supersededReleased,
             new Promise((resolve) => setTimeout(resolve, 15_000)),
@@ -3977,6 +3982,9 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
       '[data-cy="chat-knowledge-graph-choice"]',
       'Graph Alpha'
     )
+    // The superseded request must really be in flight before the switch,
+    // otherwise the race under test never happens.
+    await supersededStarted
     await selectOption(
       page,
       '[data-cy="chat-knowledge-graph-choice"]',
