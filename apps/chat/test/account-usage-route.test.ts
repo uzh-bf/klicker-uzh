@@ -129,6 +129,7 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
+  registerLangfuseTelemetry: vi.fn().mockResolvedValue(undefined),
   flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
   getChatTraceContext: mocks.getChatTraceContext,
   getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
