@@ -83,6 +83,21 @@ with `core.fsmonitor=false`. Remaining gates: provider final reviews
 (Doc Processing range 5a0979af..b6448bf, Doc Query retry at d6e13ae,
 scraping simplifier, risk and final on 7eadb3a6..1771693), then provider
 pushes, draft MRs and the separately gated target-integration ruling.
+2026-09-10 integration reviews: the simplifier and slice reviewer both
+returned done-with-concerns on 0e96bb4b4c..99160c2074 (receipts in
+project/_local/reviews/2026-09-10-klicker-launcher-integration-*.md).
+Accepted corrections landed at 63e92688be: explicit rejection of project
+identities beyond the launchers' 48-character instance limit, scraping
+ordered before ingestion so runtime workers never precede their
+dependency, a literal docProcessing owner-id assertion, and the
+simplifier's dead-branch, duplicate-assertion and parameter reductions.
+66/66 local-stack tests and Biome pass on the corrected head. Remaining
+gates: provider final reviews (Doc Processing 5a0979af..b6448bf, Doc
+Query retry f258c2d..d6e13ae, scraping simplifier, risk and final on
+7eadb3a6..1771693) - currently blocked on explicit user approval to send
+the private UZH GitLab provider diffs to an external reviewer route -
+then provider pushes, draft MRs and the separately gated
+target-integration ruling.
 
 ### Current delivery ownership — 2026-09-09
 
