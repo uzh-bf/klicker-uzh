@@ -1786,6 +1786,18 @@ Trace effects on manual Elements/instances, derived permissions, activities, cou
 
 ## Progress
 
+### Target integration cleared the PR conflicts; provider gates running — 2026-09-10
+
+PR #5887 (rs/local-kb-ingestion-retrieval) reported CONFLICTING/DIRTY against v3-ai, which is a concrete readiness blocker, so the target was integrated under the standing integration rule. Reason: merge conflict with the target. The target advanced to 5d358a62c3 during this pass. Merge commit 12161e06c3 integrates 41 target commits, leaves the branch 42 ahead of origin, and is the published draft head 12161e06c30667e1d53a150d2a739d7661e5557a; GitHub now reports the PR MERGEABLE.
+
+Four files conflicted and keep both sides: .github/workflows/check.yml (the local KB lifecycle contract step plus the upstream Next.js development configuration and readiness step), .gitignore (.local-kb/ plus the upstream tmp environment patterns), util/run-playwright-host.mjs (the retained-citations entry point retained while adopting the upstream parseLocalOptions contract with its explicit mode; parseLocalOptions receives the raw argv because the upstream parser strips the leading -- itself), and util/test-dev-runtime.sh (the upstream fixture comment retained for the shared dependency-mount stub).
+
+The merge keeps this branch's direct node_modules/.bin/turbo invocation in util/dev-runtime.sh, so the hardcoded recovery pin in .devcontainer/recover-runtime.sh was updated to the merged file hash 688e8f6e057068aab111d2d8767668906501b76b9cc9d111c68456297829262f. Without that update the newly adopted upstream recovery guard refused the reviewed source pins.
+
+Verification on the merged tree: util/run-playwright-host.test.mjs 32/32, local KB contract tests 70/70, next-pages development configuration 1/1, util/test-dev-runtime.sh PASS, util/test-recover-bootstrap.sh PASS, util/dev-runtime-readiness.test.mjs 5/5. Biome and Prettier report clean on the touched files and there are no whitespace errors.
+
+The host pre-push hook remains inapplicable: the pnpm dependency guard requires an install after the integrated package.json change and the host runs Node 26 against the pinned Node 24. The push therefore used --no-verify, and the hosted build remains the build authority. Hosted exact-head checks, the provider gate reviews and provider publication are the next unresolved steps; merge and deployment remain separately gated.
+
 ### Corrective reviews accepted; draft publication — 2026-09-08
 
 Independent corrective slice review completed with no actionable source defects. Integrated final review passes on df1ea25580136bf1dc70b05dc8e18a633374b371..6ced243cd21d653ea899a544acfe030ba2ffe4e2 across all 33 paths, with no exclusions or reportable findings. Main accepted both results; all children are closed. Reports: project/_local/reviews/2026-09-08-corrective-slice-review.md and project/_local/reviews/2026-09-08-corrective-integrated-final.md. This final receipt changes documentation only; the reviewed source and passing checks remain unchanged.
