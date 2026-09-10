@@ -1,6 +1,6 @@
-import axios from 'axios'
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { toSafeError } from '@klicker-uzh/logging/node'
+import axios from 'axios'
 
 export async function sendTeamsNotifications(
   scope: string,

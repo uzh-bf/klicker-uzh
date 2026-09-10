@@ -1,5 +1,5 @@
-import { apiReference } from '@scalar/express-api-reference'
 import { toSafeError } from '@klicker-uzh/logging/node'
+import { apiReference } from '@scalar/express-api-reference'
 import express, { Request, Response } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import fs from 'fs/promises'
@@ -20,8 +20,8 @@ import {
 import {
   AccountParameters,
   ActivityOlatConfigurationKey,
-  activityOlatConfigurationKeys,
   ActivityTypeKeyParameters,
+  activityOlatConfigurationKeys,
   CourseParameters,
   ErrorParameters,
   StatusCode,

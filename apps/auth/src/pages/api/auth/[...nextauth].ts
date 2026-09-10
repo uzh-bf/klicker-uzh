@@ -12,10 +12,10 @@ import {
 import bcrypt from 'bcryptjs'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextAuthOptions } from 'next-auth'
-import type { UserinfoEndpointHandler } from 'next-auth/providers/oauth'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
+import type { UserinfoEndpointHandler } from 'next-auth/providers/oauth'
 import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
 import {
   createOrLinkParticipant,

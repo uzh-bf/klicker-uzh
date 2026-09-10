@@ -1,4 +1,3 @@
-import { sendTeamsNotifications } from '@/lib/util'
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
@@ -21,6 +20,7 @@ import { NextApiRequest } from 'next'
 import type { Profile } from 'next-auth'
 import { Account } from 'next-auth'
 import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
+import { sendTeamsNotifications } from '@/lib/util'
 import { updateAssessmentParticipantIdentity } from './assessmentIdentity'
 import {
   DEFAULT_LECTURER_HOSTS,

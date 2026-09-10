@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
+import { type NextRequest, NextResponse } from 'next/server'
 import {
   DEFAULT_LECTURER_HOSTS,
   DEFAULT_PWA_HOSTS,
@@ -7,7 +8,6 @@ import {
   STUDENT_REDIRECT_COOKIE_NAME,
 } from './lib/constants'
 import { edgeLogger } from './lib/edgeLogger'
-import { resolveRequestContext } from '@klicker-uzh/logging/request'
 
 // Cookie maxAge is specified in seconds
 const REDIRECT_COOKIE_TTL_S = 10
@@ -65,6 +65,12 @@ export async function proxy(request: NextRequest) {
     correlationId: request.headers.get('x-correlation-id'),
   })
   const log = edgeLogger.child(requestContext)
+  const nextResponse = () => {
+    const headers = new Headers(request.headers)
+    headers.set('x-request-id', requestContext.requestId)
+    headers.set('x-correlation-id', requestContext.correlationId)
+    return NextResponse.next({ request: { headers } })
+  }
   const withRequestId = (response: NextResponse) => {
     response.headers.set('x-request-id', requestContext.requestId)
     response.headers.set('x-correlation-id', requestContext.correlationId)
@@ -142,7 +148,7 @@ export async function proxy(request: NextRequest) {
   if (pathname === '/') {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     if (redirectTo && isValidLecturerRedirectUrl(redirectTo)) {
-      const response = NextResponse.next()
+      const response = nextResponse()
       // Set lecturer-specific cookie, scoped to auth host
       response.cookies.set(LECTURER_REDIRECT_COOKIE_NAME, redirectTo, {
         ...commonCookieOpts,
@@ -208,7 +214,7 @@ export async function proxy(request: NextRequest) {
 
     // Set/refresh the redirect cookie so it's available on callback even if
     // NextAuth posts the callbackUrl in the body (not readable in proxy)
-    const response = NextResponse.next()
+    const response = nextResponse()
     // Set student-specific cookie, scoped to auth host
     response.cookies.set(STUDENT_REDIRECT_COOKIE_NAME, redirectTo, {
       ...commonCookieOpts,
@@ -283,12 +289,12 @@ export async function proxy(request: NextRequest) {
         }
 
         // Clear the cookies in any case on callback to avoid lingering state
-        const passthrough = NextResponse.next()
+        const passthrough = nextResponse()
         clearAllRedirectCookies(passthrough)
         return withRequestId(passthrough)
       }
       // If generic cookie is not present, still clear any specific cookies
-      const passthrough = NextResponse.next()
+      const passthrough = nextResponse()
       if (studentRedirect || lecturerRedirect) {
         clearAllRedirectCookies(passthrough)
       }
@@ -296,7 +302,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // Default passthrough for auth routes; avoid unnecessary URL rewrites
-    let response: NextResponse | null = NextResponse.next()
+    const response: NextResponse | null = nextResponse()
 
     // On signin routes, set the short-lived redirect cookie based on callbackUrl (set after user triggers sign-in)
     if (pathname.startsWith('/api/auth/signin')) {
@@ -320,7 +326,7 @@ export async function proxy(request: NextRequest) {
     return withRequestId(response)
   }
 
-  return withRequestId(NextResponse.next())
+  return withRequestId(nextResponse())
 }
 
 export const config = {
