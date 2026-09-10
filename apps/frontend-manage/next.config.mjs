@@ -47,6 +47,13 @@ nextConfig.transpilePackages = Array.from(
   ])
 )
 
+if (process.env.NODE_ENV === 'development') {
+  nextConfig.experimental = {
+    ...nextConfig.experimental,
+    turbopackFileSystemCacheForDev: false,
+  }
+}
+
 if (process.env.NODE_ENV !== 'test') {
   const withPWA = withPWAInit(
     getNextPWAConfig({ NODE_ENV: process.env.NODE_ENV })

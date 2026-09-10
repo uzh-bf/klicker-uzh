@@ -1,10 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { encrypt } from '@klicker-uzh/util'
 import {
-  assertDisposableDatabaseIdentity,
-  disposableDatabaseIdentityQuery,
-} from '../../../packages/prisma/src/disposableDatabase.ts'
-import {
   assertLocalSeedOwnership,
   LOCAL_CHATBOT_ID,
   LOCAL_FIXTURE_MARKER,
@@ -13,9 +9,6 @@ import {
 
 // The caller owns the local-runtime boundary and the database connection.
 export async function repairLocalMcpSeed(db, token, isInterrupted) {
-  assertDisposableDatabaseIdentity(
-    (await db.query(disposableDatabaseIdentityQuery)).rows
-  )
   try {
     await db.query('BEGIN ISOLATION LEVEL SERIALIZABLE')
     await db.query("SET LOCAL lock_timeout = '5s'")
@@ -41,7 +34,7 @@ export async function repairLocalMcpSeed(db, token, isInterrupted) {
         ownerId,
         courseId,
         chatMode,
-        isEnabled: false,
+        isEnabled: true,
         priority: 0,
         allowedTools: ['doc_query'],
         parameters: server.authType === 'bearer' ? LOCAL_SCOPE : {},
@@ -84,7 +77,7 @@ export async function repairLocalMcpSeed(db, token, isInterrupted) {
       )
       for (const config of restoredConfigs) {
         await db.query(
-          'INSERT INTO "ChatbotMCPConfig" (id, "chatbotId", "mcpServerId", "chatMode", "isEnabled", priority, "allowedTools", parameters, "updatedAt") VALUES ($1, $2, $3, $4, false, 0, $5::jsonb, $6::jsonb, NOW())',
+          'INSERT INTO "ChatbotMCPConfig" (id, "chatbotId", "mcpServerId", "chatMode", "isEnabled", priority, "allowedTools", parameters, "updatedAt") VALUES ($1, $2, $3, $4, true, 0, $5::jsonb, $6::jsonb, NOW())',
           [
             randomUUID(),
             LOCAL_CHATBOT_ID,
@@ -100,7 +93,7 @@ export async function repairLocalMcpSeed(db, token, isInterrupted) {
     assertLocalSeedOwnership(server, configs)
     if (isInterrupted()) throw new Error('Local MCP startup interrupted')
     await db.query(
-      'UPDATE "ChatbotMCPServer" SET "authType" = $1, "authSecret" = $2, parameters = $3::jsonb, "passChatbotId" = false, "updatedAt" = NOW() WHERE id = $4',
+      'UPDATE "ChatbotMCPServer" SET "authType" = $1, "authSecret" = $2, parameters = $3::jsonb, "updatedAt" = NOW() WHERE id = $4',
       [
         'bearer',
         encrypt(token),
