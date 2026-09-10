@@ -23,6 +23,7 @@ function fixture(overrides = {}) {
   }
   const receiptBytes = Buffer.from(JSON.stringify(receipt))
   return {
+    expectedWorkloads: ['backend', 'migrator'],
     candidateSha: 'a'.repeat(40),
     approvedSha: 'a'.repeat(40),
     receiptBytes,
@@ -77,4 +78,29 @@ test('rejects changed configuration, missing migrator and mutable image tags', (
       })
     )
   )
+})
+
+test('rejects an arbitrary artifact in place of the backend application', () => {
+  const input = fixture()
+  const receipt = JSON.parse(input.receiptBytes)
+  receipt.artifacts[0].workload = 'unrelated'
+  assert.throws(() => validateProductionCandidate(fixture(receipt)))
+})
+
+test('requires an independent complete workload inventory', () => {
+  assert.throws(() => validateProductionCandidate({
+    ...fixture(), expectedWorkloads: undefined,
+  }))
+  assert.throws(() => validateProductionCandidate({
+    ...fixture(), expectedWorkloads: ['backend', 'migrator', 'chat'],
+  }))
+  assert.throws(() => validateProductionCandidate({
+    ...fixture(), expectedWorkloads: ['backend', 'migrator', 'migrator'],
+  }))
+  const receipt = JSON.parse(fixture().receiptBytes)
+  receipt.artifacts.push({
+    workload: 'unexpected',
+    image: `ghcr.io/uzh-bf/klicker-uzh/chat-arm@sha256:${'e'.repeat(64)}`,
+  })
+  assert.throws(() => validateProductionCandidate(fixture(receipt)))
 })

@@ -35,3 +35,9 @@ Restore only the prior approved controller/source/values when both rendered work
 ## Candidate isolation specification
 
 Provisioning is not authorized. Candidate target must bind the exact maintenance SHA and production schema baseline, with dedicated database identity, Redis databases/instances, Hatchet tenant/task namespace and queues, storage account/container scope and outbound credentials. Disable real email/provider callbacks and paid dispatch. Use synthetic destructive suites separately from a protected production-derived upgrade rehearsal. Validate isolation before any release qualification; audit staging is unsuitable once schema advances.
+
+## Prepared source publication
+
+Maintenance PR #5881 at tested candidate 5b63ea881cabf4b7785e6f5bbfe49a976fa44f72; audit PR #5883 at 0fadf15c12c91a398a7422632915a43c3a40a6c0; trusted-CI PR #5882; infrastructure MR !557 at 33f58e76253a505a751e041127ecc5dfe8a794d8. Final documentation commits must be resolved to exact remote heads before any approval. All are drafts; none authorizes a shared merge. Audit tree equals maintenance and contains current staging ancestor. No published audit-candidate digest receipt exists, so staging promotion is not executable.
+
+Latest live invalidation: PRD worker ConfigMap is OutOfSync, although health is Healthy and all four general workers are ready. Ingestion stop remains unset. Reconcile this drift and refresh effective inputs before approval; no current desired/live equality is claimed. Trusted-CI published head is 8efc6509b7 (resolve full remote head before approval).

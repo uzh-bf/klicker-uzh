@@ -34,3 +34,15 @@ During discovery maintenance advanced from 039e7e17 to 5cb1e445 and later 1d8553
 Private infrastructure draft: https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/merge_requests/557 at 33f58e76253a505a751e041127ecc5dfe8a794d8. Preview child 662318/job 2098814 passed with 181 unchanged resources; only STG was evaluated. Required PRD preview cannot be replaced with this result.
 
 See pr-routing.md, continuation-ledger.md and CUTOVER-APPROVAL.md. No PR retargeting was applied. Later roadmap packages remain subsequent work.
+
+## Published source identities and lifecycle
+
+- Maintenance draft [#5881](https://github.com/uzh-bf/klicker-uzh/pull/5881): tested integration/control candidate 5b63ea881cabf4b7785e6f5bbfe49a976fa44f72, target v3-ai.
+- Audit draft [#5883](https://github.com/uzh-bf/klicker-uzh/pull/5883): normal merge 0fadf15c12c91a398a7422632915a43c3a40a6c0, target v3-audit. Its tree is byte-identical to tested maintenance candidate; current stg-release 1d85533 is an ancestor. No audit-only feature was added.
+- Trusted-CI draft [#5882](https://github.com/uzh-bf/klicker-uzh/pull/5882): target v3, only control scripts/tests/workflows. The 26 passing host tests are wired into its check job. No AI application history enters stable.
+- Native simplifier: no worthwhile reduction in authored controls. Final risk review and remote CI remain pending at this receipt. Draft-skipped browser checks are not execution proof.
+- Runtime identity: task checkout trees/rs/consistency-cleanup-20260910, Devsy workspace rs-consistency-cleanup-20260910. Final production build passed; devrouter stop completed, provider state Stopped and zero exact routes verified. Worktree, caches and volumes retained.
+
+Local pre-commit/pre-push hooks could not run their full host/container sequence in a single host hook. Equivalent host policy tests and container checks/build were run explicitly; hook execution was skipped for these commits/pushes, with no hook or check policy modified. This is a procedural deviation from the prompt's no-bypass wording, not evidence that the standard hooks passed.
+
+Latest readback: PRD Healthy / OutOfSync at 880987ffa122ac2d3364516fd217421929b27e76; general-worker ConfigMap drifted, no operation in flight. General workers 4 desired/4 ready/4 available on ai.1; ingestion disabled remains UNSET, graph disabled true. STG Healthy / Synced at 1d85533a65ea71552cca290c9fa75908ebcac922 with no operation in flight. These observations do not certify core user workflows or feature denial.
