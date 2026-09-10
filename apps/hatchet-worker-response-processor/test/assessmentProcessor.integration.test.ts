@@ -7,7 +7,7 @@ import {
   dispatchAssessmentAuditOutbox,
   PrismaAuditOutboxRepository,
 } from '@klicker-uzh/audit'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import type {
   AssessmentResponseCommand,
   LiveQuizResponseInput,
@@ -43,6 +43,7 @@ describe.runIf(runDatabaseTests)(
     let instanceId: number
 
     beforeAll(async () => {
+      await requireDisposableDatabase(prisma)
       await prisma.assessmentAuditOutboxEvent.deleteMany({
         where: { liveQuizId: LIVE_QUIZ_ID },
       })
@@ -144,6 +145,7 @@ describe.runIf(runDatabaseTests)(
     })
 
     beforeEach(async () => {
+      await requireDisposableDatabase(prisma)
       await prisma.assessmentAuditScope.deleteMany({
         where: { liveQuizId: LIVE_QUIZ_ID, lifecycleEpoch: { gt: 1 } },
       })
@@ -161,6 +163,7 @@ describe.runIf(runDatabaseTests)(
     })
 
     afterAll(async () => {
+      await requireDisposableDatabase(prisma)
       await prisma.assessmentAuditOutboxEvent.deleteMany({
         where: { liveQuizId: LIVE_QUIZ_ID },
       })

@@ -1,27 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
   type AuditMonitorCounts,
   PrismaAuditMonitorRepository,
 } from '../src/index.js'
-
-function assertLocalDatabase(): void {
-  const value = process.env.DATABASE_URL
-  if (value === undefined) {
-    throw new Error('DATABASE_URL is required for audit integration tests')
-  }
-  const host = new URL(value).hostname
-  const isLoopback = ['localhost', '127.0.0.1', '[::1]'].includes(host)
-  const isDevrouterDatabase =
-    host === 'postgres' &&
-    process.env.DEVROUTER_WORKSPACE !== undefined &&
-    process.env.NODE_ENV !== 'production'
-  if (!isLoopback && !isDevrouterDatabase) {
-    throw new Error(
-      `Refusing audit integration tests against database host ${host}`
-    )
-  }
-}
 
 type EventInput = {
   liveQuizId: string
@@ -80,8 +62,8 @@ async function createScope(
   })
 }
 
-beforeAll(() => {
-  assertLocalDatabase()
+beforeAll(async () => {
+  await requireDisposableDatabase(prisma)
 })
 
 afterAll(async () => {

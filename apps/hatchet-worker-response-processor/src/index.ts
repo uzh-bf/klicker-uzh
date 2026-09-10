@@ -12,14 +12,14 @@ import type {
   AssessmentResponseCommand,
   LiveQuizResponseInput,
 } from '@klicker-uzh/types'
-import { aggregateAssessmentResponses } from './processors/assessmentAggregation.js'
-import { processAssessmentResponse } from './processors/assessmentProcessor.js'
-import { processResponseMessage } from './processors/processor.js'
 import {
   resolveResponseProcessorMode,
   resolveResponseProcessorWorkerMode,
   selectResponseProcessorWorkflows,
 } from './mode.js'
+import { aggregateAssessmentResponses } from './processors/assessmentAggregation.js'
+import { processAssessmentResponse } from './processors/assessmentProcessor.js'
+import { processResponseMessage } from './processors/processor.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',

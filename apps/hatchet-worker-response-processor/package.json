@@ -41,11 +41,11 @@
     "dev:offline": "pnpm run dev",
     "dev:run": "nodemon -w dist/ --exec 'node --env-file .env dist/index.js'",
     "dev:test": "cross-env NODE_ENV=test ASSESSMENT_MODE=false tsx --env-file .env src/index.ts",
-    "dev:watch": "run-p --npm-path pnpm dev:build dev:run",
     "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts",
+    "dev:watch": "run-p --npm-path pnpm dev:build dev:run",
     "start:test": "node --env-file .env dist/index.js",
     "test": "vitest run",
-    "test:run": "tsx --test test/*.test.ts"
+    "test:run": "tsx --test test/mode.test.ts"
   },
   "engines": {
     "node": "=24"
