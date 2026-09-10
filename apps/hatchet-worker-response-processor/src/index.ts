@@ -10,16 +10,16 @@ import {
 } from '@klicker-uzh/hatchet'
 import { logger } from './logger.js'
 import {
+  resolveResponseProcessorMode,
+  resolveResponseProcessorWorkerMode,
+  selectResponseProcessorWorkflows,
+} from './mode.js'
+import {
   type AssessmentResponseMessage,
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
-import {
-  resolveResponseProcessorMode,
-  resolveResponseProcessorWorkerMode,
-  selectResponseProcessorWorkflows,
-} from './mode.js'
 
 const hatchetClient = createHatchetClient({ logger })
 
@@ -140,10 +140,16 @@ async function main() {
     workerFactory: (name, options) => hatchetClient.worker(name, options),
   })
 
-  logger.info({ event: 'hatchet.worker.starting_jobs' }, 'Starting response processing')
+  logger.info(
+    { event: 'hatchet.worker.starting_jobs' },
+    'Starting response processing'
+  )
   await runtime.start()
 
-  logger.info({ event: 'hatchet.worker.stopped', mode }, 'Response processor worker stopped')
+  logger.info(
+    { event: 'hatchet.worker.stopped', mode },
+    'Response processor worker stopped'
+  )
   // The drain is complete here, but the Redis and Prisma clients opened above
   // keep the event loop alive and node runs as PID 1, so exit explicitly
   // instead of waiting for the kubelet's SIGKILL at the end of the grace period.

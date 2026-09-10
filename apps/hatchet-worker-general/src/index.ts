@@ -4,9 +4,9 @@ import EventEmitter from 'node:events'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
 import {
+  createHatchetClient,
   createHatchetWorkerRuntime,
   getKBGraphTerminalResult,
-  createHatchetClient,
   prepareHatchetTasks,
   resolveWorkerRuntimeConfig,
 } from '@klicker-uzh/hatchet'

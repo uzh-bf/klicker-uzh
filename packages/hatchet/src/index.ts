@@ -17,6 +17,12 @@ import type {
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import {
+  type AuditLogInput,
+  type AuditLogMessage,
+  getAuditLogFields,
+  isAuditLogMessage,
+} from './auditLogging.js'
+import {
   dispatchKBGraphBuild,
   markKBGraphBuildDispatchFailed,
   monitorActiveKBGraphBuilds,
@@ -29,12 +35,6 @@ import {
   retainFailedKBDeletionDispatch,
 } from './kbIngestion.js'
 import { maintainKBResources } from './kbMaintenance.js'
-import {
-  type AuditLogInput,
-  type AuditLogMessage,
-  getAuditLogFields,
-  isAuditLogMessage,
-} from './auditLogging.js'
 import { type LoggableHatchetInput, withHatchetTaskLogging } from './logging.js'
 
 export type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
@@ -45,9 +45,8 @@ export * from './kbGraphIngestionApi.js'
 export * from './kbIngestion.js'
 export * from './kbIngestionApi.js'
 export * from './kbMaintenance.js'
-export * from './worker-runtime.js'
-
 export * from './logging.js'
+export * from './worker-runtime.js'
 export function prepareHatchetTasks({
   hatchet,
   pubSub,
