@@ -218,7 +218,12 @@ function refGithub(
 }
 
 test('requires the trusted workflow to resolve the selected source branch', () => {
-  assert.equal(getSourceBranch('v3'), 'v3')
+  assert.equal(getSourceBranch('v3-audit'), 'v3-audit')
+  assert.throws(() => getSourceBranch(''), /approved push triggers/)
+  assert.throws(
+    () => getSourceBranch('v3-audit/unsafe'),
+    /approved push triggers/
+  )
   assert.throws(() => getSourceBranch(), /resolved by the trusted workflow/)
   assert.throws(() => getSourceBranch('main'), /approved push triggers/)
 })

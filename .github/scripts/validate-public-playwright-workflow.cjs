@@ -6,8 +6,10 @@ const EXECUTION_GROUP =
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
 const OPEN_EVENT =
   "github.event_name != 'pull_request' || github.event.action != 'closed'"
-const CLOSED_EVENT =
-  "github.event_name == 'pull_request' && github.event.action == 'closed'"
+const EXECUTION_EVENT =
+  "github.event_name != 'pull_request' || (github.event.action != 'closed' && github.event.pull_request.draft != true)"
+const CANCEL_EVENT =
+  "github.event_name == 'pull_request' && (github.event.action == 'converted_to_draft' || github.event.action == 'closed')"
 
 function hasExactPermissions(actual, expected) {
   if (actual === null || actual === undefined || typeof actual !== 'object')
@@ -31,10 +33,11 @@ function validateCallerLifecycle(caller) {
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
+    !caller.on.pull_request.types.includes('converted_to_draft') ||
     caller.concurrency !== undefined
   ) {
     issues.push(
-      'caller must preserve workflow identity and handle closed PRs without workflow concurrency'
+      'caller must preserve workflow identity and handle closed and converted-to-draft PRs without workflow concurrency'
     )
   }
   for (const [name, job] of Object.entries(jobs)) {
@@ -49,8 +52,8 @@ function validateCallerLifecycle(caller) {
       issues.push(`${name} must remain outside execution concurrency`)
     }
   }
-  if (execution?.if !== OPEN_EVENT) {
-    issues.push('execution must exclude closed PR events')
+  if (execution?.if !== EXECUTION_EVENT) {
+    issues.push('execution must exclude closed and draft PR events')
   }
   const status = jobs['test-playwright-status']
   const expectedStatusIf = `always() && !cancelled() && needs.test-playwright-execution.result != 'cancelled' && (${OPEN_EVENT})`
@@ -98,7 +101,7 @@ function validateCallerLifecycle(caller) {
     issues.push('queue telemetry must be part of the status job')
   }
   if (
-    close?.if !== CLOSED_EVENT ||
+    close?.if !== CANCEL_EVENT ||
     close.needs !== undefined ||
     close['runs-on'] !== 'ubuntu-latest' ||
     close['timeout-minutes'] !== 5 ||
@@ -111,7 +114,7 @@ function validateCallerLifecycle(caller) {
     close.steps[0].run !== ':'
   ) {
     issues.push(
-      'close cancellation must be an independent permission-free hosted no-op'
+      'draft conversion and close cancellation must be an independent permission-free hosted no-op'
     )
   }
   return issues
