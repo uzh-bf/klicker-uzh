@@ -993,11 +993,10 @@ export async function getKbChatbotBindings(
       id: true,
       name: true,
       knowledgeBases: {
-        where: { isEnabled: true },
+        where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
           kb: { select: { id: true, name: true } },
         },
-        take: 1,
       },
     },
     orderBy: { name: 'asc' },
@@ -1006,8 +1005,15 @@ export async function getKbChatbotBindings(
   return chatbots.map((chatbot) => ({
     chatbotId: chatbot.id,
     chatbotName: chatbot.name,
-    enabledKbId: chatbot.knowledgeBases[0]?.kb.id ?? null,
-    enabledKbName: chatbot.knowledgeBases[0]?.kb.name ?? null,
+    enabledKbs: chatbot.knowledgeBases.map(({ kb }) => kb),
+    enabledKbId:
+      chatbot.knowledgeBases.length === 1
+        ? (chatbot.knowledgeBases[0]?.kb.id ?? null)
+        : null,
+    enabledKbName:
+      chatbot.knowledgeBases.length === 1
+        ? (chatbot.knowledgeBases[0]?.kb.name ?? null)
+        : null,
   }))
 }
 
@@ -1077,6 +1083,7 @@ export async function attachKbToChatbot(
       chatbotName: chatbot.name,
       enabledKbId: kbId,
       enabledKbName: kb.name,
+      enabledKbs: [{ id: kbId, name: kb.name }],
     }
   })
 }

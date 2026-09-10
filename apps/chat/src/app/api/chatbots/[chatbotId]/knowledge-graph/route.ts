@@ -2,6 +2,7 @@ import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatbotKnowledgeGraphReadRequest,
   isKnowledgeGraphNotPublishedError,
+  KnowledgeGraphSelectionRequiredError,
   readPublishedChatbotKnowledgeGraph,
 } from '@/src/lib/server/knowledgeGraph'
 import { NextRequest, NextResponse } from 'next/server'
@@ -65,6 +66,14 @@ export async function GET(
     return invalidRequestResponse()
   }
 
+  const kbId = z
+    .string()
+    .uuid()
+    .optional()
+    .safeParse(req.nextUrl.searchParams.get('kbId') ?? undefined)
+  if (!kbId.success) return invalidRequestResponse()
+  if (kbId.data !== undefined) readRequest.kbId = kbId.data
+
   try {
     const response = await readPublishedChatbotKnowledgeGraph(
       chatbotId,
@@ -72,6 +81,12 @@ export async function GET(
     )
     return NextResponse.json(response)
   } catch (error) {
+    if (error instanceof KnowledgeGraphSelectionRequiredError) {
+      return NextResponse.json(
+        { code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED', choices: error.choices },
+        { status: 409 }
+      )
+    }
     if (isKnowledgeGraphNotPublishedError(error)) {
       return NextResponse.json(
         {

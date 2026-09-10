@@ -12,12 +12,16 @@ import {
   searchKnowledgeGraph,
 } from './knowledgeGraphRuntime'
 
-export { isKnowledgeGraphNotPublishedError } from './knowledgeGraphRuntime'
+export {
+  isKnowledgeGraphNotPublishedError,
+  KnowledgeGraphSelectionRequiredError,
+} from './knowledgeGraphRuntime'
 
-export type ChatbotKnowledgeGraphReadRequest =
+export type ChatbotKnowledgeGraphReadRequest = { kbId?: string } & (
   | { operation: 'overview' }
   | { operation: 'search'; query: string }
   | { operation: 'neighbors'; nodeId: string }
+)
 
 function browserSafeSourceReference(
   source: KnowledgeGraphSourceReference
@@ -72,7 +76,8 @@ export async function readPublishedChatbotKnowledgeGraph(
 ): Promise<KnowledgeGraphResponse> {
   const publication = await getPublishedKnowledgeGraphForChatbot(
     prisma,
-    chatbotId
+    chatbotId,
+    request.kbId
   )
 
   const response =

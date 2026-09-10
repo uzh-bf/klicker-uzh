@@ -3,7 +3,7 @@ import {
   ChatbotStatus,
   type LocaleType,
   MSaveChatbotRevisionDocument,
-  QGetChatbotsInfoWithAuthoringRevisionsDocument,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import {
@@ -594,8 +594,7 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query:
-                                QGetChatbotsInfoWithAuthoringRevisionsDocument,
+                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -762,8 +761,7 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query:
-                                QGetChatbotsInfoWithAuthoringRevisionsDocument,
+                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
                             },
                           ],
                           awaitRefetchQueries: true,
@@ -1082,8 +1080,7 @@ function ChatbotAuthoring({
                           },
                           refetchQueries: [
                             {
-                              query:
-                                QGetChatbotsInfoWithAuthoringRevisionsDocument,
+                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
                             },
                           ],
                           awaitRefetchQueries: true,

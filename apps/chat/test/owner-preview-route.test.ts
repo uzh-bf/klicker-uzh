@@ -102,6 +102,10 @@ const baseModel = {
   usesResponsesApi: true,
 }
 
+const kbId = '11111111-1111-4111-8111-111111111111'
+const secondKbId = '22222222-2222-4222-8222-222222222222'
+const kbParameters = { kb_id: kbId, required: true, toolAlias: 'doc_query' }
+
 const defaultStandardModeConfig = {
   courseName: null,
   explainerEnabled: false,
@@ -120,13 +124,13 @@ function createChatbot(
     allowedReasoningEffortsByModel: null,
     course: { displayName: 'Test Course' },
     id: 'chatbot-id',
-    knowledgeBases: [{ kbId: 'kb-id' }],
+    knowledgeBases: [{ kbId }],
     mcpConfigurations: [
       {
         allowedTools: ['*', 'delete_all'],
         chatMode: 'tutor',
         isEnabled: true,
-        parameters: {},
+        parameters: kbParameters,
         priority: 1,
         mcpServer: {
           authSecret: null,
@@ -267,6 +271,69 @@ describe('POST owner preview chat', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  it.each(
+    [[], [kbId], [secondKbId, kbId]].map((attachedIds) => ({ attachedIds }))
+  )('uses the complete validated attachment scope %j', async ({
+    attachedIds,
+  }) => {
+    const chatbot = createChatbot()
+    const configurations = chatbot.mcpConfigurations as Record<
+      string,
+      unknown
+    >[]
+    mocks.findChatbot.mockResolvedValue({
+      ...chatbot,
+      knowledgeBases: attachedIds.map((id) => ({ kbId: id })),
+      mcpConfigurations:
+        attachedIds.length === 0
+          ? []
+          : [
+              {
+                ...configurations[0],
+                parameters: {
+                  required: true,
+                  toolAlias: 'doc_query',
+                  ...(attachedIds.length === 1
+                    ? { kb_id: attachedIds[0] }
+                    : { kb_ids: attachedIds }),
+                },
+              },
+            ],
+    })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({
+        kbIds: attachedIds.length === 0 ? undefined : [...attachedIds].sort(),
+      })
+    )
+    expect(mocks.createChatThread).not.toHaveBeenCalled()
+    expect(mocks.createChatMessage).not.toHaveBeenCalled()
+  })
+
+  it.each(
+    [[], [secondKbId], [kbId, secondKbId]].map((attachedIds) => ({
+      attachedIds,
+    }))
+  )('rejects stale configured scope for attachments %j before tool discovery', async ({
+    attachedIds,
+  }) => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({
+        knowledgeBases: attachedIds.map((id) => ({ kbId: id })),
+      })
+    )
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   it('streams with the saved model and exposes only doc_query from the KB server', async () => {
     const response = await POST(request(), {
       params: Promise.resolve({ chatbotId: 'chatbot-id' }),
@@ -286,7 +353,7 @@ describe('POST owner preview chat', () => {
       expect.objectContaining({
         authMode: 'account',
         chatbotId: 'chatbot-id',
-        kbIds: ['kb-id'],
+        kbIds: [kbId],
       })
     )
     expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
@@ -493,7 +560,7 @@ describe('POST owner preview chat', () => {
       allowedTools: ['doc_query'],
       chatMode: 'tutor',
       isEnabled: true,
-      parameters: {},
+      parameters: kbParameters,
       priority: 1,
       mcpServer: {
         authSecret: null,
@@ -541,7 +608,7 @@ describe('POST owner preview chat', () => {
       allowedTools: ['doc_query'],
       chatMode: 'tutor',
       isEnabled: true,
-      parameters: {},
+      parameters: kbParameters,
       priority: 1,
       mcpServer: {
         authSecret: null,

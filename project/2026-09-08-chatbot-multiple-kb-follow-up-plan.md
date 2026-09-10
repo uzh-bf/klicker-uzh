@@ -325,6 +325,90 @@ Earlier dependency and checkout observations above are historical.
 Main owns integration and delivery. A bounded read-only Luna executor maps the
 reader consumers while main prepares verification. OpenCodex transport health
 passed but readiness failed; Luna is the trusted continuity route.
-Source changes and tests have not yet run. The next action is reader
-compatibility implementation, followed by checks and independent reviews.
+Main drafted the preview route and its existing test suite: all enabled,
+undeleted owner attachments are loaded, the shared scope resolver validates
+configuration, and mismatched attachment sets fail before discovery. Synthetic
+zero/one/many and stale-scope cases are added but have not run. Initial GraphQL
+plural projections and newly named read operations are also drafted. Existing
+operation documents remain unchanged for persisted-query compatibility.
+The bounded Luna UI executor completed Manage plural query/type/refetch adoption
+and the KB reverse-panel membership projection. Main inspected its diff and
+preserved the existing link test hooks. Singleton replacement writes and their
+warning remain unchanged. Main also drafted explicit graph selection in the
+server, route and client, including eligible-choice errors, selection-bound
+requests, viewer resets and stale-error suppression. Synthetic route/client
+tests cover valid, missing, foreign and detached choices; these have not run.
+Generated SDL, formatting, checks, browser proof and reviews remain unfinished.
+Source remains uncommitted until verification is possible.
 Human foundation review remains required before additive writes.
+
+September 10 continuation: fresh fetch leaves this branch one plan commit ahead
+of `origin/v3-ai` and zero behind (181 ahead/one behind remote default `v3`,
+which is not this layer's target). `git diff --check` passes. The earlier
+read-only mapper has not returned usable evidence; the settled UI subset used
+a separate trusted executor while main retained the cross-system graph and
+preview seams. No source commit, push, migration, model request or PR exists yet.
+
+Verification environment: startup with `chat,manage` failed because the
+configured Azurite loopback port 10003 is occupied. The existing
+`KB_GRAPH_BLOB_HOST_PORT=10013` override avoids that port, but admission now
+refuses both ensure and repair while lifecycle state is `stopping` with
+desired `stopped-by-user`. Two exact-workspace stop attempts returned
+`Workspace workloads remain running after stop`. No raw Docker workaround,
+data deletion, or unrelated runtime mutation was performed. Owned Redis,
+Postgres and Hatchet services remained running at the last status read;
+the primary app and Azurite were stopped, and no app routes were active.
+Runtime identity: `rs-chatbot-kb-readers`, Compose project `default-rs-73efc`.
+A further canonical exact-path stop failed with the same workload error.
+Fresh workspace inventory still shows the exact owner and zero routes; this
+does not establish stopped services. Values-free failure evidence was sent to
+the existing Devrouter task for a supported recovery recommendation, not runtime
+mutation or deletion. Container builds, codegen, integration tests and browser
+acceptance are blocked pending that recovery. Do not bypass lifecycle state.
+The plan-only commit is `0631b05b82`; generated Husky hooks were absent before
+dependency bootstrap, so that commit has diff validation but no hook-run proof.
+
+September 10 verification: the workspace now accepts canonical Devrouter exec
+commands and serves the routed authentication page. Earlier recovery details
+are not re-certified by these checks. No paid model calls were made.
+Codegen succeeded. The focused Chat suite passed 75 tests and the GraphQL
+knowledge suite passed 63 tests. Chat, Manage and GraphQL package typechecks
+passed, as did all seven lint tasks. Root typechecking completed 39 of 40 tasks;
+the remaining schema guard reports only this layer's intended unstaged SDL.
+The 68 host-only CI contract tests passed on the host; running them inside the
+container fails because Devrouter is intentionally host-owned.
+The integration suite removes disposable test accounts during cleanup. Restored
+the local seed fixtures without a database reset before browser verification.
+Changed TypeScript files were formatted with repository Biome. Browser captures,
+full build, committed slice reviews and draft foundation delivery remain pending.
+
+September 10 browser/build continuation: the full container root build passed
+(26 successful tasks, 17 cached; 2m29s). Delegated synthetic lecturer login,
+Knowledge-tab attachment rendering, navigation to the KB, and reverse-panel
+membership passed in the browser. Local screenshots and limitations are in
+`_local/screenshots/multiple-kb-readers/manifest.json`. Graph selection and
+German coverage remain pending. A Luna executor owns the additional mocked
+zero/one/many GraphQL reader tests; its resumed run is still in progress.
+The repository's shared Git configuration changed to `core.bare=true` during
+verification. Ordinary worktree Git commands now fail; explicitly supplying
+this worktree's git-dir and work-tree permits read-only diff validation.
+Shared configuration was not changed by this task. Source remains uncommitted;
+slice reviews and draft foundation PR remain outstanding.
+
+The reader-test executor returned `DONE_WITH_CONCERNS`: the new
+`packages/graphql/test/chatbotKnowledgeBaseReaders.test.ts` covers zero, one
+and many projected attachments, legacy null behavior and query filtering. Its
+mock rejects relation truncation without removing the singleton index.
+Biome and explicit-worktree diff checks passed; Vitest remains unrun because
+Devrouter rejects the checkout after the shared Git configuration change.
+The same rejection prevents the canonical exact-path runtime stop. The browser
+session was closed; runtime shutdown is unverified. Resolve shared Git ownership
+before configuration changes, then run the focused test and resume delivery.
+
+September 10 recovery: the user explicitly authorized restoring `core.bare=false`.
+Normal Git and Devrouter commands now work. All three mocked reader tests passed
+in the container (Vitest 3.2.4), covering both projections with zero/one/many
+attachments. Fresh target `039e7e1753` adds only Langfuse service-name source and
+tests; it does not overlap this layer. Full-build evidence above remains valid
+for this unchanged reader implementation. Source review and draft publication
+are the next delivery steps; human foundation approval is still outstanding.
