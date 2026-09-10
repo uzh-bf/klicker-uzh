@@ -3869,3 +3869,116 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     await expect(page.getByTestId('chat-message-error')).toHaveCount(0)
   })
 })
+
+/**
+ * The graph workspace keeps one active data source per selected knowledge
+ * base. A response for a superseded selection must never reset the choice the
+ * participant made afterwards. These tests drive that race through the browser
+ * because it depends on render and layout-effect ordering inside the workspace.
+ */
+test.describe('Chatbot Knowledge Graph Selection', () => {
+  let participantId: string
+
+  const GRAPH_ALPHA = '11111111-1111-4111-8111-111111111111'
+  const GRAPH_BETA = '22222222-2222-4222-8222-222222222222'
+  const BETA_NODE = 'Beta concept node'
+
+  const graphChoices = [
+    { id: GRAPH_ALPHA, name: 'Graph Alpha' },
+    { id: GRAPH_BETA, name: 'Graph Beta' },
+  ]
+
+  const selectionRequired = () => ({
+    code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED',
+    choices: graphChoices,
+  })
+
+  const publishedGraph = (kbId: string, displayLabel: string) => ({
+    kbId,
+    buildId: `${kbId}-build`,
+    isStale: false,
+    truncated: false,
+    nodes: [
+      {
+        id: `${kbId}-node`,
+        labels: ['Concept'],
+        kind: 'concept',
+        displayLabel,
+        degree: 1,
+        sourceReferences: [
+          { resourceId: `${kbId}-resource`, title: 'Synthetic source' },
+        ],
+      },
+    ],
+    edges: [],
+  })
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  test('A delayed response for a superseded graph keeps the newer selection', async ({
+    page,
+  }) => {
+    await page.route(
+      `**/api/chatbots/${CHATBOT_ID}/knowledge-graph*`,
+      async (route) => {
+        const kbId = new URL(route.request().url()).searchParams.get('kbId')
+
+        // Two attached graphs and no selection yet -> the client must ask.
+        if (kbId === null) {
+          await route.fulfill({ status: 409, json: selectionRequired() })
+          return
+        }
+
+        // Superseded request: resolves late, after the participant moved on.
+        if (kbId === GRAPH_ALPHA) {
+          await new Promise((resolve) => setTimeout(resolve, 1_500))
+          await route.fulfill({ status: 409, json: selectionRequired() })
+          return
+        }
+
+        await route.fulfill({
+          status: 200,
+          json: publishedGraph(GRAPH_BETA, BETA_NODE),
+        })
+      }
+    )
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const choice = page.getByTestId('chat-knowledge-graph-choice')
+    await expect(choice).toBeVisible()
+
+    await selectOption(
+      page,
+      '[data-cy="chat-knowledge-graph-choice"]',
+      'Graph Alpha'
+    )
+    await selectOption(
+      page,
+      '[data-cy="chat-knowledge-graph-choice"]',
+      'Graph Beta'
+    )
+
+    await expect(choice).toContainText('Graph Beta')
+    await expect(
+      page.getByTestId('knowledge-graph-loaded-nodes')
+    ).toContainText(BETA_NODE)
+
+    // Wait past the superseded response so a late reset would already have landed.
+    await page.waitForTimeout(2_500)
+
+    await expect(choice).toContainText('Graph Beta')
+    await expect(page.getByTestId('knowledge-graph-viewer')).toBeVisible()
+    await expect(
+      page.getByTestId('knowledge-graph-loaded-nodes')
+    ).toContainText(BETA_NODE)
+  })
+})

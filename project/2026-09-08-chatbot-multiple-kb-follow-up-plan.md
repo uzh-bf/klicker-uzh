@@ -412,3 +412,105 @@ attachments. Fresh target `039e7e1753` adds only Langfuse service-name source an
 tests; it does not overlap this layer. Full-build evidence above remains valid
 for this unchanged reader implementation. Source review and draft publication
 are the next delivery steps; human foundation approval is still outstanding.
+
+Reader foundation is published as draft
+[PR #5879](https://github.com/uzh-bf/klicker-uzh/pull/5879), remote head
+`d5146fa0a3`. The simplifier's single-response-parse improvement passed all
+13 graph-client tests and Biome. Slice risk review is running after its missing
+manifest was resent; final review and multiple-graph browser proof remain pending.
+The complete pre-integration checks passed: 40 container tasks and 102 host
+contract tests, with staged secret scanning. Hooks were replaced by equivalent
+checks across the required host/container boundary.
+
+Local merge `3bc1607138` integrates `v3-ai` at `5cb1e445df` for its frontend
+dependency upgrade. Frozen-lockfile installation passed. The integrated full
+build is not green: PWA and Manage generated dev/production validators collide;
+Manage also reports TS5097 for existing test imports. Only stale PWA generated
+dev types were reversibly moved to `/tmp/kb-readers-pwa-dev-types-20260910` in
+the container. No upstream source/config repair has been made. Do not reuse
+the earlier full-build pass as proof for this new dependency state. The local
+merge has not yet been pushed. Browser proof owner remains the resumed reader
+executor; the main session owns integration repair and delivery.
+
+September 10 recovered continuation: `core.bare=false` is verified. Current
+`v3-ai` supplied the exact production TypeScript import fix at `1d85533a65`.
+Merged that concrete build dependency without rebase into `9f41ecb7ff` and
+pushed the head to the existing draft foundation PR. Unrelated primary-checkout
+changes remain untouched. The full integrated build now passes all 26 tasks
+(22 cached, 1m18s). Stale generated Manage dev types were reversibly moved to
+`/tmp/kb-readers-manage-dev-types-20260910` inside the container. All 75 focused
+Chat graph/preview tests and three GraphQL plural-reader tests pass on the
+integrated dependencies. Exact-head CI has started; it is not yet terminal.
+
+Slice review completed with one accepted verification gap: directly prove that
+an earlier delayed graph-selection response cannot override a newer selection.
+Report: `_local/reviews/2026-09-10-multiple-kb-readers-slice-review.md`.
+The existing `reader_projection_tests` executor still owns browser graph proof;
+main owns integrated checks and final delivery. Final review and human
+foundation approval remain pending. No additive writer or migration has started.
+
+The integrated package check also passed all 40 tasks, and lint passed all seven
+tasks. The first remote failure is OpenCodeReview run `34492672357`: its provider
+returns HTTP 402, all 22 file requests fail, and zero token/tool usage is reported.
+This is not a completed review and was not retried. The existing slice reviewer
+is checking a remote claim about tool-free preview behavior before any scope
+validation change. The query-prefix comment also remains undispositioned.
+
+The same slice reviewer rejected the preview finding: optional managed KB rows
+are invalid under the shared scope contract; genuinely absent KB configuration
+remains tool-free in both routes. Preserve this validation rather than adding
+a preview-only fallback. The browser executor returned BLOCKED after a Zen CUA
+inspection hung for 734.5 seconds. No browser journey ran, no files changed and
+no shell process was left. Main must resume graph-selection/stale-response proof
+through the repository's host engineering-browser route; no replacement child
+is needed. Browser screenshots currently cover only earlier singleton flows.
+
+Next goal continuation verified host agent-browser starts successfully and
+Devrouter resumes the exact chat/manage runtime. The delegated-login page is
+reachable. Auto-review rejected entry of the repository's public synthetic
+lecturer credentials because command arguments persist. No login workaround
+was attempted. Authenticated browser proof now needs an approved fixture-login
+method or human login. The same executor owns offline regression-test seam
+selection only; no application or database changes are authorized by that task.
+
+Offline seam assessment returned NEEDS_CONTEXT with no changed files. There is
+no installed React component-test layer or existing graph-workspace Playwright
+journey. Use the authenticated full Chat seam in `playwright/util/chat.ts` for
+the remaining test after the login boundary is resolved; do not introduce a new
+component-testing dependency. The worker is terminal and main owns continuation.
+The login restriction has persisted across three goal continuations. Local
+runtime and browser were stopped, and no credential workaround was attempted.
+Required next input: authorize the public local-only fixture login or provide
+human-authenticated browser access. External OpenCodeReview also needs its HTTP
+402 resolved. Final review and human foundation approval still precede writers.
+
+September 10 slice-proof continuation: the accepted verification gap now has a
+deterministic browser test. `playwright/tests/Y-chat.spec.ts` gained a
+"Chatbot Knowledge Graph Selection" suite. The initial request offers two
+graphs; the request for the first choice resolves 1.5s late with a second
+selection-required response while the participant selects the second choice;
+the test then asserts the choice text, the loaded node label and the mounted
+viewer all survive that late response. It renders the workspace from the
+`/{id}/graph` route alone and intercepts every graph response, so no knowledge
+base, graph build or FalkorDB instance is required. Assertions were checked
+against the component and viewer source: the workspace drops the viewer when it
+clears a selection, and the loaded-nodes list renders a node label only after a
+successful load, so both assertions discriminate a stale reset.
+
+Local verification of that test is not yet possible in this worktree: root
+`node_modules` is empty, the devrouter runtime recorded for
+`rs-chatbot-kb-readers` is stopped, and the sandbox denies Git metadata writes,
+so the commit hook's `check:all` cannot run here. Prettier was run directly on
+the spec. The Playwright suite in CI is the verification of record for this
+test.
+
+Exact-head state at `9f41ecb7ff`: every check passes except
+`test-playwright-execution / test-playwright-hosted (8, 8)`, which fails only
+in `tests/V-template.spec.ts` on a student password-login timeout with a
+sibling test marked flaky. That file and the PWA are outside this diff, which
+touches only chat, manage, GraphQL, i18n and kb-management. The failed job
+cannot be retried while run `34492674396` remains in progress; its
+`test-playwright-status` gate has been queued on `ubuntu-latest`. The separate
+`ocr-review` failure is the external provider's HTTP 402 and needs billing or
+an owner decision. The repository has no self-hosted runners registered, and
+many other branches are competing for hosted runners.
