@@ -161,6 +161,30 @@ fi
 # read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
 # selection drops it, stop the exact owned process instead of leaving it stale.
 if [ "$PROFILE_WANTS_MCP" = yes ]; then
+  export CHAT_COURSE_IMAGE_STORE_PATH="$ROOT/apps/chat/scripts/fixtures/course-images"
+  if [ -f "$ROOT/.devcontainer/.runtime/course-image-llm" ]; then
+    # Bounded direct-model smoke; avoid Auto's extra classifier requests.
+    export CHAT_PRIMARY_MODEL_ID=gpt-4.1
+    export CHAT_FALLBACK_MODEL_ID=gpt-5.6-luna
+    export CHAT_MODEL_REGISTRY_JSON='[{"id":"auto","deploymentId":"auto-router","name":"Auto Mode","fallback":false,"supportsReasoning":false,"usesResponsesApi":true,"maxOutputTokens":512,"usageClass":"ADVANCED","cost":{"input":0.2,"output":1.2}},{"id":"gpt-5.6-luna","deploymentId":"gpt-5.6-luna","name":"GPT-5.6 Luna","fallback":true,"supportsReasoning":true,"usesResponsesApi":true,"supportedReasoningEfforts":["low","medium","high","xhigh"],"maxOutputTokens":512,"usageClass":"BASE","cost":{"input":0.2,"output":1.2}},{"id":"gpt-4.1","deploymentId":"gpt-4.1","name":"GPT-4.1","fallback":false,"supportsReasoning":false,"usesResponsesApi":false,"maxOutputTokens":512,"usageClass":"ADVANCED","cost":{"input":2,"output":8}}]'
+  fi
+  # Private material requires a separate explicit opt-in for real-model use.
+  if [ -f "$ROOT/.devcontainer/.runtime/course-image-llm" ] && \
+    [ -f "$ROOT/.devcontainer/.runtime/course-image-llm-private" ]; then
+    export CHAT_COURSE_IMAGE_STORE_PATH="$(cat "$ROOT/.devcontainer/.runtime/course-image-private-store")"
+    export LOCAL_COURSE_QUERY_URL=http://host.docker.internal:28518/query
+  fi
+  if [ -f "$ROOT/.devcontainer/.runtime/course-image-demo" ] && \
+    [ ! -f "$ROOT/.devcontainer/.runtime/course-image-llm" ]; then
+    export LOCAL_COURSE_IMAGE_DEMO=1
+    if [ -f "$ROOT/.devcontainer/.runtime/course-image-private-store" ]; then
+      export CHAT_COURSE_IMAGE_STORE_PATH="$(cat "$ROOT/.devcontainer/.runtime/course-image-private-store")"
+      export LOCAL_COURSE_QUERY_URL=http://host.docker.internal:28518/query
+    fi
+    export OPENAI_BASE_URL=http://127.0.0.1:1419/v1
+    export CHAT_MODEL_REGISTRY_JSON='[{"id":"auto","deploymentId":"auto-router","name":"Image demo (scripted)","fallback":false,"supportsReasoning":false,"usesResponsesApi":false,"maxOutputTokens":4096,"usageClass":"ADVANCED","cost":{"input":0,"output":0}},{"id":"gpt-5.6-luna","deploymentId":"gpt-5.6-luna","name":"Image demo (scripted)","fallback":true,"supportsReasoning":false,"usesResponsesApi":false,"maxOutputTokens":4096,"usageClass":"BASE","cost":{"input":0,"output":0}}]'
+  fi
+
   # Rotate the fixture and Chat together. Only the child receives the ephemeral
   # credentials; the parent owns cleanup if any later readiness check fails.
   if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" != 1 ]; then

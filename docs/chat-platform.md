@@ -968,6 +968,83 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Streaming failures need both client and server evidence**: a client-side generic error bubble does not distinguish a provider failure from a response-pipe failure. For staging smoke tests, correlate the browser request time with the chat pod logs and check for `failed to pipe response`, `stream.error`, and `stream.finish` before changing ingress timeouts or model routing.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
+## Explicit course-image display (experimental)
+
+Image selection is a tool result, not a Markdown URL. When
+`CHAT_COURSE_IMAGE_STORE_PATH` is configured and the mode has a valid KB scope,
+the chat route wraps course-search tools with a request-local candidate registry
+and adds `show_course_image`. Only validated, manifest-bound `visual_assets`
+from a successful search in that request and KB scope can be selected. The prompt
+limits selection to explicit student requests. This is model instruction, not a
+language-specific keyword authorization rule; automatic image suggestions and
+model inspection of pixels remain outside this slice.
+
+Selected descriptors are persisted in normal assistant tool-call content. The
+image route under the owned thread/message checks participant authentication,
+published chatbot and course participation, ownership, selected occurrence, and
+the chatbot's current enabled KB scope before reading bytes. Removing the KB
+binding prevents old messages from serving its images. `Participation.isActive`
+is never used. The card uses this same-origin route, and retries image failures.
+No image bytes or public storage URLs are persisted in chat messages.
+
+The initial adapter reads the processor's `e4/v3` content-addressed projection
+layout from a server-controlled filesystem root. It verifies manifest/payload/image
+hashes, source and extraction identity, image occurrence/page/dimensions, PNG
+signature, path containment and bounded sizes. It supports mounted projections;
+no deployed Azure resolver, resource-version withdrawal service, or lecturer-upload
+processing integration is implied. Resource-level upstream revocation and full
+cloud storage authorization must be connected before production rollout.
+
+The local `mcp` profile provides the synthetic learning-cycle projection fixture.
+An ignored `.devcontainer/.runtime/course-image-demo` marker additionally opts the
+local runtime into a loopback scripted model provider at port 1419. It exposes
+“Image demo (scripted)” model labels, handles an explicit diagram request through
+real MCP/tool/persistence/image routes, and makes no model-provider call. Its fixed
+responses are wiring evidence, not an evaluation of LLM image selection. The
+normal runtime without that marker retains its configured model provider.
+
+An ignored `.devcontainer/.runtime/course-image-llm` marker takes precedence over
+the scripted marker. It retains the configured normal model provider and uses
+only the synthetic image fixture by default, ignoring the private-store marker. Start with
+the approved host-side credential injection and the `chat,ai,mcp` profile. Use a
+fresh conversation containing synthetic material only; old conversations can
+contain private retrieved text. Verify that the model itself calls `doc_query`
+and `show_course_image`, then check the original image and reload persistence.
+Creating the marker alone does not provide credentials or prove model access.
+The image LLM smoke selects GPT-4.1 directly and caps registered models at 512
+output tokens to bound the test; the normal BASE/ADVANCED registry rules remain
+in force. A model-list response proves connectivity only. Require completed
+model-driven tool calls and the image card before claiming an end-to-end result.
+
+For a private component demo, an additional ignored
+`.devcontainer/.runtime/course-image-private-store` file contains the absolute
+projection-store path **inside the container**, outside the source checkout.
+This also enables the loopback host query adapter at
+`http://host.docker.internal:28518/query`. The adapter must return the existing
+`doc_query` documents envelope from real ingestion chunks. The scripted provider
+passes the user's query through and displays the first returned image. The local
+adapter can use BM25 and physical-page filtering; this does not exercise Milvus,
+embeddings, orchestration, or an LLM. Private PDFs, chunks, projection bytes, and
+screenshots must remain outside repository fixtures. The host query process and
+private container data must be restored separately after container recreation.
+
+To include the private corpus with a real model, obtain authorization for that
+corpus to reach the configured provider, then add the separate ignored
+`.devcontainer/.runtime/course-image-llm-private` marker alongside the LLM and
+private-store markers. Restart through `devrouter ensure`. The projection store
+must contain both the private and synthetic content-addressed projections.
+Learning-cycle queries still use the synthetic fixture; other queries use the
+existing local component adapter. This is demo dispatch, not general multi-document
+ranking. The LLM selects an image from the returned references; the local adapter
+still uses BM25/page filtering rather than Milvus or an embedding model.
+
+The guarded `apps/chat/scripts/prepare-course-image-demo.mjs` is dry-run by default;
+`DRY_RUN=false` enables AI access only for the known seeded Benibot owner after
+`requireDisposableDatabase` succeeds. The seed may otherwise return
+`AI_FEATURES_DISABLED` before tool execution. Never use this fixture on retained
+or remote databases. Tests in `course-images*.test.ts` cover candidate validation,
+selection, projection integrity, saved descriptors, ownership scoping and KB removal.
+
 ## Testing
 
 Start the self-contained devcontainer with

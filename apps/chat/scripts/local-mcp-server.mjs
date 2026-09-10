@@ -1,8 +1,12 @@
+import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
+import { startCourseImageDemoModel } from './local-course-image-model.mjs'
 import { createLocalAuthenticator } from './local-mcp-auth.mjs'
+
+if (process.env.LOCAL_COURSE_IMAGE_DEMO === '1') startCourseImageDemoModel()
 
 const HOST = '127.0.0.1'
 const PORT = 1417
@@ -96,15 +100,17 @@ function createMcpServer() {
   server.registerTool(
     'doc_query',
     {
-      title: 'Search synthetic course material',
+      title: 'Search local course material',
       description:
-        'Search deterministic synthetic course material. Use this tool whenever the user asks to test the local MCP integration.',
+        'Search the local course material for passages and original figure references. The optional private corpus includes BFI Skript; the synthetic learning-cycle document is also available.',
       inputSchema: {
         query: z
           .string()
           .min(1)
           .max(500)
-          .describe('The synthetic course-material search query'),
+          .describe(
+            'The course-material search query; include the document title and physical page when known'
+          ),
       },
       annotations: {
         readOnlyHint: true,
@@ -114,6 +120,49 @@ function createMcpServer() {
       },
     },
     async ({ query }) => {
+      if (
+        /learning.?cycle|lernzyklus/i.test(query) &&
+        process.env.CHAT_COURSE_IMAGE_STORE_PATH
+      ) {
+        const payload = JSON.parse(
+          await readFile(
+            new URL(
+              './fixtures/course-images/query-result.json',
+              import.meta.url
+            ),
+            'utf8'
+          )
+        )
+        return {
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+          structuredContent: payload,
+        }
+      }
+      // Optional local component demo. Keep private corpus data out of fixtures.
+      if (process.env.LOCAL_COURSE_QUERY_URL) {
+        const endpoint = new URL(process.env.LOCAL_COURSE_QUERY_URL)
+        if (
+          endpoint.protocol !== 'http:' ||
+          !['127.0.0.1', 'localhost', 'host.docker.internal'].includes(
+            endpoint.hostname
+          )
+        ) {
+          throw new Error('Course component endpoint must be local')
+        }
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          redirect: 'error',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+          signal: AbortSignal.timeout(15000),
+        })
+        if (!response.ok) throw new Error('Local course search unavailable')
+        const payload = await response.json()
+        return {
+          content: [{ type: 'text', text: JSON.stringify(payload) }],
+          structuredContent: payload,
+        }
+      }
       const documents = findDocuments(query)
       const payload = {
         answer:
