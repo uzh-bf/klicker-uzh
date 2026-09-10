@@ -183,16 +183,35 @@ global cleanup and seed only for a local host-launcher run. An explicit request
 in CI or without the launcher marker fails before setup instead of resetting
 the database. Individual specs still own their fixture writes and cleanup. Use this only
 when the required baseline already exists, and never against real course data.
-Without these options, runtime selection and database setup remain unchanged.
+Explicit spec paths infer the smallest runtime union from `playwright/profiles.json`.
+Broad or unresolved filters use the maximal `playwright` profile. An explicit
+`--runtime-profile` takes precedence. Applying a profile reconciles the runtime
+downward and stops services outside it, so pass `--runtime-profile` explicitly
+when optional services such as LiteLLM or MailHog must stay up. Normal database
+cleanup and seeding remain
+the acceptance default. Keep one worker for a shared runtime because per-spec
+cleanup resets shared fixed identities; parallel shards need separate complete
+worktree runtimes, including Redis and Hatchet.
+
+With `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1`, local host-launcher runs snapshot
+the clean synthetic seed into the git-ignored `playwright/.cache/seed-snapshot/`
+cache and restore it transactionally instead of reseeding. Snapshotting stays
+opt-in because measured restore times are not faster than the normal cleanup
+and seed reset; it exists for its exact-baseline guarantee. The cache key binds
+the Prisma schema, migrations, seed implementation and constants, lockfile,
+PostgreSQL major version, timezone and year, plus a live schema fingerprint;
+any drift falls back to cleanup and reseed. Snapshots are refused in CI and
+under `--preserve-database`, and a failed restore stops the run rather than
+continuing on partial state.
 
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
-|               | Playwright (`playwright/`)                                 |
-| ------------- | ---------------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                           |
-| Infisical env | `dev-playwright`                                           |
-| Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
-| CI            | official Playwright container, 8-way shard, all PRs        |
+|               | Playwright (`playwright/`)                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Local command | `pnpm playwright:host -- <args>`                                                                                    |
+| Infisical env | `dev-playwright`                                                                                                    |
+| Seed          | own `seedDatabase()` in `global-setup.ts`; opt-in `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1` restores a captured baseline |
+| CI            | official Playwright container, 8-way shard, ready PRs                                                               |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
@@ -292,9 +311,11 @@ Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
 `public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
-across the two-host public pool; pushes, fork PRs, drafts, bots, private
-repositories, and
-disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+across the two-host public pool; pushes, fork PRs, bots, private
+repositories, and disabled rollouts keep all eight shards on GitHub-hosted
+runners. Draft PRs never enter either route: the caller skips the reusable
+execution workflow and `test-playwright-status` reports an explicit successful
+skip, so no Playwright worker is allocated until the PR is marked ready. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
 public-PR routes to be selected. The workflow tars the five `.next` trees before

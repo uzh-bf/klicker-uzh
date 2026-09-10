@@ -83,7 +83,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           STG_PROMOTE_TOKEN: ${{ ((github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' && github.event.inputs.confirm_ref_update == 'stg-release') || (github.event_name == 'workflow_run' && vars.STG_RELEASE_PROMOTION_ENABLED == 'true')) && secrets.STG_PROMOTE_TOKEN || '' }}
           PROMOTION_ENABLED: ${{ vars.STG_RELEASE_PROMOTION_ENABLED || 'false' }}
-          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
           RECEIPT_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.json
           CHECKSUM_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.sha256
         with:

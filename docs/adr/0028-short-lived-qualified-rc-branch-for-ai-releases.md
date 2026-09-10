@@ -4,6 +4,9 @@
 
 Accepted — 2026-08-29
 
+Branch convergence and production-source clauses are superseded by
+[ADR 0044](0044-maintenance-audit-and-stable-release-lines.md). Other contracts remain in force.
+
 ## Context
 
 `v3` is the production mainline and ships alphas continuously. `v3-ai` has

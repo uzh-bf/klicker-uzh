@@ -83,6 +83,7 @@ packages/graphql/.env.tmp.*
 .devcontainer/docker-compose.dependencies.yml
 playwright/playwright-report/
 playwright/test-results/
+playwright/.cache/
 
 # One-off course data pulls (contain real participant data — never commit).
 # Course-award seed payloads, comparison sheets, and state dumps all live in
