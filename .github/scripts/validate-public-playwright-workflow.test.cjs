@@ -116,8 +116,33 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
     'status on close': (w) => {
       w.jobs['test-playwright-status'].if = 'always()'
     },
-    'telemetry on close': (w) => {
-      w.jobs['playwright-queue-telemetry'].if = 'always()'
+    'status missing cancellation guard': (w) => {
+      w.jobs['test-playwright-status'].if =
+        "always() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
+    },
+    'status missing dependency guard': (w) => {
+      w.jobs['test-playwright-status'].if =
+        "always() && !cancelled() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
+    },
+    'telemetry missing cancellation guard': (w) => {
+      w.jobs['test-playwright-status'].steps.find(
+        (step) => step.id === 'queue_telemetry'
+      ).if = "always() && needs.test-playwright-execution.result == 'failure'"
+    },
+    'telemetry not best effort': (w) => {
+      delete w.jobs['test-playwright-status'].steps.find(
+        (step) => step.id === 'queue_telemetry'
+      )['continue-on-error']
+    },
+    'telemetry upload on cancellation': (w) => {
+      w.jobs['test-playwright-status'].steps.find(
+        (step) => step.name === 'Upload queue telemetry'
+      ).if = 'always()'
+    },
+    'standalone telemetry job': (w) => {
+      w.jobs['playwright-queue-telemetry'] = {
+        if: 'always()',
+      }
     },
     'elevated token': (w) => {
       w.jobs['cancel-closed-pr'].permissions = { actions: 'write' }
