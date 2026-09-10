@@ -331,3 +331,26 @@ all 26 tasks. Integrated checks, lint, validators and the full 26-task build
 also pass. The normal target merge is committed as 161b6dea7.
 Source verification is complete; independent integrity/final review and hosted
 CI remain pending before completed delivery can be claimed.
+
+
+### Review corrections and remaining gates — 2026-09-10
+
+The integrity reviewer found no source defect and approved the correction that
+covers false rejection acknowledgement and recovered failure stage. Commit
+45db4d739 passes all 26 review integration tests. The exact runtime is Stopped,
+with zero source-matched routes and retained data.
+
+Draft PR #5878 targets v3-ai. Hosted validation exposed the CI installer still
+pinning devrouter 0.0.59 while this package requires 0.0.68. The installer and
+current setup references now align at 0.0.68. A temporary installation through
+the actual CI script passes all 15 real profile-runtime tests. Historical release
+limitation references stay historical. The relative-import review suggestion is
+not applied: these NodeNext service modules follow adjacent relative .js imports;
+rewriting TypeScript aliases changes runtime resolution without helping this
+extraction. This is not a browser frontend module.
+
+Final review is unproven: Claude OAuth expired; Gemini initially returned empty
+output after a denied tool action; the GLM route has a recorded HTTP503 outage.
+The hosted OCR reviewer separately failed with provider HTTP402. None of these
+are source-test failures or passed review gates. Preserve human review and draft
+state. No merge, ready conversion, deployment or runtime deletion is authorized.
