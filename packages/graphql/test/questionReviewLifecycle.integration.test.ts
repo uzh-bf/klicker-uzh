@@ -59,7 +59,6 @@ let buildId!: string
 const cleanupIds = {
   users: new Set<string>(),
   kbs: new Set<string>(),
-  graphs: new Set<string>(),
   builds: new Set<string>(),
 }
 
@@ -87,7 +86,6 @@ afterEach(async () => {
   }
   cleanupIds.users.clear()
   cleanupIds.kbs.clear()
-  cleanupIds.graphs.clear()
   cleanupIds.builds.clear()
 })
 
@@ -133,7 +131,6 @@ async function createWaitingBuild(
   buildId = randomUUID()
   cleanupIds.users.add(ownerId)
   cleanupIds.kbs.add(kbId)
-  cleanupIds.graphs.add(graphBuildId)
   cleanupIds.builds.add(buildId)
   await prisma.user.create({
     data: {
