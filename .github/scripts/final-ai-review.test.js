@@ -589,14 +589,14 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   }
 })
 
-test('keeps DeepSeek V4 Flash 0731 for automatic draft reviews', () => {
+test('keeps DeepSeek V4.1 Flash for automatic draft reviews', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-review.yml'),
     'utf8'
   )
 
   assert.equal(
-    source.match(/llm_model: deepseek\/deepseek-v4-flash-0731/g)?.length,
+    source.match(/llm_model: deepseek\/deepseek-v4\.1-flash/g)?.length,
     1
   )
   assert.doesNotMatch(source, /z-ai\/glm-5\.3-flash/)
