@@ -104,15 +104,20 @@ replica ownership or replica counts.
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`.
+Non-assessment responses emit `response-received:authenticated|anonymous`. The
+assessment path validates a caller-generated UUID `submissionId`, the existing
+correlation JWT, and the Participant session, then emits the existing
+`response-received:assessment` command. It no longer short-circuits duplicates
+through Redis. It acknowledges only after Hatchet returns an event ID and
+returns `503` when that durable transport is unavailable. Live-quiz vs
+assessment behavior switches on `ASSESSMENT_MODE`; assessment mode has no Redis
+dependency in the response API itself.
 
-The `create-audit-log-entry` task is the pre-existing free-form audit path. It is
-not the provider-neutral assessment evidence contract or its append-only store.
-The new contract, PostgreSQL outbox, and Azure delivery path are documented in
-[Assessment Audit Evidence](./assessment-audit-evidence.md). The new dispatcher
-does not consume those legacy free-form events. Layer 4 replaces lecturer and
-system assessment uses with typed transactional evidence; Layer 5 removes the
-remaining response-pipeline uses when Hatchet submission materialization lands.
+The former `create-audit-log-entry` free-form task has been removed. Assessment
+submission evidence is now materialized from the existing Hatchet command into
+the provider-neutral PostgreSQL outbox described in
+[Assessment Audit Evidence](./assessment-audit-evidence.md).
 
 ## Worker task catalog
 
@@ -120,8 +125,11 @@ remaining response-pipeline uses when Hatchet submission materialization lands.
 
 - `processAnonymousResponseTask` — on `response-received:anonymous`
 - `processAuthenticatedResponseTask` — durable
-- `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
-- `aggregateAssessmentResponsesTask` — keyed by `instanceId`
+- `processAssessmentResponseWorkflow` — durable; materializes accepted,
+  validated, terminal, failure, and recovery evidence
+- `aggregateAssessmentResponsesTask` — keyed by `instanceId`; atomically moves
+  the existing submission vote marker from `accepted` to `aggregated` with its
+  result and leaderboard increments, making repeated Hatchet delivery a no-op
 
 `apps/hatchet-worker-general` selects workflows via `HATCHET_WORKFLOWS`.
 Ordinary workers exclude privileged audit workflows; dedicated audit workers
@@ -130,7 +138,11 @@ identity class is fatal. Unknown ordinary workflow keys produce a warning.
 KB integration gates apply after the allow-list, so disabled KB workflows
 are never registered:
 
-- `create-audit-log-entry` (event-driven)
+Dedicated audit pods use the shared worker runtime's port 8001 health server:
+`/readyz` for readiness and `/healthz` for liveness, with a 90-second
+termination grace period. The separate port 9464 server supplies metrics only;
+its legacy health endpoint is not a worker-readiness signal.
+
 - `process-course-duplication` — async course duplication worker implemented by `packages/graphql/src/services/courseDuplication.ts`. A task-local constant concurrency bucket allows one running duplication globally and queues additional duplication jobs for up to 60 minutes with group round-robin scheduling; unrelated Hatchet tasks retain their own concurrency. The GraphQL mutation stores job state in Redis and returns a job id; it retries an ambiguous Hatchet event publication with the same job id, and republishes an existing pending job on a later mutation retry, so a lost acknowledgement cannot open a second copy or strand the job. Each attempt allows 30 minutes, above the ten-minute database transaction limit, and waits 60 seconds before the first retry so a crashed worker's lease can expire. The worker uses a renewable, token-checked process lease plus a separate 120-second heartbeat key refreshed on the same cadence; rethrows generic failures for Hatchet retries; and records only access or partial-copy failures as terminal. Stale-job normalization (`COURSE_DUPLICATION_STALE_AFTER_MS`, currently 75 minutes — 15 minutes beyond the queue timeout) only fires when the record is old **and** no fresh heartbeat exists, then reconciles against Postgres before declaring failure: because a running attempt refreshes the record before starting and the copied course carries the job id as its primary key, live or committed work is not misclassified as a stale failure. Terminal records strip the stored mutation payload (including any notification email) and identity fields for the remainder of their TTL. A scheduled sweep (`sweep-stale-course-duplications`, every 5 minutes) normalizes abandoned jobs server-side, so recovery no longer depends on a user polling. The manage frontend polls `courseDuplicationStatuses` until the job completes or fails, then shows a localized action to open the copied course without navigating automatically.
 - `sweep-stale-course-duplications` — cron task (every 5 minutes) scanning non-terminal duplication records and applying stale normalization with heartbeat + Postgres reconciliation.
 - `process-course-deletion` — event-driven permanent deletion of an accepted course deletion request, implemented by `packages/graphql/src/services/courseDeletion.ts`. `requestCourseDeletion` sets `Course.deletionRequestedAt` (the only persisted state, and the visibility boundary for every read path) and pushes the event carrying the requester id and the draft-live-quiz option; if the push fails, the marker is cleared again and the mutation errors, so a hidden course always has a scheduled job. A task-local concurrency bucket serializes deletion processing. The deletion transaction claims the row by its request timestamp and rechecks the requester's ADMIN/OWNER permission, assessment mode, and the published-live-quiz condition; a failed check clears the marker (the course reappears) instead of deleting. Ordinary failures are retried three times; when the last attempt fails, the handler clears the marker so the lecturer can retry.

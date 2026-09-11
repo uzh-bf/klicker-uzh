@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import {
   AzureImmutableAuditMediaStore,
   AzureTableAppendSink,
+  auditMediaContentAddress,
   baselinePartPayloadSchema,
   collectAssessmentAuditMonitorSnapshot,
   createAzureAuditClients,
@@ -14,6 +15,7 @@ import {
   recordAssessmentAuditMediaPolicySuccess,
   recordAssessmentAuditMonitorSuccess,
   renewActiveAssessmentMediaPolicies,
+  retentionBatchFor,
 } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
@@ -52,8 +54,20 @@ export const handleDispatchAssessmentAuditOutbox: HatchetHandlers['handleDispatc
 
 export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessmentAudit'] =
   async (_input, globalCtx, executionCtx) => {
+    const capacityBytes = Number(
+      process.env.ASSESSMENT_AUDIT_DELIVERED_UNSEALED_CAPACITY_BYTES ?? 0
+    )
+    const growthBytesPerWeek = Number(
+      process.env.ASSESSMENT_AUDIT_DELIVERED_UNSEALED_GROWTH_BYTES_PER_WEEK ?? 0
+    )
     const snapshot = await collectAssessmentAuditMonitorSnapshot({
       repository: new PrismaAuditMonitorRepository(globalCtx.prisma),
+      ...(Number.isFinite(capacityBytes) && capacityBytes > 0
+        ? { deliveredUnsealedCapacityBytes: capacityBytes }
+        : {}),
+      ...(Number.isFinite(growthBytesPerWeek) && growthBytesPerWeek > 0
+        ? { deliveredUnsealedGrowthBytesPerWeek: growthBytesPerWeek }
+        : {}),
     })
     recordAssessmentAuditMonitorSuccess(snapshot)
     const metadata = {
@@ -66,6 +80,14 @@ export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessm
       differentHashConflictCount: snapshot.differentHashConflictCount,
       deliveredUnsealedCount: snapshot.deliveredUnsealedCount,
       deliveredUnsealedBytes: snapshot.deliveredUnsealedBytes,
+      deliveredUnsealedCapacityWeeksRemaining:
+        snapshot.deliveredUnsealedCapacityWeeksRemaining,
+      requiredMediaCaptureFailureCount:
+        snapshot.requiredMediaCaptureFailureCount,
+      coveredSubmissionWithoutTerminalCount:
+        snapshot.coveredSubmissionWithoutTerminalCount,
+      oldestCoveredSubmissionWithoutTerminalSeconds:
+        snapshot.oldestCoveredSubmissionWithoutTerminalSeconds,
       signals: snapshot.signals,
     }
     if (snapshot.status === 'CRITICAL') {
@@ -87,7 +109,6 @@ export async function* activeAssessmentMediaReferences(
     const scopes = await client.assessmentAuditScope.findMany({
       where: {
         coverageState: DB.AssessmentAuditCoverageState.COVERED,
-        retentionAnchorAt: null,
       },
       orderBy: [{ liveQuizId: 'asc' }, { lifecycleEpoch: 'asc' }],
       take: 100,
@@ -97,13 +118,16 @@ export async function* activeAssessmentMediaReferences(
             cursor: { liveQuizId_lifecycleEpoch: scopeCursor },
             skip: 1,
           }),
-      select: { liveQuizId: true, lifecycleEpoch: true },
+      select: {
+        liveQuizId: true,
+        lifecycleEpoch: true,
+        retentionAnchorAt: true,
+      },
     })
-    if (scopes.length === 0) return
+    if (scopes.length === 0) break
 
     for (const scope of scopes) {
       let eventCursor: string | undefined
-      const seen = new Set<string>()
       while (true) {
         const events = await client.assessmentAuditOutboxEvent.findMany({
           where: {
@@ -122,21 +146,36 @@ export async function* activeAssessmentMediaReferences(
         for (const event of events) {
           const envelope = parseCanonicalAuditEnvelope(event.canonicalEnvelope)
           const payload = baselinePartPayloadSchema.parse(envelope.payload)
-          if (
-            payload.content.kind === 'MEDIA_REFERENCE' &&
-            !seen.has(payload.content.media.blobName)
-          ) {
-            seen.add(payload.content.media.blobName)
+          if (payload.content.kind === 'MEDIA_REFERENCE') {
+            const media = payload.content.media
+            const retainUntil =
+              scope.retentionAnchorAt === null
+                ? undefined
+                : retentionBatchFor(scope.retentionAnchorAt)
+            if (
+              media.blobName !== auditMediaContentAddress(media.contentHash)
+            ) {
+              throw new Error(
+                `Assessment media blob ${media.blobName} has conflicting content hashes`
+              )
+            }
+            // Stream duplicates: the store never shortens retention, and each
+            // scope must retain its horizon without an unbounded deduplication map.
             yield {
-              blobName: payload.content.media.blobName,
-              contentHash: payload.content.media.contentHash,
+              blobName: media.blobName,
+              contentHash: media.contentHash,
+              ...(retainUntil === undefined ? {} : { retainUntil }),
             }
           }
         }
         eventCursor = events.at(-1)!.eventId
       }
     }
-    scopeCursor = scopes.at(-1)!
+    const lastScope = scopes.at(-1)!
+    scopeCursor = {
+      liveQuizId: lastScope.liveQuizId,
+      lifecycleEpoch: lastScope.lifecycleEpoch,
+    }
   }
 }
 

@@ -1,13 +1,15 @@
+import { randomUUID } from 'node:crypto'
+import type { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { parseCanonicalAuditEnvelope } from '@klicker-uzh/audit'
 import {
   AuditLogType,
   ElementType,
   ObjectType,
   PermissionLevel,
-  PrismaClient,
+  type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   addUserToUserGroup,
@@ -2088,6 +2090,95 @@ describe('Integration tests for user group management', () => {
       expect(derivedPermission3).toBeTruthy()
       expect(derivedPermission3!.permissionLevel).toBe(PermissionLevel.READ)
       expect(derivedPermission3!.derived).toBe(true)
+    })
+
+    it('emits exact assessment permission evidence when group membership changes', async () => {
+      const liveQuizId = randomUUID()
+      const group = await prisma.userGroup.create({
+        data: {
+          name: 'Assessment Permission Evidence Group',
+          ownerId: userOne.id,
+        },
+      })
+      await prisma.liveQuiz.create({
+        data: {
+          id: liveQuizId,
+          name: 'Assessment permission evidence quiz',
+          displayName: 'Assessment permission evidence quiz',
+          ownerId: userOne.id,
+          isAssessmentEnabled: true,
+        },
+      })
+      await prisma.permission.create({
+        data: {
+          permissionLevel: PermissionLevel.EXECUTE,
+          userGroupId: group.id,
+          liveQuizId,
+        },
+      })
+      await prisma.assessmentAuditScope.create({
+        data: {
+          liveQuizId,
+          lifecycleEpoch: 1,
+          coverageState: 'COVERED',
+        },
+      })
+      await recomputeDerivedPermissions({ liveQuizId }, prisma)
+
+      try {
+        await addUserToUserGroup(
+          {
+            groupId: group.id,
+            shortnameOrEmail: userTwo.shortname,
+          },
+          userOneCtx
+        )
+        const grant = await prisma.assessmentAuditOutboxEvent.findFirst({
+          where: {
+            liveQuizId,
+            eventType: 'ASSESSMENT_LECTURER_PERMISSION_CHANGED',
+          },
+        })
+        expect(grant).not.toBeNull()
+        expect(
+          parseCanonicalAuditEnvelope(grant!.canonicalEnvelope).payload
+        ).toMatchObject({
+          subjectType: 'USER',
+          subjectId: userTwo.id,
+          change: 'GRANTED',
+          permission: 'EXECUTE',
+          reasonCode: 'EFFECTIVE_LECTURER_PERMISSION_MUTATION',
+        })
+
+        await leaveUserGroup({ groupId: group.id }, userTwoCtx)
+        const revoke = await prisma.assessmentAuditOutboxEvent.findFirst({
+          where: {
+            liveQuizId,
+            eventType: 'ASSESSMENT_LECTURER_PERMISSION_CHANGED',
+            eventId: { not: grant!.eventId },
+          },
+        })
+        expect(revoke).not.toBeNull()
+        expect(
+          parseCanonicalAuditEnvelope(revoke!.canonicalEnvelope).payload
+        ).toMatchObject({
+          subjectType: 'USER',
+          subjectId: userTwo.id,
+          change: 'REVOKED',
+          permission: 'EXECUTE',
+          reasonCode: 'EFFECTIVE_LECTURER_PERMISSION_MUTATION',
+        })
+      } finally {
+        await prisma.assessmentAuditOutboxEvent.deleteMany({
+          where: { liveQuizId },
+        })
+        await prisma.assessmentAuditScope.deleteMany({
+          where: { liveQuizId },
+        })
+        await prisma.permission.deleteMany({ where: { liveQuizId } })
+        await prisma.liveQuiz.delete({ where: { id: liveQuizId } })
+        await prisma.userGroup.delete({ where: { id: group.id } })
+      }
     })
   })
 })

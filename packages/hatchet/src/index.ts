@@ -40,22 +40,6 @@ export * from './kbIngestionApi.js'
 export * from './kbMaintenance.js'
 export * from './worker-runtime.js'
 
-type AuditLogMessage = Record<string, string | undefined> & {
-  correlationId?: string
-  info: string
-}
-
-type AuditLogInput = AuditLogMessage | { message: AuditLogMessage }
-
-function isAuditLogMessage(input: unknown): input is AuditLogMessage {
-  return (
-    input !== null &&
-    typeof input === 'object' &&
-    !Array.isArray(input) &&
-    typeof (input as { info?: unknown }).info === 'string'
-  )
-}
-
 export function prepareHatchetTasks({
   hatchet,
   pubSub,
@@ -156,36 +140,6 @@ export function prepareHatchetTasks({
     },
   })
   // #endregion
-
-  // ! AUDIT LOGGING
-  // #region
-  const createAuditLogEntry = hatchet.task({
-    name: 'create-audit-log-entry',
-    retries: 3,
-    defaultPriority: Priority.LOW,
-    onEvents: ['create-audit-log-entry'],
-    fn: (input: AuditLogInput, ctx) => {
-      // GraphQL task calls use the declared envelope; event producers send the
-      // audit message directly.
-      const messageInput =
-        input !== null && typeof input === 'object'
-          ? (input as { message?: unknown }).message
-          : undefined
-      let message: AuditLogMessage
-      if (isAuditLogMessage(messageInput)) {
-        message = messageInput
-      } else if (isAuditLogMessage(input)) {
-        message = input
-      } else {
-        throw new Error('Invalid audit log message input')
-      }
-      const { info, ...args } = message
-
-      // TODO: send the message to the actual audit log service with the correlation ID as a key?
-      ctx.logger.info(`Audit log entry: ${info}`, args)
-      return { success: true }
-    },
-  })
 
   const ingestKBResourceDefinition = {
     name: 'ingest-kb-resource',
@@ -659,7 +613,6 @@ export function prepareHatchetTasks({
     monitorKBGraphBuilds,
     prepareKBGraphs,
     maintainKBResources: maintainKBResourcesTask,
-    createAuditLogEntry,
     processCourseDuplication,
     sweepStaleCourseDuplications,
     processCourseDeletion,
