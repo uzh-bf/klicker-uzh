@@ -30,7 +30,9 @@ The staging service-account names match df-cloud's `stg-audit-backend-media`,
 Staging uses `rollout: all` without a pilot allowlist: once audit is enabled,
 all assessment live quizzes are eligible for coverage activation.
 The endpoints select the provisioned `stgklickerevidenceaohwr` storage account.
-Keep `enabled: false` until application readiness and worker images are verified.
+Staging sets `enabled: true` for assessment testing. Before syncing this revision,
+verify the application images and migrations; enabled configuration is not proof
+of successful evidence delivery. Monitoring remains a separate deployment gate.
 Both dedicated audit workers use the mutable `v3-audit` image tag with
 `pullPolicy: Always`; unlike the normal workloads, their templates currently
 do not use the ArgoCD `global.imageTag` override. Updating a mutable image tag
@@ -41,8 +43,8 @@ course-copy activation, baseline-reservation, and export-integrity hardening.
 Course copies are activated after the enclosing transaction commits. Tests
 cross-check the launch producer registry against its actual source locations,
 including bulk operations in `activities.ts`. These are wiring checks, not a
-substitute for behavioral integration tests. Keep audit disabled until the
-submission layer and staging evidence delivery are verified; the baseline layer alone is
+substitute for behavioral integration tests. Verify the submission layer and
+staging evidence delivery before relying on audit coverage; the baseline layer alone is
 not a deployable complete assessment-audit feature.
 
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
