@@ -29,10 +29,12 @@ The staging service-account names match df-cloud's `stg-audit-backend-media`,
 `stg-audit-dispatcher`, and `stg-audit-media-policy` resources in `stg-klicker`.
 Staging uses `rollout: all` without a pilot allowlist: once audit is enabled,
 all assessment live quizzes are eligible for coverage activation.
-Keep `enabled: false` until provisioning is verified,
-`tableEndpoint` and `blobEndpoint` contain the actual `auditTableEndpoint` and
-`auditBlobEndpoint` outputs, and the worker images are verified. Endpoint blanks
-are intentional prerequisites, not usable deployment defaults.
+The endpoints select the provisioned `stgklickerevidenceaohwr` storage account.
+Keep `enabled: false` until application readiness and worker images are verified.
+Both dedicated audit workers use the mutable `v3-audit` image tag with
+`pullPolicy: Always`; unlike the normal workloads, their templates currently
+do not use the ArgoCD `global.imageTag` override. Updating a mutable image tag
+does not itself restart an existing pod.
 
 The producer layer includes lifecycle/session, permission, correction, bulk,
 course-copy activation, baseline-reservation, and export-integrity hardening.
