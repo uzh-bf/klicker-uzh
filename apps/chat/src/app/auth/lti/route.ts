@@ -198,8 +198,6 @@ export async function GET(req: NextRequest) {
       path: '/',
       maxAge: 0,
     })
-    response.headers.set('Cache-Control', 'no-store')
-    response.headers.set('Referrer-Policy', 'no-referrer')
     response.cookies.set('chat_participant_token', '', {
       httpOnly: true,
       ...cookieSecurityOptions({ isProduction }),
@@ -247,8 +245,6 @@ export async function GET(req: NextRequest) {
     path: '/',
     maxAge: 0,
   })
-  response.headers.set('Cache-Control', 'no-store')
-  response.headers.set('Referrer-Policy', 'no-referrer')
   response.cookies.set(PWA_CHAT_EMBED_SESSION_COOKIE, '', {
     httpOnly: true,
     ...cookieSecurityOptions({ isProduction }),
