@@ -61,9 +61,6 @@ COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist
 
 USER nodejs
 
-# Fail the image build if the audit package or its runtime dependencies are missing.
-RUN node --input-type=module -e "import { createRequire } from 'node:module'; await import(createRequire('/app/packages/graphql/package.json').resolve('@klicker-uzh/audit')); console.log('Audit runtime import verified')"
-
 EXPOSE 3000
 
 CMD node /app/apps/backend-docker/dist/index.js

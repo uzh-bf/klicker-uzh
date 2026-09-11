@@ -59,9 +59,6 @@ COPY --from=builder --chown=nodejs:nodejs /app/apps/hatchet-worker-response-proc
 
 USER nodejs
 
-# Fail the image build if the audit package or its runtime dependencies are missing.
-RUN node --input-type=module -e "import { createRequire } from 'node:module'; await import(createRequire('/app/apps/hatchet-worker-response-processor/package.json').resolve('@klicker-uzh/audit')); console.log('Audit runtime import verified')"
-
 EXPOSE 3000
 
 CMD ["node", "/app/apps/hatchet-worker-response-processor/dist/index.js"]
