@@ -3350,7 +3350,7 @@ export async function deleteCourse(
 
       return { deleted, deletionCancelled: false }
     },
-    { timeout: 60000 }
+    { timeout: 300000 }
   )
 
   if (!deletedCourse.deleted) {
