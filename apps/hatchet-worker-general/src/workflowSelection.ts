@@ -14,6 +14,10 @@ const KB_GRAPH_WORKFLOW_KEYS = new Set([
   'prepareKBGraphs',
 ])
 const KB_MAINTENANCE_WORKFLOW_KEY = 'maintainKBResources'
+const AUDIT_WORKFLOW_KEYS = new Set([
+  'dispatchAssessmentAuditOutbox',
+  'monitorAssessmentAudit',
+])
 
 export type KBWorkerIntegrationState = {
   ingestionDisabled: boolean
@@ -57,6 +61,7 @@ export function selectWorkflows<T extends Record<string, unknown>>(
   workflows: T,
   options: KBWorkerIntegrationState & {
     requestedWorkflowNames?: string
+    auditWorkerEnabled?: boolean
   }
 ) {
   const availableKeys = Object.keys(workflows) as Array<keyof T & string>
@@ -68,9 +73,38 @@ export function selectWorkflows<T extends Record<string, unknown>>(
   const unknownKeys = hasRequestedKeys
     ? requestedKeys.filter((key) => !(key in workflows))
     : []
-  const candidateKeys = hasRequestedKeys
+  const requestedCandidates = hasRequestedKeys
     ? requestedKeys.filter((key): key is keyof T & string => key in workflows)
     : availableKeys
+  const isAllowed = (key: string) =>
+    options.auditWorkerEnabled
+      ? AUDIT_WORKFLOW_KEYS.has(key)
+      : !AUDIT_WORKFLOW_KEYS.has(key)
+  if (options.auditWorkerEnabled && unknownKeys.length > 0) {
+    throw new Error(
+      `HATCHET_WORKFLOWS contains unknown tasks for the audit worker: ${unknownKeys.join(', ')}`
+    )
+  }
+  const forbidden = hasRequestedKeys
+    ? requestedCandidates.filter((key) => !isAllowed(key))
+    : []
+  if (forbidden.length > 0) {
+    throw new Error(
+      `HATCHET_WORKFLOWS contains tasks forbidden for this worker identity: ${forbidden.join(', ')}`
+    )
+  }
+  const candidateKeys = requestedCandidates.filter(isAllowed)
+  const selectedKeySet = new Set(candidateKeys)
+  if (
+    options.auditWorkerEnabled &&
+    (selectedKeySet.size !== AUDIT_WORKFLOW_KEYS.size ||
+      candidateKeys.length !== selectedKeySet.size ||
+      [...AUDIT_WORKFLOW_KEYS].some((key) => !selectedKeySet.has(key)))
+  ) {
+    throw new Error(
+      'The audit worker must select every required audit workflow exactly'
+    )
+  }
   const disabledKeys = candidateKeys.filter(
     (key) =>
       (options.ingestionDisabled && KB_INGESTION_WORKFLOW_KEYS.has(key)) ||
