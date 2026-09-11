@@ -298,6 +298,8 @@ jobs:
 
   review:
     needs: [authorize, start]
+    env:
+      OCR_NO_UPDATE: '1'
     if: >-
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
@@ -409,6 +411,20 @@ jobs:
             local session_id="${3:-}"
             local resume_args=()
             local now
+            local version
+            local exit_code=0
+            if version=$(ocr version 2>/dev/null); then
+              if [[ "${version}" != 'open-code-review v1.11.0 '* ]]; then
+                exit_code=1
+              fi
+            else
+              exit_code=$?
+            fi
+            if (( exit_code != 0 )); then
+              printf 'OCR stage=version exit=%s\n' "${exit_code}" >>"${GITHUB_STEP_SUMMARY}"
+              echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
+              return "${exit_code}"
+            fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
             now="$(date +%s)"
             if (( now + 2760 > REVIEW_JOB_STARTED_AT + 4800 )); then
@@ -418,7 +434,7 @@ jobs:
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
-            ocr review \
+            if ocr review \
               --from "${REVIEW_FROM}" \
               --to "${HEAD_SHA}" \
               --audience agent \
@@ -429,7 +445,15 @@ jobs:
               --background "${BACKGROUND}" \
               --rule .github/open-code-review/final-review-rules.json \
               "${resume_args[@]}" \
-              >"${output_path}" 2>>"${STDERR_PATH}"
+              >"${output_path}" 2>>"${STDERR_PATH}"; then
+              exit_code=0
+            else
+              exit_code=$?
+            fi
+            printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_total_bytes=%s\n' \
+              "${exit_code}" "$(wc -c <"${output_path}")" "$(wc -c <"${STDERR_PATH}")" \
+              >>"${GITHUB_STEP_SUMMARY}"
+            return "${exit_code}"
           }
 
           : >"${STDERR_PATH}"
@@ -822,6 +846,8 @@ jobs:
           retention-days: 1
 
   review_stack:
+    env:
+      OCR_NO_UPDATE: '1'
     needs: [authorize_stack, start_stack]
     if: >-
       needs.authorize_stack.outputs.authorized == 'true' &&
@@ -961,6 +987,20 @@ jobs:
             local session_id="${5:-}"
             local resume_args=()
             local now
+            local version
+            local exit_code=0
+            if version=$(ocr version 2>/dev/null); then
+              if [[ "${version}" != 'open-code-review v1.11.0 '* ]]; then
+                exit_code=1
+              fi
+            else
+              exit_code=$?
+            fi
+            if (( exit_code != 0 )); then
+              printf 'OCR stage=version exit=%s\n' "${exit_code}" >>"${GITHUB_STEP_SUMMARY}"
+              echo 'Pinned OCR executable verification failed; raw output is suppressed.' >&2
+              return "${exit_code}"
+            fi
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
             now="$(date +%s)"
             if (( now + 1860 > REVIEW_JOB_STARTED_AT + 4200 )); then
@@ -970,7 +1010,7 @@ jobs:
             if [[ -n "${session_id}" ]]; then
               resume_args=(--resume "${session_id}")
             fi
-            ocr review \
+            if ocr review \
               --from "${review_from}" \
               --to "${review_to}" \
               --audience agent \
@@ -981,7 +1021,15 @@ jobs:
               --background "${BACKGROUND}" \
               --rule .github/open-code-review/final-review-rules.json \
               "${resume_args[@]}" \
-              >"${output_path}" 2>>"${STDERR_PATH}"
+              >"${output_path}" 2>>"${STDERR_PATH}"; then
+              exit_code=0
+            else
+              exit_code=$?
+            fi
+            printf 'OCR stage=review exit=%s stdout_bytes=%s stderr_total_bytes=%s\n' \
+              "${exit_code}" "$(wc -c <"${output_path}")" "$(wc -c <"${STDERR_PATH}")" \
+              >>"${GITHUB_STEP_SUMMARY}"
+            return "${exit_code}"
           }
 
           resume_partial_result() {

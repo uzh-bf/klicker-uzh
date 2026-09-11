@@ -1088,8 +1088,11 @@ test.describe('Chatbot Message Actions & Branching', () => {
       state.__assistantMessageBeforeFeedback = node
     })
 
+    const feedbackUrl = `**/messages/${assistantMessageId}/feedback`
+    const upResponse = page.waitForResponse(feedbackUrl)
     await up.click()
     await expect(up).toHaveAttribute('aria-pressed', 'true')
+    expect((await upResponse).status()).toBe(200)
     await expect.poll(() => getMessageRating(assistantMessageId)).toBe('UP')
     await expect
       .poll(() =>
@@ -1106,14 +1109,18 @@ test.describe('Chatbot Message Actions & Branching', () => {
       .toBe(true)
 
     // Changing one's mind replaces the vote rather than stacking a second one.
+    const downResponse = page.waitForResponse(feedbackUrl)
     await down.click()
     await expect(down).toHaveAttribute('aria-pressed', 'true')
     await expect(up).toHaveAttribute('aria-pressed', 'false')
+    expect((await downResponse).status()).toBe(200)
     await expect.poll(() => getMessageRating(assistantMessageId)).toBe('DOWN')
 
     // Clicking the active vote retracts it.
+    const clearResponse = page.waitForResponse(feedbackUrl)
     await down.click()
     await expect(down).toHaveAttribute('aria-pressed', 'false')
+    expect((await clearResponse).status()).toBe(200)
     await expect.poll(() => getMessageRating(assistantMessageId)).toBeNull()
   })
 
@@ -3413,6 +3420,39 @@ test.describe('Chatbot Source Citations', () => {
     const scrollTopBeforeText = await viewport.evaluate(
       (element) => element.scrollTop
     )
+    const scrollDiagnostics = await viewport.evaluateHandle((element) => {
+      const samples: object[] = []
+      const record = (event: string) => {
+        samples.push({
+          event,
+          time: performance.now(),
+          top: element.scrollTop,
+          height: element.scrollHeight,
+          clientHeight: element.clientHeight,
+          focusTag: document.activeElement?.tagName ?? null,
+        })
+        if (samples.length > 200) samples.shift()
+      }
+      const controller = new AbortController()
+      element.addEventListener('scroll', () => record('scroll'), {
+        signal: controller.signal,
+      })
+      document.addEventListener('focusin', () => record('focus'), {
+        signal: controller.signal,
+      })
+      const observer = new ResizeObserver(() => record('resize'))
+      observer.observe(element)
+      if (element.firstElementChild) observer.observe(element.firstElementChild)
+      record('initial')
+      return {
+        samples,
+        stop: () => {
+          record('final')
+          controller.abort()
+          observer.disconnect()
+        },
+      }
+    })
     const cancelButton = page.getByTestId('chat-cancel-button')
     await expect(cancelButton).toBeVisible()
     await expect(cancelButton).toHaveAccessibleName('Stop response')
@@ -3454,6 +3494,17 @@ test.describe('Chatbot Source Citations', () => {
         )
       )
       .toBeLessThanOrEqual(1)
+      .finally(async () => {
+        const samples = await scrollDiagnostics.evaluate((state) => {
+          state.stop()
+          return state.samples
+        })
+        await test.info().attach('stream-scroll-diagnostics', {
+          body: JSON.stringify(samples),
+          contentType: 'application/json',
+        })
+        await scrollDiagnostics.dispose()
+      })
 
     await page.evaluate(() => {
       const state = window as typeof window & {
