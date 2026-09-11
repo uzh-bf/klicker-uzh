@@ -1010,10 +1010,9 @@ assessment:
     resources:
       requests:
         cpu: 50m
-        memory: 50Mi
+        memory: 384Mi
       limits:
-        cpu: 200m
-        memory: 200Mi
+        memory: 1Gi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.stg.df-app.ch'
