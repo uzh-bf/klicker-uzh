@@ -188,7 +188,60 @@ asserted for this path here; the redirect target itself is a separate fix.
   and `pnpm install` for the Playwright workspace does not finish), and the
   repository requires Playwright to run through `pnpm playwright:host` rather
   than inside a container. Exact-head CI is the first real execution.
-- S4: required committed-range reviews, commit, push and draft PR.
+- S4: draft PR delivered at https://github.com/uzh-bf/klicker-uzh/pull/5892.
+
+### Reviews and their dispositions
+
+Simplifier (committed range `1d85533a65ea71552cca290c9fa75908ebcac922..42f49fd0de`)
+returned two accepted items, both applied in `51d797d29a`:
+
+- `resolveLtiAuthDecision` and its input/decision types had no remaining caller
+  after the route moved to the backend operation; deleted.
+- The two `Cache-Control`/`Referrer-Policy` assignments after `launchResponse()`
+  duplicated headers that helper already sets; removed.
+
+Slice reviewer (same range) returned three findings. Two were accepted and fixed
+in `92d074570b`:
+
+- **Stale transport suppressed a valid one.** The proxy collapsed each token
+  family with `cookie || query || bearer` and verified only that value, so an
+  expired guest or scoped cookie refused a request that also carried a valid
+  `?_t=`/`?_pe=` handoff; with the no-login self-heal this is a reload loop.
+  Transports are now verified independently and the first valid one wins, and the
+  scoped handoff follows the value that verified.
+- **Scoped account transport skipped the liveness check.** A valid `_pe`/scoped
+  token yielded an `account` identity from its claims alone, so a participant
+  deactivated after the 12-hour token was minted kept access through the cookie
+  and header paths. The active, non-guest participant check is now shared by both
+  account transports.
+- **The "blocked third-party cookies" browser test did not actually block
+  cookies** (open). The spec omits the LTI probe cookie, but the launch response
+  still sets Chat cookies, so the reload exercises the cookie path. The
+  cookie-less scoped handoff is covered against the real apps by the `?_pe=`/`?_t=`
+  assertions and the transport tests, but a genuinely cookie-blocked browser
+  context is still unverified.
+
+Reviewer-confirmed unchanged behaviour: signed handoff binding and rejection in
+both Chat and the backend; account precedence without relinking; guest creation
+only after an account denial; course-scoped, race-safe guest personas;
+`isActive=false` on create with empty updates; publication, non-deleted course
+and assessment exclusion before writes; legacy PWA forwarding; and the reserved
+scoped-token header as a transport rather than an identity.
+
+### Exact-head CI
+
+Published head `92d074570b`. Two checks fail and both are environmental or
+upstream, not caused by this diff:
+
+- `ocr-review`: "provider or subtask request failed" for all 19 files with zero
+  tokens consumed; the review model never ran.
+- GitGuardian: `37178135` on `42f49fd0de` flagged the synthetic
+  `password: '<value>'` fixture pairing in the new spec. The value is not a
+  credential, but the pairing is what the detector matches, so the literal was
+  replaced by a named fixture constant in `d168966c21`; the fix needs a re-scan
+  of the new head to clear.
+
+`check-gitleaks` passes on the published head.
 
 ### Screenshot evidence (disposable runtime, host `agent-browser`)
 
