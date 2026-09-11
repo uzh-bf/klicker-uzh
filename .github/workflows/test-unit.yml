@@ -7,6 +7,7 @@ on:
     paths:
       - 'apps/frontend-pwa/**'
       - 'apps/chat/**'
+      - 'apps/hatchet-worker-response-processor/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
       - 'packages/i18n/**'
@@ -31,6 +32,7 @@ on:
     paths:
       - 'apps/frontend-pwa/**'
       - 'apps/chat/**'
+      - 'apps/hatchet-worker-response-processor/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
       - 'packages/i18n/**'
@@ -189,6 +191,10 @@ jobs:
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/grading test
+
+      - name: Test response processor helpers
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/hatchet-worker-response-processor test:run
 
       - name: Test markdown package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
