@@ -247,12 +247,12 @@ export function ltiLaunchUrl({
  */
 export async function setLtiProbeCookie(page: Page) {
   const chat = new URL(chatUrl())
+  // Playwright rejects a cookie that carries both `url` and `path`.
   await page.context().addCookies([
     {
       name: 'lti-token',
       value: 'placeholder',
       url: chat.origin,
-      path: '/',
       httpOnly: true,
       sameSite: 'Lax',
       secure: chat.protocol === 'https:',

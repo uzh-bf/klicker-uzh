@@ -100,6 +100,21 @@ async function launchChatbot(
   else await navigation
 }
 
+/**
+ * Capture Chat's `/auth/lti` entry response.
+ *
+ * The transport the entry picked is only observable in that response: it
+ * hands the scoped handoff to the client (`?_pe=`) and the client strips the
+ * parameter from the URL once the chatbot has loaded.
+ */
+function captureLtiEntry(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/auth/lti'
+  )
+}
+
 test.describe('LTI chatbot launch identity resolution', () => {
   test.beforeEach(async ({ page }) => {
     await clearChatCookies(page)
@@ -289,7 +304,12 @@ test.describe('LTI chatbot launch identity resolution', () => {
       { sub: LTI_SUB_REJECTED, chatbotId: MISSING_CHATBOT_ID },
     ]) {
       await launchChatbot(page, { ...launch, allowsRefusal: true })
-      await expect(page).not.toHaveURL(new RegExp(CHATBOT_ID))
+      // A refused launch redirects to Chat's no-login page, whose
+      // `redirectTo` parameter names the chatbot that was refused, so the
+      // chatbot id can legitimately appear in the URL. Assert the refusal
+      // itself and that the chatbot route was never served.
+      await expect(page).toHaveURL(/\/noLogin/)
+      expect(new URL(page.url()).pathname).toBe('/noLogin')
       expect(await chatCookie(page, 'chat_participant_token')).toBeFalsy()
     }
 
@@ -305,7 +325,7 @@ test.describe('LTI chatbot launch identity resolution', () => {
     ).toBe(0)
   })
 
-  test('blocked third-party cookies use the scoped handoff and survive reload', async ({
+  test('a launch without the LTI probe cookie uses the scoped handoff and survives reload', async ({
     page,
   }) => {
     const prisma = await getPrisma()
@@ -319,7 +339,9 @@ test.describe('LTI chatbot launch identity resolution', () => {
 
     // No lti-token probe cookie: the launch must use the scoped token
     // transport instead of assuming the shared cookie survived the iframe.
+    const entryResponse = captureLtiEntry(page)
     await launchChatbot(page, { sub: LTI_SUB_LINKED })
+    expect(await (await entryResponse).text()).toContain('_pe=')
     await expectChatbotReached(page)
     expect(
       cookieTokenSubject(await chatCookie(page, 'participant_token'))

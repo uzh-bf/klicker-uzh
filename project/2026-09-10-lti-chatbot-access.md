@@ -215,11 +215,17 @@ in `92d074570b`:
   and header paths. The active, non-guest participant check is now shared by both
   account transports.
 - **The "blocked third-party cookies" browser test did not actually block
-  cookies** (open). The spec omits the LTI probe cookie, but the launch response
-  still sets Chat cookies, so the reload exercises the cookie path. The
-  cookie-less scoped handoff is covered against the real apps by the `?_pe=`/`?_t=`
-  assertions and the transport tests, but a genuinely cookie-blocked browser
-  context is still unverified.
+  cookies.** The spec omits the LTI probe cookie, but the launch response still
+  sets Chat cookies, so the reload exercises the cookie path. The test now
+  asserts the `?_pe=` handoff in the entry response body, which pins the
+  cookie-less transport for the launch itself, and it is now named "a launch
+  without the LTI probe cookie" rather than claiming a blocked-cookie context.
+  Suppressing Chat's own cookies would leave the scenario without a working
+  transport: `sessionStorage` does not survive the `window.location` reload the
+  entry performs and the URL parameter is stripped on first render, so the
+  handoff could not be replayed at all. A genuinely cookie-blocked browser
+  context therefore remains unverified, and closing it is a product change
+  rather than a speculation this spec can make.
 
 Reviewer-confirmed unchanged behaviour: signed handoff binding and rejection in
 both Chat and the backend; account precedence without relinking; guest creation
@@ -230,8 +236,37 @@ scoped-token header as a transport rather than an identity.
 
 ### Exact-head CI
 
-Published head `92d074570b`. Two checks fail and both are environmental or
-upstream, not caused by this diff:
+Published head `93e640c117`. Shard 6 of the eight Playwright shards is the only
+execution failure, and it is caused by four defects the first real execution of
+the new spec exposed. All four are repaired in the follow-up commit:
+
+1. **The anonymous guest path returns 503 in CI.** `apps/chat` builds with
+   `NODE_ENV=test` but Next constant-folds its own `NODE_ENV` comparison at
+   build time: the compiled chunk reads
+   `if (process.env.CHAT_GUEST_SEED) return ...; throw new Error('CHAT_GUEST_SEED is required in production...')`
+   with no trace of the runtime test. `apps/chat/test/lti-guest.test.ts`
+   confirmed the same shape. The production-mode refusal therefore applies to
+   every built bundle, and neither `CHAT_GUEST_SEED` nor
+   `APP_CHAT_GUEST_SECRET` was reachable by the CI app processes, so
+   `findOrCreateGuestPersona`/`signChatGuestToken` threw and the entry route
+   answered `503 {"error":"Unable to establish chatbot session"}`. Both values
+   are now exported as fixed dev fixtures by `util/_with_local_test_origins.sh`,
+   the wrapper every Playwright build and service start already goes through.
+   The shard and build actions could not carry the fix: the reusable workflow
+   resolves them as `@refs/heads/v3`, so versions in this branch never run.
+2. **`setLtiProbeCookie` passed both `url` and `path`.** Playwright 1.58 asserts
+   `!(cookie.url && cookie.path)` with "Cookie should have either url or path",
+   so the helper threw before the launch. It now relies on `url` alone.
+3. **A refused-launch assertion could never hold.** `expect(page).not.toHaveURL(/<chatbotId>/)`
+   fails because the refusal redirect is `/noLogin?lti=1&redirectTo=%2F<chatbotId>`
+   and names the refused chatbot in `redirectTo`. The test now asserts that the
+   pathname is exactly `/noLogin`.
+4. **The scoped-transport test asserted nothing about the transport.** It now
+   captures the `/auth/lti` response and requires the `?_pe=` handoff in the
+   body. Review finding 3 below is resolved with it.
+
+Remaining checks failing on the published head are environmental or upstream,
+not caused by this diff:
 
 - `ocr-review`: "provider or subtask request failed" for all 19 files with zero
   tokens consumed; the review model never ran.
