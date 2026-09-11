@@ -50,7 +50,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.59 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.72 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -100,7 +100,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.0.59. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.72. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -434,7 +434,7 @@ disabled and the rest of the DevPod still starts normally.
   Generation failures abort startup and retain the previous output; unchanged
   output is not rewritten.
 - Generating updated configuration does not change mounts in an existing
-  container. Devrouter 0.0.59 does not support warm mount reconciliation.
+  container. Devrouter 0.0.72 does not support warm mount reconciliation.
   Do not recreate or reset a retained workspace to apply a package addition or
   removal. Keep its data intact and resolve the supported lifecycle procedure
   separately. Unchanged package inventories retain the same volume names.
@@ -482,7 +482,7 @@ and confirm its provider is stopped and its routes are gone before restarting.
 The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
 the separately reviewed devrouter retained-recovery implementation. It is not
 an ordinary startup hook or a command to invoke manually. The repository-pinned
-0.0.59 release does not provide this recovery contract. The recovery performed
+0.0.72 release does not provide this recovery contract. The recovery performed
 for this branch used devrouter source revision
 `aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
 `recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact

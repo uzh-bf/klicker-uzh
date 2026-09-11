@@ -19,12 +19,15 @@ data:
   HATCHET_WORKER_DURABLE_SLOTS: {{ .Values.hatchet.workers.general.durableSlots | quote }}
   HATCHET_WORKER_HEALTH_PORT: {{ .Values.hatchet.workers.general.healthPort | quote }}
   HATCHET_WORKER_STARTUP_TIMEOUT_MS: {{ .Values.hatchet.workers.general.startupTimeoutMs | quote }}
+  {{- if .Values.hatchet.kbIngestion }}
   {{- if .Values.hatchet.kbIngestion.workerDisabled }}
   KB_INGESTION_WORKER_DISABLED: {{ .Values.hatchet.kbIngestion.workerDisabled | quote }}
   {{- end }}
   KB_INGESTION_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
   KB_INGESTION_PROJECT_ID: {{ .Values.hatchet.kbIngestion.projectId | quote }}
   KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
+  {{- end }}
+  {{- if .Values.hatchet.kbGraph }}
   {{- if .Values.hatchet.kbGraph.disabled }}
   KB_GRAPH_DISABLED: {{ .Values.hatchet.kbGraph.disabled | quote }}
   {{- end }}
@@ -39,6 +42,7 @@ data:
   KB_GRAPH_HIGH_GENERATION_MODEL: {{ .Values.hatchet.kbGraph.highGenerationModel | quote }}
   KB_GRAPH_HIGH_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.highCleaningModel | quote }}
   KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS: {{ .Values.backendGraphql.elementGeneration.enabled | quote }}
+  {{- end }}
   {{- end }}
   {{- if .Values.backendGraphql.knowledgeGraph.host }}
   KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
