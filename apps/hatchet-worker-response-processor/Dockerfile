@@ -48,6 +48,7 @@ RUN pnpm i --prod --ignore-scripts
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
+COPY --from=builder --chown=nodejs:nodejs /app/packages/audit/dist/ /app/packages/audit/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/types/dist/ /app/packages/types/dist/
@@ -57,6 +58,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/packages/prisma/dist/ /app/packag
 COPY --from=builder --chown=nodejs:nodejs /app/apps/hatchet-worker-response-processor/dist/ /app/apps/hatchet-worker-response-processor/dist/
 
 USER nodejs
+
+# Fail the image build if the audit package or its runtime dependencies are missing.
+RUN node --input-type=module -e "import { createRequire } from 'node:module'; await import(createRequire('/app/apps/hatchet-worker-response-processor/package.json').resolve('@klicker-uzh/audit')); console.log('Audit runtime import verified')"
 
 EXPOSE 3000
 

@@ -38,6 +38,14 @@ Both dedicated audit workers use the mutable `v3-audit` image tag with
 do not use the ArgoCD `global.imageTag` override. Updating a mutable image tag
 does not itself restart an existing pod.
 
+The backend and both Hatchet worker images must copy `packages/audit/dist` into
+their final runtime stages. Installing workspace production dependencies alone
+only provides the package metadata/link, not its compiled entry point. Their
+Dockerfiles import `@klicker-uzh/audit` from the actual consumer's resolution
+context as the non-root runtime user during the image build. This catches missing
+audit artifacts and load-time dependencies without starting a worker or using
+Azure credentials; it does not replace a deployed evidence-delivery test.
+
 The producer layer includes lifecycle/session, permission, correction, bulk,
 course-copy activation, baseline-reservation, and export-integrity hardening.
 Course copies are activated after the enclosing transaction commits. Tests

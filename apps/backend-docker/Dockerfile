@@ -48,6 +48,7 @@ RUN pnpm i --prod --ignore-scripts
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
+COPY --from=builder /app/packages/audit/dist/ /app/packages/audit/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
@@ -59,6 +60,9 @@ COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
 COPY --from=builder /app/apps/backend-docker/dist/ /app/apps/backend-docker/dist/
 
 USER nodejs
+
+# Fail the image build if the audit package or its runtime dependencies are missing.
+RUN node --input-type=module -e "import { createRequire } from 'node:module'; await import(createRequire('/app/packages/graphql/package.json').resolve('@klicker-uzh/audit')); console.log('Audit runtime import verified')"
 
 EXPOSE 3000
 
