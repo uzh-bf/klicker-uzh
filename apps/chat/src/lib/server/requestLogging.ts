@@ -4,6 +4,7 @@ import {
   type RequestContext,
   resolveRequestContext,
 } from '@klicker-uzh/logging/request'
+import type { NextRequest } from 'next/server'
 import { logger } from './logger'
 
 type RouteHandler<T extends Response> = (
@@ -82,4 +83,16 @@ export async function withRouteLogging<T extends Response>(
 
 export function getRouteLogger(log: AppLogger = logger): AppLogger {
   return log
+}
+
+export function createLoggedRoute<TContext, T extends Response>(
+  route: string,
+  handler: (
+    request: NextRequest,
+    context: TContext,
+    log: AppLogger
+  ) => T | Promise<T>
+) {
+  return (request: NextRequest, context: TContext): Promise<T> =>
+    withRouteLogging(request, route, (log) => handler(request, context, log))
 }

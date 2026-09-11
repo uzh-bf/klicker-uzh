@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { dirname, extname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const serverRoots = [
@@ -25,206 +26,46 @@ const serverRoots = [
 ]
 const allowedFiles = new Set(['packages/logging/src/edge.ts'])
 const sourceExtensions = new Set(['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx'])
-const consoleCallPattern = /\bconsole\s*\.\s*(log|info|warn|error|debug)\s*\(/g
+const consoleMethods = new Set(['log', 'info', 'warn', 'error', 'debug'])
 
-function replaceCommentCharacter(character) {
-  return character === '\n' ? '\n' : ' '
-}
-
-export function stripComments(source) {
-  let result = ''
-  let state = 'code'
-  let escaped = false
-
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index]
-    const next = source[index + 1]
-
-    if (state === 'line-comment') {
-      result += replaceCommentCharacter(character)
-      if (character === '\n') state = 'code'
-      continue
-    }
-
-    if (state === 'block-comment') {
-      if (character === '*' && next === '/') {
-        result += '  '
-        index += 1
-        state = 'code'
-      } else {
-        result += replaceCommentCharacter(character)
-      }
-      continue
-    }
-
-    if (state !== 'code') {
-      result += character
-      if (escaped) {
-        escaped = false
-      } else if (character === '\\') {
-        escaped = true
-      } else if (
-        (state === 'single-quote' && character === "'") ||
-        (state === 'double-quote' && character === '"') ||
-        (state === 'template' && character === '`')
-      ) {
-        state = 'code'
-      }
-      continue
-    }
-
-    if (character === '/' && next === '/') {
-      result += '  '
-      index += 1
-      state = 'line-comment'
-    } else if (character === '/' && next === '*') {
-      result += '  '
-      index += 1
-      state = 'block-comment'
-    } else {
-      result += character
-      if (character === "'") state = 'single-quote'
-      else if (character === '"') state = 'double-quote'
-      else if (character === '`') state = 'template'
-    }
-  }
-
-  return result
-}
-
-function maskStrings(source) {
-  let result = ''
-  let quote = null
-  let escaped = false
-
-  for (const character of source) {
-    if (quote) {
-      result += character === '\n' ? '\n' : ' '
-      if (escaped) {
-        escaped = false
-      } else if (character === '\\') {
-        escaped = true
-      } else if (character === quote) {
-        quote = null
-      }
-      continue
-    }
-
-    if (character === "'" || character === '"' || character === '`') {
-      quote = character
-      result += ' '
-    } else {
-      result += character
-    }
-  }
-
-  return result
-}
-
-function skipQuoted(source, start, quote) {
-  let escaped = false
-  for (let index = start + 1; index < source.length; index += 1) {
-    const character = source[index]
-    if (escaped) {
-      escaped = false
-    } else if (character === '\\') {
-      escaped = true
-    } else if (character === quote) {
-      return index + 1
-    }
-  }
-  return source.length
-}
-
-function skipTemplate(source, start) {
-  for (let index = start + 1; index < source.length; index += 1) {
-    const character = source[index]
-    if (character === '\\') {
-      index += 1
-    } else if (character === '`') {
-      return index + 1
-    } else if (character === '$' && source[index + 1] === '{') {
-      const end = findBraceEnd(source, index + 2)
-      index = end
-    }
-  }
-  return source.length
-}
-
-function findBraceEnd(source, start) {
-  let depth = 1
-  for (let index = start; index < source.length; index += 1) {
-    const character = source[index]
-    const next = source[index + 1]
-    if (character === "'" || character === '"') {
-      index = skipQuoted(source, index, character) - 1
-    } else if (character === '`') {
-      index = skipTemplate(source, index) - 1
-    } else if (character === '/' && next === '/') {
-      const newline = source.indexOf('\n', index + 2)
-      index = newline === -1 ? source.length : newline
-    } else if (character === '/' && next === '*') {
-      const end = source.indexOf('*/', index + 2)
-      index = end === -1 ? source.length : end + 1
-    } else if (character === '{') {
-      depth += 1
-    } else if (character === '}' && --depth === 0) {
-      return index
-    }
-  }
-  return source.length
-}
-
-function extractTemplateExpressions(source) {
-  const expressions = []
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index]
-    if (character === "'" || character === '"') {
-      index = skipQuoted(source, index, character) - 1
-    } else if (character === '`') {
-      for (let cursor = index + 1; cursor < source.length; cursor += 1) {
-        if (source[cursor] === '\\') {
-          cursor += 1
-        } else if (source[cursor] === '`') {
-          index = cursor
-          break
-        } else if (source[cursor] === '$' && source[cursor + 1] === '{') {
-          const end = findBraceEnd(source, cursor + 2)
-          expressions.push({
-            source: source.slice(cursor + 2, end),
-            start: cursor + 2,
-          })
-          cursor = end
-        }
-      }
-    }
-  }
-  return expressions
-}
-
-export function findActiveConsoleCalls(source) {
-  const commentFree = stripComments(source)
-  const searchable = maskStrings(commentFree)
+export function findActiveConsoleCalls(source, fileName = 'server.tsx') {
+  const file = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true
+  )
   const findings = []
-
-  for (const [lineIndex, line] of searchable.split('\n').entries()) {
-    consoleCallPattern.lastIndex = 0
-    for (const match of line.matchAll(consoleCallPattern)) {
-      findings.push({ line: lineIndex + 1, method: match[1] })
+  function visit(node) {
+    if (ts.isCallExpression(node)) {
+      const target = node.expression
+      const receiver =
+        ts.isPropertyAccessExpression(target) ||
+        ts.isElementAccessExpression(target)
+          ? target.expression
+          : undefined
+      const method = ts.isPropertyAccessExpression(target)
+        ? target.name.text
+        : ts.isElementAccessExpression(target) &&
+            ts.isStringLiteral(target.argumentExpression)
+          ? target.argumentExpression.text
+          : undefined
+      if (
+        receiver &&
+        ts.isIdentifier(receiver) &&
+        receiver.text === 'console' &&
+        consoleMethods.has(method)
+      ) {
+        findings.push({
+          line:
+            file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1,
+          method,
+        })
+      }
     }
+    ts.forEachChild(node, visit)
   }
-
-  // Template literals are strings except for their `${...}` expressions.
-  // Scan those expressions recursively so interpolation calls cannot hide
-  // behind the string masker.
-  for (const expression of extractTemplateExpressions(commentFree)) {
-    const lineOffset =
-      commentFree.slice(0, expression.start).split('\n').length - 1
-    for (const finding of findActiveConsoleCalls(expression.source)) {
-      findings.push({ ...finding, line: finding.line + lineOffset })
-    }
-  }
-
+  visit(file)
   return findings.sort((a, b) => a.line - b.line)
 }
 
@@ -267,7 +108,7 @@ export async function scanServerConsoleCalls() {
     if (allowedFiles.has(path)) continue
 
     const source = await readFile(file, 'utf8')
-    for (const finding of findActiveConsoleCalls(source)) {
+    for (const finding of findActiveConsoleCalls(source, file)) {
       findings.push({ path, ...finding })
     }
   }

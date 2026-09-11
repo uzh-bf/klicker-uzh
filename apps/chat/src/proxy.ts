@@ -124,6 +124,12 @@ export async function proxy(request: NextRequest) {
     correlationId: request.headers.get('x-correlation-id'),
   })
   const log = edgeLogger.child(requestContext)
+  const nextResponse = () => {
+    const headers = new Headers(request.headers)
+    headers.set('x-request-id', requestContext.requestId)
+    headers.set('x-correlation-id', requestContext.correlationId)
+    return NextResponse.next({ request: { headers } })
+  }
   const respond = (response: NextResponse) => {
     response.headers.set('x-request-id', requestContext.requestId)
     response.headers.set('x-correlation-id', requestContext.correlationId)
@@ -141,15 +147,13 @@ export async function proxy(request: NextRequest) {
         name: 'NEXT_LOCALE',
         value: requestedLocale,
       })
-      const response = NextResponse.next({
-        request: { headers: request.headers },
-      })
+      const response = nextResponse()
       response.cookies.set({
         name: 'NEXT_LOCALE',
         value: requestedLocale,
         path: '/manage',
       })
-      return applyFrameAncestorsCSP(response)
+      return respond(response)
     }
   }
 
@@ -167,12 +171,12 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/auth/lti') ||
     pathname.startsWith('/auth/pwa-embed')
   ) {
-    return respond(NextResponse.next())
+    return respond(nextResponse())
   }
 
   const pathSegments = pathname.split('/').filter(Boolean)
   if (pathSegments.length === 0) {
-    return respond(NextResponse.next())
+    return respond(nextResponse())
   }
 
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
@@ -188,7 +192,7 @@ export async function proxy(request: NextRequest) {
   if (chatGuestToken) {
     hadGuestToken = true
     if (await verifyChatGuestTokenInProxy(chatGuestToken)) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      return respond(nextResponse())
     }
     // Invalid guest token → fall through to participant_token.
   }
@@ -204,7 +208,7 @@ export async function proxy(request: NextRequest) {
         token: pwaEmbedToken,
       })
     ) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      return respond(nextResponse())
     }
   }
 
@@ -234,7 +238,7 @@ export async function proxy(request: NextRequest) {
     return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
-  return respond(NextResponse.next())
+  return respond(nextResponse())
 }
 
 export const config = {

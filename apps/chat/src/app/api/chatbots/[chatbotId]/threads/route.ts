@@ -1,7 +1,7 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
-import { withRouteLogging } from '@/src/lib/server/requestLogging'
+import { createLoggedRoute } from '@/src/lib/server/requestLogging'
 import { ThreadService } from '@/src/services/threads'
 
 /**
@@ -63,16 +63,11 @@ async function handlePOST(
   }
 }
 
-type RouteContext = { params: Promise<{ chatbotId: string }> }
-
-export function GET(req: NextRequest, context: RouteContext) {
-  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', (log) =>
-    handleGET(req, context, log)
-  )
-}
-
-export function POST(req: NextRequest, context: RouteContext) {
-  return withRouteLogging(req, '/api/chatbots/:chatbotId/threads', (log) =>
-    handlePOST(req, context, log)
-  )
-}
+export const GET = createLoggedRoute(
+  '/api/chatbots/:chatbotId/threads',
+  handleGET
+)
+export const POST = createLoggedRoute(
+  '/api/chatbots/:chatbotId/threads',
+  handlePOST
+)

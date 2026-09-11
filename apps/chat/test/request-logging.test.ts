@@ -1,6 +1,10 @@
 import { createLogger } from '@klicker-uzh/logging/node'
+import { NextRequest } from 'next/server'
 import { describe, expect, test } from 'vitest'
-import { withRouteLogging } from '../src/lib/server/requestLogging'
+import {
+  createLoggedRoute,
+  withRouteLogging,
+} from '../src/lib/server/requestLogging'
 
 function captureLogger(records: Record<string, unknown>[]) {
   return createLogger(
@@ -14,6 +18,24 @@ function captureLogger(records: Record<string, unknown>[]) {
 }
 
 describe('chat route logging', () => {
+  test('adapts a Next route without changing its request, params or response', async () => {
+    const request = new NextRequest('https://chat.test/api/synthetic', {
+      headers: { 'x-correlation-id': 'adapter-correlation' },
+    })
+    const context = { params: Promise.resolve({ chatbotId: 'synthetic' }) }
+    const expected = new Response('synthetic-response', { status: 201 })
+    const route = createLoggedRoute(
+      '/api/:chatbotId',
+      async (received, params: typeof context, log) => {
+        expect(received).toBe(request)
+        expect(params).toBe(context)
+        expect(log.bindings().correlationId).toBe('adapter-correlation')
+        return expected
+      }
+    )
+    expect(await route(request, context)).toBe(expected)
+    expect(expected.headers.get('x-correlation-id')).toBe('adapter-correlation')
+  })
   test('records a fixed route and echoes a validated request ID', async () => {
     const records: Record<string, unknown>[] = []
     const request = new Request(
