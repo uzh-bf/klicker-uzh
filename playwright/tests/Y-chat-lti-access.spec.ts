@@ -38,6 +38,10 @@ const LTI_SUB_GUEST = 'https://olat.uzh.ch/lti-sub/anonymous-guest'
 const LTI_SUB_REJECTED = 'https://olat.uzh.ch/lti-sub/rejected'
 const MISSING_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
 
+// Placeholder for the synthetic participants this spec creates. These accounts
+// are never login-capable: the value is not a credential and is not hashed.
+const FIXTURE_PASSWORD = 'unused-e2e-hash'
+
 async function chatCookie(page: Page, name: string) {
   const cookies = await page.context().cookies()
   return cookies.find((cookie) => cookie.name === name)?.value
@@ -147,7 +151,7 @@ test.describe('LTI chatbot launch identity resolution', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'lti-e2e-linked',
-        password: 'unused-e2e-hash',
+        password: FIXTURE_PASSWORD,
         accounts: { create: { ssoId: LTI_SUB_LINKED, ssoType: 'LTI1.3' } },
       },
     })
@@ -206,7 +210,7 @@ test.describe('LTI chatbot launch identity resolution', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'lti-e2e-optin',
-        password: 'unused-e2e-hash',
+        password: FIXTURE_PASSWORD,
         accounts: { create: { ssoId: LTI_SUB_LINKED, ssoType: 'LTI1.3' } },
       },
     })
@@ -308,7 +312,7 @@ test.describe('LTI chatbot launch identity resolution', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'lti-e2e-cookieless',
-        password: 'unused-e2e-hash',
+        password: FIXTURE_PASSWORD,
         accounts: { create: { ssoId: LTI_SUB_LINKED, ssoType: 'LTI1.3' } },
       },
     })
@@ -332,7 +336,7 @@ test.describe('LTI chatbot launch identity resolution', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'lti-e2e-cookie',
-        password: 'unused-e2e-hash',
+        password: FIXTURE_PASSWORD,
         accounts: { create: { ssoId: LTI_SUB_LINKED, ssoType: 'LTI1.3' } },
       },
     })
@@ -355,7 +359,7 @@ test.describe('LTI chatbot launch identity resolution', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'lti-e2e-legacy',
-        password: 'unused-e2e-hash',
+        password: FIXTURE_PASSWORD,
         accounts: { create: { ssoId: LTI_SUB_LINKED, ssoType: 'LTI1.3' } },
       },
     })
