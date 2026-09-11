@@ -282,11 +282,7 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
+          if (isFullyCorrect(pointsPercentage) && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -363,7 +359,10 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
+          if (
+            hasGradableNumericalAnswer(parsedSolutions, pointsPercentage) &&
+            !firstResponseReceivedAt
+          ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -441,7 +440,10 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (pointsPercentage && !firstResponseReceivedAt) {
+          if (
+            hasGradableFreeTextAnswer(pointsPercentage) &&
+            !firstResponseReceivedAt
+          ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -520,11 +522,7 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
+          if (isFullyCorrect(pointsPercentage) && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -621,11 +619,7 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
+          if (isFullyCorrect(pointsPercentage) && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(

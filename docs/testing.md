@@ -246,8 +246,8 @@ therefore required before changing the action, followed by a non-skipped
 postmerge shard run. The action logs its provisioner checksum so that run can
 be matched to the reviewed source.
 
-The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
-suites with one frozen install. It builds Prisma, types, grading, and util once,
+The path-filtered `test-unit` workflow runs the chat, grading, markdown, util,
+and response-processor suites with one frozen install. It builds Prisma, types, grading, and util once,
 then keeps each suite as a separately visible step. The chat suite runs against
 a PostgreSQL 15 service; the workflow resets that disposable test database
 before the suite and enables the account-usage integration cases. Later suites

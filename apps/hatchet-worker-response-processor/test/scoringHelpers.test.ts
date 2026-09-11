@@ -21,8 +21,8 @@ import {
 // (helpers.ts + @klicker-uzh/grading) and pin the observable scoring
 // behavior, including the per-type differences that a future consolidation
 // must preserve:
-// - choices/selection/case-study award via `pointsPercentage`, numerical and
-//   free text via `getsMaxPoints` (equivalent at the produced percentages)
+// - all types award via `pointsPercentage` (numerical/free-text percentages are
+//   {0, 1, null}, so the percentage path equals the former getsMaxPoints path)
 // - XP is 10 iff the percentage is exactly 1, otherwise 0 (null coerces to 0)
 // - the bonus declines linearly from maxBonusPoints to zero after
 //   timeToZeroBonus seconds, measured against firstResponseReceivedAt
@@ -191,7 +191,7 @@ describe('characterization of the response processor scoring helpers', () => {
       responseTimestamp: RESPONSE_TIMESTAMP,
     }
 
-    it('grades exact solutions via the getsMaxPoints path', () => {
+    it('grades exact solutions through the shared percentage path', () => {
       const result = getNumericalQuestionPoints({
         ...exactBase,
         response: { value: '5' },
