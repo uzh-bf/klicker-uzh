@@ -1,5 +1,6 @@
 import type { ContainerClient } from '@azure/storage-blob'
 import { sha256Hex } from '../canonical/hash.js'
+import { matchesBlobMetadata } from './blob-metadata.js'
 
 export type ImmutableAuditBlob = {
   blobName: string
@@ -77,7 +78,7 @@ export class AzureImmutableAuditBlobStore {
         conditions: { ifNoneMatch: '*' },
         metadata: {
           sha256: contentHash,
-          byteLength: String(input.content.byteLength),
+          bytelength: String(input.content.byteLength),
         },
         blobHTTPHeaders: { blobContentType: input.contentType },
       })
@@ -91,8 +92,12 @@ export class AzureImmutableAuditBlobStore {
       const existing = await blob.downloadToBuffer()
       if (
         sha256Hex(existing) !== contentHash ||
-        properties.metadata?.sha256 !== contentHash ||
-        properties.metadata?.byteLength !== String(input.content.byteLength) ||
+        !matchesBlobMetadata(properties.metadata, 'sha256', contentHash) ||
+        !matchesBlobMetadata(
+          properties.metadata,
+          'bytelength',
+          String(input.content.byteLength)
+        ) ||
         properties.contentType !== input.contentType
       ) {
         throw new AuditBlobConflictError(blobName)

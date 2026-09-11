@@ -36,7 +36,12 @@ class MemoryContainer {
         }
         container.stored.set(name, {
           content: Buffer.from(content),
-          metadata: options.metadata,
+          metadata: Object.fromEntries(
+            Object.entries(options.metadata).map(([key, value]) => [
+              key.toLowerCase(),
+              value,
+            ])
+          ),
           contentType: options.blobHTTPHeaders.blobContentType,
           versionId: 'version-1',
         })
@@ -167,5 +172,62 @@ describe('immutable audit blob store', () => {
         retainUntil: new Date('2030-03-01T00:00:00.000Z'),
       })
     ).rejects.toBeInstanceOf(AuditBlobConflictError)
+  })
+
+  it.each([
+    'byteLength',
+    'BYTELENGTH',
+  ])('replays existing %s metadata without rewriting it', async (lengthKey) => {
+    const { container, store } = storeFixture()
+    const input = {
+      kind: 'manifest' as const,
+      content: Buffer.from('metadata regression'),
+      contentType: 'application/json',
+      retainUntil: new Date('2030-03-01T00:00:00.000Z'),
+    }
+    const first = await store.create(input)
+    const stored = container.stored.get(first.blobName)!
+    const metadata = {
+      SHA256: first.contentHash,
+      [lengthKey]: String(first.byteLength),
+    }
+    stored.metadata = metadata
+    await expect(store.create(input)).resolves.toMatchObject({
+      outcome: 'IDENTICAL_REPLAY',
+    })
+    expect(stored.metadata).toBe(metadata)
+    expect(container.policyCalls).toHaveLength(1)
+  })
+
+  it.each([
+    'missing length',
+    'wrong length',
+    'missing hash',
+    'wrong hash',
+    'conflicting length alias',
+    'conflicting hash alias',
+    'wrong MIME',
+  ])('rejects %s before changing retention', async (conflict) => {
+    const { container, store } = storeFixture()
+    const input = {
+      kind: 'manifest' as const,
+      content: Buffer.from('metadata regression'),
+      contentType: 'application/json',
+      retainUntil: new Date('2030-03-01T00:00:00.000Z'),
+    }
+    const first = await store.create(input)
+    const stored = container.stored.get(first.blobName)!
+    if (conflict === 'missing length') delete stored.metadata.bytelength
+    if (conflict === 'wrong length') stored.metadata.bytelength = '999'
+    if (conflict === 'missing hash') delete stored.metadata.sha256
+    if (conflict === 'wrong hash') stored.metadata.sha256 = 'wrong'
+    if (conflict === 'conflicting length alias')
+      stored.metadata.byteLength = '999'
+    if (conflict === 'conflicting hash alias') stored.metadata.SHA256 = 'wrong'
+    if (conflict === 'wrong MIME') stored.contentType = 'text/plain'
+    await expect(store.create(input)).rejects.toBeInstanceOf(
+      AuditBlobConflictError
+    )
+    expect(container.policyCalls).toHaveLength(1)
   })
 })

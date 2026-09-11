@@ -6,6 +6,7 @@ import type {
   ImmutableAuditMediaStore,
 } from '../media/capture.js'
 import { auditMediaContentAddress } from '../media/content-address.js'
+import { matchesBlobMetadata } from './blob-metadata.js'
 
 export class AuditMediaConflictError extends Error {
   readonly blobName: string
@@ -114,7 +115,7 @@ export class AzureImmutableAuditMediaStore
           conditions: { ifNoneMatch: '*' },
           metadata: {
             sha256: input.contentHash,
-            byteLength: String(input.byteLength),
+            bytelength: String(input.byteLength),
           },
           blobHTTPHeaders: { blobContentType: input.mimeType },
         }
@@ -130,8 +131,12 @@ export class AzureImmutableAuditMediaStore
     const storedHash = await hashBlobDownload(blob)
     if (
       storedHash !== input.contentHash ||
-      properties.metadata?.sha256 !== input.contentHash ||
-      properties.metadata?.byteLength !== String(input.byteLength) ||
+      !matchesBlobMetadata(properties.metadata, 'sha256', input.contentHash) ||
+      !matchesBlobMetadata(
+        properties.metadata,
+        'bytelength',
+        String(input.byteLength)
+      ) ||
       properties.contentLength !== input.byteLength ||
       properties.contentType !== input.mimeType
     ) {
@@ -196,14 +201,16 @@ export class AzureImmutableAuditMediaStore
     }
     const blob = this.container.getBlockBlobClient(input.blobName)
     const baseProperties = await blob.getProperties()
-    if (baseProperties.metadata?.sha256 !== input.contentHash) {
+    if (
+      !matchesBlobMetadata(baseProperties.metadata, 'sha256', input.contentHash)
+    ) {
       throw new AuditMediaConflictError(input.blobName)
     }
     const versionId = requireVersionId(baseProperties.versionId, input.blobName)
     const version = blob.withVersion(versionId)
     const properties = await version.getProperties()
     if (
-      properties.metadata?.sha256 !== input.contentHash ||
+      !matchesBlobMetadata(properties.metadata, 'sha256', input.contentHash) ||
       properties.immutabilityPolicyMode !== 'Locked' ||
       properties.immutabilityPolicyExpiresOn === undefined
     ) {
@@ -227,7 +234,7 @@ export class AzureImmutableAuditMediaStore
     })
     const extended = await version.getProperties()
     if (
-      extended.metadata?.sha256 !== input.contentHash ||
+      !matchesBlobMetadata(extended.metadata, 'sha256', input.contentHash) ||
       extended.immutabilityPolicyMode !== 'Locked' ||
       extended.immutabilityPolicyExpiresOn === undefined ||
       extended.immutabilityPolicyExpiresOn.getTime() <
