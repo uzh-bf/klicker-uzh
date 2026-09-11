@@ -143,28 +143,32 @@ hatchet:
           effect: NoSchedule
 
 assessmentAudit:
+  # Keep disabled until application readiness and both dedicated worker images
+  # are verified. These values render into ConfigMaps,
+  # not ExternalSecrets; do not duplicate them in Infisical.
   enabled: false
   environment: stg
-  rollout: disabled
-  pilotLiveQuizIds: ''
-  # Supplied from the df-cloud Pulumi stack only after staging validation.
-  tableEndpoint: ''
-  blobEndpoint: ''
+  # Cover all assessment live quizzes once audit is enabled; no pilot allowlist.
+  rollout: all
+  # Set from df-cloud outputs auditTableEndpoint and auditBlobEndpoint.
+  # Do not use the legacy audit account or URLs containing SAS credentials.
+  tableEndpoint: https://stgklickerevidenceaohwr.table.core.windows.net/
+  blobEndpoint: https://stgklickerevidenceaohwr.blob.core.windows.net/
   backendMedia:
-    serviceAccountName: ''
+    serviceAccountName: stg-audit-backend-media
   worker:
-    serviceAccountName: ''
+    serviceAccountName: stg-audit-dispatcher
     priorityClassName: staging-workload
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
       pullPolicy: Always
       tag: v3-ai
   mediaPolicyWorker:
-    serviceAccountName: ''
+    serviceAccountName: stg-audit-media-policy
     priorityClassName: staging-workload
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
       tag: v3-ai
   monitoring:
     enabled: false
