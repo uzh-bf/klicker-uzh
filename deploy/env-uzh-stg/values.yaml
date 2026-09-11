@@ -143,10 +143,9 @@ hatchet:
           effect: NoSchedule
 
 assessmentAudit:
-  # Keep disabled until application readiness and both dedicated worker images
-  # are verified. These values render into ConfigMaps,
+  # Enabled for staging assessment testing. These values render into ConfigMaps,
   # not ExternalSecrets; do not duplicate them in Infisical.
-  enabled: false
+  enabled: true
   environment: stg
   # Cover all assessment live quizzes once audit is enabled; no pilot allowlist.
   rollout: all
