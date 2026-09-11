@@ -2,6 +2,9 @@
 
 - **Status:** Accepted — 2026-08-16
 
+The branch convergence and production-source clauses are superseded by
+[ADR 0044](0044-maintenance-audit-and-stable-release-lines.md). Other contracts remain in force.
+
 ## Context
 
 `v3-ai` is not a stale branch. Verified against the repository on 2026-08-16, it

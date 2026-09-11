@@ -3,15 +3,15 @@
 ## Quick Reference
 
 - **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
-- **Main branch**: `v3` (active development)
+- **Branch roles**: `v3-ai` for production maintenance/stabilization; `v3-audit` for next-release integration; `v3` for the accepted stable application line and trusted CI
 - **Legacy branches**: `dev` and `master` belong to the older Klicker variant and are not actively developed.
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
 ## Stacked PRs
 
-- To bring `v3` back into `v3-ai` or a similar feature branch, use a normal merge commit on the receiving branch and a normal, non-force push to that branch. Do not open an integration PR or substitute selective cherry-picks for this branch synchronization. This convention applies to integrating `v3` into feature branches, not promoting feature work into `v3`; retain the applicable verification and merge/deployment authorization gates.
+- Synchronize long-lived branches with normal merge ancestry: stable `v3` into maintenance `v3-ai`, then accepted maintenance into `v3-audit`. Prepare integration on task branches; shared-ref advances require explicit approval and a deployment-control check.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
-- `v3-ai` is a long-lived consolidation branch that combines AI feature work for deployment to environments such as staging. Treat PRs targeting `v3-ai` as ordinary PRs into that branch. Never stack them with the separate eventual promotion PR from `v3-ai` into `v3`; that promotion can remain open or draft for an extended period.
+- Maintenance PRs target `v3-ai`; next-release feature roots target `v3-audit`; narrow trusted-CI fixes may target `v3`. Preserve stack child bases. Source integration does not authorize application, migrator, or feature activation. See [deployment policy](docs/ci-and-deployment.md).
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
 - Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
 
@@ -319,7 +319,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - **Data hygiene before every commit.** Review staged content (`git diff --cached`, and open any staged data file) for secrets _and_ real personal data — participant/student names, email addresses, matriculation/Studi-IDs, raw response exports, course rosters. Be especially wary of bulk data files (`.csv`, `.json`, `.sql` dumps): these are the highest-risk carriers and are easy to sweep in with `git add .`. Real course-data pulls belong outside the repo (add a `.gitignore` rule); if such data must be versioned, it goes in a private location with direct identifiers removed first. Pseudonymous ids (participant UUIDs) are lower-risk but still get the same scrutiny. When in doubt, do not commit — ask.
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
-- Feature branches from `v3`. Conventional commits preferred.
+- Branch from the intended maintenance, integration, or trusted-control target above. Conventional commits preferred.
 - **Keep this file high-level.** Durable, non-obvious engineering knowledge lives in [docs/](docs/); architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/). Update the matching page or ADR when a change makes it inaccurate or introduces a durable contract that the code does not explain, rather than growing this overview.
 
 ## Engineering Wiki

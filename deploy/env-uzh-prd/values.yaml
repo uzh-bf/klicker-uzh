@@ -401,6 +401,7 @@ chat:
       memory: 1Gi
 
 mcpStudent:
+  enabled: false
   priorityClassName: production-workload
 
   replicaCount: 2
@@ -451,6 +452,7 @@ mcpStudent:
       memory: 200Mi
 
 mcpLecturer:
+  enabled: false
   priorityClassName: production-workload
 
   replicaCount: 2
