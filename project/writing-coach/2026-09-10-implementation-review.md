@@ -1,6 +1,6 @@
 # Writing Coach implementation review
 
-Status: correction implemented and verified locally; delivery commit and draft-PR update pending.
+Status: delivered 11 September — cleanup and integration pushed to draft PR 5867's branch; integrated verification complete; fresh browser capture documented as a limitation.
 
 ## Correction closure — 11 September
 
@@ -8,9 +8,15 @@ After user approval, the retained task runtime was recreated through the support
 
 Final post-correction suites ran in the recreated runtime: @klicker-uzh/util passed 71 tests; @klicker-uzh/chat test:run passed 647 and skipped 21; @klicker-uzh/graphql passed 871 and had one pre-existing failure in the assessment live-quiz reset case. Git history confirms neither the implementation nor its test changed on this branch, so that failure is outside this correction. The focused host authoring flow playwright/tests/T-chatbot-authoring.spec.ts passed with the disposable database preserved. git diff --check passes. Fresh source inspection finds no remaining hasLegacyWritingCoachMode, writingCoachIsCustom, CUSTOM_MODE_COLLISION, or chatbotWritingCoachCollision references under apps/packages outside build and dependency outputs. The remaining legacy references are unrelated project history or deliberate compatibility tests for the previously released scopeNote field.
 
-Delivery remains: commit and push this verified cleanup, update draft PR 5867 evidence, and monitor exact-head CI. No merge, readiness change, or deployment is authorized.
+Delivered 11 September: cleanup commit `8a742f6dff` and integration merge `89e4304efa` (merging `origin/v3` at `2fc5952835`) are pushed to `origin/docs/writing-coach-proposal`, and draft PR 5867 evidence is updated. Exact-head CI is monitored; no merge, readiness change, or deployment is authorized.
 
-Reviewed source: draft PR 5867, head `62249c7a72d262f51c20a9ef4131aa1cf4794c0c`, feature base `294e3f9f35c549be67aa7fb9d96e5539dd174e13`, plus the local correction diff. Target remains `v3`; no merge or deployment.
+Reviewed source: draft PR 5867, head `62249c7a72d262f51c20a9ef4131aa1cf4794c0c`, feature base `294e3f9f35c549be67aa7fb9d96e5539dd174e13`, plus the local correction diff and integrated head `89e4304efa`. Target remains `v3`; no merge or deployment.
+
+## Integrated verification — 11 September
+
+On the integrated head `89e4304efa` the chat suite passed 647 tests and skipped 21. The GraphQL suite ran against a clean isolated database on an ephemeral postgres:15 container with guarded identity and guarded reset: 871 passed, 1 failed — the documented pre-existing `assessmentRestrictions.test.ts:460` live-quiz reset failure, unchanged on this branch. An earlier four-failure run against the retained disposable database was residue (zero users expected, eleven found), not a code regression. The legacy-symbol audit finds zero remaining `hasLegacyWritingCoachMode`, `writingCoachIsCustom`, `CUSTOM_MODE_COLLISION`, or `chatbotWritingCoachCollision` matches on the integrated head. The integration merge from `origin/v3` changed only manifests, lockfile, docs, deploy charts, and CI/playwright infrastructure; no application UI source changed, so the pre-integration browser evidence remains the applicable browser proof.
+
+Fresh browser capture on the integrated head stayed blocked and is recorded as a limitation in PR 5867: the mcp profile bootstrap requires authenticated fixture credentials unavailable on this host, the ai profile requires litellm which is absent from the effective configuration after the profile switch, and the manage-profile runtime starts against the retained disposable database, which is empty. Seeding or resetting that database was not authorized.
 
 ## Findings and corrections
 
@@ -35,11 +41,13 @@ The shared 1,000-character context is normalized and saved through the owner-aut
 - Host launcher and identity checks: 34 passed outside the sandbox.
 - Diff whitespace and evaluation test syntax: passed.
 
-The last small test assertions and mode-summary ordering still need a container check. Full hook-equivalent checks, fresh browser captures, independent integrated review and a correction commit/push remain outstanding. Earlier screenshots are historical evidence, not refreshed proof of this correction.
+Resolved 11 September: the remaining assertions and mode-summary ordering passed in the recreated runtime chat suite; integrated suites, the legacy-symbol audit and delivery are recorded in the correction closure and integrated verification sections above. Earlier screenshots remain historical evidence; fresh browser capture stayed blocked and is documented as a limitation.
 
-## Blockers and next action
+## Verification boundary and next action
 
-Devrouter rejects recovery with `Repair requires the recorded profile, resource sets, and unchanged managed configuration`. Diagnostics report generated Dev Container configuration drift. A retained beta-enrollment fixture also permits only the manage profile while the recorded profile is ai,chat,manage,mcp. The fixture marker was restored unchanged. Canonical stop completed; all exact task containers are stopped and no task routes remain. Repair the exact task runtime through its supported lifecycle before container/browser checks; do not edit managed state manually.
+The earlier runtime-recovery blocker is resolved for the completed test runs: the task runtime was recreated through the supported lifecycle after user approval, and the integrated suites ran against a clean isolated database. The later browser recapture used the supported `manage` profile, while the recorded `ai,chat,manage,mcp` profile could not be restored because Devrouter reported `Repair requires the recorded profile, resource sets, and unchanged managed configuration`; diagnostics identified generated Dev Container configuration drift. No managed state was edited and the retained disposable database was not reset or seeded.
+
+Fresh browser capture is therefore the remaining verification limitation. The prior browser evidence remains applicable because the integration merge changed no application UI source. Exact-head CI is the next operational check; no merge, readiness change, or deployment is authorized.
 
 Claude independent review failed with HTTP 401 due to an expired OAuth token. Automatic approval review rejected the configured AGY fallback because it would disclose repository material to another provider. That route was not executed. The native read-only explorer terminated with HTTP 503 and produced no report. An authorized outside-sandbox Claude retry has empty output and error files; its process state remains unverified.
 
