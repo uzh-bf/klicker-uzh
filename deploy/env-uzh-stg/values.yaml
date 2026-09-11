@@ -153,6 +153,10 @@ assessmentAudit:
   # Do not use the legacy audit account or URLs containing SAS credentials.
   tableEndpoint: https://stgklickerevidenceaohwr.table.core.windows.net/
   blobEndpoint: https://stgklickerevidenceaohwr.blob.core.windows.net/
+  # Copied element snapshots can retain media hosted by the legacy image account.
+  # Requires source read access for the backend media workload identity.
+  additionalSourceAccounts:
+    - klickeruzhprodimages
   backendMedia:
     serviceAccountName: stg-audit-backend-media
   worker:

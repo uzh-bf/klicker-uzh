@@ -8,6 +8,8 @@ import {
   AuditMediaConflictError,
   AzureImmutableAuditMediaStore,
   auditMediaContentAddress,
+  captureAssessmentMedia,
+  readAuditMediaSourceHosts,
   renewActiveAssessmentMediaPolicies,
   sha256Hex,
 } from '../src/index.js'
@@ -18,7 +20,7 @@ type StoredMedia = {
   contentType: string
   versionId: string
   expiresOn?: Date
-  policyMode?: 'Locked'
+  policyMode?: 'locked' | 'Locked' | 'unlocked'
 }
 
 class MemoryMediaContainer {
@@ -84,7 +86,7 @@ class MemoryMediaContainer {
             container.policyCalls.push(versionId)
             if (container.persistPolicy) {
               stored.expiresOn = policy.expiriesOn
-              stored.policyMode = 'Locked'
+              stored.policyMode = 'locked'
             }
             return {}
           },
@@ -179,7 +181,7 @@ describe('Azure immutable audit media store', () => {
     })
     expect(created.outcome).toBe('CREATED')
     expect(replay.outcome).toBe('IDENTICAL_REPLAY')
-    expect(container.stored.get(input.blobName)?.policyMode).toBe('Locked')
+    expect(container.stored.get(input.blobName)?.policyMode).toBe('locked')
     expect(replay.retainUntil).toEqual(input.retainUntil)
   })
 
@@ -305,7 +307,7 @@ describe('Azure immutable audit media store', () => {
       outcome: 'IDENTICAL_REPLAY',
     })
     expect(container.policyCalls).toEqual(['version-1', 'version-1'])
-    expect(stored.policyMode).toBe('Locked')
+    expect(stored.policyMode).toBe('locked')
   })
 
   it('validates case-insensitive hashes during retention renewal', async () => {
@@ -333,5 +335,88 @@ describe('Azure immutable audit media store', () => {
       AuditMediaConflictError
     )
     expect(container.policyCalls).toHaveLength(2)
+  })
+  it.each([
+    'locked',
+    'Locked',
+  ] as const)('accepts a sufficient %s policy without another write', async (policyMode) => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('policy case compatibility'))
+    await store.createFromFile(input)
+    container.stored.get(input.blobName)!.policyMode = policyMode
+    await expect(store.createFromFile(input)).resolves.toMatchObject({
+      outcome: 'IDENTICAL_REPLAY',
+    })
+    await expect(store.extendRetention(input)).resolves.toMatchObject({
+      outcome: 'ALREADY_SUFFICIENT',
+    })
+    expect(container.policyCalls).toHaveLength(1)
+  })
+
+  it('rejects an unlocked policy during verification and renewal', async () => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('unlocked policy'))
+    await store.createFromFile(input)
+    container.stored.get(input.blobName)!.policyMode = 'unlocked'
+    container.persistPolicy = false
+    await expect(store.createFromFile(input)).rejects.toThrow(
+      'was not durably locked'
+    )
+    await expect(store.extendRetention(input)).rejects.toBeInstanceOf(
+      AuditMediaConflictError
+    )
+  })
+  it('captures and replays an explicitly trusted secondary-account image through version locking', async () => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const bytes = Buffer.from('synthetic image bytes')
+    const input = {
+      reference: {
+        mediaId: '00000000-0000-4000-8000-000000000001',
+        sourceUrl:
+          'https://copiedmedia.blob.core.windows.net/00000000-0000-4000-8000-000000000001/image.png',
+        mimeType: 'image/png',
+      },
+      source: {
+        async open() {
+          return {
+            body: Readable.from(bytes),
+            mimeType: 'image/png',
+            contentLength: bytes.length,
+          }
+        },
+      },
+      store,
+      allowedHosts: readAuditMediaSourceHosts({
+        BLOB_STORAGE_ACCOUNT_NAME: 'primarymedia',
+        ASSESSMENT_AUDIT_ADDITIONAL_SOURCE_ACCOUNTS: 'copiedmedia',
+      }),
+      retainUntil: new Date('2027-10-01T00:00:00Z'),
+    }
+    await expect(
+      captureAssessmentMedia({
+        ...input,
+        allowedHosts: readAuditMediaSourceHosts({
+          BLOB_STORAGE_ACCOUNT_NAME: 'primarymedia',
+        }),
+      })
+    ).rejects.toThrow('host is not allowlisted')
+    expect(container.stored.size).toBe(0)
+    const created = await captureAssessmentMedia(input)
+    const replay = await captureAssessmentMedia(input)
+    expect(created.outcome).toBe('CREATED')
+    expect(replay.outcome).toBe('IDENTICAL_REPLAY')
+    expect(created.media.contentHash).toBe(sha256Hex(bytes))
+    expect(created.media.sourceUrl).toBe(input.reference.sourceUrl)
+    expect(container.policyCalls).toEqual(['version-1'])
+    expect(container.versionReads).toEqual(['version-1', 'version-1'])
   })
 })

@@ -19,6 +19,7 @@ import {
   extractBaselineMediaUrls,
   type ImmutableAuditMediaStore,
   type RolloutBaselinePayload,
+  readAuditMediaSourceHosts,
   readAzureAuditStorageConfig,
   retentionBatchFor,
   runInAuditTransaction,
@@ -134,28 +135,10 @@ export type AssessmentAuditRolloutObservation = {
   observedLifecycleState: RolloutBaselinePayload['observedLifecycleState']
 }
 
-function requireEnvironmentValue(
-  environment: NodeJS.ProcessEnv,
-  name: string
-): string {
-  const value = environment[name]?.trim()
-  if (value === undefined || value === '') {
-    throw new Error(`${name} is required for assessment audit activation`)
-  }
-  return value
-}
-
 export function createAssessmentAuditMediaDependencies(
   environment: NodeJS.ProcessEnv = process.env
 ): AssessmentAuditMediaDependencies {
-  const sourceAccountName = requireEnvironmentValue(
-    environment,
-    'BLOB_STORAGE_ACCOUNT_NAME'
-  )
-  if (!/^[a-z0-9]{3,24}$/.test(sourceAccountName)) {
-    throw new TypeError('BLOB_STORAGE_ACCOUNT_NAME is invalid')
-  }
-  const allowedHosts = [`${sourceAccountName}.blob.core.windows.net`]
+  const allowedHosts = readAuditMediaSourceHosts(environment)
   const credential = createAzureAuditCredential()
   const clients = createAzureAuditClients(
     readAzureAuditStorageConfig(environment),
