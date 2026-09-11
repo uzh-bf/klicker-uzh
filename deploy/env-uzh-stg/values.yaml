@@ -47,7 +47,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3-ai
+        tag: v3-audit
       resources:
         requests:
           cpu: 50m
@@ -77,7 +77,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-ai
+        tag: v3-audit
       resources:
         requests:
           cpu: 50m
@@ -108,7 +108,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-ai
+        tag: v3-audit
       resources:
         requests:
           cpu: 50m
@@ -143,29 +143,33 @@ hatchet:
           effect: NoSchedule
 
 assessmentAudit:
+  # Keep disabled until application readiness and both dedicated worker images
+  # are verified. These values render into ConfigMaps,
+  # not ExternalSecrets; do not duplicate them in Infisical.
   enabled: false
   environment: stg
-  rollout: disabled
-  pilotLiveQuizIds: ''
-  # Supplied from the df-cloud Pulumi stack only after staging validation.
-  tableEndpoint: ''
-  blobEndpoint: ''
+  # Cover all assessment live quizzes once audit is enabled; no pilot allowlist.
+  rollout: all
+  # Set from df-cloud outputs auditTableEndpoint and auditBlobEndpoint.
+  # Do not use the legacy audit account or URLs containing SAS credentials.
+  tableEndpoint: https://stgklickerevidenceaohwr.table.core.windows.net/
+  blobEndpoint: https://stgklickerevidenceaohwr.blob.core.windows.net/
   backendMedia:
-    serviceAccountName: ''
+    serviceAccountName: stg-audit-backend-media
   worker:
-    serviceAccountName: ''
+    serviceAccountName: stg-audit-dispatcher
     priorityClassName: staging-workload
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-audit
   mediaPolicyWorker:
-    serviceAccountName: ''
+    serviceAccountName: stg-audit-media-policy
     priorityClassName: staging-workload
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
-      pullPolicy: IfNotPresent
-      tag: v3
+      pullPolicy: Always
+      tag: v3-audit
   monitoring:
     enabled: false
     deliveredUnsealedCapacityBytes: 0
@@ -194,7 +198,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     annotations:
@@ -364,7 +368,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     annotations:
@@ -418,7 +422,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   strategy:
     type: RollingUpdate
@@ -455,7 +459,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   strategy:
     type: RollingUpdate
@@ -495,7 +499,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     className: haproxy
@@ -548,7 +552,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     className: haproxy
@@ -586,7 +590,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   affinity:
     podAntiAffinity:
@@ -653,7 +657,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -737,7 +741,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   affinity:
     podAntiAffinity:
@@ -807,7 +811,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     className: haproxy
@@ -835,7 +839,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3-ai
+    tag: v3-audit
     pullPolicy: Always
 
   affinity:
@@ -912,7 +916,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3-ai
+      tag: v3-audit
 
     ingress:
       className: haproxy
@@ -974,7 +978,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3-ai
+      tag: v3-audit
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1050,7 +1054,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3-ai
+      tag: v3-audit
 
     ingress:
       className: haproxy

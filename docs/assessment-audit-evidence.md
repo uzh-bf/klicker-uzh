@@ -2,7 +2,7 @@
 type: Architecture
 title: Assessment Audit Evidence
 description: Assessment evidence contract, PostgreSQL outbox, append-only Azure delivery, verification, and operator export.
-timestamp: '2026-08-12'
+timestamp: '2026-09-11'
 tags:
   - audit
   - assessment
@@ -20,13 +20,29 @@ and the delivery order lives in the
 
 ## Current implementation boundary
 
+Staging audit configuration lives in `deploy/env-uzh-stg/values.yaml` under
+`assessmentAudit`. The chart renders the endpoint, rollout, pilot quiz IDs,
+environment, and dedicated worker role/metrics settings into ConfigMaps; these
+settings do not require duplicate Infisical entries or ExternalSecret mappings.
+Existing worker Secrets still supply database, Redis, and Hatchet credentials.
+The staging service-account names match df-cloud's `stg-audit-backend-media`,
+`stg-audit-dispatcher`, and `stg-audit-media-policy` resources in `stg-klicker`.
+Staging uses `rollout: all` without a pilot allowlist: once audit is enabled,
+all assessment live quizzes are eligible for coverage activation.
+The endpoints select the provisioned `stgklickerevidenceaohwr` storage account.
+Keep `enabled: false` until application readiness and worker images are verified.
+Both dedicated audit workers use the mutable `v3-audit` image tag with
+`pullPolicy: Always`; unlike the normal workloads, their templates currently
+do not use the ArgoCD `global.imageTag` override. Updating a mutable image tag
+does not itself restart an existing pod.
+
 The producer layer includes lifecycle/session, permission, correction, bulk,
 course-copy activation, baseline-reservation, and export-integrity hardening.
 Course copies are activated after the enclosing transaction commits. Tests
 cross-check the launch producer registry against its actual source locations,
 including bulk operations in `activities.ts`. These are wiring checks, not a
-substitute for behavioral integration tests. Keep rollout disabled until the
-submission layer and staging pilot are verified; the baseline layer alone is
+substitute for behavioral integration tests. Keep audit disabled until the
+submission layer and staging evidence delivery are verified; the baseline layer alone is
 not a deployable complete assessment-audit feature.
 
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
