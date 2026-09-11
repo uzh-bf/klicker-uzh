@@ -1,8 +1,10 @@
+import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   participationFindUnique: vi.fn(),
+  participantFindUnique: vi.fn(),
   jwtVerify: vi.fn(),
 }))
 
@@ -14,6 +16,9 @@ vi.mock('@klicker-uzh/prisma', () => ({
     participation: {
       findUnique: mocks.participationFindUnique,
     },
+    participant: {
+      findUnique: mocks.participantFindUnique,
+    },
   },
 }))
 
@@ -21,19 +26,31 @@ vi.mock('jose', () => ({
   jwtVerify: mocks.jwtVerify,
 }))
 
-import {
-  getChatbotOr404,
-  withChatbotTokenAuth,
-} from '../src/lib/server/apiGuards'
+import { getChatbotOr404, withChatbotAuth } from '../src/lib/server/apiGuards'
 
 // A syntactically valid UUID so the guard proceeds to the DB lookup.
 const VALID_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+
+function accountRequest(cookieValue?: string) {
+  return new NextRequest(new URL('/' + VALID_ID, 'https://chat.test'), {
+    headers: cookieValue
+      ? { cookie: 'participant_token=' + cookieValue }
+      : undefined,
+  })
+}
 
 describe('getChatbotOr404 publication gate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('APP_SECRET', 'test-secret')
-    mocks.jwtVerify.mockResolvedValue({ payload: { sub: 'participant-1' } })
+    vi.stubEnv('APP_ORIGIN_API', 'https://api.test')
+    mocks.jwtVerify.mockResolvedValue({
+      payload: { sub: 'participant-1', role: 'PARTICIPANT' },
+    })
+    mocks.participantFindUnique.mockResolvedValue({
+      isActive: true,
+      accounts: [{ type: 'credential' }],
+    })
     mocks.participationFindUnique.mockResolvedValue({ id: 'participation-1' })
   })
 
@@ -127,7 +144,10 @@ describe('getChatbotOr404 publication gate', () => {
       status: 'PUBLISHED',
     })
 
-    const result = await withChatbotTokenAuth('valid-token', VALID_ID)
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
 
     expect(result).toMatchObject({
       participantId: 'participant-1',
@@ -151,7 +171,10 @@ describe('getChatbotOr404 publication gate', () => {
     })
     mocks.participationFindUnique.mockResolvedValue(null)
 
-    const result = await withChatbotTokenAuth('valid-token', VALID_ID)
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
 
     expect('response' in result).toBe(true)
     if ('response' in result) {
@@ -160,7 +183,7 @@ describe('getChatbotOr404 publication gate', () => {
   })
 
   test('rejects a missing participant token before database access', async () => {
-    const result = await withChatbotTokenAuth(undefined, VALID_ID)
+    const result = await withChatbotAuth(accountRequest(), VALID_ID)
 
     expect('response' in result).toBe(true)
     if ('response' in result) {
@@ -176,7 +199,10 @@ describe('getChatbotOr404 publication gate', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
 
-    const result = await withChatbotTokenAuth('invalid-token', VALID_ID)
+    const result = await withChatbotAuth(
+      accountRequest('invalid-token'),
+      VALID_ID
+    )
 
     expect('response' in result).toBe(true)
     if ('response' in result) {
@@ -185,5 +211,90 @@ describe('getChatbotOr404 publication gate', () => {
     expect(mocks.findUnique).not.toHaveBeenCalled()
     expect(mocks.participationFindUnique).not.toHaveBeenCalled()
     consoleError.mockRestore()
+  })
+
+  // The account session token is verified against the API issuer, so a token
+  // minted for a different audience (for example a lecturer session) is not a
+  // participant identity.
+  test('requires the canonical API issuer on the account token', async () => {
+    await withChatbotAuth(accountRequest('valid-token'), VALID_ID)
+
+    expect(mocks.jwtVerify).toHaveBeenCalledWith(
+      'valid-token',
+      expect.anything(),
+      {
+        issuer: 'https://api.test',
+        algorithms: ['HS256'],
+        requiredClaims: ['exp'],
+      }
+    )
+  })
+
+  test('rejects an account token without the participant role', async () => {
+    mocks.jwtVerify.mockResolvedValue({
+      payload: { sub: 'participant-1', role: 'USER' },
+    })
+
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(401)
+    }
+    // Rejection happens on the token claims, before any chatbot lookup.
+    expect(mocks.findUnique).not.toHaveBeenCalled()
+    expect(mocks.participantFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('rejects an account token whose participant record is missing', async () => {
+    mocks.participantFindUnique.mockResolvedValue(null)
+
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(401)
+    }
+    expect(mocks.findUnique).not.toHaveBeenCalled()
+  })
+
+  test('rejects an account token whose participant is inactive', async () => {
+    mocks.participantFindUnique.mockResolvedValue({
+      isActive: false,
+      accounts: [{ type: 'credential' }],
+    })
+
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(401)
+    }
+  })
+
+  test('rejects an account token naming a guest persona', async () => {
+    mocks.participantFindUnique.mockResolvedValue({
+      isActive: true,
+      accounts: [{ type: 'lti_guest' }],
+    })
+
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(401)
+    }
   })
 })

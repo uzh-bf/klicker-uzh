@@ -46,6 +46,28 @@ Two related properties of that resolver are worth knowing before changing it: it
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
 
+### LTI chatbot entry
+
+Both direct Chat launch targets and existing PWA `/course/:courseId/chatbot/:chatbotId`
+targets enter Chat's `/auth/lti` route. The LTI service signs the resolved course
+and chatbot IDs into the five-minute handoff. Chat and the backend login operation
+verify that binding, the LTI issuer, expiry and scope before changing account or
+participation state. Assessment courses and unpublished or mismatched chatbots
+are rejected.
+
+Identity precedence is a valid existing participant session, then the existing
+LTI account resolver with account creation disabled, then a course-scoped guest
+when there is no matching account. A current session never relinks the LMS identity
+as a side effect. Ambiguous matches and infrastructure errors deny the launch.
+Missing participation is created with `isActive=false`; existing leaderboard
+preferences remain unchanged. Guest history is not transferred to an account.
+
+The account decision uses the persisted `LoginParticipantForLtiChatbot` operation.
+Deploy the backend operation before Chat starts using it, and deploy the LTI
+service's signed binding with the Chat consumer. Old unbound handoffs are rejected;
+existing OLAT link shapes remain supported. Validate the complete coordinated
+release rather than treating route presence as proof of working authentication.
+
 ## Lecturer MCP and Manage assistant
 
 `apps/mcp-lecturer` is currently an internal backend service for the embedded Manage assistant, not an OAuth-exposed MCP server:

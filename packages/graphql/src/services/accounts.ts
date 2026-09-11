@@ -734,7 +734,7 @@ async function resolveOrCreateParticipantForLti(
 
       if (matchedParticipants.length > 1) {
         console.warn(
-          `event=lti_conflict_duplicate_email normalizedEmail=${normalizedEmail} matches=${matchedParticipants.length}`
+          `event=lti_conflict_duplicate_email matches=${matchedParticipants.length}`
         )
         return { type: 'conflict_duplicate_email' }
       }
@@ -1739,4 +1739,114 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
     { liveQuizId: liveQuiz.id, userId: ctx.user.sub },
     ctx.prisma
   )
+}
+
+/** Resolve a verified chatbot launch without registering a normal account. */
+export async function loginParticipantForLtiChatbot(
+  {
+    signedLtiData,
+    courseId,
+    chatbotId,
+    participantToken,
+  }: {
+    signedLtiData: string
+    courseId: string
+    chatbotId: string
+    participantToken?: string | null
+  },
+  ctx: Context
+): Promise<{
+  status: 'ACCOUNT' | 'GUEST' | 'DENIED'
+  participantId?: string
+  participantToken?: string
+}> {
+  const denied = { status: 'DENIED' as const }
+  const issuer = process.env.APP_ORIGIN_LTI
+  const secret = process.env.APP_SECRET
+  const accountIssuer = process.env.APP_ORIGIN_API
+  if (!issuer || !secret || !accountIssuer) return denied
+  let launch: Awaited<ReturnType<typeof verifyJWT>>
+  try {
+    launch = await verifyJWT(signedLtiData, secret, { issuer })
+  } catch {
+    return denied
+  }
+  const binding = launch.chatbotLaunch as
+    | { courseId?: unknown; chatbotId?: unknown }
+    | undefined
+  if (
+    launch.scope !== 'LTI1.3' ||
+    !launch.sub ||
+    typeof launch.exp !== 'number' ||
+    binding?.courseId !== courseId ||
+    binding?.chatbotId !== chatbotId
+  )
+    return denied
+
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: {
+      id: chatbotId,
+      courseId,
+      status: DB.ChatbotStatus.PUBLISHED,
+      course: { isAssessmentEnabled: false, deletionRequestedAt: null },
+    },
+    select: { id: true },
+  })
+  if (!chatbot) return denied
+
+  let participant: DB.Participant | null = null
+  if (participantToken) {
+    let session: Awaited<ReturnType<typeof verifyJWT>> | undefined
+    try {
+      session = await verifyJWT(participantToken, secret, {
+        issuer: accountIssuer,
+      })
+    } catch {
+      // An expired browser session does not invalidate the verified LMS launch.
+    }
+    if (
+      session?.role === DB.UserRole.PARTICIPANT &&
+      session.sub &&
+      typeof session.exp === 'number'
+    ) {
+      participant = await ctx.prisma.participant.findFirst({
+        where: {
+          id: session.sub,
+          isActive: true,
+          accounts: { none: { type: 'lti_guest' } },
+        },
+      })
+    }
+  }
+  if (!participant) {
+    const resolved = await resolveOrCreateParticipantForLti(
+      { signedLtiData, allowCreate: false },
+      ctx
+    )
+    if (resolved.type === 'not_found' || resolved.type === 'missing_email')
+      return { status: 'GUEST' }
+    if (
+      resolved.type !== 'resolved' ||
+      !resolved.account.participant.isActive ||
+      resolved.account.type === 'lti_guest'
+    )
+      return denied
+    participant = resolved.account.participant
+  }
+  await ctx.prisma.participation.upsert({
+    where: {
+      courseId_participantId: { courseId, participantId: participant.id },
+    },
+    create: { courseId, participantId: participant.id, isActive: false },
+    update: {},
+  })
+  const token = await doParticipantLogin(
+    { participantId: participant.id, participantLocale: participant.locale },
+    ctx
+  )
+  return {
+    status: 'ACCOUNT',
+    participantId: participant.id,
+    participantToken: token,
+  }
 }

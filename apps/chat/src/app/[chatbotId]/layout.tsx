@@ -1,9 +1,14 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
 import {
+  CHAT_SCOPED_TOKEN_HEADER,
+  PWA_CHAT_EMBED_SESSION_COOKIE,
+} from '../../lib/pwaEmbedAuth'
+import {
+  authorizeIdentityForChatbot,
   getChatbotOr404,
-  withChatbotTokenAuth,
+  resolveParticipantIdentity,
 } from '../../lib/server/apiGuards'
 import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
 
@@ -18,12 +23,23 @@ export default async function ChatLayout({
 }: ChatLayoutProps) {
   const { chatbotId } = await params
 
-  const cookieStore = await cookies()
-  const authResult = await withChatbotTokenAuth(
-    cookieStore.get('participant_token')?.value,
+  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
+  const identityResult = await resolveParticipantIdentity({
+    participantToken: cookieStore.get('participant_token')?.value,
+    chatGuestToken: cookieStore.get('chat_participant_token')?.value,
+    pwaEmbedToken: cookieStore.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
+    // Cookie-less transports (blocked third-party cookies) arrive in the
+    // reserved header the proxy sets. The value is re-verified here by
+    // signature, scope and chatbot/course binding before it can authorize.
+    scopedFallbackToken: headerStore.get(CHAT_SCOPED_TOKEN_HEADER) ?? undefined,
+  })
+  if ('response' in identityResult) notFound()
+
+  const authorizationResult = await authorizeIdentityForChatbot(
+    identityResult,
     chatbotId
   )
-  if ('response' in authResult) notFound()
+  if ('response' in authorizationResult) notFound()
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     id: true,
