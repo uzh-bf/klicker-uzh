@@ -2560,22 +2560,6 @@ type KBGraphDomainPersistedFields = {
   domainPolicyLanguage?: string | null
 } | null
 
-/** True when any persisted domain field is present, including a partial row. */
-function hasPersistedKBGraphDomainSelection(
-  build: KBGraphDomainPersistedFields
-): boolean {
-  if (!build) {
-    return false
-  }
-  return (
-    (build.domainPolicyId !== undefined && build.domainPolicyId !== null) ||
-    (build.domainPolicyVersion !== undefined &&
-      build.domainPolicyVersion !== null) ||
-    (build.domainPolicyLanguage !== undefined &&
-      build.domainPolicyLanguage !== null)
-  )
-}
-
 /**
  * Categories of a persisted explicit domain selection, resolved through the
  * shipped catalog. A legacy all-null build has no explicit selection, and a
@@ -2585,7 +2569,7 @@ function hasPersistedKBGraphDomainSelection(
 function resolvePersistedKBGraphDomainCategories(
   build: KBGraphDomainPersistedFields
 ): KBGraphDomainCategory[] | null {
-  if (!build || !hasPersistedKBGraphDomainSelection(build)) {
+  if (!build) {
     return null
   }
   const catalog = getDefaultKBGraphDomainCatalog()
