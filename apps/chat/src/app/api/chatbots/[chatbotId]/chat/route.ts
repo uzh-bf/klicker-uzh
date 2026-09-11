@@ -1137,10 +1137,9 @@ export async function POST(
     }
 
     const toolNames = Object.keys(mcpTools || {})
+    const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? toolNames.find(isDocQueryToolName)
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await failOrDiscardUnstartedClaim('mcp.quizzer')
@@ -1646,13 +1645,13 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: quizzerDocQueryToolName
+        prepareStep: docQueryToolName
           ? ({ stepNumber }) =>
               stepNumber === 0
                 ? {
                     toolChoice: {
                       type: 'tool' as const,
-                      toolName: quizzerDocQueryToolName,
+                      toolName: docQueryToolName,
                     },
                   }
                 : {}
