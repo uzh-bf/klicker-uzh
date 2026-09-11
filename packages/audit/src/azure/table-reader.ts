@@ -40,6 +40,8 @@ type LocatorEntity = {
   evidencePartitionKey: string
   evidenceRootRowKey: string
   chunkCount: number
+  liveQuizId: string
+  lifecycleEpoch: number
 }
 
 type RootEntity = {
@@ -60,13 +62,57 @@ type ChunkEntity = {
 
 type RetentionEntity = {
   eventId: string
+  eventHash: string
+  canonicalHash: string
+  evidencePartitionKey: string
+  evidenceRootRowKey: string
+  locatorPartitionKey: string
+  locatorRowKey: string
   liveQuizId: string
   lifecycleEpoch: number
   participantId?: string
+  resourceKind: string
   recordedAt: Date | string
 }
 
 const AUDIT_EXPORT_READ_CONCURRENCY = 8
+
+type EvidenceFailureReason =
+  | 'RETENTION_INDEX_MISSING'
+  | 'LOCATOR_MISSING'
+  | 'EVIDENCE_MISSING'
+  | 'VERIFICATION_FAILED'
+
+class MissingAuditEntityError extends Error {
+  constructor(
+    readonly reason: EvidenceFailureReason,
+    message: string
+  ) {
+    super(message)
+  }
+}
+
+async function readRequiredEntity<T extends object>(
+  client: AuditTableReaderClientPort,
+  partitionKey: string,
+  rowKey: string,
+  reason: EvidenceFailureReason,
+  label: string
+): Promise<TableEntityResult<T>> {
+  try {
+    return await client.getEntity<T>(partitionKey, rowKey)
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'statusCode' in error &&
+      error.statusCode === 404
+    ) {
+      throw new MissingAuditEntityError(reason, `Audit ${label} is missing`)
+    }
+    throw error
+  }
+}
 
 function assertString(value: unknown, name: string): asserts value is string {
   if (typeof value !== 'string' || value === '') {
@@ -106,10 +152,12 @@ function assertLocator(entity: unknown): asserts entity is LocatorEntity {
     'canonicalHash',
     'evidencePartitionKey',
     'evidenceRootRowKey',
+    'liveQuizId',
   ]) {
     assertString(row[field], `locator ${field}`)
   }
   assertInteger(row.chunkCount, 'locator chunkCount')
+  assertInteger(row.lifecycleEpoch, 'locator lifecycleEpoch')
 }
 
 function assertRoot(entity: unknown): asserts entity is RootEntity {
@@ -122,6 +170,30 @@ function assertRoot(entity: unknown): asserts entity is RootEntity {
   }
   assertInteger(row.canonicalByteLength, 'root canonicalByteLength')
   assertInteger(row.chunkCount, 'root chunkCount')
+}
+
+function assertRetention(
+  entity: unknown,
+  eventId: string
+): asserts entity is RetentionEntity {
+  if (typeof entity !== 'object' || entity === null) {
+    throw new Error(`Audit retention index for ${eventId} is invalid`)
+  }
+  const row = entity as Record<string, unknown>
+  for (const field of [
+    'eventId',
+    'eventHash',
+    'canonicalHash',
+    'evidencePartitionKey',
+    'evidenceRootRowKey',
+    'locatorPartitionKey',
+    'locatorRowKey',
+    'liveQuizId',
+    'resourceKind',
+  ]) {
+    assertString(row[field], `retention ${field}`)
+  }
+  assertInteger(row.lifecycleEpoch, 'retention lifecycleEpoch')
 }
 
 async function mapInParallel<T, R>(
@@ -153,18 +225,24 @@ export class AzureTableAuditReader {
   }
 
   async verifyEvent(eventId: string): Promise<VerifiedAuditEvidence> {
-    const locator = await this.clients.locator.getEntity<LocatorEntity>(
+    const locator = await readRequiredEntity<LocatorEntity>(
+      this.clients.locator,
       auditLocatorPartitionKey(eventId),
-      eventId
+      eventId,
+      'LOCATOR_MISSING',
+      'locator'
     )
     assertLocator(locator)
     if (locator.eventId !== eventId) {
       throw new Error('Audit locator identity mismatch')
     }
 
-    const root = await this.clients.evidence.getEntity<RootEntity>(
+    const root = await readRequiredEntity<RootEntity>(
+      this.clients.evidence,
       locator.evidencePartitionKey,
-      locator.evidenceRootRowKey
+      locator.evidenceRootRowKey,
+      'EVIDENCE_MISSING',
+      'event root'
     )
     assertRoot(root)
     if (
@@ -179,9 +257,12 @@ export class AzureTableAuditReader {
     const chunks: Uint8Array[] = []
     for (let index = 0; index < root.chunkCount; index += 1) {
       const rowKey = `c|${eventId}|${String(index).padStart(6, '0')}`
-      const chunk = await this.clients.evidence.getEntity<ChunkEntity>(
+      const chunk = await readRequiredEntity<ChunkEntity>(
+        this.clients.evidence,
         locator.evidencePartitionKey,
-        rowKey
+        rowKey,
+        'EVIDENCE_MISSING',
+        `chunk ${index}`
       )
       const content = readBinary(chunk.content)
       if (
@@ -208,6 +289,48 @@ export class AzureTableAuditReader {
     const envelope = parseCanonicalAuditEnvelope(canonicalEnvelope)
     if (envelope.eventId !== eventId || envelope.eventHash !== root.eventHash) {
       throw new Error('Audit canonical envelope does not match its root')
+    }
+
+    const shard = eventId.toLowerCase().match(/[0-9a-f]/)?.[0]
+    if (shard === undefined) {
+      throw new Error('Audit event ID has no hexadecimal shard')
+    }
+    const retentionPartitionKey = [
+      'v1',
+      locator.liveQuizId,
+      String(locator.lifecycleEpoch),
+      shard,
+    ].join('|')
+    const retention = await readRequiredEntity<RetentionEntity>(
+      this.clients.retentionIndex,
+      retentionPartitionKey,
+      'event|' + eventId,
+      'RETENTION_INDEX_MISSING',
+      'retention index'
+    )
+    assertRetention(retention, eventId)
+    if (
+      retention.eventId !== eventId ||
+      retention.eventHash !== root.eventHash ||
+      retention.canonicalHash !== root.canonicalHash ||
+      retention.evidencePartitionKey !== locator.evidencePartitionKey ||
+      retention.evidenceRootRowKey !== locator.evidenceRootRowKey ||
+      retention.locatorPartitionKey !== auditLocatorPartitionKey(eventId) ||
+      retention.locatorRowKey !== eventId ||
+      retention.liveQuizId !== locator.liveQuizId ||
+      retention.lifecycleEpoch !== locator.lifecycleEpoch ||
+      retention.resourceKind !== 'EVENT'
+    ) {
+      throw new Error('Audit retention index does not match its event')
+    }
+    if (
+      envelope.scope.liveQuizId !== locator.liveQuizId ||
+      envelope.scope.lifecycleEpoch !== locator.lifecycleEpoch
+    ) {
+      throw new Error('Audit scope does not match its locator')
+    }
+    if (retention.participantId !== envelope.scope.participantId) {
+      throw new Error('Audit retention participant scope does not match')
     }
 
     return {
@@ -237,6 +360,30 @@ export class AzureTableAuditReader {
       }
     )) {
       assertString(entity.eventId, 'retention eventId')
+      eventIds.add(entity.eventId)
+    }
+    // Cross-check the independent locator inventory. Enumerating only the
+    // retention index would silently omit evidence when an index row is lost.
+    const locatorFilter = odata`liveQuizId eq ${input.liveQuizId}`
+    for await (const entity of this.clients.locator.listEntities<LocatorEntity>(
+      {
+        queryOptions: {
+          filter:
+            input.lifecycleEpoch === undefined
+              ? locatorFilter
+              : `${locatorFilter} and ${odata`lifecycleEpoch eq ${input.lifecycleEpoch}`}`,
+          select: ['eventId', 'liveQuizId', 'lifecycleEpoch'],
+        },
+      }
+    )) {
+      if (
+        entity.liveQuizId !== input.liveQuizId ||
+        (input.lifecycleEpoch !== undefined &&
+          entity.lifecycleEpoch !== input.lifecycleEpoch)
+      ) {
+        continue
+      }
+      assertString(entity.eventId, 'locator eventId')
       eventIds.add(entity.eventId)
     }
     return [...eventIds].sort()
@@ -269,5 +416,85 @@ export class AzureTableAuditReader {
         left.envelope.recordedAt.localeCompare(right.envelope.recordedAt) ||
         left.envelope.eventId.localeCompare(right.envelope.eventId)
     )
+  }
+
+  async exportQuizWithFailures(input: {
+    liveQuizId: string
+    lifecycleEpoch?: number
+    participantId?: string
+  }): Promise<{
+    verified: VerifiedAuditEvidence[]
+    failures: {
+      eventId: string
+      reason:
+        | 'RETENTION_INDEX_MISSING'
+        | 'LOCATOR_MISSING'
+        | 'EVIDENCE_MISSING'
+        | 'VERIFICATION_FAILED'
+      detail: string
+    }[]
+  }> {
+    const eventIds = await this.listQuizEventIds({
+      liveQuizId: input.liveQuizId,
+      lifecycleEpoch: input.lifecycleEpoch,
+    })
+    type ExportResult =
+      | { eventId: string; evidence: VerifiedAuditEvidence }
+      | {
+          eventId: string
+          failure: {
+            eventId: string
+            reason:
+              | 'RETENTION_INDEX_MISSING'
+              | 'LOCATOR_MISSING'
+              | 'EVIDENCE_MISSING'
+              | 'VERIFICATION_FAILED'
+            detail: string
+          }
+        }
+    const results = await mapInParallel(
+      eventIds,
+      AUDIT_EXPORT_READ_CONCURRENCY,
+      async (eventId): Promise<ExportResult> => {
+        try {
+          return { eventId, evidence: await this.verifyEvent(eventId) }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          const reason =
+            error instanceof MissingAuditEntityError
+              ? error.reason
+              : 'VERIFICATION_FAILED'
+          return { eventId, failure: { eventId, reason, detail: message } }
+        }
+      }
+    )
+    const verified = results
+      .filter(
+        (result): result is Extract<ExportResult, { evidence: unknown }> =>
+          'evidence' in result
+      )
+      .map((result) => result.evidence)
+    const failures = results
+      .filter(
+        (result): result is Extract<ExportResult, { failure: unknown }> =>
+          'failure' in result
+      )
+      .map((result) => result.failure)
+    const participantScoped =
+      input.participantId === undefined
+        ? verified
+        : verified.filter(
+            ({ envelope }) =>
+              envelope.scope.participantId === undefined ||
+              envelope.scope.participantId === input.participantId
+          )
+    return {
+      verified: participantScoped.sort(
+        (left, right) =>
+          left.envelope.recordedAt.localeCompare(right.envelope.recordedAt) ||
+          left.envelope.eventId.localeCompare(right.envelope.eventId)
+      ),
+      failures,
+    }
   }
 }

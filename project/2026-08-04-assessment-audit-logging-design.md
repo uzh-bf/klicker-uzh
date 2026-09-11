@@ -2,8 +2,8 @@
 
 - **Status:** Approved for implementation (revision 7)
 - **Date:** 2026-08-04
-- **Last updated:** 2026-08-10 (revision 7 with delivery, retention, and
-  rollout rulings)
+- **Last updated:** 2026-08-12 (revision 7 implementation clarification: stable
+  names are introduced only with an existing platform mutation and producer)
 - **Target branch:** `v3`
 - **Related work:** [PR #4872](https://github.com/uzh-bf/klicker-uzh/pull/4872), [PR #4946](https://github.com/uzh-bf/klicker-uzh/pull/4946)
 
@@ -751,15 +751,15 @@ runtime; a Hatchet-scheduled worker can still produce a Lane 1 transaction.
 | Assessment lifecycle | assessment mode/course assignment changed; published; started; paused; resumed; completed; reopened; cancelled; reset; copied; imported; deleted | `LANE_1_OUTBOX` | GraphQL mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Lifecycle state and event commit in one transaction. `SYSTEM` plus `initiatedBy` identifies scheduled work. |
 | LiveQuiz configuration | metadata, options, restrictions, points, timing, access settings, and grading configuration changed | `LANE_1_OUTBOX` | GraphQL lecturer mutation | `AUTHORITATIVE` / `CRITICAL` | Exact affected-entity before/after values commit with the mutation. |
 | Blocks | created, updated, reordered, activated, closed, deleted | `LANE_1_OUTBOX` | GraphQL lecturer mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact block before/after values commit with the mutation. |
-| ElementInstances | added, refreshed, updated, reordered, removed, deleted | `LANE_1_OUTBOX` | GraphQL lecturer mutation | `AUTHORITATIVE` / `CRITICAL` | Exact effective instance before/after values and content hashes commit with the mutation. |
+| ElementInstances | added, refreshed, updated, reordered, removed | `LANE_1_OUTBOX` | GraphQL lecturer mutation | `AUTHORITATIVE` / `CRITICAL` | Exact effective instance before/after values and content hashes commit with the mutation. A future independently meaningful hard-delete operation must add its event contract together with its producer. |
 | Source Elements and media | referenced source changed; effective content changed/unchanged; media captured/replaced | `LANE_1_OUTBOX` | GraphQL lecturer mutation and media readiness service | `AUTHORITATIVE` / `CRITICAL` | Source provenance and immutable media identity commit before the effective mutation succeeds. |
 | Eligibility and permissions | participant eligibility added/removed; assessment-relevant lecturer permission changed | `LANE_1_OUTBOX` | GraphQL mutation | `AUTHORITATIVE` / `CRITICAL` | Permission/Participation change and evidence commit atomically. |
-| Assessment session | session started, resumed, ended, forcibly terminated | `LANE_1_OUTBOX` | Existing authenticated assessment endpoints | `SERVER_OBSERVED` / `STANDARD` | A successful audit-only outbox transaction acknowledges recording; no passive page/focus events. |
+| Assessment runtime session | quiz execution session started, resumed, ended | `LANE_1_OUTBOX` | Authenticated LiveQuiz lifecycle endpoints | `SERVER_OBSERVED` / `STANDARD` | The runtime transition and evidence commit together. These are quiz-execution sessions identified by the LiveQuiz UUID, not participant browser/focus sessions, and therefore carry no Participant scope. A future independent forced-termination operation must introduce its event name with its producer. |
 | Participant answer state | answer state changed/cleared; text/numerical state committed after idle, blur, navigation, or submit | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | The PWA stages the event in IndexedDB before transmission. Ingress acknowledges after durable queue insertion; acknowledgement removes the local record. Answer rendering does not wait for ingress. |
 | Submission attempt | submit clicked; auto-submit triggered | `CLIENT_INGRESS` | PWA through independent ingress and queue drainer | `CLIENT_OBSERVED` / `STANDARD` | The submit request follows the durable local outbox commit. This evidence still does not mean server acceptance. |
 | Submission validation and outcome | server accepted; validated; rejected; duplicate; processing failed/recovered | `LANE_2_HATCHET` | Response processor materializing the Hatchet command and result | `SERVER_OBSERVED`; accepted/validated/rejected/duplicate are `CRITICAL`, operational failure/recovery is `STANDARD` | Hatchet receipt exists first. Accepted plus validated/rejected/duplicate evidence commits in an audit-only or response transaction before task completion. |
 | Submission persistence and scoring | persisted; scored | `LANE_2_HATCHET` | Response processor | `AUTHORITATIVE` / `CRITICAL` | Persistence and scoring evidence commit atomically with the response and stored scoring result. |
-| Post-submission scoring and responses | score recomputed; response modified/deleted; points corrected; participant reset/removed | `LANE_1_OUTBOX` | GraphQL mutation or scheduled worker | `AUTHORITATIVE` / `CRITICAL` | Exact previous/new response or score, stable reason, actor, and algorithm/config version commit with the change. |
+| Post-submission scoring and responses | points corrected; assessment participant responses reset | `LANE_1_OUTBOX` | GraphQL mutation | `AUTHORITATIVE` / `CRITICAL` | Exact previous/new scoring state or the deterministic pre-reset participant aggregate hash, stable reason, and actor commit with the change. Additional response administration event names are introduced only together with real platform mutations and producers. |
 | Bulk operations | bulk operation started/completed plus per-item outcomes | `LANE_1_OUTBOX` | GraphQL mutation or worker | `AUTHORITATIVE` / `CRITICAL` | Root and per-item outcome events are committed with each authoritative effect; partial outcomes remain explicit. |
 | Assessment reports | issued; superseded; revoked | `LANE_1_OUTBOX` | Assessment-report service | `AUTHORITATIVE` / `CRITICAL` | Report row, snapshot hash, and audit event commit in one transaction. Public reads are excluded. |
 | Authenticated rejections | an authenticated assessment-scoped action was rejected | `LANE_1_OUTBOX` | Protected API or worker that rejects the action | `SERVER_OBSERVED` / `STANDARD` | An audit-only outbox transaction records attempted action and stable reason without raw request data. |
@@ -794,14 +794,12 @@ The v1 contract defines these names; none are reserved without a producer:
   `ASSESSMENT_ELEMENT_INSTANCE_UPDATED`,
   `ASSESSMENT_ELEMENT_INSTANCE_REORDERED`,
   `ASSESSMENT_ELEMENT_INSTANCE_REMOVED`,
-  `ASSESSMENT_ELEMENT_INSTANCE_DELETED`,
   `ASSESSMENT_SOURCE_ELEMENT_CHANGED`, `ASSESSMENT_MEDIA_CAPTURED`, and
   `ASSESSMENT_MEDIA_REPLACED`.
 - Eligibility, permissions, and session:
   `ASSESSMENT_PARTICIPANT_ELIGIBILITY_CHANGED`,
   `ASSESSMENT_LECTURER_PERMISSION_CHANGED`, `ASSESSMENT_SESSION_STARTED`,
-  `ASSESSMENT_SESSION_RESUMED`, `ASSESSMENT_SESSION_ENDED`,
-  `ASSESSMENT_SESSION_FORCIBLY_TERMINATED`, and
+  `ASSESSMENT_SESSION_RESUMED`, `ASSESSMENT_SESSION_ENDED`, and
   `ASSESSMENT_ACTION_REJECTED`.
 - Client interaction: `RESPONSE_ANSWER_CHANGED`,
   `RESPONSE_ANSWER_CLEARED`, `SUBMISSION_ATTEMPTED`, and
@@ -810,10 +808,8 @@ The v1 contract defines these names; none are reserved without a producer:
   `SUBMISSION_VALIDATED`, `SUBMISSION_REJECTED`, `SUBMISSION_DUPLICATE`,
   `SUBMISSION_PERSISTED`, `SUBMISSION_SCORED`,
   `SUBMISSION_PROCESSING_FAILED`, and `SUBMISSION_PROCESSING_RECOVERED`.
-- Responses and scores: `ASSESSMENT_SCORE_RECOMPUTED`,
-  `ASSESSMENT_RESPONSE_MODIFIED`, `ASSESSMENT_RESPONSE_DELETED`,
-  `ASSESSMENT_POINTS_CORRECTED`, `ASSESSMENT_PARTICIPANT_RESET`, and
-  `ASSESSMENT_PARTICIPANT_REMOVED`.
+- Responses and scores: `ASSESSMENT_POINTS_CORRECTED` and
+  `ASSESSMENT_PARTICIPANT_RESET`.
 - Bulk operations: `ASSESSMENT_BULK_OPERATION_STARTED`,
   `ASSESSMENT_BULK_ITEM_COMPLETED`, and
   `ASSESSMENT_BULK_OPERATION_COMPLETED`.

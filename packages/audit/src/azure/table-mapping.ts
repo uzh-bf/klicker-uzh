@@ -74,6 +74,44 @@ function optionalProperties(
   )
 }
 
+function retentionMediaState(
+  envelope: AppendAuditRecord['envelope']
+): Record<string, unknown> | null {
+  const payload = envelope.payload
+  if (
+    typeof payload !== 'object' ||
+    payload === null ||
+    Array.isArray(payload)
+  ) {
+    return null
+  }
+  if (envelope.eventType === 'ASSESSMENT_BASELINE_PART_RECORDED') {
+    const content = payload.content
+    if (
+      typeof content !== 'object' ||
+      content === null ||
+      Array.isArray(content) ||
+      content.kind !== 'MEDIA_REFERENCE'
+    ) {
+      return null
+    }
+    const media = content.media
+    return typeof media === 'object' && media !== null && !Array.isArray(media)
+      ? media
+      : null
+  }
+  if (
+    envelope.eventType !== 'ASSESSMENT_MEDIA_CAPTURED' &&
+    envelope.eventType !== 'ASSESSMENT_MEDIA_REPLACED'
+  ) {
+    return null
+  }
+  const media = payload.after
+  return typeof media === 'object' && media !== null && !Array.isArray(media)
+    ? media
+    : null
+}
+
 export function auditEvidencePartitionKey(record: AppendAuditRecord): string {
   const { envelope } = record
   return [
@@ -118,20 +156,8 @@ export function mapAuditRecordToTableEntities(
     participantId: envelope.scope.participantId,
   })
   const reverseRetentionIndexes: AuditTableEntity[] = []
-  if (
-    envelope.eventType === 'ASSESSMENT_BASELINE_PART_RECORDED' &&
-    typeof envelope.payload === 'object' &&
-    envelope.payload !== null &&
-    !Array.isArray(envelope.payload) &&
-    typeof envelope.payload.content === 'object' &&
-    envelope.payload.content !== null &&
-    !Array.isArray(envelope.payload.content) &&
-    envelope.payload.content.kind === 'MEDIA_REFERENCE' &&
-    typeof envelope.payload.content.media === 'object' &&
-    envelope.payload.content.media !== null &&
-    !Array.isArray(envelope.payload.content.media)
-  ) {
-    const media = envelope.payload.content.media
+  const media = retentionMediaState(envelope)
+  if (media !== null) {
     const contentHash = media.contentHash
     const blobName = media.blobName
     if (

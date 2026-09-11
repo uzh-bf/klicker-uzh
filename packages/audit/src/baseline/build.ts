@@ -1,3 +1,7 @@
+import {
+  canonicalByteLength,
+  canonicalizeJson,
+} from '../canonical/canonicalize.js'
 import type {
   BaselinePartPayload,
   BaselineRootPayload,
@@ -17,22 +21,45 @@ export type BuiltAssessmentBaseline = {
   parts: BaselinePartPayload[]
 }
 
+// Baselines are assembled before their parts are written to the transactional
+// outbox. Keep the construction bounded so a malformed or unexpectedly large
+// assessment fails closed instead of exhausting the GraphQL worker.
+export const ASSESSMENT_BASELINE_MAX_PARTS = 100_000
+// Keep the materialized representation below the worker's launch memory
+// budget. This is a conservative payload budget; the outbox still chunks each
+// emitted event independently.
+export const ASSESSMENT_BASELINE_MAX_CANONICAL_BYTES = 64 * 1024 * 1024
+
 export function buildAssessmentBaseline(input: {
   baselineId: string
   baselineKind: BaselineRootPayload['baselineKind']
   capturedAt: string
   contents: readonly AssessmentBaselineContent[]
 }): BuiltAssessmentBaseline {
-  const parts = input.contents
-    .map((content) =>
-      buildAssessmentBaselinePart({
-        baselineId: input.baselineId,
-        baselineKind: input.baselineKind,
-        capturedAt: input.capturedAt,
-        content,
-      })
+  if (input.contents.length > ASSESSMENT_BASELINE_MAX_PARTS) {
+    throw new Error(
+      `Assessment baseline exceeds the maximum of ${ASSESSMENT_BASELINE_MAX_PARTS} parts`
     )
-    .sort(compareAssessmentBaselineParts)
+  }
+  const parts = input.contents.map((content) =>
+    buildAssessmentBaselinePart({
+      baselineId: input.baselineId,
+      baselineKind: input.baselineKind,
+      capturedAt: input.capturedAt,
+      content,
+    })
+  )
+
+  const canonicalBytes = parts.reduce(
+    (total, part) => total + canonicalByteLength(canonicalizeJson(part)),
+    0
+  )
+  if (canonicalBytes > ASSESSMENT_BASELINE_MAX_CANONICAL_BYTES) {
+    throw new Error(
+      `Assessment baseline exceeds the maximum of ${ASSESSMENT_BASELINE_MAX_CANONICAL_BYTES} canonical bytes`
+    )
+  }
+  parts.sort(compareAssessmentBaselineParts)
 
   const uniquePartKeys = new Set<string>()
   for (const part of parts) {
