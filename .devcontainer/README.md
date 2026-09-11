@@ -341,6 +341,13 @@ analytics image and lint CI so the root quality gate runs inside the container.
 
 ## Local KB ingestion and graph builder
 
+The `full` profile does not include the external provider fleet. See
+[local KB qualification boundaries](../docs/solutions/integration/local-kb-stack.md)
+before treating an API health check as end-to-end ingestion readiness.
+The isolated launcher has source-only setup and infrastructure lifecycle
+commands, but is not yet runtime-qualified. Do not restart retained workers or
+reset existing KB data to qualify a new local stack.
+
 The Klicker worker uses the producer-neutral `data-ingestion` resource API for
 KB resource acceptance. It is not part of this DevPod compose project. Start
 the sibling service on the host before clicking **Ingest**:

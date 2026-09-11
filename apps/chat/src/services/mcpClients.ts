@@ -14,6 +14,7 @@ import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import { sanitizeDocQueryResult } from './docQueryResult'
 import {
   assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
@@ -449,7 +450,19 @@ async function loadServerTools(
           modelToolName,
           usedNames
         )
-        filteredTools[namespacedName] = toolDefinition
+        filteredTools[namespacedName] =
+          (toolName === 'doc_query' || modelToolName === 'doc_query') &&
+          typeof toolDefinition.execute === 'function'
+            ? {
+                ...toolDefinition,
+                execute: async (
+                  ...args: Parameters<
+                    NonNullable<typeof toolDefinition.execute>
+                  >
+                ) =>
+                  sanitizeDocQueryResult(await toolDefinition.execute(...args)),
+              }
+            : toolDefinition
         usedNames.add(namespacedName)
       }
     })
