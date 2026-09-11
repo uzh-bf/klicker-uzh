@@ -27,7 +27,9 @@ settings do not require duplicate Infisical entries or ExternalSecret mappings.
 Existing worker Secrets still supply database, Redis, and Hatchet credentials.
 The staging service-account names match df-cloud's `stg-audit-backend-media`,
 `stg-audit-dispatcher`, and `stg-audit-media-policy` resources in `stg-klicker`.
-Keep `enabled: false` and `rollout: disabled` until provisioning is verified,
+Staging uses `rollout: all` without a pilot allowlist: once audit is enabled,
+all assessment live quizzes are eligible for coverage activation.
+Keep `enabled: false` until provisioning is verified,
 `tableEndpoint` and `blobEndpoint` contain the actual `auditTableEndpoint` and
 `auditBlobEndpoint` outputs, and the worker images are verified. Endpoint blanks
 are intentional prerequisites, not usable deployment defaults.
@@ -37,8 +39,8 @@ course-copy activation, baseline-reservation, and export-integrity hardening.
 Course copies are activated after the enclosing transaction commits. Tests
 cross-check the launch producer registry against its actual source locations,
 including bulk operations in `activities.ts`. These are wiring checks, not a
-substitute for behavioral integration tests. Keep rollout disabled until the
-submission layer and staging pilot are verified; the baseline layer alone is
+substitute for behavioral integration tests. Keep audit disabled until the
+submission layer and staging evidence delivery are verified; the baseline layer alone is
 not a deployable complete assessment-audit feature.
 
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
