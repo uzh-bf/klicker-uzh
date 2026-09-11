@@ -83,7 +83,6 @@ import { MessageSourcesProvider } from './message-sources-context'
 import {
   useEffectiveModeOptions,
   useHasAvailableChatMode,
-  useWritingCoachIsCustom,
 } from './mode-options-context'
 import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
@@ -151,7 +150,6 @@ const useSupportsImageAttachments = () => {
 const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   includeCredits = false,
 }) => {
-  const writingCoachIsCustom = useWritingCoachIsCustom()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata & {
     role: string
     status?: { type: string }
@@ -195,7 +193,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   // per-chatbot keys have no translation and keep their raw name.
   const modeLabel = !chatMode
     ? null
-    : isKnownMode(chatMode, writingCoachIsCustom)
+    : isKnownMode(chatMode)
       ? t(`chat.modes.${chatMode}`)
       : formatTitleCase(chatMode)
   const modelLabel = modelId
@@ -484,16 +482,13 @@ const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotName: string
 }> = ({ chatbotAvatar, chatbotName }) => {
-  const writingCoachIsCustom = useWritingCoachIsCustom()
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
-  const modeLabel = activeMode
-    ? formatModeLabel(t, activeMode, writingCoachIsCustom)
-    : null
+  const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
-    ? getModeDescription(t, activeMode, modeOptions, writingCoachIsCustom)
+    ? getModeDescription(t, activeMode, modeOptions)
     : null
 
   return (
@@ -565,7 +560,6 @@ const ThreadWelcome: FC<{
 const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
 const ThreadWelcomeSuggestions: FC = () => {
-  const writingCoachIsCustom = useWritingCoachIsCustom()
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useEffectiveModeOptions()
@@ -573,7 +567,7 @@ const ThreadWelcomeSuggestions: FC = () => {
   if (Object.keys(modeOptions).length === 0) return null
 
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
-  const suggestions = getThreadSuggestions(activeMode, writingCoachIsCustom)
+  const suggestions = getThreadSuggestions(activeMode)
 
   return (
     <section

@@ -11,11 +11,9 @@ import {
   resolveSelectedMode,
 } from '@/src/lib/config/modes'
 import { useSettingsStore } from '@/src/stores/settingsStore'
-import { useWritingCoachIsCustom } from './mode-options-context'
 
 function ModeIcon({ mode, className }: { mode: string; className?: string }) {
-  const writingCoachIsCustom = useWritingCoachIsCustom()
-  return createElement(getModeIcon(mode, writingCoachIsCustom), {
+  return createElement(getModeIcon(mode), {
     'aria-hidden': true,
     className,
   })
@@ -29,7 +27,6 @@ export function ModeSwitcher({
   testIdPrefix?: string
 } = {}) {
   const t = useTranslations()
-  const writingCoachIsCustom = useWritingCoachIsCustom()
   const storeModeOptions = useSettingsStore((state) => state.modeOptions)
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const setSelectedMode = useSettingsStore((state) => state.setSelectedMode)
@@ -40,11 +37,7 @@ export function ModeSwitcher({
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
 
-  const selectedLabel = formatModeLabel(
-    t,
-    effectiveSelectedMode,
-    writingCoachIsCustom
-  )
+  const selectedLabel = formatModeLabel(t, effectiveSelectedMode)
 
   return (
     <SelectPrimitive.Root
@@ -83,13 +76,8 @@ export function ModeSwitcher({
         >
           <SelectPrimitive.Viewport className="p-1.5">
             {modeKeys.map((mode) => {
-              const label = formatModeLabel(t, mode, writingCoachIsCustom)
-              const description = getModeDescription(
-                t,
-                mode,
-                modeOptions,
-                writingCoachIsCustom
-              )
+              const label = formatModeLabel(t, mode)
+              const description = getModeDescription(t, mode, modeOptions)
               const descriptionId = `${testIdPrefix}-description-${mode}`
 
               return (

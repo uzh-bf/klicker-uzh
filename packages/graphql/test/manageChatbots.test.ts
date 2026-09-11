@@ -819,48 +819,9 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       })
     })
 
-    it('preserves a legacy custom persona and rejects enabling the colliding built-in', async () => {
-      const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
-      const systemPrompts = {
-        'writing-coach': {
-          prompt: 'synthetic-custom-prompt',
-          description: 'synthetic-description',
-          enabled: true,
-        },
-      }
-      await prisma.chatbot.update({
-        where: { id: chatbot.id },
-        data: { systemPrompts },
-      })
-      await expect(
-        updateChatbotStandardModeConfig(
-          { chatbotId: chatbot.id, config },
-          userOneCtx
-        )
-      ).resolves.toMatchObject({
-        writingCoachUnavailableReason: 'CUSTOM_MODE_COLLISION',
-        standardModeConfig: { writingCoachEnabled: false },
-      })
-      await expect(
-        updateChatbotStandardModeConfig(
-          {
-            chatbotId: chatbot.id,
-            config: { ...config, writingCoachEnabled: true },
-          },
-          userOneCtx
-        )
-      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
-      await expect(
-        prisma.chatbot.findUniqueOrThrow({ where: { id: chatbot.id } })
-      ).resolves.toMatchObject({
-        systemPrompts,
-        standardModeConfig: { writingCoachEnabled: false },
-      })
-    })
-
     it.each([
       'mode-choice',
-      'custom-persona',
+      'lecturer-guidance',
     ] as const)('rejects a stale save after a concurrent %s change', async (change) => {
       const chatbot = await seedOwnedChatbot(ChatbotStatus.DRAFT)
       const changed =
@@ -868,7 +829,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
           ? { standardModeConfig: { ...config, writingCoachEnabled: true } }
           : {
               systemPrompts: {
-                'writing-coach': { prompt: 'synthetic-new-custom' },
+                tutor: { prompt: 'synthetic-new-guidance' },
               },
             }
       const staleRead = await prisma.chatbot.findUniqueOrThrow({

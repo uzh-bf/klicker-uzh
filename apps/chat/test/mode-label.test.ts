@@ -45,17 +45,14 @@ describe('formatModeLabel', () => {
   })
 })
 
-test('keeps legacy custom presentation separate from the new built-in mode', () => {
+test('uses localized standard-mode presentation for Writing Coach', () => {
   const syntheticT = ((key: string) =>
     `localized:${key}`) as unknown as Parameters<typeof formatModeLabel>[0]
   const mode = 'writing-coach'
   expect(isKnownMode(mode)).toBe(true)
-  expect(isKnownMode(mode, true)).toBe(false)
   expect(formatModeLabel(syntheticT, mode)).toBe(`localized:chat.modes.${mode}`)
-  expect(formatModeLabel(syntheticT, mode, true)).toBe('Writing-coach')
-  expect(
-    getModeDescription(syntheticT, mode, { [mode]: 'custom-description' }, true)
-  ).toBe('custom-description')
-  expect(getModeIcon(mode, true)).toBe(getModeIcon('synthetic-custom'))
-  expect(getModeIcon(mode)).not.toBe(getModeIcon(mode, true))
+  expect(getModeDescription(syntheticT, mode, {})).toBe(
+    `localized:chat.modes.${mode}Description`
+  )
+  expect(getModeIcon(mode)).not.toBe(getModeIcon('synthetic-custom'))
 })

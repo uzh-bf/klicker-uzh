@@ -45,7 +45,6 @@ interface DisclaimerStatus {
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
-  readonly initialWritingCoachIsCustom?: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -63,11 +62,7 @@ interface DisclaimerDeclinedProps {
   readonly onDecline: () => Promise<void>
 }
 
-export function Assistant({
-  chatbot,
-  initialModeOptions,
-  initialWritingCoachIsCustom = false,
-}: AssistantProps) {
+export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
   const t = useTranslations()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(
@@ -125,7 +120,6 @@ export function Assistant({
         <RuntimeProvider
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
-          initialWritingCoachIsCustom={initialWritingCoachIsCustom}
         >
           <AssistantLayout chatbot={chatbot} />
         </RuntimeProvider>

@@ -361,14 +361,14 @@ function ChatbotAuthoring({
       enabled: standardModeConfig.explainerEnabled,
     },
     {
-      mode: 'writing-coach' as const,
-      title: t('manage.resources.chatbotModeWritingCoach'),
-      enabled: standardModeConfig.writingCoachEnabled,
-    },
-    {
       mode: 'quizzer' as const,
       title: t('manage.resources.chatbotModeQuizzer'),
       enabled: standardModeConfig.quizzerEnabled,
+    },
+    {
+      mode: 'writing-coach' as const,
+      title: t('manage.resources.chatbotModeWritingCoach'),
+      enabled: standardModeConfig.writingCoachEnabled,
     },
   ]
   const editorKey = `${chatbot.id}:${disclaimer?.id ?? 'new'}`
@@ -803,8 +803,6 @@ function ChatbotAuthoring({
                             )}
                             disabled={
                               controlsDisabled ||
-                              writingCoachUnavailableReason ===
-                                'CUSTOM_MODE_COLLISION' ||
                               (values.writingCoachEnabled &&
                                 !values.tutorEnabled &&
                                 !values.explainerEnabled)
@@ -830,10 +828,7 @@ function ChatbotAuthoring({
                               data-cy="chatbot-writing-coach-unavailable"
                             >
                               {t(
-                                writingCoachUnavailableReason ===
-                                  'CUSTOM_MODE_COLLISION'
-                                  ? 'manage.resources.chatbotWritingCoachCollision'
-                                  : 'manage.resources.chatbotWritingCoachRequiredTool'
+                                'manage.resources.chatbotWritingCoachRequiredTool'
                               )}
                             </p>
                           )}
@@ -942,12 +937,7 @@ function ChatbotAuthoring({
                         className="text-sm text-amber-800"
                         data-cy="chatbot-writing-coach-unavailable"
                       >
-                        {t(
-                          writingCoachUnavailableReason ===
-                            'CUSTOM_MODE_COLLISION'
-                            ? 'manage.resources.chatbotWritingCoachCollision'
-                            : 'manage.resources.chatbotWritingCoachRequiredTool'
-                        )}
+                        {t('manage.resources.chatbotWritingCoachRequiredTool')}
                       </p>
                     )}
                   </div>

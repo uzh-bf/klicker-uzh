@@ -27,11 +27,8 @@ const THREAD_SUGGESTIONS_BY_MODE: Record<KnownMode, ThreadSuggestion[]> = {
   'writing-coach': [{ id: 'reviewWriting' }, { id: 'reviewRevision' }],
 }
 
-export function getThreadSuggestions(
-  mode: string,
-  writingCoachIsCustom = false
-): ThreadSuggestion[] {
-  return isKnownMode(mode, writingCoachIsCustom)
+export function getThreadSuggestions(mode: string): ThreadSuggestion[] {
+  return isKnownMode(mode)
     ? THREAD_SUGGESTIONS_BY_MODE[mode]
     : THREAD_SUGGESTIONS_BY_MODE.tutor
 }

@@ -358,19 +358,6 @@ describe('required MCP chat preflight', () => {
     )
   })
 
-  test('rejects disabled Writing Coach before any model or tool work', async () => {
-    mocks.findUnique.mockResolvedValueOnce(
-      createChatbot({ mcpConfigurations: [] })
-    )
-    const response = await POST(createRequest('writing-coach'), {
-      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
-    })
-    expect(response.status).toBe(400)
-    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
-    expect(mocks.compileSystemPrompt).not.toHaveBeenCalled()
-    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
-  })
-
   test('rejects a request for a typed-disabled mode before MCP and thread work', async () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({

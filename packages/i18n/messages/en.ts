@@ -3889,8 +3889,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotModeWritingCoach: 'Writing Coach',
       chatbotModeWritingCoachDescription:
         'Gives specific writing feedback and revision strategies. Participants write every revision themselves.',
-      chatbotWritingCoachCollision:
-        'Writing Coach is unavailable because an existing custom mode uses the same identifier. That custom mode is preserved. Contact the chatbot administrator to resolve the conflict.',
       chatbotWritingCoachRequiredTool:
         'Writing Coach is currently unavailable to participants because this chatbot requires a course-tool binding that the mode does not have. Contact the chatbot administrator to configure a compatible binding.',
       chatbotModeTutor: 'Tutor',

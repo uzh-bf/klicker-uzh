@@ -15,22 +15,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** A stored same-key entry remains a custom persona, including when disabled. */
-export function hasLegacyWritingCoachMode(systemPrompts: unknown): boolean {
-  return (
-    isRecord(systemPrompts) && Object.hasOwn(systemPrompts, 'writing-coach')
-  )
-}
-
 export function getWritingCoachUnavailableReason(
-  systemPrompts: unknown,
   mcpConfigurations: readonly {
     chatMode: string
     isEnabled?: boolean
     parameters?: unknown
   }[] = []
-): 'CUSTOM_MODE_COLLISION' | 'REQUIRED_TOOL_BINDING' | null {
-  if (hasLegacyWritingCoachMode(systemPrompts)) return 'CUSTOM_MODE_COLLISION'
+): 'REQUIRED_TOOL_BINDING' | null {
   const requiredBindings = mcpConfigurations.filter(
     (config) =>
       config.isEnabled !== false &&

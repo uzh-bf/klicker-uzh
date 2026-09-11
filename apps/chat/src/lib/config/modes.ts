@@ -2,9 +2,9 @@ import {
   GraduationCap,
   Lightbulb,
   ListChecks,
+  type LucideIcon,
   PencilLine,
   Sparkles,
-  type LucideIcon,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
 
@@ -21,12 +21,8 @@ const MODE_ICONS = {
 
 export type KnownMode = keyof typeof MODE_ICONS
 
-export function isKnownMode(
-  mode: string,
-  writingCoachIsCustom = false
-): mode is KnownMode {
-  if (mode === 'writing-coach' && writingCoachIsCustom) return false
-  return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
+export function isKnownMode(mode: string): mode is KnownMode {
+  return Object.hasOwn(MODE_ICONS, mode)
 }
 
 export function parseModeOptions(
@@ -53,9 +49,7 @@ export function resolveSelectedMode(
   const firstMode = Object.keys(modeOptions)[0]
   if (!firstMode) return ''
 
-  return Object.prototype.hasOwnProperty.call(modeOptions, selectedMode)
-    ? selectedMode
-    : firstMode
+  return Object.hasOwn(modeOptions, selectedMode) ? selectedMode : firstMode
 }
 
 export function hasAvailableChatMode(
@@ -73,19 +67,15 @@ export function getComposerSubmitMode(
 export function getModeDescription(
   t: ReturnType<typeof useTranslations<never>>,
   mode: string,
-  modeOptions: Record<string, string>,
-  writingCoachIsCustom = false
+  modeOptions: Record<string, string>
 ): string {
-  return isKnownMode(mode, writingCoachIsCustom)
+  return isKnownMode(mode)
     ? t(`chat.modes.${mode}Description`)
     : (modeOptions[mode]?.trim() ?? '')
 }
 
-export function getModeIcon(
-  mode: string,
-  writingCoachIsCustom = false
-): LucideIcon {
-  return isKnownMode(mode, writingCoachIsCustom) ? MODE_ICONS[mode] : Sparkles
+export function getModeIcon(mode: string): LucideIcon {
+  return isKnownMode(mode) ? MODE_ICONS[mode] : Sparkles
 }
 
 /**
@@ -100,10 +90,9 @@ export function formatModeLabel(
   // gets from a bare `useTranslations()`. Without it the generic resolves to a
   // union over every namespace and only relative keys typecheck.
   t: ReturnType<typeof useTranslations<never>>,
-  mode: string,
-  writingCoachIsCustom = false
+  mode: string
 ): string {
-  return isKnownMode(mode, writingCoachIsCustom)
+  return isKnownMode(mode)
     ? t(`chat.modes.${mode}`)
     : mode.charAt(0).toUpperCase() + mode.slice(1)
 }

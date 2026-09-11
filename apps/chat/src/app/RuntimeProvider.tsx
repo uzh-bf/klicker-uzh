@@ -24,12 +24,10 @@ const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 export function RuntimeProvider({
   chatbotId,
   initialModeOptions,
-  initialWritingCoachIsCustom = false,
   children,
 }: Readonly<{
   chatbotId: string
   initialModeOptions: Record<string, string>
-  initialWritingCoachIsCustom?: boolean
   children: React.ReactNode
 }>) {
   const { embedded } = useChatUi()
@@ -53,9 +51,6 @@ export function RuntimeProvider({
   const selectedModel = useSettingsStore((state) => state.selectedModel)
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const loadedModeOptions = useSettingsStore((state) => state.modeOptions)
-  const loadedWritingCoachIsCustom = useSettingsStore(
-    (state) => state.writingCoachIsCustom
-  )
   const modeOptionsChatbotId = useSettingsStore(
     (state) => state.modeOptionsChatbotId
   )
@@ -114,11 +109,7 @@ export function RuntimeProvider({
       // (mode options, credits) are still needed for the embedded chrome.
       previousRuntimeContext.current = { chatbotId, embedded, threadId }
       void (async () => {
-        await loadModeOptions(
-          chatbotId,
-          initialModeOptions,
-          initialWritingCoachIsCustom
-        )
+        await loadModeOptions(chatbotId, initialModeOptions)
         await loadCredits(chatbotId)
       })()
       return
@@ -154,18 +145,13 @@ export function RuntimeProvider({
     })()
 
     void (async () => {
-      await loadModeOptions(
-        chatbotId,
-        initialModeOptions,
-        initialWritingCoachIsCustom
-      )
+      await loadModeOptions(chatbotId, initialModeOptions)
       await loadCredits(chatbotId)
     })()
   }, [
     chatbotId,
     embedded,
     initialModeOptions,
-    initialWritingCoachIsCustom,
     loadCredits,
     loadModeOptions,
     loadThreads,
@@ -336,14 +322,7 @@ export function RuntimeProvider({
   })
 
   return (
-    <ModeOptionsProvider
-      modeOptions={activeModeOptions}
-      writingCoachIsCustom={
-        modeOptionsChatbotId === chatbotId
-          ? loadedWritingCoachIsCustom
-          : initialWritingCoachIsCustom
-      }
-    >
+    <ModeOptionsProvider modeOptions={activeModeOptions}>
       <AssistantRuntimeProvider runtime={runtime}>
         {children}
       </AssistantRuntimeProvider>

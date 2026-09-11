@@ -3955,8 +3955,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModeWritingCoach: 'Schreibcoach',
       chatbotModeWritingCoachDescription:
         'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
-      chatbotWritingCoachCollision:
-        'Der Schreibcoach ist nicht verfügbar, weil ein bestehender benutzerdefinierter Modus dieselbe Kennung verwendet. Dieser Modus bleibt erhalten. Kontaktieren Sie die Chatbot-Administration, um den Konflikt zu beheben.',
       chatbotWritingCoachRequiredTool:
         'Der Schreibcoach ist für Teilnehmende derzeit nicht verfügbar, weil diesem Modus eine für den Chatbot erforderliche Kurswerkzeug-Verknüpfung fehlt. Kontaktieren Sie die Chatbot-Administration, um eine passende Verknüpfung einzurichten.',
       chatbotModeTutor: 'Tutor',

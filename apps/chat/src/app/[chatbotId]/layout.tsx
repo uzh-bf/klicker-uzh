@@ -1,4 +1,3 @@
-import { hasLegacyWritingCoachMode } from '@klicker-uzh/util'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
@@ -61,9 +60,6 @@ export default async function ChatLayout({
           avatar: chatbot.avatar ?? undefined,
         }}
         initialModeOptions={initialModeOptions}
-        initialWritingCoachIsCustom={hasLegacyWritingCoachMode(
-          chatbot.systemPrompts
-        )}
       />
       {children}
     </>

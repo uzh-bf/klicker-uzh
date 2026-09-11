@@ -422,34 +422,22 @@ describe('Writing Coach availability', () => {
     ).toEqual(['writing-coach'])
   })
 
-  test('preserves a same-key custom persona and its exact-key selection', () => {
-    const stored = {
-      'writing-coach': {
-        prompt: 'Synthetic custom instructions.',
-        description: 'Synthetic custom description.',
-        enabled: true,
-      },
-    }
-    const options = resolveEffectiveChatModeOptions(stored, [])
-    expect(options['writing-coach']).toBe(stored['writing-coach'].description)
-    expect(resolveRequestedChatMode(options, 'WRITING-COACH', stored)).toBe(
-      'WRITING-COACH'
+  test('requires the typed opt-in even when stored guidance uses the same key', () => {
+    const stored = { 'writing-coach': { enabled: true } }
+    expect(resolveEffectiveChatModeOptions(stored, [])).not.toHaveProperty(
+      'writing-coach'
     )
-    expect(resolveRequestedChatMode(options, 'writing-coach', stored)).toBe(
+    const options = resolveEffectiveChatModeOptions(stored, [], config)
+    expect(Object.keys(options)).toEqual(['writing-coach'])
+    expect(resolveRequestedChatMode(options, 'WRITING-COACH')).toBe(
       'writing-coach'
     )
     expect(
-      resolveRequestedChatMode(
-        resolveEffectiveChatModeOptions(null, [], config),
-        'WRITING-COACH'
-      )
-    ).toBe('writing-coach')
-    expect(
       resolveEffectiveChatModeOptions(
-        { 'writing-coach': { ...stored['writing-coach'], enabled: false } },
+        { 'writing-coach': { enabled: false } },
         [],
         config
       )
-    ).not.toHaveProperty('writing-coach')
+    ).toHaveProperty('writing-coach')
   })
 })

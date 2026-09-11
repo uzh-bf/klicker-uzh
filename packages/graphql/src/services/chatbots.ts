@@ -6,7 +6,6 @@ import {
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
   getWritingCoachUnavailableReason,
-  hasLegacyWritingCoachMode,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '@klicker-uzh/util'
@@ -495,10 +494,8 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 
   return {
     ...chatbotWithoutSystemPrompts,
-    writingCoachUnavailableReason: getWritingCoachUnavailableReason(
-      systemPrompts,
-      mcpConfigurations
-    ),
+    writingCoachUnavailableReason:
+      getWritingCoachUnavailableReason(mcpConfigurations),
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
@@ -1177,14 +1174,6 @@ export async function updateChatbotStandardModeConfig(
           chatbot.systemPrompts
         ).writingCoachEnabled,
     })
-    if (
-      standardModeConfig.writingCoachEnabled &&
-      hasLegacyWritingCoachMode(chatbot.systemPrompts)
-    ) {
-      throw new Error(
-        'Writing Coach cannot be enabled while a custom mode uses its identifier'
-      )
-    }
   } catch (error) {
     throw chatbotError(
       error instanceof Error
@@ -1200,7 +1189,7 @@ export async function updateChatbotStandardModeConfig(
         id: chatbot.id,
         ownerId: ctx.user.sub,
         status: { in: metadataAndModelEditableStatuses },
-        // Do not overwrite a newer mode choice or a newly added custom persona.
+        // Do not overwrite newer mode settings or lecturer guidance.
         standardModeConfig: {
           equals: chatbot.standardModeConfig ?? Prisma.AnyNull,
         },

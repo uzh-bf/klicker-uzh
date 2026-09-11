@@ -1,7 +1,4 @@
-import {
-  hasLegacyWritingCoachMode,
-  normalizeChatbotStandardModeConfig,
-} from '@klicker-uzh/util'
+import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { courseDataSection } from '@/src/lib/server/courseContextInstructions'
@@ -51,10 +48,7 @@ function modeSections(
   selectedMode: string,
   standardModeConfig: unknown
 ): string[] {
-  const platformMode =
-    selectedMode === 'writing-coach' && hasLegacyWritingCoachMode(systemPrompts)
-      ? undefined
-      : DEFAULT_PROMPT[selectedMode]?.prompt
+  const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
   const lecturerPrompt = storedModePrompt(systemPrompts, selectedMode)
   const typedContext = standardModeContextSection(
     systemPrompts,
@@ -103,12 +97,6 @@ function standardModeContextSection(
   ) {
     return null
   }
-
-  if (
-    selectedMode === 'writing-coach' &&
-    hasLegacyWritingCoachMode(systemPrompts)
-  )
-    return null
 
   const normalizedConfig = normalizeChatbotStandardModeConfig(
     standardModeConfig,

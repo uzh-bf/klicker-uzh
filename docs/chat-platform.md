@@ -770,10 +770,9 @@ least one of Tutor, Explainer, or Writing Coach must remain enabled; Quizzer alo
 Missing historical flags normalize to false. An older mutation that omits the new flag preserves
 the stored choice. The save compares the read configuration and custom prompts before writing,
 so a concurrent mode change or added custom persona causes an edit conflict instead of being
-overwritten. A stored same-key custom entry retains its prompt, exact identifier, description,
-enabled state and custom presentation. Authoring reports that collision and rejects enabling
-the built-in on that chatbot. The client receives only a custom-classification boolean, never
-the stored prompt.
+overwritten. `writing-coach` is a standard-mode identifier. Stored guidance with that key
+cannot enable the mode or replace its platform contract. Other custom modes retain their
+existing behavior; stored prompt text is never returned to the client.
 
 The Writing Coach prompt uses generic criteria for purpose, reasoning, organization, clarity
 and tone. It asks for evidence-based feedback and revision strategies adapted to the excerpt,

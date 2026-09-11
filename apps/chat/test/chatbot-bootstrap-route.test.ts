@@ -48,9 +48,7 @@ describe('chatbot bootstrap route', () => {
     expect(Object.keys(payload).sort()).toEqual([
       'modeOptions',
       'modelSelection',
-      'writingCoachIsCustom',
     ])
-    expect(payload.writingCoachIsCustom).toBe(false)
     expect(payload.modelSelection).toBe(true)
     expect(typeof payload.modeOptions.tutor).toBe('string')
     expect(JSON.stringify(payload)).not.toContain('private prompt')
@@ -89,30 +87,6 @@ describe('chatbot bootstrap route', () => {
       },
     })
     expect(payload.modeOptions.tutor).toBeUndefined()
-  })
-
-  test('exposes legacy identity without exposing the stored custom prompt', async () => {
-    const customMode = {
-      prompt: 'synthetic-private-custom-instructions',
-      description: 'synthetic-custom-description',
-      enabled: true,
-    }
-    mocks.getChatbotOr404.mockResolvedValueOnce({
-      chatbot: {
-        modelSelection: false,
-        systemPrompts: { 'writing-coach': customMode },
-        standardModeConfig: null,
-        mcpConfigurations: [],
-      },
-    })
-    const response = await GET(
-      new NextRequest(`http://localhost/api/chatbots/${CHATBOT_ID}`),
-      { params: Promise.resolve({ chatbotId: CHATBOT_ID }) }
-    )
-    const payload = await response.json()
-    expect(payload.writingCoachIsCustom).toBe(true)
-    expect(payload.modeOptions['writing-coach']).toBe(customMode.description)
-    expect(JSON.stringify(payload)).not.toContain(customMode.prompt)
   })
 
   test('returns the authorization response without loading bootstrap data', async () => {

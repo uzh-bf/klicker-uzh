@@ -1,7 +1,4 @@
-import {
-  hasLegacyWritingCoachMode,
-  normalizeChatbotStandardModeConfig,
-} from '@klicker-uzh/util'
+import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 
@@ -157,18 +154,12 @@ export function resolveEffectiveMCPConfigurations<
 
 export function resolveRequestedChatMode(
   modeOptions: Record<string, string>,
-  requestedMode: string,
-  systemPrompts: unknown = null
+  requestedMode: string
 ): string {
   if (Object.hasOwn(modeOptions, requestedMode)) return requestedMode
 
   const normalizedMode = requestedMode.toLowerCase()
-  const isStandardMode =
-    Object.hasOwn(DEFAULT_PROMPT, normalizedMode) &&
-    !(
-      normalizedMode === 'writing-coach' &&
-      hasLegacyWritingCoachMode(systemPrompts)
-    )
+  const isStandardMode = Object.hasOwn(DEFAULT_PROMPT, normalizedMode)
   return isStandardMode && Object.hasOwn(modeOptions, normalizedMode)
     ? normalizedMode
     : requestedMode
@@ -193,10 +184,6 @@ function isStandardModeEnabled(
   systemPrompts: unknown,
   mode: string
 ): boolean {
-  if (mode === 'writing-coach' && hasLegacyWritingCoachMode(systemPrompts)) {
-    return !isModeExplicitlyDisabled(systemPrompts, mode)
-  }
-
   const normalizedConfig = normalizeChatbotStandardModeConfig(
     standardModeConfig,
     systemPrompts
@@ -217,10 +204,7 @@ function getModeDescription(systemPrompts: unknown, mode: string): string {
   const defaultDescription = (
     DEFAULT_MODE_DESCRIPTIONS as Record<string, string>
   )[mode]
-  if (
-    typeof defaultDescription === 'string' &&
-    !(mode === 'writing-coach' && hasLegacyWritingCoachMode(systemPrompts))
-  ) {
+  if (typeof defaultDescription === 'string') {
     return defaultDescription
   }
 

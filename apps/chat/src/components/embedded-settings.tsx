@@ -6,12 +6,10 @@ import { twMerge } from 'tailwind-merge'
 import { isKnownMode } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
-import { useWritingCoachIsCustom } from './mode-options-context'
 
 export function EmbeddedSettings() {
   const t = useTranslations()
   const { showMinimalSettings } = useChatUi()
-  const writingCoachIsCustom = useWritingCoachIsCustom()
   const { selectedMode, modeOptions, setSelectedMode } = useSettingsStore()
 
   if (!showMinimalSettings) return null
@@ -32,7 +30,7 @@ export function EmbeddedSettings() {
             not fall back to `modeOptions[key]`, which is the English-only
             registry description, or the DE select leaks raw English. */}
         {modeKeys.map((key) => {
-          const label = isKnownMode(key, writingCoachIsCustom)
+          const label = isKnownMode(key)
             ? t(`chat.modes.${key}`)
             : key.charAt(0).toUpperCase() + key.slice(1)
           return (

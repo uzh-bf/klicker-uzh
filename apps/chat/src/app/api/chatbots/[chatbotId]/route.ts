@@ -1,4 +1,3 @@
-import { hasLegacyWritingCoachMode } from '@klicker-uzh/util'
 import { type NextRequest, NextResponse } from 'next/server'
 import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
@@ -41,7 +40,6 @@ export async function GET(
     const { mcpConfigurations, ...chatbot } = chatbotResult.chatbot
     return NextResponse.json({
       modelSelection: chatbot.modelSelection,
-      writingCoachIsCustom: hasLegacyWritingCoachMode(chatbot.systemPrompts),
       modeOptions: resolveEffectiveChatModeOptions(
         chatbot.systemPrompts,
         mcpConfigurations,

@@ -8,7 +8,6 @@ import { TextField, useSidebar } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useParams, useRouter } from 'next/navigation'
 import { formatModeLabel, getModeIcon } from '../lib/config/modes'
-import { useWritingCoachIsCustom } from './mode-options-context'
 import { useChatStore, type Thread } from '../stores/chatStore'
 import {
   transitionDeleteConfirm,
@@ -206,7 +205,6 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
   onSelect,
   onDelete,
 }) => {
-  const writingCoachIsCustom = useWritingCoachIsCustom()
   const t = useTranslations()
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const [isEditing, setIsEditing] = useState(false)
@@ -402,18 +400,11 @@ const ThreadListItem: FC<ThreadListItemProps> = ({
                 data-cy="chat-thread-mode"
                 className="text-muted-foreground flex items-center gap-1 text-xs"
               >
-                {createElement(
-                  getModeIcon(thread.lastChatMode, writingCoachIsCustom),
-                  {
-                    className: 'size-3 shrink-0',
-                  }
-                )}
+                {createElement(getModeIcon(thread.lastChatMode), {
+                  className: 'size-3 shrink-0',
+                })}
                 <span className="truncate">
-                  {formatModeLabel(
-                    t,
-                    thread.lastChatMode,
-                    writingCoachIsCustom
-                  )}
+                  {formatModeLabel(t, thread.lastChatMode)}
                 </span>
               </p>
             )}

@@ -180,28 +180,23 @@ describe('chatbot standard mode configuration', () => {
     ).toThrow()
   })
 
-  it('explains custom collisions and required-tool exclusions without inheriting tools', () => {
+  it('explains required-tool exclusions without inheriting tools', () => {
     const requiredTutor = { chatMode: 'tutor', parameters: { required: true } }
-    expect(getWritingCoachUnavailableReason(null)).toBeNull()
-    expect(
-      getWritingCoachUnavailableReason({ 'writing-coach': { enabled: false } })
-    ).toBe('CUSTOM_MODE_COLLISION')
-    expect(getWritingCoachUnavailableReason(null, [requiredTutor])).toBe(
+    expect(getWritingCoachUnavailableReason()).toBeNull()
+    expect(getWritingCoachUnavailableReason([requiredTutor])).toBe(
       'REQUIRED_TOOL_BINDING'
     )
     expect(
-      getWritingCoachUnavailableReason(null, [
-        { ...requiredTutor, isEnabled: false },
-      ])
+      getWritingCoachUnavailableReason([{ ...requiredTutor, isEnabled: false }])
     ).toBeNull()
     expect(
-      getWritingCoachUnavailableReason(null, [
+      getWritingCoachUnavailableReason([
         requiredTutor,
         { chatMode: 'writing-coach' },
       ])
     ).toBe('REQUIRED_TOOL_BINDING')
     expect(
-      getWritingCoachUnavailableReason(null, [
+      getWritingCoachUnavailableReason([
         requiredTutor,
         { ...requiredTutor, chatMode: 'writing-coach' },
       ])

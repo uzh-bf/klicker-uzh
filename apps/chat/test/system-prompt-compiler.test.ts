@@ -210,25 +210,33 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(DEFAULT_PROMPT[mode]!.prompt)
   })
 
-  test('keeps a same-key legacy persona distinct from the built-in Writing Coach', () => {
-    const prompt = 'SYNTHETIC-CUSTOM-PERSONA'
-    const result = compilePrompt(
-      { 'writing-coach': { prompt } },
-      'writing-coach',
-      [],
-      {
-        tutorEnabled: true,
-        explainerEnabled: true,
-        quizzerEnabled: false,
-        writingCoachEnabled: true,
-        scopeNote: 'SYNTHETIC-STANDARD-CONTEXT',
-      }
-    )
-    expect(result).toContain(prompt)
-    expect(result).toContain(CUSTOM_PERSONA_MARK)
-    expect(result).not.toContain(DEFAULT_PROMPT['writing-coach']!.prompt)
-    expect(result).not.toContain('SYNTHETIC-STANDARD-CONTEXT')
-    expect(result).not.toContain(`${PLATFORM_MODE_MARK} writing-coach`)
+  test('cannot replace the Writing Coach contract with stored guidance', () => {
+    const mode = DEFAULT_PROMPT['writing-coach']!
+    const original = mode.prompt
+    mode.prompt = 'SYNTHETIC-PLATFORM-CONTRACT'
+    try {
+      const guidance = 'SYNTHETIC-STORED-GUIDANCE'
+      const context = 'SYNTHETIC-STANDARD-CONTEXT'
+      const result = compilePrompt(
+        { 'writing-coach': { prompt: guidance } },
+        'writing-coach',
+        [],
+        {
+          tutorEnabled: false,
+          explainerEnabled: false,
+          quizzerEnabled: false,
+          writingCoachEnabled: true,
+          scopeNote: context,
+        }
+      )
+      expect(result).toContain(guidance)
+      expect(result).toContain(context)
+      expect(result).toContain(mode.prompt)
+      expect(result.indexOf(guidance)).toBeLessThan(result.indexOf(mode.prompt))
+      expect(result.indexOf(context)).toBeLessThan(result.indexOf(mode.prompt))
+    } finally {
+      mode.prompt = original
+    }
   })
 
   test('serializes instruction-like course display names as one data value', () => {

@@ -776,11 +776,7 @@ export async function POST(
     chatbot.mcpConfigurations,
     chatbot.standardModeConfig
   )
-  const selectedMode = resolveRequestedChatMode(
-    modeOptions,
-    requestedMode,
-    chatbot.systemPrompts
-  )
+  const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
       { error: `Unsupported chat mode: ${requestedMode}` },

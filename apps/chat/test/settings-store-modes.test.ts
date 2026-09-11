@@ -25,7 +25,6 @@ describe('settingsStore mode loading', () => {
     useSettingsStore.setState({
       modeOptions: {},
       modeOptionsChatbotId: null,
-      writingCoachIsCustom: false,
       selectedMode: 'tutor',
     })
   })
@@ -154,34 +153,18 @@ describe('settingsStore mode loading', () => {
     expect(useSettingsStore.getState().selectedMode).toBe('')
   })
 
-  test('selects standalone Writing Coach and retains legacy identity in fallback metadata', async () => {
+  test('selects the first server mode when the stored selection is unavailable', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          modeOptions: { 'writing-coach': 'synthetic-description' },
-          writingCoachIsCustom: false,
+          modeOptions: { 'synthetic-mode': 'synthetic-description' },
         }),
       })
     )
-    useSettingsStore.setState({ selectedMode: 'tutor' })
-    await useSettingsStore.getState().loadModeOptions('writing-bot')
-    expect(useSettingsStore.getState().selectedMode).toBe('writing-coach')
-    expect(useSettingsStore.getState().writingCoachIsCustom).toBe(false)
-
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockRejectedValue(new Error('synthetic-offline'))
-    )
-    await useSettingsStore
-      .getState()
-      .loadModeOptions(
-        'legacy-bot',
-        { 'writing-coach': 'synthetic-custom-description' },
-        true
-      )
-    expect(useSettingsStore.getState().writingCoachIsCustom).toBe(true)
-    expect(useSettingsStore.getState().modeOptionsChatbotId).toBe('legacy-bot')
+    useSettingsStore.setState({ selectedMode: 'unavailable-mode' })
+    await useSettingsStore.getState().loadModeOptions('chatbot-1')
+    expect(useSettingsStore.getState().selectedMode).toBe('synthetic-mode')
   })
 })
