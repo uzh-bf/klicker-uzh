@@ -12,7 +12,7 @@ export const GUEST_ACCOUNT_TYPE = 'lti_guest'
 const CHAT_GUEST_TOKEN_EXPIRY = '14d'
 const CHAT_GUEST_SCOPE = 'CHAT_GUEST'
 
-export type LtiScope = 'LTI1.1' | 'LTI1.3'
+export type LtiScope = 'LTI1.3'
 export type AuthMode = 'account' | 'anonymous'
 
 // ---------------------------------------------------------------------------
@@ -106,6 +106,7 @@ export async function findOrCreateGuestPersona(
         },
       },
       create: {
+        isActive: false,
         course: { connect: { id: courseId } },
         participant: { connect: { id: existing.participantId } },
       },
@@ -136,6 +137,7 @@ export async function findOrCreateGuestPersona(
         },
         participations: {
           create: {
+            isActive: false,
             course: { connect: { id: courseId } },
           },
         },
@@ -162,6 +164,7 @@ export async function findOrCreateGuestPersona(
             },
           },
           create: {
+            isActive: false,
             course: { connect: { id: courseId } },
             participant: { connect: { id: racedExisting.participantId } },
           },
@@ -210,6 +213,7 @@ export async function verifyChatGuestToken(
 export interface LtiTokenPayload {
   sub: string
   email?: string
+  chatbotLaunch?: { courseId: string; chatbotId: string }
   scope: LtiScope
 }
 
@@ -224,7 +228,8 @@ export async function verifyLtiToken(token: string): Promise<LtiTokenPayload> {
 
   if (
     !payload.sub ||
-    (payload.scope !== 'LTI1.3' && payload.scope !== 'LTI1.1')
+    payload.scope !== 'LTI1.3' ||
+    typeof payload.exp !== 'number'
   ) {
     throw new Error('Invalid LTI token: missing sub or wrong scope')
   }
@@ -232,65 +237,7 @@ export async function verifyLtiToken(token: string): Promise<LtiTokenPayload> {
   return {
     sub: payload.sub,
     email: payload.email,
+    chatbotLaunch: payload.chatbotLaunch as LtiTokenPayload['chatbotLaunch'],
     scope: payload.scope as LtiScope,
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Auth decision resolver — pure function. Phase C wraps this with a UI page.
-// ---------------------------------------------------------------------------
-
-export interface ResolveLtiAuthInput {
-  ltiSub: string
-  ltiScope: LtiScope
-  courseId: string
-  // Verified `sub` from the request's `participant_token` cookie, or null if
-  // absent/invalid. The account branch only fires when this matches the real
-  // account participant id — a stale token for a different participant on a
-  // shared browser must not select the account branch.
-  participantTokenSub: string | null
-}
-
-export type ResolveLtiAuthDecision =
-  | { mode: 'account'; participantId: string }
-  | { mode: 'guest'; participantId: string; isNewGuest: boolean }
-
-// Phase A invariant: never delete or modify the existing real account row
-// when both a real account and a guest persona exist for the same `ltiSub`.
-// Phase C decides what to do with the guest history.
-export async function resolveLtiAuthDecision(
-  input: ResolveLtiAuthInput
-): Promise<ResolveLtiAuthDecision> {
-  const { ltiSub, ltiScope, courseId, participantTokenSub } = input
-
-  const realAccount = await prisma.participantAccount.findFirst({
-    where: { ssoId: ltiSub, NOT: { type: GUEST_ACCOUNT_TYPE } },
-    select: { participantId: true },
-  })
-
-  if (realAccount && participantTokenSub === realAccount.participantId) {
-    await prisma.participation.upsert({
-      where: {
-        courseId_participantId: {
-          courseId,
-          participantId: realAccount.participantId,
-        },
-      },
-      create: {
-        course: { connect: { id: courseId } },
-        participant: { connect: { id: realAccount.participantId } },
-      },
-      update: {},
-    })
-    return { mode: 'account', participantId: realAccount.participantId }
-  }
-
-  // Real account without valid token, or no real account at all → guest.
-  // Phase A invariant: leave the real account row untouched.
-  const guest = await findOrCreateGuestPersona(ltiSub, ltiScope, courseId)
-  return {
-    mode: 'guest',
-    participantId: guest.participantId,
-    isNewGuest: guest.isNew,
   }
 }
