@@ -166,16 +166,35 @@ global cleanup and seed only for a local host-launcher run. An explicit request
 in CI or without the launcher marker fails before setup instead of resetting
 the database. Individual specs still own their fixture writes and cleanup. Use this only
 when the required baseline already exists, and never against real course data.
-Without these options, runtime selection and database setup remain unchanged.
+Explicit spec paths infer the smallest runtime union from `playwright/profiles.json`.
+Broad or unresolved filters use the maximal `playwright` profile. An explicit
+`--runtime-profile` takes precedence. Applying a profile reconciles the runtime
+downward and stops services outside it, so pass `--runtime-profile` explicitly
+when optional services such as LiteLLM or MailHog must stay up. Normal database
+cleanup and seeding remain
+the acceptance default. Keep one worker for a shared runtime because per-spec
+cleanup resets shared fixed identities; parallel shards need separate complete
+worktree runtimes, including Redis and Hatchet.
+
+With `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1`, local host-launcher runs snapshot
+the clean synthetic seed into the git-ignored `playwright/.cache/seed-snapshot/`
+cache and restore it transactionally instead of reseeding. Snapshotting stays
+opt-in because measured restore times are not faster than the normal cleanup
+and seed reset; it exists for its exact-baseline guarantee. The cache key binds
+the Prisma schema, migrations, seed implementation and constants, lockfile,
+PostgreSQL major version, timezone and year, plus a live schema fingerprint;
+any drift falls back to cleanup and reseed. Snapshots are refused in CI and
+under `--preserve-database`, and a failed restore stops the run rather than
+continuing on partial state.
 
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
-|               | Playwright (`playwright/`)                                 |
-| ------------- | ---------------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                           |
-| Infisical env | `dev-playwright`                                           |
-| Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
-| CI            | official Playwright container, 8-way shard, all PRs        |
+|               | Playwright (`playwright/`)                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Local command | `pnpm playwright:host -- <args>`                                                                                    |
+| Infisical env | `dev-playwright`                                                                                                    |
+| Seed          | own `seedDatabase()` in `global-setup.ts`; opt-in `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1` restores a captured baseline |
+| CI            | official Playwright container, 8-way shard, ready PRs                                                               |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
@@ -247,9 +266,11 @@ Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
 `public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
-across the two-host public pool; pushes, fork PRs, drafts, bots, private
-repositories, and
-disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+across the two-host public pool; pushes, fork PRs, bots, private
+repositories, and disabled rollouts keep all eight shards on GitHub-hosted
+runners. Draft PRs never enter either route: the caller skips the reusable
+execution workflow and `test-playwright-status` reports an explicit successful
+skip, so no Playwright worker is allocated until the PR is marked ready. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
 public-PR routes to be selected. The workflow tars the five `.next` trees before
@@ -282,7 +303,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-CI installs `@devrouter/cli` version `0.0.55` through
+CI installs `@devrouter/cli` version `0.0.72` through
 `.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
 scripts disabled. The shard action uses the trusted control checkout's installer
 and passes its absolute executable path to the runtime adapter, including for
@@ -336,3 +357,21 @@ Root typecheck includes the Playwright compiler surface through its package `che
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
 For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+## Local recovery regression checks
+
+`pnpm run test:dev-runtime` runs the shell process/readiness regressions,
+the HTTP readiness deadline tests, and `util/test-recover-bootstrap.sh`.
+The recovery suite uses synthetic commands and temporary files, checks pinned
+consumer sources and mounted-source refusal, and never invokes real Docker or
+initializes a database. The existing runtime CI step runs this command.
+
+The MCP parent-repair acceptance suite is a separate manual integration check:
+inside the provisioned self-contained container at `/workspaces/klicker-uzh`,
+run `LOCAL_MCP_SEED_TEST=1 node apps/chat/scripts/test-local-mcp-seed.mjs`
+after building its util dependency. It requires the local PostgreSQL connection in the process
+environment and builds temporary mirror tables on that connection. It verifies
+restoration and rollback using synthetic fixtures, not production tables.
+It is not currently scheduled in CI; a passing shell recovery check does not
+claim MCP transaction coverage. Do not print connection strings or supply
+remote/production database credentials to this command.

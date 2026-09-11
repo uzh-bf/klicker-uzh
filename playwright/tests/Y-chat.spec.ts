@@ -2041,6 +2041,8 @@ test.describe('Chatbot History Rail', () => {
   test('pairs turns, keeps tool calls out of the rail, and navigates on desktop and mobile', async ({
     page,
   }) => {
+    // Keep the short fixture scrollable so selecting a turn exercises a jump.
+    await page.setViewportSize({ width: 1280, height: 400 })
     const firstUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c50'
     const firstAssistantId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c51'
     const secondUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c52'
@@ -2091,6 +2093,13 @@ test.describe('Chatbot History Rail', () => {
     await visitChat(page)
     await page.getByTestId('chat-thread-select').first().click()
 
+    await expect
+      .poll(() =>
+        page
+          .getByTestId('chat-thread-viewport')
+          .evaluate((viewport) => viewport.scrollHeight > viewport.clientHeight)
+      )
+      .toBe(true)
     const rail = page.locator('[data-cy="chat-history-rail"]')
     await expect(rail).toBeVisible()
     const ticks = rail.locator('[data-history-rail-tick]')
