@@ -239,7 +239,7 @@ scoped-token header as a transport rather than an identity.
 
 ### Exact-head CI
 
-Published head `93e640c117`. Shard 6 of the eight Playwright shards is the only
+Initial published head `93e640c117`. Shard 6 of the eight Playwright shards is the only
 execution failure, and it is caused by four defects the first real execution of
 the new spec exposed. All four are repaired in the follow-up commit:
 
@@ -280,6 +280,15 @@ not caused by this diff:
   of the new head to clear.
 
 `check-gitleaks` passes on the published head.
+
+Final exact-head CI on `127f1be5bf` completed on September 11, 2026. All eight
+Playwright shards passed, as did the hosted build, aggregate Playwright status,
+codebase check, GraphQL tests, MCP lecturer tests, translation smoke tests,
+builds, gitleaks and trusted-policy checks. The exact-head `ocr-review` still
+fails before review with provider HTTP 402 for all 20 files and zero tokens;
+it produced no review findings. GitGuardian still reports stale incident
+`37178135` from the earlier credential-shaped fixture commit; the branch
+gitleaks check is green and the replacement fixture is already present.
 
 ### Screenshot evidence (disposable runtime, host `agent-browser`)
 
