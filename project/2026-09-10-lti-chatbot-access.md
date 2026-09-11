@@ -335,13 +335,63 @@ import ordering and implicit-any declarations. These early checks did not establ
 type compatibility, generated-schema validity or working browser behavior; the
 runtime evidence above does.
 
-For deployed acceptance after a separately authorized rollout, test the existing
-OLAT activity with: no account; an existing linked account with no session; an
-already logged-in account differing from the LMS identity; and an account lacking
-course participation. Confirm selected identity, missing participation false,
-existing true and false unchanged, and repeated launch without duplicates. Repeat
-in a context blocking third-party cookies and after reload. Use approved synthetic
-accounts and messages, and verify page/API access together. Reject assessment,
-unpublished, mismatched and expired launches without creating identity or
-participation rows. Production testing with real accounts remains outside this
-batch.
+## E2E validation recipe (deployed acceptance)
+
+Production runs `v3.4.0-alpha.75-ai.1` (`2c78bd13`), which carries PR #5083 but
+not this branch. The recipe below therefore validates a deployment that contains
+this PR: staging, or production after a separately authorized rollout. The
+read-only probes recorded under "current deployment baseline" stay useful as the
+before-state.
+
+### Prerequisites
+
+- The chat deployment includes this branch's head.
+- The out-of-band Secret referenced by
+  `deploy/charts/klicker-uzh-v3/templates/deployment-chat.yaml` provides both
+  `APP_CHAT_GUEST_SECRET` and `CHAT_GUEST_SEED`. The chart defines no Secret
+  manifest of its own, and the built bundles constant-fold the refusal, so a
+  missing value is not recoverable at runtime: every guest launch answers
+  `500 {"error":"Failed to create guest session"}`. Check key presence, never
+  values.
+- An OLAT activity whose tool URL is
+  `https://lti.klicker.uzh.ch?redirectTo=https://pwa.klicker.uzh.ch/course/<COURSE_ID>/chatbot/<CHATBOT_ID>`,
+  plus the same chatbot reachable directly on the chat host.
+- Synthetic identities: an Edu-ID with no Klicker account; an Edu-ID linked to a
+  Klicker account without course participation; a linked account with an
+  existing `isActive=true` opt-in; and a signed-in Klicker session whose
+  participant differs from the LMS identity.
+
+### Current deployment baseline (read-only, 2026-09-11)
+
+| Probe | Observed |
+| --- | --- |
+| `GET https://chat.klicker.uzh.ch/auth/pwa-embed` | `307` to `https://app-klicker-klicker-uzh-v2-chat-<pod>:3000/noLogin`, an in-cluster origin (the defect this batch fixes for `/auth/lti`) |
+| `GET https://chat.klicker.uzh.ch/<CHATBOT_ID>` | `307 /noLogin?redirectTo=%2F<chatbotId>`; the proxy already emits a path-relative location |
+| `GET https://pwa.klicker.uzh.ch/course/<COURSE_ID>/chatbot/<CHATBOT_ID>` | `307 /en/login?redirect_to=...`; this is the PWA login screen a learner reaches without the signed handoff |
+| `GET https://lti.klicker.uzh.ch?redirectTo=...` with no OLAT session | `401` at ingress; the tool URL is launch-only and is not a defect |
+| `GET https://chat.klicker.uzh.ch/auth/lti` without parameters | `400 {"error":"Missing or invalid query parameters (jwt, courseId, chatbotId)"}` |
+
+### Scenario matrix
+
+| # | Launch identity | Expected identity and state |
+| --- | --- | --- |
+| 1 | No Klicker account | Course-scoped guest persona. Lands on `/<chatbotId>` on the chat host; `chat_participant_token` carries scope `CHAT_GUEST`; no `participant_token`; composer reachable; `?_t` stripped from the URL; missing participation created with `isActive=false` |
+| 2 | LTI-linked account, no browser session | `participant_token` with role `PARTICIPANT` for the linked participant plus the scoped PWA-embed cookie; missing participation created `isActive=false`; exactly one account link; no guest persona |
+| 3 | LTI-linked account already opted in | The pre-existing `isActive=true` is unchanged after the launch |
+| 4 | Signed-in Klicker session differing from the LMS identity | The session participant wins; no account link is created for the LMS identity; no guest persona appears |
+| 5 | Any of 1-2 repeated | Same persona or participant; no duplicate participant, account link or participation row |
+| 6 | Reload after a successful launch | Same identity; the chatbot stays reachable |
+| 7 | Context without the LTI probe cookie | The entry response body carries the `?_pe=` (scoped) or `?_t=` (guest) handoff; identity and authorization are unchanged |
+| 8 | Refused launch: expired or tampered handoff, assessment course, unpublished or deleted chatbot, chatbot/course mismatch | No identity, participation or account row is written, and the browser lands on `https://<chat-host>/noLogin?lti=1&redirectTo=%2F<chatbotId>` rather than an in-cluster service origin |
+
+Verify page and API access together for scenarios 1-4, because the guest and
+account transports authorize both. For scenario 5, count rows before and after
+with a read-only query over `Participation` joined to `ParticipantAccount`
+(`ssoId like 'chat-guest:%'` for guests, the LMS subject for linked accounts)
+and require no increase on the repeat.
+
+A genuinely cookie-blocked browser context still cannot be exercised: the entry
+performs a `window.location` reload, `sessionStorage` does not survive it, and
+the URL parameter is stripped on first render. Scenario 7 pins the cookie-less
+handoff in the response instead. Use synthetic accounts and messages only;
+production testing with real accounts remains outside this batch.
