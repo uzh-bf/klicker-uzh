@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "devDependencies": {
-    "@types/react": "^19.2.17",
+    "@types/react": "^19.2.18",
     "typescript": "~6.0.3"
   },
   "peerDependencies": {
@@ -17,9 +17,9 @@
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@uzh-bf/design-system": "4.1.8",
-    "next": "^16.2.11",
-    "next-intl": "^4.13.0",
-    "react": "^19.2.7",
+    "next": "^16.3.4",
+    "next-intl": "^4.13.7",
+    "react": "^19.2.8",
     "react-dropzone": "^14.2.9"
   },
   "scripts": {

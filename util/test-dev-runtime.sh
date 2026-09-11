@@ -245,6 +245,29 @@ grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
   fail 'relative post-create root wrote the Hatchet environment incorrectly'
 bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
 : > "$INSTALL_LOG"
+mkdir -p "$ROOT/util/local-kb"
+cp "$REPO_ROOT/util/local-kb/runtime-environment.sh" "$ROOT/util/local-kb/runtime-environment.sh"
+(
+  . "$ROOT/util/local-kb/runtime-environment.sh"
+  local_kb_capture_environment >/dev/null 2>&1 || true
+  for key in "${LOCAL_KB_ENV_KEYS[@]}"; do
+    export "$key=synthetic-isolated-value"
+  done
+KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  KLICKER_LOCAL_KB_RUNTIME_ONLY=1 \
+  HATCHET_CLIENT_TOKEN=synthetic-isolated-token \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
+)
+if grep -Eq 'prisma:reset:raw|prisma:push:raw|seed:raw' "$INSTALL_LOG"; then
+  fail 'isolated post-create mutated the database'
+fi
+grep -Fq 'exec turbo run build' "$INSTALL_LOG" || \
+  fail 'isolated post-create skipped the application build'
+grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
+  "$ROOT/.devcontainer/.hatchet.env" || \
+  fail 'isolated post-create overwrote existing token state'
+bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
+: > "$INSTALL_LOG"
 rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
 
 post_start_status=0
@@ -257,6 +280,25 @@ post_start_output="$(
 process_helper_error='Run devrouter ensure to start this managed application process.'
 [[ "$post_start_output" == *"$process_helper_error"* ]] || \
   fail 'post-start did not use the configured root before its process-helper gate'
+
+# An opted-in signer must be private and must not be followed through a symlink.
+signer_fixture="$TEST_ROOT/signer.env"
+signer_effect="$TEST_ROOT/signer-loaded"
+write_file "$signer_fixture" "touch '$signer_effect'"
+chmod 644 "$signer_fixture"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" LOCAL_KB_SIGNER_ENV_FILE="$signer_fixture" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'post-start accepted a readable-by-others signer'
+assert_absent "$signer_effect"
+chmod 600 "$signer_fixture"
+ln -s "$signer_fixture" "$TEST_ROOT/signer-link.env"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" LOCAL_KB_SIGNER_ENV_FILE="$TEST_ROOT/signer-link.env" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 && \
+  fail 'post-start accepted a symlink signer'
+assert_absent "$signer_effect"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" LOCAL_KB_SIGNER_ENV_FILE="$signer_fixture" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1 || true
+assert_exists "$signer_effect"
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"
@@ -554,17 +596,21 @@ for command in \
   fi
 done
 
+write_file "$ROOT/node_modules/.bin/turbo" '#!/usr/bin/env bash
+[ "${KLICKER_TEST_TURBO_FAIL:-false}" != true ] || exit 17
+printf "turbo %s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
+chmod +x "$ROOT/node_modules/.bin/turbo"
 : >"$INSTALL_LOG"
 if bash "$RUNTIME_SCRIPT" prepare --filter=@klicker-uzh/auth >/dev/null 2>&1; then
   fail 'preparation accepted an app build selector'
 fi
 [ ! -s "$INSTALL_LOG" ] || fail 'invalid preparation changed dependencies'
 # shellcheck disable=SC2086 # validated flags emitted by preparation-filters
-bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
-assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'exec turbo run build'
+KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_before "$INSTALL_LOG" 'install --frozen-lockfile' 'turbo run build'
 status=0
 # shellcheck disable=SC2086
-KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
+KLICKER_TEST_TURBO_FAIL=true bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null || status=$?
 assert_equal "$status" 17
 
 write_file "$FAKE_BIN/ps" '#!/usr/bin/env bash
@@ -591,6 +637,30 @@ fi
 if KLICKER_TEST_PROCESS_SCAN_FAIL=true bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null 2>&1; then
   fail 'preparation accepted a failed process scan'
 fi
+rm "$FAKE_BIN/ps"
+
+write_file "$FAKE_BIN/ps" '#!/usr/bin/env bash
+if [ "$1" = "-o" ]; then
+  echo 123
+  exit 0
+fi
+count=0
+[ ! -f "$KLICKER_TEST_PS_COUNT" ] || count=$(<"$KLICKER_TEST_PS_COUNT")
+count=$((count + 1))
+printf "%s\n" "$count" >"$KLICKER_TEST_PS_COUNT"
+if [ "$count" -lt 3 ]; then
+  printf "%s S git\n" "$KLICKER_TEST_GIT_GROUP"
+fi'
+chmod +x "$FAKE_BIN/ps"
+export KLICKER_TEST_PS_COUNT="$TEST_ROOT/ps-count"
+# A finishing Git child delays completion, but another process group does not.
+# shellcheck disable=SC2086
+KLICKER_TEST_GIT_GROUP=123 bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_equal "$(<"$KLICKER_TEST_PS_COUNT")" 3
+printf '0\n' >"$KLICKER_TEST_PS_COUNT"
+# shellcheck disable=SC2086
+KLICKER_TEST_GIT_GROUP=456 bash "$RUNTIME_SCRIPT" prepare $build_filters >/dev/null
+assert_equal "$(<"$KLICKER_TEST_PS_COUNT")" 1
 rm "$FAKE_BIN/ps"
 
 HELPER_LOG="$TEST_ROOT/helper.log"
@@ -623,7 +693,7 @@ fi
 [ ! -s "$HELPER_LOG" ] || fail 'unsupported helper caused a lifecycle operation'
 [ ! -s "$CURL_LOG" ] || fail 'unsupported helper reached readiness'
 if KLICKER_DEVCONTAINER_ROOT="$ROOT" DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
-  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo run build' \
+  KLICKER_TEST_TURBO_FAIL=true \
   bash "$REPO_ROOT/.devcontainer/post-start.sh" >/dev/null 2>&1; then
   fail 'post-start ignored preparation failure'
 fi

@@ -113,6 +113,7 @@ describe('Langfuse telemetry configuration', () => {
       secretKey: 'sk-lf-test',
     })
     expect(telemetryMocks.sdkOptions).toMatchObject({
+      serviceName: 'klicker-chat',
       spanProcessors: [expect.any(Object)],
     })
     expect(telemetryMocks.sdkStart).toHaveBeenCalledOnce()

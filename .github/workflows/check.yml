@@ -82,6 +82,9 @@ jobs:
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
 
+      - name: Check local KB lifecycle contracts
+        run: pnpm run check:local-kb
+
       - name: Check Next.js development configuration and readiness
         run: |
           node --test ./util/next-pages-development-config.test.mjs
