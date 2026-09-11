@@ -2,7 +2,10 @@ name: Production translation context
 on:
   pull_request:
     branches: [v3]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # ready_for_review is intentionally absent: this smoke runs the same jobs
+    # for draft and ready PRs, and the transition fires on an unchanged head,
+    # so listing it would only re-run validation that already passed.
+    types: [opened, synchronize, reopened]
     paths:
       - 'apps/frontend-pwa/**'
       - 'apps/frontend-manage/**'
