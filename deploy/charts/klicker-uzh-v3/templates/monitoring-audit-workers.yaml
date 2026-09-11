@@ -31,6 +31,38 @@ spec:
       path: /metrics
       interval: {{ .Values.assessmentAudit.monitoring.interval }}
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chart.fullname" . }}-assessment-audit-media-policy-worker
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: assessment-audit-media-policy-worker
+spec:
+  selector:
+    {{- include "chart.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: assessment-audit-media-policy-worker
+  ports:
+    - name: metrics
+      port: 9464
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "chart.fullname" . }}-assessment-audit-media-policy-worker
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: assessment-audit-media-policy-worker
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: {{ .Values.assessmentAudit.monitoring.interval }}
+---
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -42,7 +74,7 @@ spec:
     - name: assessment-audit-worker
       rules:
         - alert: AssessmentAuditMonitorHeartbeatMissing
-          expr: absent(assessment_audit_monitor_last_success_timestamp_seconds) or (time() - assessment_audit_monitor_last_success_timestamp_seconds > 180)
+          expr: absent(assessment_audit_monitor_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) or (time() - max(assessment_audit_monitor_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="dispatcher"}) > 180)
           for: 3m
           labels:
             severity: critical
@@ -57,4 +89,28 @@ spec:
             assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
           annotations:
             summary: Assessment audit worker has no available replica
+        - alert: AssessmentAuditMediaPolicyHeartbeatMissing
+          expr: absent(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) == 0 and time() - max(assessment_audit_worker_started_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600) or (max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 0 and time() - max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 129600)
+          for: 5m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit media-policy renewal is absent or stale
+        - alert: AssessmentAuditMediaHorizonLow
+          expr: min(assessment_audit_media_policy_minimum_horizon_days{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) < 30 and max(assessment_audit_media_policy_last_success_timestamp_seconds{environment={{ .Values.assessmentAudit.environment | quote }},role="media-policy"}) > 0
+          for: 5m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Active assessment media has less than 30 days of immutable horizon
+        - alert: AssessmentAuditMediaPolicyWorkerUnavailable
+          expr: kube_deployment_status_replicas_available{namespace={{ .Release.Namespace | quote }},deployment={{ printf "%s-assessment-audit-media-policy-worker" (include "chart.fullname" .) | quote }}} < 1
+          for: 3m
+          labels:
+            severity: critical
+            assessment_audit_route: {{ .Values.assessmentAudit.monitoring.alertRoutingLabel | quote }}
+          annotations:
+            summary: Assessment audit media-policy worker has no available replica
 {{- end }}

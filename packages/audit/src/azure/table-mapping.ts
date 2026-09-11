@@ -22,6 +22,7 @@ export type MappedAuditTableRecord = {
   evidence: AuditTableEntity[]
   locator: AuditTableEntity
   retentionIndex: AuditTableEntity
+  reverseRetentionIndexes: AuditTableEntity[]
 }
 
 function int32(value: number) {
@@ -116,6 +117,49 @@ export function mapAuditRecordToTableEntities(
     courseId: envelope.scope.courseId,
     participantId: envelope.scope.participantId,
   })
+  const reverseRetentionIndexes: AuditTableEntity[] = []
+  if (
+    envelope.eventType === 'ASSESSMENT_BASELINE_PART_RECORDED' &&
+    typeof envelope.payload === 'object' &&
+    envelope.payload !== null &&
+    !Array.isArray(envelope.payload) &&
+    typeof envelope.payload.content === 'object' &&
+    envelope.payload.content !== null &&
+    !Array.isArray(envelope.payload.content) &&
+    envelope.payload.content.kind === 'MEDIA_REFERENCE' &&
+    typeof envelope.payload.content.media === 'object' &&
+    envelope.payload.content.media !== null &&
+    !Array.isArray(envelope.payload.content.media)
+  ) {
+    const media = envelope.payload.content.media
+    const contentHash = media.contentHash
+    const blobName = media.blobName
+    if (
+      typeof contentHash !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(contentHash) ||
+      typeof blobName !== 'string' ||
+      blobName !== `sha256/${contentHash}`
+    ) {
+      throw new AuditAppendConflictError(envelope.eventId)
+    }
+    reverseRetentionIndexes.push({
+      partitionKey: `media|${contentHash[0]}|${contentHash}`,
+      rowKey: [
+        envelope.scope.liveQuizId,
+        String(envelope.scope.lifecycleEpoch).padStart(10, '0'),
+        envelope.eventId,
+      ].join('|'),
+      recordKind: 'MEDIA_REFERENCE',
+      resourceKind: 'MEDIA',
+      contentHash,
+      blobName,
+      referenceEventId: envelope.eventId,
+      referenceEventHash: envelope.eventHash,
+      liveQuizId: envelope.scope.liveQuizId,
+      lifecycleEpoch: int32(envelope.scope.lifecycleEpoch),
+      recordedAt: new Date(envelope.recordedAt),
+    })
+  }
 
   const root: AuditTableEntity = {
     partitionKey: evidencePartitionKey,
@@ -189,5 +233,6 @@ export function mapAuditRecordToTableEntities(
       recordedAt: new Date(envelope.recordedAt),
       ...optionalScope,
     },
+    reverseRetentionIndexes,
   }
 }

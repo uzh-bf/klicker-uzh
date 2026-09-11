@@ -1,4 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
@@ -39,6 +40,18 @@ import {
   liveQuizCourseVisibilityFilter,
   persistActivityWithPermissions,
 } from './activities.js'
+import {
+  assessmentIsSelectedForAuditActivation,
+  createAssessmentAuditMediaDependencies,
+  type PreparedAssessmentAuditActivation,
+  persistPreparedAssessmentAuditActivationInTransaction,
+  prepareReopeningAssessmentAuditActivation,
+  readAssessmentAuditRolloutConfig,
+} from './assessmentAuditActivation.js'
+import {
+  activateNewAssessmentAuditIfSelected,
+  assessmentAuditReadiness,
+} from './assessmentAuditRollout.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -528,6 +541,20 @@ export async function manipulateLiveQuiz(
     transactionPrisma,
   })
 
+  if (!id && activity.isAssessmentEnabled) {
+    try {
+      const outcome = await activateNewAssessmentAuditIfSelected({
+        client: ctx.prisma,
+        liveQuizId: activity.id,
+      })
+      if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
+        console.warn('New assessment audit activation recorded a coverage gap')
+      }
+    } catch {
+      console.warn('New assessment audit activation remains pending')
+    }
+  }
+
   return {
     id: activity.id,
     templateId: activity.templateInfo?.id ?? null,
@@ -847,6 +874,24 @@ export async function startLiveQuiz(
     // if there is no live quiz matching the current user and quiz id, exit early
     if (!quiz) {
       return null
+    }
+
+    if (quiz.isAssessmentEnabled) {
+      try {
+        const readiness = await assessmentAuditReadiness({
+          client: ctx.prisma,
+          liveQuizId: quiz.id,
+        })
+        if (readiness === 'UNCOVERED') {
+          console.warn(
+            'Starting selected assessment without audit coverage; teaching continues'
+          )
+        }
+      } catch {
+        console.warn(
+          'Assessment audit readiness unavailable; teaching continues'
+        )
+      }
     }
 
     // depending on the quiz assessment setting, select the corresponding redis instance
@@ -2813,6 +2858,25 @@ export async function resetAssessmentLiveQuiz(
 
   if (!liveQuiz) return null
 
+  const auditSelected = assessmentIsSelectedForAuditActivation(
+    liveQuiz.id,
+    readAssessmentAuditRolloutConfig()
+  )
+  let preparedAuditReopening: PreparedAssessmentAuditActivation | null = null
+  if (auditSelected) {
+    try {
+      preparedAuditReopening = await prepareReopeningAssessmentAuditActivation({
+        client: ctx.prisma,
+        liveQuizId: liveQuiz.id,
+        media: createAssessmentAuditMediaDependencies(),
+      })
+    } catch {
+      throw new GraphQLError(
+        'Assessment cannot be reopened until its audit baseline is available'
+      )
+    }
+  }
+
   try {
     await ctx.hatchet.events.push('create-audit-log-entry', {
       info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
@@ -2832,8 +2896,9 @@ export async function resetAssessmentLiveQuiz(
     }
 
     // update the live quiz (reset it to draft status, remove all responses, reset results)
-    const updatedQuiz = await ctx.prisma.$transaction(
-      async (tx) => {
+    const updatedQuiz = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
         // reset the live quiz
         const updatedLiveQuiz = await tx.liveQuiz.update({
           where: { id },
@@ -2841,6 +2906,7 @@ export async function resetAssessmentLiveQuiz(
             status: DB.PublicationStatus.DRAFT,
             startedAt: null,
             finishedAt: null,
+            activeBlockId: null,
             feedbacks: { deleteMany: {} },
             confusionFeedbacks: { deleteMany: {} },
             leaderboard: { deleteMany: {} },
@@ -2885,6 +2951,16 @@ export async function resetAssessmentLiveQuiz(
               },
             })
           }
+        }
+
+        if (preparedAuditReopening !== null) {
+          await persistPreparedAssessmentAuditActivationInTransaction({
+            tx,
+            auditTx,
+            prepared: preparedAuditReopening,
+            actor: { kind: 'USER', userId: ctx.user.sub },
+            correlationId: uuidv4(),
+          })
         }
 
         return updatedLiveQuiz

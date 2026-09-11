@@ -133,6 +133,15 @@ export class AzureTableAppendSink implements AppendOnlyAuditSink {
         record.envelope.eventId
       )
     )
+    for (const reverseIndex of mapped.reverseRetentionIndexes) {
+      outcomes.push(
+        await createOnlyEntity(
+          this.clients.retentionIndex,
+          reverseIndex,
+          record.envelope.eventId
+        )
+      )
+    }
     outcomes.push(
       await createOnlyEntity(
         this.clients.retentionIndex,

@@ -141,6 +141,20 @@ export function prepareHatchetTasks({
       return { success }
     },
   })
+
+  const renewAssessmentAuditMediaPolicies = hatchet.task({
+    name: 'renew-assessment-audit-media-policies',
+    retries: 3,
+    onCrons: ['17 1 * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleRenewAssessmentAuditMediaPolicies(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
   // #endregion
 
   // ! AUDIT LOGGING
@@ -618,6 +632,7 @@ export function prepareHatchetTasks({
   const tasks = {
     dispatchAssessmentAuditOutbox,
     monitorAssessmentAudit,
+    renewAssessmentAuditMediaPolicies,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

@@ -94,6 +94,49 @@ function recordWithLargeDescription() {
   )
 }
 
+function mediaBaselineRecord() {
+  const contentHash = 'a'.repeat(64)
+  return createCanonicalAuditEvent(
+    createTrustedAuditContext({
+      recordedVia: 'TRANSACTIONAL_OUTBOX',
+      receivedAt: '2026-08-12T00:00:00.000Z',
+      actor: { kind: 'USER', userId: USER_ID },
+      authorization: {
+        decision: 'ALLOWED',
+        authScope: 'LECTURER',
+        requiredPermission: 'LIVE_QUIZ_WRITE',
+      },
+      scope: { liveQuizId: LIVE_QUIZ_ID, lifecycleEpoch: 2 },
+      correlationId: CORRELATION_ID,
+    }),
+    {
+      eventType: 'ASSESSMENT_BASELINE_PART_RECORDED',
+      producerOperationId: `${CORRELATION_ID}:media`,
+      payload: {
+        baselineId: '55555555-5555-4555-8555-555555555555',
+        baselineKind: 'CREATION',
+        baselineSchemaVersion: 1,
+        capturedAt: '2026-08-12T00:00:00.000Z',
+        partKey: 'MEDIA_REFERENCE|66666666-6666-4666-8666-666666666666',
+        content: {
+          kind: 'MEDIA_REFERENCE',
+          media: {
+            mediaId: '66666666-6666-4666-8666-666666666666',
+            sourceUrl:
+              'https://media.blob.core.windows.net/77777777-7777-4777-8777-777777777777/image.png',
+            contentHash,
+            byteLength: 42,
+            mimeType: 'image/png',
+            blobName: `sha256/${contentHash}`,
+            sourceReferenceHash: 'b'.repeat(64),
+          },
+        },
+        contentHash: 'c'.repeat(64),
+      },
+    }
+  )
+}
+
 describe('Azure Table audit mapping', () => {
   it('derives deterministic sharded keys without participant identifiers in keys', () => {
     const record = recordWithPayload('NOT_AUTHORIZED')
@@ -152,6 +195,20 @@ describe('Azure Table audit mapping', () => {
         chunks.map((chunk) => Buffer.from(chunk.content as Uint8Array))
       ).toString('utf8')
     ).toBe(record.canonicalEnvelope)
+  })
+
+  it('adds a reverse retention index for immutable media references', () => {
+    const record = mediaBaselineRecord()
+    const mapped = mapAuditRecordToTableEntities(record)
+
+    expect(mapped.reverseRetentionIndexes).toEqual([
+      expect.objectContaining({
+        partitionKey: `media|a|${'a'.repeat(64)}`,
+        rowKey: `${LIVE_QUIZ_ID}|0000000002|${record.envelope.eventId}`,
+        resourceKind: 'MEDIA',
+        blobName: `sha256/${'a'.repeat(64)}`,
+      }),
+    ])
   })
 
   it('rejects a canonical envelope that does not match the supplied envelope', () => {

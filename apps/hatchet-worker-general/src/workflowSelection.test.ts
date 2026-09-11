@@ -23,7 +23,77 @@ const workflows = {
   buildKBGraph: 'build-graph',
   monitorKBGraphBuilds: 'monitor-graph',
   publishScheduledLiveQuiz: 'publish-quiz',
+  dispatchAssessmentAuditOutbox: 'audit-dispatch',
+  monitorAssessmentAudit: 'audit-monitor',
+  renewAssessmentAuditMediaPolicies: 'audit-media',
 }
+
+describe('audit worker identity selection alongside KB gates', () => {
+  const disabledKB = { ingestionDisabled: true, graphDisabled: true }
+
+  it.each([
+    ['dispatcher', ['dispatchAssessmentAuditOutbox', 'monitorAssessmentAudit']],
+    ['media-policy', ['renewAssessmentAuditMediaPolicies']],
+  ] as const)('registers only the %s role tasks', (auditWorkerRole, keys) => {
+    const selection = selectWorkflows(workflows, {
+      ...disabledKB,
+      auditWorkerEnabled: true,
+      auditWorkerRole,
+    })
+    expect(selection.selectedKeys).toEqual(keys)
+  })
+
+  it.each([
+    undefined,
+    'unknown',
+    'toString',
+  ])('rejects invalid role %s', (role) => {
+    expect(() =>
+      selectWorkflows(workflows, {
+        ...disabledKB,
+        auditWorkerEnabled: true,
+        auditWorkerRole: role,
+      })
+    ).toThrow('ASSESSMENT_AUDIT_WORKER_ROLE is invalid')
+  })
+
+  it.each([
+    'dispatchAssessmentAuditOutbox',
+    'dispatchAssessmentAuditOutbox,monitorAssessmentAudit,monitorAssessmentAudit',
+    'dispatchAssessmentAuditOutbox,monitorAssessmentAudit,missing',
+    'dispatchAssessmentAuditOutbox,monitorAssessmentAudit,publishScheduledLiveQuiz',
+    'renewAssessmentAuditMediaPolicies',
+  ])('rejects incomplete or cross-identity selection %s', (requestedWorkflowNames) => {
+    expect(() =>
+      selectWorkflows(workflows, {
+        ...disabledKB,
+        auditWorkerEnabled: true,
+        auditWorkerRole: 'dispatcher',
+        requestedWorkflowNames,
+      })
+    ).toThrow()
+  })
+
+  it('refuses privileged tasks in the ordinary worker', () => {
+    expect(() =>
+      selectWorkflows(workflows, {
+        ...disabledKB,
+        requestedWorkflowNames: 'monitorAssessmentAudit',
+      })
+    ).toThrow('forbidden for this worker identity')
+  })
+
+  it('refuses a dispatcher missing a required prepared task', () => {
+    const { monitorAssessmentAudit: _monitor, ...incomplete } = workflows
+    expect(() =>
+      selectWorkflows(incomplete, {
+        ...disabledKB,
+        auditWorkerEnabled: true,
+        auditWorkerRole: 'dispatcher',
+      })
+    ).toThrow('every required audit workflow exactly')
+  })
+})
 
 describe('general worker KB workflow selection', () => {
   it('keeps unrelated workflows while ingestion and graph work are disabled', () => {

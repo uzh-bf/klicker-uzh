@@ -41,9 +41,13 @@ export async function runInAuditTransaction<T>(
   callback: (
     tx: Prisma.TransactionClient,
     auditTx: AuditTransactionClient
-  ) => Promise<T>
+  ) => Promise<T>,
+  options?: { maxWait?: number; timeout?: number }
 ): Promise<T> {
-  return client.$transaction((tx) => callback(tx, bindAuditTransaction(tx)))
+  return client.$transaction(
+    (tx) => callback(tx, bindAuditTransaction(tx)),
+    options
+  )
 }
 
 function assertTransactionClient(tx: AuditTransactionClient): void {
