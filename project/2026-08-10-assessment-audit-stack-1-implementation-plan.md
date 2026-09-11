@@ -256,8 +256,8 @@ not be reused. After plan approval, create a clean repository-owned worktree at
 
 ### Files
 
-- Create `src/bootstrap/klicker-audit.ts`.
-- Modify `src/bootstrap/index.ts` to own the dedicated resource group once.
+- Reuse the existing `DF_Klicker_RG` through the application base configuration;
+  do not create or take over a resource group in bootstrap.
 - Create `src/apps/klicker/audit-storage.ts`.
 - Create `src/apps/klicker/audit-storage.test.ts`.
 - Modify `src/infra/config.ts` and `src/infra/index.ts` to add an owner-only
@@ -270,7 +270,8 @@ not be reused. After plan approval, create a clean repository-owned worktree at
 
 ### Resources
 
-- Dedicated `DF_Klicker_Audit_RG` in `switzerlandnorth`.
+- Dedicated audit storage accounts in the existing shared `DF_Klicker_RG`;
+  staging storage remains in `switzerlandnorth`.
 - One staging and one production StorageV2 account; shared-key access and public
   blob access disabled, OAuth default enabled, HTTPS/TLS 1.2 required, service
   encryption enabled. Public network access remains enabled for the local owner
@@ -293,10 +294,13 @@ not be reused. After plan approval, create a clean repository-owned worktree at
   its exact Kubernetes service account; identities and service accounts are not
   shared between privilege roles.
 - Human object IDs are encrypted Pulumi configuration, not committed constants.
-  The platform owner and platform engineer receive Resource Group ownership and
-  explicit Table/Blob data-plane read access. Their CLI control-table assignment
+  Existing Resource Group ownership is unchanged. The platform owner and
+  platform engineer receive explicit Table/Blob data-plane read access scoped
+  to the audit storage account. Their CLI control-table assignment
   permits read plus entity add, not update/delete. They are the only human data
-  readers; named workload identities retain only the non-human read operations
+  readers configured by this module; inherited resource-group and subscription
+  data roles must be checked before asserting exclusivity. Named workload
+  identities retain only the non-human read operations
   required for conflict verification, media verification, sealing, and eventual
   retention.
 
@@ -402,7 +406,9 @@ review required by decision 26.
   `packages/prisma/src/prisma/schema/migrations/<timestamp>_assessment_audit_core/migration.sql`.
 - Run the required Prisma analytics sync; modify generated analytics schema only
   through that workflow.
-- Create `docs/assessment-audit-evidence.md` and link it from `docs/index.md`.
+- Create `docs/assessment-audit-evidence.md`. The repository deliberately keeps
+  `docs/index.md` and `docs/log/` absent; discover the page through the docs
+  directory and the direct links in affected documentation.
 - Update `turbo.json` only for the two rollout variables; Azure endpoints are
   added with the deployment layer.
 
@@ -735,6 +741,9 @@ Branch: `feat/assessment-audit-submissions`, stacked on layer 4.
   `apps/hatchet-worker-response-processor/src/processors/assessmentProcessor.ts`,
   processor error handling, and tests.
 - Modify the existing assessment command types in `packages/types/src/hatchet.ts`.
+- Add the optional unique `LiveQuizResponse.submissionId` UUID and its
+  expand-contract migration so authoritative retries can be distinguished from
+  new duplicate commands.
 - Add focused Vitest configuration and `test` scripts to the Response API and
   response-processor packages; do not rely on untestable worker entry points.
 - Add the minimal stable submission ID/retry behavior to

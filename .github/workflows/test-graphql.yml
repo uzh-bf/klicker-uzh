@@ -28,7 +28,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/audit/|packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/(backend-docker|hatchet-worker-general)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
+          pattern: '^(packages/audit/|packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/(backend-docker|hatchet-worker-general|hatchet-worker-response-processor|response-api)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
 
   test-graphql:
     needs: filter
@@ -141,7 +141,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build dependency packages
-        run: pnpm exec turbo run build --filter=@klicker-uzh/audit --filter=@klicker-uzh/graphql --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/backend-docker --concurrency=4
+        run: pnpm exec turbo run build --filter=@klicker-uzh/audit --filter=@klicker-uzh/graphql --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/hatchet-worker-response-processor --filter=@klicker-uzh/response-api --concurrency=4
 
       - name: Provision disposable PostgreSQL
         id: provision_db
@@ -164,6 +164,17 @@ jobs:
           AZURITE_TABLE_ENDPOINT: http://127.0.0.1:10002/devstoreaccount1
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           NODE_ENV: test
+
+      - name: Run assessment submission tests
+        if: ${{ !cancelled() && steps.setup_db.outcome == 'success' }}
+        run: |
+          pnpm --filter @klicker-uzh/response-api test
+          pnpm --filter @klicker-uzh/hatchet-worker-response-processor test
+        env:
+          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          NODE_ENV: test
+          REDIS_ASSESSMENT_HOST: localhost
+          REDIS_ASSESSMENT_PORT: 6380
 
       - name: Run tests
         if: ${{ !cancelled() && steps.setup_db.outcome == 'success' }}

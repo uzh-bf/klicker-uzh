@@ -238,6 +238,17 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 ## Schema-level gotchas
 
+- **Assessment `LiveQuizResponse.submissionId` is optional but unique.** New
+  assessment submissions store the PWA-generated UUID so Hatchet retries and
+  duplicate commands can be classified durably. Existing, correction-only, and
+  non-assessment responses remain `NULL`; do not synthesize IDs for old rows.
+  Its expand migration creates the unique index concurrently so the rollout
+  does not block writes to the existing response table. Keep that migration
+  non-transactional: PostgreSQL rejects `CREATE INDEX CONCURRENTLY` inside a
+  transaction. The same migration adds the
+  `AuditOutbox_quiz_correlation_event_idx` lookup used to classify Hatchet
+  retries and duplicate submission commands without scanning a quiz's full
+  evidence history.
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
 - **One enabled KB per chatbot is a SQL invariant**: Prisma cannot express the partial unique index `KBChatbot_one_enabled_per_chatbot_key`. Preserve it in `packages/prisma/src/prisma/schema/migrations/20260825190000_kb_management_foundation/migration.sql` and any replacement migration. The migration deliberately leaves an existing KB MCP server row unchanged so the previous Chat runtime remains usable during rollout and rollback. The new runtime identifies the reserved `KB` server by name, sends the scoped token in its dedicated header, and preserves an existing transport bearer in `Authorization`. `packages/prisma-data/src/data/seedMCPServers.ts:seedMCPServers` reconciles new or explicitly reseeded environments to `scope_token` auth and leaves KB MCP configs disabled unless an enabled binding exists; a shared multi-tenant deployment still needs its transport bearer configured separately from the scope token.
