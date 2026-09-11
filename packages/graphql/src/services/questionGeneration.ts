@@ -63,6 +63,12 @@ import type {
   QuestionWorkflowReviewEvent,
   QuestionWorkflowStartPayload,
 } from './questionGenerationRuntime.js'
+import {
+  advanceQuestionReview,
+  questionReviewState,
+  recordQuestionReviewDecision,
+  recordQuestionReviewWorkflowFailure,
+} from './questionReviewLifecycle.js'
 
 const REVIEW_DISPATCH_RECOVERY_MILLISECONDS = 15_000
 const TERMINAL_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
@@ -868,29 +874,6 @@ export async function getQuestionGenerationBuild(
   return findOwnedBuild(buildId, ctx)
 }
 
-function questionReviewState(
-  gate: DB.ElementGenerationReviewGate,
-  decision: DB.ElementGenerationReviewDecision
-) {
-  const expectedStatus =
-    gate === DB.ElementGenerationReviewGate.DESIGN
-      ? DB.ElementGenerationBuildStatus.WAITING_FOR_DESIGN_REVIEW
-      : DB.ElementGenerationBuildStatus.WAITING_FOR_PLAN_REVIEW
-  const nextStatus =
-    decision === DB.ElementGenerationReviewDecision.REJECT
-      ? DB.ElementGenerationBuildStatus.REJECTED
-      : gate === DB.ElementGenerationReviewGate.DESIGN
-        ? DB.ElementGenerationBuildStatus.GENERATING_ITEMS
-        : DB.ElementGenerationBuildStatus.FINALIZING
-  const nextStage =
-    decision === DB.ElementGenerationReviewDecision.REJECT
-      ? 'rejected'
-      : gate === DB.ElementGenerationReviewGate.DESIGN
-        ? 'stems'
-        : 'finalizing'
-  return { expectedStatus, nextStatus, nextStage }
-}
-
 function questionReviewEvent(
   buildId: string,
   review: QuestionBuild['reviews'][number]
@@ -925,10 +908,7 @@ async function dispatchQuestionReviewLeased(
   ctx: ContextWithUser,
   allowNewDispatch: boolean
 ) {
-  const { expectedStatus, nextStatus, nextStage } = questionReviewState(
-    review.gate,
-    review.decision
-  )
+  const { expectedStatus } = questionReviewState(review.gate, review.decision)
   if (build.status !== expectedStatus) return
 
   let recovered = await runtime.findRunByQuestionReview(
@@ -964,47 +944,23 @@ async function dispatchQuestionReviewLeased(
   }
 
   if (recovered?.status === 'FAILED' || recovered?.status === 'CANCELLED') {
-    await ctx.prisma.elementGenerationBuild.updateMany({
-      where: {
-        id: build.id,
-        ownerId: ctx.user.sub,
-        status: expectedStatus,
-        syncLeaseOwner: leaseOwner,
-      },
-      data: {
-        status: DB.ElementGenerationBuildStatus.FAILED,
-        stage: 'failed',
-        errorCode: `WORKFLOW_${recovered.status}`,
-        errorMessage: 'Question-generation review workflow did not complete',
-        errorRetryable: false,
-        completedAt: new Date(),
-      },
+    await recordQuestionReviewWorkflowFailure(ctx.prisma, {
+      buildId: build.id,
+      ownerId: ctx.user.sub,
+      gate: review.gate,
+      leaseOwner,
+      status: recovered.status,
     })
     return
   }
 
-  const updated = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      status: expectedStatus,
-      syncLeaseOwner: leaseOwner,
-    },
-    data: {
-      status: nextStatus,
-      stage: nextStage,
-      completedAt:
-        nextStatus === DB.ElementGenerationBuildStatus.REJECTED
-          ? new Date()
-          : null,
-    },
+  await advanceQuestionReview(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    gate: review.gate,
+    decision: review.decision,
+    leaseOwner,
   })
-  if (updated.count !== 1) {
-    return serviceError(
-      'CONCURRENT_MODIFICATION',
-      'Question-generation review was changed by another request'
-    )
-  }
 }
 
 async function resumeQuestionReviewDispatch(
@@ -1112,17 +1068,15 @@ async function reviewQuestionGenerationGate(
   }
   const reviewId = randomUUID()
   try {
-    await ctx.prisma.elementGenerationReview.create({
-      data: {
-        id: reviewId,
-        buildId: build.id,
-        gate,
-        decision,
-        reviewerId: ctx.user.sub,
-        warningsAcknowledged,
-        artifact,
-        reviewedAt: new Date(),
-      },
+    await recordQuestionReviewDecision(ctx.prisma, {
+      id: reviewId,
+      buildId: build.id,
+      gate,
+      decision,
+      reviewerId: ctx.user.sub,
+      warningsAcknowledged,
+      artifact,
+      reviewedAt: new Date(),
     })
   } catch (error) {
     if (
