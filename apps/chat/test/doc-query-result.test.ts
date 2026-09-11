@@ -50,7 +50,7 @@ describe('retrieval display independent of citation eligibility', () => {
     ],
   }
 
-  test('retains every unnamed chunk with a readable citation and safe links', () => {
+  test('retains every unnamed chunk without shifting existing citation identity', () => {
     const named = {
       reference: 'https://example.org/lecture.pdf',
       title: 'Lecture',
@@ -68,11 +68,10 @@ describe('retrieval display independent of citation eligibility', () => {
     expect(
       displayed.groups[0].chunks.every((chunk) => chunk.url === undefined)
     ).toBe(true)
-    expect(displayed.groups[0].citationId).toBe(citations[0]?.id)
-    expect(citations).toHaveLength(2)
-    expect(citations[0]?.title).toBe('Document')
-    expect(displayed.groups[1].citationId).toBe(citations[1]?.id)
-    expect(citations.map((citation) => citation.index)).toEqual([1, 2])
+    expect(displayed.groups[0].citationId).toBeUndefined()
+    expect(citations).toHaveLength(1)
+    expect(displayed.groups[1].citationId).toBe(citations[0].id)
+    expect(citations[0].index).toBe(1)
   })
 
   test('preserves supplied origin independently of internal reference and identity', () => {
@@ -83,7 +82,7 @@ describe('retrieval display independent of citation eligibility', () => {
     })
     expect(result.groups[0].url).toBe(source_url)
     expect(result.groups[0].chunks[1].url).toBe(source_url)
-    expect(result.groups[0].citationId).toBeDefined()
+    expect(result.groups[0].citationId).toBeUndefined()
   })
 
   test.each([

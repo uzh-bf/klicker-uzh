@@ -453,17 +453,21 @@ function normalizeDocumentsModeSources(
     const url = referenceIsUrl && !ingestionReference ? reference : undefined
 
     // Title fallback: explicit title -> (if reference is a URL) a short name
-    // derived from its last path segment -> a generic document label for an
-    // unnamed opaque/ingestion identity with chunks -> raw reference -> skip.
+    // derived from its last path segment -> a generic document label for a
+    // sanitized opaque identity with chunks -> raw reference -> skip. An
+    // unnamed ingestion reference is never a source: its retrieval still
+    // renders from the raw payload, but it must not become a citation.
     const title =
       explicitTitle ??
-      (ingestionReference || sanitizedDocumentReference
-        ? firstChunk
-          ? GENERIC_DOCUMENT_TITLE
-          : undefined
-        : referenceIsUrl && reference
-          ? (lastPathSegment(reference) ?? reference)
-          : reference)
+      (ingestionReference
+        ? undefined
+        : sanitizedDocumentReference
+          ? firstChunk
+            ? GENERIC_DOCUMENT_TITLE
+            : undefined
+          : referenceIsUrl && reference
+            ? (lastPathSegment(reference) ?? reference)
+            : reference)
     if (!title) continue
 
     const excerpt = truncateExcerpt(cleanString(firstChunk?.content))

@@ -92,29 +92,24 @@ describe('resource citation provenance', () => {
     ).toEqual([])
   })
 
-  test('uses a generic title for an unnamed ingestion source with a chunk', () => {
+  test('keeps an unnamed ingestion source with a chunk out of the citation list', () => {
     const reference =
       'https://api.example.org/api/ingestion/resources/item/versions/3'
-    const sources = normalizeSourcesFromParts([
-      toolCallPart('KB_doc_query', {
-        mode: 'documents',
-        sources: [
-          {
-            reference,
-            chunks: [{ content: 'Synthetic excerpt', page_number: 4 }],
-          },
-        ],
-      }),
-    ])
-
-    expect(sources).toHaveLength(1)
-    expect(sources[0]).toMatchObject({
-      title: 'Document',
-      page: 4,
-      excerpt: 'Synthetic excerpt',
-    })
-    expect(sources[0]?.url).toBeUndefined()
-    expect(sources[0]?.id).toContain(reference)
+    // The retrieved chunks still render from the raw payload, but the entry
+    // must not gain a citation index or a participant-facing origin link.
+    expect(
+      normalizeSourcesFromParts([
+        toolCallPart('KB_doc_query', {
+          mode: 'documents',
+          sources: [
+            {
+              reference,
+              chunks: [{ content: 'Synthetic excerpt', page_number: 4 }],
+            },
+          ],
+        }),
+      ])
+    ).toEqual([])
   })
 
   test('also suppresses ingestion links in persisted answer-mode payloads', () => {
