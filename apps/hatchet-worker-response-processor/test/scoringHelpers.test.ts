@@ -10,7 +10,7 @@ import {
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPoints,
   getSelectionQuestionPointsDetails,
-} from '../src/processors/helpers.js'
+} from '@/src/processors/helpers.js'
 
 // ! Characterization battery for the response-processor scoring helpers.
 //

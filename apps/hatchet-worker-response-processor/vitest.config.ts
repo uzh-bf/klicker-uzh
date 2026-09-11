@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -15,6 +16,12 @@ export default defineConfig({
     },
   },
   resolve: {
+    alias: [
+      {
+        find: /^@\//,
+        replacement: `${fileURLToPath(new URL('.', import.meta.url))}/`,
+      },
+    ],
     // Let Node handle workspace packages naturally with proper conditions
     conditions: ['node', 'import', 'default'],
   },

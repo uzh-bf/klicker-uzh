@@ -8,6 +8,9 @@
   "compilerOptions": {
     /* Base Options: */
     "esModuleInterop": true,
+    "paths": {
+      "@/*": ["./*"]
+    },
     "skipLibCheck": true,
     "target": "es2022",
     "allowJs": true,
