@@ -4,7 +4,7 @@ import {
   cookiesAvailableViaLtiProbe,
   LTI_PROBE_COOKIE_NAME,
 } from '@klicker-uzh/util/auth'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
   PWA_CHAT_EMBED_QUERY_KEY,
@@ -25,15 +25,18 @@ const querySchema = z.object({
   chatbotId: z.string().uuid(),
 })
 
-function noLoginRedirect(req: NextRequest, chatbotId: string | null) {
-  const noLoginUrl = req.nextUrl.clone()
-  noLoginUrl.pathname = '/noLogin'
-  noLoginUrl.search = ''
-  noLoginUrl.searchParams.set('lti', '1')
-  if (chatbotId) {
-    noLoginUrl.searchParams.set('redirectTo', `/${chatbotId}`)
-  }
-  const response = NextResponse.redirect(noLoginUrl)
+function noLoginRedirect(chatbotId: string | null) {
+  // A route handler resolves `req.nextUrl` against the origin the server is
+  // bound to, which behind the ingress is an in-cluster service address. An
+  // absolute redirect built from it is unreachable from the browser, so the
+  // refusal is issued as a path-relative `Location` that the browser resolves
+  // against the origin it actually requested.
+  const search = new URLSearchParams({ lti: '1' })
+  if (chatbotId) search.set('redirectTo', `/${chatbotId}`)
+  const response = new NextResponse(null, {
+    status: 307,
+    headers: { location: `/noLogin?${search.toString()}` },
+  })
   response.headers.set('Cache-Control', 'no-store')
   response.headers.set('Referrer-Policy', 'no-referrer')
   return response
@@ -84,7 +87,7 @@ export async function GET(req: NextRequest) {
     ltiPayload = await verifyLtiToken(jwt)
   } catch (error) {
     console.error(LOG_PREFIX, 'LTI JWT verification failed:', error)
-    return noLoginRedirect(req, chatbotId)
+    return noLoginRedirect(chatbotId)
   }
 
   if (
@@ -140,7 +143,7 @@ export async function GET(req: NextRequest) {
       })
       .parse(body.data?.loginParticipantForLtiChatbot)
     if (body.errors) throw new Error('Login unavailable')
-    if (parsed.status === 'DENIED') return noLoginRedirect(req, chatbotId)
+    if (parsed.status === 'DENIED') return noLoginRedirect(chatbotId)
     if (
       parsed.status === 'ACCOUNT' &&
       (!parsed.participantId || !parsed.participantToken)

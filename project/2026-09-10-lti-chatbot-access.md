@@ -165,19 +165,22 @@ unchanged; no account row was added for the unknown identity. Synthetic
 `lti-e2e-*` and guest-persona fixtures were deleted from the disposable database
 afterwards.
 
-### Defect found, not fixed in this batch
+### Refusal redirect corrected in this batch
 
-`noLoginRedirect` in `apps/chat/src/app/auth/lti/route.ts` builds its redirect
-from `req.nextUrl`, which resolves to the server's internal origin. The response
-therefore carries `location: https://localhost:3004/noLogin?lti=1&redirectTo=%2F<chatbotId>`
-for a request that arrived on the public host, so a browser cannot follow it and
-shows a connection error instead of Chat's `/noLogin` page. Reproduced directly
-with an expired handoff (307 plus that `location`, while the tampered handoff
-correctly returns 403). The same pre-existing pattern is used by
-`apps/chat/src/app/auth/pwa-embed/route.ts` and `apps/chat/src/proxy.ts`, and it
-is invisible to the existing suite because CI runs Chat on `127.0.0.1:3004`,
-where the internal and external origins coincide. Only rejection of the launch is
-asserted for this path here; the redirect target itself is a separate fix.
+`noLoginRedirect` in `apps/chat/src/app/auth/lti/route.ts` built its redirect
+from `req.nextUrl`, which resolves to the server's internal origin, so a browser
+could not follow a refusal. Production confirmed the impact: an invalid handoff
+at `https://chat.klicker.uzh.ch/auth/lti` answered
+`307 location: https://app-klicker-klicker-uzh-v2-chat-<pod>:3000/noLogin?...`,
+an in-cluster service address. The refusal is now a path-relative `Location`
+(`/noLogin?lti=1&redirectTo=%2F<chatbotId>`), which the browser resolves against
+the origin it requested, matching what `apps/chat/src/proxy.ts` already emits
+on the public host.
+
+The same pre-existing pattern remains in `apps/chat/src/app/auth/pwa-embed/route.ts`,
+which is outside this change and still returns the in-cluster location on refuse.
+It is recorded here rather than fixed, because the embedded PWA path is not part
+of the OLAT launch flow this batch owns.
 
 ### Remaining work
 
