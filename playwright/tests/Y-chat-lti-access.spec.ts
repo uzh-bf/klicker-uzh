@@ -101,18 +101,26 @@ async function launchChatbot(
 }
 
 /**
- * Capture Chat's `/auth/lti` entry response.
+ * Read Chat's `/auth/lti` entry response body, once it has been served.
  *
  * The transport the entry picked is only observable in that response: it
  * hands the scoped handoff to the client (`?_pe=`) and the client strips the
- * parameter from the URL once the chatbot has loaded.
+ * parameter from the URL before the chatbot renders. The body has to be
+ * intercepted rather than inspected after the fact, because the entry
+ * response navigates away immediately and Chromium then discards it.
  */
-function captureLtiEntry(page: Page) {
-  return page.waitForResponse(
-    (response) =>
-      response.request().method() === 'GET' &&
-      new URL(response.url()).pathname === '/auth/lti'
+async function captureLtiEntry(page: Page): Promise<() => string | null> {
+  let body: string | null = null
+  await page.route(
+    (url) => url.pathname === '/auth/lti',
+    async (route, request) => {
+      if (request.method() !== 'GET') return route.continue()
+      const response = await route.fetch()
+      body = await response.text()
+      await route.fulfill({ response, body })
+    }
   )
+  return () => body
 }
 
 test.describe('LTI chatbot launch identity resolution', () => {
@@ -339,9 +347,9 @@ test.describe('LTI chatbot launch identity resolution', () => {
 
     // No lti-token probe cookie: the launch must use the scoped token
     // transport instead of assuming the shared cookie survived the iframe.
-    const entryResponse = captureLtiEntry(page)
+    const ltiEntryBody = await captureLtiEntry(page)
     await launchChatbot(page, { sub: LTI_SUB_LINKED })
-    expect(await (await entryResponse).text()).toContain('_pe=')
+    expect(ltiEntryBody()).toContain('_pe=')
     await expectChatbotReached(page)
     expect(
       cookieTokenSubject(await chatCookie(page, 'participant_token'))
