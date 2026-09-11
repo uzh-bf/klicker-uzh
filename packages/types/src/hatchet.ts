@@ -79,6 +79,11 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handleRenewAssessmentAuditMediaPolicies: (
+    _input: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,

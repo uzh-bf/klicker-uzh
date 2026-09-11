@@ -85,6 +85,8 @@ export type AuditMonitorSnapshot = AuditMonitorCounts & {
 
 let dispatcherLastSuccessAt: Date | undefined
 let monitorLastSuccessAt: Date | undefined
+let mediaPolicyLastSuccessAt: Date | undefined
+let mediaPolicyMinimumHorizonDays: number | undefined
 let latestSnapshot: AuditMonitorSnapshot | undefined
 const auditWorkerStartedAt = new Date()
 
@@ -98,6 +100,14 @@ export function recordAssessmentAuditMonitorSuccess(
 ): void {
   monitorLastSuccessAt = at
   latestSnapshot = snapshot
+}
+
+export function recordAssessmentAuditMediaPolicySuccess(
+  minimumHorizonDays: number | null,
+  at = new Date()
+): void {
+  mediaPolicyLastSuccessAt = at
+  mediaPolicyMinimumHorizonDays = minimumHorizonDays ?? Number.POSITIVE_INFINITY
 }
 
 function elapsedSeconds(now: Date, then: Date | null | undefined): number {
@@ -216,10 +226,16 @@ function prometheusNumber(value: number | undefined): string {
 }
 
 export function renderAssessmentAuditPrometheusMetrics(
-  environment: string
+  environment: string,
+  role = 'dispatcher'
 ): string {
   const safeEnvironment = environment.replaceAll(/[^a-zA-Z0-9_.-]/g, '_')
+  const safeRole = role.replaceAll(/[^a-zA-Z0-9_.-]/g, '_')
   const metrics: Array<[string, string]> = [
+    [
+      'assessment_audit_worker_started_timestamp_seconds',
+      prometheusNumber(auditWorkerStartedAt.getTime() / 1_000),
+    ],
     [
       'assessment_audit_dispatcher_last_success_timestamp_seconds',
       prometheusNumber(
@@ -235,6 +251,18 @@ export function renderAssessmentAuditPrometheusMetrics(
           ? undefined
           : monitorLastSuccessAt.getTime() / 1_000
       ),
+    ],
+    [
+      'assessment_audit_media_policy_last_success_timestamp_seconds',
+      prometheusNumber(
+        mediaPolicyLastSuccessAt === undefined
+          ? undefined
+          : mediaPolicyLastSuccessAt.getTime() / 1_000
+      ),
+    ],
+    [
+      'assessment_audit_media_policy_minimum_horizon_days',
+      prometheusNumber(mediaPolicyMinimumHorizonDays),
     ],
     [
       'assessment_audit_outbox_pending',
@@ -258,8 +286,11 @@ export function renderAssessmentAuditPrometheusMetrics(
     ],
   ]
   return [
-    `assessment_audit_worker_info{environment="${safeEnvironment}"} 1`,
-    ...metrics.map(([name, value]) => `${name} ${value}`),
+    `assessment_audit_worker_info{environment="${safeEnvironment}",role="${safeRole}"} 1`,
+    ...metrics.map(
+      ([name, value]) =>
+        `${name}{environment="${safeEnvironment}",role="${safeRole}"} ${value}`
+    ),
     '',
   ].join('\n')
 }

@@ -10,10 +10,13 @@ const KB_INGESTION_WORKFLOW_KEYS = new Set([
 ])
 const KB_GRAPH_WORKFLOW_KEYS = new Set(['buildKBGraph', 'monitorKBGraphBuilds'])
 const KB_MAINTENANCE_WORKFLOW_KEY = 'maintainKBResources'
-const AUDIT_WORKFLOW_KEYS = new Set([
-  'dispatchAssessmentAuditOutbox',
-  'monitorAssessmentAudit',
-])
+const AUDIT_WORKFLOWS_BY_ROLE = {
+  dispatcher: ['dispatchAssessmentAuditOutbox', 'monitorAssessmentAudit'],
+  'media-policy': ['renewAssessmentAuditMediaPolicies'],
+} as const
+const AUDIT_WORKFLOW_KEYS = new Set<string>(
+  Object.values(AUDIT_WORKFLOWS_BY_ROLE).flat()
+)
 
 export type KBWorkerIntegrationState = {
   ingestionDisabled: boolean
@@ -58,6 +61,7 @@ export function selectWorkflows<T extends Record<string, unknown>>(
   options: KBWorkerIntegrationState & {
     requestedWorkflowNames?: string
     auditWorkerEnabled?: boolean
+    auditWorkerRole?: string
   }
 ) {
   const availableKeys = Object.keys(workflows) as Array<keyof T & string>
@@ -72,9 +76,23 @@ export function selectWorkflows<T extends Record<string, unknown>>(
   const requestedCandidates = hasRequestedKeys
     ? requestedKeys.filter((key): key is keyof T & string => key in workflows)
     : availableKeys
+  if (
+    options.auditWorkerEnabled &&
+    (options.auditWorkerRole === undefined ||
+      !Object.hasOwn(AUDIT_WORKFLOWS_BY_ROLE, options.auditWorkerRole))
+  ) {
+    throw new Error('ASSESSMENT_AUDIT_WORKER_ROLE is invalid')
+  }
+  const requiredAuditKeys = new Set<string>(
+    options.auditWorkerEnabled
+      ? AUDIT_WORKFLOWS_BY_ROLE[
+          options.auditWorkerRole as keyof typeof AUDIT_WORKFLOWS_BY_ROLE
+        ]
+      : []
+  )
   const isAllowed = (key: string) =>
     options.auditWorkerEnabled
-      ? AUDIT_WORKFLOW_KEYS.has(key)
+      ? requiredAuditKeys.has(key)
       : !AUDIT_WORKFLOW_KEYS.has(key)
   if (options.auditWorkerEnabled && unknownKeys.length > 0) {
     throw new Error(
@@ -93,9 +111,9 @@ export function selectWorkflows<T extends Record<string, unknown>>(
   const selectedKeySet = new Set(candidateKeys)
   if (
     options.auditWorkerEnabled &&
-    (selectedKeySet.size !== AUDIT_WORKFLOW_KEYS.size ||
+    (selectedKeySet.size !== requiredAuditKeys.size ||
       candidateKeys.length !== selectedKeySet.size ||
-      [...AUDIT_WORKFLOW_KEYS].some((key) => !selectedKeySet.has(key)))
+      [...requiredAuditKeys].some((key) => !selectedKeySet.has(key)))
   ) {
     throw new Error(
       'The audit worker must select every required audit workflow exactly'

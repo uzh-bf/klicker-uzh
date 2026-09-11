@@ -31,6 +31,7 @@ function startAuditMetricsServer(): void {
     throw new Error('ASSESSMENT_AUDIT_METRICS_PORT must be a valid port')
   }
   const environment = process.env.ASSESSMENT_AUDIT_ENVIRONMENT ?? 'unknown'
+  const role = process.env.ASSESSMENT_AUDIT_WORKER_ROLE ?? 'general'
   const server = createServer((request, response) => {
     if (request.url === '/healthz') {
       response.writeHead(200, { 'content-type': 'text/plain' })
@@ -41,7 +42,7 @@ function startAuditMetricsServer(): void {
       response.writeHead(200, {
         'content-type': 'text/plain; version=0.0.4; charset=utf-8',
       })
-      response.end(renderAssessmentAuditPrometheusMetrics(environment))
+      response.end(renderAssessmentAuditPrometheusMetrics(environment, role))
       return
     }
     response.writeHead(404, { 'content-type': 'text/plain' })
@@ -144,6 +145,7 @@ async function main() {
   const selection = selectWorkflows(preparedWorkflows, {
     ...integrationState,
     auditWorkerEnabled,
+    auditWorkerRole: process.env.ASSESSMENT_AUDIT_WORKER_ROLE,
     requestedWorkflowNames: process.env.HATCHET_WORKFLOWS,
   })
   if (selection.unknownKeys.length > 0) {

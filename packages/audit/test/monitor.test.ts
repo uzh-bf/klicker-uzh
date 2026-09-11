@@ -69,9 +69,14 @@ describe('assessment audit monitor', () => {
 
     const metrics = renderAssessmentAuditPrometheusMetrics('stg')
     expect(metrics).toContain(
-      'assessment_audit_monitor_last_success_timestamp_seconds 1786435800'
+      'assessment_audit_monitor_last_success_timestamp_seconds{environment="stg",role="dispatcher"} 1786435800'
     )
-    expect(metrics).toContain('assessment_audit_delivered_unsealed_bytes 512')
+    expect(metrics).toContain(
+      'assessment_audit_delivered_unsealed_bytes{environment="stg",role="dispatcher"} 512'
+    )
+    expect(metrics).toContain(
+      'assessment_audit_worker_started_timestamp_seconds{environment="stg",role="dispatcher"}'
+    )
     expect(metrics).not.toContain('participant')
   })
 })
