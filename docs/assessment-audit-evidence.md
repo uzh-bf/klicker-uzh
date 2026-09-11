@@ -2,7 +2,7 @@
 type: Architecture
 title: Assessment Audit Evidence
 description: Assessment evidence contract, PostgreSQL outbox, append-only Azure delivery, verification, and operator export.
-timestamp: '2026-08-12'
+timestamp: '2026-09-11'
 tags:
   - audit
   - assessment
@@ -19,6 +19,18 @@ and the delivery order lives in the
 [Stack 1 implementation plan](../project/2026-08-10-assessment-audit-stack-1-implementation-plan.md).
 
 ## Current implementation boundary
+
+Staging audit configuration lives in `deploy/env-uzh-stg/values.yaml` under
+`assessmentAudit`. The chart renders the endpoint, rollout, pilot quiz IDs,
+environment, and dedicated worker role/metrics settings into ConfigMaps; these
+settings do not require duplicate Infisical entries or ExternalSecret mappings.
+Existing worker Secrets still supply database, Redis, and Hatchet credentials.
+The staging service-account names match df-cloud's `stg-audit-backend-media`,
+`stg-audit-dispatcher`, and `stg-audit-media-policy` resources in `stg-klicker`.
+Keep `enabled: false` and `rollout: disabled` until provisioning is verified,
+`tableEndpoint` and `blobEndpoint` contain the actual `auditTableEndpoint` and
+`auditBlobEndpoint` outputs, and the worker images are verified. Endpoint blanks
+are intentional prerequisites, not usable deployment defaults.
 
 The producer layer includes lifecycle/session, permission, correction, bulk,
 course-copy activation, baseline-reservation, and export-integrity hardening.
