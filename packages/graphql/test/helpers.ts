@@ -185,6 +185,10 @@ export async function testInitialization(
       name: 'monitor-assessment-audit-test',
       fn: async () => ({ success: true }),
     }),
+    renewAssessmentAuditMediaPolicies: hatchet.task({
+      name: 'renew-assessment-audit-media-policies-test',
+      fn: async () => ({ success: true }),
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({

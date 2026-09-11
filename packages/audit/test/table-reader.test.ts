@@ -210,4 +210,70 @@ describe('Azure Table audit reader', () => {
       )
     ).toBe(false)
   })
+
+  it('fails verification when the retention index entity is missing', async () => {
+    const { auditRecord, retentionIndex, reader } = readerFixture()
+    retentionIndex.rows.clear()
+
+    await expect(
+      reader.verifyEvent(auditRecord.envelope.eventId)
+    ).rejects.toThrow(/retention index/i)
+  })
+
+  it('collects retention-index failures without failing the whole export', async () => {
+    const { auditRecord, retentionIndex, reader } = readerFixture()
+    retentionIndex.rows.clear()
+
+    const result = await reader.exportQuizWithFailures({
+      liveQuizId: LIVE_QUIZ_ID,
+    })
+
+    expect(result.verified).toHaveLength(0)
+    expect(result.failures).toHaveLength(1)
+    expect(result.failures[0]).toMatchObject({
+      eventId: auditRecord.envelope.eventId,
+      reason: 'RETENTION_INDEX_MISSING',
+    })
+  })
+
+  it.each([
+    ['locator', 'LOCATOR_MISSING'],
+    ['evidence', 'EVIDENCE_MISSING'],
+  ] as const)('reports missing %s rows explicitly', async (store, reason) => {
+    const fixture = readerFixture()
+    fixture[store].rows.clear()
+    const result = await fixture.reader.exportQuizWithFailures({
+      liveQuizId: LIVE_QUIZ_ID,
+    })
+    expect(result.verified).toHaveLength(0)
+    expect(result.failures).toEqual([
+      expect.objectContaining({
+        eventId: fixture.auditRecord.envelope.eventId,
+        reason,
+      }),
+    ])
+  })
+
+  it('rejects missing participant scope in the retention index', async () => {
+    const fixture = readerFixture()
+    for (const row of fixture.retentionIndex.rows.values()) {
+      delete row.participantId
+    }
+    await expect(
+      fixture.reader.verifyEvent(fixture.auditRecord.envelope.eventId)
+    ).rejects.toThrow('participant scope')
+  })
+
+  it('does not misclassify a provider outage as missing evidence', async () => {
+    const fixture = readerFixture()
+    vi.spyOn(fixture.retentionIndex, 'getEntity').mockRejectedValue(
+      Object.assign(new Error('retention index unavailable'), {
+        statusCode: 503,
+      })
+    )
+    const result = await fixture.reader.exportQuizWithFailures({
+      liveQuizId: LIVE_QUIZ_ID,
+    })
+    expect(result.failures[0]?.reason).toBe('VERIFICATION_FAILED')
+  })
 })

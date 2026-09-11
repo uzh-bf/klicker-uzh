@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import {
+  ASSESSMENT_BASELINE_MAX_PARTS,
   type AssessmentBaselineContent,
   buildAssessmentBaseline,
 } from '../src/baseline/build.js'
@@ -117,5 +118,20 @@ describe('assessment baseline builder', () => {
         ],
       })
     ).toThrow()
+  })
+
+  it('fails closed before materializing an unbounded baseline', () => {
+    const configuration = contents()[2]!
+    expect(() =>
+      buildAssessmentBaseline({
+        baselineId: randomUUID(),
+        baselineKind: 'CREATION',
+        capturedAt,
+        contents: Array.from(
+          { length: ASSESSMENT_BASELINE_MAX_PARTS + 1 },
+          () => configuration
+        ),
+      })
+    ).toThrow('maximum of 100000 parts')
   })
 })

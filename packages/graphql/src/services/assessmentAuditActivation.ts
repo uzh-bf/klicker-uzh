@@ -31,7 +31,7 @@ import {
   buildAssessmentBaselineContents,
 } from './assessmentAuditBaseline.js'
 
-const BASELINE_QUIZ_SELECT = {
+export const ASSESSMENT_AUDIT_QUIZ_SELECT = {
   id: true,
   name: true,
   displayName: true,
@@ -94,7 +94,7 @@ const BASELINE_QUIZ_SELECT = {
 } satisfies Prisma.LiveQuizSelect
 
 type BaselineQuizRecord = Prisma.LiveQuizGetPayload<{
-  select: typeof BASELINE_QUIZ_SELECT
+  select: typeof ASSESSMENT_AUDIT_QUIZ_SELECT
 }>
 
 type BaselineReadClient = Pick<
@@ -180,21 +180,29 @@ function mapQuizRecord(record: BaselineQuizRecord): AssessmentBaselineSnapshot {
   }
 }
 
+export async function loadAssessmentAuditSnapshot(
+  client: Pick<Prisma.TransactionClient, 'liveQuiz'>,
+  liveQuizId: string
+): Promise<AssessmentBaselineSnapshot | null> {
+  const quiz = await client.liveQuiz.findUnique({
+    where: { id: liveQuizId },
+    select: ASSESSMENT_AUDIT_QUIZ_SELECT,
+  })
+  return quiz === null ? null : mapQuizRecord(quiz)
+}
+
 export async function loadAssessmentBaselineSnapshot(
   client: BaselineReadClient,
   liveQuizId: string
 ): Promise<AssessmentBaselineSnapshot> {
-  const quiz = await client.liveQuiz.findUnique({
-    where: { id: liveQuizId },
-    select: BASELINE_QUIZ_SELECT,
-  })
+  const quiz = await loadAssessmentAuditSnapshot(client, liveQuizId)
   if (quiz === null || quiz.isDeleted || !quiz.isAssessmentEnabled) {
     throw new Error('Assessment audit activation requires an active assessment')
   }
-  return mapQuizRecord(quiz)
+  return quiz
 }
 
-async function prepareCapturedMedia(input: {
+export async function captureAssessmentAuditSnapshotMedia(input: {
   client: BaselineReadClient
   snapshot: AssessmentBaselineSnapshot
   media: AssessmentAuditMediaDependencies
@@ -268,46 +276,91 @@ async function prepareAssessmentAuditActivationInternal(input: {
     throw new Error('Assessment audit coverage is already active')
   }
   const lifecycleEpoch =
-    input.lifecycleEpoch ?? (latestScope?.lifecycleEpoch ?? 0) + 1
-  const { capturedMedia, limitations } = await prepareCapturedMedia({
-    client: input.client,
-    snapshot,
-    media: input.media,
-    capturedAt,
-  })
-  const contents = buildAssessmentBaselineContents({
-    snapshot,
-    capturedMedia,
-    limitations,
-  })
+    input.lifecycleEpoch ??
+    (latestScope?.coverageState === DB.AssessmentAuditCoverageState.ACTIVATING
+      ? latestScope.lifecycleEpoch
+      : (latestScope?.lifecycleEpoch ?? 0) + 1)
   const baselineId = input.baselineId ?? randomUUID()
-  const capturedAtIso = capturedAt.toISOString()
-  const baseline = buildAssessmentBaseline({
-    baselineId,
-    baselineKind: input.baselineKind,
-    capturedAt: capturedAtIso,
-    contents,
+  // Reserve the epoch before touching immutable Blob storage. If the process
+  // dies after capture but before the coverage transaction commits, this
+  // durable reservation is the reconciler's proof that the blob may be an
+  // orphan; it is never interpreted as covered evidence by readers.
+  await input.client.assessmentAuditScope.upsert({
+    where: {
+      liveQuizId_lifecycleEpoch: {
+        liveQuizId: input.liveQuizId,
+        lifecycleEpoch,
+      },
+    },
+    create: {
+      liveQuizId: input.liveQuizId,
+      lifecycleEpoch,
+      coverageState: DB.AssessmentAuditCoverageState.ACTIVATING,
+      baselineId,
+      baselineKind: input.baselineKind,
+    },
+    update: {},
   })
-  const recordedAt = (input.now ?? (() => new Date()))()
-  if (
-    Number.isNaN(recordedAt.getTime()) ||
-    recordedAt.getTime() < capturedAt.getTime()
-  ) {
-    throw new TypeError('Assessment baseline recording time is invalid')
-  }
-  return {
-    liveQuizId: input.liveQuizId,
-    lifecycleEpoch,
-    courseId: snapshot.courseId,
-    baselineId,
-    baselineKind: input.baselineKind,
-    capturedAt: capturedAtIso,
-    recordedAt: recordedAt.toISOString(),
-    activatedAt: capturedAtIso,
-    snapshotHash: baseline.root.aggregateHash,
-    capturedMedia,
-    limitations,
-    ...baseline,
+
+  let capturedMedia: PreparedAssessmentAuditActivation['capturedMedia']
+  let limitations: PreparedAssessmentAuditActivation['limitations']
+  try {
+    const captured = await captureAssessmentAuditSnapshotMedia({
+      client: input.client,
+      snapshot,
+      media: input.media,
+      capturedAt,
+    })
+    capturedMedia = captured.capturedMedia
+    limitations = captured.limitations
+    const contents = buildAssessmentBaselineContents({
+      snapshot,
+      capturedMedia,
+      limitations,
+    })
+    const capturedAtIso = capturedAt.toISOString()
+    const baseline = buildAssessmentBaseline({
+      baselineId,
+      baselineKind: input.baselineKind,
+      capturedAt: capturedAtIso,
+      contents,
+    })
+    const recordedAt = (input.now ?? (() => new Date()))()
+    if (
+      Number.isNaN(recordedAt.getTime()) ||
+      recordedAt.getTime() < capturedAt.getTime()
+    ) {
+      throw new TypeError('Assessment baseline recording time is invalid')
+    }
+    return {
+      liveQuizId: input.liveQuizId,
+      lifecycleEpoch,
+      courseId: snapshot.courseId,
+      baselineId,
+      baselineKind: input.baselineKind,
+      capturedAt: capturedAtIso,
+      recordedAt: recordedAt.toISOString(),
+      activatedAt: capturedAtIso,
+      snapshotHash: baseline.root.aggregateHash,
+      capturedMedia,
+      limitations,
+      ...baseline,
+    }
+  } catch (error) {
+    try {
+      await input.client.assessmentAuditScope.updateMany({
+        where: {
+          liveQuizId: input.liveQuizId,
+          lifecycleEpoch,
+          coverageState: DB.AssessmentAuditCoverageState.ACTIVATING,
+        },
+        data: { coverageState: DB.AssessmentAuditCoverageState.FAILED },
+      })
+    } catch {
+      // Preserve the original capture failure. The reservation remains
+      // ACTIVATING for a later reconciliation attempt.
+    }
+    throw error
   }
 }
 
@@ -425,6 +478,23 @@ export async function persistPreparedAssessmentAuditActivationInTransaction(inpu
       data: {
         liveQuizId: input.prepared.liveQuizId,
         lifecycleEpoch: input.prepared.lifecycleEpoch,
+        coverageState: DB.AssessmentAuditCoverageState.COVERED,
+        baselineId: input.prepared.baselineId,
+        baselineKind: input.prepared.baselineKind,
+        activatedAt: new Date(input.prepared.activatedAt),
+      },
+    })
+  } else if (
+    existing.coverageState === DB.AssessmentAuditCoverageState.ACTIVATING
+  ) {
+    await tx.assessmentAuditScope.update({
+      where: {
+        liveQuizId_lifecycleEpoch: {
+          liveQuizId: input.prepared.liveQuizId,
+          lifecycleEpoch: input.prepared.lifecycleEpoch,
+        },
+      },
+      data: {
         coverageState: DB.AssessmentAuditCoverageState.COVERED,
         baselineId: input.prepared.baselineId,
         baselineKind: input.prepared.baselineKind,
@@ -559,22 +629,42 @@ export async function persistPreparedAssessmentAuditActivationInTransaction(inpu
 }
 
 export async function persistPreparedAssessmentAuditActivation(input: {
-  client: Pick<DB.PrismaClient, '$transaction'>
+  client: Pick<DB.PrismaClient, '$transaction' | 'assessmentAuditScope'>
   prepared: PreparedAssessmentAuditActivation
   actor: Extract<AuditActor, { kind: 'USER' | 'SYSTEM' }>
   correlationId: string
   rollout?: AssessmentAuditRolloutObservation
 }) {
-  return runInAuditTransaction(input.client, (tx, auditTx) =>
-    persistPreparedAssessmentAuditActivationInTransaction({
-      tx,
-      auditTx,
-      prepared: input.prepared,
-      actor: input.actor,
-      correlationId: input.correlationId,
-      ...(input.rollout === undefined ? {} : { rollout: input.rollout }),
-    })
-  )
+  try {
+    return await runInAuditTransaction(input.client, (tx, auditTx) =>
+      persistPreparedAssessmentAuditActivationInTransaction({
+        tx,
+        auditTx,
+        prepared: input.prepared,
+        actor: input.actor,
+        correlationId: input.correlationId,
+        ...(input.rollout === undefined ? {} : { rollout: input.rollout }),
+      })
+    )
+  } catch (error) {
+    // The activation transaction intentionally rolls back on a changed
+    // assessment or an outbox failure. Keep the pre-capture reservation
+    // durable so the orphan-media reconciler can account for this attempt.
+    try {
+      await input.client.assessmentAuditScope.updateMany({
+        where: {
+          liveQuizId: input.prepared.liveQuizId,
+          lifecycleEpoch: input.prepared.lifecycleEpoch,
+          coverageState: DB.AssessmentAuditCoverageState.ACTIVATING,
+        },
+        data: { coverageState: DB.AssessmentAuditCoverageState.FAILED },
+      })
+    } catch {
+      // Preserve the original activation failure. A later reconciliation run
+      // will observe the still-ACTIVATING reservation and retry the transition.
+    }
+    throw error
+  }
 }
 
 export type AssessmentAuditRolloutConfig =
