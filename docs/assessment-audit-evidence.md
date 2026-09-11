@@ -401,6 +401,13 @@ and a differing replay a hard conflict. Capture locks the returned blob version
 with a version-level immutability policy and never exposes content update or
 delete operations.
 
+Audit Blob adapters write `sha256` and `bytelength` metadata with lowercase
+names. Azure property responses lowercased the former `byteLength` name, which
+caused valid media copies and manifest replays to fail integrity validation.
+Reads accept case-insensitive names for existing copies, require every matching
+value to agree, and reject missing or conflicting integrity metadata. Existing
+Blob metadata is never rewritten to repair casing.
+
 Audit capture tolerates `application/octet-stream` source metadata only for
 images whose file signature matches the database MIME type. Detection runs on
 the already-staged temporary file before immutable persistence; bytes are never

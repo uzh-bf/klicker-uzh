@@ -23,6 +23,9 @@ type StoredMedia = {
 
 class MemoryMediaContainer {
   stored = new Map<string, StoredMedia>()
+  policyCalls: string[] = []
+  versionReads: string[] = []
+  persistPolicy = true
 
   getBlockBlobClient(name: string) {
     const container = this
@@ -45,7 +48,12 @@ class MemoryMediaContainer {
         for await (const chunk of stream) chunks.push(Buffer.from(chunk))
         container.stored.set(name, {
           content: Buffer.concat(chunks),
-          metadata: options.metadata,
+          metadata: Object.fromEntries(
+            Object.entries(options.metadata).map(([key, value]) => [
+              key.toLowerCase(),
+              value,
+            ])
+          ),
           contentType: options.blobHTTPHeaders.blobContentType,
           versionId: 'version-1',
         })
@@ -69,15 +77,19 @@ class MemoryMediaContainer {
           ),
         }
       },
-      withVersion() {
+      withVersion(versionId: string) {
         return {
           async setImmutabilityPolicy(policy: { expiriesOn?: Date }) {
             const stored = container.stored.get(name)!
-            stored.expiresOn = policy.expiriesOn
-            stored.policyMode = 'Locked'
+            container.policyCalls.push(versionId)
+            if (container.persistPolicy) {
+              stored.expiresOn = policy.expiriesOn
+              stored.policyMode = 'Locked'
+            }
             return {}
           },
           async getProperties() {
+            container.versionReads.push(versionId)
             return client.getProperties()
           },
         }
@@ -159,6 +171,12 @@ describe('Azure immutable audit media store', () => {
     const created = await store.createFromFile(input)
     const replay = await store.createFromFile(input)
 
+    expect(container.policyCalls).toEqual(['version-1'])
+    expect(container.versionReads).toEqual(['version-1', 'version-1'])
+    expect(container.stored.get(input.blobName)?.metadata).toEqual({
+      sha256: input.contentHash,
+      bytelength: String(input.byteLength),
+    })
     expect(created.outcome).toBe('CREATED')
     expect(replay.outcome).toBe('IDENTICAL_REPLAY')
     expect(container.stored.get(input.blobName)?.policyMode).toBe('Locked')
@@ -204,5 +222,116 @@ describe('Azure immutable audit media store', () => {
         retainUntil: input.retainUntil,
       })
     ).toMatchObject({ outcome: 'ALREADY_SUFFICIENT', retainUntil: later })
+  })
+
+  it.each([
+    'byteLength',
+    'BYTELENGTH',
+  ])('replays existing %s metadata without rewriting it', async (lengthKey) => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('metadata regression'))
+    const first = await store.createFromFile(input)
+    const stored = container.stored.get(first.blobName)!
+    const metadata = {
+      SHA256: first.contentHash,
+      [lengthKey]: String(first.byteLength),
+    }
+    stored.metadata = metadata
+    await expect(store.createFromFile(input)).resolves.toMatchObject({
+      outcome: 'IDENTICAL_REPLAY',
+    })
+    expect(stored.metadata).toBe(metadata)
+    expect(container.policyCalls).toHaveLength(1)
+  })
+
+  it.each([
+    'missing length',
+    'wrong length',
+    'missing hash',
+    'wrong hash',
+    'conflicting length alias',
+    'conflicting hash alias',
+    'wrong MIME',
+  ])('rejects %s before changing retention', async (conflict) => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('metadata regression'))
+    const first = await store.createFromFile(input)
+    const stored = container.stored.get(first.blobName)!
+    if (conflict === 'missing length') delete stored.metadata.bytelength
+    if (conflict === 'wrong length') stored.metadata.bytelength = '999'
+    if (conflict === 'missing hash') delete stored.metadata.sha256
+    if (conflict === 'wrong hash') stored.metadata.sha256 = 'wrong'
+    if (conflict === 'conflicting length alias')
+      stored.metadata.byteLength = '999'
+    if (conflict === 'conflicting hash alias') stored.metadata.SHA256 = 'wrong'
+    if (conflict === 'wrong MIME') stored.contentType = 'text/plain'
+    await expect(store.createFromFile(input)).rejects.toBeInstanceOf(
+      AuditMediaConflictError
+    )
+    expect(container.policyCalls).toHaveLength(1)
+  })
+
+  it('rejects a lock that was not persisted on the returned version', async () => {
+    const container = new MemoryMediaContainer()
+    container.persistPolicy = false
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('unlocked media'))
+    await expect(store.createFromFile(input)).rejects.toThrow(
+      'was not durably locked'
+    )
+    expect(container.policyCalls).toEqual(['version-1'])
+    expect(container.versionReads).toEqual(['version-1'])
+  })
+
+  it('locks an existing lowercase copy left by a failed activation', async () => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('metadata regression'))
+    const first = await store.createFromFile(input)
+    const stored = container.stored.get(first.blobName)!
+    stored.policyMode = undefined
+    stored.expiresOn = undefined
+    await expect(store.createFromFile(input)).resolves.toMatchObject({
+      outcome: 'IDENTICAL_REPLAY',
+    })
+    expect(container.policyCalls).toEqual(['version-1', 'version-1'])
+    expect(stored.policyMode).toBe('Locked')
+  })
+
+  it('validates case-insensitive hashes during retention renewal', async () => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('metadata regression'))
+    const first = await store.createFromFile(input)
+    const stored = container.stored.get(first.blobName)!
+    stored.metadata = {
+      SHA256: first.contentHash,
+      byteLength: String(first.byteLength),
+    }
+    const renewal = {
+      blobName: first.blobName,
+      contentHash: first.contentHash,
+      retainUntil: new Date('2031-01-01T00:00:00.000Z'),
+    }
+    await expect(store.extendRetention(renewal)).resolves.toMatchObject({
+      outcome: 'EXTENDED',
+    })
+    stored.metadata.sha256 = 'wrong'
+    await expect(store.extendRetention(renewal)).rejects.toBeInstanceOf(
+      AuditMediaConflictError
+    )
+    expect(container.policyCalls).toHaveLength(2)
   })
 })
