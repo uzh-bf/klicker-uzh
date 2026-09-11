@@ -1,5 +1,5 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { CourseAuthType, PrismaClient } from '@klicker-uzh/prisma/client'
 import { signJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { EventEmitter } from 'events'
@@ -483,7 +483,11 @@ describe('LTI participant linking and creation', () => {
     if (reason === 'assessment')
       await prisma.course.update({
         where: { id: course.id },
-        data: { isAssessmentEnabled: true },
+        data: {
+          isAssessmentEnabled: true,
+          authType: CourseAuthType.SSO,
+          pinCode: null,
+        },
       })
     if (reason === 'deleted')
       await prisma.course.update({
