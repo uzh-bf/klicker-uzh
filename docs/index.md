@@ -15,7 +15,7 @@ Conventions: one concept per file (OKF v0.1), claims cite `path:Symbol`, command
 - [Domain Model](./domain-model.md) - Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
 - [GraphQL API Layer](./graphql-api-layer.md) - Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
 - [Data & Migrations](./data-and-migrations.md) - Split Prisma schema, the migrate→sync→generate ritual, seeding paths, typed Json fields, and schema-level gotchas.
-- [Assessment Audit Evidence](./assessment-audit-evidence.md) - Provider-neutral assessment evidence contract, deterministic identity, transactional outbox, and the current delivery boundary.
+- [Assessment Audit Evidence](./assessment-audit-evidence.md) - Assessment evidence contract, transactional outbox, append-only Azure delivery, verification, owner export, and operational boundary.
 - [Async & Workers](./async-and-workers.md) - The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
 - [Auth Model](./auth-model.md) - Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
 - [Frontend Conventions](./frontend-conventions.md) - Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.

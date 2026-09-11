@@ -37,11 +37,11 @@ import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -176,6 +176,14 @@ export async function testInitialization(
         console.info('KB deletion dispatch stub triggered', input)
         return { success: true }
       },
+    }),
+    dispatchAssessmentAuditOutbox: hatchet.task({
+      name: 'dispatch-assessment-audit-outbox-test',
+      fn: async () => ({ success: true }),
+    }),
+    monitorAssessmentAudit: hatchet.task({
+      name: 'monitor-assessment-audit-test',
+      fn: async () => ({ success: true }),
     }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
