@@ -3,6 +3,7 @@ import { DisplayMode, type ElementData } from '@klicker-uzh/types'
 import { describe, expect, it } from 'vitest'
 import {
   assessmentIsSelectedForAuditActivation,
+  createAssessmentAuditMediaDependencies,
   readAssessmentAuditRolloutConfig,
 } from '../src/services/assessmentAuditActivation.js'
 import { buildAssessmentBaselineContents } from '../src/services/assessmentAuditBaseline.js'
@@ -155,5 +156,21 @@ describe('assessment audit rollout configuration', () => {
         })
       )
     ).toBe(true)
+  })
+})
+
+describe('assessment audit media configuration', () => {
+  it('passes explicitly trusted source accounts to capture dependencies', () => {
+    const media = createAssessmentAuditMediaDependencies({
+      BLOB_STORAGE_ACCOUNT_NAME: 'primarymedia',
+      ASSESSMENT_AUDIT_ADDITIONAL_SOURCE_ACCOUNTS: 'copiedmedia',
+      ASSESSMENT_AUDIT_BLOB_ENDPOINT: 'https://evidence.blob.core.windows.net',
+      ASSESSMENT_AUDIT_TABLE_ENDPOINT:
+        'https://evidence.table.core.windows.net',
+    })
+    expect(media.allowedHosts).toEqual([
+      'primarymedia.blob.core.windows.net',
+      'copiedmedia.blob.core.windows.net',
+    ])
   })
 })

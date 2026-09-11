@@ -394,7 +394,7 @@ and reports whether any target-participant evidence was found. Evidence without
 a baseline reports `BASELINE_MISSING`; it never claims covered status.
 
 Owned assessment media is copied through a bounded-memory stream path. Source
-URLs must be query-free HTTPS URLs on the configured Blob account, and every
+URLs must be query-free HTTPS URLs on explicitly configured Blob accounts, and every
 copy is hashed while streaming. The destination name is content addressed;
 conditional creation plus metadata verification makes identical retries safe
 and a differing replay a hard conflict. Capture locks the returned blob version
@@ -407,6 +407,30 @@ caused valid media copies and manifest replays to fail integrity validation.
 Reads accept case-insensitive names for existing copies, require every matching
 value to agree, and reject missing or conflicting integrity metadata. Existing
 Blob metadata is never rewritten to repair casing.
+
+The primary source account remains `BLOB_STORAGE_ACCOUNT_NAME`. Additional
+trusted Azure account names can be supplied as a comma-separated
+`ASSESSMENT_AUDIT_ADDITIONAL_SOURCE_ACCOUNTS`; the chart exposes this as
+`assessmentAudit.additionalSourceAccounts` (empty by default). Names are
+validated and converted to exact Blob service hosts. Wildcards, arbitrary
+hosts, credentials and non-UUID container paths remain rejected. The same
+allowlist is used by capture and the Azure source adapter; redirects or
+anonymous HTTP fallbacks are not introduced.
+
+Staging explicitly includes the legacy `klickeruzhprodimages` account because
+copied ElementInstance snapshots can retain image references in explanations,
+feedback or other nested content, even when question text has no image. The
+backend media workload identity needs Storage Blob Data Reader access to each
+source account/container it reads. Configuration alone does not grant Azure
+permissions. Owned references still require capture; they are never silently
+reclassified as external limitations. Existing failed coverage is not changed
+by deployment, and source Element edits do not rewrite published snapshots.
+
+Azure returns the version policy mode as lowercase `locked` / `unlocked`,
+while the JavaScript SDK request enum uses `Locked` / `Unlocked`. The adapters
+compare response modes case-insensitively; a missing or unlocked policy still
+fails verification. Test providers must return lowercase response modes so
+capture, replay and retention renewal exercise the real service contract.
 
 Audit capture tolerates `application/octet-stream` source metadata only for
 images whose file signature matches the database MIME type. Detection runs on

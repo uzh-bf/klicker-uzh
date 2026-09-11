@@ -104,7 +104,8 @@ export class AzureImmutableAuditBlobStore {
       }
       versionId = properties.versionId
       const existingExpiry = properties.immutabilityPolicyExpiresOn
-      const existingLocked = properties.immutabilityPolicyMode === 'Locked'
+      const existingLocked =
+        properties.immutabilityPolicyMode?.toLowerCase() === 'locked'
       if (
         existingLocked &&
         existingExpiry !== undefined &&
