@@ -2158,6 +2158,23 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      rebuildKbKnowledgeGraphWithDomain: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          qualityTier: t.arg({ type: KBGraphQualityTier, required: false }),
+          // An omitted triple is the legacy path, so one mutation can serve a
+          // deployment whose capability gate is closed.
+          domainPolicyId: t.arg.id({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.rebuildKbKnowledgeGraph(args, ctx)
+        },
+      }),
+
       setKbKnowledgeGraphEnabled: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KBKnowledgeGraphConfigType,

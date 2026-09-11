@@ -87,6 +87,7 @@ import {
 } from './groupActivity.js'
 import {
   KBKnowledgeGraphConfigType,
+  KBKnowledgeGraphDomainConfigType,
   KnowledgeGraphResponseType,
 } from './kbKnowledgeGraph.js'
 import {
@@ -1585,6 +1586,18 @@ export const Query = builder.queryType({
         args: { kbId: t.arg.id({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbKnowledgeGraphConfig(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphDomainConfig: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphDomainConfigType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphDomainConfig(
+            args,
+            ctx
+          )
         },
       }),
 

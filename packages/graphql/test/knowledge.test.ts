@@ -1,5 +1,6 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { getDefaultKBGraphDomainCatalog } from '@klicker-uzh/knowledge-graph'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
   KBGraphBuildStatus,
@@ -40,6 +41,7 @@ const { resolveMcpScope } = await vi.importActual<{
     effectiveConfigurations: readonly unknown[]
   ) => string[] | undefined
 }>('../../../apps/chat/src/services/mcpScope.ts')
+
 import {
   attachKbToChatbot,
   confirmKbFileReplacement,
@@ -261,6 +263,7 @@ describe('Integration tests for knowledge base CRUD', () => {
   let blobServiceUrl: string
   const graphCostEnvironmentKeys = [
     'KB_GRAPH_DISABLED',
+    'KB_GRAPH_DOMAIN_CATALOG_REVISION',
     'KB_GRAPH_COST_CURRENCY',
     'KB_GRAPH_STANDARD_ESTIMATE_MINOR_UNITS',
     'KB_GRAPH_HIGH_ESTIMATE_MINOR_UNITS',
@@ -501,6 +504,113 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
     ).resolves.toBe(1)
+  })
+
+  it('reserves a build only for a complete, supported domain selection', async () => {
+    const catalog = getDefaultKBGraphDomainCatalog()
+    const kb = await createKb({ name: 'Domain-scoped graph' }, userOneCtx)
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Domain graph source',
+        sourceUrl: 'https://example.com/domain-graph-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'c'.repeat(64),
+      },
+    })
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+
+    // A partial selection is rejected before any cost reservation exists.
+    await expect(
+      rebuildKbKnowledgeGraph(
+        { kbId: kb.id, domainPolicyId: 'finance' },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_SELECTION_INCOMPLETE' },
+    })
+    await expect(
+      rebuildKbKnowledgeGraph(
+        {
+          kbId: kb.id,
+          domainPolicyId: 'retired-policy',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNKNOWN_POLICY' },
+    })
+    await expect(
+      rebuildKbKnowledgeGraph(
+        {
+          kbId: kb.id,
+          domainPolicyId: 'finance',
+          domainPolicyVersion: 2,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNSUPPORTED_VERSION' },
+    })
+
+    // The same request without the capability gate is refused as well.
+    delete process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION
+    await expect(
+      rebuildKbKnowledgeGraph(
+        {
+          kbId: kb.id,
+          domainPolicyId: 'finance',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
+    })
+
+    await expect(
+      prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
+    ).resolves.toBe(0)
+
+    // A complete, supported selection is frozen onto the build.
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+    const config = await rebuildKbKnowledgeGraph(
+      {
+        kbId: kb.id,
+        domainPolicyId: 'finance',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      userOneCtx
+    )
+    expect(config).toMatchObject({
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+      publishedDomainPolicyId: null,
+    })
+    expect(config.domainCategories).not.toBeNull()
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({
+        where: { id: config.buildId! },
+        select: {
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
+        },
+      })
+    ).resolves.toEqual({
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+    })
   })
 
   it('creates and lists only the current users knowledge bases', async () => {

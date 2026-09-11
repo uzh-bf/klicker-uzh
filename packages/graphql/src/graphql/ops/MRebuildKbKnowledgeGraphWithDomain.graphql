@@ -1,0 +1,61 @@
+mutation RebuildKbKnowledgeGraphWithDomain(
+  $kbId: ID!
+  $qualityTier: KBGraphQualityTier
+  $domainPolicyId: ID
+  $domainPolicyVersion: Int
+  $domainPolicyLanguage: String
+) {
+  rebuildKbKnowledgeGraphWithDomain(
+    kbId: $kbId
+    qualityTier: $qualityTier
+    domainPolicyId: $domainPolicyId
+    domainPolicyVersion: $domainPolicyVersion
+    domainPolicyLanguage: $domainPolicyLanguage
+  ) {
+    kbId
+    isEnabled
+    buildId
+    status
+    statusMessage
+    qualityTier
+    domainPolicyId
+    domainPolicyVersion
+    domainPolicyLanguage
+    publishedDomainPolicyId
+    publishedDomainPolicyVersion
+    publishedDomainPolicyLanguage
+    domainCategories {
+      name
+      definition
+    }
+    sourceContentDigest
+    activeBuildId
+    publishedBuildId
+    elementGenerationReady
+    isStale
+    startedAt
+    finishedAt
+    createdAt
+    updatedAt
+    costConfigurationReady
+    costCurrency
+    quotaCurrency
+    billingLabel
+    standardEstimateMinorUnits
+    highEstimateMinorUnits
+    estimatedCostMinorUnits
+    actualCostMinorUnits
+    actualInputTokens
+    actualOutputTokens
+    actualEmbeddingTokens
+    actualRequestCount
+    maxCostMinorUnits
+    costStatus
+    semesterKey
+    semesterQuotaMinorUnits
+    semesterReservedMinorUnits
+    semesterSettledMinorUnits
+    remainingSemesterQuotaMinorUnits
+    worstCaseRemainingMinorUnits
+  }
+}
