@@ -38,6 +38,10 @@ Both dedicated audit workers use the mutable `v3-audit` image tag with
 do not use the ArgoCD `global.imageTag` override. Updating a mutable image tag
 does not itself restart an existing pod.
 
+The backend and both Hatchet worker images must copy `packages/audit/dist` into
+their final runtime stages. Installing workspace production dependencies alone
+only provides the package metadata/link, not its compiled entry point.
+
 The producer layer includes lifecycle/session, permission, correction, bulk,
 course-copy activation, baseline-reservation, and export-integrity hardening.
 Course copies are activated after the enclosing transaction commits. Tests
