@@ -10,6 +10,9 @@ import {
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPoints,
   getSelectionQuestionPointsDetails,
+  hasGradableFreeTextAnswer,
+  hasGradableNumericalAnswer,
+  isFullyCorrect,
 } from '@/src/processors/helpers.js'
 
 // ! Characterization battery for the response-processor scoring helpers.
@@ -502,5 +505,34 @@ describe('characterization of the response processor scoring helpers', () => {
 
       expect(result.bonusPoints).toBe(45)
     })
+  })
+})
+
+describe('first-response guard predicates', () => {
+  // the live-quiz flow combines these per-type predicates with its own
+  // !firstResponseReceivedAt check; the variants below intentionally differ
+  // between question types and are preserved verbatim
+  it('isFullyCorrect accepts only a percentage of exactly one', () => {
+    expect(isFullyCorrect(1)).toBe(true)
+    expect(isFullyCorrect(0.5)).toBe(false)
+    expect(isFullyCorrect(0)).toBe(false)
+    expect(isFullyCorrect(null)).toBe(false)
+  })
+
+  it('hasGradableNumericalAnswer requires solutions and a non-zero percentage', () => {
+    expect(hasGradableNumericalAnswer([5], 1)).toBe(true)
+    expect(hasGradableNumericalAnswer([{ min: 1, max: 2 }], 1)).toBe(true)
+    expect(hasGradableNumericalAnswer([5], 0)).toBe(false)
+    expect(hasGradableNumericalAnswer(undefined, 1)).toBe(false)
+    // quirk preserved verbatim: an empty array is truthy, so it counts as
+    // gradable in the original guard
+    expect(hasGradableNumericalAnswer([], 1)).toBe(true)
+  })
+
+  it('hasGradableFreeTextAnswer requires a non-zero percentage', () => {
+    expect(hasGradableFreeTextAnswer(1)).toBe(true)
+    expect(hasGradableFreeTextAnswer(0.5)).toBe(true)
+    expect(hasGradableFreeTextAnswer(0)).toBe(false)
+    expect(hasGradableFreeTextAnswer(null)).toBe(false)
   })
 })

@@ -294,20 +294,29 @@ interface SharedQuestionPointsParams {
   parsedSolutions: any
 }
 
-export function getChoicesQuestionPoints({
+// ---------------------------------------------------------------------------
+// shared grading cores and award finalization for the supported question types
+// ---------------------------------------------------------------------------
+
+type SharedScoringParams = {
+  pointsPercentage: number | null
+  instanceInfo: Record<string, string>
+  firstResponseReceivedAt?: string
+  responseTimestamp: number
+  pointsMultiplier?: string
+}
+
+function gradeChoicesResponse({
   type,
   choiceCount,
   response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
   parsedSolutions,
-}: SharedQuestionPointsParams & {
+}: {
   type: 'SC' | 'MC' | 'KPRIM'
   choiceCount?: string
-}) {
+  response: LiveQuizResponseInput
+  parsedSolutions: any
+}): number | null {
   let pointsPercentage: number | null
   if (type === 'SC') {
     pointsPercentage = gradeQuestionSC({
@@ -329,6 +338,91 @@ export function getChoicesQuestionPoints({
     })
   }
 
+  return pointsPercentage
+}
+
+function gradeNumericalResponse({
+  response,
+  parsedSolutions,
+}: {
+  response: LiveQuizResponseInput
+  parsedSolutions: any
+}): number | null {
+  const exactSolutionsDefined =
+    typeof parsedSolutions !== 'undefined' &&
+    parsedSolutions.length > 0 &&
+    (typeof parsedSolutions[0] === 'number' ||
+      typeof parsedSolutions[0] === 'string')
+
+  return gradeQuestionNumerical({
+    response: Number(response.value),
+    solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
+    exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
+  })
+}
+
+function gradeFreeTextResponse({
+  response,
+  parsedSolutions,
+}: {
+  response: LiveQuizResponseInput
+  parsedSolutions: any
+}): number | null {
+  return gradeQuestionFreeText({
+    response: response.value!.trim(),
+    solutions: parsedSolutions,
+  })
+}
+
+function gradeSelectionResponse({
+  response,
+  instanceInfo,
+  parsedSolutions,
+}: {
+  response: LiveQuizResponseInput
+  instanceInfo: Record<string, string>
+  parsedSolutions: any
+}): number | null {
+  return gradeQuestionSelection({
+    numberOfInputs: parseInt(instanceInfo.numberOfInputs!, 10),
+    response: response.selection!.filter(
+      (r: number) => r !== -1 && typeof r !== 'undefined' && r !== null
+    ), // filter out skipped response fields
+    correctAnswers: parsedSolutions,
+  })
+}
+
+function gradeCaseStudyResponse({
+  response,
+  parsedSolutions,
+}: {
+  response: LiveQuizResponseInput
+  parsedSolutions: any
+}): number | null {
+  return gradeQuestionCaseStudy({
+    response: response.assessment!,
+    solutions: parsedSolutions,
+  })
+}
+
+// total points for synchronous activities: correctness + bonus + optional
+// base points, rounded; the percentage is forwarded to the grading package,
+// which awards the maximum on a fully correct answer
+function finalizeTotalPoints({
+  pointsPercentage,
+  instanceInfo,
+  firstResponseReceivedAt,
+  responseTimestamp,
+  basePoints,
+  pointsMultiplier,
+}: {
+  pointsPercentage: number | null
+  basePoints?: string
+} & SharedScoringParams): {
+  pointsAwarded: number
+  xpAwarded: number
+  pointsPercentage: number | null
+} {
   const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
   const pointsAwarded = computeAwardedPoints({
     ...pointsWithDefaults,
@@ -344,305 +438,147 @@ export function getChoicesQuestionPoints({
   return { pointsAwarded, xpAwarded, pointsPercentage }
 }
 
-export function getChoicesQuestionPointsDetails({
-  type,
-  choiceCount,
-  response,
+// correctness/bonus decomposition for assessment activities
+function finalizeCorrectnessPoints({
+  pointsPercentage,
   instanceInfo,
   firstResponseReceivedAt,
   responseTimestamp,
   pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams & {
-  type: 'SC' | 'MC' | 'KPRIM'
-  choiceCount?: string
-}) {
-  let pointsPercentage: number | null
-  if (type === 'SC') {
-    pointsPercentage = gradeQuestionSC({
-      responseCount: Number(choiceCount),
-      response: response.choices!,
-      solution: parsedSolutions,
-    })
-  } else if (type === 'MC') {
-    pointsPercentage = gradeQuestionMC({
-      responseCount: Number(choiceCount),
-      response: response.choices!,
-      solution: parsedSolutions,
-    })
-  } else {
-    pointsPercentage = gradeQuestionKPRIM({
-      responseCount: Number(choiceCount),
-      response: response.choices!,
-      solution: parsedSolutions,
-    })
+}: SharedScoringParams): {
+  correctnessPoints: number
+  bonusPoints: number
+  xpAwarded: number
+  pointsPercentage: number | null
+} {
+  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
+  const { correctnessPoints, bonusPoints } = computeAwardedCorrectnessPoints({
+    ...pointsWithDefaults,
+    firstResponseReceivedAt,
+    responseTimestamp,
+    pointsPercentage,
+    pointsMultiplier,
+  })
+  const xpAwarded = computeAwardedXp({ pointsPercentage })
+
+  return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
+}
+
+/**
+ * Whether the answer is fully correct (percentage exactly 1); used by the
+ * live-quiz flow to decide whether a response qualifies as the first
+ * (bonus-relevant) response of a block for percentage-based question types.
+ */
+export function isFullyCorrect(pointsPercentage: number | null): boolean {
+  return pointsPercentage !== null && pointsPercentage === 1
+}
+
+/**
+ * Whether a numerical response is gradable at all (solutions defined and a
+ * non-zero percentage); used by the live-quiz flow for the first-response
+ * bookkeeping of numerical questions.
+ */
+export function hasGradableNumericalAnswer(
+  parsedSolutions: any,
+  pointsPercentage: number | null
+): boolean {
+  return Boolean(parsedSolutions && pointsPercentage)
+}
+
+/**
+ * Whether a free-text response achieved a non-zero percentage; used by the
+ * live-quiz flow for the first-response bookkeeping of free-text questions.
+ */
+export function hasGradableFreeTextAnswer(
+  pointsPercentage: number | null
+): boolean {
+  return Boolean(pointsPercentage)
+}
+
+export function getChoicesQuestionPoints(
+  params: SharedQuestionPointsParams & {
+    type: 'SC' | 'MC' | 'KPRIM'
+    choiceCount?: string
   }
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const { correctnessPoints, bonusPoints } = computeAwardedCorrectnessPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    pointsMultiplier,
+) {
+  return finalizeTotalPoints({
+    ...params,
+    pointsPercentage: gradeChoicesResponse(params),
   })
-  const xpAwarded = computeAwardedXp({ pointsPercentage })
-
-  return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
 }
 
-export function getNumericalQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const exactSolutionsDefined =
-    typeof parsedSolutions !== 'undefined' &&
-    parsedSolutions.length > 0 &&
-    (typeof parsedSolutions[0] === 'number' ||
-      typeof parsedSolutions[0] === 'string')
-
-  const pointsPercentage = gradeQuestionNumerical({
-    response: Number(response.value),
-    solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-    exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
+export function getChoicesQuestionPointsDetails(
+  params: SharedQuestionPointsParams & {
+    type: 'SC' | 'MC' | 'KPRIM'
+    choiceCount?: string
+  }
+) {
+  return finalizeCorrectnessPoints({
+    ...params,
+    pointsPercentage: gradeChoicesResponse(params),
   })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    getsMaxPoints: parsedSolutions && pointsPercentage === 1,
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage: pointsPercentage ?? 0,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
 }
 
-export function getNumericalQuestionPointsDetails({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const exactSolutionsDefined =
-    typeof parsedSolutions !== 'undefined' &&
-    parsedSolutions.length > 0 &&
-    (typeof parsedSolutions[0] === 'number' ||
-      typeof parsedSolutions[0] === 'string')
-
-  const pointsPercentage = gradeQuestionNumerical({
-    response: Number(response.value),
-    solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-    exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
+export function getNumericalQuestionPoints(params: SharedQuestionPointsParams) {
+  return finalizeTotalPoints({
+    ...params,
+    pointsPercentage: gradeNumericalResponse(params),
   })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const { correctnessPoints, bonusPoints } = computeAwardedCorrectnessPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    getsMaxPoints: parsedSolutions && pointsPercentage === 1,
-    pointsMultiplier,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage: pointsPercentage ?? 0,
-  })
-
-  return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
 }
 
-export function getFreeTextQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionFreeText({
-    response: response.value!.trim(),
-    solutions: parsedSolutions,
+export function getNumericalQuestionPointsDetails(
+  params: SharedQuestionPointsParams
+) {
+  return finalizeCorrectnessPoints({
+    ...params,
+    pointsPercentage: gradeNumericalResponse(params),
   })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    getsMaxPoints: Boolean(pointsPercentage),
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage: pointsPercentage ?? 0,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
 }
 
-export function getFreeTextQuestionPointsDetails({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionFreeText({
-    response: response.value!.trim(),
-    solutions: parsedSolutions,
+export function getFreeTextQuestionPoints(params: SharedQuestionPointsParams) {
+  return finalizeTotalPoints({
+    ...params,
+    pointsPercentage: gradeFreeTextResponse(params),
   })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const { correctnessPoints, bonusPoints } = computeAwardedCorrectnessPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    getsMaxPoints: Boolean(pointsPercentage),
-    pointsMultiplier,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage: pointsPercentage ?? 0,
-  })
-
-  return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
 }
 
-export function getSelectionQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionSelection({
-    numberOfInputs: parseInt(instanceInfo.numberOfInputs!, 10),
-    response: response.selection!.filter(
-      (r: number) => r !== -1 && typeof r !== 'undefined' && r !== null
-    ), // filter out skipped response fields
-    correctAnswers: parsedSolutions,
+export function getFreeTextQuestionPointsDetails(
+  params: SharedQuestionPointsParams
+) {
+  return finalizeCorrectnessPoints({
+    ...params,
+    pointsPercentage: gradeFreeTextResponse(params),
   })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
 }
 
-export function getSelectionQuestionPointsDetails({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionSelection({
-    numberOfInputs: parseInt(instanceInfo.numberOfInputs!, 10),
-    response: response.selection!.filter(
-      (r: number) => r !== -1 && typeof r !== 'undefined' && r !== null
-    ), // filter out skipped response fields
-    correctAnswers: parsedSolutions,
+export function getSelectionQuestionPoints(params: SharedQuestionPointsParams) {
+  return finalizeTotalPoints({
+    ...params,
+    pointsPercentage: gradeSelectionResponse(params),
   })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const { correctnessPoints, bonusPoints } = computeAwardedCorrectnessPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    pointsMultiplier,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage,
-  })
-
-  return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
 }
 
-export function getCaseStudyQuestionPoints({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  basePoints,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionCaseStudy({
-    response: response.assessment!,
-    solutions: parsedSolutions,
+export function getSelectionQuestionPointsDetails(
+  params: SharedQuestionPointsParams
+) {
+  return finalizeCorrectnessPoints({
+    ...params,
+    pointsPercentage: gradeSelectionResponse(params),
   })
-
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const pointsAwarded = computeAwardedPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    basePoints: basePoints === 'true' ? true : false,
-    pointsMultiplier,
-    roundedResult: true,
-  })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage,
-  })
-
-  return { pointsAwarded, xpAwarded, pointsPercentage }
 }
 
-export function getCaseStudyQuestionPointsDetails({
-  response,
-  instanceInfo,
-  firstResponseReceivedAt,
-  responseTimestamp,
-  pointsMultiplier,
-  parsedSolutions,
-}: SharedQuestionPointsParams) {
-  const pointsPercentage = gradeQuestionCaseStudy({
-    response: response.assessment!,
-    solutions: parsedSolutions,
+export function getCaseStudyQuestionPoints(params: SharedQuestionPointsParams) {
+  return finalizeTotalPoints({
+    ...params,
+    pointsPercentage: gradeCaseStudyResponse(params),
   })
+}
 
-  const pointsWithDefaults = getPointsWithDefaults(instanceInfo)
-  const { correctnessPoints, bonusPoints } = computeAwardedCorrectnessPoints({
-    ...pointsWithDefaults,
-    firstResponseReceivedAt,
-    responseTimestamp,
-    pointsPercentage,
-    pointsMultiplier,
+export function getCaseStudyQuestionPointsDetails(
+  params: SharedQuestionPointsParams
+) {
+  return finalizeCorrectnessPoints({
+    ...params,
+    pointsPercentage: gradeCaseStudyResponse(params),
   })
-  const xpAwarded = computeAwardedXp({
-    pointsPercentage,
-  })
-
-  return { correctnessPoints, bonusPoints, xpAwarded, pointsPercentage }
 }

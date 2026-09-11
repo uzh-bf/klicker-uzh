@@ -11,7 +11,7 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -22,6 +22,9 @@ import {
   getFreeTextQuestionPoints,
   getNumericalQuestionPoints,
   getSelectionQuestionPoints,
+  hasGradableFreeTextAnswer,
+  hasGradableNumericalAnswer,
+  isFullyCorrect,
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
@@ -175,7 +178,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
