@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdtemp, open, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileTypeFromFile } from 'file-type'
 import type { OwnedBaselineMediaReference } from '../baseline/media-references.js'
 import { hashCanonicalValue } from '../canonical/hash.js'
 import { mediaStateSchema } from '../contract/payloads/assessment.js'
@@ -65,7 +66,10 @@ export async function captureAssessmentMedia(input: {
       ...input.reference,
       sourceUrl,
     })
-    if (source.mimeType !== input.reference.mimeType) {
+    const detectImageType =
+      source.mimeType === 'application/octet-stream' &&
+      input.reference.mimeType.startsWith('image/')
+    if (source.mimeType !== input.reference.mimeType && !detectImageType) {
       throw new Error('Klicker media MIME type changed during capture')
     }
 
@@ -108,6 +112,19 @@ export async function captureAssessmentMedia(input: {
       throw new Error('Klicker media length changed during capture')
     }
 
+    // Existing uploads may have generic Blob metadata. Detect from the staged
+    // bytes, never the URL/extension, before creating any immutable evidence.
+    // Signature detection is a format hint, not full decoding or a safety scan.
+    if (detectImageType) {
+      const detected = await fileTypeFromFile(tempFile)
+      if (detected?.mime !== input.reference.mimeType) {
+        throw new Error(
+          'Klicker media detected MIME type does not match reference'
+        )
+      }
+    }
+
+    const mimeType = input.reference.mimeType
     const contentHash = hash.digest('hex')
     const blobName = auditMediaContentAddress(contentHash)
     const stored = await input.store.createFromFile({
@@ -115,14 +132,14 @@ export async function captureAssessmentMedia(input: {
       blobName,
       contentHash,
       byteLength,
-      mimeType: source.mimeType,
+      mimeType,
       retainUntil: input.retainUntil,
     })
     if (
       stored.blobName !== blobName ||
       stored.contentHash !== contentHash ||
       stored.byteLength !== byteLength ||
-      stored.mimeType !== source.mimeType ||
+      stored.mimeType !== mimeType ||
       stored.retainUntil.getTime() < input.retainUntil.getTime()
     ) {
       throw new Error('Immutable audit media store returned unverifiable data')
@@ -134,7 +151,7 @@ export async function captureAssessmentMedia(input: {
         sourceUrl,
         contentHash,
         byteLength,
-        mimeType: source.mimeType,
+        mimeType,
         blobName,
         sourceReferenceHash: hashCanonicalValue({
           mediaId: input.reference.mediaId,

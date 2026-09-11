@@ -401,6 +401,18 @@ and a differing replay a hard conflict. Capture locks the returned blob version
 with a version-level immutability policy and never exposes content update or
 delete operations.
 
+Audit capture tolerates `application/octet-stream` source metadata only for
+images whose file signature matches the database MIME type. Detection runs on
+the already-staged temporary file before immutable persistence; bytes are never
+re-encoded. The existing evidence `mimeType` is the matched image type. Exact
+metadata matches retain their existing behavior; concrete mismatches, unknown
+signatures and generic non-images fail. This is best-effort format detection,
+not full image decoding, malware scanning or proof that the file is valid.
+Generic SVG metadata is not supported by binary signature detection.
+The strict version-1 evidence schema is unchanged; separate reported-type and
+detection-method provenance would require a versioned follow-up. This path does not
+change element rendering, uploads, source Blob metadata or database records.
+
 `AuditRetentionIndex` contains an append-only reverse index from immutable media
 versions to the assessment scopes that reference them. This includes baseline
 media parts and media captured or replaced by a covered source-element change.
