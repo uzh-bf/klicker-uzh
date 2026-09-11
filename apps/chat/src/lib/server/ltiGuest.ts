@@ -12,7 +12,7 @@ export const GUEST_ACCOUNT_TYPE = 'lti_guest'
 const CHAT_GUEST_TOKEN_EXPIRY = '14d'
 const CHAT_GUEST_SCOPE = 'CHAT_GUEST'
 
-export type LtiScope = 'LTI1.1' | 'LTI1.3'
+export type LtiScope = 'LTI1.3'
 export type AuthMode = 'account' | 'anonymous'
 
 // ---------------------------------------------------------------------------
@@ -106,6 +106,7 @@ export async function findOrCreateGuestPersona(
         },
       },
       create: {
+        isActive: false,
         course: { connect: { id: courseId } },
         participant: { connect: { id: existing.participantId } },
       },
@@ -136,6 +137,7 @@ export async function findOrCreateGuestPersona(
         },
         participations: {
           create: {
+            isActive: false,
             course: { connect: { id: courseId } },
           },
         },
@@ -162,6 +164,7 @@ export async function findOrCreateGuestPersona(
             },
           },
           create: {
+            isActive: false,
             course: { connect: { id: courseId } },
             participant: { connect: { id: racedExisting.participantId } },
           },
@@ -210,6 +213,7 @@ export async function verifyChatGuestToken(
 export interface LtiTokenPayload {
   sub: string
   email?: string
+  chatbotLaunch?: { courseId: string; chatbotId: string }
   scope: LtiScope
 }
 
@@ -224,7 +228,8 @@ export async function verifyLtiToken(token: string): Promise<LtiTokenPayload> {
 
   if (
     !payload.sub ||
-    (payload.scope !== 'LTI1.3' && payload.scope !== 'LTI1.1')
+    payload.scope !== 'LTI1.3' ||
+    typeof payload.exp !== 'number'
   ) {
     throw new Error('Invalid LTI token: missing sub or wrong scope')
   }
@@ -232,6 +237,7 @@ export async function verifyLtiToken(token: string): Promise<LtiTokenPayload> {
   return {
     sub: payload.sub,
     email: payload.email,
+    chatbotLaunch: payload.chatbotLaunch as LtiTokenPayload['chatbotLaunch'],
     scope: payload.scope as LtiScope,
   }
 }

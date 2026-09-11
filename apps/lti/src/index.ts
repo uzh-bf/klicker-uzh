@@ -2,7 +2,11 @@ import { signJWT } from '@klicker-uzh/util'
 import { Provider } from 'ltijs'
 // @ts-ignore
 import Database from 'ltijs-sequelize'
-import { appendJwt, resolveLaunchTarget } from './launchTarget.js'
+import {
+  appendJwt,
+  getChatbotLaunchBinding,
+  resolveLaunchTarget,
+} from './launchTarget.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
@@ -60,34 +64,10 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 // LTI launch callback (token has been verified by ltijs beforehand)
 // @ts-ignore The type here is wrong, a Promise is accepted as per official docs
 Provider.onConnect(async (token, req, res) => {
-  console.log('LTI launch callback:', token)
-
   if (!process.env.APP_ORIGIN_LTI) {
     console.error('APP_ORIGIN_LTI is required but not defined')
     process.exit(1)
   }
-
-  const jwt = await signJWT(
-    {
-      sub: token.user,
-      email: token.userInfo.email,
-      scope: 'LTI1.3',
-    },
-    process.env.APP_SECRET as string,
-    {
-      algorithm: 'HS256',
-      expiresIn: '5m',
-      issuer: process.env.APP_ORIGIN_LTI,
-    }
-  )
-
-  res.cookie('lti-token', jwt, {
-    maxAge: 5 * 60 * 1000,
-    path: '/',
-    secure: true,
-    sameSite: 'none',
-    domain: process.env.COOKIE_DOMAIN as string,
-  })
 
   const launchTarget = resolveLaunchTarget(token, {
     query: req.query as Record<string, unknown>,
@@ -111,6 +91,32 @@ Provider.onConnect(async (token, req, res) => {
       source: launchTarget.source,
     })
   }
+
+  const jwt = await signJWT(
+    {
+      sub: token.user,
+      email: token.userInfo.email,
+      scope: 'LTI1.3',
+      chatbotLaunch: getChatbotLaunchBinding(launchTarget.target),
+    },
+    process.env.APP_SECRET as string,
+    {
+      algorithm: 'HS256',
+      expiresIn: '5m',
+      issuer: process.env.APP_ORIGIN_LTI,
+    }
+  )
+
+  res.cookie('lti-token', jwt, {
+    maxAge: 5 * 60 * 1000,
+    path: '/',
+    secure: true,
+    sameSite: 'none',
+    domain: process.env.COOKIE_DOMAIN as string,
+  })
+
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('Referrer-Policy', 'no-referrer')
 
   const redirectUrl = appendJwt(launchTarget.target, jwt)
   console.log(

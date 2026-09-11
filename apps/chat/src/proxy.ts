@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { hasLocale } from 'next-intl'
 import {
+  CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
@@ -110,6 +111,22 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
   return applyFrameAncestorsCSP(NextResponse.redirect(noLoginUrl))
 }
 
+// Allow a verified scoped token to reach the server render when the cookie
+// transport is unavailable. The token is handed over in a reserved request
+// header, so the page render can re-verify signature, scope and binding; a
+// client-supplied value for that header is always replaced (blanked when this
+// request carries no verified token) and can therefore never authorize.
+function passThroughWithScopedToken(
+  request: NextRequest,
+  scopedToken: string | null
+) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(CHAT_SCOPED_TOKEN_HEADER, scopedToken ?? '')
+  return applyFrameAncestorsCSP(
+    NextResponse.next({ request: { headers: requestHeaders } })
+  )
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -163,22 +180,35 @@ export async function proxy(request: NextRequest) {
   // Falls back to `?_t=` query and `Authorization: Bearer` header for the
   // CHIPS-unsupported-browser code path (sessionStorage-driven; see
   // `useChatGuestTokenBootstrap`).
+  const guestCookieToken = request.cookies.get('chat_participant_token')?.value
+  const guestQueryToken = request.nextUrl.searchParams.get('_t')
   const chatGuestToken =
-    request.cookies.get('chat_participant_token')?.value ||
-    request.nextUrl.searchParams.get('_t') ||
+    guestCookieToken ||
+    guestQueryToken ||
     extractBearerToken(request.headers.get('authorization'))
   let hadGuestToken = false
   if (chatGuestToken) {
     hadGuestToken = true
     if (await verifyChatGuestTokenInProxy(chatGuestToken)) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      // Only the query token needs the server-side handoff; the cookie and the
+      // sessionStorage-driven bearer header reach the server on their own.
+      return passThroughWithScopedToken(
+        request,
+        !guestCookieToken && guestQueryToken ? guestQueryToken : null
+      )
     }
     // Invalid guest token → fall through to participant_token.
   }
 
+  const pwaEmbedCookieToken = request.cookies.get(
+    PWA_CHAT_EMBED_SESSION_COOKIE
+  )?.value
+  const pwaEmbedQueryToken = request.nextUrl.searchParams.get(
+    PWA_CHAT_EMBED_QUERY_KEY
+  )
   const pwaEmbedToken =
-    request.cookies.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value ||
-    request.nextUrl.searchParams.get(PWA_CHAT_EMBED_QUERY_KEY) ||
+    pwaEmbedCookieToken ||
+    pwaEmbedQueryToken ||
     extractBearerToken(request.headers.get('authorization'))
   if (pwaEmbedToken) {
     if (
@@ -187,7 +217,10 @@ export async function proxy(request: NextRequest) {
         token: pwaEmbedToken,
       })
     ) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      return passThroughWithScopedToken(
+        request,
+        !pwaEmbedCookieToken && pwaEmbedQueryToken ? pwaEmbedQueryToken : null
+      )
     }
   }
 
@@ -214,7 +247,7 @@ export async function proxy(request: NextRequest) {
     return redirectToNoLogin(request, hadGuestToken)
   }
 
-  return applyFrameAncestorsCSP(NextResponse.next())
+  return passThroughWithScopedToken(request, null)
 }
 
 export const config = {
