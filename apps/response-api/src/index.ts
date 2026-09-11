@@ -453,7 +453,7 @@ const server = createServer(async (req, res) => {
     }
 
     // fallback to 404 Not Found
-    startRequest(req, res, '/')
+    startRequest(req, res, '/unmatched')
     return sendJson(req, res, 404, { error: 'Not found' })
   } catch {
     const request = requests.get(res)

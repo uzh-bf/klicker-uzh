@@ -5,7 +5,7 @@ import {
   resolveRequestContext,
 } from '@klicker-uzh/logging/request'
 
-export type ResponseApiRoute = '/AddResponse' | '/healthz' | '/'
+export type ResponseApiRoute = '/AddResponse' | '/healthz' | '/' | '/unmatched'
 
 export interface NodeRequestLog {
   context: RequestContext

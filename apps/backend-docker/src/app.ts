@@ -17,7 +17,10 @@ import express from 'express'
 import { createYoga } from 'graphql-yoga'
 import { registerKBHttpRoutes } from './kbHttpRoutes.js'
 import { logger } from './logger.js'
-import { requestLoggingMiddleware } from './requestLogging.js'
+import {
+  requestLoggingMiddleware,
+  setRequestLogRoute,
+} from './requestLogging.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -214,7 +217,7 @@ function prepareApp({
     res.send('OK')
   })
 
-  app.use('/api/graphql', yogaApp as any)
+  app.use('/api/graphql', setRequestLogRoute('/api/graphql'), yogaApp as any)
 
   return { app, yogaApp }
 }

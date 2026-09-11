@@ -1,9 +1,13 @@
 import { EventEmitter } from 'node:events'
+import type { AddressInfo } from 'node:net'
 import { createLogger } from '@klicker-uzh/logging/node'
-import type { Request, Response } from 'express'
+import express, { type Request, type Response } from 'express'
 import { describe, expect, it, vi } from 'vitest'
 import { backendServiceName } from '../src/logger.js'
-import { requestLoggingMiddleware } from '../src/requestLogging.js'
+import {
+  requestLoggingMiddleware,
+  setRequestLogRoute,
+} from '../src/requestLogging.js'
 
 function harness(path = '/api/graphql') {
   const records: Record<string, unknown>[] = []
@@ -42,6 +46,40 @@ function harness(path = '/api/graphql') {
 }
 
 describe('requestLoggingMiddleware', () => {
+  it('records a GraphQL middleware mount without Express route metadata', async () => {
+    const test = harness()
+    const app = express()
+    app.use(requestLoggingMiddleware(test.root))
+    app.use('/api/graphql', setRequestLogRoute('/api/graphql'), (req, res) => {
+      expect(req.route).toBeUndefined()
+      res.json({ data: { __typename: 'Query' } })
+    })
+    const server = app.listen(0, '127.0.0.1')
+    try {
+      await new Promise<void>((resolve) => server.once('listening', resolve))
+      const port = (server.address() as AddressInfo).port
+      const response = await fetch(
+        `http://127.0.0.1:${port}/api/graphql?token=private`,
+        {
+          method: 'POST',
+          headers: { 'x-correlation-id': 'graphql-correlation' },
+        }
+      )
+      expect(response.status).toBe(200)
+      await response.json()
+      expect(test.records).toHaveLength(1)
+      expect(test.records[0]).toMatchObject({
+        correlationId: 'graphql-correlation',
+        http: { route: '/api/graphql', statusCode: 200 },
+      })
+      expect(JSON.stringify(test.records)).not.toContain('private')
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      )
+    }
+  })
+
   it.each([
     '/api/ingestion/resources/:resourceId/versions/:resourceVersion',
     '/api/webhooks/kb-ingestion',

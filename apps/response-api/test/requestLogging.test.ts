@@ -32,6 +32,28 @@ function harness(headers: IncomingMessage['headers'] = {}) {
 }
 
 describe('beginNodeRequest', () => {
+  it.each([
+    ['POST', '/private-path?token=private'],
+    ['GET', '/AddResponse'],
+    ['POST', '/healthz'],
+  ])('logs unmatched %s %s as a bounded 404 on finish', (method, url) => {
+    const test = harness({ 'x-correlation-id': 'unmatched-correlation' })
+    test.req.method = method
+    test.req.url = url
+    test.res.statusCode = 404
+    beginNodeRequest(test.req, test.res, test.root, '/unmatched')
+    expect(test.records).toEqual([])
+    test.res.emit('finish')
+    test.res.emit('finish')
+    expect(test.records).toHaveLength(1)
+    expect(test.records[0]).toMatchObject({
+      correlationId: 'unmatched-correlation',
+      event: 'http.request.completed',
+      http: { method, route: '/unmatched', statusCode: 404 },
+    })
+    expect(JSON.stringify(test.records)).not.toContain('private')
+  })
+
   it('validates identifiers, echoes the request ID, and completes once', () => {
     const test = harness({
       'x-request-id': 'request-1',

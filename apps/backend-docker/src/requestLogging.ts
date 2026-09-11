@@ -20,8 +20,17 @@ declare global {
         user?: unknown
         requestContext: RequestContext
         log: AppLogger
+        logRoute?: string
       }
     }
+  }
+}
+
+/** Bind a template for app.use mounts, which do not populate req.route. */
+export function setRequestLogRoute(route: string): RequestHandler {
+  return (req, _res, next) => {
+    if (LOGGED_ROUTES.has(route)) req.locals.logRoute = route
+    next()
   }
 }
 
@@ -43,7 +52,7 @@ export function requestLoggingMiddleware(root: AppLogger): RequestHandler {
 
     if (req.path !== '/healthz') {
       res.once('finish', () => {
-        const matchedRoute = req.route?.path
+        const matchedRoute = req.locals.logRoute ?? req.route?.path
         const route =
           typeof matchedRoute === 'string' && LOGGED_ROUTES.has(matchedRoute)
             ? matchedRoute
