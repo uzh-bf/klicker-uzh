@@ -16,7 +16,10 @@ vi.mock('@klicker-uzh/prisma', () => ({
   },
 }))
 
-import { PWA_CHAT_EMBED_QUERY_KEY } from '../src/lib/pwaEmbedAuth'
+import {
+  PWA_CHAT_EMBED_QUERY_KEY,
+  PWA_CHAT_EMBED_SESSION_COOKIE,
+} from '../src/lib/pwaEmbedAuth'
 import {
   authorizeIdentityForChatbot,
   resolveParticipantIdentity,
@@ -130,6 +133,49 @@ describe('proxy scoped-token handoff', () => {
     const response = await proxy(request)
 
     expect(response.headers.get('x-middleware-next')).toBeNull()
+    expect(response.headers.get('location')).toContain('/noLogin')
+  })
+})
+
+describe('stale transport fallback', () => {
+  it('uses a valid _t handoff when a stale guest cookie is also present', async () => {
+    const guestToken = await signChatGuestToken('guest-participant')
+    const request = new NextRequest(chatbotUrl('?_t=' + guestToken), {
+      headers: {
+        cookie: 'chat_participant_token=stale-invalid-cookie',
+      },
+    })
+
+    const response = await proxy(request)
+
+    expect(response.headers.get('x-middleware-next')).toBe('1')
+    expect(response.headers.get(REWRITTEN_SCOPED_HEADER)).toBe(guestToken)
+  })
+
+  it('uses a valid _pe handoff when a stale scoped cookie is also present', async () => {
+    const scopeToken = await signPwaEmbedSessionToken({
+      participantId: 'participant-1',
+      chatbotId: CHATBOT_ID,
+      courseId: COURSE_A,
+    })
+    const request = new NextRequest(
+      chatbotUrl('?' + PWA_CHAT_EMBED_QUERY_KEY + '=' + scopeToken),
+      { headers: { cookie: PWA_CHAT_EMBED_SESSION_COOKIE + '=stale-invalid' } }
+    )
+
+    const response = await proxy(request)
+
+    expect(response.headers.get('x-middleware-next')).toBe('1')
+    expect(response.headers.get(REWRITTEN_SCOPED_HEADER)).toBe(scopeToken)
+  })
+
+  it('still refuses a request whose transports are all invalid', async () => {
+    const request = new NextRequest(chatbotUrl('?_t=not-a-token'), {
+      headers: { cookie: 'chat_participant_token=also-invalid' },
+    })
+
+    const response = await proxy(request)
+
     expect(response.headers.get('location')).toContain('/noLogin')
   })
 })

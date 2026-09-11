@@ -182,22 +182,31 @@ export async function proxy(request: NextRequest) {
   // `useChatGuestTokenBootstrap`).
   const guestCookieToken = request.cookies.get('chat_participant_token')?.value
   const guestQueryToken = request.nextUrl.searchParams.get('_t')
-  const chatGuestToken =
-    guestCookieToken ||
-    guestQueryToken ||
-    extractBearerToken(request.headers.get('authorization'))
+  // Each transport is validated independently and the first valid one wins.
+  // A stale cookie must not shadow a valid fallback, otherwise a browser that
+  // still carries an expired guest cookie is refused even though it holds a
+  // usable `_t` handoff, and the no-login self-heal turns that into a reload
+  // loop.
+  const guestCandidates = [
+    guestCookieToken,
+    guestQueryToken,
+    extractBearerToken(request.headers.get('authorization')),
+  ].filter((token): token is string => Boolean(token))
   let hadGuestToken = false
-  if (chatGuestToken) {
+  for (const chatGuestToken of guestCandidates) {
     hadGuestToken = true
     if (await verifyChatGuestTokenInProxy(chatGuestToken)) {
       // Only the query token needs the server-side handoff; the cookie and the
       // sessionStorage-driven bearer header reach the server on their own.
+      // A stale cookie can still be present while the query token is the
+      // transport that verified, so the handoff follows the verified value
+      // rather than the presence of a cookie.
       return passThroughWithScopedToken(
         request,
-        !guestCookieToken && guestQueryToken ? guestQueryToken : null
+        chatGuestToken === guestQueryToken ? guestQueryToken : null
       )
     }
-    // Invalid guest token → fall through to participant_token.
+    // Invalid transport → try the next candidate.
   }
 
   const pwaEmbedCookieToken = request.cookies.get(
@@ -206,11 +215,12 @@ export async function proxy(request: NextRequest) {
   const pwaEmbedQueryToken = request.nextUrl.searchParams.get(
     PWA_CHAT_EMBED_QUERY_KEY
   )
-  const pwaEmbedToken =
-    pwaEmbedCookieToken ||
-    pwaEmbedQueryToken ||
-    extractBearerToken(request.headers.get('authorization'))
-  if (pwaEmbedToken) {
+  const pwaEmbedCandidates = [
+    pwaEmbedCookieToken,
+    pwaEmbedQueryToken,
+    extractBearerToken(request.headers.get('authorization')),
+  ].filter((token): token is string => Boolean(token))
+  for (const pwaEmbedToken of pwaEmbedCandidates) {
     if (
       await verifyPwaEmbedTokenInProxy({
         chatbotId: pathSegments[0],
@@ -219,7 +229,7 @@ export async function proxy(request: NextRequest) {
     ) {
       return passThroughWithScopedToken(
         request,
-        !pwaEmbedCookieToken && pwaEmbedQueryToken ? pwaEmbedQueryToken : null
+        pwaEmbedToken === pwaEmbedQueryToken ? pwaEmbedQueryToken : null
       )
     }
   }

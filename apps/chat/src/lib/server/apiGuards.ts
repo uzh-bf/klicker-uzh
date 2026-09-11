@@ -105,14 +105,22 @@ export async function resolveParticipantIdentity({
   if (pwaEmbedToken) {
     try {
       const payload = await verifyPwaEmbedSessionToken(pwaEmbedToken)
-      return {
-        participantId: payload.sub,
-        authMode: 'account',
-        pwaEmbedScope: {
-          chatbotId: payload.chatbotId,
-          courseId: payload.courseId,
-        },
+      // A scoped token is minted for the participant it names, so it carries an
+      // account identity and gets the same liveness check as the account
+      // session: a deactivated or guest persona must not keep access for the
+      // life of the scoped token.
+      if (payload.sub && (await isActiveAccountParticipant(payload.sub))) {
+        return {
+          participantId: payload.sub,
+          authMode: 'account',
+          pwaEmbedScope: {
+            chatbotId: payload.chatbotId,
+            courseId: payload.courseId,
+          },
+        }
       }
+      console.error('PWA embed session token subject is not an active account')
+      // Fall through to the scoped fallback token / account session below.
     } catch (error) {
       console.error('PWA embed session token verification failed:', error)
       // Fall through to the scoped fallback token / account session below.
@@ -125,6 +133,27 @@ export async function resolveParticipantIdentity({
   }
 
   return getParticipantIdFromToken(participantToken)
+}
+
+/**
+ * A signature alone is not an identity: the subject must still name a real,
+ * active participant. Anonymous LTI guests have their own token family and must
+ * never be reachable through an account-scoped transport.
+ */
+async function isActiveAccountParticipant(
+  participantId: string
+): Promise<boolean> {
+  const participant = await prisma.participant.findUnique({
+    where: { id: participantId },
+    select: {
+      isActive: true,
+      accounts: { select: { type: true } },
+    },
+  })
+  const isGuestPersona = participant?.accounts.some(
+    (account) => account.type === GUEST_ACCOUNT_TYPE
+  )
+  return Boolean(participant?.isActive) && !isGuestPersona
 }
 
 export async function getParticipantIdFromToken(
@@ -183,20 +212,7 @@ export async function getParticipantIdFromToken(
       }
     }
 
-    // A signature alone is not an identity: the subject must still name a real,
-    // active participant. Anonymous LTI guests have their own token family and
-    // must never be reachable through the account transport.
-    const participant = await prisma.participant.findUnique({
-      where: { id: participantId },
-      select: {
-        isActive: true,
-        accounts: { select: { type: true } },
-      },
-    })
-    const isGuestPersona = participant?.accounts.some(
-      (account) => account.type === GUEST_ACCOUNT_TYPE
-    )
-    if (!participant || !participant.isActive || isGuestPersona) {
+    if (!(await isActiveAccountParticipant(participantId))) {
       return {
         response: NextResponse.json(
           { error: 'Invalid authentication token' },
