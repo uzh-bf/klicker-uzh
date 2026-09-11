@@ -4,6 +4,8 @@ import type { ChatSource, ChatSourceType } from './types'
 
 export const MAX_SOURCES = 12
 const EXCERPT_MAX_LENGTH = 240
+const GENERIC_DOCUMENT_TITLE = 'Document'
+const SANITIZED_DOCUMENT_REFERENCE_RE = /^document-[0-9a-f]{16}$/
 
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see
 // `toSafeToolName` in `services/mcpClients.ts`). Match the namespaced form or
@@ -114,6 +116,35 @@ export function normalizeSourcesFromParts(
   }
 
   return sources
+}
+
+/**
+ * Counts retrieved documents for the doc_query activity chip. Documents-mode
+ * results count valid source entries with chunks, once per source document;
+ * this is intentionally independent of the capped, deduplicated card list.
+ */
+export function countDocQueryDocuments(
+  payload: Record<string, unknown>
+): number {
+  if (payload.mode !== 'documents') {
+    return normalizeAnswerModeSources(payload).length
+  }
+
+  const rawSources = Array.isArray(payload.sources) ? payload.sources : []
+  return rawSources.reduce((count, rawSource) => {
+    if (
+      !rawSource ||
+      typeof rawSource !== 'object' ||
+      Array.isArray(rawSource)
+    ) {
+      return count
+    }
+
+    const source = rawSource as Record<string, unknown>
+    if (!getFirstChunk(source)) return count
+
+    return count + 1
+  }, 0)
 }
 
 function isQualifyingPart(
@@ -261,7 +292,7 @@ function lastPathSegment(value: string): string | undefined {
 
 // Resource ingestion gateways are machine-to-machine fetch endpoints, never
 // participant source links, even when exposed through a public API hostname.
-function isIngestionReference(value: string | undefined): boolean {
+export function isIngestionReference(value: string | undefined): boolean {
   if (!value) return false
   try {
     const url = new URL(value)
@@ -282,6 +313,22 @@ function isUrlLike(value: string): boolean {
 
 function hasFileExtension(value: string): boolean {
   return /\.[a-z0-9]{1,8}$/i.test(value)
+}
+
+function isSanitizedDocumentReference(value: string | undefined): boolean {
+  return value !== undefined && SANITIZED_DOCUMENT_REFERENCE_RE.test(value)
+}
+
+function getFirstChunk(
+  source: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  const rawChunks = Array.isArray(source.chunks) ? source.chunks : []
+  const firstChunk = rawChunks[0]
+  return firstChunk &&
+    typeof firstChunk === 'object' &&
+    !Array.isArray(firstChunk)
+    ? (firstChunk as Record<string, unknown>)
+    : undefined
 }
 
 function truncateExcerpt(value: string | undefined): string | undefined {
@@ -395,30 +442,33 @@ function normalizeDocumentsModeSources(
     const source = rawSource as Record<string, unknown>
 
     const reference = cleanString(source.reference)
+    const firstChunk = getFirstChunk(source)
     const explicitTitle =
       cleanString(source.title) ??
       cleanString(source.display_name) ??
       cleanString(source.file_name)
     const ingestionReference = isIngestionReference(reference)
+    const sanitizedDocumentReference = isSanitizedDocumentReference(reference)
     const referenceIsUrl = reference ? isUrlLike(reference) : false
     const url = referenceIsUrl && !ingestionReference ? reference : undefined
 
     // Title fallback: explicit title -> (if reference is a URL) a short name
-    // derived from its last path segment -> the raw reference -> skip.
+    // derived from its last path segment -> a generic document label for a
+    // sanitized opaque identity with chunks -> raw reference -> skip. An
+    // unnamed ingestion reference is never a source: its retrieval still
+    // renders from the raw payload, but it must not become a citation.
     const title =
       explicitTitle ??
       (ingestionReference
         ? undefined
-        : referenceIsUrl && reference
-          ? (lastPathSegment(reference) ?? reference)
-          : reference)
+        : sanitizedDocumentReference
+          ? firstChunk
+            ? GENERIC_DOCUMENT_TITLE
+            : undefined
+          : referenceIsUrl && reference
+            ? (lastPathSegment(reference) ?? reference)
+            : reference)
     if (!title) continue
-
-    const rawChunks = Array.isArray(source.chunks) ? source.chunks : []
-    const firstChunk =
-      rawChunks.length > 0 && rawChunks[0] && typeof rawChunks[0] === 'object'
-        ? (rawChunks[0] as Record<string, unknown>)
-        : undefined
 
     const excerpt = truncateExcerpt(cleanString(firstChunk?.content))
     const page = cleanPage(firstChunk?.page_number)

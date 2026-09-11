@@ -75,6 +75,7 @@ output/
 # Devcontainer: runtime-minted Hatchet client token (post-create writes it)
 .devcontainer/.hatchet.env
 .devcontainer/.local-kb-services.env
+.local-kb/
 .devcontainer/.hatchet.env.tmp.*
 packages/graphql/.env.tmp.*
 .devcontainer/.runtime/

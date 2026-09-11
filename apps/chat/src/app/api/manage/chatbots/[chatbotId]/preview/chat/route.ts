@@ -39,7 +39,6 @@ import {
 } from '@/src/services/mcpClients'
 import {
   DOC_QUERY_MCP_SERVER_NAME,
-  normalizeDocQueryKbIds,
   resolveMcpScope,
 } from '@/src/services/mcpScope'
 import { createRateLimiter } from '@/src/services/rateLimiter'
@@ -145,13 +144,6 @@ export async function POST(
       course: {
         select: { displayName: true },
       },
-      knowledgeBases: {
-        where: {
-          isEnabled: true,
-          kb: { deletedAt: null, ownerId: auth.userId },
-        },
-        select: { kbId: true },
-      },
       mcpConfigurations: {
         include: { mcpServer: true },
         orderBy: { priority: 'asc' },
@@ -168,6 +160,9 @@ export async function POST(
     )
   }
 
+  const enabledMCPConfigurations = chatbot.mcpConfigurations.filter(
+    (configuration) => configuration.isEnabled !== false
+  )
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
@@ -273,26 +268,15 @@ export async function POST(
 
   let tools: ToolSet
   try {
-    const scopedKbIds = resolveMcpScope(
-      chatbot.mcpConfigurations.filter((config) => config.isEnabled !== false),
+    const kbIds = resolveMcpScope(
+      enabledMCPConfigurations,
       selectedMode,
       modeConfigurations
     )
-    if (scopedKbIds !== undefined) {
-      const attachedKbIds = normalizeDocQueryKbIds(
-        chatbot.knowledgeBases.map(({ kbId }) => kbId)
-      )
-      if (
-        attachedKbIds.length !== scopedKbIds.length ||
-        attachedKbIds.some((kbId, index) => kbId !== scopedKbIds[index])
-      ) {
-        throw new Error('Preview knowledge-base scope mismatch')
-      }
-    }
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
-      kbIds: scopedKbIds,
+      kbIds,
       sessionId: randomUUID(),
     })
     tools = mcpToolsHandle.tools

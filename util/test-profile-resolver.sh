@@ -115,4 +115,24 @@ status=0
 profile_readiness_apps >/dev/null || status=$?
 [ "$status" -eq 2 ] || fail "unknown selection readiness must exit 2 (got $status)"
 
+export DEVROUTER_PROFILE=local-kb-setup
+unset KLICKER_LOCAL_KB_RUNTIME_ONLY
+status=0
+profile_wants klicker-dev || status=$?
+[ "$status" -eq 2 ] || fail 'isolated setup was accepted in ordinary mode'
+export KLICKER_LOCAL_KB_RUNTIME_ONLY=1
+for marker in klicker-dev klicker-local-mcp klicker-workers; do
+  status=0
+  profile_wants "$marker" || status=$?
+  [ "$status" -eq 1 ] || fail "isolated setup selected $marker"
+done
+[ -z "$(profile_turbo_filters)" ] || fail 'isolated setup selected a turbo root'
+[ -z "$(profile_readiness_apps)" ] || fail 'isolated setup selected a readiness app'
+for selection in 'local-kb-setup,manage' 'manage,local-kb-setup' 'local-kb-setup,local-kb-setup'; do
+  export DEVROUTER_PROFILE="$selection"
+  status=0
+  profile_wants klicker-dev || status=$?
+  [ "$status" -eq 2 ] || fail 'isolated setup accepted a combined profile'
+done
+
 echo '[test-profile-resolver] PASS'

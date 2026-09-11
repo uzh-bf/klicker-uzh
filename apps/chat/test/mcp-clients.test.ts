@@ -112,6 +112,23 @@ describe('MCP runtime policy', () => {
     })
   })
 
+  test('sanitizes doc_query execution results without changing other tools', async () => {
+    const reference = 'https://api.example.test/api/ingestion/resources/test'
+    const output = { sources: [{ reference, chunks: [{ page_number: 1 }] }] }
+    const execute = vi.fn().mockResolvedValue(output)
+    setTools({ doc_query: { execute }, search_docs: { execute } })
+    const tools = await getAggregatedMCPTools([createServer()], {
+      chatbotId: 'chatbot-1',
+      authMode: 'account',
+    })
+    const input = { query: 'synthetic' }
+    const result = await tools.IW_doc_query.execute(input, {})
+    expect(execute).toHaveBeenCalledWith(input, {})
+    expect(JSON.stringify(result)).not.toContain(reference)
+    expect(result.sources[0].chunks).toEqual(output.sources[0].chunks)
+    expect(await tools.IW_search_docs.execute(input, {})).toBe(output)
+  })
+
   test('passes authentication headers through the AI SDK transport', async () => {
     setTools({ search_docs: { description: 'search' } })
 
@@ -145,12 +162,12 @@ describe('MCP runtime policy', () => {
             authSecret: 'transport-token',
           },
           {
-            allowedTools: ['doc_query'],
             parameters: {
               required: true,
               toolAlias: 'doc_query',
               kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
             },
+            allowedTools: ['doc_query'],
           }
         ),
       ],

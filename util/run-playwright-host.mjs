@@ -12,6 +12,14 @@ import {
 } from './playwright-host-policy.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const retainedCitationsConfig = resolve(
+  repoRoot,
+  'playwright',
+  'retained-citations.config.ts'
+)
+const retainedCitationsSpec = 'retained-citations.spec.ts'
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
 
 function fail(message) {
@@ -94,6 +102,100 @@ function createRuntime({
     runPnpm: (args, env = environment) =>
       runPnpm(args, env, { runCommand: commandRunner, commandExistsFn }),
   }
+}
+
+function isLocalhostUrl(value) {
+  let parsed
+  try {
+    parsed = new URL(value)
+  } catch {
+    return false
+  }
+
+  const hostname = parsed.hostname.toLowerCase()
+  return (
+    (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+    !parsed.username &&
+    !parsed.password &&
+    !parsed.search &&
+    !parsed.hash &&
+    parsed.pathname === '/' &&
+    (hostname === 'localhost' ||
+      hostname.endsWith('.localhost') ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname === '[::1]')
+  )
+}
+
+export function validateRetainedCitationEnvironment(env = process.env) {
+  const required = [
+    'PLAYWRIGHT_BASE_URL',
+    'APP_SECRET',
+    'PARTICIPANT_ID',
+    'CHATBOT_ID',
+    'THREAD_ID',
+  ]
+  const missing = required.filter((name) => !env[name])
+  if (missing.length > 0) {
+    fail(
+      `--retained-citations requires ${missing.join(', ')} in the process environment`
+    )
+  }
+
+  if (!isLocalhostUrl(env.PLAYWRIGHT_BASE_URL)) {
+    fail(
+      '--retained-citations requires PLAYWRIGHT_BASE_URL to be a local origin without credentials, query or fragment'
+    )
+  }
+
+  for (const name of ['PARTICIPANT_ID', 'CHATBOT_ID', 'THREAD_ID']) {
+    if (!uuidPattern.test(env[name])) {
+      fail(`--retained-citations requires ${name} to be a UUID`)
+    }
+  }
+}
+
+function assertRetainedCitationDependencies(runtime = createRuntime()) {
+  const playwrightCli = join(
+    runtime.repoRoot,
+    'playwright',
+    'node_modules',
+    '@playwright',
+    'test',
+    'cli.js'
+  )
+
+  if (!runtime.pathExists(playwrightCli)) {
+    fail(
+      '--retained-citations requires existing host Playwright dependencies; refusing to install them'
+    )
+  }
+}
+
+function runRetainedCitations(runtime = createRuntime()) {
+  const retainedEnvironment = {
+    ...runtime.environment,
+    [HOST_RUNNER_ENV]: '1',
+  }
+
+  validateRetainedCitationEnvironment(retainedEnvironment)
+  assertRetainedCitationDependencies(runtime)
+
+  runtime.log('[playwright:host] Running retained citation test only')
+  runtime.runPnpm(
+    [
+      '--filter',
+      '@klicker-uzh/playwright',
+      'exec',
+      'playwright',
+      'test',
+      `--config=${retainedCitationsConfig}`,
+      retainedCitationsSpec,
+      '--project=chromium',
+    ],
+    retainedEnvironment
+  )
 }
 
 export function readCommittedEnvironment(contents) {
@@ -327,8 +429,32 @@ function ensureHostDependencies(runtime, playwrightArgs) {
 }
 
 export function main(argv = process.argv.slice(2), dependencies = {}) {
-  const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
+  const localArgs = argv[0] === '--' ? argv.slice(1) : argv
   const runtime = createRuntime(dependencies)
+
+  if (localArgs.includes('--retained-citations')) {
+    const remainingArgs = localArgs.filter(
+      (arg) => arg !== '--retained-citations'
+    )
+    if (remainingArgs.length > 0) {
+      fail(
+        '--retained-citations does not accept additional Playwright arguments'
+      )
+    }
+    const hostEnvironment = {
+      ...runtime.environment,
+      [HOST_RUNNER_ENV]: '1',
+    }
+    assertPlaywrightHostBoundary({
+      cwd: dependencies.cwd,
+      env: hostEnvironment,
+      pathExists: runtime.pathExists,
+    })
+    runRetainedCitations(runtime)
+    return
+  }
+
+  const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
   const hostEnvironment = {
     ...runtime.environment,
     [HOST_RUNNER_ENV]: '1',

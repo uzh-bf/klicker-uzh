@@ -89,6 +89,36 @@ test('accepts deterministic repository-owned bindings', () => {
   })
 })
 
+test('Blob routing requires Azurite without adding app processes or endpoints', () => {
+  const base = profilePlan()
+  const plan = profilePlan({
+    apps: [...base.apps, 'blob'].sort(),
+    managedRuntime: {
+      ...base.managedRuntime,
+      services: ['azurite', ...base.managedRuntime.services],
+    },
+    bindings: { ...base.bindings, managedServices: ['azurite'] },
+  })
+  const runtime = validateRuntimePlan(plan)
+  assert.deepEqual(runtime.turboFilters, validateRuntimePlan(base).turboFilters)
+  assert.deepEqual(
+    runtime.serviceEndpoints,
+    validateRuntimePlan(base).serviceEndpoints
+  )
+  assert.throws(
+    () => validateRuntimePlan({ ...plan, managedRuntime: base.managedRuntime }),
+    /requires the managed azurite service/
+  )
+  assert.throws(
+    () => validateRuntimePlan({ ...plan, bindings: base.bindings }),
+    /bindings.managedServices/
+  )
+  assert.throws(
+    () => validateRuntimePlan({ ...base, bindings: plan.bindings }),
+    /binding keys must equal/
+  )
+})
+
 test('response-api adds both Hatchet workers and its health endpoint', () => {
   const runtime = validateRuntimePlan(
     profilePlan({
