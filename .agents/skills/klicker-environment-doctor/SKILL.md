@@ -133,6 +133,13 @@ A mismatch is expected to fail at startup. Baseline media capture runs in the
 GraphQL backend under its separate Blob-only service account, so a healthy
 dispatcher does not prove that activation media capture is authorized.
 
+For image-baseline failures, check source Blob read access under the backend
+identity separately from audit destination access. After a successful read,
+compare Blob content type with `MediaFile.type`: generic binary metadata is
+accepted only when audit signature detection matches the expected image type.
+Do not rewrite source images or database metadata to hide a genuine mismatch.
+See [assessment audit evidence](../../../docs/assessment-audit-evidence.md).
+
 ## Check 8 — database state (config-derived)
 
 Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` — values in AGENTS.md only). Prisma 7 reset/migrate commands are seed-free. On the legacy host stack, `pnpm run prisma:setup` wraps the reset/push/seed composite with Infisical. In the self-contained DevPod, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` as shown in `.devcontainer/post-create.sh`. Use either path **only after confirming the volume holds no real work** (fresh volume, test course names like "Testkurs"). When in doubt, ask the user.

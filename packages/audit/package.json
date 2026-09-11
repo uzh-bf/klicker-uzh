@@ -13,6 +13,7 @@
     "@azure/storage-blob": "12.25.0",
     "@klicker-uzh/prisma": "workspace:*",
     "canonicalize": "3.0.0",
+    "file-type": "21.3.4",
     "uuid": "10.0.0",
     "zod": "3.25.76"
   },

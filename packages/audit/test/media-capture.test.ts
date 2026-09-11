@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
-import { describe, expect, it } from 'vitest'
+import { readFile, stat } from 'node:fs/promises'
+import { describe, expect, it, vi } from 'vitest'
 import {
   assertAllowedKlickerMediaSource,
   auditMediaContentAddress,
@@ -12,6 +12,90 @@ const sourceUrl =
   'https://klicker-media.blob.core.windows.net/00000000-0000-4000-8000-000000000001/figure.png'
 
 describe('assessment media capture', () => {
+  it.each([
+    ['image/png', 'application/octet-stream', Buffer.from('not an image')],
+    ['image/jpeg', 'application/octet-stream', Buffer.from('GIF89a synthetic')],
+    ['image/jpeg', 'image/png', Buffer.from('GIF89a synthetic')],
+    ['application/pdf', 'application/octet-stream', Buffer.from('%PDF-1.7')],
+    ['image/svg+xml', 'application/octet-stream', Buffer.from('<svg/>')],
+  ])('rejects unsupported or mismatched %s / %s before persistence', async (expected, reported, bytes) => {
+    const createFromFile = vi.fn<ImmutableAuditMediaStore['createFromFile']>()
+    await expect(
+      captureAssessmentMedia({
+        reference: { mediaId: randomUUID(), sourceUrl, mimeType: expected },
+        source: {
+          async open() {
+            return {
+              mimeType: reported,
+              contentLength: bytes.length,
+              body: (async function* () {
+                yield bytes
+              })(),
+            }
+          },
+        },
+        store: { createFromFile },
+        allowedHosts: ['klicker-media.blob.core.windows.net'],
+        retainUntil: new Date('2027-10-01T00:00:00.000Z'),
+      })
+    ).rejects.toThrow(/MIME type/)
+    expect(createFromFile).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    // Synthetic format fixtures: detection is not full decoding/validation.
+    [
+      'image/jpeg',
+      Buffer.from('ffd8ffe000104a46494600010100000100010000ffd9', 'hex'),
+    ],
+    [
+      'image/png',
+      Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
+        'base64'
+      ),
+    ],
+    [
+      'image/gif',
+      Buffer.from(
+        'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+        'base64'
+      ),
+    ],
+  ])('captures generic binary %s only after detecting its expected format', async (mimeType, bytes) => {
+    let capturedPath = ''
+    const result = await captureAssessmentMedia({
+      reference: { mediaId: randomUUID(), sourceUrl, mimeType },
+      source: {
+        async open() {
+          return {
+            mimeType: 'application/octet-stream',
+            contentLength: bytes.length,
+            body: (async function* () {
+              yield bytes.subarray(0, 2)
+              yield bytes.subarray(2)
+            })(),
+          }
+        },
+      },
+      store: {
+        async createFromFile(input) {
+          capturedPath = input.filePath
+          expect(await readFile(input.filePath)).toEqual(bytes)
+          expect(input.mimeType).toBe(mimeType)
+          return { ...input, versionId: 'version-1', outcome: 'CREATED' }
+        },
+      },
+      allowedHosts: ['klicker-media.blob.core.windows.net'],
+      retainUntil: new Date('2027-10-01T00:00:00.000Z'),
+    })
+    expect(result.media).toMatchObject({
+      mimeType,
+    })
+    expect(result.media).not.toHaveProperty('sourceMimeType')
+    await expect(stat(capturedPath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
   it('streams source bytes through a temporary file and verifies the result', async () => {
     const chunks = [Buffer.from('large '), Buffer.from('synthetic media')]
     let opened = 0
@@ -65,6 +149,7 @@ describe('assessment media capture', () => {
     )
     expect(result.media.sourceUrl).toBe(sourceUrl)
     expect(result.media.sourceReferenceHash).toMatch(/^[0-9a-f]{64}$/)
+    expect(result.media).not.toHaveProperty('sourceMimeType')
   })
 
   it('fails before persistence for an untrusted URL or corrupted length', async () => {
