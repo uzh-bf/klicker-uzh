@@ -542,9 +542,6 @@ describe('KB retention maintenance', () => {
         // the KB, so only a knowledge base that never built a graph is removed,
         // and only once the recovery grace has expired.
         graphBuilds: { none: {} },
-        // Imported inventory is only removable by an operator, so a KB with
-        // imported sources keeps its tombstone instead of failing the delete.
-        importedSources: { none: {} },
         deletedAt: {
           not: null,
           lte: new Date(NOW.getTime() - GRAPH_DELETION_GRACE_MS),

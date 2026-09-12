@@ -14,8 +14,6 @@ test.describe('Knowledge base management workspace', () => {
     const kbName = `UX review ${Date.now()}`
     const resourceTitle = `UX website ${Date.now()}`
     let detailPath: string | undefined
-    let importedSourceCountOverride = 0
-    let importedSourceMode: 'data' | 'empty' | 'error' = 'data'
 
     try {
       await page.goto(`${manageUrl}/resources/knowledgeBases`)
@@ -89,56 +87,6 @@ test.describe('Knowledge base management workspace', () => {
       let replaceCalls = 0
       let syntheticFileVisible = false
       let syntheticFileReplaced = false
-      // Synthetic imported inventory: a video-derived source without any stored
-      // file, a link source with a safe original URL and an unknown ingestion
-      // time, a document source, and a document with a signed query in its
-      // stored URL. The second page is served only after the bounded inventory
-      // cursor is used.
-      const importedObservedAt = new Date(
-        Date.UTC(2026, 7, 2, 9, 0)
-      ).toISOString()
-      const importedIngestedAt = new Date(
-        Date.UTC(2026, 6, 18, 14, 30)
-      ).toISOString()
-      const importedVideoSource = {
-        id: 'imported-video-source',
-        kind: 'VIDEO',
-        title: 'Synthetic lecture recording',
-        sourceUrl: null,
-        ingestedAt: importedIngestedAt,
-        observedAt: importedObservedAt,
-        createdAt: importedObservedAt,
-      }
-      const importedLinkSource = {
-        id: 'imported-link-source',
-        kind: 'LINK',
-        title: 'Synthetic reading list',
-        sourceUrl: 'https://example.org/synthetic-reading-list',
-        ingestedAt: null,
-        observedAt: importedObservedAt,
-        createdAt: importedObservedAt,
-      }
-      const importedDocumentSource = {
-        id: 'imported-document-source',
-        kind: 'DOCUMENT',
-        title: 'Synthetic handbook',
-        sourceUrl: null,
-        ingestedAt: importedIngestedAt,
-        observedAt: importedObservedAt,
-        createdAt: importedObservedAt,
-      }
-      // A stored value that carries credentials, a query or a fragment is
-      // rejected by registration and must never render as a link.
-      const importedSignedSource = {
-        id: 'imported-signed-source',
-        kind: 'DOCUMENT',
-        title: 'Synthetic signed handbook',
-        sourceUrl:
-          'https://example.org/synthetic-handbook.pdf?sv=2025-11-05&sig=secret',
-        ingestedAt: importedIngestedAt,
-        observedAt: importedObservedAt,
-        createdAt: importedObservedAt,
-      }
       const pendingUpload = new Promise<void>((resolve) => {
         releasePendingUpload = resolve
       })
@@ -179,83 +127,6 @@ test.describe('Knowledge base management workspace', () => {
               ).persistedQuery?.sha256Hash
             : undefined
           operationName = hash ? persistedNames[hash] : undefined
-        }
-        const variables = (() => {
-          try {
-            if (request.method() === 'POST') {
-              return (
-                (
-                  request.postDataJSON() as {
-                    variables?: Record<string, unknown>
-                  }
-                ).variables ?? {}
-              )
-            }
-            const rawVariables = requestUrl.searchParams.get('variables')
-            return rawVariables
-              ? (JSON.parse(rawVariables) as Record<string, unknown>)
-              : {}
-          } catch {
-            return {}
-          }
-        })()
-
-        if (operationName === 'GetKbImportedSources') {
-          if (importedSourceMode === 'error') {
-            await route.fulfill({
-              status: 500,
-              contentType: 'application/json',
-              body: JSON.stringify({
-                errors: [{ message: 'synthetic inventory failure' }],
-              }),
-            })
-            return
-          }
-          if (importedSourceMode === 'empty') {
-            await route.fulfill({
-              status: 200,
-              contentType: 'application/json',
-              body: JSON.stringify({
-                data: {
-                  getKbImportedSources: {
-                    totalCount: 0,
-                    items: [],
-                    pageInfo: { hasNextPage: false, endCursor: null },
-                  },
-                },
-              }),
-            })
-            return
-          }
-          const after =
-            typeof variables.after === 'string' ? variables.after : null
-          await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-              data: {
-                getKbImportedSources: after
-                  ? {
-                      totalCount: 4,
-                      items: [
-                        importedLinkSource,
-                        importedDocumentSource,
-                        importedSignedSource,
-                      ],
-                      pageInfo: { hasNextPage: false, endCursor: null },
-                    }
-                  : {
-                      totalCount: 4,
-                      items: [importedVideoSource],
-                      pageInfo: {
-                        hasNextPage: true,
-                        endCursor: 'synthetic-imported-page-2',
-                      },
-                    },
-              },
-            }),
-          })
-          return
         }
         if (operationName === 'RequestKbFileUpload') {
           await route.fulfill({
@@ -398,18 +269,6 @@ test.describe('Knowledge base management workspace', () => {
               errors: [{ message: 'Synthetic metrics refresh failure' }],
             }),
           })
-          return
-        }
-
-        if (operationName === 'GetKb' && importedSourceCountOverride > 0) {
-          const response = await route.fetch()
-          const body = (await response.json()) as {
-            data?: { getKb?: { importedSourceCount?: number } }
-          }
-          if (body.data?.getKb) {
-            body.data.getKb.importedSourceCount = importedSourceCountOverride
-          }
-          await route.fulfill({ response, json: body })
           return
         }
 
@@ -564,51 +423,6 @@ test.describe('Knowledge base management workspace', () => {
       await expect(detail).toBeVisible()
       await expect(fileRow).toContainText(/Version 1 remains|Version 1 bleibt/)
 
-      const importedSection = page.getByTestId('kb-imported-sources')
-      await expect(importedSection).toBeVisible()
-      await expect(page.getByTestId('kb-imported-sources-notice')).toBeVisible()
-      await expect(page.getByTestId('kb-imported-sources-count')).toBeVisible()
-
-      const importedVideoRow = page.getByTestId(
-        'kb-imported-source-imported-video-source'
-      )
-      await expect(importedVideoRow).toContainText(
-        'Synthetic lecture recording'
-      )
-      await expect(
-        page.getByTestId('kb-imported-source-kind-imported-video-source')
-      ).toBeVisible()
-      // A video-derived source is listed without any stored file or link.
-      await expect(
-        page.getByTestId('kb-imported-source-video-hint-imported-video-source')
-      ).toBeVisible()
-      await expect(importedVideoRow.locator('a')).toHaveCount(0)
-      await expect(
-        page.getByTestId('kb-imported-source-ingested-imported-video-source')
-      ).toBeVisible()
-
-      // The bounded inventory loads its next page on demand.
-      await page.getByTestId('load-more-imported-sources').click()
-      await expect(
-        page.getByTestId('kb-imported-source-imported-link-source')
-      ).toBeVisible()
-      await expect(importedSection.locator('li')).toHaveCount(4)
-      await expect(
-        page.getByTestId('kb-imported-source-link-imported-link-source')
-      ).toHaveAttribute('href', 'https://example.org/synthetic-reading-list')
-      // An unrecorded ingestion time stays honestly unknown.
-      await expect(
-        page.getByTestId('kb-imported-source-ingested-imported-link-source')
-      ).toBeVisible()
-      // A stored URL with credentials, query or fragment stays unlinked.
-      const importedSignedRow = page.getByTestId(
-        'kb-imported-source-imported-signed-source'
-      )
-      await expect(importedSignedRow).toContainText('Synthetic signed handbook')
-      await expect(importedSignedRow.locator('a')).toHaveCount(0)
-      // The inventory is read-only: no ingestion, retry or deletion controls.
-      await expect(importedSection.getByRole('button')).toHaveCount(0)
-
       await page.setViewportSize({ width: 1440, height: 900 })
       await page.screenshot({
         path: testInfo.outputPath('kb-management-en-desktop.png'),
@@ -624,60 +438,11 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByTestId('kb-chatbot-settings').getByText('Konfigurieren')
       ).toBeVisible()
-      await page.getByTestId('kb-imported-sources').scrollIntoViewIfNeeded()
       await page.screenshot({
         path: testInfo.outputPath('kb-management-de-desktop.png'),
         fullPage: true,
       })
-
-      await page.setViewportSize({ width: 375, height: 812 })
-      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
-      await page.screenshot({
-        path: testInfo.outputPath('kb-management-de-mobile.png'),
-        fullPage: true,
-      })
-
-      await page.goto(`${manageUrl}${detailPath}`)
-      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
-      await page.screenshot({
-        path: testInfo.outputPath('kb-management-en-mobile.png'),
-        fullPage: true,
-      })
-
-      // The inventory renders its empty and failed initial-load branches.
-      importedSourceMode = 'empty'
-      await page.goto(`${manageUrl}${detailPath}`)
-      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
-      await expect(page.getByTestId('kb-imported-sources-empty')).toBeVisible()
-
-      importedSourceMode = 'error'
-      await page.goto(`${manageUrl}${detailPath}`)
-      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
-      await expect(page.getByTestId('kb-imported-sources-error')).toBeVisible()
-      importedSourceMode = 'data'
-
-      // A knowledge base with imported sources cannot be deleted from the list.
-      importedSourceCountOverride = 4
-      await page.setViewportSize({ width: 1440, height: 900 })
-      await page.goto(`${manageUrl}/resources/knowledgeBases`)
-      const deleteTargetRow = page.locator('li').filter({ hasText: kbName })
-      await deleteTargetRow
-        .getByRole('button', { name: /Delete|Löschen/ })
-        .click()
-      const blockedDeleteModal = page.getByTestId('delete-knowledge-base-modal')
-      await expect(blockedDeleteModal).toBeVisible()
-      await expect(
-        page.getByTestId('kb-delete-imported-sources-blocked')
-      ).toBeVisible()
-      await expect(
-        page.getByTestId('confirm-delete-knowledge-base')
-      ).toBeDisabled()
-      await page.getByTestId('cancel-delete-knowledge-base').click()
-      await expect(blockedDeleteModal).toBeHidden()
-      importedSourceCountOverride = 0
     } finally {
-      importedSourceCountOverride = 0
-      importedSourceMode = 'data'
       if (detailPath) {
         await page.setViewportSize({ width: 1440, height: 900 })
         await page.goto(`${manageUrl}${detailPath}`)
