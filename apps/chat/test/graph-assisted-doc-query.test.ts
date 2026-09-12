@@ -230,6 +230,77 @@ describe('graph-assisted document retrieval', () => {
     ).toEqual(['First support', 'Another passage', 'Different support'])
   })
 
+  it('protects the baseline prefix, fuses repeated evidence once, and preserves emitted order', () => {
+    const make = (ids: number[]) => ({
+      mode: 'documents',
+      sources: ids.map((id) => ({
+        reference: 'synthetic.pdf',
+        chunks: [{ id, content: `Evidence ${id}`, page_number: id }],
+      })),
+    })
+    const result = combineGraphSearchDocuments(
+      make([1, 2, 3, 4, 5, 6, 7, 8]),
+      make([8, 9, 10, 11, 12, 13, 14, 8])
+    ) as any
+    const ids = result.structuredContent.sources.flatMap((source: any) =>
+      source.chunks.map((chunk: any) => chunk.id)
+    )
+    expect(ids.slice(0, 4)).toEqual([1, 2, 3, 8])
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toHaveLength(12)
+    expect(JSON.parse(result.content[0].text)).toEqual(result.structuredContent)
+  })
+
+  it('keeps global rank order when a provider group resumes after another source', () => {
+    const chunks = Array.from({ length: 6 }, (_, index) => ({
+      id: index + 1,
+      content: `Evidence ${index + 1}`,
+    }))
+    const original = {
+      mode: 'documents',
+      sources: [{ reference: 'a.pdf', chunks }],
+    }
+    const expanded = {
+      mode: 'documents',
+      sources: [
+        { reference: 'a.pdf', chunks: [chunks[5]] },
+        { reference: 'b.pdf', chunks: [{ id: 7, content: 'Other evidence' }] },
+      ],
+    }
+    const result = combineGraphSearchDocuments(original, expanded) as any
+    expect(
+      result.structuredContent.sources.flatMap((source: any) =>
+        source.chunks.map((chunk: any) => chunk.id)
+      )
+    ).toEqual([1, 2, 3, 6, 7, 4, 5])
+    expect(
+      result.structuredContent.sources.map((source: any) => source.reference)
+    ).toEqual(['a.pdf', 'b.pdf', 'a.pdf'])
+  })
+
+  it('skips oversized passages and reserves original character budget before expansion', () => {
+    const original = documents('x'.repeat(16001))
+    original.sources[0]!.chunks.push({
+      content: 'y'.repeat(8000),
+      page_number: 2,
+    })
+    original.sources[0]!.chunks.push({
+      content: 'z'.repeat(8000),
+      page_number: 3,
+    })
+    const result = combineGraphSearchDocuments(
+      original,
+      documents('New evidence')
+    ) as any
+    const chunks = result.structuredContent.sources.flatMap(
+      (source: any) => source.chunks
+    )
+    expect(chunks.map((chunk: any) => chunk.page_number)).toEqual([2, 3])
+    expect(
+      chunks.reduce((sum: number, chunk: any) => sum + chunk.content.length, 0)
+    ).toBe(16000)
+  })
+
   it('handles JSON MCP envelopes and never retains obsolete generated answers', () => {
     const first = {
       content: [

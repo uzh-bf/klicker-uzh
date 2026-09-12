@@ -920,7 +920,20 @@ single published graph supplies at most six neighboring concept names from
 fixed, parameterized, one-hop queries. The original document query remains
 intact; at most one additional document query runs per tool instance. The
 adapter combines compatible `mode: documents` passages within 12 passages and
-16,000 content characters, retaining provider source groups and locators.
+16,000 content characters, retaining provider source groups and locators. It
+protects the first three admitted baseline passages, then uses equal-weight
+reciprocal rank fusion with constant 60 for the remaining candidates. Contiguous
+source groups preserve the chosen passage order.
+
+Retrieval seeds require complete normalized display-label phrases in the query;
+substring matches and inferred aliases are excluded. Up to four longest matching
+concepts are selected from at most 10,000 nodes. An overflow probe declines graph
+hints instead of searching a partial graph. The one-hop query similarly declines
+when more than 1,000 incident rows occur across the selected seeds. Both native
+queries retain 500ms execution budgets. These limits bound graph work but do not
+make this an indexed search. Queries over 100 tokens decline expansion; six-token
+phrases include internal stop words and late-query acronyms. Exact matching can
+miss inflections, aliases and translations, so these cases use ordinary RAG.
 Graph descriptions and LightRAG extraction references never become citations.
 Stale graphs and optional graph/expansion failures retain document-only results.
 Changed course access or KB bindings suppress both results because the original

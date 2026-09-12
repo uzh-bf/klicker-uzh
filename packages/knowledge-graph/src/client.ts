@@ -29,10 +29,12 @@ import {
 } from './queries.js'
 import {
   GRAPH_SEARCH_HINT_LIMIT,
+  GRAPH_SEARCH_NODE_SCAN_LIMIT,
   GRAPH_SEARCH_QUERY_TIMEOUT_MS,
   graphSearchNeighborsQuery,
   graphSearchSeedsQuery,
   graphSearchTerms,
+  selectGraphSearchSeeds,
 } from './retrieval.js'
 
 type ClientSession = {
@@ -300,13 +302,15 @@ export async function readKnowledgeGraphSearchHints(
       GRAPH_SEARCH_QUERY_TIMEOUT_MS
     ),
   }
-  const seeds = normalizedNodes(
-    await readRows<KnowledgeGraphNodeRow>(
-      graph,
-      boundedConfig,
-      graphSearchSeedsQuery(terms)
-    ),
-    context
+  const candidates = await readRows<KnowledgeGraphNodeRow>(
+    graph,
+    boundedConfig,
+    graphSearchSeedsQuery()
+  )
+  if (candidates.length > GRAPH_SEARCH_NODE_SCAN_LIMIT) return []
+  const seeds = selectGraphSearchSeeds(
+    normalizedNodes(candidates, context),
+    query
   )
   if (seeds.length === 0) return []
   const neighbors = normalizedNodes(

@@ -83,39 +83,70 @@ export function combineGraphSearchDocuments(
   const first = passages(original)
   const second = passages(expanded)
   if (!first || !second || second.length === 0) return original
+  const ranked = new Map<
+    string,
+    { passage: Passage; score: number; ranks: number[] }
+  >()
+  for (const [search, candidates] of [first, second].entries()) {
+    const contributed = new Set<string>()
+    candidates.forEach((passage, index) => {
+      const key = canonical(passage)
+      if (contributed.has(key)) return
+      contributed.add(key)
+      const candidate = ranked.get(key) ?? {
+        passage,
+        score: 0,
+        ranks: [Infinity, Infinity],
+      }
+      candidate.score += 1 / (60 + index + 1)
+      candidate.ranks[search] = index
+      ranked.set(key, candidate)
+    })
+  }
   const selected: Passage[] = []
   const seen = new Set<string>()
   let characters = 0
-  for (let index = 0; index < Math.max(first.length, second.length); index++) {
-    for (const candidate of [first[index], second[index]]) {
-      if (!candidate || selected.length >= 12) continue
-      const key = canonical(candidate)
-      if (seen.has(key)) continue
-      const size = String(candidate.chunk.content).length
-      if (characters + size > 16000) continue
-      seen.add(key)
-      characters += size
-      selected.push(candidate)
-    }
+  function admit(passage: Passage) {
+    const key = canonical(passage)
+    const size = String(passage.chunk.content).length
+    if (seen.has(key) || selected.length >= 12 || characters + size > 16000)
+      return
+    seen.add(key)
+    characters += size
+    selected.push(passage)
   }
+  // Reserve the strongest original evidence before admitting graph discoveries.
+  for (const passage of first) {
+    if (selected.length === 3) break
+    admit(passage)
+  }
+  for (const { passage } of [...ranked.values()].sort(
+    (a, b) =>
+      b.score - a.score ||
+      a.ranks[0]! - b.ranks[0]! ||
+      a.ranks[1]! - b.ranks[1]!
+  ))
+    admit(passage)
   if (selected.length === 0) return original
   // Keep each provider source group: the citation UI displays its first chunk's locator.
   // Coalescing groups from two searches could hide the newly retrieved page.
-  const groups = new Map<RecordValue, RecordValue>()
+  const groups: RecordValue[] = []
+  let previousSource: RecordValue | undefined
   for (const { source, chunk } of selected) {
-    const group = groups.get(source)
-    if (group) (group.chunks as RecordValue[]).push(chunk)
-    else groups.set(source, { ...source, chunks: [chunk] })
+    if (source === previousSource)
+      (groups[groups.length - 1]!.chunks as RecordValue[]).push(chunk)
+    else groups.push({ ...source, chunks: [chunk] })
+    previousSource = source
   }
   const payload = {
     mode: 'documents',
-    sources: [...groups.values()],
+    sources: groups,
     summary: {
-      count: groups.size,
-      sources_returned: groups.size,
+      count: groups.length,
+      sources_returned: groups.length,
       chunks_returned: selected.length,
     },
-    sources_used: groups.size,
+    sources_used: groups.length,
   }
   return sanitizeDocQueryResult({
     content: [{ type: 'text', text: JSON.stringify(payload) }],

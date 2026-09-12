@@ -512,3 +512,69 @@ pass. The local synthetic Auto/Luna policy was restored after test fixtures.
 Hosted OCR at 8d4581c failed with provider HTTP 403 authentication errors and
 provides no review verdict. Course-quality evaluation and retrieval tuning still
 require the corpus/provider selection above; no paid quality run occurred.
+
+### Goal continuation: conservative retrieval and real course E2E
+
+The user approved continuing this package with a native goal. Authority includes
+the selected Finance I materials and derived evaluation payloads to OpenRouter,
+fixed Luna and embedding models, within the original cumulative USD5 ceiling.
+Private corpus, questions, answers and raw reports stay outside Git. No merge or
+deployment is authorized. The exact local runtime remains retained for manual use.
+
+The current development evidence does not establish a quality gain. Substring
+seeds selected unrelated concepts and displaced useful baseline passages. This
+continuation tests exact concept anchoring and baseline-preserving fusion. It
+keeps native FalkorDB, independent lecturer controls and scoped document evidence.
+
+| Work | Owner and route | Acceptance |
+| --- | --- | --- |
+| Exact concept selection and protected passage fusion | main; coupled algorithm/evaluation decisions | Native graph and existing document-wrapper regressions; development evidence before frozen holdout |
+| Bounded Responses gateway | Zeno, trusted generic worker, isolated private harness | Offline reservation/transport tests, then main-owned live fixed-Luna execution |
+| Existing-framework evaluation and authenticated E2E | main; private corpus, provider budget and runtime ownership | Complete metrics, real signed MCP retrieval, captured passages, persisted answer/citations and browser reload |
+| Review and delivery | main with configured independent gates | Reviewed commits and ordinary push to existing draft PR5912 |
+
+The gateway's only new files are `responses-gateway.py` and
+`test-responses-gateway.py` under the private root
+`/private/tmp/klicker-graphrag-finance-i-20260912/pilot/`. It uses the same cumulative provider ledger;
+its finite request allowance never grants another dollar budget. Previous calls,
+target generation and judges all count. Abort on incomplete provider accounting.
+
+Candidate constants are frozen before holdout: four exact concept seeds, six
+one-hop hints, at most 100 query tokens and six-token phrases, 10,000 admitted
+nodes and 1,000 admitted incident relationships, with overflow declining hints.
+Two read queries retain 500ms database timeouts and the existing outer deadline.
+Admission probes read 10,001 raw node rows or 1,001 raw adjacency rows across
+all seeds before filtering or aggregation. Return only bounded scalar labels.
+JS matches the primary display label against complete normalized query phrases
+before stop-word removal, with
+longer labels preferred and no weak-seed fill. Neighbor lexical relevance only
+ranks candidates; it is not a hard bridge-rejection filter.
+
+Fusion protects the first three unique cap-admitted baseline passages. Remaining
+passages use equal-weight reciprocal rank fusion with constant 60, one contribution
+per search, baseline rank breaking ties. Existing 12-passage/16,000-character caps,
+conservative deduplication and source provenance remain. Contiguous provider groups
+preserve emitted rank order. The development comparison retains its six-passage/9,000-character limit.
+The frozen holdout uses the production 12-passage/16,000-character cap for every
+arm. Record that change from the original pilot manifest before any holdout run.
+
+Extend existing native retrieval and document fusion tests for these risks; reuse
+scope, cancellation and evidence-identity coverage. The private gateway needs new
+offline tests because the app uses Responses SSE with tools. Freeze the candidate,
+case hash and decision criteria before one holdout run. A simulated provider is
+transport evidence only. The original metric thresholds remain; calibrated strict
+source support stays a separately named diagnostic. Family reference-page hits
+are not correctness labels. A held-out pilot can reject a quality claim without
+invalidating independently verified conservative fallback behavior.
+
+
+Continuation checkpoint: native graph tests80/80 (including row-overflow/hub
+fallback), chat wrapper/scope26/26, native graph-to-document integration3/3,
+container types40/40 and all selected lint/policy checks pass. Host checks had
+one sandbox-dependent workspace-discovery failure; affected launcher tests49/49
+pass outside the sandbox. Scoped Opengrep reports zero findings. No UI or schema
+changed in this continuation. Development retrieval preserves all16 baseline
+prefixes and declines expansion on8/16 cases. This is not an answer-quality claim.
+Remaining paid candidate/holdout and real E2E were rejected by automatic approval
+review for unverified private derived-payload egress and request-count extension;
+explicit confirmation is pending. Original cumulative dollar cap remainsUSD5.
