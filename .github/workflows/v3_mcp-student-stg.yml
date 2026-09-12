@@ -6,7 +6,7 @@ on:
       - 'v3'
       - 'v3*'
   pull_request:
-    types: [opened, synchronize, reopened, converted_to_draft, edited]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'apps/mcp-student/**'
       - 'packages/**'
