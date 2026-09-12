@@ -867,6 +867,12 @@ async function collectWorkflowEvidence({
   }
   return {
     jobs: verifiedJobs,
+    observedJobs: jobs.map(({ id, name, status, conclusion }) => ({
+      id,
+      name,
+      status,
+      conclusion,
+    })),
     path: workflow.path,
     run: {
       branch: exact.head_branch,
@@ -878,6 +884,109 @@ async function collectWorkflowEvidence({
     },
     status: 'success',
   }
+}
+
+async function readCiEvidence({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    {
+      ...context.repo,
+      run_id: run.id,
+      per_page: 100,
+    }
+  )
+  const matches = artifacts.filter(
+    (a) => a.name === 'required-ci-evidence' && !a.expired
+  )
+  if (matches.length !== 1 || matches[0].size_in_bytes > 1048576) {
+    throw new Error('missing or ambiguous CI selection artifact')
+  }
+  const response = await github.rest.actions.downloadArtifact({
+    ...context.repo,
+    artifact_id: matches[0].id,
+    archive_format: 'zip',
+  })
+  if (response.data.byteLength > 1048576)
+    throw new Error('CI selection archive too large')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-ci-'))
+  try {
+    const archive = path.join(directory, 'evidence.zip')
+    fs.writeFileSync(archive, Buffer.from(response.data))
+    return JSON.parse(
+      execFileSync('unzip', ['-p', archive, 'required-ci-evidence.json'], {
+        encoding: 'utf8',
+        maxBuffer: 1048576,
+        timeout: 10000,
+      })
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+function validateCiSelection(
+  evidence,
+  workflow,
+  repository,
+  candidateSha,
+  sourceBranch
+) {
+  if (
+    evidence?.schemaVersion !== 1 ||
+    evidence.repository !== repository ||
+    evidence.workflow?.path !== workflow.path ||
+    evidence.workflow?.terminalJob !== workflow.jobs[0].name ||
+    evidence.event?.name !== 'push' ||
+    evidence.event.branch !== sourceBranch ||
+    evidence.event.sha !== candidateSha ||
+    evidence.run?.id !== workflow.run.id ||
+    evidence.run.attempt !== workflow.run.attempt ||
+    evidence.decision?.outcome !== 'pass' ||
+    evidence.reuse != null ||
+    !['run', 'no-change'].includes(evidence.selection?.state) ||
+    !Array.isArray(evidence.jobs) ||
+    evidence.jobs.length === 0
+  ) {
+    throw new Error('invalid CI selection evidence')
+  }
+  const names = new Set()
+  for (const job of evidence.jobs) {
+    if (
+      typeof job.name !== 'string' ||
+      !job.name ||
+      names.has(job.name) ||
+      !['success', 'skipped'].includes(job.result)
+    )
+      throw new Error('invalid selected job evidence')
+    const observed = workflow.observedJobs?.filter(
+      (actual) => actual.name === job.name
+    )
+    if (
+      observed?.length !== 1 ||
+      observed[0].status !== 'completed' ||
+      observed[0].conclusion !== job.result
+    ) {
+      throw new Error('CI selection does not match actual jobs')
+    }
+    names.add(job.name)
+  }
+  const suite = evidence.jobs.filter((job) => job.role === 'suite')
+  const selector = evidence.jobs.filter((job) => job.role === 'selection')
+  if (
+    suite.length !== 1 ||
+    selector.length !== 1 ||
+    selector[0].result !== 'success' ||
+    (evidence.selection.state === 'run' && suite[0].result !== 'success') ||
+    (evidence.selection.state === 'no-change' &&
+      (evidence.selection.reason !== 'no-change' ||
+        suite[0].result !== 'skipped'))
+  ) {
+    throw new Error(
+      'selected CI suite did not succeed or selection is unproven'
+    )
+  }
+  return evidence
 }
 
 function isRetryableEvidenceStatus(status) {
@@ -1503,9 +1612,9 @@ async function runPromotion({
   candidateSha,
   promotionEnabled,
   controllerSha = process.env.TRUSTED_WORKFLOW_SHA,
-  requiredCiWorkflows = REQUIRED_CI_WORKFLOWS,
   expectedWorkflows = STAGING_WORKFLOWS,
   getRegistryDigest = fetchRegistryDigest,
+  getCiEvidence = readCiEvidence,
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
@@ -1588,7 +1697,7 @@ async function runPromotion({
   const ciEvidence = await collectBuildEvidence({
     github,
     context,
-    workflows: requiredCiWorkflows,
+    workflows: REQUIRED_CI_WORKFLOWS,
     candidateSha: inputs.candidateSha,
     sourceBranch: inputs.sourceBranch,
     maxAttempts,
@@ -1597,6 +1706,21 @@ async function runPromotion({
   })
   if (!ciEvidence.valid) {
     throw new Error(`staging CI evidence is incomplete: ${ciEvidence.reason}`)
+  }
+  for (const workflow of ciEvidence.workflows) {
+    if (
+      ['test-unit.yml', 'test-olat-api.yml', 'test-intl-production.yml'].some(
+        (file) => workflow.path === `.github/workflows/${file}`
+      )
+    ) {
+      workflow.selection = validateCiSelection(
+        await getCiEvidence({ github, context, run: workflow.run }),
+        workflow,
+        repository,
+        inputs.candidateSha,
+        inputs.sourceBranch
+      )
+    }
   }
   const images = await resolveStableRegistryDigests({
     candidateSha: inputs.candidateSha,
@@ -1696,6 +1820,7 @@ async function runPromotion({
 }
 
 module.exports = {
+  validateCiSelection,
   REQUIRED_CI_WORKFLOWS,
   APPROVED_PUSH_BRANCHES,
   DEFAULT_MAX_ATTEMPTS,

@@ -14,6 +14,7 @@ const {
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
 const {
+  validateCiSelection,
   REQUIRED_CI_WORKFLOWS,
   MANUAL_CONFIRMATION,
   PROMOTION_REF,
@@ -36,6 +37,24 @@ const REPOSITORY = 'uzh-bf/klicker-uzh'
 const CANDIDATE_SHA = 'a'.repeat(40)
 const CURRENT_SHA = 'b'.repeat(40)
 const NEXT_SHA = 'c'.repeat(40)
+
+async function fixtureCiEvidence({ run }) {
+  const workflow = REQUIRED_CI_WORKFLOWS[run.id - 500]
+  return {
+    schemaVersion: 1,
+    repository: REPOSITORY,
+    workflow: { path: workflow.path, terminalJob: workflow.jobs[0].id },
+    event: { name: 'push', branch: 'v3', sha: CANDIDATE_SHA },
+    run: { id: run.id, attempt: run.attempt },
+    selection: { state: 'run', reason: 'success' },
+    reuse: null,
+    decision: { outcome: 'pass', reason: 'success' },
+    jobs: [
+      { name: 'suite', role: 'suite', result: 'success' },
+      { name: 'selection', role: 'selection', result: 'success' },
+    ],
+  }
+}
 
 function reviewContext(eventName = 'workflow_dispatch', inputs = {}) {
   return {
@@ -100,6 +119,17 @@ function evidenceGithub({
       status: 'completed',
       conclusion: 'success',
     }))
+  }
+  for (const [i] of REQUIRED_CI_WORKFLOWS.entries()) {
+    jobs[500 + i].push(
+      ...['suite', 'selection'].map((name, n) => ({
+        id: 6000 + i * 10 + n,
+        name,
+        head_sha: CANDIDATE_SHA,
+        status: 'completed',
+        conclusion: 'success',
+      }))
+    )
   }
   runs = { ...ciRuns, ...runs }
   const runEndpoint = async (params) => ({
@@ -1404,6 +1434,7 @@ test('writes receipts before rejecting uncertain or mismatched post-push readbac
     const outputs = new Map()
     await assert.rejects(
       runPromotion({
+        getCiEvidence: fixtureCiEvidence,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1476,6 +1507,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   const summaryPath = path.join(temporaryDirectory, 'summary.md')
   try {
     const result = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_dispatch', {
@@ -1511,6 +1543,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
       },
     }
     const rerun = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
       controllerSha: NEXT_SHA,
       github: rerunGithub,
       context: reviewContext('workflow_dispatch', {
@@ -1536,6 +1569,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     )
 
     const automatic = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1546,6 +1580,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     assert.equal(refs.current(), null)
 
     const enabled = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1579,6 +1614,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   ]) {
     await assert.rejects(
       runPromotion({
+        getCiEvidence: fixtureCiEvidence,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1697,6 +1733,7 @@ test('requires complete candidate CI before a release write', async (t) => {
     }
     await assert.rejects(
       runPromotion({
+        getCiEvidence: fixtureCiEvidence,
         github,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,
@@ -1781,6 +1818,7 @@ test('rejects manual apply when controller or release changed after dry run', as
   ]) {
     await assert.rejects(
       runPromotion({
+        getCiEvidence: fixtureCiEvidence,
         ...args,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,
@@ -1794,4 +1832,59 @@ test('rejects manual apply when controller or release changed after dry run', as
     )
     assert.equal(refs.current(), CURRENT_SHA)
   }
+})
+
+test('selection evidence binds identities and proves the selected suite result', async () => {
+  const definition = REQUIRED_CI_WORKFLOWS.find((w) =>
+    w.path.endsWith('/test-unit.yml')
+  )
+  const workflow = {
+    path: definition.path,
+    jobs: [{ name: 'test-unit-status' }],
+    run: { id: 504, attempt: 1 },
+    observedJobs: ['suite', 'selection'].map((name) => ({
+      name,
+      status: 'completed',
+      conclusion: 'success',
+    })),
+  }
+  const evidence = await fixtureCiEvidence({ run: workflow.run })
+  const validate = (value) =>
+    validateCiSelection(value, workflow, REPOSITORY, CANDIDATE_SHA, 'v3')
+  assert.equal(validate(evidence), evidence)
+  for (const mutate of [
+    (e) => {
+      e.event.name = 'pull_request'
+    },
+    (e) => {
+      e.run.attempt = 2
+    },
+    (e) => {
+      e.event.sha = CURRENT_SHA
+    },
+    (e) => {
+      e.reuse = { duplicateRunId: 123 }
+    },
+    (e) => {
+      e.selection.state = 'unknown'
+    },
+    (e) => {
+      e.jobs[0].result = 'skipped'
+    },
+    (e) => {
+      e.jobs[1].result = 'failure'
+    },
+    (e) => {
+      e.jobs = []
+    },
+  ]) {
+    const invalid = structuredClone(evidence)
+    mutate(invalid)
+    assert.throws(() => validate(invalid))
+  }
+  const noChange = structuredClone(evidence)
+  noChange.selection = { state: 'no-change', reason: 'no-change' }
+  noChange.jobs[0].result = 'skipped'
+  workflow.observedJobs[0].conclusion = 'skipped'
+  assert.equal(validate(noChange), noChange)
 })
