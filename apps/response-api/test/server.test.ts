@@ -1,4 +1,5 @@
 import type { AddressInfo } from 'node:net'
+import { createLogger } from '@klicker-uzh/logging/node'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createResponseServer,
@@ -14,9 +15,11 @@ const PARTICIPANT_TOKEN = 'participant-token-sensitive'
 const RAW_ANSWER = 'answer-that-must-not-be-logged'
 
 const servers: ReturnType<typeof createResponseServer>[] = []
+const logRecords: Record<string, unknown>[] = []
 
 afterEach(async () => {
   vi.restoreAllMocks()
+  logRecords.length = 0
   await Promise.all(
     servers
       .splice(0)
@@ -39,6 +42,14 @@ function dependencies(
     assessmentApiOrigin: 'https://assessment-api.example.org',
     authOrigin: 'https://auth.example.org',
     now: () => new Date('2026-08-12T12:00:00.000Z'),
+    logger: createLogger(
+      { service: 'response-api-test', environment: 'production' },
+      {
+        write(line) {
+          logRecords.push(JSON.parse(line) as Record<string, unknown>)
+        },
+      }
+    ),
     pushEvent: vi.fn().mockResolvedValue({ eventId: 'hatchet-event-1' }),
     verifyToken: vi.fn(async (token) => {
       if (token === CORRELATION_TOKEN) {

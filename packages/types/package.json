@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*"
   },
   "devDependencies": {

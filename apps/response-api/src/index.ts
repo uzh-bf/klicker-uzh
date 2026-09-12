@@ -1,6 +1,8 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { verifyJWT } from '@klicker-uzh/util'
 import { Redis } from 'ioredis'
+import { logger } from './logger.js'
 import {
   createResponseServer,
   type ResponseServerDependencies,
@@ -32,24 +34,51 @@ const serverDependencies: ResponseServerDependencies = {
   pushEvent: (name, payload, options) =>
     hatchetClient.events.push(name, payload, options),
   verifyToken: verifyJWT,
+  logger,
 }
 
 validateResponseServerConfig(serverDependencies)
 const server = createResponseServer(serverDependencies)
 
 async function initializeService() {
-  console.info('Starting response-api service', {
-    port: PORT,
-    assessmentMode,
-    allowedOriginCount: allowedOrigins.length,
-  })
+  logger.info(
+    {
+      event: 'service.starting',
+      port: PORT,
+      assessment: assessmentMode,
+      allowedOriginCount: allowedOrigins.length,
+    },
+    'Starting response-api service'
+  )
   if (!assessmentMode) {
-    await redis.ping()
-    console.info('Standard response Redis connection established')
+    try {
+      await redis.ping()
+      logger.info(
+        { event: 'dependency.connected', dependency: 'redis' },
+        'Redis connected'
+      )
+    } catch {
+      logger.error(
+        {
+          event: 'dependency.unavailable',
+          dependency: 'redis',
+          err: toSafeError('Redis connection failed'),
+        },
+        'Redis connection failed'
+      )
+      throw new Error('Redis connection failed')
+    }
   }
 }
 
 await initializeService()
 server.listen(PORT, () => {
-  console.info(`[response-api] Ready and listening on port ${PORT}`)
+  logger.info(
+    {
+      event: 'service.started',
+      port: PORT,
+      assessment: assessmentMode,
+    },
+    'Response API is ready'
+  )
 })

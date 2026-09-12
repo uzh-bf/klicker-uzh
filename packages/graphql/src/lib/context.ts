@@ -5,6 +5,8 @@ import type {
   FeatureFlagAttributes,
   FeatureFlagKey,
 } from '@klicker-uzh/feature-flags'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import type { RequestContext } from '@klicker-uzh/logging/request'
 import type {
   PrismaClient,
   UserLoginScope,
@@ -17,7 +19,13 @@ import type { Redis } from 'ioredis'
 import type { QuestionGenerationRuntime } from '../services/questionGenerationRuntime.js'
 
 interface BaseContext {
-  req: Request & { locals: { user?: any } }
+  req: Request & {
+    locals: {
+      user?: any
+      requestContext: RequestContext
+      log: AppLogger
+    }
+  }
   res: Response
 }
 
@@ -53,6 +61,8 @@ export interface Context extends BaseContext {
     userId: string
     value: Promise<boolean | null>
   }
+  requestContext: RequestContext
+  log: AppLogger
 }
 
 export interface ContextWithUser extends Context {
@@ -80,6 +90,8 @@ function enhanceContext(args = {}) {
   return ({ req }: BaseContext) => ({
     ...args,
     user: req?.locals?.user,
+    requestContext: req.locals.requestContext,
+    log: req.locals.log,
   })
 }
 
