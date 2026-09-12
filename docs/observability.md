@@ -50,8 +50,11 @@ without breaking queries.
   Loki.
 - Development: pretty single-line output by default. Set `PINO_PRETTY=false` for
   raw JSON locally.
-- Tests: silent by default. Contract tests inject a capture destination.
-- `LOG_LEVEL` controls the threshold and defaults to `info` outside tests.
+- Tests: silent by default. Contract tests inject a capture destination. Test
+  silence wins over an ambient `LOG_LEVEL` so environments that export the
+  variable globally keep quiet suites.
+- Level resolution order: explicit `createLogger({ level })` option, then
+  test-environment silence, then `LOG_LEVEL`, then `info`.
 
 The package pins Pino 9.14.0 and constrains `pino-pretty` to `~13.1.3`. Pino 10
 adoption is a separate dependency change.
@@ -209,6 +212,14 @@ supports queries such as:
 The collector preserves the original JSON line and non-JSON third-party output.
 It stores level, event, request, correlation, and trace/span identifiers as
 structured metadata rather than indexed labels.
+
+Structured metadata keys are snake_case and map from the camelCase record
+fields at the Alloy parsing stage: `level`, `event`, `request_id`,
+`correlation_id`, `trace_id`, and `span_id` (see
+`project/2026-08-05-production-json-logging-infrastructure.md`). Everything
+else a record carries — including `service`, `outcome`, `reason`, `http.*`,
+and `durationMs` — stays in the raw line only: it is available to full-text
+and line-filter queries, not to structured-metadata filters.
 
 Application deployment does not depend on the companion cloud MRs: the existing
 collector already forwards container stdout, so production NDJSON is available
