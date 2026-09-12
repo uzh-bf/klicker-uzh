@@ -2,16 +2,18 @@ import {
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
 } from '@/src/lib/pwaEmbedAuth'
+import { createLoggedRoute } from '@/src/lib/server/requestLogging'
 import {
   signPwaEmbedSessionToken,
   verifyPwaEmbedExchangeToken,
 } from '@/src/lib/server/pwaEmbed'
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { cookieSecurityOptions } from '@klicker-uzh/util/auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-const LOG_PREFIX = '[chat:auth/pwa-embed]'
 const EMBED_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12
 
 const querySchema = z.object({
@@ -50,16 +52,19 @@ function embedBootstrapResponse(chatbotUrl: URL) {
   )
 }
 
-export async function GET(req: NextRequest) {
+export async function handleGET(
+  req: NextRequest,
+  _context: unknown,
+  log: AppLogger
+) {
   const queryResult = querySchema.safeParse({
     token: req.nextUrl.searchParams.get('token'),
   })
 
   if (!queryResult.success) {
-    console.error(
-      LOG_PREFIX,
-      'Invalid query params:',
-      queryResult.error.flatten()
+    log.warn(
+      { event: 'auth.embed.query.rejected' },
+      'Missing or invalid PWA embed query parameters'
     )
     return noLoginRedirect(req, null)
   }
@@ -67,8 +72,14 @@ export async function GET(req: NextRequest) {
   let exchangePayload
   try {
     exchangePayload = await verifyPwaEmbedExchangeToken(queryResult.data.token)
-  } catch (error) {
-    console.error(LOG_PREFIX, 'PWA exchange token verification failed:', error)
+  } catch {
+    log.warn(
+      {
+        event: 'auth.embed.token.rejected',
+        err: toSafeError('PWA embed exchange token verification failed'),
+      },
+      'PWA embed exchange token verification failed'
+    )
     return noLoginRedirect(req, null)
   }
 
@@ -88,11 +99,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
   if (chatbot.courseId !== courseId) {
-    console.error(LOG_PREFIX, 'Cross-course access blocked', {
-      chatbotCourseId: chatbot.courseId,
-      requestedCourseId: courseId,
-      chatbotId,
-    })
+    log.warn(
+      {
+        event: 'auth.embed.access.blocked',
+        chatbotCourseId: chatbot.courseId,
+        requestedCourseId: courseId,
+        chatbotId,
+      },
+      'Blocked cross-course PWA embed attempt'
+    )
     return NextResponse.json(
       { error: 'Chatbot not found in this course' },
       { status: 403 }
@@ -123,8 +138,14 @@ export async function GET(req: NextRequest) {
       courseId,
       participantId,
     })
-  } catch (error) {
-    console.error(LOG_PREFIX, 'Failed to sign PWA embed session token:', error)
+  } catch {
+    log.error(
+      {
+        event: 'auth.embed.session.sign_failed',
+        err: toSafeError('Failed to sign PWA embed session token'),
+      },
+      'Failed to sign PWA embed session token'
+    )
     return NextResponse.json(
       { error: 'Failed to create embed session' },
       { status: 500 }
@@ -154,3 +175,5 @@ export async function GET(req: NextRequest) {
 
   return response
 }
+
+export const GET = createLoggedRoute('/auth/pwa-embed', handleGET)

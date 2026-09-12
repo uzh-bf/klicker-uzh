@@ -2,6 +2,8 @@ import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { ToolSet } from 'ai'
 import { mintLecturerMcpJwt } from '@/src/lib/server/mcpAuthMint'
+import { logger } from '@/src/lib/server/logger'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import {
   classifyManageAssistantCapabilityState,
   type ManageAssistantCapabilityState,
@@ -101,8 +103,15 @@ export async function loadLecturerMcpTools(
   const close = async () => {
     if (closed) return
     closed = true
-    await client.close().catch((error: unknown) => {
-      console.warn('Failed to close lecturer MCP client:', error)
+    await client.close().catch(() => {
+      logger.warn(
+        {
+          event: 'chat.mcp.client.close_failed',
+          client: 'lecturer',
+          err: toSafeError('Failed to close lecturer MCP client'),
+        },
+        'Failed to close lecturer MCP client'
+      )
     })
   }
 

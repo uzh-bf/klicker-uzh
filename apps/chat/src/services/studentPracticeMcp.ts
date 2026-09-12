@@ -7,6 +7,8 @@ import type {
   StudentMcpToolErrorCode as ToolErrorCode,
 } from '@klicker-uzh/types'
 import type { AuthMode } from '@/src/lib/server/ltiGuest'
+import { logger } from '@/src/lib/server/logger'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { createMCPClient, type MCPServerConfig } from './mcpClients'
 import { buildMcpServiceUrl } from './mcpUrl'
 
@@ -256,8 +258,15 @@ async function withStudentPracticeMcp<T>({
     >
     return await execute(tools)
   } finally {
-    await client.close().catch((error: unknown) => {
-      console.warn('Failed to close student practice MCP client:', error)
+    await client.close().catch(() => {
+      logger.warn(
+        {
+          event: 'chat.mcp.client.close_failed',
+          client: 'student-practice',
+          err: toSafeError('Failed to close student practice MCP client'),
+        },
+        'Failed to close student practice MCP client'
+      )
     })
   }
 }

@@ -99,6 +99,11 @@ describe('chat route logging', () => {
 
     expect(records).toHaveLength(1)
     expect(records[0]).toMatchObject({ level, outcome })
+    if (status >= 500) {
+      expect(records[0]).toMatchObject({
+        err: { type: 'Error', message: 'Chat request failed' },
+      })
+    }
   })
 
   test('records a safe failure once and preserves thrown errors', async () => {
