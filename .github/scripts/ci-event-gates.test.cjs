@@ -182,6 +182,7 @@ test('graphql validation re-runs at the retarget and ready boundaries', () => {
     'reopened',
     'ready_for_review',
     'edited',
+    'converted_to_draft',
   ])
 })
 

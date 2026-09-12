@@ -354,6 +354,21 @@ test('an unknown image workflow fails closed', () => {
   assert.match(decision.reason, /uncovered image workflow/)
 })
 
+test('deleting a required publisher blocks qualification', () => {
+  const { unknown } = selectImageWorkflows({
+    presentFiles: presentImageWorkflows(root).filter(
+      (name) => name !== 'v3_auth-stg.yml'
+    ),
+    eventName: 'pull_request',
+    changedFiles: ['apps/auth/src/index.ts'],
+  })
+  assert.deepEqual(unknown, ['v3_auth-stg.yml'])
+  assert.equal(
+    decideBuildStatus({ evidence: [], expected: [], unknown }).ok,
+    false
+  )
+})
+
 test('run binding never mixes push and pull-request evidence', () => {
   const entry = { jobs: ['build-arm'], path: 'v3_lti-stg.yml' }
   const binding = {

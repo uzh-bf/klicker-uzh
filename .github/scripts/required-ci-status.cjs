@@ -127,9 +127,12 @@ const JOB_INPUTS = Object.freeze([
 function collectJobs(env) {
   const jobs = []
   for (const [role, prefix] of JOB_INPUTS) {
-    const name = (env[prefix + '_JOB'] ?? '').trim()
-    if (!name) continue
-    jobs.push({ role, name, result: env[prefix + '_JOB_RESULT'] ?? '' })
+    const names = env[prefix + '_JOBS']
+      ? JSON.parse(env[prefix + '_JOBS'])
+      : [(env[prefix + '_JOB'] ?? '').trim()].filter(Boolean)
+    for (const name of names) {
+      jobs.push({ role, name, result: env[prefix + '_JOB_RESULT'] ?? '' })
+    }
   }
   return jobs
 }

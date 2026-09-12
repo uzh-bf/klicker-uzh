@@ -1,21 +1,31 @@
 name: Production translation context
 on:
+  push:
+    branches: ['v3', 'v3-*']
   pull_request:
-    branches: [v3]
+    branches: ['v3', 'v3-*']
     # The smoke is gated on the PR draft state and the internal path filter, so
     # "ready_for_review" runs the real smoke at the draft boundary and "edited"
     # re-evaluates the selector on a base retarget.
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        edited,
+        converted_to_draft,
+      ]
 permissions:
   contents: read
 concurrency:
-  group: intl-production-${{ github.event.pull_request.number }}
+  group: intl-production-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,7 +40,7 @@ jobs:
     needs: filter
     if: >-
       needs.filter.outputs.should_run == 'true' &&
-      github.event.pull_request.draft == false
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -40,10 +50,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Build and render through the production provider
-        run: node .github/scripts/intl-production-smoke.mjs '${{ matrix.app }}' '${{ github.event.pull_request.head.sha }}'
+        run: node .github/scripts/intl-production-smoke.mjs '${{ matrix.app }}' '${{ github.event.pull_request.head.sha || github.sha }}'
 
   # Always reports a status even when the path filter selects nothing, so this
   # job is the required check. It runs unconditionally so a skipped context can
@@ -71,7 +81,7 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           REF: ${{ github.ref }}
           SHA: ${{ github.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -80,7 +90,7 @@ jobs:
           EVIDENCE_PATH: required-ci-evidence.json
           SELECTION_JOB: filter
           SELECTION_JOB_RESULT: ${{ needs.filter.result }}
-          SUITE_JOB: intl-production-smoke
+          SUITE_JOBS: '["intl-production-smoke (frontend-pwa)","intl-production-smoke (frontend-manage)"]'
           SUITE_JOB_RESULT: ${{ needs.intl-production-smoke.result }}
         run: node .github/scripts/required-ci-status.cjs report
       - name: Upload required CI evidence

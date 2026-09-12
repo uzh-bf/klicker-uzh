@@ -7,7 +7,15 @@ on:
     # "edited" re-evaluates the internal selector on a base retarget; the suite
     # is gated on the draft state, so "ready_for_review" runs the real suite at
     # the draft boundary.
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        edited,
+        converted_to_draft,
+      ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -20,7 +28,7 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

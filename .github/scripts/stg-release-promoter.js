@@ -28,6 +28,16 @@ const REGISTRY_CONTENT_TYPES = Object.freeze([
 ])
 const REGISTRY_ACCEPT = REGISTRY_CONTENT_TYPES.join(', ')
 
+const CI_SUITE_JOBS = Object.freeze({
+  'test-graphql.yml': ['test-graphql'],
+  'test-unit.yml': ['test-unit'],
+  'test-olat-api.yml': ['test-olat-api'],
+  'test-intl-production.yml': [
+    'intl-production-smoke (frontend-pwa)',
+    'intl-production-smoke (frontend-manage)',
+  ],
+})
+
 const REQUIRED_CI_WORKFLOWS = Object.freeze(
   [
     ['check.yml', 'check'],
@@ -48,7 +58,7 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
               id: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
             })),
           ]
-        : [{ id }],
+        : [{ id }, ...(CI_SUITE_JOBS[file] ?? []).map((id) => ({ id }))],
   }))
 )
 
@@ -944,12 +954,14 @@ function validateCiSelection(
     evidence.run.attempt !== workflow.run.attempt ||
     evidence.decision?.outcome !== 'pass' ||
     evidence.reuse != null ||
-    !['run', 'no-change'].includes(evidence.selection?.state) ||
+    evidence.selection?.state !== 'run' ||
     !Array.isArray(evidence.jobs) ||
     evidence.jobs.length === 0
   ) {
     throw new Error('invalid CI selection evidence')
   }
+  const expectedSuites = CI_SUITE_JOBS[path.basename(workflow.path)]
+  if (!expectedSuites) throw new Error('unknown CI suite')
   const names = new Set()
   for (const job of evidence.jobs) {
     if (
@@ -974,13 +986,15 @@ function validateCiSelection(
   const suite = evidence.jobs.filter((job) => job.role === 'suite')
   const selector = evidence.jobs.filter((job) => job.role === 'selection')
   if (
-    suite.length !== 1 ||
+    evidence.jobs.length !== expectedSuites.length + 1 ||
+    suite.length !== expectedSuites.length ||
+    expectedSuites.some(
+      (name) =>
+        !suite.some((job) => job.name === name && job.result === 'success')
+    ) ||
     selector.length !== 1 ||
-    selector[0].result !== 'success' ||
-    (evidence.selection.state === 'run' && suite[0].result !== 'success') ||
-    (evidence.selection.state === 'no-change' &&
-      (evidence.selection.reason !== 'no-change' ||
-        suite[0].result !== 'skipped'))
+    selector[0].name !== 'filter' ||
+    selector[0].result !== 'success'
   ) {
     throw new Error(
       'selected CI suite did not succeed or selection is unproven'
@@ -1829,6 +1843,7 @@ async function runPromotion({
 }
 
 module.exports = {
+  readCiEvidence,
   resolveInputs,
   validateCiSelection,
   REQUIRED_CI_WORKFLOWS,

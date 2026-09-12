@@ -14,6 +14,7 @@ const {
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
 const {
+  readCiEvidence,
   resolveInputs,
   validateCiSelection,
   REQUIRED_CI_WORKFLOWS,
@@ -51,8 +52,10 @@ async function fixtureCiEvidence({ run }) {
     reuse: null,
     decision: { outcome: 'pass', reason: 'success' },
     jobs: [
-      { name: 'suite', role: 'suite', result: 'success' },
-      { name: 'selection', role: 'selection', result: 'success' },
+      ...workflow.jobs
+        .slice(1)
+        .map(({ id }) => ({ name: id, role: 'suite', result: 'success' })),
+      { name: 'filter', role: 'selection', result: 'success' },
     ],
   }
 }
@@ -123,7 +126,7 @@ function evidenceGithub({
   }
   for (const [i] of REQUIRED_CI_WORKFLOWS.entries()) {
     jobs[500 + i].push(
-      ...['suite', 'selection'].map((name, n) => ({
+      ...['filter'].map((name, n) => ({
         id: 6000 + i * 10 + n,
         name,
         head_sha: CANDIDATE_SHA,
@@ -1843,7 +1846,7 @@ test('selection evidence binds identities and proves the selected suite result',
     path: definition.path,
     jobs: [{ name: 'test-unit-status' }],
     run: { id: 504, attempt: 1 },
-    observedJobs: ['suite', 'selection'].map((name) => ({
+    observedJobs: ['test-unit', 'filter'].map((name) => ({
       name,
       status: 'completed',
       conclusion: 'success',
@@ -1876,6 +1879,12 @@ test('selection evidence binds identities and proves the selected suite result',
       e.jobs[1].result = 'failure'
     },
     (e) => {
+      e.jobs[0].name = 'test-unit-status'
+    },
+    (e) => {
+      e.jobs[1].name = 'test-unit'
+    },
+    (e) => {
       e.jobs = []
     },
   ]) {
@@ -1887,7 +1896,7 @@ test('selection evidence binds identities and proves the selected suite result',
   noChange.selection = { state: 'no-change', reason: 'no-change' }
   noChange.jobs[0].result = 'skipped'
   workflow.observedJobs[0].conclusion = 'skipped'
-  assert.equal(validate(noChange), noChange)
+  assert.throws(() => validate(noChange))
 })
 
 test('manual bootstrap explicitly binds an absent release', async () => {
@@ -1903,4 +1912,42 @@ test('manual bootstrap explicitly binds an absent release', async () => {
   })
   assert.equal(result.expectedReleaseSha, 'absent')
   assert.equal(result.allowWrite, true)
+})
+
+test('default CI evidence reader decodes bounded archives and rejects ambiguous artifacts', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-artifact-test-'))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
+  const expected = await fixtureCiEvidence({ run: { id: 504, attempt: 1 } })
+  fs.writeFileSync(
+    path.join(dir, 'required-ci-evidence.json'),
+    JSON.stringify(expected)
+  )
+  execFileSync('zip', ['-q', 'evidence.zip', 'required-ci-evidence.json'], {
+    cwd: dir,
+  })
+  const archive = fs.readFileSync(path.join(dir, 'evidence.zip'))
+  const artifacts = [
+    {
+      id: 1,
+      name: 'required-ci-evidence',
+      expired: false,
+      size_in_bytes: archive.length,
+    },
+  ]
+  const github = {
+    paginate: async () => artifacts,
+    rest: {
+      actions: {
+        listWorkflowRunArtifacts: async () => {},
+        downloadArtifact: async () => ({ data: archive }),
+      },
+    },
+  }
+  const args = { github, context: reviewContext(), run: { id: 504 } }
+  assert.deepEqual(await readCiEvidence(args), expected)
+  artifacts.push({ ...artifacts[0], id: 2 })
+  await assert.rejects(readCiEvidence(args), /ambiguous/)
+  artifacts.pop()
+  artifacts[0].size_in_bytes = 1048577
+  await assert.rejects(readCiEvidence(args), /ambiguous/)
 })

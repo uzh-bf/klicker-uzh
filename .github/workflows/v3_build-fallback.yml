@@ -35,8 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # Bounded polling: 60 attempts at 30 s is 30 minutes, which stays inside
-      # the job timeout so the decision and its evidence are always written.
+      # Polling delays take up to 29.5 minutes; API time also counts toward
+      # the job timeout. A timeout blocks qualification.
       BUILD_STATUS_MAX_ATTEMPTS: '60'
       BUILD_STATUS_RETRY_DELAY_MS: '30000'
     steps:

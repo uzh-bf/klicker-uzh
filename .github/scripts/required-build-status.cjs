@@ -206,11 +206,13 @@ function presentImageWorkflows(rootDirectory = process.cwd()) {
     .sort()
 }
 
-// Any present image workflow the inventory does not cover fails closed, so a
-// newly added workflow cannot slip past the required check unnoticed.
+// Additions and deletions must agree with the required publisher inventory.
 function uncoveredWorkflows(presentFiles) {
   const covered = new Set(IMAGE_WORKFLOWS.map((entry) => entry.path))
-  return presentFiles.filter((file) => !covered.has(file)).sort()
+  return [
+    ...presentFiles.filter((file) => !covered.has(file)),
+    ...[...covered].filter((file) => !presentFiles.includes(file)),
+  ].sort()
 }
 
 // The changed-file list is produced by the workflow's diff step. An absent or
@@ -495,7 +497,7 @@ function resolveBinding(context) {
   return binding
 }
 
-function formatSummary({ attempts, decision, expected }) {
+function formatSummary({ attemptCount, decision, expected }) {
   const lines = [
     '## Image build status',
     '',
@@ -507,15 +509,14 @@ function formatSummary({ attempts, decision, expected }) {
     const required = entry.jobs.map((job) => `\`${job}\``).join(', ')
     lines.push(`  - \`${entry.path}\` requires ${required}`)
   }
-  if (attempts.length > 1 || attempts.some((entry) => entry.failures.length)) {
-    lines.push('', '- Attempts: ' + attempts.length)
+  if (attemptCount > 1 || (attemptCount > 0 && !decision.ok)) {
+    lines.push('', '- Attempts: ' + attemptCount)
   }
   return lines.join('\n') + '\n'
 }
 
 // Runs are listed through the workflow-scoped endpoint so every response binds
-// to one selected workflow identity. A single page is enough: one workflow
-// cannot produce 100 runs for the same event, branch and commit.
+// to one selected workflow identity. Truncated responses block qualification.
 async function listRuns({ github, context, entry, binding }) {
   const { data } = await github.rest.actions.listWorkflowRuns({
     branch: binding.branch,
@@ -574,7 +575,7 @@ async function evaluateBuildImagesStatus({
   const binding = resolveBinding(context)
 
   const publish = async ({
-    attempts,
+    attemptCount = 0,
     changedFileCount,
     decision,
     expected,
@@ -591,7 +592,7 @@ async function evaluateBuildImagesStatus({
       })
       fs.writeFileSync(evidencePath, JSON.stringify(evidence, null, 2) + '\n')
     }
-    const summary = formatSummary({ attempts, decision, expected })
+    const summary = formatSummary({ attemptCount, decision, expected })
     core?.info?.(summary)
     if (core?.summary?.addRaw) {
       await core.summary.addRaw(summary).write()
@@ -601,7 +602,7 @@ async function evaluateBuildImagesStatus({
   const block = async ({ changedFileCount = 0, mode, reason, state }) => {
     const decision = { evidence: [], failures: [], ok: false, reason }
     await publish({
-      attempts: [],
+      attemptCount: 0,
       changedFileCount,
       decision,
       expected: [],
@@ -626,17 +627,13 @@ async function evaluateBuildImagesStatus({
   }
 
   const presentFiles = presentImageWorkflows(rootDirectory)
-  const coverage = selectImageWorkflows({
-    changedFiles: [],
-    eventName: binding.event,
-    presentFiles,
-  })
-  if (coverage.unknown.length > 0) {
+  const unknown = uncoveredWorkflows(presentFiles)
+  if (unknown.length > 0) {
     const decision = await block({
       mode: 'uncovered-workflow',
       reason:
         'uncovered image workflow(s): ' +
-        coverage.unknown.join(', ') +
+        unknown.join(', ') +
         ' (add them to the required build inventory)',
       state: 'unavailable',
     })
@@ -657,19 +654,16 @@ async function evaluateBuildImagesStatus({
     }
   }
 
-  const expected =
-    binding.event === 'push'
-      ? coverage.expected
-      : selectImageWorkflows({
-          changedFiles,
-          eventName: binding.event,
-          presentFiles,
-        }).expected
+  const { expected } = selectImageWorkflows({
+    changedFiles,
+    eventName: binding.event,
+    presentFiles,
+  })
   const mode = selectionMode({ binding, expected })
   if (expected.length === 0) {
     const decision = decideBuildStatus({ evidence: [], expected, unknown: [] })
     await publish({
-      attempts: [],
+      attemptCount: 0,
       changedFileCount: changedFiles.length,
       decision,
       expected,
@@ -679,7 +673,6 @@ async function evaluateBuildImagesStatus({
     return decision
   }
 
-  const attempts = []
   const cache = new Map()
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const evidence = []
@@ -717,36 +710,19 @@ async function evaluateBuildImagesStatus({
       evidence.push(evaluateWorkflowRun({ binding, entry, jobs, run }))
     }
     const decision = decideBuildStatus({ evidence, expected, unknown: [] })
-    attempts.push({
-      attempt,
-      failures: evidence
-        .filter((entry) => entry.status !== 'success')
-        .map(({ reason, status, workflow }) => ({ reason, status, workflow })),
-      passed: decision.ok,
-    })
-    if (decision.ok) {
-      await publish({
-        attempts,
-        changedFileCount: changedFiles.length,
-        decision,
-        expected,
-        mode,
-        state: 'run',
-      })
-      return decision
-    }
     const retryable = decision.failures.every((entry) =>
       RETRYABLE_STATUSES.includes(entry.status)
     )
-    if (!retryable || attempt === maxAttempts) {
+    if (decision.ok || !retryable || attempt === maxAttempts) {
       await publish({
-        attempts,
+        attemptCount: attempt,
         changedFileCount: changedFiles.length,
         decision,
         expected,
         mode,
         state: 'run',
       })
+      if (decision.ok) return decision
       throw new Error('image build qualification blocked: ' + decision.reason)
     }
     await sleep(retryDelayMs)

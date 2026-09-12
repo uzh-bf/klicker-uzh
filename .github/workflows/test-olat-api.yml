@@ -6,7 +6,15 @@ on:
   pull_request:
     branches: ['v3', 'v3*']
     # "edited" re-evaluates the internal selector on a base retarget.
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types:
+      [
+        opened,
+        synchronize,
+        reopened,
+        ready_for_review,
+        edited,
+        converted_to_draft,
+      ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -16,7 +24,7 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -263,8 +263,9 @@ Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to 
 `workflow_run` controller. It checks out only `github.workflow_sha`, executes
 only the promoter script from that checkout, and treats candidate workflow
 files, run and job metadata, and registry responses as untrusted data. It does
-not check out or execute candidate actions or scripts and does not consume
-candidate caches or artifacts.
+not check out or execute candidate actions or scripts or consume candidate
+caches. It reads bounded JSON evidence artifacts as untrusted data and binds
+their identities and suite names to the actual GitHub job results.
 
 For each candidate, the controller validates all of these before considering a
 ref update:
@@ -277,7 +278,10 @@ ref update:
 - The code check, secret scan, GraphQL, Playwright, unit, OLAT, translation,
   and image-build summary jobs all have successful push runs for the exact
   candidate SHA, repository, and selected branch. The newest matching run and
-  its current attempt are required; duplicate terminal jobs fail validation. Only missing or still-running evidence is retried, for a
+  its current attempt are required; duplicate terminal jobs fail validation.
+  Candidate pushes run GraphQL, unit, OLAT, both translation smoke jobs, and
+  all eight Playwright shards. PR-only no-change selections cannot qualify a
+  staging candidate. Only missing or still-running evidence is retried, for a
   bounded interval; skipped, failed, cancelled, or mismatched evidence fails
   immediately.
 - Every expected runtime repository exposes the full candidate SHA tag with a
