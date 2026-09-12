@@ -1,6 +1,6 @@
 # Writing Coach: feedback on the author's own writing
 
-Status: product design and the [execution plan](2026-09-09-writing-coach-plan.md) were approved on 9 September 2026. Implementation and verification are in progress; the plan's Progress section and [evaluation results](EVALUATION_RESULTS.md) carry current evidence.
+Status: design approved and implementation delivered to [draft PR 5867](https://github.com/uzh-bf/klicker-uzh/pull/5867). Integrated browser acceptance and review gates remain open. The [current roadmap](2026-09-09-writing-coach-plan.md#current-roadmap--12-september-2026) is authoritative for status, next steps and deferred scope; the proposal below records the design rationale.
 
 ## Recommended first version
 
