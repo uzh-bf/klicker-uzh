@@ -184,13 +184,21 @@ export async function findOrCreateGuestPersona(
 export interface ChatGuestTokenPayload {
   sub: string
   scope: typeof CHAT_GUEST_SCOPE
+  // Opaque eLearning learner pseudonym; only present on tokens minted
+  // through the eLearning chat handoff. PWA quiz paths never set it.
+  learnerBinding?: string
 }
 
 export async function signChatGuestToken(
-  participantId: string
+  participantId: string,
+  learnerBinding?: string
 ): Promise<string> {
   return signJWT(
-    { sub: participantId, scope: CHAT_GUEST_SCOPE },
+    {
+      sub: participantId,
+      scope: CHAT_GUEST_SCOPE,
+      ...(learnerBinding ? { learnerBinding } : {}),
+    },
     getChatGuestSecret(),
     { algorithm: 'HS256', expiresIn: CHAT_GUEST_TOKEN_EXPIRY }
   )
@@ -203,7 +211,13 @@ export async function verifyChatGuestToken(
   if (payload.scope !== CHAT_GUEST_SCOPE || typeof payload.sub !== 'string') {
     throw new Error('Invalid chat guest token: wrong scope or sub')
   }
-  return { sub: payload.sub, scope: CHAT_GUEST_SCOPE }
+  return {
+    sub: payload.sub,
+    scope: CHAT_GUEST_SCOPE,
+    ...(typeof payload.learnerBinding === 'string'
+      ? { learnerBinding: payload.learnerBinding }
+      : {}),
+  }
 }
 
 // ---------------------------------------------------------------------------
