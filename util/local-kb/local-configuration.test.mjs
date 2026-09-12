@@ -83,6 +83,10 @@ test('provider configuration separates backing ownership and agrees on retrieval
   )
   assert.equal(worker.OPENAI_BASE_URL, 'http://host.docker.internal:31001/v1')
   assert.equal(
+    env.klicker.KLICKER_LOCAL_KB_RETRIEVAL_URL,
+    'http://host.docker.internal:31019/mcp'
+  )
+  assert.equal(
     reader.KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL,
     'http://127.0.0.1:31001/v1'
   )

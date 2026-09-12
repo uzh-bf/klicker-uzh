@@ -1270,7 +1270,7 @@ async function launchInfrastructure(
     return {
       infrastructureStarted: true,
       aiQualified: false,
-      workersStarted: false,
+      providerWorkerActivationRequested: true,
     }
   } catch {
     throw new Error(

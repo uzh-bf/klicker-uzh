@@ -66,7 +66,7 @@ A completed receipt binds provider preparation, workspace, candidate and local
 Docker context. Partial failure retains its claim and cannot be replayed silently.
 
 Start invokes scraping and document processing, starts Klicker with
-`manage,chat,ai` so the local model gateway is included, then invokes ingestion
+`ai,chat,manage` so the local model gateway is included, then invokes ingestion
 worker activation and retrieval. It never calls setup, migrations or seeding.
 Resume requires a successful stop of the current cycle and uses the same startup
 path. Concurrent operations and implicit replay after failure are refused.

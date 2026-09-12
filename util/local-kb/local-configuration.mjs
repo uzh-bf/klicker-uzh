@@ -157,6 +157,7 @@ export function renderProviderLocalConfiguration(credentials, input) {
       REDIS_ASSESSMENT_HOST: 'redis_assessment',
       REDIS_ASSESSMENT_PORT: '6379',
       KB_INGESTION_API_URL: container.ingestion,
+      KLICKER_LOCAL_KB_RETRIEVAL_URL: container.retrieval,
       KB_INGESTION_API_KEY: credentials.ingestion,
       KB_INGESTION_PROJECT_ID: project,
       KB_SOURCE_GATEWAY_URL: backend,

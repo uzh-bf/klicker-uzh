@@ -264,8 +264,7 @@ test('keeps roots and health compatible with supported provider commands', () =>
   const commands = providerCommands(config)
 
   assert.equal(
-    // Retrieval start is blocked pending its launcher's validated bindings,
-    // so the derivable stop verb carries the source-path binding.
+    // Retained stop uses the same explicitly bound provider source as startup.
     commands.providers.retrieval.lifecycle.stop.cwd,
     config.providers.retrieval.sourcePath
   )

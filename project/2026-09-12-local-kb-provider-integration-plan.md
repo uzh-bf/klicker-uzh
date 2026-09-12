@@ -232,6 +232,49 @@ current source-only verification package.
 
 ## Progress
 
+The queued checks-only startup completed successfully on the existing container.
+A bounded grading build exited normally (1.8s), and the combined Turbo grading
+and knowledge-graph build passed 4/4 tasks (two dependency cache hits, both
+affected Rollup builds actually executed). The prior hang is not reproduced;
+no speculative build-config change is warranted. Resume normal commit checks.
+
+Build-hang diagnosis continuation: the same checks-only startup on loopback
+31003 is queued (host exec session 31752), behind live PID 91733 whose working
+directory is `trees/proposal-writing-coach`. Do not bypass or interrupt that
+owner or enqueue a duplicate startup. The prepared ignored diagnostic is
+`project/_local/rollup-handles.cjs`; it reports only active handle/resource types
+after fifteen seconds. Once startup finishes, run one grading build under a
+45-second timeout with that preloader inside the exact validation container.
+No root cause or build correction is established yet; no extra commit exists.
+The previous runtime stop receipt below remains the last completed lifecycle
+evidence; this new startup is an active authorized verification attempt.
+
+The user authorized a separate validation-runtime loopback port after Azurite
+10003 was found owned by `rs/audit-lock-response-fix`. The canonical checks-only
+startup uses `KB_GRAPH_BLOB_HOST_PORT=31003 devrouter ensure <checkout> --profile
+email --json`; no tracked runtime configuration changed. Devrouter recreated the
+validation container and ran its normal bootstrap. No retained provider stack,
+paid model call or ingestion submission is involved. The startup completed with
+profile `email`, no application processes or routes, and healthy base services.
+The container-run mocked seed regression passes 5/5; all 68 launcher tests pass.
+The normal commit hook entered repository checks but grading and knowledge-graph
+Rollup processes remained alive for several minutes after reporting build
+completion, preventing dependent checks from proceeding. No commit or hook
+bypass occurred. Devrouter stop completed with `stopped: true`; exact container
+`52f417786568` is exited and route readback has zero matches. The hook ended with
+`Execution completion is unknown` after shutdown; it did not pass. Corrections and the passing 5/5
+mocked seed regression are preserved. Resolve the check-process hang before
+commit, same-GLM correction review and draft publication.
+
+GLM integrated review at d47d59096f identified the missing seeded retrieval
+endpoint and misleading worker activation field, plus two stale references.
+The correction includes the existing MCP seed's isolated-only URL binding and
+its focused synthetic test, local environment preservation and Turbo visibility.
+No model/migration or live seed is involved; ordinary seed behavior is unchanged.
+The status field now reports requested provider activation, not worker readiness.
+All 68 local launcher tests pass; seed checks and committed correction review
+remain pending. Executor Peirce owns only the seed module/test; main owns wiring.
+
 Current correction: the two simplifier findings are applied (direct configuration
 construction and shared port fixture). The slice review identified missing
 retrieval environment on observations/stop and a development DSN in plan output;

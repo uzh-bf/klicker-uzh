@@ -344,7 +344,7 @@ test('explicit startup orders provider activation without repeating setup and re
       assert.deepEqual(await run(), {
         infrastructureStarted: true,
         aiQualified: false,
-        workersStarted: false,
+        providerWorkerActivationRequested: true,
       })
       assert.equal(calls.length, 4)
       assert.deepEqual(phases, [
@@ -463,7 +463,7 @@ test('explicit resume requires stop evidence, serializes operations and retains 
   await assert.rejects(resume(), /successful stop/)
   for (let cycle = 0; cycle < 2; cycle++) {
     await stopPreparedInfrastructure(config, revision, managed, docker)
-    assert.equal((await resume()).workersStarted, false)
+    assert.equal((await resume()).providerWorkerActivationRequested, true)
     await assert.rejects(resume(), /successful stop/)
   }
   const launches = writes.filter((args) => args.includes('up'))
