@@ -128,7 +128,7 @@
     {
       "id": "chat",
       "pathPrefixes": ["apps/chat/"],
-      "specs": ["A-login.spec.ts", "Y-chat.spec.ts"]
+      "specs": ["A-login.spec.ts", "Y-chat.spec.ts", "Y-mobile-polish.spec.ts"]
     },
     {
       "id": "auth",
@@ -162,6 +162,7 @@
         "Y-chat.spec.ts",
         "Z-credential-verification.spec.ts",
         "Z-preview-mobile-polish.spec.ts",
+        "Y-mobile-polish.spec.ts",
         "Z-pwa-mobile-polish.spec.ts"
       ]
     }

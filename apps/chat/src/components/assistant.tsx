@@ -386,7 +386,7 @@ function DisclaimerDeclined({
         data-cy="chat-disclaimer-declined"
         className={twMerge(
           'flex items-center justify-center',
-          embedded ? 'h-full p-4' : 'h-screen'
+          embedded ? 'h-full p-4' : 'min-h-dvh overflow-y-auto px-4 py-8'
         )}
       >
         <div
@@ -395,14 +395,14 @@ function DisclaimerDeclined({
             embedded ? 'max-w-sm p-4' : 'max-w-md p-6'
           )}
         >
-          <h2
+          <h1
             className={twMerge(
               'text-foreground font-semibold',
               embedded ? 'mb-2 text-base' : 'mb-4 text-xl'
             )}
           >
             {t('chat.assistant.disclaimerDeclinedTitle')}
-          </h2>
+          </h1>
           <p className={twMerge('text-foreground', embedded && 'text-sm')}>
             {t('chat.assistant.disclaimerDeclinedMessage')}
           </p>
