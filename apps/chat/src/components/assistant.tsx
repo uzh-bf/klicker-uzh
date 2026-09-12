@@ -9,7 +9,7 @@ import {
 import { Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useParams, usePathname, useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -28,7 +28,10 @@ import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
-import { ChatKnowledgeGraphWorkspace } from './knowledge-graph/ChatKnowledgeGraphWorkspace'
+import {
+  ChatKnowledgeGraphPanel,
+  useChatGraphPanel,
+} from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -495,13 +498,13 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
-  graphMode,
+  graphPanel,
   knowledgeGraphVisible,
   initialModeOptions,
   initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  graphMode: boolean
+  graphPanel: ReturnType<typeof useChatGraphPanel>
   knowledgeGraphVisible: boolean
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback: boolean
@@ -530,7 +533,7 @@ function SidebarMain({
     <SidebarInset id="main-content" tabIndex={-1} className="min-w-0">
       <header
         data-cy="chat-header"
-        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto]"
+        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 border-b px-2 py-1.5"
       >
         {/* Only visible when the sidebar is closed — once it's open, the
             sidebar's own trigger closes it, so this stays the single toggle
@@ -580,9 +583,8 @@ function SidebarMain({
         </Tooltip>
         {knowledgeGraphVisible ? (
           <ChatGraphModeSwitch
-            chatbotId={chatbot.id}
-            compact
-            className="col-span-4 justify-self-end sm:col-span-1"
+            open={graphPanel.open}
+            onToggle={graphPanel.toggle}
           />
         ) : null}
       </header>
@@ -598,16 +600,18 @@ function SidebarMain({
               <ThreadSkeleton />
             </div>
           )}
-          {graphMode ? (
-            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
-          ) : (
+          <ChatKnowledgeGraphPanel
+            chatbotId={chatbot.id}
+            open={graphPanel.open}
+            onClose={graphPanel.close}
+          >
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />
-          )}
+          </ChatKnowledgeGraphPanel>
         </div>
       </main>
     </SidebarInset>
@@ -627,8 +631,7 @@ function AssistantLayout({
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
-  const pathname = usePathname()
-  const graphMode = knowledgeGraphVisible && pathname === `/${chatbot.id}/graph`
+  const graphPanel = useChatGraphPanel(chatbot.id, knowledgeGraphVisible)
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextLabel = getKlickerChatContextLabel(context)
@@ -640,7 +643,7 @@ function AssistantLayout({
         <AppSidebar />
         <SidebarMain
           chatbot={chatbot}
-          graphMode={graphMode}
+          graphPanel={graphPanel}
           knowledgeGraphVisible={knowledgeGraphVisible}
           initialModeOptions={initialModeOptions}
           initialModeOptionsAreFallback={initialModeOptionsAreFallback}
@@ -651,16 +654,15 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-4 sm:px-4 sm:py-3">
+      <div className="bg-muted/50 grid shrink-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
         <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
           {chatbot.name}
         </h1>
         <EmbeddedSettings />
         {knowledgeGraphVisible ? (
           <ChatGraphModeSwitch
-            chatbotId={chatbot.id}
-            compact
-            className="col-span-2 justify-self-end sm:col-span-1"
+            open={graphPanel.open}
+            onToggle={graphPanel.toggle}
           />
         ) : null}
       </div>
@@ -675,9 +677,11 @@ function AssistantLayout({
               <ThreadSkeleton />
             </div>
           )}
-          {graphMode ? (
-            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
-          ) : (
+          <ChatKnowledgeGraphPanel
+            chatbotId={chatbot.id}
+            open={graphPanel.open}
+            onClose={graphPanel.close}
+          >
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
@@ -686,7 +690,7 @@ function AssistantLayout({
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />
-          )}
+          </ChatKnowledgeGraphPanel>
         </div>
         <EmbeddedCreditsBar />
       </main>

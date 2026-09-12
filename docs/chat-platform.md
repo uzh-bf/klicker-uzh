@@ -863,11 +863,19 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. The Chat/Knowledge graph workspace switch appears once in that
-header's right-hand control cluster in standalone and embedded layouts; the
-sidebar and content area do not repeat it
-(`src/components/assistant.tsx:SidebarMain`,
-`src/components/assistant.tsx:AssistantLayout`). Embedded mode shows the
+header grid. A single graph icon in the header toggles a graph dock without
+navigation or replacing the mounted conversation. Desktop shows it on the right;
+compact viewports stack graph above chat. Fullscreen expands the same graph over
+the chatbot, makes background controls inert and contains keyboard focus. Escape
+restores the dock; closing unmounts the graph and returns focus to its toggle.
+Legacy `/graph` links open the dock on entry. Reopening starts an overview.
+`ChatKnowledgeGraphPanel.tsx` owns this presentation in both standalone and
+embedded layouts. Node and relationship details can append a localized, editable
+question to the current composer, preserving its draft and attachments. The
+callback carries only bounded display labels (200 characters each), never raw
+properties or graph identifiers. Asking never sends or creates a thread; mobile
+asking closes the panel to leave room for the keyboard. Lecturer details retain
+the existing layout and have no chat action. Embedded mode shows the
 loading state and compact credit/model information through the shared settings
 components. Direct thread URL
 activation resynchronizes the thread's stored chat mode once per activation,
@@ -877,7 +885,7 @@ The lecturer controls the student map with `Chatbot.knowledgeGraphVisible` and
 graph-assisted document search independently with
 `Chatbot.knowledgeGraphRetrievalEnabled`. Both follow the authoring-revision
 approval lifecycle. Existing chatbots retain map visibility; new chatbots start
-with both options off. A disabled map hides the workspace switch and its API
+with both options off. A disabled map hides the graph toggle and its API
 returns `403 KNOWLEDGE_GRAPH_DISABLED`. Student maps start with a bounded overview. Typing at least two characters
 requests up to 20 suggestions after 300ms; selecting a suggestion opens a focused
 view. Explicit search also supports one character. Return to overview clears the

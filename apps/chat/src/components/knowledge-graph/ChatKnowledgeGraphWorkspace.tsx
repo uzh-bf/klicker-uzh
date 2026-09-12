@@ -5,6 +5,7 @@ import {
   KnowledgeGraphBuildChangedError,
   KnowledgeGraphUnavailableError,
 } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -260,8 +261,10 @@ export function createChatKnowledgeGraphDataSource(
 
 export function ChatKnowledgeGraphWorkspace({
   chatbotId,
+  onAsk,
 }: {
   chatbotId: string
+  onAsk?: (selection: KnowledgeGraphAskSelection) => void
 }) {
   const t = useTranslations('pwa.chatbot')
   const [selection, setSelection] = useState<{
@@ -309,7 +312,7 @@ export function ChatKnowledgeGraphWorkspace({
   return (
     <section
       aria-label="Knowledge graph workspace"
-      className="flex min-h-0 flex-1 flex-col gap-3 bg-[#FAFAFA] p-2 sm:p-3 md:p-4"
+      className="flex min-h-0 flex-1 flex-col gap-2 bg-[#FAFAFA] p-2"
       data-cy="chat-knowledge-graph-workspace"
     >
       {choices.length > 0 ? (
@@ -331,6 +334,7 @@ export function ChatKnowledgeGraphWorkspace({
         <ChatKnowledgeGraphViewer
           key={`${chatbotId}:${kbId ?? ''}`}
           dataSource={dataSource}
+          onAsk={onAsk}
         />
       ) : null}
     </section>

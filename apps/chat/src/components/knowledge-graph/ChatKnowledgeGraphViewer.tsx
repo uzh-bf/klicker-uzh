@@ -1,7 +1,9 @@
 'use client'
 
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
 import dynamic from 'next/dynamic'
+import { useTranslations } from 'next-intl'
 
 const DynamicKnowledgeGraphViewer = dynamic(
   () =>
@@ -24,12 +26,20 @@ const DynamicKnowledgeGraphViewer = dynamic(
 
 export function ChatKnowledgeGraphViewer({
   dataSource,
+  onAsk,
 }: {
   dataSource: KnowledgeGraphDataSource
+  onAsk?: (selection: KnowledgeGraphAskSelection) => void
 }) {
+  const t = useTranslations('chat.graphPanel')
   return (
     <DynamicKnowledgeGraphViewer
       dataSource={dataSource}
+      onAsk={onAsk}
+      askLabel={t('ask')}
+      labels={{ details: { missingEndpoint: t('missingEndpoint') } }}
+      detailsLayout="contained"
+      preserveViewportOnResize
       initialView="overview"
       searchSuggestions
       overviewNavigation

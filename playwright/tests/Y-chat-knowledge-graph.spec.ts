@@ -4,8 +4,10 @@ import {
   CHATBOT_ID,
   chatUrl,
   getEnrolledParticipantId,
+  seedThread,
   setDisclaimerState,
   setParticipantToken,
+  testImageUpload,
 } from '../util/chat.js'
 
 // Opt in after publishing the synthetic native graph with seed-graph-e2e.mjs.
@@ -327,6 +329,152 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     const participantId = await getEnrolledParticipantId()
     await setDisclaimerState(participantId, 'accepted')
     await setParticipantToken(page, participantId)
+  })
+
+  test('docked graph preserves the draft and attachments; fullscreen restores focus and inserts without sending', async ({
+    page,
+  }) => {
+    const graph = createKnowledgeGraphRoute(overviewLabels)
+    await page.route('**/api/chatbots/*/knowledge-graph**', (route) =>
+      graph.handle(route)
+    )
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    const thread = await seedThread(await getEnrolledParticipantId(), {
+      title: 'Graph exploration',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'A previous question' }],
+        },
+      ],
+    })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`)
+    const input = page.getByTestId('chat-composer-input')
+    await expect(input).toBeVisible()
+    await input.fill('My unfinished question')
+    await page
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles(testImageUpload())
+    const url = page.url()
+    const sent: string[] = []
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        /\/(chat|threads)(?:\?|$)/.test(request.url())
+      )
+        sent.push(request.url())
+    })
+    const toggle = page.getByTestId('knowledge-graph-mode-link')
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toHaveCount(0)
+    await toggle.click()
+    const panel = page.getByTestId('chat-knowledge-graph-panel')
+    await expect(panel).toBeVisible()
+    await expect(input).toHaveValue('My unfinished question')
+    await expect(page.getByTestId('chat-composer-attachment')).toHaveCount(1)
+    const conversation = await page
+      .getByTestId('chat-conversation-pane')
+      .boundingBox()
+    const dock = await panel.boundingBox()
+    expect(conversation!.x + conversation!.width).toBeLessThanOrEqual(
+      dock!.x + 1
+    )
+    await page.getByTestId('knowledge-graph-loaded-node').first().click()
+    const fullscreen = page.getByTestId('knowledge-graph-fullscreen')
+    await fullscreen.click()
+    await expect(panel).toHaveAttribute('data-fullscreen', 'true')
+    await expect(page.getByTestId('knowledge-graph-details')).toBeVisible()
+    expect(
+      await input.evaluate((element) => Boolean(element.closest('[inert]')))
+    ).toBe(true)
+    await fullscreen.press('Shift+Tab')
+    expect(
+      await panel.evaluate((element) =>
+        element.contains(document.activeElement)
+      )
+    ).toBe(true)
+    await fullscreen.press('Escape')
+    await expect(panel).toHaveAttribute('data-fullscreen', 'false')
+    await expect(fullscreen).toBeFocused()
+    await fullscreen.click()
+    await page.getByTestId('knowledge-graph-ask').click()
+    await expect(panel).toHaveAttribute('data-fullscreen', 'false')
+    await expect(input).toBeFocused()
+    const draft = await input.inputValue()
+    expect(draft.startsWith('My unfinished question')).toBe(true)
+    expect(draft).toContain(overviewLabels[0])
+    expect(draft.length).toBeGreaterThan('My unfinished question'.length)
+    await page.getByTestId('knowledge-graph-panel-close').click()
+    await expect(toggle).toBeFocused()
+    await expect(input).toHaveValue(draft)
+    await expect(page.getByTestId('chat-composer-attachment')).toHaveCount(1)
+    await toggle.click()
+    expect(page.url()).toBe(url)
+    expect(sent).toEqual([])
+  })
+
+  test('relation prompts include both labels and mobile asking returns to the composer', async ({
+    page,
+  }) => {
+    const nodes = ['First topic', 'Second topic'].map(syntheticNode)
+    await page.route('**/api/chatbots/*/knowledge-graph**', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ...syntheticGraphResponse([]),
+          nodes,
+          edges: [
+            {
+              id: '1',
+              source: nodes[0]!.id,
+              target: nodes[1]!.id,
+              type: 'RELATED',
+              label: 'connects',
+              properties: {},
+            },
+          ],
+        }),
+      })
+    )
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph?embed=true`)
+    const input = page.getByTestId('chat-composer-input')
+    await expect(input).toBeVisible()
+    const sent: string[] = []
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/chat'))
+        sent.push(request.url())
+    })
+    await page
+      .getByTestId('knowledge-graph-loaded-relationship')
+      .first()
+      .click()
+    await page.getByTestId('knowledge-graph-ask').click()
+    await expect(input).toBeFocused()
+    await expect(page.getByTestId('chat-knowledge-graph-panel')).toHaveCount(0)
+    const draft = await input.inputValue()
+    for (const node of nodes) expect(draft).toContain(node.displayLabel)
+    expect(draft).toContain('connects')
+    expect(sent).toEqual([])
+    expect(page.url()).toContain('?embed=true')
+  })
+
+  test('closing the panel cancels its debounce and drops late suggestions', async ({
+    page,
+  }) => {
+    const graph = createKnowledgeGraphRoute(overviewLabels)
+    const search = await openSuggestionGraph(page, graph)
+    await search.fill('Closed')
+    await page.getByTestId('knowledge-graph-panel-close').click()
+    await page.waitForTimeout(400)
+    expect(graph.queries).toEqual([])
+    await page.getByTestId('knowledge-graph-mode-link').click()
+    await search.fill('Late')
+    await graph.waitForQuery('Late')
+    await page.getByTestId('knowledge-graph-panel-close').click()
+    graph.release('Late')
+    await page.getByTestId('knowledge-graph-mode-link').click()
+    await expect(search).toHaveValue('')
+    await expect(page.getByTestId('knowledge-graph-suggestion')).toHaveCount(0)
   })
 
   test('a suggestion response for a superseded query never renders', async ({

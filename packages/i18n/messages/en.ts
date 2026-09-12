@@ -1,5 +1,17 @@
 export default {
   chat: {
+    graphPanel: {
+      missingEndpoint: 'Unknown concept',
+      title: 'Knowledge graph',
+      open: 'Open knowledge graph',
+      close: 'Close knowledge graph',
+      fullscreen: 'Expand graph to fullscreen',
+      restore: 'Return graph to sidebar',
+      ask: 'Ask about this',
+      nodePrompt: 'Help me understand the concept “{topic}”.',
+      edgePrompt:
+        'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
+    },
     common: {
       opensInNewTab: '(opens in new tab)',
     },

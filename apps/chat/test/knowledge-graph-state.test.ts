@@ -16,7 +16,9 @@ import {
   mergeKnowledgeGraphResponse,
 } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphState.js'
 import {
+  edgeAskSelection,
   nextKnowledgeGraphZoom,
+  nodeAskSelection,
   relationshipLabels,
 } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphView.js'
 
@@ -617,5 +619,39 @@ describe('knowledge graph bounded view and suggestions', () => {
     expect(isKnowledgeGraphBuildChangedError({ status: 409 })).toBe(false)
     expect(isKnowledgeGraphBuildChangedError(new Error('plain'))).toBe(false)
     expect(isKnowledgeGraphBuildChangedError(null)).toBe(false)
+  })
+})
+
+// Composer handoff carries display labels only, with bounded payload size.
+describe('knowledge graph question selection', () => {
+  it('bounds labels and omits graph metadata from the composer handoff', () => {
+    const selected = node('internal-id', {
+      displayLabel: 'x'.repeat(300),
+      summary: 'Do not copy',
+    })
+    expect(nodeAskSelection(selected)).toEqual({
+      kind: 'node',
+      label: 'x'.repeat(200),
+    })
+    const relationship: KnowledgeGraphEdge = {
+      id: 'edge-id',
+      source: selected.id,
+      target: 'missing-internal-id',
+      type: 'RELATED',
+      label: 'y'.repeat(300),
+      properties: { hidden: 'Do not copy' },
+    }
+    expect(
+      edgeAskSelection(
+        relationship,
+        new Map([[selected.id, selected]]),
+        'Unknown'
+      )
+    ).toEqual({
+      kind: 'edge',
+      label: 'y'.repeat(200),
+      source: 'x'.repeat(200),
+      target: 'Unknown',
+    })
   })
 })

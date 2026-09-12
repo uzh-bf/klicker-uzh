@@ -14,6 +14,8 @@ export type KnowledgeGraphDetailsLabels = {
   from: string
   to: string
   properties: string
+  ask: string
+  missingEndpoint: string
 }
 
 export type KnowledgeGraphViewerLabels = {
@@ -144,6 +146,8 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     from: 'From',
     to: 'To',
     properties: 'Properties',
+    ask: 'Ask about this',
+    missingEndpoint: 'Unknown concept',
   },
 }
 

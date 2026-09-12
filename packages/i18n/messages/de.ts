@@ -1,5 +1,17 @@
 export default {
   chat: {
+    graphPanel: {
+      missingEndpoint: 'Unbekannter Begriff',
+      title: 'Wissensgraph',
+      open: 'Wissensgraph öffnen',
+      close: 'Wissensgraph schliessen',
+      fullscreen: 'Graph im Vollbild anzeigen',
+      restore: 'Graph in der Seitenleiste anzeigen',
+      ask: 'Dazu eine Frage stellen',
+      nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
+      edgePrompt:
+        'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
+    },
     common: {
       opensInNewTab: '(öffnet in neuem Tab)',
     },

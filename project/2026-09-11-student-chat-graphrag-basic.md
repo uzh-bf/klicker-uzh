@@ -294,3 +294,49 @@ Lease checkpoint: user's next manual-testing follow-up. No deletion is proposed.
 Substring scans and per-process admission are bounded local protections, not a
 measured multi-replica capacity guarantee. No paid-model answer quality or real
 browser generated-answer persistence is claimed.
+
+### Approved chat and graph composition extension
+
+User requested an unobtrusive header icon, simultaneous chat and graph, fullscreen
+and editable node/relation questions. The same draft package remains the delivery
+unit. Planner challenge accepted bounded selection payloads, stable fullscreen
+mounting, focus containment, and explicit close lifecycle; revised plan approved.
+
+Primitive impact: compose the existing authorized graph selection with the
+existing conversation draft. Chat thread identity, attachment ownership, lecturer
+visibility and retrieval policy remain unchanged. No new product object, API,
+dependency or migration; no new ADR because this reversible presentation does not
+change the underlying graph/retrieval contract.
+
+The panel is closed by default; legacy `/graph` opens it on entry. Toggling does
+not navigate or remount the thread. Desktop uses a right dock; narrow viewports
+stack graph above chat. Fullscreen keeps one graph instance, preserves viewport,
+contains focus and makes background controls inert. Escape restores the dock;
+close unmounts the graph, cancels pending work and returns focus to its toggle.
+Reopening starts an overview. Asking restores composer access, appends an editable
+localized prompt to the current draft, preserves attachments and never sends.
+Only labels bounded to 200 characters per field are inserted, with generic
+missing endpoint text instead of internal IDs. Mobile asking closes the graph
+so the keyboard can use the remaining space.
+
+Owners and acceptance:
+
+- Executor: shared graph Viewer, Details, View and Labels files; optional typed
+  Ask callback, contained details, viewport preservation and cleanup verification.
+  Lecturer defaults remain unchanged.
+- Main: assistant layout, existing three chat graph components and new
+  `ChatKnowledgeGraphPanel.tsx`, both i18n message files, existing graph Playwright
+  specification, chat platform guide and this plan. `thread.tsx` remains unchanged.
+  Integrate via the installed assistant-ui composer draft API, then verify browser
+  behavior, format/type/lint/build, reviews and the existing draft PR.
+
+Test portfolio: extend existing browser coverage for unchanged URL/thread/draft
+and attachments, node/relation insertion without submission, closed debounce and
+late results, fullscreen focus/viewport, mobile and embed. Retain existing native,
+access and request-race coverage; no new API/auth/DB tests for this presentation.
+Desktop, mobile, embedded and localized captures replace superseded navigation
+images in the same draft. Prior source reviews do not cover this extension.
+
+Progress: implementation and focused verification active. Runtime retention follows
+the user's local testing request above. Merge, readiness and deployment remain
+outside the approved terminal condition.

@@ -44,9 +44,12 @@ import {
   knowledgeGraphReducer,
 } from './knowledgeGraphState'
 import {
+  edgeAskSelection,
   KNOWLEDGE_GRAPH_MAX_ZOOM,
   KNOWLEDGE_GRAPH_MIN_ZOOM,
+  type KnowledgeGraphAskSelection,
   nextKnowledgeGraphZoom,
+  nodeAskSelection,
   relationshipLabels,
 } from './knowledgeGraphView'
 
@@ -61,6 +64,14 @@ type KnowledgeGraphViewerProps = {
   searchSuggestions?: boolean
   /** Shows the overview entry's return control once the view is focused. */
   overviewNavigation?: boolean
+  /** Emits the bounded ask payload for the selected concept or relationship. */
+  onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  /** Label of the ask control; the details pane falls back to its own default. */
+  askLabel?: string
+  /** 'contained' overlays the details pane inside the graph. */
+  detailsLayout?: 'sidebar' | 'contained'
+  /** Keeps the current zoom and pan when the canvas container resizes. */
+  preserveViewportOnResize?: boolean
 }
 
 function fitGraphElements(cy: cytoscape.Core) {
@@ -130,6 +141,10 @@ export function KnowledgeGraphViewer({
   initialView = 'overview',
   searchSuggestions = false,
   overviewNavigation = false,
+  onAsk,
+  askLabel,
+  detailsLayout = 'sidebar',
+  preserveViewportOnResize = false,
 }: KnowledgeGraphViewerProps) {
   const searchFirst = initialView === 'search'
   const initialViewRef = useRef(initialView)
@@ -161,6 +176,7 @@ export function KnowledgeGraphViewer({
   const expansionOriginRef = useRef<string | null>(null)
   const pendingFocusRef = useRef<string | null>(null)
   const prefersReducedMotionRef = useRef(false)
+  const preserveViewportOnResizeRef = useRef(preserveViewportOnResize)
   const expandNodeRef = useRef<(nodeId: string) => void>(() => undefined)
   const labelsRef = useRef(labels)
   const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -181,6 +197,7 @@ export function KnowledgeGraphViewer({
   dataSourceRef.current = dataSource
   stateRef.current = state
   labelsRef.current = labels
+  preserveViewportOnResizeRef.current = preserveViewportOnResize
 
   const cancelSuggestions = useCallback(() => {
     if (suggestionTimerRef.current !== null) {
@@ -539,7 +556,12 @@ export function KnowledgeGraphViewer({
         ? null
         : new ResizeObserver(() => {
             cy.resize()
-            fitGraphElements(cy)
+            // A host that swaps the viewer between its docked and fullscreen
+            // slot keeps the zoom and pan it had; the default lecture view
+            // still refits the graph on every resize.
+            if (!preserveViewportOnResizeRef.current) {
+              fitGraphElements(cy)
+            }
           })
     resizeObserver?.observe(container)
 
@@ -732,6 +754,16 @@ export function KnowledgeGraphViewer({
     selectedEdge === undefined
       ? undefined
       : relationshipLabels(selectedEdge, indexes.nodes)
+  let askSelection: KnowledgeGraphAskSelection | undefined
+  if (selectedNode !== undefined) {
+    askSelection = nodeAskSelection(selectedNode)
+  } else if (selectedEdge !== undefined) {
+    askSelection = edgeAskSelection(
+      selectedEdge,
+      indexes.nodes,
+      labels.details.missingEndpoint
+    )
+  }
   const relationshipEntries = useMemo(
     () =>
       state.edges.map((edge) => ({
@@ -966,10 +998,14 @@ export function KnowledgeGraphViewer({
       : undefined
   const showOverviewControl = overviewNavigation && state.view === 'focused'
 
+  const sectionMinHeight =
+    detailsLayout === 'contained' ? 'min-h-0' : 'min-h-[32rem]'
+  const canvasMinHeight = detailsLayout === 'contained' ? 'min-h-0' : 'min-h-80'
+
   return (
     <section
       aria-label={labels.explorerAriaLabel}
-      className={`relative flex h-full min-h-[32rem] w-full min-w-0 overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${className}`}
+      className={`relative flex h-full w-full min-w-0 overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${sectionMinHeight} ${className}`}
       data-cy="knowledge-graph-viewer"
     >
       <div className="flex min-w-0 flex-1 flex-col">
@@ -1130,7 +1166,7 @@ export function KnowledgeGraphViewer({
           ) : null}
         </div>
 
-        <div className="relative min-h-80 flex-1 bg-[#FAFAFA]">
+        <div className={`relative flex-1 bg-[#FAFAFA] ${canvasMinHeight}`}>
           <div
             id="knowledge-graph-canvas"
             ref={containerRef}
@@ -1139,7 +1175,9 @@ export function KnowledgeGraphViewer({
             className="h-full w-full"
           />
 
-          <div className="absolute left-3 right-3 top-3 flex flex-wrap gap-2 md:right-auto">
+          <div
+            className={`absolute left-3 right-3 top-3 flex flex-wrap gap-2 ${detailsLayout === 'contained' ? '' : 'md:right-auto'}`}
+          >
             <button
               type="button"
               onClick={() => changeZoom(1.25)}
@@ -1147,7 +1185,7 @@ export function KnowledgeGraphViewer({
               aria-label={labels.zoomInAriaLabel}
               data-cy="knowledge-graph-zoom-in"
             >
-              {labels.zoomIn}
+              {detailsLayout === 'contained' ? '+' : labels.zoomIn}
             </button>
             <button
               type="button"
@@ -1156,30 +1194,34 @@ export function KnowledgeGraphViewer({
               aria-label={labels.zoomOutAriaLabel}
               data-cy="knowledge-graph-zoom-out"
             >
-              {labels.zoomOut}
+              {detailsLayout === 'contained' ? '−' : labels.zoomOut}
             </button>
             <button
               type="button"
               onClick={fitGraph}
+              aria-label={labels.fitView}
+              title={labels.fitView}
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
               data-cy="knowledge-graph-fit"
             >
-              {labels.fitView}
+              {detailsLayout === 'contained' ? '↗' : labels.fitView}
             </button>
             <button
               type="button"
               onClick={resetLayout}
+              aria-label={labels.resetLayout}
+              title={labels.resetLayout}
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
               data-cy="knowledge-graph-reset"
             >
-              {labels.resetLayout}
+              {detailsLayout === 'contained' ? '↺' : labels.resetLayout}
             </button>
           </div>
 
           {legendEntries.length === 0 ? null : (
             <div
               aria-label={labels.legendAriaLabel}
-              className="absolute bottom-3 right-3 hidden max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm sm:block md:bottom-auto md:top-3"
+              className={`absolute bottom-3 right-3 hidden max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm ${detailsLayout === 'contained' ? '' : 'sm:block md:bottom-auto md:top-3'}`}
             >
               <p className="mb-2 font-semibold">{labels.conceptTypes}</p>
               <ul className="space-y-1.5">
@@ -1275,7 +1317,7 @@ export function KnowledgeGraphViewer({
         </div>
 
         <div
-          className={`grid max-h-64 shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white md:h-56 md:overflow-hidden ${state.searchResults.length === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}
+          className={`grid shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white ${detailsLayout === 'contained' ? 'max-h-24 lg:max-h-44 lg:h-44' : 'max-h-64 md:h-56 md:overflow-hidden'} ${state.searchResults.length === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}
         >
           {state.searchResults.length === 0 ? null : (
             <section
@@ -1397,6 +1439,7 @@ export function KnowledgeGraphViewer({
         edgeEndpoints={selectedEdgeEndpoints}
         isExpanding={isExpanding}
         labels={labels.details}
+        layout={detailsLayout}
         onClose={() =>
           dispatch({
             type: 'close-details',
@@ -1404,6 +1447,9 @@ export function KnowledgeGraphViewer({
           })
         }
         onExpand={(nodeId) => expandNodeRef.current(nodeId)}
+        onAsk={onAsk}
+        askLabel={askLabel}
+        askSelection={askSelection}
       />
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
