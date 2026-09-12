@@ -25,8 +25,8 @@ scheduled jobs, and promotion activation retain separate named authority.
 
 Completion requires proven detection and rejection of representative failures,
 successful supported contributor paths, and evidence tied to the correct source
-revision and image digest. Sonar administration access, pnpm 11 support, useful
-coverage, and the existing findings backlog remain material uncertainties.
+revision and image digest. Sonar administration access, useful coverage, and
+the existing findings backlog remain material uncertainties.
 Resolve each before its dependent enforcement; independent source preparation
 can continue within an approved implementation package.
 
@@ -578,9 +578,18 @@ its dependent action. Read back effective settings and retain sanitized receipts
     deliberately unarmed, and frontend PWA coverage (Node test runner) is still
     unpublished.
   - W4: `dependency-review.yml` fails on high severity, and Dependabot now
-    covers `uv` plus the twelve application Dockerfile directories. pnpm 11
-    graph and updater support is still unverified, so this is not complete CVE
-    coverage.
+    covers `uv` plus the twelve application Dockerfile directories. A read-only
+    check of the GitHub dependency graph on 2026-09-12 resolved the graph
+    question: the `v3` SBOM records 4,487 npm and 60 pypi purls with 10,757
+    dependency edges, the 336 open alerts are attributed to the root
+    `pnpm-lock.yaml` (250), workspace `package.json` files (83), and
+    `apps/analytics/uv.lock` (3), and the recorded npm versions match the
+    `pnpm-workspace.yaml` override targets. The repository declares no
+    `patchedDependencies`, so that recognition case does not arise here.
+    Detection and graph coverage are therefore verified on the pinned pnpm 11.5
+    toolchain; PR-time blocking of a newly introduced vulnerable dependency
+    still needs the acceptance fixture, and the existing backlog is untriaged,
+    so this is not complete CVE coverage.
   - W5: Trivy scans the staging backend-docker image and its migrator by digest
     after publication and records receipts and SBOMs. Promotion consumes those
     receipts once the controller source reaches the default branch, and only for

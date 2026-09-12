@@ -67,8 +67,11 @@ parameter and change nothing else:
    required check would never become green. See
    [ADR 0043](../docs/adr/0043-sonar-analysis-credential-and-coverage-input-boundary.md).
 3. Dependency and CodeQL checks are deliberately **not** part of this delta.
-   pnpm 11 dependency-graph support is unverified (W4) and CodeQL runs as a
-   `security-extended` pilot (W6), so neither can carry admission yet.
+   Dependency review only inspects the dependencies a pull request changes
+   rather than the repository's existing dependencies, the 336 open alerts are
+   untriaged (W7), and CodeQL runs as a `security-extended` pilot (W6), so none
+   of them can carry admission yet. The dependency graph itself does resolve
+   the pinned pnpm 11.5 workspace (W4).
 
 **Expected result.** A pull request whose gate fails cannot merge into `v3`,
 independent of the workflow's own green job. Unrelated requirements, the
