@@ -11,7 +11,7 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -25,134 +25,21 @@ import {
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
+import {
+  ADD_AUTHENTICATED_RESPONSE_SCRIPT,
+  buildResponseScriptInvocation,
+  createRedisOperationCollector,
+  getAnonymousResponseField,
+  getParticipantResponseField,
+  type RedisHashOperation,
+  type RedisOperationCollector,
+  type RedisResponseOperations,
+} from './responseScript.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the element options
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
-
-const ADD_AUTHENTICATED_RESPONSE_SCRIPT = `
-if redis.call('HEXISTS', KEYS[1], ARGV[1]) == 1 then
-  return 0
-end
-
-local index = 3
-local incrementCount = tonumber(ARGV[index])
-index = index + 1
-for _ = 1, incrementCount do
-  local keyIndex = tonumber(ARGV[index])
-  local currentValue = redis.call('HGET', KEYS[keyIndex], ARGV[index + 1])
-  if currentValue and not string.match(currentValue, '^-?%d+$') then
-    return -1
-  end
-  if not string.match(ARGV[index + 2], '^-?%d+$') then
-    return -1
-  end
-  index = index + 3
-end
-
-redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
-
--- Replay the increment operations after validation. Base ARGV slots 1-3 are
--- participantResponseField, markerValue, and incrementCount, so increments
--- start at slot 4.
-index = 4
-for _ = 1, incrementCount do
-  local keyIndex = tonumber(ARGV[index])
-  redis.call('HINCRBY', KEYS[keyIndex], ARGV[index + 1], tonumber(ARGV[index + 2]))
-  index = index + 3
-end
-
-local hsetCount = tonumber(ARGV[index])
-index = index + 1
-for _ = 1, hsetCount do
-  local keyIndex = tonumber(ARGV[index])
-  local mode = ARGV[index + 3]
-  if mode == 'setnx' then
-    redis.call('HSETNX', KEYS[keyIndex], ARGV[index + 1], ARGV[index + 2])
-  else
-    redis.call('HSET', KEYS[keyIndex], ARGV[index + 1], ARGV[index + 2])
-  end
-  index = index + 4
-end
-
-return 1
-`
-
-type RedisHashOperation =
-  | {
-      type: 'hincrby'
-      key: string
-      field: string
-      increment: number
-    }
-  | {
-      type: 'hset'
-      key: string
-      field: string
-      value: string
-      mode: 'set' | 'setnx'
-    }
-
-function getParticipantResponseField(participantData: JWTPayload) {
-  return participantData.role === 'TEMPORARY_PARTICIPANT'
-    ? `temporary-${participantData.sub}`
-    : participantData.sub
-}
-
-function getAnonymousResponseField(submissionId: string) {
-  return `anonymous-${createHash('sha256').update(submissionId).digest('hex')}`
-}
-
-type RedisOperationCollector = {
-  hincrby(
-    key: string,
-    field: string,
-    increment: number
-  ): RedisOperationCollector
-  hset(key: string, field: string, value: unknown): RedisOperationCollector
-  hsetnx(key: string, field: string, value: unknown): RedisOperationCollector
-  discard(): RedisOperationCollector
-}
-
-type RedisResponseOperations = ChainableCommander | RedisOperationCollector
-
-function createRedisOperationCollector(
-  operations: RedisHashOperation[]
-): RedisOperationCollector {
-  const collector = {
-    hincrby(key: string, field: string, increment: number) {
-      operations.push({ type: 'hincrby', key, field, increment })
-      return collector
-    },
-    hset(key: string, field: string, value: unknown) {
-      operations.push({
-        type: 'hset',
-        key,
-        field,
-        value: String(value),
-        mode: 'set',
-      })
-      return collector
-    },
-    hsetnx(key: string, field: string, value: unknown) {
-      operations.push({
-        type: 'hset',
-        key,
-        field,
-        value: String(value),
-        mode: 'setnx',
-      })
-      return collector
-    },
-    discard() {
-      operations.length = 0
-      return collector
-    },
-  }
-
-  return collector
-}
 
 export async function processResponseMessage(
   message: {
@@ -304,7 +191,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
@@ -808,71 +695,17 @@ export async function processResponseMessage(
     let execResult: unknown
 
     if (participantResponseKey && participantResponseField) {
-      const markerOperation = redisOperations.find(
-        (operation) =>
-          operation.type === 'hset' &&
-          operation.key === participantResponseKey &&
-          operation.field === participantResponseField
-      )
-
-      if (!markerOperation || markerOperation.type !== 'hset') {
-        throw new Error('Missing authenticated participant response marker')
-      }
-
-      const incrementOperations = redisOperations.filter(
-        (
-          operation
-        ): operation is Extract<RedisHashOperation, { type: 'hincrby' }> =>
-          operation.type === 'hincrby'
-      )
-      const invalidIncrementOperation = incrementOperations.find(
-        (operation) => !Number.isInteger(Number(operation.increment))
-      )
-      if (invalidIncrementOperation) {
-        throw new Error(
-          `Invalid Redis integer increment ${invalidIncrementOperation.increment} for ${invalidIncrementOperation.key}:${invalidIncrementOperation.field}`
-        )
-      }
-
-      const hsetOperations = redisOperations.filter(
-        (
-          operation
-        ): operation is Extract<RedisHashOperation, { type: 'hset' }> =>
-          operation.type === 'hset' &&
-          (operation.key !== participantResponseKey ||
-            operation.field !== participantResponseField)
-      )
-      const scriptKeys = [
+      const { keys, args } = buildResponseScriptInvocation({
+        operations: redisOperations,
         participantResponseKey,
-        ...new Set(
-          [...incrementOperations, ...hsetOperations]
-            .map((operation) => operation.key)
-            .filter((key) => key !== participantResponseKey)
-        ),
-      ]
-      const keyIndexByKey = new Map(
-        scriptKeys.map((key, index) => [key, index + 1])
-      )
+        participantResponseField,
+      })
 
       execResult = await redisExec.eval(
         ADD_AUTHENTICATED_RESPONSE_SCRIPT,
-        scriptKeys.length,
-        ...scriptKeys,
-        participantResponseField,
-        markerOperation.value,
-        String(incrementOperations.length),
-        ...incrementOperations.flatMap((operation) => [
-          String(keyIndexByKey.get(operation.key)!),
-          operation.field,
-          String(operation.increment),
-        ]),
-        String(hsetOperations.length),
-        ...hsetOperations.flatMap((operation) => [
-          String(keyIndexByKey.get(operation.key)!),
-          operation.field,
-          operation.value,
-          operation.mode,
-        ])
+        keys.length,
+        ...keys,
+        ...args
       )
 
       if (Number(execResult) === -1) {
