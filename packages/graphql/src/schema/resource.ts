@@ -385,6 +385,7 @@ export interface IChatbot {
   disclaimerSummary?: IChatbotDisclaimerSummary | null
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
   enabledKnowledgeBase?: IChatbotKnowledgeBaseSummary | null
+  enabledKnowledgeBases?: IChatbotKnowledgeBaseSummary[]
   authoringRevision?: ChatbotAuthoringRevisionProjection | null
   revisionStatus?: DB.ChatbotStatus | null
   revisionVersion?: number
@@ -561,7 +562,13 @@ export const Chatbot = ChatbotRef.implement({
     enabledKnowledgeBase: t.field({
       type: ChatbotKnowledgeBaseSummaryRef,
       nullable: true,
+      deprecationReason:
+        'Use enabledKnowledgeBases for all attached knowledge bases.',
       resolve: (chatbot) => chatbot.enabledKnowledgeBase ?? null,
+    }),
+    enabledKnowledgeBases: t.field({
+      type: [ChatbotKnowledgeBaseSummaryRef],
+      resolve: (chatbot) => chatbot.enabledKnowledgeBases ?? [],
     }),
     authoringRevision: t.field({
       type: ChatbotAuthoringRevisionRef,

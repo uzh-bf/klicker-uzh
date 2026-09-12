@@ -164,6 +164,7 @@ export type GeneratedQuestionEditable = {
   stem: string
   context: string | null
   explanation: string | null
+  tags?: string[]
   choices: Array<{
     id: string
     label: string

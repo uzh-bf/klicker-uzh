@@ -8,9 +8,6 @@
 {{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
 {{- end -}}
 {{- $langfuseRelease := .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion -}}
-{{- with .Values.chat.podAnnotations -}}
-{{- $langfuseRelease = index . "rollout.klicker.uzh.ch/release" | default $langfuseRelease -}}
-{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

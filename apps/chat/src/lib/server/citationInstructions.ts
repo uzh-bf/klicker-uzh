@@ -1,7 +1,12 @@
+import type { ModelMessage } from 'ai'
+import { mapAssistantStepContent } from '@/src/lib/server/persistedAssistantContent'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 import {
   isDocQueryToolName,
   MAX_SOURCES,
+  normalizeSourcesFromParts,
+  parseDocQueryPayload,
+  sourceCitationIndices,
 } from '@/src/lib/sources/normalizeSources'
 
 /**
@@ -17,11 +22,8 @@ import {
  * Each number in a marker or range only resolves for `1 <= n <= N`
  * (`resolveCitationSource`).
  *
- * The reuse sentence is load-bearing for that match. A source returned again
- * by a later search is skipped by the dedupe and keeps its original number —
- * no new one is minted — so a model that kept counting upward for the repeat
- * would emit a marker beyond N, which renders as literal text instead of a
- * chip.
+ * The model-facing projection below supplies those indices directly. Repeated
+ * sources retain their number; invalid model markers still remain literal text.
  *
  * Legacy lecturer guidance or custom personas may still forbid square
  * brackets for formulas. The closing precedence sentence keeps those
@@ -45,4 +47,68 @@ export function withCitationContract(
   return trimmedBase.length > 0
     ? `${trimmedBase}\n\n${CITATION_CONTRACT}`
     : CITATION_CONTRACT
+}
+
+/**
+ * Projects current-generation tool results for the model only. Call positions,
+ * rather than completion timing, determine the same indices used after reload.
+ * Callers supply responseMessages only, so historical turns cannot be rewritten.
+ */
+export function withModelCitationIndices(
+  messages: ModelMessage[],
+  steps: Array<{ content?: unknown[] }>
+): ModelMessage[] {
+  const parts = mapAssistantStepContent(steps)
+  const sources = normalizeSourcesFromParts(parts)
+  const projections = new Map<string, string>()
+
+  for (const part of parts) {
+    if (part.type !== 'tool-call' || !isDocQueryToolName(part.toolName)) {
+      continue
+    }
+    const payload = parseDocQueryPayload(part.result)
+    if (part.isError || !payload || 'error' in payload) continue
+    if (!Array.isArray(payload.sources)) continue
+    const indices = sourceCitationIndices(payload, sources)
+    projections.set(
+      part.toolCallId,
+      JSON.stringify({
+        ...payload,
+        sources: payload.sources.map((source, index) =>
+          source && typeof source === 'object' && !Array.isArray(source)
+            ? { ...source, citation_index: indices[index] }
+            : source
+        ),
+      })
+    )
+  }
+
+  return messages.map((message) => {
+    if (message.role !== 'tool') return message
+    return {
+      ...message,
+      content: message.content.map((part) => {
+        if (part.type !== 'tool-result') return part
+        const projection = projections.get(part.toolCallId)
+        if (projection === undefined) return part
+        // Keep supplementary and multimodal blocks, replacing the source JSON
+        // even when MCP's text and structured representations disagree.
+        const output =
+          part.output.type === 'content'
+            ? {
+                ...part.output,
+                value: [
+                  { type: 'text' as const, text: projection },
+                  ...part.output.value.filter((block) => {
+                    if (block.type !== 'text') return true
+                    const payload = parseDocQueryPayload(block.text)
+                    return !payload || !('sources' in payload)
+                  }),
+                ],
+              }
+            : { type: 'text' as const, value: projection }
+        return { ...part, output }
+      }),
+    }
+  })
 }

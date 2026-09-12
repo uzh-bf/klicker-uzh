@@ -148,6 +148,7 @@ function workflowRun({
 }) {
   return {
     conclusion,
+    run_attempt: 1,
     event,
     head_branch: headBranch,
     head_sha: candidateSha,
