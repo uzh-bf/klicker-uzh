@@ -192,7 +192,6 @@ export async function GET(req: NextRequest) {
           grant,
           courseId,
           chatbotId,
-          participantToken: req.cookies.get('participant_token')?.value,
         },
       }),
     })

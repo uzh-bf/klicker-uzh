@@ -315,6 +315,8 @@ export default {
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
       welcomeMode: 'Ausgewählter Modus: {mode}',
       learningContext: {
+        refreshUnavailable:
+          'Der Seitenkontext konnte für diese Frage nicht aktualisiert werden. Antworten können abgerufene Kursmaterialien verwenden.',
         summary: 'Verwendeter Lernkontext',
         location: 'Ort',
         observed: 'Erhoben am',

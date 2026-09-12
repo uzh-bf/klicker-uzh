@@ -55,8 +55,8 @@ useChatContextStore.subscribe((state) => {
  * reply echoing it is used, so a snapshot the host had already queued cannot
  * satisfy the request. A request left unanswered within the bound resolves to
  * null — the caller must not fall back to the previous snapshot — and the
- * server then answers under the materials-only policy. The context store stays
- * owned by the receiver.
+ * server then answers under the materials-only policy. A failed refresh clears
+ * the previous label and exposes its absence; later valid updates can restore it.
  */
 export function requestFreshElearningChatContext(
   timeoutMs: number = ELEARNING_CONTEXT_REFRESH_TIMEOUT_MS
@@ -86,6 +86,13 @@ export function requestFreshElearningChatContext(
       settled = true
       clearTimeout(timeoutHandle)
       window.removeEventListener('message', handleMessage)
+      if (!value) {
+        useChatContextStore.setState({
+          context: null,
+          parentOrigin,
+          contextUnavailable: true,
+        })
+      }
       resolve(value)
     }
 

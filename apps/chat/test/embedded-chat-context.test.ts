@@ -310,6 +310,8 @@ describe('requestFreshElearningChatContext', () => {
     })
 
     await expect(pending).resolves.toEqual(fresh)
+    useChatContextStore.getState().setContext(fresh, REFRESH_PARENT_ORIGIN)
+    expect(useChatContextStore.getState().contextUnavailable).toBe(false)
   })
 
   test('ignores an uncorrelated reply and times out to null', async () => {
@@ -332,6 +334,10 @@ describe('requestFreshElearningChatContext', () => {
     })
 
     await expect(pending).resolves.toBeNull()
+    expect(useChatContextStore.getState()).toMatchObject({
+      context: null,
+      contextUnavailable: true,
+    })
   })
 
   test('ignores a correlated reply from a different origin', async () => {

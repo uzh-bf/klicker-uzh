@@ -4,6 +4,7 @@ import { create } from 'zustand'
 type ChatContextState = {
   context: KlickerChatContextV2 | null
   parentOrigin: string | null
+  contextUnavailable: boolean
   setContext: (context: KlickerChatContextV2, parentOrigin: string) => void
   clearContext: () => void
 }
@@ -11,6 +12,9 @@ type ChatContextState = {
 export const useChatContextStore = create<ChatContextState>((set) => ({
   context: null,
   parentOrigin: null,
-  setContext: (context, parentOrigin) => set({ context, parentOrigin }),
-  clearContext: () => set({ context: null, parentOrigin: null }),
+  contextUnavailable: false,
+  setContext: (context, parentOrigin) =>
+    set({ context, parentOrigin, contextUnavailable: false }),
+  clearContext: () =>
+    set({ context: null, parentOrigin: null, contextUnavailable: false }),
 }))

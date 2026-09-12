@@ -1924,7 +1924,6 @@ export async function loginParticipantForElearningChatbot(
     grant: string
     courseId: string
     chatbotId: string
-    participantToken?: string | null
   },
   ctx: Context
 ): Promise<LtiChatIdentityResult> {

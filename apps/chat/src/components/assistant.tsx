@@ -616,12 +616,16 @@ function AssistantLayout({
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback: boolean
 }) {
+  const t = useTranslations('chat.thread.learningContext')
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
   const pathname = usePathname()
   const graphMode = pathname === `/${chatbot.id}/graph`
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
+  const contextUnavailable = useChatContextStore(
+    (state) => state.contextUnavailable
+  )
   const contextLabel = getKlickerChatContextLabel(context)
   const hasQuestionContext =
     context?.source === 'pwa' && Boolean(context.question)
@@ -658,6 +662,14 @@ function AssistantLayout({
         tabIndex={-1}
         className="flex min-h-0 flex-1 flex-col"
       >
+        {contextUnavailable && (
+          <p
+            role="status"
+            className="text-muted-foreground border-b px-4 py-2 text-xs"
+          >
+            {t('refreshUnavailable')}
+          </p>
+        )}
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">

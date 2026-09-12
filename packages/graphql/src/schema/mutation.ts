@@ -387,7 +387,6 @@ export const Mutation = builder.mutationType({
           grant: t.arg.string({ required: true }),
           courseId: t.arg.string({ required: true, validate: { uuid: true } }),
           chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
-          participantToken: t.arg.string(),
         },
         resolve: (_, args, ctx) =>
           AccountService.loginParticipantForElearningChatbot(args, ctx),

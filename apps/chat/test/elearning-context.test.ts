@@ -8,7 +8,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   formatElearningGroundingPolicy,
   hasElearningPageEvidence,
-  isElearningOriginThread,
   normalizePersistedLearningContext,
   resolveElearningThreadOrigin,
   verifyAndNormalizeElearningChatContext,
@@ -375,12 +374,5 @@ describe('eLearning thread origin', () => {
       'elearning'
     )
     expect(resolveElearningThreadOrigin({})).toBeUndefined()
-  })
-
-  it('keeps a handoff session on the policy without a thread tag', () => {
-    expect(isElearningOriginThread({ learnerBinding: 'binding' })).toBe(true)
-    expect(isElearningOriginThread({ threadOrigin: 'elearning' })).toBe(true)
-    expect(isElearningOriginThread({ threadOrigin: null })).toBe(false)
-    expect(isElearningOriginThread({})).toBe(false)
   })
 })

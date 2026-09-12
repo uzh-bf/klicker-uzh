@@ -2733,7 +2733,7 @@ type Mutation {
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   leaveUserGroup(groupId: Int!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
-  loginParticipantForElearningChatbot(chatbotId: String!, courseId: String!, grant: String!, participantToken: String): LtiChatbotLogin!
+  loginParticipantForElearningChatbot(chatbotId: String!, courseId: String!, grant: String!): LtiChatbotLogin!
   loginParticipantForLtiChatbot(chatbotId: String!, courseId: String!, participantToken: String, signedLtiData: String!): LtiChatbotLogin!
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData

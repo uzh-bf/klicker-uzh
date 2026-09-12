@@ -381,7 +381,7 @@ describe('eLearning origin and branch context', () => {
     expect(mocks.deleteThread).not.toHaveBeenCalled()
   })
 
-  test('tags a legacy eLearning thread so the policy and history keep it', async () => {
+  test('does not retag an existing ordinary thread from a handoff session', async () => {
     mocks.findThread.mockResolvedValue({
       id: THREAD_ID,
       participantId: 'participant-1',
@@ -389,44 +389,25 @@ describe('eLearning origin and branch context', () => {
       origin: null,
       title: null,
     })
-    mocks.updateMessage.mockRejectedValue(new Error('db down'))
+    mocks.findUnique.mockResolvedValue(
+      createChatbot({ mcpConfigurations: [requiredMcpConfiguration()] })
+    )
+    mocks.getAggregatedMCPTools.mockRejectedValue(
+      new RequiredMCPUnavailableError()
+    )
 
     const response = await POST(createRequest(await elearningEnvelope()), {
       params: Promise.resolve({ chatbotId: CHATBOT_ID }),
     })
 
+    // Ordinary conversations retain their original retrieval policy and origin.
     expect(response.status).toBe(503)
-    expect(mocks.updateThread).toHaveBeenCalledWith({
-      where: { id: THREAD_ID },
-      data: { origin: 'elearning' },
-    })
+    expect(mocks.updateThread).not.toHaveBeenCalled()
+    expect(mocks.createMessage).not.toHaveBeenCalled()
   })
 })
 
 describe('eLearning provenance and retrieval failure modes', () => {
-  test('fails closed when the eLearning origin tag cannot be persisted', async () => {
-    mocks.findThread.mockResolvedValue({
-      id: THREAD_ID,
-      participantId: 'participant-1',
-      chatbotId: CHATBOT_ID,
-      origin: null,
-      title: null,
-    })
-    mocks.updateThread.mockRejectedValue(new Error('db down'))
-
-    const response = await POST(createRequest(await elearningEnvelope()), {
-      params: Promise.resolve({ chatbotId: CHATBOT_ID }),
-    })
-
-    // Untagged, later turns of this conversation would silently lose the
-    // materials-only policy, so the turn must not succeed here.
-    expect(response.status).toBe(503)
-    await expect(response.json()).resolves.toEqual({
-      error: 'Unable to persist the question context',
-      code: 'ELEARNING_CONTEXT_PERSIST_FAILED',
-    })
-  })
-
   test('keeps a historical null snapshot unavailable instead of the live page', async () => {
     const SOURCE_MESSAGE_ID = 'user-message-0'
     mocks.updateMessage.mockResolvedValue({ count: 0 })

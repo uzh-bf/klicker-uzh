@@ -100,7 +100,6 @@ import {
 } from '@/src/services/studentPracticeMcp'
 import {
   formatElearningGroundingPolicy,
-  isElearningOriginThread,
   normalizePersistedLearningContext,
   resolveElearningThreadOrigin,
   verifyAndNormalizeElearningChatContext,
@@ -1051,41 +1050,9 @@ export async function POST(
     )
   }
 
-  // eLearning provenance follows the authenticated handoff identity: the chat
-  // client creates its first thread before any snapshot envelope is verified,
-  // so the scoped session learner binding decides the origin, not a client
-  // label. The origin is also what binds the materials-only grounding policy.
-  const isElearningThread = isElearningOriginThread({
-    threadOrigin: owningThread.origin,
-    learnerBinding,
-  })
-  if (isElearningThread && owningThread.origin !== 'elearning') {
-    try {
-      await prisma.chatThread.update({
-        where: { id: owningThread.id },
-        data: { origin: 'elearning' },
-      })
-      owningThread.origin = 'elearning'
-    } catch (error) {
-      // The origin tag is what keeps the materials-only policy attached to
-      // later turns of this conversation. Proceeding without it would answer
-      // this turn correctly and silently drop the policy afterwards, so the
-      // turn fails closed instead.
-      console.error('Failed to tag eLearning thread origin', {
-        requestId,
-        threadId: owningThread.id,
-        error,
-      })
-      await discardCreatedThread('thread.origin')
-      return NextResponse.json(
-        {
-          error: 'Unable to persist the question context',
-          code: 'ELEARNING_CONTEXT_PERSIST_FAILED',
-        },
-        { status: 503 }
-      )
-    }
-  }
+  // The origin records where the conversation began. A later eLearning
+  // session must not retag an existing ordinary Klicker conversation.
+  const isElearningThread = owningThread.origin === 'elearning'
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
   if (lastMessage?.role === 'user') {

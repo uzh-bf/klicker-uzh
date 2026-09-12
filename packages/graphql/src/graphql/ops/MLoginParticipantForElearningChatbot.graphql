@@ -2,13 +2,11 @@ mutation LoginParticipantForElearningChatbot(
   $grant: String!
   $courseId: String!
   $chatbotId: String!
-  $participantToken: String
 ) {
   loginParticipantForElearningChatbot(
     grant: $grant
     courseId: $courseId
     chatbotId: $chatbotId
-    participantToken: $participantToken
   ) {
     status
     participantId

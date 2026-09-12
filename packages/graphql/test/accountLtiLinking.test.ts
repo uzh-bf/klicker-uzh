@@ -636,7 +636,7 @@ describe('LTI participant linking and creation', () => {
     ).toEqual({ status: 'DENIED' })
     await prisma.chatbot.delete({ where: { id: chatbot.id } })
   })
-  it('resolves the eLearning learner rather than an unrelated browser account', async () => {
+  it('resolves a signed eLearning subject to its linked account or a chat-only guest', async () => {
     vi.stubEnv('ELEARNING_CHAT_HANDOFF_SECRET', 'synthetic-handoff-secret')
     const { user, course } = await createTestCourse()
     const chatbot = await prisma.chatbot.create({
@@ -679,7 +679,6 @@ describe('LTI participant linking and creation', () => {
     const args = {
       courseId: course.id,
       chatbotId: chatbot.id,
-      participantToken: await createParticipantToken(unrelated.id),
     }
     expect(
       await loginParticipantForElearningChatbot(

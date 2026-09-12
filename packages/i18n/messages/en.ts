@@ -308,6 +308,8 @@ export default {
       welcomeSubtitle: 'Choose a starter or write your own question.',
       welcomeMode: 'Selected mode: {mode}',
       learningContext: {
+        refreshUnavailable:
+          'Page context could not be refreshed for this question. Answers can use retrieved course materials.',
         summary: 'Learning context used',
         location: 'Location',
         observed: 'Observed at',

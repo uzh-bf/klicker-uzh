@@ -111,17 +111,6 @@ export function resolveElearningThreadOrigin(input: {
     : undefined
 }
 
-// A conversation counts as eLearning-origin when it was tagged that way, or
-// when the current request carries an eLearning handoff identity. Conversations
-// started before the origin tag existed keep the materials-only policy instead
-// of silently dropping to ordinary chat behavior.
-export function isElearningOriginThread(input: {
-  threadOrigin?: string | null
-  learnerBinding?: string | null
-}): boolean {
-  return input.threadOrigin === 'elearning' || Boolean(input.learnerBinding)
-}
-
 // Verifies the signed envelope end to end: signature, expiry, chatbot and
 // course binding, opaque learner binding against the request identity, and a
 // full snapshot shape with size caps. Returns null on any failure.
