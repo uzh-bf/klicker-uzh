@@ -112,7 +112,7 @@ describe('knowledge graph client', () => {
     expect(sdk.roQuery).not.toHaveBeenCalled()
   })
 
-  it('uses roQuery with parameters and the configured timeout only', async () => {
+  it('uses roQuery with parameters and a hard browsing timeout cap', async () => {
     sdk.roQuery
       .mockResolvedValueOnce({ data: exampleLectureNodeRows })
       .mockResolvedValueOnce({ data: exampleLectureEdgeRows })
@@ -122,7 +122,7 @@ describe('knowledge graph client', () => {
     expect(sdk.roQuery).toHaveBeenCalledTimes(2)
     for (const [cypher, options] of sdk.roQuery.mock.calls) {
       expect(cypher).toEqual(expect.any(String))
-      expect(options).toMatchObject({ TIMEOUT: 4321 })
+      expect(options).toMatchObject({ TIMEOUT: 1000 })
     }
     expect(sdk.roQuery.mock.calls[1]?.[1]).toMatchObject({
       params: { nodeIds: ['12', '27', '31', '44', '58'] },
@@ -196,7 +196,7 @@ describe('knowledge graph client', () => {
     expect(sdk.roQuery.mock.calls[0]?.[0]).not.toContain(userText)
     expect(sdk.roQuery.mock.calls[0]?.[1]).toEqual({
       params: { searchText: userText },
-      TIMEOUT: 4321,
+      TIMEOUT: 1000,
     })
     expect(result.edges).toEqual([])
   })

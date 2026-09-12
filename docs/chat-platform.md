@@ -878,8 +878,27 @@ graph-assisted document search independently with
 `Chatbot.knowledgeGraphRetrievalEnabled`. Both follow the authoring-revision
 approval lifecycle. Existing chatbots retain map visibility; new chatbots start
 with both options off. A disabled map hides the workspace switch and its API
-returns `403 KNOWLEDGE_GRAPH_DISABLED`. Student maps start with concept search;
-the lecturer viewer retains its overview entry.
+returns `403 KNOWLEDGE_GRAPH_DISABLED`. Student maps start with a bounded overview. Typing at least two characters
+requests up to 20 suggestions after 300ms; selecting a suggestion opens a focused
+view. Explicit search also supports one character. Return to overview clears the
+exploration. The lecturer viewer retains its existing overview and explicit-search controls.
+
+Overview reads return at most 250 concepts and 500 relationships. They sample
+candidates before projecting degree, rather than ranking the entire graph.
+The viewer retains at most 500 concepts and 1,000 relationships across expansions;
+partial-server-results and local-canvas limits have separate notices. Student
+neighbor requests bind numeric IDs to the originating KB/build. A changed
+publication rejects the read and refreshes the overview, preventing ID reuse
+from selecting a different concept.
+
+Student graph admission is per process: eight active reads, two per participant,
+60 requests per participant per minute, and 2,000 tracked identities maximum.
+Excess traffic receives 429 with Retry-After and no server queue. Slots remain
+occupied until the underlying read settles. Each native browsing query has a
+hard execution budget of at most 1,000ms; overview and neighbors use two queries.
+These are database execution budgets, not end-to-end latency guarantees.
+Substring search still scans in the worst case. Limits multiply across replicas;
+large deployments may need indexed search and distributed admission control.
 
 Graph-assisted document search uses the native FalkorDB reader in
 `packages/knowledge-graph/src/retrieval.ts` through the shared MCP tool adapter.

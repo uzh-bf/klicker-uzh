@@ -181,3 +181,74 @@ No paid model completion, production MCP retrieval or browser answer persistence
 was exercised. Native integration verifies citation normalization after JSON
 round-trip; this is narrower than an actual generated-answer reload. The basic
 implementation is graph-guided query expansion with ordinary document grounding.
+
+## Navigation extension approved 2026-09-12
+
+The user approved overview on entry, autocomplete and return-to-overview, with
+scalability and safety checks. This extends the existing full-path package and
+draft PR 5912. Approval remains executable; no merge, deployment or data-model
+change is included. The local runtime remains running for the user's manual tests.
+
+Primitive impact: reuse the lecturer-controlled published graph and concept
+identities. Compose its read operations into discoverable student navigation.
+Student overview is a bounded sample, not a globally ranked or complete graph
+when truncated. No new domain object, framework, index or model call is added.
+
+| Slice | Owner | Acceptance |
+| --- | --- | --- |
+| Native query bounds and student admission/build contracts | main, coupled safety decisions | Native synthetic hub/sparse graph tests; admission, disabled map and stale-build rejection |
+| Overview, suggestions and bounded viewer state | executor | Accessible combobox, serialized debounce, race rejection and 500-node/1000-edge canvas caps |
+| Integrated proof and existing draft delivery | main | Native checks, host browser including lecturer compatibility, screenshots and scoped reviews |
+
+Native browsing reads limit candidate nodes before degree projection and avoid
+global degree sorting. Each read-only query has at most 1000ms database execution
+budget; overview/neighbors have two sequential queries. This is not an end-to-end
+latency guarantee. Substring search can still scan the graph and returns a
+recoverable failure on timeout. Student admission is per process: eight active
+reads, two per participant, 60 requests per participant per minute, at most 2000
+tracked identities. Reject immediately with Retry-After rather than queueing.
+Slots stay occupied until the underlying awaited read settles. Multi-replica
+limits multiply; distributed admission and indexed search remain later work.
+
+Student neighbor requests require the originating KB/build and a bounded decimal
+node ID. Resolve authorization/current publication first; reject a changed build
+before traversing. Refresh the overview rather than mixing builds. Lecturer
+adapter remains compatible; the shared viewer also rejects changed-build
+neighbor responses. Suggestions retain their source identity, never select by
+refetching their label.
+
+Suggestions wait 300ms after at least two characters, serialize requests, and
+retain only the latest input. Keyboard, IME and pointer interaction must work;
+Escape, blur, reset and data-source changes invalidate pending suggestions.
+Typing never changes the canvas. Explicit submit supports one-character search.
+Overview/search/selection invalidate older operations when starting. The canvas
+keeps existing nodes first, admits new nodes only within its cap, and drops edges
+with missing endpoints; replacement paths obey the same cap. Selecting a
+suggestion starts a focused view so the selected concept always fits.
+
+Planner round one requested explicit admission budgets, source-bound node IDs,
+canvas overflow semantics and input/race cases. All were accepted; round two
+approved this extension. Earlier optional AGY review failed required read access;
+that route remains unavailable. Tests must cover high-degree hubs, sparse/no-match
+search, edge reads, saturation/recovery, stale builds, delayed responses, keyboard
+selection, reset, mobile layout and the existing lecturer viewer.
+
+### Navigation verification progress
+
+Native graph package: 79 tests pass, including a disposable 5,000-neighbor hub,
+query timeout and recovery. Admission/route/client/state checks: 72 pass. Root
+checks passed lint and 37/40 type tasks; a concurrent Prisma generate race and
+an ES2022-incompatible test helper caused the remaining failures. The client was
+regenerated serially and Prisma/chat checks pass; Playwright check passes after
+replacing the helper. Full production build passes 26/26 with conflicting generated
+development types temporarily isolated and restored. Host policy checks pass 123/123.
+
+Real browser captures show overview, autocomplete, keyboard selection and compact
+details. Inspection corrected overlapping layout animations and excessive automatic
+zoom. Native browser smoke passed; the expanded delayed-response/IME/pointer/touch
+suite is running. Lecturer preview remains a required compatibility check. Source
+reviews, final integrated review, commit and draft update remain pending.
+
+No schema or dependency change was added by navigation. The local runtime stays
+running at the user's request for manual testing. Substring scans and per-process
+admission are bounded local protections, not measured multi-replica capacity.

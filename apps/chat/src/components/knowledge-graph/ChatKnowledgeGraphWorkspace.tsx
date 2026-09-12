@@ -1,7 +1,10 @@
 'use client'
 
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import {
+  KnowledgeGraphBuildChangedError,
+  KnowledgeGraphUnavailableError,
+} from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -65,10 +68,12 @@ function knowledgeGraphUrl(
   chatbotId: string,
   operation: 'overview' | 'search' | 'neighbors',
   input?: { key: 'q' | 'nodeId'; value: string },
-  kbId?: string
+  kbId?: string,
+  buildId?: string
 ): string {
   const searchParams = new URLSearchParams({ operation })
   if (kbId !== undefined) searchParams.set('kbId', kbId)
+  if (buildId !== undefined) searchParams.set('buildId', buildId)
   if (input !== undefined) {
     searchParams.set(input.key, input.value)
   }
@@ -91,6 +96,9 @@ async function readKnowledgeGraphResponse(
   const response = await fetcher(url)
   if (response.status === 409) {
     const body: unknown = await response.json().catch(() => null)
+    if (isRecord(body) && body.code === 'KNOWLEDGE_GRAPH_BUILD_CHANGED') {
+      throw new KnowledgeGraphBuildChangedError()
+    }
     if (
       isRecord(body) &&
       body.code === 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED' &&
@@ -124,7 +132,7 @@ async function readKnowledgeGraphResponse(
   if (!response.ok) {
     throw new ChatKnowledgeGraphRequestError(
       response.status,
-      response.status === 503
+      response.status === 503 || response.status === 429
     )
   }
 
@@ -233,7 +241,7 @@ export function createChatKnowledgeGraphDataSource(
         ),
         fetcher
       ),
-    neighbors: (nodeId) =>
+    neighbors: (nodeId, origin) =>
       readKnowledgeGraphResponse(
         knowledgeGraphUrl(
           chatbotId,
@@ -242,7 +250,8 @@ export function createChatKnowledgeGraphDataSource(
             key: 'nodeId',
             value: nodeId,
           },
-          kbId
+          origin.kbId,
+          origin.buildId
         ),
         fetcher
       ),
@@ -285,7 +294,7 @@ export function ChatKnowledgeGraphWorkspace({
     const wrapped: KnowledgeGraphDataSource = {
       overview: () => observe(source.overview()),
       search: (query) => observe(source.search(query)),
-      neighbors: (nodeId) => observe(source.neighbors(nodeId)),
+      neighbors: (nodeId, origin) => observe(source.neighbors(nodeId, origin)),
     }
     return wrapped
   }, [chatbotId, kbId])

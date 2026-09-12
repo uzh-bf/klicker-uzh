@@ -142,7 +142,7 @@ async function readRows<Row>(
 ): Promise<Row[]> {
   const result = await graph.roQuery<Row>(query.cypher, {
     params: query.params,
-    TIMEOUT: config.queryTimeoutMs,
+    TIMEOUT: Math.min(config.queryTimeoutMs, 1000),
   })
   return result.data ?? []
 }

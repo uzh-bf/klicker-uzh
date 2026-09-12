@@ -1,13 +1,16 @@
 import {
+  KnowledgeGraphBuildChangedError,
+  KnowledgeGraphUnavailableError,
+} from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
   ChatKnowledgeGraphRequestError,
   ChatKnowledgeGraphSelectionRequiredError,
   createChatKnowledgeGraphDataSource,
 } from '@/src/components/knowledge-graph/ChatKnowledgeGraphWorkspace'
 import { CHAT_GUEST_SESSION_STORAGE_KEY } from '@/src/hooks/useChatGuestTokenBootstrap'
 import { useChatStore } from '@/src/stores/chatStore'
-import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const chatbotId = '11111111-1111-4111-8111-111111111111'
 const graphResponse: KnowledgeGraphResponse = {
@@ -87,7 +90,10 @@ describe('chat knowledge graph API client', () => {
     )
     await source.overview()
     await source.search('synthetic')
-    await source.neighbors('12')
+    await source.neighbors('12', {
+      kbId: graphResponse.kbId,
+      buildId: graphResponse.buildId,
+    })
     for (const [url] of fetcher.mock.calls) {
       expect(new URL(url, 'http://localhost').searchParams.get('kbId')).toBe(
         graphResponse.kbId
@@ -117,11 +123,31 @@ describe('chat knowledge graph API client', () => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse(graphResponse))
     const dataSource = createChatKnowledgeGraphDataSource(chatbotId, fetcher)
 
-    await dataSource.neighbors('12004')
+    await dataSource.neighbors('12004', {
+      kbId: graphResponse.kbId,
+      buildId: graphResponse.buildId,
+    })
 
     expect(fetcher).toHaveBeenCalledWith(
-      `/api/chatbots/${chatbotId}/knowledge-graph?operation=neighbors&nodeId=12004`
+      `/api/chatbots/${chatbotId}/knowledge-graph?operation=neighbors&kbId=${graphResponse.kbId}&buildId=${graphResponse.buildId}&nodeId=12004`
     )
+  })
+
+  it('distinguishes a changed build so the viewer can reload its overview', async () => {
+    const source = createChatKnowledgeGraphDataSource(
+      chatbotId,
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ code: 'KNOWLEDGE_GRAPH_BUILD_CHANGED' }, 409)
+        )
+    )
+    await expect(
+      source.neighbors('12', {
+        kbId: graphResponse.kbId,
+        buildId: graphResponse.buildId,
+      })
+    ).rejects.toBeInstanceOf(KnowledgeGraphBuildChangedError)
   })
 
   it('maps unpublished responses to an unavailable graph error with status', async () => {
