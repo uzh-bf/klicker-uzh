@@ -1,10 +1,10 @@
-import type { KlickerChatContext } from '@klicker-uzh/types'
+import type { KlickerChatContextV2 } from '@klicker-uzh/types'
 import { create } from 'zustand'
 
 type ChatContextState = {
-  context: KlickerChatContext | null
+  context: KlickerChatContextV2 | null
   parentOrigin: string | null
-  setContext: (context: KlickerChatContext, parentOrigin: string) => void
+  setContext: (context: KlickerChatContextV2, parentOrigin: string) => void
   clearContext: () => void
 }
 
