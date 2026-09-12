@@ -1,4 +1,8 @@
-import { signJWT } from '@klicker-uzh/util'
+import {
+  ELEARNING_SNAPSHOT_EXCERPT_MAX_LENGTH,
+  ELEARNING_SNAPSHOT_OUTLINE_MAX_ITEMS,
+  signJWT,
+} from '@klicker-uzh/util'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -186,6 +190,41 @@ describe('verifyAndNormalizeElearningChatContext', () => {
       ...(snapshot as Record<string, unknown>),
       location,
     })()
+    expect(result).toBeNull()
+  })
+
+  it('rejects an excerpt beyond the maximum length', async () => {
+    const result = await verifyWith(
+      baseSnapshot({
+        material: {
+          title: 'Reading',
+          blockType: 'pdf',
+          blockIdent: 'b1',
+          availability: 'full-text',
+          excerpt: 'x'.repeat(ELEARNING_SNAPSHOT_EXCERPT_MAX_LENGTH + 1),
+          excerptTruncated: true,
+          revision: 'rev-1',
+        },
+      })
+    )()
+    expect(result).toBeNull()
+  })
+
+  it('rejects an outline beyond the item cap', async () => {
+    const result = await verifyWith(
+      baseSnapshot({
+        outline: Array.from(
+          { length: ELEARNING_SNAPSHOT_OUTLINE_MAX_ITEMS + 1 },
+          () => ({
+            ident: 'b1',
+            title: 'Compound interest',
+            blockType: 'pdf',
+            availability: 'full-text',
+            completion: 'confirmed_complete',
+          })
+        ),
+      })
+    )()
     expect(result).toBeNull()
   })
 })
