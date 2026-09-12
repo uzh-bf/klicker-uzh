@@ -439,8 +439,13 @@ The September 12 follow-up fixes partial runner-group updates by disabling
 public access before replacing repository access and only then enabling the
 exact workflow policy. Fixture checks cover failure at each of the three API
 writes and confirm no subsequent write occurs after failure. No live policy
-update was performed. The host environment descriptor-race correction and
-remaining PR feedback are still open; this is not merge-ready.
+update was performed. Host environment reads now traverse directories without
+following symlinks, open the file once, validate its descriptor, and reject
+nonregular or multiply linked inputs before emitting any contents. Focused
+tests cover symlinks, hard links, FIFOs, and symlinked parent directories.
+Python 3 is checked before host mutations. ShellCheck and focused tests pass.
+Final remote checks and remaining PR feedback are still open; this is not
+merge-ready.
 
 - [x] Current `origin/v3`, primary-checkout divergence, prior plan, workflows,
       provisioners, documentation, and closest shared skill inspected.

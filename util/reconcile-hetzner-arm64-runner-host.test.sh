@@ -41,6 +41,7 @@ main() {
     fail 'host B allocation differs'
 
   TEMP_DIR=$(mktemp -d -t runner-host-reconcile-test.XXXXXX)
+  TEMP_DIR=$(cd "$TEMP_DIR" && pwd -P)
   telemetry_hook="${TEMP_DIR}/telemetry"
   started_hook="${TEMP_DIR}/started"
   completed_hook="${TEMP_DIR}/completed"
@@ -71,6 +72,18 @@ main() {
   printf '%s\n' "$rendered_env" >"${TEMP_DIR}/current.env"
   [[ "$(render_runner_env "${TEMP_DIR}/current.env")" == "$rendered_env" ]] ||
     fail 'runner environment rendering is not idempotent'
+
+  ln -s "${TEMP_DIR}/existing.env" "${TEMP_DIR}/symlink.env"
+  ln "${TEMP_DIR}/existing.env" "${TEMP_DIR}/hardlink.env"
+  mkfifo "${TEMP_DIR}/fifo.env"
+  ln -s "$TEMP_DIR" "${TEMP_DIR}/alias"
+  local unsafe_path
+  for unsafe_path in symlink.env hardlink.env fifo.env alias/current.env; do
+    if render_runner_env "${TEMP_DIR}/${unsafe_path}" >"${TEMP_DIR}/rejected.out" 2>/dev/null; then
+      fail "unsafe environment accepted: ${unsafe_path}"
+    fi
+    [[ ! -s "${TEMP_DIR}/rejected.out" ]] || fail 'unsafe input exposed environment contents'
+  done
 
   if grep -Eq 'docker (system prune|volume prune)|config\.sh remove|svc\.sh uninstall|userdel|rm -rf' "$HOST_SCRIPT"; then
     fail 'host reconciler contains a forbidden destructive operation'

@@ -151,12 +151,13 @@ util/reconcile-public-pr-arm64-pool.sh \
 
 After applying, inspect a bounded UTC interval on each host and correlate
 `run_id` and `runner` with the GitHub job summary and step timestamps:
+Set `RECONCILE_START_UTC` and `RECONCILE_END_UTC` to the actual apply interval.
 
 ```bash
 sudo journalctl \
   -t actions-runner-telemetry \
-  --since '2026-08-29 12:00:00 UTC' \
-  --until '2026-08-29 13:00:00 UTC' \
+  --since "${RECONCILE_START_UTC:?set the apply start time in UTC}" \
+  --until "${RECONCILE_END_UTC:?set the apply end time in UTC}" \
   -o cat
 ```
 

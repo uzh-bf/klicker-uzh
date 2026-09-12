@@ -160,11 +160,50 @@ render_hook() {
 
 render_runner_env() {
   local existing_file=$1
-  if [[ -f "$existing_file" ]]; then
-    grep -Ev '^ACTIONS_RUNNER_HOOK_JOB_(STARTED|COMPLETED)=' "$existing_file" || true
-  fi
-  printf 'ACTIONS_RUNNER_HOOK_JOB_STARTED=%s\n' "$START_HOOK"
-  printf 'ACTIONS_RUNNER_HOOK_JOB_COMPLETED=%s\n' "$COMPLETE_HOOK"
+  # Shell pathname checks cannot protect a subsequent root read from replacement.
+  python3 - "$existing_file" "$START_HOOK" "$COMPLETE_HOOK" <<'PY'
+import os
+import stat
+import sys
+
+try:
+    path, started, completed = sys.argv[1:]
+    if not path.startswith('/') or '..' in path.split('/'):
+        raise ValueError('expected an absolute environment path')
+    parts = [part for part in path.split('/') if part and part != '.']
+    directory = os.open('/', os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for part in parts[:-1]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                            dir_fd=directory)
+            os.close(directory)
+            directory = child
+        try:
+            descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                                 dir_fd=directory)
+        except FileNotFoundError:
+            contents = b''
+        else:
+            with os.fdopen(descriptor, 'rb') as source:
+                metadata = os.fstat(source.fileno())
+                if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+                    raise ValueError('environment must be a single-link regular file')
+                contents = source.read(1024 * 1024 + 1)
+                if len(contents) > 1024 * 1024 or b'\x00' in contents:
+                    raise ValueError('invalid environment contents')
+    finally:
+        os.close(directory)
+    keys = (b'ACTIONS_RUNNER_HOOK_JOB_STARTED=', b'ACTIONS_RUNNER_HOOK_JOB_COMPLETED=')
+    retained = [line for line in contents.split(b'\n') if not line.startswith(keys)]
+    output = b'\n'.join(retained)
+    if output and not output.endswith(b'\n'):
+        output += b'\n'
+    output += keys[0] + os.fsencode(started) + b'\n'
+    output += keys[1] + os.fsencode(completed) + b'\n'
+    sys.stdout.buffer.write(output)
+except (OSError, ValueError):
+    sys.exit('ERROR: runner environment could not be safely read')
+PY
 }
 
 expected_digest() {
@@ -186,6 +225,7 @@ managed_file_matches() {
 
 validate_platform() {
   local architecture cpu_count memory_kb available_kb
+  command -v python3 >/dev/null 2>&1 || die 'Python 3 is required for safe environment reads'
   [[ "$(id -u)" == '0' ]] || die 'run as root or through sudo -n'
   architecture=$(uname -m)
   [[ "$architecture" == 'aarch64' || "$architecture" == 'arm64' ]] ||
