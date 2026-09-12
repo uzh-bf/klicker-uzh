@@ -471,6 +471,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         type: KBResourceType.URL,
         title: 'Graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         sourceUrl: 'https://example.com/graph-source',
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
@@ -527,6 +528,71 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
     ).resolves.toBe(1)
+  })
+
+  it('builds only from course-content resources and refuses builds without any', async () => {
+    const kb = await createKb({ name: 'Tagged graph sources' }, userOneCtx)
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Lecture script',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        sourceUrl: 'https://example.com/script',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'c'.repeat(64),
+      },
+    })
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Platform tutorial',
+        materialType: KBResourceMaterialType.ADMINISTRATIVE,
+        sourceUrl: 'https://example.com/tutorial',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'd'.repeat(64),
+      },
+    })
+
+    const config = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+    const sources = await prisma.kBGraphBuildSource.findMany({
+      where: { buildId: config.buildId! },
+    })
+    expect(sources.map(({ title }) => title)).toEqual(['Lecture script'])
+
+    const untaggedKb = await createKb(
+      { name: 'Untagged graph sources' },
+      userOneCtx
+    )
+    await setKbKnowledgeGraphEnabled(
+      { kbId: untaggedKb.id, enabled: true },
+      userOneCtx
+    )
+    await prisma.kBResource.create({
+      data: {
+        kbId: untaggedKb.id,
+        type: KBResourceType.URL,
+        title: 'Syllabus',
+        materialType: KBResourceMaterialType.ADMINISTRATIVE,
+        sourceUrl: 'https://example.com/syllabus',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'e'.repeat(64),
+      },
+    })
+
+    await expect(
+      rebuildKbKnowledgeGraph({ kbId: untaggedKb.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_NO_COURSE_CONTENT' },
+    })
+    await expect(
+      prisma.kBGraphBuild.count({ where: { kbId: untaggedKb.id } })
+    ).resolves.toBe(0)
   })
 
   it('creates and lists only the current users knowledge bases', async () => {

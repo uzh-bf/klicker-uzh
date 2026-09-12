@@ -1933,6 +1933,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphLoadError: 'The graph status could not be loaded.',
     graphRetry: 'Retry',
     graphBuildError: 'The graph build could not be started.',
+    graphNoCourseContent:
+      'No resources are categorized as “Course content”. Tag your course materials before building the graph — administrative resources are excluded.',
     graphQuotaInsufficient:
       'The selected build is estimated at {estimate}, but only {remaining} remains in your semester quota. Choose a lower-cost quality level if available, or wait for the quota to reset.',
     graphPreviewTitle: 'Published graph',
