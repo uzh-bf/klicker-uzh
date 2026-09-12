@@ -432,6 +432,8 @@ const chatbotOwnerSelect = {
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
+  knowledgeGraphVisible: true,
+  knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
   creditResetPeriod: true,
   creditResetAmount: true,
@@ -460,6 +462,8 @@ type ChatbotWithOwnerCourse = {
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
+  knowledgeGraphVisible: boolean
+  knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
@@ -611,7 +615,26 @@ function cloneJson(value: unknown): unknown {
   )
 }
 
-function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
+type ChatbotKnowledgeGraphPolicy = {
+  visible: boolean
+  retrievalEnabled: boolean
+}
+
+// Live columns are the fallback for revisions saved before these fields existed.
+function knowledgeGraphPolicyFromLive(chatbot: {
+  knowledgeGraphVisible: boolean
+  knowledgeGraphRetrievalEnabled: boolean
+}): ChatbotKnowledgeGraphPolicy {
+  return {
+    visible: chatbot.knowledgeGraphVisible,
+    retrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
+  }
+}
+
+function parseStoredRevision(
+  value: unknown,
+  live: ChatbotKnowledgeGraphPolicy
+): ChatbotAuthoringRevision | null {
   if (!isRecord(value)) return null
 
   if (typeof value.name !== 'string') return null
@@ -704,6 +727,20 @@ function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
     return null
   }
 
+  // A missing flag inherits the live value; a non-boolean is rejected.
+  if (
+    value.knowledgeGraphVisible !== undefined &&
+    typeof value.knowledgeGraphVisible !== 'boolean'
+  ) {
+    return null
+  }
+  if (
+    value.knowledgeGraphRetrievalEnabled !== undefined &&
+    typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
+  ) {
+    return null
+  }
+
   return {
     name: value.name,
     description: value.description,
@@ -733,6 +770,14 @@ function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
       value.disclaimerId === undefined
         ? null
         : (value.disclaimerId as string | null),
+    knowledgeGraphVisible:
+      value.knowledgeGraphVisible === undefined
+        ? live.visible
+        : value.knowledgeGraphVisible,
+    knowledgeGraphRetrievalEnabled:
+      value.knowledgeGraphRetrievalEnabled === undefined
+        ? live.retrievalEnabled
+        : value.knowledgeGraphRetrievalEnabled,
   }
 }
 
@@ -762,6 +807,8 @@ function buildRevisionFromLive(
     publicationUseCase: chatbot.publicationUseCase,
     expectedStudentCount: chatbot.expectedStudentCount,
     disclaimerId: chatbot.disclaimer?.id ?? chatbot.disclaimerId,
+    knowledgeGraphVisible: chatbot.knowledgeGraphVisible,
+    knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
   }
 }
 
@@ -802,7 +849,10 @@ function projectAuthoringRevision(
   if (chatbot.draftConfig === null || chatbot.draftConfig === undefined) {
     return null
   }
-  const revision = parseStoredRevision(chatbot.draftConfig)
+  const revision = parseStoredRevision(
+    chatbot.draftConfig,
+    knowledgeGraphPolicyFromLive(chatbot)
+  )
   if (!revision) return null
 
   return revisionProjection(
@@ -887,7 +937,10 @@ function getRevisionSnapshot(chatbot: ChatbotRevisionRecord) {
   const snapshot =
     chatbot.draftConfig === null || chatbot.draftConfig === undefined
       ? buildRevisionFromLive(chatbot)
-      : parseStoredRevision(chatbot.draftConfig)
+      : parseStoredRevision(
+          chatbot.draftConfig,
+          knowledgeGraphPolicyFromLive(chatbot)
+        )
   if (!snapshot) {
     throw chatbotError(
       'Saved chatbot revision is invalid and must be edited again',
@@ -924,6 +977,8 @@ function revisionLiveData(
       revision.allowedReasoningEffortsByModel === null
         ? Prisma.JsonNull
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
+    knowledgeGraphVisible: revision.knowledgeGraphVisible,
+    knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
     creditResetPeriod: revision.creditResetPeriod,
     creditResetAmount: revision.creditResetAmount,
@@ -1121,6 +1176,11 @@ type RevisionDisclaimerInput = {
   introText: string
 }
 
+type RevisionKnowledgeGraphPolicyInput = {
+  visible: boolean
+  retrievalEnabled: boolean
+}
+
 // Omitted sections retain the saved revision. Metadata patches individual fields;
 // other supplied sections use their existing complete-section normalization.
 export type ChatbotRevisionSaveInput = {
@@ -1133,6 +1193,7 @@ export type ChatbotRevisionSaveInput = {
   standardModeConfig?: ChatbotStandardModeConfigInput | null
   creditPolicy?: ChatbotCreditPolicy | null
   disclaimer?: RevisionDisclaimerInput | null
+  knowledgeGraphPolicy?: RevisionKnowledgeGraphPolicyInput | null
 }
 
 export async function saveChatbotRevision(
@@ -1156,6 +1217,7 @@ export async function saveChatbotRevision(
     'standardModeConfig',
     'creditPolicy',
     'disclaimer',
+    'knowledgeGraphPolicy',
   ] as const
   if (
     !input ||
@@ -1193,6 +1255,9 @@ export async function saveChatbotRevision(
       : {}),
     ...(input.creditPolicy
       ? normalizeAndValidateCreditPolicy(input.creditPolicy)
+      : {}),
+    ...(input.knowledgeGraphPolicy
+      ? normalizeRevisionKnowledgeGraphPolicy(input.knowledgeGraphPolicy)
       : {}),
   }
   const disclaimer = input.disclaimer
@@ -1315,6 +1380,26 @@ function normalizeRevisionMetadata(
       ? { description: args.description }
       : {}),
     ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
+  }
+}
+
+function normalizeRevisionKnowledgeGraphPolicy(
+  args: RevisionKnowledgeGraphPolicyInput
+) {
+  // GraphQL enforces required booleans; reject non-booleans at this seam too.
+  if (
+    typeof args.visible !== 'boolean' ||
+    typeof args.retrievalEnabled !== 'boolean'
+  ) {
+    throw chatbotError(
+      'Knowledge-graph policy values must be booleans',
+      'BAD_USER_INPUT'
+    )
+  }
+
+  return {
+    knowledgeGraphVisible: args.visible,
+    knowledgeGraphRetrievalEnabled: args.retrievalEnabled,
   }
 }
 
@@ -1902,6 +1987,9 @@ export async function createChatbot(
       modelSelection: false,
       allowedModelIds: [auto.id],
       allowedReasoningEffortsByModel: Prisma.DbNull,
+      // New chatbots start with the participant map off (lecturer opts in).
+      knowledgeGraphVisible: false,
+      knowledgeGraphRetrievalEnabled: false,
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
       // systemPrompts intentionally left unset (null): the chat runtime

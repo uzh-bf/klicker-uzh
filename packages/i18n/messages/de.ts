@@ -5023,6 +5023,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerPending: 'Ausstehend',
       mcpConfigurations: 'MCP-Konfigurationen',
       knowledgeBase: 'Wissensdatenbank',
+      knowledgeGraphPolicy: 'Wissensgraph',
+      knowledgeGraphPolicyDescription:
+        'Steuern Sie die Konzeptkarte für Teilnehmende und die graphgestützte Dokumentsuche unabhängig voneinander. Beide Einstellungen werden in der Chatbot-Revision gespeichert und nach der Freigabe wirksam.',
+      knowledgeGraphVisible: 'Konzeptkarte für Teilnehmende anzeigen',
+      knowledgeGraphVisibleEnabledDescription:
+        'Ein: Teilnehmende können die Konzeptkarte für diesen Chatbot öffnen.',
+      knowledgeGraphVisibleDisabledDescription:
+        'Aus: Die Konzeptkarte bleibt für Teilnehmende verborgen.',
+      knowledgeGraphRetrieval:
+        'Graphverbindungen für die Dokumentsuche verwenden',
+      knowledgeGraphRetrievalDescription:
+        'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
+      knowledgeGraphSave: 'Wissensgraph-Einstellungen speichern',
+      knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:
         'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
       noMcpConfigurations: 'Keine MCP-Konfigurationen.',

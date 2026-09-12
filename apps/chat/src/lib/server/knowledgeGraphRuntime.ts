@@ -35,6 +35,10 @@ type KnowledgeGraphModule = {
     context: PublishedKnowledgeGraph,
     nodeId: string
   ) => Promise<KnowledgeGraphResponse>
+  readKnowledgeGraphSearchHints: (
+    context: PublishedKnowledgeGraph,
+    query: string
+  ) => Promise<string[]>
 }
 
 const nodeRequire = createRequire(import.meta.url)
@@ -108,6 +112,16 @@ export async function readKnowledgeGraphNeighbors(
   return (await loadKnowledgeGraph()).readKnowledgeGraphNeighbors(
     context,
     nodeId
+  )
+}
+
+export async function readKnowledgeGraphSearchHints(
+  context: PublishedKnowledgeGraph,
+  query: string
+): Promise<string[]> {
+  return (await loadKnowledgeGraph()).readKnowledgeGraphSearchHints(
+    context,
+    query
   )
 }
 

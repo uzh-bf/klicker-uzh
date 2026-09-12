@@ -155,6 +155,26 @@ describe('chat knowledge graph API client', () => {
     expect(JSON.stringify(useChatStore.getState())).not.toContain('secret')
   })
 
+  it('does not open the participation gate when the map is disabled', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          code: 'KNOWLEDGE_GRAPH_DISABLED',
+          error: 'Knowledge graph is disabled for this chatbot',
+        },
+        403
+      )
+    )
+    const dataSource = createChatKnowledgeGraphDataSource(chatbotId, fetcher)
+
+    await expect(dataSource.overview()).rejects.toMatchObject({
+      message: 'Knowledge graph request failed',
+      retryable: false,
+      status: 403,
+    })
+    expect(useChatStore.getState().participationRequired).toBe(false)
+  })
+
   it('uses authedFetch so the guest bearer token reaches the API', async () => {
     sessionStorage.setItem(CHAT_GUEST_SESSION_STORAGE_KEY, 'guest-token')
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(graphResponse))

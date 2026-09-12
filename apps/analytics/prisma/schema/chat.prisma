@@ -197,6 +197,12 @@ model Chatbot {
   allowedModelIds                String[] @default([]) // Restrict to these registry model IDs (empty = all models)
   allowedReasoningEffortsByModel Json? // { [modelId: string]: ReasoningEffort[] } where missing key = all supported efforts
 
+  // Independent lecturer controls for the participant concept map and for
+  // graph-assisted document search; not the KB's own graph-generation flag.
+  // The default keeps existing chatbots on the map they already had.
+  knowledgeGraphVisible          Boolean @default(true)
+  knowledgeGraphRetrievalEnabled Boolean @default(false)
+
   // OpenAI-compatible Configuration
   openaiApiKey  String? @db.Text // Encrypted API key using APP_SECRET
   openaiBaseUrl String? // Optional custom endpoint (defaults to model config)

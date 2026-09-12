@@ -45,6 +45,8 @@ type KnowledgeGraphViewerProps = {
   className?: string
   unavailableMessage?: string
   labels?: KnowledgeGraphViewerLabelOverrides
+  /** 'search' opens the search entry without automatically fetching an overview. */
+  initialView?: 'overview' | 'search'
 }
 
 function isUnavailableError(error: unknown): boolean {
@@ -78,7 +80,11 @@ export function KnowledgeGraphViewer({
   className = '',
   unavailableMessage,
   labels: labelOverrides,
+  initialView = 'overview',
 }: KnowledgeGraphViewerProps) {
+  const searchFirst = initialView === 'search'
+  const initialViewRef = useRef(initialView)
+  initialViewRef.current = initialView
   const labels = useMemo(
     () => resolveKnowledgeGraphLabels(labelOverrides),
     [labelOverrides]
@@ -232,7 +238,9 @@ export function KnowledgeGraphViewer({
     cyRef.current?.elements().remove()
     setSearchQuery('')
     dispatch({ type: 'reset' })
-    void loadOverview()
+    if (initialViewRef.current !== 'search') {
+      void loadOverview()
+    }
   }, [dataSource, loadOverview])
 
   useEffect(() => {
@@ -747,12 +755,22 @@ export function KnowledgeGraphViewer({
             </div>
           )}
 
-          {state.status === 'loading' || state.status === 'idle' ? (
+          {state.status === 'loading' ||
+          (state.status === 'idle' && !searchFirst) ? (
             <div
               role="status"
               className="absolute inset-0 flex items-center justify-center bg-white/90 p-6 text-center text-[#4C4C4C]"
             >
               {labels.loading}
+            </div>
+          ) : null}
+
+          {state.status === 'idle' && searchFirst ? (
+            <div
+              role="status"
+              className="absolute inset-0 flex items-center justify-center bg-white/90 p-6 text-center text-[#4C4C4C]"
+            >
+              {labels.searchFirstPrompt}
             </div>
           ) : null}
 

@@ -41,6 +41,8 @@ type ChatbotRevisionValues = Pick<
   | 'disclaimerIntroText'
   | 'publicationUseCase'
   | 'expectedStudentCount'
+  | 'knowledgeGraphVisible'
+  | 'knowledgeGraphRetrievalEnabled'
 >
 
 function getChatbotAuthoringRevision(chatbot: RevisionChatbot) {
@@ -101,6 +103,12 @@ function getChatbotRevisionValues(
     expectedStudentCount: revision
       ? revision.expectedStudentCount
       : (chatbot.expectedStudentCount ?? null),
+    knowledgeGraphVisible: revision
+      ? revision.knowledgeGraphVisible
+      : chatbot.knowledgeGraphVisible,
+    knowledgeGraphRetrievalEnabled: revision
+      ? revision.knowledgeGraphRetrievalEnabled
+      : chatbot.knowledgeGraphRetrievalEnabled,
   }
 }
 

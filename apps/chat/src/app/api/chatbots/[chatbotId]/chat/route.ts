@@ -1114,6 +1114,8 @@ export async function POST(
         authMode,
         kbIds: scopedKbIds,
         sessionId: mcpScopeSessionId,
+        knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
+        courseId: chatbot.courseId,
       })
       mcpTools = mcpToolsHandle.tools
     } catch (error) {

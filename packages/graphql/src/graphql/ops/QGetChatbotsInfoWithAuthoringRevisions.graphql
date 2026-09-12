@@ -29,6 +29,8 @@ query QGetChatbotsInfoWithAuthoringRevisions {
       modelId
       efforts
     }
+    knowledgeGraphVisible
+    knowledgeGraphRetrievalEnabled
     creditInitialCredits
     creditResetPeriod
     creditResetAmount

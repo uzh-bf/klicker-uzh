@@ -757,6 +757,8 @@ type Chatbot {
   enabledKnowledgeBase: ChatbotKnowledgeBaseSummary
   expectedStudentCount: Int
   id: ID!
+  knowledgeGraphRetrievalEnabled: Boolean!
+  knowledgeGraphVisible: Boolean!
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]!
   modelSelection: Boolean!
   name: String!
@@ -783,6 +785,8 @@ type ChatbotAuthoringRevision {
   disclaimerIntroText: String
   disclaimerTitle: String
   expectedStudentCount: Int
+  knowledgeGraphRetrievalEnabled: Boolean!
+  knowledgeGraphVisible: Boolean!
   modelSelection: Boolean!
   name: String!
   publicationUseCase: String
@@ -848,6 +852,11 @@ input ChatbotRevisionDisclaimerInput {
   title: String!
 }
 
+input ChatbotRevisionKnowledgeGraphPolicyInput {
+  retrievalEnabled: Boolean!
+  visible: Boolean!
+}
+
 input ChatbotRevisionMetadataInput {
   avatar: String
   description: String
@@ -863,6 +872,7 @@ input ChatbotRevisionModelPolicyInput {
 input ChatbotRevisionSaveInput {
   creditPolicy: ChatbotCreditPolicyInput
   disclaimer: ChatbotRevisionDisclaimerInput
+  knowledgeGraphPolicy: ChatbotRevisionKnowledgeGraphPolicyInput
   metadata: ChatbotRevisionMetadataInput
   modelPolicy: ChatbotRevisionModelPolicyInput
   standardModeConfig: ChatbotStandardModeConfigInput

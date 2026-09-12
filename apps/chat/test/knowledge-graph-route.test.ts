@@ -102,7 +102,7 @@ beforeEach(() => {
   boundaries.withChatbotAuth.mockResolvedValue({
     participantId: 'participant-id',
     authMode: 'account',
-    chatbot: { courseId: 'course-id' },
+    chatbot: { courseId: 'course-id', knowledgeGraphVisible: true },
   })
   boundaries.getPublishedKnowledgeGraphForChatbot.mockResolvedValue(publication)
   boundaries.isKnowledgeGraphNotPublishedError.mockImplementation(
@@ -146,6 +146,26 @@ describe('participant knowledge graph route', () => {
     const result = await callRoute('operation=overview')
 
     expect(result.status).toBe(403)
+    expect(
+      boundaries.getPublishedKnowledgeGraphForChatbot
+    ).not.toHaveBeenCalled()
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
+  it('refuses the graph with a dedicated code when the map is disabled', async () => {
+    boundaries.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-id',
+      authMode: 'account',
+      chatbot: { courseId: 'course-id', knowledgeGraphVisible: false },
+    })
+
+    const result = await callRoute('operation=overview')
+
+    expect(result.status).toBe(403)
+    await expect(result.json()).resolves.toEqual({
+      code: 'KNOWLEDGE_GRAPH_DISABLED',
+      error: 'Knowledge graph is disabled for this chatbot',
+    })
     expect(
       boundaries.getPublishedKnowledgeGraphForChatbot
     ).not.toHaveBeenCalled()

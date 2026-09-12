@@ -47,6 +47,7 @@ export default async function ChatLayout({
     avatar: true,
     systemPrompts: true,
     standardModeConfig: true,
+    knowledgeGraphVisible: true,
     mcpConfigurations: {
       select: {
         allowedTools: true,
@@ -76,6 +77,7 @@ export default async function ChatLayout({
           avatar: chatbot.avatar ?? undefined,
         }}
         initialModeOptions={initialModeOptions}
+        knowledgeGraphVisible={chatbot.knowledgeGraphVisible}
       />
       {children}
     </>

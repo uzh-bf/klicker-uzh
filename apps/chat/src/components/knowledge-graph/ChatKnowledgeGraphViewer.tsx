@@ -30,6 +30,7 @@ export function ChatKnowledgeGraphViewer({
   return (
     <DynamicKnowledgeGraphViewer
       dataSource={dataSource}
+      initialView="search"
       unavailableMessage="The knowledge graph is not available yet. Please try again later or contact your lecturer."
       className="!min-h-0 flex-1"
     />

@@ -26,6 +26,10 @@ export type ChatbotAuthoringRevision = {
   publicationUseCase: string | null
   expectedStudentCount: number | null
 
+  /** Revisions saved before these fields existed inherit the live flags. */
+  knowledgeGraphVisible: boolean
+  knowledgeGraphRetrievalEnabled: boolean
+
   /** Internal link for a staged disclaimer; never exposed in GraphQL. */
   disclaimerId?: string | null
 }

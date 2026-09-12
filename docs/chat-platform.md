@@ -873,6 +873,35 @@ components. Direct thread URL
 activation resynchronizes the thread's stored chat mode once per activation,
 without overriding a mode manually chosen afterward.
 
+The lecturer controls the student map with `Chatbot.knowledgeGraphVisible` and
+graph-assisted document search independently with
+`Chatbot.knowledgeGraphRetrievalEnabled`. Both follow the authoring-revision
+approval lifecycle. Existing chatbots retain map visibility; new chatbots start
+with both options off. A disabled map hides the workspace switch and its API
+returns `403 KNOWLEDGE_GRAPH_DISABLED`. Student maps start with concept search;
+the lecturer viewer retains its overview entry.
+
+Graph-assisted document search uses the native FalkorDB reader in
+`packages/knowledge-graph/src/retrieval.ts` through the shared MCP tool adapter.
+It applies only to the student chat's configured KB document tool. A current,
+single published graph supplies at most six neighboring concept names from
+fixed, parameterized, one-hop queries. The original document query remains
+intact; at most one additional document query runs per tool instance. The
+adapter combines compatible `mode: documents` passages within 12 passages and
+16,000 content characters, retaining provider source groups and locators.
+Graph descriptions and LightRAG extraction references never become citations.
+Stale graphs and optional graph/expansion failures retain document-only results.
+Changed course access or KB bindings suppress both results because the original
+MCP transport scope cannot be narrowed after issuance. This basic query-expansion
+path adds no retrieval framework or semantic index and makes no measured answer
+quality claim. Owner previews continue using ordinary document retrieval.
+
+The opt-in `packages/knowledge-graph/test/retrieval.integration.test.ts` requires
+`GRAPH_RETRIEVAL_TEST_PORT` on a disposable local FalkorDB, optionally
+`GRAPH_RETRIEVAL_TEST_HOST=host.docker.internal` for a container test runner.
+It uses a unique synthetic graph and removes only that graph. Without the
+explicit test port, it skips and does not prove native retrieval.
+
 Switching mode mid-thread affects **only the turns sent afterwards**, and the choice is not
 persisted until the next send: a thread's stored mode is `lastChatMode`, derived from its most
 recent message's `chatMode`, so a switch that is never followed by a message leaves no trace.

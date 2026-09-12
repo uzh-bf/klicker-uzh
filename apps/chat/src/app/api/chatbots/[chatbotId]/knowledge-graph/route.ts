@@ -60,6 +60,18 @@ export async function GET(
     return authResult.response
   }
 
+  // A disabled map exposes no graph data. It is not a participation failure,
+  // so it carries its own code instead of the participation-required response.
+  if (!authResult.chatbot.knowledgeGraphVisible) {
+    return NextResponse.json(
+      {
+        code: 'KNOWLEDGE_GRAPH_DISABLED',
+        error: 'Knowledge graph is disabled for this chatbot',
+      },
+      { status: 403 }
+    )
+  }
+
   const readRequest = parseReadRequest(req)
   if (readRequest === null) {
     return invalidRequestResponse()

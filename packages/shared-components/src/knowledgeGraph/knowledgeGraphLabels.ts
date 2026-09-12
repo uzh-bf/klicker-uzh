@@ -39,6 +39,7 @@ export type KnowledgeGraphViewerLabels = {
   shapeRoundedSquare: string
   shapeHexagon: string
   loading: string
+  searchFirstPrompt: string
   unavailableTitle: string
   notReadyTitle: string
   checkAgain: string
@@ -95,6 +96,7 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   shapeRoundedSquare: 'rounded square',
   shapeHexagon: 'hexagon',
   loading: 'Loading knowledge graph…',
+  searchFirstPrompt: 'Search for a concept to explore the knowledge graph.',
   unavailableTitle: 'Knowledge graph unavailable',
   notReadyTitle: 'Knowledge graph not ready',
   checkAgain: 'Check again',

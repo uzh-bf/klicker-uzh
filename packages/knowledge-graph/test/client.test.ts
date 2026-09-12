@@ -18,6 +18,7 @@ import {
   closeKnowledgeGraphClient,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
+  readKnowledgeGraphSearchHints,
   searchKnowledgeGraph,
 } from '../src/client.js'
 import type { PublishedKnowledgeGraph } from '../src/publication.js'
@@ -84,6 +85,31 @@ describe('knowledge graph client', () => {
     })
     expect(sdk.on).toHaveBeenCalledWith('error', expect.any(Function))
     expect(sdk.selectGraph).toHaveBeenCalledWith(context.graphName)
+  })
+
+  it('retrieves related concept hints with read-only traversal and short timeouts', async () => {
+    sdk.roQuery
+      .mockResolvedValueOnce({ data: [exampleLectureNodeRows[0]] })
+      .mockResolvedValueOnce({ data: [exampleLectureNodeRows[1]] })
+    expect(
+      await readKnowledgeGraphSearchHints(context, 'Explain the example method')
+    ).toEqual(['Example metric'])
+    expect(sdk.roQuery).toHaveBeenCalledTimes(2)
+    expect(sdk.roQuery.mock.calls[1]?.[1]).toMatchObject({
+      params: { seedIds: ['12'] },
+      TIMEOUT: 500,
+    })
+    expect(sdk.query).not.toHaveBeenCalled()
+  })
+
+  it('never reads stale graphs for retrieval hints', async () => {
+    expect(
+      await readKnowledgeGraphSearchHints(
+        { ...context, isStale: true },
+        'example'
+      )
+    ).toEqual([])
+    expect(sdk.roQuery).not.toHaveBeenCalled()
   })
 
   it('uses roQuery with parameters and the configured timeout only', async () => {

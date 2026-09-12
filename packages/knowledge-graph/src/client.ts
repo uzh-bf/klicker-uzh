@@ -6,27 +6,34 @@ import type {
 import { FalkorDB, type Graph } from 'falkordb'
 
 import {
+  getKnowledgeGraphConfig,
   KNOWLEDGE_GRAPH_NEIGHBOR_EDGE_LIMIT,
   KNOWLEDGE_GRAPH_NEIGHBOR_NODE_LIMIT,
   KNOWLEDGE_GRAPH_OVERVIEW_EDGE_LIMIT,
   KNOWLEDGE_GRAPH_OVERVIEW_NODE_LIMIT,
   KNOWLEDGE_GRAPH_SEARCH_NODE_LIMIT,
   type KnowledgeGraphConfig,
-  getKnowledgeGraphConfig,
 } from './config.js'
 import {
   normalizeKnowledgeGraphEdge,
   normalizeKnowledgeGraphNode,
 } from './normalize.js'
-import { type PublishedKnowledgeGraph } from './publication.js'
+import type { PublishedKnowledgeGraph } from './publication.js'
 import {
-  type KnowledgeGraphEdgeRow,
-  type KnowledgeGraphNodeRow,
   getEdgesForNodeIdsQuery,
   getNeighborhoodNodesQuery,
   getOverviewNodesQuery,
   getSearchNodesQuery,
+  type KnowledgeGraphEdgeRow,
+  type KnowledgeGraphNodeRow,
 } from './queries.js'
+import {
+  GRAPH_SEARCH_HINT_LIMIT,
+  GRAPH_SEARCH_QUERY_TIMEOUT_MS,
+  graphSearchNeighborsQuery,
+  graphSearchSeedsQuery,
+  graphSearchTerms,
+} from './retrieval.js'
 
 type ClientSession = {
   client: FalkorDB
@@ -275,4 +282,51 @@ export async function readKnowledgeGraphNeighbors(
     allNodes.length > KNOWLEDGE_GRAPH_NEIGHBOR_NODE_LIMIT ||
       edgeRows.length > KNOWLEDGE_GRAPH_NEIGHBOR_EDGE_LIMIT
   )
+}
+
+/** Related concept names are search hints, never source evidence. */
+export async function readKnowledgeGraphSearchHints(
+  context: PublishedKnowledgeGraph,
+  query: string
+): Promise<string[]> {
+  if (context.isStale) return []
+  const terms = graphSearchTerms(query)
+  if (terms.length === 0) return []
+  const { graph, config } = await graphSession(context.graphName)
+  const boundedConfig = {
+    ...config,
+    queryTimeoutMs: Math.min(
+      config.queryTimeoutMs,
+      GRAPH_SEARCH_QUERY_TIMEOUT_MS
+    ),
+  }
+  const seeds = normalizedNodes(
+    await readRows<KnowledgeGraphNodeRow>(
+      graph,
+      boundedConfig,
+      graphSearchSeedsQuery(terms)
+    ),
+    context
+  )
+  if (seeds.length === 0) return []
+  const neighbors = normalizedNodes(
+    await readRows<KnowledgeGraphNodeRow>(
+      graph,
+      boundedConfig,
+      graphSearchNeighborsQuery(
+        seeds.map((node) => node.id),
+        terms
+      )
+    ),
+    context
+  )
+  return [...new Set(neighbors.map((node) => node.displayLabel))]
+    .filter(
+      (name) =>
+        name.length <= 100 &&
+        /^[\p{L}\p{N}\s()&.,+/-]+$/u.test(name) &&
+        !/^Concept \d+$/.test(name) &&
+        !query.toLowerCase().includes(name.toLowerCase())
+    )
+    .slice(0, GRAPH_SEARCH_HINT_LIMIT)
 }

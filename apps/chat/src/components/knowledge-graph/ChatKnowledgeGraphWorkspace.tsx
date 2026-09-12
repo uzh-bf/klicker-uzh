@@ -77,6 +77,15 @@ async function publicationStatus(
   }
 }
 
+async function isKnowledgeGraphDisabled(response: Response): Promise<boolean> {
+  try {
+    const body = (await response.json()) as { code?: unknown }
+    return body.code === 'KNOWLEDGE_GRAPH_DISABLED'
+  } catch {
+    return false
+  }
+}
+
 async function readKnowledgeGraphResponse(
   url: string,
   fetcher: KnowledgeGraphFetch
@@ -88,7 +97,10 @@ async function readKnowledgeGraphResponse(
     )
   }
   if (response.status === 403) {
-    useChatStore.getState().setParticipationRequired(true)
+    // A disabled map is not a participation failure.
+    if (!(await isKnowledgeGraphDisabled(response))) {
+      useChatStore.getState().setParticipationRequired(true)
+    }
     throw new ChatKnowledgeGraphRequestError(403, false)
   }
   if (!response.ok) {

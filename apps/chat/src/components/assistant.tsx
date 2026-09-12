@@ -54,6 +54,7 @@ interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
   readonly initialModeOptionsAreFallback?: boolean
+  readonly knowledgeGraphVisible: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -75,6 +76,7 @@ export function Assistant({
   chatbot,
   initialModeOptions,
   initialModeOptionsAreFallback = false,
+  knowledgeGraphVisible,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -143,6 +145,7 @@ export function Assistant({
             chatbot={chatbot}
             initialModeOptions={initialModeOptions}
             initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            knowledgeGraphVisible={knowledgeGraphVisible}
           />
         </RuntimeProvider>
       </ChatUiProvider>
@@ -493,11 +496,13 @@ function ThreadSkeleton() {
 function SidebarMain({
   chatbot,
   graphMode,
+  knowledgeGraphVisible,
   initialModeOptions,
   initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
   graphMode: boolean
+  knowledgeGraphVisible: boolean
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback: boolean
 }) {
@@ -573,11 +578,13 @@ function SidebarMain({
           </TooltipTrigger>
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
-        <ChatGraphModeSwitch
-          chatbotId={chatbot.id}
-          compact
-          className="col-span-4 justify-self-end sm:col-span-1"
-        />
+        {knowledgeGraphVisible ? (
+          <ChatGraphModeSwitch
+            chatbotId={chatbot.id}
+            compact
+            className="col-span-4 justify-self-end sm:col-span-1"
+          />
+        ) : null}
       </header>
       <MobileCreditsBar />
       <main
@@ -611,15 +618,17 @@ function AssistantLayout({
   chatbot,
   initialModeOptions,
   initialModeOptionsAreFallback,
+  knowledgeGraphVisible,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback: boolean
+  knowledgeGraphVisible: boolean
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
   const pathname = usePathname()
-  const graphMode = pathname === `/${chatbot.id}/graph`
+  const graphMode = knowledgeGraphVisible && pathname === `/${chatbot.id}/graph`
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextLabel = getKlickerChatContextLabel(context)
@@ -632,6 +641,7 @@ function AssistantLayout({
         <SidebarMain
           chatbot={chatbot}
           graphMode={graphMode}
+          knowledgeGraphVisible={knowledgeGraphVisible}
           initialModeOptions={initialModeOptions}
           initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
@@ -646,11 +656,13 @@ function AssistantLayout({
           {chatbot.name}
         </h1>
         <EmbeddedSettings />
-        <ChatGraphModeSwitch
-          chatbotId={chatbot.id}
-          compact
-          className="col-span-2 justify-self-end sm:col-span-1"
-        />
+        {knowledgeGraphVisible ? (
+          <ChatGraphModeSwitch
+            chatbotId={chatbot.id}
+            compact
+            className="col-span-2 justify-self-end sm:col-span-1"
+          />
+        ) : null}
       </div>
       <main
         id="main-content"
