@@ -36,6 +36,7 @@ const current = {
   stem: 'Which answer is correct?',
   context: null,
   explanation: 'A is correct.',
+  tags: ['generated'],
   choices: [
     {
       id: 'choice-a',

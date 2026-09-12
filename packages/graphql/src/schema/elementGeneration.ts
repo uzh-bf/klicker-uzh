@@ -532,7 +532,7 @@ function editableView(
     explanation: question.explanation,
     choices: question.choices,
     cardType: null,
-    tags: [],
+    tags: question.tags ?? [],
   }
 }
 

@@ -472,6 +472,7 @@ const finalQuestionSchema = z
   .object({
     id: canonicalIdentifier(200),
     title: boundedText(500).optional(),
+    suggested_tags: z.array(boundedText(200)).max(50).optional(),
     stem: boundedText(10_000),
     context_inline: z.string().trim().max(20_000).nullable().optional(),
     explanation: z.string().trim().max(20_000).nullable().optional(),
@@ -599,6 +600,17 @@ function normalizedPlainText(value: string): string {
     .replace(/[`*_~>#]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function normalizeSuggestedTags(value: string[] | undefined): string[] {
+  const tags: string[] = []
+  for (const candidate of value ?? []) {
+    const tag = normalizedPlainText(candidate)
+    if (!tag || tags.includes(tag)) continue
+    tags.push(tag)
+    if (tags.length === 5) break
+  }
+  return tags
 }
 
 export function deriveGeneratedQuestionName(
@@ -1439,6 +1451,7 @@ function normalizeFinalQuestion(
     stem: question.stem.trim(),
     context: optionalText(question.context_inline),
     explanation: optionalText(question.explanation),
+    tags: normalizeSuggestedTags(question.suggested_tags),
     choices,
     bloomLevel: question.bloom_level,
     targetDifficulty:
