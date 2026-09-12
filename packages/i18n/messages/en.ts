@@ -1939,6 +1939,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'This published graph does not include an element-generation bundle yet. Rebuild it to generate Klicker elements.',
     graphPreviewUnavailable:
       'Build and publish a graph before opening the lecturer viewer.',
+    graphDomainLabel: 'Domain',
+    graphDomainSelectPlaceholder: 'Select a domain',
+    graphDomainFinance: 'Finance',
+    graphDomainEconomics: 'Economics',
+    graphDomainBusiness: 'Business Administration',
+    graphDomainMathematics: 'Mathematics',
+    graphDomainInformatics: 'Informatics',
+    graphDomainGeneralAcademic: 'General / Mixed',
+    graphDomainCategoriesLabel: 'Generated categories',
+    graphDomainLanguageNote:
+      'The graph is generated in German. The interface language does not change the categories.',
+    graphDomainCurrentUnavailable:
+      'The selected domain {domain} (version {version}) is not available in this deployment. Choose a supported domain to build again.',
+    graphDomainRebuildBlocked:
+      'This knowledge base uses an explicit domain ({domain}, version {version}, {language}) that this deployment cannot reapply. Rebuilding is blocked until an explicit domain selection is available again.',
+    graphDomainVersionUnknown: 'unknown',
+    graphDomainPublished:
+      'Served graph: {domain} (version {version}, {language})',
+    graphDomainLanguageGerman: 'German',
+    graphDomainLanguageEnglish: 'English',
     ingestionDisabledError:
       'Adding new content to knowledge bases is temporarily disabled.',
   },
