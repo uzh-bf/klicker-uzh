@@ -53,7 +53,14 @@ function createPrismaMock({
 }
 
 describe('KB chatbot MCP seed reconciliation', () => {
-  for (const enabledKbIds of [[], ['kb-single'], ['kb-z', 'kb-a', 'kb-z']]) {
+  for (const [enabledKbIds, expectedKbIds] of [
+    [[], []],
+    [['kb-single'], ['kb-single']],
+    [
+      ['kb-z', 'kb-a', 'kb-z'],
+      ['kb-a', 'kb-z'],
+    ],
+  ]) {
     for (const hasExistingConfig of [true, false]) {
       test(`${hasExistingConfig ? 'updates' : 'creates'} ${enabledKbIds.length} KB configs`, async () => {
         const existingParameters = {
@@ -89,9 +96,7 @@ describe('KB chatbot MCP seed reconciliation', () => {
                     unrelated: 'preserved',
                     required: true,
                     toolAlias: 'doc_query',
-                    kb_ids: [...new Set(enabledKbIds)].sort((left, right) =>
-                      left.localeCompare(right)
-                    ),
+                    kb_ids: expectedKbIds,
                   }
                 : {
                     unrelated: 'preserved',
@@ -102,9 +107,7 @@ describe('KB chatbot MCP seed reconciliation', () => {
                 ? {
                     required: true,
                     toolAlias: 'doc_query',
-                    kb_ids: [...new Set(enabledKbIds)].sort((left, right) =>
-                      left.localeCompare(right)
-                    ),
+                    kb_ids: expectedKbIds,
                   }
                 : {}
           )
