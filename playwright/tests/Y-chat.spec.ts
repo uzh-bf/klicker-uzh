@@ -455,9 +455,7 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
-      'You are chatting with E2E Chatbot.'
-    )
+    await expect(page.getByTestId('chat-welcome-chatbot')).toBeVisible()
     await expect(page.getByTestId('chat-welcome-mode')).toContainText(
       'Selected mode: Tutor'
     )

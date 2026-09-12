@@ -477,7 +477,7 @@ the local KB fixture, so they cannot be relabeled as local goldens.
 Progress: planner approved the frozen extension in round two after six method
 and evidence-contract corrections. Framework pin
 2a75632a98a8f8e8382a7f7ecaa4fda9f715e12b is unchanged. Implementation baseline
-is da777c5e9f89c9b919ea64db62dfe0c3f93247ce. Independent harness work is active;
+is da777c5e9f89c9b919ea64db62dfe0c3f93247ce. Independent harness work is complete;
 corpus/provider selection is pending. No paid evaluation or retrieval-quality
 improvement is claimed. Substantive implementation requires simplifier, bounded
 risk review and integrated final review before ordinary task-branch delivery to
@@ -499,3 +499,16 @@ routes are registered as running; this route listing does not prove HTTP health.
 Container checks execute successfully. Lease checkpoint remains the next manual
 testing follow-up. Corpus/provider selection blocks live course evaluation and
 candidate tuning; the draft retains that limitation.
+
+The evaluation slice and integrated public package passed independent review
+after replacing the retired-model browser expectation with outgoing Auto and
+Luna request assertions. The full chat browser run completed all 96 tests:
+95 passed, and an existing welcome assertion failed because it pinned the
+default seed name instead of allowing the retained synthetic demo name. That
+assertion now checks visibility of the chatbot context. The original run is not
+a clean full-suite pass; focused rerun evidence is recorded in the draft PR.
+Fresh container types (40/40), lint (7/7), policy checks and host checks (120/120)
+pass. The local synthetic Auto/Luna policy was restored after test fixtures.
+Hosted OCR at 8d4581c failed with provider HTTP 403 authentication errors and
+provides no review verdict. Course-quality evaluation and retrieval tuning still
+require the corpus/provider selection above; no paid quality run occurred.
