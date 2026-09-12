@@ -14,14 +14,18 @@ tags:
 
 Coverage is published, not enforced. `test-unit.yml` and `test-graphql.yml` run their
 existing Vitest suites with the v8 provider and upload LCOV as the `coverage-lcov`
-artifact. The SonarCloud analysis imports a report only when the producing run belongs
-to the analyzed revision and recorded the same tested source tree, so a report from
-another tree or base cannot become a metric. Imported reports are rewritten so their
-`SF:` entries are repository-relative, which keeps the mapping independent of the
-runner's checkout path. An upload that finds no report fails its job, and a missing,
-pending, or unverified report leaves coverage "not computed" in SonarCloud; no
-coverage threshold is armed yet. Suites that do not use Vitest (the frontend PWA uses
-the Node test runner) publish no LCOV and are covered by their own job results instead.
+artifact. The upload collects only reports directly inside `apps/*` and `packages/*`,
+because a workspace-wide glob would also gather the pnpm-linked copy of every report
+from `node_modules`. The SonarCloud analysis imports a report only when the producing
+run belongs to the analyzed revision and recorded the same tested source tree, so a
+report from another tree or base cannot become a metric. Imported reports are rewritten
+so their `SF:` entries are repository-relative: the analysis resolves the package that
+produced a report from the report path and the sources it records, and refuses to
+import a report that matches no package or more than one. An upload that finds no
+report fails its job, and a missing, pending, or unverified report leaves coverage "not
+computed" in SonarCloud; no coverage threshold is armed yet. Suites that do not use
+Vitest (the frontend PWA uses the Node test runner) publish no LCOV and are covered by
+their own job results instead.
 
 ## Which level for which change
 

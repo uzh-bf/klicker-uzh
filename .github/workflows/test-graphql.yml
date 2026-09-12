@@ -272,14 +272,17 @@ jobs:
       - name: Upload LCOV coverage
         # Upload on every outcome so coverage from the suite is still available
         # to the Sonar analysis job even when the run fails. The job itself is
-        # gated by the path filter, so a missing lcov file means the suite
-        # stopped producing coverage; fail instead of reporting a green test job
-        # without coverage.
+        # gated by the path filter. The pattern stays one level inside the
+        # workspace groups because a glob that also reaches node_modules would
+        # collect the pnpm-linked copy of the report, and the analysis maps a
+        # report through the package directory that produced it.
+        # A missing lcov file means the suite stopped producing coverage; fail
+        # instead of reporting a green test job without coverage.
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-lcov
-          path: '**/coverage/lcov.info'
+          path: packages/*/coverage/lcov.info
           if-no-files-found: error
           retention-days: 7
 

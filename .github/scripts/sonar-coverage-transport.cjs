@@ -35,8 +35,83 @@ function toRepositoryPath(filePath, options = {}) {
 
 function rewriteLcov(content, options) {
   return content.replace(/^SF:(.+)$/gm, (_line, filePath) => {
-    return 'SF:' + toRepositoryPath(filePath.trim(), options)
+    const trimmed = filePath.trim()
+    if (path.isAbsolute(trimmed)) {
+      return 'SF:' + toRepositoryPath(trimmed, options)
+    }
+    // Vitest writes source records relative to the package it tested, so the
+    // package directory resolved for the report supplies the missing prefix.
+    return 'SF:' + path.posix.join(options.prefix || '', trimmed)
   })
+}
+
+function collectSources(content) {
+  return [...content.matchAll(/^SF:(.+)$/gm)].map((match) =>
+    match[1].trim()
+  )
+}
+
+// The upload glob anchors the artifact at some directory above the producing
+// package, so the artifact-relative path keeps only the package's last path
+// segments: apps/chat/coverage/lcov.info keeps apps/chat, a glob rooted at
+// packages keeps grading from packages/grading/coverage/lcov.info. Both ends
+// identify the package to within those segments.
+function packageRootsFromArtifact(relative) {
+  const segments = String(relative).split('/')
+  const coverage = segments.lastIndexOf('coverage')
+  if (coverage <= 0) return ''
+  return segments.slice(0, coverage).join('/')
+}
+
+// Workspace package directories produced by the test jobs. Bounded to the two
+// workspace groups so a report can never be mapped into node_modules.
+function workspacePackages(workspace) {
+  const packages = []
+  for (const group of ['apps', 'packages']) {
+    const groupDirectory = path.join(workspace, group)
+    if (!fs.existsSync(groupDirectory)) continue
+    for (const entry of fs.readdirSync(groupDirectory, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      const candidate = group + '/' + entry.name
+      if (fs.existsSync(path.join(workspace, candidate, 'package.json'))) {
+        packages.push(candidate)
+      }
+    }
+  }
+  return packages
+}
+
+// Vitest records each source relative to the package it ran in, so a report
+// cannot be imported without that package directory. The artifact path supplies
+// the package's last segments, and every remaining candidate must also resolve
+// every recorded source in this checkout. A report that matches no package or
+// more than one stops the import, because importing it would publish a mapping
+// that is known to be wrong or ambiguous. This also rejects the pnpm-linked
+// copies of a report that an over-broad upload glob would collect from
+// node_modules: their recorded paths do not resolve as first-party sources.
+function resolvePackageRoot(content, workspace, relative) {
+  const sources = collectSources(content)
+  if (sources.length === 0) {
+    throw new Error(relative + ' records no source files to map')
+  }
+  const suffix = packageRootsFromArtifact(relative)
+  const candidates = workspacePackages(workspace).filter(
+    (candidate) =>
+      !suffix || candidate === suffix || candidate.endsWith('/' + suffix)
+  )
+  const resolvable = candidates.filter((candidate) =>
+    sources.every((source) =>
+      fs.existsSync(path.resolve(workspace, candidate, source))
+    )
+  )
+  if (resolvable.length !== 1) {
+    const detail =
+      resolvable.length === 0
+        ? 'no workspace package contains ' + sources.slice(0, 3).join(', ')
+        : 'multiple workspace packages match: ' + resolvable.join(', ')
+    throw new Error(relative + ' cannot be mapped to one package: ' + detail)
+  }
+  return resolvable[0]
 }
 
 function createTransport(options) {
@@ -158,10 +233,15 @@ function createTransport(options) {
       files.forEach((file, index) => {
         const name =
           files.length === 1 ? 'lcov.info' : 'lcov-' + index + '.info'
+        const relative = path
+          .relative(directory, file)
+          .split(path.sep)
+          .join('/')
         const content = fs.readFileSync(file, 'utf8')
+        const packageRoot = resolvePackageRoot(content, workspace, relative)
         fs.writeFileSync(
           path.join(target, name),
-          rewriteLcov(content, rewriteOptions)
+          rewriteLcov(content, { ...rewriteOptions, prefix: packageRoot })
         )
         reports.push(path.join('coverage-inputs', slug, name))
       })
@@ -187,5 +267,9 @@ function createTransport(options) {
 }
 
 module.exports = createTransport
+module.exports.collectSources = collectSources
+module.exports.packageRootsFromArtifact = packageRootsFromArtifact
+module.exports.resolvePackageRoot = resolvePackageRoot
 module.exports.rewriteLcov = rewriteLcov
 module.exports.toRepositoryPath = toRepositoryPath
+module.exports.workspacePackages = workspacePackages
