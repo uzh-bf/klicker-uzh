@@ -137,6 +137,9 @@ export default {
     },
     markdown: {
       copyCode: 'Kopieren',
+      copyCodeSuccess: 'Code kopiert.',
+      copyCodeError:
+        'Kopieren fehlgeschlagen. Versuche es erneut oder markiere den Code zum Kopieren.',
     },
     attachments: {
       hydrationError:
@@ -449,6 +452,8 @@ export default {
       fieldcontent: 'Inhalt',
     },
     generic: {
+      expandImage: 'Bild vergrössern',
+      skipToContent: 'Zum Inhalt springen',
       date: 'Datum',
       percentage: 'Prozent',
       status: 'Status',
@@ -1251,6 +1256,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       submitPin: 'PIN absenden',
     },
     feedbacks: {
+      feedbackLabel: 'Ihre Frage oder Ihr Feedback',
+      feedbacksLoadFailed:
+        'Das Feedback konnte nicht geladen werden. Bitte versuchen Sie es erneut.',
+      feedbackSubmissionFailed:
+        'Ihr Feedback konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.',
+      upvoteQuestion: 'Frage unterstützen',
+      helpfulResponse: 'Hilfreiche Antwort',
+      unhelpfulResponse: 'Nicht hilfreiche Antwort',
       title: 'Feedback-Kanal',
       speed: 'Geschwindigkeit',
       difficulty: 'Schwierigkeit',

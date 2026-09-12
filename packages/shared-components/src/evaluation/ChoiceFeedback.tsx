@@ -2,6 +2,7 @@ import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { QuestionFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 
 export interface ChoiceFeedbackProps {
@@ -15,6 +16,8 @@ function ChoiceFeedback({
   choiceIx,
   feedback,
 }: ChoiceFeedbackProps) {
+  const t = useTranslations()
+
   return (
     <div
       className={twMerge(
@@ -35,7 +38,10 @@ function ChoiceFeedback({
         className="py-2 pr-3 text-gray-700"
         data-cy={`sc-${elementIx}-feedback-${choiceIx}`}
       >
-        <Markdown content={feedback.feedback ?? undefined} />
+        <Markdown
+          content={feedback.feedback ?? undefined}
+          expandLabel={t('shared.generic.expandImage')}
+        />
       </div>
     </div>
   )

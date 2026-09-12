@@ -21,7 +21,11 @@ function EvaluationExplanation({
       <div className={twMerge('font-bold', textSizeLg)}>
         {t('shared.generic.explanation')}
       </div>
-      <Markdown content={explanation} className={{ root: textSize }} />
+      <Markdown
+        content={explanation}
+        expandLabel={t('shared.generic.expandImage')}
+        className={{ root: textSize }}
+      />
     </UserNotification>
   ) : null
 }

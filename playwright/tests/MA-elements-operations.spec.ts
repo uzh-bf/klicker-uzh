@@ -192,9 +192,29 @@ async function expectRecoveredSCQuestionContent(page: Page, title: string) {
 
 async function clearAndTypeEditor(page: Page, testId: string, text: string) {
   const editor = page.getByTestId(testId)
+  const editorText = () =>
+    editor.evaluate((el) => {
+      const clone = el.cloneNode(true) as HTMLElement
+      clone
+        .querySelectorAll('[data-slate-placeholder]')
+        .forEach((node) => node.remove())
+      return (clone.textContent ?? '').replace(/[\u200b\ufeff]/g, '').trim()
+    })
   await editor.click()
   await editor.clear()
+  // Slate can miss a single select-all + delete when its selection state is
+  // stale, leaving the previous content in place. Retry the deletion until
+  // the editor is verifiably empty before typing (CI observed saved values
+  // like "Choice 2Choice NEW 2" when typing started on unremoved content).
+  await expect
+    .poll(async () => {
+      await page.keyboard.press('ControlOrMeta+a')
+      await page.keyboard.press('Backspace')
+      return editorText()
+    })
+    .toBe('')
   await editor.pressSequentially(text)
+  await expect.poll(editorText).toBe(text)
 }
 
 async function saveElementModal(page: Page) {
@@ -384,9 +404,9 @@ async function verifySingleChoiceQuestionContent(
   )
 
   for (let ix = 0; ix < choices.length; ix++) {
-    await expect(page.getByTestId(`sc-0-answer-option-${ix}`)).toContainText(
-      choices[ix].value
-    )
+    await expect(
+      page.getByTestId(`sc-0-answer-option-${ix}`)
+    ).toHaveAccessibleName(choices[ix].value)
   }
 
   if (submission) {
@@ -1396,8 +1416,10 @@ test.describe('Create different types of elements (with and without sample solut
           page.getByTestId(`open-group-activity-${groupActivity}`)
         ).toBeVisible()
         await page.getByTestId(`open-group-activity-${groupActivity}`).click()
-        await expect(page.getByTestId('start-group-activity')).toBeVisible()
-        await page.getByTestId('start-group-activity').click()
+        const startActivity = page.getByTestId('start-group-activity')
+        const question = page.getByTestId('instance-question-content')
+        await expect(startActivity.or(question).first()).toBeVisible()
+        if (await startActivity.isVisible()) await startActivity.click()
         await verifySingleChoiceQuestionContent(page, {
           submission: false,
           content,

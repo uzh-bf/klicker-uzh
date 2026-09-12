@@ -116,11 +116,29 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await page.getByTestId('insert-question-title').clear()
     await page.getByTestId('insert-question-title').fill(FT.titleEdited)
 
-    await page.getByTestId('insert-question-text').click()
-    await page.getByTestId('insert-question-text').clear()
-    await page
-      .getByTestId('insert-question-text')
-      .pressSequentially(FT.contentEdited)
+    const questionText = page.getByTestId('insert-question-text')
+    const editorText = () =>
+      questionText.evaluate((el) => {
+        const clone = el.cloneNode(true) as HTMLElement
+        clone
+          .querySelectorAll('[data-slate-placeholder]')
+          .forEach((node) => node.remove())
+        return (clone.textContent ?? '').replace(/[\u200b\ufeff]/g, '').trim()
+      })
+    await questionText.click()
+    await questionText.clear()
+    // Slate can miss a single select-all + delete when its selection state is
+    // stale. Retry the deletion until the editor is verifiably empty before
+    // typing.
+    await expect
+      .poll(async () => {
+        await page.keyboard.press('ControlOrMeta+a')
+        await page.keyboard.press('Backspace')
+        return editorText()
+      })
+      .toBe('')
+    await questionText.pressSequentially(FT.contentEdited)
+    await expect.poll(editorText).toBe(FT.contentEdited)
 
     await page.getByTestId('set-free-text-length').click()
     await page.getByTestId('set-free-text-length').clear()

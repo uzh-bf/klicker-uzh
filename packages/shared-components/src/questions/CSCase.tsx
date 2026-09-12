@@ -2,6 +2,7 @@ import type { CaseStudyElementOptions } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import type { CaseStudySolutionsObject } from '@klicker-uzh/types'
 import { FormLabel } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import Loader from '../Loader'
 import type { CaseStudyStudentResponseType } from '../StudentElement'
@@ -28,6 +29,8 @@ function CSCase({
   caseResponse?: CaseStudyStudentResponseType['']
   setCaseResponse: (newValue: CaseStudyStudentResponseType['']) => void
 }) {
+  const t = useTranslations()
+
   return (
     <div className="mt-6">
       {currentCase.description !== '<br>' && (
@@ -45,6 +48,7 @@ function CSCase({
           >
             <Markdown
               content={currentCase.description}
+              expandLabel={t('shared.generic.expandImage')}
               data={{ cy: `case-${caseIndex}-description` }}
             />
           </div>
