@@ -5,6 +5,7 @@ set -Eeuo pipefail
 method='GET'
 endpoint=''
 public_access=''
+read_input=false
 while (($# > 0)); do
   case "$1" in
     api)
@@ -21,6 +22,7 @@ while (($# > 0)); do
       shift 2
       ;;
     --input)
+      read_input=true
       shift 2
       ;;
     /*)
@@ -34,7 +36,16 @@ while (($# > 0)); do
 done
 
 state=$(cat "$FAKE_STATE" 2>/dev/null || printf 'before')
+if [[ "$read_input" == true ]]; then
+  payload=$(cat)
+fi
 if [[ "$method" == 'PATCH' ]]; then
+  if [[ "$read_input" == true ]]; then
+    jq -e '.name == "public-pr-arm64" and .visibility == "selected" and
+      .allows_public_repositories == false and .restricted_to_workflows == true and
+      .selected_workflows == []' <<<"$payload" >/dev/null || exit 1
+    public_access=false
+  fi
   if [[ "$public_access" == 'false' ]]; then
     [[ "$FAKE_SCENARIO" != 'disable-failure' ]] || exit 1
     printf 'disabled' >"$FAKE_STATE"
@@ -47,7 +58,7 @@ if [[ "$method" == 'PATCH' ]]; then
   exit 0
 fi
 if [[ "$method" == 'PUT' ]]; then
-  cat >/dev/null
+  jq -e '.selected_repository_ids == [42]' <<<"$payload" >/dev/null || exit 1
   [[ "$state" == 'disabled' ]] || exit 1
   [[ "$FAKE_SCENARIO" != 'repository-failure' ]] || exit 1
   printf 'repositories' >"$FAKE_STATE"

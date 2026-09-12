@@ -435,10 +435,13 @@ idle checks before each restart, and pre-authorized SSH host keys.
 The checklist below records the original implementation phase; final CI and
 review for this reconciliation remain pending.
 
-The September 12 follow-up fixes partial runner-group updates by disabling
-public access before replacing repository access and only then enabling the
+The September 12 follow-up fixes partial runner-group updates by restricting
+execution to an empty workflow allowlist before replacing repository access and only then enabling the
 exact workflow policy. Fixture checks cover failure at each of the three API
-writes and confirm no subsequent write occurs after failure. No live policy
+writes and confirm no subsequent write occurs after failure. The initial PATCH
+also disables public access, but the empty workflow list is what blocks any
+previously selected private repository. Fixture assertions verify both fields.
+No live policy
 update was performed. Host environment reads now traverse directories without
 following symlinks, open the file once, validate its descriptor, and reject
 nonregular or multiply linked inputs before emitting any contents. Focused
