@@ -74,4 +74,99 @@ describe('KB knowledge graph config', () => {
     expect(result.remainingSemesterQuotaMinorUnits).toBe(750)
     expect(result.elementGenerationReady).toBe(true)
   })
+
+  it('reports a legacy all-null build without any domain selection', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      },
+      {
+        ...build,
+        domainPolicyId: null,
+        domainPolicyVersion: null,
+        domainPolicyLanguage: null,
+      },
+      false,
+      null,
+      costConfiguration,
+      false
+    )
+
+    expect(result).toMatchObject({
+      domainPolicyId: null,
+      domainPolicyVersion: null,
+      domainPolicyLanguage: null,
+      publishedDomainPolicyId: null,
+      publishedDomainPolicyVersion: null,
+      publishedDomainPolicyLanguage: null,
+      domainCategories: null,
+    })
+  })
+
+  it('reports the selected and published domain metadata separately', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: '44444444-4444-4444-8444-444444444444',
+      },
+      {
+        ...build,
+        domainPolicyId: 'mathematics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      false,
+      null,
+      costConfiguration,
+      false,
+      {
+        domainPolicyId: 'informatics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      }
+    )
+
+    // The reported build and the published build may carry different frozen
+    // selections; neither may overwrite the other.
+    expect(result.domainPolicyId).toBe('mathematics')
+    expect(result.domainPolicyVersion).toBe(1)
+    expect(result.domainPolicyLanguage).toBe('German')
+    expect(result.publishedDomainPolicyId).toBe('informatics')
+    expect(result.publishedDomainPolicyVersion).toBe(1)
+    expect(result.publishedDomainPolicyLanguage).toBe('English')
+    expect(result.domainCategories).not.toBeNull()
+    expect(result.domainCategories!.length).toBeGreaterThan(0)
+  })
+
+  it('does not describe categories for a persisted selection the catalog dropped', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      },
+      {
+        ...build,
+        domainPolicyId: 'retired-policy',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      false,
+      null,
+      costConfiguration,
+      false
+    )
+
+    expect(result.domainPolicyId).toBe('retired-policy')
+    expect(result.domainCategories).toBeNull()
+  })
 })

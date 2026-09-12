@@ -204,6 +204,14 @@ model KBGraphBuild {
   status      KBGraphBuildStatus @default(QUEUED)
   qualityTier KBGraphQualityTier @default(STANDARD)
 
+  // Frozen domain selection for this build: the provider catalog policy id and
+  // version plus the requested language. All-null rows predate domain selection
+  // and retain the provider's legacy default policy, so historical builds are
+  // never retroactively described as an explicit choice.
+  domainPolicyId       String?
+  domainPolicyVersion  Int?
+  domainPolicyLanguage String?
+
   // digest over the KB's active serving set at request time; pins what this build represents
   sourceContentDigest String
   // FalkorDB graph the completed build is written to, in one step at the end

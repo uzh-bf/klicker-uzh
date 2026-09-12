@@ -42,6 +42,9 @@ data:
   KB_GRAPH_HIGH_GENERATION_MODEL: {{ .Values.hatchet.kbGraph.highGenerationModel | quote }}
   KB_GRAPH_HIGH_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.highCleaningModel | quote }}
   KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS: {{ .Values.backendGraphql.elementGeneration.enabled | quote }}
+  {{- if .Values.backendGraphql.knowledgeGraph.domainCatalogRevision }}
+  KB_GRAPH_DOMAIN_CATALOG_REVISION: {{ .Values.backendGraphql.knowledgeGraph.domainCatalogRevision | quote }}
+  {{- end }}
   {{- end }}
   {{- end }}
   {{- if .Values.backendGraphql.knowledgeGraph.host }}
