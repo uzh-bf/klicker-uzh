@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { randomUUID, timingSafeEqual } from 'node:crypto'
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import { readFile, readdir } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
@@ -12,6 +12,7 @@ export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
 export const DEFAULT_POLL_INTERVAL_MS = 250
 export const DEFAULT_POLL_TIMEOUT_MS = 60_000
 export const DEFAULT_REQUEST_TIMEOUT_MS = 75_000
+export const ELEARNING_GRANT_TTL_SECONDS = 120
 
 const LOGIN_MUTATION = `
   mutation LoginParticipant($usernameOrEmail: String!, $password: String!) {
@@ -99,7 +100,10 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
 
   const values = new Map()
   for (const line of normalized.slice(4, end).split('\n')) {
-    const match = /^(question|mode):\s*(.*)$/.exec(line)
+    const match =
+      /^(question|mode|source|learner_id|klicker_course_id|elearning_course_id):\s*(.*)$/.exec(
+        line
+      )
     if (!match) continue
     if (values.has(match[1])) {
       throw evaluationError(
@@ -118,7 +122,84 @@ export function parseGroundTruthFrontmatter(text, filePath = 'unknown') {
     throw evaluationError(`ground_truth_mode_invalid:${basename(filePath)}`)
   }
 
-  return { question, mode, source: 'fineco', filePath }
+  const source = (values.get('source') || 'fineco').toLowerCase()
+  if (!['fineco', 'elearning'].includes(source)) {
+    throw evaluationError(`ground_truth_source_invalid:${basename(filePath)}`)
+  }
+  if (source === 'fineco') {
+    return { question, mode, source, filePath }
+  }
+
+  const learnerId = values.get('learner_id')
+  const klickerCourseId = values.get('klicker_course_id')
+  const elearningCourseId = values.get('elearning_course_id')
+  if (!learnerId || !klickerCourseId || !elearningCourseId) {
+    throw evaluationError(`ground_truth_fields_missing:${basename(filePath)}`)
+  }
+  return {
+    question,
+    mode,
+    source,
+    learnerId,
+    klickerCourseId,
+    elearningCourseId,
+    filePath,
+  }
+}
+
+// Signs the same short-lived purpose-scoped login grant the eLearning server
+// issues, so a local evaluation stack can exercise the /auth/elearning
+// handoff without the eLearning app running.
+function signElearningGrant({
+  secret,
+  learnerId,
+  chatbotId,
+  klickerCourseId,
+  elearningCourseId,
+}) {
+  const encoder = (value) => Buffer.from(JSON.stringify(value), 'utf8')
+  const encode = (value) => encoder(value).toString('base64url')
+  const header = encode({ alg: 'HS256', typ: 'JWT' })
+  const issuedAt = Math.floor(Date.now() / 1000)
+  const payload = encode({
+    purpose: 'chat-handoff',
+    scope: 'ELEARNING_CHAT',
+    chatbotId,
+    klickerCourseId,
+    elearningCourseId,
+    iss: 'elearning',
+    aud: 'klicker-chat',
+    sub: learnerId,
+    iat: issuedAt,
+    exp: issuedAt + ELEARNING_GRANT_TTL_SECONDS,
+    jti: randomUUID(),
+  })
+  const signature = createHmac('sha256', secret)
+    .update(`${header}.${payload}`)
+    .digest('base64url')
+  return `${header}.${payload}.${signature}`
+}
+
+// Collects every named cookie the launch response sets; clear-on-launch
+// cookies carry empty values and must not be forwarded.
+function collectCookies(headers) {
+  const values =
+    typeof headers.getSetCookie === 'function'
+      ? headers.getSetCookie()
+      : [headers.get('set-cookie') || '']
+  const cookies = []
+  // Header values may arrive comma-joined, so pairs are matched anywhere a
+  // new pair can start; attribute pairs always follow a semicolon instead.
+  const pairPattern = /(?:^|,\s*)([^=;,\s]+)=([^;,]*)/g
+  for (const value of values) {
+    let match
+    while ((match = pairPattern.exec(value)) !== null) {
+      const name = match[1]
+      const cookieValue = match[2].trim()
+      if (name && cookieValue) cookies.push(`${name}=${cookieValue}`)
+    }
+  }
+  return cookies
 }
 
 export async function buildGroundTruthIndex(directory) {
@@ -412,6 +493,7 @@ export class KlickerEvaluationTarget {
     modelId = DEFAULT_MODEL_ID,
     groundTruthDirectory,
     canaryFixture,
+    elearningHandoffSecret = null,
     maxStreamBytes = DEFAULT_MAX_STREAM_BYTES,
     pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
     pollTimeoutMs = DEFAULT_POLL_TIMEOUT_MS,
@@ -433,10 +515,13 @@ export class KlickerEvaluationTarget {
     this.pollIntervalMs = pollIntervalMs
     this.pollTimeoutMs = pollTimeoutMs
     this.requestTimeoutMs = requestTimeoutMs
+    this.elearningHandoffSecret = elearningHandoffSecret
     this.cookie = null
+    this.elearningCookie = null
     this.groundTruthIndex = null
     this.canary = null
     this.sessionPromise = null
+    this.elearningSessionPromise = null
   }
 
   async initialize() {
@@ -444,6 +529,12 @@ export class KlickerEvaluationTarget {
       this.groundTruthDirectory
     )
     this.canary = await loadCanaryFixture(this.canaryFixture)
+    const hasElearningCases = [...this.groundTruthIndex.values()].some(
+      (metadata) => metadata.source === 'elearning'
+    )
+    if (hasElearningCases && !this.elearningHandoffSecret) {
+      throw evaluationError('elearning_secret_missing')
+    }
   }
 
   async resolveQuestion(question) {
@@ -467,6 +558,12 @@ export class KlickerEvaluationTarget {
   }
 
   async loginAndAcceptDisclaimer() {
+    const cookie = await this.loginParticipant()
+    await this.acceptDisclaimer(cookie)
+    this.cookie = cookie
+  }
+
+  async loginParticipant() {
     const loginResponse = await fetchWithTimeout(
       urlFor(this.apiOrigin, '/api/graphql'),
       {
@@ -494,8 +591,10 @@ export class KlickerEvaluationTarget {
     if (!loginBody?.data?.loginParticipant) {
       throw evaluationError('participant_login_rejected')
     }
-    const cookie = participantCookie(loginResponse.headers)
+    return participantCookie(loginResponse.headers)
+  }
 
+  async acceptDisclaimer(cookie) {
     const disclaimerResponse = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/disclaimer`),
       { headers: requestHeaders(cookie) },
@@ -532,16 +631,76 @@ export class KlickerEvaluationTarget {
         throw evaluationError('disclaimer_accept_rejected')
       }
     }
-    this.cookie = cookie
   }
 
-  async createThread() {
+  async ensureElearningSession(metadata) {
+    if (this.elearningCookie) return
+    if (this.elearningSessionPromise) return this.elearningSessionPromise
+    this.elearningSessionPromise = this.elearningLaunch(metadata).finally(
+      () => {
+        this.elearningSessionPromise = null
+      }
+    )
+    await this.elearningSessionPromise
+  }
+
+  async elearningLaunch(metadata) {
+    if (!this.elearningHandoffSecret) {
+      throw evaluationError('elearning_secret_missing')
+    }
+    let grant
+    try {
+      grant = signElearningGrant({
+        secret: this.elearningHandoffSecret,
+        learnerId: metadata.learnerId,
+        chatbotId: this.chatbotId,
+        klickerCourseId: metadata.klickerCourseId,
+        elearningCourseId: metadata.elearningCourseId,
+      })
+    } catch {
+      throw evaluationError('elearning_grant_sign_failed')
+    }
+    const launchQuery = new URLSearchParams({
+      grant,
+      courseId: metadata.klickerCourseId,
+      chatbotId: this.chatbotId,
+    })
+    let launchResponse
+    try {
+      launchResponse = await fetchWithTimeout(
+        urlFor(this.chatOrigin, `/auth/elearning?${launchQuery}`),
+        { headers: { Accept: 'text/html' } },
+        this.requestTimeoutMs
+      )
+    } catch (error) {
+      if (error?.code === 'request_failed') {
+        throw evaluationError('elearning_launch_rejected')
+      }
+      throw error
+    }
+    if (!launchResponse.ok) {
+      launchResponse[RESPONSE_TIMEOUT_CLEANUP]?.()
+      throw safeStatusError('elearning_launch', launchResponse)
+    }
+    const cookies = collectCookies(launchResponse.headers)
+    launchResponse[RESPONSE_TIMEOUT_CLEANUP]?.()
+    if (cookies.length === 0) {
+      throw evaluationError('elearning_cookies_missing')
+    }
+    this.elearningCookie = cookies.join('; ')
+    await this.acceptDisclaimer(this.elearningCookie)
+  }
+
+  async createThread(cookie, isElearning = false) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/threads`),
       {
         method: 'POST',
-        headers: requestHeaders(this.cookie),
-        body: JSON.stringify({ title: null }),
+        headers: requestHeaders(cookie),
+        body: JSON.stringify({
+          title: null,
+          ...(isElearning ? { origin: 'elearning' } : {}),
+        }),
       },
       this.requestTimeoutMs
     )
@@ -559,13 +718,14 @@ export class KlickerEvaluationTarget {
     userMessageId,
     assistantMessageId,
     maxStreamBytes,
+    cookie,
   }) {
     const response = await fetchWithTimeout(
       urlFor(this.chatOrigin, `/api/chatbots/${this.chatbotId}/chat`),
       {
         method: 'POST',
         headers: {
-          ...requestHeaders(this.cookie),
+          ...requestHeaders(cookie),
           Accept: 'text/event-stream',
         },
         body: JSON.stringify({
@@ -588,7 +748,7 @@ export class KlickerEvaluationTarget {
     await drainResponse(response, maxStreamBytes)
   }
 
-  async readCompletedMessage(threadId, assistantMessageId, mode) {
+  async readCompletedMessage(threadId, assistantMessageId, mode, cookie) {
     const deadline = Date.now() + this.pollTimeoutMs
     while (Date.now() < deadline) {
       const response = await fetchWithTimeout(
@@ -596,7 +756,7 @@ export class KlickerEvaluationTarget {
           this.chatOrigin,
           `/api/chatbots/${this.chatbotId}/threads/${threadId}/messages`
         ),
-        { headers: requestHeaders(this.cookie) },
+        { headers: requestHeaders(cookie) },
         Math.min(
           this.requestTimeoutMs,
           10_000,
@@ -624,8 +784,14 @@ export class KlickerEvaluationTarget {
 
   async runQuestion(question) {
     const metadata = await this.resolveQuestion(question)
-    await this.ensureSession()
-    const threadId = await this.createThread()
+    const isElearning = metadata.source === 'elearning'
+    if (isElearning) {
+      await this.ensureElearningSession(metadata)
+    } else {
+      await this.ensureSession()
+    }
+    const cookie = isElearning ? this.elearningCookie : this.cookie
+    const threadId = await this.createThread(cookie, isElearning)
     const userMessageId = randomUUID()
     const assistantMessageId = randomUUID()
     await this.submitTurn({
@@ -635,11 +801,13 @@ export class KlickerEvaluationTarget {
       userMessageId,
       assistantMessageId,
       maxStreamBytes: metadata.maxStreamBytes || this.maxStreamBytes,
+      cookie,
     })
     const message = await this.readCompletedMessage(
       threadId,
       assistantMessageId,
-      metadata.mode
+      metadata.mode,
+      cookie
     )
     const result = extractAssistantMessage(message)
     if (
@@ -762,6 +930,7 @@ export async function createTargetFromEnvironment(env = process.env) {
     participantPassword: env.KLICKER_EVAL_PARTICIPANT_PASSWORD,
     chatbotId: env.KLICKER_EVAL_CHATBOT_ID || DEFAULT_CHATBOT_ID,
     modelId: env.KLICKER_EVAL_MODEL_ID || DEFAULT_MODEL_ID,
+    elearningHandoffSecret: env.KLICKER_EVAL_ELEARNING_HANDOFF_SECRET || null,
     groundTruthDirectory: env.KLICKER_EVAL_GT_DIR,
     canaryFixture: env.KLICKER_EVAL_CANARY_FILE,
     maxStreamBytes:
