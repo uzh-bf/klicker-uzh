@@ -347,7 +347,13 @@ spec:
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend-graphql
+        {{- if .Values.assessmentAudit.enabled }}
+        azure.workload.identity/use: 'true'
+        {{- end }}
     spec:
+      {{- if .Values.assessmentAudit.enabled }}
+      serviceAccountName: {{ required "assessmentAudit.backendMedia.serviceAccountName is required when assessment audit is enabled" .Values.assessmentAudit.backendMedia.serviceAccountName }}
+      {{- end }}
       priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.backendGraphql.priorityClassName }}
       {{- with .Values.backendGraphql.imagePullSecrets }}
       imagePullSecrets:
