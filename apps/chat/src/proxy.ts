@@ -1,4 +1,6 @@
 import { routing } from '@klicker-uzh/i18n'
+import { createEdgeLogger } from '@klicker-uzh/logging/edge'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
@@ -9,6 +11,11 @@ import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
+
+const edgeLogger = createEdgeLogger({
+  service: 'chat',
+  level: process.env.LOG_LEVEL,
+})
 
 function applyFrameAncestorsCSP(response: NextResponse) {
   const allowed = process.env.ALLOWED_FRAME_ANCESTORS
@@ -112,6 +119,22 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const requestContext = resolveRequestContext({
+    requestId: request.headers.get('x-request-id'),
+    correlationId: request.headers.get('x-correlation-id'),
+  })
+  const log = edgeLogger.child(requestContext)
+  const nextResponse = () => {
+    const headers = new Headers(request.headers)
+    headers.set('x-request-id', requestContext.requestId)
+    headers.set('x-correlation-id', requestContext.correlationId)
+    return NextResponse.next({ request: { headers } })
+  }
+  const respond = (response: NextResponse) => {
+    response.headers.set('x-request-id', requestContext.requestId)
+    response.headers.set('x-correlation-id', requestContext.correlationId)
+    return applyFrameAncestorsCSP(response)
+  }
 
   // The embedded Manage assistant receives its locale as a query parameter,
   // but Chat's root layout resolves the active locale from the
@@ -124,15 +147,13 @@ export async function proxy(request: NextRequest) {
         name: 'NEXT_LOCALE',
         value: requestedLocale,
       })
-      const response = NextResponse.next({
-        request: { headers: request.headers },
-      })
+      const response = nextResponse()
       response.cookies.set({
         name: 'NEXT_LOCALE',
         value: requestedLocale,
         path: '/manage',
       })
-      return applyFrameAncestorsCSP(response)
+      return respond(response)
     }
   }
 
@@ -150,12 +171,12 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/auth/lti') ||
     pathname.startsWith('/auth/pwa-embed')
   ) {
-    return applyFrameAncestorsCSP(NextResponse.next())
+    return respond(nextResponse())
   }
 
   const pathSegments = pathname.split('/').filter(Boolean)
   if (pathSegments.length === 0) {
-    return applyFrameAncestorsCSP(NextResponse.next())
+    return respond(nextResponse())
   }
 
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
@@ -171,7 +192,7 @@ export async function proxy(request: NextRequest) {
   if (chatGuestToken) {
     hadGuestToken = true
     if (await verifyChatGuestTokenInProxy(chatGuestToken)) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      return respond(nextResponse())
     }
     // Invalid guest token → fall through to participant_token.
   }
@@ -187,7 +208,7 @@ export async function proxy(request: NextRequest) {
         token: pwaEmbedToken,
       })
     ) {
-      return applyFrameAncestorsCSP(NextResponse.next())
+      return respond(nextResponse())
     }
   }
 
@@ -197,24 +218,27 @@ export async function proxy(request: NextRequest) {
   const participantToken = request.cookies.get('participant_token')?.value
 
   if (!participantToken) {
-    return redirectToNoLogin(request, hadGuestToken)
+    return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
   // Fail closed when APP_SECRET is missing — the previous `|| ''` fallback
   // would have used an empty signing key, which is not a meaningful gate.
   const appSecret = process.env.APP_SECRET
   if (!appSecret) {
-    return redirectToNoLogin(request, hadGuestToken)
+    return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
   try {
     await jwtVerify(participantToken, new TextEncoder().encode(appSecret))
-  } catch (error) {
-    console.error('Invalid participant token:', error)
-    return redirectToNoLogin(request, hadGuestToken)
+  } catch {
+    log.warn(
+      { event: 'participant_token.invalid', outcome: 'redirect' },
+      'Invalid participant token'
+    )
+    return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
-  return applyFrameAncestorsCSP(NextResponse.next())
+  return respond(nextResponse())
 }
 
 export const config = {

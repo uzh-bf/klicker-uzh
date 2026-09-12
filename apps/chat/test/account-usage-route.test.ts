@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  logRecords: [] as Record<string, unknown>[],
   after: vi.fn(),
   afterCallback: null as (() => unknown) | null,
   withChatbotAuth: vi.fn(),
@@ -48,6 +49,16 @@ const mocks = vi.hoisted(() => ({
   responseOptions: null as Record<string, unknown> | null,
   ChatTurnConflictError: class ChatTurnConflictError extends Error {},
 }))
+
+vi.mock('@/src/lib/server/logger', async () => {
+  const { createLogger } = await import('@klicker-uzh/logging/node')
+  return {
+    logger: createLogger(
+      { service: 'chat-test', level: 'info', pretty: false },
+      { write: (line) => mocks.logRecords.push(JSON.parse(line)) }
+    ),
+  }
+})
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
@@ -129,6 +140,7 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
+  registerLangfuseTelemetry: vi.fn(async () => undefined),
   flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
   getChatTraceContext: mocks.getChatTraceContext,
   getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
@@ -264,6 +276,7 @@ describe('account usage chat route', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.logRecords.length = 0
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null
@@ -576,9 +589,12 @@ describe('account usage chat route', () => {
     expect(streamCallbacks()).not.toHaveProperty(
       'tools.search_response_examples'
     )
-    expect(console.warn).toHaveBeenCalledWith(
-      'Response-example skill loading failed; continuing without response examples',
-      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    expect(mocks.logRecords).toContainEqual(
+      expect.objectContaining({
+        event: 'chat.response_examples.unavailable',
+        outcome: 'load_failed',
+        correlationId: expect.any(String),
+      })
     )
   })
 
@@ -658,9 +674,12 @@ describe('account usage chat route', () => {
         },
       })
     )
-    expect(console.warn).toHaveBeenCalledWith(
-      'Response-example skill name conflicts with an existing tool; continuing without response examples',
-      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    expect(mocks.logRecords).toContainEqual(
+      expect.objectContaining({
+        event: 'chat.response_examples.unavailable',
+        outcome: 'tool_name_conflict',
+        correlationId: expect.any(String),
+      })
     )
   })
 
@@ -677,11 +696,16 @@ describe('account usage chat route', () => {
     })
     expect(response.status).toBe(403)
     expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
-    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
-      requestId: expect.any(String),
-      phase: 'admission.accountApproval',
-      code: 'AI_FEATURES_DISABLED',
-    })
+    expect(mocks.logRecords).toContainEqual(
+      expect.objectContaining({
+        level: 'warn',
+        event: 'chat.admission.denied',
+        requestId: expect.any(String),
+        correlationId: response.headers.get('x-correlation-id'),
+        phase: 'admission.accountApproval',
+        code: 'AI_FEATURES_DISABLED',
+      })
+    )
     expect(mocks.streamText).not.toHaveBeenCalled()
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()

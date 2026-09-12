@@ -1,6 +1,7 @@
 import type { LangfuseSpanProcessor } from '@langfuse/otel'
 import { createTraceId } from '@langfuse/tracing'
 import { LangfuseVercelAiSdkIntegration } from '@langfuse/vercel-ai-sdk'
+import { logger } from './logger'
 
 const REQUIRED_LANGFUSE_ENV_VARS = [
   'LANGFUSE_PUBLIC_KEY',
@@ -139,9 +140,13 @@ export function createPrivacyPreservingLangfuseSpanProcessor(
       try {
         processor.onStart(...args)
       } catch (error) {
-        console.error('[chat] Failed to prepare a Langfuse span:', {
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        logger.error(
+          {
+            event: 'chat.telemetry.span_prepare.failed',
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to prepare a Langfuse span'
+        )
       }
     },
     onEnd(span) {
@@ -150,11 +155,12 @@ export function createPrivacyPreservingLangfuseSpanProcessor(
       } catch (error) {
         // Dropping a span is safer than exporting an error message or stack
         // that could contain prompt, provider, or tool data.
-        console.error(
-          '[chat] Dropped a Langfuse span that could not be sanitized:',
+        logger.error(
           {
+            event: 'chat.telemetry.span_sanitize.failed',
             errorType: error instanceof Error ? error.name : typeof error,
-          }
+          },
+          'Dropped a Langfuse span that could not be sanitized'
         )
         return
       }
@@ -162,27 +168,39 @@ export function createPrivacyPreservingLangfuseSpanProcessor(
       try {
         processor.onEnd(span)
       } catch (error) {
-        console.error('[chat] Failed to export a Langfuse span:', {
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        logger.error(
+          {
+            event: 'chat.telemetry.span_export.failed',
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to export a Langfuse span'
+        )
       }
     },
     async forceFlush() {
       try {
         await processor.forceFlush()
       } catch (error) {
-        console.error('[chat] Failed to flush Langfuse telemetry:', {
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        logger.error(
+          {
+            event: 'chat.telemetry.flush.failed',
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to flush Langfuse telemetry'
+        )
       }
     },
     async shutdown() {
       try {
         await processor.shutdown()
       } catch (error) {
-        console.error('[chat] Failed to shut down Langfuse telemetry:', {
-          errorType: error instanceof Error ? error.name : typeof error,
-        })
+        logger.error(
+          {
+            event: 'chat.telemetry.shutdown.failed',
+            errorType: error instanceof Error ? error.name : typeof error,
+          },
+          'Failed to shut down Langfuse telemetry'
+        )
       }
     },
   }
@@ -197,8 +215,12 @@ export async function registerLangfuseTelemetry() {
   const configuration = getLangfuseTelemetryConfiguration()
   if (!configuration.enabled) {
     if (configuration.requested) {
-      console.warn(
-        `[chat] Langfuse telemetry requested but not configured; missing ${configuration.missingEnvironmentVariables.join(', ')}`
+      logger.warn(
+        {
+          event: 'chat.telemetry.configuration.missing',
+          missingVariables: configuration.missingEnvironmentVariables,
+        },
+        'Langfuse telemetry requested but not configured'
       )
     }
     return false
@@ -237,9 +259,13 @@ export async function registerLangfuseTelemetry() {
     state.registered = true
     return true
   } catch (error) {
-    console.error('[chat] Failed to initialize Langfuse telemetry:', {
-      errorType: error instanceof Error ? error.name : typeof error,
-    })
+    logger.error(
+      {
+        event: 'chat.telemetry.initialize.failed',
+        errorType: error instanceof Error ? error.name : typeof error,
+      },
+      'Failed to initialize Langfuse telemetry'
+    )
     return false
   }
 }

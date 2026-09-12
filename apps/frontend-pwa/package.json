@@ -17,6 +17,7 @@
     "@fortawesome/react-fontawesome": "0.2.2",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",

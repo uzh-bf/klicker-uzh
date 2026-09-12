@@ -209,7 +209,13 @@ describe('required MCP chat preflight', () => {
     expect(response.status).toBe(503)
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ sessionId: 'thread-owned' })
+      expect.objectContaining({ sessionId: 'thread-owned' }),
+      {},
+      'account',
+      expect.objectContaining({
+        info: expect.any(Function),
+        error: expect.any(Function),
+      })
     )
   })
 
@@ -243,7 +249,10 @@ describe('required MCP chat preflight', () => {
         authMode: 'account',
         kbIds: undefined,
         sessionId: 'thread-1',
-      }
+      },
+      {},
+      'account',
+      expect.anything()
     )
     expect(mocks.getUserCredits).toHaveBeenCalledWith(
       'participant-1',
@@ -347,7 +356,13 @@ describe('required MCP chat preflight', () => {
         authMode: 'account',
         kbIds: [KB_ID],
         sessionId: 'thread-1',
-      }
+      },
+      {},
+      'account',
+      expect.objectContaining({
+        info: expect.any(Function),
+        error: expect.any(Function),
+      })
     )
   })
 
@@ -521,7 +536,10 @@ describe('required MCP chat preflight', () => {
         authMode: 'account',
         kbIds: [KB_ID],
         sessionId: 'thread-1',
-      }
+      },
+      {},
+      'account',
+      expect.anything()
     )
   })
 
@@ -623,7 +641,10 @@ describe('required MCP chat preflight', () => {
         authMode: 'account',
         kbIds: undefined,
         sessionId: 'thread-1',
-      }
+      },
+      {},
+      'account',
+      expect.anything()
     )
   })
 })
