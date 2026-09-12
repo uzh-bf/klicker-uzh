@@ -1,4 +1,7 @@
-import { verifyJWT } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import { GetServerSidePropsContext } from 'next'
@@ -9,7 +12,7 @@ import nookies from 'nookies'
 import { useMutation } from '@apollo/client'
 import Layout from '@components/Layout'
 import CreateAccountForm from '@components/forms/CreateAccountForm'
-import { CreateParticipantAccountDocument } from '@klicker-uzh/graphql/dist/ops'
+import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -21,6 +24,7 @@ interface Props {
   username: string
   participantToken?: string
   cookiesAvailable?: boolean
+  dataUseDisclosureVersion: string
 }
 
 function CreateAccount({
@@ -29,11 +33,12 @@ function CreateAccount({
   username,
   participantToken,
   cookiesAvailable,
+  dataUseDisclosureVersion,
 }: Props) {
   const t = useTranslations()
   const router = useRouter()
   const [createParticipantAccount] = useMutation(
-    CreateParticipantAccountDocument
+    CreateParticipantAccountWithDataUseDocument
   )
 
   useParticipantToken({
@@ -43,7 +48,7 @@ function CreateAccount({
   })
 
   return (
-    <Layout displayName={t('pwa.profile.createProfile')}>
+    <Layout displayName={t('pwa.createAccount.signup.submit')}>
       <CreateAccountForm
         initialUsername={username}
         initialEmail={email}
@@ -55,8 +60,14 @@ function CreateAccount({
               email: values.email.trim().toLowerCase(),
               username: values.username.trim(),
               password: values.password.trim(),
-              isProfilePublic: values.isProfilePublic,
+              isProfilePublic: true,
               signedLtiData,
+              dataUse: {
+                disclosureVersion: dataUseDisclosureVersion,
+                researchConsent: values.researchConsent,
+                learningAnalyticsConsent: values.learningAnalyticsConsent,
+                acknowledged: values.acknowledged,
+              },
             },
           })
 
@@ -166,6 +177,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           signedLtiData: signedLtiData.token,
           ssoId: signedLtiData.ssoId,
           email: signedLtiData.email,
+          dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
           username: generatePassword.generate({
             length: 10,
             uppercase: true,
@@ -180,6 +192,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return {
       props: {
+        dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         username: generatePassword.generate({
           length: 10,
           uppercase: true,

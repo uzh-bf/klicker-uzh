@@ -7,7 +7,11 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { getZurichMonthReset, getZurichMonthStart } from '@klicker-uzh/util'
+import {
+  getZurichMonthReset,
+  getZurichMonthStart,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util'
 import { createYoga } from 'graphql-yoga'
 import type { ContextWithUser, FeatureFlagEvaluator } from '@/lib/context.js'
 import {
@@ -20,6 +24,30 @@ import { userOne, userTwo } from './userData.js'
 
 const NOW = new Date('2026-08-15T10:00:00Z')
 const NEXT_MONTH = new Date('2026-09-15T10:00:00Z')
+
+// Participant callers must carry a complete account data-use state to reach
+// the field authorization boundary. Refusing both optional purposes is a
+// valid, already-onboarded state.
+const completedParticipantDataUse = {
+  researchConsent: false,
+  learningAnalyticsConsent: false,
+  researchConsentChoiceAt: NOW,
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: NOW,
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseAcknowledgedAt: NOW,
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseRevision: 1,
+  dataUseEvents: {
+    create: {
+      revision: 1,
+      disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+      acknowledged: true,
+    },
+  },
+}
 
 describe('ChatAccountUsage service and GraphQL API', () => {
   let prisma: PrismaClient
@@ -673,17 +701,31 @@ describe('ChatAccountUsage service and GraphQL API', () => {
   })
 
   it('rejects participant callers at the GraphQL schema boundary', async () => {
-    const result = await executeGraphql({
-      source: 'query { getChatAccountUsage { authorized } }',
-      context: contextFor(
-        ownerId,
-        UserRole.PARTICIPANT,
-        UserLoginScope.ACCOUNT_OWNER
-      ),
+    const participantId = randomUUID()
+    await prisma.participant.create({
+      data: {
+        id: participantId,
+        username: `participant-boundary-${participantId}`,
+        password: 'not-used',
+        ...completedParticipantDataUse,
+      },
     })
 
-    expect(result.data).toEqual({ getChatAccountUsage: null })
-    expect(result.errors?.[0]?.message).toBe('Unauthorized')
+    try {
+      const result = await executeGraphql({
+        source: 'query { getChatAccountUsage { authorized } }',
+        context: contextFor(
+          participantId,
+          UserRole.PARTICIPANT,
+          UserLoginScope.ACCOUNT_OWNER
+        ),
+      })
+
+      expect(result.data).toEqual({ getChatAccountUsage: null })
+      expect(result.errors?.[0]?.message).toBe('Unauthorized')
+    } finally {
+      await prisma.participant.deleteMany({ where: { id: participantId } })
+    }
   })
 
   it('hides usage data when the feature evaluator is absent', async () => {

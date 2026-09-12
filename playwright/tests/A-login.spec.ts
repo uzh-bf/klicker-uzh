@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
@@ -113,6 +114,65 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       usernameOrEmail: STUDENT_USERNAME,
       password: STUDENT_PASSWORD,
     })
+  })
+
+  // -------------------------------------------------------------------------
+  // Student: normal signup records both optional refusals; saving stays
+  // disabled until the explicit learning-analytics choice and acknowledgement
+  // -------------------------------------------------------------------------
+  test('Signup requires learning analytics choice and acknowledgement', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const username = `su${Date.now().toString(36).slice(-8)}`
+
+    try {
+      await page.context().clearCookies()
+      await page.goto('/createAccount')
+
+      await page.getByTestId('email-field').fill(`${username}@test.uzh.ch`)
+      await page.getByTestId('username-field-account-creation').fill(username)
+      await page.getByTestId('password-field').fill('signupPassword123!')
+
+      const submit = page.getByTestId('create-profile-button')
+      // The learning-analytics choice starts unanswered and the acknowledgement
+      // is unchecked, so saving is blocked until both are provided.
+      await expect(submit).toBeDisabled()
+
+      await page.getByTestId('research-consent-no').click()
+      await expect(submit).toBeDisabled()
+
+      await page.getByTestId('learning-analytics-consent-no').click()
+      await expect(submit).toBeDisabled()
+
+      await page.getByTestId('tos-checkbox').click()
+      await expect(submit).toBeEnabled()
+      await submit.click()
+
+      await expect(page).toHaveURL(/newAccount=true/)
+
+      const participant = await prisma.participant.findUniqueOrThrow({
+        where: { username },
+        select: {
+          researchConsent: true,
+          learningAnalyticsConsent: true,
+          researchConsentChoiceAt: true,
+          learningAnalyticsChoiceAt: true,
+          dataUseAcknowledgedAt: true,
+          dataUseAcknowledgedVersion: true,
+        },
+      })
+      expect(participant.researchConsent).toBe(false)
+      expect(participant.learningAnalyticsConsent).toBe(false)
+      expect(participant.researchConsentChoiceAt).toBeInstanceOf(Date)
+      expect(participant.learningAnalyticsChoiceAt).toBeInstanceOf(Date)
+      expect(participant.dataUseAcknowledgedAt).toBeInstanceOf(Date)
+      expect(participant.dataUseAcknowledgedVersion).toBe(
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+      )
+    } finally {
+      await prisma.participant.deleteMany({ where: { username } })
+    }
   })
 
   test('Reject external return target after student sign in', async ({
