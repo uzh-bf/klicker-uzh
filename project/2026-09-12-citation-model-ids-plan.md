@@ -116,7 +116,16 @@ reload test passed after correcting its expected in-page citation link.
 Root check:all requires split execution: its host-launcher tests reject running
 inside the container. Both host suites passed (64 and 48 tests); the remaining
 container checks passed (35 Turbo tasks). Staged secret scanning passed.
-Required implementation reviews and draft delivery remain pending.
+Implementation committed as `92f5a4a6bed553055756ab8d00c258991f344a3d`.
+Native simplifier returned DONE with no recommended changes.
+Required correctness and final reviews remain blocked on external-review
+authority after the earlier disclosure rejection; no alternative external route
+was used. Draft delivery remains pending. Substantive diff excluding project
+artifacts: 515 additions and 12 deletions; one cohesive independently reviewable
+citation fix, no stack.
+Full root build failed in unchanged PWA generated types: development and
+production `validator.ts` both declare `PagesPageConfig`; 17 tasks succeeded
+before the failure cancelled siblings. The isolated Chat build remains passing.
 Runtime startup for this exact worktree completed
 with Devrouter 0.0.73, profile `chat`; no model key injected.
 Stop and verify the exact runtime after the last check or real pause.
