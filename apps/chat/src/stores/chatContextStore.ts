@@ -6,7 +6,7 @@ type ChatContextState = {
   parentOrigin: string | null
   contextUnavailable: boolean
   setContext: (context: KlickerChatContextV2, parentOrigin: string) => void
-  clearContext: () => void
+  clearContext: (unavailable?: boolean) => void
 }
 
 export const useChatContextStore = create<ChatContextState>((set) => ({
@@ -15,6 +15,6 @@ export const useChatContextStore = create<ChatContextState>((set) => ({
   contextUnavailable: false,
   setContext: (context, parentOrigin) =>
     set({ context, parentOrigin, contextUnavailable: false }),
-  clearContext: () =>
-    set({ context: null, parentOrigin: null, contextUnavailable: false }),
+  clearContext: (unavailable = false) =>
+    set({ context: null, parentOrigin: null, contextUnavailable: unavailable }),
 }))

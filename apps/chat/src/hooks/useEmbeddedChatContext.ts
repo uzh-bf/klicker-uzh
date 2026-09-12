@@ -290,7 +290,7 @@ export function useEmbeddedChatContext() {
         if (clearDecision.messageId != null) {
           sequenceByOrigin.set(event.origin, clearDecision.messageId)
         }
-        clearContext()
+        clearContext(true)
         lastAcceptedRef.current = null
         return
       }
@@ -309,7 +309,7 @@ export function useEmbeddedChatContext() {
       }
 
       if (decision.kind === 'reject') {
-        clearContext()
+        clearContext(event.data?.type === ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE)
         lastAcceptedRef.current = null
         return
       }

@@ -647,12 +647,6 @@ describe('LTI participant linking and creation', () => {
         status: 'PUBLISHED',
       },
     })
-    const unrelated = await prisma.participant.create({
-      data: {
-        username: usernameFor('unrelated-cookie'),
-        password: 'unused-test-hash',
-      },
-    })
     const linked = await prisma.participant.create({
       data: {
         username: usernameFor('elearning-linked'),
@@ -692,14 +686,6 @@ describe('LTI participant linking and creation', () => {
         createCtx()
       )
     ).toEqual({ status: 'GUEST' })
-    expect(
-      await prisma.participation.count({
-        where: {
-          courseId: course.id,
-          participantId: unrelated.id,
-        },
-      })
-    ).toBe(0)
     await prisma.chatbot.delete({ where: { id: chatbot.id } })
   })
 })

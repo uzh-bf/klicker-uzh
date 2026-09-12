@@ -338,6 +338,13 @@ describe('requestFreshElearningChatContext', () => {
       context: null,
       contextUnavailable: true,
     })
+    // A delayed host clear is another failure, not a session reset.
+    useChatContextStore.getState().clearContext(true)
+    expect(useChatContextStore.getState().contextUnavailable).toBe(true)
+    useChatContextStore
+      .getState()
+      .setContext(freshElearningContext('new'), REFRESH_PARENT_ORIGIN)
+    expect(useChatContextStore.getState().contextUnavailable).toBe(false)
   })
 
   test('ignores a correlated reply from a different origin', async () => {
