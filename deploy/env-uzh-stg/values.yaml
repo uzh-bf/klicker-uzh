@@ -773,6 +773,15 @@ lti:
   authEndpoint: https://exp.olat.uzh.ch/lti/auth
   tokenEndpoint: https://exp.olat.uzh.ch/lti/token
   keysEndpoint: https://exp.olat.uzh.ch/lti/keys
+  additionalPlatforms:
+    - url: https://lms.uzh.ch
+      name: OLAT UZH LMS
+      clientId: 1f57e919-362d-4fbd-82c8-5c1e9a415d4f
+      authenticationEndpoint: https://lms.uzh.ch/lti/auth
+      accesstokenEndpoint: https://lms.uzh.ch/lti/token
+      authConfig:
+        method: JWK_SET
+        key: https://lms.uzh.ch/lti/keys
   cookieDomain: .klicker.stg.df-app.ch
 
   image:

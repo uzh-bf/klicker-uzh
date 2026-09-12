@@ -7,12 +7,15 @@ import {
   getChatbotLaunchBinding,
   resolveLaunchTarget,
 } from './launchTarget.js'
+import { resolvePlatforms } from './platforms.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
   console.error('APP_ORIGIN_LTI is required but not defined')
   process.exit(1)
 }
+
+const platforms = resolvePlatforms(process.env)
 
 const PROVIDER_OPTIONS = {
   appRoute: '/',
@@ -133,24 +136,13 @@ const setup = async () => {
   })
   console.log(result)
 
-  // Optional: Register platform if you're setting this up for the first time
-  const platform = await Provider.registerPlatform({
-    url: process.env.LTI_URL as string,
-    name: process.env.LTI_NAME as string,
-    clientId: process.env.LTI_CLIENT_ID as string,
-    authenticationEndpoint: process.env.LTI_AUTH_ENDPOINT as string,
-    accesstokenEndpoint: process.env.LTI_TOKEN_ENDPOINT as string,
-    authConfig: {
-      method: 'JWK_SET',
-      key: process.env.LTI_KEYS_ENDPOINT as string,
-    },
-  })
-
-  if (!platform) {
-    throw new Error('Failed to register platform')
+  for (const registration of platforms) {
+    const platform = await Provider.registerPlatform(registration)
+    if (!platform) {
+      throw new Error('Failed to register platform')
+    }
   }
-
-  console.log(await platform.platformPublicKey())
+  console.log(`Registered ${platforms.length} LTI platforms`)
 }
 
 // Get user and context information
