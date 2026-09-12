@@ -83,12 +83,18 @@ function workspacePackages(workspace) {
 
 // Vitest records each source relative to the package it ran in, so a report
 // cannot be imported without that package directory. The artifact path supplies
-// the package's last segments, and every remaining candidate must also resolve
-// every recorded source in this checkout. A report that matches no package or
-// more than one stops the import, because importing it would publish a mapping
-// that is known to be wrong or ambiguous. This also rejects the pnpm-linked
-// copies of a report that an over-broad upload glob would collect from
-// node_modules: their recorded paths do not resolve as first-party sources.
+// the package's last segments, which normally leaves exactly one candidate. When
+// the artifact keeps no package segment, the candidate whose sources resolve in
+// this checkout decides instead, and a tie stops the import because the mapping
+// would be ambiguous. A report that matches no candidate at all also stops the
+// import. That rejects the pnpm-linked copies of a report that an over-broad
+// upload glob would collect from node_modules: no first-party package ends with
+// such an artifact path.
+//
+// A recorded source that does not exist in this checkout, such as a generated
+// and ignored codegen output, is left in the report and simply never matches an
+// analyzed file. Coverage reads as absent for that file rather than as the
+// mapping being wrong, so it must not fail the whole import.
 function resolvePackageRoot(content, workspace, relative) {
   const sources = collectSources(content)
   if (sources.length === 0) {
@@ -99,19 +105,35 @@ function resolvePackageRoot(content, workspace, relative) {
     (candidate) =>
       !suffix || candidate === suffix || candidate.endsWith('/' + suffix)
   )
-  const resolvable = candidates.filter((candidate) =>
-    sources.every((source) =>
-      fs.existsSync(path.resolve(workspace, candidate, source))
+  if (candidates.length === 0) {
+    throw new Error(
+      relative +
+        ' cannot be mapped to one package: no workspace package ' +
+        'ends with ' +
+        (suffix || 'the report path')
     )
-  )
-  if (resolvable.length !== 1) {
-    const detail =
-      resolvable.length === 0
-        ? 'no workspace package contains ' + sources.slice(0, 3).join(', ')
-        : 'multiple workspace packages match: ' + resolvable.join(', ')
-    throw new Error(relative + ' cannot be mapped to one package: ' + detail)
   }
-  return resolvable[0]
+  const scored = candidates
+    .map((candidate) => ({
+      candidate,
+      resolved: sources.filter((source) =>
+        fs.existsSync(path.resolve(workspace, candidate, source))
+      ).length,
+    }))
+    .sort((left, right) => right.resolved - left.resolved)
+  const best = scored[0]
+  const tied = scored.filter((entry) => entry.resolved === best.resolved)
+  if (best.resolved === 0 || tied.length > 1) {
+    throw new Error(
+      relative +
+        ' cannot be mapped to one package: ' +
+        (best.resolved === 0
+          ? 'no recorded source resolves under ' + candidates.join(', ')
+          : 'multiple workspace packages match: ' +
+            tied.map((entry) => entry.candidate).join(', '))
+    )
+  }
+  return best.candidate
 }
 
 function createTransport(options) {

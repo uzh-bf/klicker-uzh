@@ -217,7 +217,24 @@ describe('resolvePackageRoot', () => {
           workspace,
           'grading/coverage/lcov.info'
         ),
-      /cannot be mapped to one package: no workspace package contains src\/missing\.ts/
+      /cannot be mapped to one package: no recorded source resolves under packages\/grading/
+    )
+  })
+
+  it('maps a report whose generated source is absent from the checkout', (t) => {
+    const workspace = createWorkspace(t, [
+      'packages/graphql/package.json',
+      'packages/graphql/codegen.ts',
+      'packages/graphql/src/builder.ts',
+      'packages/graphql/src/index.ts',
+    ])
+    assert.equal(
+      resolvePackageRoot(
+        lcov(['codegen.ts', 'src/builder.ts', 'src/index.ts', 'src/ops.ts']),
+        workspace,
+        'graphql/coverage/lcov.info'
+      ),
+      'packages/graphql'
     )
   })
 

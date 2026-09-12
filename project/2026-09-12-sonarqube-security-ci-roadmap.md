@@ -571,9 +571,12 @@ its dependent action. Read back effective settings and retain sanitized receipts
     per report from the artifact path and the sources the report records, and
     refuses a report that matches no package or more than one, which rejects
     those linked copies instead of importing duplicate coverage from
-    `node_modules` (`.github/scripts/sonar-coverage-transport.cjs`, 19 unit
-    cases). The coverage threshold is deliberately unarmed, and frontend PWA
-    coverage (Node test runner) is still unpublished.
+    `node_modules` (`.github/scripts/sonar-coverage-transport.cjs`, 20 unit
+    cases). A source that only exists in the producing checkout, such as the
+    generated `packages/graphql/src/ops.ts`, stays in the report and reads as
+    absent coverage instead of failing the analysis. The coverage threshold is
+    deliberately unarmed, and frontend PWA coverage (Node test runner) is still
+    unpublished.
   - W4: `dependency-review.yml` fails on high severity, and Dependabot now
     covers `uv` plus the twelve application Dockerfile directories. pnpm 11
     graph and updater support is still unverified, so this is not complete CVE

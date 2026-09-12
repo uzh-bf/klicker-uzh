@@ -21,7 +21,9 @@ run belongs to the analyzed revision and recorded the same tested source tree, s
 report from another tree or base cannot become a metric. Imported reports are rewritten
 so their `SF:` entries are repository-relative: the analysis resolves the package that
 produced a report from the report path and the sources it records, and refuses to
-import a report that matches no package or more than one. An upload that finds no
+import a report that matches no package or more than one. A source that only exists in
+the producing checkout, such as a generated and ignored codegen output, stays in the
+report and reads as absent coverage instead of failing the import. An upload that finds no
 report fails its job, and a missing, pending, or unverified report leaves coverage "not
 computed" in SonarCloud; no coverage threshold is armed yet. Suites that do not use
 Vitest (the frontend PWA uses the Node test runner) publish no LCOV and are covered by
