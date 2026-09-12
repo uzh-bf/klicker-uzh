@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "research-export-manifest/3",
+  "status": "synthetic-prototype",
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "sourceBaseline": "origin/v3@795568a4a1155991d4f2909c5903cd15735e23b4",
+  "privacyClassification": "pseudonymised-personal-data",
+  "anonymous": false,
+  "project": {
+    "title": "Adaptive Wiederholung in Grundlagenvorlesungen",
+    "responsiblePerson": "Dr. Beispiel",
+    "contact": "research-lead@example.invalid",
+    "purpose": "Wirkung adaptiver Wiederholungsempfehlungen auf Lernerfolg in synthetischen Grundlagenmodulen",
+    "retainUntil": "2029-12-31"
+  },
+  "pseudonymisation": {
+    "scope": "project",
+    "keyVersion": "k2026-09",
+    "keyIncluded": false
+  },
+  "timestampPrecision": {
+    "quizAndLearningRows": "day",
+    "chatTranscripts": "exact synthetic timestamps in this review specimen"
+  },
+  "eligibility": {
+    "rule": "Include only participants whose global research choice is ALLOWED when the backend releases the artifact.",
+    "implementationStatus": "proposed control; the participant research-choice field is not present on origin/v3",
+    "revision": "2026-09-04T11:59:58.000Z"
+  },
+  "selectedDataClasses": [
+    "live-quiz-responses",
+    "asynchronous-question-responses",
+    "learning-analytics-group-summaries",
+    "chat-transcripts"
+  ],
+  "learningAnalyticsDisclosure": {
+    "participantRowsIncluded": false,
+    "participantErrorDetailsIncluded": false,
+    "minimumEligibleGroupSize": 5,
+    "complementarySuppression": true,
+    "status": "proposed control for DPO review"
+  },
+  "files": [
+    {
+      "name": "live-quiz-responses.csv",
+      "rowCount": 3,
+      "bytes": 562,
+      "sha256": "201889bad866d58dfcd0261c7e7931bfad7dab2a64bc11cf1dab20fc8dbd58ba"
+    },
+    {
+      "name": "asynchronous-question-responses.csv",
+      "rowCount": 2,
+      "bytes": 551,
+      "sha256": "9b21ca66597f69609643c9fa6bffb81b270a105cfc0292776a6d4b659e729acc"
+    },
+    {
+      "name": "learning-analytics-groups.csv",
+      "rowCount": 3,
+      "bytes": 577,
+      "sha256": "dd09326b95bafa8a6ed6478f908a958daf8b0824f46ddcb355c7ae3eafa133c1"
+    },
+    {
+      "name": "chat-transcripts.json",
+      "chatbotCount": 1,
+      "threadCount": 1,
+      "messageCount": 2,
+      "bytes": 2652,
+      "sha256": "bb959bb2f65283cb7a8804a9f1d3099edd6710acde27c3d3f44c94f9b2db40d7"
+    },
+    {
+      "name": "data-dictionary.json",
+      "bytes": 2025,
+      "sha256": "f2dc0fdd56582d03eb7f086f8880e1efdfd8dc9d620ab16c369e9cab70b93480"
+    }
+  ]
+}

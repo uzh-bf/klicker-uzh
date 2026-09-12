@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "research-export-data-dictionary/1",
+  "commonTransformations": {
+    "participantPseudonym": "Project-specific keyed pseudonym derived from Participant.id; the key is not exported.",
+    "objectPseudonyms": "Project-specific keyed pseudonyms derived from operational activity, item, course, chatbot, thread, and message identifiers.",
+    "dayFields": "Operational timestamps coarsened to a calendar date."
+  },
+  "files": {
+    "live-quiz-responses.csv": {
+      "sourceModels": [
+        "LiveQuizResponse",
+        "ElementInstance",
+        "ElementBlock",
+        "LiveQuiz"
+      ],
+      "excludedByDefault": [
+        "raw response JSON",
+        "free-text response values",
+        "operational database identifiers",
+        "exact timestamps"
+      ]
+    },
+    "asynchronous-question-responses.csv": {
+      "sourceModels": [
+        "QuestionResponse",
+        "ElementInstance",
+        "PracticeQuiz",
+        "MicroLearning"
+      ],
+      "note": "One derived row per participant and element instance. Attempt-level QuestionResponseDetail rows are not included."
+    },
+    "learning-analytics-groups.csv": {
+      "sourceModels": [
+        "ActivityProgress",
+        "ActivityPerformance"
+      ],
+      "disclosureControl": {
+        "minimumEligibleGroupSize": 5,
+        "complementarySuppression": true
+      },
+      "note": "One cohort-level row per activity. Empty metrics show a group below the example threshold, not missing participant records. The release projection must be recalculated from the currently eligible population; existing aggregate rows cannot be exported unchanged. The export contains no participant key or participant-level error details."
+    },
+    "chat-transcripts.json": {
+      "sourceModels": [
+        "Chatbot",
+        "ChatThread",
+        "ChatMessage",
+        "ChatAttachment"
+      ],
+      "note": "Pseudonymisation covers identifiers, not free text. Image payloads, provider secrets, and lifecycle attempt IDs are excluded."
+    }
+  }
+}

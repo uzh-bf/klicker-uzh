@@ -2,6 +2,7 @@ import { ApolloProvider } from '@apollo/client'
 import { config } from '@fortawesome/fontawesome-svg-core'
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { getMessageFallback, onError, routing } from '@klicker-uzh/i18n'
+import DpoDraftApp from '@klicker-uzh/shared-components/src/DpoDraftApp'
 import { sourceSansPro } from '@klicker-uzh/shared-components/src/font'
 import { init } from '@socialgouv/matomo-next'
 import { Toaster } from '@uzh-bf/design-system'
@@ -27,7 +28,7 @@ config.autoAddCss = false
 const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
-function App({ Component, pageProps }: AppProps) {
+function RegularApp({ Component, pageProps }: AppProps) {
   const { locale } = useRouter()
 
   const apolloClient = useApollo(pageProps)
@@ -77,4 +78,10 @@ function App({ Component, pageProps }: AppProps) {
   )
 }
 
-export default App
+export default function App(props: AppProps) {
+  const { pathname } = useRouter()
+  if (process.env.NODE_ENV === 'development' && pathname === '/dpo-draft') {
+    return <DpoDraftApp {...props} />
+  }
+  return <RegularApp {...props} />
+}

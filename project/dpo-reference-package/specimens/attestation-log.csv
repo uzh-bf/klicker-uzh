@@ -1,0 +1,8 @@
+occurred_at,event,subject_type,subject_id,value,text_version,artifact_ref
+2026-09-01T12:02:11Z,policy_acknowledged,participant,7c1e3a9e-0000-4000-8000-00000000a1f3,,privacy-policy-2026-09;terms-2026-09,
+2026-09-01T12:02:11Z,research_choice_set,participant,7c1e3a9e-0000-4000-8000-00000000a1f3,allowed,research-notice-2026-09,
+2026-09-01T12:02:11Z,learning_analytics_choice_set,participant,7c1e3a9e-0000-4000-8000-00000000a1f3,enabled,la-notice-2026-09,
+2026-09-02T08:47:30Z,learning_analytics_choice_set,participant,7c1e3a9e-0000-4000-8000-00000000a1f3,disabled,la-notice-2026-09,la-purge-3f2b1c00-0000-4000-8000-000000000001
+2026-09-02T09:15:04Z,export_attested,user,91b0c2d4-0000-4000-8000-00000000cc02,assessment:5d4a77e1-0000-4000-8000-000000000042,assessment-export-attestation-2026-09,rows=48;sha256=3f9c0000000000000000000000000000000000000000000000000000000000e2
+2026-09-02T09:15:06Z,export_downloaded,user,91b0c2d4-0000-4000-8000-00000000cc02,assessment:5d4a77e1-0000-4000-8000-000000000042,,sha256=3f9c0000000000000000000000000000000000000000000000000000000000e2
+2026-09-03T10:30:00Z,research_export_attested,user,2ab7e6f0-0000-4000-8000-00000000010ee,project:"Adaptive Wiederholung in Grundlagenvorlesungen";pi=Dr. R. Example,research-export-attestation-2026-09,eligibility_rev=2026-09-03T10:29:58Z;rows=1240;sha256=8a010000000000000000000000000000000000000000000000000000000000077
