@@ -1001,6 +1001,104 @@ export async function updateChatbotModelPolicy(
   return shapeChatbotResponse(updated)
 }
 
+const PARTNER_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,62}$/
+
+function normalizePartnerId(partnerId: string): string {
+  const normalized = partnerId.trim().toLowerCase()
+  if (!PARTNER_ID_PATTERN.test(normalized)) {
+    throw new GraphQLError(
+      'Partner id must be a lowercase slug of 2-63 characters (letters, digits, dashes)'
+    )
+  }
+  return normalized
+}
+
+async function loadOwnedChatbotId(
+  chatbotId: string,
+  ctx: ContextWithUser
+): Promise<string | null> {
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: { id: chatbotId, ownerId: ctx.user.sub },
+    select: { id: true },
+  })
+  return chatbot?.id ?? null
+}
+
+type PartnerChatbotAccessArgs = {
+  chatbotId: string
+  partnerId: string
+}
+
+export async function grantPartnerChatbotAccess(
+  args: PartnerChatbotAccessArgs,
+  ctx: ContextWithUser
+) {
+  const chatbotId = await loadOwnedChatbotId(args.chatbotId, ctx)
+  if (!chatbotId) {
+    return null
+  }
+  const partnerId = normalizePartnerId(args.partnerId)
+
+  return await ctx.prisma.partnerChatbotGrant.upsert({
+    where: { partnerId_chatbotId: { partnerId, chatbotId } },
+    create: {
+      partnerId,
+      chatbotId,
+      grantedBy: ctx.user.sub,
+    },
+    // Re-granting a revoked or existing grant refreshes the approval so the
+    // owner's latest intent is the one the issuance route resolves.
+    update: {
+      grantedBy: ctx.user.sub,
+      grantedAt: new Date(),
+      revokedAt: null,
+      revokedBy: null,
+    },
+  })
+}
+
+export async function revokePartnerChatbotAccess(
+  args: PartnerChatbotAccessArgs,
+  ctx: ContextWithUser
+) {
+  const chatbotId = await loadOwnedChatbotId(args.chatbotId, ctx)
+  if (!chatbotId) {
+    return null
+  }
+  const partnerId = normalizePartnerId(args.partnerId)
+
+  const existing = await ctx.prisma.partnerChatbotGrant.findUnique({
+    where: { partnerId_chatbotId: { partnerId, chatbotId } },
+    select: { id: true, revokedAt: true },
+  })
+  if (!existing || existing.revokedAt) {
+    return null
+  }
+
+  return await ctx.prisma.partnerChatbotGrant.update({
+    where: { id: existing.id },
+    data: {
+      revokedAt: new Date(),
+      revokedBy: ctx.user.sub,
+    },
+  })
+}
+
+export async function listPartnerChatbotGrants(
+  args: { chatbotId: string },
+  ctx: ContextWithUser
+) {
+  const chatbotId = await loadOwnedChatbotId(args.chatbotId, ctx)
+  if (!chatbotId) {
+    return null
+  }
+
+  return await ctx.prisma.partnerChatbotGrant.findMany({
+    where: { chatbotId },
+    orderBy: { createdAt: 'desc' },
+  })
+}
+
 type CreateChatbotArgs = {
   name: string
   description?: string | null

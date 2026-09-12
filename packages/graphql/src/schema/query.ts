@@ -44,6 +44,7 @@ import {
   StudentAssessmentResults,
 } from './assessment.js'
 import { asChatbotAuthor } from './authScopes.js'
+import { PartnerChatbotGrant } from './chatbotPartnerGrant.js'
 import {
   AssessmentParticipant,
   Course,
@@ -1486,6 +1487,17 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      partnerChatbotGrants: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: [PartnerChatbotGrant],
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.listPartnerChatbotGrants(args, ctx)
         },
       }),
 

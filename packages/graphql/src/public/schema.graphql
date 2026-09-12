@@ -2094,6 +2094,7 @@ type Mutation {
   flagOutdatedElementInstances(elementId: Int!): Boolean
   getFileUploadSas(contentType: String!, fileName: String!): FileUploadSAS
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
+  grantPartnerChatbotAccess(chatbotId: String!, partnerId: String!): PartnerChatbotGrant
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
@@ -2147,6 +2148,7 @@ type Mutation {
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  revokePartnerChatbotAccess(chatbotId: String!, partnerId: String!): PartnerChatbotGrant
   saveChatbotDisclaimer(chatbotId: String!, expectedDisclaimerId: String, introText: String!, title: String!): Chatbot
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
@@ -2486,6 +2488,13 @@ type Participation {
   subscriptions: [PushSubscription!]
 }
 
+type PartnerChatbotGrant {
+  grantedAt: Date!
+  lastUsedAt: Date
+  partnerId: String!
+  revokedAt: Date
+}
+
 enum PerformanceLevel {
   HIGH
   LOW
@@ -2716,6 +2725,7 @@ type Query {
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
+  partnerChatbotGrants(chatbotId: String!): [PartnerChatbotGrant!]
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
