@@ -21,8 +21,10 @@ enum ElementType {
 model Element {
   id Int @id @default(autoincrement())
 
-  version    Int     @default(1) // used to track question versions, incremented on each update
-  originalId String?
+  version                  Int     @default(1) // used to track question versions, incremented on each update
+  originalId               String?
+  importFingerprint        String?
+  importFingerprintVersion Int?
 
   isArchived Boolean @default(false)
   isDeleted  Boolean @default(false)
@@ -60,6 +62,12 @@ model Element {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([ownerId, importFingerprint])
+  @@index([ownerId, importFingerprintVersion, importFingerprint], map: "Element_owner_fpv_fp_idx")
+  @@index([ownerId, importFingerprintVersion, importFingerprint, isDeleted, id], map: "Element_owner_fpv_fp_id_idx")
+  @@index([answerCollectionId, isDeleted, id], map: "Element_answer_collection_deleted_id_idx")
+  @@index([importFingerprintVersion, isDeleted, id], map: "Element_repair_fpv_deleted_id_idx")
 }
 
 enum ElementInstanceType {
