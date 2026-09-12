@@ -48,7 +48,7 @@ Record per-run logs, raw/cleaned graphs, chunks, recipes, request ranges and sem
 - Local Manage startup initially hit another worktree's Blob port10003. Existing `KB_GRAPH_BLOB_HOST_PORT=18440` override clears the collision without stopping its owner. Managed startup completed; the runtime was subsequently stopped.
 - Four pilot builds and eight remaining repetitions passed on frozen generator source. Publication remains blocked by missing isolated bindings.
 - Verified provenance correction: record nullable legacy course profile in generator recipe parameters and omit its null default from canonical bytes. Preserve historical and strict recipe validation; old missing metadata does not establish historical strict execution. The fix was prepared outside the evaluated tree and applied after all graph and retrieval calls completed. Relevant source: generator generation_recipe.py and tasks.py; existing recipe and workflow tests. Graph-bound artifact hashes continue to separate outputs.
-- Staged plan delivery is blocked: ordinary hooks repeatedly lose Git worktree context while shared core.bare changes. Secret scan and formatting pass. No hook bypass or shared config mutation occurred.
+- The original staged delivery failed because a Git fixture inherited hook context. The correction below resolves that defect and the complete check portfolio passes without disabling hooks.
 
 
 ## Completed experiment evidence
@@ -72,9 +72,12 @@ A provenance defect was corrected after all paid runs: future legacy recipes rec
 3. Preserve raw-source coverage when graph context consumes the retrieval budget; evaluate claims, citations, conflicts and abstention through a bound participant-chat corpus.
 4. Expand to reviewed multi-document scenarios and blinded educator scoring before policy/model tuning or adoption claims.
 
-The runtime used for publication was stopped with zero task routes and the browser closed. The evaluation container is also stopped. Both draft descriptions are updated and read back. The generator source is pushed, but these Klicker documents remain uncommitted because the normal hook fails. This document does not claim full acceptance or deployment readiness.
+The runtime used for publication was stopped with zero task routes and the browser closed. The evaluation container is also stopped. Both draft descriptions are updated and read back. The generator source is pushed. These Klicker documents and the fixture repair are now committed after the complete normal check portfolio passed; task-branch push remains the next delivery step. This document does not claim full acceptance or deployment readiness.
 
 
 ## Commit-hook correction
 
 A disposable linked-worktree reproduction established the hook root cause: the local-KB test inherited GIT_DIR and ran git init against its parent metadata, changing shared core.bare from false to true. The fixture now removes inherited Git variables, matching the existing identity-test convention. All70 local-KB tests pass with a linked-worktree GIT_DIR supplied, and core.bare remains false. The shared setting was restored to its verified original value. This is a test-fixture isolation fix; application behavior is unchanged.
+
+
+All normal checks passed for the committed package: 69 Playwright CI contracts and32 host-wrapper checks ran on host Node24; all remaining check:all commands ran in the provisioned container, including40 Turbo check tasks, lint, format, secret scan and70 local-KB tests. A temporary command wrapper routed each existing check to its supported environment; no check or hook was disabled. The already-installed Devrouter0.0.76 was used after shared state moved beyond0.0.72. No tool upgrade or agent configuration change was performed.
