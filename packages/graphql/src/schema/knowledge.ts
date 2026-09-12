@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
+import { ChatbotKnowledgeBaseSummaryRef } from './resource.js'
 
 interface IKBFileUpload {
   uploadSasURL: string
@@ -217,6 +218,7 @@ interface IKBChatbotBinding {
   chatbotName: string
   enabledKbId: string | null
   enabledKbName: string | null
+  enabledKbs: { id: string; name: string }[]
 }
 
 export const KBChatbotBindingRef =
@@ -225,7 +227,17 @@ export const KBChatbotBinding = KBChatbotBindingRef.implement({
   fields: (t) => ({
     chatbotId: t.exposeID('chatbotId'),
     chatbotName: t.exposeString('chatbotName'),
-    enabledKbId: t.exposeID('enabledKbId', { nullable: true }),
-    enabledKbName: t.exposeString('enabledKbName', { nullable: true }),
+    enabledKbId: t.exposeID('enabledKbId', {
+      nullable: true,
+      deprecationReason: 'Use enabledKbs for all attached knowledge bases.',
+    }),
+    enabledKbName: t.exposeString('enabledKbName', {
+      nullable: true,
+      deprecationReason: 'Use enabledKbs for all attached knowledge bases.',
+    }),
+    enabledKbs: t.field({
+      type: [ChatbotKnowledgeBaseSummaryRef],
+      resolve: (binding) => binding.enabledKbs,
+    }),
   }),
 })

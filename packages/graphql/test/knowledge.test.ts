@@ -558,9 +558,10 @@ describe('Integration tests for knowledge base CRUD', () => {
     expect(bindings).toEqual([
       {
         chatbotId: chatbot.id,
-        chatbotName: 'Finance tutor',
+        chatbotName: chatbot.name,
         enabledKbId: kb.id,
-        enabledKbName: 'Finance notes',
+        enabledKbName: kb.name,
+        enabledKbs: [{ id: kb.id, name: kb.name }],
       },
     ])
   })
