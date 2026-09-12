@@ -15,7 +15,10 @@ import {
   PWA_CHAT_EMBED_QUERY_KEY,
   PWA_CHAT_EMBED_SESSION_COOKIE,
 } from '@/src/lib/pwaEmbedAuth'
-import { findOrCreateGuestPersona, signChatGuestToken } from '@/src/lib/server/ltiGuest'
+import {
+  findOrCreateGuestPersona,
+  signChatGuestToken,
+} from '@/src/lib/server/ltiGuest'
 import { signPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 
 const LOG_PREFIX = '[chat:auth/elearning]'
@@ -24,6 +27,9 @@ const querySchema = z.object({
   grant: z.string().min(1),
   courseId: z.string().uuid(),
   chatbotId: z.string().uuid(),
+  // Optional deep link to the conversation the host remembers for this
+  // learner, chatbot and course; ownership is enforced by the chat UI.
+  threadId: z.string().uuid().optional(),
 })
 
 function noLoginRedirect(chatbotId: string | null) {
@@ -47,8 +53,7 @@ function noLoginRedirect(chatbotId: string | null) {
 function launchResponse(destination: URL) {
   const path = `${destination.pathname}${destination.search}`
   return new NextResponse(
-    `<!doctype html><meta charset="utf-8"><script>try { sessionStorage.removeItem('chat_participant_token'); sessionStorage.removeItem('chat_pwa_embed_token') } catch {} window.location.replace(${JSON.stringify(path).replaceAll('<', '\\u003c')})</script>`
-    ,
+    `<!doctype html><meta charset="utf-8"><script>try { sessionStorage.removeItem('chat_participant_token'); sessionStorage.removeItem('chat_pwa_embed_token') } catch {} window.location.replace(${JSON.stringify(path).replaceAll('<', '\\u003c')})</script>`,
     {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
@@ -76,13 +81,14 @@ export async function GET(req: NextRequest) {
     )
     return NextResponse.json(
       {
-        error: 'Missing or invalid query parameters (grant, courseId, chatbotId)',
+        error:
+          'Missing or invalid query parameters (grant, courseId, chatbotId)',
       },
       { status: 400 }
     )
   }
 
-  const { grant, courseId, chatbotId } = queryResult.data
+  const { grant, courseId, chatbotId, threadId } = queryResult.data
 
   let verified: Awaited<ReturnType<typeof verifyElearningChatGrant>>
   try {
@@ -186,7 +192,9 @@ export async function GET(req: NextRequest) {
   })
 
   const chatbotUrl = req.nextUrl.clone()
-  chatbotUrl.pathname = `/${chatbotId}`
+  chatbotUrl.pathname = threadId
+    ? `/${chatbotId}/threads/${threadId}`
+    : `/${chatbotId}`
   chatbotUrl.search = ''
 
   const isProduction =
@@ -250,7 +258,10 @@ export async function GET(req: NextRequest) {
   // Guest path. Issue chat_participant_token; never override participant_token.
   let chatGuestToken: string
   try {
-    chatGuestToken = await signChatGuestToken(decision.participantId!, learnerBinding)
+    chatGuestToken = await signChatGuestToken(
+      decision.participantId!,
+      learnerBinding
+    )
   } catch (error) {
     console.error(LOG_PREFIX, 'Failed to sign chat guest token:', error)
     return NextResponse.json(

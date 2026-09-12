@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { sanitizeKlickerChatContextV2 } from '../services/chatContext'
 import { useChatContextStore } from '../stores/chatContextStore'
+import { useChatStore } from '../stores/chatStore'
 import { useEmbedded } from './useEmbedded'
 
 const CHAT_CONTEXT_MESSAGE_TYPE = 'klicker:chat-context'
@@ -25,6 +26,9 @@ function getElearningEmbedOrigins(): string[] {
 export function useEmbeddedChatContext() {
   const embedded = useEmbedded()
   const setContext = useChatContextStore((state) => state.setContext)
+  // Reported with eLearning acks so the host can keep a scoped thread
+  // pointer for reload continuity without exposing other threads.
+  const activeThreadId = useChatStore((state) => state.activeThreadId)
   const clearContext = useChatContextStore((state) => state.clearContext)
 
   useEffect(() => {
@@ -39,7 +43,8 @@ export function useEmbeddedChatContext() {
       if (event.source !== window.parent || event.origin === 'null') return
       if (!isChatContextMessage(event.data)) return
 
-      const isElearning = event.data.type === ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE
+      const isElearning =
+        event.data.type === ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE
       if (isElearning && !elearningOrigins.includes(event.origin)) {
         // An unknown host never receives an ack, so the sender surfaces the
         // context as unavailable instead of silently trusting the label.
@@ -62,6 +67,9 @@ export function useEmbeddedChatContext() {
           payload: {
             version: 1,
             ...(messageId != null ? { messageId } : {}),
+            ...(isElearning && activeThreadId
+              ? { threadId: activeThreadId }
+              : {}),
           },
         },
         event.origin
@@ -74,18 +82,20 @@ export function useEmbeddedChatContext() {
       window.removeEventListener('message', handleMessage)
       clearContext()
     }
-  }, [clearContext, embedded, setContext])
+  }, [activeThreadId, clearContext, embedded, setContext])
 }
 
 function isChatContextMessage(data: unknown): data is {
-  type: typeof CHAT_CONTEXT_MESSAGE_TYPE | typeof ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE
+  type:
+    | typeof CHAT_CONTEXT_MESSAGE_TYPE
+    | typeof ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE
   payload: unknown
   messageId?: unknown
 } {
   return (
-    typeof data === 'object' &&
-    data !== null &&
-    (data as { type?: unknown }).type === CHAT_CONTEXT_MESSAGE_TYPE ||
+    (typeof data === 'object' &&
+      data !== null &&
+      (data as { type?: unknown }).type === CHAT_CONTEXT_MESSAGE_TYPE) ||
     (typeof data === 'object' &&
       data !== null &&
       (data as { type?: unknown }).type === ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE)
