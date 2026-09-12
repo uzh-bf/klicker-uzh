@@ -94,15 +94,48 @@ The private ingestion inputs select CPU compute, the default document-processing
 profile and no picture descriptions. Provider artifacts use the provider's
 isolated Azurite, separate from Klicker's source-upload storage. Ingestion and
 retrieval share the derived collection identity; retrieval requires signed KB
-scope and excludes inactive resources. The local model gateway receives no
+scope and excludes inactive resources. By default the local model gateway receives no
 ambient upstream credentials. A nonempty local SDK placeholder is not an
 upstream credential or proof of model availability.
+
+## Opt-in OpenRouter upstream
+
+Set `"aiUpstream": "openrouter"` in a fresh isolated input to enable real model
+and embedding calls. Omit it for the existing credential-free mode. The mode
+is part of the preparation identity: changing it on retained state is rejected.
+Public or synthetic content sent through this mode reaches OpenRouter and
+incurs ordinary model and embedding usage.
+
+Configuration-derived invocation, after host operator setup and runtime approval:
+
+```bash
+rs-infisical-operator --profile <approved-profile> run \
+  --map OPENROUTER_API_KEY=UPSTREAM_OPENAI_API_KEY -- \
+  env UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
+  node util/local-kb-stack.mjs setup \
+    --config /absolute/path/local-kb-input.json --candidate <full-commit-sha>
+```
+
+Use the same wrapper for `start` and `resume`. These three verbs reject missing
+credentials or a different upstream endpoint before claiming an attempt or
+activating providers. Setup validates the injection but does not forward it to
+its route-free managed profile. Only the managed `ai,chat,manage` startup
+receives the two upstream environment variables, and only LiteLLM among the
+containers receives them through name-only Compose references. The trusted
+host launcher and initialization hook inherit that environment. Never put the
+key in the input, generated files, workspace arguments, logs or receipts.
+
+`status` and `stop` use the ordinary commands without the operator wrapper.
+Resume requires fresh injection; a rejected missing-key resume consumes no
+attempt. Validate the installed Devrouter/Devsy environment transport with a
+synthetic sentinel before using a real key. Unit checks do not qualify that
+transport or establish successful retrieval.
 
 ## Provisioning and acceptance
 
 Use fresh application storage and explicit local provider destinations. Normal
 Devrouter networking is supported; do not claim network-level internet blocking.
-Keep ambient upstream credentials out of the environment. Never reuse an old KB
+Keep upstream credentials out of unrelated commands. Never reuse an old KB
 binding or restart retained workers as a substitute for isolated qualification.
 
 Prefer verified immutable provider images over local cold builds. The ingestion

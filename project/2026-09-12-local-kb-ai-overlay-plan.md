@@ -35,8 +35,8 @@ Repository: KlickerUZH. Target: v3-ai at
 same-repository HTTPS fetch after the SSH signing agent failed.
 Branch: `rs/local-kb-ai-overlay` in `trees/rs/generation-lifecycle-contracts`.
 The preceding source branch and pristine detached acceptance checkout remain.
-Artifacts remain in `project/`; this reviewed plan is uncommitted because the
-normal pre-commit hook requires a running implementation-worktree container.
+Artifacts remain in `project/`; the plan was committed as `54129eaa28` after
+the user approved implementation-worktree startup and its normal hooks passed.
 
 Baseline launcher tests pass 68/68. Both ingestion images from merged provider
 revision `3eaee85555a01d45e425c93bb9bf058d4a782e91` were pulled and their
@@ -114,6 +114,19 @@ Unsupported transport blocks
 S1; do not substitute an environment file or credential-bearing argument.
 
 ## Progress
+
+- S1 implementation committed at `f3a372f98a63d3eda5d35a00e8b77e0232066ba2`.
+  Nine source/test paths; 247 added and 21 removed substantive lines.
+  Three tests added and existing configuration/restart tests extended;
+  focused suite passes 71/71 in the container. Full normal pre-commit passes.
+  Simplifier and GLM slice review are running on the exact committed range.
+- Implementation runtime `rs-generation-lifecycle-contract` is ready on the
+  `manage` profile with no drift. Shared provider-lock waits resolved normally.
+  No real AI key has been injected, and no PDF has been submitted.
+- S2 guide update is in progress. Synthetic transport, fresh isolated setup,
+  PDF/citation proof, retained restart, final review and draft delivery remain.
+
+### Prior preparation evidence
 
 - Registry recovery and immutable image verification complete.
 - Baseline source checks pass 68/68; no implementation changes yet.
