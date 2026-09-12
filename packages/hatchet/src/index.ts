@@ -39,22 +39,6 @@ export * from './kbIngestionApi.js'
 export * from './kbMaintenance.js'
 export * from './worker-runtime.js'
 
-type AuditLogMessage = Record<string, string | undefined> & {
-  correlationId?: string
-  info: string
-}
-
-type AuditLogInput = AuditLogMessage | { message: AuditLogMessage }
-
-function isAuditLogMessage(input: unknown): input is AuditLogMessage {
-  return (
-    input !== null &&
-    typeof input === 'object' &&
-    !Array.isArray(input) &&
-    typeof (input as { info?: unknown }).info === 'string'
-  )
-}
-
 export function prepareHatchetTasks({
   hatchet,
   pubSub,
@@ -104,35 +88,50 @@ export function prepareHatchetTasks({
     },
   }
 
-  // ! AUDIT LOGGING
+  // ! ASSESSMENT AUDIT DELIVERY
   // #region
-  const createAuditLogEntry = hatchet.task({
-    name: 'create-audit-log-entry',
-    retries: 3,
-    defaultPriority: Priority.LOW,
-    onEvents: ['create-audit-log-entry'],
-    fn: (input: AuditLogInput, ctx) => {
-      // GraphQL task calls use the declared envelope; event producers send the
-      // audit message directly.
-      const messageInput =
-        input !== null && typeof input === 'object'
-          ? (input as { message?: unknown }).message
-          : undefined
-      let message: AuditLogMessage
-      if (isAuditLogMessage(messageInput)) {
-        message = messageInput
-      } else if (isAuditLogMessage(input)) {
-        message = input
-      } else {
-        throw new Error('Invalid audit log message input')
-      }
-      const { info, ...args } = message
-
-      // TODO: send the message to the actual audit log service with the correlation ID as a key?
-      ctx.logger.info(`Audit log entry: ${info}`, args)
-      return { success: true }
+  const dispatchAssessmentAuditOutbox = hatchet.task({
+    name: 'dispatch-assessment-audit-outbox',
+    retries: 0,
+    onCrons: ['* * * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleDispatchAssessmentAuditOutbox(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
     },
   })
+
+  const monitorAssessmentAudit = hatchet.task({
+    name: 'monitor-assessment-audit',
+    retries: 0,
+    onCrons: ['* * * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleMonitorAssessmentAudit(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const renewAssessmentAuditMediaPolicies = hatchet.task({
+    name: 'renew-assessment-audit-media-policies',
+    retries: 3,
+    onCrons: ['17 1 * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleRenewAssessmentAuditMediaPolicies(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+  // #endregion
 
   const ingestKBResourceDefinition = {
     name: 'ingest-kb-resource',
@@ -262,9 +261,15 @@ export function prepareHatchetTasks({
   const publishScheduledLiveQuiz = hatchet.task({
     name: 'publish-scheduled-live-quiz',
     retries: 3,
-    fn: async ({ liveQuizId }: { liveQuizId: string }, executionContext) => {
+    fn: async (
+      {
+        liveQuizId,
+        initiatedByUserId,
+      }: { liveQuizId: string; initiatedByUserId?: string },
+      executionContext
+    ) => {
       const success = await handlers.handlePublishScheduledLiveQuiz(
-        { liveQuizId },
+        { liveQuizId, initiatedByUserId },
         globalContext,
         executionContext
       )
@@ -553,6 +558,9 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    dispatchAssessmentAuditOutbox,
+    monitorAssessmentAudit,
+    renewAssessmentAuditMediaPolicies,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
@@ -572,7 +580,6 @@ export function prepareHatchetTasks({
     monitorKBIngestions,
     monitorKBGraphBuilds,
     maintainKBResources: maintainKBResourcesTask,
-    createAuditLogEntry,
     processCourseDuplication,
     sweepStaleCourseDuplications,
     processCourseDeletion,

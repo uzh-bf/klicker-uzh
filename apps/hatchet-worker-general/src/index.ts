@@ -1,7 +1,9 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
 import EventEmitter from 'node:events'
+import { createServer } from 'node:http'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
+import { renderAssessmentAuditPrometheusMetrics } from '@klicker-uzh/audit'
 import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
 import {
   createHatchetWorkerRuntime,
@@ -20,8 +22,44 @@ import {
   validateKBWorkerConfiguration,
 } from './workflowSelection.js'
 
+function startAuditMetricsServer(): void {
+  const portValue = process.env.ASSESSMENT_AUDIT_METRICS_PORT
+  if (portValue === undefined || portValue === '') {
+    return
+  }
+  const port = Number(portValue)
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error('ASSESSMENT_AUDIT_METRICS_PORT must be a valid port')
+  }
+  const environment = process.env.ASSESSMENT_AUDIT_ENVIRONMENT ?? 'unknown'
+  const role = process.env.ASSESSMENT_AUDIT_WORKER_ROLE ?? 'general'
+  const server = createServer((request, response) => {
+    if (request.url === '/healthz') {
+      response.writeHead(200, { 'content-type': 'text/plain' })
+      response.end('ok\n')
+      return
+    }
+    if (request.url === '/metrics') {
+      response.writeHead(200, {
+        'content-type': 'text/plain; version=0.0.4; charset=utf-8',
+      })
+      response.end(renderAssessmentAuditPrometheusMetrics(environment, role))
+      return
+    }
+    response.writeHead(404, { 'content-type': 'text/plain' })
+    response.end('not found\n')
+  })
+  server.listen(port, '0.0.0.0', () => {
+    logger.info({ port }, 'Assessment audit metrics server listening')
+  })
+}
+
 async function main() {
-  const integrationState = validateKBWorkerConfiguration()
+  const auditWorkerEnabled =
+    process.env.ASSESSMENT_AUDIT_WORKER_ENABLED === 'true'
+  const integrationState = auditWorkerEnabled
+    ? { ingestionDisabled: true, graphDisabled: true }
+    : validateKBWorkerConfiguration()
   const runtimeConfig = resolveWorkerRuntimeConfig('general')
   logger.info(
     {
@@ -31,6 +69,8 @@ async function main() {
     },
     'Starting Hatchet worker'
   )
+
+  startAuditMetricsServer()
 
   const redisExec = new Redis({
     family: 4,
@@ -109,6 +149,8 @@ async function main() {
 
   const selection = selectWorkflows(preparedWorkflows, {
     ...integrationState,
+    auditWorkerEnabled,
+    auditWorkerRole: process.env.ASSESSMENT_AUDIT_WORKER_ROLE,
     requestedWorkflowNames: process.env.HATCHET_WORKFLOWS,
   })
   if (selection.unknownKeys.length > 0) {

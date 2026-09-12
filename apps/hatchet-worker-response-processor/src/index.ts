@@ -1,5 +1,6 @@
 import {
   ConcurrencyLimitStrategy,
+  type JsonObject,
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import {
@@ -7,17 +8,18 @@ import {
   hatchetClient,
   resolveWorkerRuntimeConfig,
 } from '@klicker-uzh/hatchet'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
-import {
-  aggregateAssessmentResponses,
-  processAssessmentResponse,
-} from './processors/assessmentProcessor.js'
-import { processResponseMessage } from './processors/processor.js'
+import type {
+  AssessmentResponseCommand,
+  LiveQuizResponseInput,
+} from '@klicker-uzh/types'
 import {
   resolveResponseProcessorMode,
   resolveResponseProcessorWorkerMode,
   selectResponseProcessorWorkflows,
 } from './mode.js'
+import { aggregateAssessmentResponses } from './processors/assessmentAggregation.js'
+import { processAssessmentResponse } from './processors/assessmentProcessor.js'
+import { processResponseMessage } from './processors/processor.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
@@ -42,15 +44,9 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   fn: processResponseMessage,
 })
 
-export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
-  correlationId: string
-  participantId: string
-  liveQuizId: string
-  instanceId: string
-  response: LiveQuizResponseInput
-  cookie?: string
-  responseTimestamp: number
-}>({
+export const processAssessmentResponseWorkflow = hatchetClient.workflow<
+  AssessmentResponseCommand<LiveQuizResponseInput> & JsonObject
+>({
   name: 'process-assessment-response-workflow',
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:assessment'],
@@ -60,23 +56,6 @@ processAssessmentResponseWorkflow.durableTask({
   retries: 3,
   fn: (input, ctx) => processAssessmentResponse(input, ctx),
 })
-processAssessmentResponseWorkflow.onFailure({
-  name: 'log-assessment-response-failure',
-  fn: async (input, ctx) => {
-    const error = JSON.stringify(ctx.errors)
-    const message = `[ERROR] [AddResponse Assessment] ${error}.`
-
-    // log the error
-    ctx.logger.error(message)
-
-    // push the error to the audit log
-    ctx.v1.events.push('create-audit-log-entry', {
-      correlationId: input.correlationId,
-      info: message,
-    })
-  },
-})
-
 export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
   name: 'aggregate-assessment-responses',
   retries: 1,
