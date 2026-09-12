@@ -976,6 +976,8 @@ export async function prepareFlashcardsFromFile(
           data: {
             status: Prisma.ElementStatus.REVIEW,
             tags: data.tags,
+            importFingerprint: null,
+            importFingerprintVersion: null,
             content:
               data.content && existingElement.content !== data.content
                 ? data.content

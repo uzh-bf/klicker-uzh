@@ -300,6 +300,7 @@ export async function seedFlashcards(prismaClient: PrismaClient) {
 await seedFlashcards(prisma)
   .catch((err) => {
     console.error(err)
+    process.exitCode = 1
   })
   .finally(async () => {
     await prisma.$disconnect()

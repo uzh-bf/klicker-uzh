@@ -49,7 +49,7 @@ case "$mode" in
       if [[ "$remote_sha" == "$zero" ]]; then
         check_range "$local_sha" --not --remotes
       else
-        check_range "${remote_sha}..${local_sha}"
+        check_range "${remote_sha}..${local_sha}" --not --remotes
       fi
     done
     ;;
