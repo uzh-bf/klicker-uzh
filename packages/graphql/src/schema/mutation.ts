@@ -107,7 +107,6 @@ import {
 } from './sharing.js'
 import {
   BetaEnrollmentCapability,
-  FileUploadSAS,
   LocaleType,
   User,
   UserInfo,
@@ -1866,18 +1865,6 @@ export const Mutation = builder.mutationType({
             return await GroupService.changeGroupActivityName(args, ctx)
           }
           return null
-        },
-      }),
-
-      getFileUploadSas: t.withAuth(asUserFullAccess).field({
-        nullable: true,
-        type: FileUploadSAS,
-        args: {
-          fileName: t.arg.string({ required: true }),
-          contentType: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ElementService.getFileUploadSas(args, ctx)
         },
       }),
 
