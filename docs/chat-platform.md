@@ -921,6 +921,28 @@ and connect the app with `KB_FALKORDB_HOST`, `KB_FALKORDB_PORT` and
 branches to the application. Lecturer saves stage revisions; live student
 policy changes only when that revision is approved.
 
+For repeatable browser verification, start the seeded `chat,manage,mcp` profile
+with the app pointed at that disposable FalkorDB. Publish the test-owned graph,
+then preserve the seeded database while running the host browser:
+
+```bash
+devrouter exec <checkout> -- env DRY_RUN=false \
+  GRAPH_RETRIEVAL_TEST_HOST=host.docker.internal \
+  GRAPH_RETRIEVAL_TEST_PORT=<disposable-port> \
+  node apps/chat/scripts/seed-graph-e2e.mjs
+GRAPH_RETRIEVAL_TEST_PORT=<disposable-port> pnpm playwright:host -- \
+  --runtime-profile chat,manage,mcp --preserve-database --project=chromium \
+  tests/Y-chat-knowledge-graph.spec.ts
+```
+
+The fixture requires the disposable database guard and the seeded Benibot with
+exactly one enabled KB. It defaults to dry run. The browser test uses real graph
+API responses, expands a neighboring concept with the keyboard, checks desktop
+and mobile containment, and restores the lecturer's visibility setting after
+verifying the disabled API and hidden map. It skips without the explicit port;
+a skipped run is not native E2E evidence. The separate native retrieval test
+proves document augmentation; neither check calls a paid model.
+
 Switching mode mid-thread affects **only the turns sent afterwards**, and the choice is not
 persisted until the next send: a thread's stored mode is `lastChatMode`, derived from its most
 recent message's `chatMode`, so a switch that is never followed by a message leaves no trace.
