@@ -3,6 +3,8 @@ import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
   KBGraphBuildStatus,
+  KBImportedSourceIdentityField,
+  KBImportedSourceKind,
   KBIngestionOperation,
   KBIngestionStatus,
   KBResourceMaterialType,
@@ -56,6 +58,7 @@ import {
   detachKbFromChatbot,
   getKb,
   getKbChatbotBindings,
+  getKbImportedSourcesConnection,
   getKbKnowledgeGraphConfig,
   getKbKnowledgeGraphNeighbors,
   getKbKnowledgeGraphOverview,
@@ -99,6 +102,33 @@ function legacyUrlResources(kbId: string, count: number) {
     type: KBResourceType.URL,
     title: `Legacy URL ${index}`,
     sourceUrl: `https://example.com/legacy-${index}`,
+  }))
+}
+
+// Even indices stand for a video-derived source: identity comes from the video
+// identifier, an ingestion time was observed, and the raw video is not stored.
+function importedSourceRows(kbId: string, ids: string[], timestamp: Date) {
+  return ids.map((id, index) => ({
+    id,
+    kbId,
+    databaseName: 'klicker_generation',
+    collectionName: 'kb_sources',
+    sourceIdentityField:
+      index % 2 === 0
+        ? KBImportedSourceIdentityField.VIDEO_SOURCE_ID
+        : KBImportedSourceIdentityField.SOURCE_ID,
+    sourceIdentityValue: `source-${index}`,
+    title: `Imported source ${index}`,
+    kind:
+      index % 2 === 0
+        ? KBImportedSourceKind.VIDEO
+        : KBImportedSourceKind.DOCUMENT,
+    sourceUrl: index % 2 === 0 ? null : `https://example.com/imported-${index}`,
+    ingestedAt: index % 2 === 0 ? timestamp : null,
+    observedAt: timestamp,
+    identitySha256: `identity-${id}`,
+    metadataSha256: `metadata-${id}`,
+    createdAt: timestamp,
   }))
 }
 
@@ -263,6 +293,49 @@ describe('Knowledge base GraphQL contract', () => {
         .find(({ name }) => name === 'materialType')
         ?.type.toString()
     ).toBe('KBResourceMaterialType!')
+  })
+
+  it('exposes imported sources as bounded presentation metadata only', () => {
+    const schema = buildSchema(
+      readFileSync(
+        new URL('../src/public/schema.graphql', import.meta.url),
+        'utf8'
+      )
+    )
+    const source = schema.getType('KBImportedSource') as GraphQLObjectType
+    const connection = schema.getType(
+      'KBImportedSourceConnection'
+    ) as GraphQLObjectType
+    const query = schema.getQueryType()?.getFields().getKbImportedSources
+    const kb = schema.getType('KB') as GraphQLObjectType
+
+    // Identity coordinates, fingerprints and attribution stay internal.
+    expect(Object.keys(source.getFields()).sort()).toEqual([
+      'createdAt',
+      'id',
+      'ingestedAt',
+      'kind',
+      'observedAt',
+      'sourceUrl',
+      'title',
+    ])
+    expect(Object.keys(connection.getFields()).sort()).toEqual([
+      'items',
+      'pageInfo',
+      'totalCount',
+    ])
+    // Argument order is not part of the contract, so only the accepted
+    // arguments and their types are pinned.
+    expect(
+      Object.fromEntries(
+        (query?.args ?? []).map(({ name, type }) => [name, type.toString()])
+      )
+    ).toEqual({
+      kbId: 'ID!',
+      first: 'Int',
+      after: 'String',
+    })
+    expect(kb.getFields().importedSourceCount!.type.toString()).toBe('Int!')
   })
 })
 
@@ -3208,6 +3281,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => getUserKbsConnection({}, nonAiCtx),
       () => getKb({ id: kbId }, nonAiCtx),
       () => getKbResourcesConnection({ kbId }, nonAiCtx),
+      () => getKbImportedSourcesConnection({ kbId }, nonAiCtx),
       () => getKbChatbotBindings({ kbId }, nonAiCtx),
       () => getKbResourceIngestionRuns({ resourceId }, nonAiCtx),
       () => getKbKnowledgeGraphConfig({ kbId }, nonAiCtx),
@@ -3218,7 +3292,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => rebuildKbKnowledgeGraph({ kbId }, nonAiCtx),
     ]
 
-    expect(entryPoints).toHaveLength(23)
+    expect(entryPoints).toHaveLength(24)
     for (const callEntryPoint of entryPoints) {
       await expect(callEntryPoint()).rejects.toMatchObject({
         extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
@@ -3370,6 +3444,165 @@ describe('Integration tests for knowledge base CRUD', () => {
       prisma.kBResource.findUniqueOrThrow({ where: { id: unclassified.id } })
     ).resolves.toMatchObject({
       materialType: KBResourceMaterialType.ADMINISTRATIVE,
+    })
+  })
+
+  it('lists only one knowledge bases imported sources with filter-bound cursors', async () => {
+    const kb = await createKb({ name: 'Imported inventory' }, userOneCtx)
+    const otherKb = await createKb({ name: 'Other inventory' }, userOneCtx)
+    const timestamp = new Date('2026-08-02T09:00:00.000Z')
+    const ids = Array.from({ length: 4 }, () => randomUUID())
+      .sort()
+      .reverse()
+    await prisma.kBImportedSource.createMany({
+      data: importedSourceRows(kb.id, ids, timestamp),
+    })
+    await prisma.kBImportedSource.createMany({
+      data: importedSourceRows(otherKb.id, [randomUUID()], timestamp),
+    })
+
+    const firstPage = await getKbImportedSourcesConnection(
+      { kbId: kb.id, first: 2 },
+      userOneCtx
+    )
+    expect(firstPage.items.map(({ id }) => id)).toEqual(ids.slice(0, 2))
+    expect(firstPage.items[0]).toMatchObject({
+      kind: KBImportedSourceKind.VIDEO,
+      sourceUrl: null,
+      ingestedAt: timestamp,
+      observedAt: timestamp,
+    })
+    expect(firstPage).toMatchObject({
+      totalCount: 4,
+      pageInfo: { hasNextPage: true },
+    })
+    expect(firstPage.pageInfo.endCursor).toBeTruthy()
+
+    const secondPage = await getKbImportedSourcesConnection(
+      { kbId: kb.id, first: 2, after: firstPage.pageInfo.endCursor },
+      userOneCtx
+    )
+    expect(secondPage.items.map(({ id }) => id)).toEqual(ids.slice(2))
+    expect(secondPage).toMatchObject({
+      totalCount: 4,
+      pageInfo: { hasNextPage: false },
+    })
+
+    // the cursor is bound to one knowledge base, so it cannot be replayed on a
+    // sibling inventory, and malformed cursors are rejected
+    await expect(
+      getKbImportedSourcesConnection(
+        { kbId: otherKb.id, first: 2, after: firstPage.pageInfo.endCursor },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    await expect(
+      getKbImportedSourcesConnection(
+        { kbId: kb.id, after: 'not+a+cursor' },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+  })
+
+  it('denies imported source reads to a foreign owner without revealing existence', async () => {
+    const kb = await createKb({ name: 'Private inventory' }, userOneCtx)
+    await prisma.kBImportedSource.createMany({
+      data: importedSourceRows(
+        kb.id,
+        [randomUUID()],
+        new Date('2026-08-02T10:00:00.000Z')
+      ),
+    })
+
+    await expect(
+      getKbImportedSourcesConnection({ kbId: kb.id }, userTwoCtx)
+    ).rejects.toThrow('KB not found')
+    await expect(
+      prisma.kBImportedSource.count({ where: { kbId: kb.id } })
+    ).resolves.toBe(1)
+  })
+
+  it('reports imported sources separately from managed quota metrics', async () => {
+    const kb = await createKb({ name: 'Separate inventory' }, userOneCtx)
+    await createKbUrlResource(
+      {
+        kbId: kb.id,
+        title: 'Managed document',
+        url: 'https://example.com/managed',
+      },
+      userOneCtx
+    )
+    await prisma.kBImportedSource.createMany({
+      data: importedSourceRows(
+        kb.id,
+        Array.from({ length: 3 }, () => randomUUID()),
+        new Date('2026-08-02T11:00:00.000Z')
+      ),
+    })
+
+    const kbWithCount = await getKb({ id: kb.id }, userOneCtx)
+
+    expect(kbWithCount.importedSourceCount).toBe(3)
+    // Imported rows occupy no managed resource slot and no storage quota.
+    expect(kbWithCount.metrics).toMatchObject({
+      visibleResourceCount: 1,
+      quotaResourceCount: 1,
+      resourceLimit: MAX_KB_RESOURCE_COUNT,
+    })
+
+    const listed = (await getUserKbsConnection({}, userOneCtx)).items
+    expect(listed).toEqual([
+      expect.objectContaining({
+        id: kb.id,
+        importedSourceCount: 3,
+        metrics: expect.objectContaining({ quotaResourceCount: 1 }),
+      }),
+    ])
+  })
+
+  it('refuses whole-KB deletion while imported sources exist without side effects', async () => {
+    const kb = await createKb({ name: 'Imported inventory' }, userOneCtx)
+    const resource = await createKbUrlResource(
+      {
+        kbId: kb.id,
+        title: 'Managed document',
+        url: 'https://example.com/managed',
+      },
+      userOneCtx
+    )
+    await prisma.kBImportedSource.createMany({
+      data: importedSourceRows(
+        kb.id,
+        [randomUUID()],
+        new Date('2026-08-02T12:00:00.000Z')
+      ),
+    })
+    const runNoWait = vi.spyOn(userOneCtx.tasks.deleteKBResource, 'runNoWait')
+
+    await expect(deleteKb({ id: kb.id }, userOneCtx)).rejects.toMatchObject({
+      extensions: { code: 'KB_IMPORTED_SOURCES_PRESENT' },
+    })
+
+    expect(runNoWait).not.toHaveBeenCalled()
+    await expect(
+      prisma.kB.findUnique({ where: { id: kb.id } })
+    ).resolves.toMatchObject({ deletedAt: null, deletedById: null })
+    await expect(
+      prisma.kBResource.findUnique({ where: { id: resource.id } })
+    ).resolves.toMatchObject({
+      deletedAt: null,
+      ingestionOperation: KBIngestionOperation.UPSERT,
+      resourceVersion: 0,
+      status: KBResourceStatus.ADDED,
+    })
+    await expect(
+      prisma.kBImportedSource.count({ where: { kbId: kb.id } })
+    ).resolves.toBe(1)
+
+    // removing the imported row releases the guard
+    await prisma.kBImportedSource.deleteMany({ where: { kbId: kb.id } })
+    await expect(deleteKb({ id: kb.id }, userOneCtx)).resolves.toMatchObject({
+      id: kb.id,
     })
   })
 })

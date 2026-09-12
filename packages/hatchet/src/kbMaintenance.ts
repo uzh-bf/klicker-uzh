@@ -1051,6 +1051,10 @@ export async function maintainKBResources(
     uploadTickets: { none: {} },
     chatbots: { none: { isEnabled: true } },
     graphBuilds: { none: {} },
+    // Imported inventory has no deregistration path, and its restrictive foreign
+    // key would fail the delete anyway; keep such KBs tombstoned until an
+    // operator removes their imported sources.
+    importedSources: { none: {} },
   } satisfies Prisma.KBWhereInput
   const deletedKbCount = await dependencies.prisma.kB.count({
     where: deletedKbWhere,

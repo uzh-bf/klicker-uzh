@@ -1,0 +1,18 @@
+query GetKbImportedSources($kbId: ID!, $first: Int, $after: String) {
+  getKbImportedSources(kbId: $kbId, first: $first, after: $after) {
+    items {
+      id
+      kind
+      title
+      sourceUrl
+      ingestedAt
+      observedAt
+      createdAt
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}

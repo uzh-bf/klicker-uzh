@@ -2240,6 +2240,7 @@ type KB {
   createdAt: Date!
   description: String
   id: ID!
+  importedSourceCount: Int!
   metrics: KBMetrics
   name: String!
   updatedAt: Date!
@@ -2283,6 +2284,29 @@ enum KBGraphCostStatus {
 enum KBGraphQualityTier {
   HIGH
   STANDARD
+}
+
+type KBImportedSource {
+  createdAt: Date!
+  id: ID!
+  ingestedAt: Date
+  kind: KBImportedSourceKind!
+  observedAt: Date!
+  sourceUrl: String
+  title: String!
+}
+
+type KBImportedSourceConnection {
+  items: [KBImportedSource!]!
+  pageInfo: KBPageInfo!
+  totalCount: Int!
+}
+
+enum KBImportedSourceKind {
+  DOCUMENT
+  IMAGE
+  LINK
+  VIDEO
 }
 
 type KBIngestAllResult {
@@ -3330,6 +3354,7 @@ type Query {
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getKb(id: ID!): KB!
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
+  getKbImportedSources(after: String, first: Int, kbId: ID!): KBImportedSourceConnection!
   getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
   getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
   getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!

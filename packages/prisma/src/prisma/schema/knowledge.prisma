@@ -93,6 +93,18 @@ enum GeneratedElementDecision {
   REJECTED
 }
 
+enum KBImportedSourceKind {
+  DOCUMENT
+  LINK
+  VIDEO
+  IMAGE
+}
+
+enum KBImportedSourceIdentityField {
+  SOURCE_ID
+  VIDEO_SOURCE_ID
+}
+
 model KB {
   id          String  @id @default(uuid()) @db.Uuid
   name        String
@@ -118,6 +130,9 @@ model KB {
   uploadTickets KBUploadTicket[]
   chatbots      KBChatbot[]
   graphBuilds   KBGraphBuild[]
+
+  // imported metadata inventory; never part of managed upload, ingestion or deletion paths
+  importedSources KBImportedSource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -551,6 +566,44 @@ model KBChatbot {
 
   @@unique([kbId, chatbotId])
   @@index([chatbotId])
+}
+
+// Imported source inventory: a metadata record for a source already indexed in the KB's
+// external collection, independent of managed upload, ingestion and graph-build lifecycles.
+model KBImportedSource {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Immutable retrieval coordinates identifying one source; values are observed original
+  // structured identifiers, never fabricated from titles or segment URLs.
+  databaseName        String
+  collectionName      String
+  sourceIdentityField KBImportedSourceIdentityField
+  sourceIdentityValue String
+
+  // Attribution from the reviewed inventory observation; unknown values stay null.
+  projectId  String?
+  producerId String?
+
+  title String
+  kind  KBImportedSourceKind
+  // Optional safe original link; never a signed or short-lived URL.
+  sourceUrl  String?
+  ingestedAt DateTime?
+  observedAt DateTime
+
+  // identitySha256 covers the canonical ordered coordinates; metadataSha256 additionally
+  // covers all immutable presentation and attribution fields, excluding local id and createdAt.
+  identitySha256 String
+  metadataSha256 String
+
+  // Restrict keeps imported inventory from being removed by an accidental hard delete.
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([kbId, identitySha256])
+  @@index([kbId])
 }
 
 // #endregion

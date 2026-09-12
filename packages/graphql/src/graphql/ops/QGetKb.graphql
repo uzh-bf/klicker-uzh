@@ -3,6 +3,7 @@ query GetKb($id: ID!) {
     id
     name
     description
+    importedSourceCount
     metrics {
       visibleResourceCount
       visibleSizeBytes

@@ -435,6 +435,10 @@ export async function testCleanup(prisma: PrismaClient) {
   // upload tickets intentionally restrict KB deletion until retention cleanup
   await prisma.kBUploadTicket.deleteMany()
 
+  // imported sources intentionally restrict KB deletion and cascade from the
+  // owner, so they are removed before users are deleted
+  await prisma.kBImportedSource.deleteMany()
+
   // delete all users, participants and user groups / participant groups that have been added for the test run
   await prisma.user.deleteMany()
   await prisma.participant.deleteMany()

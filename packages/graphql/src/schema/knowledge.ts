@@ -36,6 +36,41 @@ export const KBIngestionStatus = builder.enumType('KBIngestionStatus', {
   values: Object.values(DB.KBIngestionStatus),
 })
 
+export const KBImportedSourceKind = builder.enumType('KBImportedSourceKind', {
+  values: Object.values(DB.KBImportedSourceKind),
+})
+
+export const KBImportedSourceRef =
+  builder.objectRef<DB.KBImportedSource>('KBImportedSource')
+export const KBImportedSource = KBImportedSourceRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    kind: t.expose('kind', { type: KBImportedSourceKind }),
+    title: t.exposeString('title'),
+    sourceUrl: t.exposeString('sourceUrl', { nullable: true }),
+    ingestedAt: t.expose('ingestedAt', { type: 'Date', nullable: true }),
+    observedAt: t.expose('observedAt', { type: 'Date' }),
+    createdAt: t.expose('createdAt', { type: 'Date' }),
+  }),
+})
+
+interface IKBImportedSourceConnection {
+  items: DB.KBImportedSource[]
+  pageInfo: IKBPageInfo
+  totalCount: number
+}
+
+export const KBImportedSourceConnectionRef =
+  builder.objectRef<IKBImportedSourceConnection>('KBImportedSourceConnection')
+export const KBImportedSourceConnection =
+  KBImportedSourceConnectionRef.implement({
+    fields: (t) => ({
+      items: t.expose('items', { type: [KBImportedSourceRef] }),
+      pageInfo: t.expose('pageInfo', { type: KBPageInfoRef }),
+      totalCount: t.exposeInt('totalCount'),
+    }),
+  })
+
 export const KBIngestionRunRef =
   builder.objectRef<DB.KBIngestionRun>('KBIngestionRun')
 export const KBIngestionRun = KBIngestionRunRef.implement({
@@ -142,6 +177,9 @@ export const KBMetrics = KBMetricsRef.implement({
 
 interface IKB extends DB.KB {
   metrics?: IKBMetrics
+  // Imported inventory is reported apart from KBMetrics: it consumes no managed
+  // resource slot and no storage quota.
+  importedSourceCount?: number
 }
 
 export const KBRef = builder.objectRef<IKB>('KB')
@@ -154,6 +192,10 @@ export const KB = KBRef.implement({
       type: KBMetricsRef,
       nullable: true,
       resolve: (kb) => kb.metrics ?? null,
+    }),
+    importedSourceCount: t.field({
+      type: 'Int',
+      resolve: (kb) => kb.importedSourceCount ?? 0,
     }),
     createdAt: t.expose('createdAt', { type: 'Date' }),
     updatedAt: t.expose('updatedAt', { type: 'Date' }),

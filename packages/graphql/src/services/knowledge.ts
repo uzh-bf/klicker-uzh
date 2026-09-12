@@ -63,7 +63,7 @@ const KB_FILE_TYPES: Record<string, readonly string[]> = {
   md: ['text/plain'],
 }
 
-type KBPaginationKind = 'knowledge-bases' | 'resources'
+type KBPaginationKind = 'knowledge-bases' | 'resources' | 'imported-sources'
 
 interface KBPaginationCursor {
   version: number
@@ -95,6 +95,9 @@ export interface KBMetrics {
 
 export interface KBWithMetrics extends DB.KB {
   metrics: KBMetrics
+  // Imported inventory is reported separately and never counts toward managed
+  // resource slots, storage quota or cleanup bookkeeping.
+  importedSourceCount: number
 }
 
 export interface KBConnection {
@@ -110,6 +113,12 @@ export interface KBResourceConnection {
   needsIngestionCount: number
   failedIngestionCount: number
   inProgressCount: number
+}
+
+export interface KBImportedSourceConnection {
+  items: DB.KBImportedSource[]
+  pageInfo: KBPageInfo
+  totalCount: number
 }
 
 export interface KBIngestAllResult {
@@ -712,6 +721,21 @@ async function getKbMetrics(
   return metrics.get(kbId) ?? createKbMetrics()
 }
 
+async function getKbImportedSourceCountMap(
+  prisma: DB.Prisma.TransactionClient | ContextWithUser['prisma'],
+  kbIds: string[]
+) {
+  if (kbIds.length === 0) return new Map<string, number>()
+
+  const grouped = await prisma.kBImportedSource.groupBy({
+    by: ['kbId'],
+    where: { kbId: { in: kbIds } },
+    _count: { _all: true },
+  })
+
+  return new Map(grouped.map((row) => [row.kbId, row._count._all]))
+}
+
 export async function getUserKbsConnection(
   {
     first,
@@ -781,14 +805,16 @@ export async function getUserKbsConnection(
       },
     }),
   ])
-  const metrics = await getKbMetricsMap(
-    ctx.prisma,
-    items.map(({ id }) => id)
-  )
+  const kbIds = items.map(({ id }) => id)
+  const [metrics, importedSourceCounts] = await Promise.all([
+    getKbMetricsMap(ctx.prisma, kbIds),
+    getKbImportedSourceCountMap(ctx.prisma, kbIds),
+  ])
   const itemsWithMetrics = items.map((kb) => ({
     ...kb,
     resources: [],
     metrics: metrics.get(kb.id) ?? createKbMetrics(),
+    importedSourceCount: importedSourceCounts.get(kb.id) ?? 0,
   }))
 
   return createPaginationResult(
@@ -813,9 +839,14 @@ export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
   if (!kb) {
     throw new GraphQLError('KB not found')
   }
+  const [metrics, importedSourceCount] = await Promise.all([
+    getKbMetrics(ctx.prisma, kb.id),
+    ctx.prisma.kBImportedSource.count({ where: { kbId: kb.id } }),
+  ])
   return {
     ...kb,
-    metrics: await getKbMetrics(ctx.prisma, kb.id),
+    metrics,
+    importedSourceCount,
   } satisfies KBWithMetrics
 }
 
@@ -1002,6 +1033,72 @@ export async function getKbResourcesConnection(
     ),
     ...summary,
   }
+}
+
+export async function getKbImportedSourcesConnection(
+  {
+    kbId,
+    first,
+    after,
+  }: {
+    kbId: string
+    first?: number | null
+    after?: string | null
+  },
+  ctx: ContextWithUser
+): Promise<KBImportedSourceConnection> {
+  await assertManageAiEnabled(ctx)
+  await getOwnedKbOrThrow(ctx, kbId)
+  const pageSize = normalizePageSize(first)
+  const filterHash = getFilterHash({ ownerId: ctx.user.sub, kbId })
+  const cursor = decodePaginationCursor(after, 'imported-sources', filterHash)
+  const baseWhere: DB.Prisma.KBImportedSourceWhereInput = {
+    kbId,
+    kb: {
+      is: {
+        ownerId: ctx.user.sub,
+        deletedAt: null,
+      },
+    },
+  }
+  const where: DB.Prisma.KBImportedSourceWhereInput = cursor
+    ? {
+        AND: [
+          baseWhere,
+          {
+            OR: [
+              { createdAt: { lt: cursor.timestamp } },
+              {
+                createdAt: cursor.timestamp,
+                id: { lt: cursor.id },
+              },
+            ],
+          },
+        ],
+      }
+    : baseWhere
+
+  const [items, totalCount] = await Promise.all([
+    ctx.prisma.kBImportedSource.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: pageSize + 1,
+    }),
+    ctx.prisma.kBImportedSource.count({ where: baseWhere }),
+  ])
+
+  return createPaginationResult(
+    items,
+    pageSize,
+    (source) => ({
+      version: KB_CURSOR_VERSION,
+      kind: 'imported-sources',
+      filterHash,
+      timestamp: source.createdAt.toISOString(),
+      id: source.id,
+    }),
+    totalCount
+  )
 }
 
 export async function getKbChatbotBindings(
@@ -1257,6 +1354,18 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
   const { kb, deletionInputs } = await ctx.prisma.$transaction(
     async (prisma) => {
       await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+      // Imported inventory has no cleanup or deregistration path, so a hard
+      // deletion would orphan metadata that is still referenced by the
+      // collection. The KB row lock serializes this check with registration.
+      const importedSourceCount = await prisma.kBImportedSource.count({
+        where: { kbId: id },
+      })
+      if (importedSourceCount > 0) {
+        throw new GraphQLError(
+          'KB cannot be deleted while imported sources are present. Imported sources are registered outside the managed ingestion lifecycle, so no automatic cleanup exists. Contact operator support to remove them before deleting this knowledge base.',
+          { extensions: { code: 'KB_IMPORTED_SOURCES_PRESENT' } }
+        )
+      }
       const graphState = await prisma.kB.findUniqueOrThrow({
         where: { id },
         select: { activeGraphBuildId: true },
