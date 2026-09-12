@@ -900,7 +900,26 @@ The opt-in `packages/knowledge-graph/test/retrieval.integration.test.ts` require
 `GRAPH_RETRIEVAL_TEST_PORT` on a disposable local FalkorDB, optionally
 `GRAPH_RETRIEVAL_TEST_HOST=host.docker.internal` for a container test runner.
 It uses a unique synthetic graph and removes only that graph. Without the
-explicit test port, it skips and does not prove native retrieval.
+explicit test port, it skips and does not prove native retrieval. The chat-level
+`apps/chat/test/graph-assisted-doc-query.integration.test.ts` uses the same
+connection guard to verify native traversal, additional passage retrieval,
+citation normalization and failure fallback with a synthetic document provider.
+It makes no model calls. Run both checks inside the task container against a
+disposable loopback-published FalkorDB:
+
+```bash
+devrouter exec <checkout> -- env \
+  GRAPH_RETRIEVAL_TEST_HOST=host.docker.internal \
+  GRAPH_RETRIEVAL_TEST_PORT=<disposable-port> \
+  pnpm --filter @klicker-uzh/chat test:run \
+  test/graph-assisted-doc-query.integration.test.ts
+```
+
+The browser fixture must also publish a synthetic build through the KB ledger
+and connect the app with `KB_FALKORDB_HOST`, `KB_FALKORDB_PORT` and
+`KB_FALKORDB_TLS`. Keep fixture setup in the test harness; do not add mock
+branches to the application. Lecturer saves stage revisions; live student
+policy changes only when that revision is approved.
 
 Switching mode mid-thread affects **only the turns sent afterwards**, and the choice is not
 persisted until the next send: a thread's stored mode is `lastChatMode`, derived from its most

@@ -27,10 +27,10 @@ import {
   resolveKnowledgeGraphLabels,
 } from './knowledgeGraphLabels'
 import {
+  initialKnowledgeGraphState,
   type KnowledgeGraphDataSource,
   type KnowledgeGraphRequestOperation,
   KnowledgeGraphUnavailableError,
-  initialKnowledgeGraphState,
   knowledgeGraphReducer,
 } from './knowledgeGraphState'
 import {
@@ -410,16 +410,17 @@ export function KnowledgeGraphViewer({
     })
 
     const isInitialLayout = buildChanged
-    const subsetEdges = cy.edges().filter((edge) => {
-      return (
-        newNodeIds.has(String(edge.source().data('graphId'))) &&
-        newNodeIds.has(String(edge.target().data('graphId')))
-      )
-    })
-    const layoutElements = isInitialLayout
-      ? cy.elements()
-      : newNodes.union(subsetEdges)
-    const layout = layoutElements.layout({
+    if (!isInitialLayout) {
+      // Keep added neighbors around their origin. An isolated subset layout
+      // recenters them at zero and can overlap already positioned concepts.
+      newNodes.forEach((node) => {
+        positionsRef.current.set(String(node.data('graphId')), node.position())
+      })
+      cy.fit(cy.elements(), 40)
+      expansionOriginRef.current = null
+      return
+    }
+    const layout = cy.elements().layout({
       name: 'cose',
       animate: !prefersReducedMotionRef.current,
       randomize: isInitialLayout,

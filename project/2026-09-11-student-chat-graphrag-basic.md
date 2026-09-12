@@ -140,3 +140,44 @@ succeeded; `devsy workspace status rs-student-chat-graphrag` reports `Stopped`,
 and `devrouter ls` contains zero routes for the exact source path. The disposable
 FalkorDB test container is absent after its explicit stop. No data/worktree was
 deleted. Unrelated primary-checkout untracked plans were preserved.
+
+### 2026-09-12 approved continuation
+
+User explicitly approved the split host/container commit method and required local
+E2E. Commit `8136a5e60` records the basic implementation after the staged secret
+scan and previously completed split checks. Native simplifier and slice review
+completed; both simplifications accepted, the single concurrency finding rejected
+because check and reservation have no intervening await. Reports are in the ignored
+review directory.
+
+Canonical `devrouter setup --repo <task> --yes` repaired missing workspace TLS
+coverage while preserving existing certificate names. The task subsequently
+reported ready, and host TLS validation succeeded. Its diagnostics also reported
+an unrelated shared network issue; no network allocation or cleanup was done.
+Lecturer graph settings saved independently and survived reload in the real UI.
+Stable DOM selectors were necessary; initial browser references did not activate
+the switches. Native FalkorDB-to-document integration now executes three tests
+with synthetic documents, plus 15 wrapper regressions; all 18 pass. GraphQL
+revision/type verification passes; 76 policy tests passed after the known seed
+collision was cleaned by the test harness. Browser fixtures were then restored.
+
+Current local native test service: task-owned `klicker-graphrag-e2e`, loopback
+port 16389, pinned FalkorDB digest as above, no retained corpus. An ignored
+`.local-kb-services.env` supplies this task connection. No paid model or production
+provider calls were used. Remaining: student browser matrix, durable local test
+instructions, final review and draft PR delivery.
+
+Student browser proof now covers real graph search, concept selection, native
+neighbor loading, map-disabled HTTP 403 and hidden navigation, desktop and
+390px mobile layout. German lecturer labels were captured. Browser discovery
+found clipped desktop details (fixed with min-width containment) and overlapping
+expanded concepts (fixed by preserving radial insertion positions instead of
+recentering a disconnected subset). Chat/shared-component typechecks and 37
+access/client tests pass after correction. Full Biome check flags three pre-existing
+viewer rules (React import, form search role, legend aria-label), verified in the
+base; formatting and relevant package checks pass.
+
+No paid model completion, production MCP retrieval or browser answer persistence
+was exercised. Native integration verifies citation normalization after JSON
+round-trip; this is narrower than an actual generated-answer reload. The basic
+implementation is graph-guided query expansion with ordinary document grounding.

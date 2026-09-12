@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { sanitizeDocQueryResult } from './docQueryResult'
 
 type RecordValue = Record<string, unknown>
@@ -90,9 +89,7 @@ export function combineGraphSearchDocuments(
   for (let index = 0; index < Math.max(first.length, second.length); index++) {
     for (const candidate of [first[index], second[index]]) {
       if (!candidate || selected.length >= 12) continue
-      const key = createHash('sha256')
-        .update(canonical(candidate))
-        .digest('hex')
+      const key = canonical(candidate)
       if (seen.has(key)) continue
       const size = String(candidate.chunk.content).length
       if (characters + size > 16000) continue

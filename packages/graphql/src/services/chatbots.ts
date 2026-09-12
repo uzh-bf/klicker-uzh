@@ -615,22 +615,12 @@ function cloneJson(value: unknown): unknown {
   )
 }
 
-type ChatbotKnowledgeGraphPolicy = {
-  visible: boolean
-  retrievalEnabled: boolean
-}
+type ChatbotKnowledgeGraphPolicy = Pick<
+  DB.Chatbot,
+  'knowledgeGraphVisible' | 'knowledgeGraphRetrievalEnabled'
+>
 
 // Live columns are the fallback for revisions saved before these fields existed.
-function knowledgeGraphPolicyFromLive(chatbot: {
-  knowledgeGraphVisible: boolean
-  knowledgeGraphRetrievalEnabled: boolean
-}): ChatbotKnowledgeGraphPolicy {
-  return {
-    visible: chatbot.knowledgeGraphVisible,
-    retrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
-  }
-}
-
 function parseStoredRevision(
   value: unknown,
   live: ChatbotKnowledgeGraphPolicy
@@ -772,11 +762,11 @@ function parseStoredRevision(
         : (value.disclaimerId as string | null),
     knowledgeGraphVisible:
       value.knowledgeGraphVisible === undefined
-        ? live.visible
+        ? live.knowledgeGraphVisible
         : value.knowledgeGraphVisible,
     knowledgeGraphRetrievalEnabled:
       value.knowledgeGraphRetrievalEnabled === undefined
-        ? live.retrievalEnabled
+        ? live.knowledgeGraphRetrievalEnabled
         : value.knowledgeGraphRetrievalEnabled,
   }
 }
@@ -849,10 +839,7 @@ function projectAuthoringRevision(
   if (chatbot.draftConfig === null || chatbot.draftConfig === undefined) {
     return null
   }
-  const revision = parseStoredRevision(
-    chatbot.draftConfig,
-    knowledgeGraphPolicyFromLive(chatbot)
-  )
+  const revision = parseStoredRevision(chatbot.draftConfig, chatbot)
   if (!revision) return null
 
   return revisionProjection(
@@ -937,10 +924,7 @@ function getRevisionSnapshot(chatbot: ChatbotRevisionRecord) {
   const snapshot =
     chatbot.draftConfig === null || chatbot.draftConfig === undefined
       ? buildRevisionFromLive(chatbot)
-      : parseStoredRevision(
-          chatbot.draftConfig,
-          knowledgeGraphPolicyFromLive(chatbot)
-        )
+      : parseStoredRevision(chatbot.draftConfig, chatbot)
   if (!snapshot) {
     throw chatbotError(
       'Saved chatbot revision is invalid and must be edited again',
