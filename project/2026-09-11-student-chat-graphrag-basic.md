@@ -235,20 +235,56 @@ selection, reset, mobile layout and the existing lecturer viewer.
 
 ### Navigation verification progress
 
-Native graph package: 79 tests pass, including a disposable 5,000-neighbor hub,
-query timeout and recovery. Admission/route/client/state checks: 72 pass. Root
-checks passed lint and 37/40 type tasks; a concurrent Prisma generate race and
-an ES2022-incompatible test helper caused the remaining failures. The client was
-regenerated serially and Prisma/chat checks pass; Playwright check passes after
-replacing the helper. Full production build passes 26/26 with conflicting generated
-development types temporarily isolated and restored. Host policy checks pass 123/123.
+Navigation implementation is committed in `90373dbcb5bef08708d1e6e463b88e8625484050`;
+accepted simplification is `9f4c37a7a8a4d92a0aff8a6ed53a0bcdc96db975`. Both are
+pushed to the existing [draft PR](https://github.com/uzh-bf/klicker-uzh/pull/5912).
+No new schema migration or dependency was added by navigation. The cohesive
+package now contains 53 substantive paths, 4,146 additions and 161 deletions
+(excluding project artifacts and generated SDL). Navigation remains in the same
+package because viewer/request identity and server bounds form one working flow.
 
-Real browser captures show overview, autocomplete, keyboard selection and compact
-details. Inspection corrected overlapping layout animations and excessive automatic
-zoom. Native browser smoke passed; the expanded delayed-response/IME/pointer/touch
-suite is running. Lecturer preview remains a required compatibility check. Source
-reviews, final integrated review, commit and draft update remain pending.
+- Native graph package: 79 tests pass, including a disposable 5,000-neighbor hub,
+  bounded edges, injection-shaped no-match search and timeout/recovery.
+- Navigation admission/route/client/state: 72 tests pass. After simplification,
+  33 state/client tests and chat typecheck pass. Root serial checks pass 40/40;
+  lint passes 7/7; host workflow checks pass 123/123. Static scan: 210 rules on
+  12 existing and two new files, zero findings/errors. Staged secret scans pass.
+- Full production build passes 26/26. Initial failures came from concurrent
+  Prisma generation and duplicate generated development/production Next types.
+  Serial generation corrected the former; temporary isolation/restoration of
+  generated development types corrected the latter without source changes.
+- Host Playwright: all nine tests pass. One exercises real native endpoints,
+  overview, keyboard selection/expansion, 403 policy, 409 build identity, mobile,
+  Escape and reset. Eight use controlled browser responses for stale requests,
+  blur/reset, serialization, IME, debounce cancellation, pointer and touch.
+- Real agent-browser captures cover overview/autocomplete/focus/mobile and the
+  existing lecturer preview. Visual inspection fixed competing layout animations
+  and excessive automatic zoom. Five synthetic captures were published through
+  host gh; PR readback and actual rendered images verified. Student graph labels
+  retain the existing English-only defaults; German lecturer controls are earlier
+  applicable evidence.
 
-No schema or dependency change was added by navigation. The local runtime stays
-running at the user's request for manual testing. Substring scans and per-process
-admission are bounded local protections, not measured multi-replica capacity.
+Lecturer verification initially found a missing nullable `KB.storageLimitMiB`
+column in the disposable local database. Guarded schema diff showed only that
+addition, two existing UUID defaults and an index rename. Non-destructive guarded
+`prisma:push:raw` aligned it; lecturer overview/search/expansion then passed. No
+retained/production database, corpus, or graph was touched by this repair.
+
+Slice review: done — ignored report `project/_local/reviews/navigation-slice-review.md`,
+all 20 navigation paths reviewed with no findings. Simplifier: two accepted
+removals of unused state and unreachable branches, verified and committed.
+Integrated final review is active on the complete committed range
+`9cb4042334751fd80fde5b95319a6c41cdd4cdaa..9f4c37a7a8a4d92a0aff8a6ed53a0bcdc96db975`.
+CLI Claude OAuth and AGY read-access failures from this package are reused;
+GLM max continuity carries the full independent final-review contract. Exact-head
+CI is running; hosted OCR previously failed provider HTTP 402 and is not a
+passed review. No merge/readiness/deployment claim is made.
+
+Runtime retained for the user's explicit local manual-testing request:
+`/Volumes/HOME/Git/klicker/klicker-uzh/trees/rs/student-chat-graphrag`, Devsy
+`rs-student-chat-graphrag`, UID `default-rs-ef739`; profiles `ai,chat,manage,mcp`.
+The local FalkorDB fixture service `klicker-graphrag-e2e` remains on loopback16389.
+Lease checkpoint: user's next manual-testing follow-up. No deletion is proposed.
+Substring scans and per-process admission are bounded local protections, not a
+measured multi-replica capacity guarantee. No paid-model answer quality or real
+browser generated-answer persistence is claimed.
