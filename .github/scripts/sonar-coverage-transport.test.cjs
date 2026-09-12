@@ -115,7 +115,9 @@ describe('rewriteLcov', () => {
   it('maps an absolute SF entry from its own path, not from the prefix', () => {
     assert.equal(
       rewriteLcov(
-        lcov(['/home/runner/work/klicker-uzh/klicker-uzh/packages/util/src/a.ts']),
+        lcov([
+          '/home/runner/work/klicker-uzh/klicker-uzh/packages/util/src/a.ts',
+        ]),
         { ...OPTIONS, prefix: 'packages/grading' }
       ),
       'SF:packages/util/src/a.ts\nLF:1\nLH:1\nend_of_record\n'
@@ -161,7 +163,10 @@ describe('workspacePackages', () => {
       'packages/util/node_modules/@klicker-uzh/grading/package.json',
       'deploy/not-a-package/package.json',
     ])
-    assert.deepEqual(workspacePackages(workspace), ['apps/chat', 'packages/util'])
+    assert.deepEqual(workspacePackages(workspace), [
+      'apps/chat',
+      'packages/util',
+    ])
   })
 })
 
@@ -248,7 +253,8 @@ describe('resolvePackageRoot', () => {
   it('rejects a report that records no source', (t) => {
     const workspace = createWorkspace(t, ['packages/grading/package.json'])
     assert.throws(
-      () => resolvePackageRoot('TN:\n', workspace, 'grading/coverage/lcov.info'),
+      () =>
+        resolvePackageRoot('TN:\n', workspace, 'grading/coverage/lcov.info'),
       /records no source files to map/
     )
   })

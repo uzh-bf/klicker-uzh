@@ -46,9 +46,7 @@ function rewriteLcov(content, options) {
 }
 
 function collectSources(content) {
-  return [...content.matchAll(/^SF:(.+)$/gm)].map((match) =>
-    match[1].trim()
-  )
+  return [...content.matchAll(/^SF:(.+)$/gm)].map((match) => match[1].trim())
 }
 
 // The upload glob anchors the artifact at some directory above the producing
@@ -70,7 +68,9 @@ function workspacePackages(workspace) {
   for (const group of ['apps', 'packages']) {
     const groupDirectory = path.join(workspace, group)
     if (!fs.existsSync(groupDirectory)) continue
-    for (const entry of fs.readdirSync(groupDirectory, { withFileTypes: true })) {
+    for (const entry of fs.readdirSync(groupDirectory, {
+      withFileTypes: true,
+    })) {
       if (!entry.isDirectory()) continue
       const candidate = group + '/' + entry.name
       if (fs.existsSync(path.join(workspace, candidate, 'package.json'))) {
