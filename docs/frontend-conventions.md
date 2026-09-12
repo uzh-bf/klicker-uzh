@@ -71,6 +71,7 @@ contract is unchanged.
 - **Design system first**: `@uzh-bf/design-system` provides `Button`, `Modal`, `FormikTextField`, `H1–H4`, `toast`, etc. Design-system components take the test hook as a prop: `data={{ cy: 'save-button' }}`; raw elements use a plain `data-cy` attribute.
 - **Tailwind v4, CSS-first**: no `tailwind.config.js` — theme tokens live in each app's `globals.css` (`@theme` block, `--color-uzh-blue`, shadcn-style tokens) and the design system is scanned via `@source "../node_modules/@uzh-bf/design-system/src"`. Conditional classes via `twMerge`.
 - **Shared components** (`packages/shared-components`): Loader, DataTable, question renderers, Leaderboard, charts, evaluation. **Deep-import** them (`@klicker-uzh/shared-components/src/Loader`) — there is no barrel index.
+- **Animations**: `motion` (declared as a dependency of `packages/shared-components`) powers the shared Leaderboard — podium rise-in, FLIP rank reordering on score changes, and staggered row entry. Gate every motion animation on `useReducedMotion()` from `motion/react`; keep durations at or below 0.5s. For app-local animation needs, prefer the Tailwind v4 `--animate-*` tokens already defined in each app's `globals.css` (e.g. `animate-fade-in`) or the installed `tw-animate-css` utilities over adding another JS animation dependency.
 - Function components with hooks only; PascalCase files; app-local components under `src/components/` with relative imports.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
@@ -100,7 +101,7 @@ contract is unchanged.
 
 ## Data fetching
 
-Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
+Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Exception for refetchable lists: render a skeleton only while `data` is still undefined and keep the previous list mounted during refetches, so updates never unmount the list or reset scroll (`apps/frontend-pwa/src/components/common/LiveQuizLeaderboard.tsx`). Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
 
 The course Practice Quiz overview is the shared participant and LTI entry point
 for the Practice Pool and individual quizzes. Keep it visible when exactly one
