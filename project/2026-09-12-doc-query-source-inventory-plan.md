@@ -150,11 +150,11 @@ seed the synthetic collection, start the Manage runtime, and prove in a real bro
 imported-sources section lists the seeded sources through the real service — no network fixtures.
 The seeded Klicker `KB` row currently points to `http://localhost:1417/mcp` with
 `authType=scope_token` and no transport secret; the e2e runtime must make that address resolve from
-the GraphQL process, and the test must prove the actual `DOC_QUERY_STATELESS_HTTP` mode. If the
-doc-query deployment enables transport JWT, a future deployment slice must also provide the
-transport credential to the KB row; scope-token keys alone are insufficient. Refresh EN/DE
-desktop/mobile screenshots and update PR #5922's description via `gh pr edit` (routine draft-PR
-update).
+the GraphQL process. The recorded run used the service's default stateful StreamableHTTP mode
+because `DOC_QUERY_STATELESS_HTTP` was unset. If a deployment enables stateless HTTP or transport
+JWT, that deployment slice must prove the corresponding client and credential contract separately;
+scope-token keys alone are not transport credentials. Refresh EN/DE desktop/mobile screenshots and
+update PR #5922's description via `gh pr edit` (routine draft-PR update).
 
 ### Delegation map
 
@@ -173,3 +173,12 @@ workload, new tenant tool rollout), live STG/PRD registration or corpus changes,
 `chatbot_id`→`kb_id` producer rename sequencing, deletion semantics for imported content (nothing
 is stored in Klicker anymore). Accepted outcome until the deployment slice is approved: outside
 local, Manage shows the section degraded/empty.
+
+## Progress
+
+- S1 is complete at mcp-doc-query `d8be6cf`; the scope-guarded `doc_query_sources` companion tool is unit-tested. The local service ran stateful StreamableHTTP because `DOC_QUERY_STATELESS_HTTP` was unset/default false; a seeded Milvus scan returned four scoped sources and excluded inactive and other-KB rows.
+- S2 is complete at Klicker implementation head `a80298bd9a7ed6c19c8a91d6ea03d6885bfefce2`. The branch contains no Prisma schema or migration paths. It includes the shared ES256 signer/MCP client, bounded inventory mapping, safe links, nullable timestamps, deterministic IDs, retry/close behavior, mocked GraphQL tests, and the read-only Manage UI.
+- S3 is complete for local acceptance: the real browser rendered two IUW video sources and two RSV document sources alongside one managed resource through the real doc-query/Milvus service. The video rows show metadata only; original video files are not retained.
+- Visual publication retains four historical synthetic captures from `1a62606023282052cf520ee6fb0037b7f7b1316f`; current-head browser state was verified separately because fresh screenshot bytes were not exportable through the current browser tool.
+- Draft PR [#5922](https://github.com/uzh-bf/klicker-uzh/pull/5922) is open against `v3-ai`; its description has been reconciled to the zero-schema design and remains draft pending the required review and CI gates.
+- Remaining: hosted `ocr-review` is blocked by provider HTTP 403 authentication with zero analysis; the required hosted `final-ai-review` status is pending manual invocation. No merge, deployment, live registration, or corpus mutation is included.
