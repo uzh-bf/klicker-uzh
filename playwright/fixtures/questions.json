@@ -1,0 +1,1354 @@
+{
+  "seededCourse": "Testkurs",
+  "SC": {
+    "title": "SC Title Test 1 (Version 1)",
+    "content": "SC Question Content 1",
+    "explanation": "SC Question Explanation 1",
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
+  },
+  "SC2": {
+    "title": "SC Title Test 1 (Version 2)",
+    "content": "SC Question Content 1 (Version 2)",
+    "explanation": "SC Question Explanation 1 (Version 2)",
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
+  },
+  "SC3": {
+    "title": "SC Title Test 1 (Version 3)",
+    "content": "SC Question Content 1 (Version 3)",
+    "explanation": "SC Question Explanation 1 (Version 3)",
+    "choices": [{ "value": "50%" }, { "value": "100%" }]
+  },
+  "SCML": {
+    "title": "SC Title Test 2 (Version 1)",
+    "content": "SC Question Content 2",
+    "explanation": "SC Question Explanation 2",
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
+  },
+  "SCML2": {
+    "title": "SC Title Test 2 (Version 2)",
+    "content": "SC Question Content 2 (Version 2)",
+    "explanation": "SC Question Explanation 2 (Version 2)",
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
+  },
+  "SCML3": {
+    "title": "SC Title Test 2 (Version 3)",
+    "content": "SC Question Content 2 (Version 3)",
+    "explanation": "SC Question Explanation 2 (Version 3)",
+    "choices": [{ "value": "50%", "correct": true }, { "value": "100%" }]
+  },
+  "SCMLAF": {
+    "title": "SC Title Test 3 (Version 1)",
+    "content": "SC Question Content 3",
+    "explanation": "SC Question Explanation 3",
+    "choices": [
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "SCMLAF2": {
+    "title": "SC Title Test 3 (Version 2)",
+    "content": "SC Question Content 3 (Version 2)",
+    "explanation": "SC Question Explanation 3 (Version 2)",
+    "choices": [
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "SCMLAF3": {
+    "title": "SC Title Test 3 (Version 3)",
+    "content": "SC Question Content 3 (Version 3)",
+    "explanation": "SC Question Explanation 3 (Version 3)",
+    "choices": [
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "MC": {
+    "title": "MC Title Test 1 (Version 1)",
+    "content": "MC Question Content 1",
+    "explanation": "MC Question Explanation 1",
+    "choices": [
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
+    ]
+  },
+  "MC2": {
+    "title": "MC Title Test 1 (Version 2)",
+    "content": "MC Question Content 1 (Version 2)",
+    "explanation": "MC Question Explanation 1 (Version 2)",
+    "choices": [
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
+    ]
+  },
+  "MC3": {
+    "title": "MC Title Test 1 (Version 3)",
+    "content": "MC Question Content 1 (Version 3)",
+    "explanation": "MC Question Explanation 1 (Version 3)",
+    "choices": [
+      { "value": "25%" },
+      { "value": "50%" },
+      { "value": "75%" },
+      { "value": "100%" }
+    ]
+  },
+  "MCML": {
+    "title": "MC Title Test 2 (Version 1)",
+    "content": "MC Question Content 2",
+    "explanation": "MC Question Explanation 2 (Version 1)",
+    "choices": [
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
+    ]
+  },
+  "MCML2": {
+    "title": "MC Title Test 2 (Version 2)",
+    "content": "MC Question Content 2 (Version 2)",
+    "explanation": "MC Question Explanation 2 (Version 2)",
+    "choices": [
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
+    ]
+  },
+  "MCML3": {
+    "title": "MC Title Test 2 (Version 3)",
+    "content": "MC Question Content 2 (Version 3)",
+    "explanation": "MC Question Explanation 2 (Version 3)",
+    "choices": [
+      { "value": "25%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "75%" },
+      { "value": "100%" }
+    ]
+  },
+  "MCMLAF": {
+    "title": "MC Title Test 3 (Version 1)",
+    "content": "MC Question Content 3",
+    "explanation": "MC Question Explanation 3 (Version 1)",
+    "choices": [
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "MCMLAF2": {
+    "title": "MC Title Test 3 (Version 2)",
+    "content": "MC Question Content 3 (Version 2)",
+    "explanation": "MC Question Explanation 3 (Version 2)",
+    "choices": [
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "MCMLAF3": {
+    "title": "MC Title Test 3 (Version 3)",
+    "content": "MC Question Content 3 (Version 3)",
+    "explanation": "MC Question Explanation 3 (Version 3)",
+    "choices": [
+      { "value": "25%", "feedback": "Feedback Option 25%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "75%", "feedback": "Feedback Option 75%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "KP": {
+    "title": "KPRIM Title Test 1 (Version 1)",
+    "content": "KPRIM Question Content 1",
+    "explanation": "KPRIM Question Explanation 1 (Version 1)",
+    "choices": [
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
+    ]
+  },
+  "KP2": {
+    "title": "KPRIM Title Test 1 (Version 2)",
+    "content": "KPRIM Question Content 1 (Version 2)",
+    "explanation": "KPRIM Question Explanation 1 (Version 2)",
+    "choices": [
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
+    ]
+  },
+  "KP3": {
+    "title": "KPRIM Title Test 1 (Version 3)",
+    "content": "KPRIM Question Content 1 (Version 3)",
+    "explanation": "KPRIM Question Explanation 1 (Version 3)",
+    "choices": [
+      { "value": "10%" },
+      { "value": "50%" },
+      { "value": "80%" },
+      { "value": "100%" }
+    ]
+  },
+  "KPML": {
+    "title": "KPRIM Title Test 2 (Version 1)",
+    "content": "KPRIM Question Content 2",
+    "explanation": "KPRIM Question Explanation 2 (Version 1)",
+    "choices": [
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
+    ]
+  },
+  "KPML2": {
+    "title": "KPRIM Title Test 2 (Version 2)",
+    "content": "KPRIM Question Content 2 (Version 2)",
+    "explanation": "KPRIM Question Explanation 2 (Version 2)",
+    "choices": [
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
+    ]
+  },
+  "KPML3": {
+    "title": "KPRIM Title Test 2 (Version 3)",
+    "content": "KPRIM Question Content 2 (Version 3)",
+    "explanation": "KPRIM Question Explanation 2 (Version 3)",
+    "choices": [
+      { "value": "10%", "correct": false },
+      { "value": "50%", "correct": true },
+      { "value": "80%" },
+      { "value": "100%" }
+    ]
+  },
+  "KPMLAF": {
+    "title": "KPRIM Title Test 3 (Version 1)",
+    "content": "KPRIM Question Content 3",
+    "explanation": "KPRIM Question Explanation 3 (Version 1)",
+    "choices": [
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "KPMLAF2": {
+    "title": "KPRIM Title Test 3 (Version 2)",
+    "content": "KPRIM Question Content 3 (Version 2)",
+    "explanation": "KPRIM Question Explanation 3 (Version 2)",
+    "choices": [
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "KPMLAF3": {
+    "title": "KPRIM Title Test 3 (Version 3)",
+    "content": "KPRIM Question Content 3 (Version 3)",
+    "explanation": "KPRIM Question Explanation 3 (Version 3)",
+    "choices": [
+      { "value": "10%", "feedback": "Feedback Option 10%", "correct": false },
+      { "value": "50%", "feedback": "Feedback Option 50%", "correct": true },
+      { "value": "80%", "feedback": "Feedback Option 80%" },
+      { "value": "100%", "feedback": "Feedback Option 100%" }
+    ]
+  },
+  "NR": {
+    "title": "NR Title Test 1 (Version 1)",
+    "content": "NR Question Content 1",
+    "explanation": "NR Question Explanation 1 (Version 1)",
+    "options": {},
+    "answer": "50"
+  },
+  "NR2": {
+    "title": "NR Title Test 1 (Version 2)",
+    "content": "NR Question Content 1 (Version 2)",
+    "explanation": "NR Question Explanation 1 (Version 2)",
+    "options": {},
+    "answer": "50"
+  },
+  "NR3": {
+    "title": "NR Title Test 1 (Version 3)",
+    "content": "NR Question Content 1 (Version 3)",
+    "explanation": "NR Question Explanation 1 (Version 3)",
+    "options": {},
+    "answer": "50"
+  },
+  "NR4": {
+    "title": "NR Title Test 1 (Version 4)",
+    "content": "NR Question Content 1 (Version 4)",
+    "explanation": "NR Question Explanation 1 (Version 4)",
+    "options": {},
+    "answer": "50"
+  },
+  "NRML": {
+    "title": "NR Title Test 2 (Version 1)",
+    "content": "NR Question Content 2",
+    "explanation": "NR Question Explanation 2 (Version 1)",
+    "options": {
+      "min": "0",
+      "max": "100",
+      "unit": "%",
+      "accuracy": "2",
+      "solutionRanges": [
+        { "min": "0", "max": "25" },
+        { "min": "75", "max": "100" }
+      ]
+    },
+    "answer": "100"
+  },
+  "NRML2": {
+    "title": "NR Title Test 2 (Version 2)",
+    "content": "NR Question Content 2 (Version 2)",
+    "explanation": "NR Question Explanation 2 (Version 2)",
+    "options": {
+      "min": "0",
+      "max": "100",
+      "unit": "%",
+      "accuracy": "2",
+      "solutionRanges": [
+        { "min": "0", "max": "25" },
+        { "min": "75", "max": "100" }
+      ]
+    },
+    "answer": "100"
+  },
+  "NRML3": {
+    "title": "NR Title Test 2 (Version 3)",
+    "content": "NR Question Content 2 (Version 3)",
+    "explanation": "NR Question Explanation 2 (Version 3)",
+    "options": {
+      "min": "0",
+      "max": "100",
+      "unit": "%",
+      "accuracy": "2",
+      "solutionRanges": [
+        { "min": "0", "max": "25" },
+        { "min": "75", "max": "100" }
+      ]
+    },
+    "answer": "100"
+  },
+  "FT": {
+    "title": "FT Title Test 1 (Version 1)",
+    "content": "FT Question Content 1",
+    "explanation": "FT Question Explanation 1 (Version 1)",
+    "options": {},
+    "answer": "Solution 1"
+  },
+  "FT2": {
+    "title": "FT Title Test 1 (Version 2)",
+    "content": "FT Question Content 1 (Version 2)",
+    "explanation": "FT Question Explanation 1 (Version 2)",
+    "options": {},
+    "answer": "Solution 1"
+  },
+  "FT3": {
+    "title": "FT Title Test 1 (Version 3)",
+    "content": "FT Question Content 1 (Version 3)",
+    "explanation": "FT Question Explanation 1 (Version 3)",
+    "options": {},
+    "answer": "Solution 1"
+  },
+  "FT4": {
+    "title": "FT Title Test 1 (Version 4)",
+    "content": "FT Question Content 1 (Version 4)",
+    "explanation": "FT Question Explanation 1 (Version 4)",
+    "options": {},
+    "answer": "hello 1st 42 of https://example.com @user #fun user@example.com :-) 😊 ! $5.00 @",
+    "filteredResponses": {
+      "word": ["hello"],
+      "ordinal": ["1st"],
+      "number": ["42", "5.00"],
+      "stopword": ["of"],
+      "url": ["https://example.com"],
+      "mention": ["@user"],
+      "hashtag": ["#fun"],
+      "email": ["user@example.com"],
+      "emoticon": [":-)"],
+      "emoji": ["😊"],
+      "punctuation": ["!"],
+      "currency": ["$"],
+      "symbol": ["@"]
+    },
+    "language": "en"
+  },
+  "FT5": {
+    "title": "FT Title Test 1 (Version 5)",
+    "content": "FT Question Content 1 (Version 5)",
+    "explanation": "FT Question Explanation 1 (Version 5)",
+    "options": {},
+    "answer": "hallo 1. 42 von https://example.com @nutzer #lustig nutzer@beispiel.com :-) 😊 ! $5.00 @",
+    "filteredResponses": {
+      "word": ["hallo"],
+      "ordinal": [],
+      "number": ["1", "42", "5.00"],
+      "stopword": ["von"],
+      "url": ["https://example.com"],
+      "mention": ["@nutzer"],
+      "hashtag": ["#lustig"],
+      "email": ["nutzer@beispiel.com"],
+      "emoticon": [":-)"],
+      "emoji": ["😊"],
+      "punctuation": ["!", "."],
+      "currency": ["$"],
+      "symbol": ["@"]
+    },
+    "language": "de"
+  },
+  "FTML": {
+    "title": "FT Title Test 2 (Version 1)",
+    "content": "FT Question Content 2",
+    "explanation": "FT Question Explanation 2 (Version 1)",
+    "options": {
+      "maxLength": "100",
+      "solutions": ["Solution 1", "Solution 2"]
+    },
+    "answer": "Answer 2"
+  },
+  "FTML2": {
+    "title": "FT Title Test 2 (Version 2)",
+    "content": "FT Question Content 2 (Version 2)",
+    "explanation": "FT Question Explanation 2 (Version 2)",
+    "options": {
+      "maxLength": "100",
+      "solutions": ["Solution 1", "Solution 2"]
+    },
+    "answer": "Answer 2"
+  },
+  "FTML3": {
+    "title": "FT Title Test 2 (Version 3)",
+    "content": "FT Question Content 2 (Version 3)",
+    "explanation": "FT Question Explanation 2 (Version 3)",
+    "options": {
+      "maxLength": "100",
+      "solutions": ["Solution 1", "Solution 2"]
+    },
+    "answer": "Answer 2"
+  },
+  "collection": {
+    "name": "Collection (Version 1)",
+    "description": "Collection Description",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
+  },
+  "collection2": {
+    "name": "Collection (Version 2)",
+    "description": "Collection Description (Version 2)",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
+  },
+  "collection3": {
+    "name": "Collection (Version 3)",
+    "description": "Collection Description (Version 3)",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5"]
+  },
+  "SE": {
+    "title": "SE Title Test 1 (Version 1)",
+    "content": "SE Question Content 1",
+    "explanation": "SE Question Explanation 1 (Version 1)",
+    "inputs": 2
+  },
+  "SE2": {
+    "title": "SE Title Test 1 (Version 2)",
+    "content": "SE Question Content 1 (Version 2)",
+    "explanation": "SE Question Explanation 1 (Version 2)",
+    "inputs": 2
+  },
+  "SE3": {
+    "title": "SE Title Test 1 (Version 3)",
+    "content": "SE Question Content 1 (Version 3)",
+    "explanation": "SE Question Explanation 1 (Version 3)",
+    "inputs": 2
+  },
+  "SEML": {
+    "title": "SE Title Test 2 (Version 1)",
+    "content": "SE Question Content 2",
+    "explanation": "SE Question Explanation 2 (Version 1)",
+    "inputs": 3,
+    "solutions": [0, 1, 2, 4]
+  },
+  "SEML2": {
+    "title": "SE Title Test 2 (Version 2)",
+    "content": "SE Question Content 2 (Version 2)",
+    "explanation": "SE Question Explanation 2 (Version 2)",
+    "inputs": 3,
+    "solutions": [0, 1, 2, 4]
+  },
+  "SEML3": {
+    "title": "SE Title Test 2 (Version 3)",
+    "content": "SE Question Content 2 (Version 3)",
+    "explanation": "SE Question Explanation 2 (Version 3)",
+    "inputs": 3,
+    "solutions": [0, 1, 2, 4]
+  },
+  "CS": {
+    "title": "CS Title Test 2 (Version 1)",
+    "content": "CS Question Test 2",
+    "explanation": "CS Explanation Test 2",
+    "collectionName": "Answer Collection Test 2",
+    "selectedItems": [0, 2, 4],
+    "criteria": [
+      {
+        "id": "ayTOU7QLxu",
+        "mode": "range",
+        "name": "Criterion 1 with range 0-100",
+        "min": 0,
+        "max": 100,
+        "step": 0.2,
+        "unit": "%"
+      },
+      {
+        "id": "oPrEkBpIdc",
+        "mode": "range",
+        "name": "Criterion 2 with range -500 to 1000",
+        "min": -500,
+        "max": 1000,
+        "step": 10
+      }
+    ],
+    "cases": [
+      {
+        "id": "_7zcnLGFTX",
+        "title": "Case 1",
+        "description": "Case 1 Description"
+      },
+      {
+        "id": "EScOftRpjg",
+        "title": "Case 2",
+        "description": "Case 2 Description"
+      }
+    ],
+    "answers": {
+      "0": {
+        "0": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 23
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 87
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 42
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 95
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 31
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 76
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 54
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 12
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 68
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 37
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 89
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 45
+          }
+        }
+      }
+    }
+  },
+  "CS2": {
+    "title": "CS Title Test 2 (Version 2)",
+    "content": "CS Question Test 2 (Version 2)",
+    "explanation": "CS Explanation Test 2 (Version 2)",
+    "collectionName": "Answer Collection Test 2",
+    "selectedItems": [0, 2, 4],
+    "criteria": [
+      {
+        "id": "WbalWEa1a8",
+        "mode": "range",
+        "name": "Criterion 1 with range 0-100",
+        "min": 0,
+        "max": 100,
+        "step": 0.2,
+        "unit": "%"
+      },
+      {
+        "id": "qg3BQke2Z7",
+        "mode": "range",
+        "name": "Criterion 2 with range -500 to 1000",
+        "min": -500,
+        "max": 1000,
+        "step": 10
+      }
+    ],
+    "cases": [
+      {
+        "id": "P3H1jIVxUv",
+        "title": "Case 1",
+        "description": "Case 1 Description"
+      },
+      {
+        "id": "d8UH0PkLV5",
+        "title": "Case 2",
+        "description": "Case 2 Description"
+      }
+    ],
+    "answers": {
+      "0": {
+        "0": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 23
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 87
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 42
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 95
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 31
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 76
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 54
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 12
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 68
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 37
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 89
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 45
+          }
+        }
+      }
+    }
+  },
+  "CS3": {
+    "title": "CS Title Test 2 (Version 3)",
+    "content": "CS Question Test 2 (Version 3)",
+    "explanation": "CS Explanation Test 2 (Version 3)",
+    "collectionName": "Answer Collection Test 2",
+    "selectedItems": [0, 2, 4],
+    "criteria": [
+      {
+        "id": "S8EZajl3ja",
+        "mode": "range",
+        "name": "Criterion 1 with range 0-100",
+        "min": 0,
+        "max": 100,
+        "step": 0.2,
+        "unit": "%"
+      },
+      {
+        "id": "bflTUKOU81",
+        "mode": "range",
+        "name": "Criterion 2 with range -500 to 1000",
+        "min": -500,
+        "max": 1000,
+        "step": 10
+      }
+    ],
+    "cases": [
+      {
+        "id": "txQnoypwKa",
+        "title": "Case 1",
+        "description": "Case 1 Description"
+      },
+      {
+        "id": "XUXVNy4vSj",
+        "title": "Case 2",
+        "description": "Case 2 Description"
+      }
+    ],
+    "answers": {
+      "0": {
+        "0": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 23
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 87
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 42
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 95
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 31
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 76
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 54
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 12
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 68
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 37
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 89
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 45
+          }
+        }
+      }
+    }
+  },
+  "CSML": {
+    "title": "CS Title Test 1 (Version 1)",
+    "content": "CS Question Test 1",
+    "explanation": "CS Explanation Test 1",
+    "collectionName": "Answer Collection Test 1",
+    "selectedItems": [0, 2, 4],
+    "criteria": [
+      {
+        "id": "90OfR7GSUB",
+        "mode": "range",
+        "name": "Criterion 1 with range 0-100",
+        "min": 0,
+        "max": 100,
+        "step": 0.2,
+        "unit": "%"
+      },
+      {
+        "id": "cAJKuQKzm5",
+        "mode": "range",
+        "name": "Criterion 2 with range -500 to 1000",
+        "min": -500,
+        "max": 1000,
+        "step": 10
+      }
+    ],
+    "cases": [
+      {
+        "id": "SrrZEpetE2",
+        "title": "Case 1",
+        "description": "Case 1 Description"
+      },
+      {
+        "id": "KELATtvxs_",
+        "title": "Case 2",
+        "description": "Case 2 Description"
+      }
+    ],
+    "solutions": {
+      "0": {
+        "0": {
+          "0": {
+            "lower": 23.4,
+            "upper": 87.9
+          },
+          "1": {
+            "lower": -234.5,
+            "upper": 456.7
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 0,
+            "upper": 100
+          },
+          "1": {
+            "lower": -500,
+            "upper": 789.3
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 45.6,
+            "upper": 92.1
+          },
+          "1": {
+            "lower": -123.4,
+            "upper": 1000
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "lower": 12.8,
+            "upper": 67.3
+          },
+          "1": {
+            "lower": -432.1,
+            "upper": 567.8
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 34.5,
+            "upper": 89.2
+          },
+          "1": {
+            "lower": -345.6,
+            "upper": 890.1
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 56.7,
+            "upper": 78.9
+          },
+          "1": {
+            "lower": -289.3,
+            "upper": 678.2
+          }
+        }
+      }
+    },
+    "answers": {
+      "0": {
+        "0": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 45
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 73
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 12
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 89
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 34
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 67
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 28
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 91
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 56
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 83
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 15
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 62
+          }
+        }
+      }
+    }
+  },
+  "CSML2": {
+    "title": "CS Title Test 1 (Version 2)",
+    "content": "CS Question Test 1 (Version 2)",
+    "explanation": "CS Explanation Test 1 (Version 2)",
+    "collectionName": "Answer Collection Test 2",
+    "selectedItems": [0, 2, 4],
+    "criteria": [
+      {
+        "id": "KCxYhNqkF8",
+        "mode": "range",
+        "name": "Criterion 1 with range 0-100",
+        "min": 0,
+        "max": 100,
+        "step": 0.2,
+        "unit": "%"
+      },
+      {
+        "id": "wyXtDB0uc6",
+        "mode": "range",
+        "name": "Criterion 2 with range -500 to 1000",
+        "min": -500,
+        "max": 1000,
+        "step": 10
+      }
+    ],
+    "cases": [
+      {
+        "id": "2ofletuhR7",
+        "title": "Case 1",
+        "description": "Case 1 Description"
+      },
+      {
+        "id": "TnMbz7CMtQ",
+        "title": "Case 2",
+        "description": "Case 2 Description"
+      }
+    ],
+    "solutions": {
+      "0": {
+        "0": {
+          "0": {
+            "lower": 23.4,
+            "upper": 87.9
+          },
+          "1": {
+            "lower": -234.5,
+            "upper": 456.7
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 0,
+            "upper": 100
+          },
+          "1": {
+            "lower": -500,
+            "upper": 789.3
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 45.6,
+            "upper": 92.1
+          },
+          "1": {
+            "lower": -123.4,
+            "upper": 1000
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "lower": 12.8,
+            "upper": 67.3
+          },
+          "1": {
+            "lower": -432.1,
+            "upper": 567.8
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 34.5,
+            "upper": 89.2
+          },
+          "1": {
+            "lower": -345.6,
+            "upper": 890.1
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 56.7,
+            "upper": 78.9
+          },
+          "1": {
+            "lower": -289.3,
+            "upper": 678.2
+          }
+        }
+      }
+    },
+    "answers": {
+      "0": {
+        "0": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 45
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 73
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 12
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 89
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 34
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 67
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 28
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 91
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 56
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 83
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 15
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 62
+          }
+        }
+      }
+    }
+  },
+  "CSML3": {
+    "title": "CS Title Test 1 (Version 3)",
+    "content": "CS Question Test 1 (Version 3)",
+    "explanation": "CS Explanation Test 1 (Version 3)",
+    "collectionName": "Answer Collection Test 2",
+    "selectedItems": [0, 2, 4],
+    "criteria": [
+      {
+        "id": "4GoHYaZBwp",
+        "mode": "range",
+        "name": "Criterion 1 with range 0-100",
+        "min": 0,
+        "max": 100,
+        "step": 0.2,
+        "unit": "%"
+      },
+      {
+        "id": "TK7nPU7CW5",
+        "mode": "range",
+        "name": "Criterion 2 with range -500 to 1000",
+        "min": -500,
+        "max": 1000,
+        "step": 10
+      }
+    ],
+    "cases": [
+      {
+        "id": "6kU1KuOheS",
+        "title": "Case 1",
+        "description": "Case 1 Description"
+      },
+      {
+        "id": "ScVppYMltS",
+        "title": "Case 2",
+        "description": "Case 2 Description"
+      }
+    ],
+    "solutions": {
+      "0": {
+        "0": {
+          "0": {
+            "lower": 23.4,
+            "upper": 87.9
+          },
+          "1": {
+            "lower": -234.5,
+            "upper": 456.7
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 0,
+            "upper": 100
+          },
+          "1": {
+            "lower": -500,
+            "upper": 789.3
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 45.6,
+            "upper": 92.1
+          },
+          "1": {
+            "lower": -123.4,
+            "upper": 1000
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "lower": 12.8,
+            "upper": 67.3
+          },
+          "1": {
+            "lower": -432.1,
+            "upper": 567.8
+          }
+        },
+        "1": {
+          "0": {
+            "lower": 34.5,
+            "upper": 89.2
+          },
+          "1": {
+            "lower": -345.6,
+            "upper": 890.1
+          }
+        },
+        "2": {
+          "0": {
+            "lower": 56.7,
+            "upper": 78.9
+          },
+          "1": {
+            "lower": -289.3,
+            "upper": 678.2
+          }
+        }
+      }
+    },
+    "answers": {
+      "0": {
+        "0": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 45
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 73
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 12
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 89
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{leftarrow}",
+            "steps": 34
+          },
+          "1": {
+            "click": "{rightarrow}",
+            "steps": 67
+          }
+        }
+      },
+      "1": {
+        "0": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 28
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 91
+          }
+        },
+        "1": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 56
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 83
+          }
+        },
+        "2": {
+          "0": {
+            "click": "{rightarrow}",
+            "steps": 15
+          },
+          "1": {
+            "click": "{leftarrow}",
+            "steps": 62
+          }
+        }
+      }
+    }
+  },
+  "FC": {
+    "title": "FC Question Title (Version 1)",
+    "content": "FC Question Content (Version 1)",
+    "explanation": "FC Explanation (Version 1)"
+  },
+  "FC2": {
+    "title": "FC Question Title (Version 2)",
+    "content": "FC Question Content (Version 2)",
+    "explanation": "FC Explanation (Version 2)"
+  },
+  "FC3": {
+    "title": "FC Question Title (Version 3)",
+    "content": "FC Question Content (Version 3)",
+    "explanation": "FC Explanation (Version 3)"
+  },
+  "CT": {
+    "title": "CT Question Title (Version 1)",
+    "content": "CT Question Content (Version 1)"
+  },
+  "CT2": {
+    "title": "CT Question Title (Version 2)",
+    "content": "CT Question Content (Version 2)"
+  },
+  "CT3": {
+    "title": "CT Question Title (Version 3)",
+    "content": "CT Question Content (Version 3)"
+  },
+  "groupActivityStandardClues": [
+    {
+      "type": "text",
+      "name": "Clue 1",
+      "displayName": "First Hint",
+      "content": "Lorem ipsum dolor sit amet"
+    },
+    {
+      "type": "text",
+      "name": "Clue 2",
+      "displayName": "Second Hint",
+      "content": "Consectetur adipiscing elit"
+    }
+  ]
+}

@@ -12,15 +12,19 @@
     "APP_STUDENT_SUBDOMAIN",
     "APP_SECRET",
     "ASSESSMENT_MODE",
+    "AUTH_LECTURER_ALLOWED_HOSTS",
+    "AUTH_STUDENT_ALLOWED_HOSTS",
     "AZUREWEBJOBSFEATUREFLAGS",
     "AZUREWEBJOBSSTORAGE",
     "BLOB_STORAGE_ACCESS_KEY",
     "BLOB_STORAGE_ACCOUNT_NAME",
     "COOKIE_DOMAIN",
+    "CORS_ALLOWED_ORIGINS",
     "CRON_TOKEN",
     "DATABASE_IMPORT_USER",
     "DATABASE_URL",
     "EDUID_CLIENT_SECRET",
+    "EDUID_FETCH_USERINFO",
     "EMAIL_TYPE",
     "EMAIL_HOST",
     "EMAIL_PORT",
@@ -31,8 +35,17 @@
     "FUNCTIONS_EXTENSION_VERSION",
     "FUNCTIONS_WORKER_PROCESS_COUNT",
     "FUNCTIONS_WORKER_RUNTIME",
+    "GROWTHBOOK_API_HOST",
+    "GROWTHBOOK_CLIENT_KEY",
+    "GROWTHBOOK_ENV",
+    "GROWTHBOOK_MANAGEMENT_API_KEY",
+    "GROWTHBOOK_MANAGEMENT_API_URL",
     "HATCHET_CLIENT_TLS_STRATEGY",
+    "HATCHET_CLIENT_HOST_PORT",
     "HATCHET_CLIENT_TOKEN",
+    "HATCHET_HOST_PORT",
+    "HATCHET_API_URL",
+    "HATCHET_TENANT_ID",
     "HATCHET_LOG_LEVEL",
     "LTI_DB_TYPE",
     "LTI_DB_HOST",
@@ -52,20 +65,34 @@
     "LTI_REDIRECT_URL",
     "LTI_DEV_MODE",
     "LTI_AAS_MODE",
+    "NEXT_PUBLIC_ENV",
+    "NEXT_PUBLIC_GROWTHBOOK_API_HOST",
+    "NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY",
     "NODE_ENV",
     "NOTIFICATION_SECRET",
     "NOTIFICATION_SUPPORT_MAIL",
     "NOTIFICATION_URL",
     "OLAT_API_KEY",
     "PRISMA_OPTIMIZE",
+    "REDIS_ASSESSMENT_HOST",
+    "REDIS_ASSESSMENT_PORT",
     "REDIS_CACHE_HOST",
+    "REDIS_CACHE_PASS",
     "REDIS_CACHE_PORT",
+    "REDIS_CACHE_TLS",
     "REDIS_HOST",
+    "REDIS_PASS",
     "REDIS_PORT",
+    "REDIS_TLS",
+    "REDIS_ASSESSMENT_HOST",
+    "REDIS_ASSESSMENT_PASS",
+    "REDIS_ASSESSMENT_PORT",
+    "REDIS_ASSESSMENT_TLS",
     "SERVICE_BUS_CONNECTION_STRING",
     "SERVICE_BUS_QUEUE_NAME",
     "SHADOW_DATABASE_URL",
     "TEAMS_WEBHOOK_URL",
+    "UV_PYTHON",
     "VAPID_PRIVATE_KEY",
     "VAPID_PUBLIC_KEY",
     "VAPID_PUBLIC_KEY_TEST",
@@ -80,12 +107,29 @@
     "OPENAI_API_KEY",
     "OPENAI_BASE_URL",
     "CHAT_OPENAI_STORE_RESPONSES",
+    "CHAT_ENABLE_AI_TELEMETRY",
+    "CHAT_PRIMARY_MODEL_ID",
+    "CHAT_FALLBACK_MODEL_ID",
+    "CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED",
+    "GROWTHBOOK_REFRESH_INTERVAL_MS",
+    "CHAT_TURN_LIFECYCLE_WRITES_ENABLED",
+    "CHAT_MODEL_REGISTRY_JSON",
+    "DOC_QUERY_SCOPE_AUDIENCE",
+    "DOC_QUERY_SCOPE_ISSUER",
+    "DOC_QUERY_SCOPE_KID",
+    "DOC_QUERY_SCOPE_PRIVATE_KEY",
+    "ALLOWED_FRAME_ANCESTORS",
+    "BLOB_STORAGE_ACCOUNT_URL",
     "UPSTREAM_OPENAI_API_KEY",
     "UPSTREAM_OPENAI_BASE_URL",
     "LANGFUSE_PUBLIC_KEY",
     "LANGFUSE_SECRET_KEY",
-    "LANGFUSE_HOST"
+    "LANGFUSE_BASE_URL",
+    "LANGFUSE_TRACING_ENVIRONMENT",
+    "LANGFUSE_RELEASE"
   ],
+  "cacheMaxAge": "14d",
+  "cacheMaxSize": "10GB",
   "tasks": {
     "lint": {
       "outputLogs": "errors-only"
@@ -97,54 +141,44 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "build/**",
+        "out/**"
+      ]
     },
     "build:test": {
       "dependsOn": ["^build:test"],
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "build/**",
+        "out/**"
+      ]
     },
     "dev": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:lti": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:offline": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:assessment": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:docs": {
@@ -152,7 +186,7 @@
       "persistent": true
     },
     "dev:test": {
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"],
+      "cache": false,
       "persistent": true
     },
     "publish": {
@@ -164,7 +198,8 @@
       "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
     },
     "start:test": {
-      "outputs": ["dist/**", ".next/**", "build/**", "out/**"]
+      "cache": false,
+      "persistent": true
     },
     "test": {
       "cache": false

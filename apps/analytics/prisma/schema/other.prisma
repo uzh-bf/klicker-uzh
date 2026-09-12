@@ -1,0 +1,14 @@
+model Migration {
+  id String @id
+
+  createdAt DateTime @default(now())
+}
+
+model EmailTemplate {
+  name String @id
+
+  html String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

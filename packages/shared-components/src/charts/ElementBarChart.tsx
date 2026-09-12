@@ -2,13 +2,8 @@ import {
   type ElementInstanceEvaluation,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  CHART_COLORS,
-  CHART_SOLUTION_COLORS,
-} from '@klicker-uzh/shared-components/src/constants'
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 import {
   Bar,
   BarChart as BarChartRecharts,
@@ -20,6 +15,7 @@ import {
   YAxis,
 } from 'recharts'
 import { twMerge } from 'tailwind-merge'
+import { CHART_COLORS, CHART_SOLUTION_COLORS } from '../constants'
 import EvaluationExplanation from '../evaluation/EvaluationExplanation'
 import useEvaluationBarChartData from '../hooks/useEvaluationBarChartData'
 

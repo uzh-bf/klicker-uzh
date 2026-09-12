@@ -9,6 +9,9 @@ query GetAssessmentResultsCourse($courseId: String!) {
     studentResults {
       participantId
       participantEmail
+      assessmentGivenName
+      assessmentSurname
+      assessmentMatriculationNumber
       basePoints
       correctnessPoints
       bonusPoints

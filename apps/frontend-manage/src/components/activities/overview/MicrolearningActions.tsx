@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
   ElementInstanceType,
   ObjectType,
@@ -8,7 +8,7 @@ import {
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo, useState } from 'react'
+import { type Dispatch, type SetStateAction, useMemo, useState } from 'react'
 import ExtensionModal from '../../courses/modals/ExtensionModal'
 import MicroLearningDeletionModal from '../../courses/modals/MicroLearningDeletionModal'
 import MicroLearningEndingModal from '../../courses/modals/MicroLearningEndingModal'
@@ -124,11 +124,11 @@ function MicrolearningActions({
         'openPreview',
         'openEvaluation',
         'activityLog',
-        ...(user?.publicPreview ? ['analyticsMicroLearning'] : []),
+        'analyticsMicroLearning',
       ],
       isRemovable: ['removeMicroLearning'],
     }),
-    [user?.publicPreview, user?.privatePreview]
+    [user?.privatePreview]
   )
 
   const actions = useMicroLearningActions({

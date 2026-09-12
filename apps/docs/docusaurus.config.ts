@@ -177,7 +177,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://klicker-uzh.feedbear.com',
+          href: 'https://klicker-uzh.feedback.df-app.ch/',
           label: 'Feedback',
           position: 'right',
         },
@@ -218,7 +218,7 @@ const config: Config = {
             },
             {
               label: 'Feedback',
-              href: 'https://klicker-uzh.feedbear.com',
+              href: 'https://klicker-uzh.feedback.df-app.ch/',
             },
             {
               label: 'Community',

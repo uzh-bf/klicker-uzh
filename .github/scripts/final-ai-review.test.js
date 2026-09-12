@@ -1,0 +1,4002 @@
+const assert = require('node:assert/strict')
+const { spawnSync } = require('node:child_process')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+const test = require('node:test')
+
+const {
+  isConsolidationBaseBranch,
+  isEligibleBaseBranch,
+} = require('./final-ai-review-shared')
+
+const {
+  FINAL_REVIEW_SCHEMA,
+  FINAL_REVIEW_MODEL,
+  FINAL_REVIEW_CLEAN_STATUS_PREFIX,
+  FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+  FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
+  authorizeFinalReview,
+  buildIndividualCleanReviewEvidenceDigest,
+  buildIndividualCleanEvidenceMetadata,
+  buildOCRConfig,
+  buildOpenRouterToolCanaryRequest,
+  buildReviewPlan,
+  buildReviewBackground,
+  createGhGithub,
+  decodeMetadata,
+  decideFinalStatus,
+  encodeMetadata,
+  finalizeFinalReview,
+  hasCurrentSuccessfulFinalReview,
+  isFinalReviewCommand,
+  isTrustedPermission,
+  initializeFinalReview,
+  mergeOCRResumeResults,
+  normalizeTitle,
+  parseDispositionRecord,
+  parseIndividualCleanEvidence,
+  parseReviewMetadata,
+  planOCRResume,
+  publishFinalReview,
+  removeOCRConfig,
+  resolveFinalReviewLockKey,
+  renderFinalReviewChunks,
+  resolveCleanReviewRange,
+  requiresColdIncrementalReview,
+  startFinalReview,
+  validateOCRResult,
+  verifyOpenRouterToolAccess,
+  writeOCRConfig,
+} = require('./final-ai-review.js')
+
+function extractWorkflowStepScript(workflow, stepName) {
+  const lines = workflow.split(/\r?\n/)
+  const stepIndex = lines.findIndex(
+    (line) => line === `      - name: ${stepName}`
+  )
+  assert.ok(stepIndex >= 0, `missing workflow step: ${stepName}`)
+
+  const runIndex = lines.findIndex(
+    (line, index) => index > stepIndex && line === '        run: |'
+  )
+  assert.ok(runIndex > stepIndex, `missing run block: ${stepName}`)
+
+  const body = []
+  for (let index = runIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index]
+    if (/^      - name: /.test(line)) break
+    if (line.length === 0) {
+      body.push('')
+      continue
+    }
+    assert.ok(
+      line.startsWith('          '),
+      `unexpected indentation in run block: ${stepName}`
+    )
+    body.push(line.slice(10))
+  }
+  return body.join('\n')
+}
+
+function extractWorkflowJobEnv(workflow, jobName) {
+  const lines = workflow.split(/\r?\n/)
+  const jobIndex = lines.findIndex((line) => line === `  ${jobName}:`)
+  assert.ok(jobIndex >= 0, `missing workflow job: ${jobName}`)
+  const nextJobIndex = lines.findIndex(
+    (line, index) => index > jobIndex && /^  \S/.test(line)
+  )
+  const jobEndIndex = nextJobIndex < 0 ? lines.length : nextJobIndex
+
+  const envIndex = lines.findIndex(
+    (line, index) =>
+      index > jobIndex && index < jobEndIndex && line === '    env:'
+  )
+  assert.ok(envIndex > jobIndex, `missing job env: ${jobName}`)
+
+  const env = {}
+  for (let index = envIndex + 1; index < jobEndIndex; index += 1) {
+    const line = lines[index]
+    if (/^    \S/.test(line)) break
+    if (line.trim() === '') continue
+    const separator = line.indexOf(':')
+    assert.ok(separator > 0, `invalid job env entry: ${line}`)
+    const key = line.slice(6, separator).trim()
+    const rawValue = line.slice(separator + 1).trim()
+    env[key] = rawValue.replace(/^(['"])(.*)\1$/, '$2')
+  }
+  return env
+}
+
+function extractShellFunction(script, functionName) {
+  const lines = script.split('\n')
+  const startIndex = lines.findIndex(
+    (line) => line.trim() === `${functionName}() {`
+  )
+  assert.ok(startIndex >= 0, `missing shell function: ${functionName}`)
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (lines[index].trim() === '}') {
+      return lines.slice(startIndex, index + 1).join('\n')
+    }
+  }
+  assert.fail(`unterminated shell function: ${functionName}`)
+}
+
+function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
+  return [
+    '--from',
+    from,
+    '--to',
+    to,
+    '--audience',
+    'agent',
+    '--effort',
+    'low',
+    '--timeout',
+    String(timeout),
+    '--max-tokens-budget',
+    String(budget),
+    '--format',
+    'json',
+    '--background',
+    'synthetic-background',
+    '--rule',
+    '.github/open-code-review/final-review-rules.json',
+    ...(sessionId ? ['--resume', sessionId] : []),
+  ]
+}
+
+function ocrInvocation({ kind, budget, sessionId }) {
+  const resume = sessionId ? ` "\${SESSION_ID}"` : ''
+  if (kind === 'individual') {
+    return `run_ocr_attempt "\${OUTPUT_PATH}" ${budget}${resume}`
+  }
+  return `run_ocr_attempt "\${REVIEW_FROM}" "\${HEAD_SHA}" ${budget} "\${OUTPUT_PATH}"${resume}`
+}
+
+function assertNoOCRSentinels(result) {
+  for (const output of [
+    result.process.stdout,
+    result.process.stderr,
+    result.summary,
+  ]) {
+    assert.doesNotMatch(output, /OCR_[A-Z_]+SENTINEL/)
+  }
+}
+
+function assertOCRSummary(result, stage, expectedExit) {
+  const match =
+    stage === 'review'
+      ? result.summary.match(
+          /^OCR stage=review exit=(\d+) stdout_bytes=[ \t]*(\d+) stderr_total_bytes=[ \t]*(\d+)\n$/
+        )
+      : result.summary.match(/^OCR stage=version exit=(\d+)\n$/)
+  assert.ok(match, 'missing structured OCR summary')
+  assert.equal(Number(match[1]), expectedExit)
+  if (stage === 'review') {
+    assert.equal(Number(match[2]), Buffer.byteLength(result.stdoutSentinel))
+    assert.equal(Number(match[3]), Buffer.byteLength(result.stderrSentinel))
+  }
+}
+
+function assertReviewAttempt(result, form, expectedExit) {
+  assert.equal(result.process.status, expectedExit, form.name)
+  assert.equal(result.process.stdout, '', form.name)
+  assert.equal(result.process.stderr, '', form.name)
+  assertNoOCRSentinels(result)
+  assertOCRSummary(result, 'review', expectedExit)
+  assert.equal(result.output, result.stdoutSentinel, form.name)
+  assert.equal(result.ocrStderr, result.stderrSentinel, form.name)
+
+  const lines = result.calls.trim().split('\n')
+  assert.equal(lines.shift(), 'version no_update=1', form.name)
+  assert.equal(lines.shift(), 'review no_update=1', form.name)
+  assert.deepEqual(
+    lines.map((line) => line.replace(/^review_arg=/, '')),
+    expectedOCRArgs({
+      from: form.reviewFrom,
+      to: form.reviewTo,
+      timeout: form.timeout,
+      budget: form.budget,
+      sessionId: form.sessionId,
+    }),
+    form.name
+  )
+}
+
+function assertVersionAttempt(result, expectedExit) {
+  assert.equal(result.process.status, expectedExit)
+  assert.equal(result.process.stdout, '')
+  assertNoOCRSentinels(result)
+  assertOCRSummary(result, 'version', expectedExit)
+  assert.equal(result.output, null)
+  assert.equal(result.ocrStderr, '')
+  assert.equal(result.calls.trim(), 'version no_update=1')
+}
+
+function executeExtractedOCRAttempt({
+  workflow,
+  jobName,
+  stepName,
+  invocation,
+  environment,
+  versionMode = 'ok',
+  versionStatus = 0,
+  reviewStatus = 0,
+}) {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-shell-')
+  )
+  const outputPath = path.join(directory, 'result.json')
+  const stderrPath = path.join(directory, 'ocr-stderr.log')
+  const summaryPath = path.join(directory, 'step-summary.md')
+  const callsPath = path.join(directory, 'ocr-calls.log')
+  const stdoutSentinel = 'OCR_STDOUT_SENTINEL'
+  const stderrSentinel = 'OCR_STDERR_SENTINEL'
+  const versionSentinel = 'OCR_VERSION_SENTINEL'
+  const functionText = extractShellFunction(
+    extractWorkflowStepScript(workflow, stepName),
+    'run_ocr_attempt'
+  )
+  const jobEnv = extractWorkflowJobEnv(workflow, jobName)
+  assert.equal(jobEnv.OCR_NO_UPDATE, '1', `missing OCR_NO_UPDATE: ${jobName}`)
+
+  fs.writeFileSync(stderrPath, '')
+  fs.writeFileSync(summaryPath, '')
+  fs.writeFileSync(callsPath, '')
+
+  const childEnv = {
+    PATH: process.env.PATH ?? '/usr/bin:/bin',
+    HOME: directory,
+    LC_ALL: 'C',
+    OCR_NO_UPDATE: jobEnv.OCR_NO_UPDATE,
+    OCR_CALLS_PATH: callsPath,
+    OCR_REVIEW_STATUS: String(reviewStatus),
+    OCR_STDERR_SENTINEL: stderrSentinel,
+    OCR_STDOUT_SENTINEL: stdoutSentinel,
+    OCR_VERSION_MODE: versionMode,
+    OCR_VERSION_OUTPUT:
+      versionMode === 'drift'
+        ? `open-code-review v1.10.0 ${versionSentinel}`
+        : 'open-code-review v1.11.0 synthetic',
+    OCR_VERSION_STATUS: String(versionStatus),
+    OCR_VERSION_STDERR: 'OCR_VERSION_STDERR_SENTINEL',
+    OUTPUT_PATH: outputPath,
+    STDERR_PATH: stderrPath,
+    GITHUB_STEP_SUMMARY: summaryPath,
+    GITHUB_OUTPUT: path.join(directory, 'github-output'),
+    REVIEW_FROM: environment.reviewFrom,
+    HEAD_SHA: environment.reviewTo,
+    BACKGROUND: 'synthetic-background',
+    REVIEW_JOB_STARTED_AT: String(Math.floor(Date.now() / 1000)),
+    SESSION_ID: environment.sessionId ?? '',
+  }
+
+  const script = [
+    'set -euo pipefail',
+    functionText,
+    '',
+    'ocr() {',
+    '  local command="${1:-}"',
+    '  case "${command}" in',
+    '    version)',
+    '      printf \'version no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
+    '      if [[ "${OCR_VERSION_MODE}" == \'fail\' ]]; then',
+    '        printf \'%s\' "${OCR_VERSION_STDERR}" >&2',
+    '        return "${OCR_VERSION_STATUS}"',
+    '      fi',
+    '      printf \'%s\' "${OCR_VERSION_OUTPUT}"',
+    '      ;;',
+    '    review)',
+    '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
+    '      shift',
+    '      while (($#)); do',
+    '        printf \'review_arg=%s\\n\' "$1" >>"${OCR_CALLS_PATH}"',
+    '        shift',
+    '      done',
+    '      printf \'%s\' "${OCR_STDOUT_SENTINEL}"',
+    '      printf \'%s\' "${OCR_STDERR_SENTINEL}" >&2',
+    '      return "${OCR_REVIEW_STATUS}"',
+    '      ;;',
+    '    *)',
+    '      return 99',
+    '      ;;',
+    '  esac',
+    '}',
+    '',
+    invocation,
+  ].join('\n')
+
+  const run = spawnSync('bash', ['-c', script], {
+    encoding: 'utf8',
+    env: childEnv,
+  })
+  assert.equal(run.error, undefined)
+
+  const readIfPresent = (filePath) =>
+    fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null
+  const result = {
+    process: run,
+    output: readIfPresent(outputPath),
+    ocrStderr: fs.readFileSync(stderrPath, 'utf8'),
+    summary: fs.readFileSync(summaryPath, 'utf8'),
+    calls: fs.readFileSync(callsPath, 'utf8'),
+    stdoutSentinel,
+    stderrSentinel,
+  }
+  fs.rmSync(directory, { recursive: true, force: true })
+  return result
+}
+
+test('executes both workflow OCR command boundaries with pinned version diagnostics', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const individualFrom = '1'.repeat(40)
+  const individualTo = '2'.repeat(40)
+  const stackFrom = '3'.repeat(40)
+  const stackTo = '4'.repeat(40)
+  const forms = [
+    {
+      name: 'individual full',
+      jobName: 'review',
+      stepName: 'Run final review',
+      kind: 'individual',
+      budget: 1000000,
+      timeout: 45,
+      reviewFrom: individualFrom,
+      reviewTo: individualTo,
+      sessionId: '',
+    },
+    {
+      name: 'individual resume',
+      jobName: 'review',
+      stepName: 'Run final review',
+      kind: 'individual',
+      budget: 250000,
+      timeout: 45,
+      reviewFrom: individualFrom,
+      reviewTo: individualTo,
+      sessionId: 'individual-session',
+    },
+    {
+      name: 'stack full',
+      jobName: 'review_stack',
+      stepName: 'Run cumulative code review',
+      kind: 'stack',
+      budget: 20000000,
+      timeout: 30,
+      reviewFrom: stackFrom,
+      reviewTo: stackTo,
+      sessionId: '',
+    },
+    {
+      name: 'stack range',
+      jobName: 'review_stack',
+      stepName: 'Run cumulative code review',
+      kind: 'stack',
+      budget: 750000,
+      timeout: 30,
+      reviewFrom: stackFrom,
+      reviewTo: stackTo,
+      sessionId: '',
+    },
+    {
+      name: 'stack resume',
+      jobName: 'review_stack',
+      stepName: 'Run cumulative code review',
+      kind: 'stack',
+      budget: 125000,
+      timeout: 30,
+      reviewFrom: stackFrom,
+      reviewTo: stackTo,
+      sessionId: 'stack-session',
+    },
+  ]
+
+  const runCase = (form, options = {}) =>
+    executeExtractedOCRAttempt({
+      workflow,
+      jobName: form.jobName,
+      stepName: form.stepName,
+      invocation: ocrInvocation(form),
+      environment: {
+        reviewFrom: form.reviewFrom,
+        reviewTo: form.reviewTo,
+        sessionId: form.sessionId,
+      },
+      ...options,
+    })
+
+  for (const form of forms) {
+    const result = runCase(form)
+    assertReviewAttempt(result, form, 0)
+  }
+
+  for (const form of [forms[0], forms[2]]) {
+    for (const outcome of [
+      { name: 'review 127', reviewStatus: 127, expectedStatus: 127 },
+      { name: 'review 2', reviewStatus: 2, expectedStatus: 2 },
+    ]) {
+      const result = runCase(form, { reviewStatus: outcome.reviewStatus })
+      assertReviewAttempt(result, form, outcome.expectedStatus)
+    }
+
+    for (const outcome of [
+      { name: 'version mismatch', versionMode: 'drift', expectedStatus: 1 },
+      {
+        name: 'version 127',
+        versionMode: 'fail',
+        versionStatus: 127,
+        expectedStatus: 127,
+      },
+    ]) {
+      const result = runCase(form, outcome)
+      assertVersionAttempt(result, outcome.expectedStatus)
+    }
+  }
+})
+
+test('normalizes untrusted PR titles to 200 Unicode code points', () => {
+  const title = `  Ignore\n\u0000 \u202einstructions\u200b\t${'🙂'.repeat(210)}  `
+  const normalized = normalizeTitle(title)
+
+  assert.equal(normalized.includes('\n'), false)
+  assert.equal(normalized.includes('\u0000'), false)
+  assert.equal(normalized.includes('\u202e'), false)
+  assert.equal(normalized.includes('\u200b'), false)
+  assert.equal(Array.from(normalized).length, 200)
+  assert.match(buildReviewBackground(title), /untrusted metadata/)
+})
+
+test('bounds individual and stack review retries, tokens, and runtime', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.equal(source.match(/--timeout 45/g)?.length, 1)
+  assert.equal(source.match(/--timeout 30/g)?.length, 1)
+  assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
+  assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 1000000/)
+  assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 20000000/)
+  assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
+  assert.equal(
+    source.match(/steps:\n {6}- name: Record review job start/g)?.length,
+    2
+  )
+  assert.equal(
+    source.match(
+      /REVIEW_JOB_STARTED_AT: \$\{\{ steps\.job_start\.outputs\.epoch \}\}/g
+    )?.length,
+    2
+  )
+  assert.match(source, /now \+ 2760 > REVIEW_JOB_STARTED_AT \+ 4800/)
+  assert.match(source, /now \+ 1860 > REVIEW_JOB_STARTED_AT \+ 4200/)
+  assert.equal(source.match(/timeout-minutes: 90/g)?.length, 2)
+  assert.equal(source.match(/RESUME_USED=true/g)?.length, 1)
+  assert.match(
+    source,
+    /Only one partial OCR result may be resumed per stack job/
+  )
+})
+
+test('accepts only the exact command and calculated write permissions', () => {
+  assert.equal(isFinalReviewCommand('/final-review'), true)
+  assert.equal(isFinalReviewCommand('/final-review please'), false)
+  assert.equal(isFinalReviewCommand(' /final-review'), false)
+  assert.equal(isTrustedPermission('write'), true)
+  assert.equal(isTrustedPermission('admin'), true)
+  assert.equal(isTrustedPermission('read'), false)
+  assert.equal(isTrustedPermission('maintain'), false)
+})
+
+test('grants clean evidence check access only to the required workflow jobs', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const permissionsFor = (jobName) =>
+    workflow.match(
+      new RegExp(
+        `\\n {2}${jobName}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`
+      )
+    )?.[1] ?? ''
+
+  for (const jobName of ['initialize', 'authorize', 'start']) {
+    assert.match(permissionsFor(jobName), /permissions:[\s\S]*checks: read/)
+  }
+  assert.match(permissionsFor('finalize'), /permissions:[\s\S]*checks: write/)
+  assert.doesNotMatch(permissionsFor('review'), / {6}checks:/)
+})
+
+test('pins trusted review code to the event workflow commit when the default branch moves', async () => {
+  for (const workflow of ['../workflows/check-ocr-final-review.yml']) {
+    const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
+    assert.match(source, /^  pull_request_target:/m)
+    assert.match(source, /^  issue_comment:/m)
+    assert.match(
+      source,
+      /GITHUB_WORKFLOW_SHA: \$\{\{ github\.workflow_sha \}\}/
+    )
+    assert.match(
+      source,
+      /- name: Resolve trusted default-branch commit\n        id: resolve\n        uses: actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
+    )
+    assert.match(
+      source,
+      /const workflowSha = process\.env\.GITHUB_WORKFLOW_SHA/
+    )
+    assert.match(source, /github\.rest\.repos\.getCommit/)
+    assert.match(source, /ref: workflowSha/)
+    assert.doesNotMatch(source, /commit_sha: workflowSha/)
+    assert.match(source, /core\.setOutput\('trusted_sha', workflowSha\)/)
+    assert.doesNotMatch(
+      source,
+      /const branch = context\.payload\.repository\.default_branch/
+    )
+
+    const script = source.match(
+      /- name: Resolve trusted default-branch commit[\s\S]*?\n          script: \|\n((?: {12}.*\n)+)/
+    )?.[1]
+    assert.ok(script)
+    const resolveTrustedPolicy = new Function(
+      'github',
+      'context',
+      'core',
+      'process',
+      `return (async () => {\n${script.replace(/^ {12}/gm, '')}\n})()`
+    )
+    const workflowSha = '86e8ac2e13c77e90a9bcd45d0f6b5f03fff18eed'
+    const getCommit = async (parameters) => {
+      assert.deepEqual(parameters, {
+        owner: 'uzh-bf',
+        repo: 'klicker-uzh',
+        ref: workflowSha,
+      })
+      return { data: { sha: workflowSha } }
+    }
+
+    for (const eventName of ['pull_request_target', 'issue_comment']) {
+      const outputs = new Map()
+      await resolveTrustedPolicy(
+        {
+          rest: { repos: { getCommit } },
+        },
+        {
+          eventName,
+          repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+        },
+        {
+          setFailed: assert.fail,
+          setOutput: (name, value) => outputs.set(name, value),
+        },
+        { env: { GITHUB_WORKFLOW_SHA: workflowSha } }
+      )
+      assert.equal(outputs.get('trusted_sha'), workflowSha)
+    }
+  }
+})
+
+test('queues and serializes every final-review status writer', () => {
+  const job = (source, name) =>
+    source.match(
+      new RegExp(`\\n {2}${name}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`)
+    )?.[1] ?? ''
+
+  for (const workflowName of ['check-ocr-final-review.yml']) {
+    const source = fs.readFileSync(
+      path.join(__dirname, `../workflows/${workflowName}`),
+      'utf8'
+    )
+    const statusWriters = [
+      ['initialize', 'resolve_lock'],
+      ['initialize_stack', 'resolve_lock'],
+      ['start', 'authorize'],
+      ['finalize', 'authorize'],
+      ['start_stack', 'authorize_stack'],
+      ['finalize_stack', 'authorize_stack'],
+    ]
+    for (const [jobName, dependency] of statusWriters) {
+      const block = job(source, jobName)
+      assert.match(
+        block,
+        dependency === 'resolve_lock'
+          ? /group: final-ai-status-lock-\$\{\{ needs\.resolve_lock\.outputs\.lock_key \}\}\n/
+          : new RegExp(
+              `group: final-ai-status-lock-\\$\\{\\{ needs\\.${dependency}\\.outputs\\.status_lock_key \\}\\}\\n`
+            )
+      )
+      assert.match(block, /cancel-in-progress: false\n/)
+      assert.match(block, /queue: max\n/)
+    }
+    assert.match(source, /resolve_lock:\n/)
+    assert.match(source, /needs: \[trusted_policy, resolve_lock\]/)
+    assert.match(
+      source,
+      /status_lock_key: \$\{\{ steps\.authorize\.outputs\.status_lock_key \}\}/
+    )
+    assert.doesNotMatch(job(source, 'review'), /statuses: write\n/)
+    if (workflowName.includes('stack')) {
+      assert.match(source, /statusLockHeld: true,\n/)
+    }
+  }
+  const individualSource = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  assert.match(
+    individualSource,
+    /needs\.start\.outputs\.run_review == 'true' \|\| needs\.start\.result == 'failure'/
+  )
+})
+
+test('propagates a clean publication result to final status', () => {
+  for (const workflowName of ['check-ocr-final-review.yml']) {
+    const source = fs.readFileSync(
+      path.join(__dirname, `../workflows/${workflowName}`),
+      'utf8'
+    )
+    assert.match(
+      source,
+      /clean_review: \$\{\{ steps\.publish\.outputs\.clean_review \}\}/
+    )
+    assert.match(
+      source,
+      /core\.setOutput\('clean_review', String\(url == null\)\)/
+    )
+    assert.match(
+      source,
+      /CLEAN_REVIEW: \$\{\{ needs\.review\.outputs\.clean_review \|\| 'false' \}\}/
+    )
+    assert.match(source, /cleanReview: process\.env\.CLEAN_REVIEW/)
+    if (workflowName === 'check-ocr-final-review.yml') {
+      assert.match(source, /name: Finalize failure fallback/)
+      assert.match(source, /finalizeFinalReviewFailure/)
+    }
+  }
+})
+
+test('authorizes and starts only the immutable ready PR range', async () => {
+  const baseSha = 'b'.repeat(40)
+  const headSha = 'a'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Ready change',
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      sha: headSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  let combinedStatuses = []
+  const rules = '{"rules":[]}'
+  const reviewsEndpoint = {}
+  const commentsEndpoint = {}
+  const github = {
+    rest: {
+      pulls: {
+        get: async () => ({ data: pull }),
+        listReviews: reviewsEndpoint,
+      },
+      issues: {
+        listComments: commentsEndpoint,
+      },
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+        getContent: async () => ({
+          data: {
+            type: 'file',
+            encoding: 'base64',
+            content: Buffer.from(rules).toString('base64'),
+          },
+        }),
+        listCommitStatusesForRef: async () => ({ data: combinedStatuses }),
+        getCollaboratorPermissionLevel: async () => ({
+          data: { user: { permission: 'write' } },
+        }),
+      },
+    },
+    paginate: async (endpoint, params) =>
+      endpoint === github.rest.repos.listCommitStatusesForRef
+        ? (await endpoint(params)).data
+        : endpoint === reviewsEndpoint || endpoint === commentsEndpoint
+          ? []
+          : [],
+  }
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+  const context = {
+    eventName: 'issue_comment',
+    issue: { number: 42 },
+    payload: {
+      comment: { body: '/final-review', user: { login: 'reviewer' } },
+      issue: { pull_request: {} },
+      repository: { default_branch: 'v3' },
+    },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 123,
+    serverUrl: 'https://github.com',
+    sha: 'f'.repeat(40),
+  }
+
+  assert.equal(await authorizeFinalReview({ github, context, core }), true)
+  assert.equal(outputs.get('base_sha'), baseSha)
+  assert.equal(outputs.get('head_sha'), headSha)
+  const planInputs = {
+    mode: outputs.get('mode'),
+    rootHead: outputs.get('root_head'),
+    rootReviewId: outputs.get('root_review_id'),
+    policyDigest: outputs.get('policy_digest'),
+    backgroundDigest: outputs.get('background_digest'),
+    scopeKind: outputs.get('scope_kind'),
+    stackId: outputs.get('stack_id'),
+    stackPosition: outputs.get('stack_position'),
+    stackOrderDigest: outputs.get('stack_order_digest'),
+    dispositionDigest: outputs.get('disposition_digest'),
+  }
+
+  assert.equal(
+    await startFinalReview({
+      github,
+      context,
+      prNumber: 42,
+      baseSha,
+      headSha,
+      ...planInputs,
+    }),
+    true
+  )
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].sha, headSha)
+  assert.equal(statuses[0].state, 'pending')
+
+  await assert.rejects(
+    startFinalReview({
+      github,
+      context,
+      prNumber: 42,
+      baseSha: 'c'.repeat(40),
+      headSha,
+      ...planInputs,
+    }),
+    /no longer eligible/
+  )
+
+  combinedStatuses = [
+    {
+      context: 'final-ai-review',
+      state: 'pending',
+      updated_at: '2026-08-25T00:00:00Z',
+    },
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      updated_at: '2026-08-25T00:00:00Z',
+    },
+  ]
+  assert.equal(await authorizeFinalReview({ github, context, core }), true)
+
+  combinedStatuses = [
+    ...Array.from({ length: 100 }, (_, index) => ({
+      context: `other-${index}`,
+      state: 'success',
+    })),
+    { context: 'final-ai-review', state: 'success' },
+  ]
+  assert.equal(await authorizeFinalReview({ github, context, core }), true)
+  assert.equal(
+    await startFinalReview({
+      github,
+      context,
+      prNumber: 42,
+      baseSha,
+      headSha,
+      ...planInputs,
+    }),
+    true
+  )
+  assert.equal(statuses.length, 2)
+})
+
+test('writes an exact high-reasoning OCR config with mode 0600', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-config-')
+  )
+  const configPath = path.join(directory, 'config.json')
+  const token = 'dummy-test-token'
+
+  writeOCRConfig({ token, configPath })
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+  assert.deepEqual(config, buildOCRConfig({ token }))
+  assert.equal(config.llm.model, FINAL_REVIEW_MODEL)
+  assert.deepEqual(config.llm.extra_body, {
+    reasoning: { effort: 'high' },
+  })
+  assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
+
+  removeOCRConfig(configPath)
+  assert.equal(fs.existsSync(configPath), false)
+})
+
+function toolCanaryResponse({
+  args = { marker: 'KLICKER_FINAL_REVIEW_TOOL_CANARY' },
+  model = FINAL_REVIEW_MODEL,
+  provider = 'Fireworks',
+  toolName = 'final_review_probe',
+} = {}) {
+  return {
+    model,
+    provider,
+    choices: [
+      {
+        message: {
+          tool_calls: [
+            {
+              type: 'function',
+              function: {
+                name: toolName,
+                arguments: JSON.stringify(args),
+              },
+            },
+          ],
+        },
+      },
+    ],
+  }
+}
+
+test('verifies the exact public OpenRouter tool contract', async () => {
+  const token = 'dummy-canary-token'
+  let request
+  const result = await verifyOpenRouterToolAccess({
+    token,
+    fetchImpl: async (url, options) => {
+      assert.equal(url, 'https://openrouter.ai/api/v1/chat/completions')
+      assert.equal(options.headers.authorization, `Bearer ${token}`)
+      request = JSON.parse(options.body)
+      return {
+        ok: true,
+        status: 200,
+        json: async () => toolCanaryResponse(),
+      }
+    },
+  })
+
+  assert.deepEqual(request, buildOpenRouterToolCanaryRequest())
+  assert.equal(request.model, FINAL_REVIEW_MODEL)
+  assert.equal(request.max_completion_tokens, 16_384)
+  assert.deepEqual(request.reasoning, { effort: 'high' })
+  assert.equal(Object.hasOwn(request, 'provider'), false)
+  assert.deepEqual(result, { provider: 'Fireworks' })
+})
+
+test('rejects malformed successful OpenRouter tool responses', async () => {
+  for (const payload of [
+    { model: FINAL_REVIEW_MODEL, choices: [] },
+    toolCanaryResponse({ args: { marker: 'wrong' } }),
+    toolCanaryResponse({
+      args: { marker: 'KLICKER_FINAL_REVIEW_TOOL_CANARY', extra: true },
+    }),
+    toolCanaryResponse({ model: 'unexpected/model' }),
+    toolCanaryResponse({ toolName: 'unexpected_tool' }),
+  ]) {
+    await assert.rejects(
+      verifyOpenRouterToolAccess({
+        token: 'dummy-canary-token',
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          json: async () => payload,
+        }),
+      }),
+      /did not return the expected tool call/
+    )
+  }
+})
+
+test('bounds and redacts OpenRouter tool-canary failure diagnostics', async () => {
+  const token = 'dummy-secret-token'
+  await assert.rejects(
+    verifyOpenRouterToolAccess({
+      token,
+      fetchImpl: async () => ({
+        ok: false,
+        status: 404,
+        json: async () => ({
+          error: {
+            code: 'provider_error\u0000',
+            message: `${token}\n${'x'.repeat(500)}`,
+            metadata: {
+              provider_name: 'Fireworks\u0000',
+              raw: 'must-not-reach-logs',
+            },
+          },
+          choices: ['must-not-reach-logs'],
+        }),
+      }),
+    }),
+    (error) => {
+      assert.match(error.message, /HTTP 404/)
+      assert.match(error.message, /provider=Fireworks/)
+      assert.match(error.message, /\[redacted\]/)
+      assert.equal(error.message.includes(token), false)
+      assert.equal(error.message.includes('must-not-reach-logs'), false)
+      assert.equal(error.message.includes('\u0000'), false)
+      assert.ok(error.message.length < 300)
+      return true
+    }
+  )
+})
+
+test('uses one qualified canary and OCR release in both manual jobs', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const job = (name) =>
+    source.match(
+      new RegExp(`\\n {2}${name}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`)
+    )?.[1] ?? ''
+
+  assert.equal(
+    source.match(/@alibaba-group\/open-code-review@1\.11\.0/g)?.length,
+    2
+  )
+  assert.equal(source.match(/verify-openrouter-tools/g)?.length, 2)
+  assert.equal(source.match(/--effort low/g)?.length, 2)
+  assert.doesNotMatch(source, /@alibaba-group\/open-code-review@1\.9\.10/)
+  assert.doesNotMatch(source, /ocr llm test/)
+  assert.doesNotMatch(source, /OCR_CONFIG_PATH/)
+  assert.doesNotMatch(source, /OCR_LLM_/)
+
+  for (const name of ['review', 'review_stack']) {
+    const block = job(name)
+    assert.match(block, /runs-on: ubuntu-latest/)
+    assert.ok(
+      block.indexOf('configure-ocr') <
+        block.indexOf('verify-openrouter-tools') &&
+        block.indexOf('verify-openrouter-tools') < block.indexOf('ocr review')
+    )
+    assert.match(
+      block,
+      /if: always\(\) && needs\.(?:start|start_stack)\.outputs\.run_review == 'true'/
+    )
+  }
+})
+
+test('keeps DeepSeek V4.1 Flash for automatic draft reviews', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+
+  assert.equal(
+    source.match(/llm_model: deepseek\/deepseek-v4\.1-flash/g)?.length,
+    1
+  )
+  assert.doesNotMatch(source, /z-ai\/glm-5\.3-flash/)
+})
+
+test('uses the OCR runtime config path for both preflight and review', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.doesNotMatch(workflow, /OCR_CONFIG_PATH/)
+  assert.equal(
+    workflow.match(/test -s "\$\{HOME\}\/\.opencodereview\/config\.json"/g)
+      ?.length,
+    2
+  )
+  assert.equal(
+    workflow.match(/node \.github\/scripts\/final-ai-review\.js configure-ocr/g)
+      ?.length,
+    2
+  )
+  assert.equal(
+    workflow.match(/node \.github\/scripts\/final-ai-review\.js cleanup-ocr/g)
+      ?.length,
+    2
+  )
+})
+
+test('requires the exact finding evidence prefix in the model rule', () => {
+  const rule = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../open-code-review/final-review-rules.json'),
+      'utf8'
+    )
+  ).rules[0]
+
+  assert.equal(rule.merge_system_rule, true)
+  assert.match(rule.rule, /Before calling the `code_comment` tool/)
+  assert.match(rule.rule, /no leading whitespace, omitted line, reordered line/)
+  assert.ok(
+    rule.rule.includes(
+      'Confidence: NN/100\nAutofix: mechanical OR manual OR not-applicable\nMotivating line: `exact source line`'
+    )
+  )
+})
+
+function completeReviewResult(comments = []) {
+  const sessionId = '33333333-3333-4333-8333-333333333333'
+  const item = {
+    item_id: 'a'.repeat(64),
+    path: 'src/example.ts',
+    fingerprint: 'b'.repeat(64),
+  }
+  return {
+    status: 'complete',
+    llm: { provider: 'openrouter', model: FINAL_REVIEW_MODEL },
+    summary: {
+      files_reviewed: 1,
+      comments: comments.length,
+      total_tokens: 100,
+      input_tokens: 80,
+      output_tokens: 20,
+      elapsed: '1s',
+    },
+    comments,
+    session_id: sessionId,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      operation: 'review',
+      terminal_state: 'complete',
+      repository: { identity_sha256: 'c'.repeat(64) },
+      input: {
+        mode: 'range',
+        resolved_base: 'd'.repeat(40),
+        resolved_head: 'e'.repeat(40),
+        source_artifact_sha256: 'f'.repeat(64),
+      },
+      execution: {
+        provider: 'openrouter',
+        model: FINAL_REVIEW_MODEL,
+        rule_config_sha256: '1'.repeat(64),
+      },
+      coverage: {
+        selected: [item],
+        completed: [item],
+        reused: [],
+        failed: [],
+        waived: [],
+      },
+      elapsed_ms: 1_000,
+    },
+  }
+}
+
+function partialResumeResult(overrides = {}) {
+  const sessionId = '11111111-1111-4111-8111-111111111111'
+  const completed = {
+    item_id: 'a'.repeat(64),
+    path: 'src/complete.ts',
+    fingerprint: 'a'.repeat(64),
+  }
+  const failed = {
+    item_id: 'b'.repeat(64),
+    path: 'src/timed-out.ts',
+    fingerprint: 'b'.repeat(64),
+    classification: 'timeout',
+    reason: 'concurrent task timeout',
+  }
+  return {
+    status: 'partial',
+    llm: { provider: 'openrouter', model: FINAL_REVIEW_MODEL },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 300,
+      input_tokens: 240,
+      output_tokens: 60,
+      elapsed: '30m0s',
+    },
+    comments: [],
+    session_id: sessionId,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      operation: 'review',
+      terminal_state: 'partial',
+      repository: { identity_sha256: 'c'.repeat(64) },
+      input: {
+        mode: 'range',
+        resolved_base: 'd'.repeat(40),
+        resolved_head: 'e'.repeat(40),
+        source_artifact_sha256: 'f'.repeat(64),
+      },
+      execution: {
+        provider: 'openrouter',
+        model: FINAL_REVIEW_MODEL,
+        rule_config_sha256: '1'.repeat(64),
+      },
+      coverage: {
+        selected: [completed, failed],
+        completed: [completed],
+        reused: [],
+        failed: [failed],
+        waived: [],
+      },
+      elapsed_ms: 1_800_000,
+    },
+    ...overrides,
+  }
+}
+
+function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
+  const sessionId = '22222222-2222-4222-8222-222222222222'
+  const completed = parent.manifest.coverage.selected[1]
+  const reused = parent.manifest.coverage.selected[0]
+  return {
+    status: 'complete',
+    llm: { ...parent.llm },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 200,
+      input_tokens: 150,
+      output_tokens: 50,
+      elapsed: '12m0s',
+    },
+    comments: [],
+    session_id: sessionId,
+    resume: {
+      resumed_from: parent.session_id,
+      reused_files: 1,
+      rerun_files: 1,
+      previous_model: FINAL_REVIEW_MODEL,
+      current_model: FINAL_REVIEW_MODEL,
+    },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      parent_run_id: parent.manifest.run_id,
+      operation: 'review',
+      terminal_state: 'complete',
+      repository: { ...parent.manifest.repository },
+      input: { ...parent.manifest.input },
+      execution: { ...parent.manifest.execution },
+      coverage: {
+        selected: [reused, completed],
+        completed: [completed],
+        reused: [reused],
+        failed: [],
+        waived: [],
+      },
+      elapsed_ms: 720_000,
+    },
+    ...overrides,
+  }
+}
+
+test('plans one resume from a valid partial OCR session', () => {
+  assert.equal(planOCRResume(completeReviewResult(), 750_000), null)
+  assert.deepEqual(planOCRResume(partialResumeResult(), 750_000), {
+    sessionId: '11111111-1111-4111-8111-111111111111',
+    remainingTokens: 749_700,
+  })
+})
+
+test('plans a stack resume under the raised full-stack ceiling', () => {
+  const parent = partialResumeResult({
+    summary: {
+      files_reviewed: 38,
+      comments: 0,
+      total_tokens: 10_408_359,
+      input_tokens: 10_239_245,
+      output_tokens: 169_114,
+      elapsed: '30m0s',
+    },
+  })
+  assert.deepEqual(planOCRResume(parent, 20_000_000), {
+    sessionId: '11111111-1111-4111-8111-111111111111',
+    remainingTokens: 9_591_641,
+  })
+  assert.throws(() => planOCRResume(parent, 10_000_000), /no token budget left/)
+})
+
+test('rejects failed partial sessions with reused or waived coverage', () => {
+  const parent = partialResumeResult()
+  const completed = parent.manifest.coverage.completed[0]
+
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [],
+              reused: [completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /reused or waived coverage/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [],
+              waived: [completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /reused or waived coverage/
+  )
+})
+
+test('rejects malformed or already-resumed partial OCR sessions', () => {
+  const parent = partialResumeResult()
+  assert.throws(
+    () =>
+      planOCRResume({ ...parent, session_id: '../../unsafe-session' }, 750_000),
+    /safe session ID/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: { ...parent.manifest, run_id: 'different-run' },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        { ...parent, resume: { resumed_from: 'older-run' } },
+        750_000
+      ),
+    /already a resumed run/
+  )
+  for (const parent_run_id of ['', null, '../../unsafe-parent']) {
+    assert.throws(
+      () =>
+        planOCRResume(
+          {
+            ...parent,
+            manifest: { ...parent.manifest, parent_run_id },
+          },
+          750_000
+        ),
+      /already a resumed run/
+    )
+  }
+  assert.throws(
+    () =>
+      planOCRResume(
+        partialResumeResult({
+          comments: [
+            {
+              path: 'src/complete.ts',
+              start_line: 1,
+              end_line: 1,
+              category: 'bug',
+              severity: 'high',
+              content: 'This partial finding omits the required evidence.',
+            },
+          ],
+        }),
+        750_000
+      ),
+    /confidence score/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          summary: { ...parent.summary, comments: 1 },
+        },
+        750_000
+      ),
+    /usage counters/
+  )
+
+  const completed = parent.manifest.coverage.completed[0]
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              selected: [completed, completed],
+            },
+          },
+        },
+        750_000
+      ),
+    /duplicate selected coverage/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              completed: [completed, completed],
+              failed: [],
+            },
+          },
+        },
+        750_000
+      ),
+    /non-disjoint coverage partition/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            coverage: {
+              ...parent.manifest.coverage,
+              failed: [],
+            },
+          },
+        },
+        750_000
+      ),
+    /incomplete manifest coverage/
+  )
+})
+
+test('requires the configured OCR model in every producer receipt', () => {
+  const parent = partialResumeResult()
+  assert.throws(
+    () =>
+      planOCRResume(
+        { ...parent, llm: { ...parent.llm, model: 'wrong-model' } },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: {
+            ...parent.manifest,
+            execution: { ...parent.manifest.execution, model: 'wrong-model' },
+          },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+
+  const complete = completeReviewResult()
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...complete,
+        llm: { ...complete.llm, model: 'wrong-model' },
+      }),
+    /unexpected model identity/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...complete,
+        manifest: {
+          ...complete.manifest,
+          execution: { ...complete.manifest.execution, model: 'wrong-model' },
+        },
+      }),
+    /session or manifest identity/
+  )
+})
+
+test('requires complete resume lineage and coverage counts', () => {
+  const firstAttempt = completeReviewResult()
+  assert.equal(validateOCRResult(firstAttempt), firstAttempt)
+
+  const firstItem = firstAttempt.manifest.coverage.completed[0]
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        manifest: {
+          ...firstAttempt.manifest,
+          coverage: {
+            ...firstAttempt.manifest.coverage,
+            completed: [],
+            reused: [firstItem],
+          },
+        },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        manifest: {
+          ...firstAttempt.manifest,
+          parent_run_id: firstAttempt.session_id,
+        },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...firstAttempt,
+        resume: {
+          resumed_from: firstAttempt.session_id,
+          reused_files: 0,
+          rerun_files: 1,
+        },
+      }),
+    /invalid resume envelope/
+  )
+
+  const resumed = completedResumeResult()
+  assert.equal(validateOCRResult(resumed), resumed)
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        manifest: {
+          ...resumed.manifest,
+          parent_run_id: '44444444-4444-4444-8444-444444444444',
+        },
+      }),
+    /invalid resume envelope/
+  )
+  for (const parentId of ['', null, '../../unsafe-parent']) {
+    assert.throws(
+      () =>
+        validateOCRResult({
+          ...resumed,
+          resume: { ...resumed.resume, resumed_from: parentId },
+          manifest: { ...resumed.manifest, parent_run_id: parentId },
+        }),
+      /invalid resume envelope/
+    )
+  }
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        resume: { ...resumed.resume, reused_files: 0 },
+      }),
+    /invalid resume envelope/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...resumed,
+        resume: { ...resumed.resume, rerun_files: 0 },
+      }),
+    /invalid resume envelope/
+  )
+})
+
+test('rejects every OCR budget-exhaustion signal before resuming', () => {
+  const parent = partialResumeResult()
+  const cases = [
+    {
+      ...parent,
+      summary: { ...parent.summary, budget_exceeded: true },
+    },
+    {
+      ...parent,
+      warnings: [
+        {
+          type: 'token_budget_reached',
+          file: 'src/timed-out.ts',
+          message: 'budget reached',
+        },
+      ],
+    },
+    {
+      ...parent,
+      manifest: {
+        ...parent.manifest,
+        coverage: {
+          ...parent.manifest.coverage,
+          failed: [
+            {
+              ...parent.manifest.coverage.failed[0],
+              classification: 'budget',
+            },
+          ],
+        },
+      },
+    },
+  ]
+  for (const result of cases) {
+    assert.throws(() => planOCRResume(result, 750_000), /token budget/)
+  }
+  assert.throws(
+    () => planOCRResume(parent, parent.summary.total_tokens),
+    /no token budget left/
+  )
+})
+
+test('rejects non-boolean OCR budget flags before planning a resume', () => {
+  const parent = partialResumeResult()
+  for (const budget_exceeded of ['false', 0, 1, null]) {
+    assert.throws(
+      () =>
+        planOCRResume(
+          { ...parent, summary: { ...parent.summary, budget_exceeded } },
+          750_000
+        ),
+      /invalid budget flag/
+    )
+  }
+  assert.deepEqual(
+    planOCRResume(
+      { ...parent, summary: { ...parent.summary, budget_exceeded: false } },
+      750_000
+    ),
+    {
+      sessionId: parent.session_id,
+      remainingTokens: 749_700,
+    }
+  )
+})
+
+test('merges only validated complete resume usage within the original ceiling', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+  const merged = mergeOCRResumeResults(parent, resumed, 750_000)
+
+  assert.equal(merged.manifest, resumed.manifest)
+  assert.equal(merged.comments, resumed.comments)
+  assert.equal(merged.summary.files_reviewed, 2)
+  assert.equal(merged.summary.comments, 0)
+  assert.equal(merged.summary.elapsed, '12m0s')
+  assert.equal(merged.summary.input_tokens, 390)
+  assert.equal(merged.summary.output_tokens, 110)
+  assert.equal(merged.summary.total_tokens, 500)
+  assert.equal(validateOCRResult(merged), merged)
+})
+
+test('merges stack resume usage below the raised ceiling only', () => {
+  const initial = partialResumeResult({
+    summary: {
+      files_reviewed: 38,
+      comments: 0,
+      total_tokens: 10_408_359,
+      input_tokens: 10_239_245,
+      output_tokens: 169_114,
+      elapsed: '30m0s',
+    },
+  })
+  const resumed = completedResumeResult(initial, {
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 9_591_640,
+      input_tokens: 9_422_526,
+      output_tokens: 169_114,
+      elapsed: '12m0s',
+    },
+  })
+  const merged = mergeOCRResumeResults(initial, resumed, 20_000_000)
+  assert.equal(merged.summary.total_tokens, 19_999_999)
+
+  const resumedOver = completedResumeResult(initial, {
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 9_591_642,
+      input_tokens: 9_422_528,
+      output_tokens: 169_114,
+      elapsed: '12m0s',
+    },
+  })
+  assert.throws(
+    () => mergeOCRResumeResults(initial, resumedOver, 20_000_000),
+    /exceeded the original token budget/
+  )
+})
+
+test('rejects incorrect resume lineage, identity, and incomplete coverage', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        { ...resumed, resume: { ...resumed.resume, resumed_from: 'wrong' } },
+        750_000
+      ),
+    /parent lineage/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          session_id: parent.session_id,
+          manifest: {
+            ...resumed.manifest,
+            run_id: parent.manifest.run_id,
+          },
+        },
+        750_000
+      ),
+    /parent lineage/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: {
+            ...resumed.manifest,
+            input: { ...resumed.manifest.input, resolved_head: '9'.repeat(40) },
+          },
+        },
+        750_000
+      ),
+    /changed its review identity/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          status: 'partial',
+          manifest: { ...resumed.manifest, terminal_state: 'partial' },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () => mergeOCRResumeResults(parent, resumed, 400),
+    /original token budget/
+  )
+
+  const changedItem = {
+    ...resumed.manifest.coverage.selected[1],
+    fingerprint: '9'.repeat(64),
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: {
+            ...resumed.manifest,
+            coverage: {
+              ...resumed.manifest.coverage,
+              selected: [resumed.manifest.coverage.selected[0], changedItem],
+              completed: [changedItem],
+            },
+          },
+        },
+        750_000
+      ),
+    /changed its selected coverage/
+  )
+})
+
+test('requires exact resume coverage mappings, counts, and terminal outcomes', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+
+  const swappedCoverage = {
+    ...resumed.manifest.coverage,
+    completed: [resumed.manifest.coverage.reused[0]],
+    reused: [resumed.manifest.coverage.completed[0]],
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: { ...resumed.manifest, coverage: swappedCoverage },
+        },
+        750_000
+      ),
+    /coverage partition/
+  )
+
+  for (const resume of [
+    { ...resumed.resume, reused_files: 0 },
+    { ...resumed.resume, rerun_files: 0 },
+    { ...resumed.resume, reused_files: '1' },
+  ]) {
+    assert.throws(
+      () => mergeOCRResumeResults(parent, { ...resumed, resume }, 750_000),
+      /(?:inconsistent resume counts|invalid resume envelope)/
+    )
+  }
+
+  const waivedCoverage = {
+    ...resumed.manifest.coverage,
+    reused: [],
+    waived: [resumed.manifest.coverage.reused[0]],
+  }
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: { ...resumed.manifest, coverage: waivedCoverage },
+        },
+        750_000
+      ),
+    /failed or waived coverage/
+  )
+})
+
+function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
+  return {
+    baseRef: 'v3',
+    baseRepo: 'uzh-bf/klicker-uzh',
+    baseSha: 'b'.repeat(40),
+    backgroundDigest: '1'.repeat(64),
+    headRef: 'rs/test-review',
+    headRepo: 'uzh-bf/klicker-uzh',
+    mode: 'full',
+    policyDigest: '2'.repeat(64),
+    dispositionDigest: '',
+    trustedPolicySha: 'd'.repeat(40),
+    workflowHeadSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
+    workflowRunId: 123,
+    ...overrides,
+    headSha,
+  }
+}
+
+function reviewContext() {
+  return {
+    eventName: 'issue_comment',
+    issue: { number: 42 },
+    payload: {
+      comment: { body: '/final-review', user: { login: 'reviewer' } },
+      issue: { pull_request: {} },
+      repository: { default_branch: 'v3' },
+    },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 123,
+    serverUrl: 'https://github.com',
+    sha: 'f'.repeat(40),
+  }
+}
+
+function reviewGithub({
+  pull,
+  reviews = [],
+  comments = [],
+  comparison = { status: 'identical', files: [] },
+  comparisons = {},
+  statuses = [],
+  permission = 'write',
+  rules = '{"rules":[]}',
+  policyFiles = {},
+  stackResponse,
+  workflowRun = null,
+  pullsByNumber = {},
+}) {
+  const reviewsEndpoint = {}
+  const commentsEndpoint = {}
+  const checksEndpoint = async () => ({ data: state.checkRuns ?? [] })
+  const state = {
+    comparison,
+    comparisons,
+    comments,
+    pull,
+    reviews,
+    statuses,
+    permission,
+    policyFiles,
+    rules,
+    workflowRun,
+    createdCheckRuns: [],
+    createdStatuses: [],
+  }
+  const github = {
+    rest: {
+      checks: {
+        listForRef: checksEndpoint,
+        create: async (check) => {
+          const created = {
+            ...check,
+            app: { slug: 'github-actions' },
+            id: state.createdCheckRuns.length + 1,
+          }
+          state.createdCheckRuns.push(created)
+          return { data: created }
+        },
+      },
+      pulls: {
+        get: async ({ pull_number }) => ({
+          data: pullsByNumber[pull_number] ?? state.pull,
+        }),
+        listReviews: reviewsEndpoint,
+      },
+      issues: { listComments: commentsEndpoint },
+      repos: {
+        compareCommits: async ({ base, head }) => ({
+          data: state.comparisons[`${base}...${head}`] ?? state.comparison,
+        }),
+        getCollaboratorPermissionLevel: async () => ({
+          data: { user: { permission: state.permission } },
+        }),
+        listCommitStatusesForRef: async () => ({ data: state.statuses }),
+        createCommitStatus: async (status) => {
+          state.createdStatuses.push(status)
+          return { data: status }
+        },
+        getContent: async ({ path: filePath }) => ({
+          data: {
+            type: 'file',
+            encoding: 'base64',
+            content: Buffer.from(
+              state.policyFiles[filePath] ?? state.rules
+            ).toString('base64'),
+          },
+        }),
+      },
+      actions: {
+        getWorkflowRun: async () => ({ data: state.workflowRun }),
+      },
+    },
+    paginate: async (endpoint, params) =>
+      endpoint === github.rest.repos.listCommitStatusesForRef
+        ? (await endpoint(params)).data
+        : endpoint === checksEndpoint
+          ? (state.checkRuns ?? [])
+          : endpoint === reviewsEndpoint
+            ? state.reviews
+            : state.comments,
+    request: async () => ({ data: stackResponse ?? [] }),
+  }
+  return { github, state }
+}
+
+test('scopes status locks to a verified native stack when available', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/stack-root',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const github = {
+    rest: {
+      repos: {
+        compareCommitsWithBasehead: async () => ({
+          data: { status: 'ahead', files: [] },
+        }),
+      },
+    },
+    request: async () => ({
+      data: [
+        {
+          id: 'stack-42',
+          pull_requests: [
+            {
+              number: 42,
+              state: 'open',
+              draft: false,
+              head: { sha: pull.head.sha },
+            },
+          ],
+        },
+      ],
+    }),
+  }
+  const lockKey = await resolveFinalReviewLockKey({
+    github,
+    context: reviewContext(),
+    pull,
+    pullNumber: pull.number,
+  })
+  assert.match(lockKey, /^stack-[0-9a-f]{64}$/)
+
+  github.request = async () => ({
+    data: [
+      {
+        id: 'stack-42',
+        pull_requests: [
+          {
+            number: 42,
+            state: 'open',
+            draft: false,
+            head: { sha: 'c'.repeat(40) },
+          },
+        ],
+      },
+    ],
+  })
+  assert.match(
+    await resolveFinalReviewLockKey({
+      github,
+      context: reviewContext(),
+      pull,
+      pullNumber: pull.number,
+    }),
+    /^stack-[0-9a-f]{64}$/
+  )
+
+  github.request = async () => {
+    throw new Error('temporary native stack failure')
+  }
+  assert.equal(
+    await resolveFinalReviewLockKey({
+      github,
+      context: reviewContext(),
+      pull,
+      pullNumber: pull.number,
+    }),
+    'global'
+  )
+
+  github.request = async () => ({ data: [] })
+  assert.equal(
+    await resolveFinalReviewLockKey({
+      github,
+      context: reviewContext(),
+      pull,
+      pullNumber: pull.number,
+    }),
+    'pr-42'
+  )
+})
+
+test('retains only the rejected individual publisher input for one day', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const step = workflow.match(
+    /      - name: Upload rejected individual publisher input\n[\s\S]*?(?=\n      - name:|\n  finalize:)/
+  )?.[0]
+
+  assert.ok(step)
+  assert.ok(
+    workflow.indexOf('Publish consolidated final review') <
+      workflow.indexOf('Upload rejected individual publisher input')
+  )
+  assert.match(
+    step,
+    /failure\(\)[\s\S]*steps\.run_review\.outputs\.validation_failure == 'true'[\s\S]*steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+  )
+  assert.match(
+    step,
+    /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
+  )
+  assert.match(
+    step,
+    /name: final-ai-individual-publisher-failure-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/
+  )
+  assert.match(
+    step,
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-individual-publisher-failure/
+  )
+  assert.match(step, /if-no-files-found: error/)
+  assert.match(step, /retention-days: 1/)
+  assert.doesNotMatch(step, /stderr|config|manifest|ranges|\*/i)
+})
+
+test('suppresses raw OCR output while retaining rejected validation inputs', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  for (const name of [
+    'Summarize final review failure output',
+    'Summarize cumulative review failure output',
+  ]) {
+    const step = workflow.match(
+      new RegExp(`      - name: ${name}\\n[\\s\\S]*?(?=\\n      - name:)`)
+    )?.[0]
+    assert.ok(step)
+    assert.match(step, /raw provider and result output is suppressed/i)
+    assert.doesNotMatch(step, /cat |tail |RESULT_PATH|STDERR_PATH|```json/)
+  }
+  assert.match(
+    workflow,
+    /plan-ocr-resume[\s\S]*cp -- "\$\{RESULT_PATH\}" "\$\{REJECTED_DIR\}\/initial-result\.json"[\s\S]*validation_failure=true/
+  )
+  assert.match(
+    workflow,
+    /merge-ocr-resume[\s\S]*cp -- "\$\{RESUMED_PATH\}" "\$\{REJECTED_DIR\}\/resumed-result\.json"[\s\S]*validation_failure=true/
+  )
+})
+
+test('validates complete OCR results and retains malformed artifacts', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-ocr-'))
+  const resultPath = path.join(directory, 'result.json')
+  const validResult = completeReviewResult([
+    {
+      path: 'src/example.ts',
+      start_line: 10,
+      end_line: 10,
+      category: 'bug',
+      severity: 'high',
+      content: [
+        'Confidence: 75/100',
+        'Autofix: manual',
+        'Motivating line: `return value`',
+        'This can fail at runtime.',
+      ].join('\n'),
+    },
+  ])
+  fs.writeFileSync(resultPath, JSON.stringify(validResult))
+  assert.equal(Object.hasOwn(validResult, 'schema_version'), false)
+  assert.equal(Object.hasOwn(validResult, 'finish_reason'), false)
+  assert.equal(Object.hasOwn(validResult.summary, 'coverage'), false)
+
+  const scriptPath = path.join(__dirname, 'final-ai-review.js')
+  const validRun = spawnSync(
+    process.execPath,
+    [scriptPath, 'validate-ocr-result', resultPath],
+    { encoding: 'utf8' }
+  )
+  assert.equal(validRun.status, 0, validRun.stderr)
+  assert.match(validRun.stdout, /OCR result passed validation/)
+  assert.equal(validateOCRResult(validResult), validResult)
+
+  const malformedResult = {
+    ...validResult,
+    comments: [
+      {
+        ...validResult.comments[0],
+        content: 'This finding omits the required confidence evidence.',
+      },
+    ],
+  }
+  fs.writeFileSync(resultPath, JSON.stringify(malformedResult))
+  const retainedBytes = fs.readFileSync(resultPath)
+  const invalidRun = spawnSync(
+    process.execPath,
+    [scriptPath, 'validate-ocr-result', resultPath],
+    { encoding: 'utf8' }
+  )
+  assert.notEqual(invalidRun.status, 0)
+  assert.match(invalidRun.stderr, /invalid confidence score/)
+  assert.equal(fs.existsSync(resultPath), true)
+  assert.deepEqual(fs.readFileSync(resultPath), retainedBytes)
+  assert.throws(
+    () => validateOCRResult(malformedResult),
+    /invalid confidence score/
+  )
+  assert.throws(
+    () =>
+      validateOCRResult({
+        ...validResult,
+        summary: { ...validResult.summary, total_tokens: 101 },
+      }),
+    /usage counters/
+  )
+  assert.throws(
+    () => validateOCRResult({ ...validResult, finish_reason: 'length' }),
+    /incomplete finish reason/
+  )
+  for (const [field, value] of [
+    ['status', 'complete\n::error::injected'],
+    ['model', 'expected\n::error::injected'],
+  ]) {
+    let error
+    try {
+      validateOCRResult(
+        field === 'status'
+          ? { ...validResult, status: value }
+          : { ...validResult, llm: { ...validResult.llm, model: value } }
+      )
+    } catch (caught) {
+      error = caught
+    }
+    assert.ok(error)
+    assert.doesNotMatch(error.message, /injected/)
+  }
+})
+
+test('runs OCR validation after resume and gates individual publication', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const runIndex = workflow.indexOf('      - name: Run final review')
+  const validateIndex = workflow.indexOf(
+    '      - name: Validate final review OCR result'
+  )
+  const publishIndex = workflow.indexOf(
+    '      - name: Publish consolidated final review'
+  )
+  const rejectedSummaryIndex = workflow.indexOf(
+    '      - name: Summarize rejected final review result'
+  )
+  const cleanupIndex = workflow.indexOf(
+    '      - name: Remove ephemeral OpenRouter access'
+  )
+  assert.ok(runIndex >= 0)
+  assert.ok(validateIndex > runIndex)
+  assert.ok(rejectedSummaryIndex > validateIndex)
+  assert.ok(cleanupIndex > rejectedSummaryIndex)
+  assert.ok(publishIndex > validateIndex)
+
+  const validationStep = workflow.slice(validateIndex, publishIndex)
+  assert.match(validationStep, /id: validate_result/)
+  assert.match(validationStep, /if: steps\.run_review\.outcome == 'success'/)
+  assert.match(
+    validationStep,
+    /node \.github\/scripts\/final-ai-review\.js validate-ocr-result "\$\{RESULT_PATH\}"/
+  )
+
+  const rejectedSummaryStep = workflow.slice(rejectedSummaryIndex, cleanupIndex)
+  assert.match(
+    rejectedSummaryStep,
+    /if: failure\(\) && steps\.validate_result\.outcome == 'failure'/
+  )
+  assert.match(rejectedSummaryStep, /rejected input is retained/)
+  assert.doesNotMatch(
+    rejectedSummaryStep,
+    /RESULT_PATH|STDERR_PATH|cat |tail |```json/
+  )
+
+  const publishStep = workflow.slice(publishIndex)
+  assert.match(publishStep, /steps\.validate_result\.outcome == 'success'/)
+  assert.match(
+    publishStep,
+    /steps\.validate_result\.outcome == 'failure'[\s\S]*steps\.publish\.outcome == 'failure'/
+  )
+})
+
+test('renders findings without making finding count a failure', () => {
+  const result = completeReviewResult([
+    {
+      path: 'src/example.ts',
+      content: [
+        'Confidence: 75/100',
+        'Autofix: manual',
+        'Motivating line: `return value`',
+        'This can fail at runtime.\n## Injected heading',
+      ].join('\n'),
+      suggestion_code: 'return value ?? fallback',
+      start_line: 10,
+      end_line: 11,
+      category: 'bug',
+      severity: 'high',
+    },
+  ])
+
+  const metadataInput = completeReviewMetadata()
+  const [report] = renderFinalReviewChunks(
+    result,
+    'a'.repeat(40),
+    metadataInput
+  )
+  assert.match(report, /z-ai\/glm-5\.3-flash \(high reasoning\)/)
+  assert.match(report, /src\/example\.ts:10-11/)
+  assert.match(report, /Confidence: 75\/100/)
+  assert.match(report, /```[\s\S]*\n## Injected heading\n```/)
+  const metadata = parseReviewMetadata(report)
+  assert.equal(metadata.schema_version, FINAL_REVIEW_SCHEMA)
+  assert.equal(metadata.workflow_head_sha, 'd'.repeat(40))
+  assert.equal(metadata.trusted_policy_sha, 'd'.repeat(40))
+  assert.equal(metadata.finding_ids.length, 1)
+  assert.match(report, new RegExp(metadata.finding_ids[0]))
+  const rerunMetadata = parseReviewMetadata(
+    renderFinalReviewChunks(
+      result,
+      'a'.repeat(40),
+      completeReviewMetadata('a'.repeat(40), { workflowRunId: 124 })
+    )[0]
+  )
+  assert.notEqual(rerunMetadata.review_id, metadata.review_id)
+  const marker = report.match(/<!-- final-ai-review\/v4 ([A-Za-z0-9_-]+) -->/)
+  const tamperedMetadata = decodeMetadata(marker[1])
+  tamperedMetadata.finding_ids = ['fr-0000000000000000']
+  const tampered = report.replace(marker[1], encodeMetadata(tamperedMetadata))
+  assert.equal(parseReviewMetadata(tampered), null)
+  assert.equal(
+    report,
+    renderFinalReviewChunks(result, 'a'.repeat(40), metadataInput)[0]
+  )
+})
+
+test('skips the final pull-request comment when no findings are generated', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const plan = await buildReviewPlan({
+    github,
+    context: reviewContext(),
+    pull,
+  })
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-'))
+  const resultPath = path.join(directory, 'result.json')
+  fs.writeFileSync(resultPath, JSON.stringify(completeReviewResult()))
+  const createdReviews = []
+  github.rest.pulls.createReview = async (review) => {
+    createdReviews.push(review)
+    return { data: { html_url: 'https://github.com/review' } }
+  }
+
+  const result = await publishFinalReview({
+    github,
+    context: reviewContext(),
+    prNumber: pull.number,
+    baseSha: pull.base.sha,
+    headSha: pull.head.sha,
+    mode: plan.mode,
+    rootHead: plan.rootHead,
+    rootReviewId: plan.rootReviewId,
+    policyDigest: plan.policyDigest,
+    backgroundDigest: plan.backgroundDigest,
+    scopeKind: plan.scopeKind,
+    stackId: plan.stackId,
+    stackPosition: plan.stackPosition,
+    stackOrderDigest: plan.stackOrderDigest,
+    dispositionDigest: plan.dispositionDigest,
+    trustedSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
+    resultPath,
+  })
+
+  assert.equal(result, null)
+  assert.equal(createdReviews.length, 0)
+})
+
+test('accepts a trusted clean status without requiring a review body', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+    },
+  })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+  const cleanEvidence = buildIndividualCleanEvidenceMetadata({
+    context,
+    pull,
+    plan,
+    trustedSha: 'd'.repeat(40),
+    range: {
+      reviewFromSha: pull.base.sha,
+      reviewedPaths: ['src/example.ts'],
+      reviewedPathAliases: ['src/example.ts'],
+    },
+  })
+  const evidenceDigest = buildIndividualCleanReviewEvidenceDigest({
+    pull,
+    plan,
+    reviewFromSha: cleanEvidence.review_from_sha,
+    reviewedPaths: cleanEvidence.reviewed_paths,
+    reviewedPathAliases: cleanEvidence.reviewed_path_aliases,
+  })
+  assert.notEqual(
+    evidenceDigest,
+    buildIndividualCleanReviewEvidenceDigest({
+      pull: { ...pull, base: { ...pull.base, sha: 'c'.repeat(40) } },
+      plan,
+      reviewFromSha: cleanEvidence.review_from_sha,
+      reviewedPaths: cleanEvidence.reviewed_paths,
+      reviewedPathAliases: cleanEvidence.reviewed_path_aliases,
+    })
+  )
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    },
+  ]
+  state.checkRuns = [
+    {
+      name: FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: pull.head.sha,
+      status: 'completed',
+      conclusion: 'success',
+      app: { slug: 'github-actions' },
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      external_id: '123',
+      completed_at: '2026-08-25T00:00:00Z',
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(cleanEvidence)} -->`,
+      },
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: context.sha,
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    true
+  )
+  assert.equal(
+    decideFinalStatus({
+      reviewedHead: pull.head.sha,
+      currentHead: pull.head.sha,
+      reviewedBase: pull.base.sha,
+      currentBase: pull.base.sha,
+      eligible: true,
+      reviewOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+      cleanEvidenceDigest: evidenceDigest,
+    }).description,
+    `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
+  )
+})
+
+test('publishes clean individual evidence as a check without a pull-request comment', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+    },
+  })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha: pull.base.sha,
+    headSha: pull.head.sha,
+    mode: plan.mode,
+    rootHead: plan.rootHead,
+    rootReviewId: plan.rootReviewId,
+    backgroundDigest: plan.backgroundDigest,
+    scopeKind: plan.scopeKind,
+    stackId: plan.stackId,
+    stackPosition: plan.stackPosition,
+    stackOrderDigest: plan.stackOrderDigest,
+    dispositionDigest: plan.dispositionDigest,
+    dispositionIds: plan.dispositionIds,
+    policyDigest: plan.policyDigest,
+    trustedSha: 'd'.repeat(40),
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+    cleanReview: 'true',
+  })
+
+  assert.equal(state.createdCheckRuns.length, 1)
+  assert.equal(
+    state.createdCheckRuns[0].name,
+    FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME
+  )
+  assert.equal(state.createdCheckRuns[0].head_sha, pull.head.sha)
+  assert.equal(state.createdStatuses.at(-1).state, 'success')
+  assert.match(
+    state.createdStatuses.at(-1).description,
+    new RegExp(`${FINAL_REVIEW_CLEAN_STATUS_PREFIX}[0-9a-f]{64}`)
+  )
+  assert.equal(state.reviews.length, 0)
+})
+
+test('binds incremental clean evidence to the root and repair paths', async () => {
+  const baseSha = 'b'.repeat(40)
+  const rootHead = '1'.repeat(40)
+  const headSha = '2'.repeat(40)
+  const comparisons = {
+    [`${baseSha}...${rootHead}`]: {
+      status: 'ahead',
+      files: [
+        {
+          filename: 'src/original-renamed.ts',
+          previous_filename: 'src/original.ts',
+        },
+      ],
+    },
+    [`${rootHead}...${headSha}`]: {
+      status: 'ahead',
+      files: [
+        {
+          filename: 'src/repair-renamed.ts',
+          previous_filename: 'src/repair.ts',
+        },
+      ],
+    },
+  }
+  const github = {
+    rest: {
+      repos: {
+        compareCommits: async ({ base, head }) => ({
+          data: comparisons[`${base}...${head}`],
+        }),
+      },
+    },
+  }
+
+  const range = await resolveCleanReviewRange({
+    github,
+    context: reviewContext(),
+    baseSha,
+    headSha,
+    mode: 'incremental',
+    rootHead,
+    rootReviewBaseSha: baseSha,
+  })
+
+  assert.deepEqual(range, {
+    reviewFromSha: rootHead,
+    reviewedPaths: ['src/original-renamed.ts', 'src/repair-renamed.ts'],
+    reviewedPathAliases: [
+      'src/original-renamed.ts',
+      'src/original.ts',
+      'src/repair-renamed.ts',
+      'src/repair.ts',
+    ],
+  })
+})
+
+test('fails finalization without publishing oversized individual clean evidence', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Oversized clean evidence',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/oversized-clean-evidence',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const paths = Array.from(
+    { length: 299 },
+    (_, index) => `src/${String(index).padStart(3, '0')}-${'x'.repeat(150)}.ts`
+  )
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: paths.map((filename) => ({ filename })),
+    },
+  })
+  const context = reviewContext()
+
+  await assert.rejects(
+    finalizeFinalReview({
+      github,
+      context,
+      prNumber: pull.number,
+      baseSha: pull.base.sha,
+      headSha: pull.head.sha,
+      mode: 'full',
+      rootHead: pull.head.sha,
+      scopeKind: 'default',
+      stackId: '',
+      stackPosition: '',
+      stackOrderDigest: '',
+      trustedSha: 'd'.repeat(40),
+      reviewOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+    }),
+    /check output limit/
+  )
+  assert.equal(state.createdCheckRuns.length, 0)
+  assert.equal(state.createdStatuses.at(-1).state, 'failure')
+})
+
+test('preserves comment-free individual clean evidence across unrelated default-base advancement', async () => {
+  const baseSha = 'b'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+    },
+  })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+  const cleanEvidence = buildIndividualCleanEvidenceMetadata({
+    context,
+    pull,
+    plan,
+    trustedSha: 'd'.repeat(40),
+    range: {
+      reviewFromSha: baseSha,
+      reviewedPaths: ['src/example.ts'],
+      reviewedPathAliases: ['src/example.ts'],
+    },
+  })
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${cleanEvidence.evidence_digest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: context.sha,
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+  state.checkRuns = [
+    {
+      name: FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: pull.head.sha,
+      status: 'completed',
+      conclusion: 'success',
+      app: { slug: 'github-actions' },
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      external_id: '123',
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(cleanEvidence)} -->`,
+      },
+    },
+  ]
+
+  const advancedBase = 'c'.repeat(40)
+  state.pull = {
+    ...pull,
+    base: { ...pull.base, sha: advancedBase },
+  }
+  state.comparisons[`${baseSha}...${advancedBase}`] = {
+    status: 'ahead',
+    files: [{ filename: 'docs/unrelated.md', additions: 1, deletions: 0 }],
+  }
+  const advancedPlan = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull: state.pull,
+      plan: advancedPlan,
+    }),
+    true
+  )
+
+  state.comparisons[`${baseSha}...${advancedBase}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 1, deletions: 1 }],
+  }
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull: state.pull,
+      plan: advancedPlan,
+    }),
+    false
+  )
+})
+
+test('rejects tampered individual clean path evidence', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({ pull })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+  const cleanEvidence = buildIndividualCleanEvidenceMetadata({
+    context,
+    pull,
+    plan,
+    trustedSha: 'd'.repeat(40),
+    range: {
+      reviewFromSha: pull.base.sha,
+      reviewedPaths: ['src/example.ts'],
+      reviewedPathAliases: ['src/example.ts'],
+    },
+  })
+  const tampered = {
+    ...cleanEvidence,
+    reviewed_path_aliases: ['src/other.ts'],
+  }
+  assert.equal(
+    parseIndividualCleanEvidence(
+      `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(tampered)} -->`
+    ),
+    null
+  )
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${cleanEvidence.evidence_digest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: context.sha,
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+  state.checkRuns = [
+    {
+      name: FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: pull.head.sha,
+      status: 'completed',
+      conclusion: 'success',
+      app: { slug: 'github-actions' },
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      external_id: '123',
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(tampered)} -->`,
+      },
+    },
+  ]
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    false
+  )
+})
+
+test('authorizes a verified native stack member', async () => {
+  const parentPull = {
+    number: 41,
+    state: 'open',
+    draft: false,
+    title: 'Parent change',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Stacked change',
+    base: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/child-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({
+    pull,
+    stackResponse: [
+      {
+        id: 'stack-42',
+        pull_requests: [
+          {
+            number: 41,
+            state: 'open',
+            draft: false,
+            head: { sha: 'c'.repeat(40) },
+          },
+          {
+            number: 42,
+            state: 'open',
+            draft: false,
+            head: { sha: 'a'.repeat(40) },
+          },
+        ],
+      },
+    ],
+    comparison: { status: 'ahead', files: [] },
+    pullsByNumber: { 41: parentPull },
+  })
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    true
+  )
+  assert.equal(outputs.get('scope_kind'), 'native-stack')
+  assert.equal(outputs.get('stack_id'), 'stack-42')
+})
+
+test('treats default-branch-prefixed branches as consolidation bases', () => {
+  const context = reviewContext()
+  for (const baseRef of ['v3-ai', 'v3-polls', 'v3-course-qa', 'v3-x.y_z']) {
+    assert.equal(isEligibleBaseBranch({ baseRef, context }), true, baseRef)
+    assert.equal(
+      isConsolidationBaseBranch({ baseRef, defaultBranch: 'v3' }),
+      true,
+      baseRef
+    )
+  }
+  assert.equal(isEligibleBaseBranch({ baseRef: 'v3', context }), true)
+  assert.equal(
+    isConsolidationBaseBranch({ baseRef: 'v3', defaultBranch: 'v3' }),
+    false
+  )
+  for (const baseRef of [
+    'v3-',
+    'v3-ai/feature',
+    'v3--ai',
+    'v4-ai',
+    'xv3-ai',
+    'feature/v3-ai',
+    'main',
+    undefined,
+    null,
+  ]) {
+    assert.equal(
+      isEligibleBaseBranch({ baseRef, context }),
+      false,
+      String(baseRef)
+    )
+  }
+  assert.equal(
+    isEligibleBaseBranch({
+      baseRef: 'main-ai',
+      context: {
+        ...context,
+        payload: { repository: { default_branch: 'main' } },
+      },
+    }),
+    true
+  )
+})
+
+test('authorizes a verified native stack member whose root targets a consolidation branch', async () => {
+  const parentPull = {
+    number: 41,
+    state: 'open',
+    draft: false,
+    title: 'Parent change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Stacked change',
+    base: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/child-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const stackResponse = [
+    {
+      id: 'stack-42',
+      pull_requests: [
+        {
+          number: 41,
+          state: 'open',
+          draft: false,
+          head: { sha: 'c'.repeat(40) },
+        },
+        {
+          number: 42,
+          state: 'open',
+          draft: false,
+          head: { sha: 'a'.repeat(40) },
+        },
+      ],
+    },
+  ]
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github: reviewGithub({
+        pull,
+        stackResponse,
+        comparison: { status: 'ahead', files: [] },
+        pullsByNumber: { 41: parentPull },
+      }).github,
+      context: reviewContext(),
+      core,
+    }),
+    true
+  )
+  assert.equal(outputs.get('scope_kind'), 'native-stack')
+  assert.equal(outputs.get('stack_id'), 'stack-42')
+
+  const unrelatedRoot = {
+    ...parentPull,
+    base: { ...parentPull.base, ref: 'feature/v3-ai' },
+  }
+  const notices = []
+  assert.equal(
+    await authorizeFinalReview({
+      github: reviewGithub({
+        pull,
+        stackResponse,
+        comparison: { status: 'ahead', files: [] },
+        pullsByNumber: { 41: unrelatedRoot },
+      }).github,
+      context: reviewContext(),
+      core: { ...core, notice: (message) => notices.push(message) },
+    }),
+    false
+  )
+  assert.equal(outputs.get('authorized'), 'false')
+  assert.match(notices.join('\n'), /consolidation branch/)
+})
+
+test('authorizes a pull request targeting a designated consolidation branch', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Consolidation change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/consolidation-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    true
+  )
+  assert.equal(outputs.get('scope_kind'), 'default')
+  assert.equal(outputs.get('stack_id'), '')
+})
+
+test('keeps the pending status for a consolidation-branch pull request', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Consolidation change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/consolidation-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+      },
+    },
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
+    },
+  }
+
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'pending')
+  assert.match(
+    statuses[0].description,
+    /Manual .* final review required for this head/
+  )
+})
+
+test('rejects a pull request targeting an unlisted integration branch', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Unlisted branch change',
+    base: {
+      ref: 'release/integration',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/unlisted-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+      },
+    },
+    request: async () => ({ data: [] }),
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
+    },
+  }
+
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'error')
+  assert.equal(
+    statuses[0].description,
+    'Final review requires the default branch, a designated consolidation branch, or a verified native stack member'
+  )
+})
+
+test('explains every eligible base option when authorization is denied', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Unlisted branch change',
+    base: {
+      ref: 'release/integration',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/unlisted-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const notices = []
+  const core = {
+    notice: (message) => notices.push(message),
+    setOutput: () => {},
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    false
+  )
+  assert.deepEqual(notices, [
+    'Final review requires an open, ready PR targeting the default branch, a designated consolidation branch, or a verified native stack',
+  ])
+})
+
+test('selects incremental attestation only for bounded repaired changes', async () => {
+  const baseSha = 'b'.repeat(40)
+  const rootHead = '1'.repeat(40)
+  const headSha = '2'.repeat(40)
+  const rootPull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Incremental review',
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/incremental-review',
+      sha: rootHead,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull: rootPull,
+    statuses: [{ context: 'final-ai-review', state: 'success' }],
+  })
+  const context = reviewContext()
+  const rootPlan = await buildReviewPlan({
+    github,
+    context,
+    pull: rootPull,
+  })
+  const rootResult = completeReviewResult([
+    {
+      path: 'src/example.ts',
+      content:
+        'Confidence: 80/100\nAutofix: manual\nMotivating line: `return value`\nFix the runtime failure.',
+      start_line: 10,
+      end_line: 10,
+      category: 'bug',
+      severity: 'high',
+    },
+  ])
+  const [rootBody] = renderFinalReviewChunks(rootResult, rootHead, {
+    baseRef: rootPull.base.ref,
+    baseRepo: rootPull.base.repo.full_name,
+    baseSha,
+    headRef: rootPull.head.ref,
+    headRepo: rootPull.head.repo.full_name,
+    mode: 'full',
+    policyDigest: rootPlan.policyDigest,
+    backgroundDigest: rootPlan.backgroundDigest,
+    scopeKind: rootPlan.scopeKind,
+    stackId: rootPlan.stackId,
+    stackOrderDigest: rootPlan.stackOrderDigest,
+    trustedPolicySha: 'd'.repeat(40),
+    workflowHeadSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
+    workflowRunId: 123,
+  })
+  const rootMetadata = parseReviewMetadata(rootBody)
+  const disposition = `<!-- final-ai-disposition/v1 ${JSON.stringify({
+    schema_version: 'final-ai-disposition/v1',
+    review_id: rootMetadata.review_id,
+    root_head: rootHead,
+    workflow_run_id: 123,
+    entries: [
+      {
+        finding_id: rootMetadata.finding_ids[0],
+        state: 'fixed',
+        reference: `commit:${rootHead}`,
+        paths: ['src/example.ts', 'src/example.test.ts'],
+      },
+    ],
+  })} -->`
+
+  state.pull = {
+    ...rootPull,
+    head: { ...rootPull.head, sha: headSha },
+  }
+  state.reviews = [
+    {
+      id: 501,
+      body: rootBody,
+      commit_id: rootHead,
+      state: 'COMMENTED',
+      submitted_at: '2026-08-25T00:00:00Z',
+      user: { login: 'github-actions[bot]' },
+    },
+  ]
+  state.comments = [
+    {
+      body: disposition,
+      created_at: '2026-08-25T01:00:00Z',
+      user: { login: 'reviewer' },
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: 'd'.repeat(40),
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      updated_at: '2026-08-25T00:00:00Z',
+    },
+  ]
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+  }
+
+  const incremental = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(incremental.mode, 'incremental')
+  assert.equal(incremental.rootHead, rootHead)
+  assert.equal(incremental.rootReviewId, rootMetadata.review_id)
+  assert.deepEqual(incremental.dispositionIds, [rootMetadata.finding_ids[0]])
+  const [incrementalBody] = renderFinalReviewChunks(rootResult, headSha, {
+    backgroundDigest: incremental.backgroundDigest,
+    baseRef: state.pull.base.ref,
+    baseRepo: state.pull.base.repo.full_name,
+    baseSha: state.pull.base.sha,
+    dispositionDigest: incremental.dispositionDigest,
+    dispositionIds: incremental.dispositionIds,
+    headRef: state.pull.head.ref,
+    headRepo: state.pull.head.repo.full_name,
+    mode: incremental.mode,
+    rootHead: incremental.rootHead,
+    rootReviewId: incremental.rootReviewId,
+    policyDigest: incremental.policyDigest,
+    scopeKind: incremental.scopeKind,
+    stackId: incremental.stackId,
+    stackOrderDigest: incremental.stackOrderDigest,
+    stackPosition: incremental.stackPosition,
+    trustedPolicySha: 'd'.repeat(40),
+    workflowHeadSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
+    workflowRunId: 123,
+  })
+  const incrementalMetadata = parseReviewMetadata(incrementalBody)
+  assert.equal(
+    incrementalMetadata.disposition_digest,
+    incremental.dispositionDigest
+  )
+  state.reviews = [
+    state.reviews[0],
+    {
+      body: incrementalBody,
+      commit_id: headSha,
+      state: 'COMMENTED',
+      submitted_at: '2026-08-25T02:00:00Z',
+      user: { login: 'github-actions[bot]' },
+    },
+  ]
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull: state.pull,
+      plan: incremental,
+    }),
+    true
+  )
+
+  state.comments = []
+  const withoutDisposition = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(withoutDisposition.mode, 'full')
+
+  state.comments = [{ body: disposition, user: { login: 'reviewer' } }]
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'package.json', additions: 1, deletions: 1 }],
+  }
+  const materialChange = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(materialChange.mode, 'full')
+
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.test.ts', additions: 4, deletions: 2 }],
+  }
+  const relatedCompanion = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(relatedCompanion.mode, 'incremental')
+
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'docs/unrelated.md', additions: 1, deletions: 0 }],
+  }
+  const unrelatedCompanion = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(unrelatedCompanion.mode, 'full')
+
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+  }
+  state.permission = 'read'
+  const untrustedDisposition = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(untrustedDisposition.mode, 'full')
+  state.permission = 'write'
+
+  state.comments = [
+    {
+      body: disposition.replace('"state":"fixed"', '"state":"follow-up"'),
+      user: { login: 'reviewer' },
+    },
+  ]
+  const deferredDisposition = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(deferredDisposition.mode, 'incremental')
+  state.comments = [{ body: disposition, user: { login: 'reviewer' } }]
+
+  state.rules = '{"rules":["changed"]}'
+  const changedDigest = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(changedDigest.mode, 'full')
+  state.rules = '{"rules":[]}'
+
+  state.policyFiles['.github/workflows/check-ocr-final-review.yml'] =
+    'changed trusted workflow'
+  const changedPolicy = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(changedPolicy.mode, 'full')
+  delete state.policyFiles['.github/workflows/check-ocr-final-review.yml']
+
+  state.pull = {
+    ...state.pull,
+    base: { ...state.pull.base, sha: 'c'.repeat(40) },
+  }
+  state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/unrelated.ts', additions: 3, deletions: 1 }],
+  }
+  state.comparisons[`${baseSha}...${rootHead}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+  }
+  const advancedBase = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(advancedBase.mode, 'incremental')
+  for (const file of [
+    {
+      filename: 'src/unrelated.ts',
+      previous_filename: '.github/workflows/old.yml',
+      additions: 3,
+      deletions: 1,
+    },
+    {
+      filename: 'src/unrelated.ts',
+      previous_filename: 'src/example.ts',
+      additions: 3,
+      deletions: 1,
+    },
+  ]) {
+    state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+      status: 'ahead',
+      files: [file],
+    }
+    const renamedBase = await buildReviewPlan({
+      github,
+      context,
+      pull: state.pull,
+    })
+    assert.equal(renamedBase.mode, 'full')
+  }
+  assert.equal(requiresColdIncrementalReview('.github/review-policy.md'), true)
+  state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 3, deletions: 1 }],
+  }
+  const reviewedBasePath = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(reviewedBasePath.mode, 'full')
+  state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 3, deletions: 1 }],
+  }
+  const interactingBase = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(interactingBase.mode, 'full')
+  state.pull = {
+    ...state.pull,
+    base: { ...state.pull.base, sha: baseSha },
+  }
+
+  state.comparison = {
+    status: 'behind',
+    files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+  }
+  const nonDescendant = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(nonDescendant.mode, 'full')
+
+  state.comparison = {
+    status: 'ahead',
+    files: Array.from({ length: 21 }, (_, index) => ({
+      filename: `docs/change-${index}.md`,
+      additions: 1,
+      deletions: 0,
+    })),
+  }
+  const overBound = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(overBound.mode, 'full')
+
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+  }
+  state.comments = [
+    {
+      body: `<!-- final-ai-disposition/v1 ${JSON.stringify({
+        schema_version: 'final-ai-disposition/v1',
+        review_id: rootMetadata.review_id,
+        root_head: rootHead,
+        workflow_run_id: 123,
+        entries: [
+          {
+            finding_id: rootMetadata.finding_ids[0],
+            state: 'fixed',
+            reference: `commit:${rootHead}`,
+            paths: ['src/example.ts'],
+          },
+          {
+            finding_id: rootMetadata.finding_ids[0],
+            state: 'fixed',
+            reference: `commit:${rootHead}`,
+            paths: ['src/example.ts'],
+          },
+        ],
+      })} -->`,
+      user: { login: 'reviewer' },
+    },
+  ]
+  const duplicateDisposition = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(duplicateDisposition.mode, 'full')
+})
+
+test('rejects incomplete or wrong-model OCR results', () => {
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          llm: { model: 'wrong-model' },
+        },
+        'a'.repeat(40)
+      ),
+    /unexpected model/
+  )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          summary: { budget_exceeded: true },
+        },
+        'a'.repeat(40)
+      ),
+    /exhausted/
+  )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          summary: undefined,
+        },
+        'a'.repeat(40)
+      ),
+    /review summary/
+  )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          summary: {
+            ...completeReviewResult().summary,
+            comments: 1,
+          },
+          comments: [
+            {
+              path: 'src/example.ts',
+              content: 'Missing the required evidence fields.',
+              start_line: 1,
+              end_line: 1,
+              category: 'bug',
+              severity: 'high',
+            },
+          ],
+        },
+        'a'.repeat(40),
+        {
+          policyDigest: '2'.repeat(64),
+          trustedPolicySha: 'd'.repeat(40),
+          workflowHeadSha: 'd'.repeat(40),
+          workflowSha: 'd'.repeat(40),
+        }
+      ),
+    /confidence score/
+  )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          status: 'partial',
+          manifest: {
+            schema_version: 'ocr.run-manifest/v1',
+            terminal_state: 'partial',
+          },
+        },
+        'a'.repeat(40)
+      ),
+    /unexpected terminal status/
+  )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          warnings: [{ code: 'partial-coverage' }],
+        },
+        'a'.repeat(40)
+      ),
+    /coverage warnings/
+  )
+})
+
+test('rejects malformed native stack membership instead of inferring topology', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Malformed stack payload',
+    base: {
+      ref: 'rs/parent-change',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/child-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({
+    pull,
+    stackResponse: [{ id: 'stack-42', pull_requests: [{ number: 42 }] }],
+  })
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    false
+  )
+  assert.equal(outputs.get('authorized'), 'false')
+})
+
+test('rejects a report that would require partial publication', () => {
+  const comments = Array.from({ length: 5 }, (_, index) => ({
+    path: `src/example-${index}.ts`,
+    content: `Confidence: 75/100\nAutofix: manual\nMotivating line: \`return value\`\n${'x'.repeat(11_000)}`,
+    start_line: index + 1,
+    end_line: index + 1,
+    category: 'bug',
+    severity: 'high',
+  }))
+
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(completeReviewResult(comments), 'a'.repeat(40), {
+        policyDigest: '2'.repeat(64),
+        trustedPolicySha: 'd'.repeat(40),
+        workflowHeadSha: 'd'.repeat(40),
+        workflowSha: 'd'.repeat(40),
+      }),
+    /report limit/
+  )
+})
+
+test('only succeeds a status for a complete review on the current head', () => {
+  const success = decideFinalStatus({
+    reviewedHead: 'a',
+    currentHead: 'a',
+    reviewedBase: 'base-a',
+    currentBase: 'base-a',
+    eligible: true,
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+  assert.equal(success.state, 'success')
+
+  const stale = decideFinalStatus({
+    reviewedHead: 'a',
+    currentHead: 'b',
+    reviewedBase: 'base-a',
+    currentBase: 'base-a',
+    eligible: true,
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+  assert.equal(stale.state, 'error')
+
+  const staleBase = decideFinalStatus({
+    reviewedHead: 'a',
+    currentHead: 'a',
+    reviewedBase: 'base-a',
+    currentBase: 'base-b',
+    eligible: false,
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+  assert.equal(staleBase.state, 'error')
+
+  const failed = decideFinalStatus({
+    reviewedHead: 'a',
+    currentHead: 'a',
+    reviewedBase: 'base-a',
+    currentBase: 'base-a',
+    eligible: true,
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'failure',
+  })
+  assert.equal(failed.state, 'failure')
+})
+
+test('terminalizes the individual status when revalidation throws', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/final-review-failure',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const context = reviewContext()
+  const { github, state } = reviewGithub({
+    pull,
+    statuses: [
+      {
+        context: 'final-ai-review',
+        state: 'pending',
+        target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      },
+    ],
+  })
+  github.rest.pulls.get = async () => {
+    throw new Error('temporary PR revalidation failure')
+  }
+  github.rest.repos.createCommitStatus = async (status) => {
+    state.statuses.unshift(status)
+  }
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha: pull.base.sha,
+    headSha: pull.head.sha,
+    reviewOutcome: 'failure',
+    cleanupOutcome: 'failure',
+    publishOutcome: 'failure',
+    cleanReview: 'false',
+  })
+
+  assert.equal(state.statuses[0].state, 'error')
+  assert.equal(
+    state.statuses[0].description,
+    'Final review provenance could not be re-verified after review'
+  )
+})
+
+test('does not overwrite a newer individual-review status during finalization', async () => {
+  const baseSha = 'b'.repeat(40)
+  const headSha = 'a'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'feature/review',
+      sha: headSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const statusEndpoint = async () => ({ data: [] })
+  const github = {
+    rest: {
+      pulls: { get: async () => ({ data: pull }) },
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+        listCommitStatusesForRef: statusEndpoint,
+      },
+    },
+    paginate: async (endpoint) => {
+      assert.equal(endpoint, statusEndpoint)
+      return [
+        {
+          context: 'final-ai-review',
+          state: 'pending',
+          target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+        },
+      ]
+    },
+  }
+  const context = {
+    payload: { repository: { default_branch: 'v3' } },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 702,
+    serverUrl: 'https://github.com',
+  }
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha,
+    headSha,
+    scopeKind: 'default',
+    stackId: '',
+    stackPosition: '',
+    stackOrderDigest: '',
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+
+  assert.equal(statuses.length, 0)
+})
+
+test('terminalizes over a later passive manual-review status for the same head', async () => {
+  const baseSha = 'b'.repeat(40)
+  const headSha = 'a'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'feature/review',
+      sha: headSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    statuses: [
+      {
+        context: 'final-ai-review',
+        state: 'pending',
+        description: `Manual ${FINAL_REVIEW_MODEL} final review required for this head`,
+        target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+      },
+    ],
+  })
+  const context = {
+    payload: { repository: { default_branch: 'v3' } },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 702,
+    serverUrl: 'https://github.com',
+  }
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha,
+    headSha,
+    scopeKind: 'default',
+    stackId: '',
+    stackPosition: '',
+    stackOrderDigest: '',
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+
+  assert.equal(state.createdStatuses.length, 1)
+  assert.equal(state.createdStatuses[0].state, 'success')
+  assert.equal(
+    state.createdStatuses[0].description,
+    `${FINAL_REVIEW_MODEL} final review completed for this head`
+  )
+})
+
+test('rejects duplicate disposition markers as ambiguous', () => {
+  const record = {
+    schema_version: 'final-ai-disposition/v1',
+    review_id: `frv-${'a'.repeat(24)}`,
+    root_head: 'b'.repeat(40),
+    workflow_run_id: 1,
+    entries: [],
+  }
+  const marker = `<!-- final-ai-disposition/v1 ${JSON.stringify(record)} -->`
+
+  assert.deepEqual(parseDispositionRecord(marker), record)
+  assert.equal(parseDispositionRecord(`${marker}\n${marker}`), null)
+})
+
+test('treats chore/promote-stg-* as ordinary final-review policy', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Legacy-named staging change',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'chore/promote-stg-123456789abc',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+      },
+    },
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
+    },
+  }
+
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'pending')
+  assert.equal(
+    statuses[0].description,
+    `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
+  )
+
+  const source = fs.readFileSync(
+    path.join(__dirname, 'final-ai-review.js'),
+    'utf8'
+  )
+  assert.doesNotMatch(
+    source,
+    /Generated staging promotion|isPromotionCandidate|validatePromotionContract/
+  )
+})

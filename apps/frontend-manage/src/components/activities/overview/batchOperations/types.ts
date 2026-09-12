@@ -1,4 +1,5 @@
 export type ActivityBatchOperationActions = {
+  deleteActivities: boolean
   multiplier?: string
   course?: {
     id?: string
@@ -19,6 +20,7 @@ export type ActivityBatchOperationActions = {
 
 export const INITIAL_ACTIVITY_BATCH_OPERATIONS: ActivityBatchOperationActions =
   {
+    deleteActivities: false,
     multiplier: undefined,
     course: undefined,
     liveQuizPoints: undefined,

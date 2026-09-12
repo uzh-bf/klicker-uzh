@@ -4,9 +4,7 @@ from .aggregate_analytics import aggregate_analytics
 from .save_participant_analytics import save_participant_analytics
 
 
-def compute_participant_analytics(
-    db, start_date, end_date, timestamp, analytics_type="DAILY", verbose=False
-):
+def compute_participant_analytics(db, start_date, end_date, timestamp, analytics_type="DAILY", verbose=False):
     df_details = get_participant_responses(db, start_date, end_date, verbose)
 
     # Compute the correctness of each question response detail

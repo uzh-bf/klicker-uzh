@@ -1,0 +1,20 @@
+mutation ShareElementsBatch(
+  $elementIds: [Int!]!
+  $permissionLevel: PermissionLevel!
+  $shortnameOrEmail: String
+  $userGroupId: Int
+) {
+  shareElementsBatch(
+    elementIds: $elementIds
+    permissionLevel: $permissionLevel
+    shortnameOrEmail: $shortnameOrEmail
+    userGroupId: $userGroupId
+  ) {
+    targetError
+    outcomes {
+      elementId
+      status
+      reason
+    }
+  }
+}

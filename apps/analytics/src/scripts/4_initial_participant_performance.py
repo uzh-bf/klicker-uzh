@@ -1,7 +1,6 @@
 # This script computes the initial participant performance analytics
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-import os
 from prisma import Prisma
 import pandas as pd
 import sys
@@ -35,7 +34,7 @@ df_courses = get_running_past_courses(db)
 # Iterate over the course and fetch all question responses linked to it
 for idx, course in df_courses.iterrows():
     course_id = course["id"]
-    print(f"Processing course", idx, "of", len(df_courses), "with id", course_id)
+    print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
     # fetch all question responses linked to this course
     question_responses = db.questionresponse.find_many(where={"courseId": course_id})

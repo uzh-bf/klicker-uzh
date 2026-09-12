@@ -59,6 +59,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-response-api
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-response-api
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           # TODO: add liveness and readiness probes to container
           # livenessProbe:
           #   httpGet:
@@ -143,6 +146,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-response-api-assessment
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-response-api-assessment
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           # TODO: add liveness and readiness probes to container
           # livenessProbe:
           #   httpGet:

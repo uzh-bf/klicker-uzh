@@ -2,7 +2,6 @@ import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 function QuestionContent({

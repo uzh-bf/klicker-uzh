@@ -1,15 +1,10 @@
-import {
-  LeaderboardType,
-  PrismaClient,
-  TimelineEntryType,
-} from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { LeaderboardType, TimelineEntryType } from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // fetch all participants
   const participants = await prisma.participant.findMany()
 

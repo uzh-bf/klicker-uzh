@@ -1,0 +1,235 @@
+// ----- ELEMENTS -----
+// #region
+enum ElementStatus {
+  DRAFT
+  REVIEW
+  READY
+}
+
+enum ElementType {
+  SC
+  MC
+  KPRIM
+  FREE_TEXT
+  NUMERICAL
+  CONTENT
+  FLASHCARD
+  SELECTION
+  CASE_STUDY
+}
+
+model Element {
+  id Int @id @default(autoincrement())
+
+  version    Int     @default(1) // used to track question versions, incremented on each update
+  originalId String?
+
+  isArchived Boolean @default(false)
+  isDeleted  Boolean @default(false)
+
+  name        String
+  content     String // markdown content
+  explanation String? // markdown content
+
+  basePoints       Boolean @default(true) // flag to determine if base points should be awarded for answers to this question
+  pointsMultiplier Int     @default(1) // currently only relevant for QUESTION types
+
+  /// [PrismaElementOptions]
+  options Json
+
+  status ElementStatus @default(READY)
+  type   ElementType
+
+  tags Tag[]
+
+  elementInstances ElementInstance[]
+  feedbacks        ElementFeedback[]
+
+  answerCollectionItems AnswerCollectionEntry[] @relation("ElementAnswerCollectionUsedItems")
+  answerCollection      AnswerCollection?       @relation(fields: [answerCollectionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  answerCollectionId    Int?
+
+  directPermissions  Permission[]
+  permissions        DerivedPermission[]
+  accessRequests     AccessRequest[]
+  catalogAssignments CatalogCollectionAssignment[]
+  activityLog        ActivityLogEntry[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ElementInstanceType {
+  LIVE_QUIZ
+  PRACTICE_QUIZ
+  MICROLEARNING
+  GROUP_ACTIVITY
+}
+
+model ElementInstance {
+  id Int @id @default(autoincrement())
+
+  type        ElementInstanceType
+  elementType ElementType
+  order       Int
+
+  /// [PrismaElementInstanceOptions]
+  options Json // contains element type specific settings (resetTimeDays for LE instances, pointsMultiplier where relevant)
+
+  /// [PrismaElementData]
+  elementData Json // contains a copy of relevant element data
+
+  /// [PrismaElementResults]
+  results Json // contains the collection of gathered results by logged in participants
+
+  /// [PrismaElementResults]
+  anonymousResults Json // contains the collection of gathered results by anonymous participants
+
+  isVersionOutdated Boolean @default(false) // flag to indicate if the element version has changed since the instance was created
+
+  responses           QuestionResponse[]
+  detailResponses     QuestionResponseDetail[]
+  liveQuizResponses   LiveQuizResponse[]
+  feedbacks           ElementFeedback[]
+  instanceStatistics  InstanceStatistics?
+  instancePerformance InstancePerformance?
+  corrections         PointCorrection[]
+
+  element        Element       @relation(fields: [elementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementId      Int
+  elementStack   ElementStack? @relation(fields: [elementStackId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementStackId Int?
+  elementBlock   ElementBlock? @relation(fields: [elementBlockId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementBlockId Int?
+  owner          User          @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId        String        @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, elementStackId, order])
+  @@unique([type, elementBlockId, order])
+}
+
+model InstanceStatistics {
+  anonymousCorrectCount        Int?
+  anonymousPartialCorrectCount Int?
+  anonymousWrongCount          Int?
+
+  // aggregated element feedbacks of all students (only last feedback)
+  upvoteCount   Int?
+  downvoteCount Int?
+
+  // only logged in participants impact the following counts (consistent with results)
+  correctCount             Int  @default(0)
+  partialCorrectCount      Int  @default(0)
+  wrongCount               Int  @default(0)
+  firstCorrectCount        Int?
+  firstPartialCorrectCount Int?
+  firstWrongCount          Int?
+  lastCorrectCount         Int?
+  lastPartialCorrectCount  Int?
+  lastWrongCount           Int?
+
+  // only logged in participants impact the following counts (consistent with results and counts above)
+  uniqueParticipantCount Int    @default(0)
+  averageTimeSpent       Float? @db.Real // computed based on averageTimeSpent per participant
+
+  elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  elementInstanceId Int             @id
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ElementStackType {
+  PRACTICE_QUIZ
+  MICROLEARNING
+  GROUP_ACTIVITY
+}
+
+model ElementStack {
+  id Int @id @default(autoincrement())
+
+  type  ElementStackType
+  order Int
+
+  displayName String?
+  description String?
+
+  elements     ElementInstance[]
+  bookmarkedBy Participation[]
+
+  practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  practiceQuizId String?       @db.Uuid
+
+  microLearning   MicroLearning? @relation(fields: [microLearningId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  microLearningId String?        @db.Uuid
+
+  groupActivity   GroupActivity? @relation(fields: [groupActivityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  groupActivityId String?        @unique @db.Uuid
+
+  course   Course? @relation(fields: [courseId], references: [id])
+  courseId String? @db.Uuid
+
+  @@unique([type, practiceQuizId, order])
+  @@unique([type, microLearningId, order])
+  @@unique([type, groupActivityId, order])
+}
+
+enum ElementBlockStatus {
+  SCHEDULED
+  ACTIVE
+  EXECUTED
+}
+
+model ElementBlock {
+  id    Int @id @default(autoincrement())
+  order Int
+
+  timeLimit       Int?
+  expiresAt       DateTime?
+  randomSelection Int?
+  execution       Int                @default(0)
+  status          ElementBlockStatus @default(SCHEDULED)
+
+  startedAt DateTime?
+  closedAt  DateTime?
+
+  elements ElementInstance[]
+
+  liveQuiz         LiveQuiz   @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId       String     @db.Uuid
+  activeInLiveQuiz LiveQuiz[] @relation(name: "ActiveElementBlock")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([liveQuizId, order])
+}
+
+// #endregion
+
+// ----- TAGS AND SKILLS -----
+// #region
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  order Int @default(0)
+
+  questions Element[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+}
+
+// #endregion

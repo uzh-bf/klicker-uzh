@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // fetch all practice quizzes, including the corresponding course
   const practiceQuizzes = await prisma.practiceQuiz.findMany({
     where: { isDeleted: false },

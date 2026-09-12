@@ -1,32 +1,38 @@
-[tool.poetry]
-name = "@klicker-uzh/analytics"
+[project]
+name = "klicker-uzh-analytics"
 version = "0.0.1"
-description = ""
-authors = ["Roland Schlaefli <roland.schlaefli@df.uzh.ch>", "Julius Schlapbach <julius.schlapbach@df.uzh.ch>"]
+description = "Learning analytics service for KlickerUZH."
+authors = [
+  { name = "Roland Schlaefli", email = "roland.schlaefli@df.uzh.ch" },
+  { name = "Julius Schlapbach", email = "julius.schlapbach@df.uzh.ch" },
+]
 license = "AGPL-3.0"
 readme = "README.md"
-package-mode = false
+requires-python = ">=3.12,<4.0"
+dependencies = [
+  "jinja2==3.1.6",
+  "pandas==2.2.2",
+  "prisma==0.15.0",
+  "xlsxwriter==3.2.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-pandas = "2.2.2"
-prisma = "0.15.0"
-xlsxwriter = "3.2.0"
+[dependency-groups]
+dev = [
+  "ipykernel==6.29.5",
+  "pyright==1.1.376",
+  "ruff>=0.15.18",
+]
 
-[tool.poetry.dev-dependencies]
-poethepoet = "0.27.0"
-ipykernel = "6.29.5"
-
-[tool.poetry.group.dev.dependencies]
-pyright = "1.1.376"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poe.tasks]
-generate = "prisma generate"
-main = "../../util/_run_with_infisical.sh --env dev python -m src.main"
+[tool.uv]
+package = false
+exclude-newer = "14d"
 
 [tool.pyright]
 typeCheckingMode = "strict"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]

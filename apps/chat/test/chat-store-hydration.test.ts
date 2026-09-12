@@ -46,6 +46,7 @@ describe('chatStore hydration', () => {
           id: 'thread-1',
           title: 'Thread',
           createdAt: new Date('2026-04-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-04-14T00:00:00.000Z'),
           isRunning: false,
           messages: [
             buildMessage({
@@ -152,6 +153,7 @@ describe('chatStore hydration', () => {
           id: 'thread-1',
           title: 'Thread',
           createdAt: new Date('2026-04-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-04-14T00:00:00.000Z'),
           isRunning: false,
           messages: [
             buildMessage({
@@ -240,6 +242,7 @@ describe('chatStore hydration', () => {
           id: 'thread-1',
           title: 'Thread',
           createdAt: new Date('2026-04-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-04-14T00:00:00.000Z'),
           isRunning: false,
           messages: [
             buildMessage({
@@ -351,6 +354,7 @@ describe('chatStore hydration', () => {
           id: 'thread-1',
           title: 'Thread',
           createdAt: new Date('2026-04-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-04-14T00:00:00.000Z'),
           isRunning: false,
           messages: [hydratedMessage],
           allMessages: [hydratedMessage],
@@ -397,6 +401,7 @@ describe('chatStore hydration', () => {
           id: 'thread-1',
           title: 'Thread',
           createdAt: new Date('2026-04-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-04-14T00:00:00.000Z'),
           isRunning: false,
           messages: [previewOnlyMessage],
           allMessages: [previewOnlyMessage],

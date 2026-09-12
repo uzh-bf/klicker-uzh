@@ -1,5 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "include": ["./src/**/*", "./scripts/**/*"],
-  "exclude": ["./instrumented/**/*"]
+  "exclude": ["./instrumented/**/*"],
+  "compilerOptions": {
+    "noEmit": true,
+    "tsBuildInfoFile": "dist/tsconfig.check.tsbuildinfo"
+  }
 }

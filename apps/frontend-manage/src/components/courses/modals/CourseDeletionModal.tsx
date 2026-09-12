@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  DeleteCourseDocument,
-  GetCourseSummaryDocument,
+  GetCourseDeletionSummaryDocument,
   GetUserCoursesDocument,
+  RequestCourseDeletionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Modal } from '@uzh-bf/design-system'
+import { Modal, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
@@ -19,6 +19,16 @@ export interface CourseDeletionConfirmationType {
   deleteLeaderboardEntries: boolean
 }
 
+const initialConfirmations: CourseDeletionConfirmationType = {
+  deleteParticipations: false,
+  disconnectLiveQuizzes: false,
+  deletePracticeQuizzes: false,
+  deleteMicroLearnings: false,
+  deleteGroupActivities: false,
+  deleteParticipantGroups: false,
+  deleteLeaderboardEntries: false,
+}
+
 function CourseDeletionModal({
   onClose,
   courseId,
@@ -26,30 +36,35 @@ function CourseDeletionModal({
   onClose: () => void
   courseId: string | null
 }) {
-  const initialConfirmations: CourseDeletionConfirmationType = {
-    deleteParticipations: false,
-    disconnectLiveQuizzes: false,
-    deletePracticeQuizzes: false,
-    deleteMicroLearnings: false,
-    deleteGroupActivities: false,
-    deleteParticipantGroups: false,
-    deleteLeaderboardEntries: false,
-  }
-
   const [confirmations, setConfirmations] =
     useState<CourseDeletionConfirmationType>({
       ...initialConfirmations,
     })
+  const [deleteDraftActivities, setDeleteDraftActivities] = useState(false)
+  const [requestError, setRequestError] = useState<
+    'activeLiveQuiz' | 'generic' | null
+  >(null)
   const t = useTranslations()
 
   // fetch course information
-  const { data, loading: queryLoading } = useQuery(GetCourseSummaryDocument, {
-    variables: { courseId: courseId ?? '' },
-    skip: !courseId,
-  })
+  const { data, loading: queryLoading } = useQuery(
+    GetCourseDeletionSummaryDocument,
+    {
+      variables: { courseId: courseId ?? '' },
+      skip: !courseId,
+    }
+  )
 
-  const [deleteCourse, { loading: courseDeleting }] =
-    useMutation(DeleteCourseDocument)
+  const [requestCourseDeletion, { loading: courseDeleting }] = useMutation(
+    RequestCourseDeletionDocument
+  )
+
+  const closeModal = () => {
+    onClose()
+    setConfirmations({ ...initialConfirmations })
+    setDeleteDraftActivities(false)
+    setRequestError(null)
+  }
 
   // skip confirmation for the elements where none are present
   useEffect(() => {
@@ -79,10 +94,7 @@ function CourseDeletionModal({
     <Modal
       open
       loading={queryLoading || !summary}
-      onClose={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      onClose={closeModal}
       className={{ content: 'w-full! max-w-240' }}
       title={t('manage.courseList.deleteCourse')}
       primaryLabel={t('shared.generic.confirm')}
@@ -93,43 +105,63 @@ function CourseDeletionModal({
         Object.values(confirmations).some((confirmation) => !confirmation)
       }
       onPrimaryAction={async () => {
-        await deleteCourse({
-          variables: { id: courseId },
-          optimisticResponse: {
-            __typename: 'Mutation',
-            deleteCourse: {
-              __typename: 'Course',
-              id: courseId,
+        try {
+          await requestCourseDeletion({
+            variables: { id: courseId, deleteDraftActivities },
+            optimisticResponse: {
+              __typename: 'Mutation',
+              requestCourseDeletion: {
+                __typename: 'CourseDeletionRequestPayload',
+                courseId,
+              },
             },
-          },
-          update: (cache, { data }) => {
-            // check if the deletion was successful
-            if (!data?.deleteCourse) return
+            update: (cache, { data }) => {
+              const requestedCourseId = data?.requestCourseDeletion?.courseId
+              if (!requestedCourseId) return
 
-            // remove the course from the queries list
-            cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
-              userCourses: qData?.userCourses?.filter(
-                (course) => course.id !== data.deleteCourse!.id
-              ),
-            }))
-          },
-        })
-        onClose()
-        setConfirmations({ ...initialConfirmations })
+              cache.updateQuery({ query: GetUserCoursesDocument }, (qData) => ({
+                userCourses: qData?.userCourses?.filter(
+                  (course) => course.id !== requestedCourseId
+                ),
+              }))
+            },
+          })
+          closeModal()
+        } catch (error) {
+          const code = (
+            error as {
+              graphQLErrors?: { extensions?: { code?: string } }[]
+            }
+          )?.graphQLErrors?.[0]?.extensions?.code
+          setRequestError(
+            code === 'COURSE_DELETION_ACTIVE_LIVE_QUIZ'
+              ? 'activeLiveQuiz'
+              : 'generic'
+          )
+        }
       }}
       dataPrimaryAction={{ cy: 'course-deletion-modal-confirm' }}
       secondaryLabel={t('shared.generic.close')}
-      onSecondaryAction={() => {
-        onClose()
-        setConfirmations({ ...initialConfirmations })
-      }}
+      onSecondaryAction={closeModal}
       dataSecondaryAction={{ cy: 'course-deletion-modal-cancel' }}
     >
+      {requestError && (
+        <UserNotification
+          type="error"
+          message={
+            requestError === 'activeLiveQuiz'
+              ? t('manage.courseList.courseDeletionActiveLiveQuiz')
+              : t('shared.generic.error')
+          }
+        />
+      )}
       {summary && (
         <CourseDeletionConfirmations
           summary={summary}
           confirmations={confirmations}
           setConfirmations={setConfirmations}
+          deleteDraftActivities={deleteDraftActivities}
+          setDeleteDraftActivities={setDeleteDraftActivities}
         />
       )}
     </Modal>

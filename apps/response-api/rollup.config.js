@@ -19,6 +19,10 @@ const config = defineConfig([
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/], // Exclude node_modules and specific external dependencies

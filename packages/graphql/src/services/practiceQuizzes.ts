@@ -8,13 +8,18 @@ import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
+  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { orderStacks } from '../lib/util.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  deleteWithPublicationStatusGuard,
+  persistActivityWithPermissions,
+  UNPUBLISHED_ACTIVITY_STATUSES,
+} from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -26,6 +31,7 @@ export async function getPracticeQuizData(
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
     where: {
       id,
+      course: { deletionRequestedAt: null },
       OR: [
         { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
         { status: DB.PublicationStatus.SCHEDULED },
@@ -86,7 +92,12 @@ export async function getPracticeQuizEvaluation(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
+    where: {
+      id,
+      status: DB.PublicationStatus.PUBLISHED,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       stacks: {
         include: { elements: { orderBy: { order: 'asc' } } },
@@ -117,7 +128,11 @@ export async function getSinglePracticeQuiz(
   ctx: Context
 ) {
   const quiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id, isDeleted: false },
+    where: {
+      id,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       course: true,
       stacks: {
@@ -135,7 +150,7 @@ export async function getCoursePublishedPracticeQuizzes(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       practiceQuizzes: {
         where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
@@ -179,12 +194,15 @@ export async function manipulatePracticeQuiz(
     order,
     resetTimeDays,
   }: ManipulatePracticeQuizArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  transactionPrisma?: PrismaTransactionClient
 ) {
+  const prisma = transactionPrisma ?? ctx.prisma
+
   // in EDIT mode - validate that the practice quiz exists and is not published
   let existingActivity: DB.PracticeQuiz | null = null
   if (id) {
-    existingActivity = await ctx.prisma.practiceQuiz.findUnique({
+    existingActivity = await prisma.practiceQuiz.findUnique({
       where: { id, isDeleted: false },
     })
 
@@ -197,7 +215,7 @@ export async function manipulatePracticeQuiz(
   }
 
   // get the course to which the practice quiz should be assigned
-  const course = await ctx.prisma.course.findUnique({
+  const course = await prisma.course.findUnique({
     where: { id: courseId },
     select: { isGamificationEnabled: true, isAssessmentEnabled: true },
   })
@@ -214,21 +232,21 @@ export async function manipulatePracticeQuiz(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
+  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx, prisma)
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
   let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let stacksToDelete: number[] = []
   if (id) {
-    const instances = await ctx.prisma.elementInstance.findMany({
+    const instances = await prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
         elementStack: { practiceQuizId: id },
       },
     })
 
-    const stacks = await ctx.prisma.elementStack.findMany({
+    const stacks = await prisma.elementStack.findMany({
       where: { practiceQuizId: id },
     })
 
@@ -278,106 +296,95 @@ export async function manipulatePracticeQuiz(
     course: { connect: { id: courseId } },
   }
 
-  const activity = await ctx.prisma.$transaction(
-    async (prisma) => {
-      // delete all instances that are not used anymore
-      await prisma.elementInstance.deleteMany({
-        where: { id: { in: instancesToDelete } },
-      })
+  const persistPracticeQuiz = async (prisma: PrismaTransactionClient) => {
+    // delete all instances that are not used anymore
+    await prisma.elementInstance.deleteMany({
+      where: { id: { in: instancesToDelete } },
+    })
 
-      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-      for (const instance of persistentInstances) {
-        const elementMultiplier =
-          'pointsMultiplier' in instance.elementData
-            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-            : 1
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
 
-        await prisma.elementInstance.update({
-          where: { id: instance.id },
-          data: {
-            elementStackId: null,
-            order: persistentInstanceOrderMap[instance.id],
-            options: {
-              ...instance.options,
-              resetTimeDays,
-              pointsMultiplier: multiplier * elementMultiplier,
-            },
+      await prisma.elementInstance.update({
+        where: { id: instance.id },
+        data: {
+          elementStackId: null,
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            resetTimeDays,
+            pointsMultiplier: multiplier * elementMultiplier,
           },
-        })
-      }
-
-      // delete all stacks
-      await prisma.elementStack.deleteMany({
-        where: { id: { in: stacksToDelete } },
-      })
-
-      const upsertedQuiz = await prisma.practiceQuiz.upsert({
-        where: { id: id ?? uuidv4() },
-        create: {
-          ...createOrUpdateJSON,
-          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
         },
-        update: createOrUpdateJSON,
-        include: {
-          templateInfo: true,
-          permissions: {
-            where: { userId: ctx.user.sub },
-            include: { directPermission: true },
-            take: 1,
-          },
-          course: {
-            include: {
-              _count: {
-                select: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+      })
+    }
+
+    // delete all stacks
+    await prisma.elementStack.deleteMany({
+      where: { id: { in: stacksToDelete } },
+    })
+
+    const upsertedQuiz = await prisma.practiceQuiz.upsert({
+      where: { id: id ?? uuidv4() },
+      create: {
+        ...createOrUpdateJSON,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      },
+      update: createOrUpdateJSON,
+      include: {
+        templateInfo: true,
+        permissions: {
+          where: { userId: ctx.user.sub },
+          include: { directPermission: true },
+          take: 1,
+        },
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
                     },
                   },
                 },
               },
             },
           },
-          stacks: {
-            include: { _count: { select: { elements: true } } },
-            orderBy: { order: 'asc' },
-          },
-          _count: { select: { permissions: true } },
         },
-      })
+        stacks: {
+          include: { _count: { select: { elements: true } } },
+          orderBy: { order: 'asc' },
+        },
+        _count: { select: { permissions: true } },
+      },
+    })
 
-      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-      if (unlinkedElementIds.length > 0) {
-        for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
-        }
+    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+    if (unlinkedElementIds.length > 0) {
+      for (const elementId of unlinkedElementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
       }
+    }
 
-      await recomputeDerivedPermissions(
-        { practiceQuizId: upsertedQuiz.id },
-        prisma
-      )
+    await recomputeDerivedPermissions(
+      { practiceQuizId: upsertedQuiz.id },
+      prisma
+    )
 
-      return upsertedQuiz
-    },
-    { timeout: 60000 }
-  )
+    return upsertedQuiz
+  }
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'PracticeQuiz',
-    id,
-  })
-
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
   const {
+    activity,
+    permissionLevel,
+    derived,
     isOwner,
     isManager,
     isEditor,
@@ -385,12 +392,12 @@ export async function manipulatePracticeQuiz(
     isShared,
     isRemovable,
     sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+  } = await persistActivityWithPermissions({
+    persist: persistPracticeQuiz,
+    invalidateTypename: 'PracticeQuiz',
+    invalidateId: id,
+    ctx,
+    transactionPrisma,
   })
 
   return {
@@ -448,6 +455,7 @@ export async function getBookmarksPracticeQuiz(
         courseId,
         participantId: ctx.user.sub,
       },
+      course: { deletionRequestedAt: null },
     },
     include: {
       bookmarkedElementStacks: {
@@ -502,7 +510,7 @@ export async function getPracticeQuizSummary(
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: { stacks: { include: { elements: true } } },
   })
 
@@ -630,7 +638,10 @@ export async function unpublishPracticeQuiz(
 }
 
 export async function deletePracticeQuiz(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
   const practiceQuiz = await ctx.prisma.practiceQuiz.findUnique({
@@ -642,16 +653,33 @@ export async function deletePracticeQuiz(
     return null
   }
 
+  const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
+    practiceQuiz.status
+  )
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the practice quiz is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    practiceQuiz.status === DB.PublicationStatus.DRAFT ||
-    practiceQuiz.status === DB.PublicationStatus.SCHEDULED ||
-    practiceQuiz.responses.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && practiceQuiz.responses.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.practiceQuiz.delete({
-      where: { id },
-    })
+    // Recheck publication status in the delete statement because the initial
+    // read can become stale while the user confirms the batch.
+    const deletedItem = onlyIfUnpublished
+      ? await deleteWithPublicationStatusGuard(() =>
+          ctx.prisma.practiceQuiz.delete({
+            where: { id, status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
+          })
+        )
+      : await ctx.prisma.practiceQuiz.delete({ where: { id } })
+
+    if (!deletedItem) {
+      return null
+    }
 
     // remove the scheduled publication task, if it exists (should only exist for scheduled practice quizzes)
     if (

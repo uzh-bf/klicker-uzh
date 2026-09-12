@@ -1,12 +1,14 @@
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { LangfuseSpanProcessor } = await import('@langfuse/otel')
-    const { NodeTracerProvider } = await import('@opentelemetry/sdk-trace-node')
-
-    const langfuseSpanProcessor = new LangfuseSpanProcessor()
-
-    const tracerProvider = new NodeTracerProvider()
-    tracerProvider.addSpanProcessor(langfuseSpanProcessor)
-    tracerProvider.register()
+  if (process.env.NEXT_RUNTIME !== 'nodejs') {
+    return
   }
+
+  const [{ getChatModelRegistry }, { registerLangfuseTelemetry }] =
+    await Promise.all([
+      import('./lib/server/chatModelRegistry'),
+      import('./lib/server/langfuseTracing'),
+    ])
+
+  getChatModelRegistry()
+  await registerLangfuseTelemetry()
 }

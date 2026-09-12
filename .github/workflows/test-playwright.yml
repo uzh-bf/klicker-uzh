@@ -1,0 +1,295 @@
+name: Klicker automated testing with playwright
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [
+        opened,
+        synchronize,
+        reopened,
+        # Retained while the trusted reusable workflow at @v3 could still
+        # compute a partial draft plan; remove once the route change lands on v3.
+        ready_for_review,
+        edited,
+        converted_to_draft,
+        closed,
+      ]
+
+jobs:
+  # A closed pull request cancels its in-flight execution through the shared
+  # group without an API token. A draft conversion must not cancel, because a
+  # draft runs the same full suite.
+  cancel-closed-pr:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    concurrency:
+      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Finish closed pull request execution
+        run: ':'
+
+  # The called workflow is the only execution envelope. It recomputes the route
+  # and selector state from the immutable event payload. Drafts run the same
+  # full plan as ready pull requests, so the caller never gates on draft state.
+  test-playwright-execution:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    concurrency:
+      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
+    with:
+      route_hint: auto
+
+  # Always reports a status even when the canonical plan skips all tests.
+  # This job intentionally stays outside the reusable workflow's concurrency
+  # group so a stale reporter cannot block the current invocation.
+  test-playwright-status:
+    needs: test-playwright-execution
+    # Unconditional for open events: a skipped required context can count as
+    # acceptable, so cancellation must fail inside the job instead.
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+    steps:
+      - name: Check result
+        shell: bash
+        env:
+          DUPLICATE_RUN_ID: ${{ needs.test-playwright-execution.outputs.duplicate_run_id }}
+          EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
+          ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
+          MODE: ${{ needs.test-playwright-execution.outputs.mode }}
+          SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
+          SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
+          IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+        run: |
+          set -euo pipefail
+          {
+            printf 'route=%s\n' "${ROUTE:-unknown}"
+            printf 'mode=%s\n' "${MODE:-unknown}"
+            printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
+            printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
+            printf 'is_pull_request=%s\n' "${IS_PULL_REQUEST:-unknown}"
+            printf 'duplicate_run_id=%s\n' "${DUPLICATE_RUN_ID:-}"
+            printf 'execution_result=%s\n' "$EXECUTION_RESULT"
+          } > playwright-run-metadata.txt
+
+          {
+            echo '### Playwright route status'
+            echo
+            echo "- Route: \`${ROUTE:-unknown}\`"
+            echo "- Mode: \`${MODE:-unknown}\`"
+            echo "- Tests selected: \`${SHOULD_RUN:-unknown}\`"
+            echo "- Envelope result: \`$EXECUTION_RESULT\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # A cancelled invocation may be obsolete, but this job has no proof
+          # that a newer invocation survived. Keep the required status failed.
+          if [ "$EXECUTION_RESULT" = 'cancelled' ]; then
+            echo 'Playwright execution was cancelled without proven supersession.'
+            exit 1
+          fi
+          if [ "$EXECUTION_RESULT" != 'success' ]; then
+            echo 'Playwright execution envelope failed.'
+            exit 1
+          fi
+          if [ "$ROUTE" != 'hosted' ] && [ "$ROUTE" != 'public-pr' ]; then
+            echo 'Playwright execution returned an invalid route.'
+            exit 1
+          fi
+          # No reuse for a push or a pull request. The reusable workflow is
+          # pinned at @v3, so until this change is merged there it can still
+          # offer a duplicate run id from older code; the caller rejects every
+          # duplicate rather than trusting the offer. A reused run also cannot
+          # attest the full eight-shard execution that the source must prove.
+          if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
+            echo 'Playwright validation cannot be reused; it must run independently.'
+            exit 1
+          fi
+
+          # Every push and every pull request, draft or ready, must attest the
+          # complete trusted eight-shard execution plan; no selector result may
+          # skip it.
+          if [ "$MODE" != 'full' ]; then
+            echo 'Playwright execution did not use full mode.'
+            exit 1
+          fi
+          if [ "$SHOULD_RUN" != 'true' ]; then
+            echo 'Playwright execution did not select Playwright.'
+            exit 1
+          fi
+          if ! node <<'NODE'
+          const raw = process.env.SHARD_MATRIX ?? ''
+          let matrix
+          try {
+            matrix = JSON.parse(raw)
+          } catch {
+            process.exit(1)
+          }
+
+          const shards = matrix?.include
+          const complete =
+            matrix !== null &&
+            !Array.isArray(matrix) &&
+            Object.keys(matrix).length === 1 &&
+            Array.isArray(shards) &&
+            shards.length === 8 &&
+            shards.every(
+              (shard) =>
+                shard !== null &&
+                typeof shard === 'object' &&
+                !Array.isArray(shard) &&
+                Object.keys(shard).length === 2 &&
+                Number.isInteger(shard.shardIndex) &&
+                shard.shardIndex >= 1 && shard.shardIndex <= 8 &&
+                shard.shardTotal === 8
+            ) &&
+            new Set(shards.map((shard) => shard.shardIndex)).size === 8
+          process.exit(complete ? 0 : 1)
+          NODE
+          then
+            echo 'Playwright execution did not expose the complete eight-shard matrix.'
+            exit 1
+          fi
+
+          echo 'Playwright execution passed.'
+
+      - name: Upload run metadata
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-run-metadata
+          path: playwright-run-metadata.txt
+          retention-days: 7
+
+      # Queue inspection is best effort, hosted, and checkout-free. It runs
+      # for every non-cancelled open-event status report, including failures.
+      - name: Collect current-run queue telemetry
+        id: queue_telemetry
+        if: >-
+          always() &&
+          !cancelled()
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('node:fs')
+
+            const secondsBetween = (start, end) => {
+              if (!start || !end) return null
+              const seconds = (Date.parse(end) - Date.parse(start)) / 1000
+              return Number.isFinite(seconds) && seconds >= 0 ? seconds : null
+            }
+
+            const percentile = (values, fraction) => {
+              if (values.length === 0) return null
+              const sorted = [...values].sort((a, b) => a - b)
+              const index = Math.min(
+                sorted.length - 1,
+                Math.ceil(sorted.length * fraction) - 1
+              )
+              return sorted[index]
+            }
+
+            const jobClass = (name) => {
+              const value = name.toLowerCase()
+              if (value.includes('public-pr')) return 'public-pr'
+              if (value.includes('hosted')) return 'hosted'
+              if (value.includes('build')) return 'build'
+              if (value.includes('status')) return 'status'
+              if (value.includes('playwright')) return 'playwright'
+              return 'other'
+            }
+
+            const runId = Number(process.env.GITHUB_RUN_ID)
+            let report
+
+            try {
+              const jobs = await github.paginate(
+                github.rest.actions.listJobsForWorkflowRun,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                }
+              )
+              const records = jobs.map((job) => ({
+                jobClass: jobClass(job.name),
+                status: job.status ?? 'unknown',
+                conclusion: job.conclusion ?? null,
+                runner: job.runner_name ?? null,
+                queueSeconds: secondsBetween(
+                  job.created_at,
+                  job.started_at
+                ),
+                durationSeconds: secondsBetween(
+                  job.started_at,
+                  job.completed_at
+                ),
+              }))
+              const queueSeconds = records
+                .map((record) => record.queueSeconds)
+                .filter((value) => value !== null)
+
+              report = {
+                schema: 1,
+                phase: 'queue',
+                route: 'envelope',
+                runId,
+                jobCount: records.length,
+                queueObservedCount: queueSeconds.length,
+                queueP50Seconds: percentile(queueSeconds, 0.5),
+                queueP95Seconds: percentile(queueSeconds, 0.95),
+                jobs: records,
+              }
+            } catch {
+              core.warning('Current-run queue telemetry is unavailable')
+              report = {
+                schema: 1,
+                phase: 'queue',
+                route: 'envelope',
+                runId,
+                collection: 'unavailable',
+                errorClass: 'actions-api',
+              }
+            }
+
+            fs.writeFileSync(
+              'playwright-queue-telemetry.json',
+              `${JSON.stringify(report, null, 2)}\n`
+            )
+            await core.summary
+              .addHeading('Playwright queue telemetry')
+              .addRaw(
+                report.collection === 'unavailable'
+                  ? 'Collection unavailable; execution was not affected.'
+                  : `Observed ${report.queueObservedCount} of ${report.jobCount} jobs; queue p50=${report.queueP50Seconds ?? 'n/a'}s, p95=${report.queueP95Seconds ?? 'n/a'}s.`
+              )
+              .write()
+
+      - name: Upload queue telemetry
+        if: >-
+          always() &&
+          !cancelled() &&
+          steps.queue_telemetry.outcome != 'skipped'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-queue-telemetry
+          path: playwright-queue-telemetry.json
+          if-no-files-found: ignore
+          retention-days: 7

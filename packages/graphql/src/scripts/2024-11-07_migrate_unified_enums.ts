@@ -1,8 +1,8 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementStackType,
   ElementStackTypeNew,
   GroupActivityStatus,
-  PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 
@@ -10,8 +10,6 @@ import {
 // ? stack types to the new unified enums (old values persist for now)
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // element stack type to new column
   const elementStacks = await prisma.elementStack.findMany()
   for (const elementStack of elementStacks) {

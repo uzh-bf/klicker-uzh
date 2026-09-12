@@ -92,6 +92,30 @@ export function hasAnyImageAttachmentData<T extends ImageAttachmentPayload>(
   )
 }
 
+type MessageWithParentAndImageAttachments = {
+  id?: string
+  parentId?: string | null
+  imageAttachments?: ImageAttachmentPayload[] | null
+}
+
+/**
+ * True when the message identified by `messageId` responds to a parent
+ * (one hop up the branch's `parentId` chain) that carries at least one
+ * image attachment with actual image data. Drives the "image analyzed"
+ * activity chip on an assistant reply — no new persisted state, the
+ * parent's `imageAttachments` are already loaded with the thread.
+ */
+export function parentMessageHasImageAttachment(
+  messages: MessageWithParentAndImageAttachments[],
+  messageId?: string | null
+): boolean {
+  if (!messageId) return false
+  const message = messages.find((m) => m.id === messageId)
+  if (!message?.parentId) return false
+  const parent = messages.find((m) => m.id === message.parentId)
+  return hasAnyImageAttachmentData(parent?.imageAttachments ?? [])
+}
+
 function isComposerImageContentPart(
   part: unknown
 ): part is ComposerImageContentPart {

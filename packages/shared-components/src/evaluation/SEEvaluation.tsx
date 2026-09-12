@@ -5,7 +5,7 @@ import type {
 import type { SingleSelectionResponse } from '@klicker-uzh/types'
 import { Progress } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { prop, sortBy } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 

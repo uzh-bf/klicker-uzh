@@ -1,0 +1,5 @@
+mutation DeleteMicroLearningBatch($id: String!) {
+  deleteMicroLearning(id: $id, onlyIfUnpublished: true) {
+    id
+  }
+}

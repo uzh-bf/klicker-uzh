@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import { ElementType, QuestionInstance } from 'dist'
 
 function prepareMicrolearningInstanceResults(
@@ -42,8 +42,6 @@ function prepareMicrolearningInstanceResults(
 }
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   const microLearningInstances = await prisma.elementInstance.findMany({
     where: {
       type: 'MICROLEARNING',

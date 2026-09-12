@@ -1,14 +1,18 @@
 import { useMutation } from '@apollo/client'
 import {
   ChangeEmailSettingsDocument,
-  User,
   UserProfileDocument,
+  type UserProfileQuery,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import SimpleSetting from './SimpleSetting'
 
-function EmailSetting({ user }: { user: User }) {
+function EmailSetting({
+  user,
+}: {
+  user: NonNullable<UserProfileQuery['userProfile']>
+}) {
   const t = useTranslations()
   const [changeEmailSettings] = useMutation(ChangeEmailSettingsDocument)
 

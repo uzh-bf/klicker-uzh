@@ -140,6 +140,7 @@ function ActivityListEntry({
               'border-primary-100 bg-orange-100'
           )}
           data-cy={`activity-${activity.type}-${activity.name}`}
+          data-cy-row={`activity-item-${activity.id}`}
         >
           <div className="flex-1">
             <div className="flex flex-row items-center gap-2.5">

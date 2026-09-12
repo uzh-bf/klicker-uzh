@@ -8,12 +8,17 @@ import {
   getActivityInstanceConnectOrCreate,
   propagateActivityToElements,
   recomputeDerivedPermissions,
+  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { getPermissionBooleans } from './activities.js'
+import {
+  deleteWithPublicationStatusGuard,
+  persistActivityWithPermissions,
+  UNPUBLISHED_ACTIVITY_STATUSES,
+} from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -25,6 +30,7 @@ export async function getMicroLearningData(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: {
       id,
+      course: { deletionRequestedAt: null },
       OR: [
         { AND: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false } },
         // if user has access to the microlearning, the query should be enabled for loading the preview
@@ -74,6 +80,7 @@ export async function getMicroLearningEvaluation(
         in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
       },
       isDeleted: false,
+      course: { deletionRequestedAt: null },
     },
     include: {
       stacks: {
@@ -113,7 +120,11 @@ export async function getSingleMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id, isDeleted: false },
+    where: {
+      id,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       course: true,
       stacks: {
@@ -131,7 +142,7 @@ export async function getCoursePublishedMicroLearnings(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       microLearnings: {
         where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
@@ -194,12 +205,15 @@ export async function manipulateMicroLearning(
     startDate,
     endDate,
   }: ManipulateMicroLearningArgs,
-  ctx: ContextWithUser
+  ctx: ContextWithUser,
+  transactionPrisma?: PrismaTransactionClient
 ) {
+  const prisma = transactionPrisma ?? ctx.prisma
+
   // in EDIT mode - validate that the microlearning exists and is not published
   let existingActivity: DB.MicroLearning | null = null
   if (id) {
-    existingActivity = await ctx.prisma.microLearning.findUnique({
+    existingActivity = await prisma.microLearning.findUnique({
       where: {
         id,
         isDeleted: false,
@@ -218,7 +232,7 @@ export async function manipulateMicroLearning(
   }
 
   // get the course to which the microlearning should be assigned
-  const course = await ctx.prisma.course.findUnique({
+  const course = await prisma.course.findUnique({
     where: { id: courseId },
     select: { isGamificationEnabled: true, isAssessmentEnabled: true },
   })
@@ -235,14 +249,14 @@ export async function manipulateMicroLearning(
     duplicationInstances,
     elementMap,
     anyInstanceOutdated,
-  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx)
+  } = await splitActivityInstances({ stacksOrBlocks: stacks }, ctx, prisma)
 
   // in EDIT mode - check which instances and stacks should be removed
   let instancesToDelete: number[] = []
   let unlinkedElementIds: number[] = [] // ids of all elements, which will no longer require a derived permissions link to the activity
   let stacksToDelete: number[] = []
   if (id) {
-    const instances = await ctx.prisma.elementInstance.findMany({
+    const instances = await prisma.elementInstance.findMany({
       where: {
         id: { notIn: persistentInstanceIds },
         elementStack: {
@@ -251,7 +265,7 @@ export async function manipulateMicroLearning(
       },
     })
 
-    const stacks = await ctx.prisma.elementStack.findMany({
+    const stacks = await prisma.elementStack.findMany({
       where: {
         microLearningId: id,
       },
@@ -304,111 +318,100 @@ export async function manipulateMicroLearning(
     course: { connect: { id: courseId } },
   }
 
-  const activity = await ctx.prisma.$transaction(
-    async (prisma) => {
-      // delete all instances that are not used anymore
-      await prisma.elementInstance.deleteMany({
+  const persistMicroLearning = async (prisma: PrismaTransactionClient) => {
+    // delete all instances that are not used anymore
+    await prisma.elementInstance.deleteMany({
+      where: {
+        id: { in: instancesToDelete },
+      },
+    })
+
+    // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
+    for (const instance of persistentInstances) {
+      const elementMultiplier =
+        'pointsMultiplier' in instance.elementData
+          ? ((instance.elementData.pointsMultiplier as number) ?? 1)
+          : 1
+
+      await prisma.elementInstance.update({
         where: {
-          id: { in: instancesToDelete },
+          id: instance.id,
+        },
+        data: {
+          elementStackId: null,
+          order: persistentInstanceOrderMap[instance.id],
+          options: {
+            ...instance.options,
+            pointsMultiplier: multiplier * elementMultiplier,
+          },
         },
       })
+    }
 
-      // disconnect all instances that should be kept in edit mode and set new order value (to satisfy uniqueness constraints)
-      for (const instance of persistentInstances) {
-        const elementMultiplier =
-          'pointsMultiplier' in instance.elementData
-            ? ((instance.elementData.pointsMultiplier as number) ?? 1)
-            : 1
+    // delete all stacks
+    await prisma.elementStack.deleteMany({
+      where: {
+        id: { in: stacksToDelete },
+      },
+    })
 
-        await prisma.elementInstance.update({
-          where: {
-            id: instance.id,
-          },
-          data: {
-            elementStackId: null,
-            order: persistentInstanceOrderMap[instance.id],
-            options: {
-              ...instance.options,
-              pointsMultiplier: multiplier * elementMultiplier,
-            },
-          },
-        })
-      }
-
-      // delete all stacks
-      await prisma.elementStack.deleteMany({
-        where: {
-          id: { in: stacksToDelete },
+    const upsertedMicrolearning = await prisma.microLearning.upsert({
+      where: { id: id ?? uuidv4() },
+      create: {
+        ...createOrUpdateJSON,
+        owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
+      },
+      update: createOrUpdateJSON,
+      include: {
+        templateInfo: true,
+        permissions: {
+          where: { userId: ctx.user.sub },
+          include: { directPermission: true },
+          take: 1,
         },
-      })
-
-      const upsertedMicrolearning = await prisma.microLearning.upsert({
-        where: { id: id ?? uuidv4() },
-        create: {
-          ...createOrUpdateJSON,
-          owner: { connect: { id: ctx.user.sub } }, // only connect the owner during activity creation (not editing)!
-        },
-        update: createOrUpdateJSON,
-        include: {
-          templateInfo: true,
-          permissions: {
-            where: { userId: ctx.user.sub },
-            include: { directPermission: true },
-            take: 1,
-          },
-          course: {
-            include: {
-              _count: {
-                select: {
-                  permissions: {
-                    where: {
-                      userId: ctx.user.sub,
-                      permissionLevel: {
-                        in: [
-                          DB.PermissionLevel.ADMIN,
-                          DB.PermissionLevel.OWNER,
-                        ],
-                      },
+        course: {
+          include: {
+            _count: {
+              select: {
+                permissions: {
+                  where: {
+                    userId: ctx.user.sub,
+                    permissionLevel: {
+                      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
                     },
                   },
                 },
               },
             },
           },
-          stacks: {
-            include: { _count: { select: { elements: true } } },
-            orderBy: { order: 'asc' },
-          },
-          _count: { select: { permissions: true } },
         },
-      })
+        stacks: {
+          include: { _count: { select: { elements: true } } },
+          orderBy: { order: 'asc' },
+        },
+        _count: { select: { permissions: true } },
+      },
+    })
 
-      // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
-      if (unlinkedElementIds.length > 0) {
-        for (const elementId of unlinkedElementIds) {
-          await recomputeDerivedPermissions({ elementId }, prisma)
-        }
+    // enforce dervied permissions update to elements that were potentially removed from the quiz (-> removal of derived permissions)
+    if (unlinkedElementIds.length > 0) {
+      for (const elementId of unlinkedElementIds) {
+        await recomputeDerivedPermissions({ elementId }, prisma)
       }
+    }
 
-      await recomputeDerivedPermissions(
-        { microLearningId: upsertedMicrolearning.id },
-        prisma
-      )
+    await recomputeDerivedPermissions(
+      { microLearningId: upsertedMicrolearning.id },
+      prisma
+    )
 
-      return upsertedMicrolearning
-    },
-    { timeout: 60000 }
-  )
+    return upsertedMicrolearning
+  }
 
-  ctx.emitter.emit('invalidate', {
-    typename: 'MicroLearning',
-    id,
-  })
-
-  const permissionLevel =
-    activity.permissions[0]?.permissionLevel ?? DB.PermissionLevel.OWNER
-  const derived = activity.permissions[0]?.derived ?? false
   const {
+    activity,
+    permissionLevel,
+    derived,
     isOwner,
     isManager,
     isEditor,
@@ -416,12 +419,12 @@ export async function manipulateMicroLearning(
     isShared,
     isRemovable,
     sharingType,
-  } = getPermissionBooleans({
-    permissionLevel,
-    derived,
-    directGroupPermission:
-      activity.permissions[0]?.directPermission &&
-      activity.permissions[0].directPermission.userGroupId !== null,
+  } = await persistActivityWithPermissions({
+    persist: persistMicroLearning,
+    invalidateTypename: 'MicroLearning',
+    invalidateId: id,
+    ctx,
+    transactionPrisma,
   })
 
   return {
@@ -709,7 +712,7 @@ export async function getMicroLearningSummary(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: { stacks: { include: { elements: true } } },
   })
 
@@ -742,7 +745,10 @@ export async function getMicroLearningSummary(
 }
 
 export async function deleteMicroLearning(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -754,14 +760,33 @@ export async function deleteMicroLearning(
     return null
   }
 
+  const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
+    microLearning.status
+  )
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the microlearning is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    microLearning.status === DB.PublicationStatus.DRAFT ||
-    microLearning.status === DB.PublicationStatus.SCHEDULED ||
-    microLearning.responses.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && microLearning.responses.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.microLearning.delete({ where: { id } })
+    // Recheck publication status in the delete statement because the initial
+    // read can become stale while the user confirms the batch.
+    const deletedItem = onlyIfUnpublished
+      ? await deleteWithPublicationStatusGuard(() =>
+          ctx.prisma.microLearning.delete({
+            where: { id, status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
+          })
+        )
+      : await ctx.prisma.microLearning.delete({ where: { id } })
+
+    if (!deletedItem) {
+      return null
+    }
 
     // remove the scheduled publication task, if it exists (should only exist for scheduled microlearnings)
     if (

@@ -1,4 +1,4 @@
-schema: packages/graphql/src/graphql/schema.graphql
+schema: packages/graphql/src/public/schema.graphql
 
 env:
   dev:

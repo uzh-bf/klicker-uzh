@@ -97,9 +97,7 @@ def compute_weekday_activity(db, course):
 def single_weekday_activity(weekdays, df_daily):
     collector = []
     for weekday in weekdays:
-        df_weekday = df_daily[
-            df_daily["timestamp"] == pd.Timestamp(weekday).tz_localize("UTC")
-        ]
+        df_weekday = df_daily[df_daily["timestamp"] == pd.Timestamp(weekday).tz_localize("UTC")]
 
         if df_weekday.empty:
             collector.append(0)

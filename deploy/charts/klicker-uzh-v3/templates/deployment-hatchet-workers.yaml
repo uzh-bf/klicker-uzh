@@ -52,6 +52,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-hatchet-worker-general
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-hatchet-worker-general
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           # TODO: add liveness and readiness probes to container
           # livenessProbe:
           #   httpGet:
@@ -130,6 +133,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-hatchet-worker-response-processor
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           # TODO: add liveness and readiness probes to container
           # livenessProbe:
           #   httpGet:
@@ -208,6 +214,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-hatchet-worker-response-processor-assessment
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-hatchet-worker-response-processor-assessment
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           # TODO: add liveness and readiness probes to container
           # livenessProbe:
           #   httpGet:

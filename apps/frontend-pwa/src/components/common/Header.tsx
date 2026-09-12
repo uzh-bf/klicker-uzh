@@ -1,5 +1,8 @@
-import { useMutation } from '@apollo/client'
-import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  faCircleQuestion,
+  faComment,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faExclamationCircle,
   faLanguage,
@@ -10,6 +13,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   ChangeParticipantLocaleDocument,
   Course,
+  GetCourseChatbotsDocument,
   LocaleType,
   LogoutParticipantDocument,
   LogoutTemporaryParticipantDocument,
@@ -26,6 +30,8 @@ import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
+
+const FEEDBACK_URL = 'https://klicker-uzh.feedback.df-app.ch/'
 
 interface HeaderProps {
   participant?: Partial<Participant>
@@ -54,6 +60,18 @@ function Header({
   )
   const [logoutTemporaryParticipant, { loading: loggingOutTemporary }] =
     useMutation(LogoutTemporaryParticipantDocument)
+
+  const courseId = course?.id
+  const { data: chatbotData } = useQuery(GetCourseChatbotsDocument, {
+    variables: courseId ? { courseId } : undefined,
+    skip:
+      !courseId ||
+      participant?.role !== UserRole.Participant ||
+      process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+  })
+  // courses are limited to a single chatbot for now, so the header links the
+  // first one and does not build a multi-chatbot affordance
+  const courseChatbot = chatbotData?.courseChatbots?.[0]
 
   const pageInFrame =
     global?.window &&
@@ -136,6 +154,24 @@ function Header({
               </Button>
             </Link>
           ))}
+
+        {courseId && courseChatbot && (
+          <Link
+            href={`/course/${courseId}/chatbot/${courseChatbot.id}`}
+            target="_blank"
+            rel="noopener"
+          >
+            <Button
+              primary
+              className={{
+                root: 'h-8 bg-slate-800 py-0 text-white hover:bg-slate-700 hover:text-white',
+              }}
+              data={{ cy: 'student-course-chatbot-link' }}
+            >
+              <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
+            </Button>
+          </Link>
+        )}
 
         <Dropdown
           trigger={
@@ -248,6 +284,27 @@ function Header({
               onClick: () => router.push(`/docs`),
               data: { cy: 'course-docs' },
             },
+            ...(process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && !pageInFrame
+              ? [
+                  {
+                    id: 'feedback',
+                    type: 'standard' as 'standard',
+                    label: (
+                      <div>
+                        <FontAwesomeIcon
+                          icon={faComment}
+                          className="mr-2 w-4"
+                        />
+                        <span>{t('shared.generic.feedback')}</span>
+                      </div>
+                    ),
+                    onClick: () => {
+                      window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer')
+                    },
+                    data: { cy: 'student-feedback-link' },
+                  },
+                ]
+              : []),
             {
               id: 'languageSwitch',
               label: (

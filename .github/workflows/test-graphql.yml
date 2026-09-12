@@ -3,26 +3,36 @@ name: Test graphql package logic functionalities
 on:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'packages/graphql/**'
-      - '.github/workflows/test-graphql.yml'
+    # "edited" re-evaluates the internal selector on a base retarget.
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+permissions:
+  contents: read
 
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
+
+  test-graphql:
+    needs: filter
+    if: >-
+      needs.filter.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:15
@@ -54,7 +64,7 @@ jobs:
           - 5433:5432
 
       hatchet:
-        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite:v0.73.1
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
           SERVER_AUTH_COOKIE_DOMAIN: localhost
@@ -112,36 +122,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v2
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
         with:
-          version: 10.15.0
-          run_install: true
+          version: 11.5.0
+
+      - name: Set up Node.js with pnpm cache
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build dependency packages
-        run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
-          cd ../grading
-          pnpm run build
-          cd ../util
-          pnpm run build
-          cd ../graphql
-          pnpm run build
-          cd ../hatchet
-          pnpm run build
-          cd ../../apps/hatchet-worker-general
-          pnpm run build
+        run: pnpm exec turbo run build --filter=@klicker-uzh/graphql --filter=@klicker-uzh/hatchet-worker-general --concurrency=4
+
+      - name: Provision disposable PostgreSQL
+        id: provision_db
+        run: bash .github/scripts/provision-disposable-postgres.sh "${{ job.services.postgres.id }}"
 
       - name: Setup database
+        id: setup_db
+        if: ${{ !cancelled() && steps.provision_db.outcome == 'success' }}
         run: |
           cd packages/prisma
           pnpm run prisma:reset:raw -f
         env:
-          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
       - name: Run tests
+        if: ${{ !cancelled() && steps.setup_db.outcome == 'success' }}
         run: |
           set -euo pipefail
 
@@ -166,7 +176,8 @@ jobs:
           HATCHET_WORKER_NAME=hatchet-worker-general
           LOG_LEVEL=info
           NODE_ENV=test
-          DATABASE_URL=postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL=postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL=postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
           REDIS_HOST=localhost
           REDIS_PORT=6379
           REDIS_ASSESSMENT_HOST=localhost
@@ -206,7 +217,8 @@ jobs:
           cd packages/graphql
           pnpm vitest run
         env:
-          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
+          SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
           HATCHET_CLIENT_TLS_STRATEGY: none
           HATCHET_CLIENT_HOST_PORT: localhost:7077
           NODE_ENV: test
@@ -222,3 +234,51 @@ jobs:
           APP_ORIGIN_CONTROL: http://control.klicker.com
           APP_ORIGIN_ASSESSMENT_API: http://assessment-api.klicker.com
           APP_ORIGIN_ASSESSMENT_PWA: http://assessment.klicker.com
+
+  # Always reports a status even when the tests are skipped by the path filter,
+  # so this job is the required check. It runs unconditionally so a skipped
+  # context can never read as acceptable; the shared helper fails on
+  # cancellation, an unexpected skip, a missing selector result or a failed
+  # suite, and records the selection evidence for the promoter.
+  test-graphql-status:
+    needs: [filter, test-graphql]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Report required status
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+          FILTER_RESULT: ${{ needs.filter.result }}
+          SHOULD_RUN: ${{ needs.filter.outputs.should_run }}
+          TEST_RESULT: ${{ needs.test-graphql.result }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_PATH: .github/workflows/test-graphql.yml
+          TERMINAL_JOB: test-graphql-status
+          EVIDENCE_PATH: required-ci-evidence.json
+          SELECTION_JOB: filter
+          SELECTION_JOB_RESULT: ${{ needs.filter.result }}
+          SUITE_JOB: test-graphql
+          SUITE_JOB_RESULT: ${{ needs.test-graphql.result }}
+        run: node .github/scripts/required-ci-status.cjs report
+      - name: Upload required CI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-ci-evidence
+          path: required-ci-evidence.json
+          if-no-files-found: error
+          retention-days: 7

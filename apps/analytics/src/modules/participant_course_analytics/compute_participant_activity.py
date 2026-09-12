@@ -20,9 +20,7 @@ def compute_participant_activity(db, df_activity, course_id, course_start, cours
         )
 
         # compute the mean elements answered per day based on the daily analytics response count
-        response_count = sum(
-            [dict(daily)["responseCount"] for daily in daily_analytics]
-        )
+        response_count = sum([dict(daily)["responseCount"] for daily in daily_analytics])
         df_activity.loc[idx, "meanElementsPerDay"] = response_count / course_duration
 
         # compute average active days per week
@@ -46,9 +44,7 @@ def compute_participant_activity(db, df_activity, course_id, course_start, cours
                 active_days_week.append(len(week_analytics))
 
         # compute the average active days per week
-        df_activity.loc[idx, "activeDaysPerWeek"] = sum(active_days_week) / len(
-            active_days_week
-        )
+        df_activity.loc[idx, "activeDaysPerWeek"] = sum(active_days_week) / len(active_days_week)
 
     return df_activity
 

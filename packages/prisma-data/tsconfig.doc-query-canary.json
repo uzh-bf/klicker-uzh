@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "tsBuildInfoFile": "./tsconfig.doc-query-canary.tsbuildinfo"
+  },
+  "include": ["src/scripts/doc-query-canary-binding.ts"]
+}

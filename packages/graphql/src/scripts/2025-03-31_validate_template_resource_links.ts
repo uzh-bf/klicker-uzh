@@ -1,9 +1,8 @@
-import { ElementType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import { CaseStudyElementData, SelectionElementData } from '@klicker-uzh/types'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // fetch all activity templates and the linked answer collections
   const templates = await prisma.activityTemplate.findMany({
     include: {

@@ -1,5 +1,6 @@
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { PrismaClient, UserLoginScope } from '@klicker-uzh/prisma/client'
+import { signJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { EventEmitter } from 'events'
 import {
@@ -12,7 +13,11 @@ import {
   vi,
 } from 'vitest'
 import type { Context } from '../src/lib/context.js'
-import { loginParticipant } from '../src/services/accounts.js'
+import {
+  activateParticipantAccount,
+  loginParticipant,
+  loginParticipantMagicLink,
+} from '../src/services/accounts.js'
 
 const TEST_PREFIX = `codex-login-${Date.now()}`
 const emailFor = (label: string) => `${TEST_PREFIX}-${label}@example.com`
@@ -36,6 +41,17 @@ function createCtx(): Context {
     hatchet: {} as any,
     tasks: {} as any,
   } as Context
+}
+
+async function createParticipantLoginToken(
+  participantId: string,
+  scope: UserLoginScope
+) {
+  return signJWT(
+    { sub: participantId, scope },
+    process.env.APP_SECRET as string,
+    { algorithm: 'HS256', expiresIn: '5m' }
+  )
 }
 
 async function cleanupTestData() {
@@ -94,15 +110,21 @@ describe('loginParticipant email/username login', () => {
       },
     })
 
+    const ctx = createCtx()
     const result = await loginParticipant(
       {
         usernameOrEmail: usernameFor('manual-username'),
         password: MANUAL_PASSWORD,
       },
-      createCtx()
+      ctx
     )
 
     expect(result).toBe(participant.id)
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'lti-token',
+      '',
+      expect.objectContaining({ path: '/', maxAge: 0 })
+    )
   })
 
   it('logs in a manual participant by email with a correct password', async () => {
@@ -115,15 +137,106 @@ describe('loginParticipant email/username login', () => {
       },
     })
 
+    const ctx = createCtx()
     const result = await loginParticipant(
       {
         usernameOrEmail: emailFor('manual-email').toUpperCase(),
         password: MANUAL_PASSWORD,
       },
-      createCtx()
+      ctx
     )
 
     expect(result).toBe(participant.id)
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'lti-token',
+      '',
+      expect.objectContaining({ path: '/', maxAge: 0 })
+    )
+  })
+
+  it('clears the LTI token after magic-link participant login', async () => {
+    const participant = await prisma.participant.create({
+      data: {
+        email: emailFor('magic-link'),
+        username: usernameFor('magic-link'),
+        password: await bcrypt.hash(MANUAL_PASSWORD, 10),
+        isSSOAccount: false,
+      },
+    })
+    const token = await createParticipantLoginToken(
+      participant.id,
+      UserLoginScope.OTP
+    )
+    const ctx = createCtx()
+
+    const result = await loginParticipantMagicLink({ token }, ctx)
+
+    expect(result).toBe(participant.id)
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'lti-token',
+      '',
+      expect.objectContaining({ path: '/', maxAge: 0 })
+    )
+  })
+
+  it('clears the LTI token after participant account activation', async () => {
+    const participant = await prisma.participant.create({
+      data: {
+        email: emailFor('activation'),
+        username: usernameFor('activation'),
+        password: await bcrypt.hash(MANUAL_PASSWORD, 10),
+        isSSOAccount: false,
+      },
+    })
+    const token = await createParticipantLoginToken(
+      participant.id,
+      UserLoginScope.ACTIVATION
+    )
+    const ctx = createCtx()
+
+    const result = await activateParticipantAccount({ token }, ctx)
+
+    expect(result).toBe(participant.id)
+    expect(ctx.res.cookie).toHaveBeenCalledWith(
+      'lti-token',
+      '',
+      expect.objectContaining({ path: '/', maxAge: 0 })
+    )
+  })
+
+  it('rejects wrong-scope participant tokens without setting cookies', async () => {
+    const participant = await prisma.participant.create({
+      data: {
+        email: emailFor('wrong-scope'),
+        username: usernameFor('wrong-scope'),
+        password: await bcrypt.hash(MANUAL_PASSWORD, 10),
+        isSSOAccount: false,
+      },
+    })
+    const activationToken = await createParticipantLoginToken(
+      participant.id,
+      UserLoginScope.ACTIVATION
+    )
+    const magicLinkToken = await createParticipantLoginToken(
+      participant.id,
+      UserLoginScope.OTP
+    )
+    const magicLinkCtx = createCtx()
+    const activationCtx = createCtx()
+
+    const magicLinkResult = await loginParticipantMagicLink(
+      { token: activationToken },
+      magicLinkCtx
+    )
+    const activationResult = await activateParticipantAccount(
+      { token: magicLinkToken },
+      activationCtx
+    )
+
+    expect(magicLinkResult).toBeNull()
+    expect(magicLinkCtx.res.cookie).not.toHaveBeenCalled()
+    expect(activationResult).toBeNull()
+    expect(activationCtx.res.cookie).not.toHaveBeenCalled()
   })
 
   it('rejects login when the password does not match', async () => {
@@ -136,27 +249,31 @@ describe('loginParticipant email/username login', () => {
       },
     })
 
+    const ctx = createCtx()
     const result = await loginParticipant(
       {
         usernameOrEmail: usernameFor('wrong-password'),
         password: 'totally-different',
       },
-      createCtx()
+      ctx
     )
 
     expect(result).toBeNull()
+    expect(ctx.res.cookie).not.toHaveBeenCalled()
   })
 
   it('returns null when no participant exists for the supplied identifier', async () => {
+    const ctx = createCtx()
     const result = await loginParticipant(
       {
         usernameOrEmail: emailFor('does-not-exist'),
         password: MANUAL_PASSWORD,
       },
-      createCtx()
+      ctx
     )
 
     expect(result).toBeNull()
+    expect(ctx.res.cookie).not.toHaveBeenCalled()
   })
 
   it('logs in an LTI-created participant by email with the password they chose at signup', async () => {

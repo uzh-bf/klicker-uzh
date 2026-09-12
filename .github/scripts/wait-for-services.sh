@@ -3,6 +3,17 @@
 # Exit on error
 set -e
 
+RUN_COMMAND_AFTER_READY=false
+if [ "${1:-}" = "--" ]; then
+  shift
+  RUN_COMMAND_AFTER_READY=true
+
+  if [ "$#" -eq 0 ]; then
+    echo "No command provided after --"
+    exit 1
+  fi
+fi
+
 # Validate required environment variables
 if [ -z "${SERVICE_ENDPOINTS:-}" ]; then
   # Default endpoints if not specified
@@ -17,41 +28,113 @@ if [ -z "${CHECK_INTERVAL:-}" ]; then
   CHECK_INTERVAL=5
 fi
 
+SERVICE_LOG="${SERVICE_LOG:-service.log}"
+SERVICE_START_SCRIPT="${SERVICE_START_SCRIPT:-start:test:ci}"
+POSTGRES_CHECK_HOST="${POSTGRES_CHECK_HOST:-localhost}"
+POSTGRES_CHECK_PORT="${POSTGRES_CHECK_PORT:-5432}"
+POSTGRES_CHECK_USER="${POSTGRES_CHECK_USER:-${POSTGRES_USER:-}}"
+POSTGRES_CHECK_DATABASE="${POSTGRES_CHECK_DATABASE:-${POSTGRES_DB:-}}"
+REDIS_CHECK_HOST="${REDIS_CHECK_HOST:-${REDIS_HOST:-localhost}}"
+REDIS_CHECK_PORT="${REDIS_CHECK_PORT:-${REDIS_PORT:-6379}}"
+REDIS_CACHE_CHECK_HOST="${REDIS_CACHE_CHECK_HOST:-${REDIS_CACHE_HOST:-}}"
+REDIS_CACHE_CHECK_PORT="${REDIS_CACHE_CHECK_PORT:-${REDIS_CACHE_PORT:-6379}}"
+REDIS_ASSESSMENT_CHECK_HOST="${REDIS_ASSESSMENT_CHECK_HOST:-${REDIS_ASSESSMENT_HOST:-}}"
+REDIS_ASSESSMENT_CHECK_PORT="${REDIS_ASSESSMENT_CHECK_PORT:-${REDIS_ASSESSMENT_PORT:-6379}}"
+HATCHET_CHECK_HOST="${HATCHET_CHECK_HOST:-localhost}"
+HATCHET_HTTP_PORT="${HATCHET_HTTP_PORT:-8888}"
+HATCHET_GRPC_PORT="${HATCHET_GRPC_PORT:-7077}"
+
+check_tcp() {
+  local host="$1"
+  local port="$2"
+
+  if command -v nc >/dev/null 2>&1; then
+    nc -z "$host" "$port" >/dev/null 2>&1
+    return $?
+  fi
+
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 5 bash -c ': </dev/tcp/$1/$2' _ "$host" "$port" >/dev/null 2>&1
+  else
+    bash -c ': </dev/tcp/$1/$2' _ "$host" "$port" >/dev/null 2>&1
+  fi
+}
+
 # Check Redis
-check_redis() {
-  if ! nc -z localhost 6379 2>/dev/null; then
-    echo "Redis is not running on port 6379"
+check_redis_endpoint() {
+  local label="$1"
+  local host="$2"
+  local port="$3"
+
+  if ! check_tcp "$host" "$port"; then
+    echo "$label Redis is not running on ${host}:${port}"
     return 1
   fi
-  echo "Redis is running on port 6379"
+
+  echo "$label Redis is running on ${host}:${port}"
+  return 0
+}
+
+check_redis() {
+  check_redis_endpoint "Primary" "$REDIS_CHECK_HOST" "$REDIS_CHECK_PORT" || return 1
+
+  if [ -n "$REDIS_CACHE_CHECK_HOST" ]; then
+    check_redis_endpoint "Cache" "$REDIS_CACHE_CHECK_HOST" "$REDIS_CACHE_CHECK_PORT" || return 1
+  fi
+
+  if [ -n "$REDIS_ASSESSMENT_CHECK_HOST" ]; then
+    check_redis_endpoint "Assessment" "$REDIS_ASSESSMENT_CHECK_HOST" "$REDIS_ASSESSMENT_CHECK_PORT" || return 1
+  fi
+
   return 0
 }
 
 # Check PostgreSQL
 check_postgres() {
-  if ! nc -z localhost 5432 2>/dev/null; then
-    echo "PostgreSQL is not running on port 5432"
+  if command -v pg_isready >/dev/null 2>&1 && [ -n "$POSTGRES_CHECK_USER" ] && [ -n "$POSTGRES_CHECK_DATABASE" ]; then
+    if ! pg_isready \
+      -h "$POSTGRES_CHECK_HOST" \
+      -p "$POSTGRES_CHECK_PORT" \
+      -U "$POSTGRES_CHECK_USER" \
+      -d "$POSTGRES_CHECK_DATABASE" >/dev/null 2>&1; then
+      echo "PostgreSQL is not ready on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT} as ${POSTGRES_CHECK_USER}/${POSTGRES_CHECK_DATABASE}"
+      return 1
+    fi
+
+    echo "PostgreSQL is ready on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT} as ${POSTGRES_CHECK_USER}/${POSTGRES_CHECK_DATABASE}"
+    return 0
+  fi
+
+  if ! check_tcp "$POSTGRES_CHECK_HOST" "$POSTGRES_CHECK_PORT"; then
+    echo "PostgreSQL is not running on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT}"
     return 1
   fi
-  echo "PostgreSQL is running on port 5432"
+  echo "PostgreSQL is running on ${POSTGRES_CHECK_HOST}:${POSTGRES_CHECK_PORT}"
   return 0
 }
 
 # Check Hatchet
 check_hatchet() {
   # Check HTTP endpoint
-  if ! curl -s -f http://localhost:8888/healthz >/dev/null 2>&1; then
-    echo "Hatchet HTTP is not ready on port 8888"
+  if ! curl -s -f "http://${HATCHET_CHECK_HOST}:${HATCHET_HTTP_PORT}/healthz" >/dev/null 2>&1; then
+    echo "Hatchet HTTP is not ready on ${HATCHET_CHECK_HOST}:${HATCHET_HTTP_PORT}"
     return 1
   fi
 
   # Check gRPC port
-  if ! nc -z localhost 7077 2>/dev/null; then
-    echo "Hatchet gRPC is not ready on port 7077"
+  if ! check_tcp "$HATCHET_CHECK_HOST" "$HATCHET_GRPC_PORT"; then
+    echo "Hatchet gRPC is not ready on ${HATCHET_CHECK_HOST}:${HATCHET_GRPC_PORT}"
     return 1
   fi
 
-  echo "Hatchet is ready (HTTP: 8888, gRPC: 7077)"
+  echo "Hatchet is ready (HTTP: ${HATCHET_HTTP_PORT}, gRPC: ${HATCHET_GRPC_PORT})"
+  return 0
+}
+
+check_dependencies() {
+  check_redis || return 1
+  check_postgres || return 1
+  check_hatchet || return 1
   return 0
 }
 
@@ -64,8 +147,10 @@ cleanup() {
     kill $TAIL_PID 2>/dev/null || true
   fi
 
-  # If we have a service PID and either we're exiting with an error or received a signal
-  if [ ! -z "${SERVICE_PID:-}" ] && { [ $exit_code -ne 0 ] || [ "${1:-}" = "TERM" ]; }; then
+  # If the script owns a follow-up command, always stop the service after it.
+  # Otherwise preserve the historical behavior and keep the service alive on a
+  # successful readiness-only invocation.
+  if [ ! -z "${SERVICE_PID:-}" ] && { [ "$RUN_COMMAND_AFTER_READY" = "true" ] || [ $exit_code -ne 0 ] || [ "${1:-}" = "TERM" ]; }; then
     echo "🛑 Cleaning up service process (PID: $SERVICE_PID)..."
     kill $SERVICE_PID 2>/dev/null || true
     wait $SERVICE_PID 2>/dev/null || true
@@ -86,42 +171,28 @@ trap cleanup EXIT
 
 # Check dependencies before starting
 echo "🔍 Checking dependencies..."
-check_redis || { echo "Redis check failed"; exit 1; }
-check_postgres || { echo "PostgreSQL check failed"; exit 1; }
-check_hatchet || { echo "Hatchet check failed"; exit 1; }
+dependencies_elapsed=0
+while [ $dependencies_elapsed -lt $TIMEOUT_SECONDS ]; do
+  if check_dependencies; then
+    echo "✨ Dependencies are ready!"
+    break
+  fi
 
-# Start the service in the background and capture all output
-echo "🚀 Starting service..."
-echo "📋 Service logs will be streamed below:"
-echo "----------------------------------------"
+  sleep $CHECK_INTERVAL
+  dependencies_elapsed=$((dependencies_elapsed + CHECK_INTERVAL))
+  echo "⏳ Still waiting for dependencies... ($dependencies_elapsed seconds elapsed)"
+done
 
-# Start service and stream logs in real-time
-pnpm run start:test:ci > service.log 2>&1 &
-
-# Store the PID of the background process
-SERVICE_PID=$!
-
-# Start background log streaming
-tail -f service.log &
-TAIL_PID=$!
-
-# Give the process a moment to fail fast if it's going to
-sleep 2
-
-# Check if process is still running after initial start
-if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
-  echo "Service failed to start. Last few lines of output:"
-  tail -n 20 service.log
+if [ $dependencies_elapsed -ge $TIMEOUT_SECONDS ]; then
+  echo "Dependency check failed"
   exit 1
 fi
-
-echo "📋 Initial service start successful (PID: $SERVICE_PID)"
 
 # Function to check if process is still running
 check_process() {
   if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
     echo "Service process died. Last few lines of output:"
-    tail -n 20 service.log
+    tail -n 20 "$SERVICE_LOG"
     return 1
   fi
   return 0
@@ -160,49 +231,124 @@ check_endpoints() {
   $all_up
 }
 
-# Initialize elapsed time
-elapsed=0
+start_service() {
+  if [ -z "${TAIL_PID:-}" ]; then
+    : > "$SERVICE_LOG"
+    tail -f "$SERVICE_LOG" &
+    TAIL_PID=$!
+  fi
 
-echo "⚙️ Configuration:"
-echo "🔍 Monitoring endpoints: $SERVICE_ENDPOINTS"
-echo "⏲️ Timeout: ${TIMEOUT_SECONDS}s, Check interval: ${CHECK_INTERVAL}s"
+  echo "🚀 Starting service..."
+  echo "📋 Service logs will be streamed below:"
+  echo "----------------------------------------"
 
-while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
-  # Check if the process is still running
-  if ! check_process; then
-    echo "📑 Full service log:"
-    cat service.log
+  {
+    echo ""
+    echo "===== ${SERVICE_START_SCRIPT} started at $(date -u +"%Y-%m-%dT%H:%M:%SZ") ====="
+  } >> "$SERVICE_LOG"
+
+  pnpm run "$SERVICE_START_SCRIPT" >> "$SERVICE_LOG" 2>&1 &
+  SERVICE_PID=$!
+
+  # Give the process a moment to fail fast if it's going to
+  sleep 2
+
+  if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
+    echo "Service failed to start. Last few lines of output:"
+    tail -n 20 "$SERVICE_LOG"
     exit 1
   fi
 
-  # Try to access all endpoints
-  if check_endpoints; then
-    echo "✨ All services are ready!"
+  echo "📋 Service start successful (PID: $SERVICE_PID)"
+}
 
-    # Stop log streaming but keep service running
-    if [ ! -z "${TAIL_PID:-}" ]; then
-      kill $TAIL_PID 2>/dev/null || true
-      echo "📋 Service logs are available in service.log"
+stop_service() {
+  if [ ! -z "${SERVICE_PID:-}" ]; then
+    echo "🛑 Stopping service process (PID: $SERVICE_PID)..."
+    kill $SERVICE_PID 2>/dev/null || true
+    wait $SERVICE_PID 2>/dev/null || true
+    SERVICE_PID=
+  fi
+}
+
+run_command_with_service_guard() {
+  "$@" &
+  local command_pid=$!
+
+  while true; do
+    if ! kill -0 "$command_pid" 2>/dev/null; then
+      set +e
+      wait "$command_pid"
+      local command_status=$?
+      set -e
+      return $command_status
     fi
 
-    # Keep the background process running but exit the script successfully
-    trap - TERM  # Remove SIGTERM trap as we want to keep the service running
-    trap - EXIT  # Remove exit trap as we want to keep the service running
-    exit 0
-  fi
+    if ! kill -0 "$SERVICE_PID" 2>/dev/null; then
+      echo "Service process died while the command was running. Recent service logs:"
+      tail -n 120 "$SERVICE_LOG"
+      kill "$command_pid" 2>/dev/null || true
+      wait "$command_pid" 2>/dev/null || true
+      return 1
+    fi
 
-  sleep $CHECK_INTERVAL
-  elapsed=$((elapsed + CHECK_INTERVAL))
+    sleep 2
+  done
+}
 
-  echo "⏳ Still waiting for services... ($elapsed seconds elapsed)"
+wait_for_service_readiness() {
+  local elapsed=0
 
-  # Show recent logs periodically
-  if [ $((elapsed % 30)) -eq 0 ]; then
-    echo "📑 Recent service logs:"
-    tail -n 30 service.log
-  fi
-done
+  echo "⚙️ Configuration:"
+  echo "🔍 Monitoring endpoints: $SERVICE_ENDPOINTS"
+  echo "⏲️ Timeout: ${TIMEOUT_SECONDS}s, Check interval: ${CHECK_INTERVAL}s"
 
-echo "Timeout waiting for services to be ready. Full service log:"
-cat service.log
-exit 1
+  while [ $elapsed -lt $TIMEOUT_SECONDS ]; do
+    if ! check_process; then
+      echo "📑 Full service log:"
+      cat "$SERVICE_LOG"
+      exit 1
+    fi
+
+    if check_endpoints; then
+      echo "✨ All services are ready!"
+      echo "📋 Service logs are available in $SERVICE_LOG"
+      return 0
+    fi
+
+    sleep $CHECK_INTERVAL
+    elapsed=$((elapsed + CHECK_INTERVAL))
+
+    echo "⏳ Still waiting for services... ($elapsed seconds elapsed)"
+
+    if [ $((elapsed % 30)) -eq 0 ]; then
+      echo "📑 Recent service logs:"
+      tail -n 30 "$SERVICE_LOG"
+    fi
+  done
+
+  echo "Timeout waiting for services to be ready. Full service log:"
+  cat "$SERVICE_LOG"
+  exit 1
+}
+
+start_service
+wait_for_service_readiness
+
+if [ "$RUN_COMMAND_AFTER_READY" = "true" ]; then
+  echo "▶️ Running command: $*"
+  set +e
+  run_command_with_service_guard "$@"
+  command_status=$?
+  set -e
+  exit $command_status
+fi
+
+# Keep the background process running but exit the script successfully
+if [ ! -z "${TAIL_PID:-}" ]; then
+  kill $TAIL_PID 2>/dev/null || true
+  echo "📋 Service logs are available in $SERVICE_LOG"
+fi
+trap - TERM  # Remove SIGTERM trap as we want to keep the service running
+trap - EXIT  # Remove exit trap as we want to keep the service running
+exit 0

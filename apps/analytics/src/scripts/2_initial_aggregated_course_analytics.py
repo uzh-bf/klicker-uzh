@@ -1,9 +1,7 @@
 # This script computes the aggregated course analytics
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-import os
 from prisma import Prisma
-import pandas as pd
 
 # set the python path correctly for module imports to work
 import sys
@@ -29,7 +27,7 @@ df_courses = get_running_past_courses(db)
 
 # iterate over all courses and compute the participant course analytics
 for idx, course in df_courses.iterrows():
-    print(f"Processing course", idx, "of", len(df_courses), "with id", course["id"])
+    print("Processing course", idx, "of", len(df_courses), "with id", course["id"])
 
     # computation of activity per weekday
     compute_weekday_activity(db, course)

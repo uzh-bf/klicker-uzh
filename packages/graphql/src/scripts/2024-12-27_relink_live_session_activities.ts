@@ -1,9 +1,7 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 // ? This script will relink all missing live session activities to the corresponding live quiz entries after their migration
 async function run() {
-  const prisma = new PrismaClient()
-
   // count udpates
   let liveQuizUpdates = 0
   let counter = 0

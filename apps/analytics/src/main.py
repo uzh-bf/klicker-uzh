@@ -1,6 +1,4 @@
-import os
 from prisma import Prisma
-import pandas as pd
 
 db = Prisma()
 

@@ -138,6 +138,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-backend-assessment
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-backend-assessment
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           livenessProbe:
             httpGet:
               path: /healthz

@@ -1,6 +1,6 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { ThreadService } from '@/src/services/threads'
 import { NextRequest, NextResponse } from 'next/server'
-import { ThreadService } from 'src/services/threads'
 
 /**
  * Updates the title of a specific thread for the authenticated participant.

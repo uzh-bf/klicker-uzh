@@ -4,8 +4,10 @@ import {
   faCancel,
   faSave,
 } from '@fortawesome/free-solid-svg-icons'
-import { Button } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useEffect, useRef, useState } from 'react'
+import { useWizardCloseGuard } from './WizardLayout'
 
 interface WizardNavigationProps {
   editMode: boolean
@@ -14,9 +16,13 @@ interface WizardNavigationProps {
   activeStep: number
   lastStep: boolean
   continueDisabled: boolean
+  disabledReason?: string
+  onDisabledReasonChange?: (reason?: string) => void
   onPrevStep?: () => void
   onCloseWizard: () => void
 }
+
+const disabledReasonId = 'activity-creation-disabled-reason'
 
 function WizardNavigation({
   editMode,
@@ -25,14 +31,51 @@ function WizardNavigation({
   activeStep,
   lastStep,
   continueDisabled,
+  disabledReason,
+  onDisabledReasonChange,
   onPrevStep,
   onCloseWizard,
 }: WizardNavigationProps) {
   const t = useTranslations()
+  const onDisabledReasonChangeRef = useRef(onDisabledReasonChange)
+  const closeGuard = useWizardCloseGuard()
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+  const continueLabels = [
+    t('manage.activityWizard.continueToDescription'),
+    t('manage.activityWizard.continueToSettings'),
+    t('manage.activityWizard.continueToQuestions'),
+  ]
+
+  useEffect(() => {
+    onDisabledReasonChangeRef.current = onDisabledReasonChange
+  }, [onDisabledReasonChange])
+
+  useEffect(() => {
+    onDisabledReasonChangeRef.current?.(lastStep ? disabledReason : undefined)
+  }, [disabledReason, lastStep])
+
+  useEffect(
+    () => () => {
+      onDisabledReasonChangeRef.current?.(undefined)
+    },
+    []
+  )
+
+  const requestClose = () => {
+    if (closeGuard.forceClean || !closeGuard.isDirty()) {
+      onCloseWizard()
+      return
+    }
+
+    setConfirmCancelOpen(true)
+  }
 
   return (
-    <div className="flex flex-row justify-between pt-2">
-      <div className="flex flex-row items-center gap-2">
+    <div
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 pt-2"
+      data-cy="activity-wizard-navigation"
+    >
+      <div className="flex flex-row items-center gap-2 justify-self-start">
         {typeof onPrevStep !== 'undefined' && (
           <Button
             type="button"
@@ -46,7 +89,7 @@ function WizardNavigation({
         )}
         <Button
           className={{ root: 'h-8 border-red-400' }}
-          onClick={() => onCloseWizard()}
+          onClick={() => requestClose()}
           data={{ cy: 'cancel-activity-creation' }}
           type="button"
         >
@@ -58,26 +101,69 @@ function WizardNavigation({
           </Button.Label>
         </Button>
       </div>
-      <Button
-        primary={lastStep}
-        disabled={!stepValidity[activeStep] || continueDisabled}
-        loading={isSubmitting}
-        type="submit"
-        data={{ cy: 'next-or-submit' }}
-        className={{ root: 'h-8 w-max' }}
+      <div
+        className={`flex flex-col items-end justify-self-end${lastStep && disabledReason ? ' gap-1' : ''}`}
       >
-        <Button.Icon
-          icon={lastStep ? faSave : faArrowRight}
+        {lastStep && (
+          <div
+            id={disabledReasonId}
+            className={
+              disabledReason ? 'text-sm text-red-600' : 'h-0 overflow-hidden'
+            }
+            data-cy={disabledReasonId}
+          >
+            {disabledReason}
+          </div>
+        )}
+        <Button
+          primary
+          disabled={!stepValidity[activeStep] || continueDisabled}
           loading={isSubmitting}
-        />
-        <Button.Label>
-          {lastStep
-            ? editMode
-              ? t('shared.generic.save')
-              : t('shared.generic.create')
-            : t('shared.generic.continue')}
-        </Button.Label>
-      </Button>
+          type="submit"
+          data={{ cy: 'next-or-submit' }}
+          className={{ root: 'h-8 w-max' }}
+          aria-describedby={
+            lastStep && disabledReason ? disabledReasonId : undefined
+          }
+        >
+          <Button.Icon
+            icon={lastStep ? faSave : faArrowRight}
+            loading={isSubmitting}
+          />
+          <Button.Label>
+            {lastStep
+              ? editMode
+                ? t('shared.generic.save')
+                : t('shared.generic.create')
+              : (continueLabels[activeStep] ?? t('shared.generic.continue'))}
+          </Button.Label>
+        </Button>
+      </div>
+      <Modal
+        open={confirmCancelOpen}
+        onClose={() => setConfirmCancelOpen(false)}
+        title={t(
+          editMode
+            ? 'manage.activityWizard.confirmCancelEditTitle'
+            : 'manage.activityWizard.confirmCancelTitle'
+        )}
+        primaryButtonStyle="primary"
+        primaryLabel={t('manage.activityWizard.confirmCancelKeepEditing')}
+        onPrimaryAction={() => setConfirmCancelOpen(false)}
+        dataPrimaryAction={{ cy: 'keep-editing-activity-creation' }}
+        secondaryLabel={t('manage.activityWizard.confirmCancelDiscard')}
+        onSecondaryAction={onCloseWizard}
+        dataSecondaryAction={{ cy: 'discard-activity-creation' }}
+        className={{ content: 'max-w-lg' }}
+      >
+        <div className="mb-2 text-sm">
+          {t(
+            editMode
+              ? 'manage.activityWizard.confirmCancelEditBody'
+              : 'manage.activityWizard.confirmCancelBody'
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }

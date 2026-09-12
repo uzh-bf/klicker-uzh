@@ -4,7 +4,6 @@ import {
   type NumericalInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 import ElementHistogram from '../charts/ElementHistogram'
 
 interface NREvaluationProps {

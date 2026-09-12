@@ -13,9 +13,6 @@ import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
-declare namespace global {
-  let __coverage__: any
-}
 
 function prepareApp({
   prisma,
@@ -26,6 +23,7 @@ function prepareApp({
   emitter,
   hatchet,
   tasks,
+  featureFlags,
 }: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
@@ -39,13 +37,29 @@ function prepareApp({
 
   const app = express()
 
-  /* istanbul ignore next */
-  if (global.__coverage__) {
-    try {
-      require('@cypress/code-coverage/middleware/express')(app)
-    } catch (e) {
-      console.error(e)
-    }
+  // Share the preload's current membership with the local test browser.
+  // No management endpoint is exposed, and production never mounts this route.
+  if (
+    process.env.NODE_ENV === 'test' &&
+    process.env.GROWTHBOOK_API_HOST === 'https://growthbook.test' &&
+    process.env.GROWTHBOOK_CLIENT_KEY === 'sdk-test'
+  ) {
+    app.get(
+      '/__growthbook__/api/features/sdk-test',
+      async (_req, res, next) => {
+        try {
+          const response = await fetch(
+            'https://growthbook.test/api/features/sdk-test'
+          )
+          res
+            .set('Cache-Control', 'no-store')
+            .status(response.status)
+            .json(await response.json())
+        } catch (error) {
+          next(error)
+        }
+      }
+    )
   }
 
   app.use(
@@ -180,6 +194,7 @@ function prepareApp({
       emitter,
       hatchet,
       tasks,
+      featureFlags,
     }),
     logging: true,
     cors: false,

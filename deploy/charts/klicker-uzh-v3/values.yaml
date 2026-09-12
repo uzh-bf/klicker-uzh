@@ -10,6 +10,36 @@ podSecurityContext: {}
 
 securityContext: {}
 
+# Database migration hook (prisma migrate deploy), run as an ArgoCD PreSync hook.
+# The image tag is NOT pinned here: it defaults to backendGraphql.image.tag (falling
+# back to the chart appVersion), so the migrator always follows the app release. Each
+# env therefore pins only the repository. A tag with no matching migrator image makes
+# the hook fail and blocks the whole sync — see docs/data-and-migrations.md.
+# The hook-delete-policy uses only BeforeHookCreation: successful Jobs persist
+# until the next sync so ArgoCD can settle their finalizers without racing the
+# running sync (upstream argo-cd#24187 / #27507).
+migrator:
+  enabled: true
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator
+    pullPolicy: Always
+  imagePullSecrets: []
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  # Unset on purpose: the TTL controller also deletes FAILED Jobs, taking the pod logs
+  # a failed migration needs. Set it only if leftover failed Jobs become a problem.
+  ttlSecondsAfterFinished: ""
+  # Rendered as "<fullname>-<value>"; set per env to the app workload class.
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
 notifications:
   url: ''
   secret: ''
@@ -37,6 +67,7 @@ vapid:
   privateKey: ''
 
 global:
+  deploymentEnvironment: development
   appOrigins:
     # Canonical origins per app (scheme + host[:port])
     api: ''
@@ -55,6 +86,17 @@ hatchet:
     apiUrl: ""
     tenantId: ""
     hostPort: ""
+  kbGraph:
+    disabled: false
+    hostPort: ""
+    apiUrl: ""
+    tlsStrategy: ""
+    workflowName: ""
+    timeoutSeconds: "21600"
+    standardGenerationModel: ""
+    standardCleaningModel: ""
+    highGenerationModel: ""
+    highCleaningModel: ""
   workers:
     general:
       replicaCount: 1
@@ -163,12 +205,21 @@ auth:
 
 chat:
   priorityClassName: production-workload
+  accountUsageEnforcementEnabled: false
+  lifecycleWritersEnabled: false
+  # Allows active requests and pending trace exports time to drain on shutdown.
+  terminationGracePeriodSeconds: 90
 
   replicaCount: 1
 
   openai:
     baseUrl: ''
     storeResponses: false
+
+  telemetry:
+    enabled: false
+    baseUrl: ''
+    environment: ''
 
   mcp:
     key: ''
@@ -326,6 +377,42 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+
+  knowledgeGraph:
+    host: ''
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
+    # One shared semester ledger covers graph builds and element-generation
+    # dispatches. These values are non-secret and must be explicit before either
+    # producer is enabled.
+    cost:
+      currency: 'CHF'
+      standardEstimateMinorUnits: ''
+      highEstimateMinorUnits: ''
+      maxCostMinorUnits: ''
+      semesterQuotaMinorUnits: ''
+      pricingVersion: ''
+      billingMode: 'SEMESTER_QUOTA'
+      semesterKey: ''
+
+  # Non-secret coordinates for the unified Klicker-element generation adapter.
+  # The dedicated Hatchet token and Azure connection string must be supplied by
+  # the externally managed backend-graphql Secret before enabling this block.
+  elementGeneration:
+    enabled: false
+    hatchetHostPort: ''
+    hatchetServerUrl: ''
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: ''
+      flashcardMinorUnits: ''
+      flashcardRetryMinorUnits: ''
+      pricingVersion: ''
 
   replicaCount: 3
 

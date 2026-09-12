@@ -63,6 +63,14 @@ function CatalogCollectionListItem({
         onClick={(e) => {
           e?.stopPropagation()
           if (
+            (e.target as HTMLElement).closest(
+              '[data-catalog-collection-actions]'
+            )
+          ) {
+            return
+          }
+
+          if (
             collection.access === ObjectAccess.Public ||
             collection.isShared ||
             collection.isManager
@@ -131,17 +139,19 @@ function CatalogCollectionListItem({
             </div>
           ) : null}
           {dropdownItems.length > 0 ? (
-            <Dropdown
-              items={dropdownItems}
-              trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
-              className={{
-                viewport: 'z-20',
-                item: 'py-0.5 text-sm',
-                trigger:
-                  'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
-              }}
-              data={{ cy: `catalog-collection-${collection.name}-actions` }}
-            />
+            <div data-catalog-collection-actions>
+              <Dropdown
+                items={dropdownItems}
+                trigger={<FontAwesomeIcon icon={faEllipsisVertical} />}
+                className={{
+                  viewport: 'z-20',
+                  item: 'py-0.5 text-sm',
+                  trigger:
+                    'h-7 w-7 rounded-full border-none bg-transparent text-gray-500 hover:bg-gray-100',
+                }}
+                data={{ cy: `catalog-collection-${collection.name}-actions` }}
+              />
+            </div>
           ) : null}
         </div>
       </div>

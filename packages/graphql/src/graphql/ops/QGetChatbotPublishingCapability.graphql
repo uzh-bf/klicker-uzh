@@ -1,0 +1,3 @@
+query GetChatbotPublishingCapability {
+  getChatbotPublishingCapability
+}

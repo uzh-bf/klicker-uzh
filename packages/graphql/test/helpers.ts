@@ -1,27 +1,29 @@
+import { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
-  AnswerCollection,
-  CatalogCollection,
+  type AnswerCollection,
+  type CatalogCollection,
   CourseAuthType,
-  Element,
+  type Element,
   ElementInstanceType,
   ElementStackType,
   ElementType,
   ObjectAccess,
   PermissionLevel,
-  PrismaClient,
+  type PrismaClient,
   PublicationStatus,
   ResponseCorrectness,
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import {
+  type CourseDeletionEvent,
   DisplayMode,
-  ElementData,
-  ElementInstanceOptions,
-  ElementInstanceResults,
+  type ElementData,
+  type ElementInstanceOptions,
+  type ElementInstanceResults,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -29,26 +31,30 @@ import {
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
-import { EventEmitter } from 'events'
 import generatePassword from 'generate-password'
 import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
+import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
+import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from '@/services/courseDuplication.js'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
-} from 'src/services/groups.js'
+} from '@/services/groups.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
   handleStandardLiveQuizBlockClosureAggregation,
-} from 'src/services/liveQuizzes.js'
+} from '@/services/liveQuizzes.js'
 import {
   handleEndExpiredMicroLearning,
   handlePublishScheduledMicroLearning,
-} from 'src/services/microLearning.js'
-import { handlePublishScheduledPracticeQuiz } from 'src/services/practiceQuizzes.js'
-import { v4 as uuidv4 } from 'uuid'
-import { vi } from 'vitest'
+} from '@/services/microLearning.js'
+import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -83,6 +89,7 @@ export async function testInitialization(
   hatchet: Hatchet,
   emitter: EventEmitter
 ): Promise<TestInitializationResult> {
+  await requireDisposableDatabase(prisma)
   // upsert all users in the database
   await Promise.all(
     [userOne, userTwo, userThree, userFour, userFive, userSix].map(
@@ -137,6 +144,7 @@ export async function testInitialization(
     redisExec,
     redisAssessmentExec,
     prisma,
+    tasks: {} as ContextWithUser['tasks'],
   }
 
   // initialize tasks to be called
@@ -278,10 +286,44 @@ export async function testInitialization(
         return { success }
       },
     }),
+    processCourseDuplication: hatchet.task({
+      name: 'process-course-duplication',
+      fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
+        const success = await handleProcessCourseDuplication(
+          { jobId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    sweepStaleCourseDuplications: hatchet.task({
+      name: 'sweep-stale-course-duplications',
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
+        const success = await handleSweepStaleCourseDuplications(
+          {},
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    processCourseDeletion: hatchet.task({
+      name: 'process-course-deletion',
+      fn: vi.fn(async (input: CourseDeletionEvent, executionCtx) => {
+        const success = await handleProcessCourseDeletion(
+          input,
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
   }
+  hatchetCtx.tasks = tasks
 
   // mock context with user including all required properties
-  const userOneCtx = {
+  const userOneCtx: ContextWithUser = {
     user: {
       sub: userOne.sub,
       role: UserRole.USER,
@@ -304,23 +346,23 @@ export async function testInitialization(
   }
 
   // mock remaining contexts
-  const userTwoCtx = {
+  const userTwoCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userTwo.sub },
   }
-  const userThreeCtx = {
+  const userThreeCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userThree.sub },
   }
-  const userFourCtx = {
+  const userFourCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFour.sub },
   }
-  const userFiveCtx = {
+  const userFiveCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userFive.sub },
   }
-  const userSixCtx = {
+  const userSixCtx: ContextWithUser = {
     ...userOneCtx,
     user: { ...userOneCtx.user, sub: userSix.sub },
   }
@@ -337,6 +379,7 @@ export async function testInitialization(
 
 // function to be run at the end of a test suite / test case to ensure complete deletion of all test data
 export async function testCleanup(prisma: PrismaClient) {
+  await requireDisposableDatabase(prisma)
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
@@ -364,20 +407,17 @@ export async function testCleanup(prisma: PrismaClient) {
 }
 
 // setup test database configuration
-// use the DATABASE_URL environment variable if available (for CI or local dev)
+// Tests require an explicit disposable database; there is no retained-data fallback.
 export function getDatabaseUrl() {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL
-  }
-
-  // as a fallback, use default PostgreSQL connection
-  process.env.DATABASE_URL =
-    'postgresql://klicker-prod:klicker@localhost:5432/klicker-prod'
+  if (!process.env.DATABASE_URL)
+    throw new Error('DATABASE_URL is required for tests')
+  return process.env.DATABASE_URL
 }
 
 export async function initializePrisma() {
   // configure database
   getDatabaseUrl()
+  await requireDisposableDatabase(prisma)
 
   try {
     // create EventEmitter for test context

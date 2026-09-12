@@ -3,7 +3,6 @@ import type {
   FreeTextInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
-import React from 'react'
 
 interface FTEvaluationProps {
   options: FreeTextElementOptions

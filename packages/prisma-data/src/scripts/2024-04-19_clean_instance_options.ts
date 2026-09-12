@@ -1,8 +1,6 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   // fetch all element instances and their associated klicker elements
   const instances = await prisma.elementInstance.findMany({
     include: {

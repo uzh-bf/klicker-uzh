@@ -1,6 +1,8 @@
-import { Chatbot } from '@klicker-uzh/graphql/dist/ops'
+import type { Chatbot } from '@klicker-uzh/graphql/dist/ops'
+import { Badge } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
+import { getChatbotStatusTranslationKey } from './chatbotStatus'
 
 function ChatbotItem({
   chatbot,
@@ -25,7 +27,15 @@ function ChatbotItem({
       data-cy={`chatbot-${chatbot.name}`}
     >
       <div className="flex flex-col items-start">
-        <span className="font-medium">{chatbot.name}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">{chatbot.name}</span>
+          <Badge
+            className="bg-gray-100 text-gray-800 hover:bg-gray-200"
+            data-cy="chatbot-status"
+          >
+            {t(getChatbotStatusTranslationKey(chatbot.status))}
+          </Badge>
+        </div>
         <div className="text-sm text-gray-500">
           {courseNames.length > 0
             ? t('manage.resources.linkedCoursesList', {

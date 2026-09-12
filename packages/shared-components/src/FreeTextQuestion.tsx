@@ -2,7 +2,6 @@ import type {
   FreeTextElementOptions,
   FreeTextInstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
-import React from 'react'
 import FTEvaluation from './evaluation/FTEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'
 import QuestionExplanation from './evaluation/QuestionExplanation'

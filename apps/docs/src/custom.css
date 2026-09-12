@@ -2,10 +2,10 @@
 @layer theme, base, components, utilities, docusaurus;
 
 /* import tailwind without preflight styles */
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 
-@plugin '@tailwindcss/typography';
+@plugin "@tailwindcss/typography";
 
 @source "../node_modules/@uzh-bf/design-system/src";
 @source "./";
@@ -203,7 +203,7 @@
   }
 
   button:not(:disabled),
-  [role='button']:not(:disabled) {
+  [role="button"]:not(:disabled) {
     cursor: pointer;
   }
 }

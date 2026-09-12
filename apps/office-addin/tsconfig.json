@@ -1,29 +1,24 @@
 {
+  "include": ["src/**/*.ts"],
   "compilerOptions": {
-    // Base Options
-    "target": "es2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowJs": true,
-    "resolveJsonModule": true,
+    "target": "es2022",
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    // Strictness
+    "verbatimModuleSyntax": false,
+    /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
-    // React Specific
-    "jsx": "react-jsx",
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    // Build Output
+    /* If transpiling with TypeScript: */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
     "sourceMap": true,
-    "declaration": true,
-    "declarationDir": "./dist/types",
-    "outDir": "./dist",
-    "emitDeclarationOnly": true
-  },
-  "include": ["src"]
+    /* If your code runs in the DOM: */
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "types": ["office-js"]
+  }
 }

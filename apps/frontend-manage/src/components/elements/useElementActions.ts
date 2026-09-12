@@ -1,14 +1,29 @@
+import { useMutation } from '@apollo/client'
 import { faCopy, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import {
+  faArchive,
   faComment,
+  faInbox,
   faPencil,
   faShare,
   faX,
 } from '@fortawesome/free-solid-svg-icons'
-import { Element } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ApplyElementBatchOperationsDocument,
+  type Element,
+} from '@klicker-uzh/graphql/dist/ops'
+import { toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useMemo } from 'react'
-import { ActivityAction } from '../activities/actions/useAvailableActions'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import type { ActivityAction } from '../activities/actions/useAvailableActions'
 
 function useElementActions({
   element,
@@ -20,6 +35,7 @@ function useElementActions({
   setRemovalModalOpen,
   setActivityLogOpen,
   setSharingModalOpen,
+  refetchElements,
 }: {
   element: Element
   disabled: boolean
@@ -30,8 +46,102 @@ function useElementActions({
   setRemovalModalOpen: Dispatch<SetStateAction<boolean>>
   setActivityLogOpen: Dispatch<SetStateAction<boolean>>
   setSharingModalOpen: Dispatch<SetStateAction<boolean>>
+  refetchElements: () => Promise<void>
 }): ActivityAction[] {
   const t = useTranslations()
+  const isArchived = element.isArchived ?? false
+  const [applyElementBatchOperations, { loading: updatingArchiveMutation }] =
+    useMutation(ApplyElementBatchOperationsDocument)
+  const [archiveStateBusy, setArchiveStateBusy] = useState(false)
+  const archiveStateBusyRef = useRef(false)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  const updateArchiveState = useCallback(async () => {
+    if (archiveStateBusyRef.current) return
+
+    archiveStateBusyRef.current = true
+    setArchiveStateBusy(true)
+
+    try {
+      let result: 'success' | 'unchanged' | 'failure' | 'uncertain'
+
+      try {
+        const { data } = await applyElementBatchOperations({
+          variables: {
+            elementIds: [element.id],
+            archive: !isArchived,
+            unarchive: isArchived,
+            updateInstances: false,
+            updateTemplateInstances: false,
+          },
+        })
+        const updatedCount = data?.applyElementBatchOperations
+        if (updatedCount === 1) {
+          result = 'success'
+        } else if (updatedCount === 0) {
+          result = 'unchanged'
+        } else {
+          result = 'failure'
+        }
+      } catch (error) {
+        console.error(error)
+        result = 'uncertain'
+      }
+
+      // The server may have applied an uncertain request, so refresh before
+      // showing the warning and let the UI reflect the confirmed server state.
+      let refreshFailed = false
+      try {
+        await refetchElements()
+      } catch (error) {
+        console.error(error)
+        refreshFailed = true
+      }
+
+      const actionMessage = isArchived
+        ? t('manage.questionPool.elementRestoredSuccessfully')
+        : t('manage.questionPool.elementArchivedSuccessfully')
+
+      if ((result === 'success' || result === 'unchanged') && !refreshFailed) {
+        toast({
+          type: 'success',
+          message:
+            result === 'unchanged'
+              ? t('manage.questionPool.elementArchiveActionUnchanged')
+              : actionMessage,
+          options: { duration: 3000 },
+        })
+      } else if (result === 'success' || result === 'unchanged') {
+        toast({
+          type: 'warning',
+          message: t('manage.questionPool.elementArchiveRefreshFailed'),
+          options: { duration: 5000 },
+        })
+      } else if (result === 'uncertain') {
+        toast({
+          type: 'warning',
+          message: t('manage.questionPool.elementArchiveActionUncertain'),
+          options: { duration: 5000 },
+        })
+      } else {
+        toast({
+          type: 'error',
+          message: t('manage.questionPool.elementArchiveActionFailed'),
+          options: { duration: 5000 },
+        })
+      }
+    } finally {
+      archiveStateBusyRef.current = false
+      if (isMountedRef.current) setArchiveStateBusy(false)
+    }
+  }, [applyElementBatchOperations, element.id, isArchived, refetchElements, t])
 
   const actions = useMemo(
     () => [
@@ -93,10 +203,23 @@ function useElementActions({
         className: 'text-red-600 hover:text-red-600',
         data: { cy: `delete-element-${element.name}` },
       },
+      {
+        id: 'archiveElement',
+        label: isArchived
+          ? t('manage.questionPool.restoreFromArchive')
+          : t('manage.questionPool.moveToArchive'),
+        icon: isArchived ? faInbox : faArchive,
+        onClick: updateArchiveState,
+        disabled: disabled || updatingArchiveMutation || archiveStateBusy,
+        data: {
+          cy: `${isArchived ? 'unarchive' : 'archive'}-element-${element.name}`,
+        },
+      },
     ],
     [
       t,
       element,
+      isArchived,
       disabled,
       setShowRecoveryPrompt,
       setModificationModalOpen,
@@ -105,6 +228,9 @@ function useElementActions({
       setRemovalModalOpen,
       setActivityLogOpen,
       setSharingModalOpen,
+      updatingArchiveMutation,
+      archiveStateBusy,
+      updateArchiveState,
     ]
   )
 

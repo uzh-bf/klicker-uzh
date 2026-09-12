@@ -1,7 +1,9 @@
 'use client'
 
+import { normalizeCustomMathTags } from '@/src/components/markdown-text'
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button, Modal } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
 
 type MessageImageAttachment = {
   id?: string
@@ -23,6 +25,7 @@ interface ThreadImageViewerModalProps {
 }
 
 function AttachmentPlaceholder({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations()
   return (
     <div
       className={
@@ -31,7 +34,7 @@ function AttachmentPlaceholder({ compact = false }: { compact?: boolean }) {
           : 'text-muted-foreground bg-muted flex min-h-72 w-full items-center justify-center rounded-lg border text-sm font-medium'
       }
     >
-      Preview unavailable
+      {t('chat.imageViewer.previewUnavailable')}
     </div>
   )
 }
@@ -44,15 +47,17 @@ export function ThreadImageViewerModal({
   onClose,
   onRetry,
 }: ThreadImageViewerModalProps) {
+  const t = useTranslations()
   if (!attachment) return null
 
   const previewSrc =
     attachment.imageBase64 ?? attachment.imagePreviewBase64 ?? null
   const description = attachment.imageDescription?.trim() || null
-  const title = 'Image attachment'
+  const title = t('chat.imageViewer.title')
 
   return (
     <Modal
+      data={{ cy: 'chat-image-viewer' }}
       title={title}
       className={{
         content:
@@ -64,6 +69,7 @@ export function ThreadImageViewerModal({
       <div className="space-y-4">
         {previewSrc ? (
           <img
+            data-cy="chat-image-viewer-image"
             src={previewSrc}
             alt={description || title}
             className="max-h-[70vh] w-full rounded-lg border object-contain"
@@ -74,8 +80,9 @@ export function ThreadImageViewerModal({
 
         {description ? (
           <Markdown
-            content={description}
+            content={normalizeCustomMathTags(description)}
             withProse
+            singleDollarTextMath
             className={{
               root: 'prose prose-sm text-foreground max-w-none',
             }}
@@ -83,14 +90,18 @@ export function ThreadImageViewerModal({
         ) : null}
 
         {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading full image...</p>
+          <p className="text-muted-foreground text-sm">
+            {t('chat.imageViewer.loading')}
+          </p>
         ) : null}
 
         {error ? (
           <div className="space-y-3">
-            <p className="text-sm text-red-600">{error}</p>
-            <Button onClick={onRetry}>
-              <Button.Label>Retry</Button.Label>
+            {/* text-destructive on white is ~4.8:1, close to the 4.5:1 AA
+                floor — same margin as the red-600 it replaces. */}
+            <p className="text-destructive text-sm">{error}</p>
+            <Button data={{ cy: 'chat-image-viewer-retry' }} onClick={onRetry}>
+              <Button.Label>{t('chat.imageViewer.retry')}</Button.Label>
             </Button>
           </div>
         ) : null}

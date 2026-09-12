@@ -1,9 +1,9 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementBlock,
   ElementInstance,
   ElementType,
   LiveQuiz,
-  PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -12,7 +12,6 @@ import {
   ElementResultsSelection,
 } from '@klicker-uzh/types'
 import { signJWT } from '@klicker-uzh/util'
-import { PrismaPg } from '@prisma/adapter-pg'
 import { ChainableCommander, Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
 
@@ -23,9 +22,6 @@ import { createHash } from 'node:crypto'
 const DRY_RUN = true
 
 async function run() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
-
   // connect to the assessment live quiz
   const redis = new Redis({
     family: 4,

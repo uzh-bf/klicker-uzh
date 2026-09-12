@@ -61,8 +61,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD }}
   build-amd:
-    if: github.event.pull_request.draft == false
+    if: ${{ false }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -108,3 +110,5 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_PRD }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_PRD }}

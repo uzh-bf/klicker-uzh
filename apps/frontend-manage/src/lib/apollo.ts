@@ -29,6 +29,8 @@ interface PageProps {
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
+const MAX_QUERY_RETRY_ATTEMPTS = 3
+
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
 function createIsomorphLink() {
@@ -38,11 +40,20 @@ function createIsomorphLink() {
     process.env.NODE_ENV === 'development'
       ? []
       : [
-          createPersistedQueryLink({
-            useGETForHashedQueries: true, // Optional but allows better caching
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            generateHash: usePregeneratedHashes(hashes),
-          }),
+          split(
+            ({ operationName }) =>
+              operationName === 'QGetCourseVerificationRecords',
+            createPersistedQueryLink({
+              useGETForHashedQueries: false,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            }),
+            createPersistedQueryLink({
+              useGETForHashedQueries: true,
+              // eslint-disable-next-line react-hooks/rules-of-hooks
+              generateHash: usePregeneratedHashes(hashes),
+            })
+          ),
         ]
 
   const errorLink = onError(({ graphQLErrors, networkError }) => {
@@ -95,8 +106,20 @@ function createIsomorphLink() {
         max: Infinity,
         jitter: true,
       },
-      attempts: {
-        max: 3,
+      attempts: (count, operation, error) => {
+        const definition = getOperationAST(
+          operation.query,
+          operation.operationName
+        )
+
+        if (
+          definition?.kind === 'OperationDefinition' &&
+          definition.operation === 'mutation'
+        ) {
+          return false
+        }
+
+        return count < MAX_QUERY_RETRY_ATTEMPTS && !!error
       },
     })
 

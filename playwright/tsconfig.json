@@ -10,5 +10,11 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["playwright.config.ts", "tests/**/*.ts"]
+  "include": [
+    "playwright.config.ts",
+    "global-setup.ts",
+    "tests/**/*.ts",
+    "util/**/*.ts",
+    "util/fixtures/**/*.ts"
+  ]
 }

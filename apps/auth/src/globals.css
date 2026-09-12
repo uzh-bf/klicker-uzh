@@ -1,10 +1,10 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@import 'tw-animate-css';
+@import "tw-animate-css";
 
-@plugin '@tailwindcss/typography';
-@plugin '@tailwindcss/aspect-ratio';
-@plugin '@tailwindcss/forms';
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/aspect-ratio";
+@plugin "@tailwindcss/forms";
 
 @source "../node_modules/@uzh-bf/design-system/src";
 @source "../../../packages/shared-components/src";
@@ -14,11 +14,13 @@
 
 @theme {
   /* UZH fonts */
-  --font-sans: var(--theme-font-primary), var(--source-sans-pro),
-    'Source Sans 3', 'Source Sans Pro', ui-sans-serif, system-ui, sans-serif,
-    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-mono: var(--mono-space-font), ui-monospace, SFMono-Regular, 'SF Mono',
-    Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-sans:
+    var(--theme-font-primary), var(--source-sans-pro), "Source Sans 3",
+    "Source Sans Pro", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono:
+    var(--mono-space-font), ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* UZH colors */
   --color-uzh-blue: #0028a5;
@@ -199,7 +201,7 @@
   }
 
   button:not(:disabled),
-  [role='button']:not(:disabled) {
+  [role="button"]:not(:disabled) {
     cursor: pointer;
   }
 }

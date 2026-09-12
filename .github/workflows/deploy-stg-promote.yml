@@ -1,0 +1,130 @@
+name: Promote to stg
+
+# This controller is evaluated from the workflow definition commit, never from
+# the candidate source tree. Candidate workflow files, run metadata, jobs, and
+# registry manifests are inputs to validation only; no candidate code, action,
+# cache, or artifact is checked out or executed here.
+
+on:
+  workflow_run:
+    workflows:
+      - 'Check codebase'
+      - 'Check for secrets (gitleaks)'
+      - 'Test graphql package logic functionalities'
+      - 'Klicker automated testing with playwright'
+      - 'Test lightweight unit suites'
+      - 'Test OLAT-API functionalities'
+      - 'Production translation context'
+      - 'Build Fallback'
+      - 'Build Docker image for analytics (stg)'
+      - 'Build Docker image for auth (stg)'
+      - 'Build Docker image for backend-docker (stg)'
+      - 'Build Docker image for chat (stg)'
+      - 'Build Docker image for frontend-assessment (stg)'
+      - 'Build Docker image for frontend-control (stg)'
+      - 'Build Docker image for frontend-manage (stg)'
+      - 'Build Docker image for frontend-pwa (stg)'
+      - 'Build Docker image for hatchet-worker-general (stg)'
+      - 'Build Docker image for hatchet-worker-response-processor (stg)'
+      - 'Build Docker image for lti (stg)'
+      - 'Build Docker image for mcp-lecturer (stg)'
+      - 'Build Docker image for mcp-student (stg)'
+      - 'Build Docker image for olat-api (stg)'
+      - 'Build Docker image for response-api (stg)'
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: '40-character commit SHA on the selected source branch'
+        required: true
+        type: string
+      dry_run:
+        description: 'Validate and emit the receipt without updating stg-release'
+        default: true
+        required: true
+        type: boolean
+      expected_release_sha:
+        description: 'Required for apply: release SHA from dry run, or absent for initial creation'
+        required: false
+        type: string
+      expected_controller_sha:
+        description: 'Required for apply: controller SHA recorded by the dry run'
+        required: false
+        type: string
+      confirm_ref_update:
+        description: 'Required only when applying a manual promotion: stg-release'
+        required: false
+        type: string
+
+# Each candidate gets its own serialized controller lane. There is deliberately
+# no global pending writer group: an out-of-order candidate must be evaluated
+# against the remote ref rather than dropped behind another candidate.
+concurrency:
+  group: promote-stg-${{ github.event.workflow_run.head_sha || github.event.inputs.sha || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  promote:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout the trusted controller
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.workflow_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Verify the trusted checkout
+        env:
+          TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${TRUSTED_WORKFLOW_SHA}"
+
+      - name: Validate and promote the selected candidate
+        id: promote
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.event.inputs.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+          STG_PROMOTE_TOKEN: ${{ ((github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' && github.event.inputs.confirm_ref_update == 'stg-release') || (github.event_name == 'workflow_run' && vars.STG_RELEASE_PROMOTION_ENABLED == 'true')) && secrets.STG_PROMOTE_TOKEN || '' }}
+          PROMOTION_ENABLED: ${{ vars.STG_RELEASE_PROMOTION_ENABLED || 'false' }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
+          RECEIPT_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.json
+          CHECKSUM_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.sha256
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const promoter = require('./.github/scripts/stg-release-promoter.js')
+            await promoter.runPromotion({
+              candidateSha: process.env.CANDIDATE_SHA,
+              context,
+              core,
+              github,
+              gitToken: process.env.STG_PROMOTE_TOKEN,
+              promotionEnabled: process.env.PROMOTION_ENABLED,
+              sourceBranch: process.env.SOURCE_BRANCH,
+              receiptPath: process.env.RECEIPT_PATH,
+              checksumPath: process.env.CHECKSUM_PATH,
+            })
+
+      - name: Upload the promotion receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          if-no-files-found: ignore
+          name: stg-release-promotion-receipt-${{ github.event.workflow_run.head_sha || github.event.inputs.sha || github.run_id }}
+          path: |
+            ${{ runner.temp }}/stg-release-promotion-receipt.json
+            ${{ runner.temp }}/stg-release-promotion-receipt.sha256

@@ -4,6 +4,7 @@ heartbeats:
   dailyGroupScores: https://betteruptime.com/api/v1/heartbeat/xN8ytcTixyVXsWnNjk9ndimD
 
 global:
+  deploymentEnvironment: staging
   appOrigins:
     api: 'https://api.klicker.stg.df-app.ch'
     auth: 'https://auth.klicker.stg.df-app.ch'
@@ -20,15 +21,23 @@ podAnnotations:
 hatchet:
   client:
     tlsStrategy: 'none'
-    apiUrl: 'http://app-klicker-uzh-hatchet-api.stg-hatchet.svc.cluster.local:8080'
+    apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
   workers:
     general:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: '66b27d0d521e'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
+      resources:
+        requests:
+          cpu: 50m
+          memory: 384Mi
+        limits:
+          memory: 2Gi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -45,10 +54,19 @@ hatchet:
     responseProcessor:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: '66b27d0d521e'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          memory: 512Mi
+
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -65,10 +83,19 @@ hatchet:
     responseProcessorAssessment:
       replicaCount: 1
       priorityClassName: staging-workload
+      podAnnotations:
+        rollout.klicker.uzh.ch/release: '66b27d0d521e'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
+      resources:
+        requests:
+          cpu: 50m
+          memory: 192Mi
+        limits:
+          memory: 256Mi
+
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -97,6 +124,8 @@ hatchet:
 
 auth:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -119,7 +148,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     annotations:
@@ -142,30 +171,77 @@ auth:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 192Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
     storeResponses: true
 
+  telemetry:
+    enabled: false
+    environment: 'staging'
+
   automaticModels:
-    primaryId: gpt-5.1
-    fallbackId: gpt-4.1-mini
+    primaryId: auto
+    fallbackId: gpt-5.6-luna
 
   modelRegistry:
+    # "Auto" routes through the LiteLLM auto-router, which self-selects the
+    # tier per request (SIMPLE=gpt-5.6-luna-medium, MEDIUM=gpt-5.6-luna-high,
+    # COMPLEX=gpt-5.6-luna-xhigh, REASONING=gpt-5.6-sol-medium; match_threshold
+    # 0.55). It is a normal selectable model (fallback: false) and is also the
+    # global automatic-model primary. Chatbots using automatic model selection
+    # therefore use Auto by default; explicit model selections remain respected.
+    # A chatbot can be pinned to Auto-only via its DB columns
+    # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
+    # The accounting rate is the accepted rounded blend for an observed
+    # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
+    # overhead remain outside the registry's selected-model token fields.
+    - id: auto
+      deploymentId: klickeruzh/azure/auto-router
+      name: Auto
+      description: Automatic model selection (routes to the best model per request)
+      supportsImageAttachments: true
+      usesResponsesApi: true
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
+      cost:
+        input: 1.0
+        output: 5.0
+    - id: gpt-5.6-luna
+      deploymentId: klickeruzh/azure/gpt-5.6-luna
+      name: GPT-5.6 Luna
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: true
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 0.2
+        output: 1.2
     - id: gpt-4.1
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
       supportsImageAttachments: true
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 2.0
         output: 8.0
@@ -182,6 +258,8 @@ chat:
         - medium
         - high
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 1.25
         output: 10.0
@@ -198,9 +276,11 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
+        input: 2.5
+        output: 15.0
     - id: gpt-5.5
       deploymentId: klickeruzh/azure/gpt-5.5
       name: GPT-5.5
@@ -214,19 +294,11 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
-    - id: gpt-4.1-mini
-      deploymentId: klickeruzh/azure/gpt-4.1-mini
-      name: GPT-4.1 Mini
-      description: Small OpenAI model
-      supportsImageAttachments: true
-      fallback: true
-      cost:
-        input: 0.4
-        output: 1.6
-
+        input: 5.0
+        output: 30.0
   replicaCount: 1
 
   autoscaling:
@@ -248,7 +320,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     annotations:
@@ -271,14 +343,16 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 320Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 768Mi
 
 frontendPWA:
-  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
+  allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -301,7 +375,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -322,14 +396,15 @@ frontendPWA:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 200Mi
+    limits:
+      memory: 600Mi
 
 frontendManage:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -352,7 +427,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -374,21 +449,22 @@ frontendManage:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 192Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      memory: 256Mi
 
 frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   autoscaling:
     enabled: false
@@ -426,13 +502,14 @@ frontendControl:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 128Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 backendGraphql:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
@@ -455,7 +532,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -492,21 +569,22 @@ backendGraphql:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 100m
+      memory: 384Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      memory: 600Mi
 
 olatApi:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   autoscaling:
     enabled: false
@@ -544,13 +622,14 @@ olatApi:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 128Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 lti:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
   replicaCount: 1
 
   affinity:
@@ -577,7 +656,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -598,11 +677,14 @@ responseApi:
 
   priorityClassName: staging-workload
 
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: '66b27d0d521e'
+
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3
+    tag: v3-ai
     pullPolicy: Always
 
   autoscaling:
@@ -641,14 +723,15 @@ responseApi:
   resources:
     requests:
       cpu: 50m
-      memory: 50Mi
+      memory: 128Mi
     limits:
-      cpu: 200m
       memory: 200Mi
 
 assessment:
   frontendPWA:
     priorityClassName: staging-workload
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: '66b27d0d521e'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -682,7 +765,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     ingress:
       className: haproxy
@@ -703,14 +786,15 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   backendGraphql:
     priorityClassName: staging-workload
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: '66b27d0d521e'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -744,7 +828,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -776,17 +860,18 @@ assessment:
 
     resources:
       requests:
-        cpu: 50m
-        memory: 50Mi
-      limits:
-        cpu: 200m
+        cpu: 100m
         memory: 200Mi
+      limits:
+        memory: 600Mi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.stg.df-app.ch'
 
     priorityClassName: staging-workload
 
+    podAnnotations:
+      rollout.klicker.uzh.ch/release: '66b27d0d521e'
     replicaCount: 1
 
     autoscaling:
@@ -821,7 +906,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     ingress:
       className: haproxy
@@ -843,7 +928,13 @@ assessment:
     resources:
       requests:
         cpu: 50m
-        memory: 50Mi
+        memory: 128Mi
       limits:
-        cpu: 200m
         memory: 200Mi
+
+# Migration hook image: only the repo is pinned; the tag auto-tracks the
+# backendGraphql image tag above (floating selected source tag on stg).
+migrator:
+  priorityClassName: staging-workload
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm

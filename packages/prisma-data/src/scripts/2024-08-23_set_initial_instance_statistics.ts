@@ -1,9 +1,8 @@
-import { ElementInstanceType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
+import { ElementInstanceType } from '@klicker-uzh/prisma/client'
 import { getInitialInstanceStatistics } from '@klicker-uzh/util'
 
 async function run() {
-  const prisma = new PrismaClient()
-
   let updatedPQInstances = 0
   let updatedMLInstances = 0
   let updatedGAInstances = 0

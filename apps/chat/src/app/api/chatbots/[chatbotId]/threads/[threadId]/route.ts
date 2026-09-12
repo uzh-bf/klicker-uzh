@@ -1,6 +1,6 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { ThreadService } from '@/src/services/threads'
 import { NextRequest, NextResponse } from 'next/server'
-import { ThreadService } from 'src/services/threads'
 
 /**
  * Deletes a specific thread and all its associated messages permanently for the authenticated participant.

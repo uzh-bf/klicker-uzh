@@ -11,7 +11,7 @@ import type {
 import { Markdown } from '@klicker-uzh/markdown'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import CSEvaluation from './evaluation/CSEvaluation'
 import PracticeQuizPoints from './evaluation/PracticeQuizPoints'

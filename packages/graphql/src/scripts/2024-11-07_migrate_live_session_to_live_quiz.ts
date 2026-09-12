@@ -2,6 +2,7 @@ import {
   gradeQuestionFreeText,
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   Element,
   ElementBlock,
@@ -11,7 +12,7 @@ import {
   ElementType,
   LiveQuiz,
   LiveSession,
-  PrismaClient,
+  type PrismaClient,
   PublicationStatus,
   QuestionInstance,
   SessionBlock,
@@ -663,8 +664,6 @@ async function run() {
     port: Number(process.env.REDIS_PORT) ?? 6379,
     tls: process.env.REDIS_TLS ? {} : undefined,
   })
-
-  const prisma = new PrismaClient()
 
   // fetch all live sessions with associated question instances
   const liveSessions = await prisma.liveSession.findMany({

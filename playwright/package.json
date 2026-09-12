@@ -2,19 +2,30 @@
   "private": true,
   "name": "@klicker-uzh/playwright",
   "devDependencies": {
+    "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/types": "workspace:*",
     "@playwright/test": "~1.58.0",
-    "@types/node": "^20.19.11",
-    "typescript": "~5.6.3"
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^24.10.1",
+    "bcryptjs": "~2.4.3",
+    "jose": "~5.9.4",
+    "typescript": "~6.0.3"
   },
   "scripts": {
-    "show-report": "playwright show-report",
-    "test": "playwright test",
-    "test:headed": "playwright test --headed --project=chromium",
-    "test:run": "playwright test",
-    "test:ui": "playwright test --ui"
+    "check": "tsc --noEmit -p tsconfig.json",
+    "show-report": "node ../util/run-playwright-host.mjs --show-report",
+    "test": "node ../util/run-playwright-host.mjs",
+    "test:headed": "node ../util/run-playwright-host.mjs --headed --project=chromium",
+    "test:headed:raw": "node ../util/run-playwright-host.mjs --headed --project=chromium",
+    "test:host": "node ../util/run-playwright-host.mjs",
+    "test:raw": "node ../util/run-playwright-host.mjs",
+    "test:run": "node ../util/run-playwright-host.mjs",
+    "test:run:raw": "node ../util/run-playwright-host.mjs",
+    "test:ui": "node ../util/run-playwright-host.mjs --ui",
+    "test:ui:raw": "node ../util/run-playwright-host.mjs --ui"
   },
   "engines": {
-    "node": "=20"
+    "node": "=24"
   },
   "volta": {
     "extends": "../package.json"

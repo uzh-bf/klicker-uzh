@@ -1,0 +1,3 @@
+mutation MRequestCatalystAccess($institution: String!, $useCase: String!) {
+  requestCatalystAccess(institution: $institution, useCase: $useCase)
+}

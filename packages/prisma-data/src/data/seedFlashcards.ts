@@ -1,10 +1,11 @@
+import { prisma } from '@klicker-uzh/prisma'
 import {
   type Element,
   ElementInstanceType,
   ElementOrderType,
   ElementStackType,
   ElementType,
-  PrismaClient,
+  type PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import {
@@ -295,12 +296,11 @@ export async function seedFlashcards(prismaClient: PrismaClient) {
 }
 
 // if main module, run this
-const prismaClient = new PrismaClient()
 // @ts-ignore
-await seedFlashcards(prismaClient)
+await seedFlashcards(prisma)
   .catch((err) => {
     console.error(err)
   })
   .finally(async () => {
-    await prismaClient.$disconnect()
+    await prisma.$disconnect()
   })

@@ -1,9 +1,7 @@
 # This script computes the activity progress analytics
 # ! This script is a copy of the corresponding notebook content and needs to be kept in sync with it
 
-import os
 from prisma import Prisma
-import pandas as pd
 import sys
 
 # set the python path correctly for module imports to work
@@ -39,7 +37,7 @@ df_courses = get_running_past_courses(db)
 # Iterate over the course and fetch all question responses linked to it
 for idx, course in df_courses.iterrows():
     course_id = course["id"]
-    print(f"Processing course", idx, "of", len(df_courses), "with id", course_id)
+    print("Processing course", idx, "of", len(df_courses), "with id", course_id)
 
     # extract number of participants
     course_participants = len(course["participations"])

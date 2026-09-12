@@ -1,4 +1,4 @@
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementInstanceType,
   ElementStackType,
@@ -81,8 +81,6 @@ function prepareMicrolearningInstanceResults(
 }
 
 async function migrate() {
-  const prisma = new PrismaClient()
-
   const microSessions = await prisma.microSession.findMany({
     include: {
       course: true,

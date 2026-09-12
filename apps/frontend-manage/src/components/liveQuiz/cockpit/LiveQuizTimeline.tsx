@@ -119,7 +119,7 @@ function LiveQuizTimeline({
       <div className="flex flex-1 flex-col items-center gap-y-2 pb-3 md:flex-wrap lg:flex-row lg:items-end">
         <div className="flex flex-1 flex-col flex-wrap items-center text-center lg:items-start lg:text-left">
           <H1>Quiz: {quizName}</H1>
-          <H4>
+          <H4 data={{ cy: 'live-quiz-display-name' }}>
             {t('manage.activityWizard.displayName')}: {quizDisplayName}
           </H4>
         </div>
