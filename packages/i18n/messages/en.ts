@@ -1787,6 +1787,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
+    importedSourcesTitle: 'Imported sources',
+    importedSourcesNotice:
+      'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
+    importedSourcesIncomplete:
+      'The list covers the most recently scanned sources. Older sources may not be listed yet.',
+    importedSourcesEmpty:
+      'No imported sources have been found for this knowledge base yet.',
+    importedSourcesLoadError: 'The imported sources could not be loaded.',
+    loadMoreImportedSources: 'Load more imported sources',
+    importedSourcesLoadMoreError:
+      'The additional imported sources could not be loaded. Try again.',
+    importedObservedAt: 'Observed {date}',
+    importedIngestedAt: 'Ingested {date}',
+    importedIngestionUnknown: 'Ingestion time not recorded',
+    importedSourceGeneric: 'Source',
+    importedVideoNoFileHint:
+      'Video content is indexed without storing the original file.',
     noResources: 'No resources have been added yet.',
     emptyResourceHint: 'Use Add resource above to add a website or document.',
     updatedAtLabel: 'Updated',

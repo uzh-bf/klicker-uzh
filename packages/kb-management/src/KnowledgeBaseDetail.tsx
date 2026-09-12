@@ -1,11 +1,12 @@
 import { useQuery } from '@apollo/client'
 import { GetKbDocument } from '@klicker-uzh/graphql/dist/ops'
 import { H1, Skeleton, UserNotification } from '@uzh-bf/design-system'
-import { useFormatter, useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { useFormatter, useTranslations } from 'next-intl'
 import React, { useRef, useState } from 'react'
 import KnowledgeBaseAddResourceModal from './components/KnowledgeBaseAddResourceModal'
 import KnowledgeBaseChatbotBindings from './components/KnowledgeBaseChatbotBindings'
+import KnowledgeBaseImportedSourceList from './components/KnowledgeBaseImportedSourceList'
 import KnowledgeBaseResourceList from './components/KnowledgeBaseResourceList'
 import KnowledgeGraphPanel from './components/KnowledgeGraphPanel'
 import { getGraphQLErrorCode } from './graphqlError'
@@ -195,6 +196,7 @@ function KnowledgeBaseDetail({ kbId }: { kbId: string }) {
           setAddResourceOpen(true)
         }}
       />
+      <KnowledgeBaseImportedSourceList kbId={kbId} />
       <KnowledgeBaseChatbotBindings kbId={kbId} onChanged={refreshMetrics} />
       <KnowledgeGraphPanel kbId={kbId} />
       {addResourceOpen ? (

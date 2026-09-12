@@ -1,0 +1,20 @@
+query GetKbImportedSources($kbId: ID!, $first: Int, $after: String) {
+  getKbImportedSources(kbId: $kbId, first: $first, after: $after) {
+    items {
+      id
+      title
+      sourceType
+      sourceUrl
+      ingestedAt
+      observedAt
+      chunkCount
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalSourcesInScan
+    incomplete
+    unidentifiedChunks
+  }
+}

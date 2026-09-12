@@ -2285,6 +2285,24 @@ enum KBGraphQualityTier {
   STANDARD
 }
 
+type KBImportedSource {
+  chunkCount: Int!
+  id: ID!
+  ingestedAt: Date
+  observedAt: Date
+  sourceType: String
+  sourceUrl: String
+  title: String!
+}
+
+type KBImportedSourceConnection {
+  incomplete: Boolean!
+  items: [KBImportedSource!]!
+  pageInfo: KBPageInfo!
+  totalSourcesInScan: Int!
+  unidentifiedChunks: Int!
+}
+
 type KBIngestAllResult {
   alreadyCurrentCount: Int!
   alreadyInProgressCount: Int!
@@ -3330,6 +3348,7 @@ type Query {
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getKb(id: ID!): KB!
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
+  getKbImportedSources(after: String, first: Int, kbId: ID!): KBImportedSourceConnection!
   getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
   getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
   getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!
