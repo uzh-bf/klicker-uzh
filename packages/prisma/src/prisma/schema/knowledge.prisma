@@ -111,6 +111,8 @@ model KB {
   publishedGraphBuildId String? @db.Uuid
   // graph generation is opt-in per KB; the lecturer-level preview flag is a separate gate
   knowledgeGraphEnabled Boolean @default(false)
+  // Optional per-KB storage capacity in MiB; null uses the shared default.
+  storageLimitMiB Int?
 
   resources     KBResource[]
   uploadTickets KBUploadTicket[]

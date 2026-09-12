@@ -104,20 +104,38 @@ interface IKBMetrics {
   linkedConsumerCount: number
 }
 
+function validateKbByteMetric(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('Invalid KB byte metric')
+  }
+  return value
+}
+
 export const KBMetricsRef = builder.objectRef<IKBMetrics>('KBMetrics')
 export const KBMetrics = KBMetricsRef.implement({
   fields: (t) => ({
     visibleResourceCount: t.exposeInt('visibleResourceCount'),
-    visibleSizeBytes: t.exposeInt('visibleSizeBytes'),
+    visibleSizeBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.visibleSizeBytes),
+    }),
     unknownSizeResourceCount: t.exposeInt('unknownSizeResourceCount'),
     quotaResourceCount: t.exposeInt('quotaResourceCount'),
-    quotaSizeBytes: t.exposeInt('quotaSizeBytes'),
+    quotaSizeBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.quotaSizeBytes),
+    }),
     resourceLimit: t.exposeInt('resourceLimit'),
-    storageLimitBytes: t.exposeInt('storageLimitBytes'),
+    storageLimitBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.storageLimitBytes),
+    }),
     pendingCleanupCount: t.exposeInt('pendingCleanupCount'),
-    pendingCleanupSizeBytes: t.exposeInt('pendingCleanupSizeBytes'),
+    pendingCleanupSizeBytes: t.float({
+      resolve: (metrics) =>
+        validateKbByteMetric(metrics.pendingCleanupSizeBytes),
+    }),
     reservedResourceCount: t.exposeInt('reservedResourceCount'),
-    reservedSizeBytes: t.exposeInt('reservedSizeBytes'),
+    reservedSizeBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.reservedSizeBytes),
+    }),
     linkedConsumerCount: t.exposeInt('linkedConsumerCount'),
   }),
 })

@@ -2355,16 +2355,16 @@ type KBKnowledgeGraphConfig {
 type KBMetrics {
   linkedConsumerCount: Int!
   pendingCleanupCount: Int!
-  pendingCleanupSizeBytes: Int!
+  pendingCleanupSizeBytes: Float!
   quotaResourceCount: Int!
-  quotaSizeBytes: Int!
+  quotaSizeBytes: Float!
   reservedResourceCount: Int!
-  reservedSizeBytes: Int!
+  reservedSizeBytes: Float!
   resourceLimit: Int!
-  storageLimitBytes: Int!
+  storageLimitBytes: Float!
   unknownSizeResourceCount: Int!
   visibleResourceCount: Int!
-  visibleSizeBytes: Int!
+  visibleSizeBytes: Float!
 }
 
 type KBPageInfo {

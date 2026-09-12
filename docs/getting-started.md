@@ -191,16 +191,15 @@ Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `p
 ### Git hooks with isolated container dependencies
 
 Git hooks use `util/run-git-hook.mjs` to run dependency-backed checks where
-dependencies are installed. A native checkout with `node_modules/.modules.yaml`
-uses host pnpm. Otherwise, the dispatcher uses `devrouter exec` for the exact
+dependencies are installed. By default, the dispatcher uses `devrouter exec` for the exact
 checkout; start that runtime explicitly before committing or pushing. Hooks
 never start services or disable pnpm dependency validation.
 
 Host contract tests also need the root tooling dependencies in this checkout;
 an ancestor checkout's installation does not count. Install them explicitly:
 `pnpm --filter @klicker-uzh/monorepo install --frozen-lockfile --ignore-scripts`.
-For a container-backed checkout with this partial host install, run Git with
-`KLICKER_GIT_HOOK_RUNTIME=container` so application checks stay in the container.
+This partial host install does not change the default container routing.
+`KLICKER_GIT_HOOK_RUNTIME=container` explicitly retains that routing.
 `KLICKER_GIT_HOOK_RUNTIME=host` explicitly selects a complete native installation.
 Hooks never install dependencies automatically.
 
