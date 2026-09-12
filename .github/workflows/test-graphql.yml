@@ -122,6 +122,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Record tested source tree
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CONTROL_SHA: ${{ github.workflow_sha }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const { execFileSync } = require('node:child_process')
+          fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
+            schemaVersion: 1,
+            event: process.env.GITHUB_EVENT_NAME,
+            runId: Number(process.env.GITHUB_RUN_ID),
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            headSha: process.env.SOURCE_HEAD_SHA,
+            baseSha: process.env.SOURCE_BASE_SHA,
+            controlSha: process.env.CONTROL_SHA,
+            treeSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+          }))
+          NODE
+
+      - name: Upload tested source receipt
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-validation-receipt
+          path: ci-validation-receipt.json
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -215,7 +249,7 @@ jobs:
           fi
 
           cd packages/graphql
-          pnpm vitest run
+          pnpm vitest run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
         env:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
@@ -234,6 +268,19 @@ jobs:
           APP_ORIGIN_CONTROL: http://control.klicker.com
           APP_ORIGIN_ASSESSMENT_API: http://assessment-api.klicker.com
           APP_ORIGIN_ASSESSMENT_PWA: http://assessment.klicker.com
+
+      - name: Upload LCOV coverage
+        # Upload on every outcome so coverage from the suite is still available
+        # to the Sonar analysis job even when the run fails. The path filter
+        # legitimately selects no suites, so if-no-files-found: ignore keeps the
+        # required status green when no lcov files exist.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: '**/coverage/lcov.info'
+          if-no-files-found: ignore
+          retention-days: 7
 
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job is the required check. It runs unconditionally so a skipped
