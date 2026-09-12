@@ -14,6 +14,7 @@ test.describe('Knowledge base management workspace', () => {
     const kbName = `UX review ${Date.now()}`
     const resourceTitle = `UX website ${Date.now()}`
     let detailPath: string | undefined
+    let importedSourceCountOverride = 0
 
     try {
       await page.goto(`${manageUrl}/resources/knowledgeBases`)
@@ -87,7 +88,6 @@ test.describe('Knowledge base management workspace', () => {
       let replaceCalls = 0
       let syntheticFileVisible = false
       let syntheticFileReplaced = false
-      let importedSourceCountOverride = 0
       // Synthetic imported inventory: a video-derived source without any stored
       // file, a link source with a safe original URL and an unknown ingestion
       // time, a document source, and a document with a signed query in its
@@ -637,6 +637,7 @@ test.describe('Knowledge base management workspace', () => {
       await expect(blockedDeleteModal).toBeHidden()
       importedSourceCountOverride = 0
     } finally {
+      importedSourceCountOverride = 0
       if (detailPath) {
         await page.setViewportSize({ width: 1440, height: 900 })
         await page.goto(`${manageUrl}${detailPath}`)
