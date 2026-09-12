@@ -27,6 +27,7 @@ interface ElementInformationFieldsProps {
   values: ElementFormTypes
   isSubmitting: boolean
   inputsDisabled?: boolean
+  hideCanonicalTags?: boolean
 }
 
 function ElementInformationFields({
@@ -36,6 +37,7 @@ function ElementInformationFields({
   values,
   isSubmitting,
   inputsDisabled = false,
+  hideCanonicalTags = false,
 }: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
@@ -129,7 +131,7 @@ function ElementInformationFields({
       </div>
 
       <div className="mt-2 flex flex-row gap-2">
-        {!isTemplate ? (
+        {!isTemplate && !hideCanonicalTags ? (
           <div className="flex w-full flex-col" data-cy="element-tag-input">
             <FormLabel
               required={false}

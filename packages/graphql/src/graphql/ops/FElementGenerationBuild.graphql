@@ -131,7 +131,12 @@ fragment ElementGenerationBuildData on ElementGenerationBuild {
       }
       cardType
       tags
+      tagSelection {
+        existingTagIds
+        newTagNames
+      }
     }
+    suggestedTags
     revision
     decision
     bloomLevel

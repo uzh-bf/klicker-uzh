@@ -200,3 +200,35 @@ overwriting reviewed work, or separately gated deployment.
   starts at merged `529bd0cf64`; service worktree of the same branch name
   starts at `origin/main` `7480c7f`. Producer worker owns only the service;
   parent owns Klicker integration, persistence and verification.
+- Backend implementation now includes tolerant metadata ingestion, structured
+  selection, exact-ID writes, legacy omission/clear behavior, and bounded
+  transaction retries. Real Prisma 7 concurrency exposed adapter-specific
+  constraint metadata; the retry predicate now recognizes the observed shape
+  and rejects unrelated or unidentified conflicts.
+- Local verification on the uncommitted task tree: GraphQL TypeScript check
+  passed after rebuilding shared types; artifact normalization 77/77;
+  completion/replay integration 26/26; tag helper and persistence integration
+  29/29. Expanded persistence coverage then passed 11/11, including identical
+  retries after concurrent creation and accepted-unsaved recovery.
+- Runtime: exact checkout `trees/rs/question-titles-tags`, managed `manage`
+  profile, isolated blob port 10193. Delegated local login passed. Runtime is
+  active for ongoing browser verification and must be stopped at completion.
+- Producer and UI workers hit terminal provider gateway errors mid-work.
+  Partial edits were preserved; trusted generic-continuity workers own only
+  their original disjoint scopes. UI, producer tests, committed reviews and
+  draft PR/MR delivery remain incomplete; no deployment or live provider run.
+
+- Resumed integration: service pipeline suite passes 66/66 in ephemeral
+  `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` with pytest 8.3.5, httpx
+  0.28.1, python-dotenv 1.1.0 and NumPy 2.2.6. Source mounted read-only;
+  no model calls. This resolves the earlier missing-environment blocker.
+- Browser proof on synthetic local fixtures: Save draft preserves selected
+  existing/new tags across reload; edited title persists; Keep creates the
+  element and canonical library editor shows title and both tags; discard
+  changes draft state. Found and fixed modal loading unmounting the form
+  during save. The shared editor now stacks preview below form on narrow
+  screens. English/German desktop/mobile captures live in ignored
+  `project/_local/question-titles-tags/`. Initial pointer automation did not
+  activate handlers reliably; observed DOM clicks were used for interactions.
+- Latest frontend-manage TypeScript check passes. Required committed reviews,
+  full checks and draft publication remain pending. STG is unchanged.

@@ -1,13 +1,15 @@
-import { useMutation } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
   GeneratableElementType,
   GeneratedElementDecision,
+  GetUserTagsDocument,
   KeepGeneratedElementDraftDocument,
   SaveGeneratedElementsDocument,
   SetGeneratedElementDecisionDocument,
+  type Tag,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -23,6 +25,14 @@ import type {
   ElementGenerationBuildData,
   GeneratedElementDraftData,
 } from './elementGenerationTypes'
+import GeneratedTagSelector from './GeneratedTagSelector'
+import {
+  draftSuggestedTags,
+  groupTagSuggestions,
+  persistedTagSelection,
+  selectedTagNames,
+} from './generatedTagSelection'
+import useGeneratedTagSelection from './useGeneratedTagSelection'
 
 type ReviewFilter = 'all' | 'open' | 'attention' | 'kept' | 'discarded'
 
@@ -287,12 +297,63 @@ function GeneratedDraftEditor({
   const initialValues = useMemo(() => draftToFormValues(draft), [draft])
   const [keepDraft] = useMutation(KeepGeneratedElementDraftDocument)
   const [setDecision] = useMutation(SetGeneratedElementDecisionDocument)
+  const isQuestion = draft.elementType !== GeneratableElementType.Flashcard
+  const {
+    data: tagData,
+    loading: tagsLoading,
+    error: tagsError,
+    refetch: refreshTags,
+  } = useQuery(GetUserTagsDocument, {
+    skip: !isQuestion,
+    fetchPolicy: 'network-only',
+  })
+  const ownerTags = useMemo(
+    () => (tagData?.userTags ?? []).filter((tag): tag is Tag => tag !== null),
+    [tagData]
+  )
+  const persistedSelection = useMemo(
+    () => persistedTagSelection(draft.current),
+    [draft.current]
+  )
+  const selection = useGeneratedTagSelection({
+    persistedSelection,
+    selectableExisting: ownerTags,
+  })
+  const [revision, setRevision] = useState(draft.revision)
+  const [savingDraft, setSavingDraft] = useState(false)
+  const groups = useMemo(
+    () => groupTagSuggestions(draftSuggestedTags(draft), ownerTags),
+    [draft, ownerTags]
+  )
+  const readyValues = useMemo(
+    () => ({
+      ...initialValues,
+      tags: isQuestion
+        ? selectedTagNames(persistedSelection, ownerTags)
+        : initialValues.tags,
+    }),
+    [initialValues, isQuestion, persistedSelection, ownerTags]
+  )
+  if (isQuestion && !tagData) {
+    return (
+      <div role="status" className="mt-4">
+        <UserNotification type={tagsError ? 'error' : 'info'}>
+          {tagsError ? tShared('systemError') : tShared('loading')}
+        </UserNotification>
+        {!tagsLoading ? (
+          <Button onClick={onClose}>{tShared('close')}</Button>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
     <ElementEditForm
       mode={ElementEditMode.EDIT}
       loading={false}
-      initialValues={initialValues}
+      inputsDisabled={savingDraft}
+      initialValues={readyValues}
+      hideCanonicalTags={isQuestion}
       titleOverride={t('review.editTitle')}
       submitLabel={t('review.keep')}
       submitErrorMessage={t('review.actionError')}
@@ -331,7 +392,22 @@ function GeneratedDraftEditor({
         },
       }}
       supplementaryContent={
-        <GeneratedDraftSources build={build} draft={draft} />
+        <>
+          <GeneratedDraftSources build={build} draft={draft} />
+          {isQuestion ? (
+            <GeneratedTagSelector
+              draftId={draft.id}
+              revision={revision}
+              selection={selection}
+              selectableExisting={ownerTags}
+              suggestedExisting={groups.suggestedExisting}
+              newProposals={groups.newProposals}
+              onDraftSaved={setRevision}
+              onSaved={onChanged}
+              onSaving={setSavingDraft}
+            />
+          ) : null}
+        </>
       }
       discardChangesPrompt={{
         title: t('review.discardChangesTitle'),
@@ -373,7 +449,7 @@ function GeneratedDraftEditor({
           const result = await keepDraft({
             variables: {
               draftId: draft.id,
-              expectedRevision: draft.revision,
+              expectedRevision: revision,
               status: values.status,
               type,
               name: variables.name,
@@ -382,7 +458,9 @@ function GeneratedDraftEditor({
               options: 'options' in variables ? variables.options : undefined,
               basePoints: variables.basePoints,
               pointsMultiplier: variables.pointsMultiplier,
-              tags: variables.tags,
+              ...(isQuestion
+                ? { tagSelection: selection.selection }
+                : { tags: variables.tags }),
               choiceIds:
                 values.type === ElementType.Sc ||
                 values.type === ElementType.Mc ||
@@ -398,6 +476,7 @@ function GeneratedDraftEditor({
         }
 
         try {
+          if (isQuestion) await refreshTags()
           await onChanged()
         } catch {
           toast({ type: 'error', message: tShared('systemError') })

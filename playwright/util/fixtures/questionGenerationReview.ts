@@ -15,6 +15,34 @@ export type QuestionGenerationReviewFixture = {
   primaryBuildId: string
   primaryDraftIds: string[]
   draftIdsByType: Record<'SC' | 'MC' | 'KPRIM' | 'FLASHCARD', string>
+  // Synthetic owner tags that make the suggestion matching verifiable.
+  tagIdByExistingName: Record<string, number>
+}
+
+// One suggestion resolves to each seeded owner tag and one stays a proposal, so
+// the review UI can be exercised for existing and new tags at the same time.
+export const REVIEW_EXISTING_TAG_NAMES = [
+  'QG-fixture portfolio diversification',
+  'QG-fixture bond duration',
+] as const
+export const REVIEW_NEW_TAG_SUGGESTION = 'QG-fixture liquidity risk'
+export const REVIEW_SUGGESTED_TAGS = [
+  REVIEW_EXISTING_TAG_NAMES[0],
+  REVIEW_NEW_TAG_SUGGESTION,
+] as const
+
+function suggestedTagsFor(type: 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD') {
+  return type === 'FLASHCARD' ? undefined : [...REVIEW_SUGGESTED_TAGS]
+}
+
+async function deleteFixtureTags() {
+  const prisma = await getPrisma()
+  await prisma.tag.deleteMany({
+    where: {
+      ownerId: USER_ID_TEST,
+      name: { in: [...REVIEW_EXISTING_TAG_NAMES, REVIEW_NEW_TAG_SUGGESTION] },
+    },
+  })
 }
 
 function questionChoices(type: 'SC' | 'MC' | 'KPRIM', index: number) {
@@ -110,11 +138,19 @@ async function deleteFixtureRows() {
   })
   await prisma.kBGraphBuild.deleteMany({ where: { id: GRAPH_BUILD_ID } })
   await prisma.kB.deleteMany({ where: { id: KB_ID } })
+  await deleteFixtureTags()
 }
 
 export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGenerationReviewFixture> {
   await deleteFixtureRows()
   const prisma = await getPrisma()
+  const tagIdByExistingName: Record<string, number> = {}
+  for (const name of REVIEW_EXISTING_TAG_NAMES) {
+    const tag = await prisma.tag.create({
+      data: { name, ownerId: USER_ID_TEST },
+    })
+    tagIdByExistingName[name] = tag.id
+  }
 
   await prisma.kB.create({
     data: {
@@ -217,7 +253,12 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
             sourceElementId: `synthetic-source-${type}-${(index % 5) + 1}`,
             order: index,
             elementType: type,
-            original: values.original,
+            original: {
+              ...values.original,
+              ...(type === 'FLASHCARD'
+                ? {}
+                : { suggestedTags: suggestedTagsFor(type) }),
+            },
             current: values.current,
             citations: [
               {
@@ -247,6 +288,7 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
 
   return {
     primaryBuildId,
+    tagIdByExistingName,
     primaryDraftIds: Array.from(
       { length: 5 },
       (_, index) =>
