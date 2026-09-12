@@ -253,6 +253,9 @@ test('source observation rejects dirty, mismatched and missing provider checkout
   const path = realpathSync(mkdtempSync(join(tmpdir(), 'kb-source-test-')))
   const git = (args) =>
     execFileSync('git', ['-C', path, ...args], {
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+      ),
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim()

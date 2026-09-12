@@ -291,3 +291,10 @@ The [official Microsoft GraphRAG query overview](https://microsoft.github.io/gra
 The [LightRAG paper](https://arxiv.org/abs/2410.05779) motivates graph-enhanced retrieval; the [official core API documentation](https://github.com/HKUDS/LightRAG/blob/main/docs/ProgramingWithCore.md) exposes retrieval modes, candidate/token budgets, and optional reranking. Verify the pinned installed version before adopting any setting. LightRAG's `global` mode and Microsoft's community-report global search are different mechanisms.
 
 [RAGChecker](https://arxiv.org/abs/2408.08067) supports diagnosing retrieval and answer generation separately and calibrating automated evaluation against human judgments. That principle informs the portfolio above; no dependency adoption or paper-level performance claim is assumed for this project.
+
+
+## Latest acceptance checkpoint
+
+The [next acceptance evidence](2026-09-12-kg-next-acceptance.md#completed-experiment-evidence) records twelve additional successful builds, actual multi-chunk processing and a six-query retrieval comparison. Future legacy recipe lineage is now distinguishable without invalidating historical digests. These results extend engineering evidence; W1 publication and W8/W9 consumer acceptance remain open.
+
+Prioritize the isolated publication binding, an effective content evidence treatment, and raw-source coverage within mixed retrieval before more domain/model tuning. The proposed content comparison was ineffective and made no paid generation calls. Mixed retrieval omitted one document's raw evidence for the conflict query; answers were not evaluated. Educator-calibrated semantic scoring and held-out scenarios remain necessary. Cumulative experimental ledger cost is USD2.59520654 of the existing USD20 ceiling with zero holds; this is not recurring spend authority.
