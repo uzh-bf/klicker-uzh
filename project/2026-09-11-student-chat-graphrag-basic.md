@@ -363,11 +363,10 @@ two validated synthetic config parameter objects allowed canonical managed repai
 to succeed. No production or retained external data was changed.
 
 Simplifier completed; its redundant Ask-label path finding was accepted and
-verified with focused checks and German draft insertion. Dock slice review is
-pending. The GLM CLI could not start because its launcher required an
+verified with focused checks and German draft insertion. Dock slice review passed after the correction below. The GLM CLI could not start because its launcher required an
 unavailable admin token. The earlier native integrated reviewer was successfully
 resumed for the new scope, preserving its full final-review contract and prior
-source evidence. Integrated review is pending. The installed Codex CLI shim also
+source evidence. Integrated review passed after the correction below. The installed Codex CLI shim also
 points to a missing backing executable; neither tool was reconfigured.
 
 Runtime retained for the user's local-testing lease: exact checkout and
@@ -383,4 +382,7 @@ also mark the event prevented after focus moved. Commit 8b4de3a makes active
 suggestions/debounce explicitly stop propagation, lets idle search Escape reach
 the panel, and preserves composition handling. All 12 browser tests pass again,
 including idle search and first-dismiss/second-exit sequences; 19 state tests,
-chat/shared types and lint pass. Reviewer correction dispositions are pending.
+chat/shared types and lint pass. Both reviewers accepted the correction. The final production build passes
+26/26. Integrated review covers all 59 package paths with no exclusions and no
+remaining findings. The draft is updated with eight verified native screenshot
+attachments; exact-head hosted CI remains separate and pending.
