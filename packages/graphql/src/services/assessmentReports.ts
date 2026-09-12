@@ -1,3 +1,7 @@
+import {
+  type AuditTransactionClient,
+  runInAuditTransaction,
+} from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   AssessmentReportHistogramBin,
@@ -13,6 +17,11 @@ import { createHash, randomBytes } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  type AssessmentAuditOperation,
+  assessmentAuditParticipantOperation,
+  emitCoveredCourseAssessmentAuditEvents,
+} from './assessmentAuditProducers.js'
 import { calculateAssessmentCourseScores } from './assessmentScores.js'
 
 const MINIMUM_COMPARISON_COHORT_SIZE = 10
@@ -546,10 +555,14 @@ async function issueAssessmentReportInTransaction({
   courseId,
   participantId,
   prisma,
+  auditTx,
+  auditOperation,
 }: {
   courseId: string
   participantId: string
   prisma: PrismaTransactionClient
+  auditTx: AuditTransactionClient
+  auditOperation: AssessmentAuditOperation
 }): Promise<IssuedAssessmentReport> {
   const recordKey = {
     participantId,
@@ -653,6 +666,42 @@ async function issueAssessmentReportInTransaction({
       snapshotHash,
     },
   })
+  const reportDrafts = [
+    ...(activeRecord === null
+      ? []
+      : [
+          {
+            eventType: 'ASSESSMENT_REPORT_SUPERSEDED' as const,
+            producerOperationId: `${auditOperation.correlationId}:report:${activeRecord.id}:superseded`,
+            scope: { participantId },
+            payload: {
+              reportId: created.id,
+              version: created.snapshotVersion,
+              snapshotHash: created.snapshotHash,
+              previousReportId: activeRecord.id,
+              reasonCode: 'PARTICIPANT_REISSUED_REPORT',
+            },
+          },
+        ]),
+    {
+      eventType: 'ASSESSMENT_REPORT_ISSUED' as const,
+      producerOperationId: `${auditOperation.correlationId}:report:${created.id}:issued`,
+      scope: { participantId },
+      payload: {
+        reportId: created.id,
+        version: created.snapshotVersion,
+        snapshotHash: created.snapshotHash,
+        ...(activeRecord === null ? {} : { previousReportId: activeRecord.id }),
+      },
+    },
+  ]
+  await emitCoveredCourseAssessmentAuditEvents({
+    tx: prisma,
+    auditTx,
+    courseId,
+    operation: auditOperation,
+    drafts: reportDrafts,
+  })
   return toIssuedAssessmentReport(created)
 }
 
@@ -733,15 +782,21 @@ export async function issueAssessmentReport(
   if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
     throw assessmentReportError('ASSESSMENT_REPORT_NOT_ELIGIBLE')
   }
+  const auditOperation = assessmentAuditParticipantOperation({
+    participantId: ctx.user.sub,
+  })
 
   for (let attempt = 0; attempt < TRANSACTION_RETRY_LIMIT; attempt++) {
     try {
-      return await ctx.prisma.$transaction(
-        async (tx) =>
+      return await runInAuditTransaction(
+        ctx.prisma,
+        async (tx, auditTx) =>
           await issueAssessmentReportInTransaction({
             courseId,
             participantId: ctx.user.sub,
             prisma: tx,
+            auditTx,
+            auditOperation,
           }),
         {
           isolationLevel: DB.Prisma.TransactionIsolationLevel.Serializable,

@@ -17,12 +17,6 @@ import type {
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import {
-  type AuditLogInput,
-  type AuditLogMessage,
-  getAuditLogFields,
-  isAuditLogMessage,
-} from './auditLogging.js'
-import {
   dispatchKBGraphBuild,
   markKBGraphBuildDispatchFailed,
   monitorActiveKBGraphBuilds,
@@ -109,18 +103,50 @@ export function prepareHatchetTasks({
     },
   }
 
-  // ! AUDIT LOGGING
+  // ! ASSESSMENT AUDIT DELIVERY
   // #region
-  const createAuditLogEntry = hatchet.task({
-    name: 'create-audit-log-entry',
-    retries: 3,
-    defaultPriority: Priority.LOW,
-    onEvents: ['create-audit-log-entry'],
-    fn: withHatchetTaskLogging({
-      taskName: 'create-audit-log-entry',
-      handler: createAuditLogEntryHandler,
-    }),
+  const dispatchAssessmentAuditOutbox = hatchet.task({
+    name: 'dispatch-assessment-audit-outbox',
+    retries: 0,
+    onCrons: ['* * * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleDispatchAssessmentAuditOutbox(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
   })
+
+  const monitorAssessmentAudit = hatchet.task({
+    name: 'monitor-assessment-audit',
+    retries: 0,
+    onCrons: ['* * * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleMonitorAssessmentAudit(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const renewAssessmentAuditMediaPolicies = hatchet.task({
+    name: 'renew-assessment-audit-media-policies',
+    retries: 3,
+    onCrons: ['17 1 * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleRenewAssessmentAuditMediaPolicies(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+  // #endregion
 
   const ingestKBResourceDefinition = {
     name: 'ingest-kb-resource',
@@ -195,30 +221,6 @@ export function prepareHatchetTasks({
     },
   }
   const buildKBGraph = hatchet.task(buildKBGraphDefinition)
-  async function createAuditLogEntryHandler(
-    input: AuditLogInput,
-    ctx: Context<AuditLogInput>
-  ) {
-    // GraphQL task calls use the declared envelope; event producers send the
-    // audit message directly.
-    const messageInput =
-      input !== null && typeof input === 'object'
-        ? (input as { message?: unknown }).message
-        : undefined
-    let message: AuditLogMessage
-    if (isAuditLogMessage(messageInput)) {
-      message = messageInput
-    } else if (isAuditLogMessage(input)) {
-      message = input
-    } else {
-      throw new Error('Invalid audit log message input')
-    }
-    await ctx.logger.info(
-      'Audit log entry received',
-      getAuditLogFields(message)
-    )
-    return { success: true }
-  }
   // #endregion
 
   // ! ACTIVITY PUBLICATION TASKS
@@ -286,11 +288,15 @@ export function prepareHatchetTasks({
     fn: withTaskLogging(
       'publish-scheduled-live-quiz',
       async (
-        { liveQuizId }: { liveQuizId: string } & LoggableHatchetInput,
+        {
+          liveQuizId,
+          initiatedByUserId,
+        }: { liveQuizId: string; initiatedByUserId?: string } &
+          LoggableHatchetInput,
         executionContext
       ) => {
         const success = await handlers.handlePublishScheduledLiveQuiz(
-          { liveQuizId },
+          { liveQuizId, initiatedByUserId },
           globalContext,
           executionContext
         )
@@ -619,6 +625,9 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    dispatchAssessmentAuditOutbox,
+    monitorAssessmentAudit,
+    renewAssessmentAuditMediaPolicies,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
@@ -638,7 +647,6 @@ export function prepareHatchetTasks({
     monitorKBIngestions,
     monitorKBGraphBuilds,
     maintainKBResources: maintainKBResourcesTask,
-    createAuditLogEntry,
     processCourseDuplication,
     sweepStaleCourseDuplications,
     processCourseDeletion,

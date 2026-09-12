@@ -1,16 +1,17 @@
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  CaseStudyElementData,
-  ElementOptionsInput,
-  SelectionElementData,
-  TemplateBlockInput,
+  type CaseStudyElementData,
+  type ElementOptionsInput,
+  type SelectionElementData,
+  type TemplateBlockInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   MISSING_CATALOG_COLLECTION_ID,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -20,6 +21,12 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import {
+  assessmentAuditUserOperation,
+  assessmentLifecycleDraft,
+  emitCoveredAssessmentAuditEvents,
+} from './assessmentAuditProducers.js'
+import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
 import { manipulateElement } from './elements.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
@@ -452,6 +459,21 @@ export async function createActivityTemplate(
   )
 
   if (error || noInstances) {
+    return false
+  }
+
+  // Assessment quizzes are evidence-bearing objects. Converting one into a
+  // template would change its lifecycle without a corresponding audit event;
+  // keep the operation explicit and fail closed until a dedicated template
+  // transition producer exists.
+  if (
+    !copyBeforeConversion &&
+    activityType === ActivityType.LIVE_QUIZ &&
+    activity !== null &&
+    activity !== undefined &&
+    'isAssessmentEnabled' in activity &&
+    activity.isAssessmentEnabled
+  ) {
     return false
   }
 
@@ -1559,6 +1581,7 @@ export async function createLiveQuizFromTemplate(
       id: template.liveQuizId,
       status: DB.PublicationStatus.TEMPLATE,
     },
+    include: { permissions: { where: { userId: ctx.user.sub } } },
   })
 
   if (!templateLiveQuiz) {
@@ -1782,7 +1805,7 @@ export async function createLiveQuizFromTemplate(
             }
 
             // combine the element options depending on the element type
-            let options: ElementOptionsInput | undefined | null = undefined
+            let options: ElementOptionsInput | undefined | null
             if (
               values.type === DB.ElementType.SC ||
               values.type === DB.ElementType.MC ||
@@ -1931,6 +1954,57 @@ export async function createLiveQuizFromTemplate(
     },
     { timeout: 60000 }
   )
+
+  if (newLiveQuiz.isAssessmentEnabled) {
+    try {
+      const outcome = await activateNewAssessmentAuditIfSelected({
+        client: ctx.prisma,
+        liveQuizId: newLiveQuiz.id,
+      })
+      if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
+        // The template copy has already committed. Rollout failure is durably
+        // recorded by the activation service; returning the created quiz keeps
+        // a transient audit gap from causing a duplicate copy on retry.
+        console.warn('Assessment template copied without audit coverage', {
+          liveQuizId: newLiveQuiz.id,
+        })
+      } else {
+        const auditOperation = assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        })
+        const copied =
+          templateLiveQuiz.ownerId === ctx.user.sub ||
+          templateLiveQuiz.permissions.length > 0
+        await runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
+          await emitCoveredAssessmentAuditEvents({
+            tx,
+            auditTx,
+            liveQuizId: newLiveQuiz.id,
+            courseId: newLiveQuiz.courseId,
+            operation: auditOperation,
+            drafts: [
+              assessmentLifecycleDraft({
+                eventType: copied ? 'ASSESSMENT_COPIED' : 'ASSESSMENT_IMPORTED',
+                producerOperationId: `${auditOperation.correlationId}:${copied ? 'copied' : 'imported'}`,
+                fromState: null,
+                toState: 'DRAFT',
+                reasonCode: copied
+                  ? 'CREATED_FROM_ACCESSIBLE_TEMPLATE'
+                  : 'IMPORTED_FROM_CATALOG_TEMPLATE',
+                sourceLiveQuizId: templateLiveQuiz.id,
+              }),
+            ],
+          })
+        })
+      }
+    } catch (error) {
+      console.error('Assessment template copy audit activation failed', {
+        liveQuizId: newLiveQuiz.id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      })
+    }
+  }
 
   return newLiveQuiz.id
 }
