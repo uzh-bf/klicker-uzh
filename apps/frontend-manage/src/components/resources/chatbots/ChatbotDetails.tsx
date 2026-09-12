@@ -646,9 +646,7 @@ function ChatbotDetails({
             },
           },
         },
-        refetchQueries: [
-          { query: QGetChatbotsInfoWithAuthoringRevisionsDocument },
-        ],
+        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
         awaitRefetchQueries: true,
       })
 
