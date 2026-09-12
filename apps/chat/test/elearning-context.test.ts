@@ -1,8 +1,8 @@
+import { signJWT } from '@klicker-uzh/util'
 import {
   ELEARNING_SNAPSHOT_EXCERPT_MAX_LENGTH,
   ELEARNING_SNAPSHOT_OUTLINE_MAX_ITEMS,
-  signJWT,
-} from '@klicker-uzh/util'
+} from '@klicker-uzh/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
