@@ -196,6 +196,14 @@ uses host pnpm. Otherwise, the dispatcher uses `devrouter exec` for the exact
 checkout; start that runtime explicitly before committing or pushing. Hooks
 never start services or disable pnpm dependency validation.
 
+Host contract tests also need the root tooling dependencies in this checkout;
+an ancestor checkout's installation does not count. Install them explicitly:
+`pnpm --filter @klicker-uzh/monorepo install --frozen-lockfile --ignore-scripts`.
+For a container-backed checkout with this partial host install, run Git with
+`KLICKER_GIT_HOOK_RUNTIME=container` so application checks stay in the container.
+`KLICKER_GIT_HOOK_RUNTIME=host` explicitly selects a complete native installation.
+Hooks never install dependencies automatically.
+
 Secret scanning, identity checks, staged-file discovery and host contract tests
 stay on the host. Container formatting reuses the staged-format rules with
 literal filenames and refuses partially staged files; fully stage or unstage

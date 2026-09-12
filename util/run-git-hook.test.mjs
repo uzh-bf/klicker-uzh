@@ -4,7 +4,12 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { checkTasks, cleanGitEnvironment, runHook } from './run-git-hook.mjs'
+import {
+  assertHostDependencies,
+  checkTasks,
+  cleanGitEnvironment,
+  runHook,
+} from './run-git-hook.mjs'
 
 function fixture(t, native = false) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hook-routing-'))
@@ -25,6 +30,7 @@ function fixture(t, native = false) {
   }
   const env = {
     ...cleanGitEnvironment(process.env),
+    KLICKER_GIT_HOOK_RUNTIME: '',
     PATH: `${bin}:${process.env.PATH}`,
     HOOK_TEST_LOG: log,
   }
@@ -94,6 +100,37 @@ test('native build retains dependency validation through pnpm', async (t) => {
   await runHook('build', f.root, f.env)
   assert.deepEqual(f.calls()[0].args, ['run', 'build'])
   assert.equal(f.calls()[0].command, 'pnpm')
+})
+
+test('explicit container routing survives a partial host tooling install', async (t) => {
+  const f = fixture(t, true)
+  await runHook('build', f.root, {
+    ...f.env,
+    KLICKER_GIT_HOOK_RUNTIME: 'container',
+  })
+  assert.equal(f.calls()[0].command, 'devrouter')
+  await assert.rejects(
+    runHook('build', f.root, { ...f.env, KLICKER_GIT_HOOK_RUNTIME: 'invalid' })
+  )
+})
+
+test('host dependencies reject ancestor resolution and accept checkout-local installation', (t) => {
+  const f = fixture(t)
+  const child = path.join(f.root, 'checkout')
+  fs.mkdirSync(child)
+  fs.writeFileSync(path.join(child, 'package.json'), '{}')
+  const ancestorPackage = path.join(f.root, 'node_modules/yaml')
+  fs.mkdirSync(ancestorPackage, { recursive: true })
+  fs.writeFileSync(
+    path.join(ancestorPackage, 'package.json'),
+    '{"name":"yaml"}'
+  )
+  assert.throws(() => assertHostDependencies(child), /checkout-local yaml/)
+  const installed = fixture(t)
+  const localPackage = path.join(installed.root, 'node_modules/yaml')
+  fs.mkdirSync(localPackage, { recursive: true })
+  fs.writeFileSync(path.join(localPackage, 'package.json'), '{"name":"yaml"}')
+  assert.doesNotThrow(() => assertHostDependencies(installed.root))
 })
 
 test('propagates failed check status', async (t) => {

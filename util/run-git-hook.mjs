@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -33,12 +34,32 @@ export function checkTasks(script) {
   return tasks
 }
 
+export function assertHostDependencies(root) {
+  const require = createRequire(path.join(root, 'package.json'))
+  const modules = path.join(root, 'node_modules')
+  try {
+    const resolved = realpathSync(require.resolve('yaml/package.json'))
+    const relative = path.relative(realpathSync(modules), resolved)
+    if (relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative))
+      throw new Error('Dependency resolved outside this checkout')
+  } catch {
+    throw new Error(
+      'Host checks require checkout-local yaml. Install root tooling with pnpm --filter @klicker-uzh/monorepo install --frozen-lockfile --ignore-scripts. For container-backed application checks, set KLICKER_GIT_HOOK_RUNTIME=container.'
+    )
+  }
+}
+
 export async function runHook(mode, root, environment = process.env) {
   if (!['check', 'build'].includes(mode))
     throw new Error('Expected check or build')
   const env = cleanGitEnvironment(environment)
   const options = { cwd: root, env }
-  const native = existsSync(path.join(root, 'node_modules/.modules.yaml'))
+  const runtime = environment.KLICKER_GIT_HOOK_RUNTIME
+  if (runtime && !['host', 'container'].includes(runtime))
+    throw new Error('KLICKER_GIT_HOOK_RUNTIME must be host or container')
+  const native = runtime
+    ? runtime === 'host'
+    : existsSync(path.join(root, 'node_modules/.modules.yaml'))
   const container = (args) =>
     native
       ? run('pnpm', args, options)
@@ -51,6 +72,12 @@ export async function runHook(mode, root, environment = process.env) {
   const { scripts } = JSON.parse(
     readFileSync(path.join(root, 'package.json'), 'utf8')
   )
+  if (
+    checkTasks(scripts['check:all']).some((task) =>
+      /^(node|bash) [\w./* -]+$/.test(scripts[task] ?? '')
+    )
+  )
+    assertHostDependencies(root)
   for (const task of checkTasks(scripts['check:all'])) {
     if (task === 'check:format') {
       if (native) {
