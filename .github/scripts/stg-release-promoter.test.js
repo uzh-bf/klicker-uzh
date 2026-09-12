@@ -40,6 +40,10 @@ const CANDIDATE_SHA = 'a'.repeat(40)
 const CURRENT_SHA = 'b'.repeat(40)
 const NEXT_SHA = 'c'.repeat(40)
 
+async function fixtureScanAdmission() {
+  return { attempts: [{ attempt: 1, failures: [] }], entries: [], valid: true }
+}
+
 async function fixtureCiEvidence({ run }) {
   const workflow = REQUIRED_CI_WORKFLOWS[run.id - 500]
   return {
@@ -1439,6 +1443,7 @@ test('writes receipts before rejecting uncertain or mismatched post-push readbac
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1512,6 +1517,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   try {
     const result = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_dispatch', {
@@ -1548,6 +1554,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     }
     const rerun = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github: rerunGithub,
       context: reviewContext('workflow_dispatch', {
@@ -1574,6 +1581,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const automatic = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1585,6 +1593,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const enabled = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1619,6 +1628,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1738,6 +1748,7 @@ test('requires complete candidate CI before a release write', async (t) => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         github,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,
@@ -1823,6 +1834,7 @@ test('rejects manual apply when controller or release changed after dry run', as
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         ...args,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,

@@ -29,6 +29,7 @@
     "@babel/core": "~7.28.3",
     "@biomejs/biome": "~2.5.2",
     "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "~3.2.4",
     "cross-env": "~7.0.3",
     "husky": "~9.1.7",
     "knip": "~6.24.0",

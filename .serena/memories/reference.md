@@ -192,9 +192,11 @@ Hierarchical from least to most privileged:
 6. E2E tests (Cypress headless)
 
 **Security scanning:**
-- Dependency vulnerability checks (npm audit)
-- Container image scanning (Trivy)
-- Secret detection (GitGuardian)
+- Secret scanning with Gitleaks in the blocking `check-gitleaks` job
+- SonarCloud analysis with a quality-gate wait, and LCOV coverage imported only from test runs bound to the analyzed revision
+- Dependency review on pull requests plus Dependabot alerts; pnpm 11 dependency-graph support is unverified
+- CodeQL security-extended pilot for JavaScript/TypeScript, Python, and GitHub Actions
+- Trivy image scanning, piloted on the staging backend-docker image and migrator only
 
 ### Deployment Pipeline
 

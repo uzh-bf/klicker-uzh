@@ -1,14 +1,13 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
+# CodeQL static security analysis, scoped to security queries. Sonar keeps the
+# maintainability and duplication role for this repository.
 #
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
+# Languages: JavaScript/TypeScript, the analytics Python sources, and the GitHub
+# Actions workflows themselves. All three are interpreted, so the analysis needs
+# no build step.
 #
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-#
+# The `security-extended` query suite is a PILOT: this workflow is not a required
+# status check yet, and its blocking policy is decided from the representative
+# findings and the analysis runtime it produces.
 name: 'CodeQL'
 
 on:
@@ -17,7 +16,9 @@ on:
   pull_request:
     # The branches below must be a subset of the branches above
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-analyzes when a pull request is retargeted to another base
+    # branch, so a stale result cannot stand in for the new base.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
   schedule:
     - cron: '21 7 * * 3'
 
@@ -27,9 +28,12 @@ concurrency:
 
 jobs:
   analyze:
-    if: github.event.pull_request.draft == false
+    # Event-aware draft handling: push and schedule runs carry no
+    # `pull_request.draft` field, so a bare draft check would skip them.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: Analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       actions: read
       contents: read
@@ -38,40 +42,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['javascript']
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
-        # Learn more:
-        # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
+        # Interpreted languages only. "actions" analyzes the workflow files in
+        # this repository.
+        language: ['javascript-typescript', 'python', 'actions']
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@311b4ee155dcdab395044f00946f664bd51ff173 # v4.38.0
         with:
           languages: ${{ matrix.language }}
-          # If you wish to specify custom queries, you can do so here or in a config file.
-          # By default, queries listed here will override any specified in a config file.
-          # Prefix the list here with "+" to use these queries and those in the config file.
-          # queries: ./path/to/local/query, your-org/your-repo/queries@main
-
-      # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-      # If this step fails, then you should remove it and run the build manually (see below)
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
-
-      # ℹ️ Command-line programs to run using the OS shell.
-      # 📚 https://git.io/JvXDl
-
-      # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-      #    and modify them (or add more) to build your code if your project
-      #    uses a compiled language
-
-      #- run: |
-      #   make bootstrap
-      #   make release
+          # PILOT: the broader security-extended suite runs here to measure
+          # representative findings and runtime cost. The workflow is not a
+          # required check yet, so the suite has no blocking policy.
+          queries: security-extended
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@311b4ee155dcdab395044f00946f664bd51ff173 # v4.38.0
