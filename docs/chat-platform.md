@@ -514,7 +514,12 @@ participant credits, the route switches from any effective model to GPT-5.6
 Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
 therefore charged only through its `BASE` account lane and the participant
 allowance. This fallback intentionally does not require the chatbot allow-list
-to contain Luna. Automatic selection otherwise retains Auto and is attributed
+to contain Luna. New browser sessions start with Auto Mode. Saved unavailable selections use
+the server-provided automatic model; an explicitly selected available Luna is
+preserved. Local seeded chatbots offer Auto and GPT-5.6 Luna. GPT-5.5 is retired
+from the built-in and deployment registries.
+
+Automatic selection otherwise retains Auto and is attributed
 to `ADVANCED`; the credits response keeps allow-listed model capabilities
 visible independently of the participant balance. Strict reservations,
 immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
@@ -1223,7 +1228,7 @@ the UI locale or by a lecturer's stored persona prompt.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — both expose `gpt-5.6-luna`, while deployments additionally offer GPT-5.1, GPT-5.4, GPT-5.5, and effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` read "None" for the same reason). The local seeded chatbot offers only Auto and Luna, while the built-in and deployment registries retain additional models and effort ids (`none`, `minimal`). Check both registry capabilities and chatbot allow-lists before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse

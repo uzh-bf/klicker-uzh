@@ -340,7 +340,7 @@ env -i \
 assert_line 'Error: LITELLM_API_BASE must point to the approved LiteLLM proxy' "$TEST_ROOT/base-url.out"
 
 LOCAL_STOP_MARKER="$TEST_ROOT/local-adapter-stopped"
-git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
+env -i PATH="$PATH" HOME="$HOME" git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
 : >"$CHILD_LOG"
 env -i \
   GIT_DIR="$TEST_ROOT/bare.git" \

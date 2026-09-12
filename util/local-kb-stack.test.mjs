@@ -254,6 +254,9 @@ test('source observation rejects dirty, mismatched and missing provider checkout
   const git = (args) =>
     execFileSync('git', ['-C', path, ...args], {
       encoding: 'utf8',
+      env: Object.fromEntries(
+        Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+      ),
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim()
   try {
