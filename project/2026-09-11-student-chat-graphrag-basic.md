@@ -488,7 +488,7 @@ tests and 10 enrichment tests passed; accepted simplification consolidates one
 duplicate into the status matrix, leaving nine enrichment tests with the same
 contract assertions. The synthetic capture → enrichment → pinned framework
 loader/factory/runner check passes. Judges are substituted and no quality score
-is claimed. Wrapper regression passes for Luna and Auto. Container types40/40,
+is claimed. Wrapper regression passes for Luna and Auto. Container types 40/40,
 lint7/7 and policy checks pass; host-only CI planning and launcher checks pass.
 Direct staged-path formatting passes; lint-staged itself cannot resolve linked
 Git metadata inside this container. The full build passes26/26; scoped Opengrep
@@ -568,13 +568,24 @@ are not correctness labels. A held-out pilot can reject a quality claim without
 invalidating independently verified conservative fallback behavior.
 
 
-Continuation checkpoint: native graph tests80/80 (including row-overflow/hub
-fallback), chat wrapper/scope26/26, native graph-to-document integration3/3,
-container types40/40 and all selected lint/policy checks pass. Host checks had
-one sandbox-dependent workspace-discovery failure; affected launcher tests49/49
+Continuation checkpoint: native graph tests 80/80 (including row-overflow/hub
+fallback), chat wrapper/scope 26/26, native graph-to-document integration 3/3,
+container types 40/40 and all selected lint/policy checks pass. Host checks had
+one sandbox-dependent workspace-discovery failure; affected launcher tests 49/49
 pass outside the sandbox. Scoped Opengrep reports zero findings. No UI or schema
-changed in this continuation. Development retrieval preserves all16 baseline
-prefixes and declines expansion on8/16 cases. This is not an answer-quality claim.
+changed in this continuation. Development retrieval preserves all 16 baseline
+prefixes and declines expansion on 8/16 cases. This is not an answer-quality claim.
 Remaining paid candidate/holdout and real E2E were rejected by automatic approval
 review for unverified private derived-payload egress and request-count extension;
-explicit confirmation is pending. Original cumulative dollar cap remainsUSD5.
+explicit confirmation is pending. Original cumulative dollar cap remains USD5.
+
+
+The first full build failed on duplicate generated development/production route
+types. The existing temporary type-isolation harness restored those generated
+files after a successful 26/26 build. Accepted simplification removes duplicate
+per-search tracking state; the unchanged 18 fusion regressions pass again. The
+synthetic fixture ownership dry-run passes without changing its binding or
+provider route. Paid gateway remains stopped and export confirmation pending.
+The source-path-resolved runtime retains six routes under the user's manual-test
+lease; the chat entry returns HTTP307 to authentication. This is route health,
+not paid completion proof. Continuation source commits: b9db0826f and eae42f4a3.
