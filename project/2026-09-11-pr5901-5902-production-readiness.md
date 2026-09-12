@@ -52,3 +52,18 @@ readiness-report commit is the only post-CI delta (docs-only).
 - getsMaxPoints deprecation candidate in packages/grading (no remaining production caller).
 - Scoring-path metrics gap (standing; pre-existing).
 - Local dev-runtime PWA state issue affecting O1:3249 outside CI — environment investigation candidate (pre-existing on v3; parent-identical).
+
+## Addendum — PR 5918 (layer 3: response-validity invariants), heads 70b10b4bc + c58da6263
+
+Proportionate audit (equivalence/config/performance/docs worker + local verification):
+
+| severity | dimension | finding | evidence | action | verification |
+| --- | --- | --- | --- | --- | --- |
+| info | equivalence | all six adoption sites expression-identical to origin/v3 (verbatim helper body); stacks undefined propagation preserved exactly for every input | grading index.ts:417-419; stacks.ts:3088-3091; validateResponse.ts:117-119 | none | confirmed (verbatim quotes) |
+| low | failure modes | worker numerical core: null solutions now yield null grading instead of TypeError — strictly safer superset; blocks.ts site exactly equivalent (outer guard) | grading index.ts:99 guard | none | confirmed |
+| low | config | client bundles gain grading's two helpers (~few hundred bytes); grading not previously in client JS despite transitive node_modules presence; remeda already a shared-components dep | shared-components imports; graphql dist/ops has no grading import | bundle note in PR body | confirmed |
+| low | maintainability | one validation-side duplicate remained unadopted — adopted in c58da6263 | helpers.ts validation guard | done | confirmed |
+| info | performance | per-call cost identical (one filter pass; one O(1) object return against JSON.parse+Redis in the same path) | wrapper comparison | none | confirmed |
+| pass | data safety / UX / observability / docs | N/A — no schema/data/UI/logging change; GraphQL snapshot unchanged; no doc describes the old duplicated expressions (greps) | diff + greps | none | confirmed |
+
+Verdict for 5918: ready-with-conditions (final AI review of the cumulative stack — see stack-level status; all automated checks green at c58da6263 incl. full Playwright suite).
