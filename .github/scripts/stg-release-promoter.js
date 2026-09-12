@@ -28,6 +28,40 @@ const REGISTRY_CONTENT_TYPES = Object.freeze([
 ])
 const REGISTRY_ACCEPT = REGISTRY_CONTENT_TYPES.join(', ')
 
+const CI_SUITE_JOBS = Object.freeze({
+  'test-graphql.yml': ['test-graphql'],
+  'test-unit.yml': ['test-unit'],
+  'test-olat-api.yml': ['test-olat-api'],
+  'test-intl-production.yml': [
+    'intl-production-smoke (frontend-pwa)',
+    'intl-production-smoke (frontend-manage)',
+  ],
+})
+
+const REQUIRED_CI_WORKFLOWS = Object.freeze(
+  [
+    ['check.yml', 'check'],
+    ['check-gitleaks.yml', 'check-gitleaks'],
+    ['test-graphql.yml', 'test-graphql-status'],
+    ['test-playwright.yml', 'test-playwright-status'],
+    ['test-unit.yml', 'test-unit-status'],
+    ['test-olat-api.yml', 'test-olat-api-status'],
+    ['test-intl-production.yml', 'test-intl-production-status'],
+    ['v3_build-fallback.yml', 'build-images-status'],
+  ].map(([file, id]) => ({
+    path: `.github/workflows/${file}`,
+    jobs:
+      id === 'test-playwright-status'
+        ? [
+            { id },
+            ...Array.from({ length: 8 }, (_, i) => ({
+              id: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
+            })),
+          ]
+        : [{ id }, ...(CI_SUITE_JOBS[file] ?? []).map((id) => ({ id }))],
+  }))
+)
+
 // Keep this inventory synchronized with the workflow_run names below. A
 // candidate cannot rename, add, remove, or retarget a runtime publisher without
 // a trusted controller change.
@@ -688,12 +722,21 @@ async function paginate(github, endpoint, params) {
   return result
 }
 
-function latestRun(runs, workflowPath, candidateSha) {
+function latestRun(runs, workflowPath, candidateSha, sourceBranch, repository) {
   const exact = runs
     .filter(
-      (run) => run?.path === workflowPath && run?.head_sha === candidateSha
+      (run) =>
+        run?.path === workflowPath &&
+        run?.head_sha === candidateSha &&
+        run.event === 'push' &&
+        run.head_branch === sourceBranch &&
+        run.repository?.full_name === repository
     )
-    .sort((left, right) => Number(right.id ?? 0) - Number(left.id ?? 0))
+    .sort(
+      (left, right) =>
+        Number(right.id ?? 0) - Number(left.id ?? 0) ||
+        Number(right.run_attempt ?? 0) - Number(left.run_attempt ?? 0)
+    )
   return {
     exact: exact[0],
     candidateRuns: runs.filter((run) => run?.head_sha === candidateSha),
@@ -743,7 +786,13 @@ async function collectWorkflowEvidence({
     head_sha: candidateSha,
     per_page: 100,
   })
-  const { exact, candidateRuns } = latestRun(runs, workflow.path, candidateSha)
+  const { exact, candidateRuns } = latestRun(
+    runs,
+    workflow.path,
+    candidateSha,
+    sourceBranch,
+    repository
+  )
   if (!exact) {
     return {
       path: workflow.path,
@@ -763,7 +812,7 @@ async function collectWorkflowEvidence({
       status: state,
     }
   }
-  if (typeof github.rest.actions.listJobsForWorkflowRun !== 'function') {
+  if (typeof github.rest.actions.listJobsForWorkflowRunAttempt !== 'function') {
     return {
       path: workflow.path,
       reason: 'workflow jobs are unavailable',
@@ -771,19 +820,37 @@ async function collectWorkflowEvidence({
       status: 'wrong_evidence',
     }
   }
+  if (!Number.isSafeInteger(exact.run_attempt) || exact.run_attempt < 1) {
+    return {
+      path: workflow.path,
+      reason: 'run attempt is unavailable',
+      run: exact,
+      status: 'wrong_evidence',
+    }
+  }
   const jobs = await paginate(
     github,
-    github.rest.actions.listJobsForWorkflowRun,
+    github.rest.actions.listJobsForWorkflowRunAttempt,
     {
       owner: context.repo.owner,
       repo: context.repo.repo,
       run_id: exact.id,
+      attempt_number: exact.run_attempt,
       per_page: 100,
     }
   )
   const verifiedJobs = []
   for (const required of workflow.jobs) {
-    const matching = jobs.find((job) => job?.name === required.id)
+    const matches = jobs.filter((job) => job?.name === required.id)
+    if (matches.length > 1) {
+      return {
+        path: workflow.path,
+        reason: `${required.id} is ambiguous`,
+        run: exact,
+        status: 'wrong_evidence',
+      }
+    }
+    const matching = matches[0]
     const stateForJob = jobState(matching, required.id, candidateSha)
     if (stateForJob !== 'success') {
       return {
@@ -805,19 +872,135 @@ async function collectWorkflowEvidence({
       id: matching.id,
       name: matching.name,
       url: matching.html_url ?? '',
+      conclusion: matching.conclusion,
     })
   }
   return {
     jobs: verifiedJobs,
+    observedJobs: jobs.map(({ id, name, status, conclusion }) => ({
+      id,
+      name,
+      status,
+      conclusion,
+    })),
     path: workflow.path,
     run: {
       branch: exact.head_branch,
       id: exact.id,
+      attempt: exact.run_attempt,
+      event: exact.event,
       sha: exact.head_sha,
       url: exact.html_url ?? '',
     },
     status: 'success',
   }
+}
+
+async function readCiEvidence({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    {
+      ...context.repo,
+      run_id: run.id,
+      per_page: 100,
+    }
+  )
+  const matches = artifacts.filter(
+    (a) => a.name === 'required-ci-evidence' && !a.expired
+  )
+  if (matches.length !== 1 || matches[0].size_in_bytes > 1048576) {
+    throw new Error('missing or ambiguous CI selection artifact')
+  }
+  const response = await github.rest.actions.downloadArtifact({
+    ...context.repo,
+    artifact_id: matches[0].id,
+    archive_format: 'zip',
+  })
+  if (response.data.byteLength > 1048576)
+    throw new Error('CI selection archive too large')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-ci-'))
+  try {
+    const archive = path.join(directory, 'evidence.zip')
+    fs.writeFileSync(archive, Buffer.from(response.data))
+    return JSON.parse(
+      execFileSync('unzip', ['-p', archive, 'required-ci-evidence.json'], {
+        encoding: 'utf8',
+        maxBuffer: 1048576,
+        timeout: 10000,
+      })
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+function validateCiSelection(
+  evidence,
+  workflow,
+  repository,
+  candidateSha,
+  sourceBranch
+) {
+  if (
+    evidence?.schemaVersion !== 1 ||
+    evidence.repository !== repository ||
+    evidence.workflow?.path !== workflow.path ||
+    evidence.workflow?.terminalJob !== workflow.jobs[0].name ||
+    evidence.event?.name !== 'push' ||
+    evidence.event.branch !== sourceBranch ||
+    evidence.event.sha !== candidateSha ||
+    evidence.run?.id !== workflow.run.id ||
+    evidence.run.attempt !== workflow.run.attempt ||
+    evidence.decision?.outcome !== 'pass' ||
+    evidence.reuse != null ||
+    evidence.selection?.state !== 'run' ||
+    !Array.isArray(evidence.jobs) ||
+    evidence.jobs.length === 0
+  ) {
+    throw new Error('invalid CI selection evidence')
+  }
+  const expectedSuites = CI_SUITE_JOBS[path.basename(workflow.path)]
+  if (!expectedSuites) throw new Error('unknown CI suite')
+  const names = new Set()
+  for (const job of evidence.jobs) {
+    if (
+      typeof job.name !== 'string' ||
+      !job.name ||
+      names.has(job.name) ||
+      !['success', 'skipped'].includes(job.result)
+    )
+      throw new Error('invalid selected job evidence')
+    const observed = workflow.observedJobs?.filter(
+      (actual) => actual.name === job.name
+    )
+    if (
+      observed?.length !== 1 ||
+      observed[0].status !== 'completed' ||
+      observed[0].conclusion !== job.result
+    ) {
+      throw new Error('CI selection does not match actual jobs')
+    }
+    names.add(job.name)
+  }
+  const suite = evidence.jobs.filter((job) => job.role === 'suite')
+  const selector = evidence.jobs.filter((job) => job.role === 'selection')
+  if (
+    evidence.jobs.length !== expectedSuites.length + 1 ||
+    suite.length !== expectedSuites.length ||
+    expectedSuites.some(
+      (name) =>
+        !suite.some((job) => job.name === name && job.result === 'success')
+    ) ||
+    selector.length !== 1 ||
+    selector[0].name !== 'filter' ||
+    selector[0].result !== 'success'
+  ) {
+    throw new Error(
+      'selected CI suite did not succeed or selection is unproven'
+    )
+  }
+  return evidence
 }
 
 function isRetryableEvidenceStatus(status) {
@@ -1412,7 +1595,19 @@ async function resolveInputs({
         `manual writes require confirm_ref_update=${MANUAL_CONFIRMATION}`
       )
     }
+    if (
+      !dryRun &&
+      ((inputs.expected_release_sha !== 'absent' &&
+        !validSha(inputs.expected_release_sha)) ||
+        !validSha(inputs.expected_controller_sha))
+    ) {
+      throw new Error(
+        'manual writes require expected_release_sha and expected_controller_sha'
+      )
+    }
     return {
+      expectedReleaseSha: inputs.expected_release_sha,
+      expectedControllerSha: inputs.expected_controller_sha,
       allowWrite: !dryRun,
       candidateSha: selectedCandidateSha,
       confirmation,
@@ -1431,8 +1626,10 @@ async function runPromotion({
   sourceBranch,
   candidateSha,
   promotionEnabled,
+  controllerSha = process.env.TRUSTED_WORKFLOW_SHA,
   expectedWorkflows = STAGING_WORKFLOWS,
   getRegistryDigest = fetchRegistryDigest,
+  getCiEvidence = readCiEvidence,
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
@@ -1471,6 +1668,14 @@ async function runPromotion({
     return { ...inputs, decision: 'disabled', skipped: true }
   }
 
+  if (!validSha(controllerSha))
+    throw new Error('trusted controller SHA is unavailable')
+  if (
+    inputs.expectedControllerSha &&
+    inputs.expectedControllerSha !== controllerSha
+  ) {
+    throw new Error('trusted controller SHA changed since dry run')
+  }
   const repository = repositoryName(context)
   const definitions = await getCandidateDefinitions({
     github,
@@ -1504,6 +1709,37 @@ async function runPromotion({
   if (!evidence.valid) {
     throw new Error(`staging build evidence is incomplete: ${evidence.reason}`)
   }
+  const ciEvidence = await collectBuildEvidence({
+    github,
+    context,
+    workflows: REQUIRED_CI_WORKFLOWS,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+    maxAttempts,
+    retryDelayMs,
+    sleep,
+  })
+  if (!ciEvidence.valid) {
+    throw new Error(`staging CI evidence is incomplete: ${ciEvidence.reason}`)
+  }
+  for (const workflow of ciEvidence.workflows) {
+    if (
+      [
+        'test-graphql.yml',
+        'test-unit.yml',
+        'test-olat-api.yml',
+        'test-intl-production.yml',
+      ].some((file) => workflow.path === `.github/workflows/${file}`)
+    ) {
+      workflow.selection = validateCiSelection(
+        await getCiEvidence({ github, context, run: workflow.run }),
+        workflow,
+        repository,
+        inputs.candidateSha,
+        inputs.sourceBranch
+      )
+    }
+  }
   const images = await resolveStableRegistryDigests({
     candidateSha: inputs.candidateSha,
     evidence,
@@ -1512,6 +1748,14 @@ async function runPromotion({
   })
 
   const currentSha = await getReleaseRef({ github, context })
+  if (
+    inputs.expectedReleaseSha &&
+    (inputs.expectedReleaseSha === 'absent'
+      ? currentSha !== null
+      : inputs.expectedReleaseSha !== currentSha)
+  ) {
+    throw new Error('stg-release changed since dry run')
+  }
   const decision = await planReleaseRef({
     github,
     context,
@@ -1546,7 +1790,9 @@ async function runPromotion({
     updateResult.verification === 'verified' ? inputs.candidateSha : null
 
   const receipt = {
-    schema_version: 'stg-release-promotion/v1',
+    schema_version: 'stg-release-promotion/v2',
+    controller_sha: controllerSha,
+    ci: ciEvidence,
     controller_run_id: context.runId,
     repository,
     source_branch: inputs.sourceBranch,
@@ -1597,6 +1843,10 @@ async function runPromotion({
 }
 
 module.exports = {
+  readCiEvidence,
+  resolveInputs,
+  validateCiSelection,
+  REQUIRED_CI_WORKFLOWS,
   APPROVED_PUSH_BRANCHES,
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_POST_PUSH_READBACK_ATTEMPTS,

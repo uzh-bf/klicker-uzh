@@ -1,36 +1,34 @@
 name: Production translation context
 on:
+  push:
+    branches: ['v3', 'v3-*']
   pull_request:
-    branches: [v3, v3-ai]
-    # ready_for_review is intentionally absent: this smoke runs the same jobs
-    # for draft and ready PRs, and the transition fires on an unchanged head,
-    # so listing it would only re-run validation that already passed.
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'apps/frontend-pwa/**'
-      - 'apps/frontend-manage/**'
-      - 'apps/frontend-control/**'
-      - 'apps/auth/**'
-      - 'apps/chat/**'
-      - 'packages/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - '.npmrc'
-      - 'turbo.json'
-      - 'tsconfig.json'
-      - '.github/workflows/test-intl-production.yml'
-      - '.github/scripts/intl-production-smoke.mjs'
-      - '.github/fixtures/intl-production/**'
-      - 'util/test-intl-resolution.mjs'
+    branches: ['v3', 'v3-*']
+    # "edited" re-evaluates the selector on a base retarget.
+    types: [opened, synchronize, reopened, edited]
 permissions:
   contents: read
 concurrency:
-  group: intl-production-${{ github.event.pull_request.number }}
+  group: intl-production-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/frontend-pwa/|apps/frontend-manage/|apps/frontend-control/|apps/auth/|apps/chat/|packages/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.npmrc$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-intl-production\.yml$|\.github/scripts/intl-production-smoke\.mjs$|\.github/fixtures/intl-production/|util/test-intl-resolution\.mjs$|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+
   intl-production-smoke:
     name: intl-production-smoke (${{ matrix.app }})
+    needs: filter
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -40,7 +38,54 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Build and render through the production provider
-        run: node .github/scripts/intl-production-smoke.mjs '${{ matrix.app }}' '${{ github.event.pull_request.head.sha }}'
+        run: node .github/scripts/intl-production-smoke.mjs '${{ matrix.app }}' '${{ github.event.pull_request.head.sha || github.sha }}'
+
+  # Always reports a status even when the path filter selects nothing, so this
+  # job is the required check. It runs unconditionally so a skipped context can
+  # never read as acceptable; the helper fails on cancellation, an unexpected
+  # skip or a failed smoke.
+  test-intl-production-status:
+    needs: [filter, intl-production-smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Report required status
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+          FILTER_RESULT: ${{ needs.filter.result }}
+          SHOULD_RUN: ${{ needs.filter.outputs.should_run }}
+          TEST_RESULT: ${{ needs.intl-production-smoke.result }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_PATH: .github/workflows/test-intl-production.yml
+          TERMINAL_JOB: test-intl-production-status
+          EVIDENCE_PATH: required-ci-evidence.json
+          SELECTION_JOB: filter
+          SELECTION_JOB_RESULT: ${{ needs.filter.result }}
+          SUITE_JOBS: '["intl-production-smoke (frontend-pwa)","intl-production-smoke (frontend-manage)"]'
+          SUITE_JOB_RESULT: ${{ needs.intl-production-smoke.result }}
+        run: node .github/scripts/required-ci-status.cjs report
+      - name: Upload required CI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-ci-evidence
+          path: required-ci-evidence.json
+          if-no-files-found: error
+          retention-days: 7

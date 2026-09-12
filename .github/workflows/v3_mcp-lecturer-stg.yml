@@ -6,13 +6,15 @@ on:
       - 'v3'
       - 'v3*'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'apps/mcp-lecturer/**'
-      - 'packages/prisma/**'
+      - 'packages/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'turbo.json'
+      - 'pnpm-workspace.yaml'
+      - '.dockerignore'
       - '.github/workflows/v3_mcp-lecturer**'
 
 concurrency:
@@ -25,7 +27,6 @@ env:
 
 jobs:
   build-arm:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -79,7 +80,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   build-amd:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read

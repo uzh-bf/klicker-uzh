@@ -7,11 +7,20 @@ on:
       - 'v3*'
   pull_request:
     # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-evaluates the path filter when a pull request is retargeted,
+    # so newly applicable images are built instead of keeping the old result.
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'apps/backend-docker/**'
-      - 'packages/graphql/**'
-      - 'packages/prisma/**'
+      # Any workspace package can be bundled into this image.
+      - 'packages/**'
+      # Root dependency and build inputs: the image build runs turbo prune
+      # against these files, so a root dependency change can alter any image.
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - '.dockerignore'
       - '.github/workflows/v3_backend-docker**'
 
 concurrency:
@@ -25,7 +34,6 @@ env:
 
 jobs:
   build-arm:
-    if: github.event.pull_request.draft == false
     # Gate the app image on the migrator image so the two tags can never drift
     # apart in the dangerous direction. If the migrator build fails, this job is
     # skipped and the backend tag stays put, leaving the migrator ahead of the
@@ -132,7 +140,6 @@ jobs:
           platforms: linux/amd64
           labels: ${{ steps.meta.outputs.labels }}
   build-migrator-arm:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read

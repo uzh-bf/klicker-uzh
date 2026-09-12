@@ -5,6 +5,7 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const { parse } = require('yaml')
+const { REQUIRED_CI_WORKFLOWS } = require('./stg-release-promoter.js')
 
 const ROOT = path.join(__dirname, '../..')
 const WORKFLOW_DIR = path.join(ROOT, '.github/workflows')
@@ -208,9 +209,12 @@ test('selected-source workflows retain all tags and guard every active image', (
   assert.equal(new Set(workflowNames).size, 15)
 
   const promoter = readYaml('.github/workflows/deploy-stg-promote.yml')
+  const validationNames = REQUIRED_CI_WORKFLOWS.map(
+    ({ path: workflowPath }) => readYaml(workflowPath).name
+  )
   assert.deepEqual(
     [...promoter.on.workflow_run.workflows].sort(),
-    [...workflowNames].sort()
+    [...workflowNames, ...validationNames].sort()
   )
   assert.deepEqual(promoter.on.workflow_run.types, ['completed'])
 

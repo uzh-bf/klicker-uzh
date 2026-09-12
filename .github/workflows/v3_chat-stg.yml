@@ -7,10 +7,20 @@ on:
       - 'v3*'
   pull_request:
     # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-evaluates the path filter when a pull request is retargeted,
+    # so newly applicable images are built instead of keeping the old result.
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'apps/chat/**'
-      - 'packages/feature-flags/**'
+      # Any workspace package can be bundled into this image.
+      - 'packages/**'
+      # Root dependency and build inputs: the image build runs turbo prune
+      # against these files, so a root dependency change can alter any image.
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - '.dockerignore'
       - '.github/workflows/v3_chat**'
 
 concurrency:
@@ -23,7 +33,6 @@ env:
 
 jobs:
   build-arm:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
