@@ -2107,6 +2107,7 @@ describe('Integration tests for user group management', () => {
           displayName: 'Assessment permission evidence quiz',
           ownerId: userOne.id,
           isAssessmentEnabled: true,
+          pinCode: 'AB12CD',
         },
       })
       await prisma.permission.create({

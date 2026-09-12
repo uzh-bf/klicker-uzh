@@ -146,7 +146,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): the committed values use `v3-audit` as their no-override fallback and keep all rollout annotations during the stability window. The staging Application tracks `stg-release`; ArgoCD will resolve that ref to a commit and pass `$ARGOCD_APP_REVISION` as the forced-string Helm parameter `global.imageTag`, which overrides all 18 first-party image tags without editing the values file. See [Staging promotion](#staging-promotion) below.
+- **stg** (`*.klicker.stg.df-app.ch`): the committed values use `v3-audit` as their no-override fallback and keep all rollout annotations during the stability window. The staging Application tracks `stg-release`; ArgoCD will resolve that ref to a commit and pass `$ARGOCD_APP_REVISION` as the forced-string Helm parameter `global.imageTag`, which overrides all first-party image tags, including the two audit workers without editing the values file. See [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags and `replicaCount: 2` for web/API services. Production stays on `v3`, receives no `global.imageTag` parameter, and keeps the existing release-tag flow.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
@@ -234,7 +234,7 @@ ref update:
 
 At activation, staging ArgoCD will track `stg-release`. ArgoCD resolves that ref
 to an exact commit, then the external Application passes `$ARGOCD_APP_REVISION` to Helm as
-`global.imageTag` with `forceString: true`. The chart applies that tag to all 18
+`global.imageTag` with `forceString: true`. The chart applies that tag to all
 first-party images, including the PreSync migrator. The values file therefore
 does not need a promotion commit or pull request. The retained rollout
 annotations and old promotion credential are stability-window rollback aids,
@@ -304,9 +304,8 @@ Operational notes:
 The static contract test at
 `.github/scripts/stg-release-ref-promotion.test.cjs` derives the 15 workflow
 paths and names, validates all 32 metadata/build pairs and the active
-repository/job map, checks the promoter trigger list, and proves all 18 chart
-images accept the override while no-override staging and production renders
-remain byte-identical to the frozen parent.
+repository/job map, checks the promoter trigger list, and verifies chart
+image override and fallback behavior through source checks and Helm renders.
 
 The superseded annotation mechanism and its incident context remain in
 [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).

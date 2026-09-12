@@ -2,7 +2,7 @@
 type: Architecture
 title: Assessment Audit Evidence
 description: Assessment evidence contract, PostgreSQL outbox, append-only Azure delivery, verification, and operator export.
-timestamp: '2026-09-11'
+timestamp: '2026-09-12'
 tags:
   - audit
   - assessment
@@ -33,10 +33,13 @@ The endpoints select the provisioned `stgklickerevidenceaohwr` storage account.
 Staging sets `enabled: true` for assessment testing. Before syncing this revision,
 verify the application images and migrations; enabled configuration is not proof
 of successful evidence delivery. Monitoring remains a separate deployment gate.
-Both dedicated audit workers use the mutable `v3-audit` image tag with
-`pullPolicy: Always`; unlike the normal workloads, their templates currently
-do not use the ArgoCD `global.imageTag` override. Updating a mutable image tag
-does not itself restart an existing pod.
+Both dedicated audit workers resolve their image tag like the other chart
+workloads: the release-wide `global.imageTag` override takes precedence, and
+the explicit `assessmentAudit.worker.image.tag` or
+`assessmentAudit.mediaPolicyWorker.image.tag` value is the fallback. A render
+fails when neither is set. Staging commits the mutable `v3-audit` tag with
+`pullPolicy: Always`, which the staging ArgoCD revision override replaces.
+Updating a mutable image tag does not itself restart an existing pod.
 
 The backend and both Hatchet worker images must copy `packages/audit/dist` into
 their final runtime stages. Installing workspace production dependencies alone
