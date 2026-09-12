@@ -1966,6 +1966,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Dieser veröffentlichte Graph enthält noch kein Paket zur Elementgenerierung. Erstellen Sie ihn neu, um Klicker-Elemente zu generieren.',
     graphPreviewUnavailable:
       'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
+    graphDomainLabel: 'Domäne',
+    graphDomainSelectPlaceholder: 'Domäne wählen',
+    graphDomainFinance: 'Finanzwirtschaft',
+    graphDomainEconomics: 'Volkswirtschaftslehre',
+    graphDomainBusiness: 'Betriebswirtschaftslehre',
+    graphDomainMathematics: 'Mathematik',
+    graphDomainInformatics: 'Informatik',
+    graphDomainGeneralAcademic: 'Allgemein / Gemischt',
+    graphDomainCategoriesLabel: 'Erzeugte Kategorien',
+    graphDomainLanguageNote:
+      'Der Graph wird auf Deutsch erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
+    graphDomainCurrentUnavailable:
+      'Die gewählte Domäne {domain} (Version {version}) ist in dieser Installation nicht verfügbar. Wählen Sie eine unterstützte Domäne, um erneut aufzubauen.',
+    graphDomainRebuildBlocked:
+      'Diese Wissensdatenbank verwendet eine explizite Domäne ({domain}, Version {version}, {language}), die diese Installation nicht erneut anwenden kann. Ein Neuaufbau ist blockiert, bis eine explizite Domänenwahl wieder möglich ist.',
+    graphDomainVersionUnknown: 'unbekannt',
+    graphDomainPublished:
+      'Ausgelieferter Graph: {domain} (Version {version}, {language})',
+    graphDomainLanguageGerman: 'Deutsch',
+    graphDomainLanguageEnglish: 'Englisch',
     ingestionDisabledError:
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
