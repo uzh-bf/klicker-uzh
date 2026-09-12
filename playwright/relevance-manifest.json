@@ -104,6 +104,7 @@
         "U-catalog.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
+        "Y-chat-lti-access.spec.ts",
         "Z-credential-verification.spec.ts"
       ]
     },
@@ -126,7 +127,11 @@
     {
       "id": "chat",
       "pathPrefixes": ["apps/chat/"],
-      "specs": ["A-login.spec.ts", "Y-chat.spec.ts"]
+      "specs": [
+        "A-login.spec.ts",
+        "Y-chat-lti-access.spec.ts",
+        "Y-chat.spec.ts"
+      ]
     },
     {
       "id": "auth",

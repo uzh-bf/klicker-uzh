@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
+import { ChatbotKnowledgeBaseSummaryRef } from './resource.js'
 
 interface IKBFileUpload {
   uploadSasURL: string
@@ -103,20 +104,38 @@ interface IKBMetrics {
   linkedConsumerCount: number
 }
 
+function validateKbByteMetric(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error('Invalid KB byte metric')
+  }
+  return value
+}
+
 export const KBMetricsRef = builder.objectRef<IKBMetrics>('KBMetrics')
 export const KBMetrics = KBMetricsRef.implement({
   fields: (t) => ({
     visibleResourceCount: t.exposeInt('visibleResourceCount'),
-    visibleSizeBytes: t.exposeInt('visibleSizeBytes'),
+    visibleSizeBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.visibleSizeBytes),
+    }),
     unknownSizeResourceCount: t.exposeInt('unknownSizeResourceCount'),
     quotaResourceCount: t.exposeInt('quotaResourceCount'),
-    quotaSizeBytes: t.exposeInt('quotaSizeBytes'),
+    quotaSizeBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.quotaSizeBytes),
+    }),
     resourceLimit: t.exposeInt('resourceLimit'),
-    storageLimitBytes: t.exposeInt('storageLimitBytes'),
+    storageLimitBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.storageLimitBytes),
+    }),
     pendingCleanupCount: t.exposeInt('pendingCleanupCount'),
-    pendingCleanupSizeBytes: t.exposeInt('pendingCleanupSizeBytes'),
+    pendingCleanupSizeBytes: t.float({
+      resolve: (metrics) =>
+        validateKbByteMetric(metrics.pendingCleanupSizeBytes),
+    }),
     reservedResourceCount: t.exposeInt('reservedResourceCount'),
-    reservedSizeBytes: t.exposeInt('reservedSizeBytes'),
+    reservedSizeBytes: t.float({
+      resolve: (metrics) => validateKbByteMetric(metrics.reservedSizeBytes),
+    }),
     linkedConsumerCount: t.exposeInt('linkedConsumerCount'),
   }),
 })
@@ -217,6 +236,7 @@ interface IKBChatbotBinding {
   chatbotName: string
   enabledKbId: string | null
   enabledKbName: string | null
+  enabledKbs: { id: string; name: string }[]
 }
 
 export const KBChatbotBindingRef =
@@ -225,7 +245,17 @@ export const KBChatbotBinding = KBChatbotBindingRef.implement({
   fields: (t) => ({
     chatbotId: t.exposeID('chatbotId'),
     chatbotName: t.exposeString('chatbotName'),
-    enabledKbId: t.exposeID('enabledKbId', { nullable: true }),
-    enabledKbName: t.exposeString('enabledKbName', { nullable: true }),
+    enabledKbId: t.exposeID('enabledKbId', {
+      nullable: true,
+      deprecationReason: 'Use enabledKbs for all attached knowledge bases.',
+    }),
+    enabledKbName: t.exposeString('enabledKbName', {
+      nullable: true,
+      deprecationReason: 'Use enabledKbs for all attached knowledge bases.',
+    }),
+    enabledKbs: t.field({
+      type: [ChatbotKnowledgeBaseSummaryRef],
+      resolve: (binding) => binding.enabledKbs,
+    }),
   }),
 })

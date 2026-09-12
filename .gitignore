@@ -75,6 +75,7 @@ output/
 # Devcontainer: runtime-minted Hatchet client token (post-create writes it)
 .devcontainer/.hatchet.env
 .devcontainer/.local-kb-services.env
+.local-kb/
 .devcontainer/.hatchet.env.tmp.*
 packages/graphql/.env.tmp.*
 .devcontainer/.runtime/
@@ -83,6 +84,7 @@ packages/graphql/.env.tmp.*
 .devcontainer/docker-compose.dependencies.yml
 playwright/playwright-report/
 playwright/test-results/
+playwright/.cache/
 
 # One-off course data pulls (contain real participant data — never commit).
 # Course-award seed payloads, comparison sheets, and state dumps all live in

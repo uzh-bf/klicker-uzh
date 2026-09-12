@@ -1,38 +1,98 @@
 name: Build Fallback
 
+# The single required status context for affected image builds. This workflow
+# runs for every v3 / v3-* pull request and push without a path filter, so the
+# required 'build-images-status' check is always reported and can never be
+# satisfied by a workflow-level path skip. It requires every actually affected
+# v3_*-stg.yml image build to succeed for the same event, branch and commit, and
+# passes only a validated no-change selection. Draft pull requests run the same
+# builds as ready ones, so a draft-era success stays authoritative and marking
+# the pull request ready re-runs nothing.
 on:
+  push:
+    branches:
+      - 'v3'
+      - 'v3*'
   pull_request:
     branches:
       - 'v3'
       - 'v3*'
-    paths-ignore:
-      - 'apps/analytics/**'
-      - 'apps/auth/**'
-      - 'apps/backend-docker/**'
-      - 'apps/chat/**'
-      - 'apps/frontend-control/**'
-      - 'apps/frontend-manage/**'
-      - 'apps/frontend-pwa/**'
-      - 'apps/hatchet-worker-general/**'
-      - 'apps/hatchet-worker-response-processor/**'
-      - 'apps/lti/**'
-      - 'apps/olat-api/**'
-      - 'apps/response-api/**'
-      - '.github/workflows/v3_**'
+    # "edited" re-evaluates the selection when a pull request is retargeted, and
+    # the drift-free build jobs cannot change at the ready boundary.
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
-jobs:
-  build-amd:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Success
-        run: echo "Fallback build check"
+permissions:
+  actions: read
+  contents: read
 
-  build-arm:
+jobs:
+  build-images-status:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # Polling delays take up to 29.5 minutes; API time also counts toward
+      # the job timeout. A timeout blocks qualification.
+      BUILD_STATUS_MAX_ATTEMPTS: '60'
+      BUILD_STATUS_RETRY_DELAY_MS: '30000'
     steps:
-      - name: Success
-        run: echo "Fallback build check"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine changed files
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          CHANGED_FILES_PATH: ${{ runner.temp }}/changed-files.txt
+        run: |
+          set -uo pipefail
+          # Bind the immutable base commit of the event, falling back to the
+          # base branch only when that object cannot be fetched.
+          if [ -f "$(git rev-parse --git-dir)/shallow" ]; then
+            git fetch --depth=1 origin "$BASE_SHA" ||
+              git fetch --depth=1 origin "$BASE_REF"
+          else
+            git fetch origin "$BASE_SHA" || git fetch origin "$BASE_REF"
+          fi
+          base="$BASE_SHA"
+          git cat-file -e "$base^{commit}" 2>/dev/null ||
+            base="origin/$BASE_REF"
+          # GitHub evaluates pull-request path filters against the merge base of
+          # the event base and the head, so prefer that comparison. A shallow
+          # checkout usually has no common ancestor and falls back to the
+          # conservative two-endpoint diff, which can only select more image
+          # builds than GitHub does.
+          if git diff --name-only "$base...HEAD" \
+            > "$CHANGED_FILES_PATH" 2>/dev/null; then
+            echo "changed files: merge-base comparison against $base"
+          elif git diff --name-only "$base" HEAD \
+            > "$CHANGED_FILES_PATH" 2>/dev/null; then
+            echo "changed files: two-endpoint comparison (conservative)"
+          else
+            rm -f "$CHANGED_FILES_PATH"
+            echo "::error::changed-file selection is unavailable"
+          fi
+
+      - name: Report affected image build status
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          BUILD_STATUS_EVIDENCE_PATH: ${{ runner.temp }}/required-ci-evidence.json
+          CHANGED_FILES_PATH: ${{ runner.temp }}/changed-files.txt
+        with:
+          script: |
+            const {
+              evaluateBuildImagesStatus,
+            } = require('./.github/scripts/required-build-status.cjs')
+            await evaluateBuildImagesStatus({ github, context, core })
+
+      - name: Upload build status evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: required-ci-evidence
+          path: ${{ runner.temp }}/required-ci-evidence.json

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
+  countDocQueryDocuments,
   isDocQueryToolName,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
@@ -84,6 +85,26 @@ describe('resource citation provenance', () => {
               reference:
                 'https://api.example.org/api/ingestion/resources/item/versions/3',
               chunks: [],
+            },
+          ],
+        }),
+      ])
+    ).toEqual([])
+  })
+
+  test('keeps an unnamed ingestion source with a chunk out of the citation list', () => {
+    const reference =
+      'https://api.example.org/api/ingestion/resources/item/versions/3'
+    // The retrieved chunks still render from the raw payload, but the entry
+    // must not gain a citation index or a participant-facing origin link.
+    expect(
+      normalizeSourcesFromParts([
+        toolCallPart('KB_doc_query', {
+          mode: 'documents',
+          sources: [
+            {
+              reference,
+              chunks: [{ content: 'Synthetic excerpt', page_number: 4 }],
             },
           ],
         }),
@@ -630,6 +651,56 @@ describe('normalizeSourcesFromParts', () => {
       startSec: 42,
       endSec: 59,
     })
+  })
+
+  test('normalizes the sanitized opaque reference in the nested envelope', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        content: [{ type: 'text', text: '{"mode":"documents"}' }],
+        structuredContent: {
+          result: JSON.stringify({
+            mode: 'documents',
+            sources: [
+              {
+                reference: 'document-0123456789abcdef',
+                chunks: [{ content: 'Synthetic excerpt', page_number: 6 }],
+              },
+            ],
+          }),
+        },
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      title: 'Document',
+      page: 6,
+      excerpt: 'Synthetic excerpt',
+    })
+    expect(result[0]?.url).toBeUndefined()
+    expect(result[0]?.id).toMatch(/^url:document-[0-9a-f]{16}\|6\|$/)
+  })
+
+  test('counts documents once rather than counting chunks or rendered cards', () => {
+    expect(
+      countDocQueryDocuments({
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'document-0123456789abcdef',
+            chunks: [
+              { content: 'first', page_number: 1 },
+              { content: 'second', page_number: 2 },
+            ],
+          },
+          {
+            reference: 'document-fedcba9876543210',
+            title: 'Empty synthetic document',
+            chunks: [],
+          },
+        ],
+      })
+    ).toBe(1)
   })
 
   test('envelope with non-JSON text content yields no sources', () => {
