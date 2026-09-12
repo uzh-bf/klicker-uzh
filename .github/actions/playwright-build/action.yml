@@ -107,9 +107,9 @@ runs:
         started=$(date +%s)
         set +e
         set -o pipefail
-        pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
+        node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-prisma.jsonl pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
         prisma_status=("${PIPESTATUS[@]}")
-        pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+        node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-build.jsonl pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
         build_status=("${PIPESTATUS[@]}")
         status=0
         if [ "${prisma_status[0]}" -ne 0 ] ||
@@ -217,6 +217,9 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-build-telemetry
-        path: playwright-build-telemetry.json
+        path: |
+          playwright-build-telemetry.json
+          playwright-resources-prisma.jsonl
+          playwright-resources-build.jsonl
         if-no-files-found: ignore
         retention-days: 7
