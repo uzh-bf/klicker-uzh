@@ -36,6 +36,10 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
     delete services[name].ports
   }
   const app = services.app
+  app.ports = [`127.0.0.1:${config.bindings.ports.klicker.backend}:3000`]
+  services.litellm.ports = [
+    `127.0.0.1:${config.bindings.ports.klicker.model}:4000`,
+  ]
   // This credential-free renderer must not inherit a host's paid AI capability.
   // A later explicitly authorized AI overlay supplies the real upstream.
   services.litellm.environment = {

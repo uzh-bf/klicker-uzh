@@ -2,8 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { resolveLocalKbConfig } from '../local-kb-stack.mjs'
 import { resolveIsolatedConfig } from './isolated-config.mjs'
-import { IDENTITY_FLAGS, providerCommands } from './provider-commands.mjs'
+import {
+  observeProviderLaunchers,
+  providerCommands,
+} from './provider-commands.mjs'
 import { LAUNCHER_CONTRACTS } from './provider-launcher-contract.mjs'
+import { providerImages, providerPorts } from './test-fixtures.mjs'
 
 const providerRevisions = {
   ingestion: 'd'.repeat(40),
@@ -27,8 +31,6 @@ function makeInput(name) {
       { path: root.path, revision: root.revision, clean: true },
     ])
   )
-  const endpoint = (offset) =>
-    'http://127.0.0.1:' + (portBase + offset) + '/health'
   return {
     primaryCheckoutPath: '/synthetic/checkouts/' + name + '/primary',
     runtimeCheckoutPath: '/synthetic/checkouts/' + name + '/runtime',
@@ -39,22 +41,8 @@ function makeInput(name) {
     retainedEndpointOrigins: ['https://retained.example.invalid:443'],
     providerRoots,
     providerObservations,
-    endpoints: {
-      klicker: 'http://127.0.0.1:' + portBase + '/graphql',
-      postgres: 'postgresql://127.0.0.1:' + (portBase + 1) + '/postgres',
-      hatchet: endpoint(2),
-      redis: 'redis://127.0.0.1:' + (portBase + 3) + '/0',
-      blob: endpoint(4),
-      ingestion: endpoint(5),
-      dispatcher: endpoint(6),
-      callback: endpoint(7),
-      scraping: endpoint(8),
-      crawl4ai: endpoint(9),
-      milvus: endpoint(10),
-      objectBacking: endpoint(11),
-      retrieval: endpoint(12),
-      docProcessing: endpoint(13),
-    },
+    ports: providerPorts(portBase),
+    images: { ...providerImages },
   }
 }
 
@@ -62,6 +50,141 @@ function resolveFixture(name) {
   const config = resolveIsolatedConfig(makeInput(name))
   return { config, commands: providerCommands(config) }
 }
+
+function providerStatus(config, name) {
+  const identity = config.project.identity
+  const revision = config.providers[name].revision
+  if (name === 'ingestion')
+    return {
+      instance: { name: identity },
+      source: { revision },
+      preparation: {
+        configuration: 'prepared',
+        credentials: 'prepared',
+        schema: 'prepared',
+      },
+      process: { infrastructure: [], workloads: [] },
+    }
+  if (name === 'docProcessing')
+    return {
+      instance_id: identity,
+      source_revision: revision,
+      ownership: 'verified',
+      setup: 'ready',
+      ready: true,
+    }
+  if (name === 'scraping')
+    return {
+      instance: identity,
+      source_revision: revision,
+      owned: true,
+      setup: { prepared: true },
+      readiness: { api: true },
+    }
+  return {
+    instance: identity,
+    source_revision: revision,
+    prepared: true,
+    ready: true,
+  }
+}
+
+test('provider observation validates custody without promoting endpoint health to AI proof', async () => {
+  const { config } = resolveFixture('a')
+  const verbs = []
+  const result = await observeProviderLaunchers(config, async (command) => {
+    const name = Object.keys(config.providers).find(
+      (key) => config.providers[key].sourcePath === command.cwd
+    )
+    verbs.push(command.args.includes('status'))
+    return JSON.stringify({
+      ...providerStatus(config, name),
+      privateDiagnostic: 'synthetic-private-value',
+    })
+  })
+  assert.ok(verbs.every(Boolean))
+  assert.equal(result.length, 4)
+  assert.ok(result.every((row) => row.prepared && !row.aiQualified))
+  assert.equal(
+    result.find((row) => row.provider === 'ingestion').endpointReady,
+    false
+  )
+  assert.equal(
+    JSON.stringify(result).includes('synthetic-private-value'),
+    false
+  )
+})
+
+test('provider observation rejects foreign revisions and suppresses provider diagnostics', async () => {
+  const { config } = resolveFixture('a')
+  for (const output of [
+    'not-json',
+    JSON.stringify({
+      ...providerStatus(config, 'scraping'),
+      source_revision: 'f'.repeat(40),
+    }),
+  ]) {
+    await assert.rejects(
+      observeProviderLaunchers(config, async () => output),
+      /observation is unavailable or mismatched/
+    )
+  }
+  await assert.rejects(
+    observeProviderLaunchers(config, async () => {
+      throw new Error('synthetic-private-value')
+    }),
+    (error) => !error.message.includes('synthetic-private-value')
+  )
+})
+
+test('bound launchers separate setup inputs from retained start and stop', () => {
+  const { config } = resolveFixture('a')
+  const bindings = config.bindings
+  const commands = providerCommands(config)
+  for (const [name, provider] of Object.entries(commands.providers)) {
+    for (const [verb, entry] of Object.entries(provider.lifecycle)) {
+      assert.equal(entry.blocked, undefined)
+      const contract = LAUNCHER_CONTRACTS[name]
+      const flags = entry.args.filter(
+        (arg) =>
+          arg.startsWith('--') && !['--frozen', '--no-sync'].includes(arg)
+      )
+      for (const flag of flags)
+        assert.ok(
+          [
+            ...contract.globalFlags,
+            ...contract.verbs[verb].required,
+            ...contract.verbs[verb].optional,
+          ].includes(flag),
+          `${name}/${verb}: ${flag}`
+        )
+      for (const flag of contract.verbs[verb].required)
+        assert.ok(flags.includes(flag))
+    }
+  }
+  const ingestion = commands.providers.ingestion.lifecycle
+  assert.ok(ingestion.setup.args.includes('--worker-env-file'))
+  assert.ok(
+    ingestion.setup.args.includes(
+      `http://host.docker.internal:${bindings.ports.scraping.api}`
+    )
+  )
+  assert.ok(ingestion.start.args.includes('--workers'))
+  assert.ok(!ingestion.start.args.includes('--state-dsn'))
+  assert.ok(!ingestion.stop.args.includes('--workers'))
+  assert.ok(
+    commands.providers.docProcessing.lifecycle.start.args.includes('--config')
+  )
+  assert.deepEqual(commands.stopOrder, [...commands.lifecycleOrder].reverse())
+  assert.throws(
+    () =>
+      providerCommands({
+        ...config,
+        bindings: { ...bindings, images: { api: 'latest', worker: 'latest' } },
+      }),
+    /immutable/
+  )
+})
 
 test('binds explicit launcher identity and revision for derivable providers', () => {
   const { config, commands } = resolveFixture('a')
@@ -91,12 +214,13 @@ test('binds explicit launcher identity and revision for derivable providers', ()
   const retrievalStop = commands.providers.retrieval.lifecycle.stop.args
   assert.ok(retrievalStop.includes(providerRevisions.retrieval))
   const retrievalPort = new URL(config.endpoints.retrieval.url).port
-  assert.deepEqual(retrievalStop.slice(retrievalStop.indexOf('--bind')), [
-    '--bind',
-    '127.0.0.1',
-    '--port',
-    retrievalPort,
-  ])
+  assert.deepEqual(
+    retrievalStop.slice(
+      retrievalStop.indexOf('--bind'),
+      retrievalStop.indexOf('--bind') + 4
+    ),
+    ['--bind', '127.0.0.1', '--port', retrievalPort]
+  )
   // The retrieval launcher serves the tool registry the consumer writes into
   // .local-kb/doc-query-tools, not a state-directory child.
   const retrievalConfigIndex = retrievalStop.indexOf('--config-dir')
@@ -105,12 +229,18 @@ test('binds explicit launcher identity and revision for derivable providers', ()
     ['--config-dir', '/synthetic/checkouts/a/runtime/.local-kb/doc-query-tools']
   )
   const scrapingSetup = commands.providers.scraping.lifecycle.setup.args
-  assert.deepEqual(scrapingSetup.slice(scrapingSetup.indexOf('--api-port')), [
-    '--api-port',
-    new URL(config.endpoints.scraping.url).port,
-    '--crawl4ai-port',
-    new URL(config.endpoints.crawl4ai.url).port,
-  ])
+  assert.deepEqual(
+    scrapingSetup.slice(
+      scrapingSetup.indexOf('--api-port'),
+      scrapingSetup.indexOf('--api-port') + 4
+    ),
+    [
+      '--api-port',
+      new URL(config.endpoints.scraping.url).port,
+      '--crawl4ai-port',
+      new URL(config.endpoints.crawl4ai.url).port,
+    ]
+  )
   const stateDir = '/synthetic/checkouts/a/runtime/.local-kb/state'
   assert.ok(
     commands.providers.scraping.lifecycle.start.args.includes(
@@ -119,12 +249,14 @@ test('binds explicit launcher identity and revision for derivable providers', ()
   )
 })
 
-test('blocks ingestion deployment on unmodeled provider-owned inputs', () => {
+test('binds ingestion setup and retains the prepared identity across lifecycle verbs', () => {
   const { config, commands } = resolveFixture('b')
   const lifecycle = commands.providers.ingestion.lifecycle
   for (const verb of ['setup', 'start']) {
-    assert.equal(lifecycle[verb].blocked, true)
-    assert.equal(lifecycle[verb].reason, 'unbound-deployment-inputs')
+    assert.equal(lifecycle[verb].blocked, undefined)
+    assert.ok(
+      lifecycle[verb].args.includes(config.providers.ingestion.revision)
+    )
   }
   for (const verb of ['status', 'stop']) {
     const args = lifecycle[verb].args
@@ -216,30 +348,18 @@ test('emits every provider-required flag for derivable commands', () => {
   }
 })
 
-test('records unbound ingestion inputs beyond the launcher identity', () => {
+test('maps explicit host environment for every retrieval lifecycle verb', () => {
   const { commands } = resolveFixture('a')
-  const ingestion = commands.providers.ingestion.lifecycle
-  const setupInputs = LAUNCHER_CONTRACTS.ingestion.verbs.setup.required
-    .filter((flag) => !IDENTITY_FLAGS.has(flag))
-    .map((flag) => flag.slice(2))
-  assert.ok(setupInputs.length > 0)
-  for (const verb of ['setup', 'start']) {
-    // Start cannot run before setup established the same bindings.
-    assert.deepEqual(ingestion[verb].requires, setupInputs)
+  for (const entry of Object.values(commands.providers.retrieval.lifecycle)) {
+    for (const name of [
+      'MILVUS_URI',
+      'MILVUS_COLLECTION_NAME',
+      'OPENAI_BASE_URL',
+      'OPENAI_API_KEY',
+    ]) {
+      assert.ok(entry.args.includes(`${name}=KLICKER_LOCAL_RETRIEVAL_${name}`))
+    }
   }
-})
-
-test('records the retrieval bindings its launcher validates', () => {
-  const { commands } = resolveFixture('a')
-  const lifecycle = commands.providers.retrieval.lifecycle
-  for (const verb of ['setup', 'start', 'status']) {
-    assert.equal(lifecycle[verb].blocked, true)
-    assert.equal(lifecycle[verb].reason, 'unbound-deployment-inputs')
-    assert.deepEqual(lifecycle[verb].requires, [
-      ...LAUNCHER_CONTRACTS.retrieval.environment,
-    ])
-  }
-  assert.equal(lifecycle.stop.blocked, undefined)
 })
 
 test('requires the isolated configuration for launcher bindings', () => {
@@ -258,9 +378,5 @@ test('requires the isolated configuration for launcher bindings', () => {
 test('rejects identities beyond the launcher instance limit', () => {
   const input = makeInput('a')
   input.projectIdentity = 'a'.repeat(49)
-  const config = resolveIsolatedConfig(input)
-  assert.throws(
-    () => providerCommands(config),
-    /launcher instance limit of 48 characters/
-  )
+  assert.throws(() => resolveIsolatedConfig(input), /at most 48 characters/)
 })

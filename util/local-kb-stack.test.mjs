@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import { execFile, execFileSync, spawnSync } from 'node:child_process'
 import { once } from 'node:events'
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -9,8 +15,8 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { renderBackingCompose } from './local-kb/backing-compose.mjs'
-import { ingestionImageRevision } from './local-kb/ingestion-compose.mjs'
 import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
+import { providerImages, providerPorts } from './local-kb/test-fixtures.mjs'
 import {
   inspectIsolatedProviderSources,
   inspectLocalKbStack,
@@ -49,7 +55,7 @@ test('Blob health requires the expected unauthenticated service response', async
   }
 })
 
-function isolatedConfigInput(endpointOverrides = {}) {
+function isolatedConfigInput(overrides = {}) {
   const providerRevisions = {
     ingestion: 'd'.repeat(40),
     scraping: 'b'.repeat(40),
@@ -77,23 +83,9 @@ function isolatedConfigInput(endpointOverrides = {}) {
         { ...root, clean: true },
       ])
     ),
-    endpoints: {
-      klicker: 'http://127.0.0.1:28000/graphql',
-      postgres: 'postgresql://127.0.0.1:28001/postgres',
-      hatchet: 'http://127.0.0.1:28002/health',
-      redis: 'redis://127.0.0.1:28003/0',
-      blob: 'http://127.0.0.1:28004/blob',
-      ingestion: 'http://127.0.0.1:28005/ready',
-      dispatcher: 'http://127.0.0.1:28006/health',
-      callback: 'http://127.0.0.1:28007/metrics',
-      scraping: 'http://127.0.0.1:28008/ready',
-      crawl4ai: 'http://127.0.0.1:28009/health',
-      milvus: 'http://127.0.0.1:28010/healthz',
-      objectBacking: 'http://127.0.0.1:28011/health',
-      retrieval: 'http://127.0.0.1:28012/health',
-      docProcessing: 'http://127.0.0.1:28013/health',
-      ...endpointOverrides,
-    },
+    ports: providerPorts(28000),
+    images: { ...providerImages },
+    ...overrides,
   }
 }
 
@@ -140,7 +132,7 @@ test('config plan resolves a full synthetic input and rejects remote endpoints s
   assert.equal(plan.sourceMounts.retrieval.readOnly, true)
   assert.equal(
     plan.providerCommands.providers.ingestion.lifecycle.setup.blocked,
-    true
+    undefined
   )
   assert.equal(
     plan.providerCommands.providers.docProcessing.lifecycle.start.cwd,
@@ -153,24 +145,23 @@ test('config plan resolves a full synthetic input and rejects remote endpoints s
   )
   assert.deepEqual(
     plan.blockers.map(({ id }) => id),
-    ['rendered-local-deployment', 'provider-preparation']
+    ['provider-runtime-qualification', 'provider-preparation']
   )
   assert.equal(plan.limitations[0].id, 'supplied-provider-observations')
-  assert.equal(plan.ingestionCompose, null)
+  assert.equal(plan.ingestionCompose, undefined)
   const pinnedInput = isolatedConfigInput()
-  pinnedInput.providerRoots.ingestion.revision = ingestionImageRevision
-  pinnedInput.providerObservations.ingestion.revision = ingestionImageRevision
+  pinnedInput.providerRoots.ingestion.revision = 'c'.repeat(40)
+  pinnedInput.providerObservations.ingestion.revision = 'c'.repeat(40)
   const pinnedResult = runConfigPlan(pinnedInput)
   assert.equal(pinnedResult.status, 2)
   const pinnedPlan = JSON.parse(pinnedResult.stdout)
   assert.equal(pinnedPlan.executable, false)
-  assert.equal(
-    pinnedPlan.ingestionCompose.services['ingestion-api'].command[0],
-    'uvicorn'
-  )
-  assert.deepEqual(
-    pinnedPlan.ingestionCompose.services['ingestion-setup'].profiles,
-    ['local-kb-setup']
+  assert.equal(pinnedPlan.ingestionCompose, undefined)
+  assert.equal(pinnedPlan.providerCompose, undefined)
+  assert.ok(
+    pinnedPlan.providerCommands.providers.ingestion.lifecycle.start.args.includes(
+      '--workers'
+    )
   )
 
   const invalid = runConfigPlan(
@@ -275,7 +266,16 @@ test('source observation rejects dirty, mismatched and missing provider checkout
     const revision = git(['rev-parse', 'HEAD'])
     const config = { roots: [{ name: 'ingestion', path, revision }] }
     assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
-    writeFileSync(join(path, '.git/info/exclude'), 'ignored.pyc\n')
+    writeFileSync(
+      join(path, '.git/info/exclude'),
+      'ignored.pyc\n.venv/\n.env\n'
+    )
+    mkdirSync(join(path, '.venv'))
+    writeFileSync(join(path, '.venv/pyvenv.cfg'), 'synthetic fixture')
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
+    writeFileSync(join(path, '.env'), 'SYNTHETIC_ONLY=true')
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, false)
+    rmSync(join(path, '.env'))
     writeFileSync(join(path, 'ignored.pyc'), 'synthetic bytecode')
     assert.equal(inspectIsolatedProviderSources(config)[0].qualified, false)
     rmSync(join(path, 'ignored.pyc'))

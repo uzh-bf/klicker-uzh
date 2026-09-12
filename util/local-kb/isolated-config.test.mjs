@@ -3,17 +3,9 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
-import { renderProviderCompose } from './compose.mjs'
-import {
-  docProcessingImageRevision,
-  renderDocProcessingCompose,
-} from './doc-processing-compose.mjs'
-import {
-  ingestionImageRevision,
-  renderIngestionCompose,
-} from './ingestion-compose.mjs'
 import {
   resolveIsolatedConfig,
+  resolveProviderBindings,
   validateIsolatedConfig,
 } from './isolated-config.mjs'
 import {
@@ -21,12 +13,7 @@ import {
   renderProviderRouting,
 } from './managed-configuration.mjs'
 import { providerCommands } from './provider-commands.mjs'
-import {
-  renderRetrievalCompose,
-  retrievalImageRevision,
-} from './retrieval-compose.mjs'
-import { renderRetrievalStoreCompose } from './retrieval-store-compose.mjs'
-import { scrapingImageRevision } from './scraping-compose.mjs'
+import { providerImages, providerPorts } from './test-fixtures.mjs'
 
 const providerRevisions = {
   ingestion: 'd'.repeat(40),
@@ -67,22 +54,8 @@ function makeInput(name) {
     retainedEndpointOrigins: ['https://retained.example.invalid:443'],
     providerRoots,
     providerObservations,
-    endpoints: {
-      klicker: `http://127.0.0.1:${portBase}/graphql`,
-      postgres: `postgresql://127.0.0.1:${portBase + 1}/postgres`,
-      hatchet: `http://127.0.0.1:${portBase + 2}/health`,
-      redis: `redis://127.0.0.1:${portBase + 3}/0`,
-      blob: `http://127.0.0.1:${portBase + 4}/blob`,
-      ingestion: `http://127.0.0.1:${portBase + 5}/ready`,
-      dispatcher: `http://127.0.0.1:${portBase + 6}/health`,
-      callback: `http://127.0.0.1:${portBase + 7}/metrics`,
-      scraping: `http://127.0.0.1:${portBase + 8}/ready`,
-      crawl4ai: `http://127.0.0.1:${portBase + 9}/health`,
-      milvus: `http://127.0.0.1:${portBase + 10}/healthz`,
-      objectBacking: `http://127.0.0.1:${portBase + 11}/health`,
-      retrieval: `http://127.0.0.1:${portBase + 12}/health`,
-      docProcessing: `http://127.0.0.1:${portBase + 13}/health`,
-    },
+    ports: providerPorts(portBase),
+    images: { ...providerImages },
   }
 }
 
@@ -119,8 +92,12 @@ test('managed application configuration shares only the isolated provider networ
   for (const name of ['postgres', 'azurite', 'hatchet', 'local-mcp']) {
     assert.equal(result.compose.services[name], undefined)
   }
-  for (const service of Object.values(result.compose.services)) {
-    assert.equal(service.ports, undefined)
+  for (const [name, service] of Object.entries(result.compose.services)) {
+    const published = {
+      app: [`127.0.0.1:${config.bindings.ports.klicker.backend}:3000`],
+      litellm: [`127.0.0.1:${config.bindings.ports.klicker.model}:4000`],
+    }
+    assert.deepEqual(service.ports, published[name])
   }
   assert.deepEqual(result.compose.networks.default, {
     external: true,
@@ -185,6 +162,26 @@ test('resolves two independent stacks with complete provider and state ownership
   assert.equal(first.providers.docProcessing.identity, 'docProcessing')
   assert.equal(first.providers.docProcessing.clean, true)
   assert.equal(first.mutableState.documentProcessing.owner, 'docProcessing')
+  for (const [provider, state] of [
+    ['docProcessing', 'documentProcessing'],
+    ['ingestion', 'ingestionOutbox'],
+    ['scraping', 'scraperCache'],
+    ['retrieval', 'docQuery'],
+  ]) {
+    assert.equal(first.mutableState[state].managedBy, 'provider-launcher')
+    assert.equal(first.mutableState[state].volumeName, undefined)
+    assert.equal(
+      first.mutableState[state].path,
+      `${first.project.runtimeCheckoutPath}/.local-kb/state/${provider}`
+    )
+  }
+  assert.deepEqual(first.dependencyGraph.nodes.documentProcessing.dependsOn, [
+    'docProcessingBacking',
+  ])
+  assert.deepEqual(first.dependencyGraph.nodes.ingestionApi.dependsOn, [
+    'ingestionBacking',
+    'ingestionOutbox',
+  ])
   for (const name of ['milvus', 'milvusMetadata', 'objectBacking']) {
     assert.equal(first.mutableState[name].owner, 'ingestion')
     assert.equal(first.dependencyGraph.nodes[name].provider, 'ingestion')
@@ -221,60 +218,6 @@ test('resolves two independent stacks with complete provider and state ownership
   assert.equal(validateIsolatedConfig(second), true)
 })
 
-test('combined provider composition resolves every dependency and named volume', () => {
-  const input = makeInput('a')
-  for (const [name, revision] of Object.entries({
-    ingestion: ingestionImageRevision,
-    scraping: scrapingImageRevision,
-    retrieval: retrievalImageRevision,
-    docProcessing: docProcessingImageRevision,
-  })) {
-    input.providerRoots[name].revision = revision
-    input.providerObservations[name].revision = revision
-  }
-  const rendered = renderProviderCompose(resolveIsolatedConfig(input))
-  assert.equal(rendered.name, input.projectIdentity)
-  for (const name of [
-    'postgres',
-    'redis',
-    'blob',
-    'hatchet',
-    'milvus-etcd',
-    'minio',
-    'milvus',
-    'crawl4ai',
-    'scraping',
-    'ingestion-api',
-    'doc-processing',
-  ]) {
-    assert.ok(rendered.services[name].healthcheck?.test.length > 0)
-    assert.equal(rendered.services[name].healthcheck.disable, undefined)
-  }
-  assert.deepEqual(rendered.services.scraping.depends_on, {
-    crawl4ai: { condition: 'service_healthy' },
-  })
-  assert.deepEqual(rendered.services['ingestion-api'].depends_on, {
-    postgres: { condition: 'service_healthy' },
-  })
-  assert.deepEqual(
-    rendered.services['ingestion-resource-fetch-worker'].depends_on,
-    {
-      postgres: { condition: 'service_healthy' },
-      hatchet: { condition: 'service_started' },
-    }
-  )
-  for (const service of Object.values(rendered.services)) {
-    for (const name of Object.keys(service.depends_on ?? {})) {
-      assert.ok(Object.hasOwn(rendered.services, name))
-    }
-    for (const mount of service.volumes ?? []) {
-      if (typeof mount === 'string')
-        assert.ok(Object.hasOwn(rendered.volumes, mount.split(':')[0]))
-    }
-    assert.equal(service.ports, undefined)
-  }
-})
-
 test('backing services use isolated volumes and keep Hatchet setup separate', () => {
   const first = renderBackingCompose(resolveIsolatedConfig(makeInput('a')))
   const second = renderBackingCompose(resolveIsolatedConfig(makeInput('b')))
@@ -297,7 +240,10 @@ test('backing services use isolated volumes and keep Hatchet setup separate', ()
     '/local-kb/hatchet-entrypoint.sh',
   ])
   for (const service of Object.values(first.services)) {
-    assert.equal(service.ports, undefined)
+    assert.deepEqual(
+      service.ports,
+      service === first.services.blob ? ['127.0.0.1:18002:10000'] : undefined
+    )
     assert.equal(service.network_mode, undefined)
     assert.deepEqual(service.networks, ['default'])
     assert.equal(service.restart, 'no')
@@ -311,157 +257,6 @@ test('backing services use isolated volumes and keep Hatchet setup separate', ()
       }
     }
   }
-})
-
-test('document processing shares extracts across workers and only explicitly initializes', () => {
-  const input = makeInput('a')
-  assert.throws(
-    () => renderDocProcessingCompose(resolveIsolatedConfig(input)),
-    /pinned runtime image/
-  )
-  input.providerRoots.docProcessing.revision = docProcessingImageRevision
-  input.providerObservations.docProcessing.revision = docProcessingImageRevision
-  const { services, volumes } = renderDocProcessingCompose(
-    resolveIsolatedConfig(input)
-  )
-  assert.equal(
-    volumes['document-processing'].name,
-    resolveIsolatedConfig(input).mutableState.documentProcessing.volumeName
-  )
-  assert.deepEqual(services['doc-processing-setup'].profiles, [
-    'local-kb-setup',
-  ])
-  for (const [name, service] of Object.entries(services)) {
-    assert.equal(service.environment.DOC_PROCESSING_AUTO_INITIALIZE, '0')
-    assert.equal(
-      service.env_file.some(({ path }) => path.endsWith('/hatchet-client.env')),
-      name !== 'doc-processing-setup'
-    )
-    assert.equal(
-      service.environment.DOC_PROCESSING_DEFAULT_PICTURE_DESCRIPTION,
-      'off'
-    )
-    assert.ok(service.volumes.includes('document-processing:/app/data'))
-    assert.equal(service.ports, undefined)
-    assert.equal(
-      service.command.includes('doc_processing.setup'),
-      name === 'doc-processing-setup'
-    )
-  }
-})
-
-test('real retrieval requires its image revision, explicit AI profile and strict local tools', () => {
-  assert.throws(
-    () => renderRetrievalCompose(resolveIsolatedConfig(makeInput('a'))),
-    /pinned runtime image/
-  )
-  const input = makeInput('a')
-  input.providerRoots.retrieval.revision = retrievalImageRevision
-  input.providerObservations.retrieval.revision = retrievalImageRevision
-  const service = renderRetrievalCompose(resolveIsolatedConfig(input)).services[
-    'doc-query'
-  ]
-  assert.deepEqual(service.profiles, ['local-kb-ai'])
-  assert.equal(service.environment.DOC_QUERY_TOOL_CONFIG_REQUIRED, 'true')
-  assert.equal(service.environment.MILVUS_URI, 'http://milvus:19530')
-  assert.equal(service.environment.OPENAI_API_KEY, undefined)
-  assert.ok(service.command.includes('/app/local-src'))
-  assert.ok(
-    service.volumes.every(
-      (mount) => mount.read_only && !mount.bind.create_host_path
-    )
-  )
-  assert.equal(service.ports, undefined)
-})
-
-test('retrieval stores isolate vector data, metadata and object backing', () => {
-  const config = resolveIsolatedConfig(makeInput('a'))
-  const rendered = renderRetrievalStoreCompose(config)
-  const other = renderRetrievalStoreCompose(
-    resolveIsolatedConfig(makeInput('b'))
-  )
-  const names = new Set(Object.values(rendered.volumes).map(({ name }) => name))
-  assert.ok(Object.values(other.volumes).every(({ name }) => !names.has(name)))
-  assert.ok(
-    config.dependencyGraph.nodes.milvus.dependsOn.includes('milvusMetadata')
-  )
-  assert.deepEqual(rendered.services.milvus.command, [
-    'milvus',
-    'run',
-    'standalone',
-  ])
-  assert.equal(rendered.services.milvus.environment.MINIO_ADDRESS, 'minio:9000')
-  for (const service of Object.values(rendered.services)) {
-    assert.equal(service.ports, undefined)
-    assert.deepEqual(service.networks, ['default'])
-    assert.equal(service.restart, 'no')
-    assert.ok(
-      service.volumes.every((mount) =>
-        Object.hasOwn(rendered.volumes, mount.split(':')[0])
-      )
-    )
-  }
-})
-
-test('renders pinned ingestion commands with explicit setup and no writable provider mounts', () => {
-  const input = makeInput('a')
-  input.providerRoots.ingestion.revision = ingestionImageRevision
-  input.providerObservations.ingestion.revision = ingestionImageRevision
-  const config = resolveIsolatedConfig(input)
-  const { services } = renderIngestionCompose(config)
-  assert.deepEqual(services['ingestion-setup'].profiles, ['local-kb-setup'])
-  assert.deepEqual(services['ingestion-setup'].command, [
-    'python',
-    '-m',
-    'ingestion_api.migrations',
-  ])
-  assert.deepEqual(services['ingestion-resource-fetch-worker'].command, [
-    'python',
-    '-m',
-    'ingestion.workers.resource_fetch_worker',
-  ])
-  for (const [name, service] of Object.entries(services)) {
-    assert.match(service.image, /@sha256:[a-f0-9]{64}$/)
-    assert.equal(
-      service.env_file.some(({ path }) => path.endsWith('/hatchet-client.env')),
-      name !== 'ingestion-setup'
-    )
-    assert.equal(service.restart, 'no')
-    assert.equal(service.cpus, 1)
-    assert.ok(['1g', '512m'].includes(service.mem_limit))
-    assert.equal(service.pids_limit, 256)
-    assert.equal(service.environment.PYTHON_DOTENV_DISABLED, '1')
-    assert.equal(service.environment.INGESTION_STATE_ENSURE_SCHEMA, 'false')
-    assert.equal(service.command.includes('uv'), false)
-    assert.equal(service.ports, undefined)
-    assert.equal(service.network_mode, undefined)
-    for (const mount of service.volumes) {
-      assert.equal(mount.read_only, true)
-      assert.equal(mount.bind.create_host_path, false)
-      assert.ok(
-        mount.source.startsWith(input.runtimeCheckoutPath) ||
-          mount.source.startsWith(input.providerRoots.ingestion.path)
-      )
-    }
-    if (name !== 'ingestion-setup') {
-      assert.equal(service.command.includes('ingestion_api.migrations'), false)
-    }
-  }
-})
-
-test('ingestion rendering refuses dependency/source mismatch and Compose interpolation', () => {
-  assert.throws(
-    () => renderIngestionCompose(resolveIsolatedConfig(makeInput('a'))),
-    /pinned runtime images/
-  )
-  const input = makeInput('a')
-  input.providerRoots.ingestion.revision = ingestionImageRevision
-  input.providerObservations.ingestion.revision = ingestionImageRevision
-  input.runtimeCheckoutPath += '-$UNEXPECTED'
-  assert.throws(
-    () => renderIngestionCompose(resolveIsolatedConfig(input)),
-    /interpolation/
-  )
 })
 
 test('keeps roots and health compatible with supported provider commands', () => {
@@ -575,27 +370,13 @@ test('rejects dirty, mismatched, or relocated provider observations', () => {
   )
 })
 
-test('rejects remote endpoint fallback and unknown settings', () => {
+test('derives endpoints from ports and rejects endpoint overrides or persisted drift', () => {
   const input = makeInput('a')
-  for (const url of [
-    'https://doc-processing/health',
-    'https://doc-processing:443/health',
-    `${input.endpoints.docProcessing}?token=synthetic-test-value`,
-    `${input.endpoints.docProcessing}#synthetic-test-value`,
-  ]) {
-    assert.throws(() =>
-      resolveIsolatedConfig({
-        ...input,
-        retainedEndpointOrigins: ['https://doc-processing'],
-        endpoints: { ...input.endpoints, docProcessing: url },
-      })
-    )
-  }
   assert.throws(() =>
     resolveIsolatedConfig({
       ...input,
       retainedEndpointOrigins: [
-        input.endpoints.docProcessing.replace('/health', '/other'),
+        `http://127.0.0.1:${input.ports.docProcessing.api}/other`,
       ],
     })
   )
@@ -603,7 +384,6 @@ test('rejects remote endpoint fallback and unknown settings', () => {
     resolveIsolatedConfig({
       ...input,
       endpoints: {
-        ...input.endpoints,
         docProcessing: 'https://doc-processing.example.invalid:443/health',
       },
     })
@@ -614,15 +394,12 @@ test('rejects remote endpoint fallback and unknown settings', () => {
       unknownSetting: true,
     })
   )
-  assert.throws(() =>
-    resolveIsolatedConfig({
-      ...input,
-      endpoints: {
-        ...input.endpoints,
-        callback: { url: input.endpoints.callback },
-      },
-    })
-  )
+  const config = resolveIsolatedConfig(input)
+  config.bindings.containerBases.ingestion = 'https://remote.example.invalid'
+  assert.throws(() => validateIsolatedConfig(config))
+  const imageDrift = resolveIsolatedConfig(input)
+  imageDrift.bindings.images.api = 'example.invalid/api:latest'
+  assert.throws(() => validateIsolatedConfig(imageDrift))
 })
 
 test('keeps document processing explicitly unqualified without a remote fallback', () => {
@@ -642,4 +419,214 @@ test('keeps document processing explicitly unqualified without a remote fallback
   tampered.capabilities.documentProcessing.healthEndpoint =
     'https://doc-processing.example.invalid:443'
   assert.throws(() => validateIsolatedConfig(tampered))
+})
+
+function makeProviderPorts(base = 19000) {
+  const take = (offset) => base + offset
+  return {
+    klicker: {
+      backend: take(0),
+      model: take(1),
+      blob: take(2),
+    },
+    ingestion: {
+      api: take(3),
+      dispatcher: take(4),
+      hatchetHttp: take(5),
+      hatchetGrpc: take(6),
+      postgres: take(7),
+      azurite: take(8),
+      milvus: take(9),
+      milvusHealth: take(10),
+      milvusAttu: take(11),
+    },
+    docProcessing: {
+      api: take(12),
+      postgres: take(13),
+      hatchetHttp: take(14),
+      hatchetGrpc: take(15),
+    },
+    scraping: { api: take(16), crawl4ai: take(17), postgres: take(18) },
+    retrieval: { api: take(19) },
+  }
+}
+
+test('provider bindings reuse every selected port across host and container bases', () => {
+  const ports = makeProviderPorts()
+  const bindings = resolveProviderBindings(ports, 'generation-lifecycle')
+
+  assert.deepEqual(bindings.ports, ports)
+  assert.notEqual(bindings.ports, ports)
+  assert.notEqual(bindings.ports.klicker, ports.klicker)
+  assert.equal(bindings.instance, 'generation-lifecycle')
+  assert.deepEqual(
+    {
+      backend: bindings.hostBases.backend,
+      model: bindings.hostBases.model,
+      blob: bindings.hostBases.blob,
+      ingestion: bindings.hostBases.ingestion,
+      dispatcher: bindings.hostBases.dispatcher,
+      scraping: bindings.hostBases.scraping,
+      docProcessing: bindings.hostBases.docProcessing,
+      milvus: bindings.hostBases.milvus,
+      retrieval: bindings.hostBases.retrieval,
+    },
+    {
+      backend: `http://127.0.0.1:${ports.klicker.backend}`,
+      model: `http://127.0.0.1:${ports.klicker.model}/v1`,
+      blob: `http://127.0.0.1:${ports.klicker.blob}/klickerdev`,
+      ingestion: `http://127.0.0.1:${ports.ingestion.api}`,
+      dispatcher: `http://127.0.0.1:${ports.ingestion.dispatcher}`,
+      scraping: `http://127.0.0.1:${ports.scraping.api}`,
+      docProcessing: `http://127.0.0.1:${ports.docProcessing.api}`,
+      milvus: `http://127.0.0.1:${ports.ingestion.milvus}`,
+      retrieval: `http://127.0.0.1:${ports.retrieval.api}/mcp`,
+    }
+  )
+  assert.deepEqual(
+    {
+      backend: bindings.containerBases.backend,
+      model: bindings.containerBases.model,
+      blob: bindings.containerBases.blob,
+      ingestion: bindings.containerBases.ingestion,
+      dispatcher: bindings.containerBases.dispatcher,
+      scraping: bindings.containerBases.scraping,
+      docProcessing: bindings.containerBases.docProcessing,
+      milvus: bindings.containerBases.milvus,
+      retrieval: bindings.containerBases.retrieval,
+    },
+    {
+      backend: `http://host.docker.internal:${ports.klicker.backend}`,
+      model: `http://host.docker.internal:${ports.klicker.model}/v1`,
+      blob: `http://host.docker.internal:${ports.klicker.blob}/klickerdev`,
+      ingestion: `http://host.docker.internal:${ports.ingestion.api}`,
+      dispatcher: `http://host.docker.internal:${ports.ingestion.dispatcher}`,
+      scraping: `http://host.docker.internal:${ports.scraping.api}`,
+      docProcessing: `http://host.docker.internal:${ports.docProcessing.api}`,
+      milvus: 'http://milvus-standalone:19530',
+      retrieval: `http://host.docker.internal:${ports.retrieval.api}/mcp`,
+    }
+  )
+  for (const name of Object.keys(bindings.hostBases).sort()) {
+    assert.ok(Object.hasOwn(bindings.containerBases, name))
+  }
+  assert.equal(bindings.collection, 'local_cli_ingestion_generation_lifecycle')
+  assert.equal(
+    bindings.collection,
+    `local_cli_ingestion_${bindings.instance.replaceAll('-', '_')}`
+  )
+  assert.equal(bindings.stateSchema, 'ingestion_state_generation_lifecycle')
+  assert.equal(
+    bindings.stateSchema,
+    `ingestion_state_${bindings.instance.replaceAll('-', '_')}`
+  )
+  assert.match(bindings.collection, /^[a-z][a-z0-9_]*$/)
+  assert.match(bindings.stateSchema, /^[a-z][a-z0-9_]*$/)
+})
+
+test('resolves provider bindings from the caller-supplied ports without mutating them', () => {
+  const first = resolveProviderBindings(makeProviderPorts(19000), 'stack-a-b')
+  const second = resolveProviderBindings(makeProviderPorts(21000), 'stack-c')
+
+  assert.deepEqual(first.ports.klicker, makeProviderPorts(19000).klicker)
+  assert.deepEqual(second.ports.klicker, makeProviderPorts(21000).klicker)
+  assert.notEqual(first.ports.klicker.backend, second.ports.klicker.backend)
+  assert.notEqual(first.collection, second.collection)
+  assert.equal(first.collection, 'local_cli_ingestion_stack_a_b')
+  assert.equal(second.stateSchema, 'ingestion_state_stack_c')
+  assert.equal(first.hostBases.backend, `http://127.0.0.1:19000`)
+  assert.equal(second.hostBases.retrieval, `http://127.0.0.1:${21019}/mcp`)
+})
+
+test('rejects incomplete, out-of-range, and overlapping provider ports', () => {
+  assert.throws(() => resolveProviderBindings(undefined, 'stack'))
+  assert.throws(() => resolveProviderBindings({}, 'stack'))
+  assert.throws(() =>
+    resolveProviderBindings({ ...makeProviderPorts(), unknown: {} }, 'stack')
+  )
+
+  const missing = makeProviderPorts()
+  delete missing.retrieval.api
+  assert.throws(() => resolveProviderBindings(missing, 'stack'))
+
+  const extra = makeProviderPorts()
+  extra.klicker.extra = 19400
+  assert.throws(() => resolveProviderBindings(extra, 'stack'))
+
+  const outOfRange = makeProviderPorts()
+  outOfRange.scraping.postgres = 65536
+  assert.throws(() => resolveProviderBindings(outOfRange, 'stack'))
+
+  const low = makeProviderPorts()
+  low.retrieval.api = 80
+  assert.throws(() => resolveProviderBindings(low, 'stack'))
+
+  const fractional = makeProviderPorts()
+  fractional.docProcessing.api = 19012.5
+  assert.throws(() => resolveProviderBindings(fractional, 'stack'))
+
+  const duplicateWithinGroup = makeProviderPorts()
+  duplicateWithinGroup.ingestion.azurite = duplicateWithinGroup.ingestion.api
+  assert.throws(() => resolveProviderBindings(duplicateWithinGroup, 'stack'))
+
+  const duplicateAcrossGroups = makeProviderPorts()
+  duplicateAcrossGroups.retrieval.api = duplicateAcrossGroups.klicker.backend
+  assert.throws(() => resolveProviderBindings(duplicateAcrossGroups, 'stack'))
+
+  const duplicateAcrossTargets = makeProviderPorts()
+  duplicateAcrossTargets.docProcessing.hatchetHttp =
+    duplicateAcrossTargets.scraping.crawl4ai
+  assert.throws(() => resolveProviderBindings(duplicateAcrossTargets, 'stack'))
+})
+
+test('rejects any selected port already held by a retained endpoint', () => {
+  const ports = makeProviderPorts()
+  const retained = [
+    'https://retained.example.invalid:19000',
+    'postgresql://retained.example.invalid:19006/ingestion',
+    'redis://retained.example.invalid:19019',
+  ]
+  assert.throws(() => resolveProviderBindings(ports, 'stack', retained))
+
+  const safe = [
+    'https://retained.example.invalid',
+    'https://retained.example.invalid:443',
+    'redis://retained.example.invalid:6379',
+    'https://retained.example.invalid/health',
+  ]
+  assert.deepEqual(
+    resolveProviderBindings(ports, 'stack', safe).ports.retrieval.api,
+    ports.retrieval.api
+  )
+  assert.deepEqual(resolveProviderBindings(ports, 'stack').ports, ports)
+  assert.throws(() => resolveProviderBindings(ports, 'stack', ['not-a-url']))
+  assert.throws(() =>
+    resolveProviderBindings(ports, 'stack', ['file:///tmp/retained'])
+  )
+  assert.deepEqual(
+    resolveProviderBindings(ports, 'stack', [
+      `http://127.0.0.1:6379/record:${ports.klicker.backend}`,
+    ]).ports,
+    ports
+  )
+})
+
+test('rejects unsafe instance identifiers for provider bindings', () => {
+  const ports = makeProviderPorts()
+  for (const instance of [
+    '',
+    '-leading',
+    'Upper',
+    'with space',
+    'with_underscore',
+    'a'.repeat(49),
+    'dot.ted',
+  ]) {
+    assert.throws(() => resolveProviderBindings(ports, instance), /instance/)
+  }
+  assert.equal(resolveProviderBindings(ports, 'a').instance, 'a')
+  assert.equal(
+    resolveProviderBindings(ports, '0-9a').collection,
+    'local_cli_ingestion_0_9a'
+  )
 })

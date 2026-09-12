@@ -193,7 +193,9 @@ projection and configuration validation in `provider-commands.mjs`,
 `provider-launcher-contract.mjs`, `isolated-config.mjs` and their existing tests.
 Main owns the dependent `local-configuration.mjs`, `managed-configuration.mjs`,
 `backing-compose.mjs`, `preparation.mjs` and `util/local-kb-stack.mjs` integration
-and matching existing tests. Remove obsolete provider Compose modules only when
+and matching existing tests. `test-fixtures.mjs` supplies the explicit synthetic
+port/image input shared by five existing test modules during schema conversion;
+it has no runtime caller. Remove obsolete provider Compose modules only when
 their execution callers have been replaced. Update ADR0018's transition note
 and the existing local KB guide only when the implementation makes them stale.
 No separate PR, extra execution owner or provider source modification is planned.
@@ -226,6 +228,124 @@ cannot substitute. Leave retained data intact. No runtime is activated by the
 current source-only verification package.
 
 ## Progress
+
+Private configuration generation no longer creates unused MinIO, Crawl4AI or
+document-callback credentials, provider database setup SQL, or obsolete provider
+environment blocks. Its public entrypoint requires provider bindings; the
+remaining base generator is private. Retrieval requires an explicit collection.
+Tests now exercise that public entrypoint; two obsolete duplicate contract tests
+were removed, leaving 68/68 passing. ADR 0018 and the local-stack guide describe
+the launcher execution path and retain the unqualified-runtime boundary.
+Next: exact diff/data hygiene, required commit checks, then the configured
+simplifier and risk-review pair followed by integrated final review and draft
+publication. No implementation commit or PR exists yet.
+
+The six obsolete provider Compose renderers and their renderer-specific tests
+are removed. Remaining fixture revisions are synthetic, not historical image
+pins. The declarative graph now separates provider backing from Klicker backing;
+provider state records identify launcher-owned roots rather than invented Docker
+volume names. The remaining offline suite passes 70/70. No runtime, data,
+branches or worktrees were deleted. Source removal is recoverable through Git.
+
+The CLI plan no longer imports or emits consumer-owned provider Compose
+assemblies or selects them through obsolete image-revision constants. It emits
+provider launcher commands plus Klicker's own backing configuration. Provider
+source preflight now uses NUL-delimited Git status and permits only the ignored
+`.venv/` directory alongside a clean pinned source tree. Ignored `.env` and
+other ignored/untracked files still reject qualification. This is source-custody
+evidence, not installed-dependency verification. Focused CLI checks pass 10/10.
+The old renderer modules and declarative ownership graph still need reconciliation
+before final review; their remaining references must not become runtime claims.
+
+Provider status now invokes supported launchers, validates instance/revision and
+returns only sanitized preparation, endpoint and shutdown evidence. It never
+promotes endpoint health to AI qualification. Provider Docker commands are bound
+to the already-verified local context. Explicit start/resume now start scraping
+and document processing, then Klicker with the `manage,chat,ai` profile, then
+ingestion workers and retrieval. Stop validates provider identity, stops in
+reverse order and checks stopped evidence before stopping Klicker/backing.
+Setup remains separate and failed lifecycle claims remain retained.
+These are source changes only; no provider runtime was activated. Remaining:
+retire old configuration projections/ownership claims, reconcile installed
+Python environments with source preflight, finish contract coverage, then
+commit checks and independent reviews before draft publication. The provider
+backing-port loopback correction remains a separate source-scope item.
+
+The setup execution path now writes provider-specific private configuration and
+invokes each supported provider setup launcher after Klicker-only backing setup.
+It validates the selected local Docker context, captures diagnostics, rejects
+malformed/mismatched preparation output, records successful steps and preserves
+the setup claim after failure. The overall prepared receipt requires matching
+provider setup evidence. Consumer backing no longer contains provider containers
+or provider migrations. The full offline suite passed 77/77 before the additional
+malformed-output guard; its affected preparation suite then passed 19/19.
+No runtime was activated. The subsequent lifecycle integration is recorded above.
+Also reconcile source preflight with installed ignored Python environments:
+the existing all-ignored-files cleanliness check may reject the `.venv` needed
+by the launchers' frozen/no-sync invocation. Do not infer installed dependencies
+or full runtime readiness from the offline suite.
+
+The persisted source contract now takes required `ports` and immutable `images`
+instead of user-supplied endpoint URLs. Schema `isolated-local-kb.provider-config.v2`
+rederives bindings during readback and rejects URL/image drift. Provider command
+generation consumes those persisted bindings; the old unbound command fallback
+has been removed. Klicker's generated application/model/blob publications use
+only the allocated loopback ports. Existing tests were updated to the actual
+contract, including replacement of obsolete unbound-input assertions. The full
+offline suite passes 76/76; no runtime was started and no commit has been made.
+Next: select the private provider renderer in setup and replace the old Compose
+execution with phase-aware launcher execution and retained ownership receipts.
+The derived legacy dependency graph and removed-provider assembly references are
+still transitional and must be reconciled before any executable/readiness claim.
+
+The next source-only continuation added private provider configuration rendering:
+separate API/worker inputs, provider-owned database/artifact endpoints, isolated
+DP backing configuration, host-side retrieval mappings and one derived collection.
+The existing setup writer now takes the retrieval collection from its generated
+project instead of independently assuming it. Signed KB scope and active-resource
+filtering remain intact. The complete existing local-KB suite passes 77/77;
+after the setup-writer change, its affected 18/18 tests also pass. Biome has no
+errors and only a pre-existing informational diagnostic in preparation.
+These changes remain uncommitted, and the new renderer is not yet selected by
+the persisted configuration/lifecycle caller. Next independent source work is
+that schema and lifecycle conversion, followed by retiring the old assembly and
+required committed-range reviews. The provider loopback correction still awaits
+the separately requested source-scope approval; no runtime was started.
+
+2026-09-12 continuation: remote refresh confirms Klicker target remains
+`21ef2e9818b3e50e592fca3db8bdd9e22f8df524`. The uncommitted port validator
+now parses retained endpoint URLs instead of extracting numbers from arbitrary
+URL paths; malformed or unsupported endpoints fail closed. The existing focused
+suite passes 32/32, focused Biome passes, and `git diff --check` passes.
+
+Fresh ingestion `origin/main@e1b386dc5bb96276a0bb8c958ae8fef03ce00210`
+reveals a binding prerequisite: `compose.e2e.yaml` publishes Postgres, Azurite,
+Hatchet and Milvus ports without a host address. The strict launcher's
+`compose.local-state.yaml` adds retained volumes but does not restrict these
+publications. API/dispatcher loopback bindings do not protect backing services.
+The approved local-only exposure must not silently become all-interface
+publication. No provider or runtime was started. Request a bounded provider-owned
+source correction for strict-instance loopback publications and focused rendering
+coverage; legacy E2E behavior stays unchanged. Provider source changes and its
+later merge are outside this consumer-only plan. Consumer lifecycle integration
+and live proof remain incomplete; preserve all existing uncommitted work.
+
+Current implementation checkpoint: plan commit `a73299c45b` passed the normal
+container-backed hooks (40 package checks, lint, formatting, syncpack and 70
+local-KB tests). The exact validation runtime was stopped afterward; its
+container was exited and the worktree had zero routes. No external provider
+was started and no model request was made.
+
+The first uncommitted source slice adds pure explicit-port bindings and bound
+setup/start/status/stop command generation. Executor Hume
+(`01a095b8-c789-76c1-9d3a-eb8a0f6a74e5`) owned only the isolated-config helper
+and its tests; main implemented the command consumer and independently verified
+the combined result. Tests pass 32/32; Biome reports no errors, only informational
+style diagnostics. The former projection remains temporarily available while
+the lifecycle caller is converted. This is incomplete integration, not an
+executable-stack or publication claim. Next: integrate bindings into persisted
+configuration and private environment generation, then replace lifecycle calls,
+remove the obsolete provider assembly and complete committed-range reviews.
 
 The same planner, Popper (`01a09422-1565-7d33-a33d-3281a60dcc24`), returned
 APPROVED on the concrete allocation, phase and source-delivery specification.
