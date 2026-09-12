@@ -271,7 +271,6 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
           WORKFLOW_PATH: .github/workflows/test-graphql.yml
           TERMINAL_JOB: test-graphql-status
-          STAGING_SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
           EVIDENCE_PATH: required-ci-evidence.json
           SELECTION_JOB: filter
           SELECTION_JOB_RESULT: ${{ needs.filter.result }}

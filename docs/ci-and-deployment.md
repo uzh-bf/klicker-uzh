@@ -12,6 +12,29 @@ tags:
 
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
 
+## Required branch checks
+
+The required baseline for PRs into `v3` and `v3-*` is `check`,
+`check-gitleaks`, `test-graphql-status`, `test-playwright-status`,
+`test-unit-status`, `test-olat-api-status`, `test-intl-production-status`, and
+`build-images-status`. Selected suites must pass; a validated no-change
+selection may succeed without an irrelevant suite. Missing, cancelled, failed,
+or unexpectedly skipped evidence blocks the summary. Ready PRs require the
+full eight-shard Playwright run.
+
+Stable `v3` has no bypass. Integration administrators may bypass CI only through
+a pull request; direct updates, force pushes, and deletion remain protected.
+Integration branches do not require freshness, approvals, resolved discussions,
+or linear history. A merge override does not qualify a staging candidate:
+promotion independently requires exact candidate push validation and images.
+Older integration branches must receive the reporting workflows before they
+can satisfy this baseline.
+
+Biome and Knip advisory steps, AI reviews, CodeQL analysis, and the SonarCloud
+analysis upload remain outside this deterministic required baseline. The
+SonarCloud workflow uploads analysis without an explicit quality-gate wait.
+Those checks must not be described as enforced test results.
+
 ## PR gates
 
 GraphQL and lightweight unit CI build their dependencies through scoped Turbo
@@ -296,7 +319,8 @@ Operational notes.
   manual dispatch defaults to dry-run; a write requires `dry_run=false` and the
   exact input `confirm_ref_update=stg-release`, plus `expected_release_sha` and
   `expected_controller_sha` copied from the reviewed dry-run receipt. A changed
-  release or controller rejects the apply. Initial ref creation,
+  release or controller rejects the apply. For initial creation only, use
+  `expected_release_sha=absent` and require the release still be absent. Initial ref creation,
   repository-variable changes, and activation remain separate operations.
 - Before activation, prove every full-SHA image and retain the receipt, create
   `stg-release` through the confirmed manual path, then update only the private

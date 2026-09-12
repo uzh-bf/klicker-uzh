@@ -30,35 +30,10 @@ jobs:
         with:
           pattern: '^(apps/frontend-pwa/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
 
-  equivalent-validation:
-    # First attempts keep one runner allocation; reuse lookup is for reruns.
-    if: github.event_name == 'push' && github.ref != 'refs/heads/v3' && github.run_attempt > 1
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: read
-    outputs:
-      duplicate_run_id: ${{ steps.equivalent.outputs.duplicate_run_id }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          sparse-checkout: .github/scripts
-      - id: equivalent
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            await require('./.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({
-              github, context, core, kind: 'unit',
-            })
-
   test-unit:
-    needs: [equivalent-validation, filter]
+    needs: filter
     if: >-
       !cancelled() &&
-      needs.equivalent-validation.outputs.duplicate_run_id == '' &&
       needs.filter.outputs.should_run == 'true' &&
       (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
@@ -175,7 +150,7 @@ jobs:
   # skipped required check as acceptable, so a draft, an unexpected skip, a
   # cancellation, a failed suite or a missing selection must fail inside it.
   test-unit-status:
-    needs: [equivalent-validation, filter, test-unit]
+    needs: [filter, test-unit]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -192,7 +167,6 @@ jobs:
           DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
           FILTER_RESULT: ${{ needs.filter.result }}
           SHOULD_RUN: ${{ needs.filter.outputs.should_run }}
-          DUPLICATE_RUN_ID: ${{ needs.equivalent-validation.outputs.duplicate_run_id }}
           TEST_RESULT: ${{ needs.test-unit.result }}
           REF_NAME: ${{ github.ref_name }}
           REF: ${{ github.ref }}
@@ -203,7 +177,6 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
           WORKFLOW_PATH: .github/workflows/test-unit.yml
           TERMINAL_JOB: test-unit-status
-          STAGING_SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
           EVIDENCE_PATH: required-ci-evidence.json
           SELECTION_JOB: filter
           SELECTION_JOB_RESULT: ${{ needs.filter.result }}

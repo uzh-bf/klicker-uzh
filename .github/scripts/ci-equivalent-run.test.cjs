@@ -426,20 +426,9 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
   const units = YAML.parse(
     fs.readFileSync(path.join(__dirname, '../workflows/test-unit.yml'), 'utf8')
   )
-  assert.equal(
-    units.jobs['equivalent-validation'].if,
-    "github.event_name == 'push' && github.ref != 'refs/heads/v3' && github.run_attempt > 1"
-  )
-  assert.deepEqual(units.jobs['test-unit'].needs, [
-    'equivalent-validation',
-    'filter',
-  ])
+  assert.equal(units.jobs['equivalent-validation'], undefined)
+  assert.equal(units.jobs['test-unit'].needs, 'filter')
   assert.ok(units.jobs['test-unit'].if.includes('!cancelled()'))
-  assert.ok(
-    units.jobs['test-unit'].if.includes(
-      "needs.equivalent-validation.outputs.duplicate_run_id == ''"
-    )
-  )
 })
 
 for (const field of [

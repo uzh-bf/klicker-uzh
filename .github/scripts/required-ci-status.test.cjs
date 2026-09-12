@@ -10,9 +10,7 @@ const {
   buildEvidence,
   decideResult,
   evaluateReport,
-  isStagingCandidate,
   readEnv,
-  resolveReuse,
   resolveSelection,
 } = require('./required-ci-status.cjs')
 
@@ -123,44 +121,6 @@ test('a draft can never pass a run selection, a genuine failure keeps its reason
     decideResult({ selection: 'no-change', result: '', draft: 'false' }),
     { ok: false, reason: REASON.missingResult }
   )
-})
-
-test('equivalent-run reuse is push-only and never the staging source', () => {
-  const staging = baseInput({
-    eventName: 'push',
-    refName: 'v3-audit',
-    stagingSourceBranch: 'v3-audit',
-  })
-  assert.equal(isStagingCandidate(staging), true)
-  assert.equal(
-    resolveReuse(baseInput({ eventName: 'push', refName: 'v3-ai' }), ''),
-    null
-  )
-  assert.equal(resolveReuse(baseInput({ eventName: 'push' }), null), null)
-  assert.deepEqual(resolveReuse(baseInput({ eventName: 'push' }), '123'), {
-    ok: true,
-    reason: REASON.equivalentRun,
-    runId: '123',
-  })
-  // A pull request never reuses another run's validation.
-  assert.equal(
-    resolveReuse(baseInput({ eventName: 'pull_request' }), '123').reason,
-    REASON.invalidReuse
-  )
-  // A non-numeric id is never accepted as a bound run.
-  assert.equal(
-    resolveReuse(baseInput({ eventName: 'push' }), '123abc').reason,
-    REASON.invalidReuse
-  )
-  // The deployment candidate source always runs its own validation.
-  assert.equal(resolveReuse(staging, '123').reason, REASON.stagingReuse)
-  // Every v3 / v3-* push may later become the deployment source, so none reuse.
-  for (const refName of ['v3', 'v3-ai', 'v3-audit']) {
-    assert.equal(
-      resolveReuse(baseInput({ eventName: 'push', refName }), '123').reason,
-      REASON.integrationReuse
-    )
-  }
 })
 
 test('edited and retarget events run normally instead of green-passing', () => {
@@ -365,6 +325,5 @@ test('readEnv normalizes the selector-driven inputs', () => {
   assert.equal(input.duplicateRunId, '77')
   assert.equal(input.runId, 100)
   assert.equal(input.runAttempt, 3)
-  assert.equal(input.stagingSourceBranch, 'v3-audit')
   assert.equal(readEnv({ DRAFT: 'false' }).draft, 'false')
 })

@@ -1,5 +1,5 @@
 // Shared, dependency-free contract for the always-reporting required status
-// jobs. The unit, OLAT, translation, and codebase-check reporters use the same
+// jobs. The unit, OLAT, translation, and GraphQL reporters use the same
 // validated selection/result decision plus the same machine-readable evidence
 // artifact, so a required context can never pass on missing selection data, an
 // unexpected skip, or a deferred draft.
@@ -13,7 +13,6 @@
 
 const REASON = Object.freeze({
   noChange: 'no-change',
-  equivalentRun: 'equivalent-run',
   success: 'success',
   unexpectedSkip: 'unexpected-skip',
   draftDeferred: 'draft-deferred',
@@ -22,27 +21,7 @@ const REASON = Object.freeze({
   filterFailed: 'filter-failed',
   invalidSelection: 'invalid-selection',
   invalidReuse: 'invalid-reuse',
-  stagingReuse: 'staging-reuse',
-  integrationReuse: 'integration-reuse',
 })
-
-// Equivalent push validation reuse is a push-only rerun optimization. It never
-// applies to a pull request, and never to the selected staging source, whose
-// whole contract is independent full execution on the candidate push.
-function isStagingCandidate(input) {
-  return (
-    input.eventName === 'push' &&
-    typeof input.stagingSourceBranch === 'string' &&
-    input.stagingSourceBranch.length > 0 &&
-    input.refName === input.stagingSourceBranch
-  )
-}
-
-// Every v3 / v3-* push is a possible future deployment source, so none of them
-// may reuse another run: the promoter requires independent push evidence.
-function isIntegrationSource(refName) {
-  return typeof refName === 'string' && /^v3/.test(refName)
-}
 
 // Fold the raw selector output into a validated selection.
 function resolveSelection(shouldRun) {
@@ -55,23 +34,6 @@ function resolveSelection(shouldRun) {
       JSON.stringify(shouldRun ?? null) +
       '; expected the literal "true" or "false"'
   )
-}
-
-function resolveReuse(input, duplicateRunId) {
-  if (!duplicateRunId) return null
-  if (input.eventName !== 'push') {
-    return { ok: false, reason: REASON.invalidReuse }
-  }
-  if (isStagingCandidate(input)) {
-    return { ok: false, reason: REASON.stagingReuse }
-  }
-  if (isIntegrationSource(input.refName)) {
-    return { ok: false, reason: REASON.integrationReuse }
-  }
-  if (!/^[0-9]+$/.test(duplicateRunId)) {
-    return { ok: false, reason: REASON.invalidReuse }
-  }
-  return { ok: true, reason: REASON.equivalentRun, runId: duplicateRunId }
 }
 
 // A draft gate skips the suite before it runs, so the terminal required context
@@ -114,8 +76,7 @@ function decideResult(input) {
 }
 
 function evaluateReport(input) {
-  const reuse = resolveReuse(input, input.duplicateRunId)
-  if (reuse) return reuse
+  if (input.duplicateRunId) return { ok: false, reason: REASON.invalidReuse }
   // The selector must report its result explicitly. An absent result is not a
   // no-change signal and never permits a pass.
   if (input.filterResult !== 'success') {
@@ -191,9 +152,7 @@ function buildEvidence(input, decision, selection) {
     repository: input.repository,
     run: { id: input.runId, attempt: input.runAttempt },
     selection: { state: selection.selection, reason: selection.reason },
-    reuse: input.duplicateRunId
-      ? { duplicateRunId: input.duplicateRunId }
-      : null,
+    reuse: null,
     decision: {
       outcome: decision.ok ? 'pass' : 'fail',
       reason: decision.reason,
@@ -230,7 +189,6 @@ function readEnv(env) {
     workflowPath: env.WORKFLOW_PATH ?? '',
     terminalJob: env.TERMINAL_JOB ?? '',
     evidencePath: env.EVIDENCE_PATH ?? '',
-    stagingSourceBranch: (env.STAGING_SOURCE_BRANCH ?? '').trim(),
     // The contributing job results travel in the same environment so the CLI
     // path records them without a separate argument.
     jobs: collectJobs(env),
@@ -250,9 +208,6 @@ function run(subcommand, input) {
     selection = resolveSelection(input.shouldRun)
   } catch {
     selection = { selection: 'no-change', reason: REASON.invalidSelection }
-  }
-  if (input.duplicateRunId) {
-    selection = { selection: 'no-change', reason: REASON.equivalentRun }
   }
   writeEvidence(input, decision, selection)
   process.stdout.write(
@@ -282,10 +237,7 @@ module.exports = {
   collectJobs,
   decideResult,
   evaluateReport,
-  isStagingCandidate,
-  isIntegrationSource,
   readEnv,
-  resolveReuse,
   resolveSelection,
   run,
   writeEvidence,
