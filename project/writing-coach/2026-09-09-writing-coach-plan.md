@@ -140,34 +140,49 @@ This section supersedes earlier execution checkpoints. Historical experiments an
 
 ### Delivered
 
-[Draft PR 5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) targets `v3`. The verified source/delivery head is `4443df2b6462387386dbed888457d1dd8f511c7d`; subsequent roadmap-only commits do not constitute new runtime evidence. The task branch matches its remote. At the 12 September fetch, `origin/v3` has eight commits outside this branch; drift alone does not authorize or require another integration.
+[Draft PR 5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) targets `v3`. The verified source head is `4443df2b6462387386dbed888457d1dd8f511c7d`; head `53eab18af8d50507dd46cffcbb1dd0ed1fd27b10` adds only roadmap and documentation changes, so the verified source tree is unchanged. The task branch matches its remote. At the 12 September refetch, `origin/v3` has ten commits outside this branch and the pull request reports `BEHIND`; drift alone does not authorize or require another integration.
 
 - Lecturer context: shared 1,000-character limit, scientific/informal examples, save/reload protection, and request-time prompt composition, including existing conversations.
 - Writing Coach: opt-in standard mode, standalone configuration, five adaptable criteria, passage-specific feedback, scientific/informal guidance, and optional Markdown Notes. No new tools or rubric editor.
 - Cleanup: removed unreleased same-key compatibility plumbing and corrected authoring mode order. Cleanup commit `8a742f6dff` and target integration `89e4304efa` are pushed.
+- Integrated acceptance: the authoring spec re-ran on the repaired task runtime. The Writing Coach test — the only case this branch modifies — and the previously failing lock test both pass, and eleven refreshed captures at `53eab18af8` cover lecturer context, mode selection and learner feedback in English and German. The published screenshots are in the pull request's screenshot block.
 - Evaluation: all 30 frozen cases completed at least once; 65 of 72 submissions used. The user accepted bounded Writing Coach results and the Tutor/Explainer recap limitation. No new submissions are part of this roadmap update.
 
 ### Verification and limits
 
 The integrated Chat suite passed 647 tests with 21 skipped. The isolated GraphQL run passed 871 with one documented pre-existing assessment-reset failure; current PR GraphQL CI passes. Current code checks, secret checks and translation smoke tests pass. The later host checks/build passed 35/35 and 23/23 tasks, respectively, but used Node 26 rather than the repository's Node 24 container toolchain.
 
-Earlier authoring interactions and nine inspected English/German desktop/mobile captures cover context boundaries, examples, save/reload, standalone mode and saved feedback. Fresh browser acceptance after integration remains incomplete: dependencies and runtime configuration changed, so unchanged UI source does not establish equivalent browser behavior. Current CI skipped actual Playwright execution. Runtime recovery/fixture access must be resolved through supported lifecycle commands with retained data preserved before recapture.
+Fresh browser acceptance after integration is closed for the states this branch changes. The previously unexplained authoring failure was a runtime-state artifact, not a product defect: without the local AI beta fixture the API fails closed on `ai-beta`, so the chatbot publishing capability returns Unauthorized and the manage app redirects to the auth app. That reproduces identically on base `v3`, and this branch changes no feature-flag, auth or scope source. With the fixture restored and the API started through the repository's `dev:test` task, the wrapper run `pnpm playwright:host --runtime-profile manage --preserve-database tests/T-chatbot-authoring.spec.ts` reported 4 passed, 1 failed and 3 not run. The Writing Coach test passed in 24.1s; the lock test that previously failed passed in 4.4s.
 
-The independent Claude review and accepted corrections are recorded, but forge gates remain unresolved at the verified head: OpenCodeReview failed with provider HTTP 402 and produced no findings; `final-ai-review` is pending. These are not successful reviews or new feature defects.
+The one remaining failure is retained-database drift, not source behavior: the retained `klicker_test` database holds a `Testkurs` row whose `pinCode` collides with the fixed `COURSE_ID_TEST` course that the three untouched publication-flow tests seed, so they abort inside `seedDatabase()`. Restoring the baseline rows needs a cleanup-and-seed or a database reset; both destroy retained local evaluation data and remain separately authorized. Eleven refreshed captures at `53eab18af8` were verified structurally through fitted-capture and DOM-text assertions, because no agent in this environment can read images; pixel-level inspection of the published images stays an explicit limitation, and the local HTML gallery remains available for human inspection.
+
+The independent Claude review and accepted corrections are recorded. The provider HTTP 402 condition that emptied OpenCodeReview has cleared: `ocr-review` passes at `53eab18af8` and published findings, and `final-ai-review` is requested at that head under the repository's standing approval in `docs/ci-and-deployment.md`. Remaining CI is green except for jobs that a draft skips by design.
 
 Feedback-only behavior is model-instructed, not deterministically guaranteed. The synthetic results do not establish universal rewrite resistance or learning gains. Feedback can be verbose; Tutor/Explainer can repeat known definitions despite expert context. Notes are optional response text, not a persistent learning record.
+
+### Forge review dispositions
+
+OpenCodeReview published 19 findings and Greptile 3. Each was checked against the current source; none is a correctness, authority or contract defect in shipped behavior.
+
+| Category | Count | Disposition | Rationale |
+| --- | --- | --- | --- |
+| Legacy custom-mode handling in `apps/chat` and `packages/graphql` | 6 | Rejected — superseded | The unreleased same-key `writing-coach` plumbing (`CUSTOM_MODE_COLLISION`, `hasLegacyWritingCoachMode`, `writingCoachIsCustom`, the divergent mode label) was removed in the cleanup commit; the flagged constructs no longer exist. The user superseded that design on 10 September, and the tool already marks these threads outdated. |
+| Greptile: custom persona reclassified in `effectiveChatModes.ts` | 1 | Rejected — intended | The approved plan states that the `writing-coach` identifier always denotes the new standard mode and that no collision flags or migration behavior is added for an unreleased key. |
+| Greptile: Writing Coach can be the only configured mode while a required tool binding excludes it | 1 | Follow-up | The required-MCP exclusion is pre-existing and can empty the effective mode set for any mode. The new warning makes the incompatible state visible; preventing the toggle is a UI change that would invalidate the accepted captures, so it is deferred to the pilot. |
+| `packages/graphql`: `shapeChatbotResponse` relies on `mcpConfigurations` being selected | 1 | Follow-up | Every caller spreads the shared `chatbotOwnerSelect`, so the value is always present. Tightening the internal shape type is a maintainability improvement rather than a behavior fix. |
+| Evaluation-harness robustness in `apps/chat/scripts/` and their tests: case-id validation, resume identity, lock recovery, credit-exhaustion scoping, interrupted-run restoration, duplicated mode list, missing assertions | 13 | Follow-up | These concern a development-only harness. The recorded run used 65 of 72 authorized submissions and the allowance is not renewed, so a fix cannot be re-validated against the live model route inside this package. |
 
 ### Next steps
 
 | Order | Outcome | Owner | Completion evidence / authority |
 | --- | --- | --- | --- |
-| 1 | Finish integrated browser acceptance | Implementation agent | Supported runtime and synthetic fixture access; English/German desktop/mobile enable, save, reload, long-context and learner interaction checks; refreshed screenshot provenance. Preserve retained data; escalate any required reset or configuration change separately. |
-| 2 | Settle review gates and delivery evidence | Implementation agent / repository reviewer | Resolve the provider HTTP 402 capability issue, complete required final review, disposition findings and verify the resulting PR head. Keep current and historical receipts distinct. |
+| 1 | Finish integrated browser acceptance | Implementation agent | Complete at head `53eab18af8`: the authoring spec passed its Writing Coach and previously failing lock tests, the chat mode-control spec passed, and refreshed captures are published in the pull request. The three untouched publication-flow tests need a separately authorized database reset. |
+| 2 | Settle review gates and delivery evidence | Implementation agent / repository reviewer | Provider HTTP 402 cleared and OpenCodeReview passes; published findings are dispositioned above. `final-ai-review` is requested at the current head, and its report must be read and dispositioned before merge readiness. Keep current and historical receipts distinct. |
 | 3 | Review merge and staging readiness | Maintainer | Browser and review gates complete, required CI passing, and required human review recorded. Mark-ready, merge into `v3`, and staging deployment each require named approval; this roadmap authorizes none of them. |
 | 4 | Run a small lecturer/learner pilot | Maintainer, with pilot owner to be assigned | Proposed after staging acceptance: assess feedback usefulness, revision ownership, audience fit and length. Agree participants, data handling and acceptance before execution. No date or capacity commitment yet. |
 
-The immediate next action is supported runtime/fixture diagnosis for step 1, alongside resolving the outstanding review capability. Do not describe the feature as fully verified or released until those dependent gates are complete.
+The immediate next action is reading the `final-ai-review` report at the current head and dispositioning any finding, then presenting merge and staging readiness to the maintainer. Do not describe the feature as released until those dependent gates are complete.
 
 ### Deferred product decisions
 
-Keep the 1,000-character limit and Markdown Notes for the first pilot. Editable rubrics, a persistent Notes panel, learning analytics and a larger context limit are uncommitted candidates, to revisit only when pilot evidence establishes a need. Improving Tutor/Explainer recap behavior is a separate follow-up rather than a Writing Coach release gate under the accepted evaluation disposition.
+Keep the 1,000-character limit and Markdown Notes for the first pilot. Editable rubrics, a persistent Notes panel, learning analytics and a larger context limit are uncommitted candidates, to revisit only when pilot evidence establishes a need. Preventing Writing Coach from being the only configured conversational mode while a required tool binding excludes it is deferred to the pilot. Improving Tutor/Explainer recap behavior is a separate follow-up rather than a Writing Coach release gate under the accepted evaluation disposition.
