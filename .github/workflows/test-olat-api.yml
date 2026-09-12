@@ -6,15 +6,7 @@ on:
   pull_request:
     branches: ['v3', 'v3*']
     # "edited" re-evaluates the internal selector on a base retarget.
-    types:
-      [
-        opened,
-        synchronize,
-        reopened,
-        ready_for_review,
-        edited,
-        converted_to_draft,
-      ]
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -37,8 +29,7 @@ jobs:
   test-olat-api:
     needs: filter
     if: >-
-      needs.filter.outputs.should_run == 'true' &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+      needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -73,8 +64,8 @@ jobs:
 
   # Always reports a status even when the path filter selects nothing, so this
   # job is the required check. It runs unconditionally so a skipped context can
-  # never read as acceptable; the helper fails on cancellation, a draft, an
-  # unexpected skip or a failed suite.
+  # never read as acceptable; the helper fails on cancellation, an unexpected
+  # skip or a failed suite.
   test-olat-api-status:
     needs: [filter, test-olat-api]
     if: always()

@@ -9,7 +9,7 @@ on:
     # branches: [ "v3" ]
     # "edited" re-evaluates the path filter when a pull request is retargeted,
     # so newly applicable images are built instead of keeping the old result.
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'apps/chat/**'
       # Any workspace package can be bundled into this image.
@@ -33,10 +33,6 @@ env:
 
 jobs:
   build-arm:
-    # A draft defers its image build; a push and every other event runs it.
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read

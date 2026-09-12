@@ -290,10 +290,9 @@ function jobIdentity(job) {
   }
 }
 
-// A draft pull request skips its build jobs, and so does any other unexpected
-// skip, so only a successful run with successful build jobs can qualify. No
-// deferral is accepted: a draft-era green would otherwise be reused on the
-// unchanged head at the ready transition.
+// Draft pull requests run the same build jobs as ready ones, so only a
+// successful run with successful build jobs can qualify. An unexpected skip is
+// a failure, never a deferral.
 function evaluateWorkflowRun({ run, jobs, entry, binding }) {
   const identity = {
     attempt: run.run_attempt ?? null,
@@ -563,7 +562,6 @@ async function evaluateBuildImagesStatus({
   rootDirectory = process.cwd(),
   changedFilesPath = process.env.CHANGED_FILES_PATH,
   evidencePath = process.env.BUILD_STATUS_EVIDENCE_PATH,
-  draft = String(process.env.PR_DRAFT ?? '') === 'true',
   maxAttempts = Number(
     process.env.BUILD_STATUS_MAX_ATTEMPTS ?? DEFAULT_MAX_ATTEMPTS
   ),
@@ -610,20 +608,6 @@ async function evaluateBuildImagesStatus({
       state,
     })
     return decision
-  }
-
-  // A draft pull request defers its affected image builds, so the same required
-  // context must fail for that head commit. Marking the pull request ready
-  // re-runs this workflow and recomputes the real build set.
-  if (draft) {
-    const decision = await block({
-      mode: 'draft-deferred',
-      reason:
-        'draft pull request: the affected image builds are deferred, so the ' +
-        'required status fails until the pull request is marked ready',
-      state: 'unavailable',
-    })
-    throw new Error(decision.reason)
   }
 
   const presentFiles = presentImageWorkflows(rootDirectory)

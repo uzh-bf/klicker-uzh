@@ -63,18 +63,19 @@ test('selection accepts only the literal selector values', () => {
   }
 })
 
-test('a draft can never pass a run selection, a genuine failure keeps its reason', () => {
+test('a run selection passes on success and keeps a genuine failure reason', () => {
   assert.deepEqual(
     decideResult({ selection: 'run', result: 'success', draft: 'false' }),
     { ok: true, reason: REASON.success }
   )
+  // A draft runs the same suite, so a genuine draft success passes.
   assert.deepEqual(
     decideResult({ selection: 'run', result: 'success', draft: 'true' }),
-    { ok: false, reason: REASON.draftDeferred }
+    { ok: true, reason: REASON.success }
   )
   assert.deepEqual(
     decideResult({ selection: 'run', result: 'skipped', draft: 'true' }),
-    { ok: false, reason: REASON.draftDeferred }
+    { ok: false, reason: REASON.unexpectedSkip }
   )
   assert.deepEqual(
     decideResult({ selection: 'run', result: 'skipped', draft: 'false' }),
@@ -95,7 +96,7 @@ test('a draft can never pass a run selection, a genuine failure keeps its reason
       reason: REASON.missingResult,
     }
   )
-  // An explicit, validated no-change is the only draft selection that passes.
+  // An explicit, validated no-change passes for a draft as well.
   assert.deepEqual(
     decideResult({ selection: 'no-change', result: 'skipped', draft: 'true' }),
     { ok: true, reason: REASON.noChange }
@@ -294,9 +295,14 @@ test('the CLI writes the evidence artifact and encodes the decision in its exit 
   assert.equal(fail.status, 1, fail.output)
   assert.equal(fail.evidence.decision.outcome, 'fail')
 
-  const draft = runReporter(t, { DRAFT: 'true', TEST_RESULT: 'skipped' })
-  assert.equal(draft.status, 1, draft.output)
-  assert.equal(draft.evidence.decision.reason, REASON.draftDeferred)
+  // A draft runs the same suite, so a genuine draft success is a real pass.
+  const draftPass = runReporter(t, { DRAFT: 'true' })
+  assert.equal(draftPass.status, 0, draftPass.output)
+  assert.equal(draftPass.evidence.decision.outcome, 'pass')
+  // A draft that reports a skipped selected suite is still an unexpected skip.
+  const draftSkip = runReporter(t, { DRAFT: 'true', TEST_RESULT: 'skipped' })
+  assert.equal(draftSkip.status, 1, draftSkip.output)
+  assert.equal(draftSkip.evidence.decision.reason, REASON.unexpectedSkip)
 
   const invalid = runReporter(t, { SHOULD_RUN: '' })
   assert.equal(invalid.status, 1, invalid.output)

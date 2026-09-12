@@ -2,7 +2,7 @@
 // jobs. The unit, OLAT, translation, and GraphQL reporters use the same
 // validated selection/result decision plus the same machine-readable evidence
 // artifact, so a required context can never pass on missing selection data, an
-// unexpected skip, or a deferred draft.
+// unexpected skip, or a missing selection.
 //
 // Selection states:
 //   run       - the suite must execute and succeed for this event
@@ -15,7 +15,6 @@ const REASON = Object.freeze({
   noChange: 'no-change',
   success: 'success',
   unexpectedSkip: 'unexpected-skip',
-  draftDeferred: 'draft-deferred',
   cancelled: 'cancelled',
   missingResult: 'missing-result',
   filterFailed: 'filter-failed',
@@ -36,11 +35,9 @@ function resolveSelection(shouldRun) {
   )
 }
 
-// A draft gate skips the suite before it runs, so the terminal required context
-// must stay non-green. This also covers a draft whose suite did run: a green
-// draft-era result would be reusable on the same unchanged head at the ready
-// transition, so no draft selection may pass except a validated no-change.
-// A genuine failure keeps its own conclusion for diagnosis.
+// A draft pull request runs the same suites as a ready one, so the decision
+// depends only on the validated selection and the suite result. A genuine
+// failure or unexpected skip keeps its own conclusion for diagnosis.
 function decideResult(input) {
   if (input.selection === 'no-change') {
     // A no-change selection still proves the suite did not fail: only a skipped
@@ -58,14 +55,10 @@ function decideResult(input) {
     return { ok: false, reason: REASON.missingResult }
   }
   if (input.result === 'success') {
-    return input.draft === 'true'
-      ? { ok: false, reason: REASON.draftDeferred }
-      : { ok: true, reason: REASON.success }
+    return { ok: true, reason: REASON.success }
   }
   if (input.result === 'skipped') {
-    return input.draft === 'true'
-      ? { ok: false, reason: REASON.draftDeferred }
-      : { ok: false, reason: REASON.unexpectedSkip }
+    return { ok: false, reason: REASON.unexpectedSkip }
   }
   // The terminal reporter runs unconditionally, so a cancelled dependency is a
   // real failure here rather than a skipped check that could read as acceptable.

@@ -7,15 +7,7 @@ on:
   pull_request:
     # "edited" re-evaluates the internal selector on a base retarget; the path
     # filter is a job below so a required status always reports.
-    types:
-      [
-        opened,
-        synchronize,
-        reopened,
-        ready_for_review,
-        edited,
-        converted_to_draft,
-      ]
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -42,8 +34,7 @@ jobs:
     needs: filter
     if: >-
       !cancelled() &&
-      needs.filter.outputs.should_run == 'true' &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+      needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -155,8 +146,8 @@ jobs:
 
   # Always reports a status even when the path filter selects nothing, so this
   # job is the required check. It runs unconditionally: GitHub can treat a
-  # skipped required check as acceptable, so a draft, an unexpected skip, a
-  # cancellation, a failed suite or a missing selection must fail inside it.
+  # skipped required check as acceptable, so an unexpected skip, a cancellation,
+  # a failed suite or a missing selection must fail inside it.
   test-unit-status:
     needs: [filter, test-unit]
     if: always()

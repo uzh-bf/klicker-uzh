@@ -117,29 +117,33 @@ test('terminal reporters run unconditionally so a skip cannot read as acceptable
   )
 })
 
-// Marking a draft PR ready fires ready_for_review on the unchanged head SHA
-// and re-runs every workflow that lists it. That is only justified when the
-// draft boundary changes what the workflow executes: either jobs are gated on
-// the draft state (skipped while drafting, first real run at the transition),
-// or the workflow owns PR lifecycle handling. Workflows that execute
-// identically for draft and ready PRs must not list the type, or marking a
-// PR ready duplicates validation that already passed.
+// Marking a draft PR ready fires ready_for_review on the unchanged head SHA and
+// re-runs every workflow that lists it. Drafts now run the identical suites and
+// builds, so a listed workflow must own a documented PR lifecycle role that
+// still needs the transition. Otherwise marking a PR ready duplicates
+// validation that already passed.
 const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'test-playwright.yml',
-    'drafts skip execution and report the skip; ready transitions start the full run and draft conversion or closure cancels it',
+    'drafts run the full suite, but ready_for_review is retained while the trusted reusable workflow at @v3 could still compute a partial draft plan; remove it once the route change lands on v3',
   ],
   [
     'check.yml',
-    'the required check is not draft-gated, so it must be recomputed at the ready boundary; a draft-era success must not stand in for the ready state',
+    'the required check owns the ready boundary and must be recomputed there',
   ],
   [
     'check-ocr-final-review.yml',
     'final review ownership transfers from the draft review at the ready boundary',
   ],
+  ['check-ocr-review.yml', 'owned code review re-runs at the ready boundary'],
+  ['codeql-analysis.yml', 'owned code scanning re-runs at the ready boundary'],
+  [
+    'v3_sonarcloud.yml',
+    'owned stable quality gate re-runs at the ready boundary',
+  ],
 ])
 
-test('ready_for_review triggers only change execution at the draft boundary', () => {
+test('ready_for_review lists only workflows with a documented lifecycle role', () => {
   const directory = path.join(root, '.github/workflows')
   const unaccounted = []
 
@@ -159,30 +163,27 @@ test('ready_for_review triggers only change execution at the draft boundary', ()
     )
     if (!listsReadyForReview) continue
 
-    const source = fs.readFileSync(path.join(directory, entry), 'utf8')
-    const draftGated = /pull_request\.draft == (?:true|false)/.test(source)
-    if (draftGated || READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS.has(entry)) continue
+    if (READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS.has(entry)) continue
     unaccounted.push(entry)
   }
 
   assert.deepEqual(
     unaccounted,
     [],
-    'Workflows trigger on ready_for_review without a draft-state gate or a documented lifecycle role, so marking a PR ready re-runs identical validation on an unchanged head. Either gate the jobs on github.event.pull_request.draft or remove ready_for_review from the trigger.'
+    'Workflows trigger on ready_for_review without a documented lifecycle role, so marking a PR ready re-runs identical validation on an unchanged head. Remove ready_for_review from the trigger or document the lifecycle role.'
   )
 })
 
-test('graphql validation re-runs at the retarget and ready boundaries', () => {
+test('graphql validation re-runs on a base retarget but not the ready boundary', () => {
   const workflow = readWorkflow('test-graphql.yml')
-  // "edited" re-evaluates the internal selector on a base retarget; the suite is
-  // draft-gated, so "ready_for_review" runs the real suite at the draft boundary.
+  // "edited" re-evaluates the internal selector on a base retarget. The suite
+  // runs identically for drafts and ready PRs, so the ready transition re-runs
+  // nothing.
   assert.deepEqual(workflow.on.pull_request.types, [
     'opened',
     'synchronize',
     'reopened',
-    'ready_for_review',
     'edited',
-    'converted_to_draft',
   ])
 })
 
@@ -216,12 +217,16 @@ test('summary reporters always report and never suppress a required check', () =
     assert.equal(workflow.on?.push?.paths, undefined, name)
     // A retarget re-evaluates the internal selector.
     assert.ok(workflow.on.pull_request.types.includes('edited'), name)
-    // The draft boundary re-runs the suite rather than reusing a draft result.
-    assert.ok(workflow.on.pull_request.types.includes('ready_for_review'), name)
-    assert.match(
-      JSON.stringify(workflow),
-      /pull_request\.draft == (?:true|false)/,
-      name
+    // Drafts run the same suite as ready PRs, so the workflow must not gate on
+    // the draft state or re-run the suite at the ready transition.
+    assert.ok(
+      !workflow.on.pull_request.types.includes('ready_for_review'),
+      name + ' must not re-run on the ready transition'
+    )
+    assert.doesNotMatch(
+      String(workflow.jobs[suite].if ?? ''),
+      /pull_request\.draft/,
+      name + ' suite must not gate on the draft state'
     )
     // The shared helper writes the machine-readable promotion evidence.
     assert.ok(

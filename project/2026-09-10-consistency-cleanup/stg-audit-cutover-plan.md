@@ -176,3 +176,15 @@ The native planner inspected the pinned controller and identified manual-bypass/
 - [AI-to-audit comparison](https://github.com/uzh-bf/klicker-uzh/compare/9cb4042334751fd80fde5b95319a6c41cdd4cdaa...3de12f7f1a68f4c78325e73f914c628be4ed1e4f).
 - [Trusted staging controller](https://github.com/uzh-bf/klicker-uzh/blob/48403f59789dca35df106002d1b2ec4e31d70a81/.github/scripts/stg-release-promoter.js) and [workflow](https://github.com/uzh-bf/klicker-uzh/blob/48403f59789dca35df106002d1b2ec4e31d70a81/.github/workflows/deploy-stg-promote.yml).
 - [Audit deployment contract](https://github.com/uzh-bf/klicker-uzh/blob/3de12f7f1a68f4c78325e73f914c628be4ed1e4f/docs/assessment-audit-evidence.md).
+
+
+### 12 September continuation checkpoint
+
+CI source PR #5919 is pushed at `5d1625476d39e22387fe2eadf691a019f708e4e6`. All 185 focused Node 24 CI contract tests pass. Corrections require actual workflow-specific suite jobs on candidate pushes, both translation matrix jobs, draft-conversion events, and publisher inventory completeness. Candidate no-change evidence cannot qualify staging. Source review corrections were sent to the existing reviewers. Integrated Claude Opus 5 medium review returned a session-limit error before review; required final review remains blocked. Preserve the existing review children and hosted watcher ownership when resuming.
+
+Audit-image PR #5917 additionally fixes the inherited domain-model formatting failure at `8dc6a2db30`. Its source checks need refreshed hosted evidence. Full required contexts remain unarmed: live stable and integration baseline requires check and check-gitleaks. Integration ruleset 23042613 permits repository-admin PR bypass only; stable ruleset 23042571 has no bypass and requires codeowner review. No staging or shared-branch mutation occurred. Draft qualification and required human review still block source merge and all dependent cutover work.
+
+
+### Failed CI correction
+
+User requested investigation and repair of both failing PRs. #5917 code-check failure was the inherited replica inventory expecting 17 staging deployments although audit enables two more; commit `603b1ee1cba908a4d7a49abba13c7c371662d9f7` repairs the count and retains per-deployment owner assertions. Helm checks pass. Playwright shards fail before tests because the trusted `v3` build action omits audit/dist; the audit branch action already includes it but is not executed. #5919 repairs trusted artifact coverage for all built workspace packages. Its draft-deferred failures are corrected by executing real applicable validation on drafts, preserving failure for missing or skipped selected work. Draft status remains unchanged; full hosted validation is required before merge.

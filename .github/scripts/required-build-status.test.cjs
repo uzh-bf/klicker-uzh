@@ -163,15 +163,19 @@ test('image build inventory mirrors the v3_*-stg.yml workflows', () => {
     )
     for (const [id, job] of Object.entries(workflow.jobs)) {
       if (job.if === INACTIVE_IF || !id.startsWith('build-')) continue
-      assert.match(
-        job.if,
-        /github\.event_name != 'pull_request'/,
-        item.path + ' ' + id + ' would be skipped on push'
-      )
-      assert.match(
-        job.if,
-        /github\.event\.pull_request\.draft == false/,
-        item.path + ' ' + id + ' must defer on a draft'
+      if (job.if !== undefined) {
+        assert.match(
+          job.if,
+          /github\.event_name != 'pull_request'/,
+          item.path + ' ' + id + ' would be skipped on push'
+        )
+      }
+      // Draft pull requests run the same builds as ready ones, so no build job
+      // may gate on the draft state.
+      assert.doesNotMatch(
+        String(job.if ?? ''),
+        /github\.event\.pull_request\.draft/,
+        item.path + ' ' + id + ' must not gate on the draft state'
       )
     }
   }
@@ -183,12 +187,14 @@ test('the fallback stays the always-reported image build contract', () => {
 
   assert.deepEqual(workflow.on.push.branches, ['v3', 'v3*'])
   assert.deepEqual(workflow.on.pull_request.branches, ['v3', 'v3*'])
-  for (const type of ['ready_for_review', 'edited']) {
-    assert.ok(
-      workflow.on.pull_request.types.includes(type),
-      'the required context must be recomputed on ' + type
-    )
-  }
+  assert.ok(
+    workflow.on.pull_request.types.includes('edited'),
+    'the required context must recompute when a pull request is retargeted'
+  )
+  assert.ok(
+    !workflow.on.pull_request.types.includes('ready_for_review'),
+    'the required context must not re-run on an unchanged head at the ready transition'
+  )
   // No path filter: the required check must always be reported.
   for (const trigger of [workflow.on.push, workflow.on.pull_request]) {
     assert.equal(trigger.paths, undefined)
@@ -223,9 +229,9 @@ test('the fallback stays the always-reported image build contract', () => {
   const report = job.steps.find(
     (step) => step.name === 'Report affected image build status'
   )
-  assert.match(report.env.PR_DRAFT, /pull_request\.draft == true/)
-  assert.match(report.env.PR_DRAFT, /event_name == 'pull_request'/)
-  assert.match(source, /pull_request\.draft == (?:true|false)/)
+  // A draft must not be deferred: no draft input and no draft gate anywhere.
+  assert.equal(report.env.PR_DRAFT, undefined)
+  assert.doesNotMatch(source, /pull_request\.draft/)
 
   const upload = job.steps.find(
     (step) => step.name === 'Upload build status evidence'
@@ -498,40 +504,42 @@ test('the aggregate decision blocks failures and reports evidence', () => {
   assert.match(decision.reason, /v3_chat-stg\.yml/)
 })
 
-test('a draft blocks the required context without waiting', async () => {
+test('a draft pull request qualifies its builds instead of being deferred', async () => {
   const directory = scratch()
-  const github = fakeGithub()
+  const github = fakeGithub({
+    jobsByRun: {
+      '100:1': [workflowJob({ id: 501 })],
+    },
+    runsByWorkflow: {
+      'v3_lti-stg.yml': [
+        workflowRun({ path: '.github/workflows/v3_lti-stg.yml' }),
+      ],
+    },
+  })
   const evidencePath = path.join(directory, 'required-ci-evidence.json')
-  await assert.rejects(
-    evaluateBuildImagesStatus({
-      changedFilesPath: changedFiles(directory, ['apps/lti/src/x.ts']),
-      context: pullRequestContext({
-        payload: {
-          action: 'opened',
-          pull_request: {
-            base: { ref: 'v3', sha: BASE_SHA },
-            draft: true,
-            head: { ref: 'feat/x', sha: PR_SHA },
-          },
+  const decision = await evaluateBuildImagesStatus({
+    changedFilesPath: changedFiles(directory, ['apps/lti/src/x.ts']),
+    context: pullRequestContext({
+      payload: {
+        action: 'opened',
+        pull_request: {
+          base: { ref: 'v3', sha: BASE_SHA },
+          draft: true,
+          head: { ref: 'feat/x', sha: PR_SHA },
         },
-      }),
-      draft: true,
-      evidencePath,
-      github,
-      maxAttempts: 2,
-      rootDirectory: root,
-      sleep: () => {
-        throw new Error('a draft must not wait for deferred builds')
       },
     }),
-    /draft pull request/
-  )
-  assert.deepEqual(github.calls, [])
+    evidencePath,
+    github,
+    maxAttempts: 2,
+    rootDirectory: root,
+  })
+  assert.equal(decision.ok, true, JSON.stringify(decision))
   const evidence = readEvidence(directory)
-  assert.equal(evidence.decision.outcome, 'fail')
-  assert.equal(evidence.selection.mode, 'draft-deferred')
-  assert.equal(evidence.selection.state, 'unavailable')
-  assert.deepEqual(evidence.builds, [])
+  assert.equal(evidence.decision.outcome, 'pass')
+  assert.equal(evidence.selection.mode, 'affected')
+  assert.equal(evidence.selection.state, 'run')
+  assert.equal(evidence.builds.length, 1)
   fs.rmSync(directory, { force: true, recursive: true })
 })
 

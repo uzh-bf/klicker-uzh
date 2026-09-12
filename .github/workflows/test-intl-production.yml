@@ -4,18 +4,8 @@ on:
     branches: ['v3', 'v3-*']
   pull_request:
     branches: ['v3', 'v3-*']
-    # The smoke is gated on the PR draft state and the internal path filter, so
-    # "ready_for_review" runs the real smoke at the draft boundary and "edited"
-    # re-evaluates the selector on a base retarget.
-    types:
-      [
-        opened,
-        synchronize,
-        reopened,
-        ready_for_review,
-        edited,
-        converted_to_draft,
-      ]
+    # "edited" re-evaluates the selector on a base retarget.
+    types: [opened, synchronize, reopened, edited]
 permissions:
   contents: read
 concurrency:
@@ -38,9 +28,7 @@ jobs:
   intl-production-smoke:
     name: intl-production-smoke (${{ matrix.app }})
     needs: filter
-    if: >-
-      needs.filter.outputs.should_run == 'true' &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    if: needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -57,8 +45,8 @@ jobs:
 
   # Always reports a status even when the path filter selects nothing, so this
   # job is the required check. It runs unconditionally so a skipped context can
-  # never read as acceptable; the helper fails on cancellation, a draft, an
-  # unexpected skip or a failed smoke.
+  # never read as acceptable; the helper fails on cancellation, an unexpected
+  # skip or a failed smoke.
   test-intl-production-status:
     needs: [filter, intl-production-smoke]
     if: always()

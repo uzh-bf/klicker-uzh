@@ -5,9 +5,9 @@ name: Build Fallback
 # required 'build-images-status' check is always reported and can never be
 # satisfied by a workflow-level path skip. It requires every actually affected
 # v3_*-stg.yml image build to succeed for the same event, branch and commit, and
-# passes only a validated no-change selection. A draft defers those builds, so
-# the required context fails for that head commit instead of staying green
-# after the pull request is marked ready.
+# passes only a validated no-change selection. Draft pull requests run the same
+# builds as ready ones, so a draft-era success stays authoritative and marking
+# the pull request ready re-runs nothing.
 on:
   push:
     branches:
@@ -18,9 +18,8 @@ on:
       - 'v3'
       - 'v3*'
     # "edited" re-evaluates the selection when a pull request is retargeted, and
-    # ready_for_review recomputes it for the real build set once a draft is
-    # marked ready.
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    # the drift-free build jobs cannot change at the ready boundary.
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -83,10 +82,6 @@ jobs:
         env:
           BUILD_STATUS_EVIDENCE_PATH: ${{ runner.temp }}/required-ci-evidence.json
           CHANGED_FILES_PATH: ${{ runner.temp }}/changed-files.txt
-          # A draft pull request defers its affected image builds, so the
-          # required status must fail for that head commit instead of carrying
-          # a draft-era green into the ready transition.
-          PR_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
         with:
           script: |
             const {

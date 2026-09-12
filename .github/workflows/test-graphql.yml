@@ -4,18 +4,8 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    # "edited" re-evaluates the internal selector on a base retarget; the suite
-    # is gated on the draft state, so "ready_for_review" runs the real suite at
-    # the draft boundary.
-    types:
-      [
-        opened,
-        synchronize,
-        reopened,
-        ready_for_review,
-        edited,
-        converted_to_draft,
-      ]
+    # "edited" re-evaluates the internal selector on a base retarget.
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -41,8 +31,7 @@ jobs:
   test-graphql:
     needs: filter
     if: >-
-      needs.filter.outputs.should_run == 'true' &&
-      (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+      needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -249,8 +238,8 @@ jobs:
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job is the required check. It runs unconditionally so a skipped
   # context can never read as acceptable; the shared helper fails on
-  # cancellation, a draft, an unexpected skip, a missing selector result or a
-  # failed suite, and records the selection evidence for the promoter.
+  # cancellation, an unexpected skip, a missing selector result or a failed
+  # suite, and records the selection evidence for the promoter.
   test-graphql-status:
     needs: [filter, test-graphql]
     if: always()
