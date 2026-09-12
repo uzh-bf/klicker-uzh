@@ -188,6 +188,33 @@ pnpm run check        # typecheck — only passes AFTER build (generated artifac
 
 Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
 
+### Git hooks with isolated container dependencies
+
+Git hooks use `util/run-git-hook.mjs` to run dependency-backed checks where
+dependencies are installed. By default, the dispatcher uses `devrouter exec` for the exact
+checkout; start that runtime explicitly before committing or pushing. Hooks
+never start services or disable pnpm dependency validation.
+
+Host contract tests also need the root tooling dependencies in this checkout;
+an ancestor checkout's installation does not count. Install them explicitly:
+`pnpm --filter @klicker-uzh/monorepo install --frozen-lockfile --ignore-scripts`.
+This partial host install does not change the default container routing.
+`KLICKER_GIT_HOOK_RUNTIME=container` explicitly retains that routing.
+`KLICKER_GIT_HOOK_RUNTIME=host` explicitly selects a complete native installation.
+Hooks never install dependencies automatically.
+
+Secret scanning, identity checks, staged-file discovery and host contract tests
+stay on the host. Container formatting reuses the staged-format rules with
+literal filenames and refuses partially staged files; fully stage or unstage
+those files first. It does not stash, rewrite files or modify the index.
+Independent checks do not inherit Git's hook environment, preventing temporary
+Git fixtures from operating on the committing repository.
+
+Manage, PWA and Control production builds opt into their existing strict
+`tsconfig.check.json`, excluding development-generated route validators.
+Development retains `tsconfig.json`; no type errors are ignored. This allows
+the pre-push build to run after local development without deleting `.next`.
+
 ## Failure signatures (fresh clone / wrong state)
 
 | Exact error                                                                                                                   | Cause                                                                                                                                          | Fix                                                                                             |

@@ -119,6 +119,7 @@
     "LTI_TOKEN_ENDPOINT",
     "LTI_KEYS_ENDPOINT",
     "LTI_CLIENT_ID",
+    "LTI_ADDITIONAL_PLATFORMS",
     "LTI_DB_CONNECTION_STRING",
     "LTI_ENCRYPTION_KEY",
     "LTI_PORT",
@@ -221,6 +222,10 @@
     "@klicker-uzh/prisma#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "src/prisma/client/**"]
+    },
+    "@klicker-uzh/prisma#check": {
+      "cache": false,
+      "dependsOn": ["build"]
     },
     "build": {
       "dependsOn": ["^build"],
