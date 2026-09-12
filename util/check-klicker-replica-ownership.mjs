@@ -713,7 +713,11 @@ for (const environment of environments) {
   assertReplicaOwnership(
     resources,
     environment.name,
-    { base: 17, stg: 20, prd: 20 }[environment.name]
+    // Enabling assessmentAudit adds the dispatcher and media-policy workers,
+    // which are static Deployments alongside the 17 shared application ones.
+    // Staging also runs the frontend PWA burst tier and the two release asset
+    // Deployments.
+    { base: 17, stg: 22, prd: 20 }[environment.name]
   )
   if (['stg', 'prd'].includes(environment.name)) {
     assertPwaBurstTier(resources, environment.name)
