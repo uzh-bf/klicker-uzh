@@ -41,3 +41,10 @@ fixture. And a capability the provider genuinely cannot offer locally stays
 absent rather than being simulated: the consumer's runner records what its local
 run does and does not prove, instead of relaxing a provider policy to make a
 test pass.
+
+Transitional note (2026-09-10). The consumer has not yet retired its Compose
+assembly. Klicker's isolated plan records each provider launcher invocation as
+a projection with `executable: false`, while the consumer-owned Compose path
+remains the lifecycle that actually runs. The launcher projection becomes
+authoritative only when that assembly is removed; until then both paths must be
+kept in step, and the plan may not claim to have replaced the assembly.

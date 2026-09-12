@@ -37,7 +37,10 @@ import {
   type MCPServerWithConfig,
   type MCPToolsHandle,
 } from '@/src/services/mcpClients'
-import { DOC_QUERY_MCP_SERVER_NAME } from '@/src/services/mcpScope'
+import {
+  DOC_QUERY_MCP_SERVER_NAME,
+  resolveMcpScope,
+} from '@/src/services/mcpScope'
 import { createRateLimiter } from '@/src/services/rateLimiter'
 
 export const runtime = 'nodejs'
@@ -141,11 +144,6 @@ export async function POST(
       course: {
         select: { displayName: true },
       },
-      knowledgeBases: {
-        where: { isEnabled: true },
-        select: { kbId: true },
-        take: 1,
-      },
       mcpConfigurations: {
         include: { mcpServer: true },
         orderBy: { priority: 'asc' },
@@ -162,6 +160,9 @@ export async function POST(
     )
   }
 
+  const enabledMCPConfigurations = chatbot.mcpConfigurations.filter(
+    (configuration) => configuration.isEnabled !== false
+  )
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
@@ -267,10 +268,15 @@ export async function POST(
 
   let tools: ToolSet
   try {
+    const kbIds = resolveMcpScope(
+      enabledMCPConfigurations,
+      selectedMode,
+      modeConfigurations
+    )
     mcpToolsHandle = await getAggregatedMCPTools(kbConfigurations, {
       chatbotId,
       authMode: 'account',
-      kbIds: chatbot.knowledgeBases.map(({ kbId }) => kbId),
+      kbIds,
       sessionId: randomUUID(),
     })
     tools = mcpToolsHandle.tools

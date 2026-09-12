@@ -93,6 +93,7 @@ import {
   AvatarSettingsInput,
   GroupMessage,
   LeaveCourseParticipation,
+  LtiChatbotLogin,
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
@@ -366,6 +367,18 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await AccountService.createParticipantAccount(args, ctx)
         },
+      }),
+
+      loginParticipantForLtiChatbot: t.field({
+        type: LtiChatbotLogin,
+        args: {
+          signedLtiData: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
+          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+          participantToken: t.arg.string(),
+        },
+        resolve: (_, args, ctx) =>
+          AccountService.loginParticipantForLtiChatbot(args, ctx),
       }),
 
       loginParticipantWithLti: t.field({

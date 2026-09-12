@@ -129,6 +129,7 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
+  registerLangfuseTelemetry: vi.fn().mockResolvedValue(undefined),
   flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
   getChatTraceContext: mocks.getChatTraceContext,
   getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
@@ -863,7 +864,10 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('forces Quizzer course retrieval only on the first model step', async () => {
+  test.each([
+    'tutor',
+    'quizzer',
+  ] as const)('forces %s course retrieval only on the first model step', async (selectedMode) => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         systemPrompts: {
@@ -872,7 +876,7 @@ describe('account usage chat route', () => {
         },
         mcpConfigurations: [
           {
-            chatMode: 'quizzer',
+            chatMode: selectedMode,
             isEnabled: true,
             priority: 0,
             allowedTools: ['doc_query'],
@@ -887,7 +891,7 @@ describe('account usage chat route', () => {
       close: mocks.closeMCPTools,
     })
 
-    const response = await POST(createRequest({ selectedMode: 'quizzer' }), {
+    const response = await POST(createRequest({ selectedMode }), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 

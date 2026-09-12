@@ -2579,6 +2579,12 @@ enum LocaleType {
   en
 }
 
+type LtiChatbotLogin {
+  participantId: String
+  participantToken: String
+  status: String!
+}
+
 enum ManageAiCapabilityState {
   DISABLED
   ENABLED
@@ -2725,6 +2731,7 @@ type Mutation {
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   leaveUserGroup(groupId: Int!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
+  loginParticipantForLtiChatbot(chatbotId: String!, courseId: String!, participantToken: String, signedLtiData: String!): LtiChatbotLogin!
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
   loginTemporaryParticipant(avatar: String, liveQuizId: String!, pseudonym: String!): ID

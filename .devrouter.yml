@@ -21,7 +21,7 @@
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.0.66
+  version: 0.0.72
 project:
   name: klicker-uzh
 managedRuntime:
@@ -40,7 +40,7 @@ managedRuntime:
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
   manage:
-    apps: [manage, api, auth]
+    apps: [manage, api, auth, blob]
     readiness: [manage, api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]

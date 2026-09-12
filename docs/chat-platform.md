@@ -20,7 +20,7 @@ tags:
 > framing is obsolete. Staged doc/skill changes for that exploration:
 > `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
-**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
+**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers; LTI account login and Manage proposals call persisted backend GraphQL operations, uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
 
@@ -54,6 +54,23 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
   the Chat/PWA/API/Auth app set, `ai` starts LiteLLM, and `mcp` starts the
   fixture. Use `chat,ai,mcp` for the complete synthetic model/tool path; plain
   `chat` intentionally starts neither optional capability.
+
+## LTI participant transport
+
+`/auth/lti` resolves a verified account-or-guest launch through the backend. Account
+sessions stay in the shared HttpOnly `participant_token` cookie. Cookie-less Chat
+entry uses the existing chatbot/course-scoped PWA embed token (`_pe`); guest entry
+uses the separate Chat guest token (`_t`). Neither fallback carries a raw account
+session token. The launch clears both previous Chat sessionStorage transports and
+the opposite scoped cookie before navigating, so an earlier guest cannot override
+a newly chosen account.
+
+The proxy overwrites `CHAT_SCOPED_TOKEN_HEADER` with a verified query token when
+cookies are unavailable. The server layout verifies that token again. Page and API
+access share `resolveParticipantIdentity` and `authorizeIdentityForChatbot`, which
+retain publication, course binding and participation checks. Participation's
+leaderboard opt-in flag does not control access. See [Auth Model](./auth-model.md#lti-chatbot-entry)
+for launch precedence and coordinated rollout requirements.
 
 ## Owner-governed response examples
 
