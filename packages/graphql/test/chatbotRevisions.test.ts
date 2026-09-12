@@ -671,4 +671,144 @@ describe('chatbot authoring revision transitions', () => {
       revisionVersion: 2,
     })
   })
+
+  it('stages the knowledge-graph policy until approval', async () => {
+    const bot = await seed()
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          knowledgeGraphPolicy: { visible: true, retrievalEnabled: true },
+        },
+      },
+      owner
+    )
+    expect(saved?.authoringRevision).toMatchObject({
+      knowledgeGraphVisible: true,
+      knowledgeGraphRetrievalEnabled: true,
+    })
+    // A published chatbot keeps serving its live columns until the revision is
+    // approved, while the saved revision already carries the new policy.
+    expect(await read(bot.id)).toMatchObject({
+      knowledgeGraphVisible: bot.knowledgeGraphVisible,
+      knowledgeGraphRetrievalEnabled: bot.knowledgeGraphRetrievalEnabled,
+      draftConfig: {
+        knowledgeGraphVisible: true,
+        knowledgeGraphRetrievalEnabled: true,
+      },
+    })
+
+    await submit(bot.id, 1)
+    await service.approveChatbotRevision(
+      { id: bot.id, expectedRevisionVersion: 2 },
+      admin
+    )
+    expect(await read(bot.id)).toMatchObject({
+      knowledgeGraphVisible: true,
+      knowledgeGraphRetrievalEnabled: true,
+      draftConfig: null,
+    })
+  })
+
+  it('inherits the live knowledge-graph flags for a revision that predates them', async () => {
+    const bot = await seed()
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: {
+        knowledgeGraphVisible: true,
+        knowledgeGraphRetrievalEnabled: true,
+        revisionStatus: ChatbotStatus.DRAFT,
+        revisionVersion: 1,
+        // @ts-expect-error Persist the legacy shape to exercise compatibility.
+        draftConfig: {
+          name: 'Legacy revision',
+          description: null,
+          avatar: null,
+          standardModeConfig: null,
+          modelSelection: false,
+          allowedModelIds: ['auto'],
+          allowedReasoningEffortsByModel: null,
+          creditInitialCredits: 10,
+          creditResetPeriod: CreditResetPeriod.WEEKLY,
+          creditResetAmount: 10,
+          creditMaxCredits: 100,
+          disclaimerTitle: 'Synthetic title',
+          disclaimerIntroText: 'Synthetic introduction.',
+          publicationUseCase: 'Synthetic course support',
+          expectedStudentCount: 20,
+        },
+      },
+    })
+
+    const saved = await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: { metadata: { description: 'Updated' } },
+      },
+      owner
+    )
+    expect(saved?.authoringRevision).toMatchObject({
+      knowledgeGraphVisible: true,
+      knowledgeGraphRetrievalEnabled: true,
+    })
+    const inherited = (await read(bot.id)).draftConfig as {
+      knowledgeGraphRetrievalEnabled: boolean
+    }
+    expect(inherited.knowledgeGraphRetrievalEnabled).toBe(true)
+  })
+
+  it('rejects a non-boolean knowledge-graph policy value', async () => {
+    const bot = await seed()
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: 0,
+          input: {
+            knowledgeGraphPolicy: {
+              visible: 'yes',
+              retrievalEnabled: false,
+            } as never,
+          },
+        },
+        owner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    expect((await read(bot.id)).revisionVersion).toBe(0)
+  })
+
+  it('rejects a stored revision whose knowledge-graph flag is not a boolean', async () => {
+    const bot = await seed()
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: { metadata: { description: 'Staged' } },
+      },
+      owner
+    )
+    const staged = await read(bot.id)
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: {
+        draftConfig: {
+          ...(staged.draftConfig as object),
+          // @ts-expect-error Persist malformed data to exercise runtime validation.
+          knowledgeGraphVisible: 'yes',
+        },
+      },
+    })
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: staged.revisionVersion,
+          input: { metadata: { description: 'Next' } },
+        },
+        owner
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+  })
 })

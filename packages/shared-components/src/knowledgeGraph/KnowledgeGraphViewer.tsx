@@ -1,5 +1,6 @@
 'use client'
 
+import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import cytoscape from 'cytoscape'
 import React, {
   type FormEvent,
@@ -27,16 +28,28 @@ import {
   resolveKnowledgeGraphLabels,
 } from './knowledgeGraphLabels'
 import {
-  type KnowledgeGraphDataSource,
-  type KnowledgeGraphRequestOperation,
-  KnowledgeGraphUnavailableError,
+  isKnowledgeGraphSubmitQuery,
+  isKnowledgeGraphSuggestionQuery,
+  KNOWLEDGE_GRAPH_SUGGESTION_DEBOUNCE_MS,
+  normalizeKnowledgeGraphQuery,
+} from './knowledgeGraphSearch'
+import {
   initialKnowledgeGraphState,
+  isKnowledgeGraphBuildChangedError,
+  type KnowledgeGraphDataSource,
+  type KnowledgeGraphNeighborOrigin,
+  type KnowledgeGraphRequestOperation,
+  type KnowledgeGraphState,
+  KnowledgeGraphUnavailableError,
   knowledgeGraphReducer,
 } from './knowledgeGraphState'
 import {
+  edgeAskSelection,
   KNOWLEDGE_GRAPH_MAX_ZOOM,
   KNOWLEDGE_GRAPH_MIN_ZOOM,
+  type KnowledgeGraphAskSelection,
   nextKnowledgeGraphZoom,
+  nodeAskSelection,
   relationshipLabels,
 } from './knowledgeGraphView'
 
@@ -45,11 +58,37 @@ type KnowledgeGraphViewerProps = {
   className?: string
   unavailableMessage?: string
   labels?: KnowledgeGraphViewerLabelOverrides
+  /** 'search' opens the search entry without automatically fetching an overview. */
+  initialView?: 'overview' | 'search'
+  /** Enables the debounced suggestion combobox; the lecturer entry keeps it off. */
+  searchSuggestions?: boolean
+  /** Shows the overview entry's return control once the view is focused. */
+  overviewNavigation?: boolean
+  /** Emits the bounded ask payload for the selected concept or relationship. */
+  onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  /** 'contained' overlays the details pane inside the graph. */
+  detailsLayout?: 'sidebar' | 'contained'
+  /** Keeps the current zoom and pan when the canvas container resizes. */
+  preserveViewportOnResize?: boolean
+}
+
+function fitGraphElements(cy: cytoscape.Core) {
+  if (cy.elements().empty()) return
+  cy.fit(cy.elements(), 40)
+  // A small neighborhood should not magnify labels beyond their normal size.
+  if (cy.zoom() > 1) {
+    cy.zoom(1)
+    cy.center()
+  }
 }
 
 function isUnavailableError(error: unknown): boolean {
   if (error instanceof KnowledgeGraphUnavailableError) {
     return true
+  }
+
+  if (isKnowledgeGraphBuildChangedError(error)) {
+    return false
   }
 
   if (typeof error !== 'object' || error === null) {
@@ -58,6 +97,25 @@ function isUnavailableError(error: unknown): boolean {
 
   const candidate = error as { code?: unknown; status?: unknown }
   return candidate.code === 'UNAVAILABLE' || candidate.status === 409
+}
+
+type KnowledgeGraphRequestOutcome =
+  | { status: 'succeeded'; response: KnowledgeGraphResponse }
+  | { status: 'stale' }
+  | { status: 'build-changed' }
+  | { status: 'failed' }
+
+function neighborOrigin(
+  state: KnowledgeGraphState
+): KnowledgeGraphNeighborOrigin | undefined {
+  if (state.kbId === null || state.buildId === null) {
+    return undefined
+  }
+  return { kbId: state.kbId, buildId: state.buildId }
+}
+
+function suggestionOptionId(index: number): string {
+  return `knowledge-graph-suggestion-${index}`
 }
 
 function safeRequestError(
@@ -78,7 +136,16 @@ export function KnowledgeGraphViewer({
   className = '',
   unavailableMessage,
   labels: labelOverrides,
+  initialView = 'overview',
+  searchSuggestions = false,
+  overviewNavigation = false,
+  onAsk,
+  detailsLayout = 'sidebar',
+  preserveViewportOnResize = false,
 }: KnowledgeGraphViewerProps) {
+  const searchFirst = initialView === 'search'
+  const initialViewRef = useRef(initialView)
+  initialViewRef.current = initialView
   const labels = useMemo(
     () => resolveKnowledgeGraphLabels(labelOverrides),
     [labelOverrides]
@@ -90,6 +157,7 @@ export function KnowledgeGraphViewer({
     initialKnowledgeGraphState
   )
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const cyRef = useRef<cytoscape.Core | null>(null)
   const dataSourceRef = useRef(dataSource)
@@ -105,19 +173,142 @@ export function KnowledgeGraphViewer({
   const expansionOriginRef = useRef<string | null>(null)
   const pendingFocusRef = useRef<string | null>(null)
   const prefersReducedMotionRef = useRef(false)
+  const preserveViewportOnResizeRef = useRef(preserveViewportOnResize)
   const expandNodeRef = useRef<(nodeId: string) => void>(() => undefined)
   const labelsRef = useRef(labels)
+  const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const suggestionRequestIdRef = useRef(0)
+  const suggestionInFlightRef = useRef(false)
+  const pendingSuggestionRef = useRef<{
+    requestId: number
+    query: string
+  } | null>(null)
+  const executeSuggestionRequestRef = useRef<
+    (requestId: number, query: string) => Promise<void>
+  >(async () => undefined)
+  const composingRef = useRef(false)
+  const layoutTokenRef = useRef(0)
+  const activeLayoutRef = useRef<{ stop: () => void } | null>(null)
+  const recoverFromBuildChangeRef = useRef<() => void>(() => undefined)
 
   dataSourceRef.current = dataSource
   stateRef.current = state
   labelsRef.current = labels
+  preserveViewportOnResizeRef.current = preserveViewportOnResize
+
+  const cancelSuggestions = useCallback(() => {
+    if (suggestionTimerRef.current !== null) {
+      clearTimeout(suggestionTimerRef.current)
+      suggestionTimerRef.current = null
+    }
+    pendingSuggestionRef.current = null
+    // Invalidating the id drops a response that is still in flight.
+    suggestionRequestIdRef.current += 1
+    dispatch({ type: 'dismiss-suggestions' })
+  }, [])
+
+  const beginViewRequest = useCallback(() => {
+    latestRequestIdsRef.current = {
+      overview: null,
+      search: null,
+      neighbors: null,
+    }
+    pendingFocusRef.current = null
+    activeLayoutRef.current?.stop()
+    activeLayoutRef.current = null
+    layoutTokenRef.current += 1
+    cancelSuggestions()
+  }, [cancelSuggestions])
+
+  const executeSuggestionRequest = useCallback(
+    async (requestId: number, query: string) => {
+      if (suggestionRequestIdRef.current !== requestId) {
+        return
+      }
+
+      const sourceGeneration = sourceGenerationRef.current
+      suggestionInFlightRef.current = true
+      try {
+        const graphResponse = await dataSourceRef.current.search(query)
+        if (
+          sourceGenerationRef.current === sourceGeneration &&
+          suggestionRequestIdRef.current === requestId
+        ) {
+          dispatch({
+            type: 'suggestions-succeeded',
+            requestId,
+            response: graphResponse,
+          })
+        }
+      } catch {
+        if (
+          sourceGenerationRef.current === sourceGeneration &&
+          suggestionRequestIdRef.current === requestId
+        ) {
+          dispatch({
+            type: 'suggestions-failed',
+            requestId,
+          })
+        }
+      } finally {
+        suggestionInFlightRef.current = false
+        const pending = pendingSuggestionRef.current
+        pendingSuggestionRef.current = null
+        if (pending !== null) {
+          void executeSuggestionRequestRef.current(
+            pending.requestId,
+            pending.query
+          )
+        }
+      }
+    },
+    []
+  )
+  executeSuggestionRequestRef.current = executeSuggestionRequest
+
+  const queueSuggestionRequest = useCallback(
+    (requestId: number, query: string) => {
+      if (suggestionRequestIdRef.current !== requestId) {
+        return
+      }
+      if (suggestionInFlightRef.current) {
+        // Only the latest pending query survives while a request is in flight.
+        pendingSuggestionRef.current = { requestId, query }
+        return
+      }
+      void executeSuggestionRequestRef.current(requestId, query)
+    },
+    []
+  )
+
+  const scheduleSuggestions = useCallback(
+    (raw: string) => {
+      // Typing invalidates the previous query right away, so a response for the
+      // old text cannot surface during the debounce window.
+      cancelSuggestions()
+
+      const query = normalizeKnowledgeGraphQuery(raw)
+      if (!isKnowledgeGraphSuggestionQuery(query)) {
+        return
+      }
+
+      suggestionTimerRef.current = setTimeout(() => {
+        suggestionTimerRef.current = null
+        const requestId = ++suggestionRequestIdRef.current
+        dispatch({ type: 'suggestions-started', requestId })
+        queueSuggestionRequest(requestId, query)
+      }, KNOWLEDGE_GRAPH_SUGGESTION_DEBOUNCE_MS)
+    },
+    [cancelSuggestions, queueSuggestionRequest]
+  )
 
   const runRequest = useCallback(
     async (
       operation: KnowledgeGraphRequestOperation,
       input: string | null,
-      request: () => ReturnType<KnowledgeGraphDataSource['overview']>
-    ) => {
+      request: () => ReturnType<KnowledgeGraphDataSource['overview']>,
+      origin?: KnowledgeGraphNeighborOrigin
+    ): Promise<KnowledgeGraphRequestOutcome> => {
       const requestId = ++requestIdRef.current
       const sourceGeneration = sourceGenerationRef.current
       latestRequestIdsRef.current[operation] = requestId
@@ -128,13 +319,24 @@ export function KnowledgeGraphViewer({
         ...(input === null ? {} : { input }),
       })
 
+      const isCurrent = () =>
+        sourceGenerationRef.current === sourceGeneration &&
+        latestRequestIdsRef.current[operation] === requestId
+
       try {
         const graphResponse = await request()
+        if (!isCurrent()) {
+          return { status: 'stale' }
+        }
         if (
-          sourceGenerationRef.current !== sourceGeneration ||
-          latestRequestIdsRef.current[operation] !== requestId
+          operation === 'neighbors' &&
+          origin !== undefined &&
+          (graphResponse.kbId !== origin.kbId ||
+            graphResponse.buildId !== origin.buildId)
         ) {
-          return null
+          // A neighbor response from another build is never merged into the
+          // current view; the viewer reloads the overview instead.
+          return { status: 'build-changed' }
         }
         dispatch({
           type: 'request-succeeded',
@@ -150,13 +352,16 @@ export function KnowledgeGraphViewer({
                   graphResponse.nodes.length
                 ),
         })
-        return graphResponse
+        return { status: 'succeeded', response: graphResponse }
       } catch (error) {
+        if (!isCurrent()) {
+          return { status: 'stale' }
+        }
         if (
-          sourceGenerationRef.current !== sourceGeneration ||
-          latestRequestIdsRef.current[operation] !== requestId
+          operation === 'neighbors' &&
+          isKnowledgeGraphBuildChangedError(error)
         ) {
-          return null
+          return { status: 'build-changed' }
         }
         if (isUnavailableError(error)) {
           dispatch({
@@ -175,40 +380,55 @@ export function KnowledgeGraphViewer({
             ...(input === null ? {} : { input }),
           })
         }
-        return null
+        return { status: 'failed' }
       }
     },
     [resolvedUnavailableMessage]
   )
 
   const loadOverview = useCallback(async () => {
-    await runRequest('overview', null, () => dataSourceRef.current.overview())
+    const outcome = await runRequest('overview', null, () =>
+      dataSourceRef.current.overview()
+    )
+    return outcome
   }, [runRequest])
 
   const expandNode = useCallback(
-    async (nodeId: string) => {
+    async (nodeId: string, origin: KnowledgeGraphNeighborOrigin) => {
       expansionOriginRef.current = nodeId
       const loadedNodeIds = new Set(
         stateRef.current.nodes.map((node) => node.id)
       )
-      const result = await runRequest('neighbors', nodeId, () =>
-        dataSourceRef.current.neighbors(nodeId)
+      const outcome = await runRequest(
+        'neighbors',
+        nodeId,
+        () => dataSourceRef.current.neighbors(nodeId, origin),
+        origin
       )
-      const hasNewNodes =
-        result?.nodes.some(
-          (node) => node.id !== nodeId && !loadedNodeIds.has(node.id)
-        ) ?? false
-      if (
-        (!hasNewNodes || result === null) &&
-        expansionOriginRef.current === nodeId
-      ) {
+      if (outcome.status === 'build-changed') {
+        recoverFromBuildChangeRef.current()
+        return
+      }
+      if (outcome.status !== 'succeeded') {
+        if (expansionOriginRef.current === nodeId) {
+          expansionOriginRef.current = null
+        }
+        return
+      }
+      const hasNewNodes = outcome.response.nodes.some(
+        (node) => node.id !== nodeId && !loadedNodeIds.has(node.id)
+      )
+      if (!hasNewNodes && expansionOriginRef.current === nodeId) {
         expansionOriginRef.current = null
       }
     },
     [runRequest]
   )
   expandNodeRef.current = (nodeId) => {
-    void expandNode(nodeId)
+    const origin = neighborOrigin(stateRef.current)
+    if (origin !== undefined) {
+      void expandNode(nodeId, origin)
+    }
   }
 
   useLayoutEffect(() => {
@@ -224,6 +444,10 @@ export function KnowledgeGraphViewer({
       search: null,
       neighbors: null,
     }
+    activeLayoutRef.current?.stop()
+    activeLayoutRef.current = null
+    layoutTokenRef.current += 1
+    cancelSuggestions()
     stateRef.current = initialKnowledgeGraphState
     positionsRef.current.clear()
     renderedBuildIdRef.current = null
@@ -231,9 +455,36 @@ export function KnowledgeGraphViewer({
     pendingFocusRef.current = null
     cyRef.current?.elements().remove()
     setSearchQuery('')
+    setActiveSuggestionIndex(-1)
     dispatch({ type: 'reset' })
-    void loadOverview()
-  }, [dataSource, loadOverview])
+    if (initialViewRef.current !== 'search') {
+      void loadOverview()
+    }
+  }, [dataSource, loadOverview, cancelSuggestions])
+
+  useEffect(() => {
+    return () => {
+      // Unmounting invalidates every pending callback: the source generation
+      // stops late requests from dispatching and the timers are cleared.
+      // Clearing the mounted source re-runs the initial load when React
+      // re-mounts the same source, which is what Strict Mode does.
+      mountedDataSourceRef.current = null
+      sourceGenerationRef.current += 1
+      latestRequestIdsRef.current = {
+        overview: null,
+        search: null,
+        neighbors: null,
+      }
+      if (suggestionTimerRef.current !== null) {
+        clearTimeout(suggestionTimerRef.current)
+        suggestionTimerRef.current = null
+      }
+      suggestionRequestIdRef.current += 1
+      pendingSuggestionRef.current = null
+      activeLayoutRef.current?.stop()
+      activeLayoutRef.current = null
+    }
+  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -300,7 +551,15 @@ export function KnowledgeGraphViewer({
     const resizeObserver =
       typeof ResizeObserver === 'undefined'
         ? null
-        : new ResizeObserver(() => cy.resize())
+        : new ResizeObserver(() => {
+            cy.resize()
+            // A host that swaps the viewer between its docked and fullscreen
+            // slot keeps the zoom and pan it had; the default lecture view
+            // still refits the graph on every resize.
+            if (!preserveViewportOnResizeRef.current) {
+              fitGraphElements(cy)
+            }
+          })
     resizeObserver?.observe(container)
 
     return () => {
@@ -321,6 +580,9 @@ export function KnowledgeGraphViewer({
       return
     }
 
+    activeLayoutRef.current?.stop()
+    activeLayoutRef.current = null
+    layoutTokenRef.current += 1
     cy.nodes().forEach((node) => {
       positionsRef.current.set(String(node.data('graphId')), node.position())
     })
@@ -402,30 +664,37 @@ export function KnowledgeGraphViewer({
     })
 
     const isInitialLayout = buildChanged
-    const subsetEdges = cy.edges().filter((edge) => {
-      return (
-        newNodeIds.has(String(edge.source().data('graphId'))) &&
-        newNodeIds.has(String(edge.target().data('graphId')))
-      )
-    })
-    const layoutElements = isInitialLayout
-      ? cy.elements()
-      : newNodes.union(subsetEdges)
-    const layout = layoutElements.layout({
+    if (!isInitialLayout) {
+      // Keep added neighbors around their origin. An isolated subset layout
+      // recenters them at zero and can overlap already positioned concepts.
+      newNodes.forEach((node) => {
+        positionsRef.current.set(String(node.data('graphId')), node.position())
+      })
+      fitGraphElements(cy)
+      expansionOriginRef.current = null
+      return
+    }
+    const layout = cy.elements().layout({
       name: 'cose',
-      animate: !prefersReducedMotionRef.current,
+      animate: false,
       randomize: isInitialLayout,
       fit: false,
       padding: 30,
       nodeRepulsion: 6_000,
       idealEdgeLength: 90,
     })
+    const layoutToken = layoutTokenRef.current
+    activeLayoutRef.current = layout
     layout.one('layoutstop', () => {
+      activeLayoutRef.current = null
+      if (layoutTokenRef.current !== layoutToken) {
+        return
+      }
       cy.nodes().forEach((node) => {
         positionsRef.current.set(String(node.data('graphId')), node.position())
       })
       if (isInitialLayout) {
-        cy.fit(cy.elements(), 40)
+        fitGraphElements(cy)
       }
     })
     layout.run()
@@ -482,6 +751,16 @@ export function KnowledgeGraphViewer({
     selectedEdge === undefined
       ? undefined
       : relationshipLabels(selectedEdge, indexes.nodes)
+  let askSelection: KnowledgeGraphAskSelection | undefined
+  if (selectedNode !== undefined) {
+    askSelection = nodeAskSelection(selectedNode)
+  } else if (selectedEdge !== undefined) {
+    askSelection = edgeAskSelection(
+      selectedEdge,
+      indexes.nodes,
+      labels.details.missingEndpoint
+    )
+  }
   const relationshipEntries = useMemo(
     () =>
       state.edges.map((edge) => ({
@@ -514,34 +793,139 @@ export function KnowledgeGraphViewer({
 
   const searchGraph = useCallback(
     async (query: string) => {
-      const loadedNodeIds = new Set(
-        stateRef.current.nodes.map((node) => node.id)
-      )
-      const result = await runRequest('search', query, () =>
+      beginViewRequest()
+      setActiveSuggestionIndex(-1)
+      const outcome = await runRequest('search', query, () =>
         dataSourceRef.current.search(query)
       )
-      const firstResult = result?.nodes[0]
+      if (outcome.status !== 'succeeded') {
+        return
+      }
+      const firstResult = outcome.response.nodes[0]
       if (firstResult === undefined) {
         return
       }
 
       pendingFocusRef.current = firstResult.id
-      if (!loadedNodeIds.has(firstResult.id)) {
-        await expandNode(firstResult.id)
-      }
+      await expandNode(firstResult.id, {
+        kbId: outcome.response.kbId,
+        buildId: outcome.response.buildId,
+      })
     },
-    [expandNode, runRequest]
+    [beginViewRequest, expandNode, runRequest]
   )
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const query = searchQuery.trim()
-    if (query.length === 0 || query.length > 100) {
+    if (composingRef.current) return
+    const query = normalizeKnowledgeGraphQuery(searchQuery)
+    if (!isKnowledgeGraphSubmitQuery(query)) {
       return
     }
 
     await searchGraph(query)
   }
+
+  function handleQueryChange(value: string) {
+    setSearchQuery(value)
+    setActiveSuggestionIndex(-1)
+    if (searchSuggestions && !composingRef.current) {
+      scheduleSuggestions(value)
+    }
+  }
+
+  function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (!searchSuggestions) {
+      return
+    }
+    // A composition key press never navigates or selects a suggestion.
+    if (composingRef.current || event.nativeEvent.isComposing) {
+      return
+    }
+
+    if (event.key === 'Escape') {
+      // Let the host handle Escape once suggestions and their debounce are idle.
+      if (
+        state.suggestionStatus === 'idle' &&
+        suggestionTimerRef.current === null
+      )
+        return
+      event.preventDefault()
+      event.stopPropagation()
+      cancelSuggestions()
+      setActiveSuggestionIndex(-1)
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
+      if (state.suggestions.length === 0) {
+        return
+      }
+      event.preventDefault()
+      setActiveSuggestionIndex((index) =>
+        index + 1 >= state.suggestions.length ? 0 : index + 1
+      )
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      if (state.suggestions.length === 0) {
+        return
+      }
+      event.preventDefault()
+      setActiveSuggestionIndex((index) =>
+        index <= 0 ? state.suggestions.length - 1 : index - 1
+      )
+      return
+    }
+
+    if (event.key === 'Enter' && activeSuggestionIndex >= 0) {
+      if (state.suggestions[activeSuggestionIndex] === undefined) {
+        return
+      }
+      event.preventDefault()
+      void selectSuggestion(activeSuggestionIndex)
+    }
+  }
+
+  async function selectSuggestion(index: number) {
+    const suggestion = state.suggestions[index]
+    const response = state.suggestionResponse
+    if (suggestion === undefined || response === null) {
+      return
+    }
+
+    // The suggestion keeps its originating build and node id; its label is
+    // never used to refetch the concept.
+    beginViewRequest()
+    setActiveSuggestionIndex(-1)
+    positionsRef.current.clear()
+    // A selected concept replaces the view, so it always fits the canvas.
+    renderedBuildIdRef.current = null
+    pendingFocusRef.current = suggestion.id
+    dispatch({
+      type: 'select-suggestion',
+      response,
+      nodeId: suggestion.id,
+      announcement: labels.selectedConceptAnnouncement(suggestion.displayLabel),
+    })
+    await expandNode(suggestion.id, {
+      kbId: response.kbId,
+      buildId: response.buildId,
+    })
+  }
+
+  const resetToOverview = useCallback(() => {
+    beginViewRequest()
+    setSearchQuery('')
+    setActiveSuggestionIndex(-1)
+    positionsRef.current.clear()
+    renderedBuildIdRef.current = null
+    expansionOriginRef.current = null
+    dispatch({ type: 'reset' })
+    void loadOverview()
+  }, [beginViewRequest, loadOverview])
+  recoverFromBuildChangeRef.current = resetToOverview
 
   function retryFailedRequest() {
     const failedRequest = stateRef.current.failedRequest
@@ -559,14 +943,14 @@ export function KnowledgeGraphViewer({
     }
 
     if (failedRequest.input !== null) {
-      void expandNode(failedRequest.input)
+      expandNodeRef.current(failedRequest.input)
     }
   }
 
   function fitGraph() {
     const cy = cyRef.current
     if (cy !== null && !cy.elements().empty()) {
-      cy.fit(cy.elements(), 40)
+      fitGraphElements(cy)
     }
   }
 
@@ -608,15 +992,41 @@ export function KnowledgeGraphViewer({
   const showFullError = state.status === 'error' && state.nodes.length === 0
   const isSearching = state.activeRequestIds.search !== null
   const isExpanding = state.activeRequestIds.neighbors !== null
+  const suggestionOptions = searchSuggestions ? state.suggestions : []
+  const suggestionsOpen = searchSuggestions && state.suggestionStatus !== 'idle'
+  const activeSuggestionId =
+    suggestionsOpen &&
+    activeSuggestionIndex >= 0 &&
+    activeSuggestionIndex < suggestionOptions.length
+      ? suggestionOptionId(activeSuggestionIndex)
+      : undefined
+  const showOverviewControl = overviewNavigation && state.view === 'focused'
+
+  const sectionMinHeight =
+    detailsLayout === 'contained' ? 'min-h-0' : 'min-h-[32rem]'
+  const canvasMinHeight = detailsLayout === 'contained' ? 'min-h-0' : 'min-h-80'
 
   return (
     <section
       aria-label={labels.explorerAriaLabel}
-      className={`relative flex h-full min-h-[32rem] w-full min-w-0 overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${className}`}
+      className={`relative flex h-full w-full min-w-0 overflow-hidden rounded-lg border border-[#E9E9E9] bg-white ${sectionMinHeight} ${className}`}
       data-cy="knowledge-graph-viewer"
     >
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="border-b border-[#E9E9E9] bg-white p-3 md:p-4">
+          {showOverviewControl ? (
+            <div className="mb-2 flex">
+              <button
+                type="button"
+                onClick={resetToOverview}
+                className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
+                data-cy="knowledge-graph-back-to-overview"
+              >
+                {labels.backToOverview}
+              </button>
+            </div>
+          ) : null}
+
           <form
             role="search"
             aria-label={labels.searchAriaLabel}
@@ -626,17 +1036,96 @@ export function KnowledgeGraphViewer({
             <label htmlFor="knowledge-graph-search" className="sr-only">
               {labels.searchLabel}
             </label>
-            <input
-              id="knowledge-graph-search"
-              type="search"
-              value={searchQuery}
-              minLength={1}
-              maxLength={100}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={labels.searchPlaceholder}
-              className="min-h-11 min-w-0 flex-1 rounded border border-[#E9E9E9] px-3 py-2 text-base text-[#121212] placeholder:text-[#666666] focus:border-[#0028A5] focus:outline-none focus:ring-2 focus:ring-[#BDC9E8]"
-              data-cy="knowledge-graph-search"
-            />
+            <div className="relative min-w-0 flex-1">
+              {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: The input is the ARIA 1.2 combobox. The rule reads the implicit searchbox role and misses the conditionally rendered role below. */}
+              <input
+                id="knowledge-graph-search"
+                type="search"
+                value={searchQuery}
+                minLength={1}
+                maxLength={100}
+                role={searchSuggestions ? 'combobox' : undefined}
+                aria-expanded={searchSuggestions ? suggestionsOpen : undefined}
+                aria-controls={
+                  searchSuggestions ? 'knowledge-graph-suggestions' : undefined
+                }
+                aria-activedescendant={activeSuggestionId}
+                aria-autocomplete={searchSuggestions ? 'list' : undefined}
+                aria-haspopup={searchSuggestions ? 'listbox' : undefined}
+                onChange={(event) => handleQueryChange(event.target.value)}
+                onKeyDown={handleInputKeyDown}
+                onCompositionStart={() => {
+                  composingRef.current = true
+                  cancelSuggestions()
+                }}
+                onCompositionEnd={(event) => {
+                  composingRef.current = false
+                  // IME commits bypass the change handler on some platforms, so
+                  // the committed text schedules the debounced suggestions.
+                  if (searchSuggestions) {
+                    scheduleSuggestions(event.currentTarget.value)
+                  }
+                }}
+                onBlur={() => {
+                  if (searchSuggestions) {
+                    cancelSuggestions()
+                  }
+                }}
+                placeholder={labels.searchPlaceholder}
+                className="min-h-11 w-full rounded border border-[#E9E9E9] px-3 py-2 text-base text-[#121212] placeholder:text-[#666666] focus:border-[#0028A5] focus:outline-none focus:ring-2 focus:ring-[#BDC9E8]"
+                data-cy="knowledge-graph-search"
+              />
+              {suggestionsOpen ? (
+                suggestionOptions.length === 0 ? (
+                  <p
+                    role="status"
+                    className="absolute z-20 mt-1 w-full rounded border border-[#E9E9E9] bg-white px-3 py-2 text-sm text-[#4C4C4C] shadow-lg"
+                    data-cy="knowledge-graph-suggestions-status"
+                  >
+                    {state.suggestionStatus === 'error'
+                      ? labels.suggestionsUnavailable
+                      : state.suggestionStatus === 'loading'
+                        ? labels.searching
+                        : labels.noSuggestions}
+                  </p>
+                ) : (
+                  <div
+                    role="listbox"
+                    id="knowledge-graph-suggestions"
+                    aria-label={labels.suggestionsAriaLabel}
+                    className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded border border-[#E9E9E9] bg-white py-1 shadow-lg"
+                    data-cy="knowledge-graph-suggestions"
+                  >
+                    {suggestionOptions.map((node, index) => (
+                      <div
+                        key={node.id}
+                        id={suggestionOptionId(index)}
+                        role="option"
+                        aria-selected={index === activeSuggestionIndex}
+                        tabIndex={-1}
+                        onMouseDown={(event) => {
+                          // Selecting on pointer press keeps the combobox
+                          // focused and runs before the blur a click causes.
+                          event.preventDefault()
+                          void selectSuggestion(index)
+                        }}
+                        className={`min-h-11 cursor-pointer px-3 py-2 text-sm text-[#121212] ${
+                          index === activeSuggestionIndex ? 'bg-[#F5F5FB]' : ''
+                        }`}
+                        data-cy="knowledge-graph-suggestion"
+                      >
+                        <span className="font-semibold">
+                          {node.displayLabel}
+                        </span>
+                        <span className="block text-[#4C4C4C]">
+                          {node.kind}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : null}
+            </div>
             <button
               type="submit"
               data-cy="knowledge-graph-search-submit"
@@ -650,6 +1139,16 @@ export function KnowledgeGraphViewer({
           {state.truncated ? (
             <p className="mt-2 text-sm text-[#4C4C4C]" role="note">
               {labels.truncatedNotice}
+            </p>
+          ) : null}
+
+          {state.viewLimitReached ? (
+            <p
+              className="mt-2 text-sm text-[#4C4C4C]"
+              role="note"
+              data-cy="knowledge-graph-view-limit"
+            >
+              {labels.viewLimitNotice}
             </p>
           ) : null}
 
@@ -671,7 +1170,7 @@ export function KnowledgeGraphViewer({
           ) : null}
         </div>
 
-        <div className="relative min-h-80 flex-1 bg-[#FAFAFA]">
+        <div className={`relative flex-1 bg-[#FAFAFA] ${canvasMinHeight}`}>
           <div
             id="knowledge-graph-canvas"
             ref={containerRef}
@@ -680,7 +1179,9 @@ export function KnowledgeGraphViewer({
             className="h-full w-full"
           />
 
-          <div className="absolute left-3 right-3 top-3 flex flex-wrap gap-2 md:right-auto">
+          <div
+            className={`absolute left-3 right-3 top-3 flex flex-wrap gap-2 ${detailsLayout === 'contained' ? '' : 'md:right-auto'}`}
+          >
             <button
               type="button"
               onClick={() => changeZoom(1.25)}
@@ -688,7 +1189,7 @@ export function KnowledgeGraphViewer({
               aria-label={labels.zoomInAriaLabel}
               data-cy="knowledge-graph-zoom-in"
             >
-              {labels.zoomIn}
+              {detailsLayout === 'contained' ? '+' : labels.zoomIn}
             </button>
             <button
               type="button"
@@ -697,30 +1198,34 @@ export function KnowledgeGraphViewer({
               aria-label={labels.zoomOutAriaLabel}
               data-cy="knowledge-graph-zoom-out"
             >
-              {labels.zoomOut}
+              {detailsLayout === 'contained' ? '−' : labels.zoomOut}
             </button>
             <button
               type="button"
               onClick={fitGraph}
+              aria-label={labels.fitView}
+              title={labels.fitView}
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
               data-cy="knowledge-graph-fit"
             >
-              {labels.fitView}
+              {detailsLayout === 'contained' ? '↗' : labels.fitView}
             </button>
             <button
               type="button"
               onClick={resetLayout}
+              aria-label={labels.resetLayout}
+              title={labels.resetLayout}
               className="min-h-11 rounded-full border border-[#E9E9E9] bg-white px-4 text-sm font-semibold text-[#121212] shadow-sm hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5]"
               data-cy="knowledge-graph-reset"
             >
-              {labels.resetLayout}
+              {detailsLayout === 'contained' ? '↺' : labels.resetLayout}
             </button>
           </div>
 
           {legendEntries.length === 0 ? null : (
             <div
               aria-label={labels.legendAriaLabel}
-              className="absolute bottom-3 right-3 hidden max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm sm:block md:bottom-auto md:top-3"
+              className={`absolute bottom-3 right-3 hidden max-w-48 rounded-lg border border-[#E9E9E9] bg-white/95 p-3 text-xs text-[#121212] shadow-sm ${detailsLayout === 'contained' ? '' : 'sm:block md:bottom-auto md:top-3'}`}
             >
               <p className="mb-2 font-semibold">{labels.conceptTypes}</p>
               <ul className="space-y-1.5">
@@ -747,12 +1252,22 @@ export function KnowledgeGraphViewer({
             </div>
           )}
 
-          {state.status === 'loading' || state.status === 'idle' ? (
+          {state.status === 'loading' ||
+          (state.status === 'idle' && !searchFirst) ? (
             <div
               role="status"
               className="absolute inset-0 flex items-center justify-center bg-white/90 p-6 text-center text-[#4C4C4C]"
             >
               {labels.loading}
+            </div>
+          ) : null}
+
+          {state.status === 'idle' && searchFirst ? (
+            <div
+              role="status"
+              className="absolute inset-0 flex items-center justify-center bg-white/90 p-6 text-center text-[#4C4C4C]"
+            >
+              {labels.searchFirstPrompt}
             </div>
           ) : null}
 
@@ -806,7 +1321,7 @@ export function KnowledgeGraphViewer({
         </div>
 
         <div
-          className={`grid max-h-64 shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white md:h-56 md:overflow-hidden ${state.searchResults.length === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}
+          className={`grid shrink-0 grid-cols-1 overflow-y-auto border-t border-[#E9E9E9] bg-white ${detailsLayout === 'contained' ? 'max-h-24 lg:max-h-44 lg:h-44' : 'max-h-64 md:h-56 md:overflow-hidden'} ${state.searchResults.length === 0 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}
         >
           {state.searchResults.length === 0 ? null : (
             <section
@@ -928,13 +1443,16 @@ export function KnowledgeGraphViewer({
         edgeEndpoints={selectedEdgeEndpoints}
         isExpanding={isExpanding}
         labels={labels.details}
+        layout={detailsLayout}
         onClose={() =>
           dispatch({
             type: 'close-details',
             announcement: labels.detailsClosedAnnouncement,
           })
         }
-        onExpand={(nodeId) => void expandNode(nodeId)}
+        onExpand={(nodeId) => expandNodeRef.current(nodeId)}
+        onAsk={onAsk}
+        askSelection={askSelection}
       />
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">

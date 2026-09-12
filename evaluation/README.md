@@ -120,3 +120,93 @@ devrouter stop /absolute/path/to/klicker-uzh/trees/WORKSPACE and verify the
 provider is stopped and no route remains. Keep generated QA, receipts, and
 evaluation output outside the repository. Query and query-eval modes require a
 separately verified target; the existing judge-only mode remains unchanged.
+
+## Graph retrieval comparison
+
+The optional graph profile adds contextual precision, contextual recall and
+faithfulness to the existing semantic-similarity metric. These are diagnostic
+scores; the semantic threshold remains 0.5. This framework pin's aggregate
+primary gate also requires tool correctness, so use individual metric outcomes
+and denominators with this profile. Missing-context metrics are skipped, not
+passed. Count them explicitly alongside target failures and judge errors.
+
+The local Chat Completions transport omits tool results. Capture actual persisted
+KB document passages during **query** mode, enrich the resulting QA file, then
+run **eval** mode. `query-eval` would judge before enrichment and is unsuitable
+for this comparison. Neither the target nor capture receives expected answers.
+
+Use an approved corpus/model route and a separate private directory for each
+arm. Set `KLICKER_EVAL_MODEL_ID=gpt-5.6-luna` for the paired quality comparison;
+`auto` is supported for a separate routing/operational run. The target currently
+requests Luna at low reasoning effort; the judge's `EVAL_REASONING_EFFORT`
+does not change the target effort. Auto normalizes its target effort separately.
+Use the repository's restricted host-side secret operator for live injection,
+with only the approved names; no raw secret fetch or dotenv copy is needed.
+
+After setting the local participant/origin variables and approved judge route
+as above, run inside the existing task container with paths visible there:
+
+```bash
+umask 077
+export KLICKER_EVAL_RUN_ID=graph-current-luna-pilot
+export KLICKER_EVAL_MODEL_ID=gpt-5.6-luna
+export KLICKER_EVAL_EVIDENCE_DIR=/tmp/graph-current-luna-pilot
+mkdir -m 700 "$KLICKER_EVAL_EVIDENCE_DIR"
+pnpm run eval:klicker -- --local-target --mode query --limit 3
+
+node evaluation/scripts/enrich-chat-qa.mjs \
+  --qa-file /absolute/path/to/framework-qa.json \
+  --evidence-dir "$KLICKER_EVAL_EVIDENCE_DIR" \
+  --output /absolute/private/path/enriched-qa.json \
+  --run-id "$KLICKER_EVAL_RUN_ID" --model "$KLICKER_EVAL_MODEL_ID"
+
+pnpm run eval:klicker -- --mode eval \
+  --qa-file /absolute/private/path/enriched-qa.json \
+  --metrics evaluation/data/metrics/klicker_graph_retrieval.yaml \
+  --eval-mode ground-truth
+```
+
+This command does not select the graph policy or create a valid corpus. Verify
+the lecturer retrieval toggle and actual corpus/build separately for each arm.
+The seeded keyword MCP fixture and marker canary prove integration only; they
+cannot support course-quality conclusions or substitute for the FineCo corpus.
+The wrapper's legacy default key lookup is not the approved secret setup path;
+supply a scoped caller key through the restricted operator. Stop before paid
+calls when that route or corpus permission is unavailable.
+
+Evidence captures are exclusive private files bound to completion ID, run ID,
+model, mode and question/answer hashes. Only recognized document passages are
+exported; unknown, failed, malformed, mixed or oversized results become
+incomplete. Empty document results and absent calls have distinct receipts.
+Enrichment rejects mismatches and overwrites. Preserve passage order and
+repetition: the evaluator must see what generation saw. Obvious credential and
+private-URL filtering is an additional guard, not a guarantee that passage text
+is non-sensitive. Keep QA, captures and evaluation outputs outside this public
+repository and within the approved model-provider data boundary.
+
+For quality, freeze cases by concept/evidence family before tuning; keep
+translations/paraphrases in the same split. Compare ordinary RAG and graph
+expansion under one model, prompt, mode, context budget and corpus. Add a
+non-graph second-search control if the provider exposes it. Otherwise retain
+retrieval-spend and context-size confounds in the report. Persisted tool names
+do not prove internal expansion counts. Record actual context sizes, per-case
+metric outcomes and skips, errors, latency and spend. The existing quality
+reports/dashboard consume evaluator output; `compare_runs` is for load metrics.
+No additional evaluation engine is needed.
+
+Offline regression checks use only test-owned synthetic payloads:
+
+```bash
+pnpm --filter @klicker-uzh/chat exec vitest run test/klicker-evaluation-target.test.mjs
+node --test evaluation/tests/enrich-chat-qa.test.mjs
+bash util/test-klicker-eval-wrapper.sh
+# Use the initialized framework's pinned Python environment:
+python evaluation/tests/test_graph_metric_contract.py
+```
+
+The Python check uses the real framework loader, metric factory and runner with
+substituted judges. It proves passage consumption and skipped-case accounting;
+its fabricated metric outcomes are not quality scores. No paid model call or
+Confident AI upload is required. Run container-dependent checks through
+`devrouter exec <exact-checkout> -- <command>`; this task's existing runtime may
+remain available for the explicitly requested local testing lease.

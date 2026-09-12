@@ -214,6 +214,42 @@ function ChatbotDetails({
   )
   const [authoringNavigationState, setAuthoringNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  // Staged through the chatbot revision and promoted on approval.
+  const [knowledgeGraphPolicy, setKnowledgeGraphPolicy] = useState<{
+    visible: boolean
+    retrievalEnabled: boolean
+  }>({ visible: true, retrievalEnabled: false })
+  const [knowledgeGraphSaveSuccess, setKnowledgeGraphSaveSuccess] =
+    useState(false)
+  const [knowledgeGraphSaveError, setKnowledgeGraphSaveError] = useState<
+    string | null
+  >(null)
+  const knowledgeGraphPolicyChatbotIdRef = useRef<string | undefined>(undefined)
+
+  const knowledgeGraphDirty = useMemo(() => {
+    if (!chatbot) return false
+    const revisionValues = getChatbotRevisionValues(chatbot)
+    return (
+      knowledgeGraphPolicy.visible !== revisionValues.knowledgeGraphVisible ||
+      knowledgeGraphPolicy.retrievalEnabled !==
+        revisionValues.knowledgeGraphRetrievalEnabled
+    )
+  }, [chatbot, knowledgeGraphPolicy])
+
+  useEffect(() => {
+    if (!chatbot) return
+    // Seed once per chatbot; refetches keep in-progress values.
+    if (knowledgeGraphPolicyChatbotIdRef.current === chatbot.id) return
+
+    knowledgeGraphPolicyChatbotIdRef.current = chatbot.id
+    const revisionValues = getChatbotRevisionValues(chatbot)
+    setKnowledgeGraphPolicy({
+      visible: revisionValues.knowledgeGraphVisible,
+      retrievalEnabled: revisionValues.knowledgeGraphRetrievalEnabled,
+    })
+    setKnowledgeGraphSaveSuccess(false)
+    setKnowledgeGraphSaveError(null)
+  }, [chatbot])
 
   const markRevisionConflict = () => {
     revisionConflictRef.current = true
@@ -344,9 +380,16 @@ function ChatbotDetails({
   const viewNavigationState = useMemo<ChatbotNavigationState>(() => {
     if (view === 'behavior') {
       return {
-        dirty: modelSettingsDirty || authoringNavigationState.dirty,
+        dirty:
+          modelSettingsDirty ||
+          authoringNavigationState.dirty ||
+          knowledgeGraphDirty,
         pending: isSaving || authoringNavigationState.pending,
       }
+    }
+
+    if (view === 'knowledge') {
+      return { dirty: knowledgeGraphDirty, pending: isSaving }
     }
 
     if (view === 'overview' || view === 'disclaimer' || view === 'usage') {
@@ -354,7 +397,13 @@ function ChatbotDetails({
     }
 
     return { dirty: false, pending: false }
-  }, [authoringNavigationState, isSaving, modelSettingsDirty, view])
+  }, [
+    authoringNavigationState,
+    isSaving,
+    knowledgeGraphDirty,
+    modelSettingsDirty,
+    view,
+  ])
 
   useEffect(() => {
     onNavigationStateChange(viewNavigationState)
@@ -577,6 +626,36 @@ function ChatbotDetails({
     } catch (error) {
       if (isChatbotRevisionConflict(error)) markRevisionConflict()
       setSaveError(t(getChatbotMutationErrorKey(error, 'metadata')))
+    }
+  }
+
+  const handleSaveKnowledgeGraphPolicy = async () => {
+    setKnowledgeGraphSaveError(null)
+    setKnowledgeGraphSaveSuccess(false)
+    clearRevisionConflict()
+
+    try {
+      await saveRevision({
+        variables: {
+          chatbotId: chatbot.id,
+          expectedRevisionVersion: getChatbotRevisionVersion(chatbot),
+          input: {
+            knowledgeGraphPolicy: {
+              visible: knowledgeGraphPolicy.visible,
+              retrievalEnabled: knowledgeGraphPolicy.retrievalEnabled,
+            },
+          },
+        },
+        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        awaitRefetchQueries: true,
+      })
+
+      setKnowledgeGraphSaveSuccess(true)
+    } catch (error) {
+      if (isChatbotRevisionConflict(error)) markRevisionConflict()
+      setKnowledgeGraphSaveError(
+        t(getChatbotMutationErrorKey(error, 'metadata'))
+      )
     }
   }
 
@@ -846,6 +925,126 @@ function ChatbotDetails({
               >
                 {t('manage.resources.knowledgeBase')}
               </Link>
+            </div>
+            <div
+              className="space-y-4 border-t border-gray-200 pt-4"
+              data-cy="chatbot-knowledge-graph-policy"
+            >
+              <div>
+                <div className="text-sm font-medium text-gray-700">
+                  {t('manage.resources.knowledgeGraphPolicy')}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {t('manage.resources.knowledgeGraphPolicyDescription')}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="chatbot-knowledge-graph-visible-switch"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    {t('manage.resources.knowledgeGraphVisible')}
+                  </label>
+                  <Switch
+                    id="chatbot-knowledge-graph-visible-switch"
+                    checked={knowledgeGraphPolicy.visible}
+                    disabled={
+                      isSaving || !modelSettingsEditable || revisionPending
+                    }
+                    onCheckedChange={(checked) => {
+                      setKnowledgeGraphSaveSuccess(false)
+                      setKnowledgeGraphSaveError(null)
+                      clearRevisionConflict()
+                      setKnowledgeGraphPolicy((current) => ({
+                        ...current,
+                        visible: checked,
+                      }))
+                    }}
+                    data={{ cy: 'chatbot-knowledge-graph-visible-switch' }}
+                  />
+                </div>
+                <div className="text-xs text-gray-500">
+                  {knowledgeGraphPolicy.visible
+                    ? t(
+                        'manage.resources.knowledgeGraphVisibleEnabledDescription'
+                      )
+                    : t(
+                        'manage.resources.knowledgeGraphVisibleDisabledDescription'
+                      )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="chatbot-knowledge-graph-retrieval-switch"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    {t('manage.resources.knowledgeGraphRetrieval')}
+                  </label>
+                  <Switch
+                    id="chatbot-knowledge-graph-retrieval-switch"
+                    checked={knowledgeGraphPolicy.retrievalEnabled}
+                    disabled={
+                      isSaving || !modelSettingsEditable || revisionPending
+                    }
+                    onCheckedChange={(checked) => {
+                      setKnowledgeGraphSaveSuccess(false)
+                      setKnowledgeGraphSaveError(null)
+                      clearRevisionConflict()
+                      setKnowledgeGraphPolicy((current) => ({
+                        ...current,
+                        retrievalEnabled: checked,
+                      }))
+                    }}
+                    data={{ cy: 'chatbot-knowledge-graph-retrieval-switch' }}
+                  />
+                </div>
+                <div className="text-xs text-gray-500">
+                  {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  onClick={handleSaveKnowledgeGraphPolicy}
+                  disabled={
+                    isSaving ||
+                    !modelSettingsEditable ||
+                    revisionPending ||
+                    !knowledgeGraphDirty
+                  }
+                  data={{ cy: 'chatbot-knowledge-graph-save' }}
+                >
+                  <Button.Label>
+                    {isSaving
+                      ? t('manage.resources.chatbotModelSettingsSaving')
+                      : t('manage.resources.knowledgeGraphSave')}
+                  </Button.Label>
+                </Button>
+                {knowledgeGraphSaveSuccess && (
+                  <span className="text-xs text-green-700">
+                    {t('manage.resources.knowledgeGraphSaveSuccess')}
+                  </span>
+                )}
+              </div>
+
+              {revisionConflict ? (
+                <ChatbotRevisionConflictNotice
+                  message={t('manage.resources.chatbotRevisionConflict')}
+                  onReload={() => void reloadAfterConflict()}
+                  reloading={revisionReloading}
+                  testId="chatbot-revision-reload-knowledge-graph"
+                />
+              ) : null}
+
+              {knowledgeGraphSaveError && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                  {knowledgeGraphSaveError}
+                </div>
+              )}
             </div>
             <Accordion
               type="single"

@@ -1,5 +1,17 @@
 export default {
   chat: {
+    graphPanel: {
+      missingEndpoint: 'Unknown concept',
+      title: 'Knowledge graph',
+      open: 'Open knowledge graph',
+      close: 'Close knowledge graph',
+      fullscreen: 'Expand graph to fullscreen',
+      restore: 'Return graph to sidebar',
+      ask: 'Ask about this',
+      nodePrompt: 'Help me understand the concept “{topic}”.',
+      edgePrompt:
+        'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
+    },
     common: {
       opensInNewTab: '(opens in new tab)',
     },
@@ -4917,6 +4929,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       disclaimerPending: 'Pending',
       mcpConfigurations: 'MCP Configurations',
       knowledgeBase: 'Knowledge base',
+      knowledgeGraphPolicy: 'Knowledge graph',
+      knowledgeGraphPolicyDescription:
+        'Control the participant concept map and graph-assisted document search independently. Both are staged in the chatbot revision and apply after approval.',
+      knowledgeGraphVisible: 'Show the participant concept map',
+      knowledgeGraphVisibleEnabledDescription:
+        'On: participants can open the concept map for this chatbot.',
+      knowledgeGraphVisibleDisabledDescription:
+        'Off: the concept map stays hidden from participants.',
+      knowledgeGraphRetrieval: 'Use graph connections for document search',
+      knowledgeGraphRetrievalDescription:
+        'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphSave: 'Save knowledge graph settings',
+      knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:
         'No knowledge base is connected. This chatbot cannot search course material.',
       noMcpConfigurations: 'No MCP configurations.',

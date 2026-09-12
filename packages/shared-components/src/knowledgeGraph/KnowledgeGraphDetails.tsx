@@ -3,6 +3,15 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@klicker-uzh/types'
 import React from 'react'
 import type { KnowledgeGraphDetailsLabels } from './knowledgeGraphLabels'
+import type { KnowledgeGraphAskSelection } from './knowledgeGraphView'
+
+const SIDEBAR_LAYOUT_CLASSES =
+  'fixed inset-x-0 bottom-0 z-30 max-h-[70vh] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:!relative md:z-auto md:h-full md:max-h-none md:w-80 md:shrink-0 md:rounded-none md:border-y-0 md:border-r-0 md:shadow-none'
+
+// A compact host overlays the pane inside the graph, so the canvas keeps its
+// full width and the loaded concept and relationship lists stay reachable.
+const CONTAINED_LAYOUT_CLASSES =
+  'absolute inset-x-0 bottom-0 z-30 max-h-[80%] lg:max-h-[60%] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)]'
 
 type KnowledgeGraphDetailsProps = {
   node?: KnowledgeGraphNode
@@ -12,6 +21,11 @@ type KnowledgeGraphDetailsProps = {
   onClose: () => void
   onExpand: (nodeId: string) => void
   labels: KnowledgeGraphDetailsLabels
+  /** Emits the bounded ask payload; the control renders only when provided. */
+  askSelection?: KnowledgeGraphAskSelection
+  onAsk?: (selection: KnowledgeGraphAskSelection) => void
+  /** 'contained' overlays the pane inside the graph instead of a side column. */
+  layout?: 'sidebar' | 'contained'
 }
 
 function PropertyList({
@@ -56,24 +70,29 @@ export function KnowledgeGraphDetails({
   onClose,
   onExpand,
   labels,
+  askSelection,
+  onAsk,
+  layout = 'sidebar',
 }: KnowledgeGraphDetailsProps) {
   if (node === undefined && edge === undefined) {
     return null
   }
 
   const heading = node?.displayLabel ?? edge?.label ?? labels.detailsFallback
+  const layoutClasses =
+    layout === 'contained' ? CONTAINED_LAYOUT_CLASSES : SIDEBAR_LAYOUT_CLASSES
 
   return (
     <aside
       aria-label={labels.ariaLabel}
-      className="fixed inset-x-0 bottom-0 z-30 max-h-[70vh] overflow-y-auto rounded-t-2xl border border-[#E9E9E9] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.12)] md:!relative md:z-auto md:h-full md:max-h-none md:w-80 md:shrink-0 md:rounded-none md:border-y-0 md:border-r-0 md:shadow-none"
+      className={layoutClasses}
       data-cy="knowledge-graph-details"
     >
       <div
         aria-hidden="true"
         className="mx-auto mt-2 h-1 w-12 rounded-full bg-[#A3A3A3] md:hidden"
       />
-      <div className="p-5">
+      <div className={layout === 'contained' ? 'p-3' : 'p-5'}>
         <div className="mb-5 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-[#4C4C4C]">
@@ -93,6 +112,17 @@ export function KnowledgeGraphDetails({
             <span aria-hidden="true">×</span>
           </button>
         </div>
+
+        {onAsk === undefined || askSelection === undefined ? null : (
+          <button
+            type="button"
+            data-cy="knowledge-graph-ask"
+            onClick={() => onAsk(askSelection)}
+            className="mb-5 min-h-11 w-full rounded-full border border-[#0028A5] bg-white px-4 py-2 text-sm font-semibold text-[#0028A5] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
+          >
+            {labels.ask}
+          </button>
+        )}
 
         {node === undefined ? null : (
           <div className="space-y-5">

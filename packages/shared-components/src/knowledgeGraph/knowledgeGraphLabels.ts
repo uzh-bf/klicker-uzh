@@ -14,6 +14,8 @@ export type KnowledgeGraphDetailsLabels = {
   from: string
   to: string
   properties: string
+  ask: string
+  missingEndpoint: string
 }
 
 export type KnowledgeGraphViewerLabels = {
@@ -24,6 +26,11 @@ export type KnowledgeGraphViewerLabels = {
   searching: string
   search: string
   truncatedNotice: string
+  viewLimitNotice: string
+  suggestionsAriaLabel: string
+  noSuggestions: string
+  suggestionsUnavailable: string
+  backToOverview: string
   retry: string
   canvasAriaLabel: string
   zoomInAriaLabel: string
@@ -39,6 +46,7 @@ export type KnowledgeGraphViewerLabels = {
   shapeRoundedSquare: string
   shapeHexagon: string
   loading: string
+  searchFirstPrompt: string
   unavailableTitle: string
   notReadyTitle: string
   checkAgain: string
@@ -78,7 +86,13 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   searching: 'Searching…',
   search: 'Search',
   truncatedNotice:
-    'This bounded view shows the most connected concepts. Search to explore the complete graph.',
+    'This view shows only part of the knowledge graph. Search for a concept to focus on it.',
+  viewLimitNotice:
+    'This view is limited to a selection of concepts. Search for a concept to focus on it.',
+  suggestionsAriaLabel: 'Concept suggestions',
+  noSuggestions: 'No matching concepts.',
+  suggestionsUnavailable: 'Suggestions are temporarily unavailable.',
+  backToOverview: 'Back to overview',
   retry: 'Retry',
   canvasAriaLabel:
     'Interactive knowledge graph. Use the concept and relationship lists below for keyboard navigation.',
@@ -95,6 +109,7 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
   shapeRoundedSquare: 'rounded square',
   shapeHexagon: 'hexagon',
   loading: 'Loading knowledge graph…',
+  searchFirstPrompt: 'Search for a concept to explore the knowledge graph.',
   unavailableTitle: 'Knowledge graph unavailable',
   notReadyTitle: 'Knowledge graph not ready',
   checkAgain: 'Check again',
@@ -131,6 +146,8 @@ export const DEFAULT_KNOWLEDGE_GRAPH_LABELS: KnowledgeGraphViewerLabels = {
     from: 'From',
     to: 'To',
     properties: 'Properties',
+    ask: 'Ask about this',
+    missingEndpoint: 'Unknown concept',
   },
 }
 

@@ -24,6 +24,8 @@ query QGetChatbotsInfoWithKnowledgeBases {
       ...ChatbotAuthoringRevisionData
     }
     modelSelection
+    knowledgeGraphVisible
+    knowledgeGraphRetrievalEnabled
     allowedModelIds
     allowedReasoningEffortsByModel {
       modelId
