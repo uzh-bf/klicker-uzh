@@ -15,8 +15,8 @@ import {
   useRef,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
+import { getSourceNavigationUrl } from '@/src/lib/sources/sourceUrl'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
 import {
   partitionSources,
@@ -116,7 +116,7 @@ function SourceCard({
   const card = source.url ? (
     <a
       {...sharedProps}
-      href={source.url}
+      href={getSourceNavigationUrl(source.url, source.page)}
       target="_blank"
       rel="noopener noreferrer"
     >
