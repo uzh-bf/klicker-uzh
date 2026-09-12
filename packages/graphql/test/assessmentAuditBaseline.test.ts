@@ -5,9 +5,38 @@ import {
   assessmentIsSelectedForAuditActivation,
   readAssessmentAuditRolloutConfig,
 } from '../src/services/assessmentAuditActivation.js'
-import { buildAssessmentBaselineContents } from '../src/services/assessmentAuditBaseline.js'
+import {
+  assessmentSourceElementState,
+  buildAssessmentBaselineContents,
+} from '../src/services/assessmentAuditBaseline.js'
 
 describe('assessment audit baseline snapshot mapping', () => {
+  it.each([
+    'CONTENT',
+    'FLASHCARD',
+  ] as const)('maps %s source elements without question options', (type) => {
+    const state = assessmentSourceElementState(
+      {
+        id: '31-v4',
+        elementId: 31,
+        type,
+        name: 'Synthetic element',
+        content: 'Synthetic content',
+        explanation: 'Synthetic explanation',
+        basePoints: false,
+        pointsMultiplier: 1,
+      } as ElementData,
+      false
+    )
+    expect(state.sourceElement.content).toMatchObject({
+      elementType: type,
+      hasSampleSolution: false,
+      hasAnswerFeedbacks: false,
+      contentOptions: { kind: type },
+    })
+    expect(state.sourceElement.scoring.scoringRules).toEqual({ kind: type })
+  })
+
   it('whitelists effective assessment, scoring, eligibility and permission state', () => {
     const courseId = randomUUID()
     const participantId = randomUUID()
