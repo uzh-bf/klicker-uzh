@@ -234,6 +234,19 @@ describe('current-v3 Doc Query scope', () => {
     ).toEqual([KB_ID])
   })
 
+  test.each([
+    { kb_id: KB_ID },
+    { kb_ids: [KB_ID] },
+  ])('accepts a singleton scope during the parameter transition: %j', (scope) => {
+    const config = {
+      chatMode: 'tutor',
+      parameters: { required: true, toolAlias: 'doc_query', ...scope },
+      mcpServer: { id: 'kb-server', name: 'KB' },
+    }
+
+    expect(resolveMcpScope([config], 'tutor', [config])).toEqual([KB_ID])
+  })
+
   test('canonicalizes kb_ids and rejects mixed or mismatched scopes', () => {
     const secondKbId = '8016810d-31e9-4b39-9529-cd46feb2bf63'
     const tutorTarget = {
@@ -315,7 +328,6 @@ describe('current-v3 Doc Query scope', () => {
 
     for (const kbIds of [
       [],
-      [KB_ID],
       [KB_ID, KB_ID],
       Array.from(
         { length: 33 },
