@@ -203,6 +203,11 @@ those files first. It does not stash, rewrite files or modify the index.
 Independent checks do not inherit Git's hook environment, preventing temporary
 Git fixtures from operating on the committing repository.
 
+Manage, PWA and Control production builds opt into their existing strict
+`tsconfig.check.json`, excluding development-generated route validators.
+Development retains `tsconfig.json`; no type errors are ignored. This allows
+the pre-push build to run after local development without deleting `.next`.
+
 ## Failure signatures (fresh clone / wrong state)
 
 | Exact error                                                                                                                   | Cause                                                                                                                                          | Fix                                                                                             |

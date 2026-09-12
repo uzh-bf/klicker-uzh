@@ -50,7 +50,7 @@
     "check:agents-md": "node ./util/check-agents-md.mjs",
     "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack check:agents-md check:git-identity check:git-hooks check:removed-doc-artifacts check:prisma-sync check:playwright-ci check:playwright-host check:local-kb",
     "check:format": "lint-staged",
-    "check:git-hooks": "node --test ./util/run-git-hook.test.mjs",
+    "check:git-hooks": "node --test ./util/run-git-hook.test.mjs ./util/next-build-config.test.mjs",
     "check:git-identity": "node --test ./util/check-git-identity.test.mjs",
     "check:kb-ingestion-stg": "node ./util/check-kb-ingestion-stg.mjs",
     "check:klicker-replica-ownership": "node ./util/check-klicker-replica-ownership.mjs",
