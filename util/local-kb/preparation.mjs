@@ -629,10 +629,10 @@ export async function initializeProviderLaunchers(
   )
   for (const provider of commands.lifecycleOrder) {
     try {
-      const output = await run(
-        commands.providers[provider].lifecycle.setup,
-        provider === 'retrieval' ? retrievalEnvironment : {}
-      )
+      const output = await run(commands.providers[provider].lifecycle.setup, {
+        ...(provider === 'retrieval' ? retrievalEnvironment : {}),
+        DOCKER_CONTEXT: context,
+      })
       const status = JSON.parse(output)
       const instance =
         provider === 'ingestion'
@@ -981,9 +981,12 @@ export async function inspectPreparedInfrastructure(
       status: health === 'unreported' ? 'readiness-unverified' : health,
     }
   })
-  const launchers = await observeProviderLaunchers(config, runProvider, {
-    DOCKER_CONTEXT: runtime.context,
-  })
+  const launchers = await observeProviderLaunchers(
+    config,
+    runProvider,
+    { DOCKER_CONTEXT: runtime.context },
+    await readOwned(join(runtime.directory, 'retrieval-environment.json'))
+  )
   return {
     providers,
     launchers,
@@ -995,8 +998,8 @@ export async function inspectPreparedInfrastructure(
     managedRuntimeStatus: managed.status,
     managedRuntimeReady:
       managed.status === 'ready' &&
-      managed.profile === 'manage,chat,ai' &&
-      managed.activeProfile === 'manage,chat,ai' &&
+      managed.profile === 'ai,chat,manage' &&
+      managed.activeProfile === 'ai,chat,manage' &&
       managed.drift.length === 0,
     aiQualified: false,
   }
@@ -1060,15 +1063,27 @@ async function stopInfrastructure(
 ) {
   await observeOwnedProviders(config, runtime, runDocker)
   const environment = { DOCKER_CONTEXT: runtime.context }
-  await observeProviderLaunchers(config, runProvider, environment)
+  const retrievalEnvironment = await readOwned(
+    join(runtime.directory, 'retrieval-environment.json')
+  )
+  await observeProviderLaunchers(
+    config,
+    runProvider,
+    environment,
+    retrievalEnvironment
+  )
   const commands = providerCommands(config)
   for (const name of commands.stopOrder) {
-    await runProvider(commands.providers[name].lifecycle.stop, environment)
+    await runProvider(commands.providers[name].lifecycle.stop, {
+      ...(name === 'retrieval' ? retrievalEnvironment : {}),
+      ...environment,
+    })
   }
   const launchers = await observeProviderLaunchers(
     config,
     runProvider,
-    environment
+    environment,
+    retrievalEnvironment
   )
   if (launchers.some((row) => !row.stopped)) {
     throw new Error('Provider shutdown is incomplete; data is retained.')
@@ -1188,10 +1203,14 @@ async function launchInfrastructure(
   try {
     const commands = providerCommands(config)
     const environment = { DOCKER_CONTEXT: context }
+    const retrievalEnvironment = await readOwned(
+      join(directory, 'retrieval-environment.json')
+    )
     const prepared = await observeProviderLaunchers(
       config,
       runProvider,
-      environment
+      environment,
+      retrievalEnvironment
     )
     if (prepared.some((row) => !row.prepared)) throw new Error()
     for (const name of ['scraping', 'docProcessing']) {
@@ -1219,7 +1238,7 @@ async function launchInfrastructure(
         'ensure',
         checkout,
         '--profile',
-        'manage,chat,ai',
+        'ai,chat,manage',
         '--json',
       ])
     )
@@ -1227,19 +1246,21 @@ async function launchInfrastructure(
       managed.kind !== 'linked' ||
       managed.repoPath !== checkout ||
       managed.workspace !== workspace ||
-      managed.profile !== 'manage,chat,ai'
+      managed.profile !== 'ai,chat,manage'
     ) {
       throw new Error('Managed startup identity differs from preparation.')
     }
     await runProvider(commands.providers.ingestion.lifecycle.start, environment)
-    const retrievalEnvironment = await readOwned(
-      join(directory, 'retrieval-environment.json')
-    )
     await runProvider(commands.providers.retrieval.lifecycle.start, {
       ...retrievalEnvironment,
       ...environment,
     })
-    await observeProviderLaunchers(config, runProvider, environment)
+    await observeProviderLaunchers(
+      config,
+      runProvider,
+      environment,
+      retrievalEnvironment
+    )
     await writeExclusive(join(attempt, 'complete.json'), {
       candidateRevision: runtime.candidateRevision,
       context,

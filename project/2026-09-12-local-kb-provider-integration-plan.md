@@ -180,8 +180,11 @@ Setup writes private configuration once, initializes Klicker-owned backing and
 invokes each provider setup with its explicit inputs. Retrieval setup validates
 configuration without requiring running Milvus or models. Start/resume brings
 up scraping and DP workers, Klicker's callback/source backend and model service,
-then ingestion with `start --workers`, then retrieval and its application
-consumers. Resume never invokes setup. Stop reverses dependencies and uses
+then ingestion with `start --workers`, then retrieval. The managed profile starts
+Klicker's application processes together with its required backend and model
+gateway; applications starting is not retrieval readiness. The dependency graph
+describes functional prerequisites, not a strict process startup order. Resume
+never invokes setup. Stop reverses provider dependencies and uses
 provider stop contracts; scraping may remove containers but retains volumes.
 Partial failure receipts retain exact successful steps without automatic retry.
 
@@ -228,6 +231,32 @@ cannot substitute. Leave retained data intact. No runtime is activated by the
 current source-only verification package.
 
 ## Progress
+
+Current correction: the two simplifier findings are applied (direct configuration
+construction and shared port fixture). The slice review identified missing
+retrieval environment on observations/stop and a development DSN in plan output;
+both are corrected with existing contract-test coverage. Setup now forwards its
+verified Docker context. The startup wording above now distinguishes process
+startup from functional dependency readiness; no backend/application split is
+needed to start the prerequisites for ingestion. All 68 focused tests pass.
+The canonical profile is `ai,chat,manage`. Corrections await their commit,
+same-reviewer verification, integrated final review and draft publication.
+No live provider, ingestion, model or graph proof has been performed.
+
+### Historical checkpoints (newest first)
+
+Implementation committed as `e43856859a0e66de2e5cc9deeb2a11c8b3c20233` after
+normal hooks: redacted gitleaks, 40 package checks, formatting, lint, syncpack
+and 68 local-KB tests passed. Azurite's public development account key has a
+line-local documented scan exception. The exact checks-only `email` runtime
+was stopped through Devrouter; container `96efd534b27f` is exited and stop
+reports zero freed routes. No application/AI process or external provider ran.
+Sagan (`01a095e8-2678-7e33-bb2e-cca474ab37c7`) is simplifying this range;
+Dirac (`01a095e8-2715-7d63-8011-7d2350ecbeb1`) is reviewing its risk seams.
+Both start at `a73299c45b49d4d235b73d5bb9a9a29e365cd603` exclusively.
+Main independently verified Devrouter's canonical profile is `ai,chat,manage`;
+that correction is uncommitted and passes preparation tests 19/19. Integrate
+verified review findings before the correction commit and final review.
 
 Private configuration generation no longer creates unused MinIO, Crawl4AI or
 document-callback credentials, provider database setup SQL, or obsolete provider

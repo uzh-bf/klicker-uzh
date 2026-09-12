@@ -36,10 +36,20 @@ import { providerImages, providerPorts } from './test-fixtures.mjs'
 const revision = 'a'.repeat(40)
 
 function lifecycleRunner(config) {
-  return async (command) => {
+  return async (command, environment) => {
     const name = Object.keys(config.providers).find(
       (key) => config.providers[key].sourcePath === command.cwd
     )
+    if (name === 'retrieval') {
+      assert.equal(
+        environment.KLICKER_LOCAL_RETRIEVAL_MILVUS_URI,
+        config.bindings.hostBases.milvus
+      )
+      assert.equal(
+        environment.KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL,
+        config.bindings.hostBases.model
+      )
+    }
     if (!command.args.includes('status')) {
       assert.ok(command.args.includes('start') || command.args.includes('stop'))
       return '{}'
@@ -308,7 +318,7 @@ test('explicit startup orders provider activation without repeating setup and re
     const managed = async (args) => {
       calls.push(args)
       phases.push('applications-and-model')
-      return JSON.stringify({ ...identity, profile: 'manage,chat,ai' })
+      return JSON.stringify({ ...identity, profile: 'ai,chat,manage' })
     }
     const provider = async (command, environment) => {
       assert.equal(environment.DOCKER_CONTEXT, 'synthetic-local')
@@ -320,7 +330,7 @@ test('explicit startup orders provider activation without repeating setup and re
         if (name === 'retrieval')
           assert.ok(environment.KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL)
       }
-      return lifecycleRunner(config)(command)
+      return lifecycleRunner(config)(command, environment)
     }
     const run = () =>
       startInfrastructure(config, revision, managed, docker, provider)
@@ -348,7 +358,7 @@ test('explicit startup orders provider activation without repeating setup and re
         'ensure',
         checkout,
         '--profile',
-        'manage,chat,ai',
+        'ai,chat,manage',
         '--json',
       ])
     }
@@ -382,7 +392,7 @@ test('explicit startup orders provider activation without repeating setup and re
                 (key) => config.providers[key].sourcePath === command.cwd
               )
             )
-          return lifecycleRunner(config)(command)
+          return lifecycleRunner(config)(command, environment)
         }
       )
       assert.deepEqual(shutdown, [
@@ -440,7 +450,7 @@ test('explicit resume requires stop evidence, serializes operations and retains 
     writes.push(args)
     return JSON.stringify({
       ...identity,
-      profile: 'manage,chat,ai',
+      profile: 'ai,chat,manage',
       stopped: true,
     })
   }
@@ -525,7 +535,7 @@ test('interrupted stop evidence permits shutdown but not resume', async () => {
     writes.push(args)
     return JSON.stringify({
       ...identity,
-      profile: 'manage,chat,ai',
+      profile: 'ai,chat,manage',
       stopped: true,
     })
   }
@@ -621,8 +631,8 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
         mode: 'managed',
         workspace: 'synthetic-runtime',
         status: 'ready',
-        profile: 'manage,chat,ai',
-        activeProfile: 'manage,chat,ai',
+        profile: 'ai,chat,manage',
+        activeProfile: 'ai,chat,manage',
         drift: [],
       },
     },
@@ -995,6 +1005,7 @@ test('provider setup invokes supported launchers once and retains partial failur
     )
     const calls = []
     const run = async (command, env) => {
+      assert.equal(env.DOCKER_CONTEXT, 'synthetic-local')
       const provider = command.cwd.split('/').at(-1)
       calls.push({ provider, args: command.args, env })
       if (provider === failure) throw new Error('synthetic private diagnostic')

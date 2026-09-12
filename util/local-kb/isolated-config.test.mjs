@@ -421,38 +421,8 @@ test('keeps document processing explicitly unqualified without a remote fallback
   assert.throws(() => validateIsolatedConfig(tampered))
 })
 
-function makeProviderPorts(base = 19000) {
-  const take = (offset) => base + offset
-  return {
-    klicker: {
-      backend: take(0),
-      model: take(1),
-      blob: take(2),
-    },
-    ingestion: {
-      api: take(3),
-      dispatcher: take(4),
-      hatchetHttp: take(5),
-      hatchetGrpc: take(6),
-      postgres: take(7),
-      azurite: take(8),
-      milvus: take(9),
-      milvusHealth: take(10),
-      milvusAttu: take(11),
-    },
-    docProcessing: {
-      api: take(12),
-      postgres: take(13),
-      hatchetHttp: take(14),
-      hatchetGrpc: take(15),
-    },
-    scraping: { api: take(16), crawl4ai: take(17), postgres: take(18) },
-    retrieval: { api: take(19) },
-  }
-}
-
 test('provider bindings reuse every selected port across host and container bases', () => {
-  const ports = makeProviderPorts()
+  const ports = providerPorts()
   const bindings = resolveProviderBindings(ports, 'generation-lifecycle')
 
   assert.deepEqual(bindings.ports, ports)
@@ -525,11 +495,11 @@ test('provider bindings reuse every selected port across host and container base
 })
 
 test('resolves provider bindings from the caller-supplied ports without mutating them', () => {
-  const first = resolveProviderBindings(makeProviderPorts(19000), 'stack-a-b')
-  const second = resolveProviderBindings(makeProviderPorts(21000), 'stack-c')
+  const first = resolveProviderBindings(providerPorts(19000), 'stack-a-b')
+  const second = resolveProviderBindings(providerPorts(21000), 'stack-c')
 
-  assert.deepEqual(first.ports.klicker, makeProviderPorts(19000).klicker)
-  assert.deepEqual(second.ports.klicker, makeProviderPorts(21000).klicker)
+  assert.deepEqual(first.ports.klicker, providerPorts(19000).klicker)
+  assert.deepEqual(second.ports.klicker, providerPorts(21000).klicker)
   assert.notEqual(first.ports.klicker.backend, second.ports.klicker.backend)
   assert.notEqual(first.collection, second.collection)
   assert.equal(first.collection, 'local_cli_ingestion_stack_a_b')
@@ -542,45 +512,45 @@ test('rejects incomplete, out-of-range, and overlapping provider ports', () => {
   assert.throws(() => resolveProviderBindings(undefined, 'stack'))
   assert.throws(() => resolveProviderBindings({}, 'stack'))
   assert.throws(() =>
-    resolveProviderBindings({ ...makeProviderPorts(), unknown: {} }, 'stack')
+    resolveProviderBindings({ ...providerPorts(), unknown: {} }, 'stack')
   )
 
-  const missing = makeProviderPorts()
+  const missing = providerPorts()
   delete missing.retrieval.api
   assert.throws(() => resolveProviderBindings(missing, 'stack'))
 
-  const extra = makeProviderPorts()
+  const extra = providerPorts()
   extra.klicker.extra = 19400
   assert.throws(() => resolveProviderBindings(extra, 'stack'))
 
-  const outOfRange = makeProviderPorts()
+  const outOfRange = providerPorts()
   outOfRange.scraping.postgres = 65536
   assert.throws(() => resolveProviderBindings(outOfRange, 'stack'))
 
-  const low = makeProviderPorts()
+  const low = providerPorts()
   low.retrieval.api = 80
   assert.throws(() => resolveProviderBindings(low, 'stack'))
 
-  const fractional = makeProviderPorts()
+  const fractional = providerPorts()
   fractional.docProcessing.api = 19012.5
   assert.throws(() => resolveProviderBindings(fractional, 'stack'))
 
-  const duplicateWithinGroup = makeProviderPorts()
+  const duplicateWithinGroup = providerPorts()
   duplicateWithinGroup.ingestion.azurite = duplicateWithinGroup.ingestion.api
   assert.throws(() => resolveProviderBindings(duplicateWithinGroup, 'stack'))
 
-  const duplicateAcrossGroups = makeProviderPorts()
+  const duplicateAcrossGroups = providerPorts()
   duplicateAcrossGroups.retrieval.api = duplicateAcrossGroups.klicker.backend
   assert.throws(() => resolveProviderBindings(duplicateAcrossGroups, 'stack'))
 
-  const duplicateAcrossTargets = makeProviderPorts()
+  const duplicateAcrossTargets = providerPorts()
   duplicateAcrossTargets.docProcessing.hatchetHttp =
     duplicateAcrossTargets.scraping.crawl4ai
   assert.throws(() => resolveProviderBindings(duplicateAcrossTargets, 'stack'))
 })
 
 test('rejects any selected port already held by a retained endpoint', () => {
-  const ports = makeProviderPorts()
+  const ports = providerPorts()
   const retained = [
     'https://retained.example.invalid:19000',
     'postgresql://retained.example.invalid:19006/ingestion',
@@ -612,7 +582,7 @@ test('rejects any selected port already held by a retained endpoint', () => {
 })
 
 test('rejects unsafe instance identifiers for provider bindings', () => {
-  const ports = makeProviderPorts()
+  const ports = providerPorts()
   for (const instance of [
     '',
     '-leading',

@@ -8,14 +8,18 @@ import { validateIsolatedConfig } from './isolated-config.mjs'
 export async function observeProviderLaunchers(
   config,
   run = runProviderCommand,
-  environment = {}
+  environment = {},
+  retrievalEnvironment = {}
 ) {
   const commands = providerCommands(config)
   const observations = []
   for (const name of commands.lifecycleOrder) {
     try {
       const status = JSON.parse(
-        await run(commands.providers[name].lifecycle.status, environment)
+        await run(commands.providers[name].lifecycle.status, {
+          ...(name === 'retrieval' ? retrievalEnvironment : {}),
+          ...environment,
+        })
       )
       const identity =
         name === 'ingestion'

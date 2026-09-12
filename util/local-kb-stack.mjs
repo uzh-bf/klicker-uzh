@@ -204,9 +204,12 @@ function readConfigPlanInput(path) {
 }
 
 function configPlan(config) {
+  const commands = providerCommands(config)
+  const setupArgs = commands.providers.ingestion.lifecycle.setup.args
+  setupArgs[setupArgs.indexOf('--state-dsn') + 1] = '<provider-owned-state-dsn>'
   return {
     ...config,
-    providerCommands: providerCommands(config),
+    providerCommands: commands,
     backingCompose: renderBackingCompose(config),
     executable: false,
     blockers: configPlanBlockers,

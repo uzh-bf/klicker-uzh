@@ -126,6 +126,7 @@ test('config plan resolves a full synthetic input and rejects remote endpoints s
   assert.equal(valid.status, 2)
   const plan = JSON.parse(valid.stdout)
   assert.equal(plan.executable, false)
+  assert.equal(valid.stdout.includes('postgresql://hatchet:hatchet@'), false)
   assert.equal(plan.model, 'validation-only')
   assert.ok(plan.dependencyGraph.nodes.docQuery)
   assert.ok(plan.mutableState.docQuery)

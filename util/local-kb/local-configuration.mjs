@@ -48,6 +48,18 @@ export function renderLocalRetrievalConfiguration(publicKey, collection) {
   }
 }
 
+export const localCredentialNames = [
+  'database',
+  'klickerDatabase',
+  'ingestion',
+  'gateway',
+  'webhook',
+  'metrics',
+  'scraping',
+  'documentProcessing',
+  'blob',
+]
+
 // Provider launchers own their backing services and credentials. This result
 // contains only the private consumer inputs they accept, never their manifests.
 export function renderProviderLocalConfiguration(credentials, input) {
@@ -57,8 +69,27 @@ export function renderProviderLocalConfiguration(credentials, input) {
     input?.retainedEndpointOrigins ?? []
   )
   const { containerBases: container, hostBases: host, ports } = bindings
-  const generated = renderLocalConfiguration(credentials)
-  const { postgres, hatchet, blob, klicker, ingestion } = generated.environment
+  if (
+    credentials === null ||
+    typeof credentials !== 'object' ||
+    Array.isArray(credentials) ||
+    Object.keys(credentials).length !== localCredentialNames.length ||
+    localCredentialNames.some(
+      (name) =>
+        !Object.hasOwn(credentials, name) ||
+        typeof credentials[name] !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(credentials[name])
+    )
+  ) {
+    throw new Error(
+      'Local setup requires one fresh hex credential per service purpose.'
+    )
+  }
+  const database = (name) =>
+    `postgresql://local_kb:${credentials.database}@postgres:5432/${name}`
+  const project = 'klicker-course-materials'
+  const backend = container.backend
+  const blobKey = Buffer.from(credentials.blob, 'hex').toString('base64')
   const state = {
     INGESTION_STATE_BACKEND: 'postgres',
     INGESTION_STATE_DSN:
@@ -81,17 +112,32 @@ export function renderProviderLocalConfiguration(credentials, input) {
     'AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;' + // gitleaks:allow -- Azurite's documented public development account key.
     'BlobEndpoint=http://azurite:10000/devstoreaccount1;'
   const environment = {
-    postgres,
-    hatchet,
-    blob,
-    klicker: {
-      ...klicker,
-      KB_INGESTION_API_URL: container.ingestion,
-      KB_SOURCE_GATEWAY_URL: container.backend,
+    postgres: {
+      POSTGRES_USER: 'local_kb',
+      POSTGRES_PASSWORD: credentials.database,
+      POSTGRES_DB: 'klicker',
+      KLICKER_DATABASE_PASSWORD: credentials.klickerDatabase,
     },
+    hatchet: {
+      DATABASE_URL: `${database('hatchet')}?sslmode=disable`,
+      SERVER_AUTH_COOKIE_DOMAIN: 'localhost',
+      SERVER_AUTH_COOKIE_INSECURE: 't',
+      SERVER_GRPC_BIND_ADDRESS: '0.0.0.0',
+      SERVER_GRPC_INSECURE: 't',
+      SERVER_GRPC_BROADCAST_ADDRESS: 'hatchet:7077',
+      SERVER_GRPC_PORT: '7077',
+      SERVER_URL: 'http://hatchet:8888',
+      SERVER_AUTH_SET_EMAIL_VERIFIED: 't',
+      SERVER_DEFAULT_ENGINE_VERSION: 'V1',
+    },
+    blob: { AZURITE_ACCOUNTS: `klickerdev:${blobKey}` },
     'ingestion-api': api,
     'ingestion-worker': {
-      ...ingestion,
+      WEB_SCRAPING_API_KEY: credentials.scraping,
+      DOC_PROCESSING_API_KEY: credentials.documentProcessing,
+      DOC_PROCESSING_COMPUTE: 'cpu',
+      DOC_PROCESSING_PROCESSING_PROFILE: 'default',
+      DOC_PROCESSING_PICTURE_DESCRIPTION: 'off',
       ...api,
       WEB_SCRAPING_BASE_URL: container.scraping,
       DOC_PROCESSING_BASE_URL: container.docProcessing,
@@ -100,6 +146,25 @@ export function renderProviderLocalConfiguration(credentials, input) {
       MILVUS_URI: container.milvus,
       INGESTION_ALLOWED_MILVUS_TARGETS: `default:${bindings.collection}`,
       AZURE_STORAGE_CONNECTION_STRING: artifactConnection,
+    },
+    klicker: {
+      DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test`,
+      SHADOW_DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test_shadow`,
+      REDIS_HOST: 'redis_exec',
+      REDIS_PORT: '6379',
+      REDIS_CACHE_HOST: 'redis_cache',
+      REDIS_CACHE_PORT: '6379',
+      REDIS_ASSESSMENT_HOST: 'redis_assessment',
+      REDIS_ASSESSMENT_PORT: '6379',
+      KB_INGESTION_API_URL: container.ingestion,
+      KB_INGESTION_API_KEY: credentials.ingestion,
+      KB_INGESTION_PROJECT_ID: project,
+      KB_SOURCE_GATEWAY_URL: backend,
+      KB_SOURCE_GATEWAY_KEY: credentials.gateway,
+      KB_WEBHOOK_SECRET: credentials.webhook,
+      BLOB_STORAGE_ACCOUNT_NAME: 'klickerdev',
+      BLOB_STORAGE_ACCESS_KEY: blobKey,
+      BLOB_STORAGE_INTERNAL_ACCOUNT_URL: 'http://blob:10000/klickerdev',
     },
   }
   return {
@@ -125,132 +190,12 @@ export function renderProviderLocalConfiguration(credentials, input) {
       },
     },
     project: {
-      ...generated.project,
-      vector_store: {
-        type: 'milvus',
-        collection_name: bindings.collection,
-        milvus: { uri: container.milvus, db_name: 'default' },
-      },
-    },
-    databaseInitialization: generated.databaseInitialization,
-    producer: {
-      ...generated.producer,
-      source_gateway: {
-        ...generated.producer.source_gateway,
-        allowed_origins: [container.backend],
-      },
-      callback: {
-        ...generated.producer.callback,
-        url: `${container.backend}/api/webhooks/kb-ingestion`,
-      },
-    },
-  }
-}
-
-export const localCredentialNames = [
-  'database',
-  'klickerDatabase',
-  'ingestion',
-  'gateway',
-  'webhook',
-  'metrics',
-  'scraping',
-  'documentProcessing',
-  'blob',
-]
-
-function renderLocalConfiguration(credentials) {
-  if (
-    credentials === null ||
-    typeof credentials !== 'object' ||
-    Array.isArray(credentials) ||
-    Object.keys(credentials).length !== localCredentialNames.length ||
-    localCredentialNames.some(
-      (name) =>
-        !Object.hasOwn(credentials, name) ||
-        typeof credentials[name] !== 'string' ||
-        !/^[a-f0-9]{64}$/.test(credentials[name])
-    )
-  ) {
-    throw new Error(
-      'Local setup requires one fresh hex credential per service purpose.'
-    )
-  }
-  const database = (name) =>
-    `postgresql://local_kb:${credentials.database}@postgres:5432/${name}`
-  const project = 'klicker-course-materials'
-  const backend = 'http://klicker:3000'
-  const blobKey = Buffer.from(credentials.blob, 'hex').toString('base64')
-  const environment = {
-    postgres: {
-      POSTGRES_USER: 'local_kb',
-      POSTGRES_PASSWORD: credentials.database,
-      POSTGRES_DB: 'klicker',
-      KLICKER_DATABASE_PASSWORD: credentials.klickerDatabase,
-    },
-    hatchet: {
-      DATABASE_URL: `${database('hatchet')}?sslmode=disable`,
-      SERVER_AUTH_COOKIE_DOMAIN: 'localhost',
-      SERVER_AUTH_COOKIE_INSECURE: 't',
-      SERVER_GRPC_BIND_ADDRESS: '0.0.0.0',
-      SERVER_GRPC_INSECURE: 't',
-      SERVER_GRPC_BROADCAST_ADDRESS: 'hatchet:7077',
-      SERVER_GRPC_PORT: '7077',
-      SERVER_URL: 'http://hatchet:8888',
-      SERVER_AUTH_SET_EMAIL_VERIFIED: 't',
-      SERVER_DEFAULT_ENGINE_VERSION: 'V1',
-    },
-    blob: { AZURITE_ACCOUNTS: `klickerdev:${blobKey}` },
-    ingestion: {
-      INGESTION_STATE_BACKEND: 'postgres',
-      INGESTION_STATE_DSN: database('ingestion'),
-      INGESTION_STATE_SCHEMA: 'ingestion_state',
-      INGESTION_SECRET_INGESTION_PRODUCER_KLICKER_API_KEY:
-        credentials.ingestion,
-      INGESTION_SECRET_KLICKER_SOURCE_GATEWAY_CLIENT_SOURCE_GATEWAY_KEY:
-        credentials.gateway,
-      INGESTION_SECRET_INGESTION_WEBHOOK_KLICKER_HMAC_KEY: credentials.webhook,
-      INGESTION_METRICS_BEARER_TOKEN: credentials.metrics,
-      WEB_SCRAPING_BASE_URL: 'http://scraping:8000',
-      WEB_SCRAPING_API_KEY: credentials.scraping,
-      DOC_PROCESSING_BASE_URL: 'http://doc-processing:8000',
-      DOC_PROCESSING_API_KEY: credentials.documentProcessing,
-      DOC_PROCESSING_COMPUTE: 'cpu',
-      DOC_PROCESSING_PROCESSING_PROFILE: 'default',
-      DOC_PROCESSING_PICTURE_DESCRIPTION: 'off',
-      MILVUS_URI: 'http://milvus:19530',
-      INGESTION_ALLOWED_MILVUS_TARGETS: 'default:klicker_course_materials_v1',
-      AZURE_STORAGE_CONNECTION_STRING: `DefaultEndpointsProtocol=http;AccountName=klickerdev;AccountKey=${blobKey};BlobEndpoint=http://blob:10000/klickerdev;`,
-    },
-    klicker: {
-      DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test`,
-      SHADOW_DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test_shadow`,
-      REDIS_HOST: 'redis_exec',
-      REDIS_PORT: '6379',
-      REDIS_CACHE_HOST: 'redis_cache',
-      REDIS_CACHE_PORT: '6379',
-      REDIS_ASSESSMENT_HOST: 'redis_assessment',
-      REDIS_ASSESSMENT_PORT: '6379',
-      KB_INGESTION_API_URL: 'http://ingestion-api:8000',
-      KB_INGESTION_API_KEY: credentials.ingestion,
-      KB_INGESTION_PROJECT_ID: project,
-      KB_SOURCE_GATEWAY_URL: backend,
-      KB_SOURCE_GATEWAY_KEY: credentials.gateway,
-      KB_WEBHOOK_SECRET: credentials.webhook,
-      BLOB_STORAGE_ACCOUNT_NAME: 'klickerdev',
-      BLOB_STORAGE_ACCESS_KEY: blobKey,
-      BLOB_STORAGE_INTERNAL_ACCOUNT_URL: 'http://blob:10000/klickerdev',
-    },
-  }
-  return {
-    environment,
-    project: {
       version: 1,
       project_name: project,
       vector_store: {
         type: 'milvus',
-        collection_name: 'klicker_course_materials_v1',
-        milvus: { uri: 'http://milvus:19530', db_name: 'default' },
+        collection_name: bindings.collection,
+        milvus: { uri: container.milvus, db_name: 'default' },
       },
       embedding: { model: 'text-embedding-3-small', dimensions: 1536 },
       artifacts: {
