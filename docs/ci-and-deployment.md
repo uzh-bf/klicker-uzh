@@ -234,7 +234,7 @@ ref update:
 
 At activation, staging ArgoCD will track `stg-release`. ArgoCD resolves that ref
 to an exact commit, then the external Application passes `$ARGOCD_APP_REVISION` to Helm as
-`global.imageTag` with `forceString: true`. The chart applies that tag to all 18
+`global.imageTag` with `forceString: true`. The chart applies that tag to all
 first-party images, including the PreSync migrator. The values file therefore
 does not need a promotion commit or pull request. The retained rollout
 annotations and old promotion credential are stability-window rollback aids,
@@ -304,9 +304,10 @@ Operational notes:
 The static contract test at
 `.github/scripts/stg-release-ref-promotion.test.cjs` derives the 15 workflow
 paths and names, validates all 32 metadata/build pairs and the active
-repository/job map, checks the promoter trigger list, and proves all 18 chart
-images accept the override while no-override staging and production renders
-remain byte-identical to the frozen parent.
+repository/job map, checks the promoter trigger list, and verifies chart
+image override and fallback behavior through source checks and Helm renders.
+Enabled audit-worker override and missing-tag behavior were also verified with
+the staging values during the audit image repair.
 
 The superseded annotation mechanism and its incident context remain in
 [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
