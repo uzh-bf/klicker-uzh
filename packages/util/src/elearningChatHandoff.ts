@@ -85,6 +85,23 @@ export function learnerBindingsEqual(a: string, b: string): boolean {
   return ab.length === bb.length && timingSafeEqual(ab, bb)
 }
 
+
+// Resolves the shared eLearning handoff secret. Production requires the
+// explicit purpose-scoped secret; development falls back to an APP_SECRET
+// derivative so local environments stay self-contained.
+export function getElearningChatHandoffSecret(): string {
+  const explicit = process.env.ELEARNING_CHAT_HANDOFF_SECRET
+  if (explicit) return explicit
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ELEARNING_CHAT_HANDOFF_SECRET is required in production')
+  }
+  const appSecret = process.env.APP_SECRET
+  if (!appSecret) throw new Error('APP_SECRET is required')
+  return createHmac('sha256', appSecret)
+    .update('elearning-chat-handoff')
+    .digest('hex')
+}
+
 function requireSharedSecret(secret?: string): string {
   if (!secret) throw new Error('ELEARNING_CHAT_HANDOFF_SECRET is required')
   return secret
@@ -113,6 +130,10 @@ export async function verifyElearningChatGrant(
     tokenError(payload, 'wrong-purpose')
   }
   if (typeof payload.exp !== 'number' || payload.exp <= 0) {
+    tokenError(payload, 'expired')
+  }
+  const issuedAt = typeof payload.iat === 'number' ? payload.iat : 0
+  if (payload.exp - issuedAt > ELEARNING_GRANT_MAX_AGE_SECONDS) {
     tokenError(payload, 'expired')
   }
 
