@@ -69,7 +69,9 @@ jobs:
         run: node --test .github/scripts/ci-equivalent-run.test.cjs .github/scripts/ci-obsolete-runs.test.cjs .github/scripts/ci-event-gates.test.cjs
 
       - name: Check Playwright CI contracts
-        run: pnpm run check:playwright-ci
+        run: |
+          pnpm run check:playwright-ci
+          node --test .github/scripts/playwright-resource-sampler.test.cjs
 
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
