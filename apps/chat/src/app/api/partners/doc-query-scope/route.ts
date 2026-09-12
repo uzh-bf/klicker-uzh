@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         select: {
           chatMode: true,
           parameters: true,
-          mcpServer: { select: { id: true, name: true } },
+          mcpServer: { select: { id: true, name: true, isActive: true } },
         },
       },
     },
@@ -85,7 +85,11 @@ export async function POST(request: NextRequest) {
     return jsonError('AI usage is not authorized', 403, 'AI_FEATURES_DISABLED')
   }
 
-  const configurations = chatbot.mcpConfigurations
+  // An inactive MCP server cannot serve retrievals, so it must not receive
+  // newly issued assertions either; scoping only considers active servers.
+  const configurations = chatbot.mcpConfigurations.filter(
+    (config) => config.mcpServer.isActive
+  )
   let kbIds: string[]
   try {
     const resolved = resolveMcpScope(configurations, 'default', configurations)
@@ -107,17 +111,21 @@ export async function POST(request: NextRequest) {
 
   const pwaBase = process.env.NEXT_PUBLIC_PWA_URL?.replace(/\/$/, '')
   const chatbotUrl = pwaBase
-    ? `${pwaBase}/course/${chatbot.courseId}/chatbot/${chatbot.id}/chat`
+    ? `${pwaBase}/course/${chatbot.courseId}/chatbot/${chatbot.id}`
     : undefined
 
   const token = await signDocQueryScopeToken({
     kbIds,
     chatbotId: chatbot.id,
-    sessionId: sessionRef ?? `partner:${partnerId}`,
+    // The subject stays the stable partner identity; a caller-supplied
+    // session reference is carried separately and can never collide with a
+    // participant thread id.
+    sessionId: `partner:${partnerId}`,
     jti: randomUUID(),
     partnerId,
-    chatbotName: chatbot.name,
+    chatbotName: chatbot.name.slice(0, 200),
     chatbotUrl,
+    ...(sessionRef ? { sessionRef } : {}),
   })
 
   try {

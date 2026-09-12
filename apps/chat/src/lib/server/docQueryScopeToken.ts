@@ -26,6 +26,7 @@ export async function signDocQueryScopeToken({
   partnerId,
   chatbotName,
   chatbotUrl,
+  sessionRef,
 }: {
   kbIds: readonly string[]
   chatbotId: string
@@ -36,6 +37,8 @@ export async function signDocQueryScopeToken({
   /** Trusted display metadata bound to the signed chatbot scope. */
   chatbotName?: string
   chatbotUrl?: string
+  /** Opaque partner-side session reference; never used as the token subject. */
+  sessionRef?: string
 }): Promise<string> {
   const privateKeyPem = requireScopeTokenEnv(
     'DOC_QUERY_SCOPE_PRIVATE_KEY'
@@ -58,6 +61,7 @@ export async function signDocQueryScopeToken({
       ...(partnerId ? { partner: partnerId } : {}),
       ...(chatbotName ? { chatbot_name: chatbotName } : {}),
       ...(chatbotUrl ? { chatbot_url: chatbotUrl } : {}),
+      ...(sessionRef ? { session_ref: sessionRef } : {}),
     })
       .setProtectedHeader({
         alg: DOC_QUERY_SCOPE_TOKEN_ALGORITHM,

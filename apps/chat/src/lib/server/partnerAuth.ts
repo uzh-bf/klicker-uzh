@@ -24,7 +24,10 @@ function parsePartnerKeys(): Record<string, string> | null {
     }
     const entries = Object.entries(parsed).filter(
       ([id, key]) =>
-        typeof id === 'string' && typeof key === 'string' && key.length > 0
+        typeof id === 'string' &&
+        id.trim().length > 0 &&
+        typeof key === 'string' &&
+        key.length > 0
     )
     if (entries.length === 0) return null
     return Object.fromEntries(entries)

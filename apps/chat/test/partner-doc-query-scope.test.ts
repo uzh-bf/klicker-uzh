@@ -66,7 +66,7 @@ function publishedChatbotFixture(
           required: true,
           toolAlias: 'doc_query',
         },
-        mcpServer: { id: 'kb-server-1', name: 'KB' },
+        mcpServer: { id: 'kb-server-1', name: 'KB', isActive: true },
       },
     ],
     ...overrides,
@@ -163,7 +163,7 @@ describe('partner doc-query scope issuance', () => {
     expect(payload.sub).toBe('partner:askuzh')
     expect(payload.chatbot_name).toBe('IuW Finance')
     expect(payload.chatbot_url).toBe(
-      `https://pwa.klicker.test/course/${TEST_COURSE_ID}/chatbot/${TEST_CHATBOT_ID}/chat`
+      `https://pwa.klicker.test/course/${TEST_COURSE_ID}/chatbot/${TEST_CHATBOT_ID}`
     )
     expect(mocks.grantUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -264,5 +264,75 @@ describe('partner doc-query scope issuance', () => {
     )
     expect(response.status).toBe(409)
     expect((await response.json()).code).toBe('SCOPE_UNAVAILABLE')
+  })
+
+  test('denies chatbots on a deleting course', async () => {
+    stubGrantFixture()
+    mocks.chatbotFindUnique.mockResolvedValue(null)
+    const response = await POST(
+      partnerRequest({ chatbotId: TEST_CHATBOT_ID }, PARTNER_FIXTURE)
+    )
+    expect(response.status).toBe(404)
+    expect(mocks.chatbotFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          course: { deletionRequestedAt: null },
+        }),
+      })
+    )
+  })
+
+  test('denies chatbots whose KB server is inactive', async () => {
+    stubGrantFixture()
+    mocks.chatbotFindUnique.mockResolvedValue(
+      publishedChatbotFixture({
+        mcpConfigurations: [
+          {
+            chatMode: 'default',
+            parameters: {
+              kb_id: TEST_KB_ID,
+              required: true,
+              toolAlias: 'doc_query',
+            },
+            mcpServer: { id: 'kb-server-1', name: 'KB', isActive: false },
+          },
+        ],
+      })
+    )
+    const response = await POST(
+      partnerRequest({ chatbotId: TEST_CHATBOT_ID }, PARTNER_FIXTURE)
+    )
+    expect(response.status).toBe(409)
+    expect((await response.json()).code).toBe('SCOPE_UNAVAILABLE')
+  })
+
+  test('disables issuance when the partner key configuration is malformed', async () => {
+    stubGrantFixture()
+    vi.stubEnv('PARTNER_DOC_QUERY_KEYS', 'not-json')
+    const response = await POST(
+      partnerRequest({ chatbotId: TEST_CHATBOT_ID }, PARTNER_FIXTURE)
+    )
+    expect(response.status).toBe(401)
+    expect(mocks.grantFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('keeps the partner subject and carries a session reference separately', async () => {
+    stubGrantFixture()
+    mocks.chatbotFindUnique.mockResolvedValue(publishedChatbotFixture())
+    const response = await POST(
+      partnerRequest(
+        { chatbotId: TEST_CHATBOT_ID, sessionRef: 'opaque-session-1' },
+        PARTNER_FIXTURE
+      )
+    )
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    const { payload } = await jwtVerify(body.token, publicKey, {
+      algorithms: ['ES256'],
+      issuer: TEST_ISSUER,
+      audience: TEST_AUDIENCE,
+    })
+    expect(payload.sub).toBe('partner:askuzh')
+    expect(payload.session_ref).toBe('opaque-session-1')
   })
 })
