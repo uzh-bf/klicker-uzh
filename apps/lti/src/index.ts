@@ -171,7 +171,10 @@ Provider.app.get('/info', async (req, res) => {
   return res.send(info)
 })
 
-setup().catch((e) => console.error(e))
+setup().catch(() => {
+  console.error('LTI platform initialization failed')
+  process.exit(1)
+})
 
 function getRawType(value: unknown): string {
   if (value === null) return 'null'
