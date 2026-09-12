@@ -12,6 +12,7 @@ import {
   prepareHatchetTasks,
   resolveWorkerRuntimeConfig,
 } from '@klicker-uzh/hatchet'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -61,7 +62,11 @@ async function main() {
     : validateKBWorkerConfiguration()
   const runtimeConfig = resolveWorkerRuntimeConfig('general')
   logger.info(
-    { workerName: runtimeConfig.name, ...integrationState },
+    {
+      event: 'hatchet.worker.starting',
+      workerName: runtimeConfig.name,
+      ...integrationState,
+    },
     'Starting Hatchet worker'
   )
 
@@ -116,7 +121,7 @@ async function main() {
 
   const emitter = new EventEmitter()
 
-  logger.info('Connecting to Hatchet...')
+  logger.info({ event: 'hatchet.worker.connecting' }, 'Connecting to Hatchet')
 
   const preparedWorkflows = prepareHatchetTasks({
     hatchet: hatchetClient,
@@ -151,23 +156,34 @@ async function main() {
   if (selection.unknownKeys.length > 0) {
     logger.warn(
       {
-        unknownKeys: selection.unknownKeys,
-        availableKeys: Object.keys(preparedWorkflows),
+        event: 'hatchet.workflow.selection.invalid',
+        unknownKeyCount: selection.unknownKeys.length,
+        availableKeyCount: Object.keys(preparedWorkflows).length,
       },
       'HATCHET_WORKFLOWS contains unknown task keys'
     )
   }
   if (selection.disabledKeys.length > 0) {
     logger.info(
-      { disabledKeys: selection.disabledKeys },
+      {
+        event: 'hatchet.workflow.disabled',
+        disabledWorkflowCount: selection.disabledKeys.length,
+      },
       'KB integration gates excluded workflows'
     )
   }
   const { workflows, selectedKeys } = selection
-  logger.info({ selectedKeys }, 'Selected workflows')
+  logger.info(
+    { event: 'hatchet.workflow.selected', workflowCount: selectedKeys.length },
+    'Selected workflows'
+  )
 
   logger.info(
-    { workerName: runtimeConfig.name, workflowCount: workflows.length },
+    {
+      event: 'hatchet.worker.creating',
+      workerName: runtimeConfig.name,
+      workflowCount: workflows.length,
+    },
     'Creating Hatchet worker'
   )
 
@@ -177,24 +193,42 @@ async function main() {
     workerFactory: (name, options) => hatchetClient.worker(name, options),
   })
 
-  logger.info('Starting worker to process jobs...')
+  logger.info(
+    { event: 'hatchet.worker.starting_jobs' },
+    'Starting worker to process jobs'
+  )
   await runtime.start()
 
-  logger.info('Worker runtime stopped after termination')
+  logger.info(
+    { event: 'hatchet.worker.stopped' },
+    'Worker runtime stopped after termination'
+  )
   // The drain is complete here, but the Redis and Prisma clients opened above
   // keep the event loop alive and node runs as PID 1, so exit explicitly
   // instead of waiting for the kubelet's SIGKILL at the end of the grace period.
   process.exit(0)
 }
 
-process.on('unhandledRejection', (reason) => {
-  logger.fatal({ err: reason }, 'Unhandled promise rejection')
+process.on('unhandledRejection', () => {
+  logger.fatal(
+    {
+      event: 'process.unhandled_rejection',
+      err: toSafeError('Unhandled rejection'),
+    },
+    'Unhandled promise rejection'
+  )
   // Let the process crash; orchestration should restart it
   process.exit(1)
 })
 
-process.on('uncaughtException', (err) => {
-  logger.fatal({ err }, 'Uncaught exception')
+process.on('uncaughtException', () => {
+  logger.fatal(
+    {
+      event: 'process.uncaught_exception',
+      err: toSafeError('Uncaught exception'),
+    },
+    'Uncaught exception'
+  )
   process.exit(1)
 })
 
