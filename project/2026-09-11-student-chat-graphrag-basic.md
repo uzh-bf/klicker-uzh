@@ -386,3 +386,99 @@ chat/shared types and lint pass. Both reviewers accepted the correction. The fin
 26/26. Integrated review covers all 59 package paths with no exclusions and no
 remaining findings. The draft is updated with eight verified native screenshot
 attachments; exact-head hosted CI remains separate and pending.
+
+### Approved retrieval evaluation extension (2026-09-12)
+
+The user requested research followed by evaluation-led improvements using the
+existing private evaluation framework. This is an executable batch within this
+feature. The independent first slice makes retrieved passages observable to the
+framework; the course comparison depends on naming the corpus and approving its
+passages for the local model provider. The local four-document MCP fixture is
+transport/diagnostic evidence, not a course-quality benchmark. No quality gain is
+assumed, and expected answers remain evaluator-only.
+
+Research supports a task-stratified comparison. [GraphRAG-Bench](https://arxiv.org/html/2506.05690v3)
+evaluates graph construction, retrieval and generation separately and finds
+varying benefits across question types. [HippoRAG 2](https://arxiv.org/html/2502.14802v1)
+uses semantic passage/phrase linking and graph retrieval; its findings do not
+validate our lexical one-hop expansion. [LightRAG](https://arxiv.org/abs/2410.05779)
+combines entity and relationship retrieval with its indexing assumptions, which
+our cleaned independently persisted graph does not inherit. [EA-GraphRAG](https://arxiv.org/abs/2602.03578)
+proposes selective dense/graph retrieval and fusion; this preprint motivates an
+experiment, not a course-quality claim. [Reciprocal rank fusion](https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf)
+and [Lost in the Middle](https://aclanthology.org/2024.tacl-1.9.pdf) motivate
+controlled ranking and equal context budgets. Native FalkorDB remains the
+application retrieval engine; no new retrieval library is planned.
+
+The pinned framework's Chat Completions client retains the completion ID but
+ignores tool outputs. Its existing QA-file interface accepts retrieval_context.
+Use that interface rather than adding ignored transport extensions or changing
+private framework code. Preserve semantic similarity and its 0.5 threshold.
+Add contextual precision, contextual recall and faithfulness as diagnostic
+metrics at 0.7. Their scores need actual retrieved passages; missing, malformed
+or incomplete evidence is ineligible, never a successful zero-context score.
+See [evaluation instructions](../evaluation/README.md) for runnable commands and
+artifact handling. The framework's primary gate also expects tool correctness;
+this profile therefore reports individual metrics rather than claiming that
+aggregate gate passed. Source-ID IR scoring is unsupported at this pin.
+
+Ownership and acceptance:
+
+1. Trusted mapper completed the private framework contract inspection. Main owns
+   research, private-framework execution, corpus/provider selection, methodology,
+   metric YAML, wrapper model alignment and its existing shell regression.
+2. Executor owns the public local target, bounded evidence helper, QA enrichment
+   CLI and their Node tests. No private framework or corpus content enters this
+   external worker's scope. Default target output remains unchanged.
+3. Main owns offline framework integration in
+   evaluation/tests/test_graph_metric_contract.py. It must prove ordered passage
+   consumption and metric selection/accounting using the pinned loader and
+   runner, fake credentials and substituted judges without network or spend.
+4. Main owns course comparison after corpus/provider selection, then candidate
+   selection, integration and delivery. Data/method decisions keep this coupled
+   work local. The first live smoke is at most six fixed-Luna target turns,
+   three paired questions, one target attempt each, single-attempt judging and
+   USD5 maximum. Do not start without observable bounded spend. Stop on any
+   model/transport/capture/required-metric failure. Auto is a later separate arm.
+
+Capture is opt-in through KLICKER_EVAL_EVIDENCE_DIR and a required run ID. It
+binds the completion ID to run, requested/persisted model, mode and question/
+answer hashes. Only recognized KB_doc_query document passage text is captured:
+no arguments, reasoning, source URL fields or arbitrary metadata. Bounds are
+64 passages, 256KiB UTF8 passage text, 2MiB input/capture, nesting depth five.
+Preserve order and duplicates; overflow makes the whole case ineligible rather
+than exporting a prefix. Failed/unknown/mixed document outputs also make the
+case incomplete. Known empty differs from no document calls. Evidence writes
+are exclusive 0600 files in private nonsymlink 0700 directories; unsafe paths,
+IO failures and obvious credential/private-URL text fail opt-in capture. Text
+filters do not replace corpus/provider permission. Enrichment checks exact
+completion/run identity, hashes and model, refuses ambiguous/missing records
+and overwrites, and validates all input before writing a private output.
+
+Freeze 30–50 passage-grounded cases from one approved corpus, separating dev and
+holdout by concept/evidence family, including translations. Fix Luna, mode,
+prompt, reasoning effort, corpus/build and context budgets. Compare ordinary
+RAG, current graph expansion and at most two candidates selected from dev
+failures. A non-graph second-search control uses predeclared document terminology,
+never gold answers or graph hints. If provider controls cannot equalize budgets
+or expose that control, label the comparison end-to-end and retain the confound.
+Persisted tool names do not reveal internal augmentation queries/call counts;
+record them as unavailable unless an external synthetic MCP harness observes
+execution. Capture hashes preserve evidence identity locally; manual source
+coverage complements the framework's LLM-judged metrics.
+
+Report paired answer correctness, retrieval coverage/order, faithfulness,
+citation support, no-answer behavior, latency, failures and spend by question
+stratum. Freeze candidates before one holdout evaluation; do not tune on its
+results. Thirty to fifty cases are a pilot, not statistical proof. Existing
+FineCo questions cite course pages but currently require a different tool than
+the local KB fixture, so they cannot be relabeled as local goldens.
+
+Progress: planner approved the frozen extension in round two after six method
+and evidence-contract corrections. Framework pin
+2a75632a98a8f8e8382a7f7ecaa4fda9f715e12b is unchanged. Implementation baseline
+is da777c5e9f89c9b919ea64db62dfe0c3f93247ce. Independent harness work is active;
+corpus/provider selection is pending. No paid evaluation or retrieval-quality
+improvement is claimed. Substantive implementation requires simplifier, bounded
+risk review and integrated final review before ordinary task-branch delivery to
+the existing draft [PR #5912](https://github.com/uzh-bf/klicker-uzh/pull/5912).

@@ -58,7 +58,7 @@ fi
 exit 2'
 
 write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
-for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
+for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE KLICKER_EVAL_EVIDENCE_DIR KLICKER_EVAL_RUN_ID EVAL_API_MODE EVAL_ENDPOINT_URL EVAL_MODELS_URL EVAL_STREAM AGENT_ID; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
 done
 for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY; do
@@ -344,6 +344,8 @@ env -i PATH="$PATH" HOME="$HOME" git init --bare "$TEST_ROOT/bare.git" >/dev/nul
 : >"$CHILD_LOG"
 env -i \
   GIT_DIR="$TEST_ROOT/bare.git" \
+  KLICKER_EVAL_EVIDENCE_DIR="$TEST_ROOT/evidence" \
+  KLICKER_EVAL_RUN_ID='synthetic-run' \
   GIT_WORK_TREE="$TEST_ROOT/not-a-worktree" \
   LITELLM_API_BASE='https://litellm.example.test' \
   LITELLM_API_KEY='synthetic-test-key' \
@@ -370,6 +372,8 @@ assert_line 'EVAL_API_MODE=chat-completions' "$CHILD_LOG"
 assert_line 'EVAL_ENDPOINT_URL=http://127.0.0.1:41234/v1/chat/completions' "$CHILD_LOG"
 assert_line 'EVAL_MODELS_URL=http://127.0.0.1:41234/v1/models' "$CHILD_LOG"
 assert_line 'EVAL_STREAM=false' "$CHILD_LOG"
+assert_line 'KLICKER_EVAL_EVIDENCE_DIR=' "$CHILD_LOG"
+assert_line 'KLICKER_EVAL_RUN_ID=' "$CHILD_LOG"
 assert_line 'AGENT_ID=gpt-5.6-luna' "$CHILD_LOG"
 assert_line "EVAL_METRICS_PATH=$FAKE_REPO/evaluation/data/metrics/klicker_fineco_semantic_similarity.yaml" "$CHILD_LOG"
 assert_line "ARG=$FAKE_REPO/evaluation/data/ground_truth/klicker_fineco" "$CHILD_LOG"
@@ -406,6 +410,7 @@ env -i \
   KLICKER_TEST_ADAPTER_STOP_MARKER="$LOCAL_STOP_MARKER" \
   KLICKER_TEST_EXEC_RUNNER='true' \
   KLICKER_TEST_RUNNER_STATUS='74' \
+  KLICKER_EVAL_MODEL_ID='auto' \
   PATH="$TEST_PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
   KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
@@ -413,6 +418,7 @@ env -i \
   >"$TEST_ROOT/local-failure.stdout" \
   2>"$TEST_ROOT/local-failure.stderr" || status=$?
 
+assert_line 'AGENT_ID=auto' "$CHILD_LOG"
 [ "$status" -eq 74 ] || fail "local child failure returned $status instead of 74"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a failed child run'
 
