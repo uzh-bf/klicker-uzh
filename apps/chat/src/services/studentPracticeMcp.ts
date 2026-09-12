@@ -21,7 +21,8 @@ const DEFAULT_LOOKUP_LIMIT = 3
 const MAX_LOOKUP_SUMMARY_MESSAGES = 6
 const MAX_LOOKUP_SUMMARY_CHARS = 1200
 
-export const STUDENT_PRACTICE_QUIZ_TOOL_NAME = 'start_student_practice_quiz'
+export { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from './studentPracticeToolName'
+import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from './studentPracticeToolName'
 
 export function toPracticeCandidateId(index: number): string {
   return `practice_${index + 1}`
