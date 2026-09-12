@@ -46,6 +46,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      # Digest of the image this job pushed. The scan job scans this digest
+      # rather than the tag, because a tag can move between build and scan.
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -71,6 +75,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -126,6 +131,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      # Digest of the image this job pushed. The scan job scans this digest
+      # rather than the tag, because a tag can move between build and scan.
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -151,6 +160,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-arm
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -199,3 +209,190 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64
           labels: ${{ steps.meta.outputs.labels }}
+  scan-arm:
+    # Scans the exact digest build-arm published. Only a push publishes an
+    # image, so the job is limited to non-pull-request events, and the guard
+    # step below fails closed when the build job reported no digest.
+    #
+    # Policy: fail on HIGH and CRITICAL vulnerabilities that ship a fix.
+    # Unfixed findings stay in the JSON report and do not change the exit code,
+    # because no image rebuild can remove them today.
+    #
+    # The receipt records the action, engine, digest and run provenance. The
+    # vulnerability database version is not captured, so the raw JSON report
+    # stays the audit source for what each finding was checked against.
+    needs: build-arm
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Require the digest from the build job
+        env:
+          DIGEST: ${{ needs.build-arm.outputs.digest }}
+        run: |
+          if [ -z "$DIGEST" ]; then
+            echo "::error::scan-arm received no image digest, so there is nothing immutable to scan."
+            exit 1
+          fi
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan the pushed image for vulnerabilities
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm@${{ needs.build-arm.outputs.digest }}
+          format: json
+          # ignore-unfixed keeps its false default so the report also shows
+          # unfixed findings; the policy step below decides the exit code.
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          output: image-scan-backend-docker-arm-findings.json
+          timeout: 10m
+
+      - name: Generate a CycloneDX SBOM
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm@${{ needs.build-arm.outputs.digest }}
+          # Without an explicit scanners input Trivy builds the SBOM from the
+          # image packages and adds no vulnerability findings to it.
+          format: cyclonedx
+          exit-code: '0'
+          output: image-scan-backend-docker-arm-sbom.cdx.json
+          timeout: 10m
+
+      # The engine version and action ref below must stay identical to the two
+      # scan steps above; the receipt records what actually scanned the image.
+      - name: Write the scan receipt
+        run: |
+          node .github/scripts/image-scan-receipt.cjs receipt \
+            --output image-scan-backend-docker-arm-receipt.json \
+            --image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm@${{ needs.build-arm.outputs.digest }}" \
+            --digest "${{ needs.build-arm.outputs.digest }}" \
+            --architecture linux/arm64 \
+            --run-id "${{ github.run_id }}" \
+            --run-attempt "${{ github.run_attempt }}" \
+            --git-sha "${{ github.sha }}" \
+            --engine-version v0.74.0 \
+            --action-ref aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 \
+            --findings image-scan-backend-docker-arm-findings.json \
+            --sbom image-scan-backend-docker-arm-sbom.cdx.json
+
+      - name: Upload the scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-scan-backend-docker-arm
+          path: |
+            image-scan-backend-docker-arm-findings.json
+            image-scan-backend-docker-arm-sbom.cdx.json
+            image-scan-backend-docker-arm-receipt.json
+          if-no-files-found: warn
+
+      - name: Enforce the fixable HIGH/CRITICAL policy
+        run: |
+          node .github/scripts/image-scan-receipt.cjs check \
+            --report image-scan-backend-docker-arm-findings.json
+  scan-migrator-arm:
+    # See scan-arm: same immutable-digest scan and policy for the migrator image
+    # that build-migrator-arm publishes.
+    needs: build-migrator-arm
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Require the digest from the build job
+        env:
+          DIGEST: ${{ needs.build-migrator-arm.outputs.digest }}
+        run: |
+          if [ -z "$DIGEST" ]; then
+            echo "::error::scan-migrator-arm received no image digest, so there is nothing immutable to scan."
+            exit 1
+          fi
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan the pushed image for vulnerabilities
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-arm@${{ needs.build-migrator-arm.outputs.digest }}
+          format: json
+          # ignore-unfixed keeps its false default so the report also shows
+          # unfixed findings; the policy step below decides the exit code.
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          output: image-scan-backend-docker-migrator-arm-findings.json
+          timeout: 10m
+
+      - name: Generate a CycloneDX SBOM
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-arm@${{ needs.build-migrator-arm.outputs.digest }}
+          # Without an explicit scanners input Trivy builds the SBOM from the
+          # image packages and adds no vulnerability findings to it.
+          format: cyclonedx
+          exit-code: '0'
+          output: image-scan-backend-docker-migrator-arm-sbom.cdx.json
+          timeout: 10m
+
+      # The engine version and action ref below must stay identical to the two
+      # scan steps above; the receipt records what actually scanned the image.
+      - name: Write the scan receipt
+        run: |
+          node .github/scripts/image-scan-receipt.cjs receipt \
+            --output image-scan-backend-docker-migrator-arm-receipt.json \
+            --image "${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-arm@${{ needs.build-migrator-arm.outputs.digest }}" \
+            --digest "${{ needs.build-migrator-arm.outputs.digest }}" \
+            --architecture linux/arm64 \
+            --run-id "${{ github.run_id }}" \
+            --run-attempt "${{ github.run_attempt }}" \
+            --git-sha "${{ github.sha }}" \
+            --engine-version v0.74.0 \
+            --action-ref aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 \
+            --findings image-scan-backend-docker-migrator-arm-findings.json \
+            --sbom image-scan-backend-docker-migrator-arm-sbom.cdx.json
+
+      - name: Upload the scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-scan-backend-docker-migrator-arm
+          path: |
+            image-scan-backend-docker-migrator-arm-findings.json
+            image-scan-backend-docker-migrator-arm-sbom.cdx.json
+            image-scan-backend-docker-migrator-arm-receipt.json
+          if-no-files-found: warn
+
+      - name: Enforce the fixable HIGH/CRITICAL policy
+        run: |
+          node .github/scripts/image-scan-receipt.cjs check \
+            --report image-scan-backend-docker-migrator-arm-findings.json
