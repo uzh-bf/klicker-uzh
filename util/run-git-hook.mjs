@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { readFileSync, realpathSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -57,9 +57,7 @@ export async function runHook(mode, root, environment = process.env) {
   const runtime = environment.KLICKER_GIT_HOOK_RUNTIME
   if (runtime && !['host', 'container'].includes(runtime))
     throw new Error('KLICKER_GIT_HOOK_RUNTIME must be host or container')
-  const native = runtime
-    ? runtime === 'host'
-    : existsSync(path.join(root, 'node_modules/.modules.yaml'))
+  const native = runtime === 'host'
   const container = (args) =>
     native
       ? run('pnpm', args, options)

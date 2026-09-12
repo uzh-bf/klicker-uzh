@@ -97,17 +97,17 @@ test('container build targets exact checkout and removes inherited Git state', a
 
 test('native build retains dependency validation through pnpm', async (t) => {
   const f = fixture(t, true)
-  await runHook('build', f.root, f.env)
+  await runHook('build', f.root, {
+    ...f.env,
+    KLICKER_GIT_HOOK_RUNTIME: 'host',
+  })
   assert.deepEqual(f.calls()[0].args, ['run', 'build'])
   assert.equal(f.calls()[0].command, 'pnpm')
 })
 
-test('explicit container routing survives a partial host tooling install', async (t) => {
+test('default container routing survives a partial host tooling install', async (t) => {
   const f = fixture(t, true)
-  await runHook('build', f.root, {
-    ...f.env,
-    KLICKER_GIT_HOOK_RUNTIME: 'container',
-  })
+  await runHook('build', f.root, f.env)
   assert.equal(f.calls()[0].command, 'devrouter')
   await assert.rejects(
     runHook('build', f.root, { ...f.env, KLICKER_GIT_HOOK_RUNTIME: 'invalid' })
@@ -118,6 +118,7 @@ test('host dependencies reject ancestor resolution and accept checkout-local ins
   const f = fixture(t)
   const child = path.join(f.root, 'checkout')
   fs.mkdirSync(child)
+  fs.mkdirSync(path.join(child, 'node_modules'))
   fs.writeFileSync(path.join(child, 'package.json'), '{}')
   const ancestorPackage = path.join(f.root, 'node_modules/yaml')
   fs.mkdirSync(ancestorPackage, { recursive: true })
