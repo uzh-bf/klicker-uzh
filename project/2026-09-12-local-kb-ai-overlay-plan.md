@@ -110,7 +110,10 @@ host environment through its local shell and SSH child (Devsy v1.16.2 commit
 travels in setup argv. Verify with a synthetic sentinel before real injection.
 The checked host initialization hook does not print its environment; it runs
 the dependency-mount generator, local certificate copy, and cache-volume check.
-Unsupported transport blocks
+The sentinel must reach LiteLLM and be absent from app/other container
+environments, generated workspace/Compose/override files, lifecycle logs,
+status output and preparation receipts on initial startup and retained resume.
+Record only boolean results. Unsupported transport blocks
 S1; do not substitute an environment file or credential-bearing argument.
 
 ## Progress
@@ -135,9 +138,16 @@ S1; do not substitute an environment file or credential-bearing argument.
   remain blocked on provider setup recovery and successful transport verification.
 - Implementation runtime was verified stopped with zero routes, then resumed
   only for normal publication hooks. Stop it again after those checks.
-- The initial final-review process ended without a recoverable report. One
-  replacement final review is running on the unchanged source range. Draft
-  delivery remains pending; no PR URL exists yet. Target freshness confirmed
+- The initial final-review process ended without a recoverable report. Its one
+  replacement completed on the unchanged source range with one documentation
+  finding: distinguish source guarantees from unproven downstream containment.
+  Accepted and corrected; the sentinel gate now explicitly checks negative
+  containment. No executable source correction was requested. Main-session
+  verification closes this non-behavioral correction under the review policy.
+- [Draft PR #5934](https://github.com/uzh-bf/klicker-uzh/pull/5934) is published.
+  Normal pre-push build passed 26/26; exact-head CI began, with Gitleaks and
+  GitGuardian green at first readback. It remains draft pending acceptance.
+  Target freshness confirmed
   `origin/v3-ai@f00e272adf40dd3cbe2c648935cde1d99727af59`; its 11 intervening
   commits do not overlap the changed source, so no integration was necessary.
 

@@ -120,16 +120,22 @@ Use the same wrapper for `start` and `resume`. These three verbs reject missing
 credentials or a different upstream endpoint before claiming an attempt or
 activating providers. Setup validates the injection but does not forward it to
 its route-free managed profile. Only the managed `ai,chat,manage` startup
-receives the two upstream environment variables, and only LiteLLM among the
-containers receives them through name-only Compose references. The trusted
-host launcher and initialization hook inherit that environment. Never put the
-key in the input, generated files, workspace arguments, logs or receipts.
+receives the two upstream environment variables from this launcher. Its generated
+Compose declares name-only references exclusively for LiteLLM. The trusted
+host launcher and initialization hook inherit that environment; containment
+through the installed Devrouter/Devsy versions still requires runtime proof.
+Never put the key in the input, generated files, workspace arguments, logs or
+receipts.
 
 `status` and `stop` use the ordinary commands without the operator wrapper.
 Resume requires fresh injection; a rejected missing-key resume consumes no
 attempt. Validate the installed Devrouter/Devsy environment transport with a
-synthetic sentinel before using a real key. Unit checks do not qualify that
-transport or establish successful retrieval.
+synthetic sentinel before using a real key. Require its presence in LiteLLM and
+absence from the app and other container environments, generated workspace,
+Compose and override files, lifecycle logs, status output and preparation
+receipts. Check both initial startup and retained resume without printing the
+sentinel or later real credentials. Unit checks do not qualify that transport
+or establish successful retrieval.
 
 ## Provisioning and acceptance
 
