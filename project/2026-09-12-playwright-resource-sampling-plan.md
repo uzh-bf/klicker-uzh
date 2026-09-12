@@ -43,5 +43,11 @@ or hard-to-reverse architecture decision changes; no ADR is needed.
 
 ## Progress
 
-Isolated clean worktree created; implementation pending. Existing primary and
-runner-operations worktree changes are untouched. No new CI run launched.
+Implemented sampler and existing artifact wiring. Four focused Node tests pass:
+numeric parsing, missing counters, child failure with unavailable output, and
+cancellation forwarding. The one-hour cap is inspected in source; a full-hour
+runtime test has not been run. Formatting and diff checks pass. Main-session
+review covers bounded output, no secret collection, missing metrics, and unchanged
+exit behavior; no independent review is claimed under the user's override.
+Full monorepo builds are not claimed. Existing primary and runner-operations
+worktree changes are untouched. Remote CI and Linux runtime evidence are pending.
