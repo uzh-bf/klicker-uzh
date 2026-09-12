@@ -356,7 +356,15 @@ test('all first-party chart images prefer the optional global tag', () => {
   assert.equal(values.global.imageTag, '')
 
   const imageSources = templateImageSources()
-  assert.ok(imageSources.length > 0)
+  for (const template of [
+    'deployment-audit-workers.yaml',
+    'deployment-audit-media-policy-worker.yaml',
+  ]) {
+    assert.ok(
+      imageSources.some(({ name }) => name === template),
+      `${template} image must be checked`
+    )
+  }
   for (const { name, line } of imageSources) {
     assert.match(
       line,
