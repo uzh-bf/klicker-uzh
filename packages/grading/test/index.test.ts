@@ -2,6 +2,7 @@ import {
   computeAwardedPoints,
   computeAwardedXp,
   computeSimpleAwardedPoints,
+  filterSkippedSelectionResponses,
   gradeQuestionCaseStudy,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
@@ -9,6 +10,7 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
   gradeQuestionSelection,
+  resolveNumericalSolutions,
 } from '../src/index.js'
 
 describe('@klicker-uzh/grading', () => {
@@ -1493,5 +1495,57 @@ describe('@klicker-uzh/grading', () => {
       pointsPercentage: 0,
     })
     expect(xp3).toEqual(0)
+  })
+})
+
+describe('shared response-validity invariants', () => {
+  describe('filterSkippedSelectionResponses', () => {
+    it('removes skipped entries while keeping valid selections in order', () => {
+      expect(filterSkippedSelectionResponses([0, -1, 2, 1])).toEqual([0, 2, 1])
+    })
+
+    it('treats undefined and null entries as skipped', () => {
+      expect(
+        filterSkippedSelectionResponses([0, undefined as any, null as any, 3])
+      ).toEqual([0, 3])
+    })
+
+    it('returns an empty array when every entry is skipped', () => {
+      expect(filterSkippedSelectionResponses([-1, -1])).toEqual([])
+    })
+  })
+
+  describe('resolveNumericalSolutions', () => {
+    it('resolves numeric lists as exact solutions', () => {
+      expect(resolveNumericalSolutions([5, 7])).toEqual({
+        exactSolutions: [5, 7],
+      })
+    })
+
+    it('resolves numeric strings as exact solutions', () => {
+      expect(resolveNumericalSolutions(['5.5'])).toEqual({
+        exactSolutions: ['5.5'],
+      })
+    })
+
+    it('resolves range objects as solution ranges', () => {
+      const ranges = [{ min: 1, max: 10 }]
+      expect(resolveNumericalSolutions(ranges)).toEqual({
+        solutionRanges: ranges,
+      })
+    })
+
+    it('resolves an empty list as solution ranges (not exact solutions)', () => {
+      expect(resolveNumericalSolutions([])).toEqual({ solutionRanges: [] })
+    })
+
+    it('resolves a missing list as solution ranges', () => {
+      expect(resolveNumericalSolutions(undefined)).toEqual({
+        solutionRanges: undefined,
+      })
+      expect(resolveNumericalSolutions(null)).toEqual({
+        solutionRanges: null,
+      })
+    })
   })
 })

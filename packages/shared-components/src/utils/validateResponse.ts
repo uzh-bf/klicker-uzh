@@ -1,3 +1,4 @@
+import { filterSkippedSelectionResponses } from '@klicker-uzh/grading'
 import type {
   FreeTextElementOptions,
   NumericalElementOptions,
@@ -112,14 +113,8 @@ export function validateSelectionResponse({
     Object.values(response).every(
       (value) => value === -1 || typeof value === 'undefined' || value === null
     ) ||
-    new Set(
-      Object.values(response).filter(
-        (r) => r !== -1 && typeof r !== 'undefined' && r !== null
-      )
-    ).size !==
-      Object.values(response).filter(
-        (r) => r !== -1 && typeof r !== 'undefined' && r !== null
-      ).length
+    new Set(filterSkippedSelectionResponses(Object.values(response))).size !==
+      filterSkippedSelectionResponses(Object.values(response)).length
   ) {
     return false
   }

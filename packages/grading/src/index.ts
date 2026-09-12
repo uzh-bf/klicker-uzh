@@ -91,7 +91,7 @@ export function gradeQuestionKPRIM({
 interface GradeQuestionNumericalArgs {
   response: number
   solutionRanges?: NumericalSolutionRange[] | null
-  exactSolutions?: number[] | null
+  exactSolutions?: (number | string)[] | null
 }
 
 export function gradeQuestionNumerical({
@@ -398,4 +398,45 @@ export function computeAwardedXp({ pointsPercentage }: ComputeAwardedXpArgs) {
     return 10
   }
   return 0
+}
+
+// ! Shared response-validity invariants
+//
+// These helpers single-source the rules that were previously duplicated
+// across the response processor, the GraphQL services, the cached block
+// results and the client-side validator. The expressions are preserved
+// verbatim, including the truthiness quirks (an empty array counts as
+// present, and `typeof undefined` filters skipped entries).
+
+/**
+ * Removes skipped entries (-1, undefined and null) from a selection
+ * response. The result feeds both grading (where skipped inputs do not
+ * count towards the achieved percentage) and response validation.
+ */
+export function filterSkippedSelectionResponses(selection: number[]): number[] {
+  return selection.filter(
+    (r) => r !== -1 && typeof r !== 'undefined' && r !== null
+  )
+}
+
+/**
+ * Resolves which solution shape a numerical question uses: a list of
+ * exact solutions (numbers or numeric strings) or a list of solution
+ * ranges. Exactly one of the returned keys is defined, mirroring the
+ * arguments of {@link gradeQuestionNumerical}.
+ */
+export function resolveNumericalSolutions(
+  solutions: NumericalSolutionRange[] | number[] | string[] | null | undefined
+): {
+  exactSolutions?: number[] | string[]
+  solutionRanges?: NumericalSolutionRange[]
+} {
+  const exactSolutionsDefined =
+    !!solutions &&
+    solutions.length > 0 &&
+    (typeof solutions[0] === 'number' || typeof solutions[0] === 'string')
+
+  return exactSolutionsDefined
+    ? { exactSolutions: solutions as number[] | string[] }
+    : { solutionRanges: solutions as NumericalSolutionRange[] }
 }

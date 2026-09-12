@@ -1,18 +1,19 @@
 import {
   gradeQuestionFreeText,
   gradeQuestionNumerical,
+  resolveNumericalSolutions,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
-import {
-  type CaseStudyCaseSolution,
-  type ElementResultsCaseStudy,
-  type ElementResultsChoices,
-  type ElementResultsContent,
-  type ElementResultsFlashcard,
-  type ElementResultsOpen,
-  type ElementResultsSelection,
+import type {
+  CaseStudyCaseSolution,
+  ElementResultsCaseStudy,
+  ElementResultsChoices,
+  ElementResultsContent,
+  ElementResultsFlashcard,
+  ElementResultsOpen,
+  ElementResultsSelection,
 } from '@klicker-uzh/types'
-import { Redis } from 'ioredis'
+import type { Redis } from 'ioredis'
 import { omitBy } from 'remeda'
 import { getInitialInstanceResults } from './elements.js'
 
@@ -130,14 +131,13 @@ export async function getCachedBlockResults({
           let grading: number | undefined
           if (solutions && solutions.length > 0) {
             if (instance.elementType === DB.ElementType.NUMERICAL) {
-              const exactSolutionsDefined =
-                typeof solutions[0] === 'number' ||
-                typeof solutions[0] === 'string'
+              const { exactSolutions, solutionRanges } =
+                resolveNumericalSolutions(solutions)
               grading =
                 gradeQuestionNumerical({
                   response: parseFloat(String(response)),
-                  solutionRanges: exactSolutionsDefined ? undefined : solutions,
-                  exactSolutions: exactSolutionsDefined ? solutions : undefined,
+                  solutionRanges,
+                  exactSolutions,
                 }) ?? undefined
             } else if (instance.elementType === DB.ElementType.FREE_TEXT) {
               grading =
