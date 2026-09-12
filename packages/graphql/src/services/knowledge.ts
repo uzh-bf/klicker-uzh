@@ -34,6 +34,10 @@ import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
+import {
+  fetchKbSourceInventory,
+  type KbSourceInventoryDeps,
+} from './docQuerySources.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
 import {
@@ -110,6 +114,24 @@ export interface KBResourceConnection {
   needsIngestionCount: number
   failedIngestionCount: number
   inProgressCount: number
+}
+
+export interface KBImportedSource {
+  id: string
+  title: string
+  sourceType: string | null
+  sourceUrl: string | null
+  ingestedAt: Date | null
+  observedAt: Date | null
+  chunkCount: number
+}
+
+export interface KBImportedSourceConnection {
+  items: KBImportedSource[]
+  pageInfo: KBPageInfo
+  totalSourcesInScan: number
+  incomplete: boolean
+  unidentifiedChunks: number
 }
 
 export interface KBIngestAllResult {
@@ -544,7 +566,13 @@ async function lockOwnedChatbotOrThrow(
 async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
   const mcpServer = await prisma.chatbotMCPServer.findUnique({
     where: { name: KB_MCP_SERVER_NAME },
-    select: { id: true, isActive: true },
+    select: {
+      id: true,
+      isActive: true,
+      url: true,
+      authType: true,
+      authSecret: true,
+    },
   })
   if (!mcpServer || !mcpServer.isActive) {
     throw new GraphQLError('Knowledge base retrieval is not configured')
@@ -1001,6 +1029,53 @@ export async function getKbResourcesConnection(
       totalCount
     ),
     ...summary,
+  }
+}
+
+export async function getKbImportedSourcesConnection(
+  {
+    kbId,
+    first,
+    after,
+  }: {
+    kbId: string
+    first?: number | null
+    after?: string | null
+  },
+  ctx: ContextWithUser,
+  deps: KbSourceInventoryDeps = {}
+): Promise<KBImportedSourceConnection> {
+  await assertManageAiEnabled(ctx)
+  await getOwnedKbOrThrow(ctx, kbId)
+  const pageSize = normalizePageSize(first)
+  const mcpServer = await getKbMcpServerOrThrow(ctx.prisma)
+
+  try {
+    const inventory = await fetchKbSourceInventory(
+      {
+        server: mcpServer,
+        kbId,
+        limit: pageSize,
+        after,
+      },
+      deps
+    )
+    return {
+      items: inventory.items,
+      pageInfo: {
+        hasNextPage: inventory.nextCursor !== null,
+        endCursor: inventory.nextCursor,
+      },
+      totalSourcesInScan: inventory.totalSourcesInScan,
+      incomplete: inventory.incomplete,
+      unidentifiedChunks: inventory.unidentifiedChunks,
+    }
+  } catch (error) {
+    console.error('Failed to load imported KB sources', {
+      kbId,
+      errorType: error instanceof Error ? error.name : typeof error,
+    })
+    throw new GraphQLError('Imported sources could not be loaded')
   }
 }
 

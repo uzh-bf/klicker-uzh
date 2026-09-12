@@ -211,6 +211,51 @@ export const KBResourceConnection = KBResourceConnectionRef.implement({
   }),
 })
 
+interface IKBImportedSource {
+  id: string
+  title: string
+  sourceType: string | null
+  sourceUrl: string | null
+  ingestedAt: Date | null
+  observedAt: Date | null
+  chunkCount: number
+}
+
+export const KBImportedSourceRef =
+  builder.objectRef<IKBImportedSource>('KBImportedSource')
+export const KBImportedSource = KBImportedSourceRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    title: t.exposeString('title'),
+    sourceType: t.exposeString('sourceType', { nullable: true }),
+    sourceUrl: t.exposeString('sourceUrl', { nullable: true }),
+    ingestedAt: t.expose('ingestedAt', { type: 'Date', nullable: true }),
+    observedAt: t.expose('observedAt', { type: 'Date', nullable: true }),
+    chunkCount: t.exposeInt('chunkCount'),
+  }),
+})
+
+interface IKBImportedSourceConnection {
+  items: IKBImportedSource[]
+  pageInfo: IKBPageInfo
+  totalSourcesInScan: number
+  incomplete: boolean
+  unidentifiedChunks: number
+}
+
+export const KBImportedSourceConnectionRef =
+  builder.objectRef<IKBImportedSourceConnection>('KBImportedSourceConnection')
+export const KBImportedSourceConnection =
+  KBImportedSourceConnectionRef.implement({
+    fields: (t) => ({
+      items: t.expose('items', { type: [KBImportedSourceRef] }),
+      pageInfo: t.expose('pageInfo', { type: KBPageInfoRef }),
+      totalSourcesInScan: t.exposeInt('totalSourcesInScan'),
+      incomplete: t.exposeBoolean('incomplete'),
+      unidentifiedChunks: t.exposeInt('unidentifiedChunks'),
+    }),
+  })
+
 interface IKBIngestAllResult {
   queuedCount: number
   retriedFailedCount: number

@@ -1804,6 +1804,24 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
+    importedSourcesTitle: 'Importierte Quellen',
+    importedSourcesNotice:
+      'Importierte Metadaten für Inhalte, die bereits in dieser Wissensdatenbank indexiert sind. Importierte Quellen werden nicht für Wissensgraphen verwendet und zählen nicht zu den Ressourcen- und Speicherlimits.',
+    importedSourcesIncomplete:
+      'Die Liste umfasst die zuletzt durchsuchten Quellen. Ältere Quellen sind möglicherweise noch nicht erfasst.',
+    importedSourcesEmpty:
+      'Für diese Wissensdatenbank wurden noch keine importierten Quellen gefunden.',
+    importedSourcesLoadError:
+      'Die importierten Quellen konnten nicht geladen werden.',
+    loadMoreImportedSources: 'Weitere importierte Quellen laden',
+    importedSourcesLoadMoreError:
+      'Die weiteren importierten Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
+    importedObservedAt: 'Beobachtet am {date}',
+    importedIngestedAt: 'Verarbeitet am {date}',
+    importedIngestionUnknown: 'Verarbeitungszeit nicht erfasst',
+    importedSourceGeneric: 'Quelle',
+    importedVideoNoFileHint:
+      'Videoinhalte werden ohne Speicherung der Originaldatei indexiert.',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
     emptyResourceHint:
       'Verwenden Sie oben «Ressource hinzufügen», um eine Website oder ein Dokument hinzuzufügen.',

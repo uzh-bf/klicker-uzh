@@ -383,6 +383,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
+      '@klicker-uzh/doc-query-client':
+        specifier: workspace:*
+        version: link:../../packages/doc-query-client
       '@klicker-uzh/feature-flags':
         specifier: workspace:*
         version: link:../../packages/feature-flags
@@ -1703,6 +1706,31 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
 
+  packages/doc-query-client:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: 1.30.0
+        version: 1.30.0(zod@4.4.3)
+      jose:
+        specifier: 5.9.4
+        version: 5.9.4
+    devDependencies:
+      '@rollup/plugin-node-resolve':
+        specifier: ~15.3.1
+        version: 15.3.1(rollup@4.34.9)
+      '@rollup/plugin-typescript':
+        specifier: ~12.1.4
+        version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.12.4
+      rollup:
+        specifier: ~4.34.9
+        version: 4.34.9
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+
   packages/export:
     dependencies:
       '@klicker-uzh/prisma':
@@ -1822,6 +1850,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      '@klicker-uzh/doc-query-client':
+        specifier: workspace:*
+        version: link:../doc-query-client
       '@klicker-uzh/feature-flags':
         specifier: workspace:*
         version: link:../feature-flags
@@ -15053,9 +15084,6 @@ packages:
   jose@5.9.4:
     resolution: {integrity: sha512-WBBl6au1qg6OHj67yCffCgFR3BADJBXN8MdRvCgJDuMv3driV2nHr7jdGvaKX9IolosAsn+M0XRArqLXUhyJHQ==}
 
-  jose@6.1.0:
-    resolution: {integrity: sha512-TTQJyoEoKcC1lscpVDCSsVgYzUDg/0Bt3WE//WiTPK6uOCQC2KZS4MpugbMWt/zyjkopgZoXhZuCi00gLudfUA==}
-
   jose@6.2.10:
     resolution: {integrity: sha512-iiW7J9qRFlGxvCOIBDBDxFePQSn7ZMAnrYGhrrOo6siO/MIqwfyilLR27pkfDgUk+raLuzADS8A3S/KLBisc0g==}
 
@@ -21610,7 +21638,7 @@ snapshots:
   '@auth/core@0.41.2':
     dependencies:
       '@panva/hkdf': 1.2.1
-      jose: 6.1.0
+      jose: 6.2.10
       oauth4webapi: 3.8.1
       preact: 10.24.3
       preact-render-to-string: 6.5.11(preact@10.24.3)
@@ -35832,8 +35860,6 @@ snapshots:
   jose@4.15.9: {}
 
   jose@5.9.4: {}
-
-  jose@6.1.0: {}
 
   jose@6.2.10: {}
 

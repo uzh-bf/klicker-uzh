@@ -14,6 +14,7 @@ test.describe('Knowledge base management workspace', () => {
     const kbName = `UX review ${Date.now()}`
     const resourceTitle = `UX website ${Date.now()}`
     let detailPath: string | undefined
+    let importedSourceMode: 'data' | 'empty' | 'error' | 'incomplete' = 'data'
 
     try {
       await page.goto(`${manageUrl}/resources/knowledgeBases`)
@@ -87,6 +88,56 @@ test.describe('Knowledge base management workspace', () => {
       let replaceCalls = 0
       let syntheticFileVisible = false
       let syntheticFileReplaced = false
+      // Synthetic imported inventory: a video-derived source without any
+      // stored file, a link source with a safe original URL and an unknown
+      // ingestion time, a document source, and a document with a signed
+      // query in its stored URL. The second page is served only after the
+      // bounded inventory cursor is used.
+      const importedObservedAt = new Date(
+        Date.UTC(2026, 7, 2, 9, 0)
+      ).toISOString()
+      const importedIngestedAt = new Date(
+        Date.UTC(2026, 6, 18, 14, 30)
+      ).toISOString()
+      const importedVideoSource = {
+        id: 'imported-video-source',
+        sourceType: 'video',
+        title: 'Synthetic lecture recording',
+        sourceUrl: null,
+        ingestedAt: importedIngestedAt,
+        observedAt: importedObservedAt,
+        chunkCount: 12,
+      }
+      const importedLinkSource = {
+        id: 'imported-link-source',
+        sourceType: 'link',
+        title: 'Synthetic reading list',
+        sourceUrl: 'https://example.org/synthetic-reading-list',
+        ingestedAt: null,
+        observedAt: importedObservedAt,
+        chunkCount: 3,
+      }
+      const importedDocumentSource = {
+        id: 'imported-document-source',
+        sourceType: 'document',
+        title: 'Synthetic handbook',
+        sourceUrl: null,
+        ingestedAt: importedIngestedAt,
+        observedAt: importedObservedAt,
+        chunkCount: 7,
+      }
+      // A stored value that carries credentials, a query or a fragment is
+      // rejected by registration and must never render as a link.
+      const importedSignedSource = {
+        id: 'imported-signed-source',
+        sourceType: 'document',
+        title: 'Synthetic signed handbook',
+        sourceUrl:
+          'https://example.org/synthetic-handbook.pdf?sv=2025-11-05&sig=secret',
+        ingestedAt: importedIngestedAt,
+        observedAt: importedObservedAt,
+        chunkCount: 2,
+      }
       const pendingUpload = new Promise<void>((resolve) => {
         releasePendingUpload = resolve
       })
@@ -127,6 +178,85 @@ test.describe('Knowledge base management workspace', () => {
               ).persistedQuery?.sha256Hash
             : undefined
           operationName = hash ? persistedNames[hash] : undefined
+        }
+        if (operationName === 'GetKbImportedSources') {
+          if (importedSourceMode === 'error') {
+            await route.fulfill({
+              status: 500,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                errors: [{ message: 'synthetic inventory failure' }],
+              }),
+            })
+            return
+          }
+          if (importedSourceMode === 'empty') {
+            await route.fulfill({
+              status: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                data: {
+                  getKbImportedSources: {
+                    items: [],
+                    pageInfo: { hasNextPage: false, endCursor: null },
+                    totalSourcesInScan: 0,
+                    incomplete: false,
+                    unidentifiedChunks: 0,
+                  },
+                },
+              }),
+            })
+            return
+          }
+          const variables = (() => {
+            try {
+              return (
+                (
+                  request.postDataJSON() as {
+                    variables?: { after?: unknown }
+                  }
+                ).variables ?? {}
+              )
+            } catch {
+              return {}
+            }
+          })()
+          const after =
+            typeof variables.after === 'string' ? variables.after : null
+          const incomplete = importedSourceMode === 'incomplete'
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                getKbImportedSources: after
+                  ? {
+                      items: [
+                        importedLinkSource,
+                        importedDocumentSource,
+                        importedSignedSource,
+                      ],
+                      pageInfo: { hasNextPage: false, endCursor: null },
+                      totalSourcesInScan: 4,
+                      incomplete: false,
+                      unidentifiedChunks: 0,
+                    }
+                  : {
+                      items: [importedVideoSource],
+                      pageInfo: incomplete
+                        ? { hasNextPage: false, endCursor: null }
+                        : {
+                            hasNextPage: true,
+                            endCursor: 'synthetic-imported-page-2',
+                          },
+                      totalSourcesInScan: incomplete ? 5000 : 4,
+                      incomplete,
+                      unidentifiedChunks: incomplete ? 2 : 0,
+                    },
+              },
+            }),
+          })
+          return
         }
         if (operationName === 'RequestKbFileUpload') {
           await route.fulfill({
@@ -423,6 +553,50 @@ test.describe('Knowledge base management workspace', () => {
       await expect(detail).toBeVisible()
       await expect(fileRow).toContainText(/Version 1 remains|Version 1 bleibt/)
 
+      const importedSection = page.getByTestId('kb-imported-sources')
+      await expect(importedSection).toBeVisible()
+      await expect(page.getByTestId('kb-imported-sources-notice')).toBeVisible()
+
+      const importedVideoRow = page.getByTestId(
+        'kb-imported-source-imported-video-source'
+      )
+      await expect(importedVideoRow).toContainText(
+        'Synthetic lecture recording'
+      )
+      await expect(
+        page.getByTestId('kb-imported-source-type-imported-video-source')
+      ).toContainText('Video')
+      // A video-derived source is listed without any stored file or link.
+      await expect(
+        page.getByTestId('kb-imported-source-video-hint-imported-video-source')
+      ).toBeVisible()
+      await expect(importedVideoRow.locator('a')).toHaveCount(0)
+      await expect(
+        page.getByTestId('kb-imported-source-ingested-imported-video-source')
+      ).toBeVisible()
+
+      // The bounded inventory loads its next page on demand.
+      await page.getByTestId('load-more-imported-sources').click()
+      await expect(
+        page.getByTestId('kb-imported-source-imported-link-source')
+      ).toBeVisible()
+      await expect(importedSection.locator('li')).toHaveCount(4)
+      await expect(
+        page.getByTestId('kb-imported-source-link-imported-link-source')
+      ).toHaveAttribute('href', 'https://example.org/synthetic-reading-list')
+      // An unrecorded ingestion time stays honestly unknown.
+      await expect(
+        page.getByTestId('kb-imported-source-ingested-imported-link-source')
+      ).toContainText(/not recorded|nicht erfasst/)
+      // A stored URL with credentials, query or fragment stays unlinked.
+      const importedSignedRow = page.getByTestId(
+        'kb-imported-source-imported-signed-source'
+      )
+      await expect(importedSignedRow).toContainText('Synthetic signed handbook')
+      await expect(importedSignedRow.locator('a')).toHaveCount(0)
+      // The inventory is read-only: no ingestion, retry or deletion controls.
+      await expect(importedSection.getByRole('button')).toHaveCount(0)
+
       await page.setViewportSize({ width: 1440, height: 900 })
       await page.screenshot({
         path: testInfo.outputPath('kb-management-en-desktop.png'),
@@ -438,11 +612,47 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByTestId('kb-chatbot-settings').getByText('Konfigurieren')
       ).toBeVisible()
+      await page.getByTestId('kb-imported-sources').scrollIntoViewIfNeeded()
       await page.screenshot({
         path: testInfo.outputPath('kb-management-de-desktop.png'),
         fullPage: true,
       })
+
+      await page.setViewportSize({ width: 375, height: 812 })
+      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
+      await page.screenshot({
+        path: testInfo.outputPath('kb-management-de-mobile.png'),
+        fullPage: true,
+      })
+
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
+      await page.screenshot({
+        path: testInfo.outputPath('kb-management-en-mobile.png'),
+        fullPage: true,
+      })
+
+      // The inventory renders its empty and failed initial-load branches.
+      importedSourceMode = 'empty'
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
+      await expect(page.getByTestId('kb-imported-sources-empty')).toBeVisible()
+
+      importedSourceMode = 'error'
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
+      await expect(page.getByTestId('kb-imported-sources-error')).toBeVisible()
+
+      // A truncated scan window is surfaced instead of a fake total.
+      importedSourceMode = 'incomplete'
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
+      await expect(
+        page.getByTestId('kb-imported-sources-incomplete')
+      ).toBeVisible()
+      importedSourceMode = 'data'
     } finally {
+      importedSourceMode = 'data'
       if (detailPath) {
         await page.setViewportSize({ width: 1440, height: 900 })
         await page.goto(`${manageUrl}${detailPath}`)
