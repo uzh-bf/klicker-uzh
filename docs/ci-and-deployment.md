@@ -110,6 +110,63 @@ Unrelated issue comments are filtered before Final AI review allocates its
 trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
 
+## Public ARM64 runner operations
+
+Run the policy reconciler from a trusted administrator checkout. Both modes
+accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;
+`--check` needs organization
+Self-hosted runners read access and `--apply` needs write access, plus repository
+Metadata read access. Revoke the token after the verified readback.
+
+```bash
+util/reconcile-public-pr-arm64-runner-group.sh --check
+util/reconcile-public-pr-arm64-runner-group.sh --apply
+```
+
+The exact target is selected access to `uzh-bf/klicker-uzh`, workflow
+restrictions enabled, and only
+`uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`.
+The script fails on inherited or read-only policy, extra repositories or
+workflows, and runner membership other than `public-pr-arm64-01` through `-08`.
+
+Check both existing hosts from the administrator machine before applying the
+optional optimization. Verify and register both SSH host keys before running
+the controller; unknown or changed keys are rejected. Pause new workflow
+dispatch to the pool and let active jobs finish before applying changes.
+`--check` streams the checksum-verified payload and
+makes no persistent remote change. `--apply` is rerunnable, requires both hosts
+to be idle, and asks once before changing either host.
+
+```bash
+util/reconcile-public-pr-arm64-pool.sh \
+  --check \
+  --host-a "$VM_A_IP" \
+  --host-b "$VM_B_IP"
+
+util/reconcile-public-pr-arm64-pool.sh \
+  --apply \
+  --host-a "$VM_A_IP" \
+  --host-b "$VM_B_IP"
+```
+
+After applying, inspect a bounded UTC interval on each host and correlate
+`run_id` and `runner` with the GitHub job summary and step timestamps:
+Set `RECONCILE_START_UTC` and `RECONCILE_END_UTC` to the actual apply interval.
+
+```bash
+sudo journalctl \
+  -t actions-runner-telemetry \
+  --since "${RECONCILE_START_UTC:?set the apply start time in UTC}" \
+  --until "${RECONCILE_END_UTC:?set the apply end time in UTC}" \
+  -o cat
+```
+
+Record one row per job with run ID, runner, GitHub start/completion, install and
+build seconds, exact cache-hit flags, shard setup and test seconds, host load,
+available memory, Docker-disk pressure, conclusion, and artifact. This separates
+cache misses, host contention, service setup, test structure, and scheduling;
+do not infer one cause from total duration alone.
+
 ## Image builds
 
 The selected staging source currently has 15 `v3_*-stg.yml` workflows with 16
