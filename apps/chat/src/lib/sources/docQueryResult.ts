@@ -1,5 +1,5 @@
 import { normalizeSourcesFromParts } from './normalizeSources'
-import { getPublicSourceUrl } from './sourceUrl'
+import { getPublicSourceUrl, getSourceNavigationUrl } from './sourceUrl'
 
 export { getPublicSourceUrl } from './sourceUrl'
 
@@ -145,8 +145,7 @@ export function getDocQueryResult(raw: unknown): {
           end !== undefined && (startSec === undefined || end >= startSec)
             ? end
             : undefined,
-        // Physical PDF page indexing is not established by the current producer contract.
-        url: chunkLink(url, source, startSec),
+        url: getSourceNavigationUrl(chunkLink(url, source, startSec), page),
       })
     })
     if (!title && !url && !chunks.some((chunk) => chunk.content)) return

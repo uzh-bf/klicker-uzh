@@ -295,10 +295,12 @@ function mapElementParts(
     content: element.elementData.content,
     explanation: element.elementData.explanation ?? null,
     hasSampleSolution:
+      element.elementData.options != null &&
       'hasSampleSolution' in element.elementData.options
         ? (element.elementData.options.hasSampleSolution ?? false)
         : false,
     hasAnswerFeedbacks:
+      element.elementData.options != null &&
       'hasAnswerFeedbacks' in element.elementData.options
         ? (element.elementData.options.hasAnswerFeedbacks ?? false)
         : false,
@@ -415,10 +417,12 @@ export function assessmentSourceElementState(
       content: elementData.content,
       explanation: elementData.explanation ?? null,
       hasSampleSolution:
+        elementData.options != null &&
         'hasSampleSolution' in elementData.options
           ? (elementData.options.hasSampleSolution ?? false)
           : false,
       hasAnswerFeedbacks:
+        elementData.options != null &&
         'hasAnswerFeedbacks' in elementData.options
           ? (elementData.options.hasAnswerFeedbacks ?? false)
           : false,

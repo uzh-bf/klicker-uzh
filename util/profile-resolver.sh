@@ -21,6 +21,13 @@ _profile_components() {
   local -a components=()
 
   [ -n "$remaining" ] || return 2
+  # Fresh isolated setup prepares the container before the database is seeded.
+  # It must select no application processes and cannot combine with app profiles.
+  if [ "$remaining" = local-kb-setup ]; then
+    [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ] || return 2
+    printf '%s\n' local-kb-setup
+    return 0
+  fi
   while true; do
     if [[ "$remaining" == *,* ]]; then
       component="${remaining%%,*}"
@@ -63,7 +70,7 @@ profile_wants() {
         esac
         ;;
       mcp) [ "$marker" = klicker-local-mcp ] && return 0 ;;
-      ai|email) ;;
+      ai|email|local-kb-setup) ;;
       *) return 2 ;;
     esac
   done

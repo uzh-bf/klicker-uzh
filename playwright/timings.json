@@ -3,131 +3,155 @@
   "durations": [
     {
       "spec": "tests/0-baseline-ops.spec.ts",
-      "duration": 9.217
+      "duration": 13.494
     },
     {
       "spec": "tests/0-video-embed.spec.ts",
-      "duration": 7.375
+      "duration": 10.28
     },
     {
       "spec": "tests/A-login.spec.ts",
-      "duration": 37.116
+      "duration": 54.615
     },
     {
       "spec": "tests/B-catalyst-request.spec.ts",
-      "duration": 5.426
+      "duration": 7.175
     },
     {
       "spec": "tests/B-feature-access.spec.ts",
-      "duration": 28.837
+      "duration": 55.887
     },
     {
       "spec": "tests/C-control.spec.ts",
-      "duration": 11.389
+      "duration": 12.242
     },
     {
       "spec": "tests/D-elements-content.spec.ts",
-      "duration": 12.24
+      "duration": 16.18
     },
     {
       "spec": "tests/E-elements-flashcards.spec.ts",
-      "duration": 14.813
+      "duration": 19.699
     },
     {
       "spec": "tests/F-elements-sc.spec.ts",
-      "duration": 22.457
+      "duration": 35.22
     },
     {
       "spec": "tests/G-elements-mc.spec.ts",
-      "duration": 31.546
+      "duration": 48.219
     },
     {
       "spec": "tests/H-elements-kprim.spec.ts",
-      "duration": 24.837
+      "duration": 40.408
     },
     {
       "spec": "tests/I-elements-numerical.spec.ts",
-      "duration": 20.025
+      "duration": 32.244
     },
     {
       "spec": "tests/J-elements-free-text.spec.ts",
-      "duration": 10.687
+      "duration": 18.391
     },
     {
       "spec": "tests/K-elements-selection.spec.ts",
-      "duration": 51.176
+      "duration": 79.65
     },
     {
       "spec": "tests/L-elements-case-study.spec.ts",
-      "duration": 97.062
+      "duration": 180.008
     },
     {
       "spec": "tests/MA-elements-operations.spec.ts",
-      "duration": 272.673
+      "duration": 440.207
     },
     {
       "spec": "tests/MB-instance-updates.spec.ts",
-      "duration": 73.677
+      "duration": 118.53
     },
     {
       "spec": "tests/N-course.spec.ts",
-      "duration": 241.131
+      "duration": 399.354
     },
     {
       "spec": "tests/O1-live-quiz-core.spec.ts",
-      "duration": 393.653
+      "duration": 385.202
     },
     {
       "spec": "tests/O2-live-quiz-collaboration.spec.ts",
-      "duration": 437.223
+      "duration": 445.23
     },
     {
       "spec": "tests/P-microlearning.spec.ts",
-      "duration": 452.675
+      "duration": 724.074
     },
     {
       "spec": "tests/P-pagination-show-all.spec.ts",
-      "duration": 3.173
+      "duration": 5.5
+    },
+    {
+      "spec": "tests/P-question-library-batch-operations.spec.ts",
+      "duration": 3.845
+    },
+    {
+      "spec": "tests/P-question-library-feedback.spec.ts",
+      "duration": 4.015
+    },
+    {
+      "spec": "tests/P-question-library-filters.spec.ts",
+      "duration": 13.463
+    },
+    {
+      "spec": "tests/P-question-library-first-use.spec.ts",
+      "duration": 12.838
     },
     {
       "spec": "tests/Q-practice-quiz.spec.ts",
-      "duration": 314.889
+      "duration": 646.394
     },
     {
       "spec": "tests/R-bookmarking.spec.ts",
-      "duration": 64.927
+      "duration": 71.426
     },
     {
       "spec": "tests/S-group-activity.spec.ts",
-      "duration": 391.162
+      "duration": 598.164
+    },
+    {
+      "spec": "tests/T-chatbot-authoring.spec.ts",
+      "duration": 60.197
     },
     {
       "spec": "tests/T-resources.spec.ts",
-      "duration": 388.273
+      "duration": 397.3
     },
     {
       "spec": "tests/U-catalog.spec.ts",
-      "duration": 315.904
+      "duration": 197.535
     },
     {
       "spec": "tests/V-template.spec.ts",
-      "duration": 312.552
+      "duration": 490.164
     },
     {
       "spec": "tests/W-activity-log.spec.ts",
-      "duration": 146.725
+      "duration": 182.784
+    },
+    {
+      "spec": "tests/W4-activity-wizard-safety.spec.ts",
+      "duration": 343.495
     },
     {
       "spec": "tests/X-review.spec.ts",
-      "duration": 230.696
+      "duration": 302.431
     },
     {
       "spec": "tests/Y-chat.spec.ts",
-      "duration": 121.832
+      "duration": 188.236
     },
     {
       "spec": "tests/Z-credential-verification.spec.ts",
-      "duration": 41.527
+      "duration": 44.86
     }
   ]
 }

@@ -163,7 +163,7 @@ Deletion is asynchronous and fenced by `deletedAt`/`deletedById` on both `KB` an
 
 `KBChatbot` is the typed ownership link between a knowledge base and a chatbot. A chatbot may retain historical disabled links, but the partial unique index `KBChatbot_one_enabled_per_chatbot_key` permits at most one enabled knowledge base per chatbot. The corresponding KB MCP configurations are derived runtime state, not the ownership relation itself.
 
-Each KB retains at most 100 resource allocations and 500 MiB. Quota accounting includes hidden resource tombstones and unconsumed upload tickets, so asynchronous cleanup and concurrent upload requests cannot free or oversubscribe capacity early. A ticket reserves its declared bytes; confirmation converts that reservation into a resource without double counting. URL bytes become known during source preparation and atomically replace that resource's previous measured size under the parent-KB lock.
+Each KB retains at most 1000 resource allocations. Its storage allowance defaults to 500 MiB; an administrator-controlled `storageLimitMiB` override applies consistently to admission, ingestion and metrics. Quota accounting includes hidden resource tombstones and unconsumed upload tickets, so asynchronous cleanup and concurrent upload requests cannot free or oversubscribe capacity early. A ticket reserves its declared bytes; confirmation converts that reservation into a resource without double counting. URL bytes become known during source preparation and atomically replace that resource's previous measured size under the parent-KB lock.
 
 Lecturer-facing metrics are derived from these rows rather than stored counters. They distinguish visible resources and known bytes from retained quota usage, conservative 25 MiB reservations for legacy unknown-size rows, upload reservations, pending cleanup, and enabled chatbot consumers. The catalog computes the same measures with bounded grouped queries for one page of owned KBs.
 
@@ -201,11 +201,11 @@ requester lost ADMIN/OWNER permission in the meantime.
 - **Not copied:** participants/participations, groups, results, leaderboards, responses. Copies land in DRAFT with zeroed `results`/`anonymousResults` and fresh `instanceStatistics` (`packages/util/src/elements.ts:getActivityInstanceConnectOrCreate`, duplication branch). Live-quiz PINs are regenerated, never reused; a SSO course's `pinCode` is nulled.
 - **Shared elements:** duplicated instances connect to the **same `Element` rows** and keep the source instance's `elementData` snapshot (same item version the previous cohort saw, even if the Element moved on — `areInstancesOutdated` flags the drift). Element edits reach both courses only through the instance-update flow.
 - **Date shifting:** The duplication dialog requires a new start date; the end date is derived from the original course duration and cannot be edited in the dialog. MicroLearning/GroupActivity schedules shift by the local calendar-day delta between old and new course start while preserving the Europe/Zurich wall-clock time across DST changes (`courseDuplication.ts:getCourseStartDayDelta`, `courseDuplication.ts:applyCourseStartDelta`). The dialog initially derives the group creation deadline from its original offset to the course start, then lets the lecturer override it before creating the copy (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:FormikNativeDateInput`).
-Assessment evidence is a separate durable record of actions and observed
-effects, not another business-data relation. Its scope, rollout inventory, and
-outbox retain scalar LiveQuiz/course/participant UUIDs without foreign keys so
-later deletion of mutable domain rows cannot erase the evidence trail. See
-[Assessment Audit Evidence](./assessment-audit-evidence.md).
+  Assessment evidence is a separate durable record of actions and observed
+  effects, not another business-data relation. Its scope, rollout inventory, and
+  outbox retain scalar LiveQuiz/course/participant UUIDs without foreign keys so
+  later deletion of mutable domain rows cannot erase the evidence trail. See
+  [Assessment Audit Evidence](./assessment-audit-evidence.md).
 
 Assessment-mode `LiveQuizResponse` rows additionally carry the optional unique
 `submissionId` created by the PWA. This identity binds one authoritative
