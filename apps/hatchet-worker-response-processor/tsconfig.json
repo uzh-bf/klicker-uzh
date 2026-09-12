@@ -1,8 +1,16 @@
 {
-  "include": ["./src/**/*", "./scripts/**/*"],
+  "include": [
+    "./src/**/*",
+    "./scripts/**/*",
+    "./test/**/*",
+    "./vitest.config.ts"
+  ],
   "compilerOptions": {
     /* Base Options: */
     "esModuleInterop": true,
+    "paths": {
+      "@/*": ["./*"]
+    },
     "skipLibCheck": true,
     "target": "es2022",
     "allowJs": true,
