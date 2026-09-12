@@ -209,6 +209,17 @@ test.describe('Knowledge base management workspace', () => {
             return
           }
           const variables = (() => {
+            // Persisted-query GET requests carry the variables in the URL;
+            // POST requests carry them in the JSON body. Both must resolve
+            // so the pagination cursor reaches this synthetic handler.
+            const urlVariables = requestUrl.searchParams.get('variables')
+            if (urlVariables) {
+              try {
+                return JSON.parse(urlVariables) as { after?: unknown }
+              } catch {
+                return {}
+              }
+            }
             try {
               return (
                 (
