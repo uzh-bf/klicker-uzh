@@ -6,7 +6,7 @@ import {
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
-  QGetChatbotsInfoWithAuthoringRevisionsDocument,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, H2, Select } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
@@ -37,7 +37,7 @@ function Chatbots() {
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
   const { data, loading } = useQuery(
-    QGetChatbotsInfoWithAuthoringRevisionsDocument,
+    QGetChatbotsInfoWithKnowledgeBasesDocument,
     {
       fetchPolicy: 'network-only',
     }

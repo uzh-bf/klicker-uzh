@@ -7,7 +7,7 @@ import {
   CreditResetPeriod,
   MSaveChatbotRevisionDocument,
   QGetCatalystRequestAccessDocument,
-  QGetChatbotsInfoWithAuthoringRevisionsDocument,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -421,6 +421,8 @@ function ChatbotDetails({
     )
   }
 
+  const enabledKnowledgeBases = chatbot.enabledKnowledgeBases ?? []
+
   const resetPeriodLabel = (() => {
     switch (chatbot.creditResetPeriod) {
       case CreditResetPeriod.Daily:
@@ -616,9 +618,7 @@ function ChatbotDetails({
             },
           },
         },
-        refetchQueries: [
-          { query: QGetChatbotsInfoWithAuthoringRevisionsDocument },
-        ],
+        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
         awaitRefetchQueries: true,
       })
 
@@ -882,18 +882,23 @@ function ChatbotDetails({
               <div className="mb-2 text-sm font-medium text-gray-700">
                 {t('manage.resources.knowledgeBase')}
               </div>
-              {chatbot.enabledKnowledgeBase ? (
+              {enabledKnowledgeBases.length > 0 ? (
                 <div className="flex flex-wrap items-center gap-3">
-                  <Link
-                    href={`/resources/knowledgeBases/${chatbot.enabledKnowledgeBase.id}`}
-                    className="text-primary-100 hover:underline"
-                    data-cy="chatbot-enabled-knowledge-base"
-                  >
-                    {chatbot.enabledKnowledgeBase.name}
-                  </Link>
-                  <span className="text-sm text-gray-600">
-                    {t('manage.resources.chatbotKnowledgeSingleActive')}
-                  </span>
+                  {enabledKnowledgeBases.map((knowledgeBase) => (
+                    <Link
+                      key={knowledgeBase.id}
+                      href={`/resources/knowledgeBases/${knowledgeBase.id}`}
+                      className="text-primary-100 hover:underline"
+                      data-cy="chatbot-enabled-knowledge-base"
+                    >
+                      {knowledgeBase.name}
+                    </Link>
+                  ))}
+                  {enabledKnowledgeBases.length === 1 ? (
+                    <span className="text-sm text-gray-600">
+                      {t('manage.resources.chatbotKnowledgeSingleActive')}
+                    </span>
+                  ) : null}
                 </div>
               ) : (
                 <div className="space-y-2">

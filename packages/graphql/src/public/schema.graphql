@@ -754,7 +754,8 @@ type Chatbot {
   creditResetPeriod: CreditResetPeriod!
   description: String
   disclaimerSummary: ChatbotDisclaimerSummary
-  enabledKnowledgeBase: ChatbotKnowledgeBaseSummary
+  enabledKnowledgeBase: ChatbotKnowledgeBaseSummary @deprecated(reason: "Use enabledKnowledgeBases for all attached knowledge bases.")
+  enabledKnowledgeBases: [ChatbotKnowledgeBaseSummary!]!
   expectedStudentCount: Int
   id: ID!
   knowledgeGraphRetrievalEnabled: Boolean!
@@ -2257,8 +2258,9 @@ type KB {
 type KBChatbotBinding {
   chatbotId: ID!
   chatbotName: String!
-  enabledKbId: ID
-  enabledKbName: String
+  enabledKbId: ID @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
+  enabledKbName: String @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
+  enabledKbs: [ChatbotKnowledgeBaseSummary!]!
 }
 
 type KBConnection {
@@ -2363,16 +2365,16 @@ type KBKnowledgeGraphConfig {
 type KBMetrics {
   linkedConsumerCount: Int!
   pendingCleanupCount: Int!
-  pendingCleanupSizeBytes: Int!
+  pendingCleanupSizeBytes: Float!
   quotaResourceCount: Int!
-  quotaSizeBytes: Int!
+  quotaSizeBytes: Float!
   reservedResourceCount: Int!
-  reservedSizeBytes: Int!
+  reservedSizeBytes: Float!
   resourceLimit: Int!
-  storageLimitBytes: Int!
+  storageLimitBytes: Float!
   unknownSizeResourceCount: Int!
   visibleResourceCount: Int!
-  visibleSizeBytes: Int!
+  visibleSizeBytes: Float!
 }
 
 type KBPageInfo {

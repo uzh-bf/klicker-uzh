@@ -1016,6 +1016,8 @@ Other participants will only see your public **participant profile**, including 
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
     chatbot: {
+      graphChoiceLabel: 'Knowledge graph',
+      graphChoicePlaceholder: 'Select a knowledge graph',
       loginRequiredMessage:
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
       goToLogin: 'Go to login',
@@ -1853,9 +1855,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     runStatusSuperseded: 'Superseded',
     ingestionStartError: 'The ingestion operation could not be started.',
     storageLimitError:
-      'This resource exceeds the 500 MiB knowledge base storage limit.',
+      'This resource exceeds the knowledge base storage limit.',
     resourceLimitError:
-      'This knowledge base has reached its limit of 100 resources.',
+      'This knowledge base has reached its limit of 1,000 resources.',
     uploadMismatchError:
       'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',

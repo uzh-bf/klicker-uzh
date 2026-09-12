@@ -147,7 +147,7 @@ test('reporting jobs keep real failures and successful path skips visible', () =
 const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'test-playwright.yml',
-    'selector state and closed-PR cancellation follow the draft/ready lifecycle',
+    'drafts skip execution and report the skip; ready transitions start the full run and draft conversion or closure cancels it',
   ],
   [
     'check-ocr-final-review.yml',

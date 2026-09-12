@@ -1,5 +1,6 @@
 import {
   ChatKnowledgeGraphRequestError,
+  ChatKnowledgeGraphSelectionRequiredError,
   createChatKnowledgeGraphDataSource,
 } from '@/src/components/knowledge-graph/ChatKnowledgeGraphWorkspace'
 import { CHAT_GUEST_SESSION_STORAGE_KEY } from '@/src/hooks/useChatGuestTokenBootstrap'
@@ -72,6 +73,43 @@ describe('chat knowledge graph API client', () => {
 
     expect(fetcher).toHaveBeenCalledWith(
       `/api/chatbots/${chatbotId}/knowledge-graph?operation=search&q=Android+security+%26+privacy`
+    )
+  })
+
+  it('keeps the selected KB on every graph operation', async () => {
+    const fetcher = vi
+      .fn()
+      .mockImplementation(() => jsonResponse(graphResponse))
+    const source = createChatKnowledgeGraphDataSource(
+      chatbotId,
+      fetcher,
+      graphResponse.kbId
+    )
+    await source.overview()
+    await source.search('synthetic')
+    await source.neighbors('12')
+    for (const [url] of fetcher.mock.calls) {
+      expect(new URL(url, 'http://localhost').searchParams.get('kbId')).toBe(
+        graphResponse.kbId
+      )
+    }
+  })
+
+  it('distinguishes graph selection from unavailable publication', async () => {
+    const choices = [{ id: graphResponse.kbId, name: 'Synthetic graph' }]
+    const source = createChatKnowledgeGraphDataSource(
+      chatbotId,
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(
+            { code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED', choices },
+            409
+          )
+        )
+    )
+    await expect(source.overview()).rejects.toBeInstanceOf(
+      ChatKnowledgeGraphSelectionRequiredError
     )
   })
 

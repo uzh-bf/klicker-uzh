@@ -1028,6 +1028,8 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
     chatbot: {
+      graphChoiceLabel: 'Wissensgraph',
+      graphChoicePlaceholder: 'Wissensgraph auswählen',
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
       goToLogin: 'Zum Login',
@@ -1875,9 +1877,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestionStartError:
       'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
     storageLimitError:
-      'Diese Ressource überschreitet das Speicherlimit von 500 MiB für die Wissensdatenbank.',
+      'Diese Ressource überschreitet das Speicherlimit der Wissensdatenbank.',
     resourceLimitError:
-      'Diese Wissensdatenbank hat ihr Limit von 100 Ressourcen erreicht.',
+      'Diese Wissensdatenbank hat ihr Limit von 1000 Ressourcen erreicht.',
     uploadMismatchError:
       'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
