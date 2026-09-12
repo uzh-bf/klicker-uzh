@@ -356,8 +356,18 @@ test('all first-party chart images prefer the optional global tag', () => {
   assert.equal(values.global.imageTag, '')
 
   const imageSources = templateImageSources()
-  assert.equal(imageSources.length, 18)
+  assert.equal(imageSources.length, 20)
+  // Assessment audit workers only run when the feature is explicitly enabled,
+  // so their tags are required rather than falling back to the global tag.
+  const requiredTagTemplates = new Set([
+    'deployment-audit-workers.yaml',
+    'deployment-audit-media-policy-worker.yaml',
+  ])
   for (const { name, line } of imageSources) {
+    if (requiredTagTemplates.has(name)) {
+      assert.match(line, /required /u, `${name}: ${line}`)
+      continue
+    }
     assert.match(
       line,
       /:\{\{ \.Values\.global\.imageTag \| default /u,
