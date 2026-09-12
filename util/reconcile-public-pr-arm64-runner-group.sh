@@ -233,19 +233,25 @@ apply_policy() {
   local repositories_payload
 
   require_confirmation
+  # Keep public execution disabled until both access restrictions are installed.
+  github_api PATCH "/orgs/${ORGANIZATION}/actions/runner-groups/${GROUP_ID}" \
+    -f visibility=selected \
+    -F allows_public_repositories=false >/dev/null ||
+    die 'could not disable public access; no further policy updates attempted'
+
+  repositories_payload=$(jq -nc --argjson repository_id "$REPOSITORY_ID" \
+    '{selected_repository_ids: [$repository_id]}')
+  github_api PUT "/orgs/${ORGANIZATION}/actions/runner-groups/${GROUP_ID}/repositories" \
+    --input - <<<"$repositories_payload" >/dev/null ||
+    die 'runner-group repository policy update failed; public access remains disabled'
+
   github_api PATCH "/orgs/${ORGANIZATION}/actions/runner-groups/${GROUP_ID}" \
     -f "name=${RUNNER_GROUP}" \
     -f visibility=selected \
     -F allows_public_repositories=true \
     -F restricted_to_workflows=true \
     -f "selected_workflows[]=${WORKFLOW_REF}" >/dev/null ||
-    die 'runner-group workflow policy update failed'
-
-  repositories_payload=$(jq -nc --argjson repository_id "$REPOSITORY_ID" \
-    '{selected_repository_ids: [$repository_id]}')
-  github_api PUT "/orgs/${ORGANIZATION}/actions/runner-groups/${GROUP_ID}/repositories" \
-    --input - <<<"$repositories_payload" >/dev/null ||
-    die 'runner-group repository policy update failed'
+    die 'runner-group workflow policy update failed; verify policy with --check before retrying'
 }
 
 main() {

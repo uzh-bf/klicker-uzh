@@ -435,6 +435,13 @@ idle checks before each restart, and pre-authorized SSH host keys.
 The checklist below records the original implementation phase; final CI and
 review for this reconciliation remain pending.
 
+The September 12 follow-up fixes partial runner-group updates by disabling
+public access before replacing repository access and only then enabling the
+exact workflow policy. Fixture checks cover failure at each of the three API
+writes and confirm no subsequent write occurs after failure. No live policy
+update was performed. The host environment descriptor-race correction and
+remaining PR feedback are still open; this is not merge-ready.
+
 - [x] Current `origin/v3`, primary-checkout divergence, prior plan, workflows,
       provisioners, documentation, and closest shared skill inspected.
 - [x] Exact runner-group contract confirmed against current GitHub documentation.
@@ -442,12 +449,12 @@ review for this reconciliation remain pending.
 - [x] User approved this plan and its named external policy boundary.
 - [x] S0 policy reconciler is fixture-tested against exact, drifted, inherited,
       read-only, and incomplete runner-group states.
-- [ ] S0 live runner-group policy is applied and proved with an authenticated
-      API readback.
+- [x] S0 live runner-group policy was applied and proved with an authenticated
+      API readback on August 29; this is historical evidence, not a fresh check.
 - [x] S1 adds a trusted GitHub-hosted ARM64 cache warmer and proves the public
       workflow remains restore-only with matching cache keys.
-- [x] S2 delivers checksum-pinned, idempotent host and two-host reconcilers;
-      host `--apply` remains intentionally unexecuted.
+- [x] S2 delivered checksum-pinned host and two-host reconcilers; the August 29
+      host apply completed. September source corrections have not been applied.
 - [x] S3 records cache, phase, runner-name, and bounded host-pressure evidence
       without changing route, shard, artifact, or required-status semantics.
 - [x] S4 created and sequentially evaluated the shared

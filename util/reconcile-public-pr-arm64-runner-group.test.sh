@@ -73,6 +73,21 @@ main() {
   expect_check_failure read-only 'workflow restrictions are read-only'
   expect_check_failure missing-runner 'membership must be exactly'
   expect_apply_success
+  local scenario expected_state
+  for scenario in disable-failure repository-failure enable-failure; do
+    rm -f -- "${TEMP_DIR}/state"
+    if printf 'LOCK PUBLIC PR RUNNER GROUP\n' |
+      run_policy "$scenario" --apply >"${TEMP_DIR}/${scenario}.out" 2>&1; then
+      fail "${scenario} unexpectedly succeeded"
+    fi
+    case "$scenario" in
+      disable-failure) expected_state=before ;;
+      repository-failure) expected_state=disabled ;;
+      enable-failure) expected_state=repositories ;;
+    esac
+    [[ "$(cat "${TEMP_DIR}/state" 2>/dev/null || printf before)" == "$expected_state" ]] ||
+      fail "${scenario} continued past its failed access update"
+  done
   printf 'PASS: runner-group policy reconciliation\n'
 }
 
