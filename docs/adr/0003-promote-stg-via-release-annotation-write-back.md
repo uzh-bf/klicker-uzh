@@ -40,6 +40,13 @@ rollout annotation, is the deployment provenance. Keep automatic promotion
 disabled until the SHA publishers, chart override, platform ref, and an initial
 manual receipt-backed ref creation have all been verified.
 
+At activation, staging ArgoCD will resolve `stg-release` to a commit and supply
+`$ARGOCD_APP_REVISION` as the forced-string `global.imageTag`; after sync, each
+deployed `imageID` digest must match the controller receipt. The ArgoCD revision,
+digest receipt, migration result, sync, health, and acceptance remain separate
+evidence. Production is unchanged: it stays on `v3`, receives no global image
+parameter, and continues to use hand-edited release tags.
+
 ## Context
 
 Staging pulls the floating image tag selected by the `STG_SOURCE_BRANCH` repository variable (the committed values currently use `v3-ai`; unset defaults to `v3`). A rebuild therefore leaves the rendered manifest byte-identical, ArgoCD detects no drift, and the new image sits in the registry until somebody restarts the pods by hand. Staging is the canary for everything merged since the prd-pinned tag, so "merged but not running" is the failure mode that matters most: [PR #5303](https://github.com/uzh-bf/klicker-uzh/pull/5303) was a regression that only production's tag pin had shielded, and it stayed unrolled on stg after merge with nothing signalling that.

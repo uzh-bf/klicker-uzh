@@ -1,7 +1,7 @@
 FROM node:24.16.0
 
-# Install dependencies
-RUN npm install -g pnpm
+# Enable the repo-pinned package manager
+RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
 
 WORKDIR /app
 
@@ -13,14 +13,8 @@ RUN echo '#!/bin/bash\n\
   \n\
   cd "${OLAT_TEST_WORKSPACE:?}"\n\
   \n\
-  # Install dependencies in-container (linux)\n\
-  if [ "$CI" = "true" ]; then\n\
-  echo "Using dependencies installed on the CI host..."\n\
-  export pnpm_config_verify_deps_before_run=false\n\
-  else\n\
   echo "Installing dependencies..."\n\
-  pnpm install --frozen-lockfile\n\
-  fi\n\
+  pnpm install --frozen-lockfile --reporter=append-only\n\
   \n\
   # Ensure PostgreSQL is ready\n\
   echo "Waiting for PostgreSQL to be ready..."\n\

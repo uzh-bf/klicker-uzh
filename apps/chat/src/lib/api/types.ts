@@ -4,6 +4,7 @@ import {
   Thread,
 } from '../../stores/chatStore'
 import { sortAttachmentsByPosition } from '../attachments/attachmentState'
+import { authedFetch } from '../client/authedFetch'
 import { type ReasoningEffort } from '../config/reasoning'
 
 export interface ApiError extends Error {
@@ -110,7 +111,7 @@ export const apiCall = async <T = unknown>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const response = await fetch(`/api${url}`, {
+  const response = await authedFetch(`/api${url}`, {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,

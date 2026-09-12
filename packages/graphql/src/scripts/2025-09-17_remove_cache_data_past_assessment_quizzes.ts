@@ -1,4 +1,8 @@
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import {
+  getKBGraphTerminalResult,
+  hatchetClient,
+  prepareHatchetTasks,
+} from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
@@ -11,6 +15,7 @@ import {
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
 } from '../services/groups.js'
+import { settleKbKnowledgeGraphResult } from '../services/knowledge.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -68,6 +73,18 @@ async function run() {
       handleStandardLiveQuizBlockClosureAggregation,
       handleAssessmentLiveQuizBlockClosureAggregation,
     },
+    getKBGraphTerminalResult,
+    settleKBGraphTerminalResult: ({
+      buildId,
+      result,
+      finishedAt,
+      allowLateSuccess,
+    }) =>
+      settleKbKnowledgeGraphResult(
+        prisma,
+        { buildId, result, allowLateSuccess },
+        finishedAt
+      ),
   })
 
   // find all ended assessment live quizzes

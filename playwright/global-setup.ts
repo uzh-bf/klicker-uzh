@@ -142,6 +142,7 @@ export async function seedDatabase() {
           catalystInstitutional: true,
           publicPreview: true,
           privatePreview: true,
+          aiFeaturesEnabled: true,
           role: UserRole.ADMIN,
           firstLogin: false,
           logins: {

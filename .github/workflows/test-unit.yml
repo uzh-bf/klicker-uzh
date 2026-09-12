@@ -28,7 +28,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/frontend-pwa/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          pattern: '^(apps/frontend-pwa/|apps/chat/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
 
   test-unit:
     needs: filter
@@ -104,7 +104,7 @@ jobs:
       - name: Build unit-test dependencies
         id: build
         shell: bash
-        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --concurrency=4
+        run: pnpm exec turbo run build --filter=@klicker-uzh/prisma --filter=@klicker-uzh/types --filter=@klicker-uzh/grading --filter=@klicker-uzh/util --filter=@klicker-uzh/graphql --filter=@klicker-uzh/markdown --filter=@klicker-uzh/feature-flags --concurrency=4
 
       - name: Provision disposable PostgreSQL
         id: provision_db

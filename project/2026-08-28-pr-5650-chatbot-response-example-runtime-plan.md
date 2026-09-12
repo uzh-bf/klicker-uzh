@@ -1,0 +1,264 @@
+# PR #5650 response-example runtime skill plan
+
+## Plan identity
+
+- Date: 2026-08-28
+- Ceremony: full path
+- Status: published for review
+- Branch: `feat/chatbot-response-example-runtime`
+- Target: `v3-ai`
+- Baseline: `609000ea9626e3fef2e713768ca2a796cac2f9a4`
+- PR: [#5650](https://github.com/uzh-bf/klicker-uzh/pull/5650)
+- Topology: standalone PR into the long-lived `v3-ai` consolidation branch;
+  not a native stack with the eventual `v3-ai` to `v3` promotion
+- Program plan: [Chatbot Test & Teach ground-truth plan](./2026-08-28-chatbot-test-and-teach-ground-truth-plan.md)
+
+## Goal
+
+Make approved, currently grounded response examples available to normal
+participant chat as a bounded hybrid skill: a deterministic prompt summary and
+an exact chatbot-and-mode search tool. Keep the seam reusable for the owner
+preview and the later examples-excluded baseline.
+
+## Non-goals
+
+- Do not capture or generate examples.
+- Do not implement the owner-preview integration before PR #5633 is merged.
+- Do not implement baseline runs, evaluation export, or DeepEval.
+- Do not add a vector provider, schema migration, source copies, or a second
+  canonical set.
+- Do not merge, deploy, invoke a model, or inspect live course data.
+
+## Execution contract
+
+- Execution owner: current main session as execution orchestrator.
+- Boundary owner: self.
+- Authority: local source and documentation edits, repository-native checks,
+  browser proof only if a visible UI changes, required read-only reviews,
+  local commits, the separately authorized exact branch push and PR
+  publication, branch-caused exact-head CI or review corrections, the
+  separately approved one-time integration of current `origin/v3-ai`, and the
+  user-directed correction of the invalid native stack registration.
+- Withheld: any further upstream integration, merge, release, deployment,
+  runtime activation, live model calls, secret access, and staging or
+  production data.
+- Terminal: the complete K6 package is committed, locally verified, reviewed,
+  published at PR #5650, and its exact-head checks and forge review are
+  dispositioned. Stop before merge.
+- Pause: current evidence cannot be resolved from the enabled KB; the change
+  needs a vector provider or unbounded prompt content; or participant auth,
+  persistence, credits, or source-retrieval behavior must change.
+
+## Decisions
+
+- Keep PR #5650 as a standalone PR targeted at `v3-ai`. The branch is a
+  long-lived consolidation branch for staging deployment, not the foundation
+  of a native stack. Never stack this PR with the separate eventual promotion
+  PR from `v3-ai` into `v3`.
+
+- Keep the first implementation small. Use one server-only response-example
+  runtime module in the chat app and shared pure projection helpers in the util
+  package. Do not introduce a new workspace package or a broad execution
+  kernel before a second runtime consumer exists. This supersedes K6's earlier
+  package topology in the umbrella plan; K5 adopts the same seam in owner
+  preview only after PR #5633 and K6 are merged.
+- Keep owner review transactions in GraphQL. Extend them with current-source
+  validation, and expose the same pure eligibility rules to chat.
+- Treat a source as current only when an enabled chatbot KB contains a live
+  resource whose ID and `activeContentSha256` match the stored source lineage.
+  `evidenceEligible` remains a captured hint and never overrides current state.
+- Reconcile invalid approved rows to `NEEDS_REVIEW` and refresh the complete
+  set digest under the existing locks. Resolve the exact Doc Query KB binding
+  first and fail closed on zero or multiple enabled bindings. The valid path is
+  read-only. When reconciliation is needed, lock `Chatbot` before
+  `ResponseExampleSet`, re-read state, conditionally transition only current
+  `APPROVED` rows, clear reviewer fields, and refresh the complete digest once.
+  Runtime excludes an uncertain example and continues the turn without the
+  entire skill if loading or reconciliation fails.
+- The prompt summary contains counts and response-approach guidance only. Full
+  questions and ideal answers are available only through the model-invoked
+  search tool.
+- Narrow through the existing set, mode, and status index, then rank the
+  eligible candidate IDs with bounded PostgreSQL full-text search. This keeps
+  the first release scalable without a vector provider or schema migration.
+  The query is parameterized, limited to 4,000 characters, and uses stable ID
+  after rank and update time for deterministic ties.
+- K6 wires participant chat only. The reusable assembly function accepts an
+  explicit included or excluded role so PR #5633 and K7 can adopt it without
+  changing the data contract. The excluded role omits the summary but keeps
+  the identical search-tool schema backed by an empty implementation that
+  never reads examples.
+- The summary is capped at 1,500 characters. Search returns at most three
+  complete examples and 24,000 total characters including metadata, skips an
+  example that does not fit, and never returns renderer-compatible citation
+  markers from an ideal answer. Runtime refuses sets above 200 examples.
+- Ranking, current-evidence validation, and content projection use one database
+  statement. Full results are model-only; the participant stream and persisted
+  assistant message receive only an opaque completion status.
+- Loader or reconciliation failure omits the whole skill. A later search
+  failure returns a bounded empty degraded result without aborting chat or
+  changing scope. The final prompt and final tool set both feed prompt-cache
+  identity.
+
+## Primitive impact
+
+- Response-example set: reuse; digest stays canonical.
+- Response example: reuse; current eligibility can change live status to
+  `NEEDS_REVIEW`.
+- Evidence lineage: extend as a current authorization and hash check without
+  copying source content.
+- Response-example skill: create as a projection only; no new stored model.
+
+## ADR gate
+
+- Update ADR 0030 with the deterministic summary contract.
+- Update ADR 0033 to describe bounded deterministic PostgreSQL full-text
+  ranking instead of an unavailable semantic service.
+- Update ADR 0034 with current KB-resource validation and reconciliation.
+- No new ADR is required. Reopen the gate for another canonical set, a vector
+  provider, participant-facing controls, durable source copies, or unbounded
+  prompt delivery.
+
+## Delegation map
+
+| Slice | Owner | Dependency | Acceptance |
+| --- | --- | --- | --- |
+| K6.1 current eligibility | main | foundation schema | active, changed, deleted, wrong-KB, citation, transition, and digest tests |
+| K6.2 projection and server search | main | K6.1 contract | deterministic summary, PostgreSQL ranking, caps, exact mode, and excluded-role tests |
+| K6.3 participant integration | executor; main integrates | K6.1 and K6.2 | route keeps auth, persistence, credits, and MCP behavior while adding the bounded tool and prompt |
+| K6.4 final docs and proof | main | all code slices | focused checks, full repository check, required reviews, exact diff, clean commits |
+
+## Feature test portfolio
+
+| Risk or behavior | Stable seam | Test obligation | Owner |
+| --- | --- | --- | --- |
+| stale or foreign evidence leaks | GraphQL DB fixture | changed hash, missing resource, wrong KB, disabled KB | K6.1 |
+| status and digest diverge | GraphQL transaction fixture | approved to needs-review and digest refresh | K6.1 |
+| prompt grows with full answers | pure projection | strict item and character bounds; no ideal answer in summary | K6.2 |
+| search escapes chatbot or mode | PostgreSQL-backed server loader | parameterized exact scope, deterministic ties, max three, 24,000-character cap | K6.2 |
+| baseline later receives examples | pure assembly | excluded role has no summary, keeps the same tool schema, and performs no read | K6.2 |
+| participant behavior regresses | chat route tests | unchanged auth, MCP failure, persistence, and credits | K6.3 |
+| loader failure blocks chat | chat route test | warning plus ordinary continuation without example skill | K6.3 |
+
+## Slices
+
+### K6.1 — Current eligibility and reconciliation
+
+- Problem: stored evidence eligibility becomes stale after KB content changes.
+- Do: add shared pure validation and extend the owner service with exact
+  enabled-KB resource lookup, read-only valid return, locked reconciliation,
+  reviewer clearing, and one digest refresh.
+- Check: `pnpm --filter @klicker-uzh/util test` and the focused response-example
+  GraphQL fixture suite, including concurrent edit, KB rebind, hash change,
+  retry, and digest rollback.
+- Commit: `fix(chat): validate current response-example evidence`.
+
+### K6.2 — Bounded hybrid projection
+
+- Problem: the model needs stable guidance without receiving every full answer.
+- Do: add deterministic summary and included/excluded pure assembly in
+  `packages/util/src/responseExampleRuntime.ts`; add parameterized exact-scope
+  PostgreSQL ranking and server loading in
+  `apps/chat/src/lib/server/responseExampleRuntime.ts`.
+- Check: util unit tests plus a PostgreSQL-backed service test for ranking,
+  ties, query/item/character caps, exact scope, no renderer-compatible example
+  citation markers, excluded-role no-read, and degraded search.
+- Commit: `feat(chat): add the response-example runtime skill`.
+
+### K6.3 — Participant chat integration
+
+- Problem: approved examples do not yet influence normal chatbot answers.
+- Do: load the included projection after MCP discovery; append its summary;
+  register the server-bound search tool; preserve prompt-cache identity,
+  participant state, credits, and existing tools.
+- Check: `pnpm --filter @klicker-uzh/chat test:run`,
+  `pnpm --filter @klicker-uzh/chat check`, existing GraphQL checks, and
+  repository-wide `pnpm run check:all`. No browser check is required because
+  this package changes no component or layout; server tool-output and
+  persistence tests prove that the participant-facing payload is opaque before
+  it reaches the UI stream or stored chat content.
+- Commit: `feat(chat): use response examples in participant chat`.
+
+### K6.4 — Durable contract and finish
+
+- Problem: ADRs still describe the larger semantic-search design.
+- Do: update ADRs and both plan Progress sections; run final verification,
+  simplification, risk review, and integrated final review; address findings.
+- Check: docs validation, repository check, exact range inspection, secret and
+  personal-data staged-content check.
+- Commit: `docs(chat): document response-example runtime delivery` plus any
+  verified review correction commit.
+
+## Progress
+
+- Status: K6.1 through K6.4 are source-complete and published as open,
+  non-draft PR #5650 against `v3-ai`. The deterministic current-source seed
+  correction is committed, reviewed, and passed every hosted Playwright shard
+  on its published head. The separately approved final upstream integration
+  through `origin/v3-ai@54fbfc921` is complete at merge head `256ff4d4b`. PR
+  #5650 remains a standalone PR into the long-lived `v3-ai` consolidation
+  branch. On 2026-08-29, the user removed the invalid native stack registration
+  with PR #5092. Merge, deployment, and live model use remain withheld.
+  Published head `dea34488a` passed all ordinary exact-head
+  checks. Its successful final review identified three medium corrections; the
+  branch now normalizes citation spans consistently, shares the current-
+  eligibility reconciliation core, and batches reconciliation writes.
+- Completed: remote-state gate, clean purpose-based worktree, approved program
+  plan transfer, current source seam mapping, package-plan narrowing, shared
+  current-evidence validation, owner-service reconciliation, and focused util,
+  GraphQL fixture, and GraphQL type checks; the K6.1 simplifier findings were
+  applied in `22cb30b14e44d5ee8dda58dda40386ad954aeab0`; the bounded summary,
+  PostgreSQL search, included/excluded runtime seam, and participant prompt,
+  tool, cache-identity, and failure-degradation composition are committed. The
+  review corrections make knowledge-base/resource selection one atomic
+  parameterized statement and publish the skill only after tool construction.
+  Full util tests pass with 129 tests; full chat tests pass with 715 tests and
+  14 explicit skips; focused chat runtime tests pass with 64 tests; the real
+  PostgreSQL runtime test and all 11 GraphQL response-example tests pass; chat,
+  util, and GraphQL type/schema checks pass; chat lint reports zero errors.
+- Review note: the configured cross-provider advisor was unavailable because
+  the organization disabled Claude Code subscription access. The trusted main
+  session selected the smaller no-new-package design. The generic-continuity
+  Sol planning review returned `DONE_WITH_CONCERNS`; its required hierarchy,
+  exclusion, concurrency, bounds, degradation, and verification corrections
+  are incorporated. The configured native simplifier and slice-reviewer routes
+  failed terminally because their resolved model/effort pair is unsupported;
+  separate native Sol xhigh reviewers preserved both roles. Their first pass
+  identified the atomic-read and atomic-activation corrections now committed;
+  both correction passes returned `DONE` with no remaining findings. The first
+  integrated Sol final review found model-output disclosure, mixed-version
+  search projection, broad citation rewriting, and an unenforced set-size cap.
+  The correction keeps full results model-only, ranks and projects in one
+  statement, rewrites exact renderer spans, and fails closed above 200 examples.
+  Its correction review found that the same-statement projection also needed
+  to revalidate citation parity; search now applies the shared parity predicate
+  to that current row and the PostgreSQL regression proves concurrent invalid
+  edits are omitted. The final correction review returned `DONE` with no
+  remaining findings at `4fe8565fefe3375189ecb4b8e98247a4c8a1f216`. The
+  published post-integration final review at `dea34488a` then found one
+  renderer-normalization offset bug, duplicated eligibility reconciliation,
+  and sequential chat-path writes. The corrective implementation uses one
+  normalized citation source, one shared query/evaluation/write plan, and at
+  most three batched updates per reconciliation.
+- Verification limitation: repository-wide `pnpm run check:all` reaches the
+  unrelated analytics lint, where the container selects Python 3.14 and cannot
+  build pandas because no C compiler is installed. All affected package checks
+  pass independently.
+- Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` was
+  stopped after its final PostgreSQL-producing run. Provider state is `Stopped`
+  and the checkout has zero exact devrouter routes; no runtime data was deleted.
+  A later CI-correction attempt to resume the same runtime failed before checks
+  because the branch baseline does not yet satisfy the managed DevPod config
+  validation and an existing process holds the Azurite host port. The managed
+  stop freed zero routes. All exact partial-start containers are now stopped or
+  remained unstarted, and devrouter reports zero exact routes. No runtime data
+  was deleted.
+- Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
+  #5650 as a standalone PR into `v3-ai`. The current merge candidate includes
+  `origin/v3-ai@54fbfc921`; its evidence layer is `delivery_pending` until the
+  corrective head is published and exact-head CI and final review settle. PR
+  #5674 merged consolidation-branch final-review eligibility into `v3` as
+  `e24287c97`. Any further upstream integration, PR merge, deployment, and live
+  activation remain separately withheld.
+- Next: publish the review-correction head and settle its exact-head checks and
+  final review; do not involve the eventual `v3-ai` to `v3` promotion PR.

@@ -422,3 +422,17 @@ export const ParticipantTokenData = ParticipantTokenDataRef.implement({
     }),
   }),
 })
+
+export const LtiChatbotLogin = builder
+  .objectRef<{
+    status: 'ACCOUNT' | 'GUEST' | 'DENIED'
+    participantId?: string
+    participantToken?: string
+  }>('LtiChatbotLogin')
+  .implement({
+    fields: (t) => ({
+      status: t.exposeString('status'),
+      participantId: t.exposeString('participantId', { nullable: true }),
+      participantToken: t.exposeString('participantToken', { nullable: true }),
+    }),
+  })

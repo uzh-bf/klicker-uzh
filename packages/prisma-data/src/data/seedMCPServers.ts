@@ -11,7 +11,7 @@ interface MCPServerSeed {
   name: MCP_SERVER_NAMES
   description: string
   url: string
-  authType: 'bearer' | 'basic' | 'none' | 'custom'
+  authType: 'bearer' | 'basic' | 'none' | 'custom' | 'scope_token'
   authSecret?: string
   parameters?: any
   isActive?: boolean
@@ -34,9 +34,9 @@ const MCP_SERVERS: MCPServerSeed[] = [
     name: MCP_SERVER_NAMES.KB,
     description: 'A comprehensive knowledge base for various topics',
     url: 'http://localhost:1417/mcp',
-    authType: 'none',
+    authType: 'scope_token',
     isActive: true,
-    passChatbotId: true,
+    passChatbotId: false,
   },
 ]
 
@@ -58,7 +58,7 @@ const EXAMPLE_CONFIGURATIONS: ChatbotMCPConfigSeed[] = [
     chatMode: 'tutor',
     allowedTools: ['doc_query'],
     priority: 0,
-    isEnabled: true,
+    isEnabled: false,
   },
   {
     chatbotId: CHATBOT_ID_TEST,
@@ -66,7 +66,7 @@ const EXAMPLE_CONFIGURATIONS: ChatbotMCPConfigSeed[] = [
     chatMode: 'explainer',
     allowedTools: ['doc_query'],
     priority: 0,
-    isEnabled: true,
+    isEnabled: false,
   },
   {
     chatbotId: CHATBOT_ID_TEST,
@@ -151,7 +151,7 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
   }
 
   // Validate auth type
-  const validAuthTypes = ['bearer', 'basic', 'none', 'custom']
+  const validAuthTypes = ['bearer', 'basic', 'none', 'custom', 'scope_token']
   if (!validAuthTypes.includes(serverConfig.authType)) {
     console.error(
       `Invalid auth type for ${serverConfig.name}: ${serverConfig.authType}`
@@ -174,14 +174,67 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
 }
 
 /**
+ * Resolves the KB MCP URL for the isolated local runtime, which reaches the
+ * retrieval service through the Docker host bridge instead of the localhost
+ * default used by ordinary seeds.
+ */
+function resolveIsolatedKBRetrievalUrl(): string {
+  const raw = process.env.KLICKER_LOCAL_KB_RETRIEVAL_URL?.trim()
+
+  let parsed: URL | undefined
+  try {
+    parsed = raw ? new URL(raw) : undefined
+  } catch {
+    parsed = undefined
+  }
+
+  const port = Number(parsed?.port)
+  const isolated =
+    !!parsed &&
+    parsed.protocol === 'http:' &&
+    parsed.hostname === 'host.docker.internal' &&
+    parsed.pathname === '/mcp' &&
+    !parsed.username &&
+    !parsed.password &&
+    !parsed.search &&
+    !parsed.hash &&
+    Number.isInteger(port) &&
+    port >= 1024 &&
+    port <= 65535
+
+  if (!raw || !isolated) {
+    throw new Error(
+      'KLICKER_LOCAL_KB_RETRIEVAL_URL must be an http://host.docker.internal:<port>/mcp URL with a port between 1024 and 65535'
+    )
+  }
+
+  return raw
+}
+
+/**
  * Seeds MCP server configurations
  */
 export async function seedMCPServers(prisma: PrismaClient) {
   console.log('Seeding MCP servers...')
 
+  // The isolated local runtime reaches the KB retrieval service through the
+  // Docker host bridge, so its KB MCP URL comes from the runtime environment.
+  // Resolving it before the loop keeps a misconfigured runtime from writing
+  // rows that point at the unreachable localhost default.
+  const isolatedKBUrl =
+    process.env.KLICKER_LOCAL_KB_RUNTIME_ONLY === '1'
+      ? resolveIsolatedKBRetrievalUrl()
+      : undefined
+
+  const serverSeeds: MCPServerSeed[] = MCP_SERVERS.map((serverConfig) =>
+    isolatedKBUrl && serverConfig.name === MCP_SERVER_NAMES.KB
+      ? { ...serverConfig, url: isolatedKBUrl }
+      : serverConfig
+  )
+
   const createdServers = []
 
-  for (const serverConfig of MCP_SERVERS) {
+  for (const serverConfig of serverSeeds) {
     try {
       // Validate server configuration first
       if (!validateServerConfig(serverConfig)) {
@@ -195,6 +248,27 @@ export async function seedMCPServers(prisma: PrismaClient) {
       })
 
       if (existingServer) {
+        if (serverConfig.name === MCP_SERVER_NAMES.KB) {
+          const reconciledServer = await prisma.chatbotMCPServer.update({
+            where: { id: existingServer.id },
+            data: {
+              description: serverConfig.description,
+              url: serverConfig.url,
+              authType: serverConfig.authType,
+              authSecret: null,
+              parameters: serverConfig.parameters || {},
+              isActive: serverConfig.isActive ?? true,
+              passChatbotId: false,
+              chatbotIdHeader: null,
+            },
+          })
+          console.log(
+            `Reconciled MCP server '${serverConfig.name}' with scoped authentication`
+          )
+          createdServers.push(reconciledServer)
+          continue
+        }
+
         console.log(
           `MCP server '${serverConfig.name}' already exists, skipping`
         )
@@ -269,6 +343,14 @@ export async function seedChatbotMCPConfigurations(
         continue
       }
 
+      const enabledBinding =
+        config.mcpServerName === MCP_SERVER_NAMES.KB
+          ? await prisma.kBChatbot.findFirst({
+              where: { chatbotId: config.chatbotId, isEnabled: true },
+              select: { id: true },
+            })
+          : null
+
       const existingConfig = await prisma.chatbotMCPConfig.findUnique({
         where: {
           chatbotId_mcpServerId_chatMode: {
@@ -280,6 +362,21 @@ export async function seedChatbotMCPConfigurations(
       })
 
       if (existingConfig) {
+        if (config.mcpServerName === MCP_SERVER_NAMES.KB) {
+          await prisma.chatbotMCPConfig.update({
+            where: { id: existingConfig.id },
+            data: {
+              allowedTools: ['doc_query'],
+              priority: 0,
+              isEnabled: Boolean(enabledBinding),
+            },
+          })
+          console.log(
+            `Reconciled ${config.mcpServerName}/${config.chatMode} from its KB binding`
+          )
+          continue
+        }
+
         console.log(
           `Configuration for ${config.mcpServerName}/${config.chatMode} already exists, skipping`
         )
@@ -293,7 +390,10 @@ export async function seedChatbotMCPConfigurations(
           chatMode: config.chatMode,
           allowedTools: config.allowedTools,
           priority: config.priority,
-          isEnabled: config.isEnabled,
+          isEnabled:
+            config.mcpServerName === MCP_SERVER_NAMES.KB
+              ? Boolean(enabledBinding)
+              : config.isEnabled,
           parameters: config.parameters || {},
         },
       })

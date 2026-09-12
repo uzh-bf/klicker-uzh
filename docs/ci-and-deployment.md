@@ -85,12 +85,14 @@ neither Node nor pnpm.
 - **Format + lint**: `check` runs blocking Biome + Prettier formatting and the blocking Turbo/ESLint safety net. Biome lint remains advisory. The same job also runs `check:prisma-sync`, `check:agents-md`, and `check:removed-doc-artifacts`.
 - **Unused code**: `check` runs Knip **advisory** (non-blocking); ratchet it to blocking only after the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
+- **SonarCloud suppressions must live in `sonar-project.properties`.** Sonar reports rules such as `typescript:S3776` on the function declaration line, and Biome always moves a trailing `NOSONAR` comment onto its own line, so an inline marker silently stops suppressing after formatting. Use a scoped `sonar.issue.ignore.multicriteria` entry instead (current example: the chat POST handler's cognitive complexity).
 - **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 - **Playwright timing feedback**: `update-playwright-timings.yml` listens for a successful direct `v3` run of `test-playwright`, validates all eight compact JUnit artifacts, and opens or updates one human-reviewed timing PR on `automation/playwright-timings`. It requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with repository contents and pull-request write permissions. The default `GITHUB_TOKEN` is deliberately insufficient because PRs it creates do not trigger their required checks; the timing workflow never auto-merges.
 - **AI review**: While a PR is a draft, OpenCodeReview runs the low-cost DeepSeek V4 Flash 0731 model (`deepseek/deepseek-v4-flash-0731`) through OpenRouter against the exact PR head and its immediate base. A ready transition cancels an in-flight draft run, and ready PRs do not start new cheap reviews. OpenRouter is an external model provider, so review diffs cross that provider boundary and incur usage cost.
 - **Manual final review**: After CI and the draft feedback are settled, a collaborator with calculated `write` or `admin` permission posts `/final-review` on an unstacked PR or on one verified native stack layer. The workflow uses `z-ai/glm-5.3-flash` with high reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to an immutable head. Before review fan-out, one fixed public-safe request must return the expected function call; failure stops the run with bounded provider diagnostics. The manual jobs pin OpenCodeReview 1.11.0 and use its low review-effort preset for one review round; this does not lower the model's high reasoning setting. Each OCR task has a 30-minute deadline, and an individual range has a 750,000-token ceiling. When the first attempt returns structurally valid partial coverage for a non-budget failure, the same job may resume that exact session once with only the unused token allowance. Strict lineage and identity checks protect checkpoint reuse, and combined usage cannot exceed the original range ceiling. Budget exhaustion, an invalid session, or a still-partial resume fails immediately. The job has a 75-minute ceiling and reserves time after OCR for cleanup and finalization. No incomplete result reaches publication. The mode-0600 OpenRouter config lives only at OCR's current-user default path on a fresh GitHub-hosted runner and is removed by the existing always-run cleanup before publication. Do not move these jobs to persistent self-hosted runners without redesigning that secret lifecycle. If no actionable findings exist, it records an evidence-bound clean success status with description `z-ai/glm-5.3-flash final review clean; evidence=<64-hex evidence digest>` and skips the PR comment. The evidence digest covers the exact PR range, review mode, root review, stack identity, dispositions, and policy. A later descendant containing only bounded, declared repairs may be attested incrementally; material scope changes, stale stack identities, missing dispositions, or exceeded bounds require another complete manual review. For a finding-bearing report, a permitted collaborator records the exact machine-readable marker `<!-- final-ai-disposition/v1 {"schema_version":"final-ai-disposition/v1","review_id":"...","root_head":"...","workflow_run_id":123,"entries":[{"finding_id":"...","state":"fixed|follow-up|rejected","reference":"public-safe reference","paths":["path/to/finding"]}]} -->`; every entry must cover exactly one root finding and include its finding path in the explicit remediation paths. Malformed or missing records force a complete review. Findings are advisory: collaborators verify them and record each blocker as fixed, follow-up, or rejected.
 - **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `z-ai/glm-5.3-flash` with high reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `z-ai/glm-5.3-flash stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external OpenRouter request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
 - **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, OpenRouter configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
+- **Legacy generated staging promotion**: Phase 1 supersedes the annotation-write-back mechanism and removes its `Verified generated staging promotion` no-report exemption. The successor creates no pull request, and a legacy-named promotion pull request follows ordinary final-review policy. Its privileged `workflow_run` executes only trusted default-branch control code; candidate Git objects and API metadata are inputs, never executable policy.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OpenCodeReview 1.11.0 is also qualified before publication against a fake OpenAI-compatible endpoint with a synthetic one-file diff; that probe checks the released binary's model, high reasoning, tool request, 16,384-token completion cap, automatic provider routing, and one-round effort wiring. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
 The individual and stack final-review jobs disable OCR's background updater
@@ -218,7 +220,7 @@ inputs and are excluded from the release receipt. Keeping the skipped
 still requires that name. The no-op `Build Fallback` `build-amd` job remains
 enabled for pull requests that do not start an app image workflow.
 
-- **stg**: push to `v3`/`v3*` or PR touching the app's paths (PRs build but don't push).
+- **stg**: push to `v3`/`v3*` or PR touching the app's paths. Every metadata block retains branch and pull-request tags and adds the full source commit SHA. Pull requests build without pushing. On push, `.github/scripts/stg-image-publish-guard.sh` checks the full-SHA tag after registry login. A missing tag permits the existing build to push all tags once; an existing tag records its canonical digest and skips the build, so a rerun cannot overwrite the SHA tag or move the floating branch tag backward. An uncertain registry response fails closed.
 - **prd**: tags `v*.*.*` only.
 
 Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile changes must keep monorepo-root context assumptions.
@@ -235,6 +237,14 @@ assets. The Dockerfiles declare and export matching build arguments before the
 Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
 operator contract.
 
+The Manage assistant target is also build-time browser configuration.
+`apps/frontend-manage/.env.stg` and `.env.prd` both map
+`NEXT_PUBLIC_CHAT_URL` from their environment-specific `APP_ORIGIN_CHAT`.
+`apps/frontend-manage/Dockerfile` checks that exact mapping after the STG or PRD
+workflow has installed its file as `.env.production`; an image build fails
+instead of producing a Manage bundle that silently hides the assistant
+launcher.
+
 ## Release flow
 
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
@@ -243,21 +253,65 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): `STG_SOURCE_BRANCH` selects the supported `v3*` branch that publishes staging candidates. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Phase 1 keeps automatic promotion disabled until the selected-source SHA publishers, chart override, and platform configuration are delivered and verified — see [Staging promotion](#staging-promotion) below.
-- **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
-- **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning.
+- **stg** (`*.klicker.stg.df-app.ch`): the committed values retain `v3-ai` as their no-override fallback and keep all rollout annotations during the stability window. At Phase 1 activation, the Application will track `stg-release`; ArgoCD will resolve that ref to a commit and pass `$ARGOCD_APP_REVISION` as the forced-string Helm parameter `global.imageTag`, which overrides all 18 first-party image tags without editing the values file. See [Staging promotion](#staging-promotion) below.
+- **prd** (`*.klicker.uzh.ch`): pinned version tags and `replicaCount: 2` for web/API services. Production stays on `v3`, receives no `global.imageTag` parameter, and keeps the existing release-tag flow.
+- **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
+- **Hatchet worker runtime contract**: the base chart and both environment overlays render separate per-pod identities and slot budgets for the general, regular-response, and assessment workers. General, regular-response, and assessment workers expose named ports 8001, 8002, and 8003 respectively, plus `/healthz` liveness, `/readyz` readiness, and a 90-second termination grace period (`deploy/charts/klicker-uzh-v3/templates/deployment-hatchet-workers.yaml`). This is desired-state evidence; it does not prove a deployed or live worker. See [Async & Workers](./async-and-workers.md#worker-runtime-contract).
+- **Hatchet worker disruption budgets**: staging sets `minAvailable: 0` for all three singleton worker Deployments so voluntary node drains can proceed, while production keeps one general worker and two workers in each response-processing mode available. The base chart defaults each worker budget to one. The render gate verifies these worker-only values and that the assessment backend keeps its independent floor of two.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
+- **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
+- **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
+- **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state. The readiness layer requires both ingestion kill switches; the activation layer requires those false-valued keys to be absent. Both layers require the exact cluster-local ingestion and source-gateway endpoints, both graph kill switches, response-processor isolation, and no ingestion secret keys in ConfigMaps.
+
+### Replica ownership
+
+Every rendered Deployment has exactly one replica owner. A static Deployment
+sets `spec.replicas` from its Git-owned `replicaCount`. An autoscaled Deployment
+leaves `spec.replicas` out and is targeted by exactly one HPA or KEDA scaler. A
+Deployment must never combine the two ownership models or have more than one
+scaler target.
+
+Only PWA, Manage, and GraphQL may declare an `autoscaling` stanza. Their current
+HPA templates scale on CPU utilization only; memory utilization is intentionally
+excluded because retained Node.js heap can keep that metric elevated after load
+subsides. Every other workload is statically owned and must not declare an
+unused autoscaling stanza.
+
+LTI is intentionally static in the chart base and both environment overlays:
+the base keeps `replicaCount: 2`, staging sets `replicaCount: 1`, and production
+sets `replicaCount: 2`. No LTI scaler or LTI autoscaling stanza is rendered.
+
+When external ArgoCD desired-state configuration permits replica differences
+for an active autoscaler, the exception must name the exact scaler target and
+the exact `/spec/replicas` field. W1 does not add or change an ArgoCD ignore
+rule, and static LTI has no replica ignore. ArgoCD `Healthy` describes resource
+health; it does not mean the application is `Synced`. Check application sync
+status and resource-level drift separately.
+
+Run `pnpm run check:klicker-replica-ownership` as the focused chart gate when
+values or replica-owner templates change. The command renders base, staging,
+production, and a synthetic all-three-HPA configuration. CI provisions Helm in
+the shared codebase workflow. It runs the same gate for pushes to `v3` and
+`v3*`, and when a pull request is opened, synchronized, or reopened. The gate
+also rejects unsupported autoscaling stanzas in the base, staging, and
+production values files.
 
 ## Deployment migrations
 
-`prisma migrate deploy` runs automatically as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`) before each stg and prd rollout. **On prd the hook is enabled** (`migrator.enabled: true`) because the pinned release tags have matching migrator images, so normal prd rollouts apply pending Prisma migrations to the primary GraphQL database before its application Deployments start. The assessment database is covered only if its separate backend Secret targets that same database; otherwise it needs a separately proven migration path. The dedicated `backend-docker-migrator` image (`packages/prisma/Dockerfile`) is CI-built in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`); its tag auto-tracks the backend tag (the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`), so it always matches the app release with no separate per-env pin. A failed hook aborts the whole sync, so app Deployments in the main wave never start against an unmigrated DB. The hook uses **ArgoCD-native** annotations (`argocd.argoproj.io/hook: PreSync`), not Helm chart hooks — the two must not be mixed, because a single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native hooks on the chart. Full details: [Data & Migrations → Deployment migrations](./data-and-migrations.md#deployment-migrations). Manual `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` remains a break-glass fallback only.
+`prisma migrate deploy` runs automatically as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`) before each stg and prd rollout. **On prd the hook is enabled** (`migrator.enabled: true`) because the pinned release tags have matching migrator images, so normal prd rollouts apply pending Prisma migrations to the primary GraphQL database before its application Deployments start. The assessment database is covered only if its separate backend Secret targets that same database; otherwise it needs a separately proven migration path. The dedicated `backend-docker-migrator` image (`packages/prisma/Dockerfile`) is CI-built in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Without a global override, its tag tracks `migrator.image.tag`, then `backendGraphql.image.tag`; on Phase 1 staging, `global.imageTag` takes precedence so the hook and all app workloads use ArgoCD's same resolved commit. Production receives no global override and keeps its pinned release tag. A failed hook aborts the whole sync, so app Deployments in the main wave never start against an unmigrated DB. The hook uses **ArgoCD-native** annotations (`argocd.argoproj.io/hook: PreSync`), not Helm chart hooks — the two must not be mixed, because a single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native hooks on the chart. Full details: [Data & Migrations → Deployment migrations](./data-and-migrations.md#deployment-migrations). Manual `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` remains a break-glass fallback only.
 
 Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to break-glass): [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
 
 ## Staging promotion
+
+Phase 1 replaces annotation write-back with an immutable-revision promotion
+contract. Every selected-source image workflow publishes a full commit-SHA tag
+alongside its branch tag. A SHA-shaped tag is still mutable registry metadata,
+so the publish-once guard is load-bearing: an existing SHA tag is never rebuilt,
+and its canonical registry digest is recorded before the build is skipped.
 
 `.github/workflows/deploy-stg-promote.yml` is a trusted default-branch
 `workflow_run` controller. It checks out only `github.workflow_sha`, executes
@@ -291,6 +345,14 @@ ref update:
   inventory twice and fails if any digest is absent or changes during
   collection.
 
+At activation, staging ArgoCD will track `stg-release`. ArgoCD resolves that ref
+to an exact commit, then the external Application passes `$ARGOCD_APP_REVISION` to Helm as
+`global.imageTag` with `forceString: true`. The chart applies that tag to all enabled
+first-party images, including the PreSync migrator. The values file therefore
+does not need a promotion commit or pull request. The retained rollout
+annotations and old promotion credential are stability-window rollback aids,
+not the new revision source.
+
 The sorted evidence becomes a canonical JSON receipt with the controller run and source SHA,
 source and candidate revisions, workflow/run/job identities, registry tags and
 digests, retry history, ref decision, update result, post-push verification
@@ -309,7 +371,16 @@ any concurrent ref movement fail. Candidate-SHA concurrency serializes
 duplicate evaluation of one commit without suppressing a different, possibly
 newer candidate.
 
-Operational notes.
+Keep the evidence layers separate:
+
+- the ArgoCD resolved revision proves which Git commit supplied the image tag;
+- the controller's canonical registry digest receipt proves what each mutable
+  SHA tag resolved to before promotion;
+- each deployed container's `imageID` must match its receipt digest after sync;
+- successful sync, successful migration, workload health, and user acceptance
+  remain independent checks.
+
+Operational notes:
 
 - Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. There is no default; missing selection fails validation. The promoter requires
   that explicit input and does not query repository variables itself. Promotion
@@ -345,7 +416,14 @@ Operational notes.
   downstream controllers before activation; a release-ref write must not
   rebuild staging images. The publishers accept `v3`/`v3*`, not `stg-release`.
 
-The superseded annotation-write-back rationale remains in
-[ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
+The static contract test at
+`.github/scripts/stg-release-ref-promotion.test.cjs` derives the 15 workflow
+paths and names, validates all 32 metadata/build pairs and the active
+repository/job map, checks the promoter trigger list, and proves all 18 chart
+images accept the override while no-override staging and production renders
+remain byte-identical to the frozen parent.
 
-Prd is unaffected — it promotes by hand-editing pinned tags in `deploy/env-uzh-prd/values.yaml`.
+The superseded annotation mechanism and its incident context remain in
+[ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
+Production is unchanged: it stays on `v3`, receives no global image parameter,
+and promotes by hand-editing pinned tags in `deploy/env-uzh-prd/values.yaml`.

@@ -93,7 +93,20 @@ The managed MCP startup now uses
 to rotate ephemeral credentials and restart both Chat and the fixture together.
 Its seed repair accepts only the exact synthetic owner, course and two mode
 bindings. An ownership conflict stops startup instead of replacing another
-configuration. Plaintext credentials remain in the local process environment;
+configuration. The current `scope_token` seed is recognized alongside the legacy
+seed; repair preserves each binding's enabled state and disables obsolete
+chatbot-ID forwarding. A disabled binding stays disabled after credential
+rotation, so successful startup does not prove tool activation.
+Playwright cleanup deletes the native fixture's course, chatbot and bindings,
+while retaining its MCP server. The browser seed uses a different course ID.
+On the next managed startup, repair can restore entirely absent parents for
+the exact synthetic lecturer and owned scoped server. Both restored bindings
+remain disabled and the chatbot remains a draft. Partial parents, unrelated
+consumers and unrecognized ownership stop recovery without writes. Use retained
+canonical repair; generic reseeding also changes unrelated MCP configuration.
+The transaction acceptance script uses PostgreSQL temporary tables and must
+match the real JSON type of `allowedTools` to detect insertion failures.
+Plaintext credentials remain in the local process environment;
 the database stores only the encrypted transport token. The local shared
 process environment is not an isolation boundary between apps.
 

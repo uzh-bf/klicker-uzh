@@ -9,7 +9,7 @@ import {
   ElementType,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page, type Request } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { getPrisma } from '../../global-setup.js'
 import { openActivityActionMenu, openCourseActionMenu } from '../actions.js'
@@ -55,6 +55,77 @@ const growthbookClientKey =
   process.env.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY ?? 'sdk-test'
 const GROWTHBOOK_FEATURES_URL = `${growthbookApiHost.replace(/\/$/, '')}/api/features/${growthbookClientKey}*`
 
+export type ManageAiCapabilityWireState =
+  | 'ENABLED'
+  | 'DISABLED'
+  | 'TEMPORARILY_UNAVAILABLE'
+
+function getGraphqlOperationName(request: Request) {
+  const operationName = new URL(request.url()).searchParams.get('operationName')
+  if (operationName) return operationName
+
+  const postData = request.postData()
+  if (!postData) return undefined
+
+  try {
+    return (JSON.parse(postData) as { operationName?: string }).operationName
+  } catch {
+    return undefined
+  }
+}
+
+export async function mockManageAiCapability(
+  page: Page,
+  initialState: ManageAiCapabilityWireState
+) {
+  let state = initialState
+  let requestCount = 0
+
+  await page.route('**/api/graphql*', async (route) => {
+    if (getGraphqlOperationName(route.request()) !== 'ManageAiCapability') {
+      await route.fallback()
+      return
+    }
+
+    requestCount++
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ data: { manageAiCapability: state } }),
+    })
+  })
+
+  return {
+    get requestCount() {
+      return requestCount
+    },
+    setState(nextState: ManageAiCapabilityWireState) {
+      state = nextState
+    },
+  }
+}
+
+export async function mockManageUserProfileUnavailable(page: Page) {
+  let markFulfilled!: () => void
+  const fulfilled = new Promise<void>((resolve) => {
+    markFulfilled = resolve
+  })
+  await page.route('**/api/graphql*', async (route) => {
+    if (
+      getGraphqlOperationName(route.request()) !== 'ManageFeatureFlagProfile'
+    ) {
+      await route.fallback()
+      return
+    }
+
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ errors: [{ message: 'Profile unavailable' }] }),
+    })
+    markFulfilled()
+  })
+  return { fulfilled }
+}
+
 export async function mockGrowthBookFeatureFlags(
   page: Page,
   {
@@ -91,7 +162,10 @@ export async function mockGrowthBookLearningAnalytics(
   page: Page,
   enabled: boolean
 ) {
-  await mockGrowthBookFeatureFlags(page, { learningAnalytics: enabled })
+  await mockGrowthBookFeatureFlags(page, {
+    aiBeta: true,
+    learningAnalytics: enabled,
+  })
 }
 
 export async function mockBetaEnrollmentGraphQL(
@@ -279,6 +353,14 @@ export async function prepareSeededAnalyticsActivities() {
   await prisma.practiceQuiz.update({
     where: { id: practiceQuiz.id },
     data: { status: PublicationStatus.PUBLISHED },
+  })
+}
+
+export async function updateLecturerAiAccess(enabled: boolean) {
+  const prisma = await getPrisma()
+  await prisma.user.update({
+    where: { shortname: LECTURER_SHORTNAME },
+    data: { aiFeaturesEnabled: enabled },
   })
 }
 

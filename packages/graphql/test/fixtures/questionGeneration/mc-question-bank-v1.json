@@ -1,0 +1,60 @@
+{
+  "metadata": {
+    "format": "MC",
+    "item_format": "mc",
+    "assessment_profile": "klicker_live",
+    "total_questions": 1,
+    "artifact_version": { "number": 1 }
+  },
+  "questions": [
+    {
+      "id": "q-M1-002",
+      "module_id": "M1",
+      "objective_id": "M1-LZ02",
+      "content_type": "verständnis",
+      "bloom_level": "understand",
+      "origin_mode": "new",
+      "item_format": "multiple_choice",
+      "difficulty_scale": 2,
+      "target_difficulty_scale": 2,
+      "predicted_difficulty_scale": 2.2,
+      "difficulty_status": "llm_reviewed",
+      "stem": "Welche Aussagen zur Liquidität sind korrekt?",
+      "context_inline": "Ein Unternehmen plant seine kurzfristigen Zahlungen.",
+      "explanation": "Liquidität betrifft verfügbare Mittel und fristgerechte Zahlungen.",
+      "options": [
+        {
+          "label": "A",
+          "text": "Sie beschreibt die Fähigkeit, fällige Zahlungen rechtzeitig zu leisten.",
+          "is_correct": true,
+          "explanation": "Dies ist ein Kernmerkmal der Liquidität."
+        },
+        {
+          "label": "B",
+          "text": "Sie ist mit langfristiger Rentabilität identisch.",
+          "is_correct": false,
+          "explanation": "Rentabilität und Liquidität sind unterschiedliche Grössen."
+        },
+        {
+          "label": "C",
+          "text": "Sie hängt von verfügbaren Zahlungsmitteln ab.",
+          "is_correct": true,
+          "explanation": "Verfügbare Zahlungsmittel sichern kurzfristige Zahlungen."
+        },
+        {
+          "label": "D",
+          "text": "Sie setzt eine reine Eigenkapitalfinanzierung voraus.",
+          "is_correct": false,
+          "explanation": "Die Finanzierungsform definiert Liquidität nicht."
+        },
+        {
+          "label": "E",
+          "text": "Sie bedeutet, dass keine Ausschüttungen erfolgen dürfen.",
+          "is_correct": false,
+          "explanation": "Ein Ausschüttungsverbot ist kein Merkmal der Liquidität."
+        }
+      ],
+      "citations": []
+    }
+  ]
+}

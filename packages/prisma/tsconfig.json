@@ -1,7 +1,7 @@
 {
   "include": ["src/index.ts", "src/client.ts", "src/prisma/client/**/*.ts"],
   "compilerOptions": {
-    "rootDir": ".",
+    "rootDir": "src",
     /* Base Options: */
     "esModuleInterop": true,
     "skipLibCheck": true,

@@ -71,6 +71,16 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 CONFIG_FILE="$ROOT_DIR/.infisical.json"
 PROJECT_ID=$(jq -r '.workspaceId' "$CONFIG_FILE")
 
+case "$ENV" in
+    dev*)
+        LOCAL_ROOT_CA="$ROOT_DIR/util/traefik/ssl/rootCA.pem"
+        if [[ -z "${NODE_EXTRA_CA_CERTS:-}" && -f "$LOCAL_ROOT_CA" ]]; then
+            export NODE_EXTRA_CA_CERTS="$LOCAL_ROOT_CA"
+            echo "🔐 Using local mkcert root CA for Node TLS: $NODE_EXTRA_CA_CERTS"
+        fi
+        ;;
+esac
+
 echo "🔐 Running in Infisical environment: $ENV (Project: $PROJECT_ID)"
 echo "▶️ Command: ${ARGS[*]}"
 

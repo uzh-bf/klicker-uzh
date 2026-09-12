@@ -1,6 +1,7 @@
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 
 export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
+export const DOC_QUERY_TOOL_NAME = `${DOC_QUERY_MCP_SERVER_NAME}_doc_query`
 export const DOC_QUERY_SCOPE_TOKEN_HEADER = 'X-Doc-Query-Scope-Token'
 
 const UUID_PATTERN =
@@ -85,9 +86,6 @@ function resolveDocQueryParameters(value: unknown): ResolvedDocQueryParameters {
       kbIds: [normalizeDocQueryKbId(parameters.kb_id)],
       representation: 'kb_id',
     }
-  }
-  if (!Array.isArray(parameters.kb_ids) || parameters.kb_ids.length < 2) {
-    requiredScopeError()
   }
   return {
     kbIds: normalizeDocQueryKbIds(parameters.kb_ids),
@@ -287,4 +285,38 @@ export function resolveMcpScope(
   )
 
   return [...kbConfigurations[0].kbIds]
+}
+
+export function resolveMcpScopeSessionId({
+  requestedThreadId,
+  owningThreadId,
+  fallbackId,
+}: {
+  requestedThreadId?: string | null
+  owningThreadId?: string
+  fallbackId: string
+}): string | null {
+  if (requestedThreadId && requestedThreadId !== owningThreadId) {
+    return null
+  }
+
+  return owningThreadId ?? fallbackId
+}
+
+export function canLoadMCPServer(
+  server: { name: string; authType: string },
+  context: {
+    chatbotId?: string
+    participantId?: string
+    kbIds?: readonly string[]
+    sessionId?: string
+  }
+): boolean {
+  const authType = server.authType.toLowerCase()
+
+  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+    return Boolean(context.kbIds?.length) && Boolean(context.sessionId)
+  }
+
+  return authType !== 'scope_token'
 }

@@ -2,6 +2,10 @@ import { spawn, spawnSync } from 'node:child_process'
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto'
 import { realpathSync } from 'node:fs'
 import pg from 'pg'
+import {
+  assertNoPostgresEnvironmentOverrides,
+  validateDisposableDatabaseUrl,
+} from '../../../packages/prisma/src/disposableDatabase.ts'
 import { repairLocalMcpSeed } from './local-mcp-seed.mjs'
 
 const ROOT = '/workspaces/klicker-uzh'
@@ -33,7 +37,10 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 try {
-  const database = new URL(process.env.DATABASE_URL)
+  assertNoPostgresEnvironmentOverrides()
+  const database = new URL(
+    validateDisposableDatabaseUrl(process.env.DATABASE_URL)
+  )
   if (
     realpathSync(process.cwd()) !== ROOT ||
     !['postgres:', 'postgresql:'].includes(database.protocol) ||

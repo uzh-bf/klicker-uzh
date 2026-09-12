@@ -1,0 +1,30 @@
+query GetKbKnowledgeGraphOverview($kbId: ID!) {
+  getKbKnowledgeGraphOverview(kbId: $kbId) {
+    kbId
+    buildId
+    isStale
+    nodes {
+      id
+      labels
+      kind
+      displayLabel
+      summary
+      content
+      degree
+      sourceReferences {
+        resourceId
+        title
+        reference
+      }
+    }
+    edges {
+      id
+      source
+      target
+      type
+      label
+      properties
+    }
+    truncated
+  }
+}

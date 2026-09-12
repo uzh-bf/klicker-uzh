@@ -1,0 +1,9 @@
+query GetKbResourceIngestionRuns($resourceId: ID!) {
+  getKbResourceIngestionRuns(resourceId: $resourceId) {
+    id
+    status
+    resourceVersion
+    errorCode
+    createdAt
+  }
+}

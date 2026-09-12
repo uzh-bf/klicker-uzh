@@ -9,18 +9,26 @@ import {
 import { Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
+import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
 import { useEmbedded } from '../hooks/useEmbedded'
+import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
+import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
+import { authedFetch } from '../lib/client/authedFetch'
+import { getKlickerChatContextLabel } from '../services/chatContext'
+import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
+import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
+import { ChatKnowledgeGraphWorkspace } from './knowledge-graph/ChatKnowledgeGraphWorkspace'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -45,6 +53,7 @@ interface DisclaimerStatus {
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
+  readonly initialModeOptionsAreFallback?: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -62,8 +71,17 @@ interface DisclaimerDeclinedProps {
   readonly onDecline: () => Promise<void>
 }
 
-export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
+export function Assistant({
+  chatbot,
+  initialModeOptions,
+  initialModeOptionsAreFallback = false,
+}: AssistantProps) {
+  // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
+  // sessionStorage and strip it from the URL on first render.
+  useChatGuestTokenBootstrap()
+
   const t = useTranslations()
+  usePwaEmbedTokenBootstrap()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(
     (state) => state.participationRequired
@@ -121,7 +139,11 @@ export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
         >
-          <AssistantLayout chatbot={chatbot} />
+          <AssistantLayout
+            chatbot={chatbot}
+            initialModeOptions={initialModeOptions}
+            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+          />
         </RuntimeProvider>
       </ChatUiProvider>
 
@@ -152,7 +174,9 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
   useEffect(() => {
     const fetchDisclaimerInfo = async () => {
       try {
-        const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`)
+        const response = await authedFetch(
+          `/api/chatbots/${chatbotId}/disclaimer`
+        )
         if (response.ok) {
           const data = await response.json()
           setDisclaimer(data.disclaimer)
@@ -190,16 +214,19 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'accept',
-          disclaimerId: disclaimer.id,
-        }),
-      })
+      const response = await authedFetch(
+        `/api/chatbots/${chatbotId}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'accept',
+            disclaimerId: disclaimer.id,
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
@@ -225,15 +252,18 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
     setDisclaimerActionError(false)
 
     try {
-      const response = await fetch(`/api/chatbots/${chatbotId}/disclaimer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'decline',
-        }),
-      })
+      const response = await authedFetch(
+        `/api/chatbots/${chatbotId}/disclaimer`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'decline',
+          }),
+        }
+      )
 
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
@@ -462,8 +492,14 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
+  graphMode,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
+  graphMode: boolean
+  initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
@@ -489,7 +525,7 @@ function SidebarMain({
     <SidebarInset id="main-content" tabIndex={-1}>
       <header
         data-cy="chat-header"
-        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5"
+        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto]"
       >
         {/* Only visible when the sidebar is closed — once it's open, the
             sidebar's own trigger closes it, so this stays the single toggle
@@ -537,49 +573,84 @@ function SidebarMain({
           </TooltipTrigger>
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
+        <ChatGraphModeSwitch
+          chatbotId={chatbot.id}
+          compact
+          className="col-span-4 justify-self-end sm:col-span-1"
+        />
       </header>
       <MobileCreditsBar />
-      <div className="flex min-h-0 flex-1 flex-col">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
               <ThreadSkeleton />
             </div>
           )}
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-          />
+          {graphMode ? (
+            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
+          ) : (
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            />
+          )}
         </div>
-      </div>
+      </main>
     </SidebarInset>
   )
 }
 
 function AssistantLayout({
   chatbot,
+  initialModeOptions,
+  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
+  initialModeOptions: Record<string, string>
+  initialModeOptionsAreFallback: boolean
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
+  const pathname = usePathname()
+  const graphMode = pathname === `/${chatbot.id}/graph`
+  useEmbeddedChatContext()
+  const context = useChatContextStore((state) => state.context)
+  const contextLabel = getKlickerChatContextLabel(context)
+  const hasQuestionContext = Boolean(context?.question)
 
   if (showSidebar) {
     return (
       <SidebarProvider className="h-dvh overflow-hidden">
         <AppSidebar />
-        <SidebarMain chatbot={chatbot} />
+        <SidebarMain
+          chatbot={chatbot}
+          graphMode={graphMode}
+          initialModeOptions={initialModeOptions}
+          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+        />
       </SidebarProvider>
     )
   }
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
+      <div className="bg-muted/50 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-4 sm:px-4 sm:py-3">
         <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
           {chatbot.name}
         </h1>
         <EmbeddedSettings />
+        <ChatGraphModeSwitch
+          chatbotId={chatbot.id}
+          compact
+          className="col-span-2 justify-self-end sm:col-span-1"
+        />
       </div>
       <main
         id="main-content"
@@ -592,10 +663,18 @@ function AssistantLayout({
               <ThreadSkeleton />
             </div>
           )}
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-          />
+          {graphMode ? (
+            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
+          ) : (
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              contextLabel={contextLabel}
+              contextualSuggestions={hasQuestionContext}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            />
+          )}
         </div>
         <EmbeddedCreditsBar />
       </main>

@@ -30,6 +30,7 @@ import {
   createLiveQuizFixture,
   CreateLiveQuizOptions,
   mockGrowthBookLearningAnalytics,
+  updateLecturerAiAccess,
   validateFeatureAvailabilityFixture,
   ValidateFeatureAvailabilityOptions,
 } from './fixtures/manage.js'
@@ -135,6 +136,9 @@ type KlickerUZHFixtures = {
     page: Page,
     options: ValidateFeatureAvailabilityOptions
   ) => Promise<void>
+
+  /** Flip the seeded lecturer's AI entitlement (the account half of the gate) */
+  updateLecturerAiAccess: (enabled: boolean) => Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -351,6 +355,10 @@ export const test = base.extend<KlickerUZHFixtures>({
         await validateFeatureAvailabilityFixture(page, options)
       }
     )
+  },
+
+  updateLecturerAiAccess: async ({}, use) => {
+    await use(updateLecturerAiAccess)
   },
 })
 

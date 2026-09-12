@@ -10,15 +10,21 @@ let nextConfig = {
     BLOB_STORAGE_ACCOUNT_URL: process.env.BLOB_STORAGE_ACCOUNT_URL,
     NODE_ENV: process.env.NODE_ENV,
     pagesRouterOnly: true,
+    buildTsconfigPath: 'tsconfig.check.json',
     NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV,
   }),
   async rewrites() {
-    return process.env.NODE_ENV === 'test'
+    return ['development', 'test'].includes(process.env.NODE_ENV)
       ? [
           {
             source: '/__growthbook__/api/features/sdk-test',
             destination:
               'http://127.0.0.1:3000/__growthbook__/api/features/sdk-test',
+          },
+          {
+            source: '/__growthbook__/__test/learning-analytics',
+            destination:
+              'http://127.0.0.1:3000/__growthbook__/__test/learning-analytics',
           },
         ]
       : []
@@ -35,7 +41,11 @@ let nextConfig = {
 }
 
 nextConfig.transpilePackages = Array.from(
-  new Set([...(nextConfig.transpilePackages ?? []), 'formik'])
+  new Set([
+    ...(nextConfig.transpilePackages ?? []),
+    '@klicker-uzh/kb-management',
+    'formik',
+  ])
 )
 
 if (process.env.NODE_ENV === 'development') {

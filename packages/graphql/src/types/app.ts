@@ -3,16 +3,44 @@ import type {
   ActivityLogModificationDetails,
   AssessmentReportSnapshot,
   AvatarSettings,
+  ChatbotAuthoringRevision,
   ChatbotStandardModeConfig,
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
   ElementOptions,
+  FlashcardGenerationConfiguration,
+  GeneratedFlashcard,
+  GeneratedFlashcardEditable,
+  GeneratedQuestionCitation,
+  GeneratedQuestionEditable,
+  GeneratedQuestionOriginal,
   GroupActivityDecisions,
   GroupActivityResults,
+  QuestionGenerationArtifactRef,
+  QuestionGenerationConfiguration,
+  QuestionGenerationDesignSummary,
+  QuestionGenerationPlanSummary,
+  QuestionGenerationQuestionProvenance,
   SingleQuestionResponse,
   SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
+
+type KBGraphMeteredCost = {
+  currency: string
+  amount_minor_units: number
+  components: Array<{
+    provider: string
+    model: string
+    amount_minor_units: number
+    pricing_version: string
+    embedding_tokens: number
+    input_tokens: number
+    output_tokens: number
+    request_count: number
+  }>
+  metering_source: 'provider_reported' | 'configured_pricing'
+}
 
 export type PrismaMigrationClient = Omit<
   InstanceType<typeof PrismaClient>,
@@ -44,7 +72,24 @@ declare global {
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
     type PrismaAssessmentReportSnapshot = AssessmentReportSnapshot
+    type PrismaKBGraphMeteredCost = KBGraphMeteredCost
+    type PrismaElementGenerationArtifactRef = QuestionGenerationArtifactRef
+    type PrismaElementGenerationConfiguration =
+      | QuestionGenerationConfiguration
+      | FlashcardGenerationConfiguration
+    type PrismaElementGenerationDesignSummary = QuestionGenerationDesignSummary
+    type PrismaElementGenerationPlanSummary = QuestionGenerationPlanSummary
+    type PrismaGeneratedElementOriginal =
+      | GeneratedQuestionOriginal
+      | GeneratedFlashcard
+    type PrismaGeneratedElementEditable =
+      | GeneratedQuestionEditable
+      | GeneratedFlashcardEditable
+    type PrismaGeneratedElementCitations = GeneratedQuestionCitation[]
+    type PrismaElementGenerationProvenance =
+      QuestionGenerationQuestionProvenance
     type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
+    type PrismaChatbotAuthoringRevision = ChatbotAuthoringRevision
   }
 }
 // #endregion

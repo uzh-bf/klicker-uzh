@@ -105,6 +105,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
   function flagEvaluator(enabled: boolean): FeatureFlagEvaluator {
     return {
       isEnabled: vi.fn(() => enabled),
+      getAiBetaDecision: vi.fn(() => (enabled ? 'enabled' : 'disabled')),
       refresh: vi.fn(async () => undefined),
     }
   }

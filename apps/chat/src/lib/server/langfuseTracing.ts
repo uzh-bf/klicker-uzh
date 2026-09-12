@@ -224,7 +224,12 @@ export async function registerLangfuseTelemetry() {
         mask: maskLangfuseData,
       })
     )
-    const sdk = new NodeSDK({ spanProcessors: [processor] })
+    const sdk = new NodeSDK({
+      // Identifies spans in Langfuse as coming from the chat app; without an
+      // explicit name the exporter reports the generic unknown_service:node.
+      serviceName: 'klicker-chat',
+      spanProcessors: [processor],
+    })
 
     try {
       sdk.start()

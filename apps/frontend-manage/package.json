@@ -19,11 +19,13 @@
     "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
+    "@klicker-uzh/kb-management": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",
     "@tanstack/react-table": "8.20.5",
     "@uidotdev/usehooks": "2.4.1",
@@ -99,7 +101,8 @@
     "dev:test": "cross-env NODE_ENV=test next dev --turbopack --port 3002",
     "lint": "eslint .",
     "start": "next start --port 3002",
-    "start:test": "cross-env NODE_ENV=test pnpm start"
+    "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test:run": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test test/*.test.ts"
   },
   "engines": {
     "node": "=24"

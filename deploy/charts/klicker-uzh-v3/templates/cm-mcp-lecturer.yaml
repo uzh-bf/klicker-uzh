@@ -1,0 +1,12 @@
+{{- if .Values.mcpLecturer.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-mcp-lecturer
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  MCP_LECTURER_HOST: "0.0.0.0"
+  MCP_LECTURER_PATH: {{ .Values.mcpLecturer.path | quote }}
+  MCP_LECTURER_PORT: {{ .Values.mcpLecturer.service.port | quote }}
+{{- end }}

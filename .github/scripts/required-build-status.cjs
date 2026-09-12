@@ -31,7 +31,7 @@ const ROOT_BUILD_GLOBS = Object.freeze([
 // One entry per v3_*-stg.yml image workflow. 'globs' mirror that workflow's
 // pull_request path filter and 'jobs' list the build jobs that must conclude
 // successfully for an affected pull request or for any push. Jobs gated with
-// an always-false condition (every build-amd job) are inactive and stay out.
+// an always-false condition are inactive and stay out.
 const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
@@ -143,6 +143,26 @@ const IMAGE_WORKFLOWS = Object.freeze([
     ],
     jobs: ['build-arm'],
     path: 'v3_lti-stg.yml',
+  },
+  {
+    globs: [
+      'apps/mcp-lecturer/**',
+      SHARED_PACKAGES_GLOB,
+      ...ROOT_BUILD_GLOBS,
+      '.github/workflows/v3_mcp-lecturer**',
+    ],
+    jobs: ['build-arm', 'build-amd'],
+    path: 'v3_mcp-lecturer-stg.yml',
+  },
+  {
+    globs: [
+      'apps/mcp-student/**',
+      SHARED_PACKAGES_GLOB,
+      ...ROOT_BUILD_GLOBS,
+      '.github/workflows/v3_mcp-student**',
+    ],
+    jobs: ['build-arm', 'build-amd'],
+    path: 'v3_mcp-student-stg.yml',
   },
   {
     globs: [

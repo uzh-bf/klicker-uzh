@@ -39,6 +39,8 @@ hatchet:
   workers:
     general:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
@@ -78,6 +80,8 @@ hatchet:
 
     responseProcessor:
       replicaCount: 6
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
@@ -117,6 +121,8 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
@@ -171,9 +177,6 @@ auth:
   priorityClassName: production-workload
 
   replicaCount: 3
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -233,9 +236,6 @@ chat:
     environment: 'production'
 
   replicaCount: 2
-
-  autoscaling:
-    enabled: false
 
   automaticModels:
     primaryId: auto
@@ -393,6 +393,106 @@ chat:
       cpu: 200m
       memory: 1Gi
 
+mcpStudent:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-student
+            topologyKey: kubernetes.io/hostname
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-student
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-student
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.61
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      memory: 200Mi
+
+mcpLecturer:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-lecturer
+            topologyKey: kubernetes.io/hostname
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
+    pullPolicy: Always
+    tag: v3.4.0-alpha.61
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      memory: 200Mi
+
 frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
@@ -511,9 +611,6 @@ frontendControl:
     pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.75-ai.1
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -555,6 +652,7 @@ frontendControl:
       memory: 512Mi
 
 backendGraphql:
+  betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: production-workload
 
   knowledgeGraph:
@@ -605,6 +703,7 @@ backendGraphql:
   appStudentDomain: pwa.klicker.uzh.ch
   appControlDomain: control.klicker.uzh.ch
   cookieDomain: .klicker.uzh.ch
+  # kbIngestionDisabled: true # interim kill switch — set to true to refuse new KB ingestion during an incident
 
   ingress:
     className: haproxy
@@ -647,9 +746,6 @@ olatApi:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.75-ai.1
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -754,9 +850,6 @@ responseApi:
     tag: v3.4.0-alpha.75-ai.1
     pullPolicy: IfNotPresent
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -801,8 +894,6 @@ assessment:
   frontendPWA:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -878,8 +969,6 @@ assessment:
   backendGraphql:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -969,9 +1058,6 @@ assessment:
     priorityClassName: production-workload
 
     replicaCount: 3
-
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
