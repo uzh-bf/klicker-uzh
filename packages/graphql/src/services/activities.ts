@@ -1958,7 +1958,8 @@ export async function setActivityReviewStatus(
           {
             event: 'activity.assessment.rejection.record_failed',
             liveQuizId: activityId,
-            errorType: auditError instanceof Error ? auditError.name : 'unknown',
+            errorType:
+              auditError instanceof Error ? auditError.name : 'unknown',
           },
           'Failed to record rejected assessment review change'
         )
