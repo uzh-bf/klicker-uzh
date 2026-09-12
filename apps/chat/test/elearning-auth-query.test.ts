@@ -10,11 +10,20 @@ const threadId = 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e'
 describe('eLearning auth query', () => {
   test('preserves the remembered thread for full-reload continuity', () => {
     const result = parseElearningAuthQuery(
-      new URLSearchParams({ grant, courseId, chatbotId, threadId })
+      new URLSearchParams({
+        grant,
+        courseId,
+        chatbotId,
+        locale: 'de',
+        threadId,
+      })
     )
 
     expect(result.success).toBe(true)
-    if (result.success) expect(result.data.threadId).toBe(threadId)
+    if (result.success) {
+      expect(result.data.locale).toBe('de')
+      expect(result.data.threadId).toBe(threadId)
+    }
   })
 
   test('keeps threadId optional for a new conversation', () => {

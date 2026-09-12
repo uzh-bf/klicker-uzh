@@ -27,6 +27,9 @@ const querySchema = z.object({
   grant: z.string().min(1),
   courseId: z.string().uuid(),
   chatbotId: z.string().uuid(),
+  // The eLearning UI locale is carried through the auth redirect so Chat's
+  // root layout renders the embedded conversation in the host language.
+  locale: z.enum(['en', 'de']).optional(),
   // Optional deep link to the conversation the host remembers for this
   // learner, chatbot and course; ownership is enforced by the chat UI.
   threadId: z.string().uuid().optional(),
@@ -64,11 +67,25 @@ function launchResponse(destination: URL) {
   )
 }
 
+function setLocaleCookie(
+  response: NextResponse,
+  locale: 'en' | 'de' | undefined,
+  isProduction: boolean
+) {
+  if (!locale) return
+
+  response.cookies.set('NEXT_LOCALE', locale, {
+    ...cookieSecurityOptions({ isProduction }),
+    path: '/',
+  })
+}
+
 export function parseElearningAuthQuery(searchParams: URLSearchParams) {
   return querySchema.safeParse({
     grant: searchParams.get('grant'),
     courseId: searchParams.get('courseId'),
     chatbotId: searchParams.get('chatbotId'),
+    locale: searchParams.get('locale') ?? undefined,
     threadId: searchParams.get('threadId') ?? undefined,
   })
 }
@@ -93,7 +110,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const { grant, courseId, chatbotId, threadId } = queryResult.data
+  const { grant, courseId, chatbotId, locale, threadId } = queryResult.data
 
   let verified: Awaited<ReturnType<typeof verifyElearningChatGrant>>
   try {
@@ -232,6 +249,7 @@ export async function GET(req: NextRequest) {
     if (!cookiesAvailable)
       chatbotUrl.searchParams.set(PWA_CHAT_EMBED_QUERY_KEY, scopedToken)
     const response = launchResponse(chatbotUrl)
+    setLocaleCookie(response, locale, isProduction)
     response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
       ...cookieSecurityOptions({ isProduction }),
       domain: process.env.COOKIE_DOMAIN,
@@ -279,6 +297,7 @@ export async function GET(req: NextRequest) {
   if (!cookiesAvailable) chatbotUrl.searchParams.set('_t', chatGuestToken)
 
   const response = launchResponse(chatbotUrl)
+  setLocaleCookie(response, locale, isProduction)
   response.cookies.set(LTI_PROBE_COOKIE_NAME, '', {
     ...cookieSecurityOptions({ isProduction }),
     domain: process.env.COOKIE_DOMAIN,
