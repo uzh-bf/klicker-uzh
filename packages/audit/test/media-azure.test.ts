@@ -18,7 +18,7 @@ type StoredMedia = {
   contentType: string
   versionId: string
   expiresOn?: Date
-  policyMode?: 'Locked'
+  policyMode?: 'locked' | 'Locked' | 'unlocked'
 }
 
 class MemoryMediaContainer {
@@ -84,7 +84,7 @@ class MemoryMediaContainer {
             container.policyCalls.push(versionId)
             if (container.persistPolicy) {
               stored.expiresOn = policy.expiriesOn
-              stored.policyMode = 'Locked'
+              stored.policyMode = 'locked'
             }
             return {}
           },
@@ -179,7 +179,7 @@ describe('Azure immutable audit media store', () => {
     })
     expect(created.outcome).toBe('CREATED')
     expect(replay.outcome).toBe('IDENTICAL_REPLAY')
-    expect(container.stored.get(input.blobName)?.policyMode).toBe('Locked')
+    expect(container.stored.get(input.blobName)?.policyMode).toBe('locked')
     expect(replay.retainUntil).toEqual(input.retainUntil)
   })
 
@@ -305,7 +305,7 @@ describe('Azure immutable audit media store', () => {
       outcome: 'IDENTICAL_REPLAY',
     })
     expect(container.policyCalls).toEqual(['version-1', 'version-1'])
-    expect(stored.policyMode).toBe('Locked')
+    expect(stored.policyMode).toBe('locked')
   })
 
   it('validates case-insensitive hashes during retention renewal', async () => {
@@ -333,5 +333,41 @@ describe('Azure immutable audit media store', () => {
       AuditMediaConflictError
     )
     expect(container.policyCalls).toHaveLength(2)
+  })
+  it.each([
+    'locked',
+    'Locked',
+  ] as const)('accepts a sufficient %s policy without another write', async (policyMode) => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('policy case compatibility'))
+    await store.createFromFile(input)
+    container.stored.get(input.blobName)!.policyMode = policyMode
+    await expect(store.createFromFile(input)).resolves.toMatchObject({
+      outcome: 'IDENTICAL_REPLAY',
+    })
+    await expect(store.extendRetention(input)).resolves.toMatchObject({
+      outcome: 'ALREADY_SUFFICIENT',
+    })
+    expect(container.policyCalls).toHaveLength(1)
+  })
+
+  it('rejects an unlocked policy during verification and renewal', async () => {
+    const container = new MemoryMediaContainer()
+    const store = new AzureImmutableAuditMediaStore(
+      container as unknown as ContainerClient
+    )
+    const input = await mediaFixture(Buffer.from('unlocked policy'))
+    await store.createFromFile(input)
+    container.stored.get(input.blobName)!.policyMode = 'unlocked'
+    container.persistPolicy = false
+    await expect(store.createFromFile(input)).rejects.toThrow(
+      'was not durably locked'
+    )
+    await expect(store.extendRetention(input)).rejects.toBeInstanceOf(
+      AuditMediaConflictError
+    )
   })
 })

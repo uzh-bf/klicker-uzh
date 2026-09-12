@@ -146,7 +146,8 @@ export class AzureImmutableAuditMediaStore
     const requiredVersionId = requireVersionId(versionId, input.blobName)
     const version = blob.withVersion(requiredVersionId)
     const existingExpiry = properties.immutabilityPolicyExpiresOn
-    const alreadyLocked = properties.immutabilityPolicyMode === 'Locked'
+    const alreadyLocked =
+      properties.immutabilityPolicyMode?.toLowerCase() === 'locked'
     if (
       !alreadyLocked ||
       existingExpiry === undefined ||
@@ -165,7 +166,7 @@ export class AzureImmutableAuditMediaStore
     const lockedProperties = await version.getProperties()
     const lockedUntil = lockedProperties.immutabilityPolicyExpiresOn
     if (
-      lockedProperties.immutabilityPolicyMode !== 'Locked' ||
+      lockedProperties.immutabilityPolicyMode?.toLowerCase() !== 'locked' ||
       lockedUntil === undefined ||
       lockedUntil.getTime() < input.retainUntil.getTime()
     ) {
@@ -211,7 +212,7 @@ export class AzureImmutableAuditMediaStore
     const properties = await version.getProperties()
     if (
       !matchesBlobMetadata(properties.metadata, 'sha256', input.contentHash) ||
-      properties.immutabilityPolicyMode !== 'Locked' ||
+      properties.immutabilityPolicyMode?.toLowerCase() !== 'locked' ||
       properties.immutabilityPolicyExpiresOn === undefined
     ) {
       throw new AuditMediaConflictError(input.blobName)
@@ -235,7 +236,7 @@ export class AzureImmutableAuditMediaStore
     const extended = await version.getProperties()
     if (
       !matchesBlobMetadata(extended.metadata, 'sha256', input.contentHash) ||
-      extended.immutabilityPolicyMode !== 'Locked' ||
+      extended.immutabilityPolicyMode?.toLowerCase() !== 'locked' ||
       extended.immutabilityPolicyExpiresOn === undefined ||
       extended.immutabilityPolicyExpiresOn.getTime() <
         input.retainUntil.getTime()
