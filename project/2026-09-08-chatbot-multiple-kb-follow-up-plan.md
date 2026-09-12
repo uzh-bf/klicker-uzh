@@ -311,6 +311,91 @@ their own work packages.
 
 ## Progress
 
+September 12 integration checkpoint: fast-forwarded this task branch to current
+`origin/v3-ai` (`d1e1fafadd`) because upstream changed the same seed source.
+The five task files reapplied cleanly; upstream isolated-runtime URL handling
+and its tests remain intact. The pre-integration patch is also preserved in
+stash `c09618d6c51232fbe14211316557c3b570cbbfcd`. No target branch was changed.
+The source slice is 171 substantive changed lines, excluding this plan.
+Affected integration checks and full pre-commit checks require a new bounded
+verification runtime; the previous one-shot startup/check/stop is complete.
+Commit and immutable-slice review remain pending. No PR exists for this branch.
+
+September 12 subsequent approved retry: installed Devrouter 0.0.77 completed
+the exact Infisical-injected startup with `managedRuntime.status=ready`, matching
+desired/active resources and no drift. The corrected local MCP fixture started.
+Auth, Chat, PWA, Manage and lecturer MCP readiness contracts passed; host Manage
+returned HTTP 200 with trusted TLS verification. No model request was made.
+Canonical stop exited zero and removed six routes. Fresh source-path readback
+reports stopped, empty active resources, no drift and zero exact routes.
+The focused four-file Biome check now exits zero after two test-format corrections;
+four existing seed-file lint warnings remain. Startup build warnings are not a
+passing full typecheck. Browser interaction and model/retrieval proof remain open.
+
+September 12 latest verification supersedes the runtime/check status below.
+The user approved the Devrouter TLS source fix, additive shared certificate
+reconciliation, and one exact startup/check/stop attempt. The dedicated
+Devrouter task completed certificate reconciliation. The reviewed source at
+`76c4ea92ae2f9ed8804693213d9bd49d22061665` reached local MCP startup but failed
+the fixture ownership guard; it did not establish application readiness.
+Trusted curl against the exact Chat hostname returned `TLS_VERIFY=0` and
+HTTP 404. TLS coverage is verified; application recovery is not.
+
+Main corrected the fixture guard to compare persisted array values structurally
+and accept only the exact owned legacy or plural fixture scopes. Broadened and
+mixed scopes remain rejected. The changed source passes 67 focused Chat tests,
+six seed reconciliation tests, the Prisma data package check, and diff whitespace
+validation. Formatting remains unverified: its managed exec failed because
+Docker could not find container `77d452dd87ff`. No second startup was attempted.
+These source changes remain uncommitted and require review.
+
+The reviewed-source stop completed successfully with `stopped: true`.
+Source-path status reports stopped with empty active app/service/process sets;
+Devsy reports `Stopped`, and exact source/hostname route filtering finds zero
+routes. Historical degraded process-start state remains recorded. The Devrouter
+owner received these receipts. The next runtime attempt must be coordinated
+with that owner and separately authorized under the one-attempt boundary.
+No deployment, live data changes, paid model calls, or resource deletion occurred.
+
+September 12 continuation checkpoint: the replacement execution checkout is
+`trees/rs/chatbot-kb-clean-runtime`, branch `rs/chatbot-kb-clean-runtime`, at
+`21ef2e9818b3e50e592fca3db8bdd9e22f8df524`. The old checkout, unresolved merge
+and named cleanup stash remain preserved. The strict reader and migration have
+not been restored: their deployment/backfill prerequisite still needs explicit
+reconciliation. The merged foundation does not itself prove deployed state.
+
+The replacement runtime completed synthetic bootstrap with a temporary serial
+package-build diagnostic. That is successful recovery, not a proven permanent
+Rollup fix. Internal application readiness passed. Fresh deterministic checks
+passed 42 Chat scope/owner-preview tests and three GraphQL plural-reader tests;
+no paid model calls or live data changes occurred. Final host HTTPS readiness
+failed: the workspace receives Traefik's default certificate, and the configured
+leaf lacks its hostname SAN. The dedicated Devrouter task owns source diagnosis;
+shared certificates and trust have not been changed here.
+
+The bounded `plural_seed_writers` executor resumed and drafted plural persisted
+scopes in the local MCP and Prisma synthetic seed writers, with existing-test
+coverage for zero/one/many bindings and stale-key reconciliation. Main is
+checking the diff; checks on this changed source remain pending. Singleton JWT
+claims remain unchanged as a separate contract.
+Main owns integration, migration safety, verification and delivery. The Prisma
+seed package check passed on unchanged source. The temporary serial-build
+override was removed. Browser acceptance, the remaining cleanup, additive
+editing, migration proof and final review remain outstanding.
+
+Canonical stop of this replacement checkout returned `stopped: true` and the
+source-path route inventory reports zero routes. The dedicated Devrouter task
+confirmed that its prior authorization does not cover the newly identified
+certificate-coverage lifecycle defect. Its proposed source fix and any shared
+certificate reconciliation need a named approval; do not bypass TLS checks.
+
+Fresh remote evidence: `origin/stg-release` at `b7dd78ac44` contains compatibility
+commit `7d378475c0`. This is release-ref ancestry, not a deployed-image receipt.
+Current target `origin/v3-ai` is `0f841214d7`; its two commits after this checkout
+change generated-question tags, so no new integration was performed merely
+for target movement. Additive attach, partial detach and deletion reconciliation
+remain source work to implement after the current preparatory slice.
+
 September 8: initial source mapping and native planning rounds identified
 deletion recomputation, preview truncation and graph browsing. The user accepted
 zero-to-32 attachments and combined document retrieval, and rejected a primary

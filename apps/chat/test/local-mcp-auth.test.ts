@@ -341,6 +341,19 @@ describe('createLocalAuthenticator', () => {
 
 describe('assertLocalSeedOwnership', () => {
   test.each([
+    { required: true, toolAlias: 'doc_query', kb_ids: [LOCAL_KB_ID] },
+    { required: true, toolAlias: 'doc_query', kb_id: LOCAL_KB_ID },
+  ])('accepts a persisted owned scope during local seed conversion', (scope) => {
+    const configs = authenticatedConfigs().map((config) => ({
+      ...config,
+      parameters: JSON.parse(JSON.stringify(scope)),
+    }))
+    expect(() =>
+      assertLocalSeedOwnership(authenticatedServer(), configs)
+    ).not.toThrow()
+  })
+
+  test.each([
     ['null parameters', null],
     ['empty parameters', {}],
   ])('accepts the exact legacy seed with %s', (_label, parameters) => {
@@ -368,6 +381,27 @@ describe('assertLocalSeedOwnership', () => {
         authenticatedConfigs([true, false])
       )
     ).not.toThrow()
+  })
+
+  test('accepts persisted plural scope for the owned scope-token seed', () => {
+    expect(() =>
+      assertLocalSeedOwnership(
+        scopeTokenServer(),
+        scopeTokenConfigs(JSON.parse(JSON.stringify(LOCAL_SCOPE)))
+      )
+    ).not.toThrow()
+  })
+
+  test.each([
+    { ...LOCAL_SCOPE, kb_ids: [LOCAL_KB_ID, 'other-kb'] },
+    { ...LOCAL_SCOPE, kb_id: LOCAL_KB_ID },
+    { ...LOCAL_SCOPE, extra: true },
+  ])('rejects broadened or ambiguous fixture scopes', (parameters) => {
+    expectOwnershipConflict(scopeTokenServer(), scopeTokenConfigs(parameters))
+    expectOwnershipConflict(
+      authenticatedServer(),
+      authenticatedConfigs().map((config) => ({ ...config, parameters }))
+    )
   })
 
   test('rejects a disabled legacy configuration', () => {

@@ -1,6 +1,6 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { seedChatbotMCPConfigurations } from '../src/data/seedMCPServers.js'
 
 const KB_SERVER = {
@@ -9,18 +9,20 @@ const KB_SERVER = {
 }
 
 function createPrismaMock({
-  hasBinding,
+  enabledKbIds,
   hasExistingConfig,
+  existingParameters = null,
 }: {
-  hasBinding: boolean
+  enabledKbIds: string[]
   hasExistingConfig: boolean
+  existingParameters?: unknown
 }) {
   const updates: Array<Record<string, unknown>> = []
   const creates: Array<Record<string, unknown>> = []
 
   const prisma = {
     kBChatbot: {
-      findFirst: async () => (hasBinding ? { id: 'binding' } : null),
+      findMany: async () => enabledKbIds.map((kbId) => ({ kbId })),
     },
     chatbotMCPConfig: {
       findUnique: async ({
@@ -33,6 +35,7 @@ function createPrismaMock({
         hasExistingConfig
           ? {
               id: `config-${where.chatbotId_mcpServerId_chatMode.chatMode}`,
+              parameters: existingParameters,
             }
           : null,
       update: async ({ data }: { data: Record<string, unknown> }) => {
@@ -50,12 +53,20 @@ function createPrismaMock({
 }
 
 describe('KB chatbot MCP seed reconciliation', () => {
-  for (const hasBinding of [true, false]) {
+  for (const enabledKbIds of [[], ['kb-single'], ['kb-z', 'kb-a', 'kb-z']]) {
     for (const hasExistingConfig of [true, false]) {
-      test(`${hasExistingConfig ? 'updates' : 'creates'} ${hasBinding ? 'enabled' : 'disabled'} tutor and explainer configs`, async () => {
+      test(`${hasExistingConfig ? 'updates' : 'creates'} ${enabledKbIds.length} KB configs`, async () => {
+        const existingParameters = {
+          unrelated: 'preserved',
+          required: true,
+          toolAlias: 'doc_query',
+          kb_id: 'legacy-kb',
+          kb_ids: ['stale-kb'],
+        }
         const { prisma, updates, creates } = createPrismaMock({
-          hasBinding,
+          enabledKbIds,
           hasExistingConfig,
+          existingParameters,
         })
 
         await seedChatbotMCPConfigurations(prisma, [KB_SERVER] as Awaited<
@@ -69,7 +80,34 @@ describe('KB chatbot MCP seed reconciliation', () => {
         for (const data of writes) {
           assert.deepEqual(data.allowedTools, ['doc_query'])
           assert.equal(data.priority, 0)
-          assert.equal(data.isEnabled, hasBinding)
+          assert.equal(data.isEnabled, enabledKbIds.length > 0)
+          assert.deepEqual(
+            data.parameters,
+            hasExistingConfig
+              ? enabledKbIds.length > 0
+                ? {
+                    unrelated: 'preserved',
+                    required: true,
+                    toolAlias: 'doc_query',
+                    kb_ids: [...new Set(enabledKbIds)].sort((left, right) =>
+                      left.localeCompare(right)
+                    ),
+                  }
+                : {
+                    unrelated: 'preserved',
+                    required: true,
+                    toolAlias: 'doc_query',
+                  }
+              : enabledKbIds.length > 0
+                ? {
+                    required: true,
+                    toolAlias: 'doc_query',
+                    kb_ids: [...new Set(enabledKbIds)].sort((left, right) =>
+                      left.localeCompare(right)
+                    ),
+                  }
+                : {}
+          )
         }
       })
     }

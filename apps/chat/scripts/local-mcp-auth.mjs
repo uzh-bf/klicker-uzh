@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 import { importSPKI, jwtVerify } from 'jose'
 
 export const LOCAL_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -6,7 +7,7 @@ export const LOCAL_KB_ID = '35a72f62-a714-45f1-8b18-2cf5681b0c75'
 export const LOCAL_SCOPE = {
   required: true,
   toolAlias: 'doc_query',
-  kb_id: LOCAL_KB_ID,
+  kb_ids: [LOCAL_KB_ID],
 }
 export const LOCAL_FIXTURE_MARKER = { localFixture: 'authenticated-benibot-v1' }
 
@@ -76,7 +77,9 @@ function exactObject(actual, expected) {
     typeof actual === 'object' &&
     !Array.isArray(actual) &&
     Object.keys(actual).length === Object.keys(expected).length &&
-    Object.entries(expected).every(([key, value]) => actual[key] === value)
+    Object.entries(expected).every(([key, value]) =>
+      isDeepStrictEqual(actual[key], value)
+    )
   )
 }
 
@@ -121,8 +124,15 @@ export function assertLocalSeedOwnership(server, configs) {
         config.allowedTools.length !== 1 ||
         config.allowedTools[0] !== 'doc_query' ||
         !(legacy || scopedSeed
-          ? config.parameters === null || exactObject(config.parameters, {})
-          : exactObject(config.parameters, LOCAL_SCOPE))
+          ? config.parameters === null ||
+            exactObject(config.parameters, {}) ||
+            (scopedSeed && exactObject(config.parameters, LOCAL_SCOPE))
+          : exactObject(config.parameters, LOCAL_SCOPE) ||
+            exactObject(config.parameters, {
+              required: true,
+              toolAlias: 'doc_query',
+              kb_id: LOCAL_KB_ID,
+            }))
     )
   )
     throw new Error('Local MCP seed ownership conflict')
