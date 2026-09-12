@@ -8,6 +8,14 @@ name: Promote to stg
 on:
   workflow_run:
     workflows:
+      - 'Check codebase'
+      - 'Check for secrets (gitleaks)'
+      - 'Test graphql package logic functionalities'
+      - 'Klicker automated testing with playwright'
+      - 'Test lightweight unit suites'
+      - 'Test OLAT-API functionalities'
+      - 'Production translation context'
+      - 'Build Fallback'
       - 'Build Docker image for analytics (stg)'
       - 'Build Docker image for auth (stg)'
       - 'Build Docker image for backend-docker (stg)'
@@ -35,6 +43,14 @@ on:
         default: true
         required: true
         type: boolean
+      expected_release_sha:
+        description: 'Required for apply: release SHA from dry run, or absent for initial creation'
+        required: false
+        type: string
+      expected_controller_sha:
+        description: 'Required for apply: controller SHA recorded by the dry run'
+        required: false
+        type: string
       confirm_ref_update:
         description: 'Required only when applying a manual promotion: stg-release'
         required: false
@@ -79,11 +95,12 @@ jobs:
         id: promote
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
+          TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
           CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.event.inputs.sha }}
           GITHUB_TOKEN: ${{ github.token }}
           STG_PROMOTE_TOKEN: ${{ ((github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'false' && github.event.inputs.confirm_ref_update == 'stg-release') || (github.event_name == 'workflow_run' && vars.STG_RELEASE_PROMOTION_ENABLED == 'true')) && secrets.STG_PROMOTE_TOKEN || '' }}
           PROMOTION_ENABLED: ${{ vars.STG_RELEASE_PROMOTION_ENABLED || 'false' }}
-          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH }}
           RECEIPT_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.json
           CHECKSUM_PATH: ${{ runner.temp }}/stg-release-promotion-receipt.sha256
         with:

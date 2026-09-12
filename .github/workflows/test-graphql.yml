@@ -4,10 +4,8 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    # ready_for_review is intentionally absent: this suite runs the same jobs
-    # for draft and ready PRs, and the transition fires on an unchanged head,
-    # so listing it would only re-run validation that already passed.
-    types: [opened, synchronize, reopened]
+    # "edited" re-evaluates the internal selector on a base retarget.
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -20,7 +18,7 @@ jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,9 +30,9 @@ jobs:
 
   test-graphql:
     needs: filter
-    if: needs.filter.outputs.should_run == 'true'
+    if: >-
+      needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:15
@@ -238,27 +236,49 @@ jobs:
           APP_ORIGIN_ASSESSMENT_PWA: http://assessment.klicker.com
 
   # Always reports a status even when the tests are skipped by the path filter,
-  # so this job can be used as a required check in branch protection.
+  # so this job is the required check. It runs unconditionally so a skipped
+  # context can never read as acceptable; the shared helper fails on
+  # cancellation, an unexpected skip, a missing selector result or a failed
+  # suite, and records the selection evidence for the promoter.
   test-graphql-status:
     needs: [filter, test-graphql]
-    if: >-
-      always() &&
-      !cancelled() &&
-      needs.filter.result != 'cancelled' &&
-      needs.test-graphql.result != 'cancelled'
+    if: always()
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Check result
-        run: |
-          if [ "${{ needs.filter.result }}" != "success" ]; then
-            echo "Filter job failed: ${{ needs.filter.result }}"
-            exit 1
-          fi
-          if [ "${{ needs.filter.outputs.should_run }}" != "true" ]; then
-            echo "Tests skipped by path filter."
-            exit 0
-          fi
-          if [ "${{ needs.test-graphql.result }}" != "success" ]; then
-            echo "test-graphql result: ${{ needs.test-graphql.result }}"
-            exit 1
-          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Report required status
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+          FILTER_RESULT: ${{ needs.filter.result }}
+          SHOULD_RUN: ${{ needs.filter.outputs.should_run }}
+          TEST_RESULT: ${{ needs.test-graphql.result }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_PATH: .github/workflows/test-graphql.yml
+          TERMINAL_JOB: test-graphql-status
+          EVIDENCE_PATH: required-ci-evidence.json
+          SELECTION_JOB: filter
+          SELECTION_JOB_RESULT: ${{ needs.filter.result }}
+          SUITE_JOB: test-graphql
+          SUITE_JOB_RESULT: ${{ needs.test-graphql.result }}
+        run: node .github/scripts/required-ci-status.cjs report
+      - name: Upload required CI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-ci-evidence
+          path: required-ci-evidence.json
+          if-no-files-found: error
+          retention-days: 7

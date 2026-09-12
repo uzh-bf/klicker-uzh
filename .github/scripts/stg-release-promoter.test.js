@@ -14,6 +14,10 @@ const {
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
 const {
+  readCiEvidence,
+  resolveInputs,
+  validateCiSelection,
+  REQUIRED_CI_WORKFLOWS,
   MANUAL_CONFIRMATION,
   PROMOTION_REF,
   STAGING_WORKFLOWS,
@@ -35,6 +39,26 @@ const REPOSITORY = 'uzh-bf/klicker-uzh'
 const CANDIDATE_SHA = 'a'.repeat(40)
 const CURRENT_SHA = 'b'.repeat(40)
 const NEXT_SHA = 'c'.repeat(40)
+
+async function fixtureCiEvidence({ run }) {
+  const workflow = REQUIRED_CI_WORKFLOWS[run.id - 500]
+  return {
+    schemaVersion: 1,
+    repository: REPOSITORY,
+    workflow: { path: workflow.path, terminalJob: workflow.jobs[0].id },
+    event: { name: 'push', branch: 'v3', sha: CANDIDATE_SHA },
+    run: { id: run.id, attempt: run.attempt },
+    selection: { state: 'run', reason: 'success' },
+    reuse: null,
+    decision: { outcome: 'pass', reason: 'success' },
+    jobs: [
+      ...workflow.jobs
+        .slice(1)
+        .map(({ id }) => ({ name: id, role: 'suite', result: 'success' })),
+      { name: 'filter', role: 'selection', result: 'success' },
+    ],
+  }
+}
 
 function reviewContext(eventName = 'workflow_dispatch', inputs = {}) {
   return {
@@ -85,6 +109,33 @@ function evidenceGithub({
   jobs = {},
   comparisons = {},
 }) {
+  const ciRuns = Object.fromEntries(
+    REQUIRED_CI_WORKFLOWS.map((w, i) => [
+      w.path,
+      [workflowRun({ candidateSha: CANDIDATE_SHA, id: 500 + i, path: w.path })],
+    ])
+  )
+  for (const [i, w] of REQUIRED_CI_WORKFLOWS.entries()) {
+    jobs[500 + i] ??= w.jobs.map((j, n) => ({
+      id: 5000 + i * 10 + n,
+      name: j.id,
+      head_sha: CANDIDATE_SHA,
+      status: 'completed',
+      conclusion: 'success',
+    }))
+  }
+  for (const [i] of REQUIRED_CI_WORKFLOWS.entries()) {
+    jobs[500 + i].push(
+      ...['filter'].map((name, n) => ({
+        id: 6000 + i * 10 + n,
+        name,
+        head_sha: CANDIDATE_SHA,
+        status: 'completed',
+        conclusion: 'success',
+      }))
+    )
+  }
+  runs = { ...ciRuns, ...runs }
   const runEndpoint = async (params) => ({
     data: { workflow_runs: runs[params.workflow_id] ?? [] },
   })
@@ -97,7 +148,7 @@ function evidenceGithub({
   const github = {
     rest: {
       actions: {
-        listJobsForWorkflowRun: jobEndpoint,
+        listJobsForWorkflowRunAttempt: jobEndpoint,
         listWorkflowRuns: runEndpoint,
       },
       repos: {
@@ -1368,7 +1419,7 @@ test('writes receipts before rejecting uncertain or mismatched post-push readbac
   ]
 
   for (const fixture of cases) {
-    const refs = refGithub(null, fixture.options)
+    const refs = refGithub(CURRENT_SHA, fixture.options)
     const github = {
       ...baseGithub,
       rest: {
@@ -1387,9 +1438,13 @@ test('writes receipts before rejecting uncertain or mismatched post-push readbac
     const outputs = new Map()
     await assert.rejects(
       runPromotion({
+        getCiEvidence: fixtureCiEvidence,
+        controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
           confirm_ref_update: MANUAL_CONFIRMATION,
+          expected_release_sha: CURRENT_SHA,
+          expected_controller_sha: NEXT_SHA,
           dry_run: false,
           sha: CANDIDATE_SHA,
         }),
@@ -1456,6 +1511,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   const summaryPath = path.join(temporaryDirectory, 'summary.md')
   try {
     const result = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
+      controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_dispatch', {
         dry_run: true,
@@ -1490,9 +1547,13 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
       },
     }
     const rerun = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
+      controllerSha: NEXT_SHA,
       github: rerunGithub,
       context: reviewContext('workflow_dispatch', {
         confirm_ref_update: MANUAL_CONFIRMATION,
+        expected_release_sha: CANDIDATE_SHA,
+        expected_controller_sha: NEXT_SHA,
         dry_run: false,
         sha: CANDIDATE_SHA,
       }),
@@ -1512,6 +1573,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     )
 
     const automatic = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
+      controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
       sourceBranch: 'v3',
@@ -1521,6 +1584,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     assert.equal(refs.current(), null)
 
     const enabled = await runPromotion({
+      getCiEvidence: fixtureCiEvidence,
+      controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
       sourceBranch: 'v3',
@@ -1553,6 +1618,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   ]) {
     await assert.rejects(
       runPromotion({
+        getCiEvidence: fixtureCiEvidence,
+        controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
           ...inputs,
@@ -1634,4 +1701,253 @@ test('does not use candidate files as executable workflow inputs', () => {
     STAGING_WORKFLOW_PATHS,
     STAGING_WORKFLOWS.map((workflow) => workflow.path)
   )
+})
+
+test('requires complete candidate CI before a release write', async (t) => {
+  for (const conclusion of [
+    'failure',
+    'cancelled',
+    'skipped',
+    'neutral',
+    null,
+  ]) {
+    const workflows = validWorkflows()
+    const ciPath = REQUIRED_CI_WORKFLOWS[0].path
+    const { github: base } = evidenceGithub({
+      definitions: fixtureDefinitions(),
+      workflows,
+      jobs: successfulJobs(workflows),
+      runs: {
+        ...evidenceRuns(workflows),
+        [ciPath]: [
+          workflowRun({
+            candidateSha: CANDIDATE_SHA,
+            id: 500,
+            path: ciPath,
+            conclusion,
+            status: conclusion === null ? 'in_progress' : 'completed',
+          }),
+        ],
+      },
+    })
+    const refs = refGithub(CURRENT_SHA)
+    const github = {
+      ...base,
+      rest: { ...base.rest, git: refs.github.rest.git },
+    }
+    await assert.rejects(
+      runPromotion({
+        getCiEvidence: fixtureCiEvidence,
+        github,
+        context: reviewContext('workflow_dispatch', {
+          sha: CANDIDATE_SHA,
+          dry_run: false,
+          confirm_ref_update: MANUAL_CONFIRMATION,
+          expected_release_sha: CURRENT_SHA,
+          expected_controller_sha: NEXT_SHA,
+        }),
+        controllerSha: NEXT_SHA,
+        sourceBranch: 'v3',
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        maxAttempts: 1,
+        getRegistryDigest: async () => {
+          throw new Error('must not resolve images')
+        },
+        gitRunner: refs.gitRunner,
+      }),
+      /staging CI evidence is incomplete/
+    )
+    assert.equal(refs.current(), CURRENT_SHA)
+  }
+})
+
+test('filters run identities before choosing newest evidence and rejects duplicate jobs', async () => {
+  const workflows = validWorkflows()
+  const runs = evidenceRuns(workflows)
+  runs[workflows[0].path].push(
+    workflowRun({
+      candidateSha: CANDIDATE_SHA,
+      id: 999,
+      path: workflows[0].path,
+      headBranch: 'v3-other',
+    })
+  )
+  const jobs = successfulJobs(workflows)
+  const { github } = evidenceGithub({ workflows, runs, jobs })
+  const args = {
+    github,
+    context: reviewContext(),
+    workflows,
+    candidateSha: CANDIDATE_SHA,
+    sourceBranch: 'v3',
+    maxAttempts: 1,
+  }
+  assert.equal((await collectBuildEvidence(args)).valid, true)
+  runs[workflows[0].path].push(
+    workflowRun({
+      candidateSha: CANDIDATE_SHA,
+      id: 1000,
+      path: workflows[0].path,
+      status: 'queued',
+      conclusion: null,
+    })
+  )
+  assert.equal((await collectBuildEvidence(args)).valid, false)
+  runs[workflows[0].path].pop()
+  jobs[100].push({ ...jobs[100][0], id: 9999 })
+  assert.match((await collectBuildEvidence(args)).reason, /ambiguous/)
+})
+
+test('rejects manual apply when controller or release changed after dry run', async () => {
+  const workflows = validWorkflows()
+  const { github: base } = evidenceGithub({
+    definitions: fixtureDefinitions(),
+    workflows,
+    jobs: successfulJobs(workflows),
+  })
+  const refs = refGithub(CURRENT_SHA)
+  const github = { ...base, rest: { ...base.rest, git: refs.github.rest.git } }
+  const args = {
+    github,
+    controllerSha: NEXT_SHA,
+    sourceBranch: 'v3',
+    expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+    maxAttempts: 1,
+    getRegistryDigest: async () => `sha256:${'4'.repeat(64)}`,
+  }
+  for (const [expectedController, expectedRelease, error] of [
+    [CURRENT_SHA, CURRENT_SHA, /controller SHA changed/],
+    [NEXT_SHA, CANDIDATE_SHA, /stg-release changed/],
+    [undefined, CURRENT_SHA, /manual writes require expected/],
+  ]) {
+    await assert.rejects(
+      runPromotion({
+        getCiEvidence: fixtureCiEvidence,
+        ...args,
+        context: reviewContext('workflow_dispatch', {
+          sha: CANDIDATE_SHA,
+          dry_run: false,
+          confirm_ref_update: MANUAL_CONFIRMATION,
+          expected_controller_sha: expectedController,
+          expected_release_sha: expectedRelease,
+        }),
+      }),
+      error
+    )
+    assert.equal(refs.current(), CURRENT_SHA)
+  }
+})
+
+test('selection evidence binds identities and proves the selected suite result', async () => {
+  const definition = REQUIRED_CI_WORKFLOWS.find((w) =>
+    w.path.endsWith('/test-unit.yml')
+  )
+  const workflow = {
+    path: definition.path,
+    jobs: [{ name: 'test-unit-status' }],
+    run: { id: 504, attempt: 1 },
+    observedJobs: ['test-unit', 'filter'].map((name) => ({
+      name,
+      status: 'completed',
+      conclusion: 'success',
+    })),
+  }
+  const evidence = await fixtureCiEvidence({ run: workflow.run })
+  const validate = (value) =>
+    validateCiSelection(value, workflow, REPOSITORY, CANDIDATE_SHA, 'v3')
+  assert.equal(validate(evidence), evidence)
+  for (const mutate of [
+    (e) => {
+      e.event.name = 'pull_request'
+    },
+    (e) => {
+      e.run.attempt = 2
+    },
+    (e) => {
+      e.event.sha = CURRENT_SHA
+    },
+    (e) => {
+      e.reuse = { duplicateRunId: 123 }
+    },
+    (e) => {
+      e.selection.state = 'unknown'
+    },
+    (e) => {
+      e.jobs[0].result = 'skipped'
+    },
+    (e) => {
+      e.jobs[1].result = 'failure'
+    },
+    (e) => {
+      e.jobs[0].name = 'test-unit-status'
+    },
+    (e) => {
+      e.jobs[1].name = 'test-unit'
+    },
+    (e) => {
+      e.jobs = []
+    },
+  ]) {
+    const invalid = structuredClone(evidence)
+    mutate(invalid)
+    assert.throws(() => validate(invalid))
+  }
+  const noChange = structuredClone(evidence)
+  noChange.selection = { state: 'no-change', reason: 'no-change' }
+  noChange.jobs[0].result = 'skipped'
+  workflow.observedJobs[0].conclusion = 'skipped'
+  assert.throws(() => validate(noChange))
+})
+
+test('manual bootstrap explicitly binds an absent release', async () => {
+  const result = await resolveInputs({
+    context: reviewContext('workflow_dispatch', {
+      sha: CANDIDATE_SHA,
+      dry_run: false,
+      confirm_ref_update: MANUAL_CONFIRMATION,
+      expected_release_sha: 'absent',
+      expected_controller_sha: NEXT_SHA,
+    }),
+    sourceBranch: 'v3',
+  })
+  assert.equal(result.expectedReleaseSha, 'absent')
+  assert.equal(result.allowWrite, true)
+})
+
+test('default CI evidence reader decodes bounded archives and rejects ambiguous artifacts', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-artifact-test-'))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
+  const expected = await fixtureCiEvidence({ run: { id: 504, attempt: 1 } })
+  fs.writeFileSync(
+    path.join(dir, 'required-ci-evidence.json'),
+    JSON.stringify(expected)
+  )
+  execFileSync('zip', ['-q', 'evidence.zip', 'required-ci-evidence.json'], {
+    cwd: dir,
+  })
+  const archive = fs.readFileSync(path.join(dir, 'evidence.zip'))
+  const artifacts = [
+    {
+      id: 1,
+      name: 'required-ci-evidence',
+      expired: false,
+      size_in_bytes: archive.length,
+    },
+  ]
+  const github = {
+    paginate: async () => artifacts,
+    rest: {
+      actions: {
+        listWorkflowRunArtifacts: async () => {},
+        downloadArtifact: async () => ({ data: archive }),
+      },
+    },
+  }
+  const args = { github, context: reviewContext(), run: { id: 504 } }
+  assert.deepEqual(await readCiEvidence(args), expected)
+  artifacts.push({ ...artifacts[0], id: 2 })
+  await assert.rejects(readCiEvidence(args), /ambiguous/)
+  artifacts.pop()
+  artifacts[0].size_in_bytes = 1048577
+  await assert.rejects(readCiEvidence(args), /ambiguous/)
 })
