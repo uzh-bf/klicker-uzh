@@ -22,7 +22,15 @@ function createPrismaMock({
 
   const prisma = {
     kBChatbot: {
-      findMany: async () => enabledKbIds.map((kbId) => ({ kbId })),
+      findMany: async ({
+        where,
+      }: {
+        where: { isEnabled: boolean; kb: { deletedAt: null } }
+      }) => {
+        assert.equal(where.isEnabled, true)
+        assert.equal(where.kb.deletedAt, null)
+        return enabledKbIds.map((kbId) => ({ kbId }))
+      },
     },
     chatbotMCPConfig: {
       findUnique: async ({
