@@ -198,7 +198,7 @@ Stable-to-AI integration is being prepared from AI `21ef2e9818b3e50e592fca3db8bd
 
 [Audit worker image PR #5917](https://github.com/uzh-bf/klicker-uzh/pull/5917) targets `v3-audit`; its fresh validation head is `098bcb304c8315260eb32912a69b345156466955`. Its base is intentional. The final audit candidate must include both this repair and the synchronized AI history.
 
-[Audit media PR #5905](https://github.com/uzh-bf/klicker-uzh/pull/5905) has a human changes-requested review explicitly asking that it not be merged while the need for the change is evaluated. Preserve that review gate. The copied-media acceptance prerequisite therefore remains unresolved and blocks staging activation, independently of source synchronization.
+[Audit media PR #5905](https://github.com/uzh-bf/klicker-uzh/pull/5905) has a human changes-requested review explicitly asking that it not be merged while the need for the change is evaluated. Preserve that review gate. The accepted scope correction below removes cross-account copied media from staging prerequisites.
 
 
 Stable merged-push qualification completed successfully, including all eight Playwright shards in run `34701263187`. Ruleset `23042571` now requires all eight approved contexts on `v3`, with no bypass actor; the API readback confirmed the exact contexts. Integration ruleset remains at its bootstrap baseline pending downstream source rollout.
@@ -209,3 +209,14 @@ The synchronization tree passed 131 focused CI contracts, 135 chat tests, and al
 ### Accepted media scope correction
 
 The user approved separating the existing Azure lock-response verification bug from #5905's legacy-account expansion. Keep #5905 unmerged. Qualify staging with synthetic media in its own storage account, including explanation imagery and verified owner export. Cross-account capture is excluded; it is no longer a cutover prerequisite. The narrow lock-response repair is prepared on `rs/audit-lock-response-fix`; no PR exists yet.
+
+
+### Source delivery checkpoint
+
+Stable-to-AI synchronization is draft [#5928](https://github.com/uzh-bf/klicker-uzh/pull/5928), head `23c2e4a3933320773ddaadbe28ec79c616476502`, preserving both merge parents. Focused CI/chat/browser checks, workspace checks, lint and formatting passed. Slice review and simplification found no code issues. Full local production build stalled after Prisma emitted output; it has no passing result. Hosted CI is pending; description edits cancelled earlier attempts, whose failed terminal summaries remain visible until replacement results arrive. Final review remains active.
+
+The trusted chatbot-authoring profile omitted Chat, explaining #5917's preview failure. Draft [#5929](https://github.com/uzh-bf/klicker-uzh/pull/5929), head `f039d692f8e0d50e75c8bf2f722a5fca50e63be2`, moves that spec to `manage,chat`; 22 selector/route tests passed. It must land on stable before downstream trusted CI can use it.
+
+#5917's content/flashcard edit failures remain unattributed. The audit transaction wrapper is a candidate seam, but no global Prisma escape or nested transaction was found in the permission-recomputation path. Reproduce save with observable GraphQL result before changing implementation.
+
+The isolated lock-response patch remains in `rs/audit-lock-response-fix` (four files, no account/config/IAM changes). Its audit package built, but managed startup then stalled after Hatchet output, blocking queued unit/type checks. Do not claim the patch tested or merge-ready. #5905 stays unmerged. Staging still selects `v3-ai`, automatic promotion remains disabled, and no audit deployment has occurred.
