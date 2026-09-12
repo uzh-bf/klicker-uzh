@@ -116,19 +116,35 @@ this baseline; the overlapping deferred history must not be applied unchanged.
 
 ### First-milestone implementation — 12 September 2026
 
-The account-only extraction is implemented and uncommitted in the active worktree.
-Parent retains coupled auth, transaction, migration and integration verification;
-independent PWA, policy and fixture source owners have completed their subsets.
-The generated additive migration applies to the marked disposable runtime and
-Prisma schema diff reports no difference. Focused account/LTI/deletion coverage
-passes 28 tests; PWA helper coverage passes 9 tests; GraphQL and PWA typechecks
-and the Docs build pass. The corrected broad GraphQL run passes 883/886 tests;
-the remaining activity-sharing and assessment-reset failures need baseline
-attribution (the existing helpers hardcode unavailable localhost Redis ports).
-Browser normal completion, saved refusal, profile update and renewal passed.
-Assessment browser, direct response admission, composed-schema compatibility,
-root checks/build, committed-slice reviews and draft publication remain pending.
-No draft exists for this extraction yet. The older broad native goal is blocked;
-this milestone does not complete it. Exact runtime remains active for these checks.
+Implemented in b4a8a94c51, course-linked signup corrected in 4e482d09ef.
+Latest v3 b824ae2612 was merged normally in a210360b16 because its Playwright
+scheduling update is required for current CI evidence. No source conflicts.
+The additive migration applies and Prisma reports schema equivalence. The
+remaining broad-DPO schema delta is generated separately; deployment must still
+reconcile old overlapping migration histories, preserving custom SQL.
 
+Focused account/LTI/deletion tests pass 28 cases; PWA helper tests pass 9;
+35 package checks, 112 host contracts and 23 production build tasks pass.
+The current upstream CI contract suite passes 64 tests. Broad GraphQL tests
+pass 883/886; two existing activity-sharing audit-message lookups are ambiguous,
+and one existing assessment-reset helper uses unavailable localhost Redis.
+These are recorded limitations, not passing tests. Container-dependent hooks
+ran as equivalent container checks; Git, identity and staged secret review ran
+on the host. No dependencies changed.
 
+Browser evidence covers normal signup, assessment completion, missing choices,
+both refusals, renewal preserving historical choice metadata, profile reload,
+DE/EN collapsibles and mobile scrolling. Direct normal bearer and assessment
+cookie response requests from an incomplete synthetic account return 403 before
+queue submission. Real Edu-ID callback is not exercised in this local runtime.
+The simplifier found the course signup caller; the correction is verified.
+The risk reviewer confirmed transaction/history, auth gate and migration
+contracts. Its remaining schema-input observation is deliberate compatibility:
+legacy persisted operations remain schema-valid but missing required evidence
+fails closed in the service. Current UI callers use required-input operations.
+No automatic acceptance or consent fallback is provided.
+
+Final independent review and draft publication remain pending. The first
+milestone leaves KB, exports and analytics processing deferred. The older broad
+native goal remains blocked and is not replaced or declared complete by M1.
+Exact task runtime is active for remaining browser checks and will be stopped.
