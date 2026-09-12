@@ -252,7 +252,11 @@ async function handleAddResponse(
     throw new Error('Hatchet response publish failed')
   }
   requestLog.log.info(
-    { event: 'response.accepted', liveQuizId: message.sessionId, instanceId: message.instanceId },
+    {
+      event: 'response.accepted',
+      liveQuizId: message.sessionId,
+      instanceId: message.instanceId,
+    },
     'Response accepted'
   )
   return sendJson(req, res, dependencies.allowedOrigins, 200, {
@@ -399,7 +403,10 @@ async function handleAddAssessmentResponse(
     !UUID_PATTERN.test(participant.sub)
   ) {
     requestLog.log.info(
-      { event: 'response.rejected', reason: 'missing_invalid_assessment_cookie' },
+      {
+        event: 'response.rejected',
+        reason: 'missing_invalid_assessment_cookie',
+      },
       'Assessment response rejected'
     )
     return sendJson(req, res, dependencies.allowedOrigins, 401, {
@@ -440,7 +447,11 @@ async function handleAddAssessmentResponse(
       hatchetEventId: receipt.eventId,
     }
     requestLog.log.info(
-      { event: 'response.accepted', liveQuizId, instanceId: String(instanceId) },
+      {
+        event: 'response.accepted',
+        liveQuizId,
+        instanceId: String(instanceId),
+      },
       'Assessment response accepted'
     )
     return sendJson(req, res, dependencies.allowedOrigins, 200, responseBody)
@@ -488,7 +499,9 @@ export function createResponseServer(dependencies: ResponseServerDependencies) {
         req,
         res,
         dependencies.logger,
-        resolveRequestLogRoute(new URL(req.url || '/', 'http://localhost').pathname)
+        resolveRequestLogRoute(
+          new URL(req.url || '/', 'http://localhost').pathname
+        )
       )
       const url = new URL(req.url || '/', 'http://localhost')
       if (

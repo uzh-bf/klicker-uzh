@@ -291,8 +291,10 @@ export function prepareHatchetTasks({
         {
           liveQuizId,
           initiatedByUserId,
-        }: { liveQuizId: string; initiatedByUserId?: string } &
-          LoggableHatchetInput,
+        }: {
+          liveQuizId: string
+          initiatedByUserId?: string
+        } & LoggableHatchetInput,
         executionContext
       ) => {
         const success = await handlers.handlePublishScheduledLiveQuiz(
