@@ -6,6 +6,7 @@ import {
   readAssessmentAuditRolloutConfig,
 } from '../src/services/assessmentAuditActivation.js'
 import {
+  assessmentElementInstanceState,
   assessmentSourceElementState,
   buildAssessmentBaselineContents,
 } from '../src/services/assessmentAuditBaseline.js'
@@ -35,6 +36,36 @@ describe('assessment audit baseline snapshot mapping', () => {
       contentOptions: { kind: type },
     })
     expect(state.sourceElement.scoring.scoringRules).toEqual({ kind: type })
+  })
+
+  it.each([
+    'CONTENT',
+    'FLASHCARD',
+  ] as const)('maps %s snapshots without question options', (type) => {
+    const state = assessmentElementInstanceState(11, {
+      id: 21,
+      order: 0,
+      elementId: 31,
+      isVersionOutdated: false,
+      options: { basePoints: false, pointsMultiplier: 1 },
+      elementData: {
+        id: '31-v4',
+        elementId: 31,
+        type,
+        name: 'Synthetic element',
+        content: 'Synthetic content',
+        explanation: 'Synthetic explanation',
+        basePoints: false,
+        pointsMultiplier: 1,
+      } as ElementData,
+    })
+    expect(state.effectiveElement.content).toMatchObject({
+      elementType: type,
+      hasSampleSolution: false,
+      hasAnswerFeedbacks: false,
+      contentOptions: { kind: type },
+    })
+    expect(state.effectiveElement.scoring.scoringRules).toEqual({ kind: type })
   })
 
   it('whitelists effective assessment, scoring, eligibility and permission state', () => {
