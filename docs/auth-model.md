@@ -46,6 +46,36 @@ Two related properties of that resolver are worth knowing before changing it: it
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
 
+### Course enrollment and LTI
+
+Course membership is a `Participation` row. Its `isActive` flag controls
+leaderboard opt-in, independently of enrollment. `joinCourseLeaderboard` only
+activates existing participation; an authenticated session and course ID do not
+create membership. Ordinary account creation also does not enroll from a course
+ID. Participants join ordinary courses through PIN enrollment or LTI identity
+resolution; assessment courses retain their invitation rules.
+
+Course LTI entry pages process a fresh handoff even when a participant session
+already exists. The LTI-resolved account receives participation before an empty
+activity state or redirect. Repeated launches preserve existing opt-in and
+leaderboard scores. Cookie-blocked redirects store the participant session in
+browser session storage before navigating; legacy course aliases preserve the
+query handoff until it reaches an enrollment entry point.
+
+The participant session travels as an HttpOnly cookie when cookies are
+available and falls back to session storage plus a `participantToken` query
+relay when they are not. Course pages reconcile session storage with a freshly
+resolved handoff, so a course link carrying a valid `participantToken` query
+value can replace the stored session of a cookie-blocked browser; signature-
+verified handoffs and server-set cookies are the trusted sources, while the
+raw query value is accepted as-is for legacy relay flows.
+
+The existing LTI identity JWT does not bind a course. Enrollment still accepts
+the course separately, and redirect validation checks the destination host,
+not course entitlement. Both custom and query redirect targets retain this
+limitation. Strict course binding requires a separate compatibility migration
+for existing OLAT links.
+
 ## Login return targets
 
 Manage and PWA login pages treat return targets as untrusted input:

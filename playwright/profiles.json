@@ -2,6 +2,10 @@
   "version": 1,
   "groups": [
     {
+      "profile": "pwa,email",
+      "specs": ["Z-course-lti-enrollment.spec.ts"]
+    },
+    {
       "profile": "manage",
       "specs": ["T-chatbot-authoring.spec.ts"]
     },

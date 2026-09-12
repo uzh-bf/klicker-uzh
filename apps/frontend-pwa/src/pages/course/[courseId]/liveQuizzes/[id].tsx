@@ -1,9 +1,15 @@
 import { ValidateAvailableLiveQuizDocument } from '@klicker-uzh/graphql/dist/ops'
 import { GetServerSidePropsContext } from 'next'
+import ParticipantRedirect from '../../../../components/ParticipantRedirect'
+import getParticipantToken from '../../../../lib/getParticipantToken'
+import { participantRedirect } from '../../../../lib/participantRedirect'
 import { initializeApollo } from '../../../../lib/apollo'
 
-function CourseLiveQuiz() {
-  return null
+function CourseLiveQuiz(props: {
+  participantToken: string
+  redirectTo: string
+}) {
+  return <ParticipantRedirect {...props} />
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
@@ -38,12 +44,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
   }
 
-  return {
-    redirect: {
-      destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${quizId}`,
-      permanent: false,
-    },
-  }
+  const auth = await getParticipantToken({ apolloClient, courseId, ctx })
+  return participantRedirect({
+    destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${quizId}`,
+    ...auth,
+    locale: ctx.locale,
+  })
 }
 
 export default CourseLiveQuiz
