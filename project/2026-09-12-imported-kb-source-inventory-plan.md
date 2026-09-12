@@ -73,9 +73,10 @@ Evidence: the Resource API list exposes only each known synthetic managed resour
 
 ## Progress
 
-- Source and metadata gap verified; current integration source inspected.
-- New clean worktree created; no implementation yet.
-- Planner construction complete with concerns; frozen draft challenge pending.
-- Advisor complete: separate inventory justified; existing resource API lacks migrated inventory; retain unknown provenance; guard maintenance hard deletion. Cleanup ledger/deregistration suggestions deferred because they exceed inspection-only scope. Isolated Manage runtime startup in progress.
-- Synthetic STG KB and chatbot created and connected in earlier approved work; ingestion currently running, no readiness claim.
-- Next: planner challenge and advisor disposition, then S1 under existing approval.
+- S1 committed as eb7534257f; independent simplifier and slice reviewer returned no findings. Reviewer independently reproduced the single generated Prisma migration and verified mirror equality. Knowledge service tests: 71/71 pass.
+- S2 committed as e17d8cd573; independent simplifier and slice reviewer returned no findings. Registration tests: 22/22 pass, including disposable database conflict/concurrency cases. Offline validation avoids Prisma loading.
+- S3 committed as 1a62606023; types pass. Synthetic browser run passed for video inventory, safe links, pagination and managed upload interactions. Refreshed Chromium run passed (15.2s); simplifier returned no changes, slice review running.
+- Host workflow checks: 190/190 pass. Broad container checks passed after serial regeneration resolved a concurrent generated-output race. Two maintenance UPSERT retry tests fail identically on unchanged baseline source and tests; 20/22 pass including imported deletion protection. No claim of a green complete maintenance suite.
+- Real local synthetic metadata was rendered through the API in EN/DE without raw video storage. Browser network fixtures exercise upload/pagination/error UI only; they do not prove deployed ingestion or retrieval. No live registration, deployment, or corpus changes performed.
+- Task runtime: rs-kb-imported-sources at this worktree. Recovery after a launcher profile failure stopped only this runtime; the canonical Manage-profile browser retry passed with isolated blob port 51504. Stop and verify before final review.
+- Video citation/source-display regression: 88/88 pass. Remaining: S3 risk review, integrated final review, draft PR delivery. No PR exists yet.
