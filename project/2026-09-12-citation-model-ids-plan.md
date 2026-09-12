@@ -118,10 +118,15 @@ inside the container. Both host suites passed (64 and 48 tests); the remaining
 container checks passed (35 Turbo tasks). Staged secret scanning passed.
 Implementation committed as `92f5a4a6bed553055756ab8d00c258991f344a3d`.
 Native simplifier returned DONE with no recommended changes.
-Required correctness and final reviews remain blocked on external-review
-authority after the earlier disclosure rejection; no alternative external route
-was used. [Draft PR](https://github.com/uzh-bf/klicker-uzh/pull/5908) is open against
-`v3`; hosted CI was pending at readback. Substantive diff excluding project
+The user subsequently approved scoped external review. Mapping review passed.
+Integrated-final review found three residual position-counting instructions in
+the prompt. Correction `2a44e6f925` makes all three use supplied citation_index;
+strict Handlebars rendering and focused reviewer verification passed. No
+unresolved source-review findings. Codebase CI and both translation smoke tests
+passed on `727a0a1cbe`; new-head CI is pending. Hosted OCR failed before producing
+findings due model/API configuration; hosted final-ai-review remains outstanding.
+[Draft PR](https://github.com/uzh-bf/klicker-uzh/pull/5908) is open against
+`v3`. Substantive diff before the three-line prompt correction, excluding project
 artifacts: 515 additions and 12 deletions; one cohesive independently reviewable
 citation fix, no stack.
 Full root build failed in unchanged PWA generated types: development and
