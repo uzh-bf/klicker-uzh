@@ -39,6 +39,8 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
 
+**Live-quiz response idempotency invariant:** standard live-quiz response aggregation must keep the response marker and all result increments in one atomic Redis write path (Lua script in `src/processors/responseScript.ts`); the preflight `hexists` check is only an optimization, never the dedupe mechanism. Anonymous PWA responses rely on the stable `submissionId` generated in `apps/frontend-pwa/src/components/liveQuiz/QuestionArea.tsx` to reach that same dedupe path; direct `/AddResponse` callers or stale PWA bundles that omit it fall back to non-deduplicated anonymous counting.
+
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 
 - `create-audit-log-entry` (event-driven)
