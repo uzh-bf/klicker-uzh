@@ -95,4 +95,5 @@ Evidence: the Resource API list exposes only each known synthetic managed resour
 - Finding (low, gated_auto): browser evidence missed empty and initial-load error branches. Corrected in 1bcabf1ab2 by extending the existing route interception; real Chromium run passed. Same-reviewer verification requested.
 - Finding (low, advisory): stored-source comparison ANDs field equality with the metadata hash, duplicating the replay contract; errs toward rejection. Deferred as follow-up hardening; no correctness impact.
 - Finding (low, advisory): UI safe-link guard re-checks the registration invariant; code comment documents it as defense-in-depth for legacy rows. Deferred with the comparison follow-up.
-- Runtime stopped again after the final browser verification. Publication still pending explicit user authorization for the public repository.
+- Same-reviewer focused verification of 1bcabf1ab2 returned pass; finding 3 resolved, advisories confirmed non-blocking. Report: project/_local/reviews/2026-09-12-imported-sources-final-review-glm.md.
+- Runtime released with zero routes after the final browser verification. Publication still pending explicit user authorization for the public repository.
