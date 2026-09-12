@@ -1791,7 +1791,12 @@ export async function POST(
         if (isElearningThread) {
           // Contextual generation requires durable question persistence; a
           // failed save returns a recoverable error without an answer. The
-          // client retry reuses the original question identity.
+          // client retry reuses the original question identity, so the claim
+          // and any open MCP handle are released first — the same cleanup the
+          // outer request failure path performs — or the retry cannot reclaim
+          // the turn.
+          await closeMcpTools()
+          await failOrDiscardUnstartedClaim('persist.userMessage')
           return NextResponse.json(
             {
               error: 'Unable to persist the question context',

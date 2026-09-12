@@ -11,6 +11,7 @@ const CHAT_CONTEXT_MESSAGE_TYPE = 'klicker:chat-context'
 const CHAT_CONTEXT_ACK_MESSAGE_TYPE = 'klicker:chat-context-ack'
 const ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE = 'elearning:chat-context'
 const ELEARNING_CHAT_CONTEXT_ACK_MESSAGE_TYPE = 'elearning:chat-context-ack'
+const ELEARNING_CHAT_CONTEXT_CLEAR_MESSAGE_TYPE = 'elearning:chat-context-clear'
 
 // Exact origins allowed to send eLearning chat contexts. The PWA contract
 // keeps its existing parent-origin check; the eLearning variant additionally
@@ -24,6 +25,107 @@ export function getElearningEmbedOrigins(): string[] {
     .filter(Boolean)
 }
 
+export const ELEARNING_CONTEXT_REFRESH_TIMEOUT_MS = 2000
+
+const ELEARNING_CHAT_CONTEXT_REQUEST_MESSAGE_TYPE =
+  'elearning:chat-context-request'
+
+// The last authenticated eLearning sender stays known after an invalid update
+// clears the stored context, so a new question can still ask for a fresh
+// snapshot instead of waiting for the student to navigate again.
+let lastAuthenticatedElearningOrigin: string | null = null
+
+useChatContextStore.subscribe((state) => {
+  if (!state.parentOrigin) return
+  if (
+    state.context?.source === 'elearning' &&
+    getElearningEmbedOrigins().includes(state.parentOrigin)
+  ) {
+    lastAuthenticatedElearningOrigin = state.parentOrigin
+    return
+  }
+  if (state.context) lastAuthenticatedElearningOrigin = null
+})
+
+/**
+ * Asks the eLearning host for a fresh snapshot before a new question. The
+ * snapshot delivered at launch can expire (300s) or describe a page the student
+ * has since left, and a completion change arrives without navigation, so a new
+ * question re-requests it. The request carries a correlation id and only the
+ * reply echoing it is used, so a snapshot the host had already queued cannot
+ * satisfy the request. A request left unanswered within the bound resolves to
+ * null — the caller must not fall back to the previous snapshot — and the
+ * server then answers under the materials-only policy. The context store stays
+ * owned by the receiver.
+ */
+export function requestFreshElearningChatContext(
+  timeoutMs: number = ELEARNING_CONTEXT_REFRESH_TIMEOUT_MS
+): Promise<KlickerChatContextV2 | null> {
+  if (typeof window === 'undefined' || window.parent === window) {
+    return Promise.resolve(null)
+  }
+
+  const current = useChatContextStore.getState()
+  const parentOrigin = current.parentOrigin ?? lastAuthenticatedElearningOrigin
+  if (!parentOrigin) return Promise.resolve(null)
+  if (!getElearningEmbedOrigins().includes(parentOrigin)) {
+    return Promise.resolve(null)
+  }
+  // A stored PWA context means this frame is not an eLearning conversation.
+  if (current.context && current.context.source !== 'elearning') {
+    return Promise.resolve(null)
+  }
+
+  const requestId = crypto.randomUUID()
+
+  return new Promise((resolve) => {
+    let settled = false
+
+    const finish = (value: KlickerChatContextV2 | null) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeoutHandle)
+      window.removeEventListener('message', handleMessage)
+      resolve(value)
+    }
+
+    function handleMessage(event: MessageEvent) {
+      if (event.source !== window.parent) return
+      if (event.origin !== parentOrigin) return
+      const data = event.data as
+        | { requestId?: unknown; type?: unknown; payload?: unknown }
+        | null
+        | undefined
+      if (!data || typeof data !== 'object') return
+      if (data.requestId !== requestId) return
+
+      if (data.type === ELEARNING_CHAT_CONTEXT_MESSAGE_TYPE) {
+        const context = sanitizeKlickerChatContextV2(data.payload)
+        finish(context?.source === 'elearning' ? context : null)
+        return
+      }
+      // A correlated reply carrying no usable context is a clear.
+      finish(null)
+    }
+
+    // Listen before sending so a fast reply cannot land between the request
+    // and the listener.
+    window.addEventListener('message', handleMessage)
+    const timeoutHandle = setTimeout(() => finish(null), timeoutMs)
+
+    try {
+      window.parent.postMessage(
+        {
+          type: ELEARNING_CHAT_CONTEXT_REQUEST_MESSAGE_TYPE,
+          payload: { version: 1, requestId },
+        },
+        parentOrigin
+      )
+    } catch {
+      finish(null)
+    }
+  })
+}
 export type ChatContextUpdateDecision =
   | { kind: 'ignore' }
   | { kind: 'reject'; messageId: number | null }
@@ -72,6 +174,37 @@ export function evaluateChatContextUpdate(input: {
   return { kind: 'accept', messageId, isElearning, context }
 }
 
+export type ChatContextClearDecision =
+  | { kind: 'ignore' }
+  | { kind: 'clear'; messageId: number | null }
+
+// Decides what one host clear message does to the stored context. Only an
+// allowlisted eLearning host may clear, and a clear the stored context has
+// already superseded is ignored so a late message cannot discard a newer
+// snapshot.
+export function evaluateChatContextClear(input: {
+  data: unknown
+  origin: string
+  allowedElearningOrigins: readonly string[]
+  lastAcceptedMessageId: number | null
+}): ChatContextClearDecision {
+  if (!isChatContextClearMessage(input.data)) return { kind: 'ignore' }
+  if (!input.allowedElearningOrigins.includes(input.origin)) {
+    return { kind: 'ignore' }
+  }
+
+  const messageId = getChatContextClearMessageId(input.data)
+  if (
+    messageId !== null &&
+    input.lastAcceptedMessageId !== null &&
+    messageId < input.lastAcceptedMessageId
+  ) {
+    return { kind: 'ignore' }
+  }
+
+  return { kind: 'clear', messageId }
+}
+
 type AcceptedContext = {
   messageId: number | null
   isElearning: boolean
@@ -99,10 +232,15 @@ export function useEmbeddedChatContext() {
   }, [activeThreadId])
 
   useEffect(() => {
+    // The map instance is stable across renders; a local keeps the effect and
+    // its cleanup closing over the same instance.
+    const sequenceByOrigin = lastSequenceRef.current
+
     if (!embedded) {
+      lastAuthenticatedElearningOrigin = null
       clearContext()
       lastAcceptedRef.current = null
-      lastSequenceRef.current.clear()
+      sequenceByOrigin.clear()
       return
     }
 
@@ -132,18 +270,35 @@ export function useEmbeddedChatContext() {
     function handleMessage(event: MessageEvent) {
       if (event.source !== window.parent || event.origin === 'null') return
 
+      // An explicit clear means the host has no usable page evidence for the
+      // current page. A clear whose sequence the stored context already passed
+      // is stale and must not wipe a newer snapshot.
+      const clearDecision = evaluateChatContextClear({
+        data: event.data,
+        origin: event.origin,
+        allowedElearningOrigins: elearningOrigins,
+        lastAcceptedMessageId: sequenceByOrigin.get(event.origin) ?? null,
+      })
+      if (clearDecision.kind === 'clear') {
+        if (clearDecision.messageId != null) {
+          sequenceByOrigin.set(event.origin, clearDecision.messageId)
+        }
+        clearContext()
+        lastAcceptedRef.current = null
+        return
+      }
+
       const decision = evaluateChatContextUpdate({
         data: event.data,
         origin: event.origin,
         allowedElearningOrigins: elearningOrigins,
-        lastAcceptedMessageId:
-          lastSequenceRef.current.get(event.origin) ?? null,
+        lastAcceptedMessageId: sequenceByOrigin.get(event.origin) ?? null,
       })
 
       if (decision.kind === 'ignore') return
 
       if (decision.messageId != null) {
-        lastSequenceRef.current.set(event.origin, decision.messageId)
+        sequenceByOrigin.set(event.origin, decision.messageId)
       }
 
       if (decision.kind === 'reject') {
@@ -171,9 +326,10 @@ export function useEmbeddedChatContext() {
 
     return () => {
       window.removeEventListener('message', handleMessage)
+      lastAuthenticatedElearningOrigin = null
       clearContext()
       lastAcceptedRef.current = null
-      lastSequenceRef.current.clear()
+      sequenceByOrigin.clear()
     }
   }, [embedded, clearContext, setContext])
 
@@ -200,6 +356,21 @@ export function useEmbeddedChatContext() {
       accepted.origin
     )
   }, [activeThreadId, embedded])
+}
+
+function isChatContextClearMessage(data: unknown): boolean {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { type?: unknown }).type ===
+      ELEARNING_CHAT_CONTEXT_CLEAR_MESSAGE_TYPE
+  )
+}
+
+function getChatContextClearMessageId(data: unknown): number | null {
+  if (typeof data !== 'object' || data === null) return null
+  const messageId = (data as { messageId?: unknown }).messageId
+  return typeof messageId === 'number' ? messageId : null
 }
 
 function isChatContextMessage(data: unknown): data is {

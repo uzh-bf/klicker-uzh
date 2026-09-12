@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findThread: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
+  closeMcpHandle: vi.fn(),
   createThread: vi.fn(),
   findFailedTurnThreadId: vi.fn(),
   updateMessage: vi.fn(),
@@ -141,6 +142,8 @@ async function elearningEnvelope() {
   return signJWT(
     {
       scope: 'ELEARNING_SNAPSHOT',
+      purpose: 'learning-context',
+      aud: 'klicker-chat',
       chatbotId: CHATBOT_ID,
       klickerCourseId: COURSE_ID,
       snapshot: snapshot(),
@@ -276,7 +279,10 @@ beforeEach(() => {
     outcome: 'claimed',
     lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
   })
-  mocks.getAggregatedMCPTools.mockResolvedValue({ tools: [] })
+  mocks.getAggregatedMCPTools.mockResolvedValue({
+    tools: [],
+    close: mocks.closeMcpHandle,
+  })
   mocks.compileSystemPrompt.mockReturnValue('COMPILED-SYSTEM-PROMPT')
   mocks.createMessage.mockResolvedValue({ id: 'user-message-1' })
   mocks.findMessageById.mockResolvedValue(null)
@@ -302,17 +308,18 @@ describe('eLearning save-before-generation', () => {
         where: { id: 'user-message-1', threadId: THREAD_ID },
       })
     )
+    // The failed turn must not leak its claim or keep the MCP handle open, or
+    // the advertised retry cannot reclaim it.
+    expect(mocks.failChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ assistantMessageId: 'assistant-1' })
+    )
+    expect(mocks.closeMcpHandle).toHaveBeenCalled()
   })
 })
 
 describe('eLearning origin and branch context', () => {
   test('retains the edited question context instead of the live page', async () => {
     const SOURCE_MESSAGE_ID = 'user-message-0'
-    // Held on an object so the assertion reads the value assigned inside the
-    // create callback rather than the initializer.
-    const captured: {
-      create: { data?: { learningContext?: { snapshotId?: string } } } | null
-    } = { create: null }
 
     mocks.updateMessage.mockResolvedValue({ count: 0 })
     mocks.findMessageById.mockResolvedValue(null)
@@ -322,10 +329,7 @@ describe('eLearning origin and branch context', () => {
           ? { learningContext: originalSnapshot() }
           : null
     )
-    mocks.createMessage.mockImplementation(async (args: never) => {
-      captured.create = args
-      throw new Error('db down')
-    })
+    mocks.createMessage.mockRejectedValue(new Error('db down'))
 
     const response = await POST(
       createRequest(await elearningEnvelope(), {
@@ -335,9 +339,9 @@ describe('eLearning origin and branch context', () => {
     )
 
     expect(response.status).toBe(503)
-    expect(captured.create?.data?.learningContext?.snapshotId).toBe(
-      'snap-original'
-    )
+    expect(
+      mocks.createMessage.mock.calls[0]?.[0]?.data?.learningContext?.snapshotId
+    ).toBe('snap-original')
   })
 
   test('keeps an eLearning thread answering without a snapshot', async () => {
@@ -425,21 +429,13 @@ describe('eLearning provenance and retrieval failure modes', () => {
 
   test('keeps a historical null snapshot unavailable instead of the live page', async () => {
     const SOURCE_MESSAGE_ID = 'user-message-0'
-    const captured: {
-      create: { data?: { learningContext?: unknown } } | null
-    } = {
-      create: null,
-    }
     mocks.updateMessage.mockResolvedValue({ count: 0 })
     mocks.findMessageById.mockResolvedValue(null)
     mocks.findMessage.mockImplementation(
       async ({ where }: { where: { id: string } }) =>
         where.id === SOURCE_MESSAGE_ID ? { learningContext: null } : null
     )
-    mocks.createMessage.mockImplementation(async (args: never) => {
-      captured.create = args
-      throw new Error('db down')
-    })
+    mocks.createMessage.mockRejectedValue(new Error('db down'))
 
     const response = await POST(
       createRequest(await elearningEnvelope(), {
@@ -451,7 +447,9 @@ describe('eLearning provenance and retrieval failure modes', () => {
     expect(response.status).toBe(503)
     // The envelope in this request is live page evidence; the stored null
     // must win so an edited historical question is not re-anchored to it.
-    expect(captured.create?.data?.learningContext).toBeUndefined()
+    expect(
+      mocks.createMessage.mock.calls[0]?.[0]?.data?.learningContext
+    ).toBeUndefined()
   })
 
   test('refuses a branch whose source message is outside the thread', async () => {

@@ -66,6 +66,31 @@ export interface MCPToolsHandle {
   close: () => Promise<void>
 }
 
+const MCP_AUTHORIZATION_STATUS_CODES = new Set([401, 403])
+
+/**
+ * The MCP SDK surfaces an HTTP credentials rejection as an `UnauthorizedError`,
+ * a streamable-HTTP error carrying a numeric `code`, or a client error with
+ * `statusCode`. Those are identity or tenant boundaries rather than transient
+ * outages, so a required-tool caller must keep them fail-closed.
+ */
+function isMcpAuthorizationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ((error as { name?: unknown }).name === 'UnauthorizedError') return true
+
+  for (const key of ['statusCode', 'code'] as const) {
+    const value = (error as Record<string, unknown>)[key]
+    if (
+      typeof value === 'number' &&
+      MCP_AUTHORIZATION_STATUS_CODES.has(value)
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
 
 function toToolNameHash(rawName: string): string {
@@ -473,16 +498,20 @@ async function loadServerTools(
     return { tools: filteredTools, close }
   } catch (error) {
     await close()
-    if (
-      error instanceof RequiredMCPUnavailableError ||
-      runtimePolicy.required
-    ) {
+    if (error instanceof RequiredMCPUnavailableError) {
       console.error('Required MCP tools unavailable', { server: server.name })
       // Preserve a scope violation raised while resolving the request so the
       // caller cannot degrade an isolation failure into an answer.
-      throw error instanceof RequiredMCPUnavailableError
-        ? error
-        : new RequiredMCPUnavailableError()
+      throw error
+    }
+    if (runtimePolicy.required) {
+      console.error('Required MCP tools unavailable', { server: server.name })
+      // A credentials rejection from the endpoint is an identity or tenant
+      // boundary, so it stays fail-closed like a scope violation; only a
+      // genuine outage may fall through to a degraded answer.
+      throw new RequiredMCPUnavailableError(
+        isMcpAuthorizationError(error) ? 'scope_violation' : 'unavailable'
+      )
     }
 
     console.error('Optional MCP tools unavailable', { server: server.name })
