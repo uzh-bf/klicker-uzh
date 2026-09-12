@@ -1920,7 +1920,6 @@ export async function loginParticipantForElearningChatbot(
     grant,
     courseId,
     chatbotId,
-    participantToken,
   }: {
     grant: string
     courseId: string
@@ -1951,7 +1950,8 @@ export async function loginParticipantForElearningChatbot(
       ltiEmail: verified.email,
       courseId,
       chatbotId,
-      participantToken,
+      // A browser cookie may belong to a different learner in a shared browser.
+      // Resolve eLearning launches from their verified LTI subject instead.
       secret,
       accountIssuer,
     },
