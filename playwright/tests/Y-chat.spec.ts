@@ -2324,7 +2324,11 @@ test.describe('Chatbot Source Citations', () => {
                       page_number: 4,
                       labeled_page_number: 'IV',
                     },
-                    { content: 'Second synthetic chunk', page_number: 8 },
+                    {
+                      content: 'Second synthetic chunk',
+                      page_number: 8,
+                      labeled_page_number: '12:34',
+                    },
                   ],
                 },
                 {
@@ -2388,6 +2392,7 @@ test.describe('Chatbot Source Citations', () => {
       await expect(page.locator(`#src-${messageId}-1`)).toContainText('9')
       const chunks = page.getByTestId('chat-doc-query-chunk')
       await expect(chunks.nth(0)).toContainText('IV')
+      await expect(chunks.nth(1)).toContainText('12:34')
       await expect(chunks.nth(1)).not.toContainText(/(?:p\.|S\.)\s*8/)
       await expect(chunks.nth(2).locator('a')).toHaveAttribute(
         'href',

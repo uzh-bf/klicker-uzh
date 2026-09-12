@@ -22,6 +22,9 @@ function Chunk({ chunk }: { chunk: DocQueryChunk }) {
         {pageLabel && (
           <span>{t('chat.sources.page', { page: pageLabel })}</span>
         )}
+        {!pageLabel &&
+          chunk.startSec === undefined &&
+          chunk.labeledPage?.trim() && <span>{chunk.labeledPage.trim()}</span>}
         {chunk.startSec !== undefined && (
           <span>
             {formatTimestamp(chunk.startSec)}
