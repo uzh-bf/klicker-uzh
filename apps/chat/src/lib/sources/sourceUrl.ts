@@ -26,3 +26,20 @@ export function getPublicSourceUrl(value: unknown): string | undefined {
     return undefined
   }
 }
+
+/** Physical PDF positions belong in navigation, never in the displayed label. */
+export function getSourceNavigationUrl(
+  value: unknown,
+  page?: number
+): string | undefined {
+  const url = getPublicSourceUrl(value)
+  if (!url || !Number.isSafeInteger(page) || page === undefined || page < 1)
+    return url
+  if (!/\.pdf$/i.test(new URL(url).pathname)) return url
+  const hashIndex = url.indexOf('#')
+  const base = hashIndex === -1 ? url : url.slice(0, hashIndex)
+  const fragment = hashIndex === -1 ? '' : url.slice(hashIndex + 1)
+  const parts = fragment ? fragment.split('&') : []
+  const remaining = parts.filter((part) => !/^page=/i.test(part))
+  return `${base}#${[...remaining, `page=${page}`].join('&')}`
+}

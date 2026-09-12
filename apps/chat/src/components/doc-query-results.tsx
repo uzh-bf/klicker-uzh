@@ -4,7 +4,10 @@ import type {
   DocQueryChunk,
   DocQueryGroup,
 } from '../lib/sources/docQueryResult'
-import { formatTimestamp } from '../lib/sources/sourceDisplay'
+import {
+  formatTimestamp,
+  getSourcePageLabel,
+} from '../lib/sources/sourceDisplay'
 import { useMessageSourcesContext } from './message-sources-context'
 
 function Chunk({ chunk }: { chunk: DocQueryChunk }) {
@@ -12,14 +15,12 @@ function Chunk({ chunk }: { chunk: DocQueryChunk }) {
   const [expanded, setExpanded] = useState(false)
   const content = chunk.content ?? ''
   const long = content.length > 480
+  const pageLabel = getSourcePageLabel(chunk.labeledPage)
   return (
     <li data-cy="chat-doc-query-chunk" className="border-border border-t pt-3">
       <div className="text-muted-foreground mb-2 flex flex-wrap gap-2 text-xs">
-        {chunk.page !== undefined && (
-          <span>{t('chat.sources.page', { page: chunk.page })}</span>
-        )}
-        {chunk.labeledPage && chunk.labeledPage !== String(chunk.page) && (
-          <span>{chunk.labeledPage}</span>
+        {pageLabel && (
+          <span>{t('chat.sources.page', { page: pageLabel })}</span>
         )}
         {chunk.startSec !== undefined && (
           <span>

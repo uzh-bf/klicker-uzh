@@ -105,3 +105,21 @@ synthetic desktop/mobile screenshots and a draft PR whose head matches the
 verified source. Stop the exact runtime and verify provider state and zero
 routes after the final runtime-dependent check. Broader failures must be
 attributed with evidence and remain explicit if they block delivery.
+
+Implementation verification: 643 Chat tests pass with 21 integration tests
+skipped; the final focused regression suite passes 71 tests after an additional
+opaque-fragment case. All 35 repository type-check tasks and seven lint tasks
+pass. Two host Chromium regressions pass, including desktop, reload, mobile
+German, and citation/card focus previews. The in-app Browser independently
+confirmed citation focus and labeled preview text. Host workflow checks pass
+64 tests; host launcher checks pass 48. Formatting, syncpack, agent-document,
+retired-document and Prisma synchronization checks pass. The combined hook was
+split because host pnpm metadata was stale and container workflow checks need
+host Devrouter. Host Playwright dependencies were refreshed with the frozen
+lockfile, without dependency changes.
+
+The full build reached 17/23 tasks before an unchanged frontend-control app
+reported duplicate `PagesPageConfig` from development and build generated types.
+Static-runtime retry is pending. Source metadata tracing found no ordinary
+field loss in v3-ai sanitization; upstream missing-title/public-URL evidence
+remains unavailable. The source fix introduces no new metadata producer.

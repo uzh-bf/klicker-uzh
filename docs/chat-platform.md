@@ -889,10 +889,13 @@ mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
-and fall back to a cleaned display URL when they carry no page; web links always lead with the
+documents display only the publisher's labeled page (`p. 12` / `S. 12`)
+and fall back to a cleaned display URL when no label is supplied; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+lead with a `12:34`-style position; images keep their type and any publisher page label.
+Physical PDF pages are used only for outbound navigation: validated public URLs with
+a `.pdf` pathname receive a positive integer `#page=` position on cards and passage
+links. Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
 structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
 `labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
 and prefers the structured start for the card and citation preview. Legacy results remain
