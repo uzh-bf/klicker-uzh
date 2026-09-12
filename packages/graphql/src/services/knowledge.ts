@@ -25,6 +25,7 @@ import {
   MAX_KB_RESOURCE_COUNT,
   MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
+  resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
@@ -384,13 +385,22 @@ async function assertKbQuotaAvailable(
     sizeBytes?: number
   }
 ) {
-  const usage = await getKbQuotaUsage(prisma, kbId)
+  const [usage, kb] = await Promise.all([
+    getKbQuotaUsage(prisma, kbId),
+    prisma.kB.findUniqueOrThrow({
+      where: { id: kbId },
+      select: { storageLimitMiB: true },
+    }),
+  ])
   if (usage.resourceCount + resourceCount > MAX_KB_RESOURCE_COUNT) {
     throw new GraphQLError('KB resource limit reached', {
       extensions: { code: 'KB_RESOURCE_LIMIT_REACHED' },
     })
   }
-  if (usage.sizeBytes + sizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
+  if (
+    usage.sizeBytes + sizeBytes >
+    resolveKBStorageLimitBytes(kb.storageLimitMiB)
+  ) {
     throw new GraphQLError('KB storage limit reached', {
       extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
     })
@@ -543,6 +553,7 @@ async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
 }
 
 function createKbMetrics({
+  storageLimitBytes = MAX_KB_TOTAL_SIZE_BYTES,
   visibleResourceCount = 0,
   visibleSizeBytes = 0,
   visibleUnknownSizeCount = 0,
@@ -553,6 +564,7 @@ function createKbMetrics({
   reservedSizeBytes = 0,
   linkedConsumerCount = 0,
 }: Partial<{
+  storageLimitBytes: number
   visibleResourceCount: number
   visibleSizeBytes: number
   visibleUnknownSizeCount: number
@@ -575,7 +587,7 @@ function createKbMetrics({
     quotaResourceCount: retainedResourceCount + reservedResourceCount,
     quotaSizeBytes: quotaRetainedSizeBytes + reservedSizeBytes,
     resourceLimit: MAX_KB_RESOURCE_COUNT,
-    storageLimitBytes: MAX_KB_TOTAL_SIZE_BYTES,
+    storageLimitBytes,
     pendingCleanupCount: retainedResourceCount - visibleResourceCount,
     pendingCleanupSizeBytes: quotaRetainedSizeBytes - quotaVisibleSizeBytes,
     reservedResourceCount,
@@ -598,6 +610,7 @@ async function getKbMetricsMap(
     uploadTickets,
     createUploadTickets,
     linkedConsumers,
+    knowledgeBases,
   ] = await Promise.all([
     prisma.kBResource.groupBy({
       by: ['kbId'],
@@ -639,8 +652,18 @@ async function getKbMetricsMap(
       where: { kbId: { in: kbIds }, isEnabled: true },
       _count: { _all: true },
     }),
+    prisma.kB.findMany({
+      where: { id: { in: kbIds } },
+      select: { id: true, storageLimitMiB: true },
+    }),
   ])
 
+  const storageLimitsByKb = new Map(
+    knowledgeBases.map((kb) => [
+      kb.id,
+      resolveKBStorageLimitBytes(kb.storageLimitMiB),
+    ])
+  )
   const visibleByKb = new Map(visibleResources.map((row) => [row.kbId, row]))
   const visibleUnknownByKb = new Map(
     visibleUnknownSizes.map((row) => [row.kbId, row._count._all])
@@ -665,6 +688,7 @@ async function getKbMetricsMap(
       return [
         kbId,
         createKbMetrics({
+          storageLimitBytes: storageLimitsByKb.get(kbId),
           visibleResourceCount: visible?._count._all,
           visibleSizeBytes: visible?._sum.sizeBytes ?? 0,
           visibleUnknownSizeCount: visibleUnknownByKb.get(kbId),
