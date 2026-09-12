@@ -17,7 +17,7 @@ The expanded retrieval result reported that the original source URL was unavaila
   and its sanitization before changing title fallbacks. Do not infer a public
   URL from an opaque internal document reference.
 
-## Source evidence
+## Source evidence before the correction
 
 `apps/chat/src/lib/sources/sourceDisplay.ts` currently prints `source.page`
 before optionally appending `source.labeledPage`. The expanded passage renderer
@@ -39,7 +39,11 @@ page has a Roman numeral label. Verify labels in all three display surfaces,
 physical page fragments in public PDF hrefs, missing-label behavior, and reload
 persistence. Verify absent or private URLs remain unlinked.
 
-Implementation and browser validation of these corrections remain pending.
+The correction is implemented and locally browser-verified in
+[draft PR 5911](https://github.com/uzh-bf/klicker-uzh/pull/5911).
+Synthetic browser cases cover labeled pages, physical PDF hrefs, missing labels,
+legacy timestamps and reload persistence. Actual producer metadata remains
+unverified; this evidence does not establish why STG omitted titles or URLs.
 Claim-source support evaluation belongs to the evaluation submodule and is
 outside this display and metadata investigation.
 

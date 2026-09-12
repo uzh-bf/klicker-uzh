@@ -71,9 +71,10 @@ No evaluation-submodule changes are in scope.
 
 ## Progress
 
-Remote fetch succeeded through host escalation. Old PR is confirmed merged.
-New branch uses current v3; existing dirty files were preserved. A read-only
-metadata investigation is running. Implementation and fresh checks are pending.
+Implementation is published in [draft PR 5911](https://github.com/uzh-bf/klicker-uzh/pull/5911).
+The source head is `4edc441559`; existing historical plan changes remain
+unstaged. Metadata investigation and local verification are complete within the
+repository boundary. Upstream producer evidence remains unavailable.
 
 ### Planning clarifications
 
@@ -118,8 +119,19 @@ split because host pnpm metadata was stale and container workflow checks need
 host Devrouter. Host Playwright dependencies were refreshed with the frozen
 lockfile, without dependency changes.
 
-The full build reached 17/23 tasks before an unchanged frontend-control app
-reported duplicate `PagesPageConfig` from development and build generated types.
-Static-runtime retry is pending. Source metadata tracing found no ordinary
+The full build passed all 23 tasks after stopping development servers and
+preserving generated development types outside the build. The initial failure
+was duplicate `PagesPageConfig` in unchanged frontend-control generated types.
+After a legacy timestamp rendering correction, Chat types, Chat production
+build, and both browser regressions passed again. Source metadata tracing found no ordinary
 field loss in v3-ai sanitization; upstream missing-title/public-URL evidence
 remains unavailable. The source fix introduces no new metadata producer.
+
+Simplification and risk review are resolved. Independent integrated final review
+passed the complete 11-path source package at `4edc441559`, with no introduced
+findings. Completed source CI checks pass; draft-policy test skips are not hosted
+test execution. Hosted OCR failed all five selected files with provider HTTP 402
+and zero review output. Hosted final-review jobs remain queued. This external
+gate keeps delivery pending. Do not retry the failed provider without restored
+capability. The exact managed runtime is stopped, its container is exited, and
+its routes are absent. No merge or deployment was performed.
