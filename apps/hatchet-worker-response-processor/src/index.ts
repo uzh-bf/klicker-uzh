@@ -1,3 +1,4 @@
+import { rm, writeFile } from 'node:fs/promises'
 import {
   ConcurrencyLimitStrategy,
   Priority,
@@ -9,6 +10,10 @@ import {
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
+import {
+  RESPONSE_PROCESSOR_READY_FILE,
+  waitForHatchetWorkerRegistration,
+} from './readiness.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
@@ -83,6 +88,7 @@ export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
 
 async function main() {
   console.log('Starting response processor worker...')
+  await rm(RESPONSE_PROCESSOR_READY_FILE, { force: true })
 
   const mode =
     process.env.ASSESSMENT_MODE === 'true' ? 'assessment' : 'live-quiz'
@@ -103,9 +109,17 @@ async function main() {
   )
 
   console.log('▶Starting worker to process responses...')
-  await worker.start()
+  const workerStart = worker.start()
 
-  console.log('Response processor worker started successfully!')
+  try {
+    await waitForHatchetWorkerRegistration(worker, workerStart)
+    await writeFile(RESPONSE_PROCESSOR_READY_FILE, 'ready\n')
+    console.log('Response processor worker registered and ready!')
+
+    await workerStart
+  } finally {
+    await rm(RESPONSE_PROCESSOR_READY_FILE, { force: true })
+  }
 }
 
 await main()

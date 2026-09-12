@@ -1,5 +1,7 @@
 // TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
 
+import { strict as assert } from 'node:assert'
+import { createHash } from 'node:crypto'
 // TODO: add additional processor with assessment logic
 import type {
   Context,
@@ -11,15 +13,20 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
-import type { ChainableCommander } from 'ioredis'
-import { getRedis } from '../redis.js'
 import {
+  getLiveQuizResponseReconciliationKey,
+  getLiveQuizResponseReplayClaimKey,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
+import { getRedis } from '../redis.js'
+import { executeResponseAggregation } from './executeResponseAggregation.js'
+import {
+  createRedisCommandCollector,
   getCaseStudyQuestionPoints,
   getChoicesQuestionPoints,
   getFreeTextQuestionPoints,
+  getLiveQuizResponseValidationShape,
   getNumericalQuestionPoints,
   getSelectionQuestionPoints,
   updateLeaderboards,
@@ -62,9 +69,11 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  let redisMulti: ChainableCommander
-  // redisMulti = redisExec.multi() -> transaction
-  redisMulti = redisExec.pipeline() // -> pipeline (not atomic)
+  const replayClaimKey = getLiveQuizResponseReplayClaimKey({
+    liveQuizId: message.sessionId,
+    instanceId: message.instanceId,
+  })
+  const transaction = createRedisCommandCollector()
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -133,10 +142,36 @@ export async function processResponseMessage(
             : participantData.sub
         ))
       ) {
-        ctx.logger.info(
-          'Participant has already responded to this question instance'
+        const [hasPersistentReconciliation, replayClaimScore] =
+          await Promise.all([
+            redisExec.hexists(
+              getLiveQuizResponseReconciliationKey({
+                liveQuizId: message.sessionId,
+                instanceId: message.instanceId,
+              }),
+              message.messageId
+            ),
+            redisExec.zscore(replayClaimKey, message.messageId),
+          ])
+        const hasLegacyReconciliation =
+          replayClaimScore !== null && Number(replayClaimScore) < 0
+        if (!hasPersistentReconciliation && !hasLegacyReconciliation) {
+          ctx.logger.info(
+            'Participant has already responded to this question instance'
+          )
+          return { status: 200 }
+        }
+
+        ctx.logger.error(
+          'Participant response requires reconciliation; continuing to the replay guard',
+          {
+            extra: {
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            },
+          }
         )
-        return { status: 200 }
       }
     }
 
@@ -175,7 +210,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions: unknown
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
@@ -207,6 +242,8 @@ export async function processResponseMessage(
       type: type as any,
       response,
       restrictions: parsedRestrictions,
+      choiceCount: Number(choiceCount),
+      validationShape: getLiveQuizResponseValidationShape(instanceInfo),
     })
 
     if (!valid) {
@@ -225,6 +262,8 @@ export async function processResponseMessage(
     let pointsAwarded: number | string = 0
     let xpAwarded: number = 0
 
+    // Collect commands locally; the processing script claims the marker and
+    // applies this batch atomically after response validation completes.
     switch (type) {
       case 'SC':
       case 'MC':
@@ -246,14 +285,14 @@ export async function processResponseMessage(
         response.choices
           .filter((choice) => choice.selected)
           .forEach((choice) => {
-            redisMulti.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
+            transaction.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
           })
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -286,7 +325,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -295,7 +334,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -325,18 +364,18 @@ export async function processResponseMessage(
         const MD5 = createHash('md5')
         MD5.update(response.value)
         const responseHash = MD5.digest('hex')
-        redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
-        redisMulti.hset(
+        transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+        transaction.hset(
           `${instanceKey}:responseHashes`,
           responseHash,
           response.value
         )
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -363,7 +402,7 @@ export async function processResponseMessage(
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -372,7 +411,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -403,18 +442,18 @@ export async function processResponseMessage(
         const MD5 = createHash('md5')
         MD5.update(cleanResponseValue)
         const responseHash = MD5.digest('hex')
-        redisMulti.hincrby(`${instanceKey}:results`, responseHash, 1)
-        redisMulti.hset(
+        transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+        transaction.hset(
           `${instanceKey}:responseHashes`,
           responseHash,
           cleanResponseValue
         )
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -441,7 +480,7 @@ export async function processResponseMessage(
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -450,7 +489,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -486,14 +525,14 @@ export async function processResponseMessage(
             return
           }
 
-          redisMulti.hincrby(`${instanceKey}:results`, String(answerId), 1)
+          transaction.hincrby(`${instanceKey}:results`, String(answerId), 1)
         })
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -524,7 +563,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -533,7 +572,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -577,8 +616,8 @@ export async function processResponseMessage(
                 const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
 
                 // add the response hash / valid combination and/or increment the corresponding count
-                redisMulti.hincrby(`${instanceKey}:results`, combinedHash, 1)
-                redisMulti.hset(
+                transaction.hincrby(`${instanceKey}:results`, combinedHash, 1)
+                transaction.hset(
                   `${instanceKey}:responseHashes`,
                   combinedHash,
                   String(criterionResponse)
@@ -589,12 +628,12 @@ export async function processResponseMessage(
         })
 
         // increment participant count
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
 
         // if the participant was logged in, award points (and xp if regular student acount was used)
         if (participantData) {
           // add the participant's response to the corresponding redis hash
-          redisMulti.hset(
+          transaction.hset(
             `${instanceKey}:responses`,
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
@@ -625,7 +664,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            redisExec.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -634,7 +673,7 @@ export async function processResponseMessage(
 
           // update both the regular and temporary live quiz leaderboards
           updateLeaderboards({
-            redisMulti,
+            redisCommands: transaction,
             participantId: participantData.sub,
             participantRole: participantData.role!,
             liveQuizKey,
@@ -648,41 +687,31 @@ export async function processResponseMessage(
       }
       case 'CONTENT': {
         // increase number of participants on element (do not award points / ... for content elements)
-        redisMulti.hincrby(`${instanceKey}:results`, 'participants', 1)
+        transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
         break
       }
     }
   } catch (e) {
-    ctx.logger.error(
-      `Error processing response: ${String(e)} ` +
-        JSON.stringify({
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-        })
-    )
-    redisMulti?.discard()
-    return { status: 500 }
+    ctx.logger.error('Error processing response', {
+      error: e instanceof Error ? e : new Error(String(e)),
+      extra: {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      },
+    })
+    throw e instanceof Error ? e : new Error(String(e))
   }
 
-  try {
-    await redisMulti.exec()
-    ctx.logger.info("Successfully processed participant's response", {
-      messageId: message.messageId,
-      sessionId: message.sessionId,
+  return await executeResponseAggregation({
+    redis: redisExec,
+    ctx,
+    request: {
+      kind: 'regular',
+      claimId: message.messageId,
+      liveQuizId: message.sessionId,
       instanceId: message.instanceId,
-    })
-    return { status: 200 }
-  } catch (e) {
-    ctx.logger.error(
-      `Redis transaction failed: ${String(e)} ` +
-        JSON.stringify({
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-        })
-    )
-    redisMulti?.discard()
-    throw new Error(`Redis transaction failed ${String(e)}`)
-  }
+      commands: transaction.commands,
+    },
+  })
 }

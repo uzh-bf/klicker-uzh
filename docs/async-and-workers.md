@@ -30,6 +30,78 @@ Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setu
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
 
+### Per-element response processing counts
+
+For every started element, the response API atomically records the accepted
+`messageId` or assessment `correlationId` in
+`lq:<quiz>:i:<instance>:responses:received` and maintains the corresponding
+numeric `:received:count`. A repeated claim does not increment twice. The
+tracking clients fail fast with a 250 ms command timeout; failures are logged
+and never reject the participant answer.
+
+The existing `lq:<quiz>:i:<instance>:results` hash's `participants` field is
+the processed total for old and new workers. The new processing script
+increments `:responses:processed:count` only when the processed claim was also
+recorded by new ingress, making that counter the received/processed overlap.
+GraphQL reports the union:
+
+`participants + max(tracked received - tracked processed overlap, 0)`
+
+This includes old processed traffic once, includes new queued or rejected
+traffic once, and reports `results.participants` as processed. The difference
+is an operational signal, not strict queue depth: it can include queued,
+invalid, late, rejected, failed, or untracked work.
+
+During the rolling compatibility window, the cockpit combines the numeric
+overlap with the identity intersection between received claims and the legacy
+processed set. It never infers cohort overlap from two independent
+cardinalities.
+
+The Helm chart enforces this migration gate with ArgoCD sync waves: both
+regular and assessment response processors are in wave `0`, while both
+response APIs are in wave `1`. ArgoCD waits for all wave-0 Deployments to be
+healthy before updating ingress. Each response processor becomes ready only
+after all of its active Hatchet runtimes have registered; a readiness file is
+removed on startup and shutdown so process startup alone cannot satisfy the
+gate. GraphQL and Manage can share wave `0` because the fields are additive and
+nullable. Before ingress cutover, old-ingress traffic is a lower bound until
+processing; after the enforced worker-first gate and ingress cutover, the union
+converges exactly. The persisted-query
+compatibility script keeps the old `GetCockpitQuiz` hash valid while Manage
+bundles drain.
+
+`lq:<quiz>:i:<instance>:responses:processed:claims` is the age-bounded replay
+sorted set for completed claims. The processing Lua script validates JSON,
+exact command arity, target key families and types, and integer increments
+before mutation. Choice answers must contain every configured choice exactly
+once with a unique in-range integer index. Selection and case-study answers
+must match the cached instance shape. Authoring permits at most 100 selection
+inputs, 1,000 choices, or 1,000 case/item/criterion response entries, and the
+Lua script applies a defense-in-depth ceiling of 2,048 commands. The real-Redis
+contract covers a valid 600-command batch and rejects an oversized batch before
+mutation.
+
+Failures before any aggregation command applies release the replay claim and
+throw so Hatchet retries. Failures after a non-idempotent command applies write
+claim-specific metadata to
+`lq:<quiz>:i:<instance>:responses:reconciliation`, including the applied
+command count and errors. Tracking failures after successful aggregation use
+the same state. The worker remains failed, and every retry checks this hash
+before the 24-hour completed-claim guard, so an aged retry cannot repeat a
+partial batch. Reconciliation entries remain persistent while the instance is
+active; manual repair or the post-closure cache-retention boundary removes
+them. If the reconciliation hash itself cannot be written, the negative replay
+claim is made persistent while the instance remains active; cleanup establishes
+its post-closure retention. While either marker exists, GraphQL preserves
+received and returns only processed as `null`; the cockpit renders the
+processed value as unavailable.
+
+Block and quiz cleanup use `EXPIRE ... LT` for instance info, counters, claim
+sets, compatibility sets, and reconciliation state. Retried cleanup can
+establish or shorten the one-day retention window but cannot extend it.
+Repeated `endLiveQuiz` calls retry retention without repeating end side
+effects.
+
 ## Worker task catalog
 
 `apps/hatchet-worker-response-processor` (`src/index.ts`):

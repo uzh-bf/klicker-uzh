@@ -1,4 +1,7 @@
-import { ElementOptionsInput } from '@klicker-uzh/types'
+import {
+  type ElementOptionsInput,
+  MAX_LIVE_QUIZ_SELECTION_INPUTS,
+} from '@klicker-uzh/types'
 
 function validateSelectionOptions(options?: ElementOptionsInput | null) {
   // options and hasSampleSolution need to be defined
@@ -17,7 +20,8 @@ function validateSelectionOptions(options?: ElementOptionsInput | null) {
   if (
     typeof options.numberOfInputs !== 'number' ||
     options.numberOfInputs === null ||
-    options.numberOfInputs < 1
+    options.numberOfInputs < 1 ||
+    options.numberOfInputs > MAX_LIVE_QUIZ_SELECTION_INPUTS
   ) {
     console.error('Number of inputs needs to be specified and valid')
     return false
