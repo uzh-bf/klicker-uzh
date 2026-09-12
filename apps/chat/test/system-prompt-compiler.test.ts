@@ -1,4 +1,18 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
+
+vi.mock('@/src/lib/server/promptTemplates', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../src/lib/server/promptTemplates')>()
+
+  return {
+    ...actual,
+    renderPromptTemplate: (name: string, context: unknown) =>
+      name === 'citation-contract'
+        ? '<SYNTHETIC-CITATION-CONTRACT>'
+        : actual.renderPromptTemplate(name as never, context as never),
+  }
+})
+
 import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
 import { withCitationContract } from '../src/lib/server/citationInstructions'
 import { compileSystemPrompt } from '../src/lib/server/systemPromptCompiler'
@@ -15,7 +29,7 @@ const COURSE_POLICY_MARK = 'Course scope:'
 const GROUNDING_MARK = 'Course grounding:'
 const PARTIAL_RETRIEVAL_MARK = 'Retrieved results are a partial'
 const OUTPUT_FORMAT_MARK = 'Output format:'
-const CITATION_MARK = 'Citation format:'
+const CITATION_MARK = '<SYNTHETIC-CITATION-CONTRACT>'
 const LANGUAGE_MARK = 'Swiss Standard German orthography'
 
 const DOC_TOOL = 'KB_doc_query'
@@ -339,7 +353,7 @@ describe('compileSystemPrompt', () => {
       expect(prompt).not.toContain('## Course data')
       expect(prompt).not.toContain('Platform course policy:')
       expect(prompt).not.toContain('Output format:')
-      expect(prompt).not.toContain('Citation format:')
+      expect(prompt).not.toContain(CITATION_MARK)
       expect(prompt).not.toContain('Language policy:')
       expect(prompt).not.toContain('[Attached image description:')
     }

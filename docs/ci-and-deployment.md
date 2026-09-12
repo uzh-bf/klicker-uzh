@@ -12,6 +12,29 @@ tags:
 
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
 
+## Required branch checks
+
+The required baseline for PRs into `v3` and `v3-*` is `check`,
+`check-gitleaks`, `test-graphql-status`, `test-playwright-status`,
+`test-unit-status`, `test-olat-api-status`, `test-intl-production-status`, and
+`build-images-status`. Selected suites must pass; a validated no-change
+selection may succeed without an irrelevant suite. Missing, cancelled, failed,
+or unexpectedly skipped evidence blocks the summary. Ready PRs require the
+full eight-shard Playwright run.
+
+Stable `v3` has no bypass. Integration administrators may bypass CI only through
+a pull request; direct updates, force pushes, and deletion remain protected.
+Integration branches do not require freshness, approvals, resolved discussions,
+or linear history. A merge override does not qualify a staging candidate:
+promotion independently requires exact candidate push validation and images.
+Older integration branches must receive the reporting workflows before they
+can satisfy this baseline.
+
+Biome and Knip advisory steps, AI reviews, CodeQL analysis, and the SonarCloud
+analysis upload remain outside this deterministic required baseline. The
+SonarCloud workflow uploads analysis without an explicit quality-gate wait.
+Those checks must not be described as enforced test results.
+
 ## PR gates
 
 GraphQL and lightweight unit CI build their dependencies through scoped Turbo
@@ -47,15 +70,15 @@ neither Node nor pnpm.
 - **Playwright cache contract**: The pnpm store uses a stable dependency fingerprint containing Node/pnpm compatibility, the lockfile, workspace configuration, package manifests, `.npmrc`, `.pnpmfile.cjs`, and tracked patches. It does not create a duplicate store for each source commit or invalidate dependencies for a telemetry-only workflow edit. The separate `.turbo` fingerprint retains the conservative build configuration, synthetic environment schema, and immutable build-image contract, with source-specific snapshots. Both cache families include OS and architecture in their keys. The trusted `v3` cache-seed matrix builds on hosted ARM64 and x64 runners and is the only writer; public PR jobs remain restore-only readers. Restore stays disabled for PRs until a global or exact canary control enables it. Cache-service errors fall back to an ordinary install/build, while actual build failures remain failures. Compact build, shard, route, selector, and queue telemetry is retained for seven days; large build outputs and diagnostics keep their existing short retention. Seed telemetry artifacts include the architecture in their names. The hosted, checkout-free Playwright status job collects queue telemetry with only `actions: read` permission; telemetry errors do not alter the test result. Configuration and successful seeding are not performance proof: verify compatible matched keys, Turbo task hits, output equivalence, and a normalized comparison cohort before claiming a speedup.
 - **Profile-aware Playwright runtime**: `playwright/profiles.json` assigns every active spec exactly once and the timing-aware sharder emits the canonical profile union for each shard. Exact `@devrouter/cli` `0.0.72` resolves that union and validates it against the repository-owned `playwright/runtime-contract.yml` without runtime access. When the trusted planner assigns a candidate-only spec to `full`, the adapter resolves that trusted union through the explicit `playwright` Devrouter profile, which covers every CI-supported application without selecting local-only MCP, LiteLLM, or MailHog resources. Activity-lifecycle specs that publish, schedule, start, or end activities select `live-quiz` because it owns both Hatchet workers. Both hosted and public-PR workflows fail closed when planning is unavailable or unexpected, then start only the selected app processes without exposing the host Docker socket. A caller checkout created before profile runtimes existed may use the explicit legacy full-stack startup only when all three profile-runtime files are absent; partial migrations fail closed. The job-level Postgres, Redis, and Hatchet containers remain fixed. The corrected manifest selects 57 app and worker process instances across eight shards instead of the previous fixed 72, a configuration-derived 20.8% reduction; this is not yet measured end-to-end speedup evidence.
 - **Stacked pull requests**: The consolidated `check` workflow runs for every opened, synchronized, or reopened pull request target, including feature-branch targets used by stacked PRs. Its push trigger remains limited to `v3` and `v3*`.
-- **Status reporting and cancellation**: GraphQL and Playwright status jobs report real failures and successful path skips. Playwright drafts skip the reusable execution workflow before preparation, builds, or shards, and `test-playwright-status` reports that skip explicitly as success. Ready PRs must show successful execution in full mode with the complete eight-shard matrix; unexpected skips, missing outputs, failures, and cancellations without proven supersession fail. Conversion back to draft or PR closure cancels running execution through the same checkout-free no-op job. They exclude workflow cancellation and canceled execution dependencies, so obsolete reporters do not keep waiting for a runner. Playwright retains one route-neutral concurrency group on its reusable-workflow caller; the called workflow has no concurrency and its sibling jobs cannot cancel each other. The status job stays outside this group. Queue telemetry and metadata uploads run in that same hosted reporter, including after test failures, and stop on cancellation.
+- **Status reporting and cancellation**: GraphQL and Playwright status jobs report real failures and successful path skips. Draft and ready PRs run the same Playwright execution envelope and must both show successful execution in full mode with the complete eight-shard matrix; unexpected skips, missing outputs, failures, and cancellations without proven supersession fail. PR closure cancels running execution through the same checkout-free no-op job; a conversion to draft no longer cancels, because a draft runs the same full suite. They exclude workflow cancellation and canceled execution dependencies, so obsolete reporters do not keep waiting for a runner. Playwright retains one route-neutral concurrency group on its reusable-workflow caller; the called workflow has no concurrency and its sibling jobs cannot cancel each other. The status job stays outside this group. Queue telemetry and metadata uploads run in that same hosted reporter, including after test failures, and stop on cancellation.
 - **Equivalent push validation**: Non-`v3` pushes may reuse completed successful hosted Playwright PR validation. Unit reuse applies to push reruns only, so initial unit validation does not acquire an extra runner or scheduling wait. The read-only gate requires one open, ready, same-repository PR with the exact head and base, an equivalent merge tree, the latest workflow run and attempt, and actual successful test coverage. A run- and attempt-bound artifact records the actual checkout tree; older runs without it cannot be reused. Playwright also requires the same trusted control revision and a matching full eight-shard plan. The summary links the reused run. Missing, stale, failed, skipped, partial, or ambiguous evidence runs normal validation. Default-branch pushes and manual runs remain independent; other workflows retain their different path/build semantics. Translation validation is already PR-only. Playwright performs its lookup inside the existing preparation job, so it can check first attempts without adding another runner allocation. Preparation inherits caller permissions: older contents-only callers continue normal validation when API access is insufficient, while updated callers forward read access to Actions and pull requests. Execution jobs retain explicit contents-only tokens.
-- **Draft → ready transition contract**: Marking a draft PR ready fires `ready_for_review`, which starts every listed workflow again on the unchanged head SHA and shadows its existing checks for the same names. Each PR workflow therefore follows exactly one of two contracts. Validation suites that run the identical jobs for draft and ready PRs (e.g. `test-graphql`, `check`) do not list `ready_for_review`, so their green draft-era run stays authoritative and the transition re-runs nothing. Workflows whose work must wait for a ready PR (`test-unit`, `test-olat-api`, CodeQL, SonarCloud, the staging image builds) gate their jobs on `github.event.pull_request.draft == false` and use `ready_for_review` to start their first real run at the transition; while drafting, their checks report as skipped, not passed. Playwright is ready-only: drafts report an explicit successful skip, and `ready_for_review` starts the first full eight-shard run. Playwright and the AI review workflows own lifecycle transitions (plan recompute, review handoff, draft conversion and closed-PR cancellation). `ci-event-gates.test.cjs` fails any `ready_for_review` trigger that has neither a draft gate nor a documented lifecycle role, so the duplicate-run class cannot return silently.
+- **Draft → ready transition contract**: Marking a draft PR ready fires `ready_for_review` on the unchanged head SHA and re-runs every workflow that lists it. Draft and ready PRs now run the same validation, so a green draft-era run stays authoritative. The validation suites (`test-unit`, `test-olat-api`, `test-graphql`, `test-intl-production`) and the staging image publishes (`v3_*-stg.yml`, `v3_build-fallback.yml`) run identically for drafts and ready PRs; they do not list `ready_for_review` and do not gate any job on `github.event.pull_request.draft`. Their always-reporting summary jobs pass a genuine success and fail a real failure, an unexpected skip, a cancellation, or missing selection data, whether or not the pull request is a draft. `test-playwright` runs the full eight-shard suite for drafts and ready PRs alike, but keeps `ready_for_review` only while the trusted reusable workflow at `@v3` could still compute a partial draft plan; it can be dropped once that route change lands on `v3`. The AI review and code-review workflows own their ready-boundary handoff. `ci-event-gates.test.cjs` fails any `ready_for_review` trigger without a documented lifecycle role, and fails any required suite that gates on the draft state, so the duplicate-run and draft-deferral classes cannot return silently.
 
-- **Public PR ARM64 runners**: The exact reusable `public-pr-playwright-shards.yml` workflow is now the single backend-neutral Playwright envelope. A hosted preparation job checks out trusted `v3` control files separately from the candidate data, computes one route and one canonical selector plan, and both hosted and public execution jobs consume that same plan. The execution jobs call the trusted `v3` composite actions remotely; candidate code supplies source and tests but cannot replace the orchestration action. Ready PRs always use the full eight-shard suite. Draft PRs never enter the execution envelope. Legacy draft-selection controls remain in the trusted routing code but cannot override the caller's ready-only policy. Forks, bots, private repositories, pushes, malformed event or policy data, and disabled smart routing fail closed to hosted full execution; an inconsistent explicit route hint rejects the invocation. `PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR` can force one exact PR to hosted execution without changing the global public rollout. Public jobs use read-only contents permission, receive no secrets, do not persist checkout credentials, and publish no service ports. They restore available pnpm and Turbo caches but never save caches from public PR jobs. The required `test-playwright-status` gate remains GitHub-hosted and consumes the one reusable invocation result. The public runner group stays restricted to `uzh-bf/klicker-uzh` and the exact workflow `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`; no other repository or workflow can target it. Two persistent public hosts expose eight runner processes, four per host. They have no private repository or private-network access and require scheduled rebuilds plus immediate replacement after anomalies. Disk cleanup is not compromise recovery.
+- **Public PR ARM64 runners**: The exact reusable `public-pr-playwright-shards.yml` workflow is now the single backend-neutral Playwright envelope. A hosted preparation job checks out trusted `v3` control files separately from the candidate data, computes one route and one canonical selector plan, and both hosted and public execution jobs consume that same plan. The execution jobs call the trusted `v3` composite actions remotely; candidate code supplies source and tests but cannot replace the orchestration action. Every PR, draft or ready, uses the full eight-shard suite. The trusted routing always returns the ready-state selector and never selects the partial draft plan, so the draft-selection controls cannot narrow a draft even when enabled. Forks, bots, private repositories, pushes, malformed event or policy data, and disabled smart routing fall back to hosted full execution; only `route_hint: auto` is accepted, and any other hint rejects the invocation. `PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR` can force one exact PR to hosted execution without changing the global public rollout. The build artifact archives `packages/*/dist`, so every workspace package dist is covered without a hand-maintained list. Public jobs use read-only contents permission, receive no secrets, do not persist checkout credentials, and publish no service ports. They restore available pnpm and Turbo caches but never save caches from public PR jobs. The required `test-playwright-status` gate remains GitHub-hosted and consumes the one reusable invocation result. The public runner group stays restricted to `uzh-bf/klicker-uzh` and the exact workflow `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`; no other repository or workflow can target it. Two persistent public hosts expose eight runner processes, four per host. They have no private repository or private-network access and require scheduled rebuilds plus immediate replacement after anomalies. Disk cleanup is not compromise recovery.
 - **Reusable workflow reference syntax**: The Playwright caller uses `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3`; GitHub records that ref as `refs/heads/v3`. Keep the full `@refs/heads/v3` spelling for the organization runner-group policy and trusted composite action refs. Using the full spelling in the reusable-workflow caller creates a zero-job workflow run. The trusted cache seed also marks only its exact checked-out workspace as a Git safe directory before reading repository metadata inside its container.
 - **Public ARM64 performance evidence**: The first eight-way run after rollout (`33246023106`, 2026-08-29) scheduled all eight shards simultaneously on distinct `public-pr-arm64-01` through `-08` runners. The restore-only build took 3m59s instead of the prior 7m43s cache-writing build. Shard jobs ranged from 14m30s to 21m24s; the remaining floor was spec structure, led by the 846-second serial live-quiz file. Job summaries report the prepare, build, and shard runner names, while the hosted status job records the selected route and dependency results. GitHub's own step timestamps remain the source for phase duration.
 - **Closed PR execution**: Closing or merging a PR starts a checkout-free GitHub-hosted no-op in that PR's existing execution concurrency group. It cancels obsolete Playwright execution without an Actions write token. The close event does not start preparation, builds, shards, status reporting, or telemetry. Push verification uses a branch-ref key and remains independent. Cancellation is asynchronous; verify actual job termination before counting capacity as recovered. Reopening a PR resumes the normal execution path.
-- **Playwright selector shadow**: The trusted envelope retains its draft-selector implementation for historical qualification tooling, but the ready-only caller no longer executes it for drafts. No new shadow comparisons are collected through ordinary draft PR runs. Ready transitions and subsequent ready updates run the full eight-shard suite; integration-branch pushes retain their separate verification.
+- **Playwright selector shadow**: The trusted envelope still builds the draft selector shadow plan on draft PRs, and because drafts now run the full canonical suite, that shadow observes the partial plan a draft could have used without narrowing execution. Ready transitions and subsequent ready updates run the same full eight-shard suite; integration-branch pushes retain their separate verification.
 - **Organization ARM64 pool provisioning**: `util/provision-hetzner-arm64-runner.sh` provisions a fresh or explicitly reset ARM64 VM as either `public-pr-arm64-01` through `-08` or `trusted-arm64-01` through `-04`. A VM may host several isolated runner directories and services while sharing Docker and disk cleanup. `util/provision-public-pr-arm64-pool.sh` runs from an administrator host and provisions runners `01` through `04` on one fresh 16-vCPU, 32-GB VM and `05` through `08` on another. It verifies both remote platforms, pins and verifies the remote provisioner, keeps the short-lived GitHub token out of command arguments and files, proves `runner-admin` SSH before root login is disabled, and verifies every service. The matching runner groups must exist before provisioning and must use selected-repository access. The provisioner deliberately does not enforce GitHub's optional workflow allowlist, so the groups and runners can be created before their final reusable workflows exist. The public group may select only public repositories, while the trusted group may select only private repositories. Before enabling public rollout, restrict the public group to `uzh-bf/klicker-uzh` and the exact `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3` workflow. Configure trusted repository and workflow restrictions after its workflow exists; neither policy change requires runner reprovisioning. Pool assignment is immutable after provisioning because a persistent runner may retain job data. Every apply downloads the pinned runner archive, verifies its checksum, and compares an existing installation against every packaged file before reuse. The short-lived registration token enters `config.sh` through its supported environment input rather than process arguments. `util/reset-hetzner-arm64-runner-host.sh` supports the one-time conversion of the five dedicated, local-disk hosts created by the earlier Klicker-specific provisioner. It removes runner credentials, work data, the runner account, Docker packages, and all local Docker data while preserving `runner-admin`, SSH hardening, SSH keys, UFW, and OS updates. It is not compromise recovery or secure disk erasure: never use it after untrusted execution or suspected compromise, and never prepare a public-PR host if it has received repository, organization, environment, or external secrets, private data, or private source. Those cases require VM replacement. Public PR services are reachable only inside each job's Docker network, and each Playwright shard uses a run-specific Hatchet volume. The provisioner enables UFW with deny-by-default inbound traffic and OpenSSH as the only inbound allowance. Threshold cleanup removes unused Docker volumes as well as old containers, images, and builder data. Use the VM's local NVMe storage initially and add a protected volume only after monitoring shows sustained disk pressure.
 - **Prisma Schema Drift**: A custom `check:prisma-sync` smoke check compares schema structures in the monorepo against mirrored schemas in `apps/analytics` to enforce database integrity.
 - **Markdown Linter**: `check:agents-md` validates links and command script correctness inside the codebase guide.
@@ -69,6 +92,17 @@ neither Node nor pnpm.
 - **Manual stack review**: For a verified native stack, post `/final-review-stack` on the top PR. The workflow uses `z-ai/glm-5.3-flash` with high reasoning to review the cumulative change and stack topology, assigns cross-layer findings to exact layer deltas, and publishes one report on the top PR. Each cumulative OCR task has a 30-minute deadline. A full-stack range has a 20,000,000-token ceiling; each incremental layer range retains its own 750,000-token ceiling. The first eligible partial range in declared order may consume the job's single resume allowance and shares that range's ceiling. A later or ineligible partial fails immediately. The 90-minute job uses an inner code-review deadline to reserve time for cleanup, topology review, publication, and finalization. Partial coverage is never published. The topology request removes derivation-only patch operations before sending evidence and fails closed above its bounded request and output budgets. It receives bounded excerpts of prior code findings, reports only defects that depend on a cross-layer interaction, and suppresses a topology result when it restates an overlapping code finding with the same path and category. Metadata retains both generated and published topology counts for later evaluation. If neither pass produces an actionable finding, it records an evidence-bound clean success status with description `z-ai/glm-5.3-flash stack review clean; evidence=<64-hex evidence digest>` and skips the PR comment. It stores the immutable reviewed-path and rename-alias set in the trusted `Final AI stack clean evidence` check output so an unrelated default-branch advance can be revalidated without recreating a comment. The stack evidence digest covers the ordered layer identities, topology identity, exact range, dispositions, and policy. A later repair in one or more layers may use the same bounded, disposition-backed attestation contract when every changed layer descends from its reviewed head, every upper layer contains the current parent head, and each per-layer remediation range remains within the declared bounds. Topology drift, material scope changes, or missing dispositions require another cumulative review. Any layer drift resets the top `final-ai-stack-review` status, even when the top PR's SHA is unchanged. Neither final status grants merge authority; merge readiness still requires current evidence, green required CI, and terminal dispositions. The repository grants agents and the shared PR babysitter standing approval to post `/final-review` or `/final-review-stack` after exact-head CI and ordinary feedback settle; no per-run approval is required for the configured external OpenRouter request and its usage cost. This standing approval does not cover non-public payloads or grant merge authority. The babysitter still stops after two autonomous head-changing rounds and never guesses a tracker destination. Add `final-ai-review` or `final-ai-stack-review` to branch protection only after a controlled live run has proved its status lifecycle.
 - **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, OpenRouter configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OpenCodeReview 1.11.0 is also qualified before publication against a fake OpenAI-compatible endpoint with a synthetic one-file diff; that probe checks the released binary's model, high reasoning, tool request, 16,384-token completion cap, automatic provider routing, and one-round effort wiring. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
+
+The individual and stack final-review jobs disable OCR's background updater
+with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.11.0
+otherwise starts a background global npm update even for `ocr version`, so a
+pinned installation alone does not keep the executable immutable. Each review
+attempt verifies the pinned version before running. Process failures retain
+their exit code and write only a fixed stage, exit status and numeric output
+sizes to the job summary: stdout for that attempt and explicitly labelled
+`stderr_total_bytes` accumulated across the step's attempts. Raw version failures, stdout, stderr and provider
+configuration remain suppressed. An execution error is not a clean review;
+cleanup and final-status failure handling still run.
 
 ## Obsolete validation cleanup
 
@@ -98,6 +132,79 @@ stops further work. This utility is manual; no recurring cleanup is installed.
 Unrelated issue comments are filtered before Final AI review allocates its
 trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
+
+## Public ARM64 runner operations
+
+Run the policy reconciler from a trusted administrator checkout. Both modes
+accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;
+`--check` needs organization
+Self-hosted runners read access and `--apply` needs write access, plus repository
+Metadata read access. Revoke the token after the verified readback.
+
+```bash
+util/reconcile-public-pr-arm64-runner-group.sh --check
+util/reconcile-public-pr-arm64-runner-group.sh --apply
+```
+
+The exact target is selected access to `uzh-bf/klicker-uzh`, workflow
+restrictions enabled, and only
+`uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`.
+The script fails on inherited or read-only policy, extra repositories or
+workflows, and runner membership other than `public-pr-arm64-01` through `-08`.
+
+Check both existing hosts from the administrator machine before applying the
+optional optimization. Verify and register both SSH host keys before running
+the controller; unknown or changed keys are rejected. Pause new workflow
+dispatch to the pool and let active jobs finish before applying changes.
+`--check` streams the checksum-verified payload and
+makes no persistent remote change. `--apply` is rerunnable, requires both hosts
+to be idle, and asks once before changing either host.
+
+```bash
+util/reconcile-public-pr-arm64-pool.sh \
+  --check \
+  --host-a "$VM_A_IP" \
+  --host-b "$VM_B_IP"
+
+util/reconcile-public-pr-arm64-pool.sh \
+  --apply \
+  --host-a "$VM_A_IP" \
+  --host-b "$VM_B_IP"
+```
+
+After applying, inspect a bounded UTC interval on each host and correlate
+`run_id` and `runner` with the GitHub job summary and step timestamps:
+Set `RECONCILE_START_UTC` and `RECONCILE_END_UTC` to the actual apply interval.
+
+```bash
+sudo journalctl \
+  -t actions-runner-telemetry \
+  --since "${RECONCILE_START_UTC:?set the apply start time in UTC}" \
+  --until "${RECONCILE_END_UTC:?set the apply end time in UTC}" \
+  -o cat
+```
+
+Record one row per job with run ID, runner, GitHub start/completion, install and
+build seconds, exact cache-hit flags, shard setup and test seconds, host load,
+available memory, Docker-disk pressure, conclusion, and artifact. This separates
+cache misses, host contention, service setup, test structure, and scheduling;
+do not infer one cause from total duration alone.
+
+### In-job resource samples
+
+Build and shard telemetry artifacts also contain `playwright-resources-*.jsonl`.
+The command wrapper samples every ten seconds for up to one hour (361 rows).
+Prisma and application builds have separate files; shard samples span service
+readiness and tests. Sampling failures do not change the wrapped command result.
+Artifacts retain the existing seven-day lifetime. No VM update is required.
+
+Samples contain only numeric procfs observations and timestamps. CPU tick order
+is user, nice, system, idle, iowait, irq, softirq, steal; guest ticks are already
+included in user/nice. Compute interval shares from successive counter deltas,
+not cumulative totals. Pressure totals are microseconds; divide their deltas by
+elapsed microseconds. Missing metrics are null, not zero. Counters describe the
+system visible from the container, not exclusive usage by its job. They do not
+measure per-process activity or establish a causal performance diagnosis alone.
 
 ## Image builds
 
@@ -156,8 +263,9 @@ Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to 
 `workflow_run` controller. It checks out only `github.workflow_sha`, executes
 only the promoter script from that checkout, and treats candidate workflow
 files, run and job metadata, and registry responses as untrusted data. It does
-not check out or execute candidate actions or scripts and does not consume
-candidate caches or artifacts.
+not check out or execute candidate actions or scripts or consume candidate
+caches. It reads bounded JSON evidence artifacts as untrusted data and binds
+their identities and suite names to the actual GitHub job results.
 
 For each candidate, the controller validates all of these before considering a
 ref update:
@@ -167,8 +275,13 @@ ref update:
 - The candidate has the exact trusted staging workflow names, paths, push
   triggers, active ARM jobs, runtime image repositories, and backend migrator
   ordering. Intentionally disabled AMD jobs are excluded.
-- Every required workflow and job has a successful push run for the exact
-  candidate SHA. Only missing or still-running evidence is retried, for a
+- The code check, secret scan, GraphQL, Playwright, unit, OLAT, translation,
+  and image-build summary jobs all have successful push runs for the exact
+  candidate SHA, repository, and selected branch. The newest matching run and
+  its current attempt are required; duplicate terminal jobs fail validation.
+  Candidate pushes run GraphQL, unit, OLAT, both translation smoke jobs, and
+  all eight Playwright shards. PR-only no-change selections cannot qualify a
+  staging candidate. Only missing or still-running evidence is retried, for a
   bounded interval; skipped, failed, cancelled, or mismatched evidence fails
   immediately.
 - Every expected runtime repository exposes the full candidate SHA tag with a
@@ -178,7 +291,7 @@ ref update:
   inventory twice and fails if any digest is absent or changes during
   collection.
 
-The sorted evidence becomes a canonical JSON receipt with the controller run,
+The sorted evidence becomes a canonical JSON receipt with the controller run and source SHA,
 source and candidate revisions, workflow/run/job identities, registry tags and
 digests, retry history, ref decision, update result, post-push verification
 state, and previous/applied release revisions. Its SHA-256 checksum is written
@@ -198,9 +311,8 @@ newer candidate.
 
 Operational notes.
 
-- Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. It falls back to
-  `v3` in the trusted workflow expression when unset. The promoter requires
-  that resolved input and does not query repository variables itself. Promotion
+- Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. There is no default; missing selection fails validation. The promoter requires
+  that explicit input and does not query repository variables itself. Promotion
   fails closed unless the branch has the exact trusted publisher inventory and
   full-SHA tags.
 - GitHub evaluates `workflow_run` from the default branch. A correction on a
@@ -209,7 +321,10 @@ Operational notes.
   automatic run executes only the default-branch revision.
 - Keep `STG_RELEASE_PROMOTION_ENABLED` absent or `false` during Phase 1. A
   manual dispatch defaults to dry-run; a write requires `dry_run=false` and the
-  exact input `confirm_ref_update=stg-release`. Initial ref creation,
+  exact input `confirm_ref_update=stg-release`, plus `expected_release_sha` and
+  `expected_controller_sha` copied from the reviewed dry-run receipt. A changed
+  release or controller rejects the apply. For initial creation only, use
+  `expected_release_sha=absent` and require the release still be absent. Initial ref creation,
   repository-variable changes, and activation remain separate operations.
 - Before activation, prove every full-SHA image and retain the receipt, create
   `stg-release` through the confirmed manual path, then update only the private
