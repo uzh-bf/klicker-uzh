@@ -1,28 +1,94 @@
 name: Perform sonarcloud analysis
+
 on:
   push:
-    branches:
-      - v3
-      - 'v3*'
+    branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-runs the analysis when a pull request is retargeted, so the
+    # new-code comparison cannot stay bound to a previous base branch.
+    types: [opened, synchronize, reopened, ready_for_review, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
+# Reading the analyzed revision and the artifacts of the test workflows is the
+# whole job. The analysis upload itself is authorized by the Sonar credential,
+# never by the workflow token.
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   sonarcloud:
-    if: github.event.pull_request.draft == false
+    # Draft pull requests keep their previous behaviour: they are analyzed when
+    # they become ready for review. The condition is written against the event
+    # so a push run can never be skipped by an absent draft field.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: SonarCloud
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out the analyzed revision
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      # Fork and Dependabot pull requests never receive repository secrets, so a
+      # trusted analysis path for untrusted contributors is still pending. Until
+      # it exists this fails with a named reason instead of an opaque
+      # authorization error, and the check stays non-green rather than pretending
+      # that an unavailable analysis succeeded.
+      - name: Require the analysis credential
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "${SONAR_TOKEN}" ]; then
+            exit 0
+          fi
+          {
+            echo '### SonarCloud analysis unavailable'
+            echo
+            echo 'No SONAR_TOKEN is available for this event. Fork and Dependabot'
+            echo 'pull requests do not receive repository secrets, so the analysis'
+            echo 'cannot run. See docs/ci-and-deployment.md.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::SONAR_TOKEN is not available for this event; SonarCloud analysis cannot run."
+          exit 1
+
+      - name: Resolve the project version
+        id: version
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "value=${version}" >> "$GITHUB_OUTPUT"
+
+      # Coverage is imported only from test runs bound to this exact revision,
+      # and only when the producing run recorded the tested source tree. Every
+      # producer is reported in the step summary, so a missing report is visible
+      # as absent coverage instead of a silently green metric.
+      - name: Collect verified coverage inputs
+        if: github.event_name == 'pull_request'
+        id: coverage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          COVERAGE_PRODUCER_WORKFLOWS: .github/workflows/test-unit.yml,.github/workflows/test-graphql.yml
+        run: node .github/scripts/sonar-coverage-inputs.cjs
+
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # The quality gate is awaited so a failing gate fails this workflow
+          # instead of leaving a green run next to a red gate. Merge enforcement
+          # is a separate, separately authorized change.
+          args: >-
+            -Dsonar.projectVersion=${{ steps.version.outputs.value }}
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=600
+            ${{ steps.coverage.outputs.scannerArgs }}
