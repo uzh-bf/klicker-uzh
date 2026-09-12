@@ -295,10 +295,12 @@ function mapElementParts(
     content: element.elementData.content,
     explanation: element.elementData.explanation ?? null,
     hasSampleSolution:
+      element.elementData.options != null &&
       'hasSampleSolution' in element.elementData.options
         ? (element.elementData.options.hasSampleSolution ?? false)
         : false,
     hasAnswerFeedbacks:
+      element.elementData.options != null &&
       'hasAnswerFeedbacks' in element.elementData.options
         ? (element.elementData.options.hasAnswerFeedbacks ?? false)
         : false,
