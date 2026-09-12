@@ -7,6 +7,7 @@ function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
   includeI18n = true,
   pagesRouterOnly = false,
+  buildTsconfigPath = '',
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
@@ -16,6 +17,11 @@ function getNextBaseConfig({
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
+    // Reuse the strict check config to exclude stale dev-route validators
+    // from production compilation without changing the development editor.
+    ...(buildTsconfigPath && NODE_ENV !== 'development'
+      ? { typescript: { tsconfigPath: buildTsconfigPath } }
+      : {}),
     // Pages-only apps need no cross-router filter. Its initial Turbopack
     // update can let an older development route scan overwrite a newer one.
     // Remove the opt-in when an app starts using App Router routes.

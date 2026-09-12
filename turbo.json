@@ -222,6 +222,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "src/prisma/client/**"]
     },
+    "@klicker-uzh/prisma#check": {
+      "cache": false,
+      "dependsOn": ["build"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [
