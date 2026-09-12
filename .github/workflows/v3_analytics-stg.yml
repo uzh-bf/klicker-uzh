@@ -7,9 +7,17 @@ on:
       - 'v3*'
   pull_request:
     # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-evaluates the path filter when a pull request is retargeted,
+    # so newly applicable images are built instead of keeping the old result.
+    types: [opened, synchronize, reopened, edited]
     paths:
       - 'apps/analytics/**'
+      # The build syncs the Prisma schema and the Dockerfile copies it, so a
+      # schema or sync-script change reaches this image. Analytics has no node
+      # workspace dependency, so the root manifests stay out.
+      - 'packages/prisma/src/prisma/schema/*.prisma'
+      - 'util/sync-schema.sh'
+      - '.dockerignore'
       - '.github/workflows/v3_analytics**'
 
 concurrency:
@@ -22,7 +30,6 @@ env:
 
 jobs:
   build-arm:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
