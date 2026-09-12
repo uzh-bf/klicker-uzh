@@ -482,3 +482,20 @@ corpus/provider selection is pending. No paid evaluation or retrieval-quality
 improvement is claimed. Substantive implementation requires simplifier, bounded
 risk review and integrated final review before ordinary task-branch delivery to
 the existing draft [PR #5912](https://github.com/uzh-bf/klicker-uzh/pull/5912).
+
+Independent evaluation slice committed at b98bb1dd. Verification: 22 adapter
+tests and 10 enrichment tests passed; accepted simplification consolidates one
+duplicate into the status matrix, leaving nine enrichment tests with the same
+contract assertions. The synthetic capture → enrichment → pinned framework
+loader/factory/runner check passes. Judges are substituted and no quality score
+is claimed. Wrapper regression passes for Luna and Auto. Container types40/40,
+lint7/7 and policy checks pass; host-only CI planning and launcher checks pass.
+Direct staged-path formatting passes; lint-staged itself cannot resolve linked
+Git metadata inside this container. The full build passes26/26; scoped Opengrep
+and staged gitleaks report no findings. Framework remains at its existing pin.
+
+The exact Devsy runtime remains retained for the user's local-testing lease: six
+routes are registered as running; this route listing does not prove HTTP health.
+Container checks execute successfully. Lease checkpoint remains the next manual
+testing follow-up. Corpus/provider selection blocks live course evaluation and
+candidate tuning; the draft retains that limitation.

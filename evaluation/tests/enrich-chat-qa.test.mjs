@@ -230,8 +230,10 @@ test('reports every context status distinctly', async (t) => {
   assert.deepEqual(enriched.results[0].retrieval_context, [
     'synthetic-passage-a',
   ])
-  for (const result of enriched.results.slice(1)) {
-    assert.deepEqual(result.retrieval_context, [])
+  for (const [index, result] of enriched.results.entries()) {
+    assert.equal(result.klicker_evidence.status, statuses[index])
+    assert.equal(result.klicker_evidence.context_available, index === 0)
+    if (index > 0) assert.deepEqual(result.retrieval_context, [])
   }
 })
 
@@ -429,30 +431,6 @@ test('refuses an insecure or symlinked output directory', async (t) => {
     { code: 'evidence_directory_unsafe' }
   )
   assert.equal(existsSync(join(shared, 'out.json')), false)
-})
-
-test('records missing context without inventing a score', async (t) => {
-  const { root, evidenceDir } = await createWorkspace(t)
-  await writeCaptures(evidenceDir, [
-    capture({
-      status: 'incomplete',
-      passages: undefined,
-      reason: 'result_unknown',
-    }),
-  ])
-  const qaFile = await writeQa(root, { metadata: {}, results: [qaCase()] })
-  const output = join(root, 'enriched.json')
-
-  const report = await enrich({ qaFile, evidenceDir, output })
-  const enriched = JSON.parse(await readFile(output, 'utf8'))
-  const [result] = enriched.results
-
-  assert.deepEqual(result.retrieval_context, [])
-  assert.equal(result.klicker_evidence.status, 'incomplete')
-  assert.equal(result.klicker_evidence.context_available, false)
-  assert.equal(report.eligible_context, 0)
-  assert.equal(report.ineligible_context, 1)
-  assert.equal(report.context_incomplete, 1)
 })
 
 test('accepts the framework default empty context and agent id', async (t) => {
