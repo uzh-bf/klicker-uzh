@@ -1958,6 +1958,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphLoadError: 'Der Graphstatus konnte nicht geladen werden.',
     graphRetry: 'Erneut versuchen',
     graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
+    graphNoCourseContent:
+      'Keine Ressourcen sind als „Kursinhalt“ kategorisiert. Markieren Sie Ihre Kursmaterialien, bevor Sie den Graphen erstellen – Verwaltungsressourcen werden ausgeschlossen.',
     graphQuotaInsufficient:
       'Der ausgewählte Aufbau kostet schätzungsweise {estimate}, im Semesterkontingent sind jedoch nur noch {remaining} verfügbar. Wählen Sie wenn möglich eine günstigere Qualitätsstufe oder warten Sie auf die Zurücksetzung des Kontingents.',
     graphPreviewTitle: 'Veröffentlichter Graph',
