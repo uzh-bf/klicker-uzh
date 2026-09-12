@@ -3,20 +3,12 @@ import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { renderBackingCompose } from './local-kb/backing-compose.mjs'
-import { renderProviderCompose } from './local-kb/compose.mjs'
-import {
-  docProcessingImageRevision,
-  renderDocProcessingCompose,
-} from './local-kb/doc-processing-compose.mjs'
-import {
-  ingestionImageRevision,
-  renderIngestionCompose,
-} from './local-kb/ingestion-compose.mjs'
 import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
 import {
   claimPreparation,
   completePreparation,
   initializeManagedApplication,
+  initializeProviderLaunchers,
   initializeProviderStorage,
   inspectPreparedInfrastructure,
   installManagedConfiguration,
@@ -26,15 +18,6 @@ import {
   stopPreparedInfrastructure,
 } from './local-kb/preparation.mjs'
 import { providerCommands } from './local-kb/provider-commands.mjs'
-import {
-  renderRetrievalCompose,
-  retrievalImageRevision,
-} from './local-kb/retrieval-compose.mjs'
-import { renderRetrievalStoreCompose } from './local-kb/retrieval-store-compose.mjs'
-import {
-  renderScrapingCompose,
-  scrapingImageRevision,
-} from './local-kb/scraping-compose.mjs'
 
 const providers = [
   ['ingestion', 'DATA_INGESTION_REPO', 'scripts/start_ingestion_workers.sh'],
@@ -112,14 +95,17 @@ export function inspectIsolatedProviderSources(config) {
         ).trim()
       const root = git(['rev-parse', '--show-toplevel'])
       const head = git(['rev-parse', 'HEAD'])
-      const clean =
-        git([
-          'status',
-          '--porcelain',
-          '--untracked-files=all',
-          '--ignored=matching',
-          '--ignore-submodules=none',
-        ]).length === 0
+      const clean = git([
+        'status',
+        '--porcelain',
+        '-z',
+        '--untracked-files=all',
+        '--ignored=matching',
+        '--ignore-submodules=none',
+      ])
+        .split('\0')
+        .filter(Boolean)
+        .every((entry) => entry === '!! .venv/')
       return {
         name,
         sourceAvailable: true,
@@ -174,10 +160,10 @@ export async function inspectLocalKbStack(
 
 const configPlanBlockers = [
   {
-    id: 'rendered-local-deployment',
+    id: 'provider-runtime-qualification',
     status: 'required',
     description:
-      'The validation model must be rendered into concrete local deployment services before execution.',
+      'Provider launcher bindings require runtime qualification; a configuration plan does not prove installed dependencies, images or connectivity.',
   },
   {
     id: 'provider-preparation',
@@ -204,7 +190,7 @@ const configPlanLimitations = [
     id: 'provider-launcher-projection',
     status: 'unverified',
     description:
-      'providerCommands projects each launcher invocation from the contract recorded in util/local-kb/provider-launcher-contract.mjs; config plan does not probe a provider checkout, and the consumer-owned Compose assembly remains the executable lifecycle until it is retired.',
+      'providerCommands contains the supported launcher invocations used by setup and retained lifecycle operations; config plan does not execute or qualify them.',
   },
 ]
 
@@ -218,33 +204,13 @@ function readConfigPlanInput(path) {
 }
 
 function configPlan(config) {
-  const imagesMatch =
-    config.providers.ingestion.revision === ingestionImageRevision &&
-    config.providers.scraping.revision === scrapingImageRevision &&
-    config.providers.docProcessing.revision === docProcessingImageRevision &&
-    config.providers.retrieval.revision === retrievalImageRevision
+  const commands = providerCommands(config)
+  const setupArgs = commands.providers.ingestion.lifecycle.setup.args
+  setupArgs[setupArgs.indexOf('--state-dsn') + 1] = '<provider-owned-state-dsn>'
   return {
     ...config,
-    providerCommands: providerCommands(config),
-    providerCompose: imagesMatch ? renderProviderCompose(config) : null,
+    providerCommands: commands,
     backingCompose: renderBackingCompose(config),
-    docProcessingCompose:
-      config.providers.docProcessing.revision === docProcessingImageRevision
-        ? renderDocProcessingCompose(config)
-        : null,
-    scrapingCompose:
-      config.providers.scraping.revision === scrapingImageRevision
-        ? renderScrapingCompose(config)
-        : null,
-    retrievalStoreCompose: renderRetrievalStoreCompose(config),
-    retrievalCompose:
-      config.providers.retrieval.revision === retrievalImageRevision
-        ? renderRetrievalCompose(config)
-        : null,
-    ingestionCompose:
-      config.providers.ingestion.revision === ingestionImageRevision
-        ? renderIngestionCompose(config)
-        : null,
     executable: false,
     blockers: configPlanBlockers,
     limitations: configPlanLimitations,
@@ -286,13 +252,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       if (command === 'setup') {
         // Resolve pins and fresh source state before the exclusive claim or
         // any generated files, Docker operation, or managed lifecycle call.
-        renderProviderCompose(config)
+        providerCommands(config)
         requireProviderSources(config)
         await claimPreparation(config, candidateRevision)
         await prepareLocalConfiguration(config, candidateRevision)
         await installManagedConfiguration(config, candidateRevision)
         requireProviderSources(config)
         await initializeProviderStorage(config, candidateRevision)
+        requireProviderSources(config)
+        await initializeProviderLaunchers(config, candidateRevision)
         requireProviderSources(config)
         await initializeManagedApplication(config, candidateRevision)
         await completePreparation(config, candidateRevision)

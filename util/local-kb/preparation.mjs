@@ -5,7 +5,6 @@ import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
-import { renderProviderCompose } from './compose.mjs'
 import {
   inspectUnusedComposeProject,
   runLocalDocker,
@@ -15,13 +14,22 @@ import { validateIsolatedConfig } from './isolated-config.mjs'
 import {
   localCredentialNames,
   localRetrievalScope,
-  renderLocalConfiguration,
   renderLocalRetrievalConfiguration,
+  renderProviderLocalConfiguration,
 } from './local-configuration.mjs'
 import {
   renderManagedConfiguration,
   renderProviderRouting,
 } from './managed-configuration.mjs'
+import {
+  observeProviderLaunchers,
+  providerCommands,
+  runProviderCommand,
+} from './provider-commands.mjs'
+
+function renderConsumerBacking(config) {
+  return { name: config.project.identity, ...renderBackingCompose(config) }
+}
 
 // A failed setup deliberately retains its claim. It must not be mistaken for
 // an unused runtime on the next invocation.
@@ -495,22 +503,17 @@ async function claimInfrastructureAttempt(runtime, operation) {
 // in place so another invocation cannot silently rotate service credentials.
 export async function prepareLocalConfiguration(config, candidateRevision) {
   const { directory } = await verifyClaim(config, candidateRevision)
-  const providers = renderProviderCompose(config)
-  const bootstrap = {
-    name: config.project.identity,
-    ...renderBackingCompose(config),
-  }
-  bootstrap.services['ingestion-setup'] = providers.services['ingestion-setup']
-  bootstrap.services['doc-processing-setup'] =
-    providers.services['doc-processing-setup']
-  bootstrap.volumes['document-processing'] =
-    providers.volumes['document-processing']
+  const providers = renderConsumerBacking(config)
+  const bootstrap = renderConsumerBacking(config)
   const configurationClaim = join(directory, 'configuration-claimed')
   await mkdir(configurationClaim, { mode: 0o700 })
   const credentials = Object.fromEntries(
     localCredentialNames.map((name) => [name, randomBytes(32).toString('hex')])
   )
-  const generated = renderLocalConfiguration(credentials)
+  const generated = renderProviderLocalConfiguration(
+    credentials,
+    config.bindings
+  )
   const { publicKey, privateKey } = generateKeyPairSync('ec', {
     namedCurve: 'prime256v1',
   })
@@ -529,6 +532,19 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
         .join('\n') + '\n'
     await writeExclusive(join(directory, `${name}.env`), content, String)
   }
+  await writeExclusive(
+    join(directory, 'doc-processing.json'),
+    generated.docProcessing
+  )
+  await writeExclusive(
+    join(directory, 'scraping-api-key'),
+    generated.scrapingApiKey,
+    String
+  )
+  await writeExclusive(
+    join(directory, 'retrieval-environment.json'),
+    generated.retrievalEnvironment
+  )
   const registry = join(directory, 'producer-registry')
   const initialization = join(directory, 'postgres-init')
   const retrieval = join(directory, 'doc-query-tools')
@@ -548,7 +564,10 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
   )
   await writeExclusive(
     join(retrieval, 'knowledge-bases.yaml'),
-    renderLocalRetrievalConfiguration(publicKey),
+    renderLocalRetrievalConfiguration(
+      publicKey,
+      generated.project.vector_store.collection_name
+    ),
     JSON.stringify,
     0o644
   )
@@ -570,6 +589,93 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
   await writeExclusive(join(directory, 'bootstrap.compose.json'), bootstrap)
   await writeExclusive(join(directory, 'providers.compose.json'), providers)
   return { configured: true }
+}
+
+// Keep each provider's setup attempt even on failure. Retained start must not
+// repair or repeat initialization behind the user's back.
+export async function initializeProviderLaunchers(
+  config,
+  candidateRevision,
+  run = runProviderCommand,
+  runDocker = runLocalDocker
+) {
+  const { directory } = await verifyClaim(config, candidateRevision)
+  const storage = await readOwned(
+    join(directory, 'storage-setup/complete.json')
+  )
+  const context = (await runDocker(['context', 'show'])).trim()
+  if (context !== storage.context) {
+    throw new Error(
+      'Provider launchers require the prepared local Docker context.'
+    )
+  }
+  const endpoint = (
+    await runDocker([
+      'context',
+      'inspect',
+      context,
+      '--format',
+      '{{.Endpoints.docker.Host}}',
+    ])
+  ).trim()
+  if (!endpoint.startsWith('unix:///') || /[\r\n]/.test(endpoint)) {
+    throw new Error('Provider launchers require a local Docker endpoint.')
+  }
+  const attempt = join(directory, 'provider-setup')
+  await mkdir(attempt, { mode: 0o700 })
+  const commands = providerCommands(config)
+  const retrievalEnvironment = await readOwned(
+    join(directory, 'retrieval-environment.json')
+  )
+  for (const provider of commands.lifecycleOrder) {
+    try {
+      const output = await run(commands.providers[provider].lifecycle.setup, {
+        ...(provider === 'retrieval' ? retrievalEnvironment : {}),
+        DOCKER_CONTEXT: context,
+      })
+      const status = JSON.parse(output)
+      const instance =
+        provider === 'ingestion'
+          ? status.instance?.name
+          : provider === 'docProcessing'
+            ? status.instance_id
+            : status.instance
+      const revision =
+        provider === 'ingestion'
+          ? status.source?.revision
+          : status.source_revision
+      const prepared =
+        provider === 'ingestion'
+          ? ['configuration', 'credentials', 'schema'].every(
+              (key) => status.preparation?.[key] === 'prepared'
+            )
+          : provider === 'docProcessing'
+            ? status.setup === 'ready'
+            : status.prepared === true
+      if (
+        instance !== config.project.identity ||
+        revision !== config.providers[provider].revision ||
+        !prepared
+      ) {
+        throw new Error(
+          'Provider preparation evidence is incomplete or mismatched.'
+        )
+      }
+      await writeExclusive(join(attempt, `${provider}.json`), {
+        setupCompleted: true,
+      })
+    } catch {
+      throw new Error(
+        `Provider ${provider} setup failed; partial state is retained.`
+      )
+    }
+  }
+  await writeExclusive(join(attempt, 'complete.json'), {
+    candidateRevision,
+    context,
+    initialized: true,
+  })
+  return { providersInitialized: true }
 }
 
 // Explicit setup checks all owned volumes before invoking the host runner.
@@ -607,8 +713,6 @@ export async function initializeProviderStorage(
   const steps = [
     ['up', '--detach', '--wait', '--wait-timeout', '120', 'postgres'],
     ['run', '--no-deps', 'hatchet-setup'],
-    ['run', '--no-deps', 'ingestion-setup'],
-    ['run', '--no-deps', 'doc-processing-setup'],
     ['up', '--detach', '--no-deps', 'hatchet'],
   ]
   for (const [index, args] of steps.entries()) {
@@ -742,7 +846,7 @@ async function preparedRuntime(config, candidateRevision, runDocker) {
   )
   if (
     JSON.stringify(composition) !==
-      JSON.stringify(renderProviderCompose(config)) ||
+      JSON.stringify(renderConsumerBacking(config)) ||
     JSON.stringify(routing) !== JSON.stringify(renderProviderRouting(workspace))
   ) {
     throw new Error('Prepared provider configuration has changed.')
@@ -784,7 +888,7 @@ async function observeOwnedProviders(config, runtime, runDocker) {
   )
     .split(/\s+/)
     .filter(Boolean)
-  const services = renderProviderCompose(config).services
+  const services = renderConsumerBacking(config).services
   const rows = []
   for (const id of ids) {
     if (!/^[a-f0-9]{12,64}$/.test(id))
@@ -829,25 +933,14 @@ async function observeOwnedProviders(config, runtime, runDocker) {
   return rows
 }
 
-const infrastructureServices = [
-  'postgres',
-  'redis',
-  'blob',
-  'hatchet',
-  'milvus-etcd',
-  'minio',
-  'milvus',
-  'crawl4ai',
-  'scraping',
-  'ingestion-api',
-  'doc-processing',
-]
+const infrastructureServices = ['postgres', 'redis', 'blob', 'hatchet']
 
 export async function inspectPreparedInfrastructure(
   config,
   candidateRevision,
   runDocker = runLocalDocker,
-  runManaged = runLocalManaged
+  runManaged = runLocalManaged,
+  runProvider = runProviderCommand
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   const providers = await observeOwnedProviders(config, runtime, runDocker)
@@ -888,8 +981,15 @@ export async function inspectPreparedInfrastructure(
       status: health === 'unreported' ? 'readiness-unverified' : health,
     }
   })
+  const launchers = await observeProviderLaunchers(
+    config,
+    runProvider,
+    { DOCKER_CONTEXT: runtime.context },
+    await readOwned(join(runtime.directory, 'retrieval-environment.json'))
+  )
   return {
     providers,
+    launchers,
     infrastructure,
     infrastructureHealthy: infrastructure.every(
       ({ status }) => status === 'healthy'
@@ -898,8 +998,8 @@ export async function inspectPreparedInfrastructure(
     managedRuntimeStatus: managed.status,
     managedRuntimeReady:
       managed.status === 'ready' &&
-      managed.profile === 'manage,chat' &&
-      managed.activeProfile === 'manage,chat' &&
+      managed.profile === 'ai,chat,manage' &&
+      managed.activeProfile === 'ai,chat,manage' &&
       managed.drift.length === 0,
     aiQualified: false,
   }
@@ -909,7 +1009,8 @@ export async function stopPreparedInfrastructure(
   config,
   candidateRevision,
   runManaged = runLocalManaged,
-  runDocker = runLocalDocker
+  runDocker = runLocalDocker,
+  runProvider = runProviderCommand
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'stop', async () => {
@@ -934,7 +1035,8 @@ export async function stopPreparedInfrastructure(
       config,
       runtime,
       runManaged,
-      runDocker
+      runDocker,
+      runProvider
     )
     // Shutdown is safe after a partial attempt, but cannot authorize replay.
     if (incomplete) return result
@@ -952,8 +1054,40 @@ export async function stopPreparedInfrastructure(
   })
 }
 
-async function stopInfrastructure(config, runtime, runManaged, runDocker) {
+async function stopInfrastructure(
+  config,
+  runtime,
+  runManaged,
+  runDocker,
+  runProvider
+) {
   await observeOwnedProviders(config, runtime, runDocker)
+  const environment = { DOCKER_CONTEXT: runtime.context }
+  const retrievalEnvironment = await readOwned(
+    join(runtime.directory, 'retrieval-environment.json')
+  )
+  await observeProviderLaunchers(
+    config,
+    runProvider,
+    environment,
+    retrievalEnvironment
+  )
+  const commands = providerCommands(config)
+  for (const name of commands.stopOrder) {
+    await runProvider(commands.providers[name].lifecycle.stop, {
+      ...(name === 'retrieval' ? retrievalEnvironment : {}),
+      ...environment,
+    })
+  }
+  const launchers = await observeProviderLaunchers(
+    config,
+    runProvider,
+    environment,
+    retrievalEnvironment
+  )
+  if (launchers.some((row) => !row.stopped)) {
+    throw new Error('Provider shutdown is incomplete; data is retained.')
+  }
   const managed = JSON.parse(
     await runManaged(['stop', runtime.checkout, '--json'])
   )
@@ -989,20 +1123,29 @@ async function stopInfrastructure(config, runtime, runManaged, runDocker) {
   return { stopped: true, dataRetained: true }
 }
 
-// This phase starts no queue consumers or model-dependent services. A failed
-// attempt remains claimed; another invocation cannot silently resume work.
+// Provider activation is explicit. A failed attempt remains claimed; another
+// invocation cannot silently resume queue processing or initialization.
 export async function startPreparedInfrastructure(
   config,
   candidateRevision,
   runManaged = runLocalManaged,
-  runDocker = runLocalDocker
+  runDocker = runLocalDocker,
+  runProvider = runProviderCommand
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'start', async () => {
     await observeOwnedProviders(config, runtime, runDocker)
     const attempt = join(runtime.directory, 'infrastructure-start')
     await mkdir(attempt, { mode: 0o700 })
-    return launchInfrastructure(config, runtime, attempt, runManaged, runDocker)
+    return launchInfrastructure(
+      config,
+      runtime,
+      attempt,
+      runManaged,
+      runDocker,
+      undefined,
+      runProvider
+    )
   })
 }
 
@@ -1010,7 +1153,8 @@ export async function resumePreparedInfrastructure(
   config,
   candidateRevision,
   runManaged = runLocalManaged,
-  runDocker = runLocalDocker
+  runDocker = runLocalDocker,
+  runProvider = runProviderCommand
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'resume', async () => {
@@ -1040,7 +1184,8 @@ export async function resumePreparedInfrastructure(
       attempt,
       runManaged,
       runDocker,
-      cycle + 1
+      cycle + 1,
+      runProvider
     )
   })
 }
@@ -1051,10 +1196,26 @@ async function launchInfrastructure(
   attempt,
   runManaged,
   runDocker,
-  cycle
+  cycle,
+  runProvider
 ) {
   const { checkout, directory, context, workspace } = runtime
   try {
+    const commands = providerCommands(config)
+    const environment = { DOCKER_CONTEXT: context }
+    const retrievalEnvironment = await readOwned(
+      join(directory, 'retrieval-environment.json')
+    )
+    const prepared = await observeProviderLaunchers(
+      config,
+      runProvider,
+      environment,
+      retrievalEnvironment
+    )
+    if (prepared.some((row) => !row.prepared)) throw new Error()
+    for (const name of ['scraping', 'docProcessing']) {
+      await runProvider(commands.providers[name].lifecycle.start, environment)
+    }
     await runDocker([
       '--context',
       context,
@@ -1077,7 +1238,7 @@ async function launchInfrastructure(
         'ensure',
         checkout,
         '--profile',
-        'manage,chat',
+        'ai,chat,manage',
         '--json',
       ])
     )
@@ -1085,10 +1246,21 @@ async function launchInfrastructure(
       managed.kind !== 'linked' ||
       managed.repoPath !== checkout ||
       managed.workspace !== workspace ||
-      managed.profile !== 'manage,chat'
+      managed.profile !== 'ai,chat,manage'
     ) {
       throw new Error('Managed startup identity differs from preparation.')
     }
+    await runProvider(commands.providers.ingestion.lifecycle.start, environment)
+    await runProvider(commands.providers.retrieval.lifecycle.start, {
+      ...retrievalEnvironment,
+      ...environment,
+    })
+    await observeProviderLaunchers(
+      config,
+      runProvider,
+      environment,
+      retrievalEnvironment
+    )
     await writeExclusive(join(attempt, 'complete.json'), {
       candidateRevision: runtime.candidateRevision,
       context,
@@ -1098,7 +1270,7 @@ async function launchInfrastructure(
     return {
       infrastructureStarted: true,
       aiQualified: false,
-      workersStarted: false,
+      providerWorkerActivationRequested: true,
     }
   } catch {
     throw new Error(
@@ -1108,6 +1280,9 @@ async function launchInfrastructure(
 }
 
 async function readApplicationSetup(directory, candidateRevision) {
+  const providers = await readOwned(
+    join(directory, 'provider-setup/complete.json')
+  )
   const application = await readOwned(
     join(directory, 'application-setup/complete.json')
   )
@@ -1119,7 +1294,10 @@ async function readApplicationSetup(directory, candidateRevision) {
     !/^[a-z0-9][a-z0-9-]*$/.test(application.workspace ?? '') ||
     !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(application.context ?? '') ||
     storage.initialized !== true ||
-    storage.context !== application.context
+    storage.context !== application.context ||
+    providers.initialized !== true ||
+    providers.candidateRevision !== candidateRevision ||
+    providers.context !== storage.context
   ) {
     throw new Error(
       'Application setup evidence does not match prepared storage.'
