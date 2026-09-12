@@ -48,7 +48,11 @@ export function selectGraphSearchSeeds(
   }
   const matches = nodes
     .flatMap((node) => {
-      if (node.displayLabel.length > 100) return []
+      if (
+        node.displayLabel.length > 100 ||
+        /^Concept \d+$/.test(node.displayLabel)
+      )
+        return []
       const label = queryTokens(node.displayLabel).join(' ')
       const match = phrases.get(label)
       return match ? [{ node, label, ...match }] : []
