@@ -42,7 +42,7 @@ can continue within an approved implementation package.
 | Artifact root | Existing `project/`; this file is the roadmap authority |
 | Boundary owner | Main session owning the approved package |
 | Current terminal condition | Reviewed, validated documentation; implementation not started |
-| PR | Not created yet |
+| PR | [Draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924), targeting `v3` |
 
 The primary checkout has unrelated changes and is 68 commits behind the recorded
 remote baseline. Primary Git metadata writes were denied by the sandbox when
@@ -534,7 +534,8 @@ its dependent action. Read back effective settings and retain sanitized receipts
 - Completed: repository/GitHub investigation, official-documentation research,
   prior proposal challenge, detailed work-item and acceptance decomposition,
   planner approval, and documentation validation.
-- Active item: documentation delivery; W0–W10 are not started.
+- Documentation delivery: [draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924).
+  Roadmap preparation is complete; W0–W10 are not started.
 - Investigation baseline: `b824ae26126bd33b44112dc27aad0ce42dbe1c4b`.
   Reconciled source baseline: `8c6a4c74f3bba3b73a5b5c3a185f6a1f0d3e89f5`;
   isolated-checkout fetch succeeded and source fast-forwarded for the reconciled
