@@ -33,6 +33,7 @@ import {
   getModelsForChatbot,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
+import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -1989,7 +1990,7 @@ export async function POST(
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
         prepareStep: docQueryToolName
-          ? ({ stepNumber }) =>
+          ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
               stepNumber === 0
                 ? {
                     toolChoice: {
@@ -1997,7 +1998,12 @@ export async function POST(
                       toolName: docQueryToolName,
                     },
                   }
-                : {}
+                : {
+                    messages: [
+                      ...initialMessages,
+                      ...withModelCitationIndices(responseMessages, steps),
+                    ],
+                  }
           : undefined,
         stopWhen: isStepCount(5),
         instructions: effectiveSystemPrompt,
