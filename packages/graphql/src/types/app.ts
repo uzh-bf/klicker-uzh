@@ -3,7 +3,6 @@ import type {
   ActivityLogModificationDetails,
   AssessmentReportSnapshot,
   AvatarSettings,
-  ChatbotStandardModeConfig,
   ElementData,
   ElementInstanceOptions,
   ElementInstanceResults,
@@ -12,6 +11,7 @@ import type {
   GroupActivityResults,
   SingleQuestionResponse,
   SingleQuestionResponseLiveQuiz,
+  StoredChatbotStandardModeConfig,
 } from '@klicker-uzh/types'
 
 export type PrismaMigrationClient = Omit<
@@ -44,7 +44,7 @@ declare global {
     type PrismaGroupActivityResults = GroupActivityResults
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
     type PrismaAssessmentReportSnapshot = AssessmentReportSnapshot
-    type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
+    type PrismaChatbotStandardModeConfig = StoredChatbotStandardModeConfig
   }
 }
 // #endregion

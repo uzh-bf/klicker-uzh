@@ -335,6 +335,63 @@ describe('account usage chat route', () => {
     )
   })
 
+  test.each([
+    'tutor',
+    'explainer',
+    'quizzer',
+    'writing-coach',
+  ])('sends full current lecturer context to the %s model on each request', async (mode) => {
+    const contexts = ['x'.repeat(1000), 'y'.repeat(1000)]
+    for (const [index, scopeNote] of contexts.entries()) {
+      mocks.chatbotFindUnique.mockResolvedValueOnce(
+        chatbot({
+          standardModeConfig: {
+            tutorEnabled: true,
+            explainerEnabled: true,
+            quizzerEnabled: true,
+            writingCoachEnabled: true,
+            scopeNote,
+          },
+          mcpConfigurations:
+            mode === 'quizzer'
+              ? [
+                  {
+                    chatMode: 'quizzer',
+                    isEnabled: true,
+                    allowedTools: ['doc_query'],
+                    parameters: null,
+                    mcpServer: { id: 'synthetic-server' },
+                  },
+                ]
+              : [],
+        })
+      )
+      mocks.getAggregatedMCPTools.mockResolvedValueOnce(
+        mode === 'quizzer' ? { Course_doc_query: {} } : {}
+      )
+      const response = await POST(
+        createRequest({
+          selectedMode: mode,
+          assistantMessageId: `assistant-context-${index}`,
+        }),
+        {
+          params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+        }
+      )
+      expect(response.status).toBe(200)
+      expect(mocks.streamText).toHaveBeenCalledTimes(index + 1)
+      expect(mocks.streamConfig?.instructions).toContain(
+        JSON.stringify(scopeNote)
+      )
+      if (index > 0) {
+        expect(mocks.streamConfig?.instructions).not.toContain(
+          JSON.stringify(contexts[0])
+        )
+      }
+    }
+    expect(mocks.chatbotFindUnique).toHaveBeenCalledTimes(2)
+  })
+
   test('enables metadata-only Langfuse tracing and closes an aborted turn once', async () => {
     mocks.isAiTelemetryEnabled.mockReturnValue(true)
 

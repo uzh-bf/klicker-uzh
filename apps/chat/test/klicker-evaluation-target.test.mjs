@@ -511,3 +511,109 @@ test('adapter requires bearer auth and exposes only the configured model', async
     )
   }
 })
+
+test('writing feedback follow-ups preserve history and distinguish requested from selected model', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    modelId: 'auto',
+    requestTimeoutMs: 1000,
+  })
+  target.cookie = 'participant_token=synthetic'
+  const originalFetch = globalThis.fetch
+  const turns = []
+  let createdThreads = 0
+  let persistedModelId = 'gpt-5.6-luna'
+  globalThis.fetch = async (url, options = {}) => {
+    const requestUrl = String(url)
+    if (requestUrl.endsWith('/threads')) {
+      createdThreads += 1
+      return Response.json({ id: 'synthetic-thread' })
+    }
+    if (requestUrl.endsWith('/chat')) {
+      turns.push(JSON.parse(options.body))
+      return new Response(
+        'data: {"type":"start"}\n\n' +
+          'data: {"type":"finish"}\n\n' +
+          'data: [DONE]\n\n',
+        { headers: { 'Content-Type': 'text/event-stream' } }
+      )
+    }
+    if (requestUrl.endsWith('/messages')) {
+      const turn = turns.at(-1)
+      return Response.json([
+        {
+          id: turn.assistantMessageId,
+          role: 'assistant',
+          chatMode: turn.selectedMode,
+          modelId: persistedModelId,
+          content: [{ type: 'text', text: 'Synthetic feedback.' }],
+        },
+      ])
+    }
+    throw new Error('Unexpected synthetic request')
+  }
+
+  try {
+    const first = await target.runTurn({
+      question: 'Synthetic draft.',
+      mode: 'writing-coach',
+      expectedSelectedModelId: 'gpt-5.6-luna',
+    })
+    const second = await target.runTurn({
+      question: 'Synthetic learner revision.',
+      mode: 'writing-coach',
+      threadId: first.threadId,
+      history: first.history,
+      parentId: first.assistantMessageId,
+      expectedSelectedModelId: 'gpt-5.6-luna',
+    })
+    assert.equal(createdThreads, 1)
+    assert.equal(second.threadId, first.threadId)
+    assert.equal(second.requestedModelId, 'auto')
+    assert.equal(second.selectedModelId, 'gpt-5.6-luna')
+    assert.equal(turns[0].selectedMode, 'writing-coach')
+    assert.equal(turns[0].selectedModel, 'auto')
+    assert.equal(turns[0].parentId, null)
+    assert.equal(turns[0].messages.at(-1).content, 'Synthetic draft.')
+    assert.equal(turns[1].selectedModel, 'auto')
+    assert.equal(turns[1].parentId, first.assistantMessageId)
+    assert.deepEqual(turns[1].messages.slice(0, -1), first.history)
+    assert.equal(turns[1].messages.at(-1).id, second.userMessageId)
+    assert.equal(second.history.at(-1).id, second.assistantMessageId)
+
+    await assert.rejects(
+      target.readCompletedMessage(
+        second.threadId,
+        second.assistantMessageId,
+        'writing-coach'
+      ),
+      { code: 'chat_model_mismatch' }
+    )
+    persistedModelId = 'unexpected-model'
+    await assert.rejects(
+      target.readCompletedMessage(
+        second.threadId,
+        second.assistantMessageId,
+        'writing-coach',
+        'gpt-5.6-luna'
+      ),
+      { code: 'chat_model_mismatch' }
+    )
+    persistedModelId = undefined
+    await assert.rejects(
+      target.readCompletedMessage(
+        second.threadId,
+        second.assistantMessageId,
+        'writing-coach',
+        'gpt-5.6-luna'
+      ),
+      { code: 'chat_model_mismatch' }
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})

@@ -14,6 +14,9 @@ export default {
       explainer: 'Erklärer',
       explainerDescription:
         'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
+      'writing-coach': 'Schreibcoach',
+      'writing-coachDescription':
+        'Erhalte konkretes Feedback und Tipps zu deinem Text und überarbeite ihn anschliessend selbst.',
       quizzer: 'Quiz',
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
@@ -183,6 +186,13 @@ export default {
       welcomeMode: 'Ausgewählter Modus: {mode}',
     },
     suggestions: {
+      reviewWriting: 'Feedback zum Text',
+      reviewWritingPrompt:
+        'Gib mir Feedback zum folgenden Textausschnitt aus meiner Kursarbeit. Erkläre die wichtigsten Verbesserungen und wie ich sie selbst umsetzen kann.\n\n[Textausschnitt hier einfügen]',
+      reviewRevision: 'Überarbeitung prüfen',
+      reviewRevisionPrompt:
+        'Ich habe meinen Textausschnitt aus der Kursarbeit überarbeitet. Gib mir Feedback dazu, was sich verbessert hat und worauf ich als Nächstes achten sollte.\n\n[Überarbeitung hier einfügen]',
+
       sectionLabel: 'Gesprächseinstiege',
       editHint: 'Wähle einen Einstieg und passe ihn vor dem Senden an.',
       practiceTopic: 'Ein Thema üben',
@@ -3941,7 +3951,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Wählen Sie die verfügbaren Standardmodi für Teilnehmende',
       chatbotSetupModesTitle: 'Lernmodi',
       chatbotSetupModesDescriptionLong:
-        'Wählen Sie die Standardmodi, die Teilnehmenden zur Verfügung stehen sollen. Tutor und Erklärer sind ohne Abruf von Kursmaterialien verfügbar; der Quizzer wird nur angezeigt, wenn seine erforderliche Fähigkeit verfügbar ist.',
+        'Wählen Sie die Standardmodi für Teilnehmende. Der Schreibcoach gibt Feedback zu Texten. Kurswerkzeug-Vorgaben gelten weiterhin für jeden Modus; der Quizzer benötigt zusätzlich Zugriff auf Kursmaterialien.',
+      chatbotModeWritingCoach: 'Schreibcoach',
+      chatbotModeWritingCoachDescription:
+        'Gibt konkretes Schreibfeedback und Strategien zur Überarbeitung. Die Teilnehmenden schreiben jede Überarbeitung selbst.',
+      chatbotWritingCoachRequiredTool:
+        'Der Schreibcoach ist für Teilnehmende derzeit nicht verfügbar, weil diesem Modus eine für den Chatbot erforderliche Kurswerkzeug-Verknüpfung fehlt. Kontaktieren Sie die Chatbot-Administration, um eine passende Verknüpfung einzurichten.',
       chatbotModeTutor: 'Tutor',
       chatbotModeTutorDescription:
         'Führt Teilnehmende mit Fragen, Hinweisen und formativen Rückmeldungen.',
@@ -3951,18 +3966,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotModeQuizzer: 'Quizzer',
       chatbotModeQuizzerDescription:
         'Übt nacheinander klausurähnliche Fragen aus dem Kurs mit formativen Rückmeldungen.',
-      chatbotModeInvariant: 'Tutor oder Erklärer muss aktiviert bleiben.',
+      chatbotModeInvariant:
+        'Tutor, Erklärer oder Schreibcoach muss aktiviert bleiben.',
       chatbotModeQuizzerCapabilityNote:
         'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
       chatbotFraming: 'Rahmung des Chatbots',
       chatbotFramingDescription:
-        'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',
+        'Beschreiben Sie den Kurs, die Zielgruppe, Vorkenntnisse, typische Aufgaben und Lernschwerpunkte. Der gespeicherte Kontext steuert die nächste Antwort in den Standard-Lernmodi einschliesslich des Schreibcoachs.',
+      chatbotFramingExamples: 'Kontextbeispiele',
+      chatbotFramingScientific: 'Wissenschaftliches Schreiben',
+      chatbotFramingScientificExample:
+        'Dieser Chatbot unterstützt einen Biologie-Laborkurs auf Bachelorstufe. Die Studierenden schreiben kurze Versuchsberichte und interpretieren Abbildungen. Sie kennen die Grundlagen der Genetik und lernen wissenschaftliches Argumentieren. Achten Sie auf die Verbindung von Aussagen und Ergebnissen, die Trennung von Beobachtung und Interpretation sowie den Umgang mit Unsicherheit. Erklären Sie unbekannte Begriffe kurz. Geben Sie direktes, ermutigendes Feedback. Bewahren Sie den individuellen Schreibstil und beurteilen Sie nur den vorgelegten Ausschnitt.',
+      chatbotFramingInformal: 'Weniger formelles Schreiben',
+      chatbotFramingInformalExample:
+        'Dieser Chatbot unterstützt einen projektbasierten Kommunikationskurs. Die Studierenden schreiben kurze Updates und Reflexionen für Mitstudierende und Projektpartner. Achten Sie auf einen klaren Zweck, konkrete Beispiele, einen logischen Aufbau und gegebenenfalls einen erkennbaren nächsten Schritt. Ein natürlicher Gesprächston passt zu diesen Aufgaben; wissenschaftliche Fachsprache und Quellenangaben sind meist nicht nötig. Geben Sie praktische, ermutigende Rückmeldungen.',
       chatbotFramingPlaceholder:
         'Zum Beispiel: Organische Chemie im ersten Jahr für Medizinstudierende.',
       chatbotFramingTooLong:
-        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens 200 Zeichen enthalten.',
+        'Die Rahmung des Chatbots darf beim Bearbeiten höchstens {count} Zeichen enthalten.',
       chatbotModesSave: 'Lernmodi speichern',
       chatbotModesSaving: 'Wird gespeichert…',
       chatbotModesSaveSuccess: 'Lernmodi gespeichert.',

@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest'
 import {
   formatModeLabel,
   getComposerSubmitMode,
+  getModeDescription,
+  getModeIcon,
   hasAvailableChatMode,
   isKnownMode,
 } from '../src/lib/config/modes'
@@ -41,4 +43,16 @@ describe('formatModeLabel', () => {
     expect(getComposerSubmitMode(false)).toBe('none')
     expect(getComposerSubmitMode(true)).toBe('enter')
   })
+})
+
+test('uses localized standard-mode presentation for Writing Coach', () => {
+  const syntheticT = ((key: string) =>
+    `localized:${key}`) as unknown as Parameters<typeof formatModeLabel>[0]
+  const mode = 'writing-coach'
+  expect(isKnownMode(mode)).toBe(true)
+  expect(formatModeLabel(syntheticT, mode)).toBe(`localized:chat.modes.${mode}`)
+  expect(getModeDescription(syntheticT, mode, {})).toBe(
+    `localized:chat.modes.${mode}Description`
+  )
+  expect(getModeIcon(mode)).not.toBe(getModeIcon('synthetic-custom'))
 })

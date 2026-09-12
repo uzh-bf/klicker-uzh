@@ -92,7 +92,8 @@ function standardModeContextSection(
   if (
     selectedMode !== 'tutor' &&
     selectedMode !== 'explainer' &&
-    selectedMode !== 'quizzer'
+    selectedMode !== 'quizzer' &&
+    selectedMode !== 'writing-coach'
   ) {
     return null
   }
