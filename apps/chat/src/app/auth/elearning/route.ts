@@ -64,14 +64,19 @@ function launchResponse(destination: URL) {
   )
 }
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl
-
-  const queryResult = querySchema.safeParse({
+export function parseElearningAuthQuery(searchParams: URLSearchParams) {
+  return querySchema.safeParse({
     grant: searchParams.get('grant'),
     courseId: searchParams.get('courseId'),
     chatbotId: searchParams.get('chatbotId'),
+    threadId: searchParams.get('threadId') ?? undefined,
   })
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = req.nextUrl
+
+  const queryResult = parseElearningAuthQuery(searchParams)
 
   if (!queryResult.success) {
     console.error(
