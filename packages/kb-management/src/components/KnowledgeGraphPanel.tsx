@@ -249,8 +249,9 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
     KbGraphQualityTier.Standard
   )
-  const [userDomainSelection, setUserDomainSelection] =
-    useState<KnowledgeGraphDomainSelection | null>(null)
+  const [userDomainSelection, setUserDomainSelection] = useState<
+    (KnowledgeGraphDomainSelection & { kbId: string }) | null
+  >(null)
   const [operationError, setOperationError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(
@@ -323,11 +324,14 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
           version: config.domainPolicyVersion ?? null,
         }
       : null
-  const domainSelection: KnowledgeGraphDomainSelection = userDomainSelection ??
-    persistedDomainSelection ?? {
-      id: DEFAULT_DOMAIN_POLICY_ID,
-      version: DEFAULT_DOMAIN_POLICY_VERSION,
-    }
+  const currentUserDomainSelection =
+    userDomainSelection?.kbId === kbId ? userDomainSelection : null
+  const domainSelection: KnowledgeGraphDomainSelection =
+    currentUserDomainSelection ??
+      persistedDomainSelection ?? {
+        id: DEFAULT_DOMAIN_POLICY_ID,
+        version: DEFAULT_DOMAIN_POLICY_VERSION,
+      }
   const domainSelectedOption = domainOptions.find(
     (option) =>
       option.id === domainSelection.id &&
@@ -345,7 +349,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   // borrow another option's categories, so only the untouched persisted
   // selection falls back to the categories the build itself recorded.
   const showingPersistedDomain =
-    userDomainSelection == null && persistedDomainSelection != null
+    currentUserDomainSelection == null && persistedDomainSelection != null
   const domainCategoryNames =
     domainSelectedOption?.languages
       .find((language) => language.language === DOMAIN_GENERATION_LANGUAGE)
@@ -405,7 +409,12 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   }
   const domainItems = domainOptions.map((option) => ({
     value: domainOptionValue(option),
-    label: domainOptionLabel(option),
+    label: domainOptions.some(
+      (candidate) =>
+        candidate.id === option.id && candidate.version !== option.version
+    )
+      ? `${domainOptionLabel(option)} (v${option.version})`
+      : domainOptionLabel(option),
   }))
   const domainSelectValue = domainSelectedOption
     ? domainOptionValue(domainSelectedOption)
@@ -451,6 +460,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const effectivePublishedDomain = effectiveDomain(publishedDomain)
   const effectiveReportedDomain = effectiveDomain(reportedDomain)
   const showPublishedDomain =
+    hasPublishedGraph &&
     publishedDomain.id != null &&
     (effectivePublishedDomain.id !== effectiveReportedDomain.id ||
       effectivePublishedDomain.version !== effectiveReportedDomain.version ||
@@ -681,6 +691,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                       )
                       if (!option) return
                       setUserDomainSelection({
+                        kbId,
                         id: option.id,
                         version: option.version,
                       })

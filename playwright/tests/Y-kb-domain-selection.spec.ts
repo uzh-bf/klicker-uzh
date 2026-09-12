@@ -398,6 +398,7 @@ test.describe('Knowledge base domain selection', () => {
 
       // A separately published domain is reported without relabelling the attempt.
       state.config = {
+        publishedBuildId: 'synthetic-published-build',
         domainPolicyId: 'business',
         domainPolicyVersion: 1,
         domainPolicyLanguage: 'German',
@@ -414,6 +415,7 @@ test.describe('Knowledge base domain selection', () => {
 
       state.config = {
         domainPolicyId: 'finance',
+        publishedBuildId: 'synthetic-published-build',
         domainPolicyVersion: 1,
         domainPolicyLanguage: 'German',
         publishedDomainPolicyId: 'finance',
@@ -477,6 +479,28 @@ test.describe('Knowledge base domain selection', () => {
       )
       await expect(domainSelect).toContainText(EN_DOMAIN_LABELS.business)
       await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
+
+      // Retained versions remain distinguishable and do not upgrade selection.
+      state.options = [
+        ...domainCatalog(DOMAIN_IDS),
+        syntheticDomainOption('business', 2),
+      ]
+      await page.reload()
+      await expect(domainSelect).toContainText('(v1)')
+      await domainSelect.click()
+      await expect(
+        page.getByRole('option', {
+          name: `${EN_DOMAIN_LABELS.business} (v1)`,
+          exact: true,
+        })
+      ).toBeVisible()
+      await expect(
+        page.getByRole('option', {
+          name: `${EN_DOMAIN_LABELS.business} (v2)`,
+          exact: true,
+        })
+      ).toBeVisible()
+      await page.keyboard.press('Escape')
 
       // The retained pair disappears from the catalog after a refresh.
       state.options = domainCatalog(
