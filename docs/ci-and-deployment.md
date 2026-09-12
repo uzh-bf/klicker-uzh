@@ -72,6 +72,17 @@ neither Node nor pnpm.
 - **Legacy generated staging promotion**: Phase 1 supersedes the annotation-write-back mechanism and removes its `Verified generated staging promotion` no-report exemption. The successor creates no pull request, and a legacy-named promotion pull request follows ordinary final-review policy. Its privileged `workflow_run` executes only trusted default-branch control code; candidate Git objects and API metadata are inputs, never executable policy.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OpenCodeReview 1.11.0 is also qualified before publication against a fake OpenAI-compatible endpoint with a synthetic one-file diff; that probe checks the released binary's model, high reasoning, tool request, 16,384-token completion cap, automatic provider routing, and one-round effort wiring. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
+The individual and stack final-review jobs disable OCR's background updater
+with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.11.0
+otherwise starts a background global npm update even for `ocr version`, so a
+pinned installation alone does not keep the executable immutable. Each review
+attempt verifies the pinned version before running. Process failures retain
+their exit code and write only a fixed stage, exit status and numeric output
+sizes to the job summary: stdout for that attempt and explicitly labelled
+`stderr_total_bytes` accumulated across the step's attempts. Raw version failures, stdout, stderr and provider
+configuration remain suppressed. An execution error is not a clean review;
+cleanup and final-status failure handling still run.
+
 ## Obsolete validation cleanup
 
 From the repository root, inspect candidates with the host GitHub CLI:
@@ -100,6 +111,79 @@ stops further work. This utility is manual; no recurring cleanup is installed.
 Unrelated issue comments are filtered before Final AI review allocates its
 trusted-policy runner. PR lifecycle status handling and exact review commands
 retain their existing authorization and serialized status locks.
+
+## Public ARM64 runner operations
+
+Run the policy reconciler from a trusted administrator checkout. Both modes
+accept `GH_TOKEN` or a hidden prompt for a short-lived fine-grained token;
+`--check` needs organization
+Self-hosted runners read access and `--apply` needs write access, plus repository
+Metadata read access. Revoke the token after the verified readback.
+
+```bash
+util/reconcile-public-pr-arm64-runner-group.sh --check
+util/reconcile-public-pr-arm64-runner-group.sh --apply
+```
+
+The exact target is selected access to `uzh-bf/klicker-uzh`, workflow
+restrictions enabled, and only
+`uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`.
+The script fails on inherited or read-only policy, extra repositories or
+workflows, and runner membership other than `public-pr-arm64-01` through `-08`.
+
+Check both existing hosts from the administrator machine before applying the
+optional optimization. Verify and register both SSH host keys before running
+the controller; unknown or changed keys are rejected. Pause new workflow
+dispatch to the pool and let active jobs finish before applying changes.
+`--check` streams the checksum-verified payload and
+makes no persistent remote change. `--apply` is rerunnable, requires both hosts
+to be idle, and asks once before changing either host.
+
+```bash
+util/reconcile-public-pr-arm64-pool.sh \
+  --check \
+  --host-a "$VM_A_IP" \
+  --host-b "$VM_B_IP"
+
+util/reconcile-public-pr-arm64-pool.sh \
+  --apply \
+  --host-a "$VM_A_IP" \
+  --host-b "$VM_B_IP"
+```
+
+After applying, inspect a bounded UTC interval on each host and correlate
+`run_id` and `runner` with the GitHub job summary and step timestamps:
+Set `RECONCILE_START_UTC` and `RECONCILE_END_UTC` to the actual apply interval.
+
+```bash
+sudo journalctl \
+  -t actions-runner-telemetry \
+  --since "${RECONCILE_START_UTC:?set the apply start time in UTC}" \
+  --until "${RECONCILE_END_UTC:?set the apply end time in UTC}" \
+  -o cat
+```
+
+Record one row per job with run ID, runner, GitHub start/completion, install and
+build seconds, exact cache-hit flags, shard setup and test seconds, host load,
+available memory, Docker-disk pressure, conclusion, and artifact. This separates
+cache misses, host contention, service setup, test structure, and scheduling;
+do not infer one cause from total duration alone.
+
+### In-job resource samples
+
+Build and shard telemetry artifacts also contain `playwright-resources-*.jsonl`.
+The command wrapper samples every ten seconds for up to one hour (361 rows).
+Prisma and application builds have separate files; shard samples span service
+readiness and tests. Sampling failures do not change the wrapped command result.
+Artifacts retain the existing seven-day lifetime. No VM update is required.
+
+Samples contain only numeric procfs observations and timestamps. CPU tick order
+is user, nice, system, idle, iowait, irq, softirq, steal; guest ticks are already
+included in user/nice. Compute interval shares from successive counter deltas,
+not cumulative totals. Pressure totals are microseconds; divide their deltas by
+elapsed microseconds. Missing metrics are null, not zero. Counters describe the
+system visible from the container, not exclusive usage by its job. They do not
+measure per-process activity or establish a causal performance diagnosis alone.
 
 ## Image builds
 

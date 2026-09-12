@@ -1088,8 +1088,11 @@ test.describe('Chatbot Message Actions & Branching', () => {
       state.__assistantMessageBeforeFeedback = node
     })
 
+    const feedbackUrl = `**/messages/${assistantMessageId}/feedback`
+    const upResponse = page.waitForResponse(feedbackUrl)
     await up.click()
     await expect(up).toHaveAttribute('aria-pressed', 'true')
+    expect((await upResponse).status()).toBe(200)
     await expect.poll(() => getMessageRating(assistantMessageId)).toBe('UP')
     await expect
       .poll(() =>
@@ -1106,14 +1109,18 @@ test.describe('Chatbot Message Actions & Branching', () => {
       .toBe(true)
 
     // Changing one's mind replaces the vote rather than stacking a second one.
+    const downResponse = page.waitForResponse(feedbackUrl)
     await down.click()
     await expect(down).toHaveAttribute('aria-pressed', 'true')
     await expect(up).toHaveAttribute('aria-pressed', 'false')
+    expect((await downResponse).status()).toBe(200)
     await expect.poll(() => getMessageRating(assistantMessageId)).toBe('DOWN')
 
     // Clicking the active vote retracts it.
+    const clearResponse = page.waitForResponse(feedbackUrl)
     await down.click()
     await expect(down).toHaveAttribute('aria-pressed', 'false')
+    expect((await clearResponse).status()).toBe(200)
     await expect.poll(() => getMessageRating(assistantMessageId)).toBeNull()
   })
 
@@ -2385,6 +2392,63 @@ test.describe('Chatbot Source Citations', () => {
     }
   })
 
+  test('One document with twenty chunks keeps invalid citation numbers literal after reload', async ({
+    page,
+  }) => {
+    const origin = 'https://example.test/citation-group.pdf'
+    await seedThread(participantId, {
+      title: 'Citation group compatibility',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Explain the material' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'group-call',
+              sources: [
+                {
+                  reference: origin,
+                  source_type: 'document',
+                  reference_type: 'pdf',
+                  title: 'Synthetic material',
+                  chunks: Array.from({ length: 20 }, (_, index) => ({
+                    content: `Passage ${index}`,
+                    page_number: index + 1,
+                  })),
+                },
+              ],
+            }),
+            { type: 'text', text: 'Supported [1]. Invalid [6] and [7].' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+    for (const reload of [false, true]) {
+      if (reload) await page.reload()
+      const citations = page.getByTestId('chat-citation')
+      await expect(citations).toHaveCount(1)
+      await expect(citations).toHaveText('1')
+      const target = await citations.getAttribute('href')
+      expect(target).toMatch(/^#src-.+-1$/)
+      await citations.click()
+      await expect(page.locator(target!)).toBeVisible()
+      const answer = page.getByTestId('chat-assistant-message-content')
+      await expect(answer).toContainText('[6]')
+      await expect(answer).toContainText('[7]')
+      await expect(answer.locator('a').filter({ hasText: '[6]' })).toHaveCount(
+        0
+      )
+      await expect(answer.locator('a').filter({ hasText: '[7]' })).toHaveCount(
+        0
+      )
+    }
+  })
+
   test('Documents-mode groups keep message-wide citations and reveal capped results after reload', async ({
     page,
   }) => {
@@ -3413,6 +3477,39 @@ test.describe('Chatbot Source Citations', () => {
     const scrollTopBeforeText = await viewport.evaluate(
       (element) => element.scrollTop
     )
+    const scrollDiagnostics = await viewport.evaluateHandle((element) => {
+      const samples: object[] = []
+      const record = (event: string) => {
+        samples.push({
+          event,
+          time: performance.now(),
+          top: element.scrollTop,
+          height: element.scrollHeight,
+          clientHeight: element.clientHeight,
+          focusTag: document.activeElement?.tagName ?? null,
+        })
+        if (samples.length > 200) samples.shift()
+      }
+      const controller = new AbortController()
+      element.addEventListener('scroll', () => record('scroll'), {
+        signal: controller.signal,
+      })
+      document.addEventListener('focusin', () => record('focus'), {
+        signal: controller.signal,
+      })
+      const observer = new ResizeObserver(() => record('resize'))
+      observer.observe(element)
+      if (element.firstElementChild) observer.observe(element.firstElementChild)
+      record('initial')
+      return {
+        samples,
+        stop: () => {
+          record('final')
+          controller.abort()
+          observer.disconnect()
+        },
+      }
+    })
     const cancelButton = page.getByTestId('chat-cancel-button')
     await expect(cancelButton).toBeVisible()
     await expect(cancelButton).toHaveAccessibleName('Stop response')
@@ -3454,6 +3551,17 @@ test.describe('Chatbot Source Citations', () => {
         )
       )
       .toBeLessThanOrEqual(1)
+      .finally(async () => {
+        const samples = await scrollDiagnostics.evaluate((state) => {
+          state.stop()
+          return state.samples
+        })
+        await test.info().attach('stream-scroll-diagnostics', {
+          body: JSON.stringify(samples),
+          contentType: 'application/json',
+        })
+        await scrollDiagnostics.dispose()
+      })
 
     await page.evaluate(() => {
       const state = window as typeof window & {
