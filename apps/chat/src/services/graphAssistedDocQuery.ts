@@ -88,16 +88,14 @@ export function combineGraphSearchDocuments(
     { passage: Passage; score: number; ranks: number[] }
   >()
   for (const [search, candidates] of [first, second].entries()) {
-    const contributed = new Set<string>()
     candidates.forEach((passage, index) => {
       const key = canonical(passage)
-      if (contributed.has(key)) return
-      contributed.add(key)
       const candidate = ranked.get(key) ?? {
         passage,
         score: 0,
         ranks: [Infinity, Infinity],
       }
+      if (candidate.ranks[search] !== Infinity) return
       candidate.score += 1 / (60 + index + 1)
       candidate.ranks[search] = index
       ranked.set(key, candidate)
