@@ -140,7 +140,7 @@ This section supersedes earlier execution checkpoints. Historical experiments an
 
 ### Delivered
 
-[Draft PR 5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) targets `v3`. The verified source head is `4443df2b6462387386dbed888457d1dd8f511c7d`; head `53eab18af8d50507dd46cffcbb1dd0ed1fd27b10` adds only roadmap and documentation changes, so the verified source tree is unchanged. The task branch matches its remote. At the 12 September refetch, `origin/v3` has ten commits outside this branch and the pull request reports `BEHIND`; drift alone does not authorize or require another integration.
+[Draft PR 5867](https://github.com/uzh-bf/klicker-uzh/pull/5867) targets `v3`. The verified source head is `4443df2b6462387386dbed888457d1dd8f511c7d`; every later commit changes roadmap documentation only, so the verified source tree is unchanged. The task branch matches its remote. At the 12 September refetch, `origin/v3` has ten commits outside this branch and the pull request reports `BEHIND`; drift alone does not authorize or require another integration.
 
 - Lecturer context: shared 1,000-character limit, scientific/informal examples, save/reload protection, and request-time prompt composition, including existing conversations.
 - Writing Coach: opt-in standard mode, standalone configuration, five adaptable criteria, passage-specific feedback, scientific/informal guidance, and optional Markdown Notes. No new tools or rubric editor.
@@ -156,13 +156,13 @@ Fresh browser acceptance after integration is closed for the states this branch 
 
 The one remaining failure is retained-database drift, not source behavior: the retained `klicker_test` database holds a `Testkurs` row whose `pinCode` collides with the fixed `COURSE_ID_TEST` course that the three untouched publication-flow tests seed, so they abort inside `seedDatabase()`. Restoring the baseline rows needs a cleanup-and-seed or a database reset; both destroy retained local evaluation data and remain separately authorized. Eleven refreshed captures at `53eab18af8` were verified structurally through fitted-capture and DOM-text assertions, because no agent in this environment can read images; pixel-level inspection of the published images stays an explicit limitation, and the local HTML gallery remains available for human inspection.
 
-The independent Claude review and accepted corrections are recorded. The provider HTTP 402 condition that emptied OpenCodeReview has cleared: `ocr-review` passes at `53eab18af8` and published findings, and `final-ai-review` is requested at that head under the repository's standing approval in `docs/ci-and-deployment.md`. Remaining CI is green except for jobs that a draft skips by design.
+The independent Claude review and accepted corrections are recorded. OpenCodeReview is now blocked by the provider credential rather than by a missing capability: it published findings at `53eab18af8`, and at head `dbd82d2e2d` it fails in 27 seconds because the shared OpenRouter key answers HTTP 403 with `error_class: authentication` for all 25 review items. The manual `final-ai-review` workflow reads the same `OPENROUTER_API_KEY`, so it is blocked until that credential is repaired; it fails closed on its own preflight, and has deliberately not been triggered while the key is demonstrably rejecting authentication.
 
 Feedback-only behavior is model-instructed, not deterministically guaranteed. The synthetic results do not establish universal rewrite resistance or learning gains. Feedback can be verbose; Tutor/Explainer can repeat known definitions despite expert context. Notes are optional response text, not a persistent learning record.
 
 ### Forge review dispositions
 
-OpenCodeReview published 19 findings and Greptile 3. Each was checked against the current source; none is a correctness, authority or contract defect in shipped behavior.
+OpenCodeReview published 19 findings and Greptile 3 at `53eab18af8`. Each was checked against the current source; none is a correctness, authority or contract defect in shipped behavior.
 
 | Category | Count | Disposition | Rationale |
 | --- | --- | --- | --- |
@@ -177,11 +177,11 @@ OpenCodeReview published 19 findings and Greptile 3. Each was checked against th
 | Order | Outcome | Owner | Completion evidence / authority |
 | --- | --- | --- | --- |
 | 1 | Finish integrated browser acceptance | Implementation agent | Complete at head `53eab18af8`: the authoring spec passed its Writing Coach and previously failing lock tests, the chat mode-control spec passed, and refreshed captures are published in the pull request. The three untouched publication-flow tests need a separately authorized database reset. |
-| 2 | Settle review gates and delivery evidence | Implementation agent / repository reviewer | Provider HTTP 402 cleared and OpenCodeReview passes; published findings are dispositioned above. `final-ai-review` is requested at the current head, and its report must be read and dispositioned before merge readiness. Keep current and historical receipts distinct. |
+| 2 | Settle review gates and delivery evidence | Implementation agent / repository reviewer with secret access | Published findings are dispositioned above and the required `check` workflow passes. OpenCodeReview and the manual final review are blocked by an HTTP 403 authentication failure on the shared OpenRouter credential, which needs an owner who can repair the secret; the final review must then be requested, read and dispositioned. Keep current and historical receipts distinct. |
 | 3 | Review merge and staging readiness | Maintainer | Browser and review gates complete, required CI passing, and required human review recorded. Mark-ready, merge into `v3`, and staging deployment each require named approval; this roadmap authorizes none of them. |
 | 4 | Run a small lecturer/learner pilot | Maintainer, with pilot owner to be assigned | Proposed after staging acceptance: assess feedback usefulness, revision ownership, audience fit and length. Agree participants, data handling and acceptance before execution. No date or capacity commitment yet. |
 
-The immediate next action is reading the `final-ai-review` report at the current head and dispositioning any finding, then presenting merge and staging readiness to the maintainer. Do not describe the feature as released until those dependent gates are complete.
+The immediate next action is repairing the OpenRouter credential shared by the OpenCodeReview and final-review workflows, then requesting `final-ai-review` at this head and dispositioning its report before merge readiness. Do not describe the feature as released until those dependent gates are complete.
 
 ### Deferred product decisions
 
