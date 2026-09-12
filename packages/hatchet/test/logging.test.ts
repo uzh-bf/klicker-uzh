@@ -131,6 +131,56 @@ describe('withHatchetTaskLogging', () => {
     }
     expect(JSON.stringify(putLog.mock.calls)).not.toContain('private detail')
   })
+  it('surfaces error-path fields top-level through the real SDK logger path', async () => {
+    const { logger, records } = testLogger()
+    const putLog = vi.fn(async () => undefined)
+    // Exercise the SDK logger and log method, replacing only its network sink.
+    const context = Object.assign(Object.create(Context.prototype), {
+      action: {
+        stepRunId: 'task-run-1',
+        workflowRunId: 'workflow-run-1',
+        retryCount: 0,
+      },
+      v1: {
+        config: {
+          logger: createHatchetLoggerFactory(logger),
+          log_level: 'INFO',
+        },
+        event: { putLog },
+      },
+    })
+    const wrapped = withHatchetTaskLogging({
+      taskName: 'error-path-contract',
+      handler: async (_input, ctx) => {
+        // Mirrors the response-processor taskError helper call shape.
+        await ctx.logger.error('Response processing failed', {
+          extra: {
+            event: 'response.processing.failed',
+            reason: 'invalid_payload',
+          },
+        })
+        throw new Error('task failure')
+      },
+    })
+    await expect(wrapped({}, context)).rejects.toThrow('task failure')
+
+    const failureRecord = records.find(
+      (record) => record.event === 'response.processing.failed'
+    )
+    // SDK 1.9.4 unpacks the { extra } bag into contextExtra, so semantic
+    // fields arrive top-level in the pino record. If this assertion fails
+    // after an SDK upgrade, the context.js logger getter contract changed.
+    expect(failureRecord).toMatchObject({
+      level: 'error',
+      msg: 'Response processing failed',
+      reason: 'invalid_payload',
+    })
+    expect(failureRecord).not.toHaveProperty('extra')
+    expect(
+      records.some((record) => record.event === 'hatchet.task.failed')
+    ).toBe(true)
+  })
+
   it.each([
     null,
     undefined,

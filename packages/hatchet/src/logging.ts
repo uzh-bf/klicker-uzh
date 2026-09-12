@@ -36,6 +36,13 @@ function logExtra(fields: LogExtra): LogExtra {
   return { extra: fields }
 }
 
+/**
+ * Shape the fields into the second argument Hatchet 1.9.4's context logger
+ * getter expects for warn/error: an `{ error?, extra? }` bag whose `extra`
+ * the SDK merges top-level into the log record (see context.js log()). The
+ * nesting is an SDK contract, not a record-shape decision — the pino bridge
+ * receives these fields expanded, never nested under `extra`.
+ */
 function mergeContextExtra(
   extra: unknown,
   fields: Record<string, string>
