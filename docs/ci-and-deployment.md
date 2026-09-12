@@ -251,8 +251,10 @@ ref update:
 - The candidate has the exact trusted staging workflow names, paths, push
   triggers, active ARM jobs, runtime image repositories, and backend migrator
   ordering. Intentionally disabled AMD jobs are excluded.
-- Every required workflow and job has a successful push run for the exact
-  candidate SHA. Only missing or still-running evidence is retried, for a
+- The code check, secret scan, GraphQL, Playwright, unit, OLAT, translation,
+  and image-build summary jobs all have successful push runs for the exact
+  candidate SHA, repository, and selected branch. The newest matching run and
+  its current attempt are required; duplicate terminal jobs fail validation. Only missing or still-running evidence is retried, for a
   bounded interval; skipped, failed, cancelled, or mismatched evidence fails
   immediately.
 - Every expected runtime repository exposes the full candidate SHA tag with a
@@ -262,7 +264,7 @@ ref update:
   inventory twice and fails if any digest is absent or changes during
   collection.
 
-The sorted evidence becomes a canonical JSON receipt with the controller run,
+The sorted evidence becomes a canonical JSON receipt with the controller run and source SHA,
 source and candidate revisions, workflow/run/job identities, registry tags and
 digests, retry history, ref decision, update result, post-push verification
 state, and previous/applied release revisions. Its SHA-256 checksum is written
@@ -282,9 +284,8 @@ newer candidate.
 
 Operational notes.
 
-- Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. It falls back to
-  `v3` in the trusted workflow expression when unset. The promoter requires
-  that resolved input and does not query repository variables itself. Promotion
+- Set `STG_SOURCE_BRANCH` to the active supported `v3*` source. There is no default; missing selection fails validation. The promoter requires
+  that explicit input and does not query repository variables itself. Promotion
   fails closed unless the branch has the exact trusted publisher inventory and
   full-SHA tags.
 - GitHub evaluates `workflow_run` from the default branch. A correction on a
@@ -293,7 +294,9 @@ Operational notes.
   automatic run executes only the default-branch revision.
 - Keep `STG_RELEASE_PROMOTION_ENABLED` absent or `false` during Phase 1. A
   manual dispatch defaults to dry-run; a write requires `dry_run=false` and the
-  exact input `confirm_ref_update=stg-release`. Initial ref creation,
+  exact input `confirm_ref_update=stg-release`, plus `expected_release_sha` and
+  `expected_controller_sha` copied from the reviewed dry-run receipt. A changed
+  release or controller rejects the apply. Initial ref creation,
   repository-variable changes, and activation remain separate operations.
 - Before activation, prove every full-SHA image and retain the receipt, create
   `stg-release` through the confirmed manual path, then update only the private
