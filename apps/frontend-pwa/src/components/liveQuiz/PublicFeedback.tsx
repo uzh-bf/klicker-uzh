@@ -152,10 +152,12 @@ function PublicFeedback({
         </div>
         <Button
           active={upvotes.upvote}
+          aria-pressed={!!upvotes.upvote}
+          aria-label={t('pwa.feedbacks.upvoteQuestion')}
           disabled={feedback.resolvedAt}
           onClick={() => onUpvote(upvotes.upvote)}
           className={{
-            root: 'h-10 w-10 transform transition hover:scale-105',
+            root: 'h-11 w-11 shrink-0',
             active: 'border-unset',
           }}
           data={{ cy: `feedback-upvote-${feedback.content}` }}
@@ -179,6 +181,8 @@ function PublicFeedback({
                 <div className="flex flex-1 flex-col">{response.content}</div>
                 <div>
                   <Button
+                    aria-label={t('pwa.feedbacks.helpfulResponse')}
+                    aria-pressed={upvotes[response.id] === 1}
                     onClick={async () =>
                       await onResponseUpvote({
                         previousValue: upvotes[response.id],
@@ -187,7 +191,7 @@ function PublicFeedback({
                     }
                     active={upvotes[response.id] === 1}
                     className={{
-                      root: 'mr-1 h-9 w-9 transform transition hover:scale-105',
+                      root: 'mr-1 h-11 w-11',
                       active: 'border-unset',
                     }}
                     data={{
@@ -201,6 +205,8 @@ function PublicFeedback({
                     />
                   </Button>
                   <Button
+                    aria-label={t('pwa.feedbacks.unhelpfulResponse')}
+                    aria-pressed={upvotes[response.id] === -1}
                     onClick={async () =>
                       await onResponseDownvote({
                         previousValue: upvotes[response.id],
@@ -209,7 +215,7 @@ function PublicFeedback({
                     }
                     active={upvotes[response.id] === -1}
                     className={{
-                      root: 'h-9 w-9 transform transition hover:scale-105',
+                      root: 'h-11 w-11',
                       active: 'border-unset',
                     }}
                     data={{ cy: 'feedback-response-downvote' }}

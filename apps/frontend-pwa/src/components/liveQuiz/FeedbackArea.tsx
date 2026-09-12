@@ -14,6 +14,7 @@ import {
   H2,
   H3,
   Slider,
+  UserNotification,
   toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
@@ -69,7 +70,10 @@ function FeedbackArea({
 
   const {
     loading: feedbacksLoading,
-    data: feedbacksData,
+    error: feedbacksError,
+    data,
+    previousData,
+    refetch: refetchFeedbacks,
     subscribeToMore,
   } = useQuery(GetFeedbacksDocument, {
     variables: {
@@ -77,6 +81,7 @@ function FeedbackArea({
     },
     skip: !router.query.id,
   })
+  const feedbacksData = data ?? previousData
 
   const onAddFeedback = async (input: string) => {
     if (!router.query.id) return
@@ -226,13 +231,44 @@ function FeedbackArea({
     [feedbacksData]
   )
 
-  if (feedbacksLoading || !feedbacksData?.feedbacks) {
+  const feedbacksErrorNotification = feedbacksError ? (
+    <div className="mb-4" role="alert">
+      <UserNotification
+        type="error"
+        message={t('pwa.feedbacks.feedbacksLoadFailed')}
+      />
+      <Button
+        primary
+        type="button"
+        disabled={feedbacksLoading}
+        loading={feedbacksLoading}
+        onClick={() => void refetchFeedbacks().catch(() => undefined)}
+        className={{ root: 'mt-2' }}
+        data={{ cy: 'feedback-retry' }}
+      >
+        <Button.Label>{t('shared.generic.tryAgain')}</Button.Label>
+      </Button>
+    </div>
+  ) : null
+
+  if (!feedbacksData?.feedbacks) {
+    if (feedbacksError) {
+      return (
+        <div className={twMerge('h-full w-full pt-4 md:pt-2', className)}>
+          <H2>{t('pwa.feedbacks.title')}</H2>
+          {feedbacksErrorNotification}
+        </div>
+      )
+    }
+
     return <Loader />
   }
 
   return (
     <div className={twMerge('h-full w-full pt-4 md:pt-2', className)}>
       <H2>{t('pwa.feedbacks.title')}</H2>
+
+      {feedbacksErrorNotification}
 
       <FeedbackAreaSubscriber
         quizId={quizId}
@@ -243,27 +279,39 @@ function FeedbackArea({
         <div className="mb-8">
           <Formik
             initialValues={{ feedbackInput: '' }}
-            onSubmit={async (values, { setSubmitting, resetForm }) => {
-              if (values.feedbackInput !== '') {
-                await onAddFeedback(values.feedbackInput)
-                resetForm()
+            onSubmit={async (
+              values,
+              { setStatus, setSubmitting, resetForm }
+            ) => {
+              setStatus(undefined)
 
-                setTimeout(() => {
+              if (values.feedbackInput !== '') {
+                try {
+                  await onAddFeedback(values.feedbackInput)
+                  resetForm()
+                } catch {
+                  setStatus({
+                    feedbackError: t('pwa.feedbacks.feedbackSubmissionFailed'),
+                  })
+                } finally {
                   setSubmitting(false)
-                }, 700)
+                }
               } else {
                 setSubmitting(false)
               }
             }}
           >
-            {({ isSubmitting }) => (
+            {({ isSubmitting, status }) => (
               <Form>
                 <FormikTextareaField
+                  id="feedbackInput"
                   name="feedbackInput"
+                  label={t('pwa.feedbacks.feedbackLabel')}
                   placeholder={t('pwa.feedbacks.feedbackPlaceholder')}
                   className={{
+                    label: 'min-w-0',
                     input:
-                      'border-uzh-grey-80 mb-1 w-full rounded-md border-2 border-solid bg-white p-1.5 text-sm',
+                      'border-uzh-grey-80 mb-1 w-full rounded-md border-2 border-solid bg-white p-1.5 text-base md:text-sm',
                     root: 'mb-1',
                   }}
                   component="textarea"
@@ -272,14 +320,23 @@ function FeedbackArea({
                   maxLengthUnit={t('shared.generic.characters')}
                   data={{ cy: 'feedback-input' }}
                 />
+                {status?.feedbackError ? (
+                  <div
+                    role="alert"
+                    className="mb-2 break-words text-sm text-red-700"
+                  >
+                    {status.feedbackError}
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-end">
                   <Button
                     primary
                     type="submit"
                     disabled={isSubmitting}
+                    aria-busy={isSubmitting}
                     loading={isSubmitting}
                     className={{
-                      root: 'h-9 w-24 transform items-center text-center transition-transform hover:scale-105',
+                      root: 'min-h-11 w-24 items-center text-center',
                     }}
                     data={{ cy: 'feedback-submit' }}
                   >
