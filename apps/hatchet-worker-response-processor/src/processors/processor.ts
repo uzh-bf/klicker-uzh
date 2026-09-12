@@ -6,6 +6,7 @@ import type {
   DurableContext,
   JsonObject,
 } from '@hatchet-dev/typescript-sdk/index.js'
+import { filterSkippedSelectionResponses } from '@klicker-uzh/grading'
 import type {
   FreeTextRestrictions,
   LiveQuizResponseInput,
@@ -503,7 +504,7 @@ export async function processResponseMessage(
             participantData.role === 'TEMPORARY_PARTICIPANT'
               ? `temporary-${participantData.sub}`
               : participantData.sub,
-            `[${String(response.selection.filter((r: number) => r !== -1 && typeof r !== 'undefined' && r !== null))}]` // filter out skipped response fields
+            `[${String(filterSkippedSelectionResponses(response.selection))}]` // filter out skipped response fields
           )
 
           const {

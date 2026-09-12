@@ -2,6 +2,7 @@ import {
   computeAwardedCorrectnessPoints,
   computeAwardedPoints,
   computeAwardedXp,
+  filterSkippedSelectionResponses,
   gradeQuestionCaseStudy,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
@@ -9,6 +10,7 @@ import {
   gradeQuestionNumerical,
   gradeQuestionSC,
   gradeQuestionSelection,
+  resolveNumericalSolutions,
 } from '@klicker-uzh/grading'
 import type {
   FreeTextRestrictions,
@@ -348,16 +350,13 @@ function gradeNumericalResponse({
   response: LiveQuizResponseInput
   parsedSolutions: any
 }): number | null {
-  const exactSolutionsDefined =
-    typeof parsedSolutions !== 'undefined' &&
-    parsedSolutions.length > 0 &&
-    (typeof parsedSolutions[0] === 'number' ||
-      typeof parsedSolutions[0] === 'string')
+  const { exactSolutions, solutionRanges } =
+    resolveNumericalSolutions(parsedSolutions)
 
   return gradeQuestionNumerical({
     response: Number(response.value),
-    solutionRanges: exactSolutionsDefined ? undefined : parsedSolutions,
-    exactSolutions: exactSolutionsDefined ? parsedSolutions : undefined,
+    solutionRanges,
+    exactSolutions,
   })
 }
 
@@ -385,9 +384,7 @@ function gradeSelectionResponse({
 }): number | null {
   return gradeQuestionSelection({
     numberOfInputs: parseInt(instanceInfo.numberOfInputs!, 10),
-    response: response.selection!.filter(
-      (r: number) => r !== -1 && typeof r !== 'undefined' && r !== null
-    ), // filter out skipped response fields
+    response: filterSkippedSelectionResponses(response.selection!),
     correctAnswers: parsedSolutions,
   })
 }

@@ -1,7 +1,8 @@
-import { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
+import { createHash } from 'node:crypto'
 import {
   computeAwardedXp,
   computeSimpleAwardedPoints,
+  filterSkippedSelectionResponses,
   gradeQuestionCaseStudy,
   gradeQuestionFreeText,
   gradeQuestionKPRIM,
@@ -54,12 +55,12 @@ import type {
 import { FlashcardCorrectness, StackFeedbackStatus } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { max, mean, median, min, quantileSeq, round, std } from 'mathjs'
-import { createHash } from 'node:crypto'
 import { toLowerCase } from 'remeda'
+import type { ICaseStudyElementEvaluationResults } from '@/schema/evaluation.js'
 import type { Context } from '../lib/context.js'
 import type {
   CaseStudyCaseResponse,
@@ -1640,7 +1641,7 @@ export function updateChoicesResults({
   response: ResponseInput
 }): { results: ElementResultsChoices; modified: boolean } {
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   if (
     !('choices' in response) ||
@@ -1678,7 +1679,7 @@ export function updateNumericalResults({
 
   const MD5 = createHash('md5')
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   // validate format of response
   if (
@@ -1744,7 +1745,7 @@ export function updateFreeTextResults({
 
   const MD5 = createHash('md5')
   const results = previousResults
-  let updatedResults = results
+  const updatedResults = results
 
   // validate format of response and check that restrictions are fulfilled
   if (
@@ -1800,7 +1801,7 @@ export function updateSelectionResults({
   }
 
   // increment all values in updatedSelections that are contained in response.selection
-  let updatedSelections = { ...previousResults.selections }
+  const updatedSelections = { ...previousResults.selections }
   response.selection.forEach((ix) => {
     if (ix in updatedSelections && typeof updatedSelections[ix] === 'number') {
       updatedSelections[ix] = updatedSelections[ix] + 1
@@ -2164,7 +2165,7 @@ function computeAggregatedResponsesChoices({
   existingResponse: DB.QuestionResponse | null
   response: ResponseInput
 }): ElementResultsChoices {
-  let newAggResponses = (existingResponse?.aggregatedResponses ??
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsChoices
 
   // update aggregated responses for choices
@@ -2190,7 +2191,7 @@ function computeAggregatedResponsesOpen({
   responseValue: string
   correctness: number
 }) {
-  let newAggResponses = (existingResponse?.aggregatedResponses ??
+  const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsOpen
 
   // update aggregated responses for open questions
@@ -3087,9 +3088,10 @@ async function respondToElement({
         id: response.instanceId,
         courseId,
         response: {
-          selection: response.selectionResponse?.filter(
-            (r) => r !== -1 && typeof r !== 'undefined' && r !== null
-          ), // only forward valid responses
+          // only forward valid responses
+          selection: response.selectionResponse
+            ? filterSkippedSelectionResponses(response.selectionResponse)
+            : undefined,
         },
         answerTime,
         participation,
@@ -3199,7 +3201,7 @@ export async function respondToElementStack(
     }
   }
 
-  let stackScore: number | undefined = undefined
+  let stackScore: number | undefined
   let stackFeedback = StackFeedbackStatus.UNANSWERED
   const evaluationsArr: InstanceEvaluation[] = []
 
