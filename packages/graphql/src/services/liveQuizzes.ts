@@ -1,16 +1,17 @@
 import { createHash, createHmac } from 'node:crypto'
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
   type ElementBlockInput,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
-  ElementResultsOpen,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
-  HatchetHandlers,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
@@ -38,6 +39,33 @@ import {
   liveQuizCourseVisibilityFilter,
   persistActivityWithPermissions,
 } from './activities.js'
+import {
+  assessmentIsSelectedForAuditActivation,
+  createAssessmentAuditMediaDependencies,
+  loadAssessmentAuditSnapshot,
+  type PreparedAssessmentAuditActivation,
+  persistPreparedAssessmentAuditActivationInTransaction,
+  prepareReopeningAssessmentAuditActivation,
+  readAssessmentAuditRolloutConfig,
+} from './assessmentAuditActivation.js'
+import {
+  anchorCoveredAssessmentAuditScope,
+  assessmentAuditSystemOperation,
+  assessmentAuditUserOperation,
+  assessmentLifecycleDraft,
+  assessmentParticipantResetDrafts,
+  assessmentResponseSnapshot,
+  assessmentSessionDraft,
+  buildAssessmentMutationAuditDrafts,
+  emitAssessmentLecturerPermissionChanges,
+  emitCoveredAssessmentAuditEvents,
+  loadAssessmentLecturerPermissionState,
+  recordAssessmentActionRejectedForUser,
+} from './assessmentAuditProducers.js'
+import {
+  activateNewAssessmentAuditIfSelected,
+  assessmentAuditReadiness,
+} from './assessmentAuditRollout.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -48,6 +76,44 @@ const scheduledJobs: Record<string, any> = {}
 const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
 const THIRD_ACHIEVEMENT_ID = 7
+
+async function scheduleAssessmentAuditMediaRenewal(ctx: ContextWithUser) {
+  try {
+    await ctx.tasks.renewAssessmentAuditMediaPolicies.schedule(new Date(), {})
+  } catch {
+    // The daily renewal cron remains the recovery path when Hatchet is
+    // unavailable at the end of a quiz.
+    console.warn('Assessment audit media renewal could not be scheduled')
+  }
+}
+
+async function recordRejectedAssessmentAction(
+  ctx: ContextWithUser,
+  input: {
+    liveQuizId: string
+    actionType: string
+    reasonCode: string
+    requiredPermission: string
+    targetType?: string
+    targetId?: string
+  }
+) {
+  try {
+    await recordAssessmentActionRejectedForUser({
+      client: ctx.prisma,
+      userId: ctx.user.sub,
+      ...input,
+    })
+  } catch (error) {
+    // An audit failure must not turn an already-rejected teaching action into
+    // a server error. The ordinary monitor observes storage failures.
+    console.error('Failed to record rejected assessment action', {
+      actionType: input.actionType,
+      liveQuizId: input.liveQuizId,
+      errorType: error instanceof Error ? error.name : 'unknown',
+    })
+  }
+}
 
 // ------ LIVE QUIZ CREATION / EDITING ------
 // #region
@@ -414,6 +480,10 @@ export async function manipulateLiveQuiz(
     },
   }
 
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'WRITE',
+  })
   const persistLiveQuiz = async (prisma: PrismaTransactionClient) => {
     // delete all instances that are not used anymore
     await prisma.elementInstance.deleteMany({
@@ -508,6 +578,53 @@ export async function manipulateLiveQuiz(
     return upsertedQuiz
   }
 
+  const persisted = transactionPrisma
+    ? await persistActivityWithPermissions({
+        persist: persistLiveQuiz,
+        invalidateTypename: 'LiveQuiz',
+        invalidateId: id,
+        ctx,
+        transactionPrisma,
+      })
+    : await runInAuditTransaction(
+        ctx.prisma,
+        async (auditPrisma, auditTx) => {
+          const beforeSnapshot = id
+            ? await loadAssessmentAuditSnapshot(auditPrisma, id)
+            : null
+          const result = await persistActivityWithPermissions({
+            persist: persistLiveQuiz,
+            invalidateTypename: 'LiveQuiz',
+            invalidateId: id,
+            ctx,
+            transactionPrisma: auditPrisma,
+          })
+          if (beforeSnapshot !== null) {
+            const afterSnapshot = await loadAssessmentAuditSnapshot(
+              auditPrisma,
+              result.activity.id
+            )
+            if (afterSnapshot === null) {
+              throw new Error('Updated assessment could not be reloaded')
+            }
+            await emitCoveredAssessmentAuditEvents({
+              tx: auditPrisma,
+              auditTx,
+              liveQuizId: result.activity.id,
+              courseId: afterSnapshot.courseId,
+              operation: auditOperation,
+              drafts: buildAssessmentMutationAuditDrafts({
+                before: beforeSnapshot,
+                after: afterSnapshot,
+                producerOperationId: auditOperation.correlationId,
+              }),
+            })
+          }
+          return result
+        },
+        { timeout: 60000 }
+      )
+
   const {
     activity,
     permissionLevel,
@@ -519,14 +636,21 @@ export async function manipulateLiveQuiz(
     isShared,
     isRemovable,
     sharingType,
-  } = await persistActivityWithPermissions({
-    persist: persistLiveQuiz,
-    invalidateTypename: 'LiveQuiz',
-    invalidateId: id,
-    ctx,
-    transactionPrisma,
-  })
+  } = persisted
 
+  if (!id && activity.isAssessmentEnabled) {
+    try {
+      const outcome = await activateNewAssessmentAuditIfSelected({
+        client: ctx.prisma,
+        liveQuizId: activity.id,
+      })
+      if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
+        console.warn('New assessment audit activation recorded a coverage gap')
+      }
+    } catch {
+      console.warn('New assessment audit activation remains pending')
+    }
+  }
   return {
     id: activity.id,
     templateId: activity.templateInfo?.id ?? null,
@@ -584,8 +708,14 @@ export async function removeLiveQuiz(
   }
 
   // remove direct permission and recompute derived permissions for this live quiz and user
-  await ctx.prisma.$transaction(
-    async (prisma) => {
+  await runInAuditTransaction(
+    ctx.prisma,
+    async (prisma, auditTx) => {
+      const beforePermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [ctx.user.sub],
+      })
       await prisma.liveQuiz.update({
         where: { id },
         data: { directPermissions: { deleteMany: { userId: ctx.user.sub } } },
@@ -606,6 +736,22 @@ export async function removeLiveQuiz(
         { liveQuizId: id, userId: ctx.user.sub },
         prisma
       )
+      const afterPermissions = await loadAssessmentLecturerPermissionState({
+        tx: prisma,
+        liveQuizId: id,
+        subjectUserIds: [ctx.user.sub],
+      })
+      await emitAssessmentLecturerPermissionChanges({
+        tx: prisma,
+        auditTx,
+        operation: assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        }),
+        before: beforePermissions,
+        after: afterPermissions,
+        operationSuffix: 'live-quiz-permission-removed',
+      })
     },
     { timeout: 60000 }
   )
@@ -832,7 +978,31 @@ export async function startLiveQuiz(
 
     // if there is no live quiz matching the current user and quiz id, exit early
     if (!quiz) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_START',
+        reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+        requiredPermission: 'EXECUTE',
+      })
       return null
+    }
+
+    if (quiz.isAssessmentEnabled) {
+      try {
+        const readiness = await assessmentAuditReadiness({
+          client: ctx.prisma,
+          liveQuizId: quiz.id,
+        })
+        if (readiness === 'UNCOVERED') {
+          console.warn(
+            'Starting selected assessment without audit coverage; teaching continues'
+          )
+        }
+      } catch {
+        console.warn(
+          'Assessment audit readiness unavailable; teaching continues'
+        )
+      }
     }
 
     // depending on the quiz assessment setting, select the corresponding redis instance
@@ -856,9 +1026,13 @@ export async function startLiveQuiz(
           })
 
           await pipeline.exec()
-        } catch (e) {
+        } catch (error) {
           ctx.log.warn(
-            { event: 'live-quiz.cache.cleanup.failed' },
+            {
+              event: 'live-quiz.cache.cleanup.failed',
+              liveQuizId: quiz.id,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            },
             'Live quiz cache cleanup failed'
           )
         }
@@ -872,6 +1046,8 @@ export async function startLiveQuiz(
               {
                 event: 'hatchet.schedule.delete_failed',
                 task: 'live-quiz-publish',
+                liveQuizId: id,
+                errorType: error instanceof Error ? error.name : 'unknown',
               },
               'Hatchet scheduled task deletion failed'
             )
@@ -879,14 +1055,61 @@ export async function startLiveQuiz(
         }
 
         // generate a random pin code
-        const startedLiveQuiz = await ctx.prisma.liveQuiz.update({
-          where: { id },
-          data: {
-            status: DB.PublicationStatus.PUBLISHED,
-            startedAt: new Date(),
-            scheduledPublicationTaskId: null,
-          },
-        })
+        const startedAt = new Date()
+        const startedLiveQuiz = quiz.isAssessmentEnabled
+          ? await runInAuditTransaction(
+              ctx.prisma,
+              async (tx, auditTx) => {
+                const started = await tx.liveQuiz.update({
+                  where: { id },
+                  data: {
+                    status: DB.PublicationStatus.PUBLISHED,
+                    startedAt,
+                    scheduledPublicationTaskId: null,
+                  },
+                })
+                await emitCoveredAssessmentAuditEvents({
+                  tx,
+                  auditTx,
+                  liveQuizId: id,
+                  courseId: started.courseId,
+                  operation: assessmentAuditUserOperation({
+                    userId: ctx.user.sub,
+                    requiredPermission: 'EXECUTE',
+                    occurredAt: startedAt,
+                  }),
+                  drafts: [
+                    assessmentLifecycleDraft({
+                      eventType: 'ASSESSMENT_STARTED',
+                      producerOperationId: `assessment:${id}:start:${startedAt.toISOString()}`,
+                      fromState:
+                        quiz.status === DB.PublicationStatus.SCHEDULED
+                          ? 'SCHEDULED'
+                          : 'DRAFT',
+                      toState: 'RUNNING',
+                      reasonCode: 'LECTURER_STARTED_ASSESSMENT',
+                    }),
+                    assessmentSessionDraft({
+                      eventType: 'ASSESSMENT_SESSION_STARTED',
+                      producerOperationId: `assessment:${id}:session-start:${startedAt.toISOString()}`,
+                      sessionId: id,
+                      transition: 'STARTED',
+                      reasonCode: 'LECTURER_STARTED_ASSESSMENT',
+                    }),
+                  ],
+                })
+                return started
+              },
+              { timeout: 60000 }
+            )
+          : await ctx.prisma.liveQuiz.update({
+              where: { id },
+              data: {
+                status: DB.PublicationStatus.PUBLISHED,
+                startedAt,
+                scheduledPublicationTaskId: null,
+              },
+            })
 
         await sendTeamsNotification({
           scope: 'graphql/startLiveQuiz',
@@ -899,7 +1122,7 @@ export async function startLiveQuiz(
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/startLiveQuiz',
-      text: `ERROR - failed to start live quiz: ${error}`,
+      text: `ERROR - failed to start live quiz ${id} (${error instanceof Error ? error.name : 'unknown'})`,
     })
     throw error
   }
@@ -915,25 +1138,75 @@ export async function scheduleLiveQuiz(
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
         availableFrom,
-        { liveQuizId: id, loggingContext: ctx.requestContext }
+        {
+          liveQuizId: id,
+          initiatedByUserId: ctx.user.sub,
+          loggingContext: ctx.requestContext,
+        }
       )
       const taskId = scheduledTask.metadata.id
 
       // change the status of the live quiz to scheduled
-      const updatedQuiz = await ctx.prisma.liveQuiz.update({
+      const assessmentMode = await ctx.prisma.liveQuiz.findUnique({
         where: { id, isDeleted: false },
-        data: {
-          availableFrom,
-          status: DB.PublicationStatus.SCHEDULED,
-          scheduledPublicationTaskId: taskId,
-        },
+        select: { isAssessmentEnabled: true },
       })
+      const scheduledAt = new Date()
+      const updatedQuiz = assessmentMode?.isAssessmentEnabled
+        ? await runInAuditTransaction(
+            ctx.prisma,
+            async (tx, auditTx) => {
+              const before = await loadAssessmentAuditSnapshot(tx, id)
+              const updated = await tx.liveQuiz.update({
+                where: { id, isDeleted: false },
+                data: {
+                  availableFrom,
+                  status: DB.PublicationStatus.SCHEDULED,
+                  scheduledPublicationTaskId: taskId,
+                },
+              })
+              const after = await loadAssessmentAuditSnapshot(tx, id)
+              if (before !== null && after !== null) {
+                await emitCoveredAssessmentAuditEvents({
+                  tx,
+                  auditTx,
+                  liveQuizId: id,
+                  courseId: updated.courseId,
+                  operation: assessmentAuditUserOperation({
+                    userId: ctx.user.sub,
+                    requiredPermission: 'EXECUTE',
+                    occurredAt: scheduledAt,
+                  }),
+                  drafts: buildAssessmentMutationAuditDrafts({
+                    before,
+                    after,
+                    producerOperationId: `assessment:${id}:schedule:${scheduledAt.toISOString()}`,
+                  }),
+                })
+              }
+              return updated
+            },
+            { timeout: 60000 }
+          )
+        : await ctx.prisma.liveQuiz.update({
+            where: { id, isDeleted: false },
+            data: {
+              availableFrom,
+              status: DB.PublicationStatus.SCHEDULED,
+              scheduledPublicationTaskId: taskId,
+            },
+          })
 
       ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
       return updatedQuiz
     } catch (error) {
       ctx.log.error(
-        { event: 'hatchet.schedule.failed', task: 'live-quiz-publish' },
+        {
+          event: 'hatchet.schedule.failed',
+          task: 'live-quiz-publish',
+          liveQuizId: id,
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
         'Hatchet task scheduling failed'
       )
       return null
@@ -953,6 +1226,18 @@ export async function unpublishLiveQuiz(
   })
 
   if (!liveQuiz) {
+    const assessmentState = await ctx.prisma.liveQuiz.findUnique({
+      where: { id },
+      select: { isAssessmentEnabled: true, status: true },
+    })
+    if (assessmentState?.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_UNPUBLISH',
+        reasonCode: 'ASSESSMENT_NOT_SCHEDULED',
+        requiredPermission: 'EXECUTE',
+      })
+    }
     return null
   }
 
@@ -965,6 +1250,8 @@ export async function unpublishLiveQuiz(
         {
           event: 'hatchet.schedule.delete_failed',
           task: 'live-quiz-publish',
+          liveQuizId: id,
+          errorType: error instanceof Error ? error.name : 'unknown',
         },
         'Hatchet scheduled task deletion failed'
       )
@@ -972,14 +1259,51 @@ export async function unpublishLiveQuiz(
   }
 
   // reset the status of the live quiz to draft and remove the availableFrom date
-  const updatedLiveQuiz = await ctx.prisma.liveQuiz.update({
-    where: { id, status: DB.PublicationStatus.SCHEDULED },
-    data: {
-      availableFrom: null,
-      status: DB.PublicationStatus.DRAFT,
-      scheduledPublicationTaskId: null,
-    },
-  })
+  const unpublishedAt = new Date()
+  const updatedLiveQuiz = liveQuiz.isAssessmentEnabled
+    ? await runInAuditTransaction(
+        ctx.prisma,
+        async (tx, auditTx) => {
+          const before = await loadAssessmentAuditSnapshot(tx, id)
+          const updated = await tx.liveQuiz.update({
+            where: { id, status: DB.PublicationStatus.SCHEDULED },
+            data: {
+              availableFrom: null,
+              status: DB.PublicationStatus.DRAFT,
+              scheduledPublicationTaskId: null,
+            },
+          })
+          const after = await loadAssessmentAuditSnapshot(tx, id)
+          if (before !== null && after !== null) {
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId: id,
+              courseId: updated.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'EXECUTE',
+                occurredAt: unpublishedAt,
+              }),
+              drafts: buildAssessmentMutationAuditDrafts({
+                before,
+                after,
+                producerOperationId: `assessment:${id}:unpublish:${unpublishedAt.toISOString()}`,
+              }),
+            })
+          }
+          return updated
+        },
+        { timeout: 60000 }
+      )
+    : await ctx.prisma.liveQuiz.update({
+        where: { id, status: DB.PublicationStatus.SCHEDULED },
+        data: {
+          availableFrom: null,
+          status: DB.PublicationStatus.DRAFT,
+          scheduledPublicationTaskId: null,
+        },
+      })
 
   ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
   return updatedLiveQuiz
@@ -1097,39 +1421,119 @@ export async function activateLiveQuizBlock(
     include: { blocks: { orderBy: { id: 'asc' } } },
   })
 
-  if (!quiz) return null
+  if (!quiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: quizId,
+      actionType: 'ASSESSMENT_BLOCK_ACTIVATE',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'EXECUTE',
+      targetType: 'BLOCK',
+      targetId: String(blockId),
+    })
+    return null
+  }
 
   const newBlock = quiz.blocks.find((block) => block.id === blockId)
 
   // if the block is not from the current quiz or it is already active, return early
-  if (!newBlock || quiz.activeBlockId === blockId) return quiz
+  if (!newBlock || quiz.activeBlockId === blockId) {
+    if (quiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: quizId,
+        actionType: 'ASSESSMENT_BLOCK_ACTIVATE',
+        reasonCode: !newBlock
+          ? 'ASSESSMENT_BLOCK_NOT_FOUND'
+          : 'ASSESSMENT_BLOCK_ALREADY_ACTIVE',
+        requiredPermission: 'EXECUTE',
+        targetType: 'BLOCK',
+        targetId: String(blockId),
+      })
+    }
+    return quiz
+  }
 
   // set the new block to active
-  const updatedQuiz = await ctx.prisma.liveQuiz.update({
-    where: { id: quizId },
-    data: {
-      activeBlock: { connect: { id: blockId } },
-      blocks: {
-        update: {
-          where: { id: blockId },
-          data: {
-            status: DB.ElementBlockStatus.ACTIVE,
-            startedAt: new Date(),
-            expiresAt: newBlock.timeLimit
-              ? dayjs().add(newBlock.timeLimit, 'seconds').toDate()
-              : undefined,
+  const activatedAt = new Date()
+  const updateBlock = async (prisma: PrismaTransactionClient) =>
+    prisma.liveQuiz.update({
+      where: { id: quizId },
+      data: {
+        activeBlock: { connect: { id: blockId } },
+        blocks: {
+          update: {
+            where: { id: blockId },
+            data: {
+              status: DB.ElementBlockStatus.ACTIVE,
+              startedAt: activatedAt,
+              expiresAt: newBlock.timeLimit
+                ? dayjs(activatedAt).add(newBlock.timeLimit, 'seconds').toDate()
+                : undefined,
+            },
           },
         },
       },
-    },
-    include: {
-      activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
-      blocks: {
-        include: { elements: { orderBy: { order: 'asc' } } },
-        orderBy: { order: 'asc' },
+      include: {
+        activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
+        blocks: {
+          include: { elements: { orderBy: { order: 'asc' } } },
+          orderBy: { order: 'asc' },
+        },
       },
-    },
-  })
+    })
+  const updatedQuiz = quiz.isAssessmentEnabled
+    ? await runInAuditTransaction(
+        ctx.prisma,
+        async (tx, auditTx) => {
+          const before = await loadAssessmentAuditSnapshot(tx, quizId)
+          const updated = await updateBlock(tx)
+          const after = await loadAssessmentAuditSnapshot(tx, quizId)
+          if (before !== null && after !== null) {
+            const resumedAfterCompletedBlock =
+              quiz.activeBlockId === null &&
+              quiz.blocks.some(
+                (block) => block.status === DB.ElementBlockStatus.EXECUTED
+              )
+            const mutationDrafts = buildAssessmentMutationAuditDrafts({
+              before,
+              after,
+              producerOperationId: `assessment:${quizId}:block:${blockId}:activate:${activatedAt.toISOString()}`,
+            })
+            if (resumedAfterCompletedBlock) {
+              mutationDrafts.push(
+                assessmentLifecycleDraft({
+                  eventType: 'ASSESSMENT_RESUMED',
+                  producerOperationId: `assessment:${quizId}:resume:${activatedAt.toISOString()}`,
+                  fromState: 'PAUSED',
+                  toState: 'RUNNING',
+                  reasonCode: 'LECTURER_RESUMED_ASSESSMENT',
+                }),
+                assessmentSessionDraft({
+                  eventType: 'ASSESSMENT_SESSION_RESUMED',
+                  producerOperationId: `assessment:${quizId}:session-resume:${activatedAt.toISOString()}`,
+                  sessionId: quizId,
+                  transition: 'RESUMED',
+                  reasonCode: 'LECTURER_RESUMED_ASSESSMENT',
+                })
+              )
+            }
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId: quizId,
+              courseId: updated.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'EXECUTE',
+                occurredAt: activatedAt,
+              }),
+              drafts: mutationDrafts,
+            })
+          }
+          return updated
+        },
+        { timeout: 60000 }
+      )
+    : await updateBlock(ctx.prisma)
 
   if (updatedQuiz.activeBlock?.expiresAt) {
     scheduledJobs[blockId] = schedule.scheduleJob(
@@ -1340,18 +1744,98 @@ export async function deactivateLiveQuizBlock(
 ) {
   let isAssessmentEnabled = false
   try {
-    const res = await updateLiveQuizBlockResultsFromCache({
-      quizId,
-      blockId,
-      prisma: ctx.prisma,
-      redisExec: ctx.redisExec,
-      redisAssessmentExec: ctx.redisAssessmentExec,
-      updateResults: true,
-      updateLeaderboards: true, // always update the leaderboard when a block is closed
+    const auditMode = await ctx.prisma.liveQuiz.findUnique({
+      where: { id: quizId },
+      select: { isAssessmentEnabled: true },
     })
+    isAssessmentEnabled = auditMode?.isAssessmentEnabled ?? false
+    const res = auditMode?.isAssessmentEnabled
+      ? await runInAuditTransaction(
+          ctx.prisma,
+          async (tx, auditTx) => {
+            const before = await loadAssessmentAuditSnapshot(tx, quizId)
+            const result = await updateLiveQuizBlockResultsFromCache({
+              quizId,
+              blockId,
+              prisma: ctx.prisma,
+              redisExec: ctx.redisExec,
+              redisAssessmentExec: ctx.redisAssessmentExec,
+              updateResults: true,
+              updateLeaderboards: true,
+              transaction: (write) => write(tx),
+            })
+            if (result !== null && before !== null) {
+              const after = await loadAssessmentAuditSnapshot(tx, quizId)
+              if (after !== null) {
+                const closedAt = after.blocks.find(
+                  (block) => block.id === blockId
+                )?.closedAt
+                const mutationDrafts = buildAssessmentMutationAuditDrafts({
+                  before,
+                  after,
+                  producerOperationId: `assessment:${quizId}:block:${blockId}:close:${closedAt?.toISOString() ?? new Date().toISOString()}`,
+                })
+                const pausedBeforeNextBlock = result.updatedQuiz.blocks.some(
+                  (block) => block.status === DB.ElementBlockStatus.SCHEDULED
+                )
+                if (pausedBeforeNextBlock) {
+                  mutationDrafts.push(
+                    assessmentLifecycleDraft({
+                      eventType: 'ASSESSMENT_PAUSED',
+                      producerOperationId: `assessment:${quizId}:pause:${closedAt?.toISOString() ?? new Date().toISOString()}`,
+                      fromState: 'RUNNING',
+                      toState: 'PAUSED',
+                      reasonCode: isScheduled
+                        ? 'SYSTEM_CLOSED_ASSESSMENT_BLOCK'
+                        : 'LECTURER_CLOSED_ASSESSMENT_BLOCK',
+                    })
+                  )
+                }
+                await emitCoveredAssessmentAuditEvents({
+                  tx,
+                  auditTx,
+                  liveQuizId: quizId,
+                  courseId: after.courseId,
+                  operation: isScheduled
+                    ? assessmentAuditSystemOperation({
+                        initiatedByUserId: ctx.user.sub,
+                      })
+                    : assessmentAuditUserOperation({
+                        userId: ctx.user.sub,
+                        requiredPermission: 'EXECUTE',
+                      }),
+                  drafts: mutationDrafts,
+                })
+              }
+            }
+            return result
+          },
+          { timeout: 60000 }
+        )
+      : await updateLiveQuizBlockResultsFromCache({
+          quizId,
+          blockId,
+          prisma: ctx.prisma,
+          redisExec: ctx.redisExec,
+          redisAssessmentExec: ctx.redisAssessmentExec,
+          updateResults: true,
+          updateLeaderboards: true, // always update the leaderboard when a block is closed
+        })
 
     // if the update was not successful, return false
-    if (!res) return false
+    if (!res) {
+      if (isAssessmentEnabled) {
+        await recordRejectedAssessmentAction(ctx, {
+          liveQuizId: quizId,
+          actionType: 'ASSESSMENT_BLOCK_CLOSE',
+          reasonCode: 'ASSESSMENT_BLOCK_NOT_ACTIVE_OR_NOT_FOUND',
+          requiredPermission: isScheduled ? 'SYSTEM' : 'EXECUTE',
+          targetType: 'BLOCK',
+          targetId: String(blockId),
+        })
+      }
+      return false
+    }
 
     const updatedQuiz = res.updatedQuiz
     const activeInstanceIds = res.activeInstanceIds
@@ -1402,12 +1886,10 @@ export async function deactivateLiveQuizBlock(
       }
       await redis.exec()
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     await sendTeamsNotification({
       scope: 'graphql/deactivateLiveQuizBlock',
-      text: `ERROR - failed to deactivate block ${blockId} in live quiz ${
-        quizId
-      } with active block ${blockId}: ${error?.message || error}`,
+      text: `ERROR - failed to deactivate block ${blockId} in live quiz ${quizId} (${error instanceof Error ? error.name : 'unknown'})`,
     })
 
     throw error
@@ -1437,7 +1919,13 @@ export async function deactivateLiveQuizBlock(
     }
   } catch (error) {
     ctx.log.warn(
-      { event: 'hatchet.schedule.failed', task: 'live-quiz-aggregate' },
+      {
+        event: 'hatchet.schedule.failed',
+        task: 'live-quiz-aggregate',
+        liveQuizId: quizId,
+        blockId,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
       'Hatchet task scheduling failed'
     )
   }
@@ -1627,7 +2115,7 @@ function aggregateLiveQuizResponses({
                         criterionId
                       ] === 'undefined'
                     ) {
-                      return acc
+                      return
                     }
 
                     // compute the hash of the response
@@ -1688,6 +2176,12 @@ export async function endLiveQuiz(
 
   // if there is no live quiz matching the current user and quiz id, exit early
   if (!quiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_COMPLETE',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'EXECUTE',
+    })
     return null
   }
 
@@ -1698,6 +2192,14 @@ export async function endLiveQuiz(
     quiz.status === DB.PublicationStatus.DRAFT ||
     quiz.status === DB.PublicationStatus.SCHEDULED
   ) {
+    if (quiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_COMPLETE',
+        reasonCode: 'ASSESSMENT_NOT_RUNNING',
+        requiredPermission: 'EXECUTE',
+      })
+    }
     return null
   }
 
@@ -1762,7 +2264,7 @@ export async function endLiveQuiz(
       })
 
       // track the achievement ids, which should be awarded to the participants
-      let newAchievements: Record<string, number> = {}
+      const newAchievements: Record<string, number> = {}
 
       // only award achievements, if the live quiz did contain questions with sample
       // solutions and at least three participants collected points
@@ -1957,13 +2459,66 @@ export async function endLiveQuiz(
       })
     }
 
-    const endedLiveQuiz = await ctx.prisma.liveQuiz.update({
-      where: { id },
-      data: {
-        status: DB.PublicationStatus.ENDED,
-        finishedAt: new Date(),
-      },
-    })
+    const finishedAt = new Date()
+    const endedLiveQuiz = quiz.isAssessmentEnabled
+      ? await runInAuditTransaction(
+          ctx.prisma,
+          async (tx, auditTx) => {
+            const ended = await tx.liveQuiz.update({
+              where: { id },
+              data: {
+                status: DB.PublicationStatus.ENDED,
+                finishedAt,
+              },
+            })
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId: id,
+              courseId: ended.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'EXECUTE',
+                occurredAt: finishedAt,
+              }),
+              drafts: [
+                assessmentLifecycleDraft({
+                  eventType: 'ASSESSMENT_COMPLETED',
+                  producerOperationId: `assessment:${id}:complete:${finishedAt.toISOString()}`,
+                  fromState: 'RUNNING',
+                  toState: 'COMPLETED',
+                  reasonCode: 'LECTURER_ENDED_ASSESSMENT',
+                }),
+                assessmentSessionDraft({
+                  eventType: 'ASSESSMENT_SESSION_ENDED',
+                  producerOperationId: `assessment:${id}:session-end:${finishedAt.toISOString()}`,
+                  sessionId: id,
+                  transition: 'ENDED',
+                  reasonCode: 'LECTURER_ENDED_ASSESSMENT',
+                }),
+              ],
+            })
+            await anchorCoveredAssessmentAuditScope({
+              tx,
+              liveQuizId: id,
+              terminalState: 'COMPLETED',
+              terminalAt: finishedAt,
+            })
+            return ended
+          },
+          { timeout: 60000 }
+        )
+      : await ctx.prisma.liveQuiz.update({
+          where: { id },
+          data: {
+            status: DB.PublicationStatus.ENDED,
+            finishedAt,
+          },
+        })
+
+    if (quiz.isAssessmentEnabled) {
+      await scheduleAssessmentAuditMediaRenewal(ctx)
+    }
 
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
@@ -1974,7 +2529,7 @@ export async function endLiveQuiz(
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
-      text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+      text: `ERROR - failed to end live quiz ${quiz.name} with id ${quiz.id} (${error instanceof Error ? error.name : 'unknown'})`,
     })
     throw error
   }
@@ -1994,6 +2549,11 @@ export async function changeLiveQuizSettings(
   },
   ctx: ContextWithUser
 ) {
+  const assessmentMode = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    select: { isAssessmentEnabled: true },
+  })
+
   // check if moderation is being diabled
   if (isModerationEnabled === false) {
     // fetch all unpublished feedbacks for the quiz
@@ -2020,14 +2580,52 @@ export async function changeLiveQuizSettings(
     }
   }
 
-  const quiz = await ctx.prisma.liveQuiz.update({
-    where: { id },
-    data: {
-      isLiveQAEnabled: isLiveQAEnabled ?? undefined,
-      isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
-      isModerationEnabled: isModerationEnabled ?? undefined,
-    },
-  })
+  const settingsChangedAt = new Date()
+  const quiz = assessmentMode?.isAssessmentEnabled
+    ? await runInAuditTransaction(
+        ctx.prisma,
+        async (tx, auditTx) => {
+          const before = await loadAssessmentAuditSnapshot(tx, id)
+          const updated = await tx.liveQuiz.update({
+            where: { id },
+            data: {
+              isLiveQAEnabled: isLiveQAEnabled ?? undefined,
+              isConfusionFeedbackEnabled:
+                isConfusionFeedbackEnabled ?? undefined,
+              isModerationEnabled: isModerationEnabled ?? undefined,
+            },
+          })
+          const after = await loadAssessmentAuditSnapshot(tx, id)
+          if (before !== null && after !== null) {
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId: id,
+              courseId: updated.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'WRITE',
+                occurredAt: settingsChangedAt,
+              }),
+              drafts: buildAssessmentMutationAuditDrafts({
+                before,
+                after,
+                producerOperationId: `assessment:${id}:settings:${settingsChangedAt.toISOString()}`,
+              }),
+            })
+          }
+          return updated
+        },
+        { timeout: 60000 }
+      )
+    : await ctx.prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          isLiveQAEnabled: isLiveQAEnabled ?? undefined,
+          isConfusionFeedbackEnabled: isConfusionFeedbackEnabled ?? undefined,
+          isModerationEnabled: isModerationEnabled ?? undefined,
+        },
+      })
 
   ctx.pubSub.publish('liveQuizSettingsChanged', {
     liveQuizId: quiz.id,
@@ -2056,23 +2654,68 @@ export async function changeLiveQuizName(
   }
 
   try {
-    await ctx.prisma.liveQuiz.update({
-      where: { id },
-      data: {
-        name,
-        displayName,
-        reviewStatus:
-          liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
-            ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
-            : undefined,
-      },
-    })
+    const nameChangedAt = new Date()
+    if (liveQuiz.isAssessmentEnabled) {
+      await runInAuditTransaction(
+        ctx.prisma,
+        async (tx, auditTx) => {
+          const before = await loadAssessmentAuditSnapshot(tx, id)
+          const updated = await tx.liveQuiz.update({
+            where: { id },
+            data: {
+              name,
+              displayName,
+              reviewStatus:
+                liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+                  ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+                  : undefined,
+            },
+          })
+          const after = await loadAssessmentAuditSnapshot(tx, id)
+          if (before !== null && after !== null) {
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId: id,
+              courseId: updated.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'WRITE',
+                occurredAt: nameChangedAt,
+              }),
+              drafts: buildAssessmentMutationAuditDrafts({
+                before,
+                after,
+                producerOperationId: `assessment:${id}:name:${nameChangedAt.toISOString()}`,
+              }),
+            })
+          }
+        },
+        { timeout: 60000 }
+      )
+    } else {
+      await ctx.prisma.liveQuiz.update({
+        where: { id },
+        data: {
+          name,
+          displayName,
+          reviewStatus:
+            liveQuiz.reviewStatus === DB.ReviewStatus.REVIEWED
+              ? DB.ReviewStatus.MODIFIED_AFTER_REVIEW
+              : undefined,
+        },
+      })
+    }
 
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
     return true
   } catch (error) {
     ctx.log.error(
-      { event: 'live-quiz.rename.failed' },
+      {
+        event: 'live-quiz.rename.failed',
+        liveQuizId: id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
       'Live quiz rename failed'
     )
     return false
@@ -2159,10 +2802,26 @@ export async function cancelLiveQuiz(
     },
   })
 
-  if (!quiz) return null
+  if (!quiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_CANCEL',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'EXECUTE',
+    })
+    return null
+  }
 
   try {
     if (quiz.status !== DB.PublicationStatus.PUBLISHED) {
+      if (quiz.isAssessmentEnabled) {
+        await recordRejectedAssessmentAction(ctx, {
+          liveQuizId: id,
+          actionType: 'ASSESSMENT_CANCEL',
+          reasonCode: 'ASSESSMENT_NOT_RUNNING',
+          requiredPermission: 'EXECUTE',
+        })
+      }
       throw new Error('Live quiz is not running')
     }
 
@@ -2174,14 +2833,20 @@ export async function cancelLiveQuiz(
           (block) => block.status !== DB.ElementBlockStatus.SCHEDULED
         ))
     ) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_CANCEL',
+        reasonCode: 'ASSESSMENT_ALREADY_PROGRESSING',
+        requiredPermission: 'EXECUTE',
+      })
       throw new Error(
         'Assessment quizzes can only be aborted before the first block is activated'
       )
     }
 
     const instances = quiz.blocks.flatMap((block) => block.elements)
-    const [updatedQuiz] = await ctx.prisma.$transaction([
-      ctx.prisma.liveQuiz.update({
+    const cancelAssessment = async (prisma: PrismaTransactionClient) => {
+      const updatedQuiz = await prisma.liveQuiz.update({
         where: { id },
         data: {
           status: DB.PublicationStatus.DRAFT,
@@ -2215,17 +2880,61 @@ export async function cancelLiveQuiz(
           activeBlock: true,
           blocks: { include: { elements: true, activeInLiveQuiz: true } },
         },
-      }),
-
-      ...instances.map((instance) => {
-        const initialResults = getInitialInstanceResults(instance.elementData)
-
-        return ctx.prisma.elementInstance.update({
-          where: { id: instance.id },
-          data: { results: initialResults, anonymousResults: initialResults },
+      })
+      await Promise.all(
+        instances.map((instance) => {
+          const initialResults = getInitialInstanceResults(instance.elementData)
+          return prisma.elementInstance.update({
+            where: { id: instance.id },
+            data: {
+              results: initialResults,
+              anonymousResults: initialResults,
+            },
+          })
         })
-      }),
-    ])
+      )
+      return updatedQuiz
+    }
+    const cancelledAt = new Date()
+    const updatedQuiz = quiz.isAssessmentEnabled
+      ? await runInAuditTransaction(
+          ctx.prisma,
+          async (tx, auditTx) => {
+            const updated = await cancelAssessment(tx)
+            await emitCoveredAssessmentAuditEvents({
+              tx,
+              auditTx,
+              liveQuizId: id,
+              courseId: updated.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'EXECUTE',
+                occurredAt: cancelledAt,
+              }),
+              drafts: [
+                assessmentLifecycleDraft({
+                  eventType: 'ASSESSMENT_CANCELLED',
+                  producerOperationId: `assessment:${id}:cancel:${cancelledAt.toISOString()}`,
+                  fromState: 'PUBLISHED',
+                  toState: 'CANCELLED',
+                  reasonCode: 'LECTURER_CANCELLED_ASSESSMENT',
+                }),
+                assessmentLifecycleDraft({
+                  eventType: 'ASSESSMENT_RESET',
+                  producerOperationId: `assessment:${id}:cancel-reset:${cancelledAt.toISOString()}`,
+                  fromState: 'CANCELLED',
+                  toState: 'DRAFT',
+                  reasonCode: 'LECTURER_CANCELLED_ASSESSMENT',
+                }),
+              ],
+            })
+            return updated
+          },
+          { timeout: 60000 }
+        )
+      : await ctx.prisma.$transaction((tx) => cancelAssessment(tx), {
+          timeout: 60000,
+        })
 
     // depending on the quiz assessment setting, select the corresponding redis instance
     const redis = quiz.isAssessmentEnabled
@@ -2249,7 +2958,7 @@ export async function cancelLiveQuiz(
   } catch (error) {
     await sendTeamsNotification({
       scope: 'graphql/abortLiveQuiz',
-      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+      text: `ERROR - failed to cancel live quiz ${quiz.name} with id ${quiz.id} (${error instanceof Error ? error.name : 'unknown'})`,
     })
     throw error
   }
@@ -2259,7 +2968,7 @@ export async function getLiveQuizEvaluation(
   { id, hmac }: { id: string; hmac?: string | null },
   ctx: Context
 ) {
-  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac == '') {
+  if ((!ctx.user?.sub && typeof hmac !== 'string') || hmac === '') {
     return null
   }
 
@@ -2431,14 +3140,36 @@ export async function deleteLiveQuiz(
     },
   })
 
-  if (!liveQuiz) return null
+  if (!liveQuiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_DELETE',
+      reasonCode: 'ASSESSMENT_NOT_FOUND_OR_INVALID_STATE',
+      requiredPermission: 'ADMIN',
+    })
+    return null
+  }
 
   if (liveQuiz.status === DB.PublicationStatus.PUBLISHED) {
     // running live quizzes cannot be deleted
+    if (liveQuiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_DELETE',
+        reasonCode: 'ASSESSMENT_DELETE_RUNNING',
+        requiredPermission: 'ADMIN',
+      })
+    }
     return null
   } else if (liveQuiz.status === DB.PublicationStatus.ENDED) {
     // completed assessment live quizzes cannot be deleted
     if (liveQuiz.isAssessmentEnabled) {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_DELETE',
+        reasonCode: 'ASSESSMENT_DELETE_COMPLETED',
+        requiredPermission: 'ADMIN',
+      })
       return null
     }
 
@@ -2475,45 +3206,127 @@ export async function deleteLiveQuiz(
         liveQuiz.course._count.permissions > 0
 
       if (!isCourseAdminOwner) {
+        await recordRejectedAssessmentAction(ctx, {
+          liveQuizId: id,
+          actionType: 'ASSESSMENT_DELETE',
+          reasonCode: 'INSUFFICIENT_PERMISSION',
+          requiredPermission: 'ADMIN',
+        })
         return null
       }
     }
 
-    const deletedLiveQuiz = await ctx.prisma.$transaction(
-      async (prisma) => {
-        const quiz = await hardDeleteLiveQuiz(
-          {
-            liveQuiz,
-            statuses: [
-              DB.PublicationStatus.DRAFT,
-              DB.PublicationStatus.SCHEDULED,
-            ],
+    const deletedAt = new Date()
+    const deletedLiveQuiz = liveQuiz.isAssessmentEnabled
+      ? await runInAuditTransaction(
+          ctx.prisma,
+          async (prisma, auditTx) => {
+            const quiz = await hardDeleteLiveQuiz(
+              {
+                liveQuiz,
+                statuses: [
+                  DB.PublicationStatus.DRAFT,
+                  DB.PublicationStatus.SCHEDULED,
+                ],
+              },
+              prisma
+            )
+            if (
+              quiz.status === DB.PublicationStatus.SCHEDULED &&
+              quiz.scheduledPublicationTaskId
+            ) {
+              try {
+                await ctx.hatchet.scheduled.delete(
+                  quiz.scheduledPublicationTaskId
+                )
+              } catch (error) {
+                ctx.log.warn(
+                  {
+                    event: 'hatchet.schedule.delete_failed',
+                    task: 'live-quiz-publish',
+                    liveQuizId: id,
+                    errorType: error instanceof Error ? error.name : 'unknown',
+                  },
+                  'Hatchet scheduled task deletion failed'
+                )
+              }
+            }
+            await emitCoveredAssessmentAuditEvents({
+              tx: prisma,
+              auditTx,
+              liveQuizId: id,
+              courseId: liveQuiz.courseId,
+              operation: assessmentAuditUserOperation({
+                userId: ctx.user.sub,
+                requiredPermission: 'ADMIN',
+                occurredAt: deletedAt,
+              }),
+              drafts: [
+                assessmentLifecycleDraft({
+                  eventType: 'ASSESSMENT_DELETED',
+                  producerOperationId: `assessment:${id}:delete:${deletedAt.toISOString()}`,
+                  fromState:
+                    liveQuiz.status === DB.PublicationStatus.SCHEDULED
+                      ? 'SCHEDULED'
+                      : 'DRAFT',
+                  toState: 'DELETED',
+                  reasonCode: 'LECTURER_DELETED_ASSESSMENT',
+                }),
+              ],
+            })
+            await anchorCoveredAssessmentAuditScope({
+              tx: prisma,
+              liveQuizId: id,
+              terminalState: 'DELETED',
+              terminalAt: deletedAt,
+            })
+            return quiz
           },
-          prisma
+          { timeout: 60000 }
+        )
+      : await ctx.prisma.$transaction(
+          async (prisma) => {
+            const quiz = await hardDeleteLiveQuiz(
+              {
+                liveQuiz,
+                statuses: [
+                  DB.PublicationStatus.DRAFT,
+                  DB.PublicationStatus.SCHEDULED,
+                ],
+              },
+              prisma
+            )
+
+            // remove the scheduled hatchet publication task, if it exists
+            if (
+              quiz.status === DB.PublicationStatus.SCHEDULED &&
+              quiz.scheduledPublicationTaskId
+            ) {
+              try {
+                await ctx.hatchet.scheduled.delete(
+                  quiz.scheduledPublicationTaskId
+                )
+              } catch (error) {
+                ctx.log.warn(
+                  {
+                    event: 'hatchet.schedule.delete_failed',
+                    task: 'live-quiz-publish',
+                    liveQuizId: id,
+                    errorType: error instanceof Error ? error.name : 'unknown',
+                  },
+                  'Hatchet scheduled task deletion failed'
+                )
+              }
+            }
+
+            return quiz
+          },
+          { timeout: 60000 }
         )
 
-        // remove the scheduled hatchet publication task, if it exists
-        if (
-          quiz.status === DB.PublicationStatus.SCHEDULED &&
-          quiz.scheduledPublicationTaskId
-        ) {
-          try {
-            await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
-          } catch (error) {
-            ctx.log.warn(
-              {
-                event: 'hatchet.schedule.delete_failed',
-                task: 'live-quiz-publish',
-              },
-              'Hatchet scheduled task deletion failed'
-            )
-          }
-        }
-
-        return quiz
-      },
-      { timeout: 60000 }
-    )
+    if (liveQuiz.isAssessmentEnabled) {
+      await scheduleAssessmentAuditMediaRenewal(ctx)
+    }
 
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',
@@ -2559,31 +3372,82 @@ export async function resetAssessmentLiveQuiz(
     },
   })
 
-  if (!liveQuiz) return null
+  if (!liveQuiz) {
+    await recordRejectedAssessmentAction(ctx, {
+      liveQuizId: id,
+      actionType: 'ASSESSMENT_RESET',
+      reasonCode: 'ASSESSMENT_RESET_NOT_ELIGIBLE',
+      requiredPermission: 'ADMIN',
+    })
+    return null
+  }
+
+  const [existingCoveredAuditScope] = await Promise.all([
+    ctx.prisma.assessmentAuditScope.findFirst({
+      where: {
+        liveQuizId: liveQuiz.id,
+        coverageState: DB.AssessmentAuditCoverageState.COVERED,
+      },
+      select: { lifecycleEpoch: true },
+    }),
+  ])
+  const auditSelected =
+    existingCoveredAuditScope !== null ||
+    assessmentIsSelectedForAuditActivation(
+      liveQuiz.id,
+      readAssessmentAuditRolloutConfig()
+    )
+  let preparedAuditReopening: PreparedAssessmentAuditActivation | null = null
+  if (auditSelected) {
+    try {
+      preparedAuditReopening = await prepareReopeningAssessmentAuditActivation({
+        client: ctx.prisma,
+        liveQuizId: liveQuiz.id,
+        media: createAssessmentAuditMediaDependencies(),
+      })
+    } catch {
+      await recordRejectedAssessmentAction(ctx, {
+        liveQuizId: id,
+        actionType: 'ASSESSMENT_RESET',
+        reasonCode: 'ASSESSMENT_AUDIT_BASELINE_UNAVAILABLE',
+        requiredPermission: 'ADMIN',
+      })
+      throw new GraphQLError(
+        'Assessment cannot be reopened until its audit baseline is available'
+      )
+    }
+  }
+
+  const resetOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
 
   try {
-    await ctx.hatchet.events.push('create-audit-log-entry', {
-      info: `[INFO] [Reset Assessment Live Quiz] Assessment course admin with ID ${ctx.user.sub} initiated reset of live quiz with ID ${id}.`,
-      loggingContext: ctx.requestContext,
-    })
-
-    // loop through the blocks and element instances and document the number of deducted points
-    for (const block of liveQuiz.blocks) {
-      for (const instance of block.elements) {
-        await Promise.all(
-          instance.liveQuizResponses.map(async (response) => {
-            await ctx.hatchet.events.push('create-audit-log-entry', {
-              info: `[INFO] [Reset Assessment Live Quiz] Deducted ${response.basePoints} base points, ${response.correctnessPoints} correctness points, and ${response.bonusPoints} bonus points from participant with ID ${response.participantId} for element instance with ID ${instance.id} in block with ID ${block.id} in live quiz with ID ${id}.`,
-              loggingContext: ctx.requestContext,
-            })
-          })
-        )
-      }
-    }
-
     // update the live quiz (reset it to draft status, remove all responses, reset results)
-    const updatedQuiz = await ctx.prisma.$transaction(
-      async (tx) => {
+    const updatedQuiz = await runInAuditTransaction(
+      ctx.prisma,
+      async (tx, auditTx) => {
+        // Capture the exact deleted answers after serializing with response
+        // persistence, not from the snapshot taken before media staging.
+        await tx.$queryRaw(
+          DB.Prisma
+            .sql`SELECT id FROM "LiveQuiz" WHERE id = ${id}::uuid FOR UPDATE`
+        )
+        const resetResponses = await tx.liveQuizResponse.findMany({
+          where: { instance: { elementBlock: { liveQuizId: id } } },
+          include: { instance: { select: { elementType: true } } },
+        })
+        const resetResponseDrafts = assessmentParticipantResetDrafts({
+          responses: resetResponses.map((response) => ({
+            participantId: response.participantId,
+            snapshot: assessmentResponseSnapshot({
+              response,
+              elementType: response.instance.elementType,
+            }),
+          })),
+          producerOperationId: resetOperation.correlationId,
+        })
         // reset the live quiz
         const updatedLiveQuiz = await tx.liveQuiz.update({
           where: { id },
@@ -2591,6 +3455,7 @@ export async function resetAssessmentLiveQuiz(
             status: DB.PublicationStatus.DRAFT,
             startedAt: null,
             finishedAt: null,
+            activeBlockId: null,
             feedbacks: { deleteMany: {} },
             confusionFeedbacks: { deleteMany: {} },
             leaderboard: { deleteMany: {} },
@@ -2637,15 +3502,47 @@ export async function resetAssessmentLiveQuiz(
           }
         }
 
+        await emitCoveredAssessmentAuditEvents({
+          tx,
+          auditTx,
+          liveQuizId: id,
+          courseId: liveQuiz.courseId,
+          operation: resetOperation,
+          drafts: [
+            assessmentLifecycleDraft({
+              eventType: 'ASSESSMENT_REOPENED',
+              producerOperationId: `${resetOperation.correlationId}:reopened`,
+              fromState: 'COMPLETED',
+              toState: 'DRAFT',
+              reasonCode: 'COURSE_ADMIN_ASSESSMENT_REOPENED',
+            }),
+            assessmentLifecycleDraft({
+              eventType: 'ASSESSMENT_RESET',
+              producerOperationId: `${resetOperation.correlationId}:lifecycle`,
+              fromState: 'COMPLETED',
+              toState: 'DRAFT',
+              reasonCode: 'COURSE_ADMIN_ASSESSMENT_RESET',
+            }),
+            ...resetResponseDrafts,
+          ],
+        })
+
+        if (preparedAuditReopening !== null) {
+          await persistPreparedAssessmentAuditActivationInTransaction({
+            tx,
+            auditTx,
+            prepared: preparedAuditReopening,
+            actor: { kind: 'USER', userId: ctx.user.sub },
+            correlationId: uuidv4(),
+          })
+        }
+
         return updatedLiveQuiz
       },
       { timeout: 60000 }
     )
 
-    await ctx.hatchet.events.push('create-audit-log-entry', {
-      info: `[INFO] [Reset Assessment Live Quiz] Successfully reset assessment live quiz with ID ${id}.`,
-      loggingContext: ctx.requestContext,
-    })
+    await scheduleAssessmentAuditMediaRenewal(ctx)
 
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
     const permission = updatedQuiz.permissions[0]!
@@ -2715,11 +3612,14 @@ export async function resetAssessmentLiveQuiz(
       updatedAt: updatedQuiz.updatedAt,
     }
   } catch (error) {
-    await ctx.hatchet.events.push('create-audit-log-entry', {
-      info: `[ERROR] [Reset Assessment Live Quiz] Failed to reset live quiz with ID ${id}: ${error}`,
-      loggingContext: ctx.requestContext,
-    })
-
+    ctx.log.error(
+      {
+        event: 'live-quiz.reset.failed',
+        liveQuizId: id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
+      'Assessment live quiz reset failed'
+    )
     return null
   }
 }
@@ -3229,7 +4129,7 @@ export async function getLiveQuizLeaderboard(
 // ------ HATCHET SCHEDULED TASK HANDLER ------
 // #region
 export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishScheduledLiveQuiz'] =
-  async ({ liveQuizId }, globalCtx, executionCtx) => {
+  async ({ liveQuizId, initiatedByUserId }, globalCtx, executionCtx) => {
     executionCtx.logger.info(
       `Publishing scheduled live quiz with ID ${liveQuizId}`
     )
@@ -3269,13 +4169,51 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
         })
         .exec()
 
-      const startedLiveQuiz = await globalCtx.prisma.liveQuiz.update({
-        where: { id: liveQuizId },
-        data: {
-          status: DB.PublicationStatus.PUBLISHED,
-          startedAt: new Date(),
-        },
-      })
+      const startedAt = new Date()
+      const startedLiveQuiz = liveQuiz.isAssessmentEnabled
+        ? await runInAuditTransaction(
+            globalCtx.prisma,
+            async (tx, auditTx) => {
+              const started = await tx.liveQuiz.update({
+                where: { id: liveQuizId },
+                data: {
+                  status: DB.PublicationStatus.PUBLISHED,
+                  startedAt,
+                },
+              })
+              await emitCoveredAssessmentAuditEvents({
+                tx,
+                auditTx,
+                liveQuizId,
+                courseId: started.courseId,
+                operation: assessmentAuditSystemOperation({
+                  ...(initiatedByUserId === undefined
+                    ? {}
+                    : { initiatedByUserId }),
+                  correlationId: `hatchet:publish:${liveQuizId}:${startedAt.toISOString()}`,
+                  occurredAt: startedAt,
+                }),
+                drafts: [
+                  assessmentLifecycleDraft({
+                    eventType: 'ASSESSMENT_PUBLISHED',
+                    producerOperationId: `assessment:${liveQuizId}:publish:${startedAt.toISOString()}`,
+                    fromState: 'SCHEDULED',
+                    toState: 'PUBLISHED',
+                    reasonCode: 'SCHEDULED_PUBLICATION',
+                  }),
+                ],
+              })
+              return started
+            },
+            { timeout: 60000 }
+          )
+        : await globalCtx.prisma.liveQuiz.update({
+            where: { id: liveQuizId },
+            data: {
+              status: DB.PublicationStatus.PUBLISHED,
+              startedAt,
+            },
+          })
 
       await sendTeamsNotification({
         scope: 'hatchet/live-quiz-start',
@@ -3290,9 +4228,13 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
 
       return true
     } catch (error) {
+      console.error('Error publishing scheduled live quiz', {
+        liveQuizId,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      })
       await sendTeamsNotification({
         scope: 'hatchet/live-quiz-start',
-        text: `Error publishing live quiz with ID ${liveQuizId}: ${error}`,
+        text: `Error publishing live quiz with ID ${liveQuizId} (${error instanceof Error ? error.name : 'unknown'})`,
       })
       throw error // rethrow to allow Hatchet to handle retries
     }
