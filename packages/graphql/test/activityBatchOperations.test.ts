@@ -14,10 +14,13 @@ import {
   ElementInstanceResults,
   ElementOptions,
 } from '@klicker-uzh/types'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  processElementData,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
-import { vi } from 'vitest'
 import { v4 as uuid } from 'uuid'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { applyActivityBatchOperations } from '../src/services/activities.js'
 import { deleteGroupActivity } from '../src/services/groups.js'
@@ -133,11 +136,21 @@ describe('Integration tests for batch operations on activities', () => {
     prisma: PrismaClient
   ) {
     const elementId = await seedElement(
-      args.ownerId ? { ownerId: args.ownerId } : {},
+      {
+        ...(args.ownerId ? { ownerId: args.ownerId } : {}),
+        options: {
+          choices: [{ ix: 0, value: 'Synthetic choice', correct: true }],
+          hasSampleSolution: true,
+          hasAnswerFeedbacks: false,
+        },
+      },
       prisma,
       0
     )
 
+    const element = await prisma.element.findUniqueOrThrow({
+      where: { id: elementId },
+    })
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
         name: uuid(),
@@ -160,7 +173,10 @@ describe('Integration tests for batch operations on activities', () => {
                     type: ElementInstanceType.LIVE_QUIZ,
                     elementType: ElementType.SC,
                     options: { pointsMultiplier: 1 },
-                    elementData: { pointsMultiplier: 1 } as ElementData,
+                    elementData: {
+                      ...processElementData(element),
+                      pointsMultiplier: 1,
+                    },
                     results: {} as ElementInstanceResults,
                     anonymousResults: {} as ElementInstanceResults,
                     elementId: elementId,
