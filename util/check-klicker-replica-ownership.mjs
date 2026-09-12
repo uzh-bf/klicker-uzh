@@ -479,7 +479,11 @@ function assertNegativeFixtures() {
 
 for (const environment of environments) {
   const resources = parseManifest(renderChart(environment), environment.name)
-  assertReplicaOwnership(resources, environment.name, 17)
+  assertReplicaOwnership(
+    resources,
+    environment.name,
+    { base: 17, stg: 19, prd: 17 }[environment.name]
+  )
   assertStaticLti(
     resources,
     environment.name,
