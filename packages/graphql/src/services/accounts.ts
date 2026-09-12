@@ -1938,10 +1938,7 @@ export async function loginParticipantForElearningChatbot(
   } catch {
     return { status: 'DENIED' as const }
   }
-  if (
-    verified.klickerCourseId !== courseId ||
-    verified.chatbotId !== chatbotId
-  )
+  if (verified.klickerCourseId !== courseId || verified.chatbotId !== chatbotId)
     return { status: 'DENIED' as const }
 
   const accountIssuer = process.env.APP_ORIGIN_API

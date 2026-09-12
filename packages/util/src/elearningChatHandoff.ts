@@ -64,7 +64,9 @@ function tokenError(
 ): never {
   const scope =
     payload && typeof payload.scope === 'string' ? payload.scope : 'unknown'
-  throw new Error('Invalid eLearning chat token: ' + reason + ' (scope=' + scope + ')')
+  throw new Error(
+    'Invalid eLearning chat token: ' + reason + ' (scope=' + scope + ')'
+  )
 }
 
 // Learner binding: an opaque, per-learner pseudonym that links the chat
@@ -84,7 +86,6 @@ export function learnerBindingsEqual(a: string, b: string): boolean {
   const bb = Buffer.from(b, 'utf8')
   return ab.length === bb.length && timingSafeEqual(ab, bb)
 }
-
 
 // Resolves the shared eLearning handoff secret. Production requires the
 // explicit purpose-scoped secret; development falls back to an APP_SECRET
@@ -114,11 +115,10 @@ export async function verifyElearningChatGrant(
   token: string,
   secret?: string
 ): Promise<ElearningChatGrant> {
-  const payload = await verifyJWT(
-    token,
-    requireSharedSecret(secret),
-    { issuer: ELEARNING_CHAT_ISSUER, clockTolerance: 0 }
-  )
+  const payload = await verifyJWT(token, requireSharedSecret(secret), {
+    issuer: ELEARNING_CHAT_ISSUER,
+    clockTolerance: 0,
+  })
 
   if (payload.aud !== undefined && !checkAudience(payload)) {
     tokenError(payload, 'wrong-audience')
@@ -170,11 +170,10 @@ export async function verifyElearningSnapshotEnvelope(
   token: string,
   secret?: string
 ): Promise<ElearningSnapshotEnvelope> {
-  const payload = await verifyJWT(
-    token,
-    requireSharedSecret(secret),
-    { issuer: ELEARNING_CHAT_ISSUER, clockTolerance: 0 }
-  )
+  const payload = await verifyJWT(token, requireSharedSecret(secret), {
+    issuer: ELEARNING_CHAT_ISSUER,
+    clockTolerance: 0,
+  })
 
   if (payload.aud !== undefined && !checkAudience(payload)) {
     tokenError(payload, 'wrong-audience')

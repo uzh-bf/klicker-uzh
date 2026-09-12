@@ -623,7 +623,8 @@ function AssistantLayout({
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextLabel = getKlickerChatContextLabel(context)
-  const hasQuestionContext = context?.source === 'pwa' && Boolean(context.question)
+  const hasQuestionContext =
+    context?.source === 'pwa' && Boolean(context.question)
 
   if (showSidebar) {
     return (
