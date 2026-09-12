@@ -119,7 +119,7 @@ function generatedChoicesElementInput(
     basePoints: true,
     pointsMultiplier: 1,
     difficultyLevel,
-    tags: [],
+    tags: draft.tags ?? [],
     options: {
       displayMode: DisplayMode.LIST,
       hasSampleSolution: true,

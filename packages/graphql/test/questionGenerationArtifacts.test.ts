@@ -1218,6 +1218,16 @@ describe('question-generation artifact normalization', () => {
     }
     const currentBank = finalBank({
       provenance: completeQuestionProvenance(),
+      title: 'Malolaktische Gärung',
+      suggested_tags: [
+        ' Gärung ',
+        'Gärung',
+        'Weinchemie',
+        '<b>Biologie</b>',
+        'extra',
+        '**Detailwissen**',
+        'ignoriert',
+      ],
     })
     currentBank.metadata.format = 'SC'
     currentBank.metadata.item_format = 'sc'
@@ -1230,6 +1240,13 @@ describe('question-generation artifact normalization', () => {
       provenanceAuthority: provenanceAuthority(),
     })
 
+    expect(questions[0]?.tags).toEqual([
+      'Gärung',
+      'Weinchemie',
+      'Biologie',
+      'extra',
+      'Detailwissen',
+    ])
     expect(questions[0]?.provenance).toMatchObject({
       lineageStatus: 'complete',
       graphVersionId: 'graph-version-1',
@@ -1768,6 +1785,7 @@ describe('question-generation artifact normalization', () => {
         sourceQuestionId: 'q01',
         name: 'Welche Umwandlung findet bei der malolaktischen Gärung statt?',
         stem: 'Welche Umwandlung findet bei der malolaktischen Gärung statt?',
+        tags: [],
         context: 'Eine Weinprobe wird nach der Gärung untersucht.',
         explanation: null,
         choices: [
