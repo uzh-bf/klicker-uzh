@@ -110,7 +110,11 @@ export function combineGraphSearchDocuments(
   const payload = {
     mode: 'documents',
     sources: [...groups.values()],
-    summary: { count: groups.size },
+    summary: {
+      count: groups.size,
+      sources_returned: groups.size,
+      chunks_returned: selected.length,
+    },
     sources_used: groups.size,
   }
   return sanitizeDocQueryResult({

@@ -273,8 +273,14 @@ retained/production database, corpus, or graph was touched by this repair.
 Slice review: done — ignored report `project/_local/reviews/navigation-slice-review.md`,
 all 20 navigation paths reviewed with no findings. Simplifier: two accepted
 removals of unused state and unreachable branches, verified and committed.
-Integrated final review is active on the complete committed range
+Integrated final review passed on the complete committed range
 `9cb4042334751fd80fde5b95319a6c41cdd4cdaa..9f4c37a7a8a4d92a0aff8a6ed53a0bcdc96db975`.
+All 55 changed paths were covered with no exclusions and no P1/P2 findings.
+The sole P3 finding was accepted: combined document envelopes now emit explicit
+source and passage counts. The existing deduplication test now distinguishes
+two source groups from three retained passages; all 15 retrieval tests and chat
+typecheck pass. This additive metadata correction leaves navigation unchanged;
+the browser and screenshot evidence remains applicable.
 CLI Claude OAuth and AGY read-access failures from this package are reused;
 GLM max continuity carries the full independent final-review contract. Exact-head
 CI is running; hosted OCR previously failed provider HTTP 402 and is not a

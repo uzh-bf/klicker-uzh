@@ -208,17 +208,26 @@ describe('graph-assisted document retrieval', () => {
 
   it('deduplicates exact passages but preserves different evidence from identically named sources', () => {
     const first = documents('First support')
+    first.sources[0]!.chunks.push({
+      content: 'Another passage',
+      page_number: 2,
+    })
     const second = documents('Different support')
     const result = combineGraphSearchDocuments(first, {
       mode: 'documents',
       sources: [...first.sources, ...second.sources],
     }) as any
     expect(result.structuredContent.sources).toHaveLength(2)
+    expect(result.structuredContent.summary).toEqual({
+      count: 2,
+      sources_returned: 2,
+      chunks_returned: 3,
+    })
     expect(
       result.structuredContent.sources.flatMap((source: any) =>
         source.chunks.map((chunk: any) => chunk.content)
       )
-    ).toEqual(['First support', 'Different support'])
+    ).toEqual(['First support', 'Another passage', 'Different support'])
   })
 
   it('handles JSON MCP envelopes and never retains obsolete generated answers', () => {
