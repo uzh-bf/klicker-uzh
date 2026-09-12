@@ -554,8 +554,16 @@ its dependent action. Read back effective settings and retain sanitized receipts
   - W3: `test-unit.yml` and `test-graphql.yml` publish LCOV as the
     `coverage-lcov` artifact, and the analysis imports a report only from a run
     bound to the analyzed head with a matching tested-source receipt
-    (`.github/scripts/sonar-coverage-inputs.cjs`, 23 unit cases). The coverage
-    threshold is deliberately unarmed.
+    (`.github/scripts/sonar-coverage-inputs.cjs`, 23 unit cases). The unit
+    suites invoke Vitest with the coverage flags directly because the first
+    `pnpm … test -- --coverage` form forwarded a literal `--`; Vitest then ran in
+    filter mode and published no LCOV without failing, and the artifact upload
+    now reports a missing report as a job failure instead of ignoring it.
+    Imported reports have their `SF:` entries rewritten to repository-relative
+    paths (`.github/scripts/sonar-coverage-transport.cjs`, 6 unit cases) so the
+    import does not depend on both runners sharing an absolute checkout path.
+    The coverage threshold is deliberately unarmed, and frontend PWA coverage
+    (Node test runner) is still unpublished.
   - W4: `dependency-review.yml` fails on high severity, and Dependabot now
     covers `uv` plus the twelve application Dockerfile directories. pnpm 11
     graph and updater support is still unverified, so this is not complete CVE

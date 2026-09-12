@@ -271,15 +271,16 @@ jobs:
 
       - name: Upload LCOV coverage
         # Upload on every outcome so coverage from the suite is still available
-        # to the Sonar analysis job even when the run fails. The path filter
-        # legitimately selects no suites, so if-no-files-found: ignore keeps the
-        # required status green when no lcov files exist.
+        # to the Sonar analysis job even when the run fails. The job itself is
+        # gated by the path filter, so a missing lcov file means the suite
+        # stopped producing coverage; fail instead of reporting a green test job
+        # without coverage.
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-lcov
           path: '**/coverage/lcov.info'
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
   # Always reports a status even when the tests are skipped by the path filter,

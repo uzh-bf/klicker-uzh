@@ -9,6 +9,36 @@ const path = require('node:path')
 
 const API = 'https://api.github.com'
 
+// LCOV records every source file as an absolute path on the runner that
+// produced it. Rewriting those paths to repository-relative form keeps
+// SonarCloud's resolution independent of the runner workspace layout, which the
+// artifact does not record. A path that cannot be mapped is left untouched and
+// surfaces as missing coverage rather than as a satisfied metric.
+function toRepositoryPath(filePath, options = {}) {
+  const workspace = options.workspace || ''
+  if (workspace && filePath.startsWith(workspace + '/')) {
+    return filePath.slice(workspace.length + 1)
+  }
+  const repository = options.repository || ''
+  const name = repository.split('/').pop()
+  if (name) {
+    // Actions checks the repository out at <runner directory>/<name>/<name>, so
+    // that pair marks the repository root on a differently laid out runner.
+    const marker = '/' + name + '/' + name + '/'
+    const index = filePath.indexOf(marker)
+    if (index !== -1) {
+      return filePath.slice(index + marker.length)
+    }
+  }
+  return filePath
+}
+
+function rewriteLcov(content, options) {
+  return content.replace(/^SF:(.+)$/gm, (_line, filePath) => {
+    return 'SF:' + toRepositoryPath(filePath.trim(), options)
+  })
+}
+
 function createTransport(options) {
   const token = options.token
   const repository = options.repository
@@ -111,14 +141,16 @@ function createTransport(options) {
 
     // The artifact layout depends on which packages produced reports, so the
     // files are re-homed into one predictable workspace directory per producer.
-    // The SF entries inside LCOV carry the absolute paths of the producing
-    // checkout, which is the same runner path as this analysis checkout, so
-    // SonarCloud resolves them against this project base. An unmapped entry
-    // surfaces as missing coverage rather than a satisfied metric.
+    // The SF entries inside LCOV are rewritten to repository-relative paths so
+    // the import does not depend on both runners sharing a checkout directory.
     async extractLcov(artifactId, label) {
       const directory = await unpack(artifactId)
       const files = walk(directory, (file) => file === 'lcov.info')
       const workspace = process.env.GITHUB_WORKSPACE || process.cwd()
+      const rewriteOptions = {
+        workspace: workspace,
+        repository: repository,
+      }
       const slug = String(label || artifactId).replace(/[^a-zA-Z0-9]+/g, '-')
       const target = path.join(workspace, 'coverage-inputs', slug)
       fs.mkdirSync(target, { recursive: true })
@@ -126,7 +158,11 @@ function createTransport(options) {
       files.forEach((file, index) => {
         const name =
           files.length === 1 ? 'lcov.info' : 'lcov-' + index + '.info'
-        fs.copyFileSync(file, path.join(target, name))
+        const content = fs.readFileSync(file, 'utf8')
+        fs.writeFileSync(
+          path.join(target, name),
+          rewriteLcov(content, rewriteOptions)
+        )
         reports.push(path.join('coverage-inputs', slug, name))
       })
       return reports
@@ -151,3 +187,5 @@ function createTransport(options) {
 }
 
 module.exports = createTransport
+module.exports.rewriteLcov = rewriteLcov
+module.exports.toRepositoryPath = toRepositoryPath

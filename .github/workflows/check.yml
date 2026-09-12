@@ -78,6 +78,7 @@ jobs:
             .github/scripts/stg-release-promoter.test.js \
             .github/scripts/required-build-status.test.cjs \
             .github/scripts/sonar-coverage-inputs.test.cjs \
+            .github/scripts/sonar-coverage-transport.test.cjs \
             .github/scripts/image-scan-receipt.test.cjs
 
       - name: Check Playwright CI contracts

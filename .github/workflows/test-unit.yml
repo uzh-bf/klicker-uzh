@@ -121,7 +121,7 @@ jobs:
 
       - name: Test chat app
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.setup_chat_db.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/chat test:run -- --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+        run: pnpm --filter @klicker-uzh/chat test:run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
         env:
           CHAT_ACCOUNT_USAGE_INTEGRATION: '1'
           CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'false'
@@ -134,28 +134,28 @@ jobs:
 
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/grading test -- --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+        run: pnpm --filter @klicker-uzh/grading test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
 
       - name: Test markdown package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/markdown test -- --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+        run: pnpm --filter @klicker-uzh/markdown test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
 
       - name: Test util package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/util test -- --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+        run: pnpm --filter @klicker-uzh/util test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
 
       - name: Upload LCOV coverage
         # Upload on every outcome so coverage from suites that did run is still
         # available to the Sonar analysis job even when a sibling suite failed.
-        # The path filter legitimately selects no suites, so
-        # if-no-files-found: ignore keeps the required status green when no
-        # lcov files exist.
+        # The job itself is gated by the path filter, so a missing lcov file
+        # means a suite stopped producing coverage; fail instead of reporting a
+        # green test job without coverage.
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-lcov
           path: '**/coverage/lcov.info'
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
   # Always reports a status even when the path filter selects nothing, so this
