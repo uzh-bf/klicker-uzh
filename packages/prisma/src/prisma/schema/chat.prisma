@@ -120,6 +120,10 @@ model ChatThread {
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chatbotId String  @db.Uuid
 
+  // Where the conversation began ('elearning' or 'pwa'); null for legacy
+  // rows, which render without an origin tag.
+  origin String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -139,6 +143,11 @@ model ChatMessage {
   lifecycleAttemptId String? @db.Uuid
   // Participant feedback on an assistant answer; null until they vote.
   rating           ChatMessageRating?
+  // Normalized, verified learning-context snapshot attached to the
+  // eLearning-origin user message it was submitted with; null otherwise.
+  // Owned by the message row, so the existing lifecycle and deletion
+  // rules cover it.
+  learningContext  Json?
 
   attachments ChatAttachment[]
 

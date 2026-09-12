@@ -1,3 +1,4 @@
+import type { ELearningSnapshotContent, KlickerChatContext } from '@klicker-uzh/types'
 import { createHash, randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
@@ -73,7 +74,7 @@ import {
 } from '@/src/services/accountUsage'
 import {
   formatKlickerChatContextForPrompt,
-  sanitizeKlickerChatContext,
+  sanitizeKlickerChatContextV2,
 } from '@/src/services/chatContext'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
@@ -93,6 +94,12 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
+import {
+  formatElearningSnapshotForPrompt,
+  hasSufficientElearningPageEvidence,
+  normalizePersistedLearningContext,
+  verifyAndNormalizeElearningChatContext,
+} from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -556,7 +563,12 @@ export async function POST(
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId, authMode, chatbot: authChatbot } = authResult
+  const {
+    participantId,
+    authMode,
+    learnerBinding,
+    chatbot: authChatbot,
+  } = authResult
 
   // check disclaimer acceptance
   try {
@@ -638,17 +650,48 @@ export async function POST(
     chatContext: rawChatContext,
   } = parsed
 
-  const sanitizedChatContext = sanitizeKlickerChatContext(rawChatContext)
-  const chatContext =
-    authChatbot && sanitizedChatContext?.courseId === authChatbot.courseId
-      ? sanitizedChatContext
-      : null
+  const sanitizedChatContext = sanitizeKlickerChatContextV2(rawChatContext)
+  let chatContext: KlickerChatContext | null = null
+  let verifiedElearningContext: { snapshot: ELearningSnapshotContent } | null =
+    null
+  if (sanitizedChatContext?.source === 'elearning') {
+    // The envelope is the only evidence carrier; client labels are
+    // display-only.
+    verifiedElearningContext = await verifyAndNormalizeElearningChatContext(
+      sanitizedChatContext.envelope,
+      {
+        chatbotId,
+        klickerCourseId: authChatbot.courseId,
+        learnerBinding,
+      }
+    )
+    if (!verifiedElearningContext) {
+      console.warn('Rejected eLearning chat context', {
+        requestId,
+        chatbotId,
+      })
+    }
+  } else if (
+    sanitizedChatContext &&
+    authChatbot &&
+    sanitizedChatContext.courseId === authChatbot.courseId
+  ) {
+    chatContext = sanitizedChatContext
+  }
 
-  if (sanitizedChatContext && authChatbot && !chatContext) {
+  if (
+    sanitizedChatContext &&
+    authChatbot &&
+    !chatContext &&
+    !verifiedElearningContext
+  ) {
     console.warn('Ignoring chat context for unrelated course', {
       requestId,
       chatbotId,
-      contextCourseId: sanitizedChatContext.courseId,
+      contextCourseId:
+        sanitizedChatContext.source === 'pwa'
+          ? sanitizedChatContext.courseId
+          : null,
       chatbotCourseId: authChatbot.courseId,
     })
   }
@@ -931,7 +974,9 @@ export async function POST(
         const newThread = await ThreadService.createThread(
           participantId,
           chatbotId,
-          null
+          null,
+          undefined,
+          verifiedElearningContext ? 'elearning' : undefined
         )
         currentThreadId = newThread.id
         createdThreadId = newThread.id
@@ -971,7 +1016,7 @@ export async function POST(
     }
   }
 
-  let owningThread: { id: string } | null
+  let owningThread: { id: string; origin: string | null } | null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -979,7 +1024,7 @@ export async function POST(
         participantId,
         chatbotId,
       },
-      select: { id: true },
+      select: { id: true, origin: true },
     })
   } catch (error) {
     await discardCreatedThread('thread.ownership.error')
@@ -996,6 +1041,33 @@ export async function POST(
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
   if (lastMessage?.role === 'user') {
     userMessageId = lastMessage.id
+  }
+
+  // eLearning-origin threads derive their answer context from the snapshot
+  // saved with the target user message; a verified live envelope is used
+  // only for a genuinely new turn (persisted below).
+  let elearningSnapshot: ELearningSnapshotContent | null = null
+  let persistElearningContext: ELearningSnapshotContent | null = null
+  if (owningThread && owningThread.origin === 'elearning') {
+    const savedRow = userMessageId
+      ? await prisma.chatMessage.findFirst({
+          where: {
+            id: userMessageId,
+            threadId: owningThread.id,
+            role: 'user',
+          },
+          select: { learningContext: true },
+        })
+      : null
+    const savedSnapshot = normalizePersistedLearningContext(
+      savedRow?.learningContext
+    )
+    if (savedSnapshot) {
+      elearningSnapshot = savedSnapshot
+    } else if (verifiedElearningContext) {
+      elearningSnapshot = verifiedElearningContext.snapshot
+      persistElearningContext = verifiedElearningContext.snapshot
+    }
   }
 
   let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
@@ -1281,9 +1353,16 @@ export async function POST(
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
-    const contextAwareSystemPrompt = chatContextPrompt
-      ? `${systemPrompt}\n\n${chatContextPrompt}`
-      : systemPrompt
+    const elearningContextPrompt = formatElearningSnapshotForPrompt(
+      elearningSnapshot
+    )
+    const contextSections = [chatContextPrompt, elearningContextPrompt].filter(
+      Boolean
+    )
+    const contextAwareSystemPrompt =
+      contextSections.length > 0
+        ? `${systemPrompt}\n\n${contextSections.join('\n\n')}`
+        : systemPrompt
     const practiceAwareSystemPrompt = practiceCandidatePrompt
       ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
       : contextAwareSystemPrompt
@@ -1449,7 +1528,7 @@ export async function POST(
       ),
       responseExampleSetDigest,
       responseExampleProjectionDigest,
-      hasChatContext: Boolean(chatContextPrompt),
+      hasChatContext: Boolean(chatContextPrompt || elearningContextPrompt),
       systemPromptLength: effectiveSystemPrompt.length,
       systemPromptHash: effectiveSystemPrompt
         ? hashSnippet(effectiveSystemPrompt)
@@ -1584,6 +1663,11 @@ export async function POST(
                 role: lastMessage.role,
                 content: [{ type: 'text', text: lastMessage.content }],
                 ...metadata,
+                // New eLearning turns persist their verified snapshot with the
+                // question; retries and regeneration keep the original.
+                ...(persistElearningContext
+                  ? { learningContext: persistElearningContext }
+                  : {}),
               },
             })
 
@@ -1604,6 +1688,18 @@ export async function POST(
           phase: 'persist.userMessage',
           error,
         })
+        if (owningThread && owningThread.origin === 'elearning') {
+          // Contextual generation requires durable question persistence; a
+          // failed save returns a recoverable error without an answer. The
+          // client retry reuses the original question identity.
+          return NextResponse.json(
+            {
+              error: 'Unable to persist the question context',
+              code: 'ELEARNING_CONTEXT_PERSIST_FAILED',
+            },
+            { status: 503 }
+          )
+        }
       }
     } else if (currentThreadId && !owningThread && userMessageId) {
       console.warn('Skipping user message save: thread ownership mismatch', {

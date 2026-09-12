@@ -1,6 +1,7 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import { ThreadService } from '@/src/services/threads'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 /**
  * Retrieves all chat threads for the authenticated participant ordered by most recently updated.
@@ -45,11 +46,23 @@ export async function POST(
   const { participantId } = authResult
 
   try {
-    const { title } = await req.json()
+    const body = z
+      .object({
+        title: z.string().max(200).nullable().optional(),
+        origin: z.enum(['elearning']).optional(),
+      })
+      .parse(await req.json())
+    // Only an eLearning handoff identity may tag a thread as eLearning.
+    const origin =
+      body.origin === 'elearning' && authResult.learnerBinding
+        ? 'elearning'
+        : undefined
     const thread = await ThreadService.createThread(
       participantId,
       chatbotId,
-      title
+      body.title,
+      undefined,
+      origin
     )
     return NextResponse.json(thread)
   } catch (error) {

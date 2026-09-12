@@ -355,7 +355,12 @@ export async function withChatbotAuth(
   req: NextRequest,
   chatbotId: string
 ): Promise<
-  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
+  | {
+      participantId: string
+      authMode: AuthMode
+      learnerBinding?: string
+      chatbot: { courseId: string }
+    }
   | { response: NextResponse }
 > {
   const participantResult = await getParticipantId(req)
@@ -376,10 +381,15 @@ export async function authorizeIdentityForChatbot(
   participantResult: ParticipantIdentity,
   chatbotId: string
 ): Promise<
-  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
+  | {
+      participantId: string
+      authMode: AuthMode
+      learnerBinding?: string
+      chatbot: { courseId: string }
+    }
   | { response: NextResponse }
 > {
-  const { participantId, authMode } = participantResult
+  const { participantId, authMode, learnerBinding } = participantResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
   if ('response' in chatbotResult) {
@@ -408,7 +418,12 @@ export async function authorizeIdentityForChatbot(
     return participationResult
   }
 
-  return { participantId, authMode, chatbot: chatbotResult.chatbot }
+  return {
+    participantId,
+    authMode,
+    ...(learnerBinding ? { learnerBinding } : {}),
+    chatbot: chatbotResult.chatbot,
+  }
 }
 
 export async function requireParticipation(
