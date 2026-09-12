@@ -80,3 +80,11 @@ Evidence: the Resource API list exposes only each known synthetic managed resour
 - Real local synthetic metadata was rendered through the API in EN/DE without raw video storage. Browser network fixtures exercise upload/pagination/error UI only; they do not prove deployed ingestion or retrieval. No live registration, deployment, or corpus changes performed.
 - Task runtime: rs-kb-imported-sources at this worktree. Recovery after a launcher profile failure stopped only this runtime; the canonical Manage-profile browser retry passed with isolated blob port 51504. Stop and verify before final review.
 - Video citation/source-display regression: 88/88 pass. Remaining: S3 risk review, integrated final review, draft PR delivery. No PR exists yet.
+
+### Delivery checkpoint
+
+- Final UI behavior verified by Chromium at 1a62606023; citation tests 88/88 pass. S3 reviewer found only a test cleanup issue; ce179a6f70 moves the override into outer scope and resets it at the start of finally. Production source unchanged.
+- Runtime release verified: exact task container 47628fe6c1b0 is exited; exact workspace has zero routes. No data deletion.
+- Public push was rejected by automatic approval review: explicit authorization for publishing the unpushed branch to public uzh-bf/klicker-uzh is required. No push or PR creation occurred.
+- Claude final review returned terminal session limit with no review. Configured AGY Gemini 3.8 Flash high fallback was rejected by automatic approval review for missing explicit authorization to transmit the unpushed source to that provider. No fallback review occurred and no other provider attempted.
+- Next required input: approval for public task-branch push/draft PR and for the named AGY read-only final review, or an available approved final-review route. Native goal remains incomplete. Local draft description and screenshots are in project/_local/imported-source-gallery; review manifest and results in project/_local/reviews.
