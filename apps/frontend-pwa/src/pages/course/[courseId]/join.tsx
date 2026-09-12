@@ -1,12 +1,13 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CreateParticipantAccountDocument,
+  CreateParticipantAccountWithDataUseDocument,
   GetBasicCourseInformationDocument,
   JoinCourseWithPinDocument,
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { initializeApollo } from '@lib/apollo'
 import {
   Button,
@@ -29,11 +30,13 @@ function JoinCourse({
   displayName,
   color,
   courseLoading,
+  dataUseDisclosureVersion,
 }: {
   courseId: string
   displayName: string
   color: string
   courseLoading: boolean
+  dataUseDisclosureVersion: string
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -60,7 +63,7 @@ function JoinCourse({
     useQuery(SelfDocument)
 
   const [createParticipantAccount] = useMutation(
-    CreateParticipantAccountDocument,
+    CreateParticipantAccountWithDataUseDocument,
     { refetchQueries: [{ query: SelfDocument }] }
   )
   const [joinCourseWithPin] = useMutation(JoinCourseWithPinDocument)
@@ -159,6 +162,12 @@ function JoinCourse({
                     password: values.password.trim(),
                     isProfilePublic: values.isProfilePublic,
                     courseId,
+                    dataUse: {
+                      disclosureVersion: dataUseDisclosureVersion,
+                      researchConsent: values.researchConsent,
+                      learningAnalyticsConsent: values.learningAnalyticsConsent,
+                      acknowledged: values.acknowledged,
+                    },
                   },
                 })
 
@@ -211,6 +220,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         color: data?.basicCourseInformation?.color,
         description: data?.basicCourseInformation?.description,
         courseLoading: loading,
+        dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },

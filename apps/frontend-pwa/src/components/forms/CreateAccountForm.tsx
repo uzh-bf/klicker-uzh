@@ -7,18 +7,20 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import {
   Button,
   Checkbox,
-  Collapsible,
-  FormikSwitchField,
   FormikTextField,
   H3,
   H4,
-  Prose,
+  RadioGroup,
+  RadioGroupItem,
+  ShadcnLabel,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+
+import ParticipantDataDisclosure from '../participant/ParticipantDataDisclosure'
 
 interface Props {
   initialUsername?: string
@@ -32,6 +34,7 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
+  const isAssessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
   const [checkParticipantNameAvailable] = useLazyQuery(
     CheckParticipantNameAvailableDocument
   )
@@ -57,23 +60,18 @@ function CreateAccountForm({
       .string()
       .required()
       .min(8, t('pwa.profile.passwordMinLength', { length: '8' })),
-    passwordRepetition: yup.string().when('password', {
-      is: (val: string) => val && val.length > 0,
-      then: (schema) =>
-        schema
-          .required(t('pwa.profile.identicalPasswords'))
-          .min(8, t('pwa.profile.passwordMinLength', { length: '8' }))
-          .oneOf(
-            [yup.ref('password'), 'null'],
-            t('pwa.profile.identicalPasswords')
-          ),
-      otherwise: (schema) =>
-        schema.oneOf([''], t('pwa.profile.identicalPasswords')),
-    }),
+    researchConsent: yup
+      .boolean()
+      .required(t('pwa.createAccount.signup.dataUseChoiceRequired')),
+    learningAnalyticsConsent: yup
+      .boolean()
+      .required(t('pwa.createAccount.signup.dataUseChoiceRequired')),
+    acknowledged: yup
+      .boolean()
+      .required(t('pwa.createAccount.signup.acknowledgementRequired'))
+      .oneOf([true], t('pwa.createAccount.signup.acknowledgementRequired')),
   })
 
-  const [tosChecked, setTosChecked] = useState<boolean>(false)
-  const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | undefined
   >(true)
@@ -85,13 +83,15 @@ function CreateAccountForm({
         email: initialEmail?.toLowerCase() ?? '',
         username: initialUsername,
         password: '',
-        passwordRepetition: '',
         isProfilePublic: true,
+        researchConsent: true,
+        learningAnalyticsConsent: undefined as boolean | undefined,
+        acknowledged: false,
       }}
       validationSchema={createAccountSchema}
       onSubmit={handleSubmit}
     >
-      {({ isSubmitting, isValid, values, validateField }) => (
+      {({ isSubmitting, isValid, setFieldValue, values, validateField }) => (
         <Form>
           <div className="flex flex-col gap-2 md:mx-auto md:grid md:w-full md:max-w-[1090px] md:grid-cols-2">
             <div className="order-3 flex flex-col items-center justify-between gap-2 rounded bg-slate-100 p-4 py-2 md:col-span-2 md:flex-row md:gap-4 md:px-4">
@@ -102,7 +102,7 @@ function CreateAccountForm({
                     className={{
                       root: twMerge(
                         'h-6 w-6',
-                        !tosChecked && 'border-red-600 bg-red-400'
+                        !values.acknowledged && 'border-red-600 bg-red-400'
                       ),
                     }}
                     data={{ cy: 'tos-checkbox' }}
@@ -113,21 +113,32 @@ function CreateAccountForm({
                         className={{
                           root: twMerge(
                             'prose-p:mb-0 prose-sm ml-4 max-w-lg',
-                            !tosChecked && 'text-red-600'
+                            !values.acknowledged && 'text-red-600'
                           ),
                         }}
-                        content={t('pwa.createAccount.confirmationMessage')}
+                        content={t(
+                          isAssessment
+                            ? 'pwa.createAccount.signup.assessmentAcknowledgement'
+                            : 'pwa.createAccount.signup.acknowledgement'
+                        )}
                       />
                     }
-                    onCheck={() => setTosChecked(!tosChecked)}
-                    checked={tosChecked}
+                    onCheck={() =>
+                      setFieldValue('acknowledged', !values.acknowledged)
+                    }
+                    checked={values.acknowledged}
                   />
                 </div>
               </div>
               <Button
                 primary
                 type="submit"
-                disabled={!tosChecked || !isValid}
+                disabled={
+                  !isValid ||
+                  typeof values.researchConsent !== 'boolean' ||
+                  typeof values.learningAnalyticsConsent !== 'boolean' ||
+                  !values.acknowledged
+                }
                 loading={isSubmitting}
                 className={{
                   root: 'h-8 w-full flex-none md:w-max',
@@ -135,12 +146,18 @@ function CreateAccountForm({
                 data={{ cy: 'create-profile-button' }}
               >
                 <Button.Icon icon={faSave} loading={isSubmitting} />
-                <Button.Label>{t('pwa.profile.createProfile')}</Button.Label>
+                <Button.Label>
+                  {t(
+                    isAssessment
+                      ? 'pwa.createAccount.signup.assessmentSubmit'
+                      : 'pwa.createAccount.signup.submit'
+                  )}
+                </Button.Label>
               </Button>
             </div>
             <div className="order-1 gap-3 rounded md:order-1 md:bg-slate-50 md:p-4">
               <H3 className={{ root: 'mb-0 border-b' }}>
-                {t('shared.generic.profile')}
+                {t('pwa.createAccount.signup.accountTitle')}
               </H3>
               <div className="mb-2 space-y-3">
                 <FormikTextField
@@ -175,6 +192,9 @@ function CreateAccountForm({
                   className={{ label: 'mt-0' }}
                   data={{ cy: 'username-field-account-creation' }}
                 />
+                <p className="text-sm text-slate-600">
+                  {t('pwa.createAccount.signup.usernameHint')}
+                </p>
                 <FormikTextField
                   required
                   name="password"
@@ -185,106 +205,148 @@ function CreateAccountForm({
                   type="password"
                   data={{ cy: 'password-field' }}
                 />
-                <FormikTextField
-                  required
-                  name="passwordRepetition"
-                  label={t('shared.generic.passwordRepetition')}
-                  className={{
-                    label: 'mt-0 text-black',
-                  }}
-                  type="password"
-                  data={{ cy: 'password-repetition-field' }}
-                />
-
-                <div>
-                  <div className="font-bold">
-                    {t('pwa.profile.publicProfile')}
-                  </div>
-                  <div className="space-between flex flex-row gap-4">
-                    <div className="flex flex-col items-center gap-1">
-                      <FormikSwitchField
-                        name="isProfilePublic"
-                        data={{ cy: 'toggle-profile-public-setting' }}
-                      />
-                      {values.isProfilePublic
-                        ? t('shared.generic.yes')
-                        : t('shared.generic.no')}
-                    </div>
-                    <div className="flex-1">
-                      <Prose className={{ root: 'prose-sm' }}>
-                        {t('pwa.profile.isProfilePublic')}
-                      </Prose>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
             <div className="order-2 space-y-2 rounded md:order-2 md:justify-between md:bg-slate-50 md:p-4">
               <H3 className={{ root: 'mb-0 border-b' }}>
-                {t('pwa.createAccount.dataProcessingTitle')}
+                {t('pwa.createAccount.signup.dataUseTitle')}
               </H3>
-              <Collapsible
-                open={openCollapsibleIx === 0}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 0 ? -1 : 0)
-                }
-                staticContent={
-                  <H4>{t('pwa.createAccount.dataCollectionTitle')}</H4>
-                }
-              >
+              <ParticipantDataDisclosure isAssessment={isAssessment} />
+              <section className="space-y-2 rounded bg-slate-50 p-3">
+                <H4>{t('pwa.createAccount.signup.researchConsentTitle')}</H4>
                 <Markdown
                   withProse
                   withLinkButtons={false}
                   className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataCollectionNotice')}
+                  content={t(
+                    'pwa.createAccount.signup.researchConsentDescription'
+                  )}
                 />
-              </Collapsible>
-              <Collapsible
-                open={openCollapsibleIx === 1}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 1 ? -1 : 1)
-                }
-                staticContent={
-                  <H4>{t('pwa.createAccount.dataSharingTitle')}</H4>
-                }
-              >
+                <RadioGroup
+                  aria-label={t(
+                    'pwa.createAccount.signup.researchConsentTitle'
+                  )}
+                  aria-required="true"
+                  className="mt-2 gap-2"
+                  value={
+                    values.researchConsent === undefined
+                      ? ''
+                      : values.researchConsent
+                        ? 'yes'
+                        : 'no'
+                  }
+                  onValueChange={(value) => {
+                    if (value === 'yes' || value === 'no') {
+                      setFieldValue('researchConsent', value === 'yes')
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="yes"
+                      id="research-consent-yes"
+                      data-cy="research-consent-yes"
+                    />
+                    <ShadcnLabel htmlFor="research-consent-yes">
+                      {t('pwa.createAccount.signup.researchConsentYes')}
+                    </ShadcnLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="no"
+                      id="research-consent-no"
+                      data-cy="research-consent-no"
+                    />
+                    <ShadcnLabel htmlFor="research-consent-no">
+                      {t('pwa.createAccount.signup.researchConsentNo')}
+                    </ShadcnLabel>
+                  </div>
+                </RadioGroup>
+              </section>
+              <section className="space-y-2 rounded bg-slate-50 p-3">
+                <H4>
+                  {t('pwa.createAccount.signup.learningAnalyticsConsentTitle')}
+                </H4>
                 <Markdown
                   withProse
                   withLinkButtons={false}
                   className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataSharingNotice')}
+                  content={t(
+                    'pwa.createAccount.signup.learningAnalyticsConsentDescription'
+                  )}
                 />
-              </Collapsible>
-              <Collapsible
-                open={openCollapsibleIx === 2}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 2 ? -1 : 2)
-                }
-                staticContent={<H4>{t('pwa.createAccount.dataUsageTitle')}</H4>}
-              >
-                <Markdown
-                  withProse
-                  withLinkButtons={false}
-                  className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataUsageNotice')}
-                />
-              </Collapsible>
-              <Collapsible
-                open={openCollapsibleIx === 3}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 3 ? -1 : 3)
-                }
-                staticContent={
-                  <H4>{t('pwa.createAccount.dataStorageTitle')}</H4>
-                }
-              >
-                <Markdown
-                  withProse
-                  withLinkButtons={false}
-                  className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataStorageNotice')}
-                />
-              </Collapsible>
+                <RadioGroup
+                  aria-label={t(
+                    'pwa.createAccount.signup.learningAnalyticsConsentTitle'
+                  )}
+                  aria-required="true"
+                  className="mt-2 gap-2"
+                  value={
+                    values.learningAnalyticsConsent === undefined
+                      ? ''
+                      : values.learningAnalyticsConsent
+                        ? 'yes'
+                        : 'no'
+                  }
+                  onValueChange={(value) => {
+                    if (value === 'yes' || value === 'no') {
+                      setFieldValue('learningAnalyticsConsent', value === 'yes')
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="yes"
+                      id="learning-analytics-consent-yes"
+                      data-cy="learning-analytics-consent-yes"
+                    />
+                    <ShadcnLabel htmlFor="learning-analytics-consent-yes">
+                      <span className="flex flex-col">
+                        <span>
+                          {t(
+                            'pwa.createAccount.signup.learningAnalyticsConsentYes'
+                          )}
+                        </span>
+                        <span className="text-sm text-slate-600">
+                          {t(
+                            'pwa.createAccount.signup.learningAnalyticsConsentYesDescription'
+                          )}
+                        </span>
+                      </span>
+                    </ShadcnLabel>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem
+                      value="no"
+                      id="learning-analytics-consent-no"
+                      data-cy="learning-analytics-consent-no"
+                    />
+                    <ShadcnLabel htmlFor="learning-analytics-consent-no">
+                      <span className="flex flex-col">
+                        <span>
+                          {t(
+                            'pwa.createAccount.signup.learningAnalyticsConsentNo'
+                          )}
+                        </span>
+                        <span className="text-sm text-slate-600">
+                          {t(
+                            'pwa.createAccount.signup.learningAnalyticsConsentNoDescription'
+                          )}
+                        </span>
+                      </span>
+                    </ShadcnLabel>
+                  </div>
+                </RadioGroup>
+                <a
+                  className="text-sm underline"
+                  data-cy="learning-analytics-privacy-policy"
+                  href={t('auth.privacyUrl')}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t('pwa.profile.dataUsePrivacyPolicy')}
+                </a>
+              </section>
             </div>
           </div>
         </Form>

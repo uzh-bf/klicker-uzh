@@ -7,7 +7,10 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { schema } from '../src/index.js'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
@@ -32,6 +35,30 @@ const fixtureIds: {
   participantIds: string[]
   userIds: string[]
 } = { courseIds: [], participantIds: [], userIds: [] }
+
+// Participants created by this suite represent accounts that have already
+// completed the account-wide data-use disclosure. Refusing both optional
+// purposes is a valid, complete onboarding state.
+const acknowledgedParticipantDataUse = {
+  researchConsent: false,
+  learningAnalyticsConsent: false,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseRevision: 1,
+  dataUseEvents: {
+    create: {
+      revision: 1,
+      disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+      acknowledged: true,
+    },
+  },
+}
 
 function participantContext(
   participantId: string,
@@ -102,6 +129,7 @@ async function createFixture() {
       email: `${TEST_PREFIX}-untrusted-${suffix}@example.net`,
       password: 'not-used',
       isActive: true,
+      ...acknowledgedParticipantDataUse,
       invitations: {
         create: {
           courseId: course.id,

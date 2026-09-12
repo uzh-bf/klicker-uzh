@@ -1,0 +1,13 @@
+mutation SetLearningAnalyticsConsentWithRevision(
+  $consent: Boolean!
+  $expectedRevision: Int!
+  $disclosureVersion: String!
+) {
+  setLearningAnalyticsConsent(
+    consent: $consent
+    expectedRevision: $expectedRevision
+    disclosureVersion: $disclosureVersion
+  ) {
+    ...ParticipantDataUseData
+  }
+}

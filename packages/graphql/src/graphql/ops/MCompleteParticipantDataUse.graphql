@@ -1,0 +1,17 @@
+mutation CompleteParticipantDataUse(
+  $expectedRevision: Int!
+  $disclosureVersion: String!
+  $researchConsent: Boolean!
+  $learningAnalyticsConsent: Boolean!
+  $acknowledged: Boolean!
+) {
+  completeParticipantDataUse(
+    expectedRevision: $expectedRevision
+    disclosureVersion: $disclosureVersion
+    researchConsent: $researchConsent
+    learningAnalyticsConsent: $learningAnalyticsConsent
+    acknowledged: $acknowledged
+  ) {
+    ...ParticipantAccountDataUseData
+  }
+}
