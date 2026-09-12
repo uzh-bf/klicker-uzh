@@ -116,6 +116,25 @@ export function normalizeSourcesFromParts(
   return sources
 }
 
+/** Maps original source positions to the message registry without renumbering. */
+export function sourceCitationIndices(
+  payload: Record<string, unknown>,
+  sources: readonly ChatSource[]
+): Array<number | null> {
+  if (!Array.isArray(payload.sources)) return []
+  const indices = new Map(sources.map((source) => [source.id, source.index]))
+  return payload.sources.map((source) => {
+    const [normalized] = normalizeSourcesFromParts([
+      {
+        type: 'tool-call',
+        toolName: 'doc_query',
+        result: { ...payload, sources: [source] },
+      },
+    ])
+    return normalized ? (indices.get(normalized.id) ?? null) : null
+  })
+}
+
 function isQualifyingPart(
   part: ChatSourcePart
 ): part is ChatSourcePart & { toolName: string; result: unknown } {

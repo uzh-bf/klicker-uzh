@@ -109,6 +109,14 @@ Planning construction completed by planner `01a0952c-cbb2-7390-ae2f-bf273ee625b8
 Frozen-draft hardening approved in round 2; all three round-1 findings accepted.
 Optional AGY review was blocked by the approval check; no disclosure occurred.
 Baseline normalizer, citation and SDK streaming checks pass: 52 tests.
+Implementation is present: full Chat suite 640 passed/21 skipped, then the added
+multimodal test passed in the 11-test focused suite. Chat typecheck, lint (only
+existing warnings), and production build passed. Chromium's one-group/20-chunk
+reload test passed after correcting its expected in-page citation link.
+Root check:all requires split execution: its host-launcher tests reject running
+inside the container. Both host suites passed (64 and 48 tests); the remaining
+container checks passed (35 Turbo tasks). Staged secret scanning passed.
+Required implementation reviews and draft delivery remain pending.
 Runtime startup for this exact worktree completed
-with Devrouter 0.0.73, profile `chat`; no model key injected. No source edits or
-tests yet. Stop and verify the exact runtime after the last check or real pause.
+with Devrouter 0.0.73, profile `chat`; no model key injected.
+Stop and verify the exact runtime after the last check or real pause.
