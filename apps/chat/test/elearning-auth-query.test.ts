@@ -40,6 +40,16 @@ describe('eLearning auth query', () => {
 })
 
 describe('resolveElearningLaunchUrl', () => {
+  test('opens the same conversation outside the iframe after a fresh handoff', () => {
+    const url = resolveElearningLaunchUrl(
+      new URL('https://chat.example.org/auth/elearning?grant=old'),
+      { chatbotId, threadId, locale: 'en', embed: '0' }
+    )
+    expect(url.pathname).toBe(`/${chatbotId}/threads/${threadId}`)
+    expect(url.searchParams.has('embed')).toBe(false)
+    expect(url.searchParams.has('grant')).toBe(false)
+  })
+
   test('marks the framed conversation as embedded and carries the locale', () => {
     const url = resolveElearningLaunchUrl(
       new URL('https://chat.example.org/auth/elearning?grant=abc&embed=0'),

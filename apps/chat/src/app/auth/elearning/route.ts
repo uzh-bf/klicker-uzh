@@ -30,6 +30,7 @@ const querySchema = z.object({
   // The eLearning UI locale is carried through the auth redirect so Chat's
   // root layout renders the embedded conversation in the host language.
   locale: z.enum(['en', 'de']).optional(),
+  embed: z.enum(['0', '1']).optional(),
   // Optional deep link to the conversation the host remembers for this
   // learner, chatbot and course; ownership is enforced by the chat UI.
   threadId: z.string().uuid().optional(),
@@ -88,14 +89,19 @@ function setLocaleCookie(
 // the render language from the query when the cookie is missing.
 export function resolveElearningLaunchUrl(
   base: URL,
-  input: { chatbotId: string; threadId?: string; locale?: 'en' | 'de' }
+  input: {
+    chatbotId: string
+    threadId?: string
+    locale?: 'en' | 'de'
+    embed?: '0' | '1'
+  }
 ): URL {
   const url = new URL(base.toString())
   url.pathname = input.threadId
     ? `/${input.chatbotId}/threads/${input.threadId}`
     : `/${input.chatbotId}`
   url.search = ''
-  url.searchParams.set('embed', '1')
+  if (input.embed !== '0') url.searchParams.set('embed', '1')
   if (input.locale) url.searchParams.set('locale', input.locale)
   return url
 }
@@ -107,6 +113,7 @@ export function parseElearningAuthQuery(searchParams: URLSearchParams) {
     chatbotId: searchParams.get('chatbotId'),
     locale: searchParams.get('locale') ?? undefined,
     threadId: searchParams.get('threadId') ?? undefined,
+    embed: searchParams.get('embed') ?? undefined,
   })
 }
 
@@ -130,7 +137,8 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const { grant, courseId, chatbotId, locale, threadId } = queryResult.data
+  const { grant, courseId, chatbotId, locale, threadId, embed } =
+    queryResult.data
 
   let verified: Awaited<ReturnType<typeof verifyElearningChatGrant>>
   try {
@@ -237,6 +245,7 @@ export async function GET(req: NextRequest) {
     chatbotId,
     threadId,
     locale,
+    embed,
   })
 
   const isProduction =
