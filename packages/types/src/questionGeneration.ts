@@ -171,9 +171,29 @@ export type GeneratedQuestionEditable = {
     correct: boolean
     feedback: string | null
   }>
+  tagSelection?: GeneratedQuestionTagSelection
+}
+
+// Requested tag selection for a generated question draft. `existingTagIds`
+// references tags of the reviewing owner by id; `newTagNames` are proposals
+// that are only created with a successful save. This is the requested intent,
+// not the resolved tag set, so an identical retry stays an exact retry after a
+// proposal has become an existing tag.
+export type GeneratedQuestionTagSelection = {
+  existingTagIds: number[]
+  newTagNames: string[]
+}
+
+// Input form of a selection as it arrives over GraphQL. Either list may be
+// omitted or null and is then treated as empty; normalization validates and
+// deduplicates the arrived values.
+export type GeneratedQuestionTagSelectionInput = {
+  existingTagIds?: number[] | null
+  newTagNames?: string[] | null
 }
 
 export type GeneratedQuestionOriginal = GeneratedQuestionEditable & {
+  suggestedTags?: string[]
   sourceQuestionId: string
   bloomLevel: QuestionGenerationBloomLevel
   targetDifficulty: number
@@ -248,3 +268,139 @@ export const QUESTION_GENERATION_CAPABILITIES = {
   requiresPlanReview: true,
   supportsIndividualRegeneration: false,
 } as const
+
+export type GeneratedQuestionTagCandidate = {
+  id: number
+  name: string
+}
+
+export type GeneratedQuestionTagMatch = {
+  existingTagIds: number[]
+  newTagNames: string[]
+}
+
+const MAX_GENERATED_QUESTION_TAG_MATCHES = 5
+const TOKEN_OVERLAP_THRESHOLD = 0.5
+const MIN_SHARED_TOKEN_LENGTH = 3
+
+export function normalizeGeneratedQuestionTagLabel(value: string): string {
+  return value.trim().replace(/\s+/gu, ' ')
+}
+
+function generatedQuestionTagKey(value: string): string {
+  return normalizeGeneratedQuestionTagLabel(value).toLocaleLowerCase()
+}
+
+function generatedQuestionTagTokens(value: string): string[] {
+  return generatedQuestionTagKey(value)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+}
+
+// Conservative token overlap: at least one shared token of three or more
+// characters and strictly more than half of the union's tokens shared, counting
+// every token once no matter how often it repeats. Weak matches are dropped
+// instead of filling a suggestion quota.
+function conservativeTokenOverlap(
+  left: string[],
+  right: string[]
+): number | null {
+  if (left.length === 0 || right.length === 0) return null
+  const leftTokens = new Set(left)
+  const rightTokens = new Set(right)
+  const shared = [...leftTokens].filter((token) => rightTokens.has(token))
+  if (
+    shared.length === 0 ||
+    !shared.some((token) => token.length >= MIN_SHARED_TOKEN_LENGTH)
+  ) {
+    return null
+  }
+  const union = new Set([...leftTokens, ...rightTokens]).size
+  const score = shared.length / union
+  return score > TOKEN_OVERLAP_THRESHOLD ? score : null
+}
+
+// Ranks advisory generation labels against the reviewing owner's tags: exact
+// name first, then case/whitespace-normalized, then conservative token overlap.
+// Returns at most five existing recommendations and five new proposals and
+// never preselects them. Matching is advisory only and never merges tags.
+export function suggestGeneratedQuestionTags(
+  suggestedTags: readonly string[],
+  existingTags: readonly GeneratedQuestionTagCandidate[]
+): GeneratedQuestionTagMatch {
+  const exactMatches = new Map<string, GeneratedQuestionTagCandidate>()
+  for (const tag of existingTags) {
+    const label = normalizeGeneratedQuestionTagLabel(tag.name)
+    if (label && !exactMatches.has(label)) exactMatches.set(label, tag)
+  }
+
+  const ranked: Array<{
+    rank: number
+    index: number
+    tag: GeneratedQuestionTagCandidate
+  }> = []
+  const proposals: Array<{ index: number; label: string }> = []
+
+  suggestedTags.forEach((suggestion, index) => {
+    if (typeof suggestion !== 'string') return
+    const label = normalizeGeneratedQuestionTagLabel(suggestion)
+    if (!label) return
+
+    const exact = exactMatches.get(label)
+    if (exact) {
+      ranked.push({ rank: 0, index, tag: exact })
+      return
+    }
+
+    const key = generatedQuestionTagKey(label)
+    const normalized = existingTags.find(
+      (tag) => generatedQuestionTagKey(tag.name) === key
+    )
+    if (normalized) {
+      ranked.push({ rank: 1, index, tag: normalized })
+      return
+    }
+
+    const tokens = generatedQuestionTagTokens(label)
+    let best: { score: number; tag: GeneratedQuestionTagCandidate } | null =
+      null
+    for (const tag of existingTags) {
+      const score = conservativeTokenOverlap(
+        tokens,
+        generatedQuestionTagTokens(tag.name)
+      )
+      if (score === null) continue
+      if (!best || score > best.score) best = { score, tag }
+    }
+    if (best) {
+      ranked.push({ rank: 2, index, tag: best.tag })
+      return
+    }
+
+    proposals.push({ index, label })
+  })
+
+  const existingTagIds: number[] = []
+  for (const entry of ranked.sort(
+    (left, right) => left.rank - right.rank || left.index - right.index
+  )) {
+    if (existingTagIds.length === MAX_GENERATED_QUESTION_TAG_MATCHES) break
+    if (existingTagIds.includes(entry.tag.id)) continue
+    existingTagIds.push(entry.tag.id)
+  }
+
+  const newTagNames: string[] = []
+  const proposedKeys = new Set<string>()
+  for (const proposal of proposals) {
+    if (newTagNames.length === MAX_GENERATED_QUESTION_TAG_MATCHES) break
+    const key = generatedQuestionTagKey(proposal.label)
+    if (proposedKeys.has(key)) continue
+    if (existingTags.some((tag) => generatedQuestionTagKey(tag.name) === key)) {
+      continue
+    }
+    proposedKeys.add(key)
+    newTagNames.push(proposal.label)
+  }
+
+  return { existingTagIds, newTagNames }
+}

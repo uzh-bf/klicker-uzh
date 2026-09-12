@@ -57,6 +57,7 @@ function ElementEditForm({
   inputsDisabled = false,
   templateId,
   preserveDraftOnDismiss = false,
+  hideCanonicalTags = false,
   onClose,
   onSuccess,
   mode,
@@ -84,6 +85,7 @@ function ElementEditForm({
   templateId?: string
   // flag to preserve dirty drafts when the modal is dismissed (creation only)
   preserveDraftOnDismiss?: boolean
+  hideCanonicalTags?: boolean
   // modal state props
   onClose: () => void
   onSuccess: () => void
@@ -307,10 +309,14 @@ function ElementEditForm({
                   setElementDataTypename={setElementDataTypename}
                   validateForm={validateForm}
                 />
-                <div ref={formBodyRef} className="flex flex-row gap-12">
-                  <div className="flex-1">
+                <div
+                  ref={formBodyRef}
+                  className="flex flex-col gap-6 lg:flex-row lg:gap-12"
+                >
+                  <div className="min-w-0 flex-1">
                     <Form className="w-full" id="question-manipulation-form">
                       <ElementInformationFields
+                        hideCanonicalTags={hideCanonicalTags}
                         isTemplate={isTemplate}
                         elementId={elementId}
                         inputsDisabled={inputsDisabled}

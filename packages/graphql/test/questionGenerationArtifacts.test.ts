@@ -6,6 +6,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   deriveGeneratedQuestionName,
+  normalizeGeneratedTagSuggestions,
   parseQuestionGenerationDesign,
   parseQuestionGenerationFinalBank,
   parseQuestionGenerationGraphManifest,
@@ -2196,6 +2197,39 @@ describe('question-generation artifact normalization', () => {
         new Intl.Segmenter('und', { granularity: 'grapheme' }).segment(name)
       )
     ).toHaveLength(120)
+  })
+
+  it('treats malformed advisory metadata as optional', () => {
+    const fallback = 'synthetic fallback'
+    for (const title of [undefined, null, 123, {}, '<p></p>']) {
+      expect(deriveGeneratedQuestionName(title, fallback)).toBe(fallback)
+    }
+    expect(normalizeGeneratedTagSuggestions({})).toEqual([])
+    expect(
+      normalizeGeneratedTagSuggestions([
+        null,
+        'topic',
+        'topic',
+        'x'.repeat(61),
+        '👨‍👩‍👧‍👦',
+        'a',
+        'b',
+        'c',
+        'd',
+      ])
+    ).toEqual(['topic', '👨‍👩‍👧‍👦', 'a', 'b', 'c'])
+    const result = parseQuestionGenerationResult(bytes(completedResult()), {
+      buildId: BUILD_ID,
+      questionCount: 1,
+    })
+    const questions = parseQuestionGenerationFinalBank(
+      bytes(finalBank({ title: { invalid: true }, suggested_tags: ['topic'] })),
+      { questionCount: 1, sourceSnapshot, expectedQuestionIds: ['q01'], result }
+    )
+    expect(questions[0]?.suggestedTags).toEqual(['topic'])
+    expect(questions[0]?.name).toBe(
+      deriveGeneratedQuestionName(undefined, questions[0]!.stem)
+    )
   })
 
   it.each([

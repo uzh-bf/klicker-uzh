@@ -18,6 +18,10 @@ mutation UpdateGeneratedElementDraft(
       }
       cardType
       tags
+      tagSelection {
+        existingTagIds
+        newTagNames
+      }
     }
     updatedAt
   }

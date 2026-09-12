@@ -6,6 +6,8 @@ import type {
   GeneratedQuestionCitation,
   GeneratedQuestionEditable,
   GeneratedQuestionOriginal,
+  GeneratedQuestionTagSelection,
+  GeneratedQuestionTagSelectionInput,
   QuestionGenerationConfiguration,
   QuestionGenerationDesignSummary,
   QuestionGenerationPlanSummary,
@@ -478,6 +480,17 @@ GeneratedElementChoiceRef.implement({
   }),
 })
 
+const GeneratedElementTagSelectionRef =
+  builder.objectRef<GeneratedQuestionTagSelection>(
+    'GeneratedElementTagSelection'
+  )
+GeneratedElementTagSelectionRef.implement({
+  fields: (t) => ({
+    existingTagIds: t.exposeIntList('existingTagIds'),
+    newTagNames: t.exposeStringList('newTagNames'),
+  }),
+})
+
 type GeneratedElementEditableView = {
   name: string
   prompt: string
@@ -486,6 +499,7 @@ type GeneratedElementEditableView = {
   choices: GeneratedElementChoiceView[]
   cardType: GeneratedElementCardTypeValue | null
   tags: string[]
+  tagSelection: GeneratedQuestionTagSelection | null
 }
 const GeneratedElementEditableRef =
   builder.objectRef<GeneratedElementEditableView>('GeneratedElementEditable')
@@ -501,6 +515,11 @@ GeneratedElementEditableRef.implement({
       nullable: true,
     }),
     tags: t.exposeStringList('tags'),
+    tagSelection: t.field({
+      type: GeneratedElementTagSelectionRef,
+      nullable: true,
+      resolve: (view) => view.tagSelection,
+    }),
   }),
 })
 
@@ -522,6 +541,7 @@ function editableView(
       choices: [],
       cardType: card.cardType,
       tags: card.tags,
+      tagSelection: null,
     }
   }
   const question = value as GeneratedQuestionEditable
@@ -533,7 +553,15 @@ function editableView(
     choices: question.choices,
     cardType: null,
     tags: [],
+    tagSelection: question.tagSelection ?? null,
   }
+}
+
+// Advisory labels produced by generation; they are matched against the owner's
+// tags by the reviewing client and never populate the draft automatically.
+function draftSuggestedTags(draft: DB.GeneratedElementDraft): string[] {
+  if (draft.elementType === DB.ElementType.FLASHCARD) return []
+  return (draft.original as GeneratedQuestionOriginal).suggestedTags ?? []
 }
 
 const GeneratedElementCitationRef =
@@ -582,6 +610,10 @@ GeneratedElementDraftRef.implement({
     current: t.field({
       type: GeneratedElementEditableRef,
       resolve: (draft) => editableView(draft.elementType, draft.current),
+    }),
+    suggestedTags: t.field({
+      type: ['String'],
+      resolve: (draft) => draftSuggestedTags(draft),
     }),
     revision: t.exposeInt('revision'),
     decision: t.expose('decision', { type: GeneratedElementDecision }),
@@ -816,6 +848,23 @@ const GeneratedElementChoiceInputRef = builder
     }),
   })
 
+export const GeneratedElementTagSelectionInputRef = builder
+  .inputRef<GeneratedQuestionTagSelectionInput>(
+    'GeneratedElementTagSelectionInput'
+  )
+  .implement({
+    fields: (t) => ({
+      existingTagIds: t.intList({
+        required: false,
+        validate: { maxLength: 100 },
+      }),
+      newTagNames: t.stringList({
+        required: false,
+        validate: { maxLength: 100 },
+      }),
+    }),
+  })
+
 const GeneratedElementEditableInputRef = builder
   .inputRef<GeneratedElementEditableInputValue>('GeneratedElementEditableInput')
   .implement({
@@ -845,6 +894,10 @@ const GeneratedElementEditableInputRef = builder
       tags: t.stringList({
         required: false,
         validate: { maxLength: 20 },
+      }),
+      tagSelection: t.field({
+        type: GeneratedElementTagSelectionInputRef,
+        required: false,
       }),
     }),
   })

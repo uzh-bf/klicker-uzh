@@ -128,15 +128,17 @@ function savedElement() {
         correct: choice.correct,
       })),
     },
-    tags: [{ name: 'generated' }],
+    tags: [{ id: 12, name: 'generated' }],
   }
 }
 
 function context(fullDraft: ReturnType<typeof draft>) {
-  const findFirst = vi
-    .fn()
-    .mockResolvedValueOnce({ buildId })
-    .mockResolvedValueOnce(fullDraft)
+  // A retry runs the same reads against committed state again, so the ownership
+  // probe and the detail read are modelled by query shape rather than a one-shot
+  // queue that a second transaction would exhaust.
+  const findFirst = vi.fn(async (args: Record<string, unknown>) =>
+    'select' in args ? { buildId } : fullDraft
+  )
   const transaction = {
     $queryRaw: vi.fn(async () => []),
     generatedElementDraft: {
@@ -150,6 +152,14 @@ function context(fullDraft: ReturnType<typeof draft>) {
         savedElementId: 91,
         savedAt,
       })),
+    },
+    tag: {
+      findMany: vi.fn(async () => [] as Array<{ id: number }>),
+      findUnique: vi.fn(async () => null),
+      create: vi.fn(async () => ({ id: 900 })),
+    },
+    element: {
+      update: vi.fn(async () => ({ id: 91 })),
     },
   }
   return {
@@ -201,7 +211,11 @@ describe('atomic generated-element keep', () => {
         savedElementId: null,
       },
       data: {
-        current,
+        // The legacy name input is stored as the requested selection intent.
+        current: {
+          ...current,
+          tagSelection: { existingTagIds: [], newTagNames: ['generated'] },
+        },
         revision: { increment: 1 },
         decision: DB.GeneratedElementDecision.ACCEPTED,
         savedElementId: 91,
@@ -589,5 +603,208 @@ describe('atomic generated-element keep', () => {
       keepGeneratedElementDraft(input, ctx as never)
     ).rejects.toMatchObject({ code: 'GENERATED_QUESTION_DRAFT_NOT_FOUND' })
     expect(manipulateElement).not.toHaveBeenCalled()
+  })
+
+  it('connects a selection by validated owner id instead of by name', async () => {
+    const { ctx, transaction } = context(draft())
+    transaction.tag.findMany.mockResolvedValue([{ id: 7 }, { id: 8 }])
+    vi.mocked(manipulateElement).mockResolvedValue(savedElement() as never)
+
+    await keepGeneratedElementDraft(
+      {
+        ...input,
+        tags: undefined,
+        tagSelection: { existingTagIds: [7, 8], newTagNames: [] },
+      },
+      ctx as never
+    )
+
+    expect(transaction.tag.create).not.toHaveBeenCalled()
+    expect(manipulateElement).toHaveBeenCalledWith(
+      expect.objectContaining({ tags: [] }),
+      expect.objectContaining({ prisma: transaction })
+    )
+    expect(transaction.element.update).toHaveBeenCalledWith({
+      where: { id: 91 },
+      data: { tags: { set: [{ id: 7 }, { id: 8 }] } },
+    })
+  })
+
+  it('creates a new proposal in the keep transaction and connects it by id', async () => {
+    const { ctx, transaction } = context(draft())
+    transaction.tag.create.mockResolvedValue({ id: 901 })
+    vi.mocked(manipulateElement).mockResolvedValue(savedElement() as never)
+
+    await keepGeneratedElementDraft(
+      {
+        ...input,
+        tags: undefined,
+        tagSelection: { existingTagIds: [], newTagNames: ['Frisch'] },
+      },
+      ctx as never
+    )
+
+    expect(transaction.tag.create).toHaveBeenCalledWith({
+      data: { name: 'Frisch', owner: { connect: { id: ownerId } } },
+      select: { id: true },
+    })
+    expect(transaction.element.update).toHaveBeenCalledWith({
+      where: { id: 91 },
+      data: { tags: { set: [{ id: 901 }] } },
+    })
+  })
+
+  it('preserves the stored selection when both tag fields are omitted', async () => {
+    const storedSelection = { existingTagIds: [7], newTagNames: [] }
+    const { ctx, transaction } = context(
+      draft({ current: { ...current, tagSelection: storedSelection } })
+    )
+    transaction.tag.findMany.mockResolvedValue([{ id: 7 }])
+    vi.mocked(manipulateElement).mockResolvedValue(savedElement() as never)
+
+    await keepGeneratedElementDraft({ ...input, tags: undefined }, ctx as never)
+
+    expect(transaction.element.update).toHaveBeenCalledWith({
+      where: { id: 91 },
+      data: { tags: { set: [{ id: 7 }] } },
+    })
+    expect(transaction.generatedElementDraft.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          current: expect.objectContaining({ tagSelection: storedSelection }),
+        }),
+      })
+    )
+  })
+
+  it('clears the stored selection with an explicitly empty selection', async () => {
+    const { ctx, transaction } = context(
+      draft({
+        current: {
+          ...current,
+          tagSelection: { existingTagIds: [7], newTagNames: [] },
+        },
+      })
+    )
+    vi.mocked(manipulateElement).mockResolvedValue(savedElement() as never)
+
+    await keepGeneratedElementDraft(
+      {
+        ...input,
+        tags: undefined,
+        tagSelection: { existingTagIds: [], newTagNames: [] },
+      },
+      ctx as never
+    )
+
+    expect(transaction.tag.findMany).not.toHaveBeenCalled()
+    expect(transaction.tag.create).not.toHaveBeenCalled()
+    expect(transaction.element.update).toHaveBeenCalledWith({
+      where: { id: 91 },
+      data: { tags: { set: [] } },
+    })
+  })
+
+  it('rejects a request supplying both legacy tags and a selection', async () => {
+    const { ctx } = context(draft())
+
+    await expect(
+      keepGeneratedElementDraft(
+        { ...input, tagSelection: { existingTagIds: [], newTagNames: [] } },
+        ctx as never
+      )
+    ).rejects.toMatchObject({ code: 'DRAFT_INVALID' })
+    expect(manipulateElement).not.toHaveBeenCalled()
+  })
+
+  it('rejects a selection referencing a tag of another owner', async () => {
+    const { ctx, transaction } = context(draft())
+    transaction.tag.findMany.mockResolvedValue([])
+
+    await expect(
+      keepGeneratedElementDraft(
+        {
+          ...input,
+          tags: undefined,
+          tagSelection: { existingTagIds: [7], newTagNames: [] },
+        },
+        ctx as never
+      )
+    ).rejects.toMatchObject({ code: 'DRAFT_INVALID' })
+    expect(manipulateElement).not.toHaveBeenCalled()
+    expect(transaction.element.update).not.toHaveBeenCalled()
+  })
+
+  it('returns the linked element for an exact selection retry', async () => {
+    const existing = draft({
+      revision: 3,
+      decision: DB.GeneratedElementDecision.ACCEPTED,
+      savedElementId: 91,
+      current: {
+        ...current,
+        tagSelection: { existingTagIds: [7], newTagNames: [] },
+      },
+      savedElement: {
+        ...savedElement(),
+        tags: [{ id: 7, name: 'Portfolio' }],
+      },
+      savedAt,
+    })
+    const { ctx, transaction } = context(existing)
+    transaction.tag.findMany.mockResolvedValue([{ id: 7 }])
+
+    await expect(
+      keepGeneratedElementDraft({ ...input, tags: undefined }, ctx as never)
+    ).resolves.toMatchObject({ savedElementId: 91 })
+    expect(manipulateElement).not.toHaveBeenCalled()
+    expect(transaction.tag.create).not.toHaveBeenCalled()
+    expect(transaction.element.update).not.toHaveBeenCalled()
+  })
+
+  it('retries the keep transaction after a concurrent owner/name tag conflict', async () => {
+    const { ctx, transaction } = context(draft())
+    transaction.tag.create
+      .mockRejectedValueOnce(
+        // The real Prisma 7 driver-adapter report for a duplicate owner/name tag.
+        new DB.Prisma.PrismaClientKnownRequestError(
+          'Unique constraint failed on the fields: ("ownerId", name)',
+          {
+            code: 'P2002',
+            clientVersion: '7.8.0',
+            meta: {
+              modelName: 'Tag',
+              driverAdapterError: {
+                cause: {
+                  kind: 'UniqueConstraintViolation',
+                  originalCode: '23505',
+                  constraint: { fields: ['"ownerId"', 'name'] },
+                  originalMessage:
+                    'duplicate key value violates unique constraint "Tag_ownerId_name_key"',
+                },
+              },
+            },
+          }
+        )
+      )
+      .mockResolvedValue({ id: 901 })
+    vi.mocked(manipulateElement).mockResolvedValue(savedElement() as never)
+
+    await expect(
+      keepGeneratedElementDraft(
+        {
+          ...input,
+          tags: undefined,
+          tagSelection: { existingTagIds: [], newTagNames: ['Frisch'] },
+        },
+        ctx as never
+      )
+    ).resolves.toMatchObject({ savedElementId: 91 })
+
+    expect(ctx.prisma.$transaction).toHaveBeenCalledTimes(2)
+    expect(transaction.element.update).toHaveBeenCalledTimes(1)
+    expect(transaction.element.update).toHaveBeenCalledWith({
+      where: { id: 91 },
+      data: { tags: { set: [{ id: 901 }] } },
+    })
   })
 })

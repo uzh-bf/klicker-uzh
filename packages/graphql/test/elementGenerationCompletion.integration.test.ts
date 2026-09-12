@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   GeneratedFlashcard,
@@ -31,6 +31,7 @@ function question(
 ): GeneratedQuestionWithProvenance {
   return {
     sourceQuestionId: 'question-1',
+    suggestedTags: ['synthetic-topic'],
     itemType,
     name: 'Synthetic question',
     stem: 'Choose the correct answer',
@@ -231,6 +232,7 @@ async function bounded<T>(promise: Promise<T>): Promise<T> {
 
 describe('initial Element completion', () => {
   beforeEach(async () => {
+    await requireDisposableDatabase(prisma)
     ownerId = randomUUID()
     const kbId = randomUUID()
     graphBuildId = randomUUID()
@@ -255,6 +257,7 @@ describe('initial Element completion', () => {
     })
   })
   afterEach(async () => {
+    await requireDisposableDatabase(prisma)
     await prisma.user.delete({ where: { id: ownerId } })
   })
   afterAll(async () => {
@@ -276,6 +279,7 @@ describe('initial Element completion', () => {
       predictedDifficulty,
       qualityFlags,
       citations,
+      suggestedTags,
       ...current
     } = generated
     const { provenance: _provenance, ...original } = generated
@@ -320,6 +324,8 @@ describe('initial Element completion', () => {
       lastSynchronizedAt: expect.any(Date),
     })
     expect(after.spends).toEqual([])
+    expect(after.drafts[0]?.original).toMatchObject({ suggestedTags })
+    expect(after.drafts[0]?.current).not.toHaveProperty('suggestedTags')
     expect(await prisma.element.count({ where: { ownerId } })).toBe(0)
   })
 
