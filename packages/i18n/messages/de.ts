@@ -1804,6 +1804,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
+    importedSourcesTitle: 'Importierte Quellen',
+    importedSourcesNotice:
+      'Importierte Metadaten für Inhalte, die bereits in dieser Wissensdatenbank indexiert sind. Importierte Quellen werden nicht für Wissensgraphen verwendet und zählen nicht zu den Ressourcen- und Speicherlimits.',
+    importedSourcesCount:
+      '{count, plural, =0 {Keine importierten Quellen} one {# importierte Quelle} other {# importierte Quellen}}',
+    importedSourcesEmpty:
+      'Für diese Wissensdatenbank wurden noch keine importierten Quellen erfasst.',
+    importedSourcesLoadError:
+      'Die importierten Quellen konnten nicht geladen werden.',
+    loadMoreImportedSources: 'Weitere importierte Quellen laden',
+    importedSourcesLoadMoreError:
+      'Die weiteren importierten Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
+    importedObservedAt: 'Beobachtet am {date}',
+    importedIngestedAt: 'Verarbeitet am {date}',
+    importedIngestionUnknown: 'Verarbeitungszeit nicht erfasst',
+    importedKindDocument: 'Dokument',
+    importedKindLink: 'Link',
+    importedKindVideo: 'Video',
+    importedKindImage: 'Bild',
+    importedVideoNoFileHint:
+      'Videoinhalte werden ohne Speicherung der Originaldatei indexiert.',
+    deleteImportedSourcesBlocked:
+      'Diese Wissensdatenbank enthält importierte Quellen. Nur der Betrieb kann sie entfernen, deshalb bleibt das Löschen deaktiviert, bis sie bereinigt sind.',
+    deleteImportedSourcesError:
+      'Diese Wissensdatenbank enthält importierte Quellen. Wenden Sie sich an den Betrieb, um sie vor dem Löschen zu entfernen.',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
     emptyResourceHint:
       'Verwenden Sie oben «Ressource hinzufügen», um eine Website oder ein Dokument hinzuzufügen.',
