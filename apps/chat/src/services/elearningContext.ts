@@ -14,8 +14,18 @@ import { z } from 'zod'
 // answer when retrieval is unavailable; below it, the limitation is stated.
 export const ELEARNING_PAGE_EVIDENCE_MIN_CHARS = 1000
 
-const availabilitySchema = z.enum(['full-text', 'metadata', 'unavailable', 'unknown'])
-const completionSchema = z.enum(['confirmed_complete', 'pending', 'incomplete', 'unavailable'])
+const availabilitySchema = z.enum([
+  'full-text',
+  'metadata',
+  'unavailable',
+  'unknown',
+])
+const completionSchema = z.enum([
+  'confirmed_complete',
+  'pending',
+  'incomplete',
+  'unavailable',
+])
 
 const locationSchema = z
   .object({
@@ -180,6 +190,11 @@ export function formatElearningSnapshotForPrompt(
       "Never claim to have inspected underlying files, animations, interactive content or quiz state when the material availability is 'metadata', 'unavailable' or 'unknown'. Explain the supplied description instead.",
       'A title or description does not prove access to the underlying material. Retrieved results remain a partial view; empty retrieval is not proof of absence.',
       'When retrieval is unavailable or fails, disclose that and answer only from the supplied page text if it suffices; otherwise state the limitation.',
+      ...(hasSufficientElearningPageEvidence(snapshot)
+        ? []
+        : [
+            'The supplied page text is too short to ground subject teaching on its own; beyond it, answer only from retrieved course material and state the limitation when that does not support the question.',
+          ]),
       'Completion facts describe recorded progress, never mastery or understanding.',
     ].join('\n'),
   ]

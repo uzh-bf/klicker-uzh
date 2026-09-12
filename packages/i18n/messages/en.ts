@@ -292,6 +292,7 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      elearningTag: 'eLearning',
     },
     thread: {
       viewportLabel: 'Conversation transcript',
@@ -306,6 +307,26 @@ export default {
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
       welcomeMode: 'Selected mode: {mode}',
+      learningContext: {
+        summary: 'Learning context used',
+        location: 'Location',
+        observed: 'Observed at',
+        evidence: 'Evidence',
+        completionLabel: 'Progress',
+        truncated: 'truncated',
+        completion: {
+          confirmed_complete: 'completed',
+          pending: 'pending',
+          incomplete: 'incomplete',
+          unavailable: 'unavailable',
+        },
+        availability: {
+          'full-text': 'Page text available',
+          metadata: 'metadata only',
+          unavailable: 'Content not inspectable',
+          unknown: 'Availability unknown',
+        },
+      },
     },
     suggestions: {
       sectionLabel: 'Conversation starters',

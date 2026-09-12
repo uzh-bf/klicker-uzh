@@ -1,4 +1,7 @@
-import type { ELearningSnapshotContent, KlickerChatContext } from '@klicker-uzh/types'
+import type {
+  ELearningSnapshotContent,
+  KlickerChatContext,
+} from '@klicker-uzh/types'
 import { createHash, randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
@@ -96,7 +99,6 @@ import {
 } from '@/src/services/studentPracticeMcp'
 import {
   formatElearningSnapshotForPrompt,
-  hasSufficientElearningPageEvidence,
   normalizePersistedLearningContext,
   verifyAndNormalizeElearningChatContext,
 } from '@/src/services/elearningContext'
@@ -1353,9 +1355,8 @@ export async function POST(
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
-    const elearningContextPrompt = formatElearningSnapshotForPrompt(
-      elearningSnapshot
-    )
+    const elearningContextPrompt =
+      formatElearningSnapshotForPrompt(elearningSnapshot)
     const contextSections = [chatContextPrompt, elearningContextPrompt].filter(
       Boolean
     )

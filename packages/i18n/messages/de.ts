@@ -299,6 +299,7 @@ export default {
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
+      elearningTag: 'eLearning',
     },
     thread: {
       viewportLabel: 'Gesprächsverlauf',
@@ -313,6 +314,26 @@ export default {
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
       welcomeMode: 'Ausgewählter Modus: {mode}',
+      learningContext: {
+        summary: 'Verwendeter Lernkontext',
+        location: 'Ort',
+        observed: 'Erhoben am',
+        evidence: 'Beleglage',
+        completionLabel: 'Fortschritt',
+        truncated: 'gekürzt',
+        completion: {
+          confirmed_complete: 'abgeschlossen',
+          pending: 'ausstehend',
+          incomplete: 'unvollständig',
+          unavailable: 'nicht verfügbar',
+        },
+        availability: {
+          'full-text': 'Seitentext verfügbar',
+          metadata: 'nur Beschreibung',
+          unavailable: 'Inhalt nicht einsehbar',
+          unknown: 'Verfügbarkeit unbekannt',
+        },
+      },
     },
     suggestions: {
       sectionLabel: 'Gesprächseinstiege',

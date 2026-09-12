@@ -41,6 +41,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LearningContextCard from '@/src/components/learning-context-card'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
@@ -1452,6 +1453,8 @@ const UserMessage: FC = () => {
         )}
         <MessagePrimitive.Content />
       </div>
+
+      <LearningContextCard message={message} />
 
       <div className="flex min-h-6 items-center">
         <UserActionBar />
