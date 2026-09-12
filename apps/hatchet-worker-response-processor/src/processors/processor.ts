@@ -11,7 +11,7 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -22,6 +22,9 @@ import {
   getFreeTextQuestionPoints,
   getNumericalQuestionPoints,
   getSelectionQuestionPoints,
+  hasGradableFreeTextAnswer,
+  hasGradableNumericalAnswer,
+  isFullyCorrect,
   updateLeaderboards,
   validateStudentResponse,
 } from './helpers.js'
@@ -175,7 +178,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
@@ -279,11 +282,7 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
+          if (isFullyCorrect(pointsPercentage) && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -360,7 +359,10 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
+          if (
+            hasGradableNumericalAnswer(parsedSolutions, pointsPercentage) &&
+            !firstResponseReceivedAt
+          ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -438,7 +440,10 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (pointsPercentage && !firstResponseReceivedAt) {
+          if (
+            hasGradableFreeTextAnswer(pointsPercentage) &&
+            !firstResponseReceivedAt
+          ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -517,11 +522,7 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
+          if (isFullyCorrect(pointsPercentage) && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(
@@ -618,11 +619,7 @@ export async function processResponseMessage(
           pointsAwarded = computedPoints
           xpAwarded = computedXp
 
-          if (
-            pointsPercentage !== null &&
-            pointsPercentage === 1 &&
-            !firstResponseReceivedAt
-          ) {
+          if (isFullyCorrect(pointsPercentage) && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
             redisExec.hset(

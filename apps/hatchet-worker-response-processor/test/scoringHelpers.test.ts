@@ -10,6 +10,9 @@ import {
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPoints,
   getSelectionQuestionPointsDetails,
+  hasGradableFreeTextAnswer,
+  hasGradableNumericalAnswer,
+  isFullyCorrect,
 } from '@/src/processors/helpers.js'
 
 // ! Characterization battery for the response-processor scoring helpers.
@@ -18,8 +21,8 @@ import {
 // (helpers.ts + @klicker-uzh/grading) and pin the observable scoring
 // behavior, including the per-type differences that a future consolidation
 // must preserve:
-// - choices/selection/case-study award via `pointsPercentage`, numerical and
-//   free text via `getsMaxPoints` (equivalent at the produced percentages)
+// - all types award via `pointsPercentage` (numerical/free-text percentages are
+//   {0, 1, null}, so the percentage path equals the former getsMaxPoints path)
 // - XP is 10 iff the percentage is exactly 1, otherwise 0 (null coerces to 0)
 // - the bonus declines linearly from maxBonusPoints to zero after
 //   timeToZeroBonus seconds, measured against firstResponseReceivedAt
@@ -188,7 +191,7 @@ describe('characterization of the response processor scoring helpers', () => {
       responseTimestamp: RESPONSE_TIMESTAMP,
     }
 
-    it('grades exact solutions via the getsMaxPoints path', () => {
+    it('grades exact solutions through the shared percentage path', () => {
       const result = getNumericalQuestionPoints({
         ...exactBase,
         response: { value: '5' },
@@ -502,5 +505,34 @@ describe('characterization of the response processor scoring helpers', () => {
 
       expect(result.bonusPoints).toBe(45)
     })
+  })
+})
+
+describe('first-response guard predicates', () => {
+  // the live-quiz flow combines these per-type predicates with its own
+  // !firstResponseReceivedAt check; the variants below intentionally differ
+  // between question types and are preserved verbatim
+  it('isFullyCorrect accepts only a percentage of exactly one', () => {
+    expect(isFullyCorrect(1)).toBe(true)
+    expect(isFullyCorrect(0.5)).toBe(false)
+    expect(isFullyCorrect(0)).toBe(false)
+    expect(isFullyCorrect(null)).toBe(false)
+  })
+
+  it('hasGradableNumericalAnswer requires solutions and a non-zero percentage', () => {
+    expect(hasGradableNumericalAnswer([5], 1)).toBe(true)
+    expect(hasGradableNumericalAnswer([{ min: 1, max: 2 }], 1)).toBe(true)
+    expect(hasGradableNumericalAnswer([5], 0)).toBe(false)
+    expect(hasGradableNumericalAnswer(undefined, 1)).toBe(false)
+    // quirk preserved verbatim: an empty array is truthy, so it counts as
+    // gradable in the original guard
+    expect(hasGradableNumericalAnswer([], 1)).toBe(true)
+  })
+
+  it('hasGradableFreeTextAnswer requires a non-zero percentage', () => {
+    expect(hasGradableFreeTextAnswer(1)).toBe(true)
+    expect(hasGradableFreeTextAnswer(0.5)).toBe(true)
+    expect(hasGradableFreeTextAnswer(0)).toBe(false)
+    expect(hasGradableFreeTextAnswer(null)).toBe(false)
   })
 })
