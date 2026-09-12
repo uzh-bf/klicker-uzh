@@ -47,6 +47,8 @@ export type ExtendedThreadMessageLike = ThreadMessageLike & {
   reasoningContent?: string | null
   creditsUsed?: number | null
   rating?: MessageRating | null
+  // Verified learning-context snapshot on eLearning-origin user messages.
+  learningContext?: unknown
   imageAttachments?: {
     id?: string
     type: 'image'
@@ -75,6 +77,7 @@ export interface Thread {
   createdAt: Date
   updatedAt: Date
   lastChatMode?: string | null // mode of the thread's most recent message (D6)
+  origin?: string | null // where the conversation began ('elearning' | 'pwa')
   lastRunOutcome?: ThreadRunOutcome | null // reset when a new run starts
 }
 

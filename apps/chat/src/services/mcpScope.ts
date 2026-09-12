@@ -22,7 +22,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function requiredScopeError(): never {
-  throw new RequiredMCPUnavailableError()
+  // Scope binding and isolation failures must never be softened into a
+  // page-only answer, so they carry the fail-closed reason.
+  throw new RequiredMCPUnavailableError('scope_violation')
 }
 
 type ResolvedMcpScope = {

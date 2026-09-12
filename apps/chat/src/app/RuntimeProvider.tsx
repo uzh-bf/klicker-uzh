@@ -269,6 +269,7 @@ export function RuntimeProvider({
         modelId,
         reasoningEffort,
         creditsUsed,
+        learningContext,
         imageAttachments,
         metadata,
         ...rest
@@ -280,6 +281,7 @@ export function RuntimeProvider({
         modelId: modelId ?? null,
         reasoningEffort: reasoningEffort ?? null,
         creditsUsed: creditsUsed ?? null,
+        learningContext: learningContext ?? null,
         imageAttachments: imageAttachments ?? [],
       }
 

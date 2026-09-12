@@ -381,6 +381,16 @@ export const Mutation = builder.mutationType({
           AccountService.loginParticipantForLtiChatbot(args, ctx),
       }),
 
+      loginParticipantForElearningChatbot: t.field({
+        type: LtiChatbotLogin,
+        args: {
+          grant: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
+          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+        },
+        resolve: (_, args, ctx) =>
+          AccountService.loginParticipantForElearningChatbot(args, ctx),
+      }),
       loginParticipantWithLti: t.field({
         nullable: true,
         type: ParticipantTokenData,

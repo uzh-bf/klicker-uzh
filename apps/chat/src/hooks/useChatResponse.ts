@@ -13,6 +13,7 @@ import {
   type ThreadRunOutcome,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { requestFreshElearningChatContext } from './useEmbeddedChatContext'
 
 type GenerateChatResponseOptions = {
   allowRegeneration?: boolean
@@ -193,6 +194,20 @@ export function useChatResponse(
           ]
         }
 
+        // A new embedded eLearning question re-requests the page snapshot from
+        // the host: the launch snapshot can expire or describe a page the
+        // student has left, and a completion change arrives without navigation.
+        // Edits and regenerations keep the server-side historical context.
+        const isBranchOrRegeneration = Boolean(
+          options.allowRegeneration ||
+            resolvedTriggerMessage?.attachmentSourceMessageId
+        )
+        const requestChatContext =
+          !isBranchOrRegeneration &&
+          (chatContext?.source === 'elearning' || chatContext == null)
+            ? await requestFreshElearningChatContext()
+            : chatContext
+
         // send request to API with streaming enabled
         const response = await authedFetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
@@ -218,8 +233,12 @@ export function useChatResponse(
             selectedModel,
             selectedMode,
             reasoningEffort: selectedReasoningEffort,
-            chatContext: chatContext ?? undefined,
+            chatContext: requestChatContext ?? undefined,
             parentId: parentId || undefined,
+            // A branch (edit) keeps the original question's learning context
+            // instead of the page that happens to be live now.
+            sourceMessageId:
+              resolvedTriggerMessage?.attachmentSourceMessageId || undefined,
             assistantMessageId,
             ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
             images: (resolvedTriggerMessage?.imageAttachments ?? [])

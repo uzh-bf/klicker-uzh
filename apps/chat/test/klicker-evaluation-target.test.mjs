@@ -1,4 +1,5 @@
 import { strict as assert } from 'node:assert'
+import { createHmac } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -509,5 +510,273 @@ test('adapter requires bearer auth and exposes only the configured model', async
     await new Promise((resolvePromise, rejectPromise) =>
       server.close((error) => (error ? rejectPromise(error) : resolvePromise()))
     )
+  }
+})
+
+test('elearning ground truth fixtures project only handoff identity metadata', () => {
+  const metadata = parseGroundTruthFrontmatter(
+    `---
+question: Why does the tangency portfolio shift?
+mode: explainer
+source: elearning
+learner_id: olat-learner-1
+klicker_course_id: 9a1b2c3d-0000-4000-8000-000000000001
+elearning_course_id: 42
+expected_answer: never projected
+---
+
+Expected answer prose stays in the fixture body.
+`,
+    'elearning.md'
+  )
+
+  assert.deepEqual(metadata, {
+    question: 'Why does the tangency portfolio shift?',
+    mode: 'explainer',
+    source: 'elearning',
+    learnerId: 'olat-learner-1',
+    klickerCourseId: '9a1b2c3d-0000-4000-8000-000000000001',
+    elearningCourseId: '42',
+    filePath: 'elearning.md',
+  })
+})
+
+test('elearning fixtures require learner and course bindings', () => {
+  assert.throws(
+    () =>
+      parseGroundTruthFrontmatter(
+        '---\nquestion: Q\nmode: tutor\nsource: elearning\n---\n',
+        'broken.md'
+      ),
+    { code: 'ground_truth_fields_missing:broken.md' }
+  )
+  assert.throws(
+    () =>
+      parseGroundTruthFrontmatter(
+        '---\nquestion: Q\nmode: tutor\nsource: pwa\n---\n',
+        'source.md'
+      ),
+    { code: 'ground_truth_source_invalid:source.md' }
+  )
+})
+
+test('elearning cases require the handoff secret at initialization', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'klicker-evaluation-'))
+  try {
+    await writeFile(
+      join(directory, 'elearning.md'),
+      '---\nquestion: Q\nmode: tutor\nsource: elearning\nlearner_id: l\nklicker_course_id: c\nelearning_course_id: 1\n---\n'
+    )
+    await writeFile(
+      join(directory, 'canary.json'),
+      JSON.stringify({
+        source: 'canary',
+        question: 'Synthetic canary',
+        mode: 'tutor',
+        expectedTool: 'KB_doc_query',
+        maxStreamBytes: 1000,
+      })
+    )
+    const target = new KlickerEvaluationTarget({
+      apiOrigin: 'https://api.klicker.localhost',
+      chatOrigin: 'https://chat.klicker.localhost',
+      apiKey: 'target-key',
+      participantUsername: 'u',
+      participantPassword: 'p',
+      groundTruthDirectory: directory,
+      canaryFixture: join(directory, 'canary.json'),
+      requestTimeoutMs: 1000,
+    })
+    await assert.rejects(target.initialize(), {
+      code: 'elearning_secret_missing',
+    })
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+function decodeGrantSegment(token, index) {
+  return JSON.parse(
+    Buffer.from(token.split('.')[index], 'base64url').toString('utf8')
+  )
+}
+
+test('elearning cases launch the handoff, tag the thread, and reuse the issued cookie', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'klicker-evaluation-'))
+  const canaryFile = join(directory, 'canary.json')
+  const secret = 'eval-handoff-secret'
+  await writeFile(
+    join(directory, 'elearning.md'),
+    `---
+question: Which animation shows the efficient frontier?
+mode: tutor
+source: elearning
+learner_id: olat-learner-9
+klicker_course_id: 9a1b2c3d-0000-4000-8000-000000000001
+elearning_course_id: 42
+---
+never projected
+`
+  )
+  await writeFile(
+    canaryFile,
+    JSON.stringify({
+      source: 'canary',
+      question: 'Synthetic canary',
+      mode: 'tutor',
+      expectedTool: 'KB_doc_query',
+      maxStreamBytes: 1000,
+    })
+  )
+
+  const originalFetch = globalThis.fetch
+  const requests = []
+  let assistantMessageId
+  let disclaimerReads = 0
+  globalThis.fetch = async (url, options = {}) => {
+    const requestUrl = String(url)
+    const method = options.method || 'GET'
+    requests.push({
+      requestUrl,
+      method,
+      body: typeof options.body === 'string' ? options.body : '',
+      headers: options.headers || {},
+    })
+
+    if (requestUrl.includes('/auth/elearning?')) {
+      const launchUrl = new URL(requestUrl)
+      assert.equal(
+        launchUrl.searchParams.get('courseId'),
+        '9a1b2c3d-0000-4000-8000-000000000001'
+      )
+      assert.equal(
+        launchUrl.searchParams.get('chatbotId'),
+        '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+      )
+      const grant = launchUrl.searchParams.get('grant')
+      const segments = grant.split('.')
+      const header = decodeGrantSegment(grant, 0)
+      const payload = decodeGrantSegment(grant, 1)
+      assert.deepEqual(header, { alg: 'HS256', typ: 'JWT' })
+      assert.equal(payload.iss, 'elearning')
+      assert.equal(payload.aud, 'klicker-chat')
+      assert.equal(payload.scope, 'ELEARNING_CHAT')
+      assert.equal(payload.purpose, 'chat-handoff')
+      assert.equal(payload.sub, 'olat-learner-9')
+      assert.equal(payload.chatbotId, '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f')
+      assert.equal(
+        payload.klickerCourseId,
+        '9a1b2c3d-0000-4000-8000-000000000001'
+      )
+      assert.equal(payload.elearningCourseId, '42')
+      assert.equal(payload.exp - payload.iat, 120)
+      const expectedSignature = createHmac('sha256', secret)
+        .update(`${segments[0]}.${segments[1]}`)
+        .digest('base64url')
+      assert.equal(segments[2], expectedSignature)
+      return new Response('<!doctype html>', {
+        headers: {
+          'Set-Cookie': [
+            'lti_probe=; Path=/; Max-Age=0',
+            'chat_participant_token=guest-jwt; Path=/; HttpOnly',
+          ],
+        },
+      })
+    }
+    if (requestUrl.endsWith('/disclaimer') && method === 'GET') {
+      disclaimerReads += 1
+      return Response.json({ status: { required: false, accepted: true } })
+    }
+    if (requestUrl.endsWith('/threads') && method === 'POST') {
+      assert.deepEqual(JSON.parse(options.body), {
+        title: null,
+        origin: 'elearning',
+      })
+      assert.equal(options.headers.Cookie, 'chat_participant_token=guest-jwt')
+      return Response.json({ id: 'thread-1' })
+    }
+    if (requestUrl.endsWith('/chat') && method === 'POST') {
+      const payload = JSON.parse(options.body)
+      assistantMessageId = payload.assistantMessageId
+      assert.equal(options.headers.Cookie, 'chat_participant_token=guest-jwt')
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              new TextEncoder().encode(
+                'data: {"type":"start"}\n\ndata: {"type":"finish"}\n\ndata: [DONE]\n\n'
+              )
+            )
+            controller.close()
+          },
+        }),
+        { headers: { 'Content-Type': 'text/event-stream' } }
+      )
+    }
+    if (requestUrl.endsWith('/messages') && method === 'GET') {
+      assert.equal(options.headers.Cookie, 'chat_participant_token=guest-jwt')
+      return Response.json([
+        {
+          id: assistantMessageId,
+          role: 'assistant',
+          chatMode: 'tutor',
+          modelId: 'gpt-5.6-luna',
+          content: [
+            {
+              type: 'text',
+              text: 'The efficient frontier animation is on this page.',
+            },
+          ],
+        },
+      ])
+    }
+    throw new Error(`Unexpected mock request: ${method} ${requestUrl}`)
+  }
+
+  try {
+    const target = new KlickerEvaluationTarget({
+      apiOrigin: 'https://api.klicker.localhost',
+      chatOrigin: 'https://chat.klicker.localhost',
+      apiKey: 'target-key',
+      participantUsername: 'synthetic-participant',
+      participantPassword: 'synthetic-password',
+      groundTruthDirectory: directory,
+      canaryFixture: canaryFile,
+      elearningHandoffSecret: secret,
+      pollTimeoutMs: 1000,
+      pollIntervalMs: 1,
+      requestTimeoutMs: 1000,
+    })
+    await target.initialize()
+    const result = await target.complete({
+      model: 'gpt-5.6-luna',
+      stream: false,
+      messages: [
+        {
+          role: 'user',
+          content: 'Which animation shows the efficient frontier?',
+        },
+      ],
+    })
+
+    assert.equal(result.source, 'elearning')
+    assert.equal(
+      result.payload.choices[0].message.content,
+      'The efficient frontier animation is on this page.'
+    )
+    assert.equal(disclaimerReads, 1)
+    assert.equal(
+      requests.filter(({ requestUrl }) =>
+        requestUrl.includes('/auth/elearning')
+      ).length,
+      1
+    )
+    assert.equal(
+      requests.every(({ body }) => !body.includes('never projected')),
+      true
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+    await rm(directory, { recursive: true, force: true })
   }
 })

@@ -42,7 +42,7 @@ if [ -n "${KLICKER_TEST_HELPER_LOG:-}" ]; then
   else
     helper="OTHER"
   fi
-  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY; do
+  for name in AZURE_OPENAI_API_KEY AZURE_OPENAI_BASE_URL UPSTREAM_OPENAI_API_KEY UPSTREAM_OPENAI_BASE_URL OPENAI_API_KEY LITELLM_API_KEY KLICKER_EVAL_PARTICIPANT_USERNAME KLICKER_EVAL_PARTICIPANT_PASSWORD KLICKER_EVAL_TARGET_KEY KLICKER_EVAL_ELEARNING_HANDOFF_SECRET; do
     printf "%s_%s_PRESENT=%s\n" "$helper" "$name" "${!name:+yes}" >>"$KLICKER_TEST_HELPER_LOG"
   done
 fi
@@ -351,6 +351,7 @@ env -i \
   KLICKER_EVAL_CHAT_ORIGIN='https://chat.klicker.localhost' \
   KLICKER_EVAL_PARTICIPANT_USERNAME='synthetic-participant' \
   KLICKER_EVAL_PARTICIPANT_PASSWORD='synthetic-password' \
+  KLICKER_EVAL_ELEARNING_HANDOFF_SECRET='synthetic-elearning-secret' \
   AZURE_OPENAI_API_KEY='synthetic-azure-key' \
   AZURE_OPENAI_BASE_URL='https://azure.example.test' \
   UPSTREAM_OPENAI_API_KEY='synthetic-upstream-key' \
@@ -387,6 +388,8 @@ assert_line 'ADAPTER_UPSTREAM_OPENAI_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_LITELLM_API_KEY_PRESENT=' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_PARTICIPANT_USERNAME_PRESENT=yes' "$TEST_ROOT/helper.log"
 assert_line 'ADAPTER_KLICKER_EVAL_TARGET_KEY_PRESENT=yes' "$TEST_ROOT/helper.log"
+assert_line 'KEYGEN_KLICKER_EVAL_ELEARNING_HANDOFF_SECRET_PRESENT=' "$TEST_ROOT/helper.log"
+assert_line 'ADAPTER_KLICKER_EVAL_ELEARNING_HANDOFF_SECRET_PRESENT=yes' "$TEST_ROOT/helper.log"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a successful child run'
 if grep -Fq -- 'synthetic-target-key' "$CHILD_LOG"; then
   fail 'ephemeral target key must not be written to logs'

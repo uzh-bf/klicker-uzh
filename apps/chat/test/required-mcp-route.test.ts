@@ -252,7 +252,10 @@ describe('required MCP chat preflight', () => {
     expect(mocks.createThread).toHaveBeenCalledWith(
       'participant-1',
       'chatbot-1',
-      null
+      null,
+      undefined,
+      // The last parameter carries the eLearning conversation origin.
+      undefined
     )
     expect(mocks.claimChatTurn).toHaveBeenCalledWith({
       ownerId: 'owner-1',
