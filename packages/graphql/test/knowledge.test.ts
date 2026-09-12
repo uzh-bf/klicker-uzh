@@ -498,6 +498,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         type: KBResourceType.URL,
         title: 'Graph source',
         sourceUrl: 'https://example.com/ambiguous-graph-source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
         activeContentSha256: 'b'.repeat(64),
