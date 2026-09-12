@@ -188,6 +188,21 @@ pnpm run check        # typecheck — only passes AFTER build (generated artifac
 
 Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
 
+### Git hooks with isolated container dependencies
+
+Git hooks use `util/run-git-hook.mjs` to run dependency-backed checks where
+dependencies are installed. A native checkout with `node_modules/.modules.yaml`
+uses host pnpm. Otherwise, the dispatcher uses `devrouter exec` for the exact
+checkout; start that runtime explicitly before committing or pushing. Hooks
+never start services or disable pnpm dependency validation.
+
+Secret scanning, identity checks, staged-file discovery and host contract tests
+stay on the host. Container formatting reuses the staged-format rules with
+literal filenames and refuses partially staged files; fully stage or unstage
+those files first. It does not stash, rewrite files or modify the index.
+Independent checks do not inherit Git's hook environment, preventing temporary
+Git fixtures from operating on the committing repository.
+
 ## Failure signatures (fresh clone / wrong state)
 
 | Exact error                                                                                                                   | Cause                                                                                                                                          | Fix                                                                                             |
