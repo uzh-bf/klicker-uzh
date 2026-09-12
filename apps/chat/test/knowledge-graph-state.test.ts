@@ -497,7 +497,6 @@ describe('knowledge graph bounded view and suggestions', () => {
     let state = knowledgeGraphReducer(initialKnowledgeGraphState, {
       type: 'suggestions-started',
       requestId: 3,
-      query: 'alg',
     })
     expect(state.suggestionStatus).toBe('loading')
 
@@ -525,24 +524,20 @@ describe('knowledge graph bounded view and suggestions', () => {
     let state = knowledgeGraphReducer(initialKnowledgeGraphState, {
       type: 'suggestions-started',
       requestId: 4,
-      query: 'be',
     })
     const failed = knowledgeGraphReducer(state, {
       type: 'suggestions-failed',
       requestId: 4,
-      message: 'Suggestions are temporarily unavailable.',
     })
     expect(failed).toMatchObject({
       suggestionStatus: 'error',
       suggestions: [],
       suggestionResponse: null,
-      suggestionErrorMessage: 'Suggestions are temporarily unavailable.',
     })
 
     state = knowledgeGraphReducer(state, { type: 'dismiss-suggestions' })
     expect(state).toMatchObject({
       suggestionStatus: 'idle',
-      suggestionQuery: '',
       suggestions: [],
       suggestionRequestId: null,
     })
@@ -575,7 +570,6 @@ describe('knowledge graph bounded view and suggestions', () => {
     state = knowledgeGraphReducer(state, {
       type: 'suggestions-started',
       requestId: 8,
-      query: 'beta',
     })
     state = knowledgeGraphReducer(state, {
       type: 'suggestions-succeeded',

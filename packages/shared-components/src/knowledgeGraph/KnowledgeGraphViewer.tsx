@@ -234,7 +234,6 @@ export function KnowledgeGraphViewer({
           dispatch({
             type: 'suggestions-failed',
             requestId,
-            message: labelsRef.current.suggestionsUnavailable,
           })
         }
       } finally {
@@ -282,7 +281,7 @@ export function KnowledgeGraphViewer({
       suggestionTimerRef.current = setTimeout(() => {
         suggestionTimerRef.current = null
         const requestId = ++suggestionRequestIdRef.current
-        dispatch({ type: 'suggestions-started', requestId, query })
+        dispatch({ type: 'suggestions-started', requestId })
         queueSuggestionRequest(requestId, query)
       }, KNOWLEDGE_GRAPH_SUGGESTION_DEBOUNCE_MS)
     },
@@ -377,9 +376,6 @@ export function KnowledgeGraphViewer({
     const outcome = await runRequest('overview', null, () =>
       dataSourceRef.current.overview()
     )
-    if (outcome.status === 'build-changed') {
-      recoverFromBuildChangeRef.current()
-    }
     return outcome
   }, [runRequest])
 
@@ -773,10 +769,6 @@ export function KnowledgeGraphViewer({
       const outcome = await runRequest('search', query, () =>
         dataSourceRef.current.search(query)
       )
-      if (outcome.status === 'build-changed') {
-        recoverFromBuildChangeRef.current()
-        return
-      }
       if (outcome.status !== 'succeeded') {
         return
       }

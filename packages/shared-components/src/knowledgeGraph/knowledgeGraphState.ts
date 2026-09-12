@@ -98,11 +98,9 @@ export type KnowledgeGraphState = {
   focusedNodeId: string | null
   searchResults: KnowledgeGraphNode[]
   suggestionStatus: KnowledgeGraphSuggestionStatus
-  suggestionQuery: string
   suggestions: KnowledgeGraphNode[]
   suggestionResponse: KnowledgeGraphResponse | null
   suggestionRequestId: number | null
-  suggestionErrorMessage: string | null
   status: KnowledgeGraphViewerStatus
   errorMessage: string | null
   unavailableMessage: string | null
@@ -139,13 +137,13 @@ export type KnowledgeGraphAction =
       message: string
       input?: string
     }
-  | { type: 'suggestions-started'; requestId: number; query: string }
+  | { type: 'suggestions-started'; requestId: number }
   | {
       type: 'suggestions-succeeded'
       requestId: number
       response: KnowledgeGraphResponse
     }
-  | { type: 'suggestions-failed'; requestId: number; message: string }
+  | { type: 'suggestions-failed'; requestId: number }
   | { type: 'dismiss-suggestions' }
   | {
       type: 'select-suggestion'
@@ -180,11 +178,9 @@ export const initialKnowledgeGraphState: KnowledgeGraphState = {
   focusedNodeId: null,
   searchResults: [],
   suggestionStatus: 'idle',
-  suggestionQuery: '',
   suggestions: [],
   suggestionResponse: null,
   suggestionRequestId: null,
-  suggestionErrorMessage: null,
   status: 'idle',
   errorMessage: null,
   unavailableMessage: null,
@@ -465,11 +461,9 @@ export function knowledgeGraphReducer(
       return {
         ...state,
         suggestionStatus: 'loading',
-        suggestionQuery: action.query,
         suggestions: [],
         suggestionResponse: null,
         suggestionRequestId: action.requestId,
-        suggestionErrorMessage: null,
       }
 
     case 'suggestions-succeeded': {
@@ -481,7 +475,6 @@ export function knowledgeGraphReducer(
         suggestionStatus: 'ready',
         suggestions: limitKnowledgeGraphSuggestions(action.response.nodes),
         suggestionResponse: action.response,
-        suggestionErrorMessage: null,
       }
     }
 
@@ -495,7 +488,6 @@ export function knowledgeGraphReducer(
         suggestionStatus: 'error',
         suggestions: [],
         suggestionResponse: null,
-        suggestionErrorMessage: action.message,
       }
     }
 
@@ -505,11 +497,9 @@ export function knowledgeGraphReducer(
       return {
         ...state,
         suggestionStatus: 'idle',
-        suggestionQuery: '',
         suggestions: [],
         suggestionResponse: null,
         suggestionRequestId: null,
-        suggestionErrorMessage: null,
       }
 
     case 'select-suggestion': {
@@ -535,11 +525,9 @@ export function knowledgeGraphReducer(
         focusedNodeId: action.nodeId,
         searchResults: [],
         suggestionStatus: 'idle',
-        suggestionQuery: '',
         suggestions: [],
         suggestionResponse: null,
         suggestionRequestId: null,
-        suggestionErrorMessage: null,
         status: 'ready',
         errorMessage: null,
         unavailableMessage: null,
