@@ -66,8 +66,6 @@ type KnowledgeGraphViewerProps = {
   overviewNavigation?: boolean
   /** Emits the bounded ask payload for the selected concept or relationship. */
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
-  /** Label of the ask control; the details pane falls back to its own default. */
-  askLabel?: string
   /** 'contained' overlays the details pane inside the graph. */
   detailsLayout?: 'sidebar' | 'contained'
   /** Keeps the current zoom and pan when the canvas container resizes. */
@@ -142,7 +140,6 @@ export function KnowledgeGraphViewer({
   searchSuggestions = false,
   overviewNavigation = false,
   onAsk,
-  askLabel,
   detailsLayout = 'sidebar',
   preserveViewportOnResize = false,
 }: KnowledgeGraphViewerProps) {
@@ -1448,7 +1445,6 @@ export function KnowledgeGraphViewer({
         }
         onExpand={(nodeId) => expandNodeRef.current(nodeId)}
         onAsk={onAsk}
-        askLabel={askLabel}
         askSelection={askSelection}
       />
 

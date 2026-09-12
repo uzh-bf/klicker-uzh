@@ -24,7 +24,6 @@ type KnowledgeGraphDetailsProps = {
   /** Emits the bounded ask payload; the control renders only when provided. */
   askSelection?: KnowledgeGraphAskSelection
   onAsk?: (selection: KnowledgeGraphAskSelection) => void
-  askLabel?: string
   /** 'contained' overlays the pane inside the graph instead of a side column. */
   layout?: 'sidebar' | 'contained'
 }
@@ -73,7 +72,6 @@ export function KnowledgeGraphDetails({
   labels,
   askSelection,
   onAsk,
-  askLabel,
   layout = 'sidebar',
 }: KnowledgeGraphDetailsProps) {
   if (node === undefined && edge === undefined) {
@@ -122,7 +120,7 @@ export function KnowledgeGraphDetails({
             onClick={() => onAsk(askSelection)}
             className="mb-5 min-h-11 w-full rounded-full border border-[#0028A5] bg-white px-4 py-2 text-sm font-semibold text-[#0028A5] hover:bg-[#F5F5FB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0028A5] focus-visible:ring-offset-2"
           >
-            {askLabel ?? labels.ask}
+            {labels.ask}
           </button>
         )}
 

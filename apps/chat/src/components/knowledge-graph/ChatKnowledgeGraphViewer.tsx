@@ -36,8 +36,9 @@ export function ChatKnowledgeGraphViewer({
     <DynamicKnowledgeGraphViewer
       dataSource={dataSource}
       onAsk={onAsk}
-      askLabel={t('ask')}
-      labels={{ details: { missingEndpoint: t('missingEndpoint') } }}
+      labels={{
+        details: { ask: t('ask'), missingEndpoint: t('missingEndpoint') },
+      }}
       detailsLayout="contained"
       preserveViewportOnResize
       initialView="overview"
