@@ -337,6 +337,41 @@ access and request-race coverage; no new API/auth/DB tests for this presentation
 Desktop, mobile, embedded and localized captures replace superseded navigation
 images in the same draft. Prior source reviews do not cover this extension.
 
-Progress: implementation and focused verification active. Runtime retention follows
-the user's local testing request above. Merge, readiness and deployment remain
-outside the approved terminal condition.
+Progress: dock implementation committed at c680f663; label-only simplification
+at 4ae0002 removes duplicate Ask-label prop plumbing. All 12 host browser tests
+pass, including native graph policy/build checks, an existing thread with draft
+and image attachment, fullscreen focus, node/relation insertion without sending,
+mobile embed and request cancellation. All 19 graph state/payload tests pass;
+chat/shared types and lint pass. Split pre-commit checks pass: container typecheck
+40/40, lint 7/7 and remaining policy/format checks; host CI-planning tests 71/71
+and launcher tests 49/49. Production build passes 26/26 on the final label-only
+source as well. Focused Opengrep reports zero findings across 210 rules
+and 12 files, with its normal skipped/partial-analysis limitation.
+
+Real browser evidence covers closed icon, desktop dock, node details, fullscreen,
+prefilled draft, mobile embedded relation/draft and German controls. Eight
+synthetic captures were published to the existing draft and all eight load in a
+real browser. Existing inner viewer labels remain English. Screenshot provenance
+and receipts are in ignored `project/_local/dock-gallery/`.
+
+Runtime startup required its existing provider injection, exact profile and blob
+port. An unintended Playwright seed reset removed the disposable demo chatbot;
+scoped guarded fixture restoration recovered its course, enrollment, bot and
+native graph. A subsequent MCP startup failure was traced to scoped-auth server
+state paired with retained authenticated-fixture parameters. Restoring only the
+two validated synthetic config parameter objects allowed canonical managed repair
+to succeed. No production or retained external data was changed.
+
+Simplifier completed; its redundant Ask-label path finding was accepted and
+verified with focused checks and German draft insertion. Dock slice review is
+pending. The GLM CLI could not start because its launcher required an
+unavailable admin token. The earlier native integrated reviewer was successfully
+resumed for the new scope, preserving its full final-review contract and prior
+source evidence. Integrated review is pending. The installed Codex CLI shim also
+points to a missing backing executable; neither tool was reconfigured.
+
+Runtime retained for the user's local-testing lease: exact checkout and
+`rs-student-chat-graphrag` identity above, six healthy routes and synthetic native
+graph. Lease checkpoint remains the user's next testing follow-up. No paid-model
+completion was attempted; prior OpenRouter 402 remains a limitation. Merge,
+readiness and deployment remain outside the approved terminal condition.
