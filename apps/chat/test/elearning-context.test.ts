@@ -6,10 +6,11 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  ELEARNING_PAGE_EVIDENCE_MIN_CHARS,
-  formatElearningSnapshotForPrompt,
-  hasSufficientElearningPageEvidence,
+  formatElearningGroundingPolicy,
+  hasElearningPageEvidence,
+  isElearningOriginThread,
   normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
   verifyAndNormalizeElearningChatContext,
 } from '../src/services/elearningContext'
 
@@ -19,8 +20,7 @@ const COURSE_ID = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
 const LEARNER_BINDING = 'learner-binding-1'
 
 function longExcerpt(): string {
-  // One extra repetition keeps the trimmed length above the threshold.
-  return 'word '.repeat(Math.ceil(ELEARNING_PAGE_EVIDENCE_MIN_CHARS / 5) + 1)
+  return 'word '.repeat(220)
 }
 
 function baseSnapshot(overrides: Record<string, unknown> = {}) {
@@ -247,27 +247,15 @@ describe('normalizePersistedLearningContext', () => {
   })
 })
 
-describe('page evidence threshold', () => {
-  const atThreshold = 'x'.repeat(ELEARNING_PAGE_EVIDENCE_MIN_CHARS)
-
-  it('treats supplied text at the threshold as sufficient', () => {
-    const snapshot = baseSnapshot({
-      material: { availability: 'full-text', excerpt: atThreshold },
+describe('page evidence', () => {
+  it('treats any supplied page text as usable evidence', () => {
+    const shortPage = baseSnapshot({
+      material: { availability: 'full-text', excerpt: 'Zinseszins.' },
     })
-    expect(hasSufficientElearningPageEvidence(snapshot as never)).toBe(true)
+    expect(hasElearningPageEvidence(shortPage as never)).toBe(true)
   })
 
-  it('treats text below the threshold as insufficient', () => {
-    const snapshot = baseSnapshot({
-      material: {
-        availability: 'full-text',
-        excerpt: atThreshold.slice(0, -1),
-      },
-    })
-    expect(hasSufficientElearningPageEvidence(snapshot as never)).toBe(false)
-  })
-
-  it('treats metadata-only material as insufficient', () => {
+  it('treats metadata-only material as having no page text', () => {
     const snapshot = baseSnapshot({
       material: {
         title: 'Animation',
@@ -275,14 +263,21 @@ describe('page evidence threshold', () => {
         availability: 'metadata',
       },
     })
-    expect(hasSufficientElearningPageEvidence(snapshot as never)).toBe(false)
+    expect(hasElearningPageEvidence(snapshot as never)).toBe(false)
+  })
+
+  it('treats a blank excerpt and a missing snapshot as no evidence', () => {
+    const blank = baseSnapshot({
+      material: { availability: 'full-text', excerpt: '   ' },
+    })
+    expect(hasElearningPageEvidence(blank as never)).toBe(false)
+    expect(hasElearningPageEvidence(null)).toBe(false)
   })
 })
 
-describe('formatElearningSnapshotForPrompt', () => {
+describe('formatElearningGroundingPolicy', () => {
   it('embeds the snapshot as intact JSON data', () => {
-    const snapshot = baseSnapshot() as never
-    const prompt = formatElearningSnapshotForPrompt(snapshot)
+    const prompt = formatElearningGroundingPolicy(baseSnapshot() as never)
     const fence = prompt.split('```json')[1]
     expect(fence).toBeDefined()
     const parsed = JSON.parse(fence.split('```')[0])
@@ -298,30 +293,63 @@ describe('formatElearningSnapshotForPrompt', () => {
       outline: undefined,
     }) as never
     expect(
-      formatElearningSnapshotForPrompt(withCompletion).includes(
-        '"completion": {'
-      )
+      formatElearningGroundingPolicy(withCompletion).includes('"completion": {')
     ).toBe(true)
     expect(
-      formatElearningSnapshotForPrompt(withoutCompletion).includes(
+      formatElearningGroundingPolicy(withoutCompletion).includes(
         '"completion": {'
       )
     ).toBe(false)
   })
 
-  it('adds the short-evidence limitation only when supplied text is insufficient', () => {
-    const sufficient = baseSnapshot() as never
-    const insufficient = baseSnapshot({
+  it('reports the limitation when no usable page text was supplied', () => {
+    const withText = baseSnapshot() as never
+    const metadataOnly = baseSnapshot({
       material: {
         title: 'Animation',
         blockType: 'animation',
         availability: 'metadata',
       },
     }) as never
-    const sufficientPrompt = formatElearningSnapshotForPrompt(sufficient)
-    const insufficientPrompt = formatElearningSnapshotForPrompt(insufficient)
-    expect(insufficientPrompt.includes('too short')).toBe(true)
-    expect(sufficientPrompt.includes('too short')).toBe(false)
-    expect(insufficientPrompt.includes('"availability": "metadata"')).toBe(true)
+    const withTextPolicy = formatElearningGroundingPolicy(withText)
+    const metadataPolicy = formatElearningGroundingPolicy(metadataOnly)
+    expect(metadataPolicy).toContain('No usable page text')
+    expect(withTextPolicy).not.toContain('No usable page text')
+    expect(metadataPolicy).toContain('"availability": "metadata"')
+  })
+
+  it('emits the materials-only policy even without a snapshot', () => {
+    const prompt = formatElearningGroundingPolicy(null)
+    expect(prompt).toContain('eLearning evidence policy')
+    expect(prompt.length).toBeGreaterThan(0)
+    expect(prompt).not.toContain('```json')
+  })
+
+  it('does not gate short page text behind a length threshold', () => {
+    const shortPage = baseSnapshot({
+      material: { availability: 'full-text', excerpt: 'Zinseszins.' },
+    }) as never
+    expect(formatElearningGroundingPolicy(shortPage)).not.toContain(
+      'No usable page text'
+    )
+  })
+})
+
+describe('eLearning thread origin', () => {
+  it('tags the origin from the handoff binding or a verified context', () => {
+    expect(resolveElearningThreadOrigin({ learnerBinding: 'binding' })).toBe(
+      'elearning'
+    )
+    expect(resolveElearningThreadOrigin({ hasVerifiedContext: true })).toBe(
+      'elearning'
+    )
+    expect(resolveElearningThreadOrigin({})).toBeUndefined()
+  })
+
+  it('keeps a handoff session on the policy without a thread tag', () => {
+    expect(isElearningOriginThread({ learnerBinding: 'binding' })).toBe(true)
+    expect(isElearningOriginThread({ threadOrigin: 'elearning' })).toBe(true)
+    expect(isElearningOriginThread({ threadOrigin: null })).toBe(false)
+    expect(isElearningOriginThread({})).toBe(false)
   })
 })

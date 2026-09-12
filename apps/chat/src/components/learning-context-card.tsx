@@ -103,7 +103,7 @@ const LearningContextCard: FC<{ message: LearningContextMessage }> = ({
           <dt className="sr-only">{t('evidence')}</dt>
           <dd className="text-muted-foreground">
             {availabilityLabels[material.availability]}
-            {material.excerptTruncated ? " + ' · ' + " : ''}
+            {material.excerptTruncated ? ` · ${t('truncated')}` : ''}
           </dd>
         </div>
         {excerptPreview && <dd className="italic">{excerptPreview}</dd>}

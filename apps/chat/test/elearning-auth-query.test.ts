@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { parseElearningAuthQuery } from '../src/app/auth/elearning/route'
+import {
+  parseElearningAuthQuery,
+  resolveElearningLaunchUrl,
+} from '../src/app/auth/elearning/route'
 
 const grant = 'eyJhbGciOiJIUzI1NiJ9.test.signature'
 const courseId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
@@ -33,5 +36,33 @@ describe('eLearning auth query', () => {
 
     expect(result.success).toBe(true)
     if (result.success) expect(result.data.threadId).toBeUndefined()
+  })
+})
+
+describe('resolveElearningLaunchUrl', () => {
+  test('marks the framed conversation as embedded and carries the locale', () => {
+    const url = resolveElearningLaunchUrl(
+      new URL('https://chat.example.org/auth/elearning?grant=abc&embed=0'),
+      { chatbotId, locale: 'de' }
+    )
+
+    expect(url.pathname).toBe(`/${chatbotId}`)
+    expect(url.searchParams.get('embed')).toBe('1')
+    expect(url.searchParams.get('locale')).toBe('de')
+    expect(url.searchParams.has('grant')).toBe(false)
+  })
+
+  test('targets the remembered thread and keeps the embed marker', () => {
+    const url = resolveElearningLaunchUrl(
+      new URL('https://chat.example.org/'),
+      {
+        chatbotId,
+        threadId,
+      }
+    )
+
+    expect(url.pathname).toBe(`/${chatbotId}/threads/${threadId}`)
+    expect(url.searchParams.get('embed')).toBe('1')
+    expect(url.searchParams.has('locale')).toBe(false)
   })
 })

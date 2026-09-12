@@ -478,7 +478,11 @@ async function loadServerTools(
       runtimePolicy.required
     ) {
       console.error('Required MCP tools unavailable', { server: server.name })
-      throw new RequiredMCPUnavailableError()
+      // Preserve a scope violation raised while resolving the request so the
+      // caller cannot degrade an isolation failure into an answer.
+      throw error instanceof RequiredMCPUnavailableError
+        ? error
+        : new RequiredMCPUnavailableError()
     }
 
     console.error('Optional MCP tools unavailable', { server: server.name })

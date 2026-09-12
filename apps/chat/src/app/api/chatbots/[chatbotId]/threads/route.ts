@@ -1,4 +1,5 @@
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { resolveElearningThreadOrigin } from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -52,11 +53,14 @@ export async function POST(
         origin: z.enum(['elearning']).optional(),
       })
       .parse(await req.json())
-    // Only an eLearning handoff identity may tag a thread as eLearning.
+    // The eLearning launcher creates its conversation through this route before
+    // it can send a verified snapshot, so the scoped session learner binding —
+    // not the client's optional label — is what tags a thread. A caller without
+    // that identity cannot claim the origin.
     const origin =
-      body.origin === 'elearning' && authResult.learnerBinding
-        ? 'elearning'
-        : undefined
+      resolveElearningThreadOrigin({
+        learnerBinding: authResult.learnerBinding,
+      }) ?? undefined
     const thread = await ThreadService.createThread(
       participantId,
       chatbotId,

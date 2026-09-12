@@ -80,6 +80,26 @@ function setLocaleCookie(
   })
 }
 
+// Builds the embedded conversation URL the handoff redirects to. The eLearning
+// launcher frames this route, so the embed marker is part of the contract: the
+// chat UI only registers the host-context receiver when it renders embedded.
+// The locale travels in the query next to the cookie because a browser that
+// blocks third-party cookies cannot store NEXT_LOCALE, and the runtime resolves
+// the render language from the query when the cookie is missing.
+export function resolveElearningLaunchUrl(
+  base: URL,
+  input: { chatbotId: string; threadId?: string; locale?: 'en' | 'de' }
+): URL {
+  const url = new URL(base.toString())
+  url.pathname = input.threadId
+    ? `/${input.chatbotId}/threads/${input.threadId}`
+    : `/${input.chatbotId}`
+  url.search = ''
+  url.searchParams.set('embed', '1')
+  if (input.locale) url.searchParams.set('locale', input.locale)
+  return url
+}
+
 export function parseElearningAuthQuery(searchParams: URLSearchParams) {
   return querySchema.safeParse({
     grant: searchParams.get('grant'),
@@ -213,11 +233,11 @@ export async function GET(req: NextRequest) {
     [LTI_PROBE_COOKIE_NAME]: req.cookies.get(LTI_PROBE_COOKIE_NAME)?.value,
   })
 
-  const chatbotUrl = req.nextUrl.clone()
-  chatbotUrl.pathname = threadId
-    ? `/${chatbotId}/threads/${threadId}`
-    : `/${chatbotId}`
-  chatbotUrl.search = ''
+  const chatbotUrl = resolveElearningLaunchUrl(req.nextUrl.clone(), {
+    chatbotId,
+    threadId,
+    locale,
+  })
 
   const isProduction =
     process.env.NODE_ENV === 'production' &&

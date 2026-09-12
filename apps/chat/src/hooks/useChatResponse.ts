@@ -220,6 +220,10 @@ export function useChatResponse(
             reasoningEffort: selectedReasoningEffort,
             chatContext: chatContext ?? undefined,
             parentId: parentId || undefined,
+            // A branch (edit) keeps the original question's learning context
+            // instead of the page that happens to be live now.
+            sourceMessageId:
+              resolvedTriggerMessage?.attachmentSourceMessageId || undefined,
             assistantMessageId,
             ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
             images: (resolvedTriggerMessage?.imageAttachments ?? [])

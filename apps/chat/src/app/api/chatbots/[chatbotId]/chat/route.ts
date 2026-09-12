@@ -98,8 +98,10 @@ import {
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
 import {
-  formatElearningSnapshotForPrompt,
+  formatElearningGroundingPolicy,
+  isElearningOriginThread,
   normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
   verifyAndNormalizeElearningChatContext,
 } from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
@@ -617,6 +619,10 @@ export async function POST(
     reasoningEffort: z.string().min(1).optional().default('none'),
     chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
+    // Set only when the client branches an existing question (edit): the new
+    // message inherits the question's stored learning context instead of the
+    // page context that happens to be live now.
+    sourceMessageId: z.string().min(1).optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
     images: z
@@ -646,6 +652,7 @@ export async function POST(
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
     parentId,
+    sourceMessageId,
     assistantMessageId,
     allowRegeneration,
     images,
@@ -978,7 +985,10 @@ export async function POST(
           chatbotId,
           null,
           undefined,
-          verifiedElearningContext ? 'elearning' : undefined
+          resolveElearningThreadOrigin({
+            learnerBinding,
+            hasVerifiedContext: Boolean(verifiedElearningContext),
+          })
         )
         currentThreadId = newThread.id
         createdThreadId = newThread.id
@@ -1040,32 +1050,101 @@ export async function POST(
     )
   }
 
+  // eLearning provenance follows the authenticated handoff identity: the chat
+  // client creates its first thread before any snapshot envelope is verified,
+  // so the scoped session learner binding decides the origin, not a client
+  // label. The origin is also what binds the materials-only grounding policy.
+  const isElearningThread = isElearningOriginThread({
+    threadOrigin: owningThread.origin,
+    learnerBinding,
+  })
+  if (isElearningThread && owningThread.origin !== 'elearning') {
+    try {
+      await prisma.chatThread.update({
+        where: { id: owningThread.id },
+        data: { origin: 'elearning' },
+      })
+      owningThread.origin = 'elearning'
+    } catch (error) {
+      // The origin tag is what keeps the materials-only policy attached to
+      // later turns of this conversation. Proceeding without it would answer
+      // this turn correctly and silently drop the policy afterwards, so the
+      // turn fails closed instead.
+      console.error('Failed to tag eLearning thread origin', {
+        requestId,
+        threadId: owningThread.id,
+        error,
+      })
+      await discardCreatedThread('thread.origin')
+      return NextResponse.json(
+        {
+          error: 'Unable to persist the question context',
+          code: 'ELEARNING_CONTEXT_PERSIST_FAILED',
+        },
+        { status: 503 }
+      )
+    }
+  }
+
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
   if (lastMessage?.role === 'user') {
     userMessageId = lastMessage.id
   }
 
   // eLearning-origin threads derive their answer context from the snapshot
-  // saved with the target user message; a verified live envelope is used
-  // only for a genuinely new turn (persisted below).
+  // saved with the target user message; a verified live envelope is used only
+  // for a genuinely new turn (persisted below). A stored null is a real value
+  // — the question was answered without page evidence — and must not be
+  // replaced by whatever page happens to be open now.
+  const findPersistedLearningContext = async (
+    messageId: string
+  ): Promise<
+    | { present: false }
+    | { present: true; snapshot: ELearningSnapshotContent | null }
+  > => {
+    const row = await prisma.chatMessage.findFirst({
+      where: { id: messageId, threadId: owningThread.id, role: 'user' },
+      select: { learningContext: true },
+    })
+    return row
+      ? {
+          present: true,
+          snapshot: normalizePersistedLearningContext(row.learningContext),
+        }
+      : { present: false }
+  }
+
   let elearningSnapshot: ELearningSnapshotContent | null = null
   let persistElearningContext: ELearningSnapshotContent | null = null
-  if (owningThread && owningThread.origin === 'elearning') {
-    const savedRow = userMessageId
-      ? await prisma.chatMessage.findFirst({
-          where: {
-            id: userMessageId,
-            threadId: owningThread.id,
-            role: 'user',
-          },
-          select: { learningContext: true },
-        })
-      : null
-    const savedSnapshot = normalizePersistedLearningContext(
-      savedRow?.learningContext
-    )
-    if (savedSnapshot) {
-      elearningSnapshot = savedSnapshot
+  if (isElearningThread) {
+    // An edited question branches from an existing message and keeps that
+    // message's stored snapshot, including a stored null that recorded the
+    // original question had no page evidence. A branch source outside this
+    // thread is refused rather than silently re-anchored to the live page.
+    let inherited:
+      | { present: false }
+      | { present: true; snapshot: ELearningSnapshotContent | null }
+      | null = null
+    if (sourceMessageId && sourceMessageId !== userMessageId) {
+      inherited = await findPersistedLearningContext(sourceMessageId)
+      if (!inherited.present) {
+        await discardCreatedThread('branch.source')
+        return NextResponse.json(
+          { error: 'Source message not found' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const saved = userMessageId
+      ? await findPersistedLearningContext(userMessageId)
+      : ({ present: false } as const)
+
+    if (inherited?.present) {
+      elearningSnapshot = inherited.snapshot
+      persistElearningContext = inherited.snapshot
+    } else if (saved.present) {
+      elearningSnapshot = saved.snapshot
     } else if (verifiedElearningContext) {
       elearningSnapshot = verifiedElearningContext.snapshot
       persistElearningContext = verifiedElearningContext.snapshot
@@ -1180,7 +1259,7 @@ export async function POST(
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
     }
 
-    let mcpTools: ToolSet
+    let mcpTools: ToolSet = {}
     try {
       mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
         chatbotId,
@@ -1191,7 +1270,10 @@ export async function POST(
       })
       mcpTools = mcpToolsHandle.tools
     } catch (error) {
-      if (error instanceof RequiredMCPUnavailableError) {
+      if (!(error instanceof RequiredMCPUnavailableError)) throw error
+      // Only plain unavailability may be softened for an eLearning-origin
+      // question; a scope or isolation violation stays fail-closed here.
+      if (!isElearningThread || error.reason !== 'unavailable') {
         await failOrDiscardUnstartedClaim('mcp.discovery')
         return NextResponse.json(
           {
@@ -1201,7 +1283,14 @@ export async function POST(
           { status: 503 }
         )
       }
-      throw error
+      // An eLearning-origin question can stand on the supplied page text, so an
+      // unavailable retrieval tool degrades to page-only grounding with the
+      // limitation disclosed by the policy instead of withholding the answer.
+      await closeMcpTools()
+      console.warn(
+        'eLearning thread answering without required retrieval tools',
+        { requestId, chatbotId, selectedMode }
+      )
     }
 
     let responseExampleSummary = ''
@@ -1330,13 +1419,19 @@ export async function POST(
       selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
-      await failOrDiscardUnstartedClaim('mcp.quizzer')
-      return NextResponse.json(
-        {
-          error: 'Required MCP tool unavailable',
-          code: REQUIRED_MCP_UNAVAILABLE_CODE,
-        },
-        { status: 503 }
+      if (!isElearningThread) {
+        await failOrDiscardUnstartedClaim('mcp.quizzer')
+        return NextResponse.json(
+          {
+            error: 'Required MCP tool unavailable',
+            code: REQUIRED_MCP_UNAVAILABLE_CODE,
+          },
+          { status: 503 }
+        )
+      }
+      console.warn(
+        'eLearning thread answering without a quizzer retrieval tool',
+        { requestId, chatbotId }
       )
     }
 
@@ -1355,8 +1450,11 @@ export async function POST(
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
-    const elearningContextPrompt =
-      formatElearningSnapshotForPrompt(elearningSnapshot)
+    // The materials-only policy is bound to the conversation origin, so a turn
+    // that lost or never carried a verified snapshot still answers under it.
+    const elearningContextPrompt = isElearningThread
+      ? formatElearningGroundingPolicy(elearningSnapshot)
+      : ''
     const contextSections = [chatContextPrompt, elearningContextPrompt].filter(
       Boolean
     )
@@ -1689,7 +1787,7 @@ export async function POST(
           phase: 'persist.userMessage',
           error,
         })
-        if (owningThread && owningThread.origin === 'elearning') {
+        if (isElearningThread) {
           // Contextual generation requires durable question persistence; a
           // failed save returns a recoverable error without an answer. The
           // client retry reuses the original question identity.
