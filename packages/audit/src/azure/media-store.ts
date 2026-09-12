@@ -146,6 +146,7 @@ export class AzureImmutableAuditMediaStore
     const requiredVersionId = requireVersionId(versionId, input.blobName)
     const version = blob.withVersion(requiredVersionId)
     const existingExpiry = properties.immutabilityPolicyExpiresOn
+    // Azure returns lowercase policy modes; SDK writes still require 'Locked'.
     const alreadyLocked =
       properties.immutabilityPolicyMode?.toLowerCase() === 'locked'
     if (
