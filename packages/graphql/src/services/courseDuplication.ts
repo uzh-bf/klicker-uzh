@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
@@ -12,6 +13,13 @@ import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
+import { loadAssessmentAuditSnapshot } from './assessmentAuditActivation.js'
+import {
+  assessmentAuditSystemOperation,
+  assessmentLifecycleDraft,
+  emitCoveredAssessmentAuditEvents,
+} from './assessmentAuditProducers.js'
+import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
 import { type CourseCreationArgs, createCourse } from './courses.js'
 import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
@@ -1683,7 +1691,8 @@ export async function duplicateCourse(
   await assertCourseDuplicationActivityAccess({ oldCourse, selection, ctx })
   await assertCourseDuplicationInstanceAccess({ oldCourse, selection, ctx })
 
-  return await ctx.prisma.$transaction(
+  const copiedLiveQuizSources = new Map<string, string>()
+  const duplicatedCourse = await ctx.prisma.$transaction(
     async (prisma) => {
       const newCourse = await createCourse(
         {
@@ -1718,6 +1727,12 @@ export async function duplicateCourse(
         ctx,
         prisma,
       })
+      for (const [
+        sourceLiveQuizId,
+        copiedLiveQuizId,
+      ] of copiedActivityIds.liveQuizIds) {
+        copiedLiveQuizSources.set(copiedLiveQuizId, sourceLiveQuizId)
+      }
 
       await prisma.course.update({
         where: { id: newCourse.id },
@@ -1785,4 +1800,42 @@ export async function duplicateCourse(
     },
     { timeout: DUPLICATE_COURSE_TRANSACTION_TIMEOUT }
   )
+
+  // Activation needs the committed copy: the baseline reader must not use the
+  // root Prisma client while the duplication transaction is still open.
+  for (const [copiedLiveQuizId, sourceLiveQuizId] of copiedLiveQuizSources) {
+    const outcome = await activateNewAssessmentAuditIfSelected({
+      client: ctx.prisma,
+      liveQuizId: copiedLiveQuizId,
+    })
+    if (outcome === 'NOT_SELECTED') continue
+
+    const copiedAt = new Date()
+    await runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
+      const copied = await loadAssessmentAuditSnapshot(tx, copiedLiveQuizId)
+      if (copied === null) return
+      const operation = assessmentAuditSystemOperation({
+        occurredAt: copiedAt,
+      })
+      await emitCoveredAssessmentAuditEvents({
+        tx,
+        auditTx,
+        liveQuizId: copiedLiveQuizId,
+        courseId: copied.courseId,
+        operation,
+        drafts: [
+          assessmentLifecycleDraft({
+            eventType: 'ASSESSMENT_COPIED',
+            producerOperationId: `${operation.correlationId}:copied`,
+            fromState: null,
+            toState: 'DRAFT',
+            reasonCode: 'COURSE_DUPLICATION',
+            sourceLiveQuizId,
+          }),
+        ],
+      })
+    })
+  }
+
+  return duplicatedCourse
 }

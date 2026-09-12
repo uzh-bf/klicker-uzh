@@ -1,5 +1,6 @@
 import {
   ConcurrencyLimitStrategy,
+  type JsonObject,
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import {
@@ -8,17 +9,18 @@ import {
   resolveWorkerRuntimeConfig,
   withHatchetTaskLogging,
 } from '@klicker-uzh/hatchet'
+import type {
+  AssessmentResponseCommand,
+  LiveQuizResponseInput,
+} from '@klicker-uzh/types'
 import { logger } from './logger.js'
 import {
   resolveResponseProcessorMode,
   resolveResponseProcessorWorkerMode,
   selectResponseProcessorWorkflows,
 } from './mode.js'
-import {
-  type AssessmentResponseMessage,
-  aggregateAssessmentResponses,
-  processAssessmentResponse,
-} from './processors/assessmentProcessor.js'
+import { aggregateAssessmentResponses } from './processors/assessmentAggregation.js'
+import { processAssessmentResponse } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
 
 const hatchetClient = createHatchetClient({ logger })
@@ -52,12 +54,13 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   }),
 })
 
-export const processAssessmentResponseWorkflow =
-  hatchetClient.workflow<AssessmentResponseMessage>({
-    name: 'process-assessment-response-workflow',
-    defaultPriority: Priority.HIGH,
-    onEvents: ['response-received:assessment'],
-  })
+export const processAssessmentResponseWorkflow = hatchetClient.workflow<
+  AssessmentResponseCommand<LiveQuizResponseInput> & JsonObject
+>({
+  name: 'process-assessment-response-workflow',
+  defaultPriority: Priority.HIGH,
+  onEvents: ['response-received:assessment'],
+})
 processAssessmentResponseWorkflow.durableTask({
   name: 'process-assessment-response',
   retries: 3,
@@ -66,29 +69,6 @@ processAssessmentResponseWorkflow.durableTask({
     handler: processAssessmentResponse,
   }),
 })
-processAssessmentResponseWorkflow.onFailure({
-  name: 'log-assessment-response-failure',
-  fn: withHatchetTaskLogging({
-    taskName: 'log-assessment-response-failure',
-    handler: async (input, ctx) => {
-      const message = '[ERROR] [AddResponse Assessment] Processing failed.'
-
-      await ctx.logger.error('Assessment response processing failed', {
-        extra: { event: 'response.assessment.failed' },
-      })
-
-      // push only an application-owned safe message to the audit log
-      ctx.v1.events.push('create-audit-log-entry', {
-        correlationId: input.correlationId,
-        info: message,
-        ...(input.loggingContext
-          ? { loggingContext: input.loggingContext }
-          : {}),
-      })
-    },
-  }),
-})
-
 export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
   name: 'aggregate-assessment-responses',
   retries: 1,

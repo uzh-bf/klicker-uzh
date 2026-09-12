@@ -37,11 +37,11 @@ import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -177,19 +177,17 @@ export async function testInitialization(
         return { success: true }
       },
     }),
-    createAuditLogEntry: hatchet.task({
-      name: 'create-audit-log-entry',
-      fn: async ({
-        message,
-      }: {
-        message: Record<string, string | undefined> & {
-          correlationId?: string
-          info: string
-        }
-      }) => {
-        console.info('Audit log triggered', message)
-        return { success: true }
-      },
+    dispatchAssessmentAuditOutbox: hatchet.task({
+      name: 'dispatch-assessment-audit-outbox-test',
+      fn: async () => ({ success: true }),
+    }),
+    monitorAssessmentAudit: hatchet.task({
+      name: 'monitor-assessment-audit-test',
+      fn: async () => ({ success: true }),
+    }),
+    renewAssessmentAuditMediaPolicies: hatchet.task({
+      name: 'renew-assessment-audit-media-policies-test',
+      fn: async () => ({ success: true }),
     }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
@@ -235,9 +233,15 @@ export async function testInitialization(
     }),
     publishScheduledLiveQuiz: hatchet.task({
       name: 'publish-scheduled-live-quiz',
-      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
+      fn: async (
+        {
+          liveQuizId,
+          initiatedByUserId,
+        }: { liveQuizId: string; initiatedByUserId?: string },
+        executionCtx
+      ) => {
         const success = await handlePublishScheduledLiveQuiz(
-          { liveQuizId },
+          { liveQuizId, initiatedByUserId },
           hatchetCtx,
           executionCtx
         )

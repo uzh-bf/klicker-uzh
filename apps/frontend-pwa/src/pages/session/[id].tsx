@@ -15,8 +15,8 @@ import {
   SelfDocument,
   SetLiveQuizPinDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { QUESTION_GROUPS } from '@klicker-uzh/shared-components/src/constants'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import {
   Button,
@@ -28,10 +28,10 @@ import {
   toast,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import * as Yup from 'yup'
 import Layout from '../../components/Layout'
@@ -50,14 +50,21 @@ async function handleNewResponse({
   type,
   answer,
   correlationKey,
+  submissionId,
 }: {
   liveQuizId: string
   instanceId: number
   type: ElementType
   answer: any
   correlationKey?: string | null
+  submissionId: string
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
-Promise<{ statusCode: number; responseTimestamp?: number }> {
+Promise<{
+  statusCode: number
+  responseTimestamp?: number
+  submissionId?: string
+  hatchetEventId?: string
+}> {
   let requestOptions: RequestInit = {
     method: 'POST',
     credentials: 'include',
@@ -70,6 +77,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         correlationKey,
         instanceId,
         liveQuizId,
+        submissionId,
         response: { choices: answer },
       }),
     }
@@ -83,6 +91,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         correlationKey,
         instanceId,
         liveQuizId,
+        submissionId,
         response: { value: answer },
       }),
     }
@@ -93,6 +102,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         correlationKey,
         instanceId,
         liveQuizId,
+        submissionId,
         response: { selection: answer },
       }),
     }
@@ -103,6 +113,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         correlationKey,
         instanceId,
         liveQuizId,
+        submissionId,
         response: { assessment: answer },
       }),
     }
@@ -113,6 +124,7 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
         correlationKey,
         instanceId,
         liveQuizId,
+        submissionId,
         response: { viewed: true },
       }),
     }
@@ -120,26 +132,45 @@ Promise<{ statusCode: number; responseTimestamp?: number }> {
     return { statusCode: 1 }
   }
 
-  try {
-    const response = await fetch(
-      process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
-      requestOptions
-    )
-
-    let responseTimestamp: number | undefined
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const json = await response.json()
-      if (json && typeof json.responseTimestamp === 'number') {
-        responseTimestamp = json.responseTimestamp
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_ADD_RESPONSE_URL as string,
+        requestOptions
+      )
+      let body: Record<string, unknown> = {}
+      try {
+        body = await response.json()
+      } catch {
+        // Not every response is required to carry JSON.
       }
-    } catch (_) {
-      // ignore JSON parse errors; not all responses may have a body
+      if (response.status === 503 && attempt === 0) continue
+      if (
+        correlationKey &&
+        response.ok &&
+        (body.submissionId !== submissionId ||
+          typeof body.hatchetEventId !== 'string')
+      ) {
+        return { statusCode: 1 }
+      }
+      return {
+        statusCode: response.status,
+        responseTimestamp:
+          typeof body.responseTimestamp === 'number'
+            ? body.responseTimestamp
+            : undefined,
+        submissionId:
+          typeof body.submissionId === 'string' ? body.submissionId : undefined,
+        hatchetEventId:
+          typeof body.hatchetEventId === 'string'
+            ? body.hatchetEventId
+            : undefined,
+      }
+    } catch {
+      if (attempt === 0) continue
     }
-    return { statusCode: response.status, responseTimestamp }
-  } catch (e) {
-    console.log('error', e)
-    return { statusCode: 1 }
   }
+  return { statusCode: 1 }
 }
 
 function Index({ id }: { id: string }) {
