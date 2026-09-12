@@ -859,7 +859,12 @@ non-KB MCP servers retain their existing behavior.
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
   unique sources exist. That contract is appended to the system prompt only when a doc_query-style
   tool is actually available for the request.
-- **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
+- Before each tool continuation, `withModelCitationIndices` projects explicit
+  `citation_index` values onto model-facing source groups using the same message
+  normalizer as the UI. It follows call order, preserves repeated indices and
+  assigns null to ineligible or overflow sources. Stored and streamed tool results
+  stay unchanged; historical messages are excluded from the projection.
+- **Model compliance with the citation contract is unverified.** Request projection is unit-tested;
   whether a given model honours it needs a live model key, which the devcontainer does not carry.
 
 On the render side, `remarkCitationMarkers` rewrites `[n]` and contiguous `[n–m]` markers in

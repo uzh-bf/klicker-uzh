@@ -683,11 +683,75 @@ describe('account usage chat route', () => {
     expect(response.status).toBe(200)
     const prepareStep = mocks.streamConfig?.prepareStep as (input: {
       stepNumber: number
+      steps?: Array<{ content: unknown[] }>
+      initialMessages?: unknown[]
+      responseMessages?: unknown[]
     }) => unknown
     expect(prepareStep({ stepNumber: 0 })).toEqual({
       toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
     })
-    expect(prepareStep({ stepNumber: 1 })).toEqual({})
+    const initialMessages = [{ role: 'user', content: 'Question' }]
+    const raw = {
+      mode: 'documents',
+      sources: [{ reference: 'urn:source:a', chunks: [] }],
+    }
+    const output = prepareStep({
+      stepNumber: 1,
+      initialMessages,
+      steps: [
+        {
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'a',
+              toolName: 'KB_doc_query',
+              input: {},
+            },
+            {
+              type: 'tool-result',
+              toolCallId: 'a',
+              toolName: 'KB_doc_query',
+              output: raw,
+            },
+          ],
+        },
+      ],
+      responseMessages: [
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'a',
+              toolName: 'KB_doc_query',
+              output: { type: 'text', value: JSON.stringify(raw) },
+            },
+          ],
+        },
+      ],
+    })
+    expect(output).toEqual({
+      messages: [
+        initialMessages[0],
+        {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'a',
+              toolName: 'KB_doc_query',
+              output: {
+                type: 'text',
+                value: JSON.stringify({
+                  ...raw,
+                  sources: [{ ...raw.sources[0], citation_index: 1 }],
+                }),
+              },
+            },
+          ],
+        },
+      ],
+    })
   })
 
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
