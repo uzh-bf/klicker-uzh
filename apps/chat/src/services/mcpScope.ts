@@ -87,9 +87,6 @@ function resolveDocQueryParameters(value: unknown): ResolvedDocQueryParameters {
       representation: 'kb_id',
     }
   }
-  if (!Array.isArray(parameters.kb_ids) || parameters.kb_ids.length < 2) {
-    requiredScopeError()
-  }
   return {
     kbIds: normalizeDocQueryKbIds(parameters.kb_ids),
     representation: 'kb_ids',
