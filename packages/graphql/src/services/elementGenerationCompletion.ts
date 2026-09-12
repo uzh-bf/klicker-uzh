@@ -110,6 +110,7 @@ export async function completeElementGeneration(
                   stem: original.stem,
                   context: original.context,
                   explanation: original.explanation,
+                  tags: original.tags,
                   choices: original.choices.map((choice) => ({ ...choice })),
                 },
                 bloomLevel: original.bloomLevel,
