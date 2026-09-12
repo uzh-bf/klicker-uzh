@@ -167,6 +167,22 @@ available memory, Docker-disk pressure, conclusion, and artifact. This separates
 cache misses, host contention, service setup, test structure, and scheduling;
 do not infer one cause from total duration alone.
 
+### In-job resource samples
+
+Build and shard telemetry artifacts also contain `playwright-resources-*.jsonl`.
+The command wrapper samples every ten seconds for up to one hour (361 rows).
+Prisma and application builds have separate files; shard samples span service
+readiness and tests. Sampling failures do not change the wrapped command result.
+Artifacts retain the existing seven-day lifetime. No VM update is required.
+
+Samples contain only numeric procfs observations and timestamps. CPU tick order
+is user, nice, system, idle, iowait, irq, softirq, steal; guest ticks are already
+included in user/nice. Compute interval shares from successive counter deltas,
+not cumulative totals. Pressure totals are microseconds; divide their deltas by
+elapsed microseconds. Missing metrics are null, not zero. Counters describe the
+system visible from the container, not exclusive usage by its job. They do not
+measure per-process activity or establish a causal performance diagnosis alone.
+
 ## Image builds
 
 The selected staging source currently has 15 `v3_*-stg.yml` workflows with 16
