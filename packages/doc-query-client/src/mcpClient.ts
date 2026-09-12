@@ -4,7 +4,6 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 export const DOC_QUERY_SCOPE_TOKEN_HEADER = 'X-Doc-Query-Scope-Token'
 export const DOC_QUERY_CLIENT_NAME = 'klicker-doc-query-client'
 export const DOC_QUERY_CLIENT_VERSION = '1.0.0'
-export const DEFAULT_DOC_QUERY_REQUEST_TIMEOUT_MS = 30_000
 
 export interface DocQueryMcpClientOptions {
   url: string
