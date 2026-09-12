@@ -375,3 +375,12 @@ Runtime retained for the user's local-testing lease: exact checkout and
 graph. Lease checkpoint remains the user's next testing follow-up. No paid-model
 completion was attempted; prior OpenRouter 402 remains a limitation. Merge,
 readiness and deployment remain outside the approved terminal condition.
+
+
+Dock review correction: both independent reviewers identified the same nested
+Escape defect. The search input consumed every Escape; tooltip dismissal could
+also mark the event prevented after focus moved. Commit 8b4de3a makes active
+suggestions/debounce explicitly stop propagation, lets idle search Escape reach
+the panel, and preserves composition handling. All 12 browser tests pass again,
+including idle search and first-dismiss/second-exit sequences; 19 state tests,
+chat/shared types and lint pass. Reviewer correction dispositions are pending.
