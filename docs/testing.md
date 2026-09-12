@@ -12,7 +12,7 @@ tags:
 
 **There is no component-test layer.** Coverage is pure-function vitest at the bottom and full-stack e2e at the top — nothing in between (no @testing-library/react). Don't look for one, and don't assume a React component is covered unless an e2e spec exercises it.
 
-## Which level for which change
+Coverage is published, not enforced. `test-unit.yml` and `test-graphql.yml` run their\nexisting Vitest suites with the v8 provider and upload LCOV as the `coverage-lcov`\nartifact. The SonarCloud analysis imports a report only when the producing run belongs\nto the analyzed revision and recorded the same tested source tree, so a report from\nanother tree or base cannot become a metric. A missing, pending, or unverified report\nleaves coverage "not computed" in SonarCloud, and no coverage threshold is armed yet.\nSuites that do not use Vitest (the frontend PWA uses the Node test runner) publish no\nLCOV and are covered by their own job results instead.\n\n## Which level for which change
 
 ### Disposable database boundary
 

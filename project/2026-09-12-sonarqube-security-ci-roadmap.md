@@ -41,7 +41,7 @@ can continue within an approved implementation package.
 | Roadmap checkout | `trees/rs/sonarqube-workflow-roadmap` |
 | Artifact root | Existing `project/`; this file is the roadmap authority |
 | Boundary owner | Main session owning the approved package |
-| Current terminal condition | Reviewed, validated documentation; implementation not started |
+| Current terminal condition | Reviewed source implementation on draft PR #5924; live activation not started |
 | PR | [Draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924), targeting `v3` |
 
 The primary checkout has unrelated changes and is 68 commits behind the recorded
@@ -530,28 +530,54 @@ its dependent action. Read back effective settings and retain sanitized receipts
 
 ## Progress and review provenance
 
-- Status: reviewed roadmap; direction-only, implementation not started.
-- Completed: repository/GitHub investigation, official-documentation research,
-  prior proposal challenge, detailed work-item and acceptance decomposition,
-  planner approval, and documentation validation.
-- Documentation delivery: [draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924).
-  Roadmap preparation is complete; W0–W10 are not started.
-- Investigation baseline: `b824ae26126bd33b44112dc27aad0ce42dbe1c4b`.
-  Reconciled source baseline: `8c6a4c74f3bba3b73a5b5c3a185f6a1f0d3e89f5`;
-  isolated-checkout fetch succeeded and source fast-forwarded for the reconciled
-  CI change linked above.
-  Effective rules were re-read and remain distinct from source intent.
-- Delivery layer: documentation only. Substantive executable-source change is
-  zero lines. No runtime was started, settings changed, or implementation scan
-  manually dispatched.
-- Outstanding gates: live Sonar access/settings, selected package approval,
-  pnpm compatibility, baseline/owner rulings, and named live-effect approvals.
-- Planning review: the earlier proposal was approved after correcting pnpm
-  compatibility, test-classification wording, and unknown SCA entitlement.
-  The expanded artifact received planner approval, followed by approval of the
-  focused source reconciliation. The optional opposing-provider challenge
-  returned an empty response; it provides no review evidence. Prettier, seven
-  relative-link checks, staged diff checks, and staged Gitleaks passed.
-- Next action after documentation delivery: select M1 for executable planning;
-  obtain authorized Sonar settings evidence for W0 and finalize W1's contributor
-  verification scope. This roadmap does not start M1 automatically.
+- Status: source implementation in progress on [draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924); no live effect applied.
+- Completed: repository and GitHub investigation, documentation research,
+  planner approval, documentation delivery, and the first implementation
+  packages for W1, W2, W3, W4, W5 (pilot), W6, and W7.
+- Investigation baseline: `b824ae26126bd33b44112dc27aad0ce42dbe1c4b`; reconciled
+  source baseline `8c6a4c74f3bba3b73a5b5c3a185f6a1f0d3e89f5`.
+- Delivery layer: source only. No runtime was started, no Sonar setting was
+  changed, no ruleset was applied, and no image was published by this work.
+- Implementation state:
+  - W1: the scanner is pinned to `SonarSource/sonarqube-scan-action` v8.2.1
+    (`22918119ff8e1ca75a623e15c8296b6ea4fbe28f`), with explicit
+    `contents: read` and `actions: read` permissions, a bounded timeout,
+    event-aware draft handling, `edited` for retargeting, and a named
+    fail-closed result when `SONAR_TOKEN` is unavailable. The trusted analysis
+    route for fork and Dependabot pull requests is decided in
+    [ADR 0043](../docs/adr/0043-sonar-analysis-credential-and-coverage-input-boundary.md)
+    and is not implemented yet.
+  - W2: the source scope now includes `util` and `.github/scripts`, test
+    classification is explicit, `sonar.python.version=3.12` is set, and the
+    stale hand-written version is gone (supplied from `package.json`). The
+    before/after scope comparison still requires a live analysis.
+  - W3: `test-unit.yml` and `test-graphql.yml` publish LCOV as the
+    `coverage-lcov` artifact, and the analysis imports a report only from a run
+    bound to the analyzed head with a matching tested-source receipt
+    (`.github/scripts/sonar-coverage-inputs.cjs`, 23 unit cases). The coverage
+    threshold is deliberately unarmed.
+  - W4: `dependency-review.yml` fails on high severity, and Dependabot now
+    covers `uv` plus the twelve application Dockerfile directories. pnpm 11
+    graph and updater support is still unverified, so this is not complete CVE
+    coverage.
+  - W5: Trivy scans the staging backend-docker image and its migrator by digest
+    after publication and records receipts and SBOMs; promotion does not consume
+    them.
+  - W6: CodeQL v4 is SHA-pinned and covers JavaScript/TypeScript, Python, and
+    GitHub Actions with a `security-extended` pilot that is not a required check.
+  - W7: `docs/ci-and-deployment.md`, `docs/testing.md`, and the scanning claims in
+    `.serena/memories/reference.md` describe the implemented contracts. ClickUp
+    triage, finding owners, and remediation dates remain unwritten because they
+    need authority.
+  - W8: the analysis workflow now fails when the quality gate fails. The ruleset
+    delta itself is neither prepared nor applied.
+- Outstanding gates: live Sonar settings and entitlement (W0), the trusted
+  contributor analysis route (W1), the ruleset activation packet and its
+  application (W8/W9), and promotion admission with its schedules (W10). Each
+  needs a named approval as described under activation gates.
+- Verification limits: the Sonar workflow, the CodeQL update, dependency review,
+  and the image scan cannot be proven from source alone. Expect the Sonar quality
+  gate to fail this pull request while W0 and the policy decisions stay open, and
+  treat the image scan as unproven until a publication run exercises it.
+- Next action: obtain authorized Sonar settings evidence for W0, then implement
+  the trusted contributor analysis route before any merge enforcement.
