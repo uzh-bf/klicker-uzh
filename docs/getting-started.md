@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-27'
+timestamp: '2026-08-31'
 tags:
   - environment
   - onboarding
@@ -38,6 +38,13 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
+Fresh volumes provision the restricted `klicker_test` login, the application
+test database of the same name and `klicker_test_shadow`. Both databases carry
+the disposable marker required by reset, seed and development migration.
+Existing volumes are not adopted or marked automatically. If bootstrap refuses
+an old database, preserve it and use an explicitly approved fresh disposable
+environment; do not bypass the guard. See [Testing](./testing.md#disposable-database-boundary).
+
 Clone-and-run via a self-contained devcontainer — no Infisical, no external
 EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
 routed app plus the two Hatchet workers. Dependency-aware profiles select only
@@ -52,7 +59,7 @@ Postgres and Hatchet as the boot-critical base.
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.42 and run `devrouter setup --yes` once. Version 0.0.39 is not safe for failed managed profile transitions.
+     1. Install devrouter ≥ 0.0.55 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -67,6 +74,18 @@ needed; for example, `devrouter ensure . --profile chat,ai,mcp`. Capability-only
 profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
 default `full`. Profile unions are additive and order-insensitive, and a warm
 transition does not recreate the app container or reset persistent data.
+
+Parallel task work should use one linked worktree per task and the smallest
+matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
+tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
+keep separate app caches, database state, routes, and processes while sharing
+only the package-download cache. Do not default every parallel worktree to
+`full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
+workers in each environment. The Turbo local cache is shared across all
+worktrees and bounded in size/age; see
+[Local Disk and Caches](./local-disk-and-caches.md) for the cache layout and
+the `clean:cache` / `clean:generated` / `clean:worktree` / `disk:usage`
+commands.
 
 Playwright is the deliberate toolchain exception. Run
 `pnpm playwright:host -- <args>` from the host; the launcher calls
@@ -89,6 +108,20 @@ and declared non-secret origin environment in
 stale owned groups are replaced boundedly, unknown processes are never killed,
 and a failed profile transition restores the last usable generated config.
 
+The Dev Container waits for `postCreateCommand` before managed post-start.
+Post-create publishes a fixed container-local completion marker only after the
+destructive bootstrap and generated runtime inputs succeed; post-start checks
+that marker before it reads those inputs or starts a process. If the marker is
+missing or malformed, treat the workspace as incompletely bootstrapped and use
+the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the
+marker or reruns database bootstrap. The `ROOT` contract in
+[post-create](../.devcontainer/post-create.sh) and
+[post-start](../.devcontainer/post-start.sh) canonicalizes
+`KLICKER_DEVCONTAINER_ROOT` once and uses that same checkout for every
+repository-local path. Post-create invalidates any earlier completion marker
+before it validates the configured root, so an invalid override cannot expose a
+stale successful bootstrap.
+
 Devrouter owns generic process lifecycle and route readiness. `ensure` verifies
 the selected routes and can spend one container recreate when an exact
 workspace is alive but an application remains unhealthy. The repository-owned
@@ -96,7 +129,8 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.42`.
+The consumer version is pinned in `.devrouter.yml`; this pin covers normal
+managed startup, not the separately reviewed retained-recovery callback.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
@@ -117,8 +151,9 @@ fingerprints the dependency graph, checked-out commit, Next.js route structure,
 and app configuration. A true managed start preserves each worktree's
 `.next/dev` output, while a changed dependency fingerprint refreshes the
 persistent `node_modules` volume with a frozen, local-first install.
-Unauthenticated Chat must answer `401 application/json` on a
-nested API route; the shell pages of auth, PWA, manage, and control must answer
+Auth must answer `200 application/json` at `/api/auth/providers` so its
+catch-all sign-in route is checked, not only its homepage. Unauthenticated Chat
+must answer `401 application/json` on a nested API route; the shell pages of PWA, manage, and control must answer
 `2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
 and `live-quiz` requires live general and response-processor worker descendants
 of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing
@@ -183,7 +218,15 @@ Two paths, depending on whether you have Infisical access:
 1. **Full path**: `pnpm run dev` — injects secrets via `util/_run_with_infisical.sh` (requires an authenticated Infisical CLI; validates env names `dev`, `dev-assessment`, `dev-playwright`, `dev-cleverreach`, `stg`, `prd`) and serves via Traefik on `*.klicker.com` (needs `/etc/hosts` entries + mkcert certs; mirrors production cookie/domain behavior).
 2. **Localhost path (no secrets)**: `pnpm run dev:raw` — hit apps directly: backend 3000, pwa 3001, manage 3002, control 3003, chat 3004, auth 3010, response-api 7078.
 
-Compose infra needs no secrets; the app dev servers are the secret consumers. Database seeding: `pnpm run prisma:setup` (reset + push + seed — destructive, only on test-seeded state). Seeded test credentials are documented in the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values into other documents.
+Compose infra needs no secrets; the app dev servers are the secret consumers.
+The legacy Compose database is not a supported target for guarded reset, push,
+development migration or test seeds. Use the provisioned self-contained
+container and the [raw migration and seed sequence](./data-and-migrations.md)
+instead (config-derived). Retained volumes are not adopted automatically; see
+[retained PostgreSQL volumes](../.devcontainer/README.md#retained-postgresql-volumes)
+before rebuilding an old checkout. Seeded test credentials are documented in
+the [AGENTS.md test-credentials section](../AGENTS.md) — never copy the values
+into other documents.
 
 ## Agent addendum
 
@@ -197,11 +240,11 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 Run the external evaluation framework from the main repository with:
 
 ```bash
-pnpm run eval:klicker -- --mode eval --limit 20
+git submodule update --init --checkout evaluation/framework
+pnpm run eval:klicker -- --mode eval --qa-file /path/to/synthetic-qa.json --limit 1
 ```
 
-The root-owned wrapper (`util/_run_klicker_eval.sh`) injects the `dev` Infisical environment without
-watch mode, selects the local `gpt-5.6-luna` judge with high reasoning effort, and passes
-`evaluation/framework/data/input/metrics/klicker_chatbot.yaml` through the framework's `--metrics`
-option. Additional arguments are forwarded unchanged. It does not start LiteLLM; recreate that
-container through Infisical if its upstream credentials are absent.
+The wrapper's restricted secret mapping, model defaults, runtime requirements,
+and proof boundaries are documented in the
+[evaluation README](../evaluation/README.md). Eval mode judges an existing QA
+artifact; it does not test Klicker's authenticated chat target.

@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  after: vi.fn(),
+  afterCallback: null as (() => unknown) | null,
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   chatbotFindUnique: vi.fn(),
@@ -26,8 +28,16 @@ const mocks = vi.hoisted(() => ({
   isChatAccountUsageEnforcementEnabled: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
   finalizeChatTurn: vi.fn(),
+  flushLangfuseTelemetry: vi.fn(async () => {}),
   ensureImagePreviewBase64: vi.fn(),
+  getChatTraceContext: vi.fn(),
+  getLangfuseAiSdkIntegration: vi.fn(),
   generateText: vi.fn(),
+  isAiTelemetryEnabled: vi.fn(),
+  langfuseObservationEnd: vi.fn(),
+  langfuseObservationUpdate: vi.fn(),
+  propagateAttributes: vi.fn(),
+  startActiveObservation: vi.fn(),
   streamText: vi.fn(),
   roundChatUsageCredits: vi.fn(),
   streamConfig: null as Record<string, unknown> | null,
@@ -109,9 +119,21 @@ vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
-  getParentSpanContext: vi.fn(),
-  getTraceIdForMessage: vi.fn(),
-  isAiTelemetryEnabled: false,
+  flushLangfuseTelemetry: mocks.flushLangfuseTelemetry,
+  getChatTraceContext: mocks.getChatTraceContext,
+  getLangfuseAiSdkIntegration: mocks.getLangfuseAiSdkIntegration,
+  isAiTelemetryEnabled: mocks.isAiTelemetryEnabled,
+  LANGFUSE_CHAT_TRACE_NAME: 'generate-chat-response',
+}))
+
+vi.mock('next/server', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('next/server')>()
+  return { ...actual, after: mocks.after }
+})
+
+vi.mock('@langfuse/tracing', () => ({
+  propagateAttributes: mocks.propagateAttributes,
+  startActiveObservation: mocks.startActiveObservation,
 }))
 
 vi.mock('@/src/lib/server/openaiCachePolicy', () => ({
@@ -157,6 +179,7 @@ type StreamCallbacks = {
 }
 
 type ResponseOptions = {
+  onError: (error: unknown) => string
   messageMetadata: (input: {
     part: {
       type: string
@@ -181,6 +204,8 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
+    owner: { aiFeaturesEnabled: true },
+    course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
     modelSelection: true,
@@ -194,14 +219,18 @@ function chatbot(overrides: Record<string, unknown> = {}) {
 
 function createRequest({
   selectedModel = 'gpt-4.1',
+  selectedMode = 'tutor',
   assistantMessageId = 'assistant-1',
   images = [],
   threadId = 'thread-1',
+  allowRegeneration = false,
 }: {
   selectedModel?: string
+  selectedMode?: string
   assistantMessageId?: string
   images?: string[]
   threadId?: string | null
+  allowRegeneration?: boolean
 } = {}) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
@@ -210,8 +239,9 @@ function createRequest({
       messages: [{ id: 'message-1', role: 'user', content: 'Explain this.' }],
       threadId,
       selectedModel,
-      selectedMode: 'tutor',
+      selectedMode,
       assistantMessageId,
+      ...(allowRegeneration ? { allowRegeneration: true } : {}),
       images,
     }),
   })
@@ -228,6 +258,10 @@ describe('account usage chat route', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null
     mocks.responseOptions = null
+    mocks.afterCallback = null
+    mocks.after.mockImplementation((callback: () => unknown) => {
+      mocks.afterCallback = callback
+    })
     mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
@@ -275,6 +309,184 @@ describe('account usage chat route', () => {
         },
       }
     })
+    mocks.isAiTelemetryEnabled.mockReturnValue(false)
+    mocks.getChatTraceContext.mockResolvedValue({
+      parentSpanContext: {
+        spanId: '0123456789abcdef',
+        traceFlags: 1,
+        traceId: '0123456789abcdef0123456789abcdef',
+      },
+      pseudonymousChatbotId: 'pseudonymous-chatbot',
+      sessionId: 'pseudonymous-session',
+      traceId: '0123456789abcdef0123456789abcdef',
+    })
+    mocks.getLangfuseAiSdkIntegration.mockReturnValue({
+      name: 'test-langfuse-integration',
+    })
+    mocks.propagateAttributes.mockImplementation(
+      (_attributes, callback: () => unknown) => callback()
+    )
+    mocks.startActiveObservation.mockImplementation(
+      (_name, callback: (observation: unknown) => unknown) =>
+        callback({
+          end: mocks.langfuseObservationEnd,
+          update: mocks.langfuseObservationUpdate,
+        })
+    )
+  })
+
+  test('enables metadata-only Langfuse tracing and closes an aborted turn once', async () => {
+    mocks.isAiTelemetryEnabled.mockReturnValue(true)
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getChatTraceContext).toHaveBeenCalledWith({
+      assistantMessageId: 'assistant-1',
+      chatbotId: 'chatbot-1',
+      threadId: 'thread-1',
+    })
+    expect(mocks.propagateAttributes).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          chatbotId: 'pseudonymous-chatbot',
+          chatMode: 'tutor',
+          imageAttachmentCount: '0',
+          modelId: 'gpt-4.1',
+          toolCount: '0',
+        }),
+        sessionId: 'pseudonymous-session',
+        traceName: 'generate-chat-response',
+      }),
+      expect.any(Function)
+    )
+    expect(mocks.streamConfig?.telemetry).toMatchObject({
+      functionId: 'generate-chat-response',
+      integrations: [{ name: 'test-langfuse-integration' }],
+      isEnabled: true,
+      recordInputs: false,
+      recordOutputs: false,
+    })
+
+    const steps = [
+      {
+        content: [{ type: 'text', text: 'Partial answer.' }],
+        usage: { inputTokens: 2, outputTokens: 1 },
+      },
+    ]
+    await streamCallbacks().onAbort({ steps })
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 },
+      steps,
+    })
+    await mocks.afterCallback?.()
+
+    expect(mocks.langfuseObservationUpdate).toHaveBeenLastCalledWith({
+      output: expect.objectContaining({ status: 'aborted' }),
+    })
+    expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
+    expect(mocks.after).toHaveBeenCalledWith(mocks.flushLangfuseTelemetry)
+    expect(mocks.flushLangfuseTelemetry).toHaveBeenCalledOnce()
+  })
+
+  test('closes a successful Langfuse trace once with aggregate output only', async () => {
+    mocks.isAiTelemetryEnabled.mockReturnValue(true)
+    const request = createRequest()
+
+    const response = await POST(request, {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.abortSignal).toBeInstanceOf(AbortSignal)
+    expect(mocks.streamConfig?.abortSignal).toBe(request.signal)
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 2, outputTokens: 1, totalTokens: 3 },
+      steps: [{ content: [{ type: 'text', text: 'Answer.' }] }],
+    })
+
+    expect(mocks.langfuseObservationUpdate).toHaveBeenLastCalledWith({
+      output: {
+        reasoningLength: 0,
+        responseLength: 0,
+        status: 'success',
+        stepsCount: 1,
+      },
+    })
+    expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
+  })
+
+  test('keeps provider errors fail-open when Langfuse trace closure throws', async () => {
+    mocks.isAiTelemetryEnabled.mockReturnValue(true)
+    mocks.after.mockImplementationOnce(() => {
+      throw new Error('synthetic scheduling failure')
+    })
+    mocks.langfuseObservationUpdate
+      .mockImplementationOnce(() => {})
+      .mockImplementationOnce(() => {
+        throw new Error('synthetic update failure')
+      })
+    mocks.langfuseObservationEnd.mockImplementationOnce(() => {
+      throw new Error('synthetic end failure')
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await expect(
+      streamCallbacks().onError(new Error('synthetic provider failure'))
+    ).resolves.toBeUndefined()
+    await expect(
+      streamCallbacks().onError(new Error('late provider failure'))
+    ).resolves.toBeUndefined()
+    const errorMessage = responseOptions().onError(
+      new Error('synthetic UI stream failure')
+    )
+    expect(errorMessage).toEqual(expect.any(String))
+    expect(errorMessage).not.toContain('synthetic UI stream failure')
+
+    expect(mocks.langfuseObservationUpdate).toHaveBeenCalledTimes(2)
+    expect(mocks.langfuseObservationEnd).toHaveBeenCalledOnce()
+  })
+
+  test.each([
+    false,
+    true,
+  ])('requires AI approval with budget enforcement %s', async (enforced) => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(enforced)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: false } })
+    )
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(403)
+    expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
+    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
+      requestId: expect.any(String),
+      phase: 'admission.accountApproval',
+      code: 'AI_FEATURES_DISABLED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.getUserCredits).not.toHaveBeenCalled()
+  })
+
+  test('allows participant model use when an approved owner opts out of beta', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({ owner: { aiFeaturesEnabled: true, betaEnabled: false } })
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {
@@ -315,6 +527,29 @@ describe('account usage chat route', () => {
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('defaults omitted regeneration to a normal turn claim', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.claimChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.claimChatTurn.mock.calls[0]?.[0]).not.toHaveProperty(
+      'allowRegeneration'
+    )
+  })
+
+  test('passes explicit regeneration to the turn claim', async () => {
+    const response = await POST(createRequest({ allowRegeneration: true }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.claimChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ allowRegeneration: true })
+    )
   })
 
   test('reuses a failed turn thread when a retry omits the thread ID', async () => {
@@ -417,7 +652,45 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {
+  test.each([
+    'tutor',
+    'quizzer',
+  ] as const)('forces %s course retrieval only on the first model step', async (selectedMode) => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          quizzer: { prompt: 'Ask course questions.' },
+        },
+        mcpConfigurations: [
+          {
+            chatMode: selectedMode,
+            isEnabled: true,
+            priority: 0,
+            allowedTools: ['doc_query'],
+            parameters: null,
+            mcpServer: { id: 'server-1' },
+          },
+        ],
+      })
+    )
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
+
+    const response = await POST(createRequest({ selectedMode }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+    }) => unknown
+    expect(prepareStep({ stepNumber: 0 })).toEqual({
+      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+    })
+    expect(prepareStep({ stepNumber: 1 })).toEqual({})
+  })
+
+  test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
@@ -429,21 +702,16 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({
-      error: 'Chat model usage is unavailable',
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
-    })
+    expect(response.status).toBe(200)
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
-      usageClass: 'ADVANCED',
+      usageClass: 'BASE',
     })
-    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('keeps automatic zero-credit usage in its ADVANCED class', async () => {
+  test('routes automatic zero-credit usage to Luna BASE', async () => {
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
@@ -457,15 +725,12 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
-    })
+    expect(response.status).toBe(200)
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
-      usageClass: 'ADVANCED',
+      usageClass: 'BASE',
     })
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('does not use another class when the ADVANCED account budget is unavailable', async () => {
@@ -487,7 +752,7 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  test('does not cross to BASE when no ADVANCED fallback is allow-listed', async () => {
+  test('uses Luna when the chatbot allow-list excludes it', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({ allowedModelIds: ['gpt-4.1'] })
     )
@@ -497,11 +762,48 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
     })
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('uses Luna when only a retired model remains in the automatic allow-list', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({ modelSelection: false, allowedModelIds: ['gpt-4.1-mini'] })
+    )
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-4.1-mini' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('allows Luna when model selection is enabled but only retired models remain', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({ allowedModelIds: ['gpt-4.1-mini'] })
+    )
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('finalizes the sole BASE model once and returns the rounded amount', async () => {
@@ -531,20 +833,13 @@ describe('account usage chat route', () => {
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'assistant-1',
+        participantId: 'participant-1',
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
         modelId: 'gpt-5.6-luna',
         rawCreditsUsed: 0.000008,
       })
     )
-    expect(mocks.finalizeChatTurn.mock.calls[0][0]).not.toHaveProperty(
-      'participantId'
-    )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
-    expect(mocks.decrementCredits).toHaveBeenCalledWith(
-      'participant-1',
-      'chatbot-1',
-      0.000008
-    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
 
     expect(
       responseOptions().messageMetadata({
@@ -578,7 +873,11 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
-  test('finalizes an empty terminal result and charges reliable usage once', async () => {
+  test('does not charge an empty terminal result', async () => {
+    mocks.finalizeChatTurn.mockResolvedValueOnce({
+      outcome: 'empty',
+      creditsUsed: null,
+    })
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
@@ -596,12 +895,7 @@ describe('account usage chat route', () => {
         rawCreditsUsed: 0.00006,
       })
     )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
-    expect(mocks.decrementCredits).toHaveBeenCalledWith(
-      'participant-1',
-      'chatbot-1',
-      0.00006
-    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
   test('keeps invalid complete usage uncharged and metadata safe', async () => {
@@ -749,7 +1043,7 @@ describe('account usage chat route', () => {
         ]),
       })
     )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
   test('marks a provider error as failed so the same key can be retried', async () => {

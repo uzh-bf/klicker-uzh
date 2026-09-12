@@ -36,6 +36,13 @@ export default {
       packages: ['@klicker-uzh/prisma'],
     },
     {
+      // CI profile resolution must not change without a reviewed workflow bump.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@devrouter/cli'],
+      packages: ['@klicker-uzh/monorepo'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],

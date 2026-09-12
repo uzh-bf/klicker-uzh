@@ -3,15 +3,18 @@
 # Invoked by host-side `devrouter ensure` after it validates the exact container.
 # Launches every routed app plus both workers through the delivered helper.
 set -euo pipefail
-cd /workspaces/klicker-uzh
+ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
+ROOT="$(cd "$ROOT" && pwd)"
+bash "$ROOT/util/dev-runtime.sh" require-bootstrap
+cd "$ROOT"
 
 # Re-source the canonical env (DevPod truncates env_file values at '='), then the
 # runtime Hatchet token written by post-create (if any). (GOTCHAS #1)
 set -a
 # shellcheck source=/dev/null
-. /workspaces/klicker-uzh/.devcontainer/devcontainer.env
+. "$ROOT/.devcontainer/devcontainer.env"
 # shellcheck source=/dev/null
-[ -f /workspaces/klicker-uzh/.devcontainer/.hatchet.env ] && . /workspaces/klicker-uzh/.devcontainer/.hatchet.env
+[ -f "$ROOT/.devcontainer/.hatchet.env" ] && . "$ROOT/.devcontainer/.hatchet.env"
 set +a
 
 # Detect if devrouter routing is active (via mkcert CA mount) or fallback to plain localhost ports
@@ -36,6 +39,7 @@ if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_CONTROL_URL=http://localhost:3003
   export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
+  export NEXT_PUBLIC_GROWTHBOOK_API_HOST=http://localhost:3002/__growthbook__
   export CORS_ALLOWED_ORIGINS=http://localhost:3001
   export NODE_EXTRA_CA_CERTS=""
 elif [ -n "${WORKSPACE:-}" ]; then
@@ -59,6 +63,7 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export NEXT_PUBLIC_ASSESSMENT_URL=https://pwa.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CONTROL_URL=https://control.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_GROWTHBOOK_API_HOST=https://manage.klicker.${WORKSPACE}.localhost/__growthbook__
   export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
   export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
   export AUTH_STUDENT_ALLOWED_HOSTS=pwa.klicker.${WORKSPACE}.localhost,127.0.0.1:3001
@@ -79,9 +84,23 @@ export npm_config_verify_deps_before_run=false
 export DEVROUTER_PROFILE
 echo "[post-start] Profile: ${DEVROUTER_PROFILE}"
 
+# Opt-in fixture mode uses only this checkout's synthetic lecturer and test
+# processes. Ordinary development and production never load the fixture.
+DEV_TURBO_TASK=dev
+if [ -f "$ROOT/.devcontainer/.runtime/beta-enrollment-fixture" ]; then
+  if [ "$DEVROUTER_PROFILE" != manage ]; then
+    echo '[post-start] ERROR: beta enrollment fixture requires the manage profile.' >&2
+    exit 1
+  fi
+  DEV_TURBO_TASK=dev:test
+  export NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=sdk-test
+fi
+export DEV_TURBO_TASK
+
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
-export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,NEXT_PUBLIC_GROWTHBOOK_API_HOST,NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},DEV_TURBO_TASK"
 
 # Resolve the complete selection first through the pure table in
 # util/profile-resolver.sh: exact turbo roots, readiness apps, and process
@@ -102,6 +121,12 @@ else
   PROFILE_WANTS_MCP=no
 fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
+DEV_BUILD_FILTERS="$(bash ./util/dev-runtime.sh preparation-filters)"
+if [ "$PROFILE_WANTS_DEV" = yes ] &&
+  ! "$DEVROUTER_PROCESS_HELPER" ensure --help | grep -F -- '--prepare-command' >/dev/null; then
+  echo '[post-start] ERROR: Managed startup requires a helper with --prepare-command support.' >&2
+  exit 1
+fi
 READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
 if profile_wants klicker-workers; then
@@ -115,7 +140,7 @@ fi
 # process starts, so close that race here after the managed Hatchet service is
 # running. Capability-only profiles do not wait for a token they never consume.
 if [ "$PROFILE_WANTS_DEV" = yes ] && [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
-  HATCHET_ENV=/workspaces/klicker-uzh/.devcontainer/.hatchet.env
+  HATCHET_ENV="$ROOT/.devcontainer/.hatchet.env"
   for attempt in $(seq 1 60); do
     if [ -s /config/authdisabled-token ]; then
       HATCHET_CLIENT_TOKEN=$(tr -d '[:space:]' < /config/authdisabled-token)
@@ -136,17 +161,31 @@ fi
 # read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
 # selection drops it, stop the exact owned process instead of leaving it stale.
 if [ "$PROFILE_WANTS_MCP" = yes ]; then
+  # Rotate the fixture and Chat together. Only the child receives the ephemeral
+  # credentials; the parent owns cleanup if any later readiness check fails.
+  if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" != 1 ]; then
+    exec node apps/chat/scripts/local-mcp-bootstrap.mjs
+  fi
+  : "${LOCAL_MCP_GENERATION:?Missing local MCP credential generation}"
+  export DEVROUTER_PROCESS_FINGERPRINT_ENV="${DEVROUTER_PROCESS_FINGERPRINT_ENV},LOCAL_MCP_GENERATION"
   MCP_FIXTURE_SHA256=$(sha256sum apps/chat/scripts/local-mcp-server.mjs)
   MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
   "$DEVROUTER_PROCESS_HELPER" ensure \
     --name klicker-local-mcp \
     --match 'apps/chat/scripts/local-mcp-server.mjs' \
     --log /tmp/local-mcp.log \
-    -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
+    -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256" "$LOCAL_MCP_GENERATION"
 
   # Keep startup bounded: this fixture check must not delay managed-app readiness.
   for attempt in $(seq 1 20); do
-    if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then
+    if curl --fail --silent http://localhost:1417/health | node -e '
+      let body = ""; process.stdin.on("data", chunk => body += chunk)
+      process.stdin.on("end", () => {
+        try {
+          const health = JSON.parse(body)
+          process.exit(health.status === "ok" && health.generation === process.env.LOCAL_MCP_GENERATION ? 0 : 1)
+        } catch { process.exit(1) }
+      })'; then
       break
     fi
     if [ "$attempt" -eq 20 ]; then
@@ -173,13 +212,15 @@ start_managed_runtime() {
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
+      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
-      -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
+      -- pnpm exec turbo run "$DEV_TURBO_TASK" ${DEV_TURBO_FILTERS}
   else
     "$DEVROUTER_PROCESS_HELPER" ensure \
       --name klicker-dev \
       --match 'turbo run dev' \
       --log /tmp/dev.log \
+      --prepare-command "bash ./util/dev-runtime.sh prepare ${DEV_BUILD_FILTERS}" \
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm run dev:container
   fi
@@ -263,7 +304,7 @@ worker_runtime_pid() {
   for proc in /proc/[0-9]*; do
     pid="${proc##*/}"
     cwd="$(readlink "$proc/cwd" 2>/dev/null || true)"
-    [ "$cwd" = "/workspaces/klicker-uzh/apps/$worker" ] || continue
+    [ "$cwd" = "$ROOT/apps/$worker" ] || continue
     state="$(ps -o stat= -p "$pid" 2>/dev/null | tr -d '[:space:]')"
     [ -n "$state" ] && [[ "$state" != Z* ]] || continue
     cmdline="$(tr '\0' ' ' <"$proc/cmdline" 2>/dev/null || true)"

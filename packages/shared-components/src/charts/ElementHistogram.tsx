@@ -148,7 +148,11 @@ function ElementHistogram({
               return null
             }}
           />
-          <Bar dataKey="count" fill="rgb(19, 149, 186)" />
+          <Bar
+            dataKey="count"
+            fill="rgb(19, 149, 186)"
+            isAnimationActive={false}
+          />
           {reference && (
             <ReferenceLine
               className={textSize}

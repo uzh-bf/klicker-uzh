@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 
 export interface ChatAccountUsageLane {
   usageClass: DB.ChatUsageClass
@@ -131,11 +132,16 @@ export async function getChatAccountUsage(
   ctx: ContextWithUser
 ): Promise<ChatAccountUsageOverview | null> {
   const ownerId = resolveTargetOwnerId(args.ownerId, ctx)
+  // Visibility gate: callers keep their authorization errors, but the usage
+  // read stays hidden until the AI beta evaluates true for the caller.
+  if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) {
+    return null
+  }
   const now = args.now ?? new Date()
   const monthStart = getZurichMonthStart(now)
   const owner = await ctx.prisma.user.findUnique({
     where: { id: ownerId },
-    select: { aiChatbotPublishingEnabled: true },
+    select: { aiFeaturesEnabled: true },
   })
   if (!owner) return null
 
@@ -153,7 +159,7 @@ export async function getChatAccountUsage(
   ])
 
   return projectOverview({
-    authorized: owner.aiChatbotPublishingEnabled,
+    authorized: owner.aiFeaturesEnabled,
     baseModelUsage,
     advancedModelUsage,
     resetAt: getZurichMonthReset(now),
@@ -182,10 +188,10 @@ export async function setChatAccountUsageBudgets(
   return ctx.prisma.$transaction(async (tx) => {
     const owner = await tx.user.findUnique({
       where: { id: ownerId },
-      select: { aiChatbotPublishingEnabled: true },
+      select: { aiFeaturesEnabled: true },
     })
     if (!owner) return null
-    if (!owner.aiChatbotPublishingEnabled) {
+    if (!owner.aiFeaturesEnabled) {
       throw new GraphQLError('Chat account usage is not authorized', {
         extensions: { code: 'CHAT_ACCOUNT_USAGE_DISABLED' },
       })

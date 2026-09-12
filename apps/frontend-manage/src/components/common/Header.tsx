@@ -9,7 +9,9 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  type UserProfileQuery,
+  ManageFeaturePreferencesDocument,
+  type ManageUserProfileQuery,
+  UserLoginScope,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
@@ -27,13 +29,21 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SupportModal from './SupportModal'
 
-type UserProfile = NonNullable<UserProfileQuery['userProfile']>
+type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
 
-function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
+function Header({
+  user,
+  userScope,
+}: {
+  user?: UserProfile | null
+  userScope?: ManageUserProfileQuery['userScope']
+}): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const aiBetaEnabled = useFeatureFlag('ai-beta')
+  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -56,7 +66,11 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(user?.privatePreview
+    ...(aiBetaEnabled &&
+    preferences?.userProfile?.betaEnabled === true &&
+    user?.catalyst === true &&
+    (userScope === UserLoginScope.FullAccess ||
+      userScope === UserLoginScope.AccountOwner)
       ? [
           {
             key: 'chatbots-item',

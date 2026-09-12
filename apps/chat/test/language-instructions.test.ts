@@ -28,13 +28,13 @@ describe('withLanguageStyleContract', () => {
     expect(result).toContain('ae, oe or ue')
   })
 
-  // A lecturer's stored prompt replaces DEFAULT_PROMPT entirely, so the
-  // contract must hold without any cooperation from the base prompt.
+  // Lecturer guidance and custom personas do not own language policy, so the
+  // contract must hold without any cooperation from earlier prompt layers.
   test('applies to an arbitrary lecturer prompt without conditions', () => {
     const lecturerPrompt = 'Du bist ein strenger Quizmaster für MAT182.'
     const result = withLanguageStyleContract(lecturerPrompt)
     expect(result).toContain(lecturerPrompt)
-    expect(result).toContain('Swiss High German')
+    expect(result).toContain('Swiss Standard German')
   })
 
   test.each([
@@ -43,6 +43,6 @@ describe('withLanguageStyleContract', () => {
   ])('handles a %s base prompt without leading blank lines', (_label, base) => {
     const result = withLanguageStyleContract(base)
     expect(result.trim()).toBe(result)
-    expect(result).toContain('Swiss High German')
+    expect(result).toContain('Swiss Standard German')
   })
 })

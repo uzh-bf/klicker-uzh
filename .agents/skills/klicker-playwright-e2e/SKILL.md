@@ -61,9 +61,38 @@ config rejects direct local invocations before global setup, and the
 devcontainer cannot store Playwright browser binaries. GitHub Actions is the
 explicit exception and keeps running in the official Playwright container.
 
-The launcher starts the full devrouter profile, including response-api and both
-Hatchet workers. Ensure the response processor is not running with
+The launcher infers the runtime profile from explicit spec-file arguments by
+taking the union of their `playwright/profiles.json` entries; broad runs,
+unresolved filters, and unrecognized options use the maximal `playwright`
+profile, and an explicit `--runtime-profile` always wins. Focused activity
+runs may explicitly request
+`pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts`.
+The caller still owns profile sufficiency for deliberately narrowed
+selections. Put launcher options before Playwright arguments; an explicit
+`--` ends their prefix.
+`--print-env` also reconciles the selected runtime and can start services.
+`--show-report` cannot be combined with a runtime profile.
+Ensure the response processor is not running with
 `ASSESSMENT_MODE=true` when validating live quiz mode.
+
+For a focused test against an existing synthetic database, the explicit local
+options `--runtime-profile chat --preserve-database` may precede Playwright
+arguments. This skips global reset/seed only; selected specs still perform
+their own fixture writes and cleanup. Inspect those fixtures before opting in.
+CI and ordinary invocations retain their existing setup behavior.
+
+Clean local runs default to normal cleanup and reseeding on every reset. With
+`KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1`, the clean seed is captured into the
+git-ignored `playwright/.cache/seed-snapshot/` cache after a successful seed;
+later runs, including the per-spec CLEANUP resets, restore it in one PostgreSQL
+transaction on the disposable `klicker_test` database instead of reseeding.
+Snapshotting stays opt-in because a measured restore is not faster than the
+normal reset; it buys an exact baseline, not speed. The cache key binds the
+Prisma schema, migrations, seed sources, lockfile, PostgreSQL major version,
+timezone/year, and a live schema fingerprint; drift, CI, and
+`--preserve-database` fall back to normal cleanup and reseed, and a failed
+restore aborts the run instead of continuing on partial state. Delete the cache
+directory to force a fresh capture.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
@@ -92,6 +121,7 @@ render of the starter grid.
 
 ## Fast Failure Triage
 
+- Nested development routes returning 404 despite existing source files can indicate overlapping Next.js route scans. Compare the live development pages manifest with dynamic source routes and verify the Pages-only development configuration; see `docs/solutions/runtime-error/next-development-route-scans-overlap.md`. Do not mask missing routes with longer test timeouts or treat an incomplete inventory as cache damage.
 - `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `pnpm playwright:host -- --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
@@ -154,7 +184,14 @@ Cleanup dialogs:
 ## CI Notes
 
 - For Chromium-only CI, run with `--project=chromium`.
-- The public ARM64 pool is an opt-in path for same-repository, non-draft, non-bot PRs in the public repository with the rollout enabled (global variable or exact canary PR). Keep `filter-hosted`, `build-and-compile-hosted`, and `test-playwright-status` GitHub-hosted; keep pushes, fork PRs, drafts, bots, private repositories, and disabled rollouts on the hosted filter, build, and shard jobs. The caller predicate and the called workflow's `prepare` job both fail closed: the reusable workflow repeats the event, repository-visibility, head-repository, bot, draft, and rollout checks before checkout, then runs the changed-path `prepare` and `build-and-compile` jobs in the Playwright container on the `public-pr-arm64` group and exposes `should_run` as a workflow output. Public jobs must use read-only contents permission, receive no secrets, not publish service ports, and not persist checkout credentials; every shard needs a run-specific Hatchet volume. Preserve all eight shard artifact names when changing either path. Keep cancellation job-scoped: the hosted stages use distinct groups, the public reusable-workflow call owns the complete public-route group, the called workflow defines no concurrency, and `test-playwright-status` stays unconstrained so stale reporters cannot block current jobs. After every public container checkout, trust only the exact `GITHUB_WORKSPACE`; the mounted directory has a different host owner, and wildcard safe-directory rules are forbidden.
+- Assign every active spec to the smallest sufficient profile in `playwright/profiles.json`. Each spec must appear exactly once; missing, stale, or duplicate entries fail `pnpm check:playwright-ci`. Both Playwright workflows pass each shard's canonical profile union through `devrouter profile plan`, the repository-owned `playwright/runtime-contract.yml`, and `util/playwright-profile-runtime.mjs`. The trusted planner may assign a candidate-only spec to `full`; the adapter resolves a trusted `full` union through the explicit `playwright` Devrouter profile, which contains every CI-supported app but none of the local-only optional services or processes. Keep that path fail closed, keep app-to-Turbo and endpoint mappings in the contract, and retain the adapter's exact binding-key and safe-literal checks. A caller checkout where all three profile-runtime files are absent may use the explicit legacy full-stack startup so open PRs created before the migration remain runnable; a partially present profile runtime must fail closed. Job service containers remain static because GitHub creates them before workflow steps.
+- The Playwright CI cache contract is versioned and architecture-specific. It includes the lockfile, workspace and Turbo configuration, tracked package manifests, Node/pnpm versions, the synthetic build-environment schema, and the digest-pinned Playwright image. The trusted `v3` seed workflow is the only cache writer; hosted and public-PR jobs restore pnpm and `.turbo` state without saving it. Public PR restore remains disabled until an explicit global or exact-canary control is enabled, and any miss or unavailable cache must leave the normal build path valid. Read `playwright-build-telemetry`, shard telemetry, and the hosted `playwright-queue-telemetry` artifact before attributing a speed change to caching; these artifacts contain only route, cache, timing, task-count, runner, and status metadata.
+- Specs that publish, schedule, start, or end activities must include `live-quiz` in their manifest profile so both Hatchet workers run. Do not rely on another spec in the same timing-balanced shard to supply this dependency.
+- The public ARM64 pool is one backend of the pinned `public-pr-playwright-shards.yml` execution envelope. A hosted preparation job computes one trusted route and one canonical selector plan; the hosted and public build/shard jobs consume that same plan, so backend choice cannot change the selected tests, profiles, shard count, artifacts, or status semantics. The execution jobs call the trusted `v3` composite actions remotely; candidate code supplies source and tests but cannot replace the orchestration action. Ready PRs always run all eight shards. Draft PRs never enter the execution envelope; the caller skips the reusable workflow and `test-playwright-status` reports the skip. The legacy smart-draft selection controls remain in the trusted routing code but cannot override the ready-only caller. Forks, bots, private repositories, pushes, malformed event or policy data, and disabled smart routing remain hosted full; an inconsistent explicit route hint rejects the invocation. `PUBLIC_PR_ARM64_PLAYWRIGHT_FORCE_HOSTED_CANARY_PR` forces one exact PR to hosted execution. Public jobs must use read-only contents permission, receive no secrets, not publish service ports, and not persist checkout credentials; every shard needs a run-specific Hatchet volume. Preserve all result artifact names when changing either path. Keep the route-neutral concurrency group only on the caller's reusable-workflow job; the called workflow defines no concurrency, and `test-playwright-status` remains outside that group. After every public container checkout, trust only the exact `GITHUB_WORKSPACE`; wildcard safe-directory rules are forbidden.
+- A candidate cannot add a runtime package to its own public-PR artifact by editing the trusted composite action because the job executes that action from `v3`. When a candidate service starts importing a new workspace package, either bundle it into an artifact path already transferred by the trusted action or land the artifact-contract support on `v3` first. If every shard fails before tests with `ERR_MODULE_NOT_FOUND`, inspect the downloaded build artifact before changing selectors, profiles, or service readiness.
+- The trusted preparation step emits a `playwright-selector-shadow` artifact for draft pull-request transitions without changing execution. It reads selector code, profiles, timings, and the relevance manifest from trusted `v3`, while the candidate checkout is data only. A draft plan may select relevant specs and one to four balanced shards; a ready plan is always full. The artifact is not a correctness gate and never allocates the `public-pr-arm64` group. Treat unknown, global, malformed, missing-history, or missing-manifest input as a full-suite fallback. Do not enable draft-selective execution until ten representative shadow comparisons show no unexplained missed failures and the later backend-neutral rollout canary passes.
+- Keep the `public-pr-arm64` runner group restricted to `uzh-bf/klicker-uzh` and `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`. Changing the workflow path or trusted branch requires updating that organization policy before rollout. A pull-request branch cannot prove changes to this reusable workflow on the restricted group; prove its shared logic on the hosted route first, then require a direct `v3` public run after merge.
+- The Playwright caller uses the short `@v3` ref, which GitHub records as `refs/heads/v3`; keep the full `@refs/heads/v3` spelling for the organization runner-group policy and trusted composite action refs. The full spelling in the reusable-workflow caller creates a zero-job workflow run. The trusted cache seed marks only its exact checked-out workspace as a Git safe directory before reading repository metadata inside its container.
 - To avoid browser install hangs, prefer the Playwright Docker image matching the lockfile-resolved Playwright version, such as `mcr.microsoft.com/playwright:v<version>-noble`, and remove the separate browser install step.
 - In GitHub job containers, service dependencies are reached by service hostnames, not localhost: `postgres`, `redis_exec`, `redis_cache`, `redis_assessment_exec`, and `hatchet`.
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.

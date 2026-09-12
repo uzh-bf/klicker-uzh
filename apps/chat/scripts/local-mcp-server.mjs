@@ -2,10 +2,90 @@ import { createServer } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
+import { createLocalAuthenticator } from './local-mcp-auth.mjs'
 
 const HOST = '127.0.0.1'
 const PORT = 1417
 const MAX_BODY_BYTES = 1024 * 1024
+const authenticate = await createLocalAuthenticator(process.env)
+
+const SYNTHETIC_DOCUMENTS = [
+  {
+    title: 'Portfolio diversification',
+    page: 1,
+    keywords: [
+      'portfolio',
+      'diversification',
+      'diversify',
+      'idiosyncratic',
+      'correlation',
+      'asset allocation',
+      'course',
+      'exam',
+      'practice',
+    ],
+    content:
+      'Portfolio diversification spreads investments across assets, sectors, or regions. It can reduce idiosyncratic risk because a loss in one holding may be offset by gains in another. Diversification does not remove systematic market risk, and its benefit depends on the correlations between the holdings.',
+  },
+  {
+    title: 'Time value of money',
+    page: 2,
+    keywords: [
+      'time value',
+      'present value',
+      'future value',
+      'discount',
+      'interest rate',
+      'cash flow',
+      'course',
+      'exam',
+      'practice',
+    ],
+    content:
+      'The time value of money means that a monetary amount available today is generally worth more than the same nominal amount available later. Present value discounts a future cash flow using an appropriate rate, while future value compounds a present amount over time.',
+  },
+  {
+    title: 'Bond pricing',
+    page: 3,
+    keywords: [
+      'bond',
+      'fixed income',
+      'coupon',
+      'yield',
+      'maturity',
+      'interest rate',
+      'course',
+      'exam',
+      'practice',
+    ],
+    content:
+      'A coupon bond is valued as the present value of its promised coupon payments and repayment of principal at maturity. Holding other factors constant, a rise in market yields lowers the price of an existing fixed-coupon bond, while a fall in yields raises its price.',
+  },
+  {
+    title: 'CAPM and required return',
+    page: 4,
+    keywords: [
+      'capm',
+      'beta',
+      'required return',
+      'market risk premium',
+      'systematic risk',
+      'expected return',
+      'course',
+      'exam',
+      'practice',
+    ],
+    content:
+      "The CAPM links an asset's required return to the risk-free rate plus beta multiplied by the market risk premium. Beta measures the asset's sensitivity to systematic market movements; diversifiable, idiosyncratic risk is not rewarded by the model.",
+  },
+]
+
+function findDocuments(query) {
+  const normalizedQuery = query.toLowerCase()
+  return SYNTHETIC_DOCUMENTS.filter((document) =>
+    document.keywords.some((keyword) => normalizedQuery.includes(keyword))
+  )
+}
 
 function createMcpServer() {
   const server = new McpServer({
@@ -34,17 +114,26 @@ function createMcpServer() {
       },
     },
     async ({ query }) => {
+      const documents = findDocuments(query)
       const payload = {
-        answer: `KLICKER_LOCAL_MCP_OK: the local MCP server received "${query}".`,
-        sources_used: 1,
-        sources: [
-          {
-            expert: 'KlickerUZH local development fixture',
-            source_type: 'pdf',
-            file_name: 'synthetic-course-material.pdf',
-            page_number: 1,
-          },
-        ],
+        answer:
+          `KLICKER_LOCAL_MCP_OK: the local MCP server received "${query}". ` +
+          `Retrieved ${documents.length} synthetic course-material excerpt(s).`,
+        mode: 'documents',
+        summary: { count: documents.length },
+        sources_used: documents.length,
+        sources: documents.map((document) => ({
+          reference: 'synthetic-course-material.pdf',
+          reference_type: 'pdf',
+          source_type: 'document',
+          title: document.title,
+          chunks: [
+            {
+              content: document.content,
+              page_number: document.page,
+            },
+          ],
+        })),
       }
 
       return {
@@ -79,7 +168,10 @@ function sendJson(response, status, body) {
 
 const httpServer = createServer(async (request, response) => {
   if (request.url === '/health' && request.method === 'GET') {
-    sendJson(response, 200, { status: 'ok' })
+    sendJson(response, 200, {
+      status: 'ok',
+      generation: process.env.LOCAL_MCP_GENERATION,
+    })
     return
   }
 
@@ -91,6 +183,11 @@ const httpServer = createServer(async (request, response) => {
   if (request.method !== 'POST') {
     response.writeHead(405, { Allow: 'POST' })
     response.end()
+    return
+  }
+
+  if (!(await authenticate(request.headers))) {
+    sendJson(response, 401, { error: 'Unauthorized' })
     return
   }
 
@@ -111,8 +208,8 @@ const httpServer = createServer(async (request, response) => {
     const body = await readJsonBody(request)
     await mcpServer.connect(transport)
     await transport.handleRequest(request, response, body)
-  } catch (error) {
-    console.error('[local-mcp] Request failed:', error)
+  } catch {
+    console.error('[local-mcp] Invalid request')
     if (!response.headersSent) {
       sendJson(response, 400, {
         jsonrpc: '2.0',

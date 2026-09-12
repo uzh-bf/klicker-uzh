@@ -34,7 +34,8 @@ import { truncateMessagesForReload } from '../components/message-parts-state'
 export function useThreadManagement(
   generateChatResponse: (
     messages: ExtendedThreadMessageLike[],
-    threadId: string
+    threadId: string,
+    options?: { allowRegeneration?: boolean }
   ) => Promise<void>,
   abortControllerRef: React.MutableRefObject<AbortController | null>,
   selectedModeOverride?: string
@@ -304,7 +305,9 @@ export function useThreadManagement(
       }))
 
       // regenerate response from truncated state
-      await generateChatResponse(truncatedPath, threadId)
+      await generateChatResponse(truncatedPath, threadId, {
+        allowRegeneration: true,
+      })
     },
     [generateChatResponse]
   )

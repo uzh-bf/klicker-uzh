@@ -3,7 +3,6 @@
 @import "tw-animate-css";
 
 @plugin "@tailwindcss/typography";
-@plugin "@tailwindcss/aspect-ratio";
 @plugin "@tailwindcss/forms";
 
 @source "../node_modules/@uzh-bf/design-system/src";

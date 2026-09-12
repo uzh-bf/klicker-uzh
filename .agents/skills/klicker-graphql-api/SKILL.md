@@ -11,13 +11,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 1. **Service function** — `packages/graphql/src/services/<area>.ts`. All logic, Prisma, Redis, pubSub here. Signature `(args, ctx: ContextWithUser) => …`. Errors: `GraphQLError` with `extensions.code` (grep `LIVE_QUIZ_PIN_INVALID` for the pattern) — not bare `Error`.
 2. **Schema field** — `packages/graphql/src/schema/query.ts` / `mutation.ts` / `subscription.ts` (+ new object types in the area file). The resolver is a **one-liner** delegating to the service.
-3. **Auth on the field** — copy the existing composition exactly (real shape from `deleteCourse` in `mutation.ts`; `withPermission` WRAPS the resolver):
+3. **Auth on the field** — copy the existing composition exactly (real shape from `requestCourseDeletion` in `mutation.ts`; `withPermission` WRAPS the resolver):
 
    ```ts
-   deleteCourse: t.withAuth(asUser).field({
+   requestCourseDeletion: t.withAuth(asUser).field({
      // asUser | asParticipant | asUserFullAccess | asUserSessionExec | asUserOwner | asAdmin
      nullable: true,
-     type: Course,
+     type: CourseDeletionRequestPayload,
      args: {
        id: t.arg.string({ required: true }),
        deleteDraftActivities: t.arg.boolean(),
@@ -25,7 +25,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
      resolve: withPermission(
        (args) => ({ courseId: args.id }), // -> PermissionCheck key for the target object
        DB.PermissionLevel.ADMIN, // READ | EXECUTE | WRITE | ADMIN, per operation severity
-       async (_, args, ctx) => CourseService.deleteCourse(args, ctx)
+       async (_, args, ctx) => {
+         const request = await CourseDeletionService.requestCourseDeletion(
+           args,
+           ctx
+         )
+         return { courseId: request.courseId }
+       }
      ),
    })
    ```
@@ -38,6 +44,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    load a bounded set of unique objects, check every object's permission, and
    return explicit per-object outcomes. Never infer permission for the whole
    batch from one selected object.
+
+   Capability-gated reads await the fail-closed feature check after the auth scope
+   and before the protected data query (`lib/featureFlags.ts:isFeatureFlagEnabled`);
+   the helper reads the trusted beta preference once per request.
+   Return `null` when the flag is off, keep authorization errors unchanged, and
+   never gate administrative mutations with a visibility flag (see
+   `services/chatAccountUsage.ts` for the pattern).
 
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
@@ -55,7 +68,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    its persisted hash remains in `server.json`.
 
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
-8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
+8. **Tests** — run `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment with marked disposable Postgres, Redis and Hatchet. The legacy `test:local` helper is disabled because it deletes shared volumes. Route further via `klicker-testing-verification`.
 
 For pagination changes, test both finite `take`/`skip` values and omitted
 values in the service, and verify that the generated operation variables and

@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
+import { ManageUserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -34,7 +34,7 @@ function Layout({
     loading: loadingUser,
     error: errorUser,
     data: dataUser,
-  } = useQuery(UserProfileDocument, {
+  } = useQuery(ManageUserProfileDocument, {
     fetchPolicy: 'cache-and-network',
     // The profile is cookie-scoped; never make a server-rendered page depend on
     // a request that cannot be reused safely across users.
@@ -79,7 +79,7 @@ function Layout({
       </Head>
 
       <div className="flex-none">
-        <Header user={dataUser.userProfile} />
+        <Header user={dataUser.userProfile} userScope={dataUser.userScope} />
       </div>
 
       <div

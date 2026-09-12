@@ -3,28 +3,34 @@ services:
     image: postgres:15
     environment:
       POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_DB: klicker_test
-    ports:
-      - '5432:5432'
+      POSTGRES_USER: klicker
+      POSTGRES_DB: klicker-prod
     healthcheck:
-      test: ['CMD', 'pg_isready', '-U', 'postgres']
+      test: ['CMD', 'pg_isready', '-U', 'klicker', '-d', 'klicker-prod']
       interval: 5s
       timeout: 5s
       retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ../../../../.devcontainer/disposable-test-init.sql:/docker-entrypoint-initdb.d/20-disposable-test-init.sql:ro
 
   test:
+    working_dir: '${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}'
     build:
       context: ../..
       dockerfile: test/docker/Dockerfile.test
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/klicker_test
+      OLAT_TEST_WORKSPACE: '${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}'
+      DATABASE_URL: postgresql://klicker_test:klicker@postgres:5432/klicker_test
+      SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@postgres:5432/klicker_test_shadow
       CI: ${CI:-false}
       NODE_ENV: test
       PNPM_HOME: '/tmp/.pnpm'
       OLAT_API_KEY: 'test-key'
     volumes:
-      - ../../../../:/usr/src/app
+      # Preserve the absolute paths recorded by pnpm during the CI host install.
+      - '${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}:${OLAT_TEST_WORKSPACE:?Run apps/olat-api/run-tests.sh}'
     depends_on:
       postgres:
         condition: service_healthy

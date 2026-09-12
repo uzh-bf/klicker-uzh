@@ -286,6 +286,8 @@ check_reconciliation_state() {
     runner_env="${RUNNER_BASE_DIR}/${name}/.env"
     if [[ ! -f "$runner_env" || -L "$runner_env" ]] ||
       [[ "$(stat -c '%U:%G:%a' "$runner_env" 2>/dev/null || true)" != 'root:root:644' ]] ||
+      [[ "$(grep -c '^ACTIONS_RUNNER_HOOK_JOB_STARTED=' "$runner_env" || true)" != '1' ]] ||
+      [[ "$(grep -c '^ACTIONS_RUNNER_HOOK_JOB_COMPLETED=' "$runner_env" || true)" != '1' ]] ||
       [[ "$(grep -Fxc "ACTIONS_RUNNER_HOOK_JOB_STARTED=${START_HOOK}" "$runner_env" || true)" != '1' ]] ||
       [[ "$(grep -Fxc "ACTIONS_RUNNER_HOOK_JOB_COMPLETED=${COMPLETE_HOOK}" "$runner_env" || true)" != '1' ]]; then
       info "Drift: ${runner_env} hook settings"
@@ -343,7 +345,11 @@ configure_runner_envs() {
       [[ -f "$runner_env" && ! -L "$runner_env" ]] ||
         die "runner environment file is invalid: ${name}"
     fi
-    temporary=$(mktemp "${runner_dir}/.env.reconcile.XXXXXX")
+    [[ "$(stat -c '%U:%G:%a' /opt)" == 'root:root:755' && ! -L /opt ]] ||
+      die '/opt must be a root-owned, non-writable directory'
+    [[ "$(stat -c '%d' /opt)" == "$(stat -c '%d' "$runner_dir")" ]] ||
+      die 'runner directory must share the /opt filesystem for atomic environment updates'
+    temporary=$(mktemp /opt/.runner-env.reconcile.XXXXXX)
     if ! render_runner_env "$runner_env" >"$temporary"; then
       rm -f -- "$temporary"
       die "runner environment could not be updated: ${name}"
@@ -375,6 +381,7 @@ restart_runners() {
   systemctl daemon-reload
   for name in "${EXPECTED_NAMES[@]}"; do
     service="actions.runner.uzh-bf.${name}.service"
+    validate_runner_installation
     systemctl restart "$service"
     systemctl is-active --quiet "$service" || die "runner did not restart: ${name}"
   done

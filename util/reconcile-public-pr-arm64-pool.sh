@@ -122,7 +122,7 @@ configure_ssh_args() {
     -o ConnectTimeout=15
     -o ServerAliveInterval=15
     -o ServerAliveCountMax=4
-    -o StrictHostKeyChecking=accept-new
+    -o StrictHostKeyChecking=yes
   )
   if [[ -n "$IDENTITY_FILE" ]]; then
     SSH_ARGS+=(-i "$IDENTITY_FILE")

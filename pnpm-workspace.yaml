@@ -3,6 +3,10 @@ packages:
   - packages/*
   - playwright
 
+# Do not let pnpm repair stale links before the host launcher can control the
+# exact stop, install, and runtime-reconciliation order.
+verifyDepsBeforeRun: error
+
 # Delay automated dependency resolution for newly published packages by 14 days
 # to reduce exposure to compromised releases. Manual emergency exceptions should
 # be exact package/version selectors reviewed with the matching package.json bump.
@@ -10,6 +14,19 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # Reviewed Next.js 16.3.4 release train; keep the 14-day policy for other releases.
+  - 'next@16.3.4'
+  - 'eslint-config-next@16.3.4'
+  - '@next/env@16.3.4'
+  - '@next/eslint-plugin-next@16.3.4'
+  - '@next/swc-darwin-x64@16.3.4'
+  - '@next/swc-darwin-arm64@16.3.4'
+  - '@next/swc-linux-x64-gnu@16.3.4'
+  - '@next/swc-linux-x64-musl@16.3.4'
+  - '@next/swc-win32-x64-msvc@16.3.4'
+  - '@next/swc-linux-arm64-gnu@16.3.4'
+  - '@next/swc-linux-arm64-musl@16.3.4'
+  - '@next/swc-win32-arm64-msvc@16.3.4'
   # Internal UZH design-system release: the exact 4.1.8 consumer bump is
   # reviewed and verified in this PR.
   - '@uzh-bf/design-system@4.1.8'
@@ -44,13 +61,21 @@ overrides:
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
 
 packageExtensions:
+  # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
+  '@uzh-bf/design-system@4.1.8':
+    dependencies:
+      '@tailwindcss/aspect-ratio': 0.4.2
   'recharts@2.15.3':
     peerDependencies:
       '@types/react': '*'
 
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
+  # Devrouter's Docker transport can use these optional native SSH helpers, but
+  # profile planning has no Docker or SSH path and must not build them in CI.
+  - cpu-features
   - keytar
+  - ssh2
 
 onlyBuiltDependencies:
   - '@apollo/protobufjs'
@@ -79,9 +104,11 @@ allowBuilds:
   azure-functions-core-tools: true
   core-js: true
   core-js-pure: true
+  cpu-features: false
   esbuild: true
   keytar: false
   prisma: true
   protobufjs: true
   sharp: true
+  ssh2: false
   unrs-resolver: true

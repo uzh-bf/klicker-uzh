@@ -2,6 +2,7 @@
   "name": "klicker-uzh",
   "dockerComposeFile": [
     "docker-compose.yml",
+    "docker-compose.dependencies.yml",
     "${localEnv:DEVCONTAINER_COMPOSE_OVERLAY:docker-compose.localhost.yml}"
   ],
   "initializeCommand": "bash .devcontainer/initialize.sh",
@@ -22,6 +23,7 @@
     "litellm"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "waitFor": "postCreateCommand",
   "customizations": {
     "vscode": {
       "extensions": [

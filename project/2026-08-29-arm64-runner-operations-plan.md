@@ -425,6 +425,16 @@ entry and any separately approved host apply.
 
 ## Progress
 
+September 12 reconciliation: the August 29 runner-group and two-host applies
+completed and were verified at that time; they are not replayed here. Current
+v3 now owns cache seeding, restoration, and job telemetry, so this PR drops its
+obsolete cache warmer and validator and preserves the current workflows.
+The remaining delivery is the operator scripts and runbook. Current review
+corrections cover duplicate hook assignments, root-owned temporary files,
+idle checks before each restart, and pre-authorized SSH host keys.
+The checklist below records the original implementation phase; final CI and
+review for this reconciliation remain pending.
+
 - [x] Current `origin/v3`, primary-checkout divergence, prior plan, workflows,
       provisioners, documentation, and closest shared skill inspected.
 - [x] Exact runner-group contract confirmed against current GitHub documentation.
