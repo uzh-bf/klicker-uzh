@@ -88,3 +88,11 @@ Evidence: the Resource API list exposes only each known synthetic managed resour
 - Public push was rejected by automatic approval review: explicit authorization for publishing the unpushed branch to public uzh-bf/klicker-uzh is required. No push or PR creation occurred.
 - Claude final review returned terminal session limit with no review. Configured AGY Gemini 3.8 Flash high fallback was rejected by automatic approval review for missing explicit authorization to transmit the unpushed source to that provider. No fallback review occurred and no other provider attempted.
 - Next required input: approval for public task-branch push/draft PR and for the named AGY read-only final review, or an available approved final-review route. Native goal remains incomplete. Local draft description and screenshots are in project/_local/imported-source-gallery; review manifest and results in project/_local/reviews.
+
+### Final review and follow-up
+
+- Claude final review failed terminally (session limit). Two AGY Gemini 3.8 Flash high attempts returned empty responses with denied file reads. Configured GLM combo/glm-5.3-flash max fallback completed the integrated final review: no critical, high or medium findings.
+- Finding (low, gated_auto): browser evidence missed empty and initial-load error branches. Corrected in 1bcabf1ab2 by extending the existing route interception; real Chromium run passed. Same-reviewer verification requested.
+- Finding (low, advisory): stored-source comparison ANDs field equality with the metadata hash, duplicating the replay contract; errs toward rejection. Deferred as follow-up hardening; no correctness impact.
+- Finding (low, advisory): UI safe-link guard re-checks the registration invariant; code comment documents it as defense-in-depth for legacy rows. Deferred with the comparison follow-up.
+- Runtime stopped again after the final browser verification. Publication still pending explicit user authorization for the public repository.
