@@ -844,7 +844,14 @@ export function KnowledgeGraphViewer({
     }
 
     if (event.key === 'Escape') {
+      // Let the host handle Escape once suggestions and their debounce are idle.
+      if (
+        state.suggestionStatus === 'idle' &&
+        suggestionTimerRef.current === null
+      )
+        return
       event.preventDefault()
+      event.stopPropagation()
       cancelSuggestions()
       setActiveSuggestionIndex(-1)
       return

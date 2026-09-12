@@ -132,10 +132,9 @@ export function ChatKnowledgeGraphPanel({
           data-cy="chat-knowledge-graph-panel"
           data-fullscreen={fullscreen}
           onKeyDown={(event) => {
-            // The fullscreen tooltip may consume Escape while dismissing itself.
-            // Search controls still keep their own first-Escape dismissal.
-            if (event.defaultPrevented && event.target !== expandRef.current)
-              return
+            if (event.nativeEvent.isComposing) return
+            // Nested graph controls stop propagation when they dismiss suggestions.
+            // A tooltip preventing Escape must not prevent leaving fullscreen.
             if (event.key === 'Escape' && fullscreen) {
               event.preventDefault()
               setFullscreen(false)
