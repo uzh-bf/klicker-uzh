@@ -75,19 +75,21 @@ Evidence: the Resource API list exposes only each known synthetic managed resour
 
 - S1 committed as eb7534257f; independent simplifier and slice reviewer returned no findings. Reviewer independently reproduced the single generated Prisma migration and verified mirror equality. Knowledge service tests: 71/71 pass.
 - S2 committed as e17d8cd573; independent simplifier and slice reviewer returned no findings. Registration tests: 22/22 pass, including disposable database conflict/concurrency cases. Offline validation avoids Prisma loading.
-- S3 committed as 1a62606023; types pass. Synthetic browser run passed for video inventory, safe links, pagination and managed upload interactions. Refreshed Chromium run passed (15.2s); simplifier returned no changes, slice review running.
+- S3 committed as 1a62606023; types pass. Synthetic browser run passed for video inventory, safe links, pagination, empty/error states and managed upload interactions. Refreshed Chromium run passed (15.2s); simplifier, slice review and integrated final review are complete with no blocking findings.
 - Host workflow checks: 190/190 pass. Broad container checks passed after serial regeneration resolved a concurrent generated-output race. Two maintenance UPSERT retry tests fail identically on unchanged baseline source and tests; 20/22 pass including imported deletion protection. No claim of a green complete maintenance suite.
 - Real local synthetic metadata was rendered through the API in EN/DE without raw video storage. Browser network fixtures exercise upload/pagination/error UI only; they do not prove deployed ingestion or retrieval. No live registration, deployment, or corpus changes performed.
 - Task runtime: rs-kb-imported-sources at this worktree. Recovery after a launcher profile failure stopped only this runtime; the canonical Manage-profile browser retry passed with isolated blob port 51504. Stop and verify before final review.
-- Video citation/source-display regression: 88/88 pass. Remaining: S3 risk review, integrated final review, draft PR delivery. No PR exists yet.
+- Video citation/source-display regression: 88/88 pass. All implementation and review gates are complete. Focused GraphQL suites pass 93/93 after restoring the task Postgres container; the container-mode pre-push build passed 26/26 tasks.
 
 ### Delivery checkpoint
 
-- Final UI behavior verified by Chromium at 1a62606023; citation tests 88/88 pass. S3 reviewer found only a test cleanup issue; ce179a6f70 moves the override into outer scope and resets it at the start of finally. Production source unchanged.
-- Runtime release verified: exact task container 47628fe6c1b0 is exited; exact workspace has zero routes. No data deletion.
-- Public push was rejected by automatic approval review: explicit authorization for publishing the unpushed branch to public uzh-bf/klicker-uzh is required. No push or PR creation occurred.
-- Claude final review returned terminal session limit with no review. Configured AGY Gemini 3.8 Flash high fallback was rejected by automatic approval review for missing explicit authorization to transmit the unpushed source to that provider. No fallback review occurred and no other provider attempted.
-- Next required input: approval for public task-branch push/draft PR and for the named AGY read-only final review, or an available approved final-review route. Native goal remains incomplete. Local draft description and screenshots are in project/_local/imported-source-gallery; review manifest and results in project/_local/reviews.
+- Final UI behavior was verified by Chromium at 1a62606023; citation/source-display tests pass 88/88. The final review found no critical, high or medium issues, and its browser coverage gap was fixed and re-verified.
+- Focused GraphQL suites pass 93/93: `knowledge.test.ts` and `knowledgeImportedSources.test.ts`. The earlier connection failure was caused by the task Postgres container being stopped; the disposable database already contained all 196 migrations, including `kb_imported_source_inventory`, so no reset or data mutation was needed.
+- The canonical container-mode pre-push build passed 26/26 tasks. Existing build warnings were non-blocking and unrelated to this change.
+- Branch `rs/kb-imported-sources` at `ec4648d74a56eef61dbbcf67b622d3fa0fc88852` was pushed to `origin` (`uzh-bf/klicker-uzh`) without force.
+- Draft PR [#5922](https://github.com/uzh-bf/klicker-uzh/pull/5922) is open against `v3-ai` with the reviewed description and four synthetic EN/DE desktop/mobile screenshots attached. It remains draft by design; no merge, deployment, live registration or corpus mutation was performed.
+- At the delivery read-back on September 12, 2026, GitHub checks were still pending; GitGuardian Security Checks had passed. This is CI status, not a claim of merge readiness.
+- The task runtime was used for the final container build and remains subject to the required stop-and-verify lifecycle check after this delivery record is pushed.
 
 ### Final review and follow-up
 
