@@ -15,6 +15,7 @@ test.describe('Knowledge base management workspace', () => {
     const resourceTitle = `UX website ${Date.now()}`
     let detailPath: string | undefined
     let importedSourceCountOverride = 0
+    let importedSourceMode: 'data' | 'empty' | 'error' = 'data'
 
     try {
       await page.goto(`${manageUrl}/resources/knowledgeBases`)
@@ -200,6 +201,32 @@ test.describe('Knowledge base management workspace', () => {
         })()
 
         if (operationName === 'GetKbImportedSources') {
+          if (importedSourceMode === 'error') {
+            await route.fulfill({
+              status: 500,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                errors: [{ message: 'synthetic inventory failure' }],
+              }),
+            })
+            return
+          }
+          if (importedSourceMode === 'empty') {
+            await route.fulfill({
+              status: 200,
+              contentType: 'application/json',
+              body: JSON.stringify({
+                data: {
+                  getKbImportedSources: {
+                    totalCount: 0,
+                    items: [],
+                    pageInfo: { hasNextPage: false, endCursor: null },
+                  },
+                },
+              }),
+            })
+            return
+          }
           const after =
             typeof variables.after === 'string' ? variables.after : null
           await route.fulfill({
@@ -617,6 +644,18 @@ test.describe('Knowledge base management workspace', () => {
         fullPage: true,
       })
 
+      // The inventory renders its empty and failed initial-load branches.
+      importedSourceMode = 'empty'
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
+      await expect(page.getByTestId('kb-imported-sources-empty')).toBeVisible()
+
+      importedSourceMode = 'error'
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(page.getByTestId('kb-imported-sources')).toBeVisible()
+      await expect(page.getByTestId('kb-imported-sources-error')).toBeVisible()
+      importedSourceMode = 'data'
+
       // A knowledge base with imported sources cannot be deleted from the list.
       importedSourceCountOverride = 4
       await page.setViewportSize({ width: 1440, height: 900 })
@@ -638,6 +677,7 @@ test.describe('Knowledge base management workspace', () => {
       importedSourceCountOverride = 0
     } finally {
       importedSourceCountOverride = 0
+      importedSourceMode = 'data'
       if (detailPath) {
         await page.setViewportSize({ width: 1440, height: 900 })
         await page.goto(`${manageUrl}${detailPath}`)
