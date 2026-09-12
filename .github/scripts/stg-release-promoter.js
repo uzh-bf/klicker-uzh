@@ -1583,7 +1583,8 @@ async function resolveInputs({
     }
     if (
       !dryRun &&
-      (!validSha(inputs.expected_release_sha) ||
+      ((inputs.expected_release_sha !== 'absent' &&
+        !validSha(inputs.expected_release_sha)) ||
         !validSha(inputs.expected_controller_sha))
     ) {
       throw new Error(
@@ -1709,9 +1710,12 @@ async function runPromotion({
   }
   for (const workflow of ciEvidence.workflows) {
     if (
-      ['test-unit.yml', 'test-olat-api.yml', 'test-intl-production.yml'].some(
-        (file) => workflow.path === `.github/workflows/${file}`
-      )
+      [
+        'test-graphql.yml',
+        'test-unit.yml',
+        'test-olat-api.yml',
+        'test-intl-production.yml',
+      ].some((file) => workflow.path === `.github/workflows/${file}`)
     ) {
       workflow.selection = validateCiSelection(
         await getCiEvidence({ github, context, run: workflow.run }),
@@ -1730,7 +1734,12 @@ async function runPromotion({
   })
 
   const currentSha = await getReleaseRef({ github, context })
-  if (inputs.expectedReleaseSha && inputs.expectedReleaseSha !== currentSha) {
+  if (
+    inputs.expectedReleaseSha &&
+    (inputs.expectedReleaseSha === 'absent'
+      ? currentSha !== null
+      : inputs.expectedReleaseSha !== currentSha)
+  ) {
     throw new Error('stg-release changed since dry run')
   }
   const decision = await planReleaseRef({
@@ -1820,6 +1829,7 @@ async function runPromotion({
 }
 
 module.exports = {
+  resolveInputs,
   validateCiSelection,
   REQUIRED_CI_WORKFLOWS,
   APPROVED_PUSH_BRANCHES,

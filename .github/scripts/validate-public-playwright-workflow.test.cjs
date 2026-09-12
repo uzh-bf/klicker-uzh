@@ -71,6 +71,7 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
     'synchronize',
     'reopened',
     'ready_for_review',
+    'edited',
     'converted_to_draft',
     'closed',
   ])
@@ -124,11 +125,11 @@ test('lifecycle policy rejects cancellation outside the exact conversion/closed-
     'status on close': (w) => {
       w.jobs['test-playwright-status'].if = 'always()'
     },
-    'status missing cancellation guard': (w) => {
+    'status without always wrapper': (w) => {
       w.jobs['test-playwright-status'].if =
-        "always() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
+        "(github.event_name != 'pull_request' || github.event.action != 'closed')"
     },
-    'status missing dependency guard': (w) => {
+    'status gated on cancellation': (w) => {
       w.jobs['test-playwright-status'].if =
         "always() && !cancelled() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
     },
@@ -255,7 +256,8 @@ test('status reporter executes draft skip and strict ready decisions', (t) => {
     SHARD_MATRIX: '',
     IS_DRAFT: 'true',
   })
-  assert.equal(draft.status, 0, draft.output)
+  // A draft never passes: the required context must be recomputed at ready.
+  assert.equal(draft.status, 1, draft.output)
   assert.equal(draft.metadata.execution_result, 'skipped')
   assert.equal(draft.metadata.is_draft, 'true')
 
@@ -330,33 +332,33 @@ test('status reporter executes draft skip and strict ready decisions', (t) => {
   ]) {
     assert.equal(runStatusReporter(t, { SHARD_MATRIX }).status, 1, SHARD_MATRIX)
   }
-  for (const SHOULD_RUN of ['true', 'false']) {
-    const push = runStatusReporter(t, {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
-      SHOULD_RUN,
-    })
-    assert.equal(push.status, 0, push.output)
-    assert.equal(push.metadata.is_pull_request, 'false')
-    assert.equal(push.metadata.execution_result, 'success')
-    assert.equal(push.metadata.should_run, SHOULD_RUN)
-  }
-})
-
-test('status reporter accepts equivalent-run reuse only for numeric push runs', (t) => {
-  const reused = runStatusReporter(t, {
+  // A push must attest the same complete eight-shard plan, so the selector may
+  // not skip it.
+  const push = runStatusReporter(t, {
     IS_PULL_REQUEST: 'false',
     ROUTE: 'hosted',
-    SHOULD_RUN: 'unknown',
-    MODE: 'unknown',
-    SHARD_MATRIX: '',
-    DUPLICATE_RUN_ID: '123',
-    GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+    SHOULD_RUN: 'true',
   })
-  assert.equal(reused.status, 0, reused.output)
-  assert.equal(reused.metadata.duplicate_run_id, '123')
+  assert.equal(push.status, 0, push.output)
+  assert.equal(push.metadata.is_pull_request, 'false')
+  assert.equal(push.metadata.execution_result, 'success')
+  const pushSkippedSelection = runStatusReporter(t, {
+    IS_PULL_REQUEST: 'false',
+    ROUTE: 'hosted',
+    SHOULD_RUN: 'false',
+  })
+  assert.equal(pushSkippedSelection.status, 1, pushSkippedSelection.output)
+})
 
+test('status reporter rejects every equivalent-run reuse', (t) => {
+  // The reusable workflow pinned at @v3 can still offer a duplicate run id from
+  // older code, so the caller rejects every push and pull request duplicate.
   const rejected = {
+    'numeric push run id': {
+      IS_PULL_REQUEST: 'false',
+      ROUTE: 'hosted',
+      DUPLICATE_RUN_ID: '123',
+    },
     'non-numeric run id': {
       IS_PULL_REQUEST: 'false',
       ROUTE: 'hosted',

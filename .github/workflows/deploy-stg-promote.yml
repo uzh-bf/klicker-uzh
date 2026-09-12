@@ -44,7 +44,7 @@ on:
         required: true
         type: boolean
       expected_release_sha:
-        description: 'Required for apply: release SHA recorded by the dry run'
+        description: 'Required for apply: release SHA from dry run, or absent for initial creation'
         required: false
         type: string
       expected_controller_sha:

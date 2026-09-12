@@ -14,7 +14,7 @@ function fixture() {
     state: 'open',
     draft: false,
     head: {
-      ref: 'v3-feature',
+      ref: 'feature-unit',
       sha: 'head',
       repo: { id: 1, full_name: 'uzh-bf/klicker-uzh' },
     },
@@ -28,7 +28,7 @@ function fixture() {
     status: 'completed',
     conclusion: 'success',
     event: 'pull_request',
-    head_branch: 'v3-feature',
+    head_branch: 'feature-unit',
     head_sha: 'head',
     repository: { full_name: 'uzh-bf/klicker-uzh' },
     head_repository: { full_name: 'uzh-bf/klicker-uzh' },
@@ -99,7 +99,7 @@ function fixture() {
       context: {
         repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
         eventName: 'push',
-        ref: 'refs/heads/v3-feature',
+        ref: 'refs/heads/feature-unit',
         sha: 'head',
       },
       kind: 'unit',
@@ -125,6 +125,9 @@ test('reuses only actual successful latest-attempt unit coverage', async () => {
 for (const [name, change] of Object.entries({
   'default branch': (s, o) => {
     o.context.ref = 'refs/heads/v3'
+  },
+  'integration branch': (s, o) => {
+    o.context.ref = 'refs/heads/v3-audit'
   },
   'manual run': (s, o) => {
     o.context.eventName = 'workflow_dispatch'
@@ -427,7 +430,10 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
     units.jobs['equivalent-validation'].if,
     "github.event_name == 'push' && github.ref != 'refs/heads/v3' && github.run_attempt > 1"
   )
-  assert.equal(units.jobs['test-unit'].needs, 'equivalent-validation')
+  assert.deepEqual(units.jobs['test-unit'].needs, [
+    'equivalent-validation',
+    'filter',
+  ])
   assert.ok(units.jobs['test-unit'].if.includes('!cancelled()'))
   assert.ok(
     units.jobs['test-unit'].if.includes(

@@ -56,11 +56,11 @@ function validateCallerLifecycle(caller) {
     issues.push('execution must exclude closed and draft PR events')
   }
   const status = jobs['test-playwright-status']
-  const expectedStatusIf = `always() && !cancelled() && needs.test-playwright-execution.result != 'cancelled' && (${OPEN_EVENT})`
+  // Unconditional for open events: a skipped required context can count as
+  // acceptable, so the reporter must run and fail on cancellation itself.
+  const expectedStatusIf = `always() && (${OPEN_EVENT})`
   if (status?.if !== expectedStatusIf) {
-    issues.push(
-      'status must always report open events while excluding cancellation'
-    )
+    issues.push('status must run unconditionally for open events')
   }
   if (
     !hasExactPermissions(status?.permissions, { actions: 'read' }) ||

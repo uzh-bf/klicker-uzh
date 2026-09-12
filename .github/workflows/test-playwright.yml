@@ -11,6 +11,7 @@ on:
         synchronize,
         reopened,
         ready_for_review,
+        edited,
         converted_to_draft,
         closed,
       ]
@@ -51,10 +52,10 @@ jobs:
   # group so a stale reporter cannot block the current invocation.
   test-playwright-status:
     needs: test-playwright-execution
+    # Unconditional for open events: a skipped required context can count as
+    # acceptable, so cancellation must fail inside the job instead.
     if: >-
       always() &&
-      !cancelled() &&
-      needs.test-playwright-execution.result != 'cancelled' &&
       (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -94,14 +95,13 @@ jobs:
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "${IS_PULL_REQUEST:-false}" = 'true' ] && [ "${IS_DRAFT:-false}" = 'true' ]; then
-            if [ "$EXECUTION_RESULT" != 'skipped' ]; then
-              echo 'Draft Playwright execution was not skipped.'
-              exit 1
-            fi
-            echo '- Draft pull request: execution skipped before prepare, build, and shards.' >> "$GITHUB_STEP_SUMMARY"
-            echo 'Draft pull request: Playwright execution skipped before prepare/build/shards.'
-            exit 0
+          # A draft never passes the required context: the suite is skipped while
+          # drafting and the ready_for_review transition runs it for real, so a
+          # green draft result could not be trusted at the ready boundary.
+          if [ "${IS_DRAFT:-false}" = 'true' ]; then
+            echo '- Draft pull request: required Playwright validation is deferred to the ready transition.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Draft pull request: required Playwright validation is deferred.'
+            exit 1
           fi
 
           # A cancelled invocation may be obsolete, but this job has no proof
@@ -118,34 +118,27 @@ jobs:
             echo 'Playwright execution returned an invalid route.'
             exit 1
           fi
-          # Equivalent validation reuse is push-only. A pull request must
-          # prove its own execution plan below.
+          # No reuse for a push or a pull request. The reusable workflow is
+          # pinned at @v3, so until this change is merged there it can still
+          # offer a duplicate run id from older code; the caller rejects every
+          # duplicate rather than trusting the offer. A reused run also cannot
+          # attest the full eight-shard execution that the source must prove.
           if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
-            if [ "${IS_PULL_REQUEST:-false}" = 'true' ]; then
-              echo 'Pull request execution cannot reuse equivalent validation.'
-              exit 1
-            fi
-            if ! [[ "$DUPLICATE_RUN_ID" =~ ^[0-9]+$ ]]; then
-              echo 'Invalid equivalent validation run ID.'
-              exit 1
-            fi
-            echo "Equivalent PR validation passed in run $DUPLICATE_RUN_ID."
-            echo "- Reused validation: [run $DUPLICATE_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$DUPLICATE_RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo 'Playwright validation cannot be reused; it must run independently.'
+            exit 1
           fi
 
-          # Push verification keeps its existing selector behavior. Ready PRs
-          # must prove the full trusted eight-shard execution plan.
-          if [ "${IS_PULL_REQUEST:-false}" = 'true' ]; then
-            if [ "$MODE" != 'full' ]; then
-              echo 'Ready pull request execution did not use full mode.'
-              exit 1
-            fi
-            if [ "$SHOULD_RUN" != 'true' ]; then
-              echo 'Ready pull request execution did not select Playwright.'
-              exit 1
-            fi
-            if ! node <<'NODE'
+          # Every push and ready pull request must attest the complete trusted
+          # eight-shard execution plan; no selector result may skip it.
+          if [ "$MODE" != 'full' ]; then
+            echo 'Playwright execution did not use full mode.'
+            exit 1
+          fi
+          if [ "$SHOULD_RUN" != 'true' ]; then
+            echo 'Playwright execution did not select Playwright.'
+            exit 1
+          fi
+          if ! node <<'NODE'
           const raw = process.env.SHARD_MATRIX ?? ''
           let matrix
           try {
@@ -174,20 +167,11 @@ jobs:
             new Set(shards.map((shard) => shard.shardIndex)).size === 8
           process.exit(complete ? 0 : 1)
           NODE
-            then
-              echo 'Ready pull request execution did not expose the complete eight-shard matrix.'
-              exit 1
-            fi
-          fi
-
-          if [ "$SHOULD_RUN" = 'false' ]; then
-            echo 'No Playwright-relevant tests selected.'
-            exit 0
-          fi
-          if [ "$SHOULD_RUN" != 'true' ]; then
-            echo 'Playwright execution did not expose a valid selection result.'
+          then
+            echo 'Playwright execution did not expose the complete eight-shard matrix.'
             exit 1
           fi
+
           echo 'Playwright execution passed.'
 
       - name: Upload run metadata

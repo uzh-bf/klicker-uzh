@@ -14,6 +14,7 @@ const {
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
 const {
+  resolveInputs,
   validateCiSelection,
   REQUIRED_CI_WORKFLOWS,
   MANUAL_CONFIRMATION,
@@ -1887,4 +1888,19 @@ test('selection evidence binds identities and proves the selected suite result',
   noChange.jobs[0].result = 'skipped'
   workflow.observedJobs[0].conclusion = 'skipped'
   assert.equal(validate(noChange), noChange)
+})
+
+test('manual bootstrap explicitly binds an absent release', async () => {
+  const result = await resolveInputs({
+    context: reviewContext('workflow_dispatch', {
+      sha: CANDIDATE_SHA,
+      dry_run: false,
+      confirm_ref_update: MANUAL_CONFIRMATION,
+      expected_release_sha: 'absent',
+      expected_controller_sha: NEXT_SHA,
+    }),
+    sourceBranch: 'v3',
+  })
+  assert.equal(result.expectedReleaseSha, 'absent')
+  assert.equal(result.allowWrite, true)
 })
