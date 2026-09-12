@@ -119,12 +119,27 @@ S1; do not substitute an environment file or credential-bearing argument.
   Nine source/test paths; 247 added and 21 removed substantive lines.
   Three tests added and existing configuration/restart tests extended;
   focused suite passes 71/71 in the container. Full normal pre-commit passes.
-  Simplifier and GLM slice review are running on the exact committed range.
-- Implementation runtime `rs-generation-lifecycle-contract` is ready on the
-  `manage` profile with no drift. Shared provider-lock waits resolved normally.
-  No real AI key has been injected, and no PDF has been submitted.
-- S2 guide update is in progress. Synthetic transport, fresh isolated setup,
-  PDF/citation proof, retained restart, final review and draft delivery remain.
+  Simplifier and GLM slice review passed on the exact committed range; their
+  reports are retained under `project/_local/reviews/`.
+- S2 guide committed at `5d1fd4b4a30846c9904960c107fd31c21fdabe6a`.
+  Package size excluding project artifacts is 305 changed lines. There are no
+  schema, dependency, or visible UI changes. Source verification does not prove
+  the runtime credential transport or live ingestion path.
+- Fresh isolated setup at that candidate failed during document-processing
+  Hatchet token creation with `backing_command_failed`. The launcher retained
+  `token_intent: true` without a client-token receipt. No replay is authorized;
+  preserve the failed attempt. Backing containers were stopped and data retained.
+  The underlying command stderr was discarded, so its precise cause is unknown.
+- The synthetic transport probe did not reach managed AI startup. No real AI
+  key was injected and no PDF submitted. PDF/citation and retained restart proof
+  remain blocked on provider setup recovery and successful transport verification.
+- Implementation runtime was verified stopped with zero routes, then resumed
+  only for normal publication hooks. Stop it again after those checks.
+- The initial final-review process ended without a recoverable report. One
+  replacement final review is running on the unchanged source range. Draft
+  delivery remains pending; no PR URL exists yet. Target freshness confirmed
+  `origin/v3-ai@f00e272adf40dd3cbe2c648935cde1d99727af59`; its 11 intervening
+  commits do not overlap the changed source, so no integration was necessary.
 
 ### Prior preparation evidence
 
