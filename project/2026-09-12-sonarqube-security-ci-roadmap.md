@@ -64,8 +64,10 @@ merged required-test summaries and exact-candidate staging qualification. The
 isolated checkout could fetch normally and was fast-forwarded to its merge
 commit because these changes materially affect W3/W8/W10. The source now
 declares eight baseline checks and includes required CI/build status helpers;
-the two named live rulesets still returned only `check` and `check-gitleaks`
-on read-back. Coordinate baseline activation with that package's owner. Do not
+the `v3` ruleset now requires those eight contexts on read-back, while the two
+integration-branch rulesets still require only `check` and `check-gitleaks`; the
+[activation packets](2026-09-12-sonar-ci-activation-packets.md) record the exact
+live state. Coordinate baseline activation with that package's owner. Do not
 replace its intended checks or claim its settings are already active.
 
 ## Evidence and limitations
@@ -532,8 +534,9 @@ its dependent action. Read back effective settings and retain sanitized receipts
 
 - Status: source implementation in progress on [draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924); no live effect applied.
 - Completed: repository and GitHub investigation, documentation research,
-  planner approval, documentation delivery, and the first implementation
-  packages for W1, W2, W3, W4, W5 (pilot), W6, and W7.
+  planner approval, documentation delivery, and the source implementation of
+  W1, W2, W3, W4, W5 (pilot), W6, W7, W8, and W10, together with the W0, W8,
+  W9, and W10 activation packets.
 - Investigation baseline: `b824ae26126bd33b44112dc27aad0ce42dbe1c4b`; reconciled
   source baseline `8c6a4c74f3bba3b73a5b5c3a185f6a1f0d3e89f5`.
 - Delivery layer: source only. No runtime was started, no Sonar setting was
@@ -560,32 +563,54 @@ its dependent action. Read back effective settings and retain sanitized receipts
     filter mode and published no LCOV without failing, and the artifact upload
     now reports a missing report as a job failure instead of ignoring it.
     Imported reports have their `SF:` entries rewritten to repository-relative
-    paths (`.github/scripts/sonar-coverage-transport.cjs`, 6 unit cases) so the
-    import does not depend on both runners sharing an absolute checkout path.
-    The coverage threshold is deliberately unarmed, and frontend PWA coverage
-    (Node test runner) is still unpublished.
+    paths so the import does not depend on both runners sharing an absolute
+    checkout path. The upload pattern is restricted to the reports directly
+    inside `apps/*` and `packages/*`; a workspace-wide glob collected 75 files
+    for four producers, because pnpm links every workspace package into its
+    dependents' `node_modules`. The transport now resolves the producing package
+    per report from the artifact path and the sources the report records, and
+    refuses a report that matches no package or more than one, which rejects
+    those linked copies instead of importing duplicate coverage from
+    `node_modules` (`.github/scripts/sonar-coverage-transport.cjs`, 19 unit
+    cases). The coverage threshold is deliberately unarmed, and frontend PWA
+    coverage (Node test runner) is still unpublished.
   - W4: `dependency-review.yml` fails on high severity, and Dependabot now
     covers `uv` plus the twelve application Dockerfile directories. pnpm 11
     graph and updater support is still unverified, so this is not complete CVE
     coverage.
   - W5: Trivy scans the staging backend-docker image and its migrator by digest
-    after publication and records receipts and SBOMs; promotion does not consume
-    them.
+    after publication and records receipts and SBOMs. Promotion consumes those
+    receipts once the controller source reaches the default branch, and only for
+    the two images the pilot scans.
   - W6: CodeQL v4 is SHA-pinned and covers JavaScript/TypeScript, Python, and
     GitHub Actions with a `security-extended` pilot that is not a required check.
   - W7: `docs/ci-and-deployment.md`, `docs/testing.md`, and the scanning claims in
     `.serena/memories/reference.md` describe the implemented contracts. ClickUp
     triage, finding owners, and remediation dates remain unwritten because they
     need authority.
-  - W8: the analysis workflow now fails when the quality gate fails. The ruleset
-    delta itself is neither prepared nor applied.
+  - W8: the analysis workflow now fails when the quality gate fails, and the
+    ruleset delta for the effective SonarCloud App check (app `12526`, context
+    `SonarCloud Code Analysis`) is prepared with a live read-back in the
+    [activation packets](2026-09-12-sonar-ci-activation-packets.md). Neither the
+    delta nor any other setting is applied.
+  - W9: activation is prepared only. Applying the delta waits for a green gate on
+    `v3`, which currently fails, and for the fork and Dependabot route decision.
+  - W10: the staging controller requires a successful terminal SonarCloud
+    candidate run and an `image-scan-receipt` whose digest matches the promoted
+    image, and a candidate whose gate is still running is reconsidered when the
+    analysis finishes (`.github/scripts/image-scan-admission.cjs`, 18 unit
+    cases). Merging that source activates the requirement for later promotions,
+    which is disclosed as a live effect; the scheduled reassessment and its
+    retention, cost, and owner decisions remain proposals.
 - Outstanding gates: live Sonar settings and entitlement (W0), the trusted
-  contributor analysis route (W1), the ruleset activation packet and its
-  application (W8/W9), and promotion admission with its schedules (W10). Each
-  needs a named approval as described under activation gates.
+  contributor analysis route (W1), ruleset application (W9), promotion
+  admission
+  once this source merges (W10), and the scheduled reassessment. Each needs a
+  named approval as described under activation gates.
 - Verification limits: the Sonar workflow, the CodeQL update, dependency review,
   and the image scan cannot be proven from source alone. Expect the Sonar quality
   gate to fail this pull request while W0 and the policy decisions stay open, and
   treat the image scan as unproven until a publication run exercises it.
-- Next action: obtain authorized Sonar settings evidence for W0, then implement
-  the trusted contributor analysis route before any merge enforcement.
+- Next action: obtain authorized Sonar settings evidence for W0, then decide the
+  fork and Dependabot analysis route before any merge enforcement. Marking the
+  pull request ready for review is a separate, separately authorized step.

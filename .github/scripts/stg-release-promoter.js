@@ -6,6 +6,13 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
+const {
+  SCAN_ADMISSION_INVENTORY,
+  evaluateScanAdmission,
+  evaluateScanJobStatus,
+  receiptFileName,
+} = require('./image-scan-admission.cjs')
+
 const PROMOTION_REF = 'refs/heads/stg-release'
 const PROMOTION_REF_NAME = 'stg-release'
 const PROMOTION_REF_API = `heads/${PROMOTION_REF_NAME}`
@@ -20,6 +27,10 @@ const WORKFLOW_PATH_PATTERN = /^\.github\/workflows\/v3_.*-stg\.yml$/
 const APPROVED_PUSH_BRANCHES = Object.freeze(['v3', 'v3*'])
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
 const SHA_PATTERN = /^[0-9a-f]{40}$/
+// One scanned image uploads its findings report, SBOM, and receipt together, so
+// the archive budget has to cover a full vulnerability report rather than a
+// receipt alone.
+const SCAN_ARCHIVE_LIMIT = 67108864
 const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.oci.image.index.v1+json',
   'application/vnd.docker.distribution.manifest.list.v2+json',
@@ -48,6 +59,9 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
     ['test-olat-api.yml', 'test-olat-api-status'],
     ['test-intl-production.yml', 'test-intl-production-status'],
     ['v3_build-fallback.yml', 'build-images-status'],
+    // The SonarCloud job only succeeds when the awaited quality gate passes, so
+    // a candidate cannot be promoted on a green workflow that hid a failed gate.
+    ['v3_sonarcloud.yml', 'SonarCloud'],
   ].map(([file, id]) => ({
     path: `.github/workflows/${file}`,
     jobs:
@@ -935,6 +949,166 @@ async function readCiEvidence({ github, context, run }) {
   }
 }
 
+// Scan receipts travel as one artifact per scanned image, next to the findings
+// JSON and SBOM they describe. The findings report can be large, so the
+// archive is bounded before it is read.
+async function readScanReceipts({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    { ...context.repo, run_id: run.id, per_page: 100 }
+  )
+  const scanned = artifacts.filter(
+    (artifact) =>
+      typeof artifact.name === 'string' &&
+      artifact.name.startsWith('image-scan-') &&
+      !artifact.expired
+  )
+  const receipts = []
+  for (const artifact of scanned) {
+    if (artifact.size_in_bytes > SCAN_ARCHIVE_LIMIT) {
+      throw new Error(`${artifact.name} exceeds the scan receipt read budget`)
+    }
+    const response = await github.rest.actions.downloadArtifact({
+      ...context.repo,
+      artifact_id: artifact.id,
+      archive_format: 'zip',
+    })
+    if (response.data.byteLength > SCAN_ARCHIVE_LIMIT)
+      throw new Error(`${artifact.name} archive too large`)
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-scan-'))
+    try {
+      const archive = path.join(directory, 'receipt.zip')
+      fs.writeFileSync(archive, Buffer.from(response.data))
+      receipts.push(
+        JSON.parse(
+          execFileSync(
+            'unzip',
+            ['-p', archive, receiptFileName(artifact.name)],
+            { encoding: 'utf8', maxBuffer: 1048576, timeout: 10000 }
+          )
+        )
+      )
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
+  }
+  return receipts
+}
+
+// The scans run after the images they judge, so a candidate can legitimately
+// finish its builds while a scan is still running. Only that state is retried.
+// A failed or missing scan job, and a receipt that does not describe the
+// promoted digest, block the candidate instead of being retried.
+async function collectScanAdmission({
+  github,
+  context,
+  workflows,
+  images,
+  candidateSha,
+  sourceBranch,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+  sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
+  getReceipts = readScanReceipts,
+  inventory = SCAN_ADMISSION_INVENTORY,
+}) {
+  const repository = repositoryName(context)
+  const paths = [...new Set(inventory.map((entry) => entry.workflowPath))]
+  const attempts = []
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const collected = await Promise.all(
+      paths.map(async (workflowPath) => {
+        const workflow = workflows.find((entry) => entry.path === workflowPath)
+        if (!workflow) {
+          return { path: workflowPath, status: 'wrong_evidence' }
+        }
+        const result = await collectWorkflowEvidence({
+          github,
+          context,
+          workflow,
+          candidateSha,
+          sourceBranch,
+          repository,
+        })
+        if (result.status !== 'success') return { ...result, workflowPath }
+        const jobs = inventory
+          .filter((entry) => entry.workflowPath === workflowPath)
+          .map((entry) => ({
+            ...evaluateScanJobStatus(result.observedJobs, entry.scanJob),
+            scanJob: entry.scanJob,
+          }))
+        const failed = jobs.find((job) => job.status !== 'success')
+        if (failed) {
+          return {
+            ...failed,
+            path: workflowPath,
+            reason: `${failed.scanJob} is ${failed.status.replace('_', ' ')}`,
+            workflowPath,
+          }
+        }
+        return { path: workflowPath, run: result.run, status: 'success' }
+      })
+    )
+    const failures = collected.filter((result) => result.status !== 'success')
+    attempts.push({
+      attempt,
+      failures: failures.map(({ path, reason, status }) => ({
+        path,
+        reason,
+        status,
+      })),
+    })
+    if (failures.length > 0) {
+      const retryable = failures.every((failure) =>
+        isRetryableEvidenceStatus(failure.status)
+      )
+      if (!retryable || attempt === maxAttempts) {
+        return {
+          attempts,
+          entries: [],
+          reason: failures
+            .map(({ path, reason }) => `${path} (${reason})`)
+            .join(', '),
+          valid: false,
+        }
+      }
+      await sleep(retryDelayMs)
+      continue
+    }
+    const runs = Object.fromEntries(
+      collected.map((result) => [result.path, result.run])
+    )
+    const receipts = Object.fromEntries(
+      await Promise.all(
+        collected.map(async (result) => [
+          result.path,
+          await getReceipts({ github, context, run: result.run }),
+        ])
+      )
+    )
+    const decision = evaluateScanAdmission({
+      images,
+      inventory,
+      receipts,
+      runs,
+    })
+    if (decision.valid) {
+      return { attempts, entries: decision.entries, valid: true }
+    }
+    return {
+      attempts,
+      entries: decision.entries,
+      reason: decision.entries
+        .filter((entry) => !entry.ok)
+        .map((entry) => `${entry.scanJob} (${entry.reason})`)
+        .join(', '),
+      valid: false,
+    }
+  }
+  throw new Error('bounded scan admission did not reach a terminal state')
+}
+
 function validateCiSelection(
   evidence,
   workflow,
@@ -1630,6 +1804,7 @@ async function runPromotion({
   expectedWorkflows = STAGING_WORKFLOWS,
   getRegistryDigest = fetchRegistryDigest,
   getCiEvidence = readCiEvidence,
+  getScanAdmission = collectScanAdmission,
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
@@ -1746,6 +1921,24 @@ async function runPromotion({
     workflows,
     getRegistryDigest,
   })
+  // A promoted digest must be the digest the scan policy judged, so the scan
+  // evidence is bound to the resolved references rather than to an image name.
+  const scanEvidence = await getScanAdmission({
+    github,
+    context,
+    workflows,
+    images,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+    maxAttempts,
+    retryDelayMs,
+    sleep,
+  })
+  if (!scanEvidence.valid) {
+    throw new Error(
+      `staging image scan evidence is incomplete: ${scanEvidence.reason}`
+    )
+  }
 
   const currentSha = await getReleaseRef({ github, context })
   if (
@@ -1815,6 +2008,10 @@ async function runPromotion({
       jobs: workflow.jobs,
     })),
     images,
+    scan: {
+      attempts: scanEvidence.attempts,
+      images: scanEvidence.entries,
+    },
   }
   const checksum = checksumReceipt(receipt)
   const artifacts = writeReceiptArtifacts({
@@ -1864,6 +2061,7 @@ module.exports = {
   canonicalJson,
   checksumReceipt,
   collectBuildEvidence,
+  collectScanAdmission,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
   getCandidateDefinitions,
@@ -1873,6 +2071,7 @@ module.exports = {
   matchesApprovedBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
+  readScanReceipts,
   resolveStableRegistryDigests,
   runPromotion,
   validateCandidateAncestry,
