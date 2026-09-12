@@ -120,7 +120,7 @@ export async function verifyElearningChatGrant(
     clockTolerance: 0,
   })
 
-  if (payload.aud !== undefined && !checkAudience(payload)) {
+  if (!checkAudience(payload)) {
     tokenError(payload, 'wrong-audience')
   }
   if (payload.scope !== ELEARNING_CHAT_GRANT_SCOPE) {
@@ -175,12 +175,21 @@ export async function verifyElearningSnapshotEnvelope(
     clockTolerance: 0,
   })
 
-  if (payload.aud !== undefined && !checkAudience(payload)) {
+  if (!checkAudience(payload)) {
     tokenError(payload, 'wrong-audience')
   }
   if (payload.scope !== ELEARNING_SNAPSHOT_SCOPE) {
     tokenError(payload, 'wrong-scope')
   }
+  if (payload.purpose !== 'learning-context')
+    tokenError(payload, 'wrong-purpose')
+  if (
+    typeof payload.iat !== 'number' ||
+    typeof payload.exp !== 'number' ||
+    payload.exp - payload.iat > ELEARNING_SNAPSHOT_MAX_AGE_SECONDS ||
+    payload.exp <= payload.iat
+  )
+    tokenError(payload, 'expired')
   if (typeof payload.exp !== 'number' || payload.exp <= 0) {
     tokenError(payload, 'expired')
   }

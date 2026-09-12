@@ -1,4 +1,4 @@
-import { signJWT } from '@klicker-uzh/util'
+import { signJWT, verifyElearningChatGrant } from '@klicker-uzh/util'
 import {
   ELEARNING_SNAPSHOT_EXCERPT_MAX_LENGTH,
   ELEARNING_SNAPSHOT_OUTLINE_MAX_ITEMS,
@@ -70,17 +70,21 @@ async function signSnapshotEnvelope(payload: {
   snapshot?: unknown
   sub?: string
   expiresInSeconds?: number
+  claims?: Record<string, unknown>
 }) {
   const now = Math.floor(Date.now() / 1000)
   return signJWT(
     {
       scope: 'ELEARNING_SNAPSHOT',
+      purpose: 'learning-context',
+      aud: 'klicker-chat',
       chatbotId: payload.chatbotId ?? CHATBOT_ID,
       klickerCourseId: payload.klickerCourseId ?? COURSE_ID,
       snapshot: payload.snapshot ?? baseSnapshot(),
       sub: payload.sub ?? LEARNER_BINDING,
       iat: now,
       exp: now + (payload.expiresInSeconds ?? 300),
+      ...payload.claims,
     },
     SECRET,
     { issuer: 'elearning' }
@@ -160,6 +164,33 @@ describe('verifyAndNormalizeElearningChatContext', () => {
       learnerBinding: LEARNER_BINDING,
     })
     expect(result).toBeNull()
+  })
+
+  it.each([
+    { aud: undefined },
+    { aud: 'foreign-chat' },
+    { purpose: undefined },
+    { purpose: 'chat-handoff' },
+    { exp: Math.floor(Date.now() / 1000) + 3600 },
+  ])('rejects an envelope outside its token contract (%j)', async (claims) => {
+    const token = await signSnapshotEnvelope({ claims })
+    expect(await verifyWith(baseSnapshot())({ token })).toBeNull()
+  })
+
+  it('requires the chat audience for login grants', async () => {
+    const token = await signJWT(
+      {
+        sub: 'synthetic-learner',
+        scope: 'ELEARNING_CHAT',
+        purpose: 'chat-handoff',
+        chatbotId: CHATBOT_ID,
+        klickerCourseId: COURSE_ID,
+        elearningCourseId: '42',
+      },
+      SECRET,
+      { issuer: 'elearning', expiresIn: '2m' }
+    )
+    await expect(verifyElearningChatGrant(token, SECRET)).rejects.toThrow()
   })
 
   it('rejects a tampered envelope', async () => {
