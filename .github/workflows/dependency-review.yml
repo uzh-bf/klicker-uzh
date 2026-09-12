@@ -1,0 +1,36 @@
+# Dependency supply-chain review for pull requests. This check complements the
+# repository's existing GitHub dependency graph and Dependabot alerts.
+#
+# Compatibility note: this repository pins pnpm 11.5.0. GitHub documents
+# dependency-graph and Dependabot updater support for pnpm 7-10, so pnpm 11
+# recognition is NOT verified here. This check must therefore not yet be treated
+# as complete CVE coverage for the workspace.
+#
+# Only the severity policy is set below; dependency scope and license options stay
+# at the action defaults.
+name: Dependency Review
+
+on:
+  pull_request:
+    # No "ready_for_review": a ready transition does not change the dependency
+    # diff, and the repository contract reserves that event for workflows with a
+    # documented lifecycle role (see ci-event-gates.test.cjs).
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  # The action publishes its findings summary as a comment on the pull request.
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          # Roadmap policy blocks High and Critical severities.
+          fail-on-severity: high

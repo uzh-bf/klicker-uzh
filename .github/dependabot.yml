@@ -27,3 +27,73 @@ updates:
       interval: 'weekly'
     cooldown:
       default-days: 14
+
+  - package-ecosystem: 'uv'
+    directory: '/apps/analytics'
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 14
+
+  # Docker entries cover the application directories that build and publish
+  # their own image. The shared migrator image in packages/prisma and the local
+  # reverse proxy in util/traefik are outside this list.
+  - package-ecosystem: 'docker'
+    directory: '/apps/analytics'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/auth'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/backend-docker'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/chat'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/frontend-control'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/frontend-manage'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/frontend-pwa'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/hatchet-worker-general'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/hatchet-worker-response-processor'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/lti'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/olat-api'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: '/apps/response-api'
+    schedule:
+      interval: 'weekly'
