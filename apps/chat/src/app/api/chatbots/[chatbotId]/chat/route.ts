@@ -1013,6 +1013,19 @@ export async function POST(
   }
 
   if (isElearningThread || learnerBinding) {
+    if (
+      messages.length > 500 ||
+      messages.some((message) => message.id.length > 128)
+    ) {
+      await discardCreatedThread('history.limit')
+      return NextResponse.json(
+        {
+          error: 'Conversation history exceeds the limit',
+          code: 'INVALID_CHAT_HISTORY',
+        },
+        { status: 400 }
+      )
+    }
     try {
       const persistedHistory = await prisma.chatMessage.findMany({
         where: {

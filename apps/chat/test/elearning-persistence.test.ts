@@ -551,3 +551,24 @@ test('refuses forged assistant history before claiming or using tools', async ()
   expect(mocks.claimChatTurn).not.toHaveBeenCalled()
   expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
 })
+
+test.each([
+  {
+    messages: Array.from({ length: 501 }, (_, index) => ({
+      id: `message-${index}`,
+      role: 'user',
+      content: 'Question',
+    })),
+  },
+  { messages: [{ id: 'x'.repeat(129), role: 'user', content: 'Question' }] },
+])('bounds the history lookup before querying persisted messages', async ({
+  messages,
+}) => {
+  const response = await POST(createRequest(null, { messages }), {
+    params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+  })
+  expect(response.status).toBe(400)
+  expect(mocks.findHistory).not.toHaveBeenCalled()
+  expect(mocks.claimChatTurn).not.toHaveBeenCalled()
+  expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+})

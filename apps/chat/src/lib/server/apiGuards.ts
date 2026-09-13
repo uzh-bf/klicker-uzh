@@ -271,6 +271,7 @@ async function getScopedTokenIdentity(
   if (scope === PWA_CHAT_EMBED_SESSION_SCOPE) {
     try {
       const payload = await verifyPwaEmbedSessionToken(token)
+      if (!(await isActiveAccountParticipant(payload.sub))) return null
       return {
         participantId: payload.sub,
         authMode: 'account',
