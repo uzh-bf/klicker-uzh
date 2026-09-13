@@ -91,6 +91,8 @@ describe('Integration tests for lecturer chatbot management', () => {
           modelSelection: true,
           allowedModelIds: true,
           allowedReasoningEffortsByModel: true,
+          knowledgeGraphVisible: true,
+          knowledgeGraphRetrievalEnabled: true,
         },
       })
       expect(row).toEqual({
@@ -101,6 +103,8 @@ describe('Integration tests for lecturer chatbot management', () => {
         modelSelection: false,
         allowedModelIds: ['auto'],
         allowedReasoningEffortsByModel: null,
+        knowledgeGraphVisible: false,
+        knowledgeGraphRetrievalEnabled: false,
       })
     })
 

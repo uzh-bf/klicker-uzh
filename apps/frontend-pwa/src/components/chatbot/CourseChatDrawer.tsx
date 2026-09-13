@@ -9,11 +9,19 @@ import {
   GetCourseChatbotsDocument,
   type GetCourseChatbotsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
+import FloatingPanelResizeHandles from '@klicker-uzh/shared-components/src/FloatingPanelResizeHandles'
 import type { KlickerChatContext } from '@klicker-uzh/types'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
@@ -51,6 +59,10 @@ export function CourseChatDrawer({
   const [selectedChatbotId, setSelectedChatbotId] = useState<string | null>(
     null
   )
+  const [panelSize, setPanelSize] = useState<{
+    width: number
+    height: number
+  } | null>(null)
   const [frameLoaded, setFrameLoaded] = useState(false)
 
   const { data, loading } = useQuery(GetCourseChatbotsDocument, {
@@ -282,10 +294,32 @@ export function CourseChatDrawer({
               'fixed z-[60] flex flex-col overflow-hidden border-gray-200 bg-white shadow-2xl focus:outline-none',
               embedded
                 ? 'inset-x-0 bottom-0 h-[min(82dvh,34rem)] max-h-[100dvh] rounded-t-md border-t sm:inset-x-2 sm:bottom-2 sm:max-h-[calc(100dvh-1rem)] sm:rounded-md sm:border'
-                : 'inset-x-0 bottom-0 h-[min(85dvh,44rem)] min-h-[28rem] border-t md:inset-x-auto md:bottom-6 md:right-4 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[27rem] md:rounded-md md:border'
+                : 'inset-x-0 bottom-0 h-[min(85dvh,44rem)] min-h-[28rem] border-t md:inset-x-auto md:bottom-6 md:right-4 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[27rem] md:rounded-md md:border',
+              panelSize &&
+                (embedded
+                  ? 'sm:left-auto sm:w-[min(var(--course-chat-width),calc(100vw-1rem))] sm:h-[min(var(--course-chat-height),calc(100dvh-1rem))]'
+                  : 'md:min-h-0 md:w-[min(var(--course-chat-width),calc(100vw-3rem))] md:h-[min(var(--course-chat-height),calc(100dvh-3rem))]')
             )}
+            style={
+              panelSize
+                ? ({
+                    '--course-chat-width': `${panelSize.width}px`,
+                    '--course-chat-height': `${panelSize.height}px`,
+                  } as CSSProperties)
+                : undefined
+            }
             data-cy="course-chatbot-drawer"
           >
+            <FloatingPanelResizeHandles
+              panelRef={panelRef}
+              active={open}
+              label={t('manage.assistant.resize')}
+              minWidth={320}
+              minHeight={448}
+              margin={embedded ? 16 : 48}
+              breakpoint={embedded ? 640 : 768}
+              onResize={setPanelSize}
+            />
             <div
               className={twMerge(
                 'flex shrink-0 items-start gap-3 border-b bg-white',

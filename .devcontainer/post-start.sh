@@ -11,6 +11,12 @@ ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
 ROOT="$(cd "$ROOT" && pwd)"
 bash "$ROOT/util/dev-runtime.sh" require-bootstrap
 cd "$ROOT"
+MCP_DATABASE_URL=""
+MCP_SHADOW_DATABASE_URL=""
+if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" = 1 ]; then
+  MCP_DATABASE_URL="${DATABASE_URL:-}"
+  MCP_SHADOW_DATABASE_URL="${SHADOW_DATABASE_URL:-}"
+fi
 if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ]; then
   . "$ROOT/util/local-kb/runtime-environment.sh"
   local_kb_capture_environment
@@ -46,6 +52,21 @@ if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ] && [ -n "${LOCAL_KB_SIGNER_ENV
   . "$LOCAL_KB_SIGNER_ENV_FILE"
 fi
 set +a
+
+if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" = 1 ]; then
+  # The mock process group uses only the explicitly provisioned mock database.
+  . "$ROOT/util/profile-resolver.sh"
+  profile_wants klicker-local-mcp || exit 1
+  DATABASE_URL="$MCP_DATABASE_URL" SHADOW_DATABASE_URL="$MCP_SHADOW_DATABASE_URL" node --input-type=module -e '
+    import { validateDisposableDatabaseUrl } from "./packages/prisma/src/disposableDatabase.ts"
+    const url = new URL(validateDisposableDatabaseUrl(process.env.DATABASE_URL))
+    if (url.hostname !== "mcp_postgres" || url.port !== "5432" || url.search) process.exit(1)
+    const shadow = new URL(validateDisposableDatabaseUrl(process.env.SHADOW_DATABASE_URL, "klicker_test_shadow"))
+    if (shadow.hostname !== url.hostname || shadow.port !== url.port || shadow.search) process.exit(1)
+  ' || exit 1
+  export DATABASE_URL="$MCP_DATABASE_URL"
+  export SHADOW_DATABASE_URL="$MCP_SHADOW_DATABASE_URL"
+fi
 
 # Detect if devrouter routing is active (via mkcert CA mount) or fallback to plain localhost ports
 if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
@@ -126,10 +147,10 @@ export CI=true
 export npm_config_verify_deps_before_run=false
 
 # Profile selection (devrouter >= 0.0.40). DEVROUTER_PROFILE is injected by
-# `devrouter ensure --profile <name>`; empty means the config default (`full`).
+# `devrouter ensure --profile <name>`; empty means the config default (`standard`).
 # The profile is part of the process fingerprint so switching profiles replaces
 # the owned turbo process group instead of mixing two app sets.
-: "${DEVROUTER_PROFILE:=full}"
+: "${DEVROUTER_PROFILE:=standard}"
 export DEVROUTER_PROFILE
 echo "[post-start] Profile: ${DEVROUTER_PROFILE}"
 
@@ -218,8 +239,8 @@ if [ "$PROFILE_WANTS_DEV" = yes ] && [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
   done
 fi
 
-# The test seed connects Benibot's Tutor and Explainer modes to this local,
-# read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
+# The isolated test database connects Tutor and Explainer to this local,
+# read-only MCP fixture; it is opt-in via the mcp capability. When the
 # selection drops it, stop the exact owned process instead of leaving it stale.
 if [ "$PROFILE_WANTS_MCP" = yes ]; then
   # Rotate the fixture and Chat together. Only the child receives the ephemeral

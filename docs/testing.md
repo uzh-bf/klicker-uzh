@@ -434,9 +434,12 @@ initializes a database. The existing runtime CI step runs this command.
 The MCP parent-repair acceptance suite is a separate manual integration check:
 inside the provisioned self-contained container at `/workspaces/klicker-uzh`,
 run `LOCAL_MCP_SEED_TEST=1 node apps/chat/scripts/test-local-mcp-seed.mjs`
-after building its util dependency. It requires the local PostgreSQL connection in the process
-environment and builds temporary mirror tables on that connection. It verifies
-restoration and rollback using synthetic fixtures, not production tables.
+after building its util dependency. Set `DATABASE_URL` to the isolated
+`mcp_postgres:5432` disposable fixture database, retaining its restricted
+`klicker_test` identity. The harness rejects the ordinary database destination.
+It operates on the real Prisma schema using synthetic fixture rows and verifies
+ownership, credential rotation and rollback. Existing transport credentials are
+restored afterward; run it only while the synthetic fixture is not being used.
 It is not currently scheduled in CI; a passing shell recovery check does not
 claim MCP transaction coverage. Do not print connection strings or supply
 remote/production database credentials to this command.
