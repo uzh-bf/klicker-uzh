@@ -1,5 +1,6 @@
 // TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
 
+import { createHash } from 'node:crypto'
 // TODO: add additional processor with assessment logic
 import type {
   Context,
@@ -13,7 +14,6 @@ import type {
 } from '@klicker-uzh/types'
 import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
 import { getRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPoints,
@@ -33,7 +33,6 @@ import {
   getRedeliveryResponseField,
   isValidSubmissionId,
   type RedisHashOperation,
-  type RedisOperationCollector,
 } from './responseScript.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
@@ -195,11 +194,13 @@ export async function processResponseMessage(
     // events without a valid submission id — the event's message id, which
     // survives Hatchet redelivery and therefore protects against repeated
     // application of one queued submission
-    participantResponseField = participantData
-      ? getParticipantResponseField(participantData)
-      : message.submissionId
-        ? getAnonymousResponseField(message.submissionId)
-        : getRedeliveryResponseField(message.messageId)
+    if (participantData) {
+      participantResponseField = getParticipantResponseField(participantData)
+    } else if (message.submissionId) {
+      participantResponseField = getAnonymousResponseField(message.submissionId)
+    } else {
+      participantResponseField = getRedeliveryResponseField(message.messageId)
+    }
 
     if (
       await redisExec.hexists(participantResponseKey, participantResponseField)

@@ -1,4 +1,9 @@
 import { createHash } from 'node:crypto'
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import {
@@ -7,7 +12,6 @@ import {
   verifyJWT,
 } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 
 const redis = new Redis({
@@ -94,6 +98,19 @@ async function readBody(req: IncomingMessage): Promise<any> {
   }
 }
 
+// Only forward participant-related cookies. If both exist, include both.
+function extractParticipantCookies(req: IncomingMessage): string | undefined {
+  if (typeof req.headers['cookie'] !== 'string') return undefined
+
+  const parts = req.headers['cookie'].split(';').map((s) => s.trim())
+  const forwarded = parts.filter(
+    (part) =>
+      part.startsWith('participant_token=') ||
+      part.startsWith('temporary_participant_token=')
+  )
+  return forwarded.length > 0 ? forwarded.join('; ') : undefined
+}
+
 async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   let payload: any
   try {
@@ -124,24 +141,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     return badRequest(req, res, 'invalid_submission_id')
   }
 
-  // Only forward participant-related cookies. If both exist, include both.
-  let cookie: string | undefined
-  if (typeof req.headers['cookie'] === 'string') {
-    const raw = req.headers['cookie']
-    const parts = raw.split(';').map((s) => s.trim())
-    const participantPair = parts.find((p) =>
-      p.startsWith('participant_token=')
-    )
-    const temporaryPair = parts.find((p) =>
-      p.startsWith('temporary_participant_token=')
-    )
-    const forwarded: string[] = []
-    if (participantPair) forwarded.push(participantPair)
-    if (temporaryPair) forwarded.push(temporaryPair)
-    if (forwarded.length > 0) {
-      cookie = forwarded.join('; ')
-    }
-  }
+  const cookie = extractParticipantCookies(req)
 
   const responseTimestamp = Date.now()
   const message = {

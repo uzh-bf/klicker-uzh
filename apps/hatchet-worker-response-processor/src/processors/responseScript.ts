@@ -1,6 +1,5 @@
+import { createHash } from 'node:crypto'
 import type { JWTPayload } from '@klicker-uzh/util'
-import { isValidSubmissionId } from '@klicker-uzh/util'
-import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
 
 /**
@@ -154,7 +153,7 @@ export function getRedeliveryResponseField(messageId: string) {
   return `redelivery-${createHash('sha256').update(messageId).digest('hex')}`
 }
 
-export { isValidSubmissionId }
+export { isValidSubmissionId } from '@klicker-uzh/util'
 
 export type RedisOperationCollector = {
   hincrby(
@@ -233,10 +232,10 @@ export function buildResponseScriptInvocation({
   )
 
   if (markerOperations.length === 0) {
-    throw new Error('Missing participant response marker operation')
+    throw new TypeError('Missing participant response marker operation')
   }
   if (markerOperations.length > 1) {
-    throw new Error('Conflicting participant response marker operations')
+    throw new TypeError('Conflicting participant response marker operations')
   }
   const markerOperation = markerOperations[0] as Extract<
     RedisHashOperation,

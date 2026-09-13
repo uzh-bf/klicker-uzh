@@ -49,11 +49,31 @@ function getLocalStorage(): SubmissionIdStorage | null {
   return resolvedStorage
 }
 
+let fallbackCounter = 0
+
 function generateClientId(): string {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  )
+  const cryptoObj = globalThis.crypto
+  if (cryptoObj?.randomUUID) {
+    return cryptoObj.randomUUID()
+  }
+
+  // getRandomValues is available in every context where randomUUID may be
+  // missing (e.g. non-secure origins); shape the output as a v4 UUID
+  if (cryptoObj?.getRandomValues) {
+    const bytes = cryptoObj.getRandomValues(new Uint8Array(16))
+    bytes[6] = (bytes[6]! & 0x0f) | 0x40
+    bytes[8] = (bytes[8]! & 0x3f) | 0x80
+    const hex = Array.from(bytes, (byte) =>
+      byte.toString(16).padStart(2, '0')
+    ).join('')
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+
+  // last resort for environments without any crypto primitive: the id only
+  // needs to be unique per page for duplicate-submission deduplication, so
+  // a timestamp plus a monotonic counter is sufficient
+  fallbackCounter += 1
+  return `client-${Date.now()}-${fallbackCounter}`
 }
 
 export function getClientSubmissionId(storageKey: string): string {
