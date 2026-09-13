@@ -1805,6 +1805,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
     importedSourcesTitle: 'Importierte Quellen',
+    importedSourceColumn: 'Quelle',
     importedSourcesNotice:
       'Importierte Metadaten für Inhalte, die bereits in dieser Wissensdatenbank indexiert sind. Importierte Quellen werden nicht für Wissensgraphen verwendet und zählen nicht zu den Ressourcen- und Speicherlimits.',
     importedSourcesIncomplete:
@@ -1817,7 +1818,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     importedSourcesLoadMoreError:
       'Die weiteren importierten Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
     importedObservedAt: 'Beobachtet am {date}',
-    importedIngestedAt: 'Verarbeitet am {date}',
+    importedIngestedColumn: 'Verarbeitet',
+    importedObservedColumn: 'Beobachtet',
     importedIngestionUnknown: 'Verarbeitungszeit nicht erfasst',
     importedSourceGeneric: 'Quelle',
     importedVideoNoFileHint:

@@ -1788,6 +1788,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
     importedSourcesTitle: 'Imported sources',
+    importedSourceColumn: 'Source',
     importedSourcesNotice:
       'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
     importedSourcesIncomplete:
@@ -1799,7 +1800,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     importedSourcesLoadMoreError:
       'The additional imported sources could not be loaded. Try again.',
     importedObservedAt: 'Observed {date}',
-    importedIngestedAt: 'Ingested {date}',
+    importedIngestedColumn: 'Ingested',
+    importedObservedColumn: 'Observed',
     importedIngestionUnknown: 'Ingestion time not recorded',
     importedSourceGeneric: 'Source',
     importedVideoNoFileHint:

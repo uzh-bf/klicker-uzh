@@ -591,7 +591,7 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByTestId('kb-imported-source-imported-link-source')
       ).toBeVisible()
-      await expect(importedSection.locator('li')).toHaveCount(4)
+      await expect(importedSection.locator('tbody tr')).toHaveCount(4)
       await expect(
         page.getByTestId('kb-imported-source-link-imported-link-source')
       ).toHaveAttribute('href', 'https://example.org/synthetic-reading-list')
