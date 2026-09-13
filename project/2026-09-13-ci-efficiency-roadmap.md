@@ -582,8 +582,10 @@ required from the user.
   tests pass across the CI queue-policy and Playwright CI contract suites;
   Biome format clean. Test delta: 13 added / 0 changed / 0 removed (the
   reject-every-reuse validator test was rewritten to the new contract).
-  Coordination: zero file overlap with PR #5936 and PR #5924. Remaining: push,
-  draft PR, post-merge exact-head activation proof on a real unchanged-head
-  transition (named gate).
+  Coordination: zero file overlap with PR #5936 and PR #5924. Delivered as
+  draft [PR #5948](https://github.com/uzh-bf/klicker-uzh/pull/5948) against
+  `v3` (branch `rs/ci-efficiency-roadmap`, pushed 2026-09-13). Remaining
+  (named gate): post-merge exact-head activation proof on a real unchanged-head
+  transition; merge authority stays with the user.
 - Next action: receiving task reads this roadmap and the global handoff, refreshes
   `v3` and adjacent ownership, then resolves approval for the first source package.
