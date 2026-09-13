@@ -6743,10 +6743,13 @@ export function withPermission<TSource, TArgs, TReturn>(
             )
           )
         } catch (error) {
-          console.error('Failed to record rejected assessment action', {
-            actionType: assessmentAudit.actionType,
-            errorType: error instanceof Error ? error.name : 'unknown',
-          })
+          ctx.log.error(
+            {
+              actionType: assessmentAudit.actionType,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            },
+            'Failed to record rejected assessment action'
+          )
         }
       }
       return null

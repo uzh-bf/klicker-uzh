@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+||||||| parent of f16622559b (fix(logging): migrate v3-ai sync console calls to the structured logger)
+import type { AppLogger } from '@klicker-uzh/logging/node'
+=======
+import { AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+>>>>>>> f16622559b (fix(logging): migrate v3-ai sync console calls to the structured logger)
 import { prisma } from '@klicker-uzh/prisma'
 import {
   ChatbotStatus,
@@ -394,7 +400,8 @@ export async function authorizeIdentityForChatbot(
 
   const participationResult = await requireParticipation(
     participantId,
-    chatbotResult.chatbot.courseId
+    chatbotResult.chatbot.courseId,
+    log
   )
   if ('response' in participationResult) {
     return participationResult
@@ -405,7 +412,8 @@ export async function authorizeIdentityForChatbot(
 
 export async function requireParticipation(
   participantId: string,
-  courseId: string
+  courseId: string,
+  log: AppLogger = getRouteLogger()
 ): Promise<{ ok: true } | { response: NextResponse }> {
   try {
     const participation = await prisma.participation.findUnique({
@@ -428,8 +436,14 @@ export async function requireParticipation(
     }
 
     return { ok: true }
-  } catch (error) {
-    console.error('Error checking participation:', error)
+  } catch {
+    log.error(
+      {
+        event: 'chat.participation.check.failed',
+        err: toSafeError('Error checking participation'),
+      },
+      'Error checking participation'
+    )
     return {
       response: NextResponse.json(
         { error: 'Error checking participation' },
