@@ -46,36 +46,30 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           CHANGED_FILES_PATH: ${{ runner.temp }}/changed-files.txt
         run: |
           set -uo pipefail
-          # Bind the immutable base commit of the event, falling back to the
-          # base branch only when that object cannot be fetched.
-          if [ -f "$(git rev-parse --git-dir)/shallow" ]; then
-            git fetch --depth=1 origin "$BASE_SHA" ||
-              git fetch --depth=1 origin "$BASE_REF"
-          else
-            git fetch origin "$BASE_SHA" || git fetch origin "$BASE_REF"
+          rm -f "$CHANGED_FILES_PATH"
+          # Fetch the immutable event endpoints and their ancestry without
+          # replacing the merge-tree checkout used by the reporting scripts.
+          fetch_args=(--no-tags)
+          if [ "$(git rev-parse --is-shallow-repository)" = 'true' ]; then
+            fetch_args+=(--unshallow)
           fi
-          base="$BASE_SHA"
-          git cat-file -e "$base^{commit}" 2>/dev/null ||
-            base="origin/$BASE_REF"
-          # GitHub evaluates pull-request path filters against the merge base of
-          # the event base and the head, so prefer that comparison. A shallow
-          # checkout usually has no common ancestor and falls back to the
-          # conservative two-endpoint diff, which can only select more image
-          # builds than GitHub does.
-          if git diff --name-only "$base...HEAD" \
-            > "$CHANGED_FILES_PATH" 2>/dev/null; then
-            echo "changed files: merge-base comparison against $base"
-          elif git diff --name-only "$base" HEAD \
-            > "$CHANGED_FILES_PATH" 2>/dev/null; then
-            echo "changed files: two-endpoint comparison (conservative)"
-          else
+          if ! git fetch "${fetch_args[@]}" origin "$BASE_SHA" "$HEAD_SHA"; then
+            echo "::error::unable to fetch pull-request comparison ancestry"
+            exit 1
+          fi
+          # Publisher path filters use the PR head's changes since the merge
+          # base. Base-only changes must not require undispatched publishers.
+          if ! git diff --name-only "$BASE_SHA...$HEAD_SHA" \
+            > "$CHANGED_FILES_PATH"; then
             rm -f "$CHANGED_FILES_PATH"
-            echo "::error::changed-file selection is unavailable"
+            echo "::error::unable to establish pull-request merge-base comparison"
+            exit 1
           fi
+          echo "changed files: event head compared with event merge base"
 
       - name: Report affected image build status
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

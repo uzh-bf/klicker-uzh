@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('node:assert/strict')
+const childProcess = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -219,12 +220,9 @@ test('the fallback stays the always-reported image build contract', () => {
     '$' + '{{ github.event.pull_request.base.sha }}'
   )
   assert.equal(
-    diff.env.BASE_REF,
-    '$' + '{{ github.event.pull_request.base.ref }}'
+    diff.env.HEAD_SHA,
+    '$' + '{{ github.event.pull_request.head.sha }}'
   )
-  assert.match(diff.run, /"\$base\.\.\.HEAD"/)
-  assert.match(diff.run, /git diff --name-only "\$base" HEAD/)
-  assert.match(diff.run, /rm -f "\$CHANGED_FILES_PATH"/)
 
   const report = job.steps.find(
     (step) => step.name === 'Report affected image build status'
@@ -239,6 +237,210 @@ test('the fallback stays the always-reported image build contract', () => {
   assert.equal(upload.if, 'always()')
   assert.equal(upload.with.name, 'required-ci-evidence')
   assert.equal(upload.with['if-no-files-found'], 'error')
+})
+
+test('the changed-file step diffs the event head against the event merge base', (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'build-status-diff-'))
+  t.after(() => fs.rmSync(directory, { force: true, recursive: true }))
+  // Git exports repository-local variables to hooks. Fixture repositories must
+  // not inherit them, or `git -C` can still mutate the parent repository.
+  const environment = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  )
+  Object.assign(environment, {
+    GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
+    GIT_AUTHOR_NAME: 'Fixture',
+    GIT_COMMITTER_EMAIL: 'fixture@example.invalid',
+    GIT_COMMITTER_NAME: 'Fixture',
+  })
+  // Signing and hooks stay off so the fixture never depends on the host Git
+  // configuration or a hook inside the temporary repositories.
+  const git = (...args) =>
+    childProcess
+      .execFileSync(
+        'git',
+        [
+          '-c',
+          'commit.gpgsign=false',
+          '-c',
+          'core.hooksPath=/dev/null',
+          ...args,
+        ],
+        {
+          cwd: directory,
+          encoding: 'utf8',
+          env: environment,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      )
+      .trim()
+
+  // A common ancestor, an event base that advanced only on the analytics
+  // workflow and an event head that changed an application path.
+  const source = path.join(directory, 'source')
+  git('init', '-q', '-b', 'base', 'source')
+  fs.mkdirSync(path.join(source, 'apps/chat/src'), { recursive: true })
+  fs.mkdirSync(path.join(source, '.github/workflows'), { recursive: true })
+  fs.writeFileSync(path.join(source, 'README.md'), 'common\n')
+  const analyticsPath = path.join(
+    source,
+    '.github/workflows/v3_analytics-stg.yml'
+  )
+  fs.writeFileSync(analyticsPath, 'name: analytics\n')
+  git('-C', 'source', 'add', '-A')
+  git('-C', 'source', 'commit', '-q', '-m', 'common ancestor')
+  const ancestor = git('-C', 'source', 'rev-parse', 'HEAD')
+  fs.writeFileSync(analyticsPath, 'name: analytics\non: push\n')
+  git('-C', 'source', 'commit', '-q', '-am', 'base-only analytics change')
+  const baseSha = git('-C', 'source', 'rev-parse', 'HEAD')
+  git('-C', 'source', 'checkout', '-q', '-b', 'candidate', ancestor)
+  fs.writeFileSync(path.join(source, 'apps/chat/src/synthetic.ts'), 'chat\n')
+  git('-C', 'source', 'add', '-A')
+  git('-C', 'source', 'commit', '-q', '-m', 'head chat change')
+  const headSha = git('-C', 'source', 'rev-parse', 'HEAD')
+  git('-C', 'source', 'checkout', '-q', '-b', 'analytics-candidate', ancestor)
+  fs.writeFileSync(analyticsPath, 'name: analytics\non: pull_request\n')
+  git('-C', 'source', 'commit', '-q', '-am', 'head analytics change')
+  const analyticsHeadSha = git('-C', 'source', 'rev-parse', 'HEAD')
+  // The pull-request ref GitHub checks out is a real two-parent merge of the
+  // event base and head, so the fixture merges both sides instead of naming a
+  // synthetic commit that exists on neither.
+  git('-C', 'source', 'checkout', '-q', '-b', 'merge', 'base')
+  git(
+    '-C',
+    'source',
+    'merge',
+    '-q',
+    '--no-ff',
+    '-m',
+    'merge event base into head',
+    'candidate'
+  )
+  const mergeSha = git('-C', 'source', 'rev-parse', 'HEAD')
+
+  git('clone', '-q', '--bare', 'source', 'origin.git')
+  git('--git-dir=origin.git', 'symbolic-ref', 'HEAD', 'refs/heads/merge')
+  const mergeParents = git(
+    '--git-dir=origin.git',
+    'rev-list',
+    '--parents',
+    '-n',
+    '1',
+    mergeSha
+  )
+  assert.equal(mergeParents.split(' ').length, 3)
+  // Unrelated history is advertised by the same origin, so its fetch succeeds
+  // and only the merge-base comparison can fail.
+  git('init', '-q', '-b', 'unrelated', 'unrelated')
+  fs.writeFileSync(path.join(directory, 'unrelated', 'orphan.txt'), 'x\n')
+  git('-C', 'unrelated', 'add', '-A')
+  git('-C', 'unrelated', 'commit', '-q', '-m', 'unrelated history')
+  const unrelatedSha = git('-C', 'unrelated', 'rev-parse', 'HEAD')
+  git(
+    '-C',
+    'unrelated',
+    'push',
+    '-q',
+    path.join(directory, 'origin.git'),
+    'HEAD:refs/heads/unrelated'
+  )
+
+  // A depth-1 clone of the merge ref: the checkout starts on the merge commit
+  // and must still be there after the step fetches the event endpoints.
+  git(
+    'clone',
+    '-q',
+    '--branch',
+    'merge',
+    '--depth',
+    '1',
+    'file://' + path.join(directory, 'origin.git'),
+    'checkout'
+  )
+  assert.equal(git('-C', 'checkout', 'rev-parse', 'HEAD'), mergeSha)
+
+  const workflow = readWorkflow('v3_build-fallback.yml')
+  const step = workflow.jobs['build-images-status'].steps.find(
+    (candidate) => candidate.name === 'Determine changed files'
+  )
+  const outputPath = path.join(directory, 'changed-files.txt')
+  const runStep = (base, head) =>
+    childProcess.spawnSync('bash', ['-euo', 'pipefail', '-c', step.run], {
+      cwd: path.join(directory, 'checkout'),
+      encoding: 'utf8',
+      env: {
+        ...environment,
+        BASE_SHA: base,
+        CHANGED_FILES_PATH: outputPath,
+        HEAD_SHA: head,
+      },
+      timeout: 120_000,
+    })
+  const selectedFiles = () =>
+    fs.readFileSync(outputPath, 'utf8').trim().split('\n')
+  const presentFiles = presentImageWorkflows(root)
+
+  // The depth-1 checkout exercises the unshallow fetch branch first.
+  assert.equal(
+    git('-C', 'checkout', 'rev-parse', '--is-shallow-repository'),
+    'true'
+  )
+  const head = runStep(baseSha, headSha)
+  assert.equal(head.status, 0, head.stderr)
+  assert.deepEqual(selectedFiles(), ['apps/chat/src/synthetic.ts'])
+  const chatSelection = selectImageWorkflows({
+    changedFiles: selectedFiles(),
+    eventName: 'pull_request',
+    presentFiles,
+  })
+  assert.deepEqual(chatSelection.unknown, [])
+  assert.deepEqual(
+    chatSelection.expected.map((entry) => entry.path),
+    ['v3_chat-stg.yml']
+  )
+  assert.equal(git('-C', 'checkout', 'rev-parse', 'HEAD'), mergeSha)
+
+  // Control: a plain two-endpoint diff of the same commits carries the
+  // base-only change, so the exclusion above comes from the merge base of the
+  // comparison rather than from the merge tree the checkout sits on.
+  const twoEndpoint = git(
+    '-C',
+    'checkout',
+    'diff',
+    '--name-only',
+    `${baseSha}..${headSha}`
+  )
+    .split('\n')
+    .sort()
+  assert.deepEqual(twoEndpoint, [
+    '.github/workflows/v3_analytics-stg.yml',
+    'apps/chat/src/synthetic.ts',
+  ])
+
+  // A head that really changes the analytics workflow must select it.
+  const analytics = runStep(baseSha, analyticsHeadSha)
+  assert.equal(analytics.status, 0, analytics.stderr)
+  assert.deepEqual(selectedFiles(), ['.github/workflows/v3_analytics-stg.yml'])
+  const analyticsSelection = selectImageWorkflows({
+    changedFiles: selectedFiles(),
+    eventName: 'pull_request',
+    presentFiles,
+  })
+  assert.deepEqual(
+    analyticsSelection.expected.map((entry) => entry.path),
+    ['v3_analytics-stg.yml']
+  )
+
+  // Unrelated ancestry and a missing endpoint both fail and clear the output.
+  fs.writeFileSync(outputPath, 'stale\n')
+  const unrelated = runStep(baseSha, unrelatedSha)
+  assert.notEqual(unrelated.status, 0)
+  assert.equal(fs.existsSync(outputPath), false)
+  fs.writeFileSync(outputPath, 'stale\n')
+  const missing = runStep('f'.repeat(40), headSha)
+  assert.notEqual(missing.status, 0)
+  assert.equal(fs.existsSync(outputPath), false)
+  assert.equal(git('-C', 'checkout', 'rev-parse', 'HEAD'), mergeSha)
 })
 
 test('path globs follow GitHub filter semantics', () => {
