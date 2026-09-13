@@ -127,7 +127,21 @@ model ParticipantDataUseEvent {
   learningAnalyticsConsent Boolean
   acknowledged             Boolean
   createdAt                DateTime    @default(now())
+
+  analyticsWithdrawal ParticipantAnalyticsWithdrawal?
+
   @@unique([participantId, revision])
+}
+
+model ParticipantAnalyticsWithdrawal {
+  participantId      String                  @db.Uuid
+  withdrawalRevision Int
+  choiceEvent        ParticipantDataUseEvent @relation(fields: [participantId, withdrawalRevision], references: [participantId, revision], onDelete: Cascade)
+  requestedAt        DateTime                @default(now())
+  completedAt        DateTime?
+
+  @@id([participantId, withdrawalRevision])
+  @@index([completedAt, requestedAt, participantId])
 }
 
 model ParticipantGroup {
