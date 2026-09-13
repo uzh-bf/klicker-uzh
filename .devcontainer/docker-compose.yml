@@ -12,6 +12,25 @@
 # Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
 # routes, and the same-path Git common-directory mount.
 services:
+  # Explicit deterministic MCP testing uses its own disposable database.
+  mcp_postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: klicker-prod
+      POSTGRES_PASSWORD: klicker
+      POSTGRES_DB: klicker-prod
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U klicker_test -d klicker_test']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks: [default]
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./disposable-test-init.sql:/docker-entrypoint-initdb.d/20-disposable-test-init.sql:ro
+
   # --- main database (disposable test DBs plus dump-support DBs via init SQL) ---
   postgres:
     image: postgres:15

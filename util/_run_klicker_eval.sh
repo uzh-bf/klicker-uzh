@@ -254,6 +254,8 @@ if [ "$LOCAL_TARGET" = true ]; then
     -u KLICKER_EVAL_TARGET_KEY
     -u KLICKER_EVAL_GT_DIR
     -u KLICKER_EVAL_CANARY_FILE
+    -u KLICKER_EVAL_EVIDENCE_DIR
+    -u KLICKER_EVAL_RUN_ID
     -u AZURE_OPENAI_API_KEY
     -u AZURE_OPENAI_BASE_URL
     -u UPSTREAM_OPENAI_API_KEY
@@ -285,7 +287,7 @@ if [ "$LOCAL_TARGET" = true ]; then
     "EVAL_ENDPOINT_URL=http://127.0.0.1:${LOCAL_TARGET_PORT}/v1/chat/completions"
     "EVAL_MODELS_URL=http://127.0.0.1:${LOCAL_TARGET_PORT}/v1/models"
     "EVAL_STREAM=false"
-    "AGENT_ID=gpt-5.6-luna"
+    "AGENT_ID=${KLICKER_EVAL_MODEL_ID:-gpt-5.6-luna}"
   )
 fi
 
@@ -306,6 +308,8 @@ if [ "$LOCAL_TARGET" = true ]; then
     -u KLICKER_EVAL_TARGET_KEY
     -u KLICKER_EVAL_GT_DIR
     -u KLICKER_EVAL_CANARY_FILE
+    -u KLICKER_EVAL_EVIDENCE_DIR
+    -u KLICKER_EVAL_RUN_ID
   )
 fi
 

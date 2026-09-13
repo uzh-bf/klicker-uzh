@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import { encrypt } from '@klicker-uzh/util'
 import { CHATBOT_ID_TEST } from './seedChatbots.js'
 
@@ -322,6 +322,34 @@ export async function seedMCPServers(prisma: PrismaClient) {
  */
 type SeededMCPServers = Awaited<ReturnType<typeof seedMCPServers>>
 
+function isJsonObject(value: unknown): value is Prisma.InputJsonObject {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+type MutableJsonObject = {
+  -readonly [Key in keyof Prisma.InputJsonObject]: Prisma.InputJsonObject[Key]
+}
+
+function reconcileKbParameters(
+  parameters: unknown,
+  kbIds: readonly string[]
+): Prisma.InputJsonObject {
+  const reconciledParameters: MutableJsonObject = isJsonObject(parameters)
+    ? { ...parameters }
+    : {}
+
+  delete reconciledParameters.kb_id
+  delete reconciledParameters.kb_ids
+
+  if (kbIds.length > 0) {
+    reconciledParameters.required = true
+    reconciledParameters.toolAlias = 'doc_query'
+    reconciledParameters.kb_ids = [...kbIds]
+  }
+
+  return reconciledParameters
+}
+
 export async function seedChatbotMCPConfigurations(
   prisma: PrismaClient,
   servers: SeededMCPServers
@@ -343,13 +371,23 @@ export async function seedChatbotMCPConfigurations(
         continue
       }
 
-      const enabledBinding =
+      const enabledKbIds =
         config.mcpServerName === MCP_SERVER_NAMES.KB
-          ? await prisma.kBChatbot.findFirst({
-              where: { chatbotId: config.chatbotId, isEnabled: true },
-              select: { id: true },
-            })
-          : null
+          ? Array.from(
+              new Set(
+                (
+                  await prisma.kBChatbot.findMany({
+                    where: {
+                      chatbotId: config.chatbotId,
+                      isEnabled: true,
+                      kb: { deletedAt: null },
+                    },
+                    select: { kbId: true },
+                  })
+                ).map(({ kbId }) => kbId)
+              )
+            ).sort((left, right) => left.localeCompare(right))
+          : []
 
       const existingConfig = await prisma.chatbotMCPConfig.findUnique({
         where: {
@@ -368,7 +406,11 @@ export async function seedChatbotMCPConfigurations(
             data: {
               allowedTools: ['doc_query'],
               priority: 0,
-              isEnabled: Boolean(enabledBinding),
+              isEnabled: enabledKbIds.length > 0,
+              parameters: reconcileKbParameters(
+                existingConfig.parameters,
+                enabledKbIds
+              ),
             },
           })
           console.log(
@@ -392,9 +434,12 @@ export async function seedChatbotMCPConfigurations(
           priority: config.priority,
           isEnabled:
             config.mcpServerName === MCP_SERVER_NAMES.KB
-              ? Boolean(enabledBinding)
+              ? enabledKbIds.length > 0
               : config.isEnabled,
-          parameters: config.parameters || {},
+          parameters:
+            config.mcpServerName === MCP_SERVER_NAMES.KB
+              ? reconcileKbParameters(config.parameters, enabledKbIds)
+              : config.parameters || {},
         },
       })
 
