@@ -30,8 +30,11 @@ ALTER TABLE "ParticipantActivityPerformance"
 -- CreateEnum
 CREATE TYPE "ChatDoseBucket" AS ENUM ('NONE', 'LOW', 'MED', 'HIGH');
 
+-- CreateEnum
+CREATE TYPE "DataExportStatus" AS ENUM ('PENDING', 'RELEASED', 'FAILED');
+
 -- AlterTable
-ALTER TABLE "ActivityPerformance" ADD COLUMN     "participantCount" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "ParticipantCourseAnalytics" ADD COLUMN     "hasChatActivity" BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
 ALTER TABLE "AggregatedCourseAnalytics" ADD COLUMN     "bothChatAndQuizCount" INTEGER NOT NULL DEFAULT 0,
@@ -43,21 +46,21 @@ ADD COLUMN     "practiceQuizCount" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "quizParticipantCount" INTEGER NOT NULL DEFAULT 0;
 
 -- AlterTable
+ALTER TABLE "ActivityPerformance" ADD COLUMN     "participantCount" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
 ALTER TABLE "Course" ADD COLUMN     "analyticsFinalizedAt" TIMESTAMP(3),
 ADD COLUMN     "analyticsLastComputedAt" TIMESTAMP(3),
 ADD COLUMN     "chatAnalyticsValidAt" TIMESTAMP(3),
 ADD COLUMN     "isLearningAnalyticsEnabled" BOOLEAN NOT NULL DEFAULT false;
 
--- AlterTable
-ALTER TABLE "Participant" ADD COLUMN     "learningAnalyticsChoiceAt" TIMESTAMP(3),
-ADD COLUMN     "learningAnalyticsConsent" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "learningAnalyticsDisclosureVersion" TEXT,
-ADD COLUMN     "researchConsent" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "researchConsentChoiceAt" TIMESTAMP(3),
-ADD COLUMN     "researchConsentDisclosureVersion" TEXT;
+-- CreateTable
+CREATE TABLE "AnalyticsEligibilityGeneration" (
+    "id" INTEGER NOT NULL,
+    "generation" BIGINT NOT NULL DEFAULT 0,
 
--- AlterTable
-ALTER TABLE "ParticipantCourseAnalytics" ADD COLUMN     "hasChatActivity" BOOLEAN NOT NULL DEFAULT false;
+    CONSTRAINT "AnalyticsEligibilityGeneration_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "ParticipantChatAnalytics" (
@@ -205,6 +208,59 @@ CREATE TABLE "PlatformSemesterAnalytics" (
     CONSTRAINT "PlatformSemesterAnalytics_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "ResearchExportReceipt" (
+    "id" UUID NOT NULL,
+    "requesterId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "projectTitle" TEXT NOT NULL,
+    "responsiblePerson" TEXT NOT NULL,
+    "contactEmail" TEXT NOT NULL,
+    "purpose" TEXT NOT NULL,
+    "deletionDate" DATE NOT NULL,
+    "reference" TEXT,
+    "selectedClasses" TEXT[],
+    "disclosureVersion" TEXT NOT NULL,
+    "attestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" "DataExportStatus" NOT NULL DEFAULT 'PENDING',
+    "sha256" TEXT,
+    "byteCount" INTEGER,
+    "recordCount" INTEGER,
+    "failureCode" TEXT,
+    "releasedAt" TIMESTAMP(3),
+
+    CONSTRAINT "ResearchExportReceipt_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AssessmentExportReceipt" (
+    "id" UUID NOT NULL,
+    "requesterId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "liveQuizId" UUID,
+    "locale" TEXT NOT NULL,
+    "disclosureVersion" TEXT NOT NULL,
+    "attestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" "DataExportStatus" NOT NULL DEFAULT 'PENDING',
+    "sha256" TEXT,
+    "byteCount" INTEGER,
+    "recordCount" INTEGER,
+    "failureCode" TEXT,
+    "releasedAt" TIMESTAMP(3),
+
+    CONSTRAINT "AssessmentExportReceipt_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ParticipantAnalyticsWithdrawal" (
+    "participantId" UUID NOT NULL,
+    "withdrawalRevision" INTEGER NOT NULL,
+    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "ParticipantAnalyticsWithdrawal_pkey" PRIMARY KEY ("participantId","withdrawalRevision")
+);
+
 -- CreateIndex
 CREATE INDEX "ParticipantChatAnalytics_chatbotId_type_timestamp_idx" ON "ParticipantChatAnalytics"("chatbotId", "type", "timestamp");
 
@@ -232,6 +288,7 @@ CREATE UNIQUE INDEX "ParticipantChatOutcome_participantId_courseId_key" ON "Part
 -- CreateIndex
 CREATE INDEX "ParticipantLiveQuizAnalytics_liveQuizId_idx" ON "ParticipantLiveQuizAnalytics"("liveQuizId");
 
+-- CreateIndex
 CREATE UNIQUE INDEX "ParticipantLiveQuizAnalytics_participantId_liveQuizId_key" ON "ParticipantLiveQuizAnalytics"("participantId", "liveQuizId");
 
 -- CreateIndex
@@ -239,6 +296,21 @@ CREATE UNIQUE INDEX "AggregatedLiveQuizAnalytics_liveQuizId_key" ON "AggregatedL
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PlatformSemesterAnalytics_semesterLabel_key" ON "PlatformSemesterAnalytics"("semesterLabel");
+
+-- CreateIndex
+CREATE INDEX "ResearchExportReceipt_requesterId_attestedAt_idx" ON "ResearchExportReceipt"("requesterId", "attestedAt");
+
+-- CreateIndex
+CREATE INDEX "ResearchExportReceipt_courseId_attestedAt_idx" ON "ResearchExportReceipt"("courseId", "attestedAt");
+
+-- CreateIndex
+CREATE INDEX "AssessmentExportReceipt_requesterId_attestedAt_idx" ON "AssessmentExportReceipt"("requesterId", "attestedAt");
+
+-- CreateIndex
+CREATE INDEX "AssessmentExportReceipt_courseId_attestedAt_idx" ON "AssessmentExportReceipt"("courseId", "attestedAt");
+
+-- CreateIndex
+CREATE INDEX "ParticipantAnalyticsWithdrawal_completedAt_requestedAt_part_idx" ON "ParticipantAnalyticsWithdrawal"("completedAt", "requestedAt", "participantId");
 
 -- AddForeignKey
 ALTER TABLE "ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -266,3 +338,6 @@ ALTER TABLE "ParticipantLiveQuizAnalytics" ADD CONSTRAINT "ParticipantLiveQuizAn
 
 -- AddForeignKey
 ALTER TABLE "AggregatedLiveQuizAnalytics" ADD CONSTRAINT "AggregatedLiveQuizAnalytics_liveQuizId_fkey" FOREIGN KEY ("liveQuizId") REFERENCES "LiveQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ParticipantAnalyticsWithdrawal" ADD CONSTRAINT "ParticipantAnalyticsWithdrawal_participantId_withdrawalRev_fkey" FOREIGN KEY ("participantId", "withdrawalRevision") REFERENCES "ParticipantDataUseEvent"("participantId", "revision") ON DELETE CASCADE ON UPDATE CASCADE;

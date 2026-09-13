@@ -1,6 +1,12 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
-import { CourseAuthType, PrismaClient } from '@klicker-uzh/prisma/client'
-import { signJWT } from '@klicker-uzh/util'
+import {
+  prisma as prismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
+import { CourseAuthType, type PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  signJWT,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { EventEmitter } from 'events'
 import {
@@ -19,11 +25,19 @@ import {
   loginParticipantForLtiChatbot,
   loginParticipantWithLti,
 } from '../src/services/accounts.js'
+import * as EmailService from '../src/services/email.js'
+import * as NotificationService from '../src/services/notifications.js'
 
 const TEST_PREFIX = `codex-lti-${Date.now()}`
 const emailFor = (label: string) => `${TEST_PREFIX}-${label}@example.com`
 const usernameFor = (label: string) => `${TEST_PREFIX}-${label}`.slice(0, 48)
 const ssoIdFor = (label: string) => `${TEST_PREFIX}-${label}`
+const dataUse = {
+  disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsent: false,
+  learningAnalyticsConsent: false,
+  acknowledged: true,
+}
 
 let prisma: PrismaClient
 
@@ -66,6 +80,7 @@ async function createSignedLtiData({
 }
 
 async function cleanupTestData() {
+  await requireDisposableDatabase(prisma)
   const participants = await prisma.participant.findMany({
     where: {
       OR: [
@@ -144,13 +159,65 @@ describe('LTI participant linking and creation', () => {
       process.env.APP_ORIGIN_PWA ?? 'https://pwa.klicker.test'
 
     prisma = prismaClient
+    await requireDisposableDatabase(prisma)
     await prisma.$connect()
     await cleanupTestData()
   }, 60000)
 
   afterEach(async () => {
     vi.unstubAllEnvs()
+    vi.restoreAllMocks()
     await cleanupTestData()
+  })
+
+  it('creates ordinary credentials and data-use audit atomically without external delivery', async () => {
+    vi.spyOn(EmailService, 'hydrateTemplate').mockResolvedValue(
+      '<p>Activation</p>'
+    )
+    vi.spyOn(EmailService, 'sendEmail').mockResolvedValue(true)
+    vi.spyOn(NotificationService, 'sendTeamsNotification').mockResolvedValue(
+      null
+    )
+    const result = await createParticipantAccount(
+      {
+        email: emailFor('ordinary-create'),
+        username: usernameFor('ordinary-create'),
+        password: 'password123',
+        isProfilePublic: true,
+        dataUse,
+      },
+      createCtx()
+    )
+    expect(result?.participant?.dataUseRevision).toBe(1)
+    expect(result?.participant?.dataUseAcknowledgedAt).toBeInstanceOf(Date)
+    const events = await prisma.participantDataUseEvent.findMany({
+      where: { participantId: result!.participant!.id },
+    })
+    expect(events).toHaveLength(1)
+    expect(events[0]).toMatchObject({
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+    })
+  })
+
+  it('rejects missing data-use acknowledgement before creating credentials', async () => {
+    const username = usernameFor('missing-data-use')
+    await expect(
+      createParticipantAccount(
+        {
+          email: emailFor('missing-data-use'),
+          username,
+          password: 'password123',
+          isProfilePublic: true,
+        },
+        createCtx()
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_INVALID_INPUT' },
+    })
+    expect(
+      await prisma.participant.findUnique({ where: { username } })
+    ).toBeNull()
   })
 
   afterAll(async () => {
@@ -308,6 +375,7 @@ describe('LTI participant linking and creation', () => {
       {
         email: emailFor('unused'),
         username: usernameFor('create-new'),
+        dataUse,
         password: 'password123',
         isProfilePublic: true,
         signedLtiData,
@@ -324,6 +392,15 @@ describe('LTI participant linking and creation', () => {
       include: { participant: true },
     })
     expect(account?.participant.email).toBe(emailFor('create-new'))
+    expect(account?.participant.dataUseRevision).toBe(1)
+    expect(account?.participant.dataUseAcknowledgedAt).toBeInstanceOf(Date)
+    expect(account?.participant.researchConsent).toBe(false)
+    expect(account?.participant.learningAnalyticsConsent).toBe(false)
+    expect(
+      await prisma.participantDataUseEvent.count({
+        where: { participantId: account!.participant.id },
+      })
+    ).toBe(1)
   })
 
   it('fails closed on ambiguous duplicate normalized email matches across auth modes', async () => {
@@ -448,6 +525,7 @@ describe('LTI participant linking and creation', () => {
       {
         email: emailFor('cross-mode').toUpperCase(),
         username: usernameFor('cross-mode-new'),
+        dataUse,
         password: 'password123',
         isProfilePublic: true,
       },

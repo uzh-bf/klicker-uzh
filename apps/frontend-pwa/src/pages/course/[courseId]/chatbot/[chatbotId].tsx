@@ -109,6 +109,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     if (!ensureSuccess) {
       return {
         props: {
+          participantToken,
+          cookiesAvailable,
           participationError: true,
           courseLink: coursePath,
           messages: (

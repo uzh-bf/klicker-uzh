@@ -1,4 +1,5 @@
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import { createYoga } from 'graphql-yoga'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
@@ -161,6 +162,17 @@ describe('AI beta authoring field boundary', () => {
   })
 })
 
+// A participant principal must carry complete account data-use state to reach
+// the field authorization boundary; refusing both optional purposes is valid.
+const completedParticipantDataUse = {
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+}
+
 function buildContext({
   scope,
   catalyst,
@@ -171,6 +183,9 @@ function buildContext({
   return {
     prisma: {
       user: { findUnique: vi.fn(async () => ({ betaEnabled: true })) },
+      participant: {
+        findUnique: vi.fn(async () => completedParticipantDataUse),
+      },
     },
     featureFlags: { isEnabled: () => true, refresh: async () => {} },
     user: {

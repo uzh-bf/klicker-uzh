@@ -18,6 +18,10 @@ import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
+import {
+  completeParticipantDataUse,
+  updateParticipantDataUseChoice,
+} from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -95,8 +99,10 @@ import {
   LeaveCourseParticipation,
   LtiChatbotLogin,
   Participant,
+  ParticipantAccountDataUse,
   ParticipantDataUse,
   ParticipantGroup,
+  ParticipantInitialDataUseInput,
   ParticipantLearningData,
   ParticipantTokenData,
   Participation,
@@ -364,6 +370,7 @@ export const Mutation = builder.mutationType({
           isProfilePublic: t.arg.boolean({ required: true }),
           courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
+          dataUse: t.arg({ type: ParticipantInitialDataUseInput }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.createParticipantAccount(args, ctx)
@@ -508,14 +515,28 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      completeParticipantDataUse: t.withAuth(asParticipant).field({
+        type: ParticipantAccountDataUse,
+        args: {
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
+          researchConsent: t.arg.boolean({ required: true }),
+          learningAnalyticsConsent: t.arg.boolean({ required: true }),
+          acknowledged: t.arg.boolean({ required: true }),
+        },
+        resolve: (_, args, ctx) => completeParticipantDataUse(args, ctx),
+      }),
+
       setResearchConsent: t.withAuth(asParticipant).field({
         nullable: true,
         type: ParticipantDataUse,
         args: {
           consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int(),
+          disclosureVersion: t.arg.string(),
         },
         resolve: async (_, args, ctx) => {
-          return await ParticipantService.setResearchConsent(args, ctx)
+          return await updateParticipantDataUseChoice('research', args, ctx)
         },
       }),
 
@@ -524,9 +545,11 @@ export const Mutation = builder.mutationType({
         type: ParticipantDataUse,
         args: {
           consent: t.arg.boolean({ required: true }),
+          expectedRevision: t.arg.int(),
+          disclosureVersion: t.arg.string(),
         },
         resolve: async (_, args, ctx) => {
-          return await ParticipantService.setLearningAnalyticsConsent(args, ctx)
+          return await updateParticipantDataUseChoice('analytics', args, ctx)
         },
       }),
 

@@ -7,16 +7,17 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { Suspense, useState } from 'react'
-import Layout from '../../../../components/Layout'
 import CourseVerifiableCredentialsModal from '../../../../components/courses/CourseVerifiableCredentialsModal'
+import AssessmentExportModal from '../../../../components/courses/modals/AssessmentExportModal'
 import PointCorrectionsModal from '../../../../components/courses/PointCorrectionsModal'
 import PreviousCorrectionsListModal from '../../../../components/courses/pointCorrections/PreviousCorrectionsListModal'
+import Layout from '../../../../components/Layout'
 import AssessmentStudentResultsTable, {
-  PageSizeOption,
+  type PageSizeOption,
 } from '../../../../components/liveQuiz/results/AssessmentStudentResultsTable'
 import CourseSingleStudentResults from '../../../../components/liveQuiz/results/CourseSingleStudentResults'
 
@@ -29,6 +30,7 @@ function CourseAssessmentResults() {
   const [previousCorrectionsModal, setPreviousCorrectionsModal] =
     useState(false)
   const [credentialsModal, setCredentialsModal] = useState(false)
+  const [assessmentExportModal, setAssessmentExportModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<{
     id: string
     email: string
@@ -118,7 +120,7 @@ function CourseAssessmentResults() {
       <div className="flex w-full flex-row gap-2">
         <div className="w-1/2">
           <AssessmentStudentResultsTable
-            quizName={course.name}
+            onOpenExport={() => setAssessmentExportModal(true)}
             studentResults={studentResults}
             selectedParticipantId={selectedParticipant?.id ?? null}
             onSelect={setSelectedParticipant}
@@ -130,7 +132,7 @@ function CourseAssessmentResults() {
           />
         </div>
         <div className="mt-11 w-1/2 pl-4">
-          {!!selectedParticipant ? (
+          {selectedParticipant ? (
             <Suspense>
               <CourseSingleStudentResults
                 courseId={router.query.id as string}
@@ -166,6 +168,14 @@ function CourseAssessmentResults() {
         <CourseVerifiableCredentialsModal
           courseId={router.query.id as string}
           onClose={() => setCredentialsModal(false)}
+        />
+      ) : null}
+
+      {assessmentExportModal && router.query.id ? (
+        <AssessmentExportModal
+          activityName={course.name}
+          courseId={router.query.id as string}
+          onClose={() => setAssessmentExportModal(false)}
         />
       ) : null}
     </Layout>

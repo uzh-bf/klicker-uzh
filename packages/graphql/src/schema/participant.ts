@@ -5,9 +5,14 @@ import type {
   SubscriptionKeysInput as SubscriptionKeysInputType,
   SubscriptionObjectInput as SubscriptionObjectInputType,
 } from '@klicker-uzh/types'
-import { levelFromXp } from '@klicker-uzh/util'
+import {
+  isParticipantDataUseComplete,
+  levelFromXp,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  type ParticipantDataUseFields,
+} from '@klicker-uzh/util'
 import builder from '../builder.js'
-import type { ParticipantDataUseFields } from '../lib/learningAnalytics.js'
+import type { ParticipantAccountDataUseFields } from '../services/participantAccountDataUse.js'
 import {
   AchievementRef,
   type IAchievement,
@@ -128,6 +133,49 @@ export const ParticipantDataUse = ParticipantDataUseRef.implement({
   }),
 })
 
+export const ParticipantAccountDataUse = builder
+  .objectRef<ParticipantAccountDataUseFields>('ParticipantAccountDataUse')
+  .implement({
+    fields: (t) => ({
+      researchConsent: t.exposeBoolean('researchConsent'),
+      learningAnalyticsConsent: t.exposeBoolean('learningAnalyticsConsent'),
+      dataUseRevision: t.exposeInt('dataUseRevision'),
+      dataUseAcknowledgedAt: t.expose('dataUseAcknowledgedAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+      dataUseAcknowledgedVersion: t.exposeString('dataUseAcknowledgedVersion', {
+        nullable: true,
+      }),
+      currentDisclosureVersion: t.string({
+        resolve: () => PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      }),
+      isComplete: t.boolean({ resolve: isParticipantDataUseComplete }),
+      researchChoiceRecorded: t.boolean({
+        resolve: (state) =>
+          state.researchConsentChoiceAt !== null &&
+          state.researchConsentDisclosureVersion !== null,
+      }),
+      learningAnalyticsChoiceRecorded: t.boolean({
+        resolve: (state) =>
+          state.learningAnalyticsChoiceAt !== null &&
+          state.learningAnalyticsDisclosureVersion !== null,
+      }),
+    }),
+  })
+
+export const ParticipantInitialDataUseInput = builder.inputType(
+  'ParticipantInitialDataUseInput',
+  {
+    fields: (t) => ({
+      disclosureVersion: t.string({ required: true }),
+      researchConsent: t.boolean({ required: true }),
+      learningAnalyticsConsent: t.boolean({ required: true }),
+      acknowledged: t.boolean({ required: true }),
+    }),
+  }
+)
+
 export interface IParticipant
   extends Omit<
     DB.Participant,
@@ -140,6 +188,9 @@ export interface IParticipant
     | 'learningAnalyticsConsent'
     | 'learningAnalyticsChoiceAt'
     | 'learningAnalyticsDisclosureVersion'
+    | 'dataUseAcknowledgedAt'
+    | 'dataUseAcknowledgedVersion'
+    | 'dataUseRevision'
   > {
   role?: DB.UserRole
   scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants

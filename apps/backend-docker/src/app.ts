@@ -9,7 +9,12 @@ import {
   forcedFeatureFlagPayload,
   normalizeFeatureFlagEnvironment,
 } from '@klicker-uzh/feature-flags'
-import { enhanceContext, schema } from '@klicker-uzh/graphql'
+import {
+  downloadAssessmentExport,
+  downloadResearchExport,
+  enhanceContext,
+  schema,
+} from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -124,7 +129,7 @@ function prepareApp({
       }
     }
 
-    req.locals = { user }
+    req.locals = { user, authenticationFailed: token !== null && !user }
     next()
   }
 
@@ -135,6 +140,87 @@ function prepareApp({
 
   app.use(cookieParser())
   app.use(jwtMiddleware)
+
+  app.post(
+    ['/api/data-exports/research', '/api/data-exports/assessment'],
+    express.json({ limit: '16kb' }),
+    async (req: any, res) => {
+      res.setHeader('Cache-Control', 'no-store')
+      res.setHeader('X-Content-Type-Options', 'nosniff')
+      res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition')
+      if (
+        !process.env.APP_ORIGIN_MANAGE ||
+        req.headers.origin !== process.env.APP_ORIGIN_MANAGE ||
+        req.headers['x-graphql-yoga-csrf'] !== '1'
+      ) {
+        res.status(403).json({ code: 'DATA_EXPORT_FORBIDDEN' })
+        return
+      }
+      if (!req.locals?.user) {
+        res.status(401).json({ code: 'DATA_EXPORT_UNAUTHENTICATED' })
+        return
+      }
+      const controller = new AbortController()
+      const cancel = () => controller.abort()
+      res.once('close', cancel)
+      try {
+        const isAssessment = req.path === '/api/data-exports/assessment'
+        const download = isAssessment
+          ? downloadAssessmentExport
+          : downloadResearchExport
+        const artifact = await download(
+          req.body,
+          {
+            req,
+            res,
+            user: req.locals.user,
+            prisma,
+            redisExec,
+            redisAssessmentExec,
+            pubSub,
+            emitter,
+            hatchet,
+            tasks,
+            featureFlags,
+          },
+          controller.signal
+        )
+        if (res.destroyed) return
+        res.setHeader(
+          'Content-Type',
+          isAssessment
+            ? 'text/csv; charset=utf-8'
+            : 'application/json; charset=utf-8'
+        )
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${isAssessment ? 'assessment' : 'research'}-${artifact.exportId}.${isAssessment ? 'csv' : 'json'}"`
+        )
+        res.status(200).send(artifact.body)
+      } catch (error) {
+        if (res.destroyed) return
+        const candidate = error as { extensions?: { code?: unknown } }
+        const code = candidate.extensions?.code
+        const statuses = {
+          DATA_EXPORT_FORBIDDEN: 403,
+          DATA_EXPORT_INVALID_REQUEST: 400,
+          DATA_EXPORT_CLASS_UNAVAILABLE: 400,
+          DATA_EXPORT_TOO_LARGE: 413,
+          DATA_EXPORT_ELIGIBILITY_CHANGED: 409,
+          DATA_EXPORT_REQUEST_ALREADY_USED: 409,
+          DATA_EXPORT_CANCELLED: 400,
+          DATA_EXPORT_FAILED: 500,
+        }
+        const safeCode =
+          typeof code === 'string' && Object.hasOwn(statuses, code)
+            ? (code as keyof typeof statuses)
+            : 'DATA_EXPORT_FAILED'
+        res.status(statuses[safeCode]).json({ code: safeCode })
+      } finally {
+        res.off('close', cancel)
+      }
+    }
+  )
 
   const yogaApp = createYoga({
     schema,
@@ -204,13 +290,24 @@ function prepareApp({
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', function (req, res) {
+  app.use('/healthz', (req, res) => {
     res.send('OK')
   })
 
   app.use('/api/graphql', yogaApp as any)
 
-  return { app, yogaApp }
+  async function authenticateSubscriptionRequest(req: any) {
+    await new Promise<void>((resolve, reject) => {
+      cookieParser()(req, {} as express.Response, (error?: unknown) => {
+        if (error) reject(error)
+        else resolve()
+      })
+    })
+    await jwtMiddleware(req, null, () => {})
+    return req.locals
+  }
+
+  return { app, yogaApp, authenticateSubscriptionRequest }
 }
 
 export default prepareApp

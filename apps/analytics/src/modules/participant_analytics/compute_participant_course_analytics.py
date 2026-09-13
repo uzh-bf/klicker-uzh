@@ -3,22 +3,42 @@ from datetime import datetime
 from .compute_correctness import compute_correctness
 from .aggregate_analytics import aggregate_analytics
 from .save_participant_analytics import save_participant_analytics
+from ..analytics_eligibility import (
+    AnalyticsEligibilityContext,
+    ensure_analytics_eligibility,
+    filter_dataframe_by_eligibility,
+    is_course_learning_analytics_enabled,
+)
 
 
-def compute_participant_course_analytics(db, df_courses, verbose=False):
+def compute_participant_course_analytics(
+    db,
+    df_courses,
+    verbose=False,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
     # Count failure cases
     courses_without_responses = 0
 
     for idx, course in df_courses.iterrows():
         print(f"Computing participant analytics for course {idx} out of {len(df_courses)}")
         course_id = course["id"]
+        if not eligibility.participant_ids:
+            courses_without_responses += 1
+            continue
+        if not is_course_learning_analytics_enabled(db, course_id):
+            continue
         course_start_date = course["startDate"]
         course_end_date = course["endDate"]
         course_id = course["id"]
 
         # Find all participants and corresponding linked responses through the participations
         participations = db.participation.find_many(
-            where={"courseId": course_id},
+            where={
+                "courseId": course_id,
+                "participantId": {"in": list(eligibility.participant_ids)},
+            },
             include={
                 "detailResponses": {
                     "where": {
@@ -44,6 +64,8 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
 
         details = [item for sublist in details_dict for item in sublist]
         responses = [item for sublist in responses_dict for item in sublist]
+        details = filter_dataframe_by_eligibility(pd.DataFrame(details), eligibility).to_dict("records")
+        responses = filter_dataframe_by_eligibility(pd.DataFrame(responses), eligibility).to_dict("records")
         if len(details) == 0 or len(responses) == 0:
             courses_without_responses += 1
             print("No detail responses or response entries found for course {}".format(course_id))
@@ -82,7 +104,7 @@ def compute_participant_course_analytics(db, df_courses, verbose=False):
         end_curr_date = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
         course_end_date_ext = course_end_date.strftime("%Y-%m-%d") + "T23:59:59.999Z"
         timestamp = course_end_date_ext if course_end_date_ext < end_curr_date else end_curr_date
-        save_participant_analytics(db, df_analytics, timestamp, "COURSE")
+        save_participant_analytics(db, df_analytics, timestamp, "COURSE", eligibility)
 
         # Delete the dataframes to avoid conflicts in the next iteration
         del df_details

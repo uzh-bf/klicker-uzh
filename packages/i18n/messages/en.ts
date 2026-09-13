@@ -1008,9 +1008,7 @@ export default {
       joinLeaderboardNotice: `
 🎊 A warm welcome, {username}, to the course "{courseName}" 🎊
 
-You are currently **not** participating in the course leaderboard, meaning that you can participate in all activities but will not collect any points, will not be listed on the leaderboard, and will not be eligible for achievements and awards. If you would like to participate in the gamified activities throughout this course, **click the button** below to join. You can leave the course leaderboard at any time, upon which all of your collected points will be **deleted**.
-
-Other participants will only see your public **participant profile**, including pseudonym and total points/achievements on leaderboards. You can choose to hide your profile from other participants while still participating in the leaderboard, if you wish to do so (see [here](/editProfile)).
+Leaderboard participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining. Joining makes your username, rank, points and achievements visible to other participants. You can leave and rejoin at any time; your points and personal statistics remain available.
 `,
       activityPreview:
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
@@ -1070,6 +1068,65 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      signup: {
+        accountTitle: 'Your account',
+        emailLabel: 'E-mail',
+        usernameHint:
+          'Your username is shown when you join a course leaderboard.',
+        assessmentTitle: 'Enable assessment access',
+        assessmentSubmit: 'Enable access',
+        assessmentDataCollectionNotice:
+          'We store your account data and the identity information provided by Switch edu-ID as well as data from courses and activities: such as answers and inputs in activities, assessments, points, and feedback.\n\nIn an assessment, identity information such as your matriculation number as well as detailed logs of your answer attempts and interactions (audit logs) are added.',
+        assessmentDataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.\n\nIn an assessment, authorised lecturers and assessment staff additionally receive your identity, answer details, and results for grading and follow-up. Other participants cannot see this assessment data.',
+        assessmentDataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. In an assessment, they additionally support grading and traceability. Your choice in the account settings applies to research and Learning Analytics. It does not affect points, grades, or assessment access.',
+        assessmentDataStorageNotice:
+          'Account data and answers are stored for the lifetime of your account. You cannot delete your assessment account and its data yourself: they remain available for traceability and during the applicable appeal and retention periods. Afterwards, they are deleted or anonymised. [Details in the privacy policy](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'I have read the [KlickerUZH privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of use](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. I have acknowledged the additional information about assessment data, inspection, and retention.',
+        accessTitle: 'Your access',
+        accessNoPassword: 'You do not need a password or any further input.',
+        dataUseTitle: 'Data use and settings',
+        dataCollectionTitle: 'What data do you collect about me?',
+        dataCollectionNotice:
+          'We store your account data and data from your courses and activities, such as answers and inputs in activities, their assessment, points, and feedback.',
+        dataSharingTitle: 'Who can see my data?',
+        dataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.',
+        dataUsageTitle: 'How is my data used?',
+        dataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. Your choice in the account settings applies to research and Learning Analytics.',
+        dataStorageTitle: 'How long is my data stored?',
+        dataStorageNotice:
+          'Your account data and answers are stored while your account exists. Data may be retained until legal or contractual retention periods expire. Afterwards, they are deleted or changed so that they can no longer be linked to any person. You can request deletion of your account and your data.',
+        acknowledgement:
+          'I have read the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of service](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. Research and Learning Analytics are voluntary.',
+        researchConsentTitle: 'Data for research',
+        researchConsentDescription:
+          'Your usage and learning data may be used without personal identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentDescriptionAssessment:
+          'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentBadgeAllowed: 'Allowed',
+        researchConsentBadgeRefused: 'Refused',
+        researchConsentBadgeUnanswered: 'Not answered',
+        researchConsentYes: 'Allow',
+        researchConsentNo: 'Object',
+        researchConsentControlLabel: 'Use for research:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/privacy_policy)',
+        learningAnalyticsDecisionRequired: 'Decision required',
+        learningAnalyticsConsentYes: 'Yes, participate',
+        learningAnalyticsConsentYesDescription:
+          'Private insights and protected group reports.',
+        learningAnalyticsConsentNo: 'No, do not participate',
+        learningAnalyticsConsentNoDescription:
+          'Courses, points, and chat work as usual.',
+        submit: 'Create account',
+        acknowledgementRequired: 'Please confirm your choices.',
+        dataUseChoiceRequired: 'Please choose yes or no.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1115,7 +1172,7 @@ While answering questions, logged-in participants can set personal bookmarks on 
 
 Some courses use group activities that can only be solved collaboratively. Lecturers may enable randomized group creation and specify a preferred group size. Once groups are formed and a group activity is published, hints are distributed across group members, and the group can solve the activity together within a limited time window (one submission per group). Group formation and activities are available to participants with a KlickerUZH account.
 
-Within a group, you can compare your points with your peers; together you can also compare your group's performance with other groups. The total group score combines points from group activities with the aggregated points of all group members.
+Within a group, you can compare published points with your peers; together you can also compare your group's performance with other groups. The total group score combines points from group activities with the average personal points of group members. The average includes all group members, whether or not they participate in the course leaderboard.
 
 #### Courses, Leaderboards, and Achievements
 
@@ -1242,11 +1299,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have not bookmarked any questions yet. Simply click on the bookmark symbol on a question for this.',
       awards: 'Awards',
       open: 'open',
+      joinLeaderboardTitle: 'Join the leaderboard for {name}',
+      joinLeaderboardDescription:
+        'Participation is voluntary. You can use all course activities, collect points and view your personal statistics without joining the leaderboard. If you join, other participants see your username {username}, your rank, points and achievements in the leaderboard. You can leave and rejoin at any time. Your retained points count immediately; historical rank-dependent awards are not awarded retroactively. Your research and Learning Analytics choices are unaffected.',
+      joinLeaderboardConfirm: 'Join leaderboard',
+      joinLeaderboardError: 'Could not join the leaderboard. Please try again.',
+      leaveLeaderboardError:
+        'Could not leave the leaderboard. Please try again.',
       leaveLeaderboardTitle: 'Leave Leaderboard',
       leaveLeaderboardConfirmation:
         'Are you sure you want to leave the course leaderboard?',
       leaveLeaderboardInformation:
-        'If you leave the leaderboard, your interactions with activities of this course, as well as collected points in this course, will be deleted. You can join again at any time, but will have to start from scratch.',
+        'After leaving, you no longer appear in the course leaderboard. Your points and personal statistics remain available, and you can continue collecting points. You can rejoin at any time; your retained points count immediately.',
       noGamificationOrDescription:
         'Welcome to the course {courseName}! For this KlickerUZH course, gamification has been disabled by the lecturer and no leaderboard will be shown here. KlickerUZH will still list all course-related activities in the corresponding sections of the app for quick access.',
       groupActivityEndedToast:
@@ -1416,17 +1480,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Your data-use choices could not be loaded. Please try again.',
       researchConsentTitle: 'Research',
       researchConsentDescription:
-        'Yes allows future research exports to include all data stored for your account. No excludes your data from future research exports. If you turn this back on, data already stored for your account can be included again. Research exports that have already been created are not recalled.',
+        'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can opt out at any time in your settings. Your data will then be excluded from future research exports.',
       researchConsentSaved: 'Your research choice has been saved.',
       researchConsentFailed:
         'Your research choice could not be saved. Please reload the page before trying again.',
+      dataUseConflict:
+        'This page is out of date. Reload it before trying again.',
       learningAnalyticsConsentTitle: 'Learning analytics',
       learningAnalyticsConsentDescription:
-        'Yes allows KlickerUZH to use all eligible stored activity data for your account for individual learning analytics after the course is recomputed following your current choice. No means that no individual learning-analytics data is used; existing individual learning-analytics data is deleted during the next successful overnight processing cycle. Aggregate results are updated when they are next recomputed. If you turn this back on, all eligible stored activity data can be included again.',
+        'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
+      learningAnalyticsGuide: 'Learn more',
       learningAnalyticsConsentSaved:
         'Your learning-analytics choice has been saved.',
       learningAnalyticsConsentFailed:
         'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsWithdrawalTitle:
+        'Stop participating in Learning Analytics?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
+      learningAnalyticsWithdrawalUnavailable:
+        'Your Learning Analytics choice could not be saved because withdrawal is currently unavailable. Your saved choice is unchanged.',
       dataUseCanonicalDataNotice:
         'These choices do not delete your account, course participation, activity submissions, or responses.',
       dataUsePrivacyPolicy: 'Read the privacy policy.',
@@ -1564,7 +1637,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       alreadySubmittedAt:
         'Your group has already submitted its solutions (on {date}).<br></br> The evaluation will be published later and communicated separately.',
       joinLeaderboard:
-        'In order to collect points within the scope of the group activity, you must join the course leaderboard. To do this, switch to the other tab and confirm your participation.',
+        'Your individual entry is hidden while you are not on the course leaderboard. Your points still count towards the group average. Group membership and points earned together in group activities are unaffected.',
       singleParticipantAutomaticAssignment:
         'You are the only participant in your group. Once the group creation deadline has passed at {groupFormationDeadline} or the lecturer has manually stopped group formation, you will be automatically assigned to a random group.',
       maxNumberOfGroupMembers:
@@ -4529,6 +4602,95 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       practiceQuizSchedulingHint:
         'Scheduling the practice quiz "{title}" for publication at a certain point in time, it will automatically become available to all students in the course at that time. Before the scheduled publication date is reached, the activity can still be unpublished and edited again. When entering a date in the past, the practice quiz will be published immediately.',
       confirmScheduling: 'Confirm Scheduling',
+    },
+    assessmentExport: {
+      open: 'Export assessment results',
+      title: 'Export assessment results',
+      classification: 'Directly identifiable personal data',
+      assessmentLabel: 'Assessment',
+      scopeLabel: 'Scope',
+      courseScope: 'Entire course',
+      liveQuizScope: 'Live quiz',
+      lead: 'This file contains directly identifiable personal data and assessment results. It is exclusively intended for conducting, assessing and carrying out necessary follow-up work for this assessment.',
+      attestationsHeading: 'By downloading, I confirm:',
+      attestations: {
+        purposeLabel: 'Purpose limitation.',
+        purposeText:
+          'I use the file only for this assessment and not for research.',
+        accessLabel: 'Restricted access.',
+        accessText:
+          'Only people who need these data to conduct, assess or carry out necessary follow-up work for the assessment receive access.',
+        storageLabel: 'Secure storage.',
+        storageText:
+          'I store and process the file only on UZH devices and storage locations approved for this purpose and protect it from unauthorised access.',
+        retentionLabel: 'Retention and deletion.',
+        retentionText:
+          'I keep the file only for as long as it is needed for the stated purpose or because of a retention obligation, and then delete it securely.',
+      },
+      logging:
+        'Your export request and this confirmation are logged with your account, the time and the data scope.',
+      acknowledgement: 'I confirm these four points for this export.',
+      acknowledgementRequired: 'Confirm the four points before continuing.',
+      requestFailed:
+        'The assessment export could not be created. Please try again.',
+      cancel: 'Cancel',
+      submit: 'Export',
+    },
+    researchExport: {
+      menuLabel: 'Export research data',
+      title: 'Export research data',
+      classification: 'Personal data without direct identifiers',
+      classificationNote:
+        'This file contains personal data without direct identifiers. Individual people may still be identifiable. The data may be used only for the stated research or teaching project at the University of Zurich and only by its staff.',
+      projectDetailsTitle: 'Research project details',
+      projectDetailsDescription:
+        'These details are stored with every export. KlickerUZH has no approval process; you are responsible for the lawfulness of your project.',
+      projectTitle: 'Project title',
+      projectTitlePlaceholder: 'Title of your research project',
+      responsiblePerson: 'Responsible person',
+      contactEmail: 'Contact address',
+      purpose: 'Purpose',
+      purposeHint: 'Required, 1–2 sentences.',
+      deletionDate: 'Planned deletion date',
+      reference: 'Reference',
+      referencePlaceholder: 'e.g. ethics committee 2026-xx',
+      referenceHint:
+        'Optional: ethics, approval, or data management plan number.',
+      dataClassesTitle: 'Required data classes (select at least one)',
+      liveQuizResponses: 'Live quiz responses',
+      asynchronousResponses:
+        'Asynchronous responses (learning elements, microlearning)',
+      learningAnalytics:
+        'Learning Analytics data (individual and group values)',
+      chatTranscripts: 'Chat transcripts',
+      unavailableHint:
+        'Currently unavailable; the core export does not support this class yet.',
+      classDataNote:
+        'Conversation free text may contain personal information, even when account identifiers have been removed. Limit your selection to the data required for your project.',
+      attestationTitle: 'With the download I confirm:',
+      attestationPurpose:
+        'Purpose limitation. I use the data only for the research or teaching project at the University of Zurich specified above and only for the stated purpose.',
+      attestationReidentification:
+        'No re-identification or impermissible linkage. I do not attempt to identify people and do not link the file with other data that could enable identification.',
+      attestationAccess:
+        'Restricted access and no onward disclosure. I make the file accessible only to the staff of the specified project and do not disclose it outside the project.',
+      attestationSecurity:
+        'Security, removal of personal reference, and deletion. I process the file only in a suitable, protected environment, remove the personal reference as early as possible, and delete it by the specified date at the latest, unless a retention obligation applies. Only results that do not allow conclusions about individual people will be published.',
+      auditNote:
+        "Your export request and this confirmation are logged with your project details, account, time, and requested data scope. The participants' current research choice applies when the data is provided.",
+      acknowledgement: 'I confirm these four points for this export.',
+      required: 'This field is required.',
+      maxLength: 'Please shorten this value.',
+      invalidEmail: 'Please enter a valid email address.',
+      deletionDateInvalid: 'Enter a valid date.',
+      deletionDatePast: 'The deletion date cannot be in the past.',
+      classesRequired: 'Select at least one available data class.',
+      acknowledgementRequired: 'Confirm all four points before exporting.',
+      requestFailed:
+        'The research export could not be created. Please try again.',
+      downloadStarted: 'The download has started.',
+      cancel: 'Cancel',
+      submit: 'Export research data',
     },
     pointCorrections: {
       stepIndicator: 'Step {current} of {total}',

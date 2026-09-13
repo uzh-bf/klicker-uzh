@@ -19,6 +19,7 @@ import {
   prepareHatchetTasks,
 } from '@klicker-uzh/hatchet'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
+import { GraphQLError } from 'graphql'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -179,7 +180,7 @@ const tasks = prepareHatchetTasks({
 console.log('Hatchet tasks initialized.', Object.keys(tasks))
 // #endregion
 
-const { app, yogaApp } = prepareApp({
+const { app, yogaApp, authenticateSubscriptionRequest } = prepareApp({
   prisma,
   redisCache,
   redisExec,
@@ -223,10 +224,32 @@ const server = app.listen(3000, () => {
       execute: (args: any) => args.rootValue.execute(args),
       subscribe: (args: any) => args.rootValue.subscribe(args),
       onSubscribe: async (ctx, msg) => {
+        const authorization = ctx.connectionParams?.authorization
+        if (
+          authorization !== undefined &&
+          (typeof authorization !== 'string' ||
+            !/^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/i.test(
+              authorization
+            ))
+        ) {
+          return [new GraphQLError('Unauthorized')]
+        }
+        const request = Object.assign(Object.create(ctx.extra.request), {
+          headers: {
+            ...ctx.extra.request.headers,
+            ...(authorization !== undefined
+              ? { authorization, cookie: undefined }
+              : {}),
+          },
+        })
+        const authentication = await authenticateSubscriptionRequest(request)
+        if (authentication.authenticationFailed) {
+          return [new GraphQLError('Unauthorized')]
+        }
         const { schema, execute, subscribe, contextFactory, parse, validate } =
           yogaApp.getEnveloped({
             ...ctx,
-            req: ctx.extra.request,
+            req: request,
             socket: ctx.extra.socket,
             params: msg.payload,
           })

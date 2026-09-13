@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-09-02'
+timestamp: '2026-09-07'
 tags:
   - backend
   - prisma
@@ -10,7 +10,7 @@ tags:
 
 # Domain Model
 
-**The fact most likely to be guessed wrong: gamification runs on two separate tracks.** Points require an _active_ `Participation` in the course and land in `LeaderboardEntry.score`; XP accrues **unconditionally** and lands on `Participant.xp`. Both are computed in `packages/graphql/src/services/stacks.ts:computeAwardedPointsAndXP` — points throttled per instance via `options.resetTimeDays`, XP throttled by the `XP_AWARD_TIMEFRAME_DAYS` constant. A participant who left the leaderboard still earns XP.
+**Gamification runs on two separate tracks.** Ordinary points require a course `Participation`, including an inactive one, and land in `LeaderboardEntry.score`. XP lands on `Participant.xp` independently of leaderboard publication. Both are computed in `packages/graphql/src/services/stacks.ts:computeAwardedPointsAndXP`: points are throttled per instance via `options.resetTimeDays`, and XP by `XP_AWARD_TIMEFRAME_DAYS`. Leaving hides public course and session leaderboard entries while retaining scores and personal timeline entries. First join and rejoin publish the retained balance immediately. Rank-dependent live-quiz awards require active leaderboard participation in gamified courses at award calculation; joining later does not replay them. Already-erased balances are not reconstructed.
 
 Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/src/prisma/schema/) (split by area — see [Data & Migrations](./data-and-migrations.md)).
 
@@ -26,6 +26,8 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. The existence of the `Participation` row is the course-membership check used by participant chatbot discovery, participant chatbot access regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`), and student MCP practice access. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment and practice access.
+
+Gamification group averages include the personal course points of all group members, regardless of individual leaderboard opt-in. Opting out hides the individual leaderboard entry but does not remove points from the group average. Group-earned points are independent. A one-member group retains its existing zero personal-average rule.
 
 ### Participant data-use choices
 
