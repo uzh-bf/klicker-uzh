@@ -29,18 +29,3 @@ export const participantDataUseSelect = {
   learningAnalyticsChoiceAt: true,
   learningAnalyticsDisclosureVersion: true,
 } satisfies DB.Prisma.ParticipantSelect
-
-/** Invalidate in-flight calculations while holding the shared eligibility gate. */
-export async function invalidateAnalyticsEligibility(
-  prisma: DB.Prisma.TransactionClient
-) {
-  await prisma.analyticsEligibilityGeneration.upsert({
-    where: { id: 0 },
-    create: { id: 0, generation: 1 },
-    update: { generation: { increment: 1 } },
-  })
-  await prisma.course.updateMany({
-    where: { areAnalyticsValid: true },
-    data: { areAnalyticsValid: false, analyticsLastComputedAt: null },
-  })
-}

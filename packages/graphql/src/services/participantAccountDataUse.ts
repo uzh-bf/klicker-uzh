@@ -4,7 +4,6 @@ import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
 import {
-  invalidateAnalyticsEligibility,
   LEARNING_ANALYTICS_ADVISORY_LOCK,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   participantDataUseSelect,
@@ -95,8 +94,6 @@ export async function initialParticipantDataUseData(
       ${LEARNING_ANALYTICS_ADVISORY_LOCK.objectId}
     )
   `
-  if (input.learningAnalyticsConsent)
-    await invalidateAnalyticsEligibility(prisma)
   const clock = await prisma.$queryRaw<Array<{ now: Date }>>`
     SELECT clock_timestamp() AS "now"
   `
@@ -283,7 +280,6 @@ async function saveParticipantDataUse(
             },
           })
         }
-        if (!analyticsUnchanged) await invalidateAnalyticsEligibility(prisma)
         return updated
       },
       { maxWait: 10_000, timeout: 60_000 }
