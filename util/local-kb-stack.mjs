@@ -97,6 +97,12 @@ export function inspectIsolatedProviderSources(config) {
         ).trim()
       const root = git(['rev-parse', '--show-toplevel'])
       const head = git(['rev-parse', 'HEAD'])
+      const environments = new Set([
+        '!! .venv/',
+        ...(name === 'ingestion'
+          ? ['!! modules/ingestion-api/.venv/', '!! modules/ingestion/.venv/']
+          : []),
+      ])
       const clean = git([
         'status',
         '--porcelain',
@@ -107,7 +113,7 @@ export function inspectIsolatedProviderSources(config) {
       ])
         .split('\0')
         .filter(Boolean)
-        .every((entry) => entry === '!! .venv/')
+        .every((entry) => environments.has(entry))
       return {
         name,
         sourceAvailable: true,

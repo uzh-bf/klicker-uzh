@@ -353,6 +353,15 @@ test('source observation rejects dirty, mismatched and missing provider checkout
     mkdirSync(join(path, '.venv'))
     writeFileSync(join(path, '.venv/pyvenv.cfg'), 'synthetic fixture')
     assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
+    for (const module of ['ingestion-api', 'ingestion']) {
+      const environment = join(path, 'modules', module, '.venv')
+      mkdirSync(environment, { recursive: true })
+      writeFileSync(join(environment, 'pyvenv.cfg'), 'synthetic fixture')
+    }
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
+    config.roots[0].name = 'retrieval'
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, false)
+    config.roots[0].name = 'ingestion'
     writeFileSync(join(path, '.env'), 'SYNTHETIC_ONLY=true')
     assert.equal(inspectIsolatedProviderSources(config)[0].qualified, false)
     rmSync(join(path, '.env'))
