@@ -2319,8 +2319,16 @@ test.describe('Chatbot Source Citations', () => {
                   reference_type: 'url',
                   source_type: 'document',
                   chunks: [
-                    { content: passage, page_number: 4 },
-                    { content: 'Second synthetic chunk', page_number: 8 },
+                    {
+                      content: passage,
+                      page_number: 4,
+                      labeled_page_number: 'IV',
+                    },
+                    {
+                      content: 'Second synthetic chunk',
+                      page_number: 8,
+                      labeled_page_number: '12:34',
+                    },
                   ],
                 },
                 {
@@ -2330,7 +2338,11 @@ test.describe('Chatbot Source Citations', () => {
                   title: 'Synthetic reference',
                   source_url: origin,
                   chunks: [
-                    { content: 'Named supporting passage', page_number: 12 },
+                    {
+                      content: 'Named supporting passage',
+                      page_number: 13,
+                      labeled_page_number: '9',
+                    },
                   ],
                 },
               ],
@@ -2375,7 +2387,16 @@ test.describe('Chatbot Source Citations', () => {
       )
       await expect(page.locator(`#src-${messageId}-1`)).toHaveAttribute(
         'href',
-        origin
+        'https://example.org/course.pdf?edition=2#page=13'
+      )
+      await expect(page.locator(`#src-${messageId}-1`)).toContainText('9')
+      const chunks = page.getByTestId('chat-doc-query-chunk')
+      await expect(chunks.nth(0)).toContainText('IV')
+      await expect(chunks.nth(1)).toContainText('12:34')
+      await expect(chunks.nth(1)).not.toContainText(/(?:p\.|S\.)\s*8/)
+      await expect(chunks.nth(2).locator('a')).toHaveAttribute(
+        'href',
+        'https://example.org/course.pdf?edition=2#page=13'
       )
       await expect(
         page.getByTestId('chat-doc-query-chunk').first().locator('p')
@@ -2938,7 +2959,13 @@ test.describe('Chatbot Source Citations', () => {
                   reference_type: 'pdf',
                   source_type: 'document',
                   title: 'Preview Guide.pdf',
-                  chunks: [{ content: excerpt, page_number: 12 }],
+                  chunks: [
+                    {
+                      content: excerpt,
+                      page_number: 13,
+                      labeled_page_number: '12',
+                    },
+                  ],
                 },
               ],
             }),
