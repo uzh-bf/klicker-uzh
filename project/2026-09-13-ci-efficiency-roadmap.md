@@ -557,6 +557,31 @@ activation and performance separately. No infrastructure change is currently
 required from the user.
 
 ## Progress
+- 2026-09-13 slice C1 (affected-image path filters): each `v3_*-stg.yml`
+  pull-request filter now lists that image's transitive workspace dependency
+  closure (`turbo prune --scope=<package> --docker`) instead of the blanket
+  `packages/**`. Measured on today's traffic: PR-side image builds executed
+  980.7 hosted minutes across 152 `build-arm` jobs, and every node image
+  matched nearly every `packages/**` change. On nine representative changed
+  files the selection drops from 86 to 40 image builds, including
+  `packages/transactional`/`packages/prisma-data` (12 -> 1, chat only),
+  `packages/word-cloud` (12 -> 6, Next images only) and `packages/export`
+  (12 -> 0). Root manifests and `.dockerignore` still select every node image,
+  analytics keeps its dependency-free filters, and pushes to `v3`/`v3*` still
+  build all images because push triggers have no path filter. The evaluator's
+  `IMAGE_WORKFLOWS` inventory and the twelve workflow filters were rewritten
+  together; three new tests derive each closure from the workspace manifests
+  and fail if a filter omits a real dependency or wakes an unrelated image.
+  Verification: 24/24 required-build-status tests, 9/9 event gates, 57/57
+  across the three CI suites, Prettier clean, stable across three runs.
+  Delivered on branch `rs/ci-image-edit-reuse`.
+- Remaining known avoidable work, unchanged by C1: the image workflows still
+  rebuild on `edited` and `ready_for_review` for an unchanged head (measured
+  97 extra unchanged-head runs across the repository in two days), and the five
+  `Build Fallback` pollers occupy hosted runners for up to 2103s per event.
+  Both need the B3 consolidation or a same-head reuse contract and stay
+  sequenced behind PR #5924.
+
 
 - Planning and local takeover artifacts completed on 2026-09-13; implementation
   has not started.
