@@ -13,7 +13,13 @@ function readWorkflow(name) {
 }
 
 // Evaluate the actual checked-in predicate against synthetic GitHub contexts.
-function evaluateGate(expression, github, needs = {}, cancelled = false) {
+function evaluateGate(
+  expression,
+  github,
+  needs = {},
+  cancelled = false,
+  vars = {}
+) {
   const normalized = expression.replace(
     /needs\.([a-z][a-z0-9-]*)/g,
     'needs["$1"]'
@@ -26,12 +32,14 @@ function evaluateGate(expression, github, needs = {}, cancelled = false) {
     'needs',
     'always',
     'cancelled',
+    'vars',
     `return (${normalized})`
   )(
     github,
     needs,
     () => true,
-    () => cancelled
+    () => cancelled,
+    vars
   )
 }
 
@@ -85,6 +93,54 @@ test('trusted review policy admits only lifecycle events and exact PR commands',
       )
     }
   }
+})
+
+test('staging promotion admits selected-source pushes before allocating a runner', () => {
+  const workflow = readWorkflow('deploy-stg-promote.yml')
+  const gate = workflow.jobs.promote.if
+
+  for (const selectedSource of ['v3', 'v3-ai', 'v3-audit']) {
+    for (const [event, conclusion, headBranch, expected] of [
+      ['push', 'success', selectedSource, true],
+      ['push', 'success', 'v3-unselected', false],
+      ['pull_request', 'success', selectedSource, false],
+      ['push', 'failure', selectedSource, false],
+      ['push', 'cancelled', selectedSource, false],
+      ['push', 'skipped', selectedSource, false],
+    ]) {
+      assert.equal(
+        evaluateGate(
+          gate,
+          {
+            event_name: 'workflow_run',
+            event: {
+              workflow_run: { event, conclusion, head_branch: headBranch },
+            },
+          },
+          {},
+          false,
+          { STG_SOURCE_BRANCH: selectedSource }
+        ),
+        expected
+      )
+    }
+  }
+
+  assert.equal(
+    evaluateGate(gate, {
+      event_name: 'workflow_run',
+      event: {
+        workflow_run: {
+          event: 'push',
+          conclusion: 'success',
+          head_branch: 'v3',
+        },
+      },
+    }),
+    false
+  )
+  assert.equal(evaluateGate(gate, { event_name: 'workflow_dispatch' }), true)
+  assert.deepEqual(workflow.on.workflow_run.branches, ['v3', 'v3*'])
 })
 
 test('terminal reporters run unconditionally so a skip cannot read as acceptable', () => {
