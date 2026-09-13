@@ -153,6 +153,76 @@ function KnowledgeBaseImportedSourceList({ kbId }: { kbId: string }) {
     }
   }
 
+  // Only an initial load without a connection maps to the load error. A
+  // rejected page keeps the already loaded rows while `error` is set, so
+  // pagination failures surface exclusively through the load-more error.
+  const renderInventoryBody = () => {
+    if (loading && !connection) {
+      return (
+        <div
+          className="mt-3"
+          role="status"
+          aria-label={t('shared.generic.loading')}
+          data-cy="kb-imported-sources-loading"
+        >
+          <Skeleton
+            className="h-20 w-full motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+        </div>
+      )
+    }
+    if (error && !connection) {
+      return (
+        <UserNotification
+          type="error"
+          className={{ root: 'mt-3' }}
+          message={t('kb.importedSourcesLoadError')}
+          data={{ cy: 'kb-imported-sources-error' }}
+        />
+      )
+    }
+    if (sources.length === 0) {
+      return (
+        <p
+          className="mt-3 text-sm text-slate-600"
+          data-cy="kb-imported-sources-empty"
+        >
+          {t('kb.importedSourcesEmpty')}
+        </p>
+      )
+    }
+    return (
+      <>
+        <ul className="mt-3 space-y-3">
+          {sources.map((source) => (
+            <ImportedSourceRow key={source.id} source={source} />
+          ))}
+        </ul>
+        {loadMoreFailed ? (
+          <UserNotification
+            type="error"
+            className={{ root: 'mt-4' }}
+            message={t('kb.importedSourcesLoadMoreError')}
+            data={{ cy: 'kb-imported-sources-load-more-error' }}
+          />
+        ) : null}
+        {connection?.pageInfo.hasNextPage ? (
+          <div className="mt-5 flex justify-center">
+            <Button
+              onClick={loadMore}
+              loading={loadingMore}
+              disabled={loadingMore}
+              data={{ cy: 'load-more-imported-sources' }}
+            >
+              <Button.Label>{t('kb.loadMoreImportedSources')}</Button.Label>
+            </Button>
+          </div>
+        ) : null}
+      </>
+    )
+  }
+
   return (
     <section
       className="mt-8"
@@ -179,69 +249,7 @@ function KnowledgeBaseImportedSourceList({ kbId }: { kbId: string }) {
           data={{ cy: 'kb-imported-sources-incomplete' }}
         />
       ) : null}
-      {error && connection ? (
-        <UserNotification
-          type="error"
-          className={{ root: 'mt-3' }}
-          message={t('kb.importedSourcesLoadError')}
-          data={{ cy: 'kb-imported-sources-error' }}
-        />
-      ) : null}
-      {loading && !connection ? (
-        <div
-          className="mt-3"
-          role="status"
-          aria-label={t('shared.generic.loading')}
-          data-cy="kb-imported-sources-loading"
-        >
-          <Skeleton
-            className="h-20 w-full motion-reduce:animate-none"
-            aria-hidden="true"
-          />
-        </div>
-      ) : error && !connection ? (
-        <UserNotification
-          type="error"
-          className={{ root: 'mt-3' }}
-          message={t('kb.importedSourcesLoadError')}
-          data={{ cy: 'kb-imported-sources-error' }}
-        />
-      ) : sources.length === 0 ? (
-        <p
-          className="mt-3 text-sm text-slate-600"
-          data-cy="kb-imported-sources-empty"
-        >
-          {t('kb.importedSourcesEmpty')}
-        </p>
-      ) : (
-        <>
-          <ul className="mt-3 space-y-3">
-            {sources.map((source) => (
-              <ImportedSourceRow key={source.id} source={source} />
-            ))}
-          </ul>
-          {loadMoreFailed ? (
-            <UserNotification
-              type="error"
-              className={{ root: 'mt-4' }}
-              message={t('kb.importedSourcesLoadMoreError')}
-              data={{ cy: 'kb-imported-sources-load-more-error' }}
-            />
-          ) : null}
-          {connection?.pageInfo.hasNextPage ? (
-            <div className="mt-5 flex justify-center">
-              <Button
-                onClick={loadMore}
-                loading={loadingMore}
-                disabled={loadingMore}
-                data={{ cy: 'load-more-imported-sources' }}
-              >
-                <Button.Label>{t('kb.loadMoreImportedSources')}</Button.Label>
-              </Button>
-            </div>
-          ) : null}
-        </>
-      )}
+      {renderInventoryBody()}
     </section>
   )
 }
