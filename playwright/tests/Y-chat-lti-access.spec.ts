@@ -53,10 +53,26 @@ async function chatCookie(page: Page, name: string) {
  * the disclaimer is an ordinary step of the participant journey.
  */
 async function expectChatbotReached(page: Page) {
-  await expect(page).toHaveURL(new RegExp(CHATBOT_ID), { timeout: 20_000 })
-
   const accept = page.getByTestId('chat-disclaimer-accept')
   const composer = page.getByTestId('chat-composer')
+  const completion = page.locator('[data-cy="account-data-use-submit"]')
+  await expect(async () => {
+    expect(
+      (await completion.isVisible()) ||
+        (await accept.isVisible()) ||
+        (await composer.isVisible())
+    ).toBe(true)
+  }).toPass({ timeout: 30_000 })
+
+  if (await completion.isVisible()) {
+    await page.locator('[data-cy="account-data-use-research-toggle"]').click()
+    await page.locator('[data-cy="account-data-use-research-false"]').click()
+    await page.locator('[data-cy="account-data-use-analytics-false"]').click()
+    await page.locator('[data-cy="account-data-use-acknowledged"]').click()
+    await completion.click()
+  }
+
+  await expect(page).toHaveURL(new RegExp(CHATBOT_ID), { timeout: 20_000 })
   await expect(async () => {
     if (await accept.isVisible()) await accept.click()
     await expect(composer).toBeVisible({ timeout: 5_000 })

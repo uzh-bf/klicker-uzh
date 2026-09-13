@@ -1,7 +1,21 @@
 import pandas as pd
 
+from ..analytics_eligibility import (
+    AnalyticsEligibilityContext,
+    ensure_analytics_eligibility,
+    filter_activity_by_eligibility,
+)
 
-def compute_instance_performance(db, activity, total_only=False):
+
+def compute_instance_performance(
+    db,
+    activity,
+    total_only=False,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
+    activity = filter_activity_by_eligibility(activity, eligibility)
+
     # initialize dataframes for performance tracking
     df_instance_performance = pd.DataFrame(
         columns=[
@@ -20,6 +34,9 @@ def compute_instance_performance(db, activity, total_only=False):
         ]
     )
 
+    # original per-participant response values that feed the instance rates
+    participant_instances = []
+
     for stack in activity["stacks"]:
         for instance in stack["elements"]:
             df_responses = pd.DataFrame(instance["responses"])
@@ -29,6 +46,21 @@ def compute_instance_performance(db, activity, total_only=False):
 
             # count number of responses
             num_responses = len(df_responses)
+
+            for response in instance["responses"]:
+                participant_instances.append(
+                    {
+                        "participantId": response["participantId"],
+                        "instanceId": instance["id"],
+                        "trialsCount": response["trialsCount"],
+                        "correctCount": response["correctCount"],
+                        "partialCorrectCount": response["partialCorrectCount"],
+                        "wrongCount": response["wrongCount"],
+                        "firstResponseCorrectness": response.get("firstResponseCorrectness"),
+                        "lastResponseCorrectness": response.get("lastResponseCorrectness"),
+                        "averageTimeSpent": response["averageTimeSpent"],
+                    }
+                )
 
             if not total_only:
                 # compute correctness rates for first and last response
@@ -84,4 +116,4 @@ def compute_instance_performance(db, activity, total_only=False):
 
             df_instance_performance.loc[len(df_instance_performance)] = instance_performance
 
-    return df_instance_performance
+    return df_instance_performance, participant_instances

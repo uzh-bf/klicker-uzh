@@ -1,4 +1,7 @@
-import { signJWT } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  signJWT,
+} from '@klicker-uzh/util'
 import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -46,6 +49,16 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.stubEnv('APP_SECRET', 'test-app-secret')
   vi.stubEnv('APP_CHAT_GUEST_SECRET', 'test-guest-secret')
+  mocks.participantFindUnique.mockResolvedValue({
+    isActive: true,
+    accounts: [],
+    dataUseAcknowledgedAt: new Date(),
+    dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    researchConsentChoiceAt: new Date(),
+    researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    learningAnalyticsChoiceAt: new Date(),
+    learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  })
 })
 
 afterEach(() => {
@@ -266,6 +279,32 @@ describe('scoped token transport identity', () => {
 })
 
 describe('identity-to-chatbot scoped authorization', () => {
+  it('requires recorded account choices before authorizing chatbot access', async () => {
+    mocks.chatbotFindUnique.mockResolvedValue({
+      courseId: COURSE_A,
+      status: 'PUBLISHED',
+    })
+    mocks.participationFindUnique.mockResolvedValue({ id: 'participation-1' })
+    mocks.participantFindUnique.mockResolvedValue({
+      dataUseAcknowledgedAt: null,
+      dataUseAcknowledgedVersion: null,
+      researchConsentChoiceAt: null,
+      researchConsentDisclosureVersion: null,
+      learningAnalyticsChoiceAt: null,
+      learningAnalyticsDisclosureVersion: null,
+    })
+    const result = await authorizeIdentityForChatbot(
+      { participantId: 'participant-1', authMode: 'account' },
+      CHATBOT_ID
+    )
+    expect(result).toHaveProperty('response')
+    if (!('response' in result)) throw new Error('Expected completion denial')
+    expect(result.response.status).toBe(403)
+    expect(await result.response.json()).toEqual({
+      error: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED',
+    })
+  })
+
   it('authorizes a scoped token bound to this chatbot and course', async () => {
     const scopeToken = await signPwaEmbedSessionToken({
       participantId: 'participant-1',

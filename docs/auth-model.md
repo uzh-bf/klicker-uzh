@@ -106,6 +106,43 @@ Current hardening boundaries:
 
 An external MCP integration therefore needs a separately approved authentication design: OAuth discovery and protected-resource metadata, audience-bound access tokens, external client registration/consent, delegated scope mapping, dedicated signing keys, ingress and network policy, and audit/rate-limit decisions.
 
+## Participant account completion
+
+A valid participant JWT establishes identity, but does not establish that the
+account has completed the current data-use disclosure. The shared
+`isParticipantDataUseComplete` predicate requires the current acknowledgement
+version and separately recorded research and Learning Analytics choices.
+`applyParticipantAccountGate` checks persisted state before protected GraphQL
+queries, mutations and subscription admission. Its explicit support-field list
+keeps login, self-state, completion and account support accessible while locked.
+Lecturer and temporary-participant roles retain their separate authorization.
+
+The PWA's `ParticipantAccountGate` initializes the existing cookie-less token
+storage before protected queries and redirects incomplete participants to
+`/account/data-use`. The saved return destination passes through
+`participantDataUseReturn`, which accepts local destinations and removes launch
+credentials. An explicit failed LTI launch must not reuse a previous participant
+identity or fall back to guest access.
+
+Account creation and completion record the acknowledgement and independent
+choices through the revisioned data-use service. Settings submit the displayed
+disclosure version and expected revision; a stale page cannot silently overwrite
+a newer choice. Research starts allowed on the creation form, whereas Learning
+Analytics requires an explicit answer. These UI defaults do not backfill legacy
+accounts. Analytics withdrawal atomically records the new choice, its audit event,
+and a durable cleanup request, and invalidates analytics eligibility. The scheduled
+worker deletes the participant's derived analytics and completes the request in
+one transaction. Pending cleanup blocks publication even after re-enablement.
+A successful settings response confirms the choice and cleanup request; it does
+not claim that asynchronous deletion has already completed.
+
+Assessment completion uses the same four disclosure sections with additional
+identity, answer, audit-log, access and retention information. In the assessment
+backend (`ASSESSMENT_MODE=true`), `deleteParticipantAccount` rejects self-deletion
+before reading or deleting records or clearing the login cookie. The profile UI
+also hides the action, but that is not the enforcement boundary. This restriction
+does not implement expiry of retention periods or an operator deletion workflow.
+
 ## Login return targets
 
 Manage and PWA login pages treat return targets as untrusted input:

@@ -33,9 +33,18 @@ import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  assertKbMaterialConfirmation,
+  type KbMaterialConfirmationInput,
+} from '../lib/kbMaterialConfirmation.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
+import {
+  getKbMaterialScope,
+  recordKbMaterialConfirmation,
+  requireKbMaterialConfirmation,
+} from './kbMaterialConfirmations.js'
 import {
   getKBGraphRemainingQuota,
   releaseKBGraphCostReservation,
@@ -1042,10 +1051,15 @@ export async function getKbChatbotBindings(
 }
 
 export async function attachKbToChatbot(
-  { kbId, chatbotId }: { kbId: string; chatbotId: string },
+  {
+    kbId,
+    chatbotId,
+    ...confirmation
+  }: KbMaterialConfirmationInput & { kbId: string; chatbotId: string },
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
+  assertKbMaterialConfirmation(confirmation)
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
@@ -1059,10 +1073,48 @@ export async function attachKbToChatbot(
       },
       data: { isEnabled: false },
     })
+    const chatbotScope = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: chatbotId },
+      select: { courseId: true },
+    })
+    const scope = (await getKbMaterialScope(prisma, kbId)).filter(
+      (binding) => binding.chatbotId !== chatbotId
+    )
+    scope.push({ chatbotId, courseId: chatbotScope.courseId })
+    const receipt = await recordKbMaterialConfirmation(prisma, {
+      kbId,
+      actorId: ctx.user.sub,
+      confirmation,
+      scope,
+      chatbotId,
+    })
+    const resources = await prisma.kBResource.findMany({
+      where: { kbId, deletedAt: null },
+    })
+    for (const resource of resources) {
+      const materialReceipt = await recordKbMaterialConfirmation(prisma, {
+        kbId,
+        actorId: ctx.user.sub,
+        confirmation,
+        scope,
+        resourceId: resource.id,
+        resourceVersion: resource.resourceVersion,
+        sourceKey: resource.blobName ?? resource.sourceUrl ?? '',
+      })
+      await prisma.kBResource.update({
+        where: { id: resource.id },
+        data: { materialConfirmationId: materialReceipt.id },
+      })
+    }
     await prisma.kBChatbot.upsert({
       where: { kbId_chatbotId: { kbId, chatbotId } },
-      create: { kbId, chatbotId, isEnabled: true },
-      update: { isEnabled: true },
+      create: {
+        kbId,
+        chatbotId,
+        isEnabled: true,
+        materialConfirmationId: receipt.id,
+      },
+      update: { isEnabled: true, materialConfirmationId: receipt.id },
     })
 
     for (const chatMode of KB_MCP_CHAT_MODES) {
@@ -1403,7 +1455,8 @@ export async function requestKbFileUpload(
     fileName,
     contentType,
     sizeBytes,
-  }: {
+    ...confirmation
+  }: KbMaterialConfirmationInput & {
     kbId: string
     fileName: string
     contentType: string
@@ -1412,6 +1465,7 @@ export async function requestKbFileUpload(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
+  assertKbMaterialConfirmation(confirmation)
   assertKbIngestionEnabled()
   await getOwnedKbOrThrow(ctx, kbId)
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
@@ -1430,6 +1484,15 @@ export async function requestKbFileUpload(
       resourceCount: 1,
       sizeBytes,
     })
+    const receipt = await recordKbMaterialConfirmation(prisma, {
+      kbId,
+      actorId: ctx.user.sub,
+      confirmation,
+      scope: await getKbMaterialScope(prisma, kbId),
+      resourceId: blobId,
+      resourceVersion: 0,
+      sourceKey: blobName,
+    })
     await prisma.kBUploadTicket.create({
       data: {
         id: blobId,
@@ -1437,6 +1500,7 @@ export async function requestKbFileUpload(
         blobName,
         sizeBytes,
         expiresAt: expiresOn,
+        materialConfirmationId: receipt.id,
       },
     })
   })
@@ -1589,6 +1653,13 @@ export async function confirmKbFileUpload(
       mimeType: validated.contentType,
       sizeBytes,
     })
+    await requireKbMaterialConfirmation(ctx.prisma, {
+      receiptId: existingResource.materialConfirmationId,
+      kbId,
+      actorId: ctx.user.sub,
+      resourceId: existingResource.id,
+      sourceKey: blobName,
+    })
     return existingResource
   }
 
@@ -1621,6 +1692,13 @@ export async function confirmKbFileUpload(
         mimeType: validated.contentType,
         sizeBytes,
       })
+      await requireKbMaterialConfirmation(prisma, {
+        receiptId: racedResource.materialConfirmationId,
+        kbId,
+        actorId: ctx.user.sub,
+        resourceId: racedResource.id,
+        sourceKey: blobName,
+      })
       return racedResource
     }
 
@@ -1632,7 +1710,7 @@ export async function confirmKbFileUpload(
         replacementResourceId: null,
         expiresAt: { gt: new Date() },
       },
-      select: { id: true, sizeBytes: true },
+      select: { id: true, sizeBytes: true, materialConfirmationId: true },
     })
     if (!ticket || (ticket.sizeBytes !== 0 && ticket.sizeBytes !== sizeBytes)) {
       throw new GraphQLError('KB upload ticket is invalid', {
@@ -1642,12 +1720,20 @@ export async function confirmKbFileUpload(
     if (ticket.sizeBytes === 0) {
       await assertKbQuotaAvailable(prisma, { kbId, sizeBytes })
     }
+    await requireKbMaterialConfirmation(prisma, {
+      receiptId: ticket.materialConfirmationId,
+      kbId,
+      actorId: ctx.user.sub,
+      resourceId: blobId,
+      sourceKey: blobName,
+    })
 
     const resource = await prisma.kBResource.create({
       data: {
         id: blobId,
         kbId,
         type: DB.KBResourceType.BLOB,
+        materialConfirmationId: ticket.materialConfirmationId,
         materialType: normalizeKbResourceMaterialType(materialType),
         title: normalizedTitle,
         originalFilename,
@@ -1670,7 +1756,8 @@ export async function requestKbFileReplacement(
     fileName,
     contentType,
     sizeBytes,
-  }: {
+    ...confirmation
+  }: KbMaterialConfirmationInput & {
     kbId: string
     resourceId: string
     fileName: string
@@ -1680,6 +1767,7 @@ export async function requestKbFileReplacement(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
+  assertKbMaterialConfirmation(confirmation)
   assertKbIngestionEnabled()
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
   const { accountUrl, containerClient, credential } = getKbBlobContainer(
@@ -1697,6 +1785,15 @@ export async function requestKbFileReplacement(
       ownerId: ctx.user.sub,
     })
     await assertKbQuotaAvailable(prisma, { kbId, sizeBytes })
+    const receipt = await recordKbMaterialConfirmation(prisma, {
+      kbId,
+      actorId: ctx.user.sub,
+      confirmation,
+      scope: await getKbMaterialScope(prisma, kbId),
+      resourceId: resource.id,
+      resourceVersion: resource.resourceVersion + 1,
+      sourceKey: blobName,
+    })
     await prisma.kBUploadTicket.create({
       data: {
         id: blobId,
@@ -1706,6 +1803,7 @@ export async function requestKbFileReplacement(
         expiresAt: expiresOn,
         replacementResourceId: resource.id,
         expectedResourceVersion: resource.resourceVersion,
+        materialConfirmationId: receipt.id,
       },
     })
   })
@@ -1781,6 +1879,13 @@ export async function confirmKbFileReplacement(
       mimeType: validated.contentType,
       sizeBytes,
     })
+    await requireKbMaterialConfirmation(ctx.prisma, {
+      receiptId: confirmedReplacement.materialConfirmationId,
+      kbId,
+      actorId: ctx.user.sub,
+      resourceId: confirmedReplacement.id,
+      sourceKey: blobName,
+    })
     return confirmedReplacement
   }
 
@@ -1841,6 +1946,18 @@ export async function confirmKbFileReplacement(
     }
 
     const resourceVersion = resource.resourceVersion + 1
+    const receipt = await requireKbMaterialConfirmation(prisma, {
+      receiptId: currentTicket.materialConfirmationId,
+      kbId,
+      actorId: ctx.user.sub,
+      resourceId,
+      sourceKey: blobName,
+    })
+    if (receipt.resourceVersion !== resourceVersion) {
+      throw new GraphQLError('Material confirmation is stale', {
+        extensions: { code: 'KB_MATERIAL_CONFIRMATION_REQUIRED' },
+      })
+    }
     const claim = await prisma.kBResource.updateMany({
       where: {
         id: resource.id,
@@ -1851,6 +1968,7 @@ export async function confirmKbFileReplacement(
       },
       data: {
         blobName,
+        materialConfirmationId: receipt.id,
         blobHref: `${accountUrl}/${containerClient.containerName}/${blobName}`,
         originalFilename,
         mimeType: validated.contentType,
@@ -1933,7 +2051,8 @@ export async function createKbUrlResource(
     url,
     title,
     materialType,
-  }: {
+    ...confirmation
+  }: KbMaterialConfirmationInput & {
     kbId: string
     url: string
     title: string
@@ -1942,6 +2061,7 @@ export async function createKbUrlResource(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
+  assertKbMaterialConfirmation(confirmation)
   assertKbIngestionEnabled()
   await getOwnedKbOrThrow(ctx, kbId)
 
@@ -1959,10 +2079,22 @@ export async function createKbUrlResource(
       resourceCount: 1,
       sizeBytes: MAX_KB_FILE_SIZE_BYTES,
     })
+    const resourceId = randomUUID()
+    const receipt = await recordKbMaterialConfirmation(prisma, {
+      kbId,
+      actorId: ctx.user.sub,
+      confirmation,
+      scope: await getKbMaterialScope(prisma, kbId),
+      resourceId,
+      resourceVersion: 0,
+      sourceKey: sourceUrl,
+    })
     return prisma.kBResource.create({
       data: {
+        id: resourceId,
         kbId,
         type: DB.KBResourceType.URL,
+        materialConfirmationId: receipt.id,
         materialType: normalizeKbResourceMaterialType(materialType),
         title: validateKbResourceTitle(title),
         sourceUrl,
@@ -2259,11 +2391,21 @@ export async function ingestKbResource(
   )
 
   await ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, resource.kbId, ctx.user.sub)
+    await requireKbMaterialConfirmation(prisma, {
+      receiptId: resource.materialConfirmationId,
+      kbId: resource.kbId,
+      actorId: ctx.user.sub,
+      resourceId: resource.id,
+      sourceKey: resource.blobName ?? resource.sourceUrl ?? '',
+    })
     const claim = await prisma.kBResource.updateMany({
       where: {
         id: resource.id,
         status: resource.status,
         ingestionAttemptId: resource.ingestionAttemptId,
+        resourceVersion: resource.resourceVersion,
+        materialConfirmationId: resource.materialConfirmationId,
         deletedAt: null,
         kb: { ownerId: ctx.user.sub, deletedAt: null },
       },
@@ -2342,6 +2484,13 @@ export async function ingestAllKbResources(
       let alreadyInProgressCount = 0
 
       for (const resource of resources) {
+        await requireKbMaterialConfirmation(prisma, {
+          receiptId: resource.materialConfirmationId,
+          kbId,
+          actorId: ctx.user.sub,
+          resourceId: resource.id,
+          sourceKey: resource.blobName ?? resource.sourceUrl ?? '',
+        })
         const currentRun = resource.ingestionAttemptId
           ? currentRunsById.get(resource.ingestionAttemptId)
           : undefined

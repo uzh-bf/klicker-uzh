@@ -1,7 +1,24 @@
 import pandas as pd
 
+from ..analytics_eligibility import (
+    AnalyticsEligibilityContext,
+    ensure_analytics_eligibility,
+    is_course_learning_analytics_enabled,
+)
 
-def compute_participant_activity(db, df_activity, course_id, course_start, course_end):
+
+def compute_participant_activity(
+    db,
+    df_activity,
+    course_id,
+    course_start,
+    course_end,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
+    if df_activity.empty or not is_course_learning_analytics_enabled(db, course_id):
+        return df_activity
+
     # compute course duration in days
     course_duration = (course_end - course_start).days + 1
     week_end_dates = pd.date_range(start=course_start, end=course_end, freq="W")

@@ -118,6 +118,7 @@ model KB {
   uploadTickets KBUploadTicket[]
   chatbots      KBChatbot[]
   graphBuilds   KBGraphBuild[]
+  materialConfirmations KBMaterialConfirmation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -135,6 +136,8 @@ model KBResource {
 
   // URL resources: location of the external web resource
   sourceUrl String?
+
+  materialConfirmationId String? @db.Uuid
 
   // BLOB resources: upload metadata and blob location (resolver-enforced as required for type BLOB)
   originalFilename String?
@@ -513,12 +516,38 @@ model GeneratedElementDraft {
   @@index([buildId, decision, savedElementId])
 }
 
+// Confirmation history belongs to the KB, independently of expiring tickets.
+// Consumers verify the receipt's KB, material identity and scope before use.
+model KBMaterialConfirmation {
+  id String @id @default(uuid()) @db.Uuid
+
+  kb KB @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+  actorId String @db.Uuid
+  noticeVersion String
+  rightsConfirmed Boolean
+  personalDataConfirmed Boolean
+  purpose String
+  scopeFingerprint String
+  scopeSnapshot String
+
+  resourceId String? @db.Uuid
+  resourceVersion Int?
+  sourceKey String?
+  chatbotId String? @db.Uuid
+  createdAt DateTime @default(now())
+
+  @@index([kbId, createdAt])
+}
+
 model KBUploadTicket {
   id String @id @db.Uuid
 
   blobName  String
   sizeBytes Int      @default(0)
   expiresAt DateTime
+
+  materialConfirmationId String? @db.Uuid
 
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   kbId String @db.Uuid
@@ -539,6 +568,8 @@ model KBChatbot {
   id String @id @default(uuid()) @db.Uuid
 
   isEnabled Boolean @default(true)
+
+  materialConfirmationId String? @db.Uuid
 
   kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   kbId String @db.Uuid

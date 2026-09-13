@@ -4,7 +4,11 @@ import {
   type Prisma,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { decodeJWT } from '@klicker-uzh/util'
+import {
+  decodeJWT,
+  isParticipantDataUseComplete,
+  participantAccountDataUseSelect,
+} from '@klicker-uzh/util'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
@@ -398,6 +402,21 @@ export async function authorizeIdentityForChatbot(
   )
   if ('response' in participationResult) {
     return participationResult
+  }
+
+  if (authMode === 'account') {
+    const state = await prisma.participant.findUnique({
+      where: { id: participantId },
+      select: participantAccountDataUseSelect,
+    })
+    if (!isParticipantDataUseComplete(state)) {
+      return {
+        response: NextResponse.json(
+          { error: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' },
+          { status: 403 }
+        ),
+      }
+    }
   }
 
   return { participantId, authMode, chatbot: chatbotResult.chatbot }

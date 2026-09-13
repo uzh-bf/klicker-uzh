@@ -9,12 +9,15 @@ import {
   Button,
   SelectField,
   Skeleton,
-  UserNotification,
   toast,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import { refreshAfterMutation } from '../refreshAfterMutation'
+import KnowledgeBaseMaterialConfirmation, {
+  KB_MATERIAL_NOTICE_VERSION,
+} from './KnowledgeBaseMaterialConfirmation'
 
 function KnowledgeBaseChatbotBindings({
   kbId,
@@ -24,6 +27,8 @@ function KnowledgeBaseChatbotBindings({
   onChanged: () => Promise<unknown>
 }) {
   const t = useTranslations()
+  const [rightsConfirmed, setRightsConfirmed] = useState(false)
+  const [personalDataConfirmed, setPersonalDataConfirmed] = useState(false)
   const [selectedChatbotId, setSelectedChatbotId] = useState<
     string | undefined
   >()
@@ -68,11 +73,23 @@ function KnowledgeBaseChatbotBindings({
   ]
 
   const handleAttach = async () => {
-    if (!selectedChatbotId || mutating) return
+    if (
+      !selectedChatbotId ||
+      mutating ||
+      !rightsConfirmed ||
+      !personalDataConfirmed
+    )
+      return
 
     try {
       await attachKb({
-        variables: { kbId, chatbotId: selectedChatbotId },
+        variables: {
+          kbId,
+          chatbotId: selectedChatbotId,
+          rightsConfirmed,
+          personalDataConfirmed,
+          noticeVersion: KB_MATERIAL_NOTICE_VERSION,
+        },
         refetchQueries,
       })
     } catch (mutationError) {
@@ -83,6 +100,8 @@ function KnowledgeBaseChatbotBindings({
 
     await refreshAfterMutation(onChanged, 'KB chatbot bindings after attach')
     setSelectedChatbotId(undefined)
+    setRightsConfirmed(false)
+    setPersonalDataConfirmed(false)
     toast({ type: 'success', message: t('kb.chatbotAttachSuccess') })
   }
 
@@ -156,14 +175,23 @@ function KnowledgeBaseChatbotBindings({
                     label: binding.chatbotName,
                   }))}
                   value={selectedChatbotId}
-                  onChange={setSelectedChatbotId}
+                  onChange={(value) => {
+                    setSelectedChatbotId(value)
+                    setRightsConfirmed(false)
+                    setPersonalDataConfirmed(false)
+                  }}
                   placeholder={t('kb.chatbotSelectPlaceholder')}
                   disabled={mutating}
                 />
               </div>
               <Button
                 primary
-                disabled={!selectedChatbotId || mutating}
+                disabled={
+                  !selectedChatbotId ||
+                  mutating ||
+                  !rightsConfirmed ||
+                  !personalDataConfirmed
+                }
                 onClick={handleAttach}
                 data={{ cy: 'attach-kb-chatbot' }}
               >
@@ -172,6 +200,16 @@ function KnowledgeBaseChatbotBindings({
                 </Button.Label>
               </Button>
             </div>
+
+            {selectedChatbotId ? (
+              <KnowledgeBaseMaterialConfirmation
+                rightsConfirmed={rightsConfirmed}
+                personalDataConfirmed={personalDataConfirmed}
+                onRightsChange={setRightsConfirmed}
+                onPersonalDataChange={setPersonalDataConfirmed}
+                disabled={mutating}
+              />
+            ) : null}
 
             {replacing ? (
               <UserNotification

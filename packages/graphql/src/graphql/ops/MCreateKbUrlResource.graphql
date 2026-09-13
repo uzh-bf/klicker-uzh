@@ -1,10 +1,16 @@
 mutation CreateKbUrlResource(
+  $rightsConfirmed: Boolean!
+  $personalDataConfirmed: Boolean!
+  $noticeVersion: String!
   $kbId: ID!
   $url: String!
   $title: String!
   $materialType: KBResourceMaterialType
 ) {
   createKbUrlResource(
+    rightsConfirmed: $rightsConfirmed
+    personalDataConfirmed: $personalDataConfirmed
+    noticeVersion: $noticeVersion
     kbId: $kbId
     url: $url
     title: $title

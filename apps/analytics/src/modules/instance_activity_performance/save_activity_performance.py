@@ -1,4 +1,23 @@
-def save_activity_performance(db, activity_performance, course_id, practice_quiz_id=None, microlearning_id=None):
+from datetime import datetime
+
+from ..analytics_eligibility import AnalyticsEligibilityContext, publish_analytics
+from ..research_contribution import (
+    contribution_scope_key,
+    retain_research_contribution,
+)
+
+
+def save_activity_performance(
+    db,
+    activity_performance,
+    course_id,
+    practice_quiz_id=None,
+    microlearning_id=None,
+    eligibility: AnalyticsEligibilityContext | None = None,
+    participant_instances=None,
+    activity_type=None,
+    activity_id=None,
+):
     values = {
         "totalErrorRate": activity_performance.totalErrorRate,
         "totalPartialRate": activity_performance.totalPartialRate,
@@ -33,7 +52,45 @@ def save_activity_performance(db, activity_performance, course_id, practice_quiz
             "Either practice_quiz_id or microlearning_id must be provided for activity performance creation/update"
         )
 
-    db.activityperformance.upsert(
-        where=where_clause,
-        data={"create": create_values, "update": values},
-    )
+    by_participant = {}
+    for stat in participant_instances or []:
+        by_participant.setdefault(str(stat["participantId"]), {})[str(stat["instanceId"])] = {
+            "trialsCount": stat["trialsCount"],
+            "correctCount": stat["correctCount"],
+            "partialCorrectCount": stat["partialCorrectCount"],
+            "wrongCount": stat["wrongCount"],
+            "firstResponseCorrectness": stat["firstResponseCorrectness"],
+            "lastResponseCorrectness": stat["lastResponseCorrectness"],
+            "averageTimeSpent": stat["averageTimeSpent"],
+        }
+
+    def write(transaction):
+        result = transaction.activityperformance.upsert(
+            where=where_clause,
+            data={"create": create_values, "update": values},
+        )
+        result_id = getattr(result, "id", None)
+        for participant_id, instances in by_participant.items():
+            retain_research_contribution(
+                transaction,
+                family="ACTIVITY_PERFORMANCE",
+                participant_id=participant_id,
+                course_id=course_id,
+                scope_key=contribution_scope_key(
+                    "ACTIVITY_PERFORMANCE",
+                    course_id,
+                    practice_quiz_id if practice_quiz_id is not None else microlearning_id,
+                ),
+                scope={
+                    "courseId": course_id,
+                    "activityType": activity_type,
+                    "activityId": activity_id,
+                },
+                contributions={"instances": instances},
+                eligibility=eligibility,
+                computed_at=datetime.now().strftime("%Y-%m-%d") + "T00:00:00.000Z",
+                binding="activityPerformanceId",
+                result_row_id=result_id,
+            )
+
+    publish_analytics(db, eligibility, (course_id,), write)

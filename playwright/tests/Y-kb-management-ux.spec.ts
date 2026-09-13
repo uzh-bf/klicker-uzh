@@ -308,6 +308,9 @@ test.describe('Knowledge base management workspace', () => {
         mimeType: 'text/plain',
         buffer: Buffer.from('pending upload'),
       })
+      await page.getByTestId('kb-rights-confirmation').check()
+      await page.getByTestId('kb-personal-data-confirmation').check()
+      await page.getByTestId('confirm-kb-file-upload').click()
       await uploadStarted
       await expect(page.getByTestId('close-kb-add-resource-modal')).toHaveCount(
         0
@@ -330,6 +333,8 @@ test.describe('Knowledge base management workspace', () => {
         '[data-cy="kb-url-material-type"]',
         'Administrative'
       )
+      await page.getByTestId('kb-rights-confirmation').check()
+      await page.getByTestId('kb-personal-data-confirmation').check()
       failNextKbMetricsRefresh = true
       await page.getByTestId('add-kb-url-resource').click()
       await expect(modal).toBeHidden()
@@ -415,6 +420,8 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByTestId('confirm-kb-file-replacement')
       ).toBeVisible()
+      await page.getByTestId('kb-rights-confirmation').check()
+      await page.getByTestId('kb-personal-data-confirmation').check()
       failNextKbMetricsRefresh = true
       await page.getByTestId('confirm-kb-file-replacement').click()
       await expect(replaceModal).toBeHidden()

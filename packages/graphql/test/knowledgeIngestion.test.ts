@@ -12,12 +12,23 @@ import { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
+  getKbMaterialScopeFingerprint,
+  KB_MATERIAL_NOTICE_VERSION,
+  KB_MATERIAL_PURPOSE,
+} from '../src/lib/kbMaterialConfirmation.js'
+import {
   createKb,
   createKbUrlResource,
   ingestAllKbResources,
   ingestKbResource,
 } from '../src/services/knowledge.js'
 import { testCleanup, testInitialization } from './helpers.js'
+
+const KB_MATERIAL_CONFIRMATION = {
+  rightsConfirmed: true,
+  personalDataConfirmed: true,
+  noticeVersion: KB_MATERIAL_NOTICE_VERSION,
+} as const
 
 const previousManageAiEnvironment = vi.hoisted(() => {
   const previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
@@ -34,6 +45,54 @@ const previousManageAiEnvironment = vi.hoisted(() => {
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
+async function attachKbMaterialReceipt(
+  prisma: PrismaClient,
+  {
+    kbId,
+    resourceId,
+    resourceVersion,
+    sourceKey,
+    actorId,
+  }: {
+    kbId: string
+    resourceId: string
+    resourceVersion: number
+    sourceKey: string
+    actorId: string
+  }
+) {
+  const bindings = (
+    await prisma.kBChatbot.findMany({
+      where: { kbId, isEnabled: true },
+      select: { chatbotId: true, chatbot: { select: { courseId: true } } },
+      orderBy: { chatbotId: 'asc' },
+    })
+  ).map(({ chatbotId, chatbot }) => ({
+    chatbotId,
+    courseId: chatbot.courseId,
+  }))
+  const receipt = await prisma.kBMaterialConfirmation.create({
+    data: {
+      kbId,
+      actorId,
+      noticeVersion: KB_MATERIAL_NOTICE_VERSION,
+      rightsConfirmed: true,
+      personalDataConfirmed: true,
+      purpose: KB_MATERIAL_PURPOSE,
+      scopeFingerprint: getKbMaterialScopeFingerprint(bindings),
+      scopeSnapshot: JSON.stringify(bindings),
+      resourceId,
+      resourceVersion,
+      sourceKey,
+    },
+  })
+  await prisma.kBResource.update({
+    where: { id: resourceId },
+    data: { materialConfirmationId: receipt.id },
+  })
+  return receipt
+}
+
 function createDeferred<T>() {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((resolvePromise) => {
@@ -42,23 +101,19 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-function withKbResourceSnapshotPause(
+function withKbLockPause(
   ctx: ContextWithUser,
-  kbId: string,
-  onSnapshot: () => void,
-  continueSnapshot: Promise<void>
+  onLock: () => void,
+  continueLock: Promise<void>
 ): ContextWithUser {
   const prisma = ctx.prisma.$extends({
     query: {
-      kBResource: {
-        async findMany({ args, query }) {
-          const resources = await query(args)
-          if (args.where?.kbId === kbId) {
-            onSnapshot()
-            await continueSnapshot
-          }
-          return resources
-        },
+      async $queryRaw({ args, query }) {
+        // Let the competing single-resource ingestion acquire the KB lock
+        // before bulk ingestion locks and reads the resource snapshot.
+        onLock()
+        await continueLock
+        return query(args)
       },
     },
   })
@@ -124,6 +179,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -172,6 +228,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -235,6 +292,13 @@ describe('Integration tests for knowledge base ingestion', () => {
         status: 'READY',
       },
     })
+    await attachKbMaterialReceipt(prisma, {
+      kbId: created.id,
+      resourceId: resource.id,
+      resourceVersion: 0,
+      sourceKey: resource.blobName ?? '',
+      actorId: userOneCtx.user.sub,
+    })
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
@@ -263,6 +327,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -290,6 +355,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -341,6 +407,13 @@ describe('Integration tests for knowledge base ingestion', () => {
         ingestionAttemptId: observedAttemptId,
       },
     })
+    await attachKbMaterialReceipt(prisma, {
+      kbId: created.id,
+      resourceId: resource.id,
+      resourceVersion: 0,
+      sourceKey: resource.sourceUrl ?? '',
+      actorId: userOneCtx.user.sub,
+    })
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
@@ -377,16 +450,7 @@ describe('Integration tests for knowledge base ingestion', () => {
               statusMessage: 'Newer same-status attempt',
             },
           })
-          return prisma.$transaction(async (tx) =>
-            callback({
-              kBResource: {
-                updateMany: async (args) => tx.kBResource.updateMany(args),
-              },
-              kBIngestionRun: {
-                create: async (args) => tx.kBIngestionRun.create(args),
-              },
-            })
-          )
+          return prisma.$transaction(async (tx) => callback(tx))
         },
       },
     } as unknown as ContextWithUser
@@ -411,6 +475,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -476,6 +541,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -504,6 +570,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/course',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -549,6 +616,7 @@ describe('Integration tests for knowledge base ingestion', () => {
             kbId: created.id,
             title: name,
             url: `https://example.com/${name}`,
+            ...KB_MATERIAL_CONFIRMATION,
           },
           userOneCtx
         )
@@ -682,6 +750,7 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Provider refresh',
         url: 'https://example.com/provider-refresh',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -722,6 +791,7 @@ describe('Integration tests for knowledge base ingestion', () => {
             kbId: created.id,
             title: name,
             url: `https://example.com/concurrent-${name}`,
+            ...KB_MATERIAL_CONFIRMATION,
           },
           userOneCtx
         )
@@ -774,27 +844,27 @@ describe('Integration tests for knowledge base ingestion', () => {
         kbId: created.id,
         title: 'Concurrent resource',
         url: 'https://example.com/concurrent-resource',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
-    const snapshotRead = createDeferred<void>()
-    const releaseSnapshot = createDeferred<void>()
-    const bulkCtx = withKbResourceSnapshotPause(
+    const lockStarted = createDeferred<void>()
+    const releaseLock = createDeferred<void>()
+    const bulkCtx = withKbLockPause(
       userOneCtx,
-      created.id,
-      snapshotRead.resolve,
-      releaseSnapshot.promise
+      lockStarted.resolve,
+      releaseLock.promise
     )
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
     const bulk = ingestAllKbResources({ kbId: created.id }, bulkCtx)
-    await snapshotRead.promise
     try {
+      await lockStarted.promise
       await ingestKbResource({ id: resource.id }, userOneCtx)
     } finally {
-      releaseSnapshot.resolve()
+      releaseLock.resolve()
     }
 
     await expect(bulk).resolves.toEqual({
@@ -822,6 +892,7 @@ describe('Integration tests for knowledge base ingestion', () => {
             kbId: created.id,
             title: name,
             url: `https://example.com/${name}`,
+            ...KB_MATERIAL_CONFIRMATION,
           },
           userOneCtx
         )

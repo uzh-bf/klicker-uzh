@@ -45,6 +45,11 @@ const { resolveMcpScope } = await vi.importActual<{
 }>('../../../apps/chat/src/services/mcpScope.ts')
 
 import {
+  getKbMaterialScopeFingerprint,
+  KB_MATERIAL_NOTICE_VERSION,
+  KB_MATERIAL_PURPOSE,
+} from '../src/lib/kbMaterialConfirmation.js'
+import {
   attachKbToChatbot,
   confirmKbFileReplacement,
   confirmKbFileUpload,
@@ -72,6 +77,12 @@ import {
   updateKbResourceMaterialType,
 } from '../src/services/knowledge.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
+
+const KB_MATERIAL_CONFIRMATION = {
+  rightsConfirmed: true,
+  personalDataConfirmed: true,
+  noticeVersion: KB_MATERIAL_NOTICE_VERSION,
+} as const
 
 const previousManageAiEnvironment = vi.hoisted(() => {
   const previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
@@ -102,17 +113,79 @@ function legacyUrlResources(kbId: string, count: number) {
   }))
 }
 
-function withIngestionClaimSignal(
+async function createKbMaterialReceipt(
+  prisma: PrismaClient,
+  {
+    kbId,
+    resourceId,
+    resourceVersion,
+    sourceKey,
+    actorId,
+  }: {
+    kbId: string
+    resourceId: string
+    resourceVersion: number
+    sourceKey: string
+    actorId: string
+  }
+) {
+  const bindings = (
+    await prisma.kBChatbot.findMany({
+      where: { kbId, isEnabled: true },
+      select: { chatbotId: true, chatbot: { select: { courseId: true } } },
+      orderBy: { chatbotId: 'asc' },
+    })
+  ).map(({ chatbotId, chatbot }) => ({
+    chatbotId,
+    courseId: chatbot.courseId,
+  }))
+  return prisma.kBMaterialConfirmation.create({
+    data: {
+      kbId,
+      actorId,
+      noticeVersion: KB_MATERIAL_NOTICE_VERSION,
+      rightsConfirmed: true,
+      personalDataConfirmed: true,
+      purpose: KB_MATERIAL_PURPOSE,
+      scopeFingerprint: getKbMaterialScopeFingerprint(bindings),
+      scopeSnapshot: JSON.stringify(bindings),
+      resourceId,
+      resourceVersion,
+      sourceKey,
+    },
+  })
+}
+
+async function attachKbMaterialReceipt(
+  prisma: PrismaClient,
+  facts: {
+    kbId: string
+    resourceId: string
+    resourceVersion: number
+    sourceKey: string
+    actorId: string
+  }
+) {
+  const receipt = await createKbMaterialReceipt(prisma, facts)
+  await prisma.kBResource.update({
+    where: { id: facts.resourceId },
+    data: { materialConfirmationId: receipt.id },
+  })
+  return receipt
+}
+
+function withIngestionLockSignal(
   ctx: ContextWithUser,
-  onClaim: () => void
+  onLock: () => void
 ): ContextWithUser {
   const prisma = ctx.prisma.$extends({
     query: {
-      kBResource: {
-        updateMany({ args, query }) {
-          onClaim()
-          return query(args)
-        },
+      $queryRaw({ args, query }) {
+        // Ingestion first locks the owning KB before checking its receipt.
+        // Signal before awaiting the lock held by the paused deletion.
+        const result = query(args)
+        onLock()
+        return result
       },
     },
   })
@@ -645,7 +718,14 @@ describe('Integration tests for knowledge base CRUD', () => {
       data: { kbId: otherKb.id, chatbotId: otherChatbot.id },
     })
 
-    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    await attachKbToChatbot(
+      {
+        kbId: kb.id,
+        chatbotId: chatbot.id,
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
     const bindings = await getKbChatbotBindings({ kbId: kb.id }, userOneCtx)
 
     expect(bindings).toEqual([
@@ -672,7 +752,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
 
     await attachKbToChatbot(
-      { kbId: firstKb.id, chatbotId: chatbot.id },
+      { kbId: firstKb.id, chatbotId: chatbot.id, ...KB_MATERIAL_CONFIRMATION },
       userOneCtx
     )
 
@@ -730,7 +810,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expectScopedConfigurations(firstKb.id)
 
     await attachKbToChatbot(
-      { kbId: secondKb.id, chatbotId: chatbot.id },
+      { kbId: secondKb.id, chatbotId: chatbot.id, ...KB_MATERIAL_CONFIRMATION },
       userOneCtx
     )
 
@@ -760,11 +840,19 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     await Promise.all([
       attachKbToChatbot(
-        { kbId: firstKb.id, chatbotId: chatbot.id },
+        {
+          kbId: firstKb.id,
+          chatbotId: chatbot.id,
+          ...KB_MATERIAL_CONFIRMATION,
+        },
         userOneCtx
       ),
       attachKbToChatbot(
-        { kbId: secondKb.id, chatbotId: chatbot.id },
+        {
+          kbId: secondKb.id,
+          chatbotId: chatbot.id,
+          ...KB_MATERIAL_CONFIRMATION,
+        },
         userOneCtx
       ),
     ])
@@ -797,10 +885,24 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
 
     await expect(
-      attachKbToChatbot({ kbId: otherKb.id, chatbotId: chatbot.id }, userOneCtx)
+      attachKbToChatbot(
+        {
+          kbId: otherKb.id,
+          chatbotId: chatbot.id,
+          ...KB_MATERIAL_CONFIRMATION,
+        },
+        userOneCtx
+      )
     ).rejects.toThrow('KB not found')
     await expect(
-      attachKbToChatbot({ kbId: kb.id, chatbotId: otherChatbot.id }, userOneCtx)
+      attachKbToChatbot(
+        {
+          kbId: kb.id,
+          chatbotId: otherChatbot.id,
+          ...KB_MATERIAL_CONFIRMATION,
+        },
+        userOneCtx
+      )
     ).rejects.toThrow('Chatbot not found')
   })
 
@@ -820,7 +922,14 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
 
     await expect(
-      attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+      attachKbToChatbot(
+        {
+          kbId: kb.id,
+          chatbotId: chatbot.id,
+          ...KB_MATERIAL_CONFIRMATION,
+        },
+        userOneCtx
+      )
     ).rejects.toThrow('Knowledge base retrieval is not configured')
     await expect(
       prisma.kBChatbot.count({ where: { chatbotId: chatbot.id } })
@@ -846,7 +955,14 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
 
     await expect(
-      attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+      attachKbToChatbot(
+        {
+          kbId: kb.id,
+          chatbotId: chatbot.id,
+          ...KB_MATERIAL_CONFIRMATION,
+        },
+        userOneCtx
+      )
     ).resolves.toMatchObject({
       chatbotId: chatbot.id,
       enabledKbId: kb.id,
@@ -863,7 +979,14 @@ describe('Integration tests for knowledge base CRUD', () => {
         courseId: course.id,
       },
     })
-    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    await attachKbToChatbot(
+      {
+        kbId: kb.id,
+        chatbotId: chatbot.id,
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
 
     await detachKbFromChatbot(
       { kbId: kb.id, chatbotId: chatbot.id },
@@ -903,7 +1026,14 @@ describe('Integration tests for knowledge base CRUD', () => {
         courseId: course.id,
       },
     })
-    await attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    await attachKbToChatbot(
+      {
+        kbId: kb.id,
+        chatbotId: chatbot.id,
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
 
     await deleteKb({ id: kb.id }, userOneCtx)
 
@@ -931,7 +1061,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
     })
     await attachKbToChatbot(
-      { kbId: firstKb.id, chatbotId: chatbot.id },
+      { kbId: firstKb.id, chatbotId: chatbot.id, ...KB_MATERIAL_CONFIRMATION },
       userOneCtx
     )
     const bindingSnapshotted = createDeferred<void>()
@@ -946,7 +1076,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     const deletion = deleteKb({ id: firstKb.id }, deleteCtx)
     await bindingSnapshotted.promise
     await attachKbToChatbot(
-      { kbId: secondKb.id, chatbotId: chatbot.id },
+      { kbId: secondKb.id, chatbotId: chatbot.id, ...KB_MATERIAL_CONFIRMATION },
       userOneCtx
     )
     finishDeletion.resolve(undefined)
@@ -963,6 +1093,106 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     expect(configurations).toHaveLength(2)
     expect(configurations.every(({ isEnabled }) => isEnabled)).toBe(true)
+  })
+
+  it('renews existing resource receipts for both chatbot audiences before ingestion', async () => {
+    const kb = await createKb({ name: 'Renewed receipts' }, userOneCtx)
+    const firstCourse = await seedCourse({}, userOneCtx)
+    const firstChatbot = await prisma.chatbot.create({
+      data: {
+        name: 'First tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: firstCourse.id,
+      },
+    })
+    const resource = await createKbUrlResource(
+      {
+        kbId: kb.id,
+        title: 'Lecture recording',
+        url: 'https://example.com/lecture',
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
+
+    await attachKbToChatbot(
+      {
+        kbId: kb.id,
+        chatbotId: firstChatbot.id,
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
+    const firstRenewal = await prisma.kBResource.findUniqueOrThrow({
+      where: { id: resource.id },
+      select: { materialConfirmationId: true },
+    })
+    const firstReceipt = await prisma.kBMaterialConfirmation.findUniqueOrThrow({
+      where: { id: firstRenewal.materialConfirmationId! },
+    })
+    expect(JSON.parse(firstReceipt.scopeSnapshot)).toEqual([
+      { chatbotId: firstChatbot.id, courseId: firstCourse.id },
+    ])
+
+    const secondCourse = await seedCourse({}, userOneCtx)
+    const secondChatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Second tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: secondCourse.id,
+      },
+    })
+
+    await attachKbToChatbot(
+      {
+        kbId: kb.id,
+        chatbotId: secondChatbot.id,
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
+    const renewals = await prisma.kBResource.findMany({
+      where: { kbId: kb.id, deletedAt: null },
+    })
+    expect(renewals).toHaveLength(1)
+    expect(renewals[0]!.materialConfirmationId).not.toBe(
+      firstRenewal.materialConfirmationId
+    )
+    const renewedReceipt =
+      await prisma.kBMaterialConfirmation.findUniqueOrThrow({
+        where: { id: renewals[0]!.materialConfirmationId! },
+      })
+    const renewedScope = JSON.parse(renewedReceipt.scopeSnapshot)
+    expect(renewedScope).toHaveLength(2)
+    expect(renewedScope).toEqual(
+      expect.arrayContaining([
+        { chatbotId: firstChatbot.id, courseId: firstCourse.id },
+        { chatbotId: secondChatbot.id, courseId: secondCourse.id },
+      ])
+    )
+    expect(renewedReceipt.scopeFingerprint).toBe(
+      getKbMaterialScopeFingerprint(renewedScope)
+    )
+
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    await expect(
+      ingestKbResource({ id: resource.id }, userOneCtx)
+    ).resolves.toMatchObject({
+      id: resource.id,
+      status: KBResourceStatus.QUEUED,
+      resourceVersion: 1,
+      materialConfirmationId: renewals[0]!.materialConfirmationId,
+    })
+    expect(runNoWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: resource.id,
+        kbId: kb.id,
+        resourceVersion: 1,
+      })
+    )
   })
 
   it('rejects an empty knowledge base name', async () => {
@@ -1085,6 +1315,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'malware.exe',
           contentType: 'application/octet-stream',
           sizeBytes: 1024,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1097,6 +1328,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           contentType:
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
           sizeBytes: 25 * 1024 * 1024 + 1,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1109,6 +1341,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           contentType:
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
           sizeBytes: 1024,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1120,6 +1353,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.md',
           contentType: 'text/plain',
           sizeBytes: 1024,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1131,6 +1365,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userTwoCtx
       )
@@ -1150,6 +1385,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1209,6 +1445,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1241,6 +1478,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'first.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       ),
@@ -1250,6 +1488,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'second.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       ),
@@ -1282,6 +1521,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'First',
           url: 'https://example.com/concurrent-first',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       ),
@@ -1290,6 +1530,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Second',
           url: 'https://example.com/concurrent-second',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       ),
@@ -1336,6 +1577,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1364,6 +1606,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1384,6 +1627,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: atCap.id,
           title: 'One too many',
           url: 'https://example.com/one-too-many',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1405,6 +1649,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: underCap.id,
           title: 'Fits under cap',
           url: 'https://example.com/fits-under-cap',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1431,6 +1676,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1442,6 +1688,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'extra.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1480,6 +1727,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1522,6 +1770,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1561,6 +1810,13 @@ describe('Integration tests for knowledge base CRUD', () => {
     const created = await createKb({ name: 'Legacy upload' }, userOneCtx)
     const blobId = randomUUID()
     const blobName = `${blobId}.pdf`
+    const receipt = await createKbMaterialReceipt(prisma, {
+      kbId: created.id,
+      resourceId: blobId,
+      resourceVersion: 0,
+      sourceKey: blobName,
+      actorId: userOneCtx.user.sub,
+    })
     await prisma.kBUploadTicket.create({
       data: {
         id: blobId,
@@ -1568,6 +1824,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         blobName,
         sizeBytes: 0,
         expiresAt: new Date(Date.now() + 60_000),
+        materialConfirmationId: receipt.id,
       },
     })
 
@@ -1600,6 +1857,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1679,6 +1937,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1721,6 +1980,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1764,6 +2024,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1795,6 +2056,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1836,6 +2098,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1861,6 +2124,13 @@ describe('Integration tests for knowledge base CRUD', () => {
         activeContentSha256: 'a'.repeat(64),
         ingestedAt: new Date(),
       },
+    })
+    await attachKbMaterialReceipt(prisma, {
+      kbId,
+      resourceId: resource.id,
+      resourceVersion: 1,
+      sourceKey: resource.blobName ?? '',
+      actorId: userOneCtx.user.sub,
     })
     return { resource, originalTicket }
   }
@@ -1892,6 +2162,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -1902,6 +2173,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'extra.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -1942,6 +2214,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -2035,6 +2308,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'first.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       ),
@@ -2045,6 +2319,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'second.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       ),
@@ -2103,6 +2378,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -2162,7 +2438,12 @@ describe('Integration tests for knowledge base CRUD', () => {
       created.id
     )
     const urlResource = await createKbUrlResource(
-      { kbId: created.id, title: 'Website', url: 'https://example.com' },
+      {
+        kbId: created.id,
+        title: 'Website',
+        url: 'https://example.com',
+        ...KB_MATERIAL_CONFIRMATION,
+      },
       userOneCtx
     )
     await expect(
@@ -2173,6 +2454,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'updated.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -2186,6 +2468,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'updated.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -2198,6 +2481,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -2230,13 +2514,23 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     await expect(
       createKbUrlResource(
-        { kbId: created.id, title: 'Invalid', url: 'not-a-url' },
+        {
+          kbId: created.id,
+          title: 'Invalid',
+          url: 'not-a-url',
+          ...KB_MATERIAL_CONFIRMATION,
+        },
         userOneCtx
       )
     ).rejects.toThrow('KB resource URL is invalid')
     await expect(
       createKbUrlResource(
-        { kbId: created.id, title: 'FTP', url: 'ftp://example.com/file' },
+        {
+          kbId: created.id,
+          title: 'FTP',
+          url: 'ftp://example.com/file',
+          ...KB_MATERIAL_CONFIRMATION,
+        },
         userOneCtx
       )
     ).rejects.toThrow('KB resource URL is invalid')
@@ -2246,6 +2540,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Private',
           url: 'http://169.254.169.254/latest/meta-data',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -2256,6 +2551,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Credentials',
           url: 'https://user:password@example.com/file',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -2266,6 +2562,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Foreign',
           url: 'https://example.com',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userTwoCtx
       )
@@ -2279,6 +2576,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/watch?id=123',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -2315,6 +2613,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/watch?id=123',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -2356,6 +2655,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/watch?id=123',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -2519,6 +2819,13 @@ describe('Integration tests for knowledge base CRUD', () => {
           'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
       },
     })
+    await attachKbMaterialReceipt(prisma, {
+      kbId: created.id,
+      resourceId: resource.id,
+      resourceVersion: 0,
+      sourceKey: resource.blobName ?? '',
+      actorId: userOneCtx.user.sub,
+    })
     const deletionStarted = createDeferred<void>()
     const finishDeletion = createDeferred<void>()
     const deleteCtx = withTombstonePause(
@@ -2527,23 +2834,26 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => deletionStarted.resolve(undefined),
       finishDeletion.promise
     )
-    const claimStarted = createDeferred<void>()
-    const ingestCtx = withIngestionClaimSignal(userOneCtx, () =>
-      claimStarted.resolve(undefined)
+    const lockStarted = createDeferred<void>()
+    const ingestCtx = withIngestionLockSignal(userOneCtx, () =>
+      lockStarted.resolve(undefined)
     )
     const runNoWait = vi
       .spyOn(ingestCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
     const deletion = deleteKbResource({ id: resource.id }, deleteCtx)
-    await deletionStarted.promise
-    const ingestion = expect(
-      ingestKbResource({ id: resource.id }, ingestCtx)
-    ).rejects.toThrow('KB resource cannot be ingested')
-    await claimStarted.promise
-
-    expect(runNoWait).not.toHaveBeenCalled()
-    finishDeletion.resolve(undefined)
+    let ingestion: Promise<void> | undefined
+    try {
+      await deletionStarted.promise
+      ingestion = expect(
+        ingestKbResource({ id: resource.id }, ingestCtx)
+      ).rejects.toThrow('KB resource cannot be ingested')
+      await lockStarted.promise
+      expect(runNoWait).not.toHaveBeenCalled()
+    } finally {
+      finishDeletion.resolve(undefined)
+    }
     await expect(deletion).resolves.toMatchObject({ id: resource.id })
     await ingestion
 
@@ -2569,6 +2879,13 @@ describe('Integration tests for knowledge base CRUD', () => {
           'https://kbtestaccount.blob.core.windows.net/container/notes.pdf',
       },
     })
+    await attachKbMaterialReceipt(prisma, {
+      kbId: created.id,
+      resourceId: resource.id,
+      resourceVersion: 0,
+      sourceKey: resource.blobName ?? '',
+      actorId: userOneCtx.user.sub,
+    })
     const deletionStarted = createDeferred<void>()
     const finishDeletion = createDeferred<void>()
     const deleteCtx = withTombstonePause(
@@ -2577,23 +2894,26 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => deletionStarted.resolve(undefined),
       finishDeletion.promise
     )
-    const claimStarted = createDeferred<void>()
-    const ingestCtx = withIngestionClaimSignal(userOneCtx, () =>
-      claimStarted.resolve(undefined)
+    const lockStarted = createDeferred<void>()
+    const ingestCtx = withIngestionLockSignal(userOneCtx, () =>
+      lockStarted.resolve(undefined)
     )
     const runNoWait = vi
       .spyOn(ingestCtx.tasks.ingestKBResource, 'runNoWait')
       .mockResolvedValue({} as never)
 
     const deletion = deleteKb({ id: created.id }, deleteCtx)
-    await deletionStarted.promise
-    const ingestion = expect(
-      ingestKbResource({ id: resource.id }, ingestCtx)
-    ).rejects.toThrow('KB resource cannot be ingested')
-    await claimStarted.promise
-
-    expect(runNoWait).not.toHaveBeenCalled()
-    finishDeletion.resolve(undefined)
+    let ingestion: Promise<void> | undefined
+    try {
+      await deletionStarted.promise
+      ingestion = expect(
+        ingestKbResource({ id: resource.id }, ingestCtx)
+      ).rejects.toThrow('KB not found')
+      await lockStarted.promise
+      expect(runNoWait).not.toHaveBeenCalled()
+    } finally {
+      finishDeletion.resolve(undefined)
+    }
     await expect(deletion).resolves.toMatchObject({ id: created.id })
     await ingestion
 
@@ -2820,6 +3140,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: enlarged.id,
           title: 'Synthetic URL',
           url: 'https://example.com/capacity',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -2837,6 +3158,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: enlarged.id,
           title: 'Synthetic measured-capacity URL',
           url: 'https://example.com/measured-capacity',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -2851,6 +3173,7 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: enlarged.id,
           title: 'Synthetic URL',
           url: 'https://example.com/over-capacity',
+          ...KB_MATERIAL_CONFIRMATION,
         },
         userOneCtx
       )
@@ -3061,6 +3384,7 @@ describe('Integration tests for knowledge base CRUD', () => {
             kbId: kb.id,
             title,
             url: `https://example.com/${title.toLowerCase()}`,
+            ...KB_MATERIAL_CONFIRMATION,
           },
           userOneCtx
         )
@@ -3104,6 +3428,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         title: 'Safe',
         url: 'https://example.com/safe',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -3112,6 +3437,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         title: 'Active',
         url: 'https://example.com/active',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userOneCtx
     )
@@ -3124,6 +3450,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: foreignKb.id,
         title: 'Foreign',
         url: 'https://example.com/foreign',
+        ...KB_MATERIAL_CONFIRMATION,
       },
       userTwoCtx
     )
@@ -3229,7 +3556,12 @@ describe('Integration tests for knowledge base CRUD', () => {
   it('refuses new KB content dispatch while the ingestion kill switch is enabled', async () => {
     const kb = await createKb({ name: 'Kill switch KB' }, userOneCtx)
     const existingResource = await createKbUrlResource(
-      { kbId: kb.id, title: 'Existing', url: 'https://example.com/existing' },
+      {
+        kbId: kb.id,
+        title: 'Existing',
+        url: 'https://example.com/existing',
+        ...KB_MATERIAL_CONFIRMATION,
+      },
       userOneCtx
     )
 
@@ -3242,6 +3574,7 @@ describe('Integration tests for knowledge base CRUD', () => {
               kbId: kb.id,
               title: 'Blocked',
               url: 'https://example.com/blocked',
+              ...KB_MATERIAL_CONFIRMATION,
             },
             userOneCtx
           ),
@@ -3252,6 +3585,7 @@ describe('Integration tests for knowledge base CRUD', () => {
               fileName: 'blocked.pdf',
               contentType: 'application/pdf',
               sizeBytes: 1024,
+              ...KB_MATERIAL_CONFIRMATION,
             },
             userOneCtx
           ),
@@ -3305,6 +3639,7 @@ describe('Integration tests for knowledge base CRUD', () => {
                 : title === 'administrative'
                   ? KBResourceMaterialType.ADMINISTRATIVE
                   : undefined,
+            ...KB_MATERIAL_CONFIRMATION,
           },
           userOneCtx
         )
