@@ -334,6 +334,23 @@ describe('fetchKbSourceInventory', () => {
     ).rejects.toThrow('pipeline unavailable')
   })
 
+  it('rejects a non-boolean truncation flag instead of hiding incompleteness', async () => {
+    const factory = createClientFactory([
+      textResult(envelope({ truncated: 'true' })),
+    ])
+
+    await expect(
+      fetchKbSourceInventory(
+        {
+          server: { url: MCP_URL, authType: 'scope_token', authSecret: null },
+          kbId: KB_ID,
+          limit: 20,
+        },
+        createDeps(factory)
+      )
+    ).rejects.toThrow('Malformed Doc Query inventory payload')
+  })
+
   it('rejects cleartext public transport URLs before minting credentials', async () => {
     const factory = createClientFactory([])
 

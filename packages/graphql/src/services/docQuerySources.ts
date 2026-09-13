@@ -138,11 +138,15 @@ function parseInventory(payload: unknown): KbImportedSourceInventory {
       chunkCount,
     }
   })
+  const truncated = record.truncated
+  if (typeof truncated !== 'boolean') {
+    throw new DocQueryInventoryError('Malformed Doc Query inventory payload')
+  }
   return {
     items,
     nextCursor: toNonEmptyString(record.next_cursor),
     totalSourcesInScan: toNonNegativeInt(record.total_sources_in_scan),
-    incomplete: record.truncated === true,
+    incomplete: truncated,
     unidentifiedChunks: toNonNegativeInt(record.unidentified_chunks),
   }
 }
