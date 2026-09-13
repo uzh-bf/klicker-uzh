@@ -44,7 +44,8 @@ export const DisclaimerModal = ({
     return () => setDisclaimerGateOpen(false)
   }, [isOpen])
 
-  // Focus the beginning of the long dialog so keyboard users start with its
+  // The design-system Modal prevents default open autofocus, so focus must
+  // be placed explicitly. Focus the beginning of the long dialog so keyboard users start with its
   // content and opening the gate does not scroll directly to the actions.
   useEffect(() => {
     if (isOpen) contentRef.current?.focus({ preventScroll: true })

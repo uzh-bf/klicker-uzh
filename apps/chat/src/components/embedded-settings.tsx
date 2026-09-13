@@ -7,18 +7,28 @@ import { isKnownMode } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
 
+/**
+ * Whether the embedded mode select has anything to offer. Shared by the bar
+ * that decides whether it has any content at all and by the select itself, so
+ * the two can never disagree about the empty state.
+ */
+export function hasEmbeddedModeSettings(
+  showMinimalSettings: boolean,
+  modeOptions: Record<string, string>
+) {
+  return showMinimalSettings && Object.keys(modeOptions).length > 1
+}
+
 export function EmbeddedSettings() {
   const t = useTranslations()
   const { showMinimalSettings } = useChatUi()
   const { selectedMode, modeOptions, setSelectedMode } = useSettingsStore()
 
-  if (!showMinimalSettings) return null
-
+  if (!hasEmbeddedModeSettings(showMinimalSettings, modeOptions)) return null
   const modeKeys = Object.keys(modeOptions)
-  if (modeKeys.length <= 1) return null
 
   return (
-    <div className="relative min-w-0 max-w-[12rem] shrink sm:max-w-xs">
+    <div className="relative ml-auto min-w-0 max-w-[12rem] shrink sm:max-w-xs">
       <select
         value={selectedMode}
         onChange={(e) => setSelectedMode(e.target.value)}
