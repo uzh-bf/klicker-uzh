@@ -93,13 +93,15 @@ test.describe('Course chatbot drawer', () => {
     // A real iframe can consume Tab inside its own document before returning
     // focus to the parent. Exercise the parent trap branch directly as well,
     // so removal of the explicit last-to-first wrap cannot pass unnoticed.
+    // The dialog's first focusable controls are the resize handles, which sit
+    // before the chatbot selector in DOM order.
     await lastControl.focus()
     await page.evaluate(() => {
       window.dispatchEvent(
         new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' })
       )
     })
-    await expect(firstControl).toBeFocused()
+    await expect(dialog.locator('[role="separator"]').first()).toBeFocused()
   })
 
   test('switches chatbots and keeps the drawer actions accessible', async ({
