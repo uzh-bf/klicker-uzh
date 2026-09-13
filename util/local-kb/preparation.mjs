@@ -2018,6 +2018,7 @@ async function launchInfrastructure(
   runProvider
 ) {
   const { checkout, directory, context, workspace } = runtime
+  let stage = 'provider observation'
   try {
     const commands = providerCommands(config)
     const environment = { DOCKER_CONTEXT: context }
@@ -2032,8 +2033,10 @@ async function launchInfrastructure(
     )
     if (prepared.some((row) => !row.prepared)) throw new Error()
     for (const name of ['scraping', 'docProcessing']) {
+      stage = `provider ${name} start`
       await runProvider(commands.providers[name].lifecycle.start, environment)
     }
+    stage = 'consumer backing services'
     await runDocker([
       '--context',
       context,
@@ -2051,6 +2054,7 @@ async function launchInfrastructure(
       '180',
       ...infrastructureServices,
     ])
+    stage = 'managed application startup'
     const managed = JSON.parse(
       await runManaged(
         ['ensure', checkout, '--profile', 'ai,chat,manage', '--json'],
@@ -2065,7 +2069,9 @@ async function launchInfrastructure(
     ) {
       throw new Error('Managed startup identity differs from preparation.')
     }
+    stage = 'provider ingestion start'
     await runProvider(commands.providers.ingestion.lifecycle.start, environment)
+    stage = 'provider retrieval start'
     await runProvider(commands.providers.retrieval.lifecycle.start, {
       ...retrievalEnvironment,
       ...environment,
@@ -2089,7 +2095,7 @@ async function launchInfrastructure(
     }
   } catch {
     throw new Error(
-      'Infrastructure startup failed; partial state is retained and output withheld.'
+      `Infrastructure startup failed at ${stage}; partial state is retained and output withheld.`
     )
   }
 }
