@@ -2555,8 +2555,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementProgress:
         '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
       succeeded: '{label} ist bereit.',
+      incomplete:
+        '{label} wurde mit weniger Elementen als angefordert abgeschlossen.',
+      reviewRequired: '{label} wartet auf Ihre Entscheidung.',
       failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
       open: 'Ergebnis öffnen',
+      review: 'Ergebnis prüfen',
     },
     elementGeneration: {
       eyebrow: 'KI-unterstützte Erstellung',

@@ -2521,8 +2521,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       elementProgress:
         '{generated} of {requested, plural, one {# element} other {# elements}} generated',
       succeeded: '{label} is ready.',
+      incomplete: '{label} finished with fewer elements than requested.',
+      reviewRequired: '{label} is waiting for your decision.',
       failed: 'Background generation failed.',
       open: 'Open result',
+      review: 'Review result',
     },
     elementGeneration: {
       eyebrow: 'AI-assisted creation',

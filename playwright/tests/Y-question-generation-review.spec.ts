@@ -345,3 +345,212 @@ test.describe('Generated element review inbox', () => {
     }
   })
 })
+
+test.describe('Background generation notifications', () => {
+  test('keeps review, completion, partial, and failure outcomes distinct', async ({
+    page,
+    loginLecturer,
+  }) => {
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const reviewBuildId = '00000000-0000-4000-8000-0000000000a1'
+    const failedBuildId = '00000000-0000-4000-8000-0000000000a2'
+    const partialBuildId = '00000000-0000-4000-8000-0000000000a3'
+    const statusByBuildId = new Map<string, string>()
+    let interceptedPolls = 0
+
+    // The provider polls ElementGenerationBuild while a job is tracked, so the
+    // notification lifecycle is driven with synthetic responses for that
+    // operation only.
+    await page.route('**/api/graphql**', async (route) => {
+      const request = route.request()
+      let operationName: string | undefined
+      let variables: { id?: string } | undefined
+
+      if (request.method() === 'GET') {
+        const url = new URL(request.url())
+        operationName = url.searchParams.get('operationName') ?? undefined
+        const rawVariables = url.searchParams.get('variables')
+        if (rawVariables) {
+          variables = JSON.parse(rawVariables) as { id?: string }
+        }
+      } else {
+        const body = request.postDataJSON() as {
+          operationName?: string
+          variables?: { id?: string }
+        }
+        operationName = body?.operationName
+        variables = body?.variables
+      }
+
+      if (operationName !== 'ElementGenerationBuild') {
+        await route.fallback()
+        return
+      }
+
+      const buildId = variables?.id ?? ''
+      const status = statusByBuildId.get(buildId)
+      if (status === undefined) {
+        // Builds are answered from the real backend unless a synthetic status
+        // was registered for them.
+        await route.fallback()
+        return
+      }
+
+      interceptedPolls += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'cache-control': 'no-store' },
+        body: JSON.stringify({
+          data: {
+            elementGenerationBuild: {
+              __typename: 'ElementGenerationBuild',
+              id: buildId,
+              status,
+              generatedElementCount: 3,
+              requestedElementCount: 4,
+            },
+          },
+        }),
+      })
+    })
+
+    await loginLecturer()
+    await expect(page.getByTestId('element-library-sidebar')).toBeVisible({
+      timeout: 20_000,
+    })
+
+    const preActionUrl = page.url()
+    const tracker = page.getByTestId('generation-status')
+    const toaster = page.getByLabel(/Notifications/)
+    const toasts = toaster.locator('[data-sonner-toast]')
+    const warningToasts = toaster.locator(
+      '[data-sonner-toast][data-type="warning"]'
+    )
+    const successToasts = toaster.locator(
+      '[data-sonner-toast][data-type="success"]'
+    )
+    const errorToasts = toaster.locator(
+      '[data-sonner-toast][data-type="error"]'
+    )
+    const completeAction = successToasts.locator('button[data-action]')
+
+    const startGeneration = (buildId: string) =>
+      page.evaluate((id) => {
+        window.dispatchEvent(
+          new CustomEvent('klicker:generation-started', {
+            detail: {
+              kind: 'element',
+              id,
+              label: `Synthetic background build ${id}`,
+              startedAt: Date.now(),
+            },
+          })
+        )
+      }, buildId)
+
+    // A running build stays tracked and raises no notification, even after it
+    // has been polled more than once.
+    statusByBuildId.set(reviewBuildId, 'RUNNING')
+    const pollsBeforeStart = interceptedPolls
+    await startGeneration(reviewBuildId)
+    await expect(tracker).toBeVisible({ timeout: 15_000 })
+    await expect
+      .poll(() => interceptedPolls, { timeout: 15_000 })
+      .toBeGreaterThanOrEqual(pollsBeforeStart + 2)
+    await expect(tracker).toBeVisible()
+    await expect(toasts).toHaveCount(0)
+
+    // Each approval gate pauses tracking without claiming completion.
+    for (const status of [
+      'WAITING_FOR_DESIGN_REVIEW',
+      'WAITING_FOR_PLAN_REVIEW',
+      'AWAITING_INCOMPLETE_PUBLICATION',
+    ]) {
+      statusByBuildId.set(reviewBuildId, status)
+      await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+      await expect(toasts).toHaveCount(1)
+      await expect(warningToasts).toHaveCount(1)
+      await expect(warningToasts.locator('button[data-action]')).toHaveCount(1)
+      await warningToasts.locator('button[data-close-button]').focus()
+      await warningToasts.locator('button[data-close-button]').press('Enter')
+      await expect(toasts).toHaveCount(0)
+      statusByBuildId.set(reviewBuildId, 'RUNNING')
+      await startGeneration(reviewBuildId)
+      await expect(tracker).toBeVisible({ timeout: 15_000 })
+    }
+
+    // The same job can complete after re-registration by its caller.
+    statusByBuildId.set(reviewBuildId, 'COMPLETED')
+    await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+    await expect(toasts).toHaveCount(1)
+    await expect(successToasts).toHaveCount(1)
+    await expect(completeAction).toHaveCount(1)
+
+    // A completion notification does not navigate on its own.
+    await expect(page).toHaveURL(preActionUrl)
+
+    await gotoCommit(page, manageUrl)
+    await expect(page.getByTestId('element-library-sidebar')).toBeVisible({
+      timeout: 20_000,
+    })
+
+    // A failed build reports an error without offering an action.
+    statusByBuildId.set(failedBuildId, 'RUNNING')
+    await startGeneration(failedBuildId)
+    await expect(tracker).toBeVisible({ timeout: 15_000 })
+    statusByBuildId.set(failedBuildId, 'FAILED')
+    await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+    await expect(toasts).toHaveCount(1)
+    await expect(errorToasts).toHaveCount(1)
+    await expect(errorToasts.locator('button[data-action]')).toHaveCount(0)
+    await expect(errorToasts.locator('button[data-close-button]')).toHaveCount(
+      1
+    )
+
+    // A partial result is announced as an actionable, non-success outcome.
+    statusByBuildId.set(partialBuildId, 'RUNNING')
+    await startGeneration(partialBuildId)
+    await expect(tracker).toBeVisible({ timeout: 15_000 })
+    statusByBuildId.set(partialBuildId, 'INCOMPLETE')
+    await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+    await expect(toasts).toHaveCount(2)
+    await expect(warningToasts.locator('button[data-action]')).toHaveCount(1)
+
+    // A notification for a real build completes against the real backend, so
+    // its action can be followed to the fully rendered build page.
+    const prisma = await getPrisma()
+    const previousAccess = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
+
+    try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiFeaturesEnabled: true, betaEnabled: true },
+      })
+      const fixture = await seedQuestionGenerationReviewFixture()
+      await startGeneration(fixture.primaryBuildId)
+      await expect(successToasts).toHaveCount(1)
+      await expect(completeAction).toHaveCount(1)
+      await completeAction.focus()
+      await completeAction.press('Enter')
+      await expect(page).toHaveURL(
+        new RegExp(`/elements/generate\\?buildId=${fixture.primaryBuildId}`)
+      )
+      await expect(page.getByTestId('element-generation-build')).toBeVisible({
+        timeout: 20_000,
+      })
+    } finally {
+      try {
+        await cleanupQuestionGenerationReviewFixture()
+      } finally {
+        await prisma.user.update({
+          where: { id: USER_ID_TEST },
+          data: previousAccess,
+        })
+      }
+    }
+  })
+})
