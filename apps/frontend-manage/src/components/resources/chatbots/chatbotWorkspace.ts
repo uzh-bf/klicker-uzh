@@ -6,7 +6,7 @@ type ChatbotWorkspaceView =
   | 'behavior'
   | 'disclaimer'
   | 'usage'
-type ChatbotSetupStep = 'basics' | 'modes' | 'disclaimer' | 'review'
+type ChatbotSetupStep = 'basics' | 'modes' | 'disclaimer' | 'credits' | 'review'
 
 type ChatbotWorkspaceState = {
   view: ChatbotWorkspaceView
@@ -29,6 +29,7 @@ const setupSteps: ChatbotSetupStep[] = [
   'basics',
   'modes',
   'disclaimer',
+  'credits',
   'review',
 ]
 
@@ -84,6 +85,8 @@ function normalizeLegacyWorkspaceState(
       return { view: 'behavior' }
     case 'disclaimer':
       return { view: 'disclaimer' }
+    case 'credits':
+      return { view: 'usage' }
     case 'basics':
       return { view: 'overview', step: 'basics' }
     case 'review':
@@ -119,6 +122,9 @@ function normalizeWorkspaceState(
     }
     if (requestedStep === 'disclaimer') {
       return { view: 'disclaimer' }
+    }
+    if (requestedStep === 'credits') {
+      return { view: 'usage' }
     }
   }
 

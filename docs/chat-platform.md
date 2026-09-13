@@ -20,7 +20,7 @@ tags:
 > framing is obsolete. Staged doc/skill changes for that exploration:
 > `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
-**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
+**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers; LTI account login and Manage proposals call persisted backend GraphQL operations, uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
 
@@ -54,6 +54,23 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
   the Chat/PWA/API/Auth app set, `ai` starts LiteLLM, and `mcp` starts the
   fixture. Use `chat,ai,mcp` for the complete synthetic model/tool path; plain
   `chat` intentionally starts neither optional capability.
+
+## LTI participant transport
+
+`/auth/lti` resolves a verified account-or-guest launch through the backend. Account
+sessions stay in the shared HttpOnly `participant_token` cookie. Cookie-less Chat
+entry uses the existing chatbot/course-scoped PWA embed token (`_pe`); guest entry
+uses the separate Chat guest token (`_t`). Neither fallback carries a raw account
+session token. The launch clears both previous Chat sessionStorage transports and
+the opposite scoped cookie before navigating, so an earlier guest cannot override
+a newly chosen account.
+
+The proxy overwrites `CHAT_SCOPED_TOKEN_HEADER` with a verified query token when
+cookies are unavailable. The server layout verifies that token again. Page and API
+access share `resolveParticipantIdentity` and `authorizeIdentityForChatbot`, which
+retain publication, course binding and participation checks. Participation's
+leaderboard opt-in flag does not control access. See [Auth Model](./auth-model.md#lti-chatbot-entry)
+for launch precedence and coordinated rollout requirements.
 
 ## Owner-governed response examples
 
@@ -274,11 +291,12 @@ conservative, because a missing class must never imply base usage.
 
 New chatbots use a fixed Auto policy by default: the owner projection contains
 one effective `auto` model and no reasoning entries. The strict owner-only
-`updateChatbotModelPolicy` mutation requires exactly one active model for fixed
-mode, one supported reasoning effort when that model supports reasoning, and at
-least one active model plus valid reasoning entries for every selected
-reasoning model in participant-choice mode. The older
-`updateChatbotModelSettings` mutation remains unchanged for rolling clients.
+`saveChatbotRevision` mutation uses its `modelPolicy` section to require exactly
+one active model for fixed mode, one supported reasoning effort when that model
+supports reasoning, and at least one active model plus valid reasoning entries
+for every selected
+reasoning model in participant-choice mode. Configuration saves use this single
+mutation; granular save mutations and publication aliases are removed.
 Legacy fixed rows are readable without a migration: empty or multi-model values
 resolve through the current `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics,
 while a retired-only list falls back to Luna. Participant-choice empty lists
@@ -713,78 +731,82 @@ v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 The owner-facing GraphQL contract lives in
 `packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
 can create a course-bound `DRAFT` chatbot before their account is authorized to
-publish. The course is fixed after creation. Metadata and model policy are
-editable in `DRAFT`, `REJECTED`, and `PUBLISHED`; they are read-only in
-`PENDING_APPROVAL` and `PAUSED`. Disclaimer content is editable only in
-`DRAFT` and `REJECTED`.
+publish. The course remains fixed after creation. Account publication capability
+and administrator approval remain separate requirements.
 
-`saveChatbotDisclaimer` accepts the lecturer-editable title and introduction
-plus the disclaimer ID the client loaded. It normalizes line endings and outer
-whitespace, validates both fields, and rejects introduction Markdown outside
-paragraphs, bold, italic, ordered or unordered lists, and line breaks. It then
-uses transactional copy-on-write. The replacement retains the internal name,
-description, and media fields. A stale expected ID fails with
-`CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op keeps the existing ID.
-This preserves the participant acceptance contract: acceptance and Manage's
-accepted count apply only when
-`acceptedDisclaimerId` equals the chatbot's current disclaimer ID. See
+[ADR 0043](./adr/0043-review-chatbot-revisions-before-activation.md) governs
+published setup revisions. The existing live chatbot fields remain canonical
+for participants. Owner edits save an allowlisted `draftConfig`, with separate
+`revisionStatus` and a monotonic `revisionVersion`. The revision includes
+metadata, standard modes and framing, model policy, participant credits,
+disclaimer title and introduction, and publication-request details. Account
+funding, provider settings, custom prompts, response examples, knowledge-base
+and MCP bindings retain their existing permissions and lifecycle.
+
+All setup writes compare the expected authoring version and advance it. Pending
+submissions are immutable; withdrawal and rejection keep their content for
+editing. Resubmission creates a new version token. Approval requires the exact
+pending token, administrator authorization, and the live account capability.
+It atomically activates only allowlisted fields while preserving identity,
+history, original publication date, and the live `PUBLISHED` status. Paused
+chatbots cannot be edited or approved. Version-zero pre-migration pending
+requests retain the limited compatibility path described in ADR 0043.
+
+Disclaimer saves normalize line endings and surrounding whitespace and accept
+only the supported basic Markdown. A normalized no-op retains its identity.
+Changed content gets a replacement disclaimer identity; published revisions
+leave this replacement unlinked until approval. Live acceptance statistics
+continue to refer to the live disclaimer. Linking an approved replacement
+requires participants to accept again through the existing ID comparison,
+without modifying historical disclaimer content or acceptance records.
+
+Participant credits remain distinct from the account's monthly base/advanced
+usage budget. Amounts are non-negative signed 32-bit integers; initial credits
+and reset amount cannot exceed the maximum. `NONE` normalizes reset amount to
+zero, while recurring periods require a positive reset amount. Approval does
+not grant, clamp, or reset existing participant balances or stored totals.
+Initial credits apply to new participant credit rows; existing rows use the
+new reset amount and maximum at their next ordinary reset.
+
+Changing the reset period records an activation timestamp. Reset eligibility
+uses the later of that timestamp and the participant's existing period
+baseline, so a schedule change does not immediately refill credits. Credit
+writers acquire a shared chatbot row lock before reading policy and before
+participant locks; approval acquires an exclusive chatbot row lock. This
+serializes policy activation with initialization, debits, and resets. Preview
+reads observe a consistent transaction and never write credit state.
+
+Manage exposes creation through
+`apps/frontend-manage/src/components/resources/Chatbots.tsx`, limited to owned,
+non-archived courses, and immediately selects a newly created chatbot. The
+workspace retains a persistent desktop rail and compact mobile selector.
+Invalid deep links fall back to a valid view. Each accordion section keeps its
+form mounted while collapsed so unsaved Formik and Slate input remains intact.
+Review edit actions open the relevant section through the navigation guard.
+
+`ContentInput` retains its full toolbar by default and uses the `basic` preset
+for disclaimer introductions, with simple formatting but no media, video,
+math, code, or quote controls. The lecturer preview renders the fixed
+`chat.disclaimer.*` sections without participant actions. A chatbot or saved
+disclaimer identity change remounts the Slate editor to prevent stale content.
+Replacement disclaimers retain internal name, description, and media fields.
+The acceptance condition remains `acceptedDisclaimerId` equal to the live
+chatbot disclaimer ID. See
 [ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
 
-`requestChatbotPublication` still requires the live account capability from
-[ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
-linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
-`PENDING_APPROVAL`. A dedicated Boolean query exposes only this live capability
-to Catalyst and full-access lecturers; it does not expose account budget data.
-Submission never publishes automatically; the existing administrator approval
-remains a separate transition.
+Manage uses the existing chatbot workspace and forms. It distinguishes live
+configuration from the saved revision, disables pending forms, and protects
+unsaved changes during navigation and chatbot switching. Revision conflicts
+require refreshed version information without silently discarding input.
+Review and submit summarizes the saved configuration; submission also requires
+clean, settled sibling forms and live account authorization. Owner preview
+uses live approved configuration, including while a revision is being edited.
+The fixed disclaimer preview keeps its basic Slate toolbar and participant
+content without participant actions.
 
-Manage exposes draft preparation through
-`apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
-limited to the lecturer's owned, non-archived courses, and the newly created
-chatbot is selected immediately. The workspace keeps chatbot selection in a
-persistent desktop rail and a compact mobile selector. Its URL identifies the
-selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
-setup view optionally uses `step=basics`, `step=disclaimer`, or `step=review`
-as the initial accordion section hint. Invalid deep links fall back to the
-first valid lifecycle view or section. Published chatbots preserve any valid
-setup-section hint while keeping their read-only Disclaimer and Review
-contracts.
-Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
-model-policy changes, and block while an affected mutation is pending.
-
-Draft and rejected chatbots use the setup view as one page with a multiple-open
-accordion containing Basics, Disclaimer, and Review and submit. Each section
-keeps its form mounted when collapsed, so unsaved Formik and Slate input remains
-available while lecturers inspect another section. Basics saves the name and
-description, Disclaimer saves the lecturer-written introduction while showing
-the fixed participant preview, and Review and submit summarizes the saved
-configuration before showing the publication request form.
-The course remains read-only after creation. Publication inputs are preparation
-fields in the Review and submit section and persist only when the lecturer submits the existing
-publication mutation. A successful Basics or Disclaimer save opens the next
-accordion section after the refetched chatbot is complete. Edit actions in the
-review section open the relevant accordion section, while the workspace
-navigation guard still prevents dirty or pending changes from being discarded
-silently.
-
-The selected course is read-only. Name, description, and model settings follow
-the metadata lifecycle matrix above; the disclaimer title and introduction are
-editable only for `DRAFT` and `REJECTED` chatbots. `ContentInput` keeps its full
-toolbar by default and uses the `basic` preset for disclaimer introductions,
-retaining simple formatting while omitting media, video, math, code, and quote
-controls. The lecturer preview renders the fixed `chat.disclaimer.*` sections
-without participant actions, and its Slate editor remounts when either the
-chatbot or current disclaimer ID changes so a selection change cannot retain
-stale text.
-
-The publication section keeps `DRAFT` and `REJECTED` request details editable
-for preparation, but enables submission only when a complete disclaimer, the
-live account publication capability, and clean, settled Basics and Disclaimer
-forms are present. While publication is pending, those sibling forms are
-locked so late edits cannot be lost during the lifecycle transition.
-`PENDING_APPROVAL`, `PAUSED`, and `PUBLISHED` chatbots show read-only
-publication details, while a rejected request retains its review comment for
-correction and resubmission.
+Account-usage cards fetch from the network when settings opens and refetch on
+window focus. A failed background refresh retains last-known values, marks them
+as potentially stale, and offers Retry.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
@@ -1002,7 +1024,12 @@ non-KB MCP servers retain their existing behavior.
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
   unique sources exist. That contract is appended to the system prompt only when a doc_query-style
   tool is actually available for the request.
-- **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
+- Before each tool continuation, `withModelCitationIndices` projects explicit
+  `citation_index` values onto model-facing source groups using the same message
+  normalizer as the UI. It follows call order, preserves repeated indices and
+  assigns null to ineligible or overflow sources. Stored and streamed tool results
+  stay unchanged; historical messages are excluded from the projection.
+- **Model compliance with the citation contract is unverified.** Request projection is unit-tested;
   whether a given model honours it needs a live model key, which the devcontainer does not carry.
 
 On the render side, `remarkCitationMarkers` rewrites `[n]` and contiguous `[n–m]` markers in
@@ -1032,10 +1059,13 @@ mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
-and fall back to a cleaned display URL when they carry no page; web links always lead with the
+documents display only the publisher's labeled page (`p. 12` / `S. 12`)
+and fall back to a cleaned display URL when no label is supplied; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+lead with a `12:34`-style position; images keep their type and any publisher page label.
+Physical PDF pages are used only for outbound navigation: validated public URLs with
+a `.pdf` pathname receive a positive integer `#page=` position on cards and passage
+links. Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
 structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
 `labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
 and prefers the structured start for the card and citation preview. Legacy results remain

@@ -41,6 +41,26 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
+    // Verified LTI chatbot launches use Chat's account-or-guest entry.
+    // Chat verifies the signed target before resolving identity or participation.
+    if (
+      typeof ctx.query.jwt === 'string' &&
+      process.env.ASSESSMENT_MODE !== 'true'
+    ) {
+      const chatBase = getChatBaseUrl()
+      if (chatBase) {
+        const target = new URL('/auth/lti', chatBase)
+        target.searchParams.set('courseId', ctx.params.courseId)
+        target.searchParams.set('chatbotId', ctx.params.chatbotId)
+        target.searchParams.set('jwt', ctx.query.jwt)
+        ctx.res.setHeader('Cache-Control', 'no-store')
+        ctx.res.setHeader('Referrer-Policy', 'no-referrer')
+        return {
+          redirect: { destination: target.toString(), permanent: false },
+        }
+      }
+    }
+
     const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string

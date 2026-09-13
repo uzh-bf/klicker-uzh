@@ -119,7 +119,7 @@ Post-create publishes a fixed container-local completion marker only after the
 destructive bootstrap and generated runtime inputs succeed; post-start checks
 that marker before it reads those inputs or starts a process. If the marker is
 missing or malformed, treat the workspace as incompletely bootstrapped and use
-the canonical stop/recovery path. A warm profile switch never manufactures the
+the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the
 marker or reruns database bootstrap. The `ROOT` contract in
 [post-create](../.devcontainer/post-create.sh) and
 [post-start](../.devcontainer/post-start.sh) canonicalizes
@@ -135,7 +135,8 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.55`.
+The consumer version is pinned in `.devrouter.yml`; this pin covers normal
+managed startup, not the separately reviewed retained-recovery callback.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
@@ -156,8 +157,9 @@ fingerprints the dependency graph, checked-out commit, Next.js route structure,
 and app configuration. A true managed start preserves each worktree's
 `.next/dev` output, while a changed dependency fingerprint refreshes the
 persistent `node_modules` volume with a frozen, local-first install.
-Unauthenticated Chat must answer `401 application/json` on a
-nested API route; the shell pages of auth, PWA, manage, and control must answer
+Auth must answer `200 application/json` at `/api/auth/providers` so its
+catch-all sign-in route is checked, not only its homepage. Unauthenticated Chat
+must answer `401 application/json` on a nested API route; the shell pages of PWA, manage, and control must answer
 `2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
 and `live-quiz` requires live general and response-processor worker descendants
 of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing
@@ -185,6 +187,33 @@ pnpm run check        # typecheck — only passes AFTER build (generated artifac
 ```
 
 Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
+
+### Git hooks with isolated container dependencies
+
+Git hooks use `util/run-git-hook.mjs` to run dependency-backed checks where
+dependencies are installed. By default, the dispatcher uses `devrouter exec` for the exact
+checkout; start that runtime explicitly before committing or pushing. Hooks
+never start services or disable pnpm dependency validation.
+
+Host contract tests also need the root tooling dependencies in this checkout;
+an ancestor checkout's installation does not count. Install them explicitly:
+`pnpm --filter @klicker-uzh/monorepo install --frozen-lockfile --ignore-scripts`.
+This partial host install does not change the default container routing.
+`KLICKER_GIT_HOOK_RUNTIME=container` explicitly retains that routing.
+`KLICKER_GIT_HOOK_RUNTIME=host` explicitly selects a complete native installation.
+Hooks never install dependencies automatically.
+
+Secret scanning, identity checks, staged-file discovery and host contract tests
+stay on the host. Container formatting reuses the staged-format rules with
+literal filenames and refuses partially staged files; fully stage or unstage
+those files first. It does not stash, rewrite files or modify the index.
+Independent checks do not inherit Git's hook environment, preventing temporary
+Git fixtures from operating on the committing repository.
+
+Manage, PWA and Control production builds opt into their existing strict
+`tsconfig.check.json`, excluding development-generated route validators.
+Development retains `tsconfig.json`; no type errors are ignored. This allows
+the pre-push build to run after local development without deleting `.next`.
 
 ## Failure signatures (fresh clone / wrong state)
 

@@ -1,0 +1,17 @@
+mutation LoginParticipantForLtiChatbot(
+  $signedLtiData: String!
+  $courseId: String!
+  $chatbotId: String!
+  $participantToken: String
+) {
+  loginParticipantForLtiChatbot(
+    signedLtiData: $signedLtiData
+    courseId: $courseId
+    chatbotId: $chatbotId
+    participantToken: $participantToken
+  ) {
+    status
+    participantId
+    participantToken
+  }
+}

@@ -18,7 +18,7 @@ const script = fileURLToPath(new URL('./dev-runtime.sh', import.meta.url))
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'klicker-readiness-'))
-  const pages = join(root, 'apps/auth/src/pages')
+  const pages = join(root, 'apps/frontend-manage/src/pages')
   mkdirSync(join(pages, 'api/auth'), { recursive: true })
   mkdirSync(join(pages, 'item/[id]'), { recursive: true })
   writeFileSync(join(pages, 'api/auth/[...login].ts'), '')
@@ -31,7 +31,7 @@ const completeManifest = { pages: ['/api/auth/[...login]', '/item/[id]'] }
 
 function runProbe(root, command = 'probe-app') {
   return new Promise((resolve, reject) => {
-    const child = spawn('bash', [script, command, 'auth'], {
+    const child = spawn('bash', [script, command, 'frontend-manage'], {
       env: {
         ...process.env,
         KLICKER_DEV_RUNTIME_ROOT: root,
@@ -56,7 +56,7 @@ async function serve(t, handler) {
   const server = http.createServer(handler)
   await new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(3010, '127.0.0.1', resolve)
+    server.listen(3002, '127.0.0.1', resolve)
   })
   t.after(async () => {
     server.closeAllConnections()
@@ -166,10 +166,10 @@ test('a hanging HTTP response cannot extend the readiness deadline', {
   })
   await new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(3010, '127.0.0.1', resolve)
+    server.listen(3002, '127.0.0.1', resolve)
   })
   const started = performance.now()
-  const child = spawn('bash', [script, 'wait-app', 'auth'], {
+  const child = spawn('bash', [script, 'wait-app', 'frontend-manage'], {
     env: {
       ...process.env,
       KLICKER_DEV_RUNTIME_ROOT: root,

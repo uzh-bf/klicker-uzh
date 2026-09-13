@@ -1028,6 +1028,8 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
     chatbot: {
+      graphChoiceLabel: 'Wissensgraph',
+      graphChoicePlaceholder: 'Wissensgraph auswählen',
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
       goToLogin: 'Zum Login',
@@ -1896,9 +1898,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestionStartError:
       'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
     storageLimitError:
-      'Diese Ressource überschreitet das Speicherlimit von 500 MiB für die Wissensdatenbank.',
+      'Diese Ressource überschreitet das Speicherlimit der Wissensdatenbank.',
     resourceLimitError:
-      'Diese Wissensdatenbank hat ihr Limit von 100 Ressourcen erreicht.',
+      'Diese Wissensdatenbank hat ihr Limit von 1000 Ressourcen erreicht.',
     uploadMismatchError:
       'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
@@ -1977,6 +1979,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphLoadError: 'Der Graphstatus konnte nicht geladen werden.',
     graphRetry: 'Erneut versuchen',
     graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
+    graphNoCourseContent:
+      'Keine Ressourcen sind als „Kursinhalt“ kategorisiert. Markieren Sie Ihre Kursmaterialien, bevor Sie den Graphen erstellen – Verwaltungsressourcen werden ausgeschlossen.',
+    graphQuotaInsufficient:
+      'Der ausgewählte Aufbau kostet schätzungsweise {estimate}, im Semesterkontingent sind jedoch nur noch {remaining} verfügbar. Wählen Sie wenn möglich eine günstigere Qualitätsstufe oder warten Sie auf die Zurücksetzung des Kontingents.',
     graphPreviewTitle: 'Veröffentlichter Graph',
     graphGenerateElements: 'Klicker-Elemente generieren',
     graphElementGenerationUnavailable:
@@ -2487,6 +2493,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
         'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
+      chatAccountUsageRefreshing: 'Nutzung wird aktualisiert ...',
+      chatAccountUsageStale:
+        'Die aktuelle Nutzung konnte nicht geladen werden. Die unten angezeigten Werte sind möglicherweise veraltet.',
+      chatAccountUsageUnavailable:
+        'Die aktuelle Nutzung konnte nicht geladen werden. Versuchen Sie es erneut, um die aktuellen Werte anzuzeigen.',
+      chatAccountUsageRetry: 'Erneut versuchen',
       usageBudget: 'Budget',
       usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
       usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
@@ -2564,8 +2576,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementProgress:
         '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
       succeeded: '{label} ist bereit.',
+      incomplete:
+        '{label} wurde mit weniger Elementen als angefordert abgeschlossen.',
+      reviewRequired: '{label} wartet auf Ihre Entscheidung.',
       failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
       open: 'Ergebnis öffnen',
+      review: 'Ergebnis prüfen',
     },
     elementGeneration: {
       eyebrow: 'KI-unterstützte Erstellung',
@@ -2727,7 +2743,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         generatedCount: '{generated} von {requested} generiert',
         generated: 'Generiert',
         unresolved: 'Ungelöst',
-        warnings: 'Warnungen',
+        warnings: 'Ablaufwarnungen',
+        warningsHelp:
+          'Vom Generierungsablauf gemeldet, unabhängig von den Qualitätshinweisen einzelner Elemente.',
         retries: 'Wiederholungen',
         processing: 'Die Elemente werden vorbereitet',
         processingHelp:
@@ -2786,6 +2804,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         bloomLevel: 'Bloom: {level}',
         difficultyLevel: 'Schwierigkeit: {level}',
         qualityAttention: 'Qualitätsprüfung empfohlen',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'Die geschätzte Schwierigkeit sollte vor der Verwendung geprüft werden.',
+          difficultyValidationFailed:
+            'Die Schwierigkeitsprüfung war für dieses Element nicht erfolgreich.',
+          manualReviewRequired:
+            'Dieses Element wurde zur manuellen Prüfung markiert.',
+          other: 'Weitere Qualitätsprüfungen haben dieses Element markiert.',
+          acceptedUnsaved:
+            'Angenommen, aber noch nicht in Ihrer Bibliothek gespeichert.',
+        },
         notApplicable: 'Nicht anwendbar',
         sourceUnavailable: 'Quelle nicht verfügbar',
         sourcesTitle: 'Quellen',
@@ -4371,10 +4400,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
       viewActivities: 'Aktivitäten einsehen',
+      openLibrary: 'Bibliothek öffnen',
+      noNotificationEmail: 'Nicht angegeben',
       executeActivities: 'Aktivitäten ausführen',
       modifyCourseSettings: 'Kurseinstellungen ändern',
       modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
       manageParticipantGroups: 'Teilnehmergruppen verwalten',
+      leaderboardSummary:
+        'Vergleichen Sie die Punkte der Teilnehmenden im gewählten Zeitraum.',
+      leaderboardInclusionHelp: 'Wer erscheint in der Rangliste?',
+      leaderboardInclusion:
+        'Teilnehmende ohne Punkte werden in der Rangliste für den gesamten Kurs und in rollierenden Ranglisten aufgeführt.',
+      leaderboardExportHelp: 'Hinweise zum CSV-Export',
+      leaderboardExportDescription:
+        'Der CSV-Export enthält zusätzlich zu den Benutzernamen die E-Mail-Adressen der Teilnehmenden.',
       deleteCourse: 'Kurs löschen',
       removeCourse: 'Kurs entfernen',
       confirmCourseRemoval:
@@ -4787,6 +4826,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Lernmodi können in diesem Chatbot-Status nicht bearbeitet werden.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
+      chatbotSetupCredits: 'Credits',
+      chatbotSetupCreditsDescription:
+        'Limiten und Zurücksetzungsintervall pro teilnehmende Person',
       chatbotSetupReview: 'Prüfen und einreichen',
       chatbotSetupReviewDescription:
         'Gespeicherte Angaben prüfen und Veröffentlichung beantragen',
@@ -4798,18 +4840,58 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSetupDisclaimerTitle: 'Disclaimer für Teilnehmende',
       chatbotSetupDisclaimerDescriptionLong:
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
+      chatbotSetupCreditsTitle: 'Credits für Teilnehmende',
+      chatbotSetupCreditsDescriptionLong:
+        'Konfigurieren Sie die Credits, die jede teilnehmende Person erhält. Die Einstellungen sind gesperrt, solange eine Revision geprüft wird.',
+      chatbotCreditPolicyDescription:
+        'Start-Credits gelten bei der ersten Nutzung. Wiederkehrende Zurücksetzungen fügen Credits bis zum festgelegten Maximum hinzu.',
+      chatbotCreditAmountRequired: 'Bitte geben Sie eine Credit-Menge ein.',
+      chatbotCreditAmountInvalid:
+        'Bitte geben Sie eine nicht negative ganze Zahl bis 2 147 483 647 ein.',
+      chatbotCreditResetPeriodRequired:
+        'Bitte wählen Sie ein Zurücksetzungsintervall.',
+      chatbotCreditResetAmountInvalid:
+        'Bitte geben Sie bei aktivierten Zurücksetzungen eine positive ganze Zahl ein.',
+      chatbotCreditInitialAboveMaximum:
+        'Die Start-Credits dürfen die maximalen Credits nicht überschreiten.',
+      chatbotCreditResetAboveMaximum:
+        'Die Zurücksetzungsmenge darf die maximalen Credits nicht überschreiten.',
+      chatbotCreditPolicySaveSuccess:
+        'Die Credit-Einstellungen für Teilnehmende wurden gespeichert.',
+      chatbotCreditPolicySaveError:
+        'Die Credit-Einstellungen für Teilnehmende konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
       chatbotSetupReviewTitle: 'Prüfen und einreichen',
       chatbotSetupReviewDescriptionLong:
         'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an. Für Änderungen können Sie die anderen Bereiche öffnen.',
       chatbotSetupEdit: 'Bearbeiten',
       chatbotSetupPublicationNote:
-        'Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und nicht separat gespeichert. Bis zum Einreichen können Sie sie bearbeiten.',
+        'Die Credit-Einstellungen für Teilnehmende werden separat gespeichert und hier zur Prüfung angezeigt. Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und können bis zum Einreichen bearbeitet werden.',
       chatbotDiscardChangesConfirmation:
         'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
       chatbotNavigationPending:
         'Bitte warten Sie, bis die aktuelle Chatbot-Änderung gespeichert wurde.',
       chatbotPreviewUnsavedConfirmation:
-        'Diese Vorschau öffnet die zuletzt gespeicherte Chatbot-Konfiguration. Möchten Sie trotz ungespeicherter Änderungen fortfahren?',
+        'Diese Vorschau öffnet die zuletzt gespeicherte Live-Konfiguration des Chatbots. Möchten Sie trotz ungespeicherter Änderungen fortfahren?',
+      chatbotRevisionLiveOnly:
+        'Die Live-Konfiguration ist für Teilnehmende aktiv. Speichern Sie eine Revision, um Änderungen zur Prüfung vorzubereiten.',
+      chatbotRevisionSaved:
+        'Die gespeicherte Revision {version} ist zur Prüfung bereit.',
+      chatbotRevisionPending:
+        'Die Revision {version} wird geprüft. Ihre Felder sind bis zum Abschluss gesperrt.',
+      chatbotRevisionRejected:
+        'Die Revision {version} wurde abgelehnt. Aktualisieren Sie die gespeicherte Revision und reichen Sie sie erneut ein.',
+      chatbotRevisionReviewComment: 'Rückmeldung zur Prüfung:',
+      chatbotRevisionReload: 'Revision neu laden',
+      chatbotRevisionReloading: 'Revision wird neu geladen…',
+      chatbotRevisionConflict:
+        'Diese Revision wurde inzwischen geändert. Laden Sie die gespeicherte Revision neu und wenden Sie Ihre ungespeicherten Änderungen erneut an.',
+      chatbotRevisionRequiresSaved:
+        'Speichern Sie die Revision, bevor Sie sie zur Prüfung einreichen.',
+      chatbotRevisionWithdraw: 'Revision zurückziehen',
+      chatbotRevisionWithdrawn:
+        'Die Revision wurde zurückgezogen. Sie können sie weiter bearbeiten.',
+      chatbotRevisionWithdrawError:
+        'Die Revision konnte nicht zurückgezogen werden. Laden Sie sie neu und versuchen Sie es erneut.',
       chatbotCreatedAt: 'Erstellt',
       chatbotUpdatedAt: 'Zuletzt aktualisiert',
       chatbotName: 'Name',
@@ -4846,11 +4928,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte geben Sie die erwartete Anzahl Studierender ein.',
       chatbotPublicationExpectedStudentCountInvalid:
         'Bitte geben Sie eine positive ganze Zahl für die erwartete Anzahl Studierender ein.',
-      chatbotPublicationProposedCredits: 'Vorgeschlagene Credits',
-      chatbotPublicationProposedCreditsRequired:
-        'Bitte geben Sie die vorgeschlagenen Credits ein.',
-      chatbotPublicationProposedCreditsInvalid:
-        'Bitte geben Sie eine positive ganze Zahl für die vorgeschlagenen Credits ein.',
       requestChatbotPublication: 'Veröffentlichung beantragen',
       resubmitChatbotPublication: 'Erneut zur Prüfung einreichen',
       chatbotPublicationSubmitted:
@@ -4860,7 +4937,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublicationDisclaimerRequired:
         'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
       chatbotPublicationUnsavedSetup:
-        'Speichern Sie Änderungen in den Grundangaben, Lernmodi und im Disclaimer oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
+        'Speichern Sie Änderungen in den Grundangaben, Lernmodi, im Disclaimer und bei den Credits oder warten Sie, bis sie gespeichert sind, bevor Sie die Veröffentlichung beantragen.',
       chatbotPublicationAuthorizationChecking:
         'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
       chatbotPublicationAuthorizationUnavailable:
@@ -4889,7 +4966,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Metadaten können während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
       chatbotDisclaimerAuthoring: 'Disclaimer bearbeiten',
       chatbotDisclaimerReadonly:
-        'Der Disclaimer kann nach der Veröffentlichung, während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
+        'Der Disclaimer kann während der Prüfung oder im pausierten Zustand nicht bearbeitet werden.',
       chatbotDisclaimerTitle: 'Disclaimer-Titel',
       chatbotDisclaimerTitleRequired:
         'Bitte geben Sie einen Disclaimer-Titel ein.',
@@ -5001,6 +5078,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
+      chatbotOwnerPreviewLive: 'Live-Konfiguration',
+      chatbotOwnerPreviewLiveDescription:
+        'Die Eigentümer-Vorschau verwendet die aktuelle Live-Konfiguration. Gespeicherte Revisionen werden erst nach der Freigabe angewendet.',
       responseExamples: 'Antwortbeispiele',
       responseExamplesDescription:
         'Überprüfen Sie Antwortbeispiele, bevor Sie sie aktivieren.',

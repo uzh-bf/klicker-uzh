@@ -321,6 +321,13 @@ is configured, `FEATURE_FLAGS_FORCED_ON` can supply registered flags only in
 `development` or `test`. Configured clients and staging or production ignore the
 override.
 
+The self-contained devcontainer serves its explicit development flags through
+`/__growthbook__/api/features/sdk-test`. Manage proxies that endpoint to the
+local backend, so browser navigation and server capabilities agree without a
+GrowthBook service. The development route is absent in production; test mode
+keeps its separate intercepted fixture endpoint. Account beta preferences,
+Catalyst eligibility, login scope, and administrative approval still apply.
+
 The `NODE_ENV` fallback covers local development and tests. It must not be used
 to distinguish staging from production because both normally run with
 `NODE_ENV=production`. An adopting service must register `GROWTHBOOK_ENV` in

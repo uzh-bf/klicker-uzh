@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementManipulationInput,
@@ -22,34 +21,6 @@ function serviceError(
   message: string
 ): never {
   throw questionGenerationServiceError(code, message)
-}
-
-export async function claimIncompleteFlashcardPublication(
-  buildId: string,
-  ctx: ContextWithUser
-) {
-  const claimed = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: buildId,
-      ownerId: ctx.user.sub,
-      status: DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
-    },
-    data: {
-      status: DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
-      stage: 'publishing_incomplete',
-      incompletePublishedById: ctx.user.sub,
-      incompletePublishedAt: new Date(),
-      providerPublicationDispatchAttemptId: randomUUID(),
-      providerPublicationEventId: null,
-      providerPublicationWorkflowRunId: null,
-    },
-  })
-  if (claimed.count !== 1) {
-    return serviceError(
-      'CONCURRENT_MODIFICATION',
-      'Flashcard build was changed by another request'
-    )
-  }
 }
 
 export async function saveGeneratedFlashcards(
