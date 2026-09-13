@@ -103,8 +103,9 @@ marker creation to work around a refusal.
 This repository pins devrouter 0.0.72. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
-additive and order-insensitive; omitting `--profile` keeps the all-on `full`
-default. The committed native `devcontainer.json` stays all-on for VS Code and
+additive and order-insensitive; omitting `--profile` selects `standard`, which
+excludes the deterministic MCP fixture. Explicit `full` selects all capabilities.
+The committed native `devcontainer.json` stays all-on for VS Code and
 direct DevPod use - only devrouter generated effective config selects less.
 Do not use 0.0.39 for managed profile transitions: 0.0.40 adds rollback-safe
 generated configuration when a cold or warm transition fails. Version 0.0.46
@@ -160,8 +161,9 @@ workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
-The default starts the full profile. For focused activity tests, request the
-required profile union explicitly before the Playwright arguments:
+The launcher infers profiles from the selected specs and falls back to
+`playwright` when inference is unavailable. To override that selection, request
+the required profile union explicitly before the Playwright arguments:
 
 ```bash
 pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
