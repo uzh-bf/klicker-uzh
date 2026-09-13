@@ -27,21 +27,37 @@ function documentPayload(value: unknown, depth = 0): RecordValue | undefined {
   }
   if (!record(value) || value.isError === true || 'error' in value)
     return undefined
-  if (
-    Array.isArray(value.content) &&
-    value.content.some((item) => !record(item) || item.type !== 'text')
-  )
-    return undefined
-  if (value.mode === 'documents' && Array.isArray(value.sources)) return value
-  if (value.structuredContent !== undefined)
-    return documentPayload(value.structuredContent, depth + 1)
-  if (Array.isArray(value.content) && value.content.length === 1) {
-    const item = value.content[0]
-    if (record(item) && item.type === 'text')
-      return documentPayload(item.text, depth + 1)
+  if (Array.isArray(value.sources)) {
+    // A bare payload must not also carry an envelope representation; the
+    // ambiguity makes the result unusable for fusion.
+    if ('structuredContent' in value || 'content' in value || 'result' in value)
+      return undefined
+    return value.mode === 'documents' ? value : undefined
   }
-  if ('result' in value) return documentPayload(value.result, depth + 1)
-  return undefined
+  const representations: unknown[] = []
+  if (value.structuredContent !== undefined)
+    representations.push(value.structuredContent)
+  if ('content' in value) {
+    if (!Array.isArray(value.content)) return undefined
+    for (const item of value.content) {
+      if (!record(item) || item.type !== 'text') return undefined
+      representations.push(item.text)
+    }
+  }
+  if (value.result !== undefined) representations.push(value.result)
+  if (representations.length === 0) return undefined
+  const payloads: RecordValue[] = []
+  for (const representation of representations) {
+    const payload = documentPayload(representation, depth + 1)
+    if (!payload) return undefined
+    payloads.push(payload)
+  }
+  // Coexisting representations must agree. Promoting one over a disagreeing
+  // sibling would fabricate evidence, so the caller keeps the original result.
+  const first = canonical(payloads[0])
+  return payloads.every((payload) => canonical(payload) === first)
+    ? payloads[0]
+    : undefined
 }
 
 function passages(value: unknown): Passage[] | undefined {
@@ -75,6 +91,51 @@ function canonical(value: unknown): string {
   return JSON.stringify(value) ?? 'null'
 }
 
+// The document producer (mcp-doc-query documents mode) attaches per-query
+// retrieval metadata in development responses: a chunk `score` and
+// `global_rank` and a source `aggregate_rank`. They rank one search and are
+// not part of a passage's identity. `reference`, `source_id` and
+// `catalog_record_id` are its stable resource identifiers; the provider emits
+// no per-chunk identifier, so a chunk is identified by content and locator.
+const PER_QUERY_SOURCE_FIELDS: readonly string[] = ['aggregate_rank']
+const PER_QUERY_CHUNK_FIELDS: readonly string[] = ['score', 'global_rank']
+const RESOURCE_ID_FIELDS: readonly string[] = [
+  'reference',
+  'source_id',
+  'catalog_record_id',
+]
+
+function withoutFields(
+  value: RecordValue,
+  fields: readonly string[]
+): RecordValue {
+  const result: RecordValue = {}
+  for (const [key, entry] of Object.entries(value)) {
+    if (!fields.includes(key)) result[key] = entry
+  }
+  return result
+}
+
+/**
+ * Deduplication identity for one passage. A stable provider resource
+ * identifier lets the per-query score metadata be ignored; the content, the
+ * locator and every other source and chunk field stay in the key, so
+ * conflicting evidence or provenance is never merged. Without a stable
+ * resource identifier the full canonical passage is used, which can only
+ * preserve more passages, never fewer.
+ */
+function passageKey(passage: Passage): string {
+  const identified = RESOURCE_ID_FIELDS.some((field) => {
+    const value = passage.source[field]
+    return typeof value === 'string' && value.trim().length > 0
+  })
+  if (!identified) return canonical(passage)
+  return canonical({
+    source: withoutFields(passage.source, PER_QUERY_SOURCE_FIELDS),
+    chunk: withoutFields(passage.chunk, PER_QUERY_CHUNK_FIELDS),
+  })
+}
+
 /** Combine exact passages, never infer identity from a filename or similar text. */
 export function combineGraphSearchDocuments(
   original: unknown,
@@ -89,7 +150,7 @@ export function combineGraphSearchDocuments(
   >()
   for (const [search, candidates] of [first, second].entries()) {
     candidates.forEach((passage, index) => {
-      const key = canonical(passage)
+      const key = passageKey(passage)
       const candidate = ranked.get(key) ?? {
         passage,
         score: 0,
@@ -105,7 +166,7 @@ export function combineGraphSearchDocuments(
   const seen = new Set<string>()
   let characters = 0
   function admit(passage: Passage) {
-    const key = canonical(passage)
+    const key = passageKey(passage)
     const size = String(passage.chunk.content).length
     if (seen.has(key) || selected.length >= 12 || characters + size > 16000)
       return

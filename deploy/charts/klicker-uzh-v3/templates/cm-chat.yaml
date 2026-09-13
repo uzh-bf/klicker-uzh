@@ -11,14 +11,14 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
-  KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
-  KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
-  KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
   name: {{ include "chart.fullname" . }}-config-chat
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
+  KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
+  KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
+  KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}

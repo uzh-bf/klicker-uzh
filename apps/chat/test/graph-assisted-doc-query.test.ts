@@ -15,6 +15,12 @@ const documents = (content: string, page = 1) => ({
     },
   ],
 })
+// Mirrors the mcp-doc-query documents-mode provider: a stable source identity
+// plus per-query chunk score/rank metadata that varies between two searches.
+const scoredDocuments = (
+  source: Record<string, unknown>,
+  chunk: Record<string, unknown>
+) => ({ mode: 'documents', sources: [{ ...source, chunks: [chunk] }] })
 const dependencies = () => ({
   validateScope: vi
     .fn()
@@ -315,5 +321,140 @@ describe('graph-assisted document retrieval', () => {
     }) as any
     expect(result.structuredContent.answer).toBeUndefined()
     expect(result.structuredContent.sources).toHaveLength(2)
+  })
+
+  it('deduplicates a repeated passage that only differs in per-query score metadata', () => {
+    const passage = (
+      score: number,
+      globalRank: number,
+      aggregateRank: number
+    ) =>
+      scoredDocuments(
+        {
+          reference: 'synthetic.pdf',
+          reference_type: 'url',
+          title: 'Synthetic course',
+          aggregate_rank: aggregateRank,
+        },
+        { content: 'Evidence', page_number: 1, score, global_rank: globalRank }
+      )
+    const result = combineGraphSearchDocuments(
+      passage(0.91, 1, 1),
+      passage(0.32, 7, 3)
+    ) as any
+    expect(result.structuredContent.sources).toHaveLength(1)
+    expect(result.structuredContent.summary).toEqual({
+      count: 1,
+      sources_returned: 1,
+      chunks_returned: 1,
+    })
+    // The baseline occurrence is retained with its own score metadata.
+    expect(result.structuredContent.sources[0]).toMatchObject({
+      aggregate_rank: 1,
+      chunks: [{ content: 'Evidence', score: 0.91, global_rank: 1 }],
+    })
+  })
+
+  it('keeps passages whose content conflicts under a shared resource identity', () => {
+    const at = (content: string, score: number) =>
+      scoredDocuments(
+        { reference: 'synthetic.pdf' },
+        { content, page_number: 1, score }
+      )
+    const result = combineGraphSearchDocuments(
+      at('First support', 0.9),
+      at('Other support', 0.2)
+    ) as any
+    expect(
+      result.structuredContent.sources.flatMap((source: any) =>
+        source.chunks.map((chunk: any) => chunk.content)
+      )
+    ).toEqual(['First support', 'Other support'])
+  })
+
+  it('keeps passages whose locator conflicts despite identical content', () => {
+    const at = (page: number, score: number) =>
+      scoredDocuments(
+        { reference: 'synthetic.pdf' },
+        { content: 'Evidence', page_number: page, score }
+      )
+    const result = combineGraphSearchDocuments(at(1, 0.9), at(2, 0.2)) as any
+    expect(
+      result.structuredContent.sources.flatMap((source: any) =>
+        source.chunks.map((chunk: any) => chunk.page_number)
+      )
+    ).toEqual([1, 2])
+  })
+
+  it('keeps passages whose source provenance conflicts despite a shared identity', () => {
+    const at = (title: string) =>
+      scoredDocuments(
+        { reference: 'synthetic.pdf', title },
+        { content: 'Evidence', page_number: 1 }
+      )
+    const result = combineGraphSearchDocuments(
+      at('Baseline title'),
+      at('Expanded title')
+    ) as any
+    expect(result.structuredContent.sources).toHaveLength(2)
+    expect(
+      result.structuredContent.sources.map((source: any) => source.title)
+    ).toEqual(['Baseline title', 'Expanded title'])
+  })
+
+  it('falls back to the full passage when no stable resource identifier is present', () => {
+    const at = (score: number) =>
+      scoredDocuments(
+        { title: 'Unidentified source' },
+        { content: 'Evidence', page_number: 1, score }
+      )
+    const result = combineGraphSearchDocuments(at(0.9), at(0.2)) as any
+    expect(result.structuredContent.sources).toHaveLength(2)
+  })
+
+  it('fuses an envelope whose text and structured payloads agree', () => {
+    const payload = documents('Baseline evidence')
+    const result = combineGraphSearchDocuments(
+      {
+        structuredContent: payload,
+        content: [{ type: 'text', text: JSON.stringify(payload) }],
+      },
+      documents('Graph evidence', 2)
+    ) as any
+    expect(
+      result.structuredContent.sources.flatMap((source: any) =>
+        source.chunks.map((chunk: any) => chunk.page_number)
+      )
+    ).toEqual([1, 2])
+  })
+
+  it('refuses to fuse an envelope whose text and structured payloads disagree', async () => {
+    const conflicted = {
+      structuredContent: documents('Baseline evidence'),
+      content: [
+        { type: 'text', text: JSON.stringify(documents('Conflicting')) },
+      ],
+    }
+    expect(combineGraphSearchDocuments(conflicted, documents('More', 2))).toBe(
+      conflicted
+    )
+    const execute = vi.fn().mockResolvedValue(conflicted)
+    expect(
+      await graphAssistedDocumentQuery(execute, dependencies())(
+        { query: 'risk' },
+        {}
+      )
+    ).toBe(conflicted)
+    expect(execute).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuses an envelope whose text sibling is not decodable JSON', () => {
+    const envelope = {
+      structuredContent: documents('Baseline evidence'),
+      content: [{ type: 'text', text: 'truncated' }],
+    }
+    expect(combineGraphSearchDocuments(envelope, documents('More'))).toBe(
+      envelope
+    )
   })
 })
