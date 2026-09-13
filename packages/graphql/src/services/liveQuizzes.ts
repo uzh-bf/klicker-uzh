@@ -1119,7 +1119,6 @@ export async function activateLiveQuizBlock(
     },
   })
 
-
   // initialize the cache for the new active block
   const redisMulti = updatedQuiz.isAssessmentEnabled
     ? ctx.redisAssessmentExec.pipeline()
