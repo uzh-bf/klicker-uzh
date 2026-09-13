@@ -2,6 +2,21 @@
 
 ## Approval summary
 
+September 12 delivery update: the reader foundation merged into `v3-ai` in
+[PR #5879](https://github.com/uzh-bf/klicker-uzh/pull/5879), commit
+`1f139428d506cb6a647a9021f9830eb65f983c13`. The user approved a compatibility
+transition before the requested plural-only cleanup. First deliver readers
+accepting both `kb_id: id` and `kb_ids: [id]`, without changing stored rows or
+writers. After those readers are deployed, backfill managed configurations,
+switch writers, and remove singular support. The final application contract
+uses plural fields; the singular compatibility descriptions below apply only
+during the transition. JWT claim compatibility remains a separate service
+contract. No deployment or live backfill is authorized by source approval.
+
+The compatibility follow-up is on `rs/chatbot-kb-scope-transition`. The
+unpublished cleanup is preserved in `trees/rs/chatbot-multiple-kb`; do not apply
+its strict reader or migration before the deployment prerequisite is proven.
+
 Let chatbot owners add and remove existing authorized knowledge bases in the
 Knowledge tab. Zero attachments remains valid; up to 32 may be active. Adding
 one preserves the others. Detaching never deletes a knowledge base or resources.

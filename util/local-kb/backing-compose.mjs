@@ -81,6 +81,7 @@ export function renderBackingCompose(config) {
       },
       blob: {
         ...common,
+        ports: [`127.0.0.1:${config.bindings.ports.klicker.blob}:10000`],
         image: 'mcr.microsoft.com/azure-storage/azurite:3.36.0',
         env_file: environmentFile('blob'),
         read_only: true,

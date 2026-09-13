@@ -1945,6 +1945,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphLoadError: 'The graph status could not be loaded.',
     graphRetry: 'Retry',
     graphBuildError: 'The graph build could not be started.',
+    graphNoCourseContent:
+      'No resources are categorized as “Course content”. Tag your course materials before building the graph — administrative resources are excluded.',
     graphQuotaInsufficient:
       'The selected build is estimated at {estimate}, but only {remaining} remains in your semester quota. Choose a lower-cost quality level if available, or wait for the quota to reset.',
     graphPreviewTitle: 'Published graph',
@@ -2531,8 +2533,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       elementProgress:
         '{generated} of {requested, plural, one {# element} other {# elements}} generated',
       succeeded: '{label} is ready.',
+      incomplete: '{label} finished with fewer elements than requested.',
+      reviewRequired: '{label} is waiting for your decision.',
       failed: 'Background generation failed.',
       open: 'Open result',
+      review: 'Review result',
     },
     elementGeneration: {
       eyebrow: 'AI-assisted creation',
@@ -2689,7 +2694,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         generatedCount: '{generated} of {requested} generated',
         generated: 'Generated',
         unresolved: 'Unresolved',
-        warnings: 'Warnings',
+        warnings: 'Workflow warnings',
+        warningsHelp:
+          'Raised by the generation workflow, separate from the quality notes on individual elements.',
         retries: 'Retries',
         processing: 'The elements are being prepared',
         processingHelp:
@@ -2748,6 +2755,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         bloomLevel: 'Bloom: {level}',
         difficultyLevel: 'Difficulty: {level}',
         qualityAttention: 'Quality review recommended',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'The predicted difficulty should be reviewed before use.',
+          difficultyValidationFailed:
+            'The difficulty check did not pass for this element.',
+          manualReviewRequired: 'This element was flagged for manual review.',
+          other: 'Additional quality checks flagged this element.',
+          acceptedUnsaved: 'Accepted, but not yet saved to your library.',
+        },
         notApplicable: 'Not applicable',
         sourceUnavailable: 'Source unavailable',
         sourcesTitle: 'Sources',

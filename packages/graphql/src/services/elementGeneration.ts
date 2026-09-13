@@ -323,6 +323,7 @@ function normalizedKeepPayload(
     stem: input.content,
     context: null,
     explanation: input.explanation ?? null,
+    tags: input.tags ?? [],
     choices,
   }
   const elementInput: ElementManipulationInput = {
@@ -345,7 +346,7 @@ function normalizedKeepPayload(
     },
     basePoints: input.basePoints,
     pointsMultiplier: input.pointsMultiplier,
-    tags: input.tags ?? [],
+    tags: current.tags,
   }
   return { current, elementInput }
 }
@@ -594,8 +595,7 @@ export async function updateGeneratedElementDraft(
   if (
     !isQuestionElementType(elementType) ||
     !input.current.choices ||
-    input.current.cardType != null ||
-    (input.current.tags?.length ?? 0) > 0
+    input.current.cardType != null
   ) {
     throw questionGenerationServiceError(
       'DRAFT_INVALID',
@@ -608,6 +608,7 @@ export async function updateGeneratedElementDraft(
     stem: input.current.prompt,
     context: input.current.context ?? null,
     explanation: input.current.explanation ?? null,
+    tags: input.current.tags ?? [],
     choices: input.current.choices.map((choice) => ({
       ...choice,
       feedback: choice.feedback ?? null,

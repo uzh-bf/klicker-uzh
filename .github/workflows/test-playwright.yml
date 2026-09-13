@@ -5,21 +5,24 @@ on:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    types:
-      [
+    types: [
         opened,
         synchronize,
         reopened,
+        # Retained while the trusted reusable workflow at @v3 could still
+        # compute a partial draft plan; remove once the route change lands on v3.
         ready_for_review,
+        edited,
         converted_to_draft,
         closed,
       ]
 
 jobs:
-  # Joining the same PR group cancels obsolete execution without an API token.
-  # Push verification uses its branch ref and remains independent.
+  # A closed pull request cancels its in-flight execution through the shared
+  # group without an API token. A draft conversion must not cancel, because a
+  # draft runs the same full suite.
   cancel-closed-pr:
-    if: github.event_name == 'pull_request' && (github.event.action == 'converted_to_draft' || github.event.action == 'closed')
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -30,11 +33,11 @@ jobs:
       - name: Finish closed pull request execution
         run: ':'
 
-  # The called workflow is the only execution envelope. It recomputes the
-  # route and selector state from the immutable event payload and exposes one
-  # result to the required status job.
+  # The called workflow is the only execution envelope. It recomputes the route
+  # and selector state from the immutable event payload. Drafts run the same
+  # full plan as ready pull requests, so the caller never gates on draft state.
   test-playwright-execution:
-    if: github.event_name != 'pull_request' || (github.event.action != 'closed' && github.event.pull_request.draft != true)
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -51,10 +54,10 @@ jobs:
   # group so a stale reporter cannot block the current invocation.
   test-playwright-status:
     needs: test-playwright-execution
+    # Unconditional for open events: a skipped required context can count as
+    # acceptable, so cancellation must fail inside the job instead.
     if: >-
       always() &&
-      !cancelled() &&
-      needs.test-playwright-execution.result != 'cancelled' &&
       (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -71,7 +74,6 @@ jobs:
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
           SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-          IS_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
         run: |
           set -euo pipefail
           {
@@ -80,7 +82,6 @@ jobs:
             printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
             printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
             printf 'is_pull_request=%s\n' "${IS_PULL_REQUEST:-unknown}"
-            printf 'is_draft=%s\n' "${IS_DRAFT:-unknown}"
             printf 'duplicate_run_id=%s\n' "${DUPLICATE_RUN_ID:-}"
             printf 'execution_result=%s\n' "$EXECUTION_RESULT"
           } > playwright-run-metadata.txt
@@ -93,16 +94,6 @@ jobs:
             echo "- Tests selected: \`${SHOULD_RUN:-unknown}\`"
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
           } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "${IS_PULL_REQUEST:-false}" = 'true' ] && [ "${IS_DRAFT:-false}" = 'true' ]; then
-            if [ "$EXECUTION_RESULT" != 'skipped' ]; then
-              echo 'Draft Playwright execution was not skipped.'
-              exit 1
-            fi
-            echo '- Draft pull request: execution skipped before prepare, build, and shards.' >> "$GITHUB_STEP_SUMMARY"
-            echo 'Draft pull request: Playwright execution skipped before prepare/build/shards.'
-            exit 0
-          fi
 
           # A cancelled invocation may be obsolete, but this job has no proof
           # that a newer invocation survived. Keep the required status failed.
@@ -118,34 +109,28 @@ jobs:
             echo 'Playwright execution returned an invalid route.'
             exit 1
           fi
-          # Equivalent validation reuse is push-only. A pull request must
-          # prove its own execution plan below.
+          # No reuse for a push or a pull request. The reusable workflow is
+          # pinned at @v3, so until this change is merged there it can still
+          # offer a duplicate run id from older code; the caller rejects every
+          # duplicate rather than trusting the offer. A reused run also cannot
+          # attest the full eight-shard execution that the source must prove.
           if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
-            if [ "${IS_PULL_REQUEST:-false}" = 'true' ]; then
-              echo 'Pull request execution cannot reuse equivalent validation.'
-              exit 1
-            fi
-            if ! [[ "$DUPLICATE_RUN_ID" =~ ^[0-9]+$ ]]; then
-              echo 'Invalid equivalent validation run ID.'
-              exit 1
-            fi
-            echo "Equivalent PR validation passed in run $DUPLICATE_RUN_ID."
-            echo "- Reused validation: [run $DUPLICATE_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$DUPLICATE_RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo 'Playwright validation cannot be reused; it must run independently.'
+            exit 1
           fi
 
-          # Push verification keeps its existing selector behavior. Ready PRs
-          # must prove the full trusted eight-shard execution plan.
-          if [ "${IS_PULL_REQUEST:-false}" = 'true' ]; then
-            if [ "$MODE" != 'full' ]; then
-              echo 'Ready pull request execution did not use full mode.'
-              exit 1
-            fi
-            if [ "$SHOULD_RUN" != 'true' ]; then
-              echo 'Ready pull request execution did not select Playwright.'
-              exit 1
-            fi
-            if ! node <<'NODE'
+          # Every push and every pull request, draft or ready, must attest the
+          # complete trusted eight-shard execution plan; no selector result may
+          # skip it.
+          if [ "$MODE" != 'full' ]; then
+            echo 'Playwright execution did not use full mode.'
+            exit 1
+          fi
+          if [ "$SHOULD_RUN" != 'true' ]; then
+            echo 'Playwright execution did not select Playwright.'
+            exit 1
+          fi
+          if ! node <<'NODE'
           const raw = process.env.SHARD_MATRIX ?? ''
           let matrix
           try {
@@ -174,20 +159,11 @@ jobs:
             new Set(shards.map((shard) => shard.shardIndex)).size === 8
           process.exit(complete ? 0 : 1)
           NODE
-            then
-              echo 'Ready pull request execution did not expose the complete eight-shard matrix.'
-              exit 1
-            fi
-          fi
-
-          if [ "$SHOULD_RUN" = 'false' ]; then
-            echo 'No Playwright-relevant tests selected.'
-            exit 0
-          fi
-          if [ "$SHOULD_RUN" != 'true' ]; then
-            echo 'Playwright execution did not expose a valid selection result.'
+          then
+            echo 'Playwright execution did not expose the complete eight-shard matrix.'
             exit 1
           fi
+
           echo 'Playwright execution passed.'
 
       - name: Upload run metadata

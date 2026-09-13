@@ -2876,6 +2876,10 @@ export async function rebuildKbKnowledgeGraph(
         kbId,
         deletedAt: null,
         activeContentSha256: { not: null },
+        // Graph builds intentionally cover only lecturer-curated course
+        // material: administrative uploads (tutorials, syllabi, rules) must
+        // not leak into graph nodes and generated questions.
+        materialType: DB.KBResourceMaterialType.COURSE_CONTENT,
       },
       select: {
         id: true,
@@ -2888,9 +2892,12 @@ export async function rebuildKbKnowledgeGraph(
       orderBy: { id: 'asc' },
     })
     if (resources.length === 0) {
-      throw new GraphQLError('KB has no active graph sources', {
-        extensions: { code: 'KB_GRAPH_EMPTY' },
-      })
+      throw new GraphQLError(
+        'KB has no course-content resources with served content',
+        {
+          extensions: { code: 'KB_GRAPH_NO_COURSE_CONTENT' },
+        }
+      )
     }
 
     const validatedResources = resources.map((resource) => ({

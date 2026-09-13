@@ -10,6 +10,35 @@ import { gotoCommit } from '../util/workflow.js'
 
 const FIXTURE_PREFIX = 'Synthetic question-generation review fixture'
 
+type BuildQueryVariables = { id?: string; input?: { buildId?: string } }
+
+// Synthetic ElementGenerationBuild payload for intercepted responses. Only the
+// fields the review page reads are provided, so a cache merge keeps the real
+// design summary and drafts of a seeded fixture build.
+function syntheticBuild(buildId: string, status: string) {
+  const timestamp = new Date().toISOString()
+  return {
+    __typename: 'ElementGenerationBuild',
+    id: buildId,
+    elementType: 'SC',
+    status,
+    stage: 'running',
+    requestedElementCount: 4,
+    generatedElementCount: 0,
+    unresolvedElementCount: 0,
+    warningCount: 0,
+    retryCount: 0,
+    errorCode: null,
+    errorMessage: null,
+    errorRetryable: false,
+    startedAt: timestamp,
+    completedAt: null,
+    incompletePublishedAt: null,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }
+}
+
 test.describe('Generated element review inbox', () => {
   test('reviews synthetic generated elements through the canonical editor', async ({
     loginLecturer,
@@ -53,7 +82,18 @@ test.describe('Generated element review inbox', () => {
       await expect(review).toContainText('Learning design')
       await expect(review).toContainText('Bloom: Understand')
       await expect(review).toContainText('Difficulty: Medium')
-      await expect(review).toContainText('Quality review recommended')
+      // The flagged draft explains itself with one reason node, an unflagged
+      // draft renders none.
+      await expect(
+        review
+          .getByTestId(`generated-element-row-${fixture.primaryDraftIds[4]}`)
+          .getByRole('listitem')
+      ).toHaveCount(1)
+      await expect(
+        review
+          .getByTestId(`generated-element-row-${fixture.primaryDraftIds[2]}`)
+          .getByRole('listitem')
+      ).toHaveCount(0)
       await expect(review).toContainText('Updated')
       await expect(review).not.toContainText('.md')
 
@@ -333,6 +373,445 @@ test.describe('Generated element review inbox', () => {
       await expect(
         savedEditor.getByTestId('insert-question-title')
       ).toHaveValue(editedTitle)
+    } finally {
+      try {
+        await cleanupQuestionGenerationReviewFixture()
+      } finally {
+        await prisma.user.update({
+          where: { id: USER_ID_TEST },
+          data: previousAccess,
+        })
+      }
+    }
+  })
+
+  test('explains quality flags and a pending save through reason nodes', async ({
+    loginLecturer,
+    page,
+  }) => {
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const prisma = await getPrisma()
+    const previousAccess = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
+
+    try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiFeaturesEnabled: true, betaEnabled: true },
+      })
+      const fixture = await seedQuestionGenerationReviewFixture()
+      await loginLecturer()
+
+      await gotoCommit(
+        page,
+        `${manageUrl}/elements/generate?buildId=${fixture.attentionBuildId}`
+      )
+      const build = page.getByTestId('element-generation-build')
+      const review = page.getByTestId('generated-element-review')
+      await expect(review.locator('tbody tr')).toHaveCount(4)
+
+      // Workflow warnings and per-element quality reasons are separate values:
+      // the build reports two warnings while the drafts below render their own
+      // reason nodes.
+      await expect(build.getByRole('definition')).toHaveText([
+        '4',
+        '0',
+        '2',
+        '0',
+      ])
+
+      const reasons = (draftId: string) =>
+        review
+          .getByTestId(`generated-element-row-${draftId}`)
+          .getByRole('listitem')
+
+      // Every known flag maps to one reason, and any number of unknown flags
+      // collapses into a single generic reason.
+      await expect(reasons(fixture.attentionDraftIds.mixedFlags)).toHaveCount(4)
+      await expect(reasons(fixture.attentionDraftIds.unknownFlags)).toHaveCount(
+        1
+      )
+      await expect(reasons(fixture.attentionDraftIds.noFlags)).toHaveCount(0)
+      // A pending library save is explained even without a quality flag.
+      await expect(
+        reasons(fixture.attentionDraftIds.acceptedUnsaved)
+      ).toHaveCount(1)
+
+      // Attention filtering is unchanged: flagged drafts and the pending save
+      // need attention, the unflagged draft stays in the open queue.
+      await review.getByTestId('element-generation-filter-attention').click()
+      await expect(review.locator('tbody tr')).toHaveCount(3)
+      await review.getByTestId('element-generation-filter-open').click()
+      await expect(review.locator('tbody tr')).toHaveCount(1)
+      await expect(
+        review.getByTestId(
+          `generated-element-row-${fixture.attentionDraftIds.noFlags}`
+        )
+      ).toBeVisible()
+    } finally {
+      try {
+        await cleanupQuestionGenerationReviewFixture()
+      } finally {
+        await prisma.user.update({
+          where: { id: USER_ID_TEST },
+          data: previousAccess,
+        })
+      }
+    }
+  })
+})
+
+test.describe('Background generation notifications', () => {
+  test('keeps review, completion, partial, and failure outcomes distinct', async ({
+    page,
+    loginLecturer,
+  }) => {
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const reviewBuildId = '00000000-0000-4000-8000-0000000000a1'
+    const failedBuildId = '00000000-0000-4000-8000-0000000000a2'
+    const partialBuildId = '00000000-0000-4000-8000-0000000000a3'
+    const statusByBuildId = new Map<string, string>()
+    let interceptedPolls = 0
+
+    // The provider polls ElementGenerationBuild while a job is tracked, so the
+    // notification lifecycle is driven with synthetic responses for that
+    // operation only.
+    await page.route('**/api/graphql**', async (route) => {
+      const request = route.request()
+      let operationName: string | undefined
+      let variables: { id?: string } | undefined
+
+      if (request.method() === 'GET') {
+        const url = new URL(request.url())
+        operationName = url.searchParams.get('operationName') ?? undefined
+        const rawVariables = url.searchParams.get('variables')
+        if (rawVariables) {
+          variables = JSON.parse(rawVariables) as { id?: string }
+        }
+      } else {
+        const body = request.postDataJSON() as {
+          operationName?: string
+          variables?: { id?: string }
+        }
+        operationName = body?.operationName
+        variables = body?.variables
+      }
+
+      if (operationName !== 'ElementGenerationBuild') {
+        await route.fallback()
+        return
+      }
+
+      const buildId = variables?.id ?? ''
+      const status = statusByBuildId.get(buildId)
+      if (status === undefined) {
+        // Builds are answered from the real backend unless a synthetic status
+        // was registered for them.
+        await route.fallback()
+        return
+      }
+
+      interceptedPolls += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'cache-control': 'no-store' },
+        body: JSON.stringify({
+          data: {
+            elementGenerationBuild: {
+              __typename: 'ElementGenerationBuild',
+              id: buildId,
+              status,
+              generatedElementCount: 3,
+              requestedElementCount: 4,
+            },
+          },
+        }),
+      })
+    })
+
+    await loginLecturer()
+    await expect(page.getByTestId('element-library-sidebar')).toBeVisible({
+      timeout: 20_000,
+    })
+
+    const preActionUrl = page.url()
+    const tracker = page.getByTestId('generation-status')
+    const toaster = page.getByLabel(/Notifications/)
+    const toasts = toaster.locator('[data-sonner-toast]')
+    const warningToasts = toaster.locator(
+      '[data-sonner-toast][data-type="warning"]'
+    )
+    const successToasts = toaster.locator(
+      '[data-sonner-toast][data-type="success"]'
+    )
+    const errorToasts = toaster.locator(
+      '[data-sonner-toast][data-type="error"]'
+    )
+    const completeAction = successToasts.locator('button[data-action]')
+
+    const startGeneration = (buildId: string) =>
+      page.evaluate((id) => {
+        window.dispatchEvent(
+          new CustomEvent('klicker:generation-started', {
+            detail: {
+              kind: 'element',
+              id,
+              label: `Synthetic background build ${id}`,
+              startedAt: Date.now(),
+            },
+          })
+        )
+      }, buildId)
+
+    // A running build stays tracked and raises no notification, even after it
+    // has been polled more than once.
+    statusByBuildId.set(reviewBuildId, 'RUNNING')
+    const pollsBeforeStart = interceptedPolls
+    await startGeneration(reviewBuildId)
+    await expect(tracker).toBeVisible({ timeout: 15_000 })
+    await expect
+      .poll(() => interceptedPolls, { timeout: 15_000 })
+      .toBeGreaterThanOrEqual(pollsBeforeStart + 2)
+    await expect(tracker).toBeVisible()
+    await expect(toasts).toHaveCount(0)
+
+    // Each approval gate pauses tracking without claiming completion.
+    for (const status of [
+      'WAITING_FOR_DESIGN_REVIEW',
+      'WAITING_FOR_PLAN_REVIEW',
+      'AWAITING_INCOMPLETE_PUBLICATION',
+    ]) {
+      statusByBuildId.set(reviewBuildId, status)
+      await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+      await expect(toasts).toHaveCount(1)
+      await expect(warningToasts).toHaveCount(1)
+      await expect(warningToasts.locator('button[data-action]')).toHaveCount(1)
+      await warningToasts.locator('button[data-close-button]').focus()
+      await warningToasts.locator('button[data-close-button]').press('Enter')
+      await expect(toasts).toHaveCount(0)
+      statusByBuildId.set(reviewBuildId, 'RUNNING')
+      await startGeneration(reviewBuildId)
+      await expect(tracker).toBeVisible({ timeout: 15_000 })
+    }
+
+    // The same job can complete after re-registration by its caller.
+    statusByBuildId.set(reviewBuildId, 'COMPLETED')
+    await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+    await expect(toasts).toHaveCount(1)
+    await expect(successToasts).toHaveCount(1)
+    await expect(completeAction).toHaveCount(1)
+
+    // A completion notification does not navigate on its own.
+    await expect(page).toHaveURL(preActionUrl)
+
+    await gotoCommit(page, manageUrl)
+    await expect(page.getByTestId('element-library-sidebar')).toBeVisible({
+      timeout: 20_000,
+    })
+
+    // A failed build reports an error without offering an action.
+    statusByBuildId.set(failedBuildId, 'RUNNING')
+    await startGeneration(failedBuildId)
+    await expect(tracker).toBeVisible({ timeout: 15_000 })
+    statusByBuildId.set(failedBuildId, 'FAILED')
+    await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+    await expect(toasts).toHaveCount(1)
+    await expect(errorToasts).toHaveCount(1)
+    await expect(errorToasts.locator('button[data-action]')).toHaveCount(0)
+    await expect(errorToasts.locator('button[data-close-button]')).toHaveCount(
+      1
+    )
+
+    // A partial result is announced as an actionable, non-success outcome.
+    statusByBuildId.set(partialBuildId, 'RUNNING')
+    await startGeneration(partialBuildId)
+    await expect(tracker).toBeVisible({ timeout: 15_000 })
+    statusByBuildId.set(partialBuildId, 'INCOMPLETE')
+    await expect(tracker).toHaveCount(0, { timeout: 20_000 })
+    await expect(toasts).toHaveCount(2)
+    await expect(warningToasts.locator('button[data-action]')).toHaveCount(1)
+
+    // A notification for a real build completes against the real backend, so
+    // its action can be followed to the fully rendered build page.
+    const prisma = await getPrisma()
+    const previousAccess = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
+
+    try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiFeaturesEnabled: true, betaEnabled: true },
+      })
+      const fixture = await seedQuestionGenerationReviewFixture()
+      await startGeneration(fixture.primaryBuildId)
+      await expect(successToasts).toHaveCount(1)
+      await expect(completeAction).toHaveCount(1)
+      await completeAction.focus()
+      await completeAction.press('Enter')
+      await expect(page).toHaveURL(
+        new RegExp(`/elements/generate\\?buildId=${fixture.primaryBuildId}`)
+      )
+      await expect(page.getByTestId('element-generation-build')).toBeVisible({
+        timeout: 20_000,
+      })
+    } finally {
+      try {
+        await cleanupQuestionGenerationReviewFixture()
+      } finally {
+        await prisma.user.update({
+          where: { id: USER_ID_TEST },
+          data: previousAccess,
+        })
+      }
+    }
+  })
+
+  test('re-arms the tracked build only after a successful approval', async ({
+    page,
+    loginLecturer,
+  }) => {
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const statusByBuildId = new Map<string, string>()
+    let reviewCalls = 0
+    let approvalFails = true
+
+    // The approval mutation is answered synthetically so the gate outcome can
+    // be driven without touching the real build. The build query is only
+    // answered once a synthetic status was registered for that build, so the
+    // initial page render still uses the seeded fixture build.
+    await page.route('**/api/graphql**', async (route) => {
+      const request = route.request()
+      let operationName: string | undefined
+      let variables: BuildQueryVariables | undefined
+
+      if (request.method() === 'GET') {
+        const url = new URL(request.url())
+        operationName = url.searchParams.get('operationName') ?? undefined
+        const rawVariables = url.searchParams.get('variables')
+        if (rawVariables) {
+          variables = JSON.parse(rawVariables) as BuildQueryVariables
+        }
+      } else {
+        const body = request.postDataJSON() as {
+          operationName?: string
+          variables?: BuildQueryVariables
+        }
+        operationName = body?.operationName
+        variables = body?.variables
+      }
+
+      if (operationName === 'ReviewElementGeneration') {
+        reviewCalls += 1
+        const buildId = variables?.input?.buildId ?? ''
+        if (approvalFails) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              errors: [
+                {
+                  message: 'Synthetic approval failure',
+                  extensions: { code: 'SYNTHETIC_APPROVAL_FAILED' },
+                },
+              ],
+            }),
+          })
+          return
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: {
+              reviewElementGeneration: syntheticBuild(buildId, 'RUNNING'),
+            },
+          }),
+        })
+        return
+      }
+
+      if (operationName !== 'ElementGenerationBuild') {
+        await route.fallback()
+        return
+      }
+
+      const buildId = variables?.id ?? ''
+      const status = statusByBuildId.get(buildId)
+      if (status === undefined) {
+        await route.fallback()
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'cache-control': 'no-store' },
+        body: JSON.stringify({
+          data: { elementGenerationBuild: syntheticBuild(buildId, status) },
+        }),
+      })
+    })
+
+    const prisma = await getPrisma()
+    const previousAccess = await prisma.user.findUniqueOrThrow({
+      where: { id: USER_ID_TEST },
+      select: { aiFeaturesEnabled: true, betaEnabled: true },
+    })
+
+    try {
+      await prisma.user.update({
+        where: { id: USER_ID_TEST },
+        data: { aiFeaturesEnabled: true, betaEnabled: true },
+      })
+      const fixture = await seedQuestionGenerationReviewFixture()
+      await loginLecturer()
+
+      await gotoCommit(
+        page,
+        `${manageUrl}/elements/generate?buildId=${fixture.gateBuildId}`
+      )
+      const approve = page.getByTestId('element-generation-approve-gate')
+      await expect(approve).toBeVisible({ timeout: 20_000 })
+      const tracker = page.getByTestId('generation-status')
+      const toaster = page.getByLabel(/Notifications/)
+      const successToasts = toaster.locator(
+        '[data-sonner-toast][data-type="success"]'
+      )
+      const warningToasts = toaster.locator(
+        '[data-sonner-toast][data-type="warning"]'
+      )
+
+      // A failed approval is reported and must not re-register the job.
+      await expect(approve).toBeEnabled()
+      await approve.click()
+      await expect(
+        page.getByTestId('element-generation-action-error')
+      ).toBeVisible({ timeout: 20_000 })
+      await expect.poll(() => reviewCalls).toBe(1)
+      await expect(tracker).toHaveCount(0)
+      await expect(successToasts).toHaveCount(0)
+      await expect(warningToasts).toHaveCount(0)
+
+      // An approved gate re-registers the same build, which then completes.
+      statusByBuildId.set(fixture.gateBuildId, 'RUNNING')
+      approvalFails = false
+      await approve.click()
+      await expect.poll(() => reviewCalls).toBe(2)
+      await expect(tracker).toBeVisible({ timeout: 20_000 })
+      await expect(successToasts).toHaveCount(0)
+      await expect(warningToasts).toHaveCount(0)
+      await expect(
+        page.getByTestId('element-generation-action-error')
+      ).toHaveCount(0)
+
+      statusByBuildId.set(fixture.gateBuildId, 'COMPLETED')
+      await expect(tracker).toHaveCount(0, { timeout: 30_000 })
+      await expect(successToasts).toHaveCount(1)
+      await expect(successToasts.locator('button[data-action]')).toHaveCount(1)
     } finally {
       try {
         await cleanupQuestionGenerationReviewFixture()

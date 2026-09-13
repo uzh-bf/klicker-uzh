@@ -40,8 +40,10 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   assert.match(sources[1], /playwright-shard@refs\/heads\/v3/)
   assert.match(sources[2], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[2], /ref: \$\{\{ job\.workflow_sha \}\}/)
-  assert.match(sources[2], /packages\/feature-flags\/dist/)
-  assert.match(sources[2], /packages\/knowledge-graph\/dist/)
+  // The build artifact archives every workspace package through one wildcard,
+  // so a new package like packages/audit/dist is covered without editing a list.
+  assert.match(sources[2], /^\s+packages\/\*\/dist$/m)
+  assert.doesNotMatch(sources[2], /packages\/[^/*\s]+\/dist/)
   assert.match(sources[3], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[3], /ref: \$\{\{ job\.workflow_sha \}\}/)
 
@@ -71,6 +73,7 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
     'synchronize',
     'reopened',
     'ready_for_review',
+    'edited',
     'converted_to_draft',
     'closed',
   ])
@@ -83,7 +86,7 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   assert.match(workflow, /test-playwright-status:/)
 })
 
-test('lifecycle policy rejects cancellation outside the exact conversion/closed-PR boundary', () => {
+test('lifecycle policy rejects cancellation outside the exact closed-PR boundary and any draft gate', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/test-playwright.yml'),
     'utf8'
@@ -110,13 +113,13 @@ test('lifecycle policy rejects cancellation outside the exact conversion/closed-
     'missing close guard': (w) => {
       delete w.jobs['cancel-closed-pr'].if
     },
-    'missing conversion cancellation': (w) => {
+    'cancels on draft conversion': (w) => {
       w.jobs['cancel-closed-pr'].if =
-        "github.event_name == 'pull_request' && github.event.action == 'closed'"
+        "github.event_name == 'pull_request' && (github.event.action == 'converted_to_draft' || github.event.action == 'closed')"
     },
-    'missing draft execution guard': (w) => {
+    'execution gated on draft state': (w) => {
       w.jobs['test-playwright-execution'].if =
-        "github.event_name != 'pull_request' || github.event.action != 'closed'"
+        "github.event_name != 'pull_request' || (github.event.action != 'closed' && github.event.pull_request.draft != true)"
     },
     'execution on close': (w) => {
       delete w.jobs['test-playwright-execution'].if
@@ -124,11 +127,11 @@ test('lifecycle policy rejects cancellation outside the exact conversion/closed-
     'status on close': (w) => {
       w.jobs['test-playwright-status'].if = 'always()'
     },
-    'status missing cancellation guard': (w) => {
+    'status without always wrapper': (w) => {
       w.jobs['test-playwright-status'].if =
-        "always() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
+        "(github.event_name != 'pull_request' || github.event.action != 'closed')"
     },
-    'status missing dependency guard': (w) => {
+    'status gated on cancellation': (w) => {
       w.jobs['test-playwright-status'].if =
         "always() && !cancelled() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
     },
@@ -220,7 +223,6 @@ function runStatusReporter(t, overrides = {}) {
         SHOULD_RUN: 'true',
         SHARD_MATRIX: JSON.stringify(fullShardMatrix()),
         IS_PULL_REQUEST: 'true',
-        IS_DRAFT: 'false',
         ...overrides,
       },
       encoding: 'utf8',
@@ -246,18 +248,12 @@ function runStatusReporter(t, overrides = {}) {
   }
 }
 
-test('status reporter executes draft skip and strict ready decisions', (t) => {
-  const draft = runStatusReporter(t, {
-    EXECUTION_RESULT: 'skipped',
-    ROUTE: 'unknown',
-    MODE: 'unknown',
-    SHOULD_RUN: 'unknown',
-    SHARD_MATRIX: '',
-    IS_DRAFT: 'true',
-  })
+test('status reporter accepts one full plan for drafts and ready and rejects anything less', (t) => {
+  // A draft runs the same full plan as a ready pull request, so both pass.
+  const draft = runStatusReporter(t, { IS_DRAFT: 'true' })
   assert.equal(draft.status, 0, draft.output)
-  assert.equal(draft.metadata.execution_result, 'skipped')
-  assert.equal(draft.metadata.is_draft, 'true')
+  assert.equal(draft.metadata.execution_result, 'success')
+  assert.equal(draft.metadata.mode, 'full')
 
   const ready = runStatusReporter(t)
   assert.equal(ready.status, 0, ready.output)
@@ -267,10 +263,6 @@ test('status reporter executes draft skip and strict ready decisions', (t) => {
   assert.deepEqual(JSON.parse(ready.metadata.shard_matrix), fullShardMatrix())
 
   const rejected = [
-    {
-      name: 'draft execution was not skipped',
-      overrides: { IS_DRAFT: 'true' },
-    },
     {
       name: 'skipped ready execution',
       overrides: { EXECUTION_RESULT: 'skipped' },
@@ -305,11 +297,15 @@ test('status reporter executes draft skip and strict ready decisions', (t) => {
     assert.equal(result.status, 1, scenario.name)
   }
 
-  for (const MODE of ['selected', 'skip', '']) {
-    assert.equal(runStatusReporter(t, { MODE }).status, 1, `mode=${MODE}`)
-  }
-  for (const EXECUTION_RESULT of ['failure', 'cancelled', 'skipped']) {
-    assert.equal(runStatusReporter(t, { EXECUTION_RESULT }).status, 1)
+  for (const [name, overrides] of [
+    ['mode=selected', { MODE: 'selected' }],
+    ['mode=skip', { MODE: 'skip' }],
+    ['mode empty', { MODE: '' }],
+    ['execution failure', { EXECUTION_RESULT: 'failure' }],
+    ['execution cancelled', { EXECUTION_RESULT: 'cancelled' }],
+    ['execution skipped', { EXECUTION_RESULT: 'skipped' }],
+  ]) {
+    assert.equal(runStatusReporter(t, overrides).status, 1, name)
   }
   const duplicate = fullShardMatrix()
   duplicate.include[7].shardIndex = 1
@@ -330,33 +326,33 @@ test('status reporter executes draft skip and strict ready decisions', (t) => {
   ]) {
     assert.equal(runStatusReporter(t, { SHARD_MATRIX }).status, 1, SHARD_MATRIX)
   }
-  for (const SHOULD_RUN of ['true', 'false']) {
-    const push = runStatusReporter(t, {
-      IS_PULL_REQUEST: 'false',
-      ROUTE: 'hosted',
-      SHOULD_RUN,
-    })
-    assert.equal(push.status, 0, push.output)
-    assert.equal(push.metadata.is_pull_request, 'false')
-    assert.equal(push.metadata.execution_result, 'success')
-    assert.equal(push.metadata.should_run, SHOULD_RUN)
-  }
-})
-
-test('status reporter accepts equivalent-run reuse only for numeric push runs', (t) => {
-  const reused = runStatusReporter(t, {
+  // A push must attest the same complete eight-shard plan, so the selector may
+  // not skip it.
+  const push = runStatusReporter(t, {
     IS_PULL_REQUEST: 'false',
     ROUTE: 'hosted',
-    SHOULD_RUN: 'unknown',
-    MODE: 'unknown',
-    SHARD_MATRIX: '',
-    DUPLICATE_RUN_ID: '123',
-    GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+    SHOULD_RUN: 'true',
   })
-  assert.equal(reused.status, 0, reused.output)
-  assert.equal(reused.metadata.duplicate_run_id, '123')
+  assert.equal(push.status, 0, push.output)
+  assert.equal(push.metadata.is_pull_request, 'false')
+  assert.equal(push.metadata.execution_result, 'success')
+  const pushSkippedSelection = runStatusReporter(t, {
+    IS_PULL_REQUEST: 'false',
+    ROUTE: 'hosted',
+    SHOULD_RUN: 'false',
+  })
+  assert.equal(pushSkippedSelection.status, 1, pushSkippedSelection.output)
+})
 
+test('status reporter rejects every equivalent-run reuse', (t) => {
+  // The reusable workflow pinned at @v3 can still offer a duplicate run id from
+  // older code, so the caller rejects every push and pull request duplicate.
   const rejected = {
+    'numeric push run id': {
+      IS_PULL_REQUEST: 'false',
+      ROUTE: 'hosted',
+      DUPLICATE_RUN_ID: '123',
+    },
     'non-numeric run id': {
       IS_PULL_REQUEST: 'false',
       ROUTE: 'hosted',
@@ -384,6 +380,45 @@ test('missing policy files produce actionable validator issues', (t) => {
     result.issues.some((issue) =>
       issue.includes('.github/workflows/test-playwright.yml')
     )
+  )
+})
+
+test('the build artifact must keep wildcard package coverage', (t) => {
+  const repository = path.join(__dirname, '../..')
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'public-playwright-artifact-')
+  )
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  for (const file of [
+    '.github/workflows/test-playwright.yml',
+    '.github/workflows/public-pr-playwright-shards.yml',
+    '.github/workflows/playwright-cache-seed.yml',
+    '.github/actions/playwright-build/action.yml',
+    '.github/actions/playwright-shard/action.yml',
+  ]) {
+    const target = path.join(root, file)
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.copyFileSync(path.join(repository, file), target)
+  }
+  assert.equal(validatePublicPlaywrightWorkflow(root).ok, true)
+
+  const actionPath = path.join(
+    root,
+    '.github/actions/playwright-build/action.yml'
+  )
+  // An explicit package list silently drops a package with its own build
+  // output, so the wildcard must stay.
+  fs.writeFileSync(
+    actionPath,
+    fs
+      .readFileSync(actionPath, 'utf8')
+      .replace('packages/*/dist', 'packages/feature-flags/dist')
+  )
+  const result = validatePublicPlaywrightWorkflow(root)
+  assert.equal(result.ok, false)
+  assert.ok(
+    result.issues.some((issue) => issue.includes('packages/*/dist')),
+    result.issues.join('\n')
   )
 })
 
