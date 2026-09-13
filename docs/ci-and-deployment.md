@@ -226,6 +226,14 @@ enabled for pull requests that do not start an app image workflow.
 - **stg**: push to `v3`/`v3*` or PR touching the app's paths (PRs build but don't push).
 - **prd**: tags `v*.*.*` only.
 
+Active `-arm` jobs build same-repository pull requests from a shared BuildKit
+registry cache (`<image>-arm:buildcache` in ghcr.io, exported with `mode=max`),
+while push publications stay fully uncached. Fork and other cross-repository
+pull requests keep the uncached build path, and the push-gated registry login
+jobs extend that login to same-repo PRs only for cache reads and writes. The
+native ARM64 `-arm` jobs no longer install QEMU; the disabled `-amd` jobs
+retain theirs.
+
 Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile changes must keep monorepo-root context assumptions.
 
 The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Auth and chat production builds use Turbopack. Control, manage, and PWA production builds explicitly use Webpack while `@ducanh2912/next-pwa` remains responsible for `sw.js`, Workbox chunks, and the custom worker bundle copied by their Dockerfiles. Before publishing a framework upgrade, run the mixed production build, inspect those artifacts, smoke the standalone server paths, and require the ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check is recorded for the release SHA.

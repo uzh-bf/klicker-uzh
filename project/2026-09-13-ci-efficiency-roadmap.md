@@ -589,3 +589,20 @@ required from the user.
   transition; merge authority stays with the user.
 - Next action: receiving task reads this roadmap and the global handoff, refreshes
   `v3` and adjacent ownership, then resolves approval for the first source package.
+- 2026-09-13 AMD audit and queue relief: PR #5948 was merged as squash
+  `1431b9aca3`; exact-head activation proof is still pending a real
+  unchanged-head transition because the Actions queue was saturated. AMD
+  verification: every `build-amd` job across the stg and prd image workflows,
+  including release tags, is gated `if: ${{ false }}` and consumes no runner
+  slots today. Ruling recorded: AMD stays disabled; any re-enable is limited to
+  prd-tag release artifacts, never branch or PR builds.
+- 2026-09-13 slice B2 (staging image build cache): all 14 active ARM64 image
+  jobs across the 13 `v3_*-stg.yml` workflows on `v3` now build
+  same-repository pull requests from a shared BuildKit registry cache
+  (`<image>-arm:buildcache` in ghcr.io, `mode=max`) while push publications
+  stay uncached. Fork and other cross-repository pull requests keep the
+  uncached path, the push-gated login jobs admit same-repo PRs for cache
+  access only, and the native ARM64 jobs no longer install QEMU. A policy
+  test pins the cache contract; 30 tests pass across the required-build-status
+  and event-gate suites; Prettier and Biome report clean formatting. Delivered
+  on branch `rs/ci-image-build-consolidation`.
