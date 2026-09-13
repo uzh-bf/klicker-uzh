@@ -239,6 +239,46 @@ test('ready state overrides a documentation-only diff with the full candidate su
   assert.ok(plan.reasonCodes.includes('ready-for-review'))
 })
 
+test('production-designated specs stay out of ordinary plans', () => {
+  // The trusted manifest designates account specs as production-webpack
+  // before their files exist on this branch; the dedicated production
+  // workflow owns them and ordinary lanes must ignore their changes.
+  const productionSpec = 'A-account-lti.spec.ts'
+  const candidateSpecs = [...trustedCandidateSpecs, productionSpec]
+
+  const added = buildSelectionPlan({
+    controlRoot: repositoryRoot,
+    candidateSpecs,
+    changes: [change('A', `playwright/tests/${productionSpec}`)],
+    baseSha: 'base',
+    headSha: 'head',
+    mergeBase: 'merge',
+    prState: 'draft',
+  })
+  assert.equal(added.mode, 'skip')
+  assert.ok(!added.candidateSpecs.includes(`tests/${productionSpec}`))
+  assert.deepEqual(added.selectedSpecs, [])
+  assert.ok(!added.reasonCodes.includes('spec-deleted'))
+
+  const ready = buildSelectionPlan({
+    controlRoot: repositoryRoot,
+    candidateSpecs,
+    changes: [change('M', 'docs/ci.md')],
+    baseSha: 'base',
+    headSha: 'head',
+    mergeBase: 'merge',
+    prState: 'ready',
+  })
+  assert.equal(ready.mode, 'full')
+  assert.ok(!ready.candidateSpecs.includes(`tests/${productionSpec}`))
+  assert.ok(!ready.selectedSpecs.includes(`tests/${productionSpec}`))
+  assert.equal(ready.shardCount, 8)
+  assert.deepEqual(
+    ready.shards.flatMap((shard) => shard.files).sort(),
+    ready.selectedSpecs.slice().sort()
+  )
+})
+
 test('new and renamed specs receive the maximal trusted runtime profile', () => {
   const plan = buildSelectionPlan({
     controlRoot: repositoryRoot,

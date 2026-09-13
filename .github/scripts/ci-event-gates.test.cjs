@@ -334,6 +334,105 @@ test('graphql validation re-runs on a base retarget but not the ready boundary',
   ])
 })
 
+// Closing a pull request must reclaim every per-PR workflow concurrency group,
+// not only Playwright. The sweeper substitutes each target's group prefix
+// literally because github.workflow inside the sweeper names the sweeper, so a
+// renamed workflow or a new per-PR group needs a matching matrix entry.
+const CLOSED_PR_SWEEPER_EXCLUSIONS = new Map([
+  [
+    'check-ocr-final-review.yml',
+    'triggers on closed itself and owns the final-review supersession lifecycle',
+  ],
+])
+
+// Entries for workflows that exist only on the v3-ai/v3-audit integration
+// branches. They stay in the single v3-owned matrix; on v3 the legs join a
+// group no run ever occupies, and requiring the standard name-derived prefix
+// keeps the allowlist honest while the workflows are absent there.
+const CLOSED_PR_SWEEPER_INTEGRATION_ONLY = new Map([
+  ['Test lecturer MCP server', 'v3-ai integration-branch validation suite'],
+  [
+    'Build Docker image for mcp-lecturer (stg)',
+    'v3-ai integration-branch image build',
+  ],
+  [
+    'Build Docker image for mcp-student (stg)',
+    'v3-ai integration-branch image build',
+  ],
+])
+
+test('closed-pr sweeper covers every per-PR workflow concurrency group', () => {
+  const sweeper = readWorkflow('cancel-closed-pr-checks.yml')
+  const job = sweeper.jobs['cancel-closed-pr-checks']
+
+  assert.deepEqual(sweeper.on.pull_request.types, ['closed'])
+  assert.equal(sweeper.on.push, undefined)
+  assert.equal(
+    job.concurrency.group,
+    '${{ matrix.group }}-${{ github.event.pull_request.number }}'
+  )
+  assert.equal(job.concurrency['cancel-in-progress'], true)
+  assert.deepEqual(job.permissions, {})
+  assert.equal(job['timeout-minutes'], 5)
+  assert.equal(job.steps.length, 1)
+  assert.equal(job.steps[0].run, ':')
+
+  const entries = job.strategy.matrix.include
+  const directory = path.join(root, '.github/workflows')
+  const targets = new Map()
+
+  for (const entry of fs.readdirSync(directory).sort()) {
+    if (entry === 'cancel-closed-pr-checks.yml' || !entry.endsWith('.yml')) {
+      continue
+    }
+    const workflow = YAML.parse(
+      fs.readFileSync(path.join(directory, entry), 'utf8')
+    )
+    const prTrigger =
+      workflow.on?.pull_request ?? workflow.on?.pull_request_target
+    const group = workflow.concurrency?.group
+    if (
+      !prTrigger ||
+      typeof group !== 'string' ||
+      !group.includes('github.event.pull_request.number')
+    ) {
+      continue
+    }
+
+    const name = workflow.name ?? entry
+    const prefix = group.startsWith('${{ github.workflow }}-')
+      ? name
+      : group.slice(0, group.indexOf('-${{'))
+    targets.set(entry, { name, prefix })
+  }
+
+  for (const [entry, target] of targets) {
+    if (CLOSED_PR_SWEEPER_EXCLUSIONS.has(entry)) continue
+    assert.ok(
+      entries.some(
+        (e) => e.workflow === target.name && e.group === target.prefix
+      ),
+      entry +
+        ' owns the per-PR concurrency group ' +
+        target.prefix +
+        '-<number> but the closed-PR sweeper has no matching entry'
+    )
+  }
+
+  for (const e of entries) {
+    const matchesLive = [...targets.values()].some(
+      (t) => t.name === e.workflow && t.prefix === e.group
+    )
+    const integrationOnly =
+      CLOSED_PR_SWEEPER_INTEGRATION_ONLY.has(e.workflow) &&
+      e.group === e.workflow
+    assert.ok(
+      matchesLive || integrationOnly,
+      'sweeper entry matches no live per-PR workflow: ' + e.workflow
+    )
+  }
+})
+
 // The unit, OLAT, graphql and translation summaries share one always-reporting
 // contract: a filter job selects, a suite job tests, and the terminal job
 // reports even when the selector chooses nothing, so it can be required.
