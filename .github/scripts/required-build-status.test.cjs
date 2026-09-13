@@ -183,6 +183,58 @@ test('image build inventory mirrors the v3_*-stg.yml workflows', () => {
   }
 })
 
+test('active image builds share a registry build cache on same-repo PRs', () => {
+  for (const item of IMAGE_WORKFLOWS) {
+    const workflow = readWorkflow(item.path)
+
+    for (const id of activeBuildJobs(workflow)) {
+      const job = workflow.jobs[id]
+      assert.ok(
+        job.steps.every((step) => step.name !== 'Set up QEMU'),
+        item.path +
+          ' ' +
+          id +
+          ' runs on a native ARM64 runner and must not install QEMU'
+      )
+
+      const buildStep = job.steps.find((step) =>
+        (step.uses || '').startsWith('docker/build-push-action@')
+      )
+      assert.ok(buildStep, item.path + ' ' + id + ' has a build-push step')
+
+      assert.equal(
+        buildStep.with['no-cache'],
+        "${{ github.event_name == 'push' }}",
+        item.path +
+          ' ' +
+          id +
+          ' must keep push publications uncached while PR builds use cache'
+      )
+      for (const key of ['cache-from', 'cache-to']) {
+        const value = buildStep.with[key]
+        assert.ok(
+          value &&
+            value.includes('type=registry,ref=') &&
+            value.includes('-arm:buildcache') &&
+            value.includes(
+              'github.event.pull_request.head.repo.full_name == github.repository'
+            ),
+          item.path +
+            ' ' +
+            id +
+            ' ' +
+            key +
+            ' must use the shared registry cache only for same-repo PRs'
+        )
+      }
+      assert.ok(
+        buildStep.with['cache-to'].includes('mode=max'),
+        item.path + ' ' + id + ' cache-to must export all intermediate layers'
+      )
+    }
+  }
+})
+
 test('the fallback stays the always-reported image build contract', () => {
   const workflow = readWorkflow('v3_build-fallback.yml')
   const source = readSource('v3_build-fallback.yml')
