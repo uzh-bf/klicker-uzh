@@ -156,7 +156,11 @@ test('playwright execution and reporting run only for open pull requests', () =>
   ]) {
     assert.equal(evaluateGate(executionGate, open(action)), true, action)
     assert.equal(evaluateGate(statusGate, open(action)), true, action)
-    assert.equal(evaluateGate(executionGate, closedState(action)), false, action)
+    assert.equal(
+      evaluateGate(executionGate, closedState(action)),
+      false,
+      action
+    )
     assert.equal(evaluateGate(statusGate, closedState(action)), false, action)
   }
   assert.equal(evaluateGate(executionGate, { event_name: 'push' }), true)
