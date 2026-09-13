@@ -213,13 +213,3 @@ export async function mintLecturerMcpJwt(
   lecturerCache.set(cacheKey, { jwt, mintedAtMs: now })
   return jwt
 }
-
-/** Test-only helper for clearing the in-process cache between cases. */
-export function __resetParticipantMcpJwtCacheForTests(): void {
-  cache.clear()
-}
-
-/** Test-only helper for clearing the in-process cache between cases. */
-export function __resetLecturerMcpJwtCacheForTests(): void {
-  lecturerCache.clear()
-}

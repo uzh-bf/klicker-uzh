@@ -557,3 +557,15 @@ GitHub reference: [Variables](https://docs.github.com/en/actions/concepts/workfl
 The architectural rationale is recorded in
 [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md) and
 [ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md).
+
+### Chatbot graph-assisted retrieval
+
+`chatbot-graphrag` defaults off. It exposes the lecturer retrieval control and
+allows retrieval only together with the approved chatbot retrieval policy.
+Backend activation/publication and Chat runtime target the owning lecturer's
+current id, role, Catalyst status and beta preference. The map remains an
+independent lecturer opt-in and does not depend on this retrieval flag.
+Missing/unusable flag configuration fails closed. Shared refresh (30 seconds)
+and maximum payload age (120 seconds) bound eventual revocation; this is not
+an instantaneous global kill switch. Deploy the source disabled, validate map
+and ordinary retrieval on staging, then enable only a named evaluation cohort.

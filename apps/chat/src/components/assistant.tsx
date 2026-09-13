@@ -9,7 +9,7 @@ import {
 import { Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useParams, usePathname, useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -32,7 +32,10 @@ import {
   EmbeddedSettings,
 } from './embedded-settings'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
-import { ChatKnowledgeGraphWorkspace } from './knowledge-graph/ChatKnowledgeGraphWorkspace'
+import {
+  ChatKnowledgeGraphPanel,
+  useChatGraphPanel,
+} from './knowledge-graph/ChatKnowledgeGraphPanel'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -58,6 +61,7 @@ interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
   readonly initialModeOptionsAreFallback?: boolean
+  readonly knowledgeGraphVisible: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -79,6 +83,7 @@ export function Assistant({
   chatbot,
   initialModeOptions,
   initialModeOptionsAreFallback = false,
+  knowledgeGraphVisible,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -147,6 +152,7 @@ export function Assistant({
             chatbot={chatbot}
             initialModeOptions={initialModeOptions}
             initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            knowledgeGraphVisible={knowledgeGraphVisible}
           />
         </RuntimeProvider>
       </ChatUiProvider>
@@ -496,12 +502,14 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
-  graphMode,
+  graphPanel,
+  knowledgeGraphVisible,
   initialModeOptions,
   initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  graphMode: boolean
+  graphPanel: ReturnType<typeof useChatGraphPanel>
+  knowledgeGraphVisible: boolean
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback: boolean
 }) {
@@ -526,10 +534,10 @@ function SidebarMain({
   }
 
   return (
-    <SidebarInset id="main-content" tabIndex={-1}>
+    <SidebarInset id="main-content" tabIndex={-1} className="min-w-0">
       <header
         data-cy="chat-header"
-        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto]"
+        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 border-b px-2 py-1.5"
       >
         {/* Only visible when the sidebar is closed — once it's open, the
             sidebar's own trigger closes it, so this stays the single toggle
@@ -577,11 +585,12 @@ function SidebarMain({
           </TooltipTrigger>
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
-        <ChatGraphModeSwitch
-          chatbotId={chatbot.id}
-          compact
-          className="col-span-4 justify-self-end sm:col-span-1"
-        />
+        {knowledgeGraphVisible ? (
+          <ChatGraphModeSwitch
+            open={graphPanel.open}
+            onToggle={graphPanel.toggle}
+          />
+        ) : null}
       </header>
       <MobileCreditsBar />
       <main
@@ -595,16 +604,18 @@ function SidebarMain({
               <ThreadSkeleton />
             </div>
           )}
-          {graphMode ? (
-            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
-          ) : (
+          <ChatKnowledgeGraphPanel
+            chatbotId={chatbot.id}
+            open={graphPanel.open}
+            onClose={graphPanel.close}
+          >
             <Thread
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
               initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />
-          )}
+          </ChatKnowledgeGraphPanel>
         </div>
       </main>
     </SidebarInset>
@@ -615,16 +626,20 @@ function AssistantLayout({
   chatbot,
   initialModeOptions,
   initialModeOptionsAreFallback,
+  knowledgeGraphVisible,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback: boolean
+  knowledgeGraphVisible: boolean
 }) {
   const t = useTranslations('chat.thread.learningContext')
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
-  const pathname = usePathname()
-  const graphMode = pathname === `/${chatbot.id}/graph`
+  const graphPanel = useChatGraphPanel(
+    chatbot.id,
+    showSidebar && knowledgeGraphVisible
+  )
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextUnavailable = useChatContextStore(
@@ -640,7 +655,8 @@ function AssistantLayout({
         <AppSidebar />
         <SidebarMain
           chatbot={chatbot}
-          graphMode={graphMode}
+          graphPanel={graphPanel}
+          knowledgeGraphVisible={knowledgeGraphVisible}
           initialModeOptions={initialModeOptions}
           initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
@@ -674,18 +690,14 @@ function AssistantLayout({
               <ThreadSkeleton />
             </div>
           )}
-          {graphMode ? (
-            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
-          ) : (
-            <Thread
-              chatbotAvatar={chatbot.avatar ?? ''}
-              chatbotName={chatbot.name}
-              contextLabel={contextLabel}
-              contextualSuggestions={hasQuestionContext}
-              initialModeOptions={initialModeOptions}
-              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-            />
-          )}
+          <Thread
+            chatbotAvatar={chatbot.avatar ?? ''}
+            chatbotName={chatbot.name}
+            contextLabel={contextLabel}
+            contextualSuggestions={hasQuestionContext}
+            initialModeOptions={initialModeOptions}
+            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+          />
         </div>
       </main>
     </div>

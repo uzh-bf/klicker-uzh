@@ -359,7 +359,7 @@ export async function withChatbotAuth(
       participantId: string
       authMode: AuthMode
       learnerBinding?: string
-      chatbot: { courseId: string }
+      chatbot: { courseId: string; knowledgeGraphVisible: boolean }
     }
   | { response: NextResponse }
 > {
@@ -385,13 +385,17 @@ export async function authorizeIdentityForChatbot(
       participantId: string
       authMode: AuthMode
       learnerBinding?: string
-      chatbot: { courseId: string }
+      chatbot: { courseId: string; knowledgeGraphVisible: boolean }
     }
   | { response: NextResponse }
 > {
   const { participantId, authMode, learnerBinding } = participantResult
 
-  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
+  const chatbotResult = await getChatbotOr404(chatbotId, {
+    courseId: true,
+    // Returned so the knowledge-graph route can enforce the map flag.
+    knowledgeGraphVisible: true,
+  })
   if ('response' in chatbotResult) {
     return chatbotResult
   }

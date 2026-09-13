@@ -17,6 +17,10 @@ inputs:
   cache-enabled:
     description: Whether restore-only Actions caches are enabled
     required: true
+  workers:
+    description: Playwright worker processes running spec files in parallel
+    required: false
+    default: '1'
 
 runs:
   using: composite
@@ -232,6 +236,7 @@ runs:
       env:
         SHARD_INDEX: ${{ inputs.shard-index }}
         SHARD_TOTAL: ${{ inputs.shard-total }}
+        PLAYWRIGHT_WORKERS: ${{ inputs.workers }}
         APP_SECRET: abcd
         DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
         NODE_ENV: production

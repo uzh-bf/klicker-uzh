@@ -1,5 +1,17 @@
 export default {
   chat: {
+    graphPanel: {
+      missingEndpoint: 'Unknown concept',
+      title: 'Knowledge graph',
+      open: 'Open knowledge graph',
+      close: 'Close knowledge graph',
+      fullscreen: 'Expand graph to fullscreen',
+      restore: 'Return graph to sidebar',
+      ask: 'Ask about this',
+      nodePrompt: 'Help me understand the concept “{topic}”.',
+      edgePrompt:
+        'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
+    },
     common: {
       opensInNewTab: '(opens in new tab)',
     },
@@ -2544,8 +2556,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       elementProgress:
         '{generated} of {requested, plural, one {# element} other {# elements}} generated',
       succeeded: '{label} is ready.',
+      incomplete: '{label} finished with fewer elements than requested.',
+      reviewRequired: '{label} is waiting for your decision.',
       failed: 'Background generation failed.',
       open: 'Open result',
+      review: 'Review result',
     },
     elementGeneration: {
       eyebrow: 'AI-assisted creation',
@@ -2702,7 +2717,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         generatedCount: '{generated} of {requested} generated',
         generated: 'Generated',
         unresolved: 'Unresolved',
-        warnings: 'Warnings',
+        warnings: 'Workflow warnings',
+        warningsHelp:
+          'Raised by the generation workflow, separate from the quality notes on individual elements.',
         retries: 'Retries',
         processing: 'The elements are being prepared',
         processingHelp:
@@ -2761,6 +2778,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         bloomLevel: 'Bloom: {level}',
         difficultyLevel: 'Difficulty: {level}',
         qualityAttention: 'Quality review recommended',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'The predicted difficulty should be reviewed before use.',
+          difficultyValidationFailed:
+            'The difficulty check did not pass for this element.',
+          manualReviewRequired: 'This element was flagged for manual review.',
+          other: 'Additional quality checks flagged this element.',
+          acceptedUnsaved: 'Accepted, but not yet saved to your library.',
+        },
         notApplicable: 'Not applicable',
         sourceUnavailable: 'Source unavailable',
         sourcesTitle: 'Sources',
@@ -4940,6 +4966,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       disclaimerPending: 'Pending',
       mcpConfigurations: 'MCP Configurations',
       knowledgeBase: 'Knowledge base',
+      knowledgeGraphPolicy: 'Knowledge graph',
+      knowledgeGraphPolicyDescription:
+        'Control the participant concept map and graph-assisted document search independently. Both are staged in the chatbot revision and apply after approval.',
+      knowledgeGraphVisible: 'Show the participant concept map',
+      knowledgeGraphVisibleEnabledDescription:
+        'On: participants can open the concept map for this chatbot.',
+      knowledgeGraphVisibleDisabledDescription:
+        'Off: the concept map stays hidden from participants.',
+      knowledgeGraphRetrieval: 'Use graph connections for document search',
+      knowledgeGraphRetrievalDescription:
+        'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphSave: 'Save knowledge graph settings',
+      knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:
         'No knowledge base is connected. This chatbot cannot search course material.',
       noMcpConfigurations: 'No MCP configurations.',

@@ -2,7 +2,7 @@ import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
 import {
@@ -15,7 +15,6 @@ import {
   generateText,
   isStepCount,
   type ModelMessage,
-  type StepResult,
   streamText,
   type ToolSet,
   tool,
@@ -65,6 +64,11 @@ import {
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
 } from '@/src/lib/server/responseExampleRuntime'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import {
+  collectStepToolDiagnostics,
+  hashSnippet,
+  summarizeToolDiagnostics,
+} from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
@@ -163,7 +167,6 @@ if (!process.env.OPENAI_API_KEY) {
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
-const HASH_DIGEST_LENGTH = 12
 
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
@@ -176,27 +179,6 @@ function truncateString(
 ): string {
   if (value.length <= maxLength) return value
   return `${value.slice(0, maxLength - 3)}...`
-}
-
-function hashSnippet(value: string): string {
-  return createHash('sha256')
-    .update(value)
-    .digest('hex')
-    .slice(0, HASH_DIGEST_LENGTH)
-}
-
-function safeSerialize(value: unknown): string | null {
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return null
-  }
-}
-
-function safeSize(value: unknown): number | null {
-  const serialized = safeSerialize(value)
-  if (serialized === null) return null
-  return Buffer.byteLength(serialized, 'utf8')
 }
 
 function toTokenCount(value: unknown): number | null {
@@ -264,60 +246,6 @@ function logChatDev(
   } else {
     console.info(message, context)
   }
-}
-
-type ToolDiagnostic = {
-  toolName: string
-  inputBytes: number | null
-  outputBytes: number | null
-  inputHash: string | null
-  outputHash: string | null
-}
-
-function collectStepToolDiagnostics(
-  step: Pick<StepResult<any>, 'content'>
-): ToolDiagnostic[] {
-  const diagnostics: ToolDiagnostic[] = []
-
-  for (const part of step.content ?? []) {
-    if (!part || typeof part !== 'object') continue
-    if (!('type' in part)) continue
-
-    const typedPart = part as {
-      type?: unknown
-      toolName?: unknown
-      input?: unknown
-      output?: unknown
-      result?: unknown
-      args?: unknown
-    }
-
-    if (
-      typedPart.type !== 'tool-call' &&
-      typedPart.type !== 'tool-result' &&
-      typedPart.type !== 'tool-error'
-    ) {
-      continue
-    }
-
-    const toolName =
-      typeof typedPart.toolName === 'string' ? typedPart.toolName : 'unknown'
-    const inputValue = typedPart.input ?? typedPart.args ?? null
-    const outputValue = typedPart.output ?? typedPart.result ?? null
-
-    const inputSerialized = safeSerialize(inputValue)
-    const outputSerialized = safeSerialize(outputValue)
-
-    diagnostics.push({
-      toolName,
-      inputBytes: safeSize(inputValue),
-      outputBytes: safeSize(outputValue),
-      inputHash: inputSerialized ? hashSnippet(inputSerialized) : null,
-      outputHash: outputSerialized ? hashSnippet(outputSerialized) : null,
-    })
-  }
-
-  return diagnostics
 }
 
 function extractSafeHeaders(headers: unknown): Record<string, unknown> | null {
@@ -1235,6 +1163,8 @@ export async function POST(
         authMode,
         kbIds: scopedKbIds,
         sessionId: mcpScopeSessionId,
+        knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
+        courseId: chatbot.courseId,
       })
       mcpTools = mcpToolsHandle.tools
     } catch (error) {
@@ -2179,10 +2109,8 @@ export async function POST(
         onStepEnd: async (step) => {
           currentStepContent = []
           const diagnostics = collectStepToolDiagnostics(step)
-          const toolCallNames = Array.from(
-            new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
-          )
-          const toolCallsCount = diagnostics.length
+          const { toolCallsCount, toolCallNames } =
+            summarizeToolDiagnostics(diagnostics)
           const providerReasoningTokens = extractReasoningTokens(
             asObject(step)?.providerMetadata
           )

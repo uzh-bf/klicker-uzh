@@ -12,13 +12,12 @@ describe('chat model registry defaults', () => {
     )
 
     const registry = getChatModelRegistry()
-    const gpt55 = registry.find((model) => model.id === 'gpt-5.5')
     const gpt54 = registry.find((model) => model.id === 'gpt-5.4')
     const gpt51 = registry.find((model) => model.id === 'gpt-5.1')
 
-    expect(gpt55?.supportedReasoningEfforts).toEqual(
-      expect.arrayContaining(['none', 'low', 'medium', 'high', 'xhigh'])
-    )
+    // Retired from the built-in registry: the model must no longer be
+    // selectable, while the remaining frontier entries keep their efforts.
+    expect(registry.map((model) => model.id)).not.toContain('gpt-5.5')
     expect(gpt54?.supportedReasoningEfforts).toEqual(
       expect.arrayContaining(['none', 'low', 'medium', 'high', 'xhigh'])
     )

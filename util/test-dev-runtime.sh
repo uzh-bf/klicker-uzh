@@ -281,6 +281,46 @@ process_helper_error='Run devrouter ensure to start this managed application pro
 [[ "$post_start_output" == *"$process_helper_error"* ]] || \
   fail 'post-start did not use the configured root before its process-helper gate'
 
+# Verify the environment delivered to managed processes across profile switches.
+mkdir -p "$ROOT/packages/prisma/src"
+mkdir -p "$ROOT/apps/chat/scripts"
+write_file "$ROOT/apps/chat/scripts/local-mcp-server.mjs" 'export {}'
+cp "$REPO_ROOT/packages/prisma/src/disposableDatabase.ts" "$ROOT/packages/prisma/src/disposableDatabase.ts"
+cp "$REPO_ROOT/util/profile-resolver.sh" "$ROOT/util/profile-resolver.sh"
+write_file "$ROOT/.devcontainer/devcontainer.env" 'DATABASE_URL=postgresql://klicker_test:synthetic@postgres:5432/klicker_test
+SHADOW_DATABASE_URL=postgresql://klicker_test:synthetic@postgres:5432/klicker_test_shadow'
+write_file "$FAKE_BIN/process-helper" '#!/usr/bin/env bash
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0
+printf "%s\n%s\n" "$DATABASE_URL" "$SHADOW_DATABASE_URL" >"$KLICKER_TEST_PROCESS_ENV"
+exit 23'
+chmod +x "$FAKE_BIN/process-helper"
+export KLICKER_TEST_PROCESS_ENV="$TEST_ROOT/process-env"
+for profile in mcp chat; do
+  status=0
+  KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+    DEVROUTER_PROFILE="$profile" \
+    DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper" \
+    LOCAL_MCP_BOOTSTRAPPED="$([ "$profile" = mcp ] && echo 1 || echo 0)" \
+    LOCAL_MCP_GENERATION=synthetic-generation \
+    DATABASE_URL=postgresql://klicker_test:synthetic@mcp_postgres:5432/klicker_test \
+    SHADOW_DATABASE_URL=postgresql://klicker_test:synthetic@mcp_postgres:5432/klicker_test_shadow \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" >"$TEST_ROOT/profile-start.log" 2>&1 || status=$?
+  [ "$status" = 23 ] || cat "$TEST_ROOT/profile-start.log" >&2
+  assert_equal "$status" 23
+  expected_host=postgres
+  [ "$profile" != mcp ] || expected_host=mcp_postgres
+  assert_equal "$(sed -n '1p' "$KLICKER_TEST_PROCESS_ENV")" \
+    "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test"
+  assert_equal "$(sed -n '2p' "$KLICKER_TEST_PROCESS_ENV")" \
+    "postgresql://klicker_test:synthetic@${expected_host}:5432/klicker_test_shadow"
+done
+write_file "$ROOT/.devcontainer/devcontainer.env" ''
+: > "$INSTALL_LOG"
+
 # An opted-in signer must be private and must not be followed through a symlink.
 signer_fixture="$TEST_ROOT/signer.env"
 signer_effect="$TEST_ROOT/signer-loaded"

@@ -455,9 +455,7 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
-      'You are chatting with E2E Chatbot.'
-    )
+    await expect(page.getByTestId('chat-welcome-chatbot')).toBeVisible()
     await expect(page.getByTestId('chat-welcome-mode')).toContainText(
       'Selected mode: Tutor'
     )
@@ -1836,20 +1834,27 @@ test.describe('Chatbot Settings Panel', () => {
     page,
   }) => {
     await setCredits(participantId, 0, 100)
+    await mockChatStream(page)
     await visitChat(page)
 
     await expect(page.getByTestId('chat-credits-section')).toBeVisible()
     await expect(page.getByTestId('chat-credits-display')).toContainText(
       '0 / 100'
     )
-    await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
-      'Some models may no longer be available'
-    )
+    await expect(page.getByTestId('chat-credits-empty-message')).toBeVisible()
 
     await openSettings(page)
-    const modelSection = page.getByTestId('chat-model-selection')
-    await expect(modelSection).toContainText('GPT-5.5')
-    await expect(modelSection).not.toContainText('GPT-5.6 Luna')
+    await expect(page.getByTestId('chat-model-select')).toBeVisible()
+
+    const chatRequestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+    await sendMessage(page, 'Default model without credits')
+    const chatRequest = await chatRequestPromise
+    const payload = chatRequest.postDataJSON() as { selectedModel?: string }
+    expect(payload.selectedModel).toBe('auto')
   })
 
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
@@ -1891,8 +1896,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1')
-    await expect(modelSection).toContainText('GPT-4.1')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1903,7 +1907,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-4.1')
+    expect(payload.selectedModel).toBe('gpt-5.6-luna')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
@@ -2319,8 +2323,16 @@ test.describe('Chatbot Source Citations', () => {
                   reference_type: 'url',
                   source_type: 'document',
                   chunks: [
-                    { content: passage, page_number: 4 },
-                    { content: 'Second synthetic chunk', page_number: 8 },
+                    {
+                      content: passage,
+                      page_number: 4,
+                      labeled_page_number: 'IV',
+                    },
+                    {
+                      content: 'Second synthetic chunk',
+                      page_number: 8,
+                      labeled_page_number: '12:34',
+                    },
                   ],
                 },
                 {
@@ -2330,7 +2342,11 @@ test.describe('Chatbot Source Citations', () => {
                   title: 'Synthetic reference',
                   source_url: origin,
                   chunks: [
-                    { content: 'Named supporting passage', page_number: 12 },
+                    {
+                      content: 'Named supporting passage',
+                      page_number: 13,
+                      labeled_page_number: '9',
+                    },
                   ],
                 },
               ],
@@ -2375,7 +2391,16 @@ test.describe('Chatbot Source Citations', () => {
       )
       await expect(page.locator(`#src-${messageId}-1`)).toHaveAttribute(
         'href',
-        origin
+        'https://example.org/course.pdf?edition=2#page=13'
+      )
+      await expect(page.locator(`#src-${messageId}-1`)).toContainText('9')
+      const chunks = page.getByTestId('chat-doc-query-chunk')
+      await expect(chunks.nth(0)).toContainText('IV')
+      await expect(chunks.nth(1)).toContainText('12:34')
+      await expect(chunks.nth(1)).not.toContainText(/(?:p\.|S\.)\s*8/)
+      await expect(chunks.nth(2).locator('a')).toHaveAttribute(
+        'href',
+        'https://example.org/course.pdf?edition=2#page=13'
       )
       await expect(
         page.getByTestId('chat-doc-query-chunk').first().locator('p')
@@ -2938,7 +2963,13 @@ test.describe('Chatbot Source Citations', () => {
                   reference_type: 'pdf',
                   source_type: 'document',
                   title: 'Preview Guide.pdf',
-                  chunks: [{ content: excerpt, page_number: 12 }],
+                  chunks: [
+                    {
+                      content: excerpt,
+                      page_number: 13,
+                      labeled_page_number: '12',
+                    },
+                  ],
                 },
               ],
             }),

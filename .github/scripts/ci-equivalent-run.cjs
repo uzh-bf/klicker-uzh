@@ -173,11 +173,13 @@ async function findEquivalentRun({
   readReceipt,
 }) {
   const repository = `${context.repo.owner}/${context.repo.repo}`
+  // Every v3 / v3-* push is a possible deployment source and must carry its own
+  // push validation, so no equivalent PR run may substitute for one.
   if (
     repository !== REPOSITORY ||
     context.eventName !== 'push' ||
     !context.ref?.startsWith('refs/heads/') ||
-    context.ref === 'refs/heads/v3' ||
+    context.ref.startsWith('refs/heads/v3') ||
     !WORKFLOWS[kind]
   )
     return null
