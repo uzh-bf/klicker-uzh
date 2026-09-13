@@ -304,6 +304,7 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      elearningTag: 'eLearning',
     },
     thread: {
       viewportLabel: 'Conversation transcript',
@@ -318,6 +319,28 @@ export default {
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
       welcomeMode: 'Selected mode: {mode}',
+      learningContext: {
+        refreshUnavailable:
+          'Page context could not be refreshed for this question. Answers can use retrieved course materials.',
+        summary: 'Learning context used',
+        location: 'Location',
+        observed: 'Observed at',
+        evidence: 'Evidence',
+        completionLabel: 'Progress',
+        truncated: 'truncated',
+        completion: {
+          confirmed_complete: 'completed',
+          pending: 'pending',
+          incomplete: 'incomplete',
+          unavailable: 'unavailable',
+        },
+        availability: {
+          'full-text': 'Page text available',
+          metadata: 'metadata only',
+          unavailable: 'Content not inspectable',
+          unknown: 'Availability unknown',
+        },
+      },
     },
     suggestions: {
       sectionLabel: 'Conversation starters',
@@ -1799,6 +1822,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
+    importedSourcesTitle: 'Imported sources',
+    importedSourceColumn: 'Source',
+    importedSourcesNotice:
+      'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
+    importedSourcesIncomplete:
+      'The list covers the most recently scanned sources. Older sources may not be listed yet.',
+    importedSourcesEmpty:
+      'No imported sources have been found for this knowledge base yet.',
+    importedSourcesLoadError: 'The imported sources could not be loaded.',
+    loadMoreImportedSources: 'Load more imported sources',
+    importedSourcesLoadMoreError:
+      'The additional imported sources could not be loaded. Try again.',
+    importedObservedAt: 'Observed {date}',
+    importedIngestedColumn: 'Ingested',
+    importedObservedColumn: 'Observed',
+    importedIngestionUnknown: 'Ingestion time not recorded',
+    importedSourceGeneric: 'Source',
+    importedVideoNoFileHint:
+      'Video content is indexed without storing the original file.',
     noResources: 'No resources have been added yet.',
     emptyResourceHint: 'Use Add resource above to add a website or document.',
     updatedAtLabel: 'Updated',

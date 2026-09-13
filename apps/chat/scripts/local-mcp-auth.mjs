@@ -13,7 +13,7 @@ export const LOCAL_SERVER_NAME = 'KB'
 export const LOCAL_SERVER_URL = 'http://localhost:1417/mcp'
 export const LOCAL_MCP_URL = LOCAL_SERVER_URL
 export const LOCAL_FIXTURE_MARKER = {
-  localFixture: 'authenticated-local-mcp-v2',
+  localFixture: 'authenticated-local-mcp',
 }
 export const LOCAL_SCOPE = {
   required: true,

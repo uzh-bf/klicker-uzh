@@ -2295,6 +2295,24 @@ enum KBGraphQualityTier {
   STANDARD
 }
 
+type KBImportedSource {
+  chunkCount: Int!
+  id: ID!
+  ingestedAt: Date
+  observedAt: Date
+  sourceType: String
+  sourceUrl: String
+  title: String!
+}
+
+type KBImportedSourceConnection {
+  incomplete: Boolean!
+  items: [KBImportedSource!]!
+  pageInfo: KBPageInfo!
+  totalSourcesInScan: Int!
+  unidentifiedChunks: Int!
+}
+
 type KBIngestAllResult {
   alreadyCurrentCount: Int!
   alreadyInProgressCount: Int!
@@ -2743,6 +2761,7 @@ type Mutation {
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   leaveUserGroup(groupId: Int!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
+  loginParticipantForElearningChatbot(chatbotId: String!, courseId: String!, grant: String!): LtiChatbotLogin!
   loginParticipantForLtiChatbot(chatbotId: String!, courseId: String!, participantToken: String, signedLtiData: String!): LtiChatbotLogin!
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
@@ -3340,6 +3359,7 @@ type Query {
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getKb(id: ID!): KB!
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
+  getKbImportedSources(after: String, first: Int, kbId: ID!): KBImportedSourceConnection!
   getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
   getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
   getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!

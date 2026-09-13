@@ -41,6 +41,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LearningContextCard from '@/src/components/learning-context-card'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
@@ -418,10 +419,7 @@ export const Thread: FC<ThreadProps> = ({
             {t('chat.composer.modeUnavailable')}
           </p>
         )}
-        {/* S6: standalone-only, same as ThreadScrollToBottom above — an
-            embedded widget has little vertical room and the embedding page
-            already carries the disclaimer context. */}
-        {!embedded && hasAvailableMode && <ComposerHint />}
+        {hasAvailableMode && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>
   )
@@ -1454,6 +1452,8 @@ const UserMessage: FC = () => {
         )}
         <MessagePrimitive.Content />
       </div>
+
+      <LearningContextCard message={message} />
 
       <div className="flex min-h-6 items-center">
         <UserActionBar />

@@ -23,7 +23,6 @@ import {
 import { isDocQueryToolName } from '../src/lib/sources/normalizeSources'
 import {
   getAggregatedMCPTools as getAggregatedMCPToolsHandle,
-  getMCPTools,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
 
@@ -81,15 +80,6 @@ describe('MCP runtime policy', () => {
     expect(parseMCPRuntimePolicy({ timeoutMs: 1000 })).toEqual({
       required: false,
     })
-  })
-
-  test('returns an empty cleanup handle when legacy MCP is not configured', async () => {
-    vi.stubEnv('MCP_URL', '')
-
-    const handle = await getMCPTools('chatbot-1', 'participant-1', 'account')
-
-    expect(handle.tools).toEqual({})
-    await expect(handle.close()).resolves.toBeUndefined()
   })
 
   test('uses the AI SDK HTTP transport configuration', async () => {
@@ -304,6 +294,66 @@ describe('MCP runtime policy', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(createSDKMCPClientMock).toHaveBeenCalledTimes(1)
+  })
+
+  test.each([
+    [
+      'UnauthorizedError',
+      Object.assign(new Error('unauthorized'), { name: 'UnauthorizedError' }),
+    ],
+    [
+      'a streamable HTTP code',
+      Object.assign(new Error('streamable'), { code: 401 }),
+    ],
+    [
+      'a client statusCode',
+      Object.assign(new Error('forbidden'), { statusCode: 403 }),
+    ],
+  ])('keeps a required tool failure from %s fail-closed', async (_label, failure) => {
+    createSDKMCPClientMock.mockResolvedValue({
+      close: closeSDKMCPClientMock,
+      tools: vi.fn().mockRejectedValue(failure),
+    })
+
+    await expect(
+      getAggregatedMCPTools(
+        [
+          createServer(
+            {},
+            {
+              allowedTools: ['doc_query'],
+              parameters: { required: true, toolAlias: 'doc_query' },
+            }
+          ),
+        ],
+        { chatbotId: 'chatbot-1', authMode: 'account' }
+      )
+    ).rejects.toMatchObject({
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      reason: 'scope_violation',
+    })
+  })
+
+  test('keeps a plain required-tool outage degradable', async () => {
+    createSDKMCPClientMock.mockRejectedValue(new Error('connect ECONNREFUSED'))
+
+    await expect(
+      getAggregatedMCPTools(
+        [
+          createServer(
+            {},
+            {
+              allowedTools: ['doc_query'],
+              parameters: { required: true, toolAlias: 'doc_query' },
+            }
+          ),
+        ],
+        { chatbotId: 'chatbot-1', authMode: 'account' }
+      )
+    ).rejects.toMatchObject({
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      reason: 'unavailable',
+    })
   })
 
   test('retains optional wildcard filtering and optional failure behavior', async () => {

@@ -16,6 +16,7 @@ import type { Context } from '../src/lib/context.js'
 import {
   createParticipantAccount,
   createParticipantToken,
+  loginParticipantForElearningChatbot,
   loginParticipantForLtiChatbot,
   loginParticipantWithLti,
 } from '../src/services/accounts.js'
@@ -633,6 +634,58 @@ describe('LTI participant linking and creation', () => {
         createCtx()
       )
     ).toEqual({ status: 'DENIED' })
+    await prisma.chatbot.delete({ where: { id: chatbot.id } })
+  })
+  it('resolves a signed eLearning subject to its linked account or a chat-only guest', async () => {
+    vi.stubEnv('ELEARNING_CHAT_HANDOFF_SECRET', 'synthetic-handoff-secret')
+    const { user, course } = await createTestCourse()
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic tutor',
+        ownerId: user.id,
+        courseId: course.id,
+        status: 'PUBLISHED',
+      },
+    })
+    const linked = await prisma.participant.create({
+      data: {
+        username: usernameFor('elearning-linked'),
+        password: 'unused-test-hash',
+        accounts: {
+          create: { ssoId: ssoIdFor('elearning-linked'), ssoType: 'LTI1.3' },
+        },
+      },
+    })
+    const grant = (sub: string) =>
+      signJWT(
+        {
+          sub,
+          scope: 'ELEARNING_CHAT',
+          purpose: 'chat-handoff',
+          chatbotId: chatbot.id,
+          klickerCourseId: course.id,
+          elearningCourseId: '42',
+          aud: 'klicker-chat',
+        },
+        'synthetic-handoff-secret',
+        { expiresIn: '2m', issuer: 'elearning' }
+      )
+    const args = {
+      courseId: course.id,
+      chatbotId: chatbot.id,
+    }
+    expect(
+      await loginParticipantForElearningChatbot(
+        { ...args, grant: await grant(ssoIdFor('elearning-linked')) },
+        createCtx()
+      )
+    ).toMatchObject({ status: 'ACCOUNT', participantId: linked.id })
+    expect(
+      await loginParticipantForElearningChatbot(
+        { ...args, grant: await grant(ssoIdFor('elearning-unknown')) },
+        createCtx()
+      )
+    ).toEqual({ status: 'GUEST' })
     await prisma.chatbot.delete({ where: { id: chatbot.id } })
   })
 })
