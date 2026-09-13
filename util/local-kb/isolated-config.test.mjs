@@ -4,6 +4,7 @@ import test from 'node:test'
 import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
 import {
+  LOCAL_KB_MANAGED_PROFILE,
   resolveIsolatedConfig,
   resolveProviderBindings,
   validateIsolatedConfig,
@@ -83,6 +84,18 @@ test('managed application configuration shares only the isolated provider networ
   assert.equal(result.devrouter.profiles.full, undefined)
   assert.equal(result.devrouter.profiles.mcp, undefined)
   assert.equal(result.devrouter.profiles.manage.default, true)
+  // The isolated runtime starts the ingestion workers, so its generated
+  // configuration keeps the worker capability and no extra application routes.
+  assert.deepEqual(result.devrouter.profiles.workers.apps, [])
+  assert.deepEqual(result.devrouter.profiles.workers.processes, ['klicker-dev'])
+  // Devrouter canonicalizes a merged selection by sorting the selected names
+  // and reports that string as the observed profile identity, so the launcher
+  // must compare its startup against this exact form.
+  assert.deepEqual(
+    LOCAL_KB_MANAGED_PROFILE.split(',').sort(),
+    LOCAL_KB_MANAGED_PROFILE.split(',')
+  )
+  assert.equal(result.devrouter.profiles.email, undefined)
   assert.deepEqual(result.devrouter.profiles['local-kb-setup'], {
     devcontainerServices: ['redis_exec'],
   })

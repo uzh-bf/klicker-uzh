@@ -14,7 +14,10 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { resolveIsolatedConfig } from './isolated-config.mjs'
+import {
+  LOCAL_KB_MANAGED_PROFILE,
+  resolveIsolatedConfig,
+} from './isolated-config.mjs'
 import {
   claimPreparation as claimObservedPreparation,
   completePreparation,
@@ -454,13 +457,14 @@ test('managed installation replaces only candidate config and neutralizes the li
 
 test('application setup initializes once and retains failures without replay', async () => {
   for (const [failure, callCount] of [
-    [false, 5],
+    [false, 6],
     ['runtime-start', 1],
     ['provider-routing', 1],
     ['blob-readiness', 2],
     ['database-schema', 3],
     ['database-seed', 4],
     ['blob-setup', 5],
+    ['kb-retrieval-transport', 6],
   ]) {
     const { config, checkout, read } = await installationFixture()
     await prepareLocalConfiguration(config, revision)
@@ -479,6 +483,8 @@ test('application setup initializes once and retains failures without replay', a
         (failure === 'runtime-start' && args[0] === 'ensure') ||
         (failure === 'database-schema' && args.includes('prisma:push:raw')) ||
         (failure === 'database-seed' && args.includes('seed:raw')) ||
+        (failure === 'kb-retrieval-transport' &&
+          args.includes('apps/chat/scripts/local-kb-retrieval-seed.mjs')) ||
         (failure === 'blob-setup' &&
           args.includes('src/scripts/setupLocalBlobStorage.ts'))
       )
@@ -512,10 +518,13 @@ test('application setup initializes once and retains failures without replay', a
       assert.equal(calls.length, callCount)
     } else {
       assert.deepEqual(await run(), { initialized: true })
-      assert.equal(calls.length, 5)
+      assert.equal(calls.length, 6)
       assert.ok(calls[2].includes('prisma:push:raw'))
       assert.ok(calls[3].includes('seed:raw'))
       assert.ok(calls[4].includes('src/scripts/setupLocalBlobStorage.ts'))
+      assert.ok(
+        calls[5].includes('apps/chat/scripts/local-kb-retrieval-seed.mjs')
+      )
     }
     const before = calls.length
     await assert.rejects(run(), { code: 'EEXIST' })
@@ -552,7 +561,7 @@ test('explicit startup orders provider activation without repeating setup and re
     const managed = async (args) => {
       calls.push(args)
       phases.push('applications-and-model')
-      return JSON.stringify({ ...identity, profile: 'ai,chat,manage' })
+      return JSON.stringify({ ...identity, profile: LOCAL_KB_MANAGED_PROFILE })
     }
     const provider = async (command, environment) => {
       assert.equal(environment.DOCKER_CONTEXT, 'synthetic-local')
@@ -592,13 +601,17 @@ test('explicit startup orders provider activation without repeating setup and re
         'ensure',
         checkout,
         '--profile',
-        'ai,chat,manage',
+        LOCAL_KB_MANAGED_PROFILE,
         '--json',
       ])
     }
+    // Startup activates providers and the managed applications only. The
+    // selected profile names its worker component; no setup command, migration,
+    // seed, callback or doc-query step may appear here.
     assert.equal(
       calls
         .flat()
+        .filter((value) => value !== LOCAL_KB_MANAGED_PROFILE)
         .some((value) =>
           /worker|dispatcher|callback|seed|migrat|doc-query/.test(value)
         ),
@@ -695,7 +708,7 @@ test('explicit resume requires stop evidence, serializes operations and retains 
     writes.push(args)
     return JSON.stringify({
       ...identity,
-      profile: 'ai,chat,manage',
+      profile: LOCAL_KB_MANAGED_PROFILE,
       stopped: true,
     })
   }
@@ -785,7 +798,7 @@ test('interrupted stop evidence permits shutdown but not resume', async () => {
     writes.push(args)
     return JSON.stringify({
       ...identity,
-      profile: 'ai,chat,manage',
+      profile: LOCAL_KB_MANAGED_PROFILE,
       stopped: true,
     })
   }
@@ -881,8 +894,8 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
         mode: 'managed',
         workspace: 'synthetic-runtime',
         status: 'ready',
-        profile: 'ai,chat,manage',
-        activeProfile: 'ai,chat,manage',
+        profile: LOCAL_KB_MANAGED_PROFILE,
+        activeProfile: LOCAL_KB_MANAGED_PROFILE,
         drift: [],
       },
     },

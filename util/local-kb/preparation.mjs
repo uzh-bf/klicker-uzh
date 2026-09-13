@@ -13,7 +13,10 @@ import {
   runLocalDocker,
   runLocalManaged,
 } from './docker-preflight.mjs'
-import { validateIsolatedConfig } from './isolated-config.mjs'
+import {
+  LOCAL_KB_MANAGED_PROFILE,
+  validateIsolatedConfig,
+} from './isolated-config.mjs'
 import {
   localCredentialNames,
   localRetrievalScope,
@@ -1094,8 +1097,17 @@ export async function initializeManagedApplication(
         'tsx',
         'src/scripts/setupLocalBlobStorage.ts',
       ],
+      // The shared seed parks the KB MCP server in its inert scoped shape, so
+      // the isolated runtime supplies the transport credential its retrieval
+      // service is paired with before any chat request can load the tool.
+      ['node', 'apps/chat/scripts/local-kb-retrieval-seed.mjs'],
     ].entries()) {
-      stage = ['database-schema', 'database-seed', 'blob-setup'][index]
+      stage = [
+        'database-schema',
+        'database-seed',
+        'blob-setup',
+        'kb-retrieval-transport',
+      ][index]
       await runManaged(['exec', checkout, '--', ...command])
     }
     stage = 'completion-receipt'
@@ -1814,8 +1826,8 @@ export async function inspectPreparedInfrastructure(
     managedRuntimeStatus: managed.status,
     managedRuntimeReady:
       managed.status === 'ready' &&
-      managed.profile === 'ai,chat,manage' &&
-      managed.activeProfile === 'ai,chat,manage' &&
+      managed.profile === LOCAL_KB_MANAGED_PROFILE &&
+      managed.activeProfile === LOCAL_KB_MANAGED_PROFILE &&
       managed.drift.length === 0,
     aiQualified: false,
   }
@@ -2057,7 +2069,7 @@ async function launchInfrastructure(
     stage = 'managed application startup'
     const managed = JSON.parse(
       await runManaged(
-        ['ensure', checkout, '--profile', 'ai,chat,manage', '--json'],
+        ['ensure', checkout, '--profile', LOCAL_KB_MANAGED_PROFILE, '--json'],
         config.aiUpstream
       )
     )
@@ -2065,7 +2077,7 @@ async function launchInfrastructure(
       managed.kind !== 'linked' ||
       managed.repoPath !== checkout ||
       managed.workspace !== workspace ||
-      managed.profile !== 'ai,chat,manage'
+      managed.profile !== LOCAL_KB_MANAGED_PROFILE
     ) {
       throw new Error('Managed startup identity differs from preparation.')
     }
