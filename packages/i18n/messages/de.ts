@@ -2617,6 +2617,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         difficulty: 'Schwierigkeitsstufe',
         difficultyHelp:
           'Wählen Sie den Denkaufwand für alle generierten Elemente. Die Schwierigkeit entsteht durch die Aufgabe, nicht durch verwirrende Formulierungen.',
+        focusTopic: 'Fokusthema',
+        focusTopicHelp:
+          'Optional. Begrenzt diesen Durchlauf auf ein Thema, während der Wissensgraph vollständig bleibt.',
+        focusTopicPlaceholder: 'z. B. Portfolio-Diversifikation',
         objectives: 'Lernziele',
         objectivesHelp: 'Optionale Vorgaben für die generierten Elemente.',
         objectiveHint: 'Formulieren Sie beobachtbare, konkrete Lernziele.',
