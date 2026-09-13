@@ -35,38 +35,40 @@ managedRuntime:
     # creates all three. LiteLLM and MailHog are opt-in capabilities. The OIDC
     # mock takes part in every application profile (it costs nothing when
     # unused) so Edu-ID login works out of the box in any selection that can
-    # sign a participant in.
+    # sign a participant in. Its route must be selected too: a managed profile
+    # publishes routes for its apps, and a service alone leaves the issuer host
+    # unrouted, which fails the server-side metadata fetch during sign-in.
     profileServices:
       [redis_exec, redis_assessment, redis_cache, litellm, mailhog, oidc]
   processes: [klicker-dev, klicker-local-mcp]
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
   manage:
-    apps: [manage, api, auth]
+    apps: [manage, api, auth, oidc]
     readiness: [manage, api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
     processes: [klicker-dev]
   # student PWA work: pwa + API and auth
   pwa:
-    apps: [pwa, api, auth]
+    apps: [pwa, api, auth, oidc]
     readiness: [pwa, api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
     processes: [klicker-dev]
   # chat work: chat + API and auth; includes pwa for the no-login path
   chat:
-    apps: [chat, pwa, api, auth]
+    apps: [chat, pwa, api, auth, oidc]
     readiness: [chat, pwa, api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
     processes: [klicker-dev]
   # live-quiz work: student PWA, controller, response ingestion, workers
   live-quiz:
-    apps: [pwa, control, api, auth, response-api]
+    apps: [pwa, control, api, auth, response-api, oidc]
     readiness: [pwa, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
     processes: [klicker-dev]
   # maximal application runtime for trusted Playwright fallback selection
   playwright:
-    apps: [chat, pwa, control, manage, api, auth, response-api]
+    apps: [chat, pwa, control, manage, api, auth, response-api, oidc]
     readiness: [chat, pwa, manage, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
     processes: [klicker-dev]
