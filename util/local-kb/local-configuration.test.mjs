@@ -68,6 +68,7 @@ test('provider configuration separates backing ownership and agrees on retrieval
   )
   assert.equal(result.docProcessing.env.DOC_PROCESSING_DATABASE_URL, undefined)
   assert.equal(result.docProcessing.env.HATCHET_CLIENT_TOKEN, undefined)
+  assert.equal(result.docProcessing.env.PYTHONDONTWRITEBYTECODE, '1')
   assert.equal(result.docProcessing.backing.postgres_port, 31013)
   assert.equal(
     worker.WEB_SCRAPING_BASE_URL,

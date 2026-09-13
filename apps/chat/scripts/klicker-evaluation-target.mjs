@@ -6,6 +6,12 @@ import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  evaluatePersistedEvidence,
+  evidenceError,
+  writeEvidenceCapture,
+} from './klicker-evaluation-evidence.mjs'
+
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 export const DEFAULT_MODEL_ID = 'gpt-5.6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
@@ -412,6 +418,8 @@ export class KlickerEvaluationTarget {
     modelId = DEFAULT_MODEL_ID,
     groundTruthDirectory,
     canaryFixture,
+    evidenceDirectory = null,
+    evidenceRunId = null,
     maxStreamBytes = DEFAULT_MAX_STREAM_BYTES,
     pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
     pollTimeoutMs = DEFAULT_POLL_TIMEOUT_MS,
@@ -421,6 +429,12 @@ export class KlickerEvaluationTarget {
     if (!participantUsername || !participantPassword) {
       throw evaluationError('participant_credentials_missing')
     }
+    if (evidenceDirectory && !evidenceRunId) {
+      throw evidenceError('evidence_run_id_missing')
+    }
+    if (!evidenceDirectory && evidenceRunId) {
+      throw evidenceError('evidence_directory_missing')
+    }
     this.apiOrigin = validateLocalOrigin(apiOrigin, 'api_origin')
     this.chatOrigin = validateLocalOrigin(chatOrigin, 'chat_origin')
     this.participantUsername = participantUsername
@@ -429,6 +443,8 @@ export class KlickerEvaluationTarget {
     this.modelId = modelId
     this.groundTruthDirectory = groundTruthDirectory
     this.canaryFixture = canaryFixture
+    this.evidenceDirectory = evidenceDirectory
+    this.evidenceRunId = evidenceRunId
     this.maxStreamBytes = maxStreamBytes
     this.pollIntervalMs = pollIntervalMs
     this.pollTimeoutMs = pollTimeoutMs
@@ -648,7 +664,7 @@ export class KlickerEvaluationTarget {
     ) {
       throw evaluationError('canary_tool_missing')
     }
-    return { metadata, ...result }
+    return { metadata, ...result, message }
   }
 
   async complete(body) {
@@ -666,8 +682,22 @@ export class KlickerEvaluationTarget {
     const question = message.content.trim()
     if (!question) throw evaluationError('question_empty')
     const result = await this.runQuestion(question)
+    const payload = completionPayload(this.modelId, result)
+    if (this.evidenceDirectory) {
+      const capture = evaluatePersistedEvidence({
+        responseId: payload.id,
+        runId: this.evidenceRunId,
+        question,
+        answer: result.answer,
+        mode: result.message.chatMode,
+        requestedModel: this.modelId,
+        persistedModel: result.message.modelId,
+        content: result.message.content,
+      })
+      await writeEvidenceCapture({ directory: this.evidenceDirectory, capture })
+    }
     return {
-      payload: completionPayload(this.modelId, result),
+      payload,
       source: result.metadata.source,
     }
   }
@@ -764,6 +794,8 @@ export async function createTargetFromEnvironment(env = process.env) {
     modelId: env.KLICKER_EVAL_MODEL_ID || DEFAULT_MODEL_ID,
     groundTruthDirectory: env.KLICKER_EVAL_GT_DIR,
     canaryFixture: env.KLICKER_EVAL_CANARY_FILE,
+    evidenceDirectory: env.KLICKER_EVAL_EVIDENCE_DIR || null,
+    evidenceRunId: env.KLICKER_EVAL_RUN_ID || null,
     maxStreamBytes:
       Number(env.KLICKER_EVAL_MAX_STREAM_BYTES) || DEFAULT_MAX_STREAM_BYTES,
     pollIntervalMs:
