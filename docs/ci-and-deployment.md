@@ -243,7 +243,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): `STG_SOURCE_BRANCH` selects the supported `v3*` branch that publishes staging candidates. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Phase 1 keeps automatic promotion disabled until the selected-source SHA publishers, chart override, and platform configuration are delivered and verified — see [Staging promotion](#staging-promotion) below.
+- **stg** (`*.klicker.stg.df-app.ch`): `STG_SOURCE_BRANCH` selects the supported `v3*` branch that publishes staging candidates; it currently selects `v3-audit`. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Automatic promotion is active, so the selected source advances staging on every qualified candidate — see [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. The primary GraphQL backend separately retains the optional `<rendered-chart-fullname>-secret-growthbook-management` reference for `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`. Beta preferences are stored in the application database, so enrollment does not use that management connection or a saved-group identifier. Optional references preserve startup before provisioning.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
@@ -319,7 +319,9 @@ Operational notes.
   selected-source branch does not change the privileged controller. Candidate
   source may contain an identical mirror for manual diagnostics, but the
   automatic run executes only the default-branch revision.
-- Keep `STG_RELEASE_PROMOTION_ENABLED` absent or `false` during Phase 1. A
+- `STG_RELEASE_PROMOTION_ENABLED=true` is the live setting that lets the
+  controller write automatically; set it absent or `false` to pause automatic
+  promotion while leaving the manual path intact. A
   manual dispatch defaults to dry-run; a write requires `dry_run=false` and the
   exact input `confirm_ref_update=stg-release`, plus `expected_release_sha` and
   `expected_controller_sha` copied from the reviewed dry-run receipt. A changed
