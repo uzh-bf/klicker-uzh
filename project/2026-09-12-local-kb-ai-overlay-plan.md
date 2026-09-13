@@ -118,6 +118,24 @@ S1; do not substitute an environment file or credential-bearing argument.
 
 ## Progress
 
+- Recovery correction: attempt B never created a preparation claim. The strict
+  source check rejected Python/test caches and local review artifacts in two
+  provider worktrees. Preserve those worktrees and use clean detached provider
+  checkouts; no cache or review-artifact deletion is needed. Planner Pauli
+  approved the corrected recovery approach after identifying ingestion's
+  separate sanitized subprocess environment.
+- Disable bytecode writes in consumer launcher commands and the explicit
+  document-processing environment. The corresponding ingestion launcher fix
+  lives on `rs/local-launcher-source-cleanliness` from `origin/main@c95cfaeb`.
+  Its focused regression runs a real child import and verifies no bytecode
+  directory appears and unrelated ambient credentials remain excluded.
+  Launcher tests pass 71/71; ingestion tests pass 18/18 and focused Ruff passes.
+  These are host source checks, not full runtime acceptance.
+- Ingestion binds workload image revision to launcher revision. The corrected
+  provider must have matching published images before the next setup; old image
+  digests cannot qualify the corrected source. No setup replay or PDF submission
+  occurred during this correction.
+
 - S1 implementation committed at `f3a372f98a63d3eda5d35a00e8b77e0232066ba2`.
   Nine source/test paths; 247 added and 21 removed substantive lines.
   Three tests added and existing configuration/restart tests extended;

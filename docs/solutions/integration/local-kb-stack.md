@@ -44,6 +44,15 @@ other ignored or untracked state, including `.env`, is rejected. This does not
 prove that the virtual environment is installed or matches the lockfile.
 No missing dependency is installed implicitly.
 
+Use dedicated detached provider checkouts for qualification. Keep development
+review artifacts and test caches in their original worktrees. Install locked
+dependencies in each qualification checkout before setup, then verify that
+only ignored `.venv/` state exists. Provider commands disable Python bytecode
+writes; document processing receives the same setting in its explicit child
+configuration. Ingestion must also preserve this setting in its own sanitized
+subprocess environment. A consumer setting alone cannot control a provider
+that rebuilds its child environment.
+
 The explicit lifecycle uses the same input and full candidate commit:
 
 ```bash
