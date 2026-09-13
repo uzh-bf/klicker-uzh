@@ -772,3 +772,25 @@ required from the user.
   fixed. The remaining genuine cause is plain hosted-queue saturation: run
   `34773533734` (PR #5924) failed on a single queued sibling after 60 polls x
   30s. That is roadmap item B3 and stays blocked until #5924 merges.
+- 2026-09-13 metadata-only edited slice (branch `rs/ci-metadata-edit-skip`):
+  PR #5977 merged as `6bcd91e4c9`; the reuse fix is live on `v3` at
+  `ci-equivalent-run.cjs` lines 235/253. This slice removes the sibling waste
+  class: 21 workflows list `edited`, and a title or body edit previously
+  re-launched every one of them on an unchanged head even though the path
+  diff is byte-identical to the event before it. The `changed-paths`
+  composite now returns `should_run=false` for a pull_request `edited` event
+  without `changes.base.from` (title/body only) and still computes the real
+  diff when `changes.base.from` is present (base retarget). The four
+  path-filtered suites (`test-unit`, `test-graphql`, `test-olat-api`,
+  `test-intl-production`) already treat `should_run=false` as a validated
+  `no-change` selection, so their required status stays green without
+  executing. `check-gitleaks` keeps its unconditional run; `check`,
+  `public-pr-playwright-shards`, and the `v3_*-stg.yml` image workflows are
+  not changed here because their edited-event behaviour is contractual
+  (required context, reusable-run lifecycle, and draft-deferral/retarget
+  recompute respectively) and belong to their own packages. Evidence: 5 new
+  behavioural tests run the composite's exact script against temp repositories
+  with a local origin remote (metadata-only edit skips, base retarget
+  re-selects, synchronize and reopened still select, empty push diff still
+  fails open). Scope note: image-workflow `edited` re-runs are governed by the
+  B3 consolidation package and remain blocked on #5924.
