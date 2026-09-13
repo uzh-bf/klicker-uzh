@@ -476,6 +476,7 @@ function resolveBinding(context) {
   const ref = String(context.ref ?? '')
   const binding = {
     action: String(context.payload?.action ?? ''),
+    draft: eventName === 'pull_request' && pullRequest?.draft === true,
     branch:
       eventName === 'push'
         ? ref.replace(/^refs\/heads\//, '')
@@ -622,6 +623,35 @@ async function evaluateBuildImagesStatus({
       state: 'unavailable',
     })
     throw new Error(decision.reason)
+  }
+
+  // Draft pull requests defer their image builds: the v3_*-stg.yml build jobs
+  // gate on the non-draft state and re-run when ready_for_review fires on the
+  // unchanged head. A draft evaluation therefore passes without polling, and
+  // the evidence records the deferral instead of a build qualification.
+  if (binding.draft) {
+    let changedFileCount = 0
+    try {
+      changedFileCount = readChangedFiles(changedFilesPath).length
+    } catch {
+      // selection is informational for the deferral evidence
+    }
+    const decision = {
+      evidence: [],
+      failures: [],
+      ok: true,
+      reason:
+        'draft pull request: affected image builds are deferred until the pull request is marked ready',
+    }
+    await publish({
+      attemptCount: 0,
+      changedFileCount,
+      decision,
+      expected: [],
+      mode: 'draft-skip',
+      state: 'draft',
+    })
+    return decision
   }
 
   let changedFiles = []
