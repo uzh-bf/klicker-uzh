@@ -26,7 +26,11 @@ import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
-import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
+import {
+  EmbeddedCreditsBar,
+  EmbeddedNewConversation,
+  EmbeddedSettings,
+} from './embedded-settings'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
@@ -629,13 +633,21 @@ function AssistantLayout({
   initialModeOptionsAreFallback: boolean
   knowledgeGraphVisible: boolean
 }) {
+  const t = useTranslations('chat.thread.learningContext')
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
-  const graphPanel = useChatGraphPanel(chatbot.id, knowledgeGraphVisible)
+  const graphPanel = useChatGraphPanel(
+    chatbot.id,
+    showSidebar && knowledgeGraphVisible
+  )
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
+  const contextUnavailable = useChatContextStore(
+    (state) => state.contextUnavailable
+  )
   const contextLabel = getKlickerChatContextLabel(context)
-  const hasQuestionContext = Boolean(context?.question)
+  const hasQuestionContext =
+    context?.source === 'pwa' && Boolean(context.question)
 
   if (showSidebar) {
     return (
@@ -654,45 +666,39 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 grid shrink-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
-        <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
-          {chatbot.name}
-        </h1>
+      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
+        <EmbeddedCreditsBar />
         <EmbeddedSettings />
-        {knowledgeGraphVisible ? (
-          <ChatGraphModeSwitch
-            open={graphPanel.open}
-            onToggle={graphPanel.toggle}
-          />
-        ) : null}
+        <EmbeddedNewConversation />
       </div>
       <main
         id="main-content"
         tabIndex={-1}
         className="flex min-h-0 flex-1 flex-col"
       >
+        {contextUnavailable && (
+          <p
+            role="status"
+            className="text-muted-foreground border-b px-4 py-2 text-xs"
+          >
+            {t('refreshUnavailable')}
+          </p>
+        )}
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
               <ThreadSkeleton />
             </div>
           )}
-          <ChatKnowledgeGraphPanel
-            chatbotId={chatbot.id}
-            open={graphPanel.open}
-            onClose={graphPanel.close}
-          >
-            <Thread
-              chatbotAvatar={chatbot.avatar ?? ''}
-              chatbotName={chatbot.name}
-              contextLabel={contextLabel}
-              contextualSuggestions={hasQuestionContext}
-              initialModeOptions={initialModeOptions}
-              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-            />
-          </ChatKnowledgeGraphPanel>
+          <Thread
+            chatbotAvatar={chatbot.avatar ?? ''}
+            chatbotName={chatbot.name}
+            contextLabel={contextLabel}
+            contextualSuggestions={hasQuestionContext}
+            initialModeOptions={initialModeOptions}
+            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+          />
         </div>
-        <EmbeddedCreditsBar />
       </main>
     </div>
   )
