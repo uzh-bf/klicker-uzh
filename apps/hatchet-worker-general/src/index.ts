@@ -6,9 +6,9 @@ import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { renderAssessmentAuditPrometheusMetrics } from '@klicker-uzh/audit'
 import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
 import {
+  createHatchetClient,
   createHatchetWorkerRuntime,
   getKBGraphTerminalResult,
-  hatchetClient,
   prepareHatchetTasks,
   resolveWorkerRuntimeConfig,
 } from '@klicker-uzh/hatchet'
@@ -53,6 +53,8 @@ function startAuditMetricsServer(): void {
     logger.info({ port }, 'Assessment audit metrics server listening')
   })
 }
+
+const hatchetClient = createHatchetClient({ logger })
 
 async function main() {
   const auditWorkerEnabled =
