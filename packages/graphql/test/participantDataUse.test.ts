@@ -96,6 +96,9 @@ describe('participant data-use API', () => {
       course: { findUnique: courseFindUnique },
     }
     const prisma = {
+      user: {
+        findUnique: vi.fn(async () => ({ betaEnabled: false })),
+      },
       $transaction: vi.fn(
         async (callback: (tx: typeof transactionClient) => unknown) =>
           callback(transactionClient)
