@@ -11,7 +11,6 @@ import {
   generateText,
   isStepCount,
   type ModelMessage,
-  type StepResult,
   streamText,
   type ToolSet,
   tool,
@@ -67,6 +66,10 @@ import {
   RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
 } from '@/src/lib/server/responseExampleRuntime'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import {
+  collectStepToolDiagnostics,
+  summarizeToolDiagnostics,
+} from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
@@ -172,20 +175,6 @@ function asObject(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>
 }
 
-function safeSerialize(value: unknown): string | null {
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return null
-  }
-}
-
-function safeSize(value: unknown): number | null {
-  const serialized = safeSerialize(value)
-  if (serialized === null) return null
-  return Buffer.byteLength(serialized, 'utf8')
-}
-
 function toTokenCount(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   if (typeof value === 'string') {
@@ -255,49 +244,6 @@ function logChatDev(
   } else {
     requestLog.info(fields, 'Chat request event')
   }
-}
-
-type ToolDiagnostic = {
-  inputBytes: number | null
-  outputBytes: number | null
-}
-
-function collectStepToolDiagnostics(
-  step: Pick<StepResult<any>, 'content'>
-): ToolDiagnostic[] {
-  const diagnostics: ToolDiagnostic[] = []
-
-  for (const part of step.content ?? []) {
-    if (!part || typeof part !== 'object') continue
-    if (!('type' in part)) continue
-
-    const typedPart = part as {
-      type?: unknown
-      toolName?: unknown
-      input?: unknown
-      output?: unknown
-      result?: unknown
-      args?: unknown
-    }
-
-    if (
-      typedPart.type !== 'tool-call' &&
-      typedPart.type !== 'tool-result' &&
-      typedPart.type !== 'tool-error'
-    ) {
-      continue
-    }
-
-    const inputValue = typedPart.input ?? typedPart.args ?? null
-    const outputValue = typedPart.output ?? typedPart.result ?? null
-
-    diagnostics.push({
-      inputBytes: safeSize(inputValue),
-      outputBytes: safeSize(outputValue),
-    })
-  }
-
-  return diagnostics
 }
 
 function extractSafeHeaders(headers: unknown): Record<string, unknown> | null {
@@ -1122,6 +1068,9 @@ async function handlePOST(
           authMode,
           kbIds: scopedKbIds,
           sessionId: mcpScopeSessionId,
+          knowledgeGraphRetrievalEnabled:
+            chatbot.knowledgeGraphRetrievalEnabled,
+          courseId: chatbot.courseId,
         },
         {},
         'account',
@@ -2032,7 +1981,9 @@ async function handlePOST(
         onStepEnd: async (step) => {
           currentStepContent = []
           const diagnostics = collectStepToolDiagnostics(step)
-          const toolCallsCount = diagnostics.length
+          // Names and content-derived digests stay out of log fields; only
+          // counts and byte sizes pass the sanitizers allowlist.
+          const { toolCallsCount } = summarizeToolDiagnostics(diagnostics)
           const providerReasoningTokens = extractReasoningTokens(
             asObject(step)?.providerMetadata
           )
@@ -2054,7 +2005,10 @@ async function handlePOST(
                 ? stepOutputTokens >= providerReasoningTokens
                 : null,
             toolCallsCount,
-            toolDiagnostics: diagnostics,
+            toolDiagnostics: diagnostics.map((diagnostic) => ({
+              inputBytes: diagnostic.input?.bytes ?? null,
+              outputBytes: diagnostic.output?.bytes ?? null,
+            })),
           })
         },
 

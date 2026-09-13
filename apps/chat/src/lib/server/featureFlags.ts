@@ -86,3 +86,32 @@ export async function isManageAiEnabled(
 ): Promise<boolean> {
   return (await getManageAiCapability(user)) === 'enabled'
 }
+
+/** Graph retrieval targets the owning lecturer, independently of map visibility. */
+export async function isChatbotGraphRetrievalEnabled(
+  ownerId: string
+): Promise<boolean> {
+  try {
+    const owner = await prisma.user.findUnique({
+      where: { id: ownerId },
+      select: {
+        role: true,
+        catalystInstitutional: true,
+        catalystIndividual: true,
+        betaEnabled: true,
+      },
+    })
+    if (!owner) return false
+    const flags = getFeatureFlagClient()
+    await flags.initialize()
+    return flags.isEnabled('chatbot-graphrag', {
+      id: ownerId,
+      actorType: 'user',
+      role: owner.role,
+      catalyst: owner.catalystInstitutional || owner.catalystIndividual,
+      betaEnabled: owner.betaEnabled,
+    })
+  } catch {
+    return false
+  }
+}

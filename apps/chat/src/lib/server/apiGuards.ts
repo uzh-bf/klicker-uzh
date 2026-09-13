@@ -1,7 +1,10 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
-import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
+import {
+  ChatbotStatus,
+  type Prisma,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { decodeJWT } from '@klicker-uzh/util'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
@@ -11,13 +14,17 @@ import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
-import { type AuthMode, verifyChatGuestToken } from '@/src/lib/server/ltiGuest'
+import {
+  type AuthMode,
+  GUEST_ACCOUNT_TYPE,
+  verifyChatGuestToken,
+} from '@/src/lib/server/ltiGuest'
 import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 import { getRouteLogger } from './requestLogging'
 
 export type { AuthMode }
 
-type ParticipantIdentity = {
+export interface ParticipantIdentity {
   participantId: string
   authMode: AuthMode
   pwaEmbedScope?: {
@@ -26,29 +33,74 @@ type ParticipantIdentity = {
   }
 }
 
+// The identity transports a participant request can carry. Every consumer (API
+// routes, the page render and the proxy) resolves them in the same order so
+// they reach the same decision.
+export interface ChatTransportTokens {
+  /** Account session cookie (`participant_token`). */
+  participantToken?: string
+  /** Anonymous LTI guest cookie (`chat_participant_token`). */
+  chatGuestToken?: string
+  /** Course/chatbot-scoped PWA embed cookie (`chat_pwa_embed_token`). */
+  pwaEmbedToken?: string
+  /**
+   * Scoped token handed to the server render in the reserved proxy header when
+   * the cookie path is unavailable. Treated as untrusted input: it is verified
+   * exactly like a cookie, so it can carry a signature but never a bare
+   * identity.
+   */
+  scopedFallbackToken?: string
+}
+
+/** Collect the identity transports carried by a participant request. */
+export function extractChatTransportTokens(
+  req: NextRequest
+): ChatTransportTokens {
+  return {
+    participantToken: req.cookies.get('participant_token')?.value,
+    chatGuestToken: req.cookies.get('chat_participant_token')?.value,
+    pwaEmbedToken: req.cookies.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
+    // The Authorization header carries a scoped token for the
+    // CHIPS-unsupported-browser path: client-side `authedFetch` reads a
+    // chat-owned token from sessionStorage and attaches it to API calls. A raw
+    // account session token in this header stays unsupported.
+    scopedFallbackToken:
+      extractBearerToken(req.headers.get('authorization')) ?? undefined,
+  }
+}
+
 // Token order: chat_participant_token, scoped PWA embed token, then
 // participant_token.
 // Forward-compat: Phase C "switch to anonymous" only sets the guest cookie;
 // account cookie stays. Guest-first ordering means the switch takes effect
 // without clearing the account cookie or changing this code.
-//
-// Authorization header fallback (`Bearer <token>`) supports the
-// CHIPS-unsupported-browser path: client-side `authedFetch` reads a chat-owned
-// scoped token from sessionStorage and attaches it to API calls. Raw
-// participant_token header fallback remains unsupported.
 export async function getParticipantId(
   req: NextRequest,
   log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
-  const headerToken = extractBearerToken(req.headers.get('authorization'))
-  const chatGuestCookieToken = req.cookies.get('chat_participant_token')?.value
-  if (chatGuestCookieToken) {
+  return resolveParticipantIdentity(extractChatTransportTokens(req), log)
+}
+
+/**
+ * Resolve a participant identity from the request's transports. Every branch
+ * verifies a signature; none trusts a caller-supplied identity value.
+ */
+export async function resolveParticipantIdentity(
+  {
+    participantToken,
+    chatGuestToken,
+    pwaEmbedToken,
+    scopedFallbackToken,
+  }: ChatTransportTokens,
+  log: AppLogger = getRouteLogger()
+): Promise<ParticipantIdentity | { response: NextResponse }> {
+  if (chatGuestToken) {
     try {
-      const payload = await verifyChatGuestToken(chatGuestCookieToken)
+      const payload = await verifyChatGuestToken(chatGuestToken)
       if (payload.sub) {
         return { participantId: payload.sub, authMode: 'anonymous' }
       }
-    } catch (error) {
+    } catch {
       log.info(
         {
           event: 'chat.authentication.rejected',
@@ -56,45 +108,74 @@ export async function getParticipantId(
         },
         'Rejected chat guest token'
       )
-      // Fall through to PWA embed / participant_token below.
+      // Fall through to the scoped PWA embed / account session below.
     }
   }
 
-  const pwaEmbedCookieToken = req.cookies.get(
-    PWA_CHAT_EMBED_SESSION_COOKIE
-  )?.value
-  if (pwaEmbedCookieToken) {
+  if (pwaEmbedToken) {
     try {
-      const payload = await verifyPwaEmbedSessionToken(pwaEmbedCookieToken)
-      return {
-        participantId: payload.sub,
-        authMode: 'account',
-        pwaEmbedScope: {
-          chatbotId: payload.chatbotId,
-          courseId: payload.courseId,
-        },
+      const payload = await verifyPwaEmbedSessionToken(pwaEmbedToken)
+      // A scoped token is minted for the participant it names, so it carries an
+      // account identity and gets the same liveness check as the account
+      // session: a deactivated or guest persona must not keep access for the
+      // life of the scoped token.
+      if (payload.sub && (await isActiveAccountParticipant(payload.sub))) {
+        return {
+          participantId: payload.sub,
+          authMode: 'account',
+          pwaEmbedScope: {
+            chatbotId: payload.chatbotId,
+            courseId: payload.courseId,
+          },
+        }
       }
-    } catch (error) {
+      log.info(
+        {
+          event: 'chat.authentication.rejected',
+          outcome: 'invalid_embed_account',
+        },
+        'Rejected PWA embed session token subject'
+      )
+      // Fall through to the scoped fallback token / account session below.
+    } catch {
       log.info(
         {
           event: 'chat.authentication.rejected',
           outcome: 'invalid_embed_token',
         },
-        'Rejected PWA embed token'
+        'Rejected PWA embed session token'
       )
-      // Fall through to header / participant_token below.
+      // Fall through to the scoped fallback token / account session below.
     }
   }
 
-  if (headerToken) {
-    const headerIdentity = await getHeaderTokenIdentity(headerToken)
-    if (headerIdentity) return headerIdentity
+  if (scopedFallbackToken) {
+    const fallbackIdentity = await getScopedTokenIdentity(scopedFallbackToken)
+    if (fallbackIdentity) return fallbackIdentity
   }
 
-  return getParticipantIdFromToken(
-    req.cookies.get('participant_token')?.value,
-    log
+  return getParticipantIdFromToken(participantToken, log)
+}
+
+/**
+ * A signature alone is not an identity: the subject must still name a real,
+ * active participant. Anonymous LTI guests have their own token family and must
+ * never be reachable through an account-scoped transport.
+ */
+async function isActiveAccountParticipant(
+  participantId: string
+): Promise<boolean> {
+  const participant = await prisma.participant.findUnique({
+    where: { id: participantId },
+    select: {
+      isActive: true,
+      accounts: { select: { type: true } },
+    },
+  })
+  const isGuestPersona = participant?.accounts.some(
+    (account) => account.type === GUEST_ACCOUNT_TYPE
   )
+  return Boolean(participant?.isActive) && !isGuestPersona
 }
 
 export async function getParticipantIdFromToken(
@@ -124,21 +205,45 @@ export async function getParticipantIdFromToken(
     }
   }
 
+  // The account session token is a bearer credential, so verify every claim
+  // the backend signs into it: signature, issuer, expiry (enforced by
+  // `jwtVerify`) and the participant role. A token minted for another
+  // audience, such as a lecturer session, is not a participant identity.
+  const issuer = process.env.APP_ORIGIN_API
+  if (!issuer) {
+    return {
+      response: NextResponse.json(
+        { error: 'Server misconfigured' },
+        { status: 500 }
+      ),
+    }
+  }
+
   try {
     const jwtPayload = await jwtVerify(
       participantToken,
-      new TextEncoder().encode(appSecret)
+      new TextEncoder().encode(appSecret),
+      { issuer, algorithms: ['HS256'], requiredClaims: ['exp'] }
     )
     const participantId =
       typeof jwtPayload.payload.sub === 'string' && jwtPayload.payload.sub
         ? jwtPayload.payload.sub
         : null
 
-    if (!participantId) {
+    if (!participantId || jwtPayload.payload.role !== UserRole.PARTICIPANT) {
       log.info(
-        { event: 'chat.authentication.rejected', outcome: 'missing_subject' },
+        { event: 'chat.authentication.rejected', outcome: 'invalid_token' },
         'Rejected chat authentication'
       )
+      return {
+        response: NextResponse.json(
+          { error: 'Invalid authentication token' },
+          { status: 401 }
+        ),
+      }
+    }
+
+    if (!(await isActiveAccountParticipant(participantId))) {
       return {
         response: NextResponse.json(
           { error: 'Invalid authentication token' },
@@ -162,10 +267,12 @@ export async function getParticipantIdFromToken(
   }
 }
 
-async function getHeaderTokenIdentity(
+// Decode the scope first so only the two chat-owned scoped token families are
+// even attempted; the signature check below remains the actual gate.
+async function getScopedTokenIdentity(
   token: string
 ): Promise<ParticipantIdentity | null> {
-  const scope = decodeHeaderTokenScope(token)
+  const scope = decodeScopedTokenScope(token)
 
   if (scope === 'CHAT_GUEST') {
     try {
@@ -197,7 +304,7 @@ async function getHeaderTokenIdentity(
   return null
 }
 
-function decodeHeaderTokenScope(token: string): unknown {
+function decodeScopedTokenScope(token: string): unknown {
   try {
     return decodeJWT(token).scope
   } catch {
@@ -263,34 +370,46 @@ export async function withChatbotAuth(
   chatbotId: string,
   log: AppLogger = getRouteLogger()
 ): Promise<
-  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
+  | {
+      participantId: string
+      authMode: AuthMode
+      chatbot: { courseId: string; knowledgeGraphVisible: boolean }
+    }
   | { response: NextResponse }
 > {
-  return withChatbotTokenAuth(
-    req.cookies.get('participant_token')?.value,
-    chatbotId,
-    log
-  )
-}
-
-export async function withChatbotTokenAuth(
-  participantToken: string | undefined,
-  chatbotId: string,
-  log: AppLogger = getRouteLogger()
-): Promise<
-  | { participantId: string; authMode: AuthMode; chatbot: { courseId: string } }
-  | { response: NextResponse }
-> {
-  const participantResult = await getParticipantIdFromToken(
-    participantToken,
-    log
-  )
+  const participantResult = await getParticipantId(req, log)
   if ('response' in participantResult) {
     return participantResult
   }
+
+  return authorizeIdentityForChatbot(participantResult, chatbotId, log)
+}
+
+/**
+ * Apply the shared identity-to-chatbot authorization: publication and course
+ * existence, scoped-token binding to this exact chatbot and course, and course
+ * participation. Both the API routes and the page render call this, so every
+ * transport reaches the same decision.
+ */
+export async function authorizeIdentityForChatbot(
+  participantResult: ParticipantIdentity,
+  chatbotId: string,
+  log: AppLogger = getRouteLogger()
+): Promise<
+  | {
+      participantId: string
+      authMode: AuthMode
+      chatbot: { courseId: string; knowledgeGraphVisible: boolean }
+    }
+  | { response: NextResponse }
+> {
   const { participantId, authMode } = participantResult
 
-  const chatbotResult = await getChatbotOr404(chatbotId, { courseId: true })
+  const chatbotResult = await getChatbotOr404(chatbotId, {
+    courseId: true,
+    // Returned so the knowledge-graph route can enforce the map flag.
+    knowledgeGraphVisible: true,
+  })
   if ('response' in chatbotResult) {
     return chatbotResult
   }
@@ -311,8 +430,7 @@ export async function withChatbotTokenAuth(
 
   const participationResult = await requireParticipation(
     participantId,
-    chatbotResult.chatbot.courseId,
-    log
+    chatbotResult.chatbot.courseId
   )
   if ('response' in participationResult) {
     return participationResult
@@ -323,8 +441,7 @@ export async function withChatbotTokenAuth(
 
 export async function requireParticipation(
   participantId: string,
-  courseId: string,
-  log: AppLogger = getRouteLogger()
+  courseId: string
 ): Promise<{ ok: true } | { response: NextResponse }> {
   try {
     const participation = await prisma.participation.findUnique({
@@ -338,13 +455,6 @@ export async function requireParticipation(
     })
 
     if (!participation) {
-      log.info(
-        {
-          event: 'chat.authorization.rejected',
-          outcome: 'missing_participation',
-        },
-        'Rejected chat authorization'
-      )
       return {
         response: NextResponse.json(
           { error: 'No valid participation found for this chatbot' },
@@ -354,15 +464,8 @@ export async function requireParticipation(
     }
 
     return { ok: true }
-  } catch {
-    log.error(
-      {
-        event: 'chat.authorization.failed',
-        outcome: 'failure',
-        err: toSafeError('Failed to verify chat participation'),
-      },
-      'Failed to check participation'
-    )
+  } catch (error) {
+    console.error('Error checking participation:', error)
     return {
       response: NextResponse.json(
         { error: 'Error checking participation' },

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   notFound: vi.fn(),
   resolveParticipantIdentity: vi.fn(),
   authorizeIdentityForChatbot: vi.fn(),
+  assistant: vi.fn(),
 }))
 
 vi.mock('next/headers', () => ({
@@ -19,7 +20,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 vi.mock('../src/components/assistant', () => ({
-  Assistant: vi.fn(),
+  Assistant: mocks.assistant,
 }))
 
 vi.mock('../src/lib/server/apiGuards', () => ({
@@ -69,6 +70,7 @@ beforeEach(() => {
       avatar: null,
       systemPrompts: null,
       standardModeConfig: null,
+      knowledgeGraphVisible: true,
       mcpConfigurations: [],
     },
   })
@@ -79,7 +81,7 @@ beforeEach(() => {
 
 describe('chatbot layout access', () => {
   test('resolves the cookie transports before rendering chatbot data', async () => {
-    await ChatLayout({
+    const layout = await ChatLayout({
       children: null,
       params: Promise.resolve({ chatbotId: CHATBOT_ID }),
     })
@@ -101,6 +103,11 @@ describe('chatbot layout access', () => {
     expect(authorizationOrder).toBeLessThan(chatbotFetchOrder)
     expect(mocks.getChatbotOr404.mock.calls[0]?.[1]).toMatchObject({
       standardModeConfig: true,
+      knowledgeGraphVisible: true,
+    })
+    expect(layout.props.children[0].props).toMatchObject({
+      chatbot: { id: CHATBOT_ID },
+      knowledgeGraphVisible: true,
     })
   })
 

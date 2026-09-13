@@ -4,6 +4,7 @@ import type {
 } from '@klicker-uzh/types'
 import { NextRequest, NextResponse } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '../src/lib/server/logger'
 
 const boundaries = vi.hoisted(() => ({
   getPublishedKnowledgeGraph: vi.fn(),
@@ -119,7 +120,7 @@ beforeEach(() => {
   boundaries.withChatbotAuth.mockResolvedValue({
     participantId: 'participant-id',
     authMode: 'account',
-    chatbot: { courseId: 'course-id' },
+    chatbot: { courseId: 'course-id', knowledgeGraphVisible: true },
   })
   boundaries.getPublishedKnowledgeGraphForChatbot.mockResolvedValue(publication)
   boundaries.getPublishedKnowledgeGraph.mockResolvedValue(publication)
@@ -256,6 +257,29 @@ describe('participant knowledge graph route', () => {
     expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
   })
 
+  it('rejects stale graphs before returning student content', async () => {
+    boundaries.getPublishedKnowledgeGraphForChatbot.mockResolvedValue({
+      ...publication,
+      isStale: true,
+    })
+    const result = await GET(graphRequest('operation=overview'), {
+      params: Promise.resolve({ chatbotId }),
+    })
+    expect(result.status).toBe(409)
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a graph that becomes stale during the read', async () => {
+    boundaries.getPublishedKnowledgeGraphForChatbot
+      .mockResolvedValueOnce(publication)
+      .mockResolvedValueOnce({ ...publication, isStale: true })
+    const result = await GET(graphRequest('operation=overview'), {
+      params: Promise.resolve({ chatbotId }),
+    })
+    expect(result.status).toBe(409)
+    expect(await result.json()).not.toHaveProperty('nodes')
+  })
+
   it('does not expose graph publication or data to a non-participant', async () => {
     boundaries.withChatbotAuth.mockResolvedValue({
       response: NextResponse.json(
@@ -267,6 +291,26 @@ describe('participant knowledge graph route', () => {
     const result = await callRoute('operation=overview')
 
     expect(result.status).toBe(403)
+    expect(
+      boundaries.getPublishedKnowledgeGraphForChatbot
+    ).not.toHaveBeenCalled()
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
+  it('refuses the graph with a dedicated code when the map is disabled', async () => {
+    boundaries.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-id',
+      authMode: 'account',
+      chatbot: { courseId: 'course-id', knowledgeGraphVisible: false },
+    })
+
+    const result = await callRoute('operation=overview')
+
+    expect(result.status).toBe(403)
+    await expect(result.json()).resolves.toEqual({
+      code: 'KNOWLEDGE_GRAPH_DISABLED',
+      error: 'Knowledge graph is disabled for this chatbot',
+    })
     expect(
       boundaries.getPublishedKnowledgeGraphForChatbot
     ).not.toHaveBeenCalled()
@@ -367,7 +411,9 @@ describe('participant knowledge graph route', () => {
   })
 
   it('passes a numeric node ID only to the fixed neighborhood reader', async () => {
-    const result = await callRoute('operation=neighbors&nodeId=12004')
+    const result = await callRoute(
+      `operation=neighbors&nodeId=12004&kbId=${kbId}&buildId=${publication.buildId}`
+    )
 
     expect(result.status).toBe(200)
     expect(boundaries.readKnowledgeGraphNeighbors).toHaveBeenCalledWith(
@@ -377,8 +423,49 @@ describe('participant knowledge graph route', () => {
     expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
   })
 
+  it('rejects an old build before interpreting its node ID', async () => {
+    const result = await callRoute(
+      `operation=neighbors&nodeId=12&kbId=${kbId}&buildId=99999999-9999-4999-8999-999999999999`
+    )
+    expect(result.status).toBe(409)
+    expect((await result.json()).code).toBe('KNOWLEDGE_GRAPH_BUILD_CHANGED')
+    expect(boundaries.readKnowledgeGraphNeighbors).not.toHaveBeenCalled()
+  })
+
+  it('holds admission until a graph read settles and releases on failure', async () => {
+    let reject!: (reason: Error) => void
+    const pending = new Promise((_, fail) => {
+      reject = fail
+    })
+    boundaries.readKnowledgeGraphOverview.mockReturnValue(pending)
+    const errorLog = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    const first = callRoute('operation=overview')
+    const second = callRoute('operation=overview')
+    try {
+      const busy = await callRoute('operation=overview')
+      expect(busy.status).toBe(429)
+      expect(busy.headers.get('Retry-After')).toBe('1')
+      expect(boundaries.readKnowledgeGraphOverview).toHaveBeenCalledTimes(2)
+      reject(new Error('synthetic timeout'))
+      expect((await first).status).toBe(503)
+      expect((await second).status).toBe(503)
+      boundaries.readKnowledgeGraphOverview.mockResolvedValue(response)
+      expect((await callRoute('operation=overview')).status).toBe(200)
+    } finally {
+      reject(new Error('cleanup'))
+      await Promise.allSettled([first, second])
+      errorLog.mockRestore()
+    }
+  })
+
   it.each([
     'operation=neighbors',
+    'operation=neighbors&nodeId=12',
+    `operation=neighbors&nodeId=9223372036854775808&kbId=${kbId}&buildId=${publication.buildId}`,
+    `operation=neighbors&nodeId=99999999999999999999&kbId=${kbId}&buildId=${publication.buildId}`,
+    `operation=neighbors&nodeId=${'1'.repeat(21)}&kbId=${kbId}&buildId=${publication.buildId}`,
     'operation=neighbors&nodeId=',
     'operation=neighbors&nodeId=-1',
     'operation=neighbors&nodeId=12.4',
@@ -399,9 +486,17 @@ describe('participant knowledge graph route', () => {
         'redis://reader:secret@falkordb.internal/graph?source=https://private.example'
       )
     )
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
+    // The route logs through a request child logger; capture at the fork.
+    const loggerError = vi.fn()
+    vi.spyOn(logger, 'child').mockImplementation(
+      () =>
+        ({
+          error: loggerError,
+          info: vi.fn(),
+          warn: vi.fn(),
+          debug: vi.fn(),
+        }) as never
+    )
 
     try {
       const result = await callRoute('operation=overview')
@@ -411,15 +506,19 @@ describe('participant knowledge graph route', () => {
         code: 'KNOWLEDGE_GRAPH_TEMPORARILY_UNAVAILABLE',
         error: 'Knowledge graph is temporarily unavailable',
       })
-      expect(consoleError).toHaveBeenCalledWith(
-        'Participant knowledge graph read failed',
-        { chatbotId, operation: 'overview' }
-      )
-      expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
+      // The handler's record plus the route wrapper's 503 completion record.
+      expect(loggerError).toHaveBeenCalledTimes(2)
+      const readFailure = loggerError.mock.calls.find(
+        ([fields]) =>
+          (fields as Record<string, unknown>).event ===
+          'chat.knowledge_graph.read.failed'
+      ) as [Record<string, unknown>, string]
+      expect(readFailure?.[1]).toBe('Participant knowledge graph read failed')
+      expect(JSON.stringify(loggerError.mock.calls)).not.toMatch(
         /secret|private\.example|redis:\/\//
       )
     } finally {
-      consoleError.mockRestore()
+      loggerError.mockRestore()
     }
   })
 
