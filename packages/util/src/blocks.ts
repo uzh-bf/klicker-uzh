@@ -63,15 +63,12 @@ export async function getCachedBlockResults({
     redisMulti.hgetall(
       `lq:${activeBlock.liveQuizId}:i:${instance.id}:responseHashes`
     )
-    redisMulti.hgetall(
-      `lq:${activeBlock.liveQuizId}:i:${instance.id}:responses`
-    )
     redisMulti.hgetall(`lq:${activeBlock.liveQuizId}:i:${instance.id}:results`)
     const cacheData = await redisMulti.exec()
 
     if (!cacheData) return
     const mappedResults: any[] = cacheData.map(([_, result]) => result)
-    const [info, responseHashes, _, results] = mappedResults
+    const [info, responseHashes, results] = mappedResults
 
     // TODO: if possible, split up results and anonymous results here (potentially the cache content needs to augmented)
     let anonymousResults:

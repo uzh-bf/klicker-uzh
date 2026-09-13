@@ -1119,63 +1119,6 @@ export async function activateLiveQuizBlock(
     },
   })
 
-  if (updatedQuiz.activeBlock?.expiresAt) {
-    scheduledJobs[blockId] = schedule.scheduleJob(
-      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
-      async () => {
-        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
-        ctx.emitter.emit('invalidate', {
-          typename: 'LiveQuiz',
-          id: updatedQuiz.id,
-        })
-      }
-    )
-  }
-
-  // update the quiz with an updated version through the corresponding subscription
-  ctx.pubSub.publish('runningLiveQuizUpdated', {
-    id: updatedQuiz.id,
-    beforeFirstBlock: false,
-    activeBlock: {
-      ...updatedQuiz.activeBlock,
-      elements: updatedQuiz.activeBlock!.elements
-        ? await Promise.all(
-            removeSolutionFromInstances({
-              instances: updatedQuiz.activeBlock!.elements,
-            }).map(async (instance) => {
-              if (!quiz.isAssessmentEnabled) {
-                return instance
-              }
-
-              // for assessment quizzes, add a correlation key to verify a student's submission
-              const correlationKey = await signJWT(
-                {
-                  instanceId: instance.id,
-                  execution: updatedQuiz.activeBlock!.execution,
-                  liveQuizId: quiz.id,
-                  sub: '', // dummy sub, since this value is required
-                },
-                process.env.APP_SECRET as string,
-                {
-                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
-                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
-                }
-              )
-
-              return { ...instance, correlationKey }
-            })
-          )
-        : [],
-    },
-    // for future blocks, do not return the elements
-    blocks: updatedQuiz.blocks.map((block) => ({
-      ...block,
-      elements:
-        block.status === DB.ElementBlockStatus.EXECUTED
-          ? removeSolutionFromInstances({ instances: block.elements })
-          : [],
-    })),
-  })
 
   // initialize the cache for the new active block
   const redisMulti = updatedQuiz.isAssessmentEnabled
@@ -1317,7 +1260,77 @@ export async function activateLiveQuizBlock(
     }
   })
 
-  redisMulti.exec()
+  // the participant announcement happens only after the cache is fully
+  // initialized, so a fast first response cannot race the seeding and be
+  // rejected as missing instance metadata
+  const seedingResults = await redisMulti.exec()
+  const seedingErrors = (seedingResults ?? [])
+    .map(([error]) => error)
+    .filter((error) => error !== null)
+  if (seedingErrors.length > 0) {
+    throw new Error(
+      `Failed to initialize response cache for block ${blockId} of live quiz ${quizId}: ${JSON.stringify(seedingErrors[0])}`
+    )
+  }
+
+  if (updatedQuiz.activeBlock?.expiresAt) {
+    scheduledJobs[blockId] = schedule.scheduleJob(
+      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
+      async () => {
+        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+        ctx.emitter.emit('invalidate', {
+          typename: 'LiveQuiz',
+          id: updatedQuiz.id,
+        })
+      }
+    )
+  }
+
+  // update the quiz with an updated version through the corresponding subscription
+  ctx.pubSub.publish('runningLiveQuizUpdated', {
+    id: updatedQuiz.id,
+    beforeFirstBlock: false,
+    activeBlock: {
+      ...updatedQuiz.activeBlock,
+      elements: updatedQuiz.activeBlock!.elements
+        ? await Promise.all(
+            removeSolutionFromInstances({
+              instances: updatedQuiz.activeBlock!.elements,
+            }).map(async (instance) => {
+              if (!quiz.isAssessmentEnabled) {
+                return instance
+              }
+
+              // for assessment quizzes, add a correlation key to verify a student's submission
+              const correlationKey = await signJWT(
+                {
+                  instanceId: instance.id,
+                  execution: updatedQuiz.activeBlock!.execution,
+                  liveQuizId: quiz.id,
+                  sub: '', // dummy sub, since this value is required
+                },
+                process.env.APP_SECRET as string,
+                {
+                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+                }
+              )
+
+              return { ...instance, correlationKey }
+            })
+          )
+        : [],
+    },
+    // for future blocks, do not return the elements
+    blocks: updatedQuiz.blocks.map((block) => ({
+      ...block,
+      elements:
+        block.status === DB.ElementBlockStatus.EXECUTED
+          ? removeSolutionFromInstances({ instances: block.elements })
+          : [],
+    })),
+  })
+
   return updatedQuiz
 }
 
