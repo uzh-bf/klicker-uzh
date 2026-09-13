@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
 import {
   CHAT_SCOPED_TOKEN_HEADER,
@@ -39,7 +39,22 @@ export default async function ChatLayout({
     identityResult,
     chatbotId
   )
-  if ('response' in authorizationResult) notFound()
+  if ('response' in authorizationResult) {
+    if (
+      authorizationResult.response.status === 403 &&
+      (await authorizationResult.response.json()).error ===
+        'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED'
+    ) {
+      const result = await getChatbotOr404(chatbotId, { courseId: true })
+      if ('response' in result) notFound()
+      const destination = new URL(
+        `/course/${encodeURIComponent(result.chatbot.courseId)}/chatbot/${encodeURIComponent(chatbotId)}`,
+        process.env.NEXT_PUBLIC_PWA_URL ?? 'https://pwa.klicker.uzh.ch'
+      )
+      redirect(destination.toString())
+    }
+    notFound()
+  }
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     id: true,

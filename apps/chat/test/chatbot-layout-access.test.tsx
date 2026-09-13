@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   headers: vi.fn(),
   getChatbotOr404: vi.fn(),
   notFound: vi.fn(),
+  redirect: vi.fn(),
   resolveParticipantIdentity: vi.fn(),
   authorizeIdentityForChatbot: vi.fn(),
   assistant: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock('next/headers', () => ({
 
 vi.mock('next/navigation', () => ({
   notFound: mocks.notFound,
+  redirect: mocks.redirect,
 }))
 
 vi.mock('../src/components/assistant', () => ({
@@ -80,6 +82,31 @@ beforeEach(() => {
 })
 
 describe('chatbot layout access', () => {
+  test('returns incomplete accounts to the PWA chatbot completion path', async () => {
+    mocks.authorizeIdentityForChatbot.mockResolvedValue({
+      response: new Response(
+        JSON.stringify({ error: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' }),
+        { status: 403 }
+      ),
+    })
+    mocks.getChatbotOr404.mockResolvedValue({
+      chatbot: { courseId: 'course-1' },
+    })
+    mocks.redirect.mockImplementation(() => {
+      throw new Error('redirect')
+    })
+    await expect(
+      ChatLayout({
+        children: null,
+        params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+      })
+    ).rejects.toThrow('redirect')
+    const destination = new URL(mocks.redirect.mock.calls[0]![0])
+    expect(destination.pathname).toBe(`/course/course-1/chatbot/${CHATBOT_ID}`)
+    expect(destination.search).toBe('')
+    expect(mocks.assistant).not.toHaveBeenCalled()
+  })
+
   test('resolves the cookie transports before rendering chatbot data', async () => {
     const layout = await ChatLayout({
       children: null,
