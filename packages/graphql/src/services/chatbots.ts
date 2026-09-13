@@ -1167,6 +1167,40 @@ export type ChatbotRevisionSaveInput = {
   knowledgeGraphPolicy?: RevisionKnowledgeGraphPolicyInput | null
 }
 
+async function assertGraphRetrievalTransition(
+  ctx: ContextWithUser,
+  ownerId: string,
+  wasEnabled: boolean,
+  enabled: boolean
+): Promise<void> {
+  if (!enabled || wasEnabled) return
+  const owner = await ctx.prisma.user.findUnique({
+    where: { id: ownerId },
+    select: {
+      role: true,
+      catalystInstitutional: true,
+      catalystIndividual: true,
+      betaEnabled: true,
+    },
+  })
+  let allowed = false
+  try {
+    allowed =
+      owner !== null &&
+      ctx.featureFlags?.isEnabled('chatbot-graphrag', {
+        id: ownerId,
+        actorType: 'user',
+        role: owner.role,
+        catalyst: owner.catalystInstitutional || owner.catalystIndividual,
+        betaEnabled: owner.betaEnabled,
+      }) === true
+  } catch {
+    /* Missing or unavailable rollout policy denies activation. */
+  }
+  if (!allowed)
+    throw chatbotError('Graph retrieval is not available', 'FORBIDDEN')
+}
+
 export async function saveChatbotRevision(
   args: {
     chatbotId: string
@@ -1246,6 +1280,12 @@ export async function saveChatbotRevision(
 
     const current = getRevisionSnapshot(chatbot)
     let next = { ...current, ...patch }
+    await assertGraphRetrievalTransition(
+      ctx,
+      chatbot.ownerId,
+      current.knowledgeGraphRetrievalEnabled,
+      next.knowledgeGraphRetrievalEnabled
+    )
     if (disclaimer) {
       const title = normalizeDisclaimerText(disclaimer.title)
       const introText = normalizeDisclaimerText(disclaimer.introText)
@@ -1477,6 +1517,12 @@ export async function submitChatbotRevision(
     revision.publicationUseCase = args.useCase
     revision.expectedStudentCount = args.expectedStudentCount
     const completeRevision = validateCompleteRevision(revision, true)
+    await assertGraphRetrievalTransition(
+      ctx,
+      chatbot.ownerId,
+      chatbot.knowledgeGraphRetrievalEnabled,
+      completeRevision.knowledgeGraphRetrievalEnabled
+    )
     const currentStatus = chatbot.status
     if (
       currentStatus !== DB.ChatbotStatus.DRAFT &&
@@ -1634,6 +1680,12 @@ export async function approveChatbotRevision(
 
     const revision = getRevisionSnapshot(chatbot)
     const completeRevision = validateCompleteRevision(revision, true)
+    await assertGraphRetrievalTransition(
+      ctx,
+      chatbot.ownerId,
+      chatbot.knowledgeGraphRetrievalEnabled,
+      completeRevision.knowledgeGraphRetrievalEnabled
+    )
     const periodChanged =
       completeRevision.creditResetPeriod !== chatbot.creditResetPeriod
     const updateData: Prisma.ChatbotUncheckedUpdateInput = {

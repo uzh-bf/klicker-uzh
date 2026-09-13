@@ -200,7 +200,7 @@ model Chatbot {
   // Independent lecturer controls for the participant concept map and for
   // graph-assisted document search; not the KB's own graph-generation flag.
   // The default keeps existing chatbots on the map they already had.
-  knowledgeGraphVisible          Boolean @default(true)
+  knowledgeGraphVisible          Boolean @default(false)
   knowledgeGraphRetrievalEnabled Boolean @default(false)
 
   // OpenAI-compatible Configuration

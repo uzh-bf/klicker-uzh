@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
+import { loginLecturer } from '../util/workflow.js'
 import {
   CHATBOT_ID,
   chatUrl,
@@ -695,4 +696,50 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
       ).toBeVisible()
     })
   })
+})
+
+test('GraphRAG rollout controls retrieval independently of the student map', async ({
+  page,
+}) => {
+  let enabled = false
+  let payloadReads = 0
+  await page.route('**/api/features/*', async (route) => {
+    payloadReads += 1
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        features: {
+          'ai-beta': { defaultValue: true },
+          'chatbot-graphrag': { defaultValue: enabled },
+        },
+      }),
+    })
+  })
+  await loginLecturer(page)
+  const url = `${process.env.URL_MANAGE}/resources/chatbots?chatbotId=${CHATBOT_ID}&view=knowledge`
+  await page.goto(url)
+  const map = page.getByTestId('chatbot-knowledge-graph-visible-switch')
+  const retrieval = page.getByTestId('chatbot-knowledge-graph-retrieval-switch')
+  await expect(map).toBeVisible()
+  await expect(retrieval).toHaveCount(0)
+  expect(payloadReads).toBeGreaterThan(0)
+  enabled = true
+  await page.evaluate(() => localStorage.clear())
+  await page.reload()
+  await expect(map).toBeVisible()
+  await expect(retrieval).toBeVisible()
+  const initial = await retrieval.isChecked()
+  await retrieval.setChecked(!initial)
+  await expect(retrieval).toBeChecked({ checked: !initial })
+  await retrieval.setChecked(initial)
+  // The local checkbox interaction does not publish or persist a policy.
+  if (process.env.GRAPH_ROLLOUT_GALLERY_DIR) {
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 1000 })
+      await page.screenshot({
+        path: `${process.env.GRAPH_ROLLOUT_GALLERY_DIR}/flag-on-${width}.png`,
+        fullPage: true,
+      })
+    }
+  }
 })

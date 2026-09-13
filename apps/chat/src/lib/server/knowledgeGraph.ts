@@ -87,6 +87,8 @@ export async function readPublishedChatbotKnowledgeGraph(
     request.kbId
   )
 
+  if (publication.isStale) throw new KnowledgeGraphBuildChangedError()
+
   if (
     request.operation === 'neighbors' &&
     (publication.kbId !== request.kbId ||
@@ -102,5 +104,13 @@ export async function readPublishedChatbotKnowledgeGraph(
         ? await searchKnowledgeGraph(publication, request.query)
         : await readKnowledgeGraphNeighbors(publication, request.nodeId)
 
+  const current = await getPublishedKnowledgeGraphForChatbot(
+    prisma,
+    chatbotId,
+    publication.kbId
+  )
+  if (current.isStale || current.buildId !== publication.buildId) {
+    throw new KnowledgeGraphBuildChangedError()
+  }
   return browserSafeResponse(response)
 }

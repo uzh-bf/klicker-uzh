@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   ChatbotStatus,
   type ChatModelCapability,
@@ -193,6 +194,7 @@ function ChatbotDetails({
   publishingAuthorizationError: boolean
 }) {
   const t = useTranslations()
+  const graphRetrievalAvailable = useFeatureFlag('chatbot-graphrag')
   const { locale } = useRouter()
   const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
   const [saveRevision, { loading: isSaving }] = useMutation(
@@ -976,36 +978,38 @@ function ChatbotDetails({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  <label
-                    htmlFor="chatbot-knowledge-graph-retrieval-switch"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    {t('manage.resources.knowledgeGraphRetrieval')}
-                  </label>
-                  <Switch
-                    id="chatbot-knowledge-graph-retrieval-switch"
-                    checked={knowledgeGraphPolicy.retrievalEnabled}
-                    disabled={
-                      isSaving || !modelSettingsEditable || revisionPending
-                    }
-                    onCheckedChange={(checked) => {
-                      setKnowledgeGraphSaveSuccess(false)
-                      setKnowledgeGraphSaveError(null)
-                      clearRevisionConflict()
-                      setKnowledgeGraphPolicy((current) => ({
-                        ...current,
-                        retrievalEnabled: checked,
-                      }))
-                    }}
-                    data={{ cy: 'chatbot-knowledge-graph-retrieval-switch' }}
-                  />
+              {graphRetrievalAvailable && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="chatbot-knowledge-graph-retrieval-switch"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      {t('manage.resources.knowledgeGraphRetrieval')}
+                    </label>
+                    <Switch
+                      id="chatbot-knowledge-graph-retrieval-switch"
+                      checked={knowledgeGraphPolicy.retrievalEnabled}
+                      disabled={
+                        isSaving || !modelSettingsEditable || revisionPending
+                      }
+                      onCheckedChange={(checked) => {
+                        setKnowledgeGraphSaveSuccess(false)
+                        setKnowledgeGraphSaveError(null)
+                        clearRevisionConflict()
+                        setKnowledgeGraphPolicy((current) => ({
+                          ...current,
+                          retrievalEnabled: checked,
+                        }))
+                      }}
+                      data={{ cy: 'chatbot-knowledge-graph-retrieval-switch' }}
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">
-                  {t('manage.resources.knowledgeGraphRetrievalDescription')}
-                </div>
-              </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button

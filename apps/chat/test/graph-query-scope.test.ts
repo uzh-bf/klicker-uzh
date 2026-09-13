@@ -6,12 +6,16 @@ const mocks = vi.hoisted(() => ({
   access: vi.fn(),
   publication: vi.fn(),
   hints: vi.fn(),
+  flag: vi.fn(),
 }))
 vi.mock('@klicker-uzh/prisma', () => ({
   prisma: {
     participant: { findUnique: mocks.participant },
     chatbot: { findUnique: mocks.chatbot },
   },
+}))
+vi.mock('@/src/lib/server/featureFlags', () => ({
+  isChatbotGraphRetrievalEnabled: mocks.flag,
 }))
 vi.mock('@/src/lib/server/apiGuards', () => ({
   authorizeIdentityForChatbot: mocks.access,
@@ -38,6 +42,7 @@ const context = {
 describe('graph document scope', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mocks.flag.mockResolvedValue(true)
     mocks.participant.mockResolvedValue({ isActive: true, accounts: [] })
     mocks.access.mockResolvedValue({
       participantId: context.participantId,
@@ -45,6 +50,7 @@ describe('graph document scope', () => {
     })
     mocks.chatbot.mockResolvedValue({
       knowledgeGraphRetrievalEnabled: true,
+      ownerId: 'owner-1',
       knowledgeBases: [binding],
     })
     mocks.publication.mockResolvedValue({
@@ -55,6 +61,17 @@ describe('graph document scope', () => {
       sources: [],
     })
     mocks.hints.mockResolvedValue(['Covariance'])
+  })
+
+  it('declines graph reads when the owner rollout is disabled or revoked', async () => {
+    const dependencies = graphQueryDependencies(context)
+    expect((await dependencies.validateScope()).enabled).toBe(true)
+    expect(mocks.flag).toHaveBeenCalledWith('owner-1')
+    mocks.flag.mockResolvedValue(false)
+    mocks.publication.mockClear()
+    expect((await dependencies.validateScope()).enabled).toBe(false)
+    expect(await dependencies.hints('risk')).toEqual([])
+    expect(mocks.publication).not.toHaveBeenCalled()
   })
 
   it('uses the publication from the authorized binding', async () => {
@@ -73,6 +90,7 @@ describe('graph document scope', () => {
   it('rejects binding replacement instead of narrowing the original transport', async () => {
     mocks.chatbot.mockResolvedValue({
       knowledgeGraphRetrievalEnabled: true,
+      ownerId: 'owner-1',
       knowledgeBases: [{ ...binding, kbId: 'kb-2' }],
     })
     await expect(

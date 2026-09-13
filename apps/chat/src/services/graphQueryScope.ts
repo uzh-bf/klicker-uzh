@@ -1,5 +1,6 @@
 import { prisma } from '@klicker-uzh/prisma'
 import { authorizeIdentityForChatbot } from '@/src/lib/server/apiGuards'
+import { isChatbotGraphRetrievalEnabled } from '@/src/lib/server/featureFlags'
 import {
   getPublishedKnowledgeGraph,
   type PublishedKnowledgeGraph,
@@ -46,6 +47,7 @@ export function graphQueryDependencies(
         where: { id: context.chatbotId },
         select: {
           knowledgeGraphRetrievalEnabled: true,
+          ownerId: true,
           knowledgeBases: {
             where: { isEnabled: true, kb: { deletedAt: null } },
             select: {
@@ -68,6 +70,7 @@ export function graphQueryDependencies(
       publication = undefined
       if (
         !chatbot.knowledgeGraphRetrievalEnabled ||
+        !(await isChatbotGraphRetrievalEnabled(chatbot.ownerId)) ||
         actual.length !== 1 ||
         !chatbot.knowledgeBases[0]?.kb.knowledgeGraphEnabled
       )

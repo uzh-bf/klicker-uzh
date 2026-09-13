@@ -256,6 +256,29 @@ describe('participant knowledge graph route', () => {
     expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
   })
 
+  it('rejects stale graphs before returning student content', async () => {
+    boundaries.getPublishedKnowledgeGraphForChatbot.mockResolvedValue({
+      ...publication,
+      isStale: true,
+    })
+    const result = await GET(graphRequest('operation=overview'), {
+      params: Promise.resolve({ chatbotId }),
+    })
+    expect(result.status).toBe(409)
+    expect(boundaries.readKnowledgeGraphOverview).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a graph that becomes stale during the read', async () => {
+    boundaries.getPublishedKnowledgeGraphForChatbot
+      .mockResolvedValueOnce(publication)
+      .mockResolvedValueOnce({ ...publication, isStale: true })
+    const result = await GET(graphRequest('operation=overview'), {
+      params: Promise.resolve({ chatbotId }),
+    })
+    expect(result.status).toBe(409)
+    expect(await result.json()).not.toHaveProperty('nodes')
+  })
+
   it('does not expose graph publication or data to a non-participant', async () => {
     boundaries.withChatbotAuth.mockResolvedValue({
       response: NextResponse.json(

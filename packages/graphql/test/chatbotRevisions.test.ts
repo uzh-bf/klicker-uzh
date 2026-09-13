@@ -26,9 +26,18 @@ describe('chatbot authoring revision transitions', () => {
       dependencies.hatchet,
       dependencies.emitter
     )
-    owner = contexts.userOneCtx
+    owner = {
+      ...contexts.userOneCtx,
+      featureFlags: {
+        ...contexts.userOneCtx.featureFlags,
+        isEnabled: vi.fn(
+          (key) => key === 'ai-beta' || key === 'chatbot-graphrag'
+        ),
+      } as NonNullable<ContextWithUser['featureFlags']>,
+    }
     admin = {
       ...contexts.userTwoCtx,
+      featureFlags: owner.featureFlags,
       user: { ...contexts.userTwoCtx.user, role: UserRole.ADMIN },
     }
     await dependencies.prisma.user.update({
@@ -670,6 +679,90 @@ describe('chatbot authoring revision transitions', () => {
       revisionStatus: ChatbotStatus.PENDING_APPROVAL,
       revisionVersion: 2,
     })
+  })
+
+  it('requires the rollout for activation but permits unrelated edits and disabling', async () => {
+    const bot = await seed()
+    const denied = {
+      ...owner,
+      featureFlags: {
+        ...owner.featureFlags,
+        isEnabled: (key: string) => key !== 'chatbot-graphrag',
+      } as NonNullable<ContextWithUser['featureFlags']>,
+    }
+    await expect(
+      service.saveChatbotRevision(
+        {
+          chatbotId: bot.id,
+          expectedRevisionVersion: 0,
+          input: {
+            knowledgeGraphPolicy: { visible: true, retrievalEnabled: true },
+          },
+        },
+        denied
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    await dependencies.prisma.chatbot.update({
+      where: { id: bot.id },
+      data: { knowledgeGraphRetrievalEnabled: true },
+    })
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          knowledgeGraphPolicy: { visible: true, retrievalEnabled: true },
+        },
+      },
+      denied
+    )
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 1,
+        input: {
+          knowledgeGraphPolicy: { visible: true, retrievalEnabled: false },
+        },
+      },
+      denied
+    )
+    expect((await read(bot.id)).draftConfig).toMatchObject({
+      knowledgeGraphRetrievalEnabled: false,
+    })
+  })
+
+  it('checks the owner cohort when an administrator approves retrieval activation', async () => {
+    const bot = await seed()
+    await service.saveChatbotRevision(
+      {
+        chatbotId: bot.id,
+        expectedRevisionVersion: 0,
+        input: {
+          knowledgeGraphPolicy: { visible: false, retrievalEnabled: true },
+        },
+      },
+      owner
+    )
+    await submit(bot.id, 1)
+    const checked: string[] = []
+    const denied = {
+      ...admin,
+      featureFlags: {
+        ...admin.featureFlags,
+        isEnabled: (_key: string, attrs: { id?: string }) => {
+          checked.push(attrs.id ?? '')
+          return false
+        },
+      } as NonNullable<ContextWithUser['featureFlags']>,
+    }
+    await expect(
+      service.approveChatbotRevision(
+        { id: bot.id, expectedRevisionVersion: 2 },
+        denied
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'FORBIDDEN' } })
+    expect(checked).toEqual([owner.user.sub])
+    expect((await read(bot.id)).knowledgeGraphRetrievalEnabled).toBe(false)
   })
 
   it('stages the knowledge-graph policy until approval', async () => {

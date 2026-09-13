@@ -889,8 +889,17 @@ without overriding a mode manually chosen afterward.
 The lecturer controls the student map with `Chatbot.knowledgeGraphVisible` and
 graph-assisted document search independently with
 `Chatbot.knowledgeGraphRetrievalEnabled`. Both follow the authoring-revision
-approval lifecycle. Existing chatbots retain map visibility; new chatbots start
-with both options off. A disabled map hides the graph toggle and its API
+approval lifecycle. The first opt-in rollout resets existing live and draft map policies to off;
+new chatbots also start with both options off. The forward migration preserves
+other draft settings and advances changed rows' revision versions to reject stale
+editors. Retrieval additionally requires the default-off `chatbot-graphrag`
+GrowthBook flag. Manage hides its retrieval switch while the flag is off; the
+server evaluates the chatbot owner's current cohort before enabling or publishing
+retrieval, and at runtime tool checkpoints. Flag-off permits disabling and
+unrelated edits to an already-enabled policy. Map visibility remains independent.
+The shared flag client refreshes every 30 seconds and rejects payloads older than
+120 seconds; disabling a hosted flag is therefore not an instantaneous global
+kill switch. Missing or unusable configuration denies retrieval. A disabled map hides the graph toggle and its API
 returns `403 KNOWLEDGE_GRAPH_DISABLED`. Student maps start with a bounded overview. Typing at least two characters
 requests up to 20 suggestions after 300ms; selecting a suggestion opens a focused
 view. Explicit search also supports one character. Return to overview clears the
@@ -902,7 +911,10 @@ The viewer retains at most 500 concepts and 1,000 relationships across expansion
 partial-server-results and local-canvas limits have separate notices. Student
 neighbor requests bind numeric IDs to the originating KB/build. A changed
 publication rejects the read and refreshes the overview, preventing ID reuse
-from selecting a different concept.
+from selecting a different concept. Student reads reject stale builds and
+revalidate publication after reading. Withdrawn content is suppressed on subsequent
+requests; content already rendered in a browser cannot be recalled. Lecturer
+inspection can still show a stale graph.
 
 Student graph admission is per process: eight active reads, two per participant,
 60 requests per participant per minute, and 2,000 tracked identities maximum.
