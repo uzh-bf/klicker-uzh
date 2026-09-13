@@ -2583,6 +2583,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         difficulty: 'Difficulty level',
         difficultyHelp:
           'Choose the reasoning demand for all generated elements. Difficulty comes from the task, not from confusing wording.',
+        focusTopic: 'Focus topic',
+        focusTopicHelp:
+          'Optional. Narrows this batch to one topic while the knowledge graph stays complete.',
+        focusTopicPlaceholder: 'E.g. Portfolio diversification',
         objectives: 'Learning objectives',
         objectivesHelp: 'Optional guidance for the generated elements.',
         objectiveHint: 'Write observable, specific learning objectives.',

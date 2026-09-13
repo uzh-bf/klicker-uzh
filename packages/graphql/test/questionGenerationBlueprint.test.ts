@@ -49,6 +49,7 @@ const configuration: QuestionGenerationConfiguration = {
     },
   ],
   bloomLevels: ['understand'],
+  focusTopic: null,
 }
 
 function parseBlueprint(bytes: Buffer): unknown {
@@ -183,6 +184,23 @@ describe('question generation blueprint', () => {
     )
 
     expect(parseBlueprint(bytes)).toMatchObject({ item_format: 'mc' })
+  })
+
+  it('emits the lecturer focus topic only when one is set', async () => {
+    const bytes = await createQuestionGenerationBlueprint(
+      { ...configuration, focusTopic: 'Portfolio diversification' },
+      sourceSnapshot
+    )
+
+    expect(parseBlueprint(bytes)).toMatchObject({
+      focus_topic: 'Portfolio diversification',
+    })
+
+    const unfocused = await createQuestionGenerationBlueprint(
+      configuration,
+      sourceSnapshot
+    )
+    expect(parseBlueprint(unfocused)).not.toHaveProperty('focus_topic')
   })
 
   it('fails closed for unknown selected sources', async () => {
