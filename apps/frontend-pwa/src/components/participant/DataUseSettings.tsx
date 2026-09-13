@@ -45,7 +45,6 @@ function isDataUseConflict(error: unknown) {
   const code = getGraphQLErrorCode(error)
   return (
     code === 'PARTICIPANT_DATA_USE_STALE_REVISION' ||
-    code === 'PARTICIPANT_DATA_USE_STALE_DISCLOSURE' ||
     code === 'PARTICIPANT_DATA_USE_INVALID_INPUT'
   )
 }
@@ -152,18 +151,6 @@ function DataUseSettings() {
         toast({
           type: 'error',
           message: t('pwa.profile.dataUseConflict'),
-          options: { duration: 6000 },
-        })
-        return
-      }
-
-      if (
-        getGraphQLErrorCode(error) ===
-        'PARTICIPANT_DATA_USE_WITHDRAWAL_UNAVAILABLE'
-      ) {
-        toast({
-          type: 'error',
-          message: t('pwa.profile.learningAnalyticsWithdrawalUnavailable'),
           options: { duration: 6000 },
         })
         return

@@ -587,15 +587,23 @@ describe('participant data-use PostgreSQL integration', () => {
       },
     })
 
-    await prisma.participant.update({
-      where: { id: participant.id },
-      data: { learningAnalyticsDisclosureVersion: '   ' },
-    })
-    const result = await getCourseActivityAnalytics(
-      { courseId: course.id },
-      ctx
-    )
-    expect(result?.participantCourseAnalytics).toHaveLength(0)
-    expect(result?.dailyActivity).toHaveLength(1)
+    for (const disclosureVersion of ['   ', '2026-09-07']) {
+      await prisma.participant.update({
+        where: { id: participant.id },
+        data: { learningAnalyticsDisclosureVersion: disclosureVersion },
+      })
+      const activity = await getCourseActivityAnalytics(
+        { courseId: course.id },
+        ctx
+      )
+      const performance = await getCoursePerformanceAnalytics(
+        { courseId: course.id },
+        ctx
+      )
+      expect(activity?.participantCourseAnalytics).toHaveLength(0)
+      expect(activity?.dailyActivity).toHaveLength(1)
+      expect(performance?.participantPerformances).toHaveLength(0)
+      expect(performance?.participantActivityPerformances).toHaveLength(0)
+    }
   })
 })

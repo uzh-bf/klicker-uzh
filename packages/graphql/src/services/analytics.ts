@@ -11,6 +11,7 @@ import { ActivityType } from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import type { ContextWithUser } from '@/lib/context.js'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../lib/learningAnalytics.js'
 
 async function getEligibleParticipantIdsForCourseAnalytics(
   prisma: PrismaTransactionClient,
@@ -29,7 +30,7 @@ async function getEligibleParticipantIdsForCourseAnalytics(
         WHERE withdrawal."participantId" = p."id"
           AND withdrawal."completedAt" IS NULL
       )
-      AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
+      AND p."learningAnalyticsDisclosureVersion" = ${PARTICIPANT_DATA_USE_DISCLOSURE_VERSION}
       AND c."analyticsLastComputedAt" IS NOT NULL
       AND c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"
   `
@@ -72,7 +73,7 @@ async function getEligibleParticipantIdsForPerformanceAnalytics(
         WHERE withdrawal."participantId" = p."id"
           AND withdrawal."completedAt" IS NULL
       )
-      AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
+      AND p."learningAnalyticsDisclosureVersion" = ${PARTICIPANT_DATA_USE_DISCLOSURE_VERSION}
       AND c."analyticsLastComputedAt" IS NOT NULL
       AND c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"
   `
