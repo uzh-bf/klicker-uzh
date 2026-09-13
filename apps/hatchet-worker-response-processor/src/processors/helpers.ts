@@ -26,6 +26,27 @@ type RedisLeaderboardOperations = {
   hincrby(key: string, field: string, increment: number): unknown
 }
 
+/**
+ * Bounds on accepted response dimensions. They exist to cap the number of
+ * Redis operations one response can generate inside the atomic script, not
+ * to describe realistic question sizes (real selections and case studies
+ * stay far below them).
+ */
+export const MAX_RESPONSE_COLLECTION_SIZE = 1000
+export const MAX_CASE_STUDY_CRITERIA = 5000
+
+// selection entries may carry the skipped sentinels (-1, null, undefined);
+// every other entry must be an integer so it cannot collide with reserved
+// aggregate field names such as "participants"
+function isSelectionEntry(entry: unknown): boolean {
+  return (
+    entry === null ||
+    entry === undefined ||
+    entry === -1 ||
+    (typeof entry === 'number' && Number.isInteger(entry))
+  )
+}
+
 export function updateLeaderboards({
   redisMulti,
   participantId,
@@ -106,6 +127,7 @@ export function validateStudentResponse({
   type,
   response,
   restrictions,
+  choiceCount,
 }: {
   type:
     | 'SC'
@@ -118,15 +140,25 @@ export function validateStudentResponse({
     | 'CONTENT'
   response: LiveQuizResponseInput
   restrictions?: NumericalRestrictions | FreeTextRestrictions
+  choiceCount?: string
 }): { valid: boolean; message?: string } {
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     // response should be of format { ix: number, selected: boolean | undefined }[]
+    const parsedChoiceCount =
+      choiceCount !== undefined && Number.isInteger(Number(choiceCount))
+        ? Number(choiceCount)
+        : undefined
+
     if (
       !Array.isArray(response.choices) ||
       response.choices.length === 0 ||
+      response.choices.length > MAX_RESPONSE_COLLECTION_SIZE ||
       !response.choices.every(
         (r) =>
           typeof r.ix === 'number' &&
+          Number.isInteger(r.ix) &&
+          (parsedChoiceCount === undefined ||
+            (r.ix >= 0 && r.ix < parsedChoiceCount)) &&
           (typeof r.selected === 'boolean' || typeof r.selected === 'undefined')
       )
     ) {
@@ -228,8 +260,10 @@ export function validateStudentResponse({
     if (
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      // TODO: re-introduce the following check once the incoming responses are guaranteed to be correct through response-api validation
-      // !response.selection.every((r) => typeof r === 'number') ||
+      response.selection.length > MAX_RESPONSE_COLLECTION_SIZE ||
+      // every non-sentinel entry must be an integer so a crafted response
+      // cannot write to reserved aggregate field names (e.g. "participants")
+      !response.selection.every((r) => isSelectionEntry(r)) ||
       response.selection.filter(
         (r) => r !== -1 && typeof r !== 'undefined' && r !== null
       ).length === 0 // at least one selection must be made (excluding skipped fields with value -1 / undefined / null)
@@ -243,24 +277,41 @@ export function validateStudentResponse({
     return { valid: true }
   } else if (type === 'CASE_STUDY') {
     // response should be of the format { [caseId: string]: { [itemId: number]: { [criterionId: string]: number } } }
+    let criterionCount = 0
     if (
       !response.assessment ||
       Object.keys(response.assessment).length === 0 ||
+      Object.keys(response.assessment).length > MAX_RESPONSE_COLLECTION_SIZE ||
       !Object.values(response.assessment).every(
         (caseObj) =>
           typeof caseObj === 'object' &&
           caseObj !== null &&
           Object.keys(caseObj).length > 0 &&
+          Object.keys(caseObj).length <= MAX_RESPONSE_COLLECTION_SIZE &&
           Object.values(caseObj).every(
             (itemObj) =>
               typeof itemObj === 'object' &&
               itemObj !== null &&
               Object.keys(itemObj).length > 0 &&
               Object.values(itemObj).every(
-                (criterionResponse) => typeof criterionResponse === 'number'
+                (itemEntries) =>
+                  typeof itemEntries === 'object' &&
+                  itemEntries !== null &&
+                  Object.entries(itemEntries).every(
+                    ([criterionId, criterionResponse]) => {
+                      criterionCount += 1
+                      return (
+                        typeof criterionResponse === 'number' &&
+                        Number.isInteger(criterionResponse) &&
+                        criterionId.length > 0 &&
+                        criterionId.length <= 128
+                      )
+                    }
+                  )
               )
           )
-      )
+      ) ||
+      criterionCount > MAX_CASE_STUDY_CRITERIA
     ) {
       return {
         valid: false,

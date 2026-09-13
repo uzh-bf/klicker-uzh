@@ -2,11 +2,13 @@ import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { Redis } from 'ioredis'
 import {
-  ADD_AUTHENTICATED_RESPONSE_SCRIPT,
+  ATOMIC_RESPONSE_SCRIPT,
   buildResponseScriptInvocation,
   createRedisOperationCollector,
   getAnonymousResponseField,
   getParticipantResponseField,
+  getRedeliveryResponseField,
+  isValidSubmissionId,
   type RedisHashOperation,
 } from './responseScript.js'
 
@@ -42,6 +44,22 @@ describe('response field helpers', () => {
       field,
       getAnonymousResponseField('client:quiz:other-instance')
     )
+  })
+
+  it('derives a stable redelivery field from the message id', () => {
+    const field = getRedeliveryResponseField('message-1')
+    assert.match(field, /^redelivery-[0-9a-f]{64}$/)
+    assert.equal(field, getRedeliveryResponseField('message-1'))
+    assert.notEqual(field, getRedeliveryResponseField('message-2'))
+    assert.notEqual(field, getAnonymousResponseField('message-1'))
+  })
+
+  it('validates bounded opaque submission ids', () => {
+    assert.ok(isValidSubmissionId('client-1:lq-uuid-ex-0-i-13'))
+    assert.ok(!isValidSubmissionId(''))
+    assert.ok(!isValidSubmissionId('has space'))
+    assert.ok(!isValidSubmissionId('a'.repeat(257)))
+    assert.ok(!isValidSubmissionId(42 as unknown as string))
   })
 })
 
@@ -192,7 +210,22 @@ describe('buildResponseScriptInvocation', () => {
           participantResponseKey: RESPONSE_KEY,
           participantResponseField: 'p-1',
         }),
-      /Missing authenticated participant response marker/
+      /Missing participant response marker operation/
+    )
+  })
+
+  it('throws when conflicting marker writes are collected', () => {
+    assert.throws(
+      () =>
+        buildResponseScriptInvocation({
+          operations: [
+            ...responseMarker(),
+            ...responseMarker({ value: 'other' }),
+          ],
+          participantResponseKey: RESPONSE_KEY,
+          participantResponseField: 'p-1',
+        }),
+      /Conflicting participant response marker operations/
     )
   })
 
@@ -215,6 +248,33 @@ describe('buildResponseScriptInvocation', () => {
       /Invalid Redis integer increment 1\.5 for .*:participants/
     )
   })
+
+  it('throws when cumulative increments for one target exceed the safe integer bound', () => {
+    const half = Number.MAX_SAFE_INTEGER / 2 + 2
+    assert.throws(
+      () =>
+        buildResponseScriptInvocation({
+          operations: [
+            ...responseMarker(),
+            {
+              type: 'hincrby',
+              key: RESULTS_KEY,
+              field: 'participants',
+              increment: half,
+            },
+            {
+              type: 'hincrby',
+              key: RESULTS_KEY,
+              field: 'participants',
+              increment: half,
+            },
+          ],
+          participantResponseKey: RESPONSE_KEY,
+          participantResponseField: 'p-1',
+        }),
+      /Cumulative Redis increment .* exceeds the safe integer bound/
+    )
+  })
 })
 
 describe('atomic response script against redis', { concurrency: false }, () => {
@@ -229,16 +289,11 @@ describe('atomic response script against redis', { concurrency: false }, () => {
   redis.on('error', () => {})
 
   let available = false
-  let prefix = ''
+  const createdPrefixes: string[] = []
 
   async function runScript(keys: string[], args: string[]): Promise<number> {
     return Number(
-      await redis.eval(
-        ADD_AUTHENTICATED_RESPONSE_SCRIPT,
-        keys.length,
-        ...keys,
-        ...args
-      )
+      await redis.eval(ATOMIC_RESPONSE_SCRIPT, keys.length, ...keys, ...args)
     )
   }
 
@@ -249,25 +304,40 @@ describe('atomic response script against redis', { concurrency: false }, () => {
       available = true
     } catch {
       available = false
+      if (process.env.RESPONSE_SCRIPT_TESTS_REQUIRE_REDIS === '1') {
+        throw new Error(
+          'Redis integration tests are required (RESPONSE_SCRIPT_TESTS_REQUIRE_REDIS=1) but no Redis is reachable'
+        )
+      }
     }
   })
 
   after(async () => {
-    if (available && prefix) {
-      const keys = await redis.keys(`test:response-script:${prefix}:*`)
-      if (keys.length > 0) await redis.del(...keys)
+    if (available) {
+      for (const prefix of createdPrefixes) {
+        const keys = await redis.keys(`test:response-script:${prefix}:*`)
+        if (keys.length > 0) await redis.del(...keys)
+      }
     }
     redis.disconnect()
   })
 
   function setupKeys() {
-    prefix = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const prefix = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    createdPrefixes.push(prefix)
     return {
       responseKey: `test:response-script:${prefix}:responses`,
       resultsKey: `test:response-script:${prefix}:results`,
+      hashesKey: `test:response-script:${prefix}:responseHashes`,
       infoKey: `test:response-script:${prefix}:info`,
       lbKey: `test:response-script:${prefix}:lb`,
     }
+  }
+
+  function markerOp(responseKey: string, field: string): RedisHashOperation[] {
+    return [
+      { type: 'hset', key: responseKey, field, value: 'answer', mode: 'set' },
+    ]
   }
 
   it('applies a first response exactly once', async (t) => {
@@ -276,13 +346,7 @@ describe('atomic response script against redis', { concurrency: false }, () => {
 
     const { keys, args } = buildResponseScriptInvocation({
       operations: [
-        {
-          type: 'hset',
-          key: responseKey,
-          field: 'p-1',
-          value: 'answer',
-          mode: 'set',
-        },
+        ...markerOp(responseKey, 'p-1'),
         {
           type: 'hincrby',
           key: resultsKey,
@@ -309,6 +373,37 @@ describe('atomic response script against redis', { concurrency: false }, () => {
     assert.equal(await redis.hget(lbKey, 'p-1'), '50')
   })
 
+  it('applies competing identical submissions exactly once', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey } = setupKeys()
+
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: [
+        ...markerOp(responseKey, 'p-1'),
+        {
+          type: 'hincrby',
+          key: resultsKey,
+          field: 'participants',
+          increment: 1,
+        },
+      ],
+      participantResponseKey: responseKey,
+      participantResponseField: 'p-1',
+    })
+
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () => runScript(keys, args))
+    )
+    assert.equal(
+      results.filter((result) => result === 1).length,
+      1,
+      'exactly one competing submission applies'
+    )
+    assert.equal(results.filter((result) => result === 0).length, 9)
+    assert.equal(await redis.hget(resultsKey, 'participants'), '1')
+    assert.equal(await redis.hget(responseKey, 'p-1'), 'answer')
+  })
+
   it('applies nothing when an existing counter is not an integer', async (t) => {
     if (!available) return t.skip('Redis not reachable')
     const { responseKey, resultsKey } = setupKeys()
@@ -316,13 +411,7 @@ describe('atomic response script against redis', { concurrency: false }, () => {
 
     const { keys, args } = buildResponseScriptInvocation({
       operations: [
-        {
-          type: 'hset',
-          key: responseKey,
-          field: 'p-1',
-          value: 'answer',
-          mode: 'set',
-        },
+        ...markerOp(responseKey, 'p-1'),
         {
           type: 'hincrby',
           key: resultsKey,
@@ -355,6 +444,151 @@ describe('atomic response script against redis', { concurrency: false }, () => {
     assert.equal(await redis.hget(responseKey, 'p-1'), null)
   })
 
+  it('refuses counter values that would overflow the safe integer bound', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey } = setupKeys()
+    await redis.hset(resultsKey, 'participants', '9007199254740990')
+
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: [
+        ...markerOp(responseKey, 'p-1'),
+        {
+          type: 'hincrby',
+          key: resultsKey,
+          field: 'participants',
+          increment: 5,
+        },
+      ],
+      participantResponseKey: responseKey,
+      participantResponseField: 'p-1',
+    })
+
+    assert.equal(await runScript(keys, args), -1)
+    assert.equal(
+      await redis.hget(responseKey, 'p-1'),
+      null,
+      'the marker must not be written when the bound is exceeded'
+    )
+    assert.equal(
+      await redis.hget(resultsKey, 'participants'),
+      '9007199254740990',
+      'the existing counter must be unchanged'
+    )
+  })
+
+  it('refuses repeated increments whose cumulative total overflows, even when each is small', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey } = setupKeys()
+    await redis.hset(resultsKey, 'participants', '9007199254740990')
+
+    // hand-crafted args: two increments of 5 to the same field whose
+    // combined effect with the stored value exceeds the safe bound
+    const keys = [responseKey, resultsKey]
+    const args = [
+      'p-1',
+      'answer',
+      '2',
+      '2',
+      'participants',
+      '5',
+      '2',
+      'participants',
+      '5',
+      '0',
+    ]
+
+    assert.equal(await runScript(keys, args), -1)
+    assert.equal(await redis.hget(responseKey, 'p-1'), null)
+    assert.equal(
+      await redis.hget(resultsKey, 'participants'),
+      '9007199254740990'
+    )
+  })
+
+  it('refuses wrong-type increment targets before any write', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey } = setupKeys()
+    await redis.set(resultsKey, 'a-string-key')
+
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: [
+        ...markerOp(responseKey, 'p-1'),
+        {
+          type: 'hincrby',
+          key: resultsKey,
+          field: 'participants',
+          increment: 1,
+        },
+      ],
+      participantResponseKey: responseKey,
+      participantResponseField: 'p-1',
+    })
+
+    assert.equal(await runScript(keys, args), -2)
+    assert.equal(await redis.hget(responseKey, 'p-1'), null)
+  })
+
+  it('refuses wrong-type late hset targets before the marker is written', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey, hashesKey } = setupKeys()
+    await redis.set(hashesKey, 'a-string-key')
+
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: [
+        ...markerOp(responseKey, 'p-1'),
+        {
+          type: 'hincrby',
+          key: resultsKey,
+          field: 'participants',
+          increment: 1,
+        },
+        {
+          type: 'hset',
+          key: hashesKey,
+          field: 'hash-1',
+          value: 'answer text',
+          mode: 'set',
+        },
+      ],
+      participantResponseKey: responseKey,
+      participantResponseField: 'p-1',
+    })
+
+    assert.equal(await runScript(keys, args), -2)
+    assert.equal(
+      await redis.hget(responseKey, 'p-1'),
+      null,
+      'the marker must not be written when a later target has the wrong type'
+    )
+    assert.equal(
+      await redis.hget(resultsKey, 'participants'),
+      null,
+      'counters must remain unchanged'
+    )
+  })
+
+  it('refuses a wrong-type response key itself', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey } = setupKeys()
+    await redis.set(responseKey, 'a-string-key')
+
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: [
+        ...markerOp(responseKey, 'p-1'),
+        {
+          type: 'hincrby',
+          key: resultsKey,
+          field: 'participants',
+          increment: 1,
+        },
+      ],
+      participantResponseKey: responseKey,
+      participantResponseField: 'p-1',
+    })
+
+    assert.equal(await runScript(keys, args), -2)
+  })
+
   it('does not overwrite setnx fields on a later distinct response', async (t) => {
     if (!available) return t.skip('Redis not reachable')
     const { responseKey, infoKey } = setupKeys()
@@ -362,13 +596,7 @@ describe('atomic response script against redis', { concurrency: false }, () => {
     for (const participant of ['p-1', 'p-2']) {
       const { keys, args } = buildResponseScriptInvocation({
         operations: [
-          {
-            type: 'hset',
-            key: responseKey,
-            field: participant,
-            value: 'v',
-            mode: 'set',
-          },
+          ...markerOp(responseKey, participant),
           {
             type: 'hset',
             key: infoKey,

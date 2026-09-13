@@ -14,7 +14,6 @@ import type {
 import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
-import type { ChainableCommander } from 'ioredis'
 import { getRedis } from '../redis.js'
 import {
   getCaseStudyQuestionPoints,
@@ -26,20 +25,40 @@ import {
   validateStudentResponse,
 } from './helpers.js'
 import {
-  ADD_AUTHENTICATED_RESPONSE_SCRIPT,
+  ATOMIC_RESPONSE_SCRIPT,
   buildResponseScriptInvocation,
   createRedisOperationCollector,
   getAnonymousResponseField,
   getParticipantResponseField,
+  getRedeliveryResponseField,
+  isValidSubmissionId,
   type RedisHashOperation,
   type RedisOperationCollector,
-  type RedisResponseOperations,
 } from './responseScript.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the element options
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
+
+// cache the atomic response script server-side (EVALSHA with automatic
+// EVAL fallback on NOSCRIPT) instead of transmitting the body per response
+redisExec.defineCommand('addAtomicResponse', {
+  lua: ATOMIC_RESPONSE_SCRIPT,
+})
+function addAtomicResponse(
+  numKeys: number,
+  ...args: unknown[]
+): Promise<unknown> {
+  return (redisExec as unknown as AtomicResponseCommand).addAtomicResponse(
+    numKeys,
+    ...args
+  )
+}
+
+type AtomicResponseCommand = {
+  addAtomicResponse(numKeys: number, ...args: unknown[]): Promise<unknown>
+}
 
 export async function processResponseMessage(
   message: {
@@ -73,10 +92,27 @@ export async function processResponseMessage(
     return { status: 200 }
   }
 
-  let redisMulti!: RedisResponseOperations
   const redisOperations: RedisHashOperation[] = []
   let participantResponseKey: string | undefined
   let participantResponseField: string | undefined
+  // populated for authenticated responses; used after the atomic write to
+  // correct the timing bonus when this response lost the first-response race
+  let correctionContext:
+    | {
+        participantData: JWTPayload
+        liveQuizKey: string
+        instanceKey: string
+        sessionBlockId: string
+        firstResponseReceivedAt?: string
+        responseTimestamp: number
+      }
+    | undefined
+  let recomputePointsWithBaseline:
+    | ((baseline: string) => number | string)
+    | undefined
+  let pointsAwarded: number | string = 0
+  let xpAwarded: number = 0
+  const redisMulti = createRedisOperationCollector(redisOperations)
 
   try {
     const liveQuizKey = `lq:${message.sessionId}`
@@ -86,6 +122,23 @@ export async function processResponseMessage(
     if (!response) {
       ctx.logger.error(
         'Missing response ' +
+          JSON.stringify({
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
+      )
+      return { status: 400 }
+    }
+
+    // a supplied submission id must be a valid bounded identifier; invalid
+    // ones are rejected terminally instead of being silently ignored
+    if (
+      message.submissionId !== undefined &&
+      !isValidSubmissionId(message.submissionId)
+    ) {
+      ctx.logger.error(
+        'Invalid submission id ' +
           JSON.stringify({
             messageId: message.messageId,
             sessionId: message.sessionId,
@@ -137,18 +190,19 @@ export async function processResponseMessage(
     }
 
     participantResponseKey = `${instanceKey}:responses`
+    // every response now carries a dedupe identity: the authenticated
+    // participant, the client submission id, or — for legacy anonymous
+    // events without a valid submission id — the event's message id, which
+    // survives Hatchet redelivery and therefore protects against repeated
+    // application of one queued submission
     participantResponseField = participantData
       ? getParticipantResponseField(participantData)
-      : typeof message.submissionId === 'string' && message.submissionId
+      : message.submissionId
         ? getAnonymousResponseField(message.submissionId)
-        : undefined
+        : getRedeliveryResponseField(message.messageId)
 
     if (
-      participantResponseField &&
-      (await redisExec.hexists(
-        participantResponseKey,
-        participantResponseField
-      ))
+      await redisExec.hexists(participantResponseKey, participantResponseField)
     ) {
       ctx.logger.info(
         'Participant has already responded to this question instance'
@@ -157,14 +211,23 @@ export async function processResponseMessage(
     }
 
     const instanceInfo = await redisExec.hgetall(`${instanceKey}:info`)
-    // if the instance metadata is not available, it has been closed and purged already
+    // if the instance metadata is not available, the response either raced
+    // the block activation cache initialization or arrived after the
+    // instance was closed and purged; either way it must not be silently
+    // discarded — fail the task so the retry path and failure visibility
+    // apply
     if (!instanceInfo || Object.keys(instanceInfo).length === 0) {
-      ctx.logger.info('Element instance metadata not found', {
-        messageId: message.messageId,
-        sessionId: message.sessionId,
-        instanceId: message.instanceId,
-      })
-      return { status: 400 }
+      ctx.logger.error(
+        'Element instance metadata not found ' +
+          JSON.stringify({
+            messageId: message.messageId,
+            sessionId: message.sessionId,
+            instanceId: message.instanceId,
+          })
+      )
+      throw new Error(
+        `Element instance metadata not found for instance ${message.instanceId} of live quiz ${message.sessionId} (response arrived before cache initialization or after purge)`
+      )
     }
     ctx.logger.info('Instance info loaded', {
       sessionId: message.sessionId,
@@ -191,7 +254,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions
+    let parsedSolutions: any
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
@@ -219,10 +282,22 @@ export async function processResponseMessage(
       )
     }
 
+    if (participantData) {
+      correctionContext = {
+        participantData,
+        liveQuizKey,
+        instanceKey,
+        sessionBlockId: sessionBlockId!,
+        firstResponseReceivedAt,
+        responseTimestamp,
+      }
+    }
+
     const { valid, message: validationError } = validateStudentResponse({
       type: type as any,
       response,
       restrictions: parsedRestrictions,
+      choiceCount,
     })
 
     if (!valid) {
@@ -238,15 +313,7 @@ export async function processResponseMessage(
       return { status: 400 }
     }
 
-    let pointsAwarded: number | string = 0
-    let xpAwarded: number = 0
-    if (participantResponseField) {
-      redisMulti = createRedisOperationCollector(redisOperations)
-    } else {
-      redisMulti = redisExec.pipeline()
-    }
-
-    if (!participantData && participantResponseField) {
+    if (!participantData) {
       redisMulti.hset(
         participantResponseKey,
         participantResponseField,
@@ -284,27 +351,31 @@ export async function processResponseMessage(
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
             participantResponseKey,
-            participantResponseField!,
+            participantResponseField,
             JSON.stringify(response.choices)
           )
 
+          const computePoints = (baseline: string | undefined) =>
+            getChoicesQuestionPoints({
+              type,
+              choiceCount,
+              response,
+              instanceInfo,
+              firstResponseReceivedAt: baseline,
+              responseTimestamp,
+              basePoints,
+              pointsMultiplier,
+              parsedSolutions,
+            })
           const {
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getChoicesQuestionPoints({
-            type,
-            choiceCount,
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
+          } = computePoints(firstResponseReceivedAt)
           pointsAwarded = computedPoints
           xpAwarded = computedXp
+          recomputePointsWithBaseline = (baseline) =>
+            computePoints(baseline).pointsAwarded
 
           if (
             pointsPercentage !== null &&
@@ -365,25 +436,29 @@ export async function processResponseMessage(
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
             participantResponseKey,
-            participantResponseField!,
+            participantResponseField,
             String(response.value)
           )
 
+          const computePoints = (baseline: string | undefined) =>
+            getNumericalQuestionPoints({
+              response,
+              instanceInfo,
+              firstResponseReceivedAt: baseline,
+              responseTimestamp,
+              basePoints,
+              pointsMultiplier,
+              parsedSolutions,
+            })
           const {
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getNumericalQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
+          } = computePoints(firstResponseReceivedAt)
           pointsAwarded = computedPoints
           xpAwarded = computedXp
+          recomputePointsWithBaseline = (baseline) =>
+            computePoints(baseline).pointsAwarded
 
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
@@ -441,25 +516,29 @@ export async function processResponseMessage(
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
             participantResponseKey,
-            participantResponseField!,
+            participantResponseField,
             cleanResponseValue
           )
 
+          const computePoints = (baseline: string | undefined) =>
+            getFreeTextQuestionPoints({
+              response,
+              instanceInfo,
+              firstResponseReceivedAt: baseline,
+              responseTimestamp,
+              basePoints,
+              pointsMultiplier,
+              parsedSolutions,
+            })
           const {
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getFreeTextQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
+          } = computePoints(firstResponseReceivedAt)
           pointsAwarded = computedPoints
           xpAwarded = computedXp
+          recomputePointsWithBaseline = (baseline) =>
+            computePoints(baseline).pointsAwarded
 
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
@@ -518,25 +597,29 @@ export async function processResponseMessage(
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
             participantResponseKey,
-            participantResponseField!,
+            participantResponseField,
             `[${String(response.selection.filter((r: number) => r !== -1 && typeof r !== 'undefined' && r !== null))}]` // filter out skipped response fields
           )
 
+          const computePoints = (baseline: string | undefined) =>
+            getSelectionQuestionPoints({
+              response,
+              instanceInfo,
+              firstResponseReceivedAt: baseline,
+              responseTimestamp,
+              basePoints,
+              pointsMultiplier,
+              parsedSolutions,
+            })
           const {
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getSelectionQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
+          } = computePoints(firstResponseReceivedAt)
           pointsAwarded = computedPoints
           xpAwarded = computedXp
+          recomputePointsWithBaseline = (baseline) =>
+            computePoints(baseline).pointsAwarded
 
           if (
             pointsPercentage !== null &&
@@ -617,25 +700,29 @@ export async function processResponseMessage(
           // add the participant's response to the corresponding redis hash
           redisMulti.hset(
             participantResponseKey,
-            participantResponseField!,
+            participantResponseField,
             JSON.stringify(response.assessment)
           )
 
+          const computePoints = (baseline: string | undefined) =>
+            getCaseStudyQuestionPoints({
+              response,
+              instanceInfo,
+              firstResponseReceivedAt: baseline,
+              responseTimestamp,
+              basePoints,
+              pointsMultiplier,
+              parsedSolutions,
+            })
           const {
             pointsAwarded: computedPoints,
             xpAwarded: computedXp,
             pointsPercentage,
-          } = getCaseStudyQuestionPoints({
-            response,
-            instanceInfo,
-            firstResponseReceivedAt,
-            responseTimestamp,
-            basePoints,
-            pointsMultiplier,
-            parsedSolutions,
-          })
+          } = computePoints(firstResponseReceivedAt)
           pointsAwarded = computedPoints
           xpAwarded = computedXp
+          recomputePointsWithBaseline = (baseline) =>
+            computePoints(baseline).pointsAwarded
 
           if (
             pointsPercentage !== null &&
@@ -671,7 +758,7 @@ export async function processResponseMessage(
         if (participantData) {
           redisMulti.hset(
             participantResponseKey,
-            participantResponseField!,
+            participantResponseField,
             JSON.stringify(response)
           )
         }
@@ -687,48 +774,89 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
-    return { status: 500 }
+    redisMulti.discard()
+    throw new Error(`Error processing response: ${String(e)}`)
   }
 
   try {
-    let execResult: unknown
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: redisOperations,
+      participantResponseKey: participantResponseKey!,
+      participantResponseField: participantResponseField!,
+    })
 
-    if (participantResponseKey && participantResponseField) {
-      const { keys, args } = buildResponseScriptInvocation({
-        operations: redisOperations,
-        participantResponseKey,
-        participantResponseField,
-      })
+    const execResult = Number(
+      await addAtomicResponse(keys.length, ...keys, ...args)
+    )
 
-      execResult = await redisExec.eval(
-        ADD_AUTHENTICATED_RESPONSE_SCRIPT,
-        keys.length,
-        ...keys,
-        ...args
-      )
-
-      if (Number(execResult) === -1) {
-        throw new Error('Invalid existing Redis counter value')
-      }
-
-      if (Number(execResult) === 0) {
-        ctx.logger.info(
-          'Participant has already responded to this question instance',
-          {
-            messageId: message.messageId,
-            sessionId: message.sessionId,
-            instanceId: message.instanceId,
-          }
-        )
-        return { status: 200 }
-      }
-    } else {
-      if (!('exec' in redisMulti)) {
-        throw new Error('Missing Redis pipeline executor')
-      }
-      await redisMulti.exec()
+    // only the documented script return codes are acceptable; anything else
+    // is an unexpected state that must surface as a task failure
+    if (execResult === -1) {
+      throw new Error('Invalid existing Redis counter value')
     }
+    if (execResult === -2) {
+      throw new Error('Wrong Redis key type for a response aggregation target')
+    }
+    if (execResult === 0) {
+      ctx.logger.info(
+        'Participant has already responded to this question instance',
+        {
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+        }
+      )
+      return { status: 200 }
+    }
+    if (execResult !== 1) {
+      throw new Error(
+        `Unexpected atomic response script result ${String(execResult)}`
+      )
+    }
+
+    // the timing-dependent bonus was computed against the first-response
+    // snapshot taken before the atomic write; if another correct response
+    // committed the baseline first, credit back the difference so the
+    // loser of the race does not keep a full speed bonus
+    if (
+      correctionContext &&
+      !correctionContext.firstResponseReceivedAt &&
+      recomputePointsWithBaseline
+    ) {
+      const committedBaseline = await redisExec.hget(
+        `${correctionContext.instanceKey}:info`,
+        'firstResponseReceivedAt'
+      )
+      if (
+        committedBaseline !== null &&
+        committedBaseline !== String(correctionContext.responseTimestamp)
+      ) {
+        const correctedPoints = recomputePointsWithBaseline(committedBaseline)
+        const overCredit = Number(pointsAwarded) - Number(correctedPoints)
+        if (overCredit > 0) {
+          ctx.logger.warn(
+            `Correcting timing bonus after lost first-response race (overCredit ${overCredit}) ` +
+              JSON.stringify({
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              })
+          )
+          const correctionPipeline = redisExec.pipeline()
+          updateLeaderboards({
+            redisMulti: correctionPipeline,
+            participantId: correctionContext.participantData.sub,
+            participantRole: correctionContext.participantData.role!,
+            liveQuizKey: correctionContext.liveQuizKey,
+            sessionBlockId: correctionContext.sessionBlockId,
+            pointsAwarded: -overCredit,
+            xpAwarded: 0,
+          })
+          await correctionPipeline.exec()
+        }
+      }
+    }
+
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,
@@ -744,7 +872,7 @@ export async function processResponseMessage(
           instanceId: message.instanceId,
         })
     )
-    redisMulti?.discard()
+    redisMulti.discard()
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }
