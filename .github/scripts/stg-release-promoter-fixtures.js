@@ -1,5 +1,3 @@
-'use strict'
-
 const crypto = require('node:crypto')
 
 const OCI_MANIFEST_CONTENT_TYPE = 'application/vnd.oci.image.manifest.v1+json'
@@ -42,7 +40,7 @@ function workflowDefinition({
     ? `  MIGRATOR_IMAGE_NAME: \${{ github.repository }}/${image}-migrator`
     : ''
   const tagLines = fullShaTag
-    ? '          type=raw,value=\${{ github.sha }}'
+    ? '          type=raw,value=${{ github.sha }}'
     : '          type=ref,event=branch'
   const amdJob = activeAmd
     ? `  build-amd:

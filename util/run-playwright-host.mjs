@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import {
@@ -24,7 +33,7 @@ import {
 const require = createRequire(import.meta.url)
 const {
   parseProfileManifest,
-} = require('../.github/scripts/get-shard-files.js')
+} = require('../.github/scripts/playwright-shards.ts')
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
@@ -400,6 +409,7 @@ export function parseLocalOptions(argv) {
   let profile
   let mode
   let preserveDatabase = false
+  let production = false
   while (args.length) {
     const option = args[0]
     if (option === '--') {
@@ -421,6 +431,10 @@ export function parseLocalOptions(argv) {
       ) {
         fail('Invalid runtime profile list')
       }
+    } else if (option === '--production') {
+      if (production) fail('Specify --production only once')
+      args.shift()
+      production = true
     } else if (option === '--preserve-database') {
       args.shift()
       preserveDatabase = true
@@ -444,7 +458,20 @@ export function parseLocalOptions(argv) {
       fail(`${option} must appear before Playwright arguments`)
     }
   }
-  return { args, profile, mode, preserveDatabase }
+  if (
+    production &&
+    (mode === '--show-report' ||
+      (profile && profile.split(',').sort().join(',') !== 'email,manage,pwa'))
+  ) {
+    fail('Production mode requires manage,pwa,email and cannot show reports')
+  }
+  return {
+    args,
+    profile,
+    mode,
+    preserveDatabase,
+    ...(production ? { production } : {}),
+  }
 }
 
 export function resolvePlaywrightEnvironment({
@@ -464,6 +491,7 @@ export function resolvePlaywrightEnvironment({
   const studentUrl = appUrl('pwa')
 
   return {
+    APP_ORIGIN_API: appUrl('api'),
     APP_ORIGIN_AUTH: appUrl('auth'),
     APP_SECRET: appSecret,
     COOKIE_DOMAIN: `klicker${namespace}.localhost`,
@@ -517,6 +545,10 @@ function resolveWorkspace(runtime) {
 }
 
 export function resolvePostgresContainer(runtime) {
+  return resolveServiceContainer(runtime, 'postgres')
+}
+
+function resolveServiceContainer(runtime, service) {
   const workingDirectory = join(runtime.repoRoot, '.devcontainer')
   const containerIds = runtime
     .commandRunner(
@@ -526,7 +558,7 @@ export function resolvePostgresContainer(runtime) {
         '--filter',
         `label=com.docker.compose.project.working_dir=${workingDirectory}`,
         '--filter',
-        'label=com.docker.compose.service=postgres',
+        `label=com.docker.compose.service=${service}`,
         '--format',
         '{{.ID}}',
       ],
@@ -537,18 +569,22 @@ export function resolvePostgresContainer(runtime) {
 
   if (containerIds.length !== 1) {
     fail(
-      `expected one Postgres container for ${workingDirectory}, found ${containerIds.length}`
+      `expected one ${service} container for ${workingDirectory}, found ${containerIds.length}`
     )
   }
   return containerIds[0]
 }
 
-export function resolveDatabasePort(runtime, containerId) {
-  if (!containerId) fail('a Postgres container id is required')
+export function resolveDatabasePort(
+  runtime,
+  service = 'postgres',
+  port = '5432/tcp'
+) {
+  const containerId = resolveServiceContainer(runtime, service)
 
   const publishedPort = runtime.commandRunner(
     'docker',
-    ['port', containerId, '5432/tcp'],
+    ['port', containerId, port],
     { capture: true }
   )
 
@@ -613,12 +649,23 @@ function ensureHostDependencies(runtime, playwrightArgs) {
 }
 
 export function main(argv = process.argv.slice(2), dependencies = {}) {
+  const {
+    args,
+    profile,
+    mode,
+    preserveDatabase,
+    production = false,
+  } = parseLocalOptions(argv)
   const runtime = createRuntime(dependencies)
   const timer = createPhaseTimer(runtime.clock)
+  const selectionPath = join(
+    runtime.repoRoot,
+    '.devcontainer/.runtime/account-production.json'
+  )
+  let orchestrationFailed = false
   let queueWaitSeconds = 0
 
   try {
-    const { args, profile, mode, preserveDatabase } = parseLocalOptions(argv)
     const hostEnvironment = {
       ...runtime.environment,
       [HOST_RUNNER_ENV]: '1',
@@ -654,16 +701,68 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     if (!printEnvironment) ensureHostDependencies(runtime, args)
 
-    const runtimeProfile =
-      profile ??
-      inferPlaywrightProfile({
-        args,
-        root: runtime.repoRoot,
-        pathExists: runtime.pathExists,
-        readDirectory: runtime.readDirectory,
-        readFile: runtime.readFile,
-        parseProfileManifestFn: runtime.parseProfileManifestFn,
-      })
+    if (production) {
+      const sourceSha = runtime.commandRunner(
+        'git',
+        ['-C', runtime.repoRoot, 'rev-parse', 'HEAD'],
+        { capture: true }
+      )
+      const files = runtime
+        .commandRunner(
+          'git',
+          [
+            '-C',
+            runtime.repoRoot,
+            'ls-files',
+            '--cached',
+            '--others',
+            '--exclude-standard',
+            '-z',
+            '--',
+            'apps',
+            'packages',
+            'util',
+            'package.json',
+            'pnpm-lock.yaml',
+            'pnpm-workspace.yaml',
+            'turbo.json',
+            '.npmrc',
+          ],
+          { capture: true }
+        )
+        .split('\0')
+        .filter(Boolean)
+      files.push(
+        'util/playwright-production.ts',
+        '.github/scripts/playwright-shards.ts',
+        '.devcontainer/post-start.sh'
+      )
+      const hash = createHash('sha256')
+      for (const file of [...new Set(files)].sort()) {
+        const path = join(runtime.repoRoot, file)
+        if (runtime.pathExists(path))
+          hash.update(file).update(runtime.readFile(path))
+      }
+      mkdirSync(dirname(selectionPath), { recursive: true })
+      writeFileSync(
+        selectionPath,
+        JSON.stringify({ sourceSha, sourceDigest: hash.digest('hex') })
+      )
+    } else if (runtime.pathExists(selectionPath)) {
+      unlinkSync(selectionPath)
+    }
+
+    const runtimeProfile = production
+      ? 'manage,pwa,email'
+      : (profile ??
+        inferPlaywrightProfile({
+          args,
+          root: runtime.repoRoot,
+          pathExists: runtime.pathExists,
+          readDirectory: runtime.readDirectory,
+          readFile: runtime.readFile,
+          parseProfileManifestFn: runtime.parseProfileManifestFn,
+        }))
 
     timer.begin('runtime')
     runtime.log('[playwright:host] Reconciling the devcontainer runtime')
@@ -677,7 +776,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     const workspace = resolveWorkspace(runtime)
     const postgresContainer = resolvePostgresContainer(runtime)
-    const databasePort = resolveDatabasePort(runtime, postgresContainer)
+    const databasePort = resolveDatabasePort(runtime)
     const committedEnvironment = readCommittedEnvironment(
       runtime.readFile(
         join(runtime.repoRoot, '.devcontainer', 'devcontainer.env'),
@@ -698,6 +797,11 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       postgresContainer,
       workspace,
     })
+
+    if (production) {
+      resolvedEnvironment.KLICKER_PLAYWRIGHT_PRODUCTION = '1'
+      resolvedEnvironment.URL_MAILHOG = `http://127.0.0.1:${resolveDatabasePort(runtime, 'mailhog', '8025/tcp')}`
+    }
 
     if (printEnvironment) {
       runtime.log(
@@ -735,7 +839,17 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
         KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
       }
     )
+  } catch (error) {
+    orchestrationFailed = true
+    throw error
   } finally {
+    if (production && existsSync(selectionPath)) {
+      try {
+        unlinkSync(selectionPath)
+      } catch (cleanupError) {
+        if (!orchestrationFailed) throw cleanupError
+      }
+    }
     timer.finish()
     logPhaseTimings(runtime, timer, queueWaitSeconds)
   }

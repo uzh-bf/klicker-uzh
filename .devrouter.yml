@@ -65,7 +65,7 @@ profiles:
   playwright:
     apps: [chat, pwa, control, manage, api, auth, response-api]
     readiness: [chat, pwa, manage, api, response-api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache, mailhog]
     processes: [klicker-dev]
   # pure capabilities: no routes, no app process
   ai:

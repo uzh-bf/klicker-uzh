@@ -79,7 +79,7 @@ jobs:
 
       - name: Compute cache contract
         id: cache-contract
-        run: node .github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+        run: node .github/scripts/playwright-cache.ts --root "$GITHUB_WORKSPACE"
 
       - name: Get pnpm store directory
         shell: bash
@@ -151,7 +151,7 @@ jobs:
       - name: Extract Turbo build telemetry
         if: always()
         continue-on-error: true
-        run: node .github/scripts/turbo-telemetry.cjs --log turbo-build.log
+        run: node .github/scripts/playwright-telemetry.ts turbo --log turbo-build.log
 
       - name: Save pnpm cache
         if: steps.build.outcome == 'success' && steps.pnpm-cache.outputs.cache-hit != 'true'
@@ -184,7 +184,7 @@ jobs:
           TURBO_CACHE_KEY: ${{ steps.turbo-cache.outputs.cache-primary-key }}
           TURBO_CACHE_MATCHED_KEY: ${{ steps.turbo-cache.outputs.cache-matched-key }}
           PLAYWRIGHT_CONCLUSION: ${{ steps.build.outcome }}
-        run: node .github/scripts/playwright-telemetry.cjs --output playwright-cache-seed-telemetry.json
+        run: node .github/scripts/playwright-telemetry.ts record --output playwright-cache-seed-telemetry.json
 
       - name: Upload seed telemetry
         if: always()

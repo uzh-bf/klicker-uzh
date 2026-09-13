@@ -1,0 +1,182 @@
+name: Account production Playwright
+on:
+  pull_request:
+    branches: [v3]
+    paths:
+      - 'apps/frontend-pwa/**'
+      - 'apps/frontend-manage/**'
+      - 'apps/auth/**'
+      - 'apps/backend-docker/**'
+      - 'apps/lti/**'
+      - 'packages/**'
+      - 'playwright/**'
+      - 'util/**'
+      - '.github/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - '.npmrc'
+      - '.devcontainer/**'
+      - '.devrouter.yml'
+  push:
+    branches:
+      - v3
+      - v3*
+permissions:
+  contents: read
+concurrency:
+  group: account-production-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  account-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+      volumes:
+        - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_account-production:/config
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker-prod
+          POSTGRES_PASSWORD: klicker #ggignore: fixed local test-service credential
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      postgres_hatchet:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hatchet
+          POSTGRES_PASSWORD: hatchet
+          POSTGRES_DB: hatchet
+        options: >-
+          --health-cmd "pg_isready -U hatchet -d hatchet"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+      mailhog:
+        image: mailhog/mailhog:v1.0.1
+      redis_cache:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis_exec:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis_assessment_exec:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      hatchet:
+        image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
+        env:
+          DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
+          SERVER_AUTH_COOKIE_DOMAIN: hatchet
+          SERVER_AUTH_COOKIE_INSECURE: 't'
+          SERVER_GRPC_BIND_ADDRESS: '0.0.0.0'
+          SERVER_GRPC_INSECURE: 't'
+          SERVER_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_INTERNAL_CLIENT_INTERNAL_GRPC_BROADCAST_ADDRESS: hatchet:7077
+          SERVER_GRPC_PORT: '7077'
+          SERVER_URL: http://hatchet:8888
+          SERVER_AUTH_SET_EMAIL_VERIFIED: 't'
+          SERVER_DEFAULT_ENGINE_VERSION: 'V1'
+          SERVER_LOGGER_LEVEL: debug
+          SERVER_LOGGER_FORMAT: console
+        options: >-
+          --health-cmd "curl -f http://localhost:8888/healthz"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        volumes:
+          - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_account-production:/config
+    env:
+      APP_SECRET: abcd
+      DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
+      NODE_ENV: production
+      KLICKER_PLAYWRIGHT_PRODUCTION: '1'
+      DEVROUTER_PROFILE: manage,pwa,email
+      EMAIL_HOST: mailhog
+      EMAIL_PORT: '1025'
+      EMAIL_FROM: account-tests@example.invalid
+      URL_MAILHOG: http://mailhog:8025
+      URL_STUDENT: http://127.0.0.1:3001
+      URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
+      URL_MANAGE: http://127.0.0.1:3002
+      URL_AUTH: http://127.0.0.1:3010
+      APP_MANAGE_SUBDOMAIN: '127.0.0.1:3002'
+      APP_STUDENT_SUBDOMAIN: '127.0.0.1:3001'
+      REDIS_HOST: redis_exec
+      REDIS_PORT: '6379'
+      REDIS_PASS: ''
+      REDIS_CACHE_HOST: redis_cache
+      REDIS_CACHE_PORT: '6379'
+      REDIS_ASSESSMENT_HOST: redis_assessment_exec
+      REDIS_ASSESSMENT_PORT: '6379'
+      REDIS_ASSESSMENT_PASS: ''
+      HATCHET_API_URL: http://hatchet:8888
+      HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+      HATCHET_CLIENT_HOST_PORT: hatchet:7077
+      HATCHET_HOST_PORT: hatchet:7077
+      HATCHET_CLIENT_TLS_STRATEGY: none
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Trust mounted workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --prod=false
+      - name: Provision disposable test database
+        run: node .github/actions/playwright-shard/prepare-test-database.cjs
+      - name: Prepare local Hatchet token
+        run: ./util/_create_hatchet_token_test.sh
+        env:
+          HATCHET_API_URL: http://hatchet:8888
+          HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+      - name: Apply disposable database migrations
+        run: pnpm --filter @klicker-uzh/prisma run prisma:reset:raw -f
+        env:
+          DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
+      - name: Build production account applications
+        run: bash util/_with_local_test_origins.sh node util/playwright-production.ts build
+      - name: Run production account journeys
+        run: bash util/_with_local_test_origins.sh node util/playwright-production.ts test
+      - name: Verify complete production coverage
+        run: node util/playwright-production.ts report account-production-inventory.json account-production-result.json account-production-specs.json account-production-receipt.json
+      - name: Upload production evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: account-production-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            account-production-receipt.json
+          if-no-files-found: error
+          retention-days: 14

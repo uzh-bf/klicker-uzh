@@ -1213,10 +1213,10 @@ test('retains only the rejected stack publisher inputs for one day', () => {
     'utf8'
   )
   const stageStep = workflow.match(
-    /      - name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:)/
+    / {6}- name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n {6}- name:)/
   )?.[0]
   const uploadStep = workflow.match(
-    /      - name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:|\n  finalize_stack:)/
+    / {6}- name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n {6}- name:|\n {2}finalize_stack:)/
   )?.[0]
 
   assert.ok(stageStep)

@@ -14,6 +14,8 @@ const {
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
 const {
+  ACCOUNT_PRODUCTION_WORKFLOW,
+  collectAccountProductionEvidence,
   readCiEvidence,
   resolveInputs,
   validateCiSelection,
@@ -102,6 +104,11 @@ function evidenceRuns(workflows, overrides = {}) {
   )
 }
 
+const productionWorkflowFixture = fs.readFileSync(
+  path.join(__dirname, '../workflows/test-account-production.yml'),
+  'utf8'
+)
+
 function evidenceGithub({
   definitions = [],
   workflows,
@@ -137,10 +144,41 @@ function evidenceGithub({
   }
   runs = { ...ciRuns, ...runs }
   const runEndpoint = async (params) => ({
-    data: { workflow_runs: runs[params.workflow_id] ?? [] },
+    data: {
+      workflow_runs:
+        params.workflow_id === ACCOUNT_PRODUCTION_WORKFLOW.path
+          ? [
+              workflowRun({
+                candidateSha: CANDIDATE_SHA,
+                id: 800,
+                path: ACCOUNT_PRODUCTION_WORKFLOW.path,
+              }),
+            ]
+          : (runs[params.workflow_id] ?? []),
+    },
   })
   const jobEndpoint = async (params) => ({
-    data: { jobs: jobs[params.run_id] ?? [] },
+    data: {
+      jobs:
+        params.run_id === 800
+          ? [
+              {
+                id: 800,
+                name: 'account-production',
+                head_sha: CANDIDATE_SHA,
+                status: 'completed',
+                conclusion: 'success',
+                steps: [
+                  {
+                    name: 'Verify complete production coverage',
+                    status: 'completed',
+                    conclusion: 'success',
+                  },
+                ],
+              },
+            ]
+          : (jobs[params.run_id] ?? []),
+    },
   })
   const compareEndpoint = async ({ basehead }) => ({
     data: comparisons[basehead] ?? { status: 'ahead' },
@@ -148,12 +186,34 @@ function evidenceGithub({
   const github = {
     rest: {
       actions: {
+        listWorkflowRunArtifacts: async () => ({
+          data: {
+            artifacts: [
+              {
+                id: 801,
+                name: `account-production-${CANDIDATE_SHA}`,
+                digest: `sha256:${'9'.repeat(64)}`,
+                expired: false,
+                size_in_bytes: 100,
+              },
+            ],
+          },
+        }),
+        listJobsForWorkflowRun: jobEndpoint,
         listJobsForWorkflowRunAttempt: jobEndpoint,
         listWorkflowRuns: runEndpoint,
       },
       repos: {
         compareCommitsWithBasehead: compareEndpoint,
         getContent: async ({ path: filePath }) => {
+          if (filePath === ACCOUNT_PRODUCTION_WORKFLOW.path)
+            return {
+              data: {
+                content: Buffer.from(productionWorkflowFixture).toString(
+                  'base64'
+                ),
+              },
+            }
           if (filePath === '.github/workflows') {
             return {
               data: definitions.map((definition) => ({
@@ -180,7 +240,12 @@ function evidenceGithub({
     },
     paginate: async (endpoint, params) => {
       const response = await endpoint(params)
-      return response.data.workflow_runs ?? response.data.jobs ?? []
+      return (
+        response.data.workflow_runs ??
+        response.data.jobs ??
+        response.data.artifacts ??
+        []
+      )
     },
   }
   return { github, jobEndpoint, runEndpoint }
@@ -441,7 +506,7 @@ test('rejects unsafe workflow publication changes', () => {
 
   const noMigrator = fixtureDefinitions()
   noMigrator[1].content = noMigrator[1].content.replace(
-    /^  build-migrator-arm:[\s\S]*?(?=^  build-migrator-amd:)/m,
+    /^ {2}build-migrator-arm:[\s\S]*?(?=^ {2}build-migrator-amd:)/m,
     ''
   )
   assert.throws(
@@ -1659,10 +1724,10 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
   assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/)
   assert.match(workflow, /gitToken: process\.env\.STG_PROMOTE_TOKEN/)
   assert.match(workflow, /secrets\.STG_PROMOTE_TOKEN/)
-  assert.match(workflow, /^  contents: read$/m)
+  assert.match(workflow, /^ {2}contents: read$/m)
 
   const workflowRunNames = [
-    ...workflow.matchAll(/^      - '([^']+ \(stg\))'$/gm),
+    ...workflow.matchAll(/^ {6}- '([^']+ \(stg\))'$/gm),
   ].map((match) => match[1])
   assert.deepEqual(
     workflowRunNames.sort(),
@@ -1671,8 +1736,8 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
 
   const permissions = [
     ...workflow
-      .match(/\npermissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/)[1]
-      .matchAll(/^  ([a-z-]+): (read|write)$/gm),
+      .match(/\npermissions:\n((?: {2}[a-z-]+: (?:read|write)\n)+)/)[1]
+      .matchAll(/^ {2}([a-z-]+): (read|write)$/gm),
   ].map((match) => match[1])
   assert.deepEqual([...new Set(permissions)].sort(), ['actions', 'contents'])
 
@@ -1701,6 +1766,149 @@ test('does not use candidate files as executable workflow inputs', () => {
     STAGING_WORKFLOW_PATHS,
     STAGING_WORKFLOWS.map((workflow) => workflow.path)
   )
+})
+
+test('requires exact candidate production coverage and artifact identity before promotion', async () => {
+  const input = () => ({
+    github: evidenceGithub({ workflows: [] }).github,
+    context: reviewContext(),
+    candidateSha: CANDIDATE_SHA,
+    sourceBranch: 'v3',
+  })
+  const result = await collectAccountProductionEvidence(input())
+  assert.equal(result.run.sha, CANDIDATE_SHA)
+  const actual = input()
+  actual.github.rest.repos.getContent = async () => ({
+    data: {
+      content: fs
+        .readFileSync(
+          path.join(__dirname, '../workflows/test-account-production.yml')
+        )
+        .toString('base64'),
+    },
+  })
+  assert.equal(
+    (await collectAccountProductionEvidence(actual)).run.sha,
+    CANDIDATE_SHA
+  )
+  for (const mutate of [
+    ...[
+      'Build production account applications',
+      'Run production account journeys',
+      'Verify complete production coverage',
+      'Upload production evidence',
+    ].map((name) => (github) => {
+      github.rest.repos.getContent = async () => ({
+        data: {
+          content: Buffer.from(
+            productionWorkflowFixture.replace(
+              `- name: ${name}`,
+              `- if: false\n        name: ${name}`
+            )
+          ).toString('base64'),
+        },
+      })
+    }),
+    (github) => {
+      github.rest.actions.listWorkflowRuns = async () => ({
+        data: {
+          workflow_runs: [
+            workflowRun({
+              candidateSha: NEXT_SHA,
+              id: 800,
+              path: ACCOUNT_PRODUCTION_WORKFLOW.path,
+            }),
+          ],
+        },
+      })
+    },
+    ...['skipped', 'failure', undefined].map((conclusion) => (github) => {
+      github.rest.actions.listJobsForWorkflowRun = async () => ({
+        data: {
+          jobs: [
+            {
+              id: 800,
+              name: 'account-production',
+              head_sha: CANDIDATE_SHA,
+              status: 'completed',
+              conclusion: 'success',
+              steps: conclusion
+                ? [
+                    {
+                      name: 'Verify complete production coverage',
+                      status: 'completed',
+                      conclusion,
+                    },
+                  ]
+                : [],
+            },
+          ],
+        },
+      })
+    }),
+    ...[
+      { expired: true },
+      { digest: null },
+      { name: 'account-production-wrong-sha' },
+      { size_in_bytes: 0 },
+    ].map((override) => (github) => {
+      github.rest.actions.listWorkflowRunArtifacts = async () => ({
+        data: {
+          artifacts: [
+            {
+              id: 801,
+              name: `account-production-${CANDIDATE_SHA}`,
+              digest: `sha256:${'9'.repeat(64)}`,
+              expired: false,
+              size_in_bytes: 100,
+              ...override,
+            },
+          ],
+        },
+      })
+    }),
+    (github) => {
+      github.rest.actions.listWorkflowRuns = async () => ({
+        data: { workflow_runs: [] },
+      })
+    },
+    (github) => {
+      github.rest.actions.listJobsForWorkflowRun = async () => ({
+        data: {
+          jobs: [
+            {
+              id: 800,
+              name: 'account-production',
+              head_sha: CANDIDATE_SHA,
+              status: 'completed',
+              conclusion: 'skipped',
+            },
+          ],
+        },
+      })
+    },
+    (github) => {
+      github.rest.actions.listWorkflowRunArtifacts = async () => ({
+        data: { artifacts: [] },
+      })
+    },
+    (github) => {
+      github.rest.repos.getContent = async () => ({
+        data: {
+          content: Buffer.from(
+            productionWorkflowFixture.replace(
+              '        run:',
+              '        continue-on-error: true\n        run:'
+            )
+          ).toString('base64'),
+        },
+      })
+    },
+  ]) {
+    const args = input()
+    mutate(args.github)
+    await assert.rejects(collectAccountProductionEvidence(args))
+  }
 })
 
 test('requires complete candidate CI before a release write', async (t) => {

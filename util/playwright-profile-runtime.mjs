@@ -12,6 +12,7 @@ const PROFILE_PLAN_CONTRACT = 'playwright/runtime-contract.yml'
 const PLAYWRIGHT_FULL_PROFILE = 'playwright'
 const TRUSTED_FULL_PROFILE_COMPONENTS = new Set([
   'chat',
+  'email',
   'full',
   'live-quiz',
   'manage',

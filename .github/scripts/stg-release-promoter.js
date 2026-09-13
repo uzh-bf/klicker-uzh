@@ -1,5 +1,3 @@
-'use strict'
-
 const crypto = require('node:crypto')
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
@@ -248,30 +246,30 @@ function extractName(content, workflowPath) {
 
 function extractPushBranches(content, workflowPath) {
   const lines = extractTopLevelBlock(content, 'on', workflowPath)
-  const pushIndex = lines.findIndex((line) => /^  push:\s*$/.test(line))
+  const pushIndex = lines.findIndex((line) => /^ {2}push:\s*$/.test(line))
   if (pushIndex < 0) {
     throw new Error(`${workflowPath} has no push trigger`)
   }
   const end = lines.slice(pushIndex + 1).findIndex((line) => {
-    return line.trim() !== '' && !/^\s*#/.test(line) && /^  \S/.test(line)
+    return line.trim() !== '' && !/^\s*#/.test(line) && /^ {2}\S/.test(line)
   })
   const endIndex = end < 0 ? lines.length : pushIndex + 1 + end
   const branchesIndex = lines.findIndex(
     (line, index) =>
-      index > pushIndex && index < endIndex && /^    branches:\s*$/.test(line)
+      index > pushIndex && index < endIndex && /^ {4}branches:\s*$/.test(line)
   )
   if (branchesIndex < 0) {
     throw new Error(`${workflowPath} push trigger has no branches`)
   }
   const pushKeys = lines
     .slice(pushIndex + 1, endIndex)
-    .flatMap((line) => line.match(/^    ([A-Za-z0-9_-]+):/)?.[1] ?? [])
+    .flatMap((line) => line.match(/^ {4}([A-Za-z0-9_-]+):/)?.[1] ?? [])
   if (canonicalJson(pushKeys) !== canonicalJson(['branches'])) {
     throw new Error(`${workflowPath} does not use the approved push triggers`)
   }
   const branches = []
   for (let index = branchesIndex + 1; index < endIndex; index += 1) {
-    const match = lines[index].match(/^      -\s*(.+?)\s*$/)
+    const match = lines[index].match(/^ {6}-\s*(.+?)\s*$/)
     if (match) branches.push(parseScalar(match[1]))
   }
   return branches
@@ -284,7 +282,7 @@ function extractRootEnvironment(content, workflowPath) {
   const values = {}
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]
-    const match = line.match(/^  ([A-Z][A-Z0-9_]*)\s*:\s*(.*?)\s*$/)
+    const match = line.match(/^ {2}([A-Z][A-Z0-9_]*)\s*:\s*(.*?)\s*$/)
     if (match) values[match[1]] = parseScalar(match[2])
   }
   return values
@@ -296,7 +294,7 @@ function extractJobBlocks(content, workflowPath) {
   let current = null
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]
-    const jobMatch = line.match(/^  ([A-Za-z0-9_-]+):\s*$/)
+    const jobMatch = line.match(/^ {2}([A-Za-z0-9_-]+):\s*$/)
     if (jobMatch) {
       if (current) jobs.push(current)
       current = { id: jobMatch[1], lines: [] }
@@ -312,7 +310,7 @@ function extractJobBlocks(content, workflowPath) {
 }
 
 function isDisabledJob(job) {
-  return /^    if:\s*\$\{\{\s*false\s*\}\}\s*(?:#.*)?$/m.test(job.content)
+  return /^ {4}if:\s*\$\{\{\s*false\s*\}\}\s*(?:#.*)?$/m.test(job.content)
 }
 
 function resolveTemplate(value, environment, repository) {
@@ -345,14 +343,14 @@ function extractActionSteps(job, workflowPath) {
     return (
       line.trim() !== '' &&
       !/^\s*#/.test(line) &&
-      /^    [A-Za-z0-9_-]+:/.test(line)
+      /^ {4}[A-Za-z0-9_-]+:/.test(line)
     )
   })
   const end = relativeEnd < 0 ? lines.length : start + 1 + relativeEnd
   const steps = []
   let current = null
   for (const line of lines.slice(start + 1, end)) {
-    if (/^      -\s+/.test(line)) {
+    if (/^ {6}-\s+/.test(line)) {
       if (current) steps.push(current.join('\n'))
       current = [line]
     } else if (current) {
@@ -383,7 +381,7 @@ function extractImageReference(
   workflowPath,
   jobId
 ) {
-  const matches = [...step.matchAll(/^          images:\s*(.+)$/gm)]
+  const matches = [...step.matchAll(/^ {10}images:\s*(.+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(
       `${workflowPath}/${jobId} must declare exactly one metadata image`
@@ -476,7 +474,7 @@ function validateStagingWorkflow({
   const images = publisherJobs.map((job) => {
     if (
       job.id.endsWith('-arm') &&
-      !/^    runs-on:\s*ubuntu-24\.04-arm\s*$/m.test(job.content)
+      !/^ {4}runs-on:\s*ubuntu-24\.04-arm\s*$/m.test(job.content)
     ) {
       throw new Error(
         `${workflowPath}/${job.id} is not pinned to the ARM runner`
@@ -489,7 +487,7 @@ function validateStagingWorkflow({
       workflowPath
     )
     const metadataId = metadataStep.match(
-      /^        id:\s*([A-Za-z0-9_-]+)\s*$/m
+      /^ {8}id:\s*([A-Za-z0-9_-]+)\s*$/m
     )?.[1]
     if (!metadataId) {
       throw new Error(
@@ -497,7 +495,7 @@ function validateStagingWorkflow({
       )
     }
     if (
-      !/^          push:\s*\$\{\{\s*github\.event_name\s*!=\s*'pull_request'\s*\}\}\s*$/m.test(
+      !/^ {10}push:\s*\$\{\{\s*github\.event_name\s*!=\s*'pull_request'\s*\}\}\s*$/m.test(
         publisherStep
       )
     ) {
@@ -533,7 +531,7 @@ function validateStagingWorkflow({
   const unexpectedPublishers = jobs.filter(
     (job) =>
       extractActionSteps(job, workflowPath).some((step) =>
-        /^(?:      - uses|        uses):\s*docker\/build-push-action@[^\s#]+\s*(?:#.*)?$/m.test(
+        /^(?: {6}- uses| {8}uses):\s*docker\/build-push-action@[^\s#]+\s*(?:#.*)?$/m.test(
           step
         )
       ) &&
@@ -547,7 +545,7 @@ function validateStagingWorkflow({
   const hasMigratorJob = expectedJobIds.includes('build-migrator-arm')
   if (
     hasMigratorJob &&
-    !/^    needs:\s*build-migrator-arm\s*$/m.test(
+    !/^ {4}needs:\s*build-migrator-arm\s*$/m.test(
       activeArmJobs.find((job) => job.id === 'build-arm').content
     )
   ) {
@@ -1619,6 +1617,133 @@ async function resolveInputs({
   throw new Error(`unsupported promotion event ${context.eventName}`)
 }
 
+const ACCOUNT_PRODUCTION_WORKFLOW = Object.freeze({
+  path: '.github/workflows/test-account-production.yml',
+  name: 'Account production Playwright',
+  jobs: [{ id: 'account-production' }],
+})
+
+async function collectAccountProductionEvidence({
+  github,
+  context,
+  candidateSha,
+  sourceBranch,
+}) {
+  const workflow = ACCOUNT_PRODUCTION_WORKFLOW
+  const response = await github.rest.repos.getContent({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    path: workflow.path,
+    ref: candidateSha,
+  })
+  const content = Buffer.from(response.data.content, 'base64').toString('utf8')
+  const trustedContent = fs.readFileSync(
+    path.resolve(__dirname, '..', '..', workflow.path),
+    'utf8'
+  )
+  if (content !== trustedContent) {
+    throw new Error('Account production workflow differs from trusted control')
+  }
+  if (
+    extractName(content, workflow.path) !== workflow.name ||
+    canonicalJson(extractPushBranches(content, workflow.path)) !==
+      canonicalJson(APPROVED_PUSH_BRANCHES)
+  ) {
+    throw new Error('Unapproved account production workflow triggers')
+  }
+  const jobs = extractJobBlocks(content, workflow.path)
+  if (
+    jobs.length !== 1 ||
+    jobs[0].id !== 'account-production' ||
+    /(?:continue-on-error|strategy|uses):/.test(
+      jobs[0].content.split('    steps:')[0]
+    )
+  ) {
+    throw new Error('Unapproved account production job')
+  }
+  const steps = extractActionSteps(jobs[0], workflow.path)
+  const verification = steps.filter((step) =>
+    /^ {6}- name: Verify complete production coverage$/m.test(step)
+  )
+  if (
+    verification.length !== 1 ||
+    /continue-on-error:| {8}if:/.test(verification[0]) ||
+    !/^ {8}run: node util\/playwright-production\.ts report /m.test(
+      verification[0]
+    )
+  ) {
+    throw new Error('Missing mandatory account production verification')
+  }
+  const evidence = await collectWorkflowEvidence({
+    github,
+    context,
+    workflow,
+    candidateSha,
+    sourceBranch,
+    repository: repositoryName(context),
+  })
+  if (evidence.status !== 'success') {
+    throw new Error(
+      `Account production coverage incomplete: ${evidence.reason}`
+    )
+  }
+  const completedJobs = await paginate(
+    github,
+    github.rest.actions.listJobsForWorkflowRun,
+    {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      run_id: evidence.run.id,
+      per_page: 100,
+    }
+  )
+  const completedVerification = completedJobs
+    .find((job) => job.name === 'account-production')
+    ?.steps?.filter(
+      (step) => step.name === 'Verify complete production coverage'
+    )
+  if (
+    completedVerification?.length !== 1 ||
+    completedVerification[0].status !== 'completed' ||
+    completedVerification[0].conclusion !== 'success'
+  ) {
+    throw new Error(
+      'Account production verification step did not execute successfully'
+    )
+  }
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      run_id: evidence.run.id,
+      per_page: 100,
+    }
+  )
+  const matching = artifacts.filter(
+    (artifact) =>
+      artifact.name === `account-production-${candidateSha}` &&
+      !artifact.expired
+  )
+  if (
+    matching.length !== 1 ||
+    matching[0].size_in_bytes <= 0 ||
+    !DIGEST_PATTERN.test(matching[0].digest)
+  ) {
+    throw new Error('Missing account production artifact identity')
+  }
+  return {
+    ...evidence,
+    artifact: {
+      id: matching[0].id,
+      name: matching[0].name,
+      digest: matching[0].digest,
+      size_in_bytes: matching[0].size_in_bytes,
+    },
+  }
+}
+
 async function runPromotion({
   github,
   context,
@@ -1740,6 +1865,12 @@ async function runPromotion({
       )
     }
   }
+  const accountProduction = await collectAccountProductionEvidence({
+    github,
+    context,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+  })
   const images = await resolveStableRegistryDigests({
     candidateSha: inputs.candidateSha,
     evidence,
@@ -1793,6 +1924,7 @@ async function runPromotion({
     schema_version: 'stg-release-promotion/v2',
     controller_sha: controllerSha,
     ci: ciEvidence,
+    account_production: accountProduction,
     controller_run_id: context.runId,
     repository,
     source_branch: inputs.sourceBranch,
@@ -1843,6 +1975,8 @@ async function runPromotion({
 }
 
 module.exports = {
+  ACCOUNT_PRODUCTION_WORKFLOW,
+  collectAccountProductionEvidence,
   readCiEvidence,
   resolveInputs,
   validateCiSelection,

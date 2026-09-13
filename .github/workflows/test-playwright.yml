@@ -145,7 +145,7 @@ jobs:
             echo 'Playwright execution did not select Playwright.'
             exit 1
           fi
-          if ! node <<'NODE'
+          if ! node -e "
           const raw = process.env.SHARD_MATRIX ?? ''
           let matrix
           try {
@@ -173,7 +173,7 @@ jobs:
             ) &&
             new Set(shards.map((shard) => shard.shardIndex)).size === 8
           process.exit(complete ? 0 : 1)
-          NODE
+          NODE"
           then
             echo 'Playwright execution did not expose the complete eight-shard matrix.'
             exit 1

@@ -1,19 +1,20 @@
-const assert = require('node:assert/strict')
-const { execFileSync, spawnSync } = require('node:child_process')
-const fs = require('node:fs')
-const os = require('node:os')
-const path = require('node:path')
-const test = require('node:test')
-const YAML = require('yaml')
+import assert from 'node:assert/strict'
+import { execFileSync, spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import type { TestContext } from 'node:test'
+import test from 'node:test'
+import YAML from 'yaml'
 
-const {
+import {
   EXPECTED_CALL,
   validateCallerLifecycle,
   validatePublicPlaywrightWorkflow,
-} = require('./validate-public-playwright-workflow.cjs')
+} from './playwright-workflow.ts'
 
 test('the current public workflow satisfies the runner trust boundary', () => {
-  const root = path.join(__dirname, '../..')
+  const root = path.join(import.meta.dirname, '../..')
   const result = validatePublicPlaywrightWorkflow(root)
 
   assert.equal(result.ok, true, result.issues.join('\n'))
@@ -60,7 +61,7 @@ test('the current public workflow satisfies the runner trust boundary', () => {
 test('the reusable envelope owns lifecycle routing and selector shadow planning', () => {
   const workflow = fs.readFileSync(
     path.join(
-      path.join(__dirname, '../..'),
+      path.join(import.meta.dirname, '../..'),
       '.github/workflows/test-playwright.yml'
     ),
     'utf8'
@@ -88,18 +89,53 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
 
 test('lifecycle policy rejects cancellation outside the exact closed-PR boundary and any draft gate', () => {
   const source = fs.readFileSync(
-    path.join(__dirname, '../workflows/test-playwright.yml'),
+    path.join(import.meta.dirname, '../workflows/test-playwright.yml'),
     'utf8'
   )
-  const mutations = {
+  type MutableStep = {
+    uses?: string
+    run?: string
+    id?: string
+    name?: string
+    if?: string
+    'continue-on-error'?: boolean
+  }
+  type MutableJob = {
+    concurrency?: { group?: string; 'cancel-in-progress'?: boolean } | string
+    if?: string
+    permissions?: Record<string, string>
+    steps?: MutableStep[]
+    'runs-on'?: string | string[]
+    needs?: string
+  }
+  type MutableWorkflow = {
+    jobs: Record<string, MutableJob>
+    concurrency?: string
+    on: { pull_request: { types: string[] } }
+  }
+  const findStatusStep = (w: MutableWorkflow, key: string): MutableStep => {
+    const step = w.jobs['test-playwright-status'].steps?.find(
+      (entry) => entry.id === key || entry.name === key
+    )
+    assert.ok(step, `status step ${key} must exist`)
+    return step
+  }
+  const mutations: Record<string, (w: MutableWorkflow) => void> = {
     'wrong close key': (w) => {
-      w.jobs['cancel-closed-pr'].concurrency.group = 'other'
+      ;(w.jobs['cancel-closed-pr'].concurrency as { group: string }).group =
+        'other'
     },
     'wrong execution key': (w) => {
-      w.jobs['test-playwright-execution'].concurrency.group = 'other'
+      ;(
+        w.jobs['test-playwright-execution'].concurrency as { group: string }
+      ).group = 'other'
     },
     'missing cancellation': (w) => {
-      w.jobs['cancel-closed-pr'].concurrency['cancel-in-progress'] = false
+      ;(
+        w.jobs['cancel-closed-pr'].concurrency as {
+          'cancel-in-progress': boolean
+        }
+      )['cancel-in-progress'] = false
     },
     'workflow concurrency': (w) => {
       w.concurrency = 'other'
@@ -136,19 +172,15 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
         "always() && !cancelled() && (github.event_name != 'pull_request' || github.event.action != 'closed')"
     },
     'telemetry missing cancellation guard': (w) => {
-      w.jobs['test-playwright-status'].steps.find(
-        (step) => step.id === 'queue_telemetry'
-      ).if = "always() && needs.test-playwright-execution.result == 'failure'"
+      const step = findStatusStep(w, 'queue_telemetry')
+      step.if =
+        "always() && needs.test-playwright-execution.result == 'failure'"
     },
     'telemetry not best effort': (w) => {
-      delete w.jobs['test-playwright-status'].steps.find(
-        (step) => step.id === 'queue_telemetry'
-      )['continue-on-error']
+      delete findStatusStep(w, 'queue_telemetry')['continue-on-error']
     },
     'telemetry upload on cancellation': (w) => {
-      w.jobs['test-playwright-status'].steps.find(
-        (step) => step.name === 'Upload queue telemetry'
-      ).if = 'always()'
+      findStatusStep(w, 'Upload queue telemetry').if = 'always()'
     },
     'standalone telemetry job': (w) => {
       w.jobs['playwright-queue-telemetry'] = {
@@ -181,7 +213,7 @@ test('lifecycle policy rejects cancellation outside the exact closed-PR boundary
 })
 
 function readStatusScript() {
-  const root = path.join(__dirname, '../..')
+  const root = path.join(import.meta.dirname, '../..')
   const workflow = YAML.parse(
     fs.readFileSync(
       path.join(root, '.github/workflows/test-playwright.yml'),
@@ -189,7 +221,7 @@ function readStatusScript() {
     )
   )
   return workflow.jobs['test-playwright-status'].steps.find(
-    (step) => step.name === 'Check result'
+    (step: { name?: string }) => step.name === 'Check result'
   ).run
 }
 
@@ -203,7 +235,10 @@ function fullShardMatrix() {
   }
 }
 
-function runStatusReporter(t, overrides = {}) {
+function runStatusReporter(
+  t: TestContext,
+  overrides: Record<string, string> = {}
+) {
   const directory = fs.mkdtempSync(
     path.join(os.tmpdir(), 'playwright-status-reporter-')
   )
@@ -265,7 +300,7 @@ test('status reporter accepts one full plan for drafts and ready and rejects any
   assert.equal(ready.metadata.should_run, 'true')
   assert.deepEqual(JSON.parse(ready.metadata.shard_matrix), fullShardMatrix())
 
-  const rejected = [
+  const rejected: { name: string; overrides: Record<string, string> }[] = [
     {
       name: 'skipped ready execution',
       overrides: { EXECUTION_RESULT: 'skipped' },
@@ -307,7 +342,7 @@ test('status reporter accepts one full plan for drafts and ready and rejects any
     ['execution failure', { EXECUTION_RESULT: 'failure' }],
     ['execution cancelled', { EXECUTION_RESULT: 'cancelled' }],
     ['execution skipped', { EXECUTION_RESULT: 'skipped' }],
-  ]) {
+  ] as [string, Record<string, string>][]) {
     assert.equal(runStatusReporter(t, overrides).status, 1, name)
   }
   const duplicate = fullShardMatrix()
@@ -387,7 +422,7 @@ test('status reporter reuses only validated pull-request runs', (t) => {
     ],
     ['failed reuse', { DUPLICATE_RUN_ID: '123', EXECUTION_RESULT: 'failure' }],
     ['reuse without full mode', { DUPLICATE_RUN_ID: '123', MODE: 'selected' }],
-  ]) {
+  ] as [string, Record<string, string>][]) {
     assert.equal(runStatusReporter(t, overrides).status, 1, name)
   }
 })
@@ -409,7 +444,7 @@ test('missing policy files produce actionable validator issues', (t) => {
 })
 
 test('the build artifact must keep wildcard package coverage', (t) => {
-  const repository = path.join(__dirname, '../..')
+  const repository = path.join(import.meta.dirname, '../..')
   const root = fs.mkdtempSync(
     path.join(os.tmpdir(), 'public-playwright-artifact-')
   )
@@ -450,11 +485,14 @@ test('the build artifact must keep wildcard package coverage', (t) => {
 test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
   const workflow = YAML.parse(
     fs.readFileSync(
-      path.join(__dirname, '../workflows/public-pr-playwright-shards.yml'),
+      path.join(
+        import.meta.dirname,
+        '../workflows/public-pr-playwright-shards.yml'
+      ),
       'utf8'
     )
   )
-  const fetchStep = workflow.jobs.prepare.steps.find((step) =>
+  const fetchStep = workflow.jobs.prepare.steps.find((step: { run?: string }) =>
     step.run?.includes('git -C .candidate fetch')
   )
   const fetchCommand = fetchStep.run
@@ -471,7 +509,7 @@ test('exact-base workflow fetch preserves a divergent PR merge-base', (t) => {
     GIT_AUTHOR_EMAIL: 'fixture@example.invalid',
     GIT_COMMITTER_EMAIL: 'fixture@example.invalid',
   })
-  const git = (...args) =>
+  const git = (...args: string[]) =>
     execFileSync('git', args, {
       cwd: root,
       env,

@@ -16,6 +16,7 @@ on:
       - 'Test OLAT-API functionalities'
       - 'Production translation context'
       - 'Build Fallback'
+      - 'Account production Playwright'
       - 'Build Docker image for analytics (stg)'
       - 'Build Docker image for auth (stg)'
       - 'Build Docker image for backend-docker (stg)'
