@@ -88,6 +88,32 @@ test('managed application configuration shares only the isolated provider networ
     result.compose.services.litellm.environment.UPSTREAM_OPENAI_API_KEY,
     undefined
   )
+  const optedIn = resolveIsolatedConfig({
+    ...makeInput('a'),
+    aiUpstream: 'openrouter',
+  })
+  assert.equal(validateIsolatedConfig(optedIn), true)
+  const ai = renderManagedConfiguration(optedIn, source)
+  assert.equal(
+    ai.compose.services.litellm.environment.UPSTREAM_OPENAI_API_KEY,
+    null
+  )
+  assert.equal(
+    ai.compose.services.litellm.environment.UPSTREAM_OPENAI_BASE_URL,
+    null
+  )
+  delete ai.compose.services.litellm.environment.UPSTREAM_OPENAI_API_KEY
+  delete ai.compose.services.litellm.environment.UPSTREAM_OPENAI_BASE_URL
+  assert.deepEqual(ai, result)
+  const withoutMode = structuredClone(optedIn)
+  delete withoutMode.aiUpstream
+  assert.deepEqual(withoutMode, config)
+  for (const aiUpstream of ['azure', '', null, undefined]) {
+    assert.throws(
+      () => resolveIsolatedConfig({ ...makeInput('a'), aiUpstream }),
+      /aiUpstream/
+    )
+  }
   assert.deepEqual(result.compose.services.app.depends_on, {})
   for (const name of ['postgres', 'azurite', 'hatchet', 'local-mcp']) {
     assert.equal(result.compose.services[name], undefined)

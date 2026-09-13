@@ -40,11 +40,17 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
   services.litellm.ports = [
     `127.0.0.1:${config.bindings.ports.klicker.model}:4000`,
   ]
-  // This credential-free renderer must not inherit a host's paid AI capability.
-  // A later explicitly authorized AI overlay supplies the real upstream.
+  // Only an explicit AI mode may inherit the host's upstream capability.
+  // Name-only references keep credentials out of generated configuration.
   services.litellm.environment = {
     LITELLM_LOG: 'INFO',
     LITELLM_REASONING_AUTO_SUMMARY: 'true',
+    ...(config.aiUpstream === 'openrouter'
+      ? {
+          UPSTREAM_OPENAI_API_KEY: null,
+          UPSTREAM_OPENAI_BASE_URL: null,
+        }
+      : {}),
   }
   if (
     !Array.isArray(app.volumes) ||

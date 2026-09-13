@@ -120,6 +120,17 @@ test('setup refuses unpinned providers before checkout or runtime mutation', () 
   assert.match(result.stderr, /source.*pinned|source.*image/i)
 })
 
+test('opt-in setup rejects missing injection before provider or preparation access', () => {
+  const result = runConfigPlan(
+    isolatedConfigInput({ aiUpstream: 'openrouter' }),
+    'setup',
+    ['--candidate', 'a'.repeat(40)]
+  )
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /runtime-injected OpenRouter/)
+})
+
 test('config plan resolves a full synthetic input and rejects remote endpoints safely', () => {
   const valid = runConfigPlan(isolatedConfigInput())
   assert.equal(valid.error, undefined)

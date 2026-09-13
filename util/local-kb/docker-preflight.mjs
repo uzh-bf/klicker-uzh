@@ -9,17 +9,56 @@ export async function runLocalDocker(args) {
   return runHostCommand('docker', args, 300000)
 }
 
-export async function runLocalManaged(args) {
-  return runHostCommand('devrouter', args, 1800000)
+export function requireLocalAiEnvironment(config, environment = process.env) {
+  if (config.aiUpstream === undefined) return {}
+  if (
+    config.aiUpstream !== 'openrouter' ||
+    typeof environment.UPSTREAM_OPENAI_API_KEY !== 'string' ||
+    !environment.UPSTREAM_OPENAI_API_KEY.trim() ||
+    environment.UPSTREAM_OPENAI_BASE_URL !== 'https://openrouter.ai/api/v1'
+  ) {
+    throw new Error(
+      'Local AI requires runtime-injected OpenRouter credentials and the exact API endpoint.'
+    )
+  }
+  return {
+    UPSTREAM_OPENAI_API_KEY: environment.UPSTREAM_OPENAI_API_KEY,
+    UPSTREAM_OPENAI_BASE_URL: environment.UPSTREAM_OPENAI_BASE_URL,
+  }
 }
 
-async function runHostCommand(command, args, timeout) {
+export async function runLocalManaged(
+  args,
+  aiUpstream,
+  executeCommand = execute
+) {
+  if (
+    aiUpstream !== undefined &&
+    (args.length !== 5 ||
+      args[0] !== 'ensure' ||
+      args[2] !== '--profile' ||
+      args[3] !== 'ai,chat,manage' ||
+      args[4] !== '--json')
+  ) {
+    throw new Error('Local AI environment is restricted to managed AI startup.')
+  }
+  const environment = requireLocalAiEnvironment({ aiUpstream })
+  return runHostCommand('devrouter', args, 1800000, environment, executeCommand)
+}
+
+async function runHostCommand(
+  command,
+  args,
+  timeout,
+  environment = {},
+  executeCommand = execute
+) {
   try {
-    const { stdout } = await execute(command, args, {
+    const { stdout } = await executeCommand(command, args, {
       encoding: 'utf8',
       timeout,
       maxBuffer: 1024 * 1024,
-      env: { PATH: process.env.PATH, HOME: process.env.HOME },
+      env: { PATH: process.env.PATH, HOME: process.env.HOME, ...environment },
     })
     return stdout.trim()
   } catch {
