@@ -145,6 +145,21 @@ export async function proxy(request: NextRequest) {
     correlationId: request.headers.get('x-correlation-id'),
   })
   const log = edgeLogger.child(requestContext)
+  // Every response echoes the validated diagnostic IDs (the logging
+  // contract): redirects and pass-throughs included.
+  const respond = (response: NextResponse) => {
+    response.headers.set('x-request-id', requestContext.requestId)
+    response.headers.set('x-correlation-id', requestContext.correlationId)
+    return applyFrameAncestorsCSP(response)
+  }
+  // Pass-throughs inject the resolved IDs into the forwarded request headers
+  // so the Node handler's logging carries the same correlation.
+  const nextResponse = () => {
+    const headers = new Headers(request.headers)
+    headers.set('x-request-id', requestContext.requestId)
+    headers.set('x-correlation-id', requestContext.correlationId)
+    return NextResponse.next({ request: { headers } })
+  }
 
   // The embedded Manage assistant receives its locale as a query parameter,
   // but Chat's root layout resolves the active locale from the
@@ -157,15 +172,13 @@ export async function proxy(request: NextRequest) {
         name: 'NEXT_LOCALE',
         value: requestedLocale,
       })
-      const response = NextResponse.next({
-        request: { headers: request.headers },
-      })
+      const response = nextResponse()
       response.cookies.set({
         name: 'NEXT_LOCALE',
         value: requestedLocale,
         path: '/manage',
       })
-      return applyFrameAncestorsCSP(response)
+      return respond(response)
     }
   }
 
@@ -183,12 +196,12 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/auth/lti') ||
     pathname.startsWith('/auth/pwa-embed')
   ) {
-    return applyFrameAncestorsCSP(NextResponse.next())
+    return respond(nextResponse())
   }
 
   const pathSegments = pathname.split('/').filter(Boolean)
   if (pathSegments.length === 0) {
-    return applyFrameAncestorsCSP(NextResponse.next())
+    return respond(nextResponse())
   }
 
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
@@ -258,14 +271,14 @@ export async function proxy(request: NextRequest) {
   const participantToken = request.cookies.get('participant_token')?.value
 
   if (!participantToken) {
-    return redirectToNoLogin(request, hadGuestToken)
+    return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
   // Fail closed when APP_SECRET is missing — the previous `|| ''` fallback
   // would have used an empty signing key, which is not a meaningful gate.
   const appSecret = process.env.APP_SECRET
   if (!appSecret) {
-    return redirectToNoLogin(request, hadGuestToken)
+    return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
   try {
@@ -275,7 +288,7 @@ export async function proxy(request: NextRequest) {
       { event: 'participant_token.invalid' },
       'Invalid participant token'
     )
-    return redirectToNoLogin(request, hadGuestToken)
+    return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
   return passThroughWithScopedToken(request, null, requestContext)
