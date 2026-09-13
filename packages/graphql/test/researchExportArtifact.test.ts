@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildResearchExportArtifact,
   type ResearchExportAsynchronousResponse,
+  type ResearchExportLearningAnalyticsContribution,
   type ResearchExportLiveQuizResponse,
 } from '../src/lib/researchExportArtifact.js'
 import {
@@ -35,6 +36,21 @@ const asynchronousResponse: ResearchExportAsynchronousResponse = {
   timeSpent: 12,
   submittedAt,
 }
+
+const learningAnalyticsContribution: ResearchExportLearningAnalyticsContribution =
+  {
+    participantId: 'participant-internal-1',
+    family: 'PARTICIPANT_ANALYTICS',
+    scopeKey: 'PARTICIPANT_ANALYTICS|course-1|COURSE',
+    scope: { courseId: 'course-1', type: 'COURSE' },
+    contributions: { trialsCount: 4, responseCount: 3 },
+    generation: 3,
+    disclosureVersion: '2026-09-08',
+    choiceAt: createdAt,
+    algorithmVersion: '1',
+    computedAt: createdAt,
+    publishedAt: submittedAt,
+  }
 
 function build(
   selectedClasses: ResearchExportClass[] = [
@@ -157,12 +173,51 @@ describe('research export artifact builder', () => {
           exportId: 'export-1',
           courseId: 'course-1',
           createdAt,
-          selectedClasses: ['LEARNING_ANALYTICS'] as ResearchExportClass[],
+          selectedClasses: ['CHAT_TRANSCRIPTS'] as ResearchExportClass[],
           liveQuizResponses: [],
           asynchronousResponses: [],
         }),
       'DATA_EXPORT_CLASS_UNAVAILABLE'
     )
+  })
+
+  it('releases learning analytics contributions with provenance and denominator', () => {
+    const artifact = buildResearchExportArtifact({
+      exportId: 'export-1',
+      courseId: 'course-1',
+      createdAt,
+      selectedClasses: ['LEARNING_ANALYTICS'],
+      liveQuizResponses: [],
+      asynchronousResponses: [],
+      learningAnalytics: [learningAnalyticsContribution],
+      courseParticipantCount: 12,
+    })
+    const document = JSON.parse(artifact.body) as {
+      LEARNING_ANALYTICS: {
+        denominator: number
+        contributions: Array<{
+          participantKey: string
+          family: string
+          provenance: Record<string, unknown>
+        }>
+      }
+    }
+
+    expect(document.LEARNING_ANALYTICS.denominator).toBe(12)
+    expect(document.LEARNING_ANALYTICS.contributions).toHaveLength(1)
+    expect(document.LEARNING_ANALYTICS.contributions[0]?.family).toBe(
+      'PARTICIPANT_ANALYTICS'
+    )
+    expect(document.LEARNING_ANALYTICS.contributions[0]?.provenance).toEqual({
+      generation: 3,
+      disclosureVersion: '2026-09-08',
+      choiceAt: createdAt.toISOString(),
+      algorithmVersion: '1',
+      computedAt: createdAt.toISOString(),
+      publishedAt: submittedAt.toISOString(),
+    })
+    expect(artifact.recordCount).toBe(1)
+    expect(artifact.body).not.toContain('participant-internal-1')
   })
 
   it('rejects artifacts over the record limit', () => {

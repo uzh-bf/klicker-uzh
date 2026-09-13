@@ -36,7 +36,9 @@ export async function downloadResearchExport(
   if (
     request.selectedClasses.some(
       (value) =>
-        value !== 'LIVE_QUIZ_RESPONSES' && value !== 'ASYNCHRONOUS_RESPONSES'
+        value !== 'LIVE_QUIZ_RESPONSES' &&
+        value !== 'ASYNCHRONOUS_RESPONSES' &&
+        value !== 'LEARNING_ANALYTICS'
     )
   ) {
     throw exportError('DATA_EXPORT_CLASS_UNAVAILABLE')
@@ -116,6 +118,13 @@ export async function downloadResearchExport(
             },
           })
         }
+        if (request.selectedClasses.includes('LEARNING_ANALYTICS')) {
+          cohortFilters.push({
+            analyticsResearchContributions: {
+              some: { courseId: request.courseId },
+            },
+          })
+        }
         // Include refusals so a grant during preparation cannot go unnoticed.
         const cohort = await prisma.participant.findMany({
           where: { OR: cohortFilters },
@@ -188,7 +197,48 @@ export async function downloadResearchExport(
               },
             })
           : []
+        const learningAnalyticsRows = request.selectedClasses.includes(
+          'LEARNING_ANALYTICS'
+        )
+          ? await prisma.participantAnalyticsResearchContribution.findMany({
+              where: {
+                courseId: request.courseId,
+                participant,
+                family: { in: Object.values(DB.AnalyticsResearchFamily) },
+              },
+              take:
+                MAX_RESEARCH_EXPORT_RECORDS +
+                1 -
+                liveRows.length -
+                asyncRows.length,
+              orderBy: [
+                { participantId: 'asc' },
+                { family: 'asc' },
+                { scopeKey: 'asc' },
+              ],
+              select: {
+                participantId: true,
+                participant: { select: { researchConsentChoiceAt: true } },
+                family: true,
+                scopeKey: true,
+                scope: true,
+                contributions: true,
+                generation: true,
+                disclosureVersion: true,
+                choiceAt: true,
+                algorithmVersion: true,
+                computedAt: true,
+                publishedAt: true,
+              },
+            })
+          : []
         if (liveRows.length + asyncRows.length > MAX_RESEARCH_EXPORT_RECORDS) {
+          throw exportError('DATA_EXPORT_TOO_LARGE')
+        }
+        if (
+          liveRows.length + asyncRows.length + learningAnalyticsRows.length >
+          MAX_RESEARCH_EXPORT_RECORDS
+        ) {
           throw exportError('DATA_EXPORT_TOO_LARGE')
         }
 
@@ -229,7 +279,7 @@ export async function downloadResearchExport(
             .map((row) => [row.id, row.researchConsentChoiceAt!.getTime()])
         )
         if (
-          [...liveRows, ...asyncRows].some(
+          [...liveRows, ...asyncRows, ...learningAnalyticsRows].some(
             (row) =>
               choices.get(row.participantId) !==
               row.participant.researchConsentChoiceAt?.getTime()
@@ -268,6 +318,22 @@ export async function downloadResearchExport(
             timeSpent: row.timeSpent,
             submittedAt: row.createdAt,
           })),
+          learningAnalytics: learningAnalyticsRows.map((row) => ({
+            participantId: row.participantId,
+            family: row.family,
+            scopeKey: row.scopeKey,
+            scope: row.scope,
+            contributions: row.contributions,
+            generation: Number(row.generation),
+            disclosureVersion: row.disclosureVersion,
+            choiceAt: row.choiceAt,
+            algorithmVersion: row.algorithmVersion,
+            computedAt: row.computedAt,
+            publishedAt: row.publishedAt,
+          })),
+          courseParticipantCount: await prisma.participation.count({
+            where: { courseId: request.courseId },
+          }),
         })
         await prisma.researchExportReceipt.update({
           where: { id: exportId },

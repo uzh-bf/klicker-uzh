@@ -33,6 +33,20 @@ export type ResearchExportAsynchronousResponse = {
   submittedAt: Date
 }
 
+export type ResearchExportLearningAnalyticsContribution = {
+  participantId: string
+  family: string
+  scopeKey: string
+  scope: unknown
+  contributions: unknown
+  generation: number
+  disclosureVersion: string
+  choiceAt: Date
+  algorithmVersion: string
+  computedAt: Date
+  publishedAt: Date
+}
+
 export type BuildResearchExportArtifactInput = {
   exportId: string
   courseId: string
@@ -40,6 +54,8 @@ export type BuildResearchExportArtifactInput = {
   selectedClasses: ResearchExportClass[]
   liveQuizResponses: ResearchExportLiveQuizResponse[]
   asynchronousResponses: ResearchExportAsynchronousResponse[]
+  learningAnalytics?: ResearchExportLearningAnalyticsContribution[]
+  courseParticipantCount?: number
 }
 
 type ResearchExportArtifactDocument = {
@@ -69,6 +85,25 @@ type ResearchExportArtifactDocument = {
     timeSpent: number
     submittedAt: string
   }>
+  LEARNING_ANALYTICS?: {
+    // denominator including refusals and zero contributors
+    denominator: number
+    contributions: Array<{
+      participantKey: string
+      family: string
+      scopeKey: string
+      scope: unknown
+      contributions: unknown
+      provenance: {
+        generation: number
+        disclosureVersion: string
+        choiceAt: string
+        algorithmVersion: string
+        computedAt: string
+        publishedAt: string
+      }
+    }>
+  }
 }
 
 export type ResearchExportArtifact = {
@@ -101,11 +136,14 @@ export function buildResearchExportArtifact({
   selectedClasses,
   liveQuizResponses,
   asynchronousResponses,
+  learningAnalytics = [],
+  courseParticipantCount = 0,
 }: BuildResearchExportArtifactInput): ResearchExportArtifact {
   for (const selectedClass of selectedClasses) {
     if (
       selectedClass !== 'LIVE_QUIZ_RESPONSES' &&
-      selectedClass !== 'ASYNCHRONOUS_RESPONSES'
+      selectedClass !== 'ASYNCHRONOUS_RESPONSES' &&
+      selectedClass !== 'LEARNING_ANALYTICS'
     ) {
       throw exportError('DATA_EXPORT_CLASS_UNAVAILABLE')
     }
@@ -119,6 +157,12 @@ export function buildResearchExportArtifact({
   ) {
     throw exportError('DATA_EXPORT_CLASS_UNAVAILABLE')
   }
+  if (
+    !selectedClasses.includes('LEARNING_ANALYTICS') &&
+    learningAnalytics.length > 0
+  ) {
+    throw exportError('DATA_EXPORT_CLASS_UNAVAILABLE')
+  }
 
   const recordCount =
     (selectedClasses.includes('LIVE_QUIZ_RESPONSES')
@@ -126,6 +170,9 @@ export function buildResearchExportArtifact({
       : 0) +
     (selectedClasses.includes('ASYNCHRONOUS_RESPONSES')
       ? asynchronousResponses.length
+      : 0) +
+    (selectedClasses.includes('LEARNING_ANALYTICS')
+      ? learningAnalytics.length
       : 0)
 
   if (recordCount > MAX_RESEARCH_EXPORT_RECORDS) {
@@ -169,6 +216,32 @@ export function buildResearchExportArtifact({
       timeSpent: row.timeSpent,
       submittedAt: row.submittedAt.toISOString(),
     }))
+  }
+
+  if (selectedClasses.includes('LEARNING_ANALYTICS')) {
+    // Released rows are the original release-consenting contributions with
+    // their publication provenance. Cohort-derived quantile classifications
+    // are deliberately excluded because the operational values reflect the
+    // learning-analytics cohort; researchers recompute them for the release
+    // cohort from these contribution values.
+    document.LEARNING_ANALYTICS = {
+      denominator: courseParticipantCount,
+      contributions: learningAnalytics.map((row) => ({
+        participantKey: exportKey(participantKeys, row.participantId),
+        family: row.family,
+        scopeKey: row.scopeKey,
+        scope: row.scope,
+        contributions: row.contributions,
+        provenance: {
+          generation: row.generation,
+          disclosureVersion: row.disclosureVersion,
+          choiceAt: row.choiceAt.toISOString(),
+          algorithmVersion: row.algorithmVersion,
+          computedAt: row.computedAt.toISOString(),
+          publishedAt: row.publishedAt.toISOString(),
+        },
+      })),
+    }
   }
 
   const body = JSON.stringify(document)

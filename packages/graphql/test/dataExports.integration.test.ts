@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
+  AnalyticsResearchFamily,
   CourseAuthType,
   DataExportStatus,
   ElementInstanceType,
@@ -822,7 +823,7 @@ describe('research export PostgreSQL integration', () => {
 
   it('explicitly denies a known but unavailable export class', async () => {
     const request = buildRequest(fixture.courseId, {
-      selectedClasses: ['LEARNING_ANALYTICS'],
+      selectedClasses: ['CHAT_TRANSCRIPTS'],
     })
 
     await expect(
@@ -835,6 +836,54 @@ describe('research export PostgreSQL integration', () => {
         where: { id: request.requestId },
       })
     ).resolves.toBeNull()
+  })
+
+  it('releases learning analytics contributions with provenance', async () => {
+    const contribution =
+      await prisma.participantAnalyticsResearchContribution.create({
+        data: {
+          family: AnalyticsResearchFamily.PARTICIPANT_ANALYTICS,
+          scopeKey: `course|${fixture.courseId}|DAILY|2026-09-13`,
+          scope: { courseId: fixture.courseId, window: 'DAILY' },
+          contributions: { activeDays: 3, responses: 4 },
+          generation: 1,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+          choiceAt,
+          algorithmVersion: 'synthetic-v1',
+          computedAt: responseAt,
+          participantId: fixture.eligible.id,
+          courseId: fixture.courseId,
+        },
+      })
+    const request = buildRequest(fixture.courseId, {
+      selectedClasses: ['LEARNING_ANALYTICS'],
+    })
+    fixtureIds.receipts.push(request.requestId)
+
+    const result = await downloadResearchExport(
+      request,
+      contextFor(fixture.adminId)
+    )
+    const artifact = JSON.parse(result.body)
+    const expectedDenominator = await prisma.participation.count({
+      where: { courseId: fixture.courseId },
+    })
+
+    expect(result.recordCount).toBe(1)
+    expect(artifact.LEARNING_ANALYTICS.denominator).toBe(expectedDenominator)
+    expect(artifact.LEARNING_ANALYTICS.contributions).toHaveLength(1)
+    expect(artifact.LEARNING_ANALYTICS.contributions[0]).toMatchObject({
+      family: 'PARTICIPANT_ANALYTICS',
+      scopeKey: contribution.scopeKey,
+      scope: { courseId: fixture.courseId, window: 'DAILY' },
+      contributions: { activeDays: 3, responses: 4 },
+      provenance: {
+        generation: 1,
+        disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+        algorithmVersion: 'synthetic-v1',
+      },
+    })
+    expect(result.body).not.toContain(fixture.eligible.id)
   })
 
   it('includes participants present in only one selected response class', async () => {
