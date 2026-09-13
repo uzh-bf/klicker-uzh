@@ -37,7 +37,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: >-
           bash util/check-git-identity.sh range "${PR_BASE_SHA}..${PR_HEAD_SHA}"
-          --published origin/v3 origin/v3-ai origin/v3-audit
+          --published-glob 'refs/remotes/origin/v3*'
 
       - name: Test Git identity guard
         run: node --test ./util/check-git-identity.test.mjs
