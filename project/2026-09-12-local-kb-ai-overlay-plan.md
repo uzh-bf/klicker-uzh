@@ -118,6 +118,64 @@ S1; do not substitute an environment file or credential-bearing argument.
 
 ## Progress
 
+### Approved retained setup continuation
+
+The user approved implementing, reviewing and executing a bounded
+`continue-setup` command on retained attempt C, followed by the original
+acceptance journey. The implementation branch is `rs/local-kb-setup-recovery`
+in the same worktree, based on `3d31c0d9cb67f80c1ec09d0f954c555eed46e467`.
+Runtime candidate remains `8207c964016b3f1c735c678e6563bfe96d604f5d`.
+This correction is full-path because it crosses retained lifecycle state.
+No KB product model changes; existing provider lifecycle contracts compose.
+
+The command must preserve normal setup's exclusive claim and normal start's
+requirement for complete preparation. It validates the original claim,
+configuration digest, actual detached candidate, managed configuration bytes,
+completed storage receipt and exact local Docker context. Recovery runs from
+a separately committed clean implementation checkout; it records that code
+revision, without copying code into C or changing C's claim. The operator
+reviews the exact executor/candidate pair before execution.
+
+Before effects, observe providers individually. A private completed receipt
+plus matching prepared native status is skipped. A provider with matching
+prepared native status and no consumer receipt may be reconciled by writing
+the missing receipt exclusively. Failed observations never imply unused
+state. New setup requires an absent provider state directory, absent consumer
+receipt, no owned runtime resources, and no previous continuation intent.
+For ingestion, check its configured deterministic Compose project for
+containers, networks and volumes; retrieval must have no state or occupied
+listener. Recheck before invoking setup and retain an intent before effects.
+If untouched ownership cannot be established, fail without initialization.
+
+Use one private exclusive continuation directory to prevent simultaneous or
+repeated continuation. A failed continuation remains retained. Do not add a
+general retry engine. Validate the entire stage classification first, then
+continue in the existing dependency order. Preserve all prior receipts.
+Only restore verified existing consumer bootstrap services when needed;
+never rerun token creation or storage initialization. After validated provider
+success, write the existing aggregate completion receipt. Managed application
+initialization is allowed only when its attempt and managed runtime are
+proven absent; reuse the existing initialization and completion operations.
+No automatic application start or model call occurs in this command.
+
+Delegation: R1 main owns lifecycle decisions and integration; a bounded
+executor may own settled source/test changes. R2 main owns exact runtime
+qualification and acceptance because it couples credentials, state and UI.
+R1 source scope is util/local-kb/preparation.mjs, provider-commands.mjs,
+util/local-kb-stack.mjs and their existing tests. R2 updates this plan and
+docs/solutions/integration/local-kb-stack.md. No new source modules.
+
+Test portfolio: extend preparation tests for valid partial continuation,
+zero repeated completed-stage setup calls, exclusive intents, identity or
+configuration drift, ambiguous state, partial application setup and failures
+after effects; extend provider observation tests for individual identity and
+readiness validation; extend CLI tests for pre-effect rejection. Reuse the
+71 passing baseline tests. Documentation needs no content-pinning tests.
+Commit the plan, implement one cohesive source slice, run focused checks,
+then simplifier and slice review, integrated final review and normal draft
+delivery. New merge authority is not implied. Execute only reviewed code on
+C, preserve failures, and stop the exact runtime after the original proof.
+
 - Recovery correction: attempt B never created a preparation claim. The strict
   source check rejected Python/test caches and local review artifacts in two
   provider worktrees. Preserve those worktrees and use clean detached provider
