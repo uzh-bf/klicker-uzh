@@ -1,8 +1,14 @@
+from datetime import datetime
+
 from ..analytics_eligibility import (
     AnalyticsEligibilityContext,
     AnalyticsEligibilityRequired,
     filter_dataframe_by_participants,
     publish_analytics,
+)
+from ..research_contribution import (
+    contribution_scope_key,
+    retain_research_contribution,
 )
 
 
@@ -29,6 +35,7 @@ def save_participant_activity_performance(
 
     def write(transaction):
         for _, row in df_activity_performance.iterrows():
+            result = None
             creation_values = {
                 "totalScore": row["totalScore"],
                 "completion": row["completion"],
@@ -41,7 +48,7 @@ def save_participant_activity_performance(
 
             if activity_type == "practiceQuizzes":
                 creation_values["practiceQuiz"] = {"connect": {"id": row["activityId"]}}
-                transaction.participantactivityperformance.upsert(
+                result = transaction.participantactivityperformance.upsert(
                     where={
                         "participantId_practiceQuizId": {
                             "participantId": row["participantId"],
@@ -53,7 +60,7 @@ def save_participant_activity_performance(
 
             elif activity_type == "microLearnings":
                 creation_values["microLearning"] = {"connect": {"id": row["activityId"]}}
-                transaction.participantactivityperformance.upsert(
+                result = transaction.participantactivityperformance.upsert(
                     where={
                         "participantId_microLearningId": {
                             "participantId": row["participantId"],
@@ -65,5 +72,31 @@ def save_participant_activity_performance(
 
             else:
                 raise ValueError("Unknown activity type: {}".format(activity_type))
+
+            retain_research_contribution(
+                transaction,
+                family="PARTICIPANT_ACTIVITY_PERFORMANCE",
+                participant_id=row["participantId"],
+                course_id=course_id,
+                scope_key=contribution_scope_key(
+                    "PARTICIPANT_ACTIVITY_PERFORMANCE",
+                    course_id,
+                    activity_type,
+                    row["activityId"],
+                ),
+                scope={
+                    "courseId": course_id,
+                    "activityType": activity_type,
+                    "activityId": row["activityId"],
+                },
+                contributions={
+                    "totalScore": row["totalScore"],
+                    "completion": row["completion"],
+                },
+                eligibility=eligibility,
+                computed_at=datetime.now().strftime("%Y-%m-%d") + "T00:00:00.000Z",
+                binding="participantActivityPerformanceId",
+                result_row_id=getattr(result, "id", None),
+            )
 
     publish_analytics(db, eligibility, (course_id,), write)

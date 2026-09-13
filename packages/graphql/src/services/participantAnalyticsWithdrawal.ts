@@ -28,6 +28,7 @@ export async function processParticipantAnalyticsWithdrawal(
       // New analytics publication waits for these requests even after re-enable.
       // Completing deletion and its receipt together makes duplicate delivery safe.
       const where = { participantId }
+      await prisma.participantAnalyticsResearchContribution.deleteMany({ where })
       await prisma.participantAnalytics.deleteMany({ where })
       await prisma.participantCourseAnalytics.deleteMany({ where })
       await prisma.participantPerformance.deleteMany({ where })

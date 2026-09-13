@@ -11,6 +11,83 @@ model AnalyticsEligibilityGeneration {
   generation BigInt @default(0)
 }
 
+// Families with a production writer whose original contributions are retained
+// for research exports. Schema-only families without a writer stay outside and
+// must be rejected explicitly by the export instead of being omitted silently.
+enum AnalyticsResearchFamily {
+  PARTICIPANT_ANALYTICS
+  AGGREGATED_ANALYTICS
+  PARTICIPANT_COURSE_ANALYTICS
+  AGGREGATED_COURSE_ANALYTICS
+  PARTICIPANT_PERFORMANCE
+  INSTANCE_PERFORMANCE
+  ACTIVITY_PERFORMANCE
+  PARTICIPANT_ACTIVITY_PERFORMANCE
+  ACTIVITY_PROGRESS
+}
+
+// Original per-participant contributions retained when analytics results are
+// published. Stored result rows alone cannot prove which consent cohort,
+// eligibility generation and algorithm produced them, and withdrawal deletes
+// them independently of research releases. One row exists per family,
+// participant and deterministic scope identity; it is created only when the
+// publication writes new result values and replaced atomically when those
+// values are republished. Provenance is never refreshed on no-op upserts and
+// never backfilled from the current consent state.
+model ParticipantAnalyticsResearchContribution {
+  id     Int                    @id @default(autoincrement())
+  family AnalyticsResearchFamily
+
+  // deterministic scope identity, e.g. "course|<id>|DAILY|2026-09-13"
+  scopeKey String
+  // captured course/activity parameters of the publication scope
+  scope        Json
+  // original numerical, date and category input values of this participant
+  contributions Json
+
+  sourceWindowStart DateTime?
+  sourceWindowEnd   DateTime?
+
+  generation        BigInt
+  disclosureVersion String
+  choiceAt          DateTime
+  algorithmVersion  String
+  computedAt        DateTime
+  publishedAt       DateTime @default(now())
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participantAnalytics             ParticipantAnalytics?          @relation(fields: [participantAnalyticsId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantAnalyticsId           Int?
+  aggregatedAnalytics              AggregatedAnalytics?           @relation(fields: [aggregatedAnalyticsId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  aggregatedAnalyticsId            Int?
+  participantCourseAnalytics       ParticipantCourseAnalytics?     @relation(fields: [participantCourseAnalyticsId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantCourseAnalyticsId     Int?
+  aggregatedCourseAnalytics        AggregatedCourseAnalytics?      @relation(fields: [aggregatedCourseAnalyticsId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  aggregatedCourseAnalyticsId      Int?
+  participantPerformance           ParticipantPerformance?         @relation(fields: [participantPerformanceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantPerformanceId         Int?
+  instancePerformance              InstancePerformance?            @relation(fields: [instancePerformanceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  instancePerformanceId            Int?
+  activityPerformance              ActivityPerformance?            @relation(fields: [activityPerformanceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  activityPerformanceId            Int?
+  participantActivityPerformance   ParticipantActivityPerformance? @relation(fields: [participantActivityPerformanceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  participantActivityPerformanceId Int?
+  activityProgress                 ActivityProgress?               @relation(fields: [activityProgressId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  activityProgressId               Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([family, participantId, scopeKey])
+  @@index([courseId, family])
+  @@index([participantId, family])
+}
+
 enum ActivityLevel {
   LOW
   MEDIUM
@@ -53,6 +130,7 @@ model ParticipantAnalytics {
   lastWrongCount    Float? @db.Real // aggregated over all questions (sum)
 
   competencyAnalytics CompetencyAnalytics[]
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
@@ -84,6 +162,7 @@ model AggregatedAnalytics {
   totalElementsAvailable Int // total number of elements available at the end of selected timeframe (practice quizzes & microlearnings != instances linked to course)
 
   aggregatedCompetencyAnalytics AggregatedCompetencyAnalytics[]
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
@@ -147,6 +226,7 @@ model ParticipantCourseAnalytics {
   activityLevel ActivityLevel
 
   hasChatActivity Boolean @default(false)
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
@@ -179,6 +259,7 @@ model AggregatedCourseAnalytics {
   chatParticipantCount Int @default(0)
   quizParticipantCount Int @default(0)
   bothChatAndQuizCount Int @default(0)
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @unique @db.Uuid
@@ -198,6 +279,7 @@ model ParticipantPerformance {
 
   totalErrorRate   Float            @db.Real // fraction of all responses that were incorrect
   totalPerformance PerformanceLevel
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
@@ -216,6 +298,7 @@ model InstancePerformance {
   id Int @id @default(autoincrement())
 
   responseCount    Int // total number of responses to this instance
+  researchContributions ParticipantAnalyticsResearchContribution[]
   averageTimeSpent Float @db.Real // average time students spent on this instance
 
   firstErrorRate   Float? @db.Real // fraction of wrong answers to this instance (first attempt, PQ only)
@@ -244,6 +327,7 @@ model ActivityPerformance {
   id Int @id @default(autoincrement())
 
   participantCount Int @default(0)
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   firstErrorRate   Float? @db.Real // fraction of wrong answers to instances in this activity (first attempt, PQ only)
   firstPartialRate Float? @db.Real // fraction of partially correct answers to instances in this activity (first attempt, PQ only)
@@ -275,6 +359,7 @@ model ParticipantActivityPerformance {
 
   totalScore Int // total score of the participant in this activity (sum of all instance scores)
   completion Float @db.Real // fraction of instances completed (answered at least once) by the participant
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
@@ -299,6 +384,7 @@ model ActivityProgress {
   startedCount            Int
   completedCount          Int
   repeatedCount           Int?
+  researchContributions ParticipantAnalyticsResearchContribution[]
 
   practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   practiceQuizId String?       @unique @db.Uuid

@@ -104,7 +104,15 @@ def compute_participant_course_analytics(
         end_curr_date = datetime.now().strftime("%Y-%m-%d") + "T23:59:59.999Z"
         course_end_date_ext = course_end_date.strftime("%Y-%m-%d") + "T23:59:59.999Z"
         timestamp = course_end_date_ext if course_end_date_ext < end_curr_date else end_curr_date
-        save_participant_analytics(db, df_analytics, timestamp, "COURSE", eligibility)
+        save_participant_analytics(
+            db,
+            df_analytics,
+            timestamp,
+            "COURSE",
+            eligibility,
+            source_window_start=course_start_date,
+            source_window_end=course_end_date,
+        )
 
         # Delete the dataframes to avoid conflicts in the next iteration
         del df_details

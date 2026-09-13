@@ -28,7 +28,15 @@ def compute_participant_analytics(
     df_analytics = aggregate_analytics(df_details)
 
     # Save the aggreagted analytics into the database
-    save_participant_analytics(db, df_analytics, timestamp, analytics_type, eligibility)
+    save_participant_analytics(
+        db,
+        df_analytics,
+        timestamp,
+        analytics_type,
+        eligibility,
+        source_window_start=start_date,
+        source_window_end=end_date,
+    )
 
     # Delete the dataframes to avoid conflicts in the next iteration
     del df_details

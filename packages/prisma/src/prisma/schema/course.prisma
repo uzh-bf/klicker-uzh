@@ -37,6 +37,7 @@ model Course {
   randomAssignmentFinalized Boolean  @default(false)
 
   elementStacks              ElementStack[]
+  analyticsResearchContributions ParticipantAnalyticsResearchContribution[]
   practiceQuizzes            PracticeQuiz[]
   groupActivities            GroupActivity[]
   leaderboard                LeaderboardEntry[]

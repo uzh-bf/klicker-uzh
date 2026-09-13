@@ -1,8 +1,14 @@
+from datetime import datetime
+
 from ..analytics_eligibility import (
     AnalyticsEligibilityContext,
     AnalyticsEligibilityRequired,
     filter_dataframe_by_participants,
     publish_analytics,
+)
+from ..research_contribution import (
+    contribution_scope_key,
+    retain_research_contribution,
 )
 
 
@@ -24,7 +30,7 @@ def save_participant_course_analytics(
 
     def write(transaction):
         for _, row in df_activity.iterrows():
-            transaction.participantcourseanalytics.upsert(
+            result = transaction.participantcourseanalytics.upsert(
                 where={
                     "courseId_participantId": {
                         "courseId": row["courseId"],
@@ -47,6 +53,26 @@ def save_participant_course_analytics(
                         "activityLevel": row["activityLevel"],
                     },
                 },
+            )
+            retain_research_contribution(
+                transaction,
+                family="PARTICIPANT_COURSE_ANALYTICS",
+                participant_id=row["participantId"],
+                course_id=row["courseId"],
+                scope_key=contribution_scope_key(
+                    "PARTICIPANT_COURSE_ANALYTICS",
+                    row["courseId"],
+                ),
+                scope={"courseId": row["courseId"]},
+                contributions={
+                    "activeWeeks": row["activeWeeks"],
+                    "activeDaysPerWeek": row["activeDaysPerWeek"],
+                    "meanElementsPerDay": row["meanElementsPerDay"],
+                },
+                eligibility=eligibility,
+                computed_at=datetime.now().strftime("%Y-%m-%d") + "T00:00:00.000Z",
+                binding="participantCourseAnalyticsId",
+                result_row_id=getattr(result, "id", None),
             )
 
     publish_analytics(db, eligibility, course_ids, write)
