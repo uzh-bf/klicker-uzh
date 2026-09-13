@@ -606,3 +606,17 @@ required from the user.
   test pins the cache contract; 30 tests pass across the required-build-status
   and event-gate suites; Prettier and Biome report clean formatting. Delivered
   on branch `rs/ci-image-build-consolidation`.
+- 2026-09-13 slice B3 sequencing decision: PR #5936 is already merged into the
+  branch base (the earlier open-draft note was stale), and PR #5971 is
+  MERGEABLE/BLOCKED-only-by-required-checks. Full image-workflow consolidation
+  must wait for PR #5924: that open PR directly rewrites
+  `stg-release-promoter.js`, `stg-release-promoter-fixtures.js`,
+  `stg-release-promoter.test.js`, `deploy-stg-promote.yml`, and
+  `v3_backend-docker-stg.yml` — the same seams slice B3 replaces. Starting B3
+  now would force a large conflicting rewrite of the promotion controller's
+  fail-closed validation. Queue evidence at 18:21Z: every Playwright run since
+  17:40Z remains queued, so both the #5948 unchanged-head activation proof and
+  #5971's first live cached builds are runner-gated, not code-gated. Next
+  action after #5924 merges: rebase, then execute B3 as one package (single
+  affected-image matrix workflow, needs-based `build-images-status`, promoter
+  and sweeper updates).
