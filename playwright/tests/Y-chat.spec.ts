@@ -4,6 +4,7 @@ import {
   CHATBOT_ID,
   chatUrl,
   clearChatCookies,
+  ensureChatbotSeeded,
   getEnrolledParticipantId,
   getMessageRating,
   mockChatStream,
@@ -4050,6 +4051,14 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
   })
 
   test.beforeEach(async ({ page }) => {
+    // The graph workspace only mounts for a seeded chatbot with the map
+    // visible: the layout 404s without the row and hides the graph otherwise.
+    await ensureChatbotSeeded()
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { knowledgeGraphVisible: true },
+    })
     participantId = await getEnrolledParticipantId()
     await clearChatCookies(page)
     await setParticipantToken(page, participantId)

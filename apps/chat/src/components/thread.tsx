@@ -912,7 +912,7 @@ const Composer: FC<{ maxImageAttachments: number }> = ({
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
-              embedded ? 'max-h-20 py-2 text-sm leading-5' : 'max-h-40 py-4'
+              embedded ? 'max-h-20 py-2 text-sm leading-6' : 'max-h-40 py-4'
             )}
           />
           <ComposerAction />
@@ -1438,7 +1438,7 @@ const UserMessage: FC = () => {
         className={twMerge(
           'bg-muted text-foreground break-words rounded-2xl px-5 py-2.5',
           embedded
-            ? 'max-w-[80%] text-sm leading-5'
+            ? 'max-w-[80%] text-sm leading-6'
             : 'max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
@@ -1861,7 +1861,7 @@ const AssistantMessage: FC<{
         className={twMerge(
           'text-foreground row-start-1 my-1.5 break-words leading-7',
           embedded
-            ? 'col-start-2 max-w-full text-sm leading-5 [&_p]:my-3 [&_p]:leading-5 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0'
+            ? 'col-start-2 max-w-full text-sm leading-6'
             : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
