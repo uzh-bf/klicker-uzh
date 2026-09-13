@@ -637,3 +637,31 @@ required from the user.
   shipping the schema before any ARM writer would add contract without
   measured payoff. Type-check caching and `check` path-scoping overlap #5924's
   `check.yml` edits and stay sequenced behind it.
+- 2026-09-13 B3 execution spec (validated against #5924's full diff): #5924
+  adds image-scan admission to the promotion controller — new per-image scan
+  jobs inside the stg workflows, `SCAN_ADMISSION_INVENTORY` keyed by
+  `workflowPath`, `collectScanAdmission` retrying scan runs and binding scan
+  receipts to resolved digests, plus `v3_sonarcloud.yml` in
+  `REQUIRED_CI_WORKFLOWS`. This deepens the same per-file seams B3 must
+  restructure, so B3 executes only after #5924 merges and must then cover:
+  (1) `WORKFLOW_PATH_PATTERN` and `STAGING_WORKFLOWS` become a single
+  target-based inventory (`v3_images-stg.yml` matrix, one entry per image;
+  matrix job names replace `build-arm`/`build-migrator-arm` identifiers);
+  (2) `validateStagingWorkflow`'s job-id matching, the migrator
+  `needs:`-ordering check, and `collectBuildEvidence`'s per-workflow run
+  enumeration are rewritten against the single workflow and its matrix runs;
+  (3) `SCAN_ADMISSION_INVENTORY` re-keys from workflow paths to image targets,
+  and scan admission consumes the one workflow's run; (4)
+  `deploy-stg-promote.yml`'s 21-name `workflow_run` watch list collapses to
+  the non-image workflows plus the new workflow name, eliminating per-image
+  controller wakeups; (5) `v3_build-fallback.yml` is deleted — the new
+  workflow owns a `needs`-based `build-images-status` job preserving the exact
+  required context name and `required-ci-evidence` artifact contract;
+  (6) `cancel-closed-pr-checks.yml` sweeper entries and
+  `ci-event-gates.test.cjs` collapse to the single new concurrency group;
+  (7) the changed-file selection from #5936 moves into the new workflow's
+  plan job with its merge-base resolution and validated-selection evidence.
+  Fail-closed semantics preserved: plan failure fails the status, empty
+  selection skips builds and passes with evidence, any selected build
+  failure/cancellation fails the status, and the promoter's complete
+  exact-SHA candidate matrix is unchanged.
