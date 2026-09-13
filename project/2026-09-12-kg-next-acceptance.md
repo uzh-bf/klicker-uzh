@@ -84,6 +84,8 @@ The published economics build served 35 nodes and 29 relationships with isStale=
 
 The reconciled ledger total after publication is USD2.82446340. This batch's own added spend is USD0.42161248, unchanged; the publication graphs and their graph reads are counted separately above. Zero holds, under the existing USD20 cap. No worker image was published and no production state was touched.
 
+One quota caveat remains. The synthetic knowledge base's quota settled 800 of its 2000 minor units across the four successful builds, and retains a 200-unit reservation from the build 96ef0d6f-5407-4e92-a5ac-04017c2351d7, which the Klicker workflow timed out and marked FAILED with costStatus NEEDS_HUMAN_REVIEW. No product path releases that reservation, and this batch deliberately did not patch fixture state to clear it, so the ledger is not fully settled. Resolving it needs a product decision about who releases a reservation for a build that timed out before the provider reported a cost.
+
 ## Remaining acceptance and order
 
 1. Define and implement an effective content evidence treatment, inspect paired generating requests, then run the bounded matched comparison. Do not infer effectiveness from the option name.
