@@ -229,6 +229,10 @@ async function findEquivalentPullRequestRun({
 
   const headSha = pull.head.sha
   const treeSha = merge.commit.tree.sha
+  // The current run is always the newest run for this head, and a run that is
+  // still executing is never successful. Excluding it is what lets the lookup
+  // reach the completed run this lifecycle event may actually reuse.
+  const currentRunId = Number(context.runId ?? 0)
   const getRuns = () =>
     listAll(
       (paging) =>
@@ -244,8 +248,10 @@ async function findEquivalentPullRequestRun({
     )
   const chooseLatest = (runs) =>
     runs
-      .filter((run) =>
-        run.pull_requests?.some((item) => item.number === pull.number)
+      .filter(
+        (run) =>
+          run.id !== currentRunId &&
+          run.pull_requests?.some((item) => item.number === pull.number)
       )
       .sort((a, b) => b.id - a.id)[0]
   const candidate = chooseLatest(await getRuns())
@@ -389,6 +395,8 @@ async function findEquivalentRun(options) {
     )
   const chooseLatest = (runs) =>
     runs
+      // This lookup runs on a push, so the current run is a push run and can
+      // never appear among these pull-request candidates.
       .filter((run) =>
         run.pull_requests?.some((item) => item.number === pull.number)
       )

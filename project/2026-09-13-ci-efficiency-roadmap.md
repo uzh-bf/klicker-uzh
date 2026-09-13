@@ -589,3 +589,186 @@ required from the user.
   transition; merge authority stays with the user.
 - Next action: receiving task reads this roadmap and the global handoff, refreshes
   `v3` and adjacent ownership, then resolves approval for the first source package.
+- 2026-09-13 AMD audit and queue relief: PR #5948 was merged as squash
+  `1431b9aca3`; exact-head activation proof is still pending a real
+  unchanged-head transition because the Actions queue was saturated. AMD
+  verification: every `build-amd` job across the stg and prd image workflows,
+  including release tags, is gated `if: ${{ false }}` and consumes no runner
+  slots today. Ruling recorded: AMD stays disabled; any re-enable is limited to
+  prd-tag release artifacts, never branch or PR builds.
+- 2026-09-13 slice B2 (staging image build cache): all 14 active ARM64 image
+  jobs across the 13 `v3_*-stg.yml` workflows on `v3` now build
+  same-repository pull requests from a shared BuildKit registry cache
+  (`<image>-arm:buildcache` in ghcr.io, `mode=max`) while push publications
+  stay uncached. Fork and other cross-repository pull requests keep the
+  uncached path, the push-gated login jobs admit same-repo PRs for cache
+  access only, and the native ARM64 jobs no longer install QEMU. A policy
+  test pins the cache contract; 30 tests pass across the required-build-status
+  and event-gate suites; Prettier and Biome report clean formatting. Delivered
+  on branch `rs/ci-image-build-consolidation`.
+- 2026-09-13 slice B3 sequencing decision: PR #5936 is already merged into the
+  branch base (the earlier open-draft note was stale), and PR #5971 is
+  MERGEABLE/BLOCKED-only-by-required-checks. Full image-workflow consolidation
+  must wait for PR #5924: that open PR directly rewrites
+  `stg-release-promoter.js`, `stg-release-promoter-fixtures.js`,
+  `stg-release-promoter.test.js`, `deploy-stg-promote.yml`, and
+  `v3_backend-docker-stg.yml` — the same seams slice B3 replaces. Starting B3
+  now would force a large conflicting rewrite of the promotion controller's
+  fail-closed validation. Queue evidence at 18:21Z: every Playwright run since
+  17:40Z remains queued, so both the #5948 unchanged-head activation proof and
+  #5971's first live cached builds are runner-gated, not code-gated. Next
+  action after #5924 merges: rebase, then execute B3 as one package (single
+  affected-image matrix workflow, needs-based `build-images-status`, promoter
+  and sweeper updates).
+- 2026-09-13 queue-gate verification and remaining-slice audit: PR #5971 is a
+  draft, so every `build-arm` job correctly reported `skipping` through the
+  #5948-era draft-deferral gate — the first live post-merge observation of that
+  contract, though the required `build-images-status` confirmation is itself
+  queued (run `34774514076`, observed queued at 18:24Z and again after a
+  bounded wait; a seconds-long metadata job cannot start, confirming the
+  organization concurrency cap is the gate, not per-job logic). #5924 remains
+  OPEN at `d673956b`, so the B3 blocker stands. Remaining (e) packages were
+  audited against live source: `playwright/timings.json` is architecture-blind
+  (version 1, one duration table, written only from hosted v3 push runs of
+  `test-playwright.yml`, consumed by both the hosted sharder and the
+  public-PR selector). A per-architecture timing family (schema v2,
+  producer-tagged feedback, architecture-matched consumption with explicit
+  fallback) is the next ready package once ARM-side measurement data exists —
+  shipping the schema before any ARM writer would add contract without
+  measured payoff. Type-check caching and `check` path-scoping overlap #5924's
+  `check.yml` edits and stay sequenced behind it.
+- 2026-09-13 B3 execution spec (validated against #5924's full diff): #5924
+  adds image-scan admission to the promotion controller — new per-image scan
+  jobs inside the stg workflows, `SCAN_ADMISSION_INVENTORY` keyed by
+  `workflowPath`, `collectScanAdmission` retrying scan runs and binding scan
+  receipts to resolved digests, plus `v3_sonarcloud.yml` in
+  `REQUIRED_CI_WORKFLOWS`. This deepens the same per-file seams B3 must
+  restructure, so B3 executes only after #5924 merges and must then cover:
+  (1) `WORKFLOW_PATH_PATTERN` and `STAGING_WORKFLOWS` become a single
+  target-based inventory (`v3_images-stg.yml` matrix, one entry per image;
+  matrix job names replace `build-arm`/`build-migrator-arm` identifiers);
+  (2) `validateStagingWorkflow`'s job-id matching, the migrator
+  `needs:`-ordering check, and `collectBuildEvidence`'s per-workflow run
+  enumeration are rewritten against the single workflow and its matrix runs;
+  (3) `SCAN_ADMISSION_INVENTORY` re-keys from workflow paths to image targets,
+  and scan admission consumes the one workflow's run; (4)
+  `deploy-stg-promote.yml`'s 21-name `workflow_run` watch list collapses to
+  the non-image workflows plus the new workflow name, eliminating per-image
+  controller wakeups; (5) `v3_build-fallback.yml` is deleted — the new
+  workflow owns a `needs`-based `build-images-status` job preserving the exact
+  required context name and `required-ci-evidence` artifact contract;
+  (6) `cancel-closed-pr-checks.yml` sweeper entries and
+  `ci-event-gates.test.cjs` collapse to the single new concurrency group;
+  (7) the changed-file selection from #5936 moves into the new workflow's
+  plan job with its merge-base resolution and validated-selection evidence.
+  Fail-closed semantics preserved: plan failure fails the status, empty
+  selection skips builds and passes with evidence, any selected build
+  failure/cancellation fails the status, and the promoter's complete
+  exact-SHA candidate matrix is unchanged.
+- 2026-09-13 timing-architecture provenance slice (branch
+  `rs/playwright-timing-architecture`): PR #5971 merged as `136a867280`,
+  verified live on `v3` (cache contract in the ARM jobs, QEMU only in the
+  disabled AMD jobs). The hazard this slice closes: `playwright/timings.json`
+  holds the weights regenerated from ARM64 run `34692527245` in PR #5921,
+  which replaced the earlier x86-measured weights because they no longer
+  reflected ARM64 reality, while the only automated writer runs from hosted
+  x64 `v3` pushes — its next timing PR would have silently restored the
+  mismatch. The updater now requires `--architecture`, records it in the
+  table, and refuses to replace a table calibrated for another architecture
+  (no write, explicit reason, no timing PR); an untagged table is adopted by
+  the producing architecture. The workflow derives the architecture from the
+  run's recorded route (`hosted` -> `x64`, `public-pr` -> `arm64`) and fails
+  closed on an unknown route. Evidence: 14/14 python timing tests (3 new:
+  architecture recorded, cross-architecture replacement refused with the file
+  byte-identical, untagged table adopted), 8/8 `get-shard-files` tests against
+  the real tagged table, 23/23 selector and plan-metadata tests, 9/9
+  event-gate tests, Prettier clean. Follow-up still open: per-architecture
+  timing families with route-matched consumption, which needs measured
+  x64 data and a human decision before either route changes its balance.
+- 2026-09-13 (a) activation audit at 19:50Z, PR #5948 post-merge:
+  **lifecycle guard verified live.** Five pull-request runs on merged or
+  closed pull requests report `test-playwright-execution` as `skipped` while
+  `cancel-closed-pr` succeeds — external-attested activation of the open-state
+  guard rather than a repository claim. The work is real, but incomplete.
+  **Reuse marker not yet observed: no run has published a non-empty
+  `duplicate_run_id`.** Of 40+ Playwright runs since the merge, each one with
+  run metadata shows `duplicate_run_id=`. The reuse step only executes for
+  push-on-non-v3, `ready_for_review`, `edited`, or `reopened` events, and in
+  the one `ready_for_review` case available (PR #5970 at 18:32:13Z on head
+  `29262f4e`) the same-head predecessor runs were cancelled before completing
+  a full proof, so the conservatively correct outcome was a real build.
+  Reuse is deployed and inert rather than proven by a positive case.
+  **AMENDMENT — corroborated by the merge guard.** Merge of #5971 at 19:36:47Z
+  produced run `34778229849` on the unchanged head `c2511ee2` with
+  `test-playwright-execution` `skipped`; the concurrent run `34778195485` was
+  cancelled by supersession. Together these show the guard prevents both a
+  post-merge revalidation launch and a duplicate execution for one head.
+- 2026-09-13 throughput attribution at 19:55Z: the eight-shard wave is not the
+  pool's constraint. Run `34776822028` placed build and all eight shards on
+  `public-pr-arm64-01` through `-08` and completed every execution job
+  successfully; only the required `test-playwright-status` reporter remained
+  queued, because it runs on GitHub-hosted runners. Repository-wide state at
+  that moment: 13 runs in progress, 299 queued, 0 waiting. The hosted
+  concurrency cap, not ARM capacity, now dominates the observed queue. Any
+  further pool-side optimization cannot shorten the critical path while the
+  reporter waits behind that cap. Moving that trusted required context to the
+  persistent public pool is not available: the runner group admits exactly one
+  public workflow, and the roadmap keeps credential-adjacent reporting
+  hosted. This strengthens the case for the org Team upgrade (20 -> 60 hosted
+  concurrent jobs) as the single remaining lever outside repository source.
+- 2026-09-13 (d) cache-activation audit at 20:10Z: the merge is verified in
+  source (`git show origin/v3:.github/workflows/v3_auth-stg.yml` carries the
+  `no-cache: ${{ github.event_name == 'push' }}` / `cache-from` / `cache-to`
+  triple and QEMU appears only in the disabled AMD jobs), but the cache has
+  not yet been exercised. GHCR reports no `-arm:buildcache` tag on any of the
+  four largest repositories (`auth-arm`, `chat-arm`, `backend-docker-arm`,
+  `frontend-manage-arm`: absent across 100 versions each), so no pull-request
+  build has written the registry cache. Every image workflow run created after
+  the merge is a draft deferral (`build-arm` `skipped`) or a push publication
+  into the saturated hosted queue (`v3-ai` push runs `34779097222` and
+  siblings remain `queued`); the last pull-request builds that actually
+  executed (`34774712103` and siblings, 18:28Z) predate the merge. The
+  contract is deployed and inert, awaiting the first same-repository
+  non-draft pull request whose diff touches image inputs. `buildcache` is
+  written through the ordinary ghcr.io push-token path rather than the
+  Actions cache service, so the ~10 GiB quota does not apply and the
+  `mode=max` export is visible as a distinct tag in the repository's version
+  list once it happens.
+- 2026-09-13 Playwright reuse defect found and fixed (branch
+  `rs/ci-metadata-edit-guard`): the merged equivalent-run contract could never
+  fire. `findEquivalentPullRequestRun` selected its candidate as the newest
+  `pull_request` run for the head, filtered only by pull-request number. The
+  event validating reuse is itself a run of the same workflow on the same
+  head, so it was always the newest entry, and a still-executing run is never
+  both `completed` and `successful`. Every lifecycle event therefore fell
+  through to full validation. Fix: exclude `context.runId` from the
+  pull-request candidate set, the same established pattern
+  `required-build-status.cjs` already uses. Two regression tests pin the
+  contract — a completed run is reused while its own event run is in flight,
+  and the current run can never qualify itself as reusable evidence. A probe
+  confirmed fail-closed behaviour is intact: a cancelled or failed earlier run
+  is still rejected and a newer completed run still wins. Evidence: 144/144
+  tests pass across the six `check.yml` gate files. Live corroboration: PR
+  #5922 fired a third full wave at 21:21:57Z on unchanged head `ab5164bc`
+  from a body edit, with the same merge tree as its 16:58 predecessor that had
+  already succeeded on the same route; that pair also differed in control
+  revision, which reuse legitimately rejects, so the live case corroborates
+  rather than demonstrates the bug. Fleet measurement across the 40 newest
+  pull requests, one commit each: 430 image suites collapse to 284
+  `(path, head)` groups, with 146 extra runs, 107 of them non-skipped.
+  Expectation-setting: reuse now requires the same control revision, base,
+  head and merge tree, so it fires in quiet windows rather than on every
+  lifecycle event; qualify it with a real unchanged-head transition after
+  merge instead of promising an immediate win.
+- 2026-09-13 required-gate false-failure attribution: the 35-minute
+  `build-images-status` failures were not a live defect. Run `34770188746`
+  (PR #5922, `action: edited`) failed with
+  `v3_analytics-stg.yml (no run for this event, branch and commit)` plus a
+  queued sibling; its downloaded evidence artifact reports
+  `changed files: two-endpoint comparison (conservative)`, an old
+  conservative fallback that exists only in base `f00e272a`. Both
+  `origin/v3` and `origin/v3-ai` now carry the merge-base version from
+  #5936 (`dfadccd1db`, an ancestor of `origin/v3`), so that cause is already
+  fixed. The remaining genuine cause is plain hosted-queue saturation: run
+  `34773533734` (PR #5924) failed on a single queued sibling after 60 polls x
+  30s. That is roadmap item B3 and stays blocked until #5924 merges.
