@@ -185,6 +185,7 @@ export function renderProviderLocalConfiguration(credentials, input) {
         grpc_port: ports.docProcessing.hatchetGrpc,
       },
       env: {
+        PYTHONDONTWRITEBYTECODE: '1',
         UVICORN_HOST: '127.0.0.1',
         UVICORN_PORT: String(ports.docProcessing.api),
         DOC_PROCESSING_API_KEY: credentials.documentProcessing,
