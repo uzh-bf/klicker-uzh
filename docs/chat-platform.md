@@ -922,7 +922,10 @@ Excess traffic receives 429 with Retry-After and no server queue. Slots remain
 occupied until the underlying read settles. Each native browsing query has a
 hard execution budget of at most 1,000ms; overview and neighbors use two queries.
 These are database execution budgets, not end-to-end latency guarantees.
-Substring search still scans in the worst case. Limits multiply across replicas;
+Bounded samples follow database scan order; truncated results do not promise a
+stable global ranking or exhaustive membership. Sorting all candidates before
+limiting would increase work on large graphs. Substring search still scans in
+the worst case. Limits multiply across replicas;
 large deployments may need indexed search and distributed admission control.
 
 Graph-assisted document search uses the native FalkorDB reader in

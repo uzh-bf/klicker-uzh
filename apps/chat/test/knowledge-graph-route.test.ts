@@ -462,6 +462,8 @@ describe('participant knowledge graph route', () => {
   it.each([
     'operation=neighbors',
     'operation=neighbors&nodeId=12',
+    `operation=neighbors&nodeId=9223372036854775808&kbId=${kbId}&buildId=${publication.buildId}`,
+    `operation=neighbors&nodeId=99999999999999999999&kbId=${kbId}&buildId=${publication.buildId}`,
     `operation=neighbors&nodeId=${'1'.repeat(21)}&kbId=${kbId}&buildId=${publication.buildId}`,
     'operation=neighbors&nodeId=',
     'operation=neighbors&nodeId=-1',

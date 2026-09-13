@@ -216,7 +216,10 @@ function syntheticGraphResponse(labels: string[]) {
  * carries its own query, which identifies the response that rendered without
  * depending on product or seed content.
  */
-function createKnowledgeGraphRoute(overviewLabels: string[]) {
+function createKnowledgeGraphRoute(
+  overviewLabels: string[],
+  options: { neighborsUnavailable?: boolean } = {}
+) {
   const releases = new Map<string, () => void>()
   const queries: string[] = []
   let inFlight = 0
@@ -247,6 +250,16 @@ function createKnowledgeGraphRoute(overviewLabels: string[]) {
       return
     }
     if (operation !== 'search') {
+      if (options.neighborsUnavailable) {
+        // A 409 without a known code reaches the viewer as an unavailable
+        // response, which is the state its check-again control recovers from.
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({}),
+        })
+        return
+      }
       // Selecting a concept asks for its neighborhood; an empty one keeps the
       // canvas on the selected response.
       await fulfil([])
@@ -509,6 +522,11 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     // 'Cov' is still held, so any option here could only come from the
     // superseded response.
     await expect(page.getByTestId('knowledge-graph-suggestion')).toHaveCount(0)
+    // No option is rendered, so the combobox must not point at a listbox.
+    await expect(search).not.toHaveAttribute(
+      'aria-controls',
+      'knowledge-graph-suggestions'
+    )
 
     graph.release('Cov')
     await expect(
@@ -517,6 +535,13 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
         .filter({ hasText: 'Suggestion:Cov' })
     ).toBeVisible()
     await expect(page.getByTestId('knowledge-graph-suggestion')).toHaveCount(1)
+    // The combobox points at the rendered listbox, and that target exists.
+    const controls = await search.getAttribute('aria-controls')
+    expect(controls).toBe('knowledge-graph-suggestions')
+    await expect(page.locator(`#${controls}`)).toHaveAttribute(
+      'role',
+      'listbox'
+    )
     expect(graph.queries).toEqual(['Co', 'Cov'])
   })
 
@@ -668,6 +693,37 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     await expect(
       page.getByTestId('knowledge-graph-back-to-overview')
     ).toBeVisible()
+  })
+
+  test('checking again after an unavailable neighborhood falls back to the overview', async ({
+    page,
+  }) => {
+    const graph = createKnowledgeGraphRoute(overviewLabels, {
+      neighborsUnavailable: true,
+    })
+    const search = await openSuggestionGraph(page, graph)
+
+    await search.fill('Retry')
+    await graph.waitForQuery('Retry')
+    graph.release('Retry')
+    await page
+      .getByTestId('knowledge-graph-suggestion')
+      .filter({ hasText: 'Suggestion:Retry' })
+      .click()
+
+    // The neighborhood request for the selected concept is unavailable, so the
+    // viewer resets to the recovery state with an empty canvas.
+    const checkAgain = page.getByTestId('knowledge-graph-retry')
+    await expect(checkAgain).toBeVisible()
+    await expect(page.getByTestId('knowledge-graph-loaded-node')).toHaveCount(0)
+
+    // The retry has no kb/build to scope a neighborhood request, so it loads
+    // the overview and the canvas becomes usable again.
+    await checkAgain.click()
+    await expect(page.getByTestId('knowledge-graph-loaded-node')).toHaveCount(
+      overviewLabels.length
+    )
+    await expect(page.getByTestId('knowledge-graph-retry')).toHaveCount(0)
   })
 
   test.describe('on a touch screen', () => {

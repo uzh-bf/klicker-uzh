@@ -943,6 +943,12 @@ export function KnowledgeGraphViewer({
     }
 
     if (failedRequest.input !== null) {
+      if (neighborOrigin(stateRef.current) === undefined) {
+        // The unavailable response cleared kb/build, so this retry has no
+        // neighborhood to scope and reloads the overview instead.
+        void loadOverview()
+        return
+      }
       expandNodeRef.current(failedRequest.input)
     }
   }
@@ -1047,7 +1053,9 @@ export function KnowledgeGraphViewer({
                 role={searchSuggestions ? 'combobox' : undefined}
                 aria-expanded={searchSuggestions ? suggestionsOpen : undefined}
                 aria-controls={
-                  searchSuggestions ? 'knowledge-graph-suggestions' : undefined
+                  suggestionsOpen && suggestionOptions.length > 0
+                    ? 'knowledge-graph-suggestions'
+                    : undefined
                 }
                 aria-activedescendant={activeSuggestionId}
                 aria-autocomplete={searchSuggestions ? 'list' : undefined}

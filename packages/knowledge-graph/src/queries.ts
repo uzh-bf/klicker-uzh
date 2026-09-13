@@ -34,7 +34,10 @@ export class KnowledgeGraphInputError extends Error {
 }
 
 function validateNodeId(nodeId: string): void {
-  if (!/^\d{1,20}$/.test(nodeId)) {
+  if (
+    !/^\d{1,19}$/.test(nodeId) ||
+    BigInt(nodeId) > BigInt('9223372036854775807')
+  ) {
     throw new KnowledgeGraphInputError('Node ID must be a decimal integer')
   }
 }

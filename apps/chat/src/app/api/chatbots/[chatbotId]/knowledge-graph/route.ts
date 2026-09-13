@@ -14,7 +14,12 @@ export const runtime = 'nodejs'
 
 const operationSchema = z.enum(['overview', 'search', 'neighbors'])
 const searchQuerySchema = z.string().trim().min(1).max(100)
-const nodeIdSchema = z.string().regex(/^\d{1,20}$/)
+const nodeIdSchema = z
+  .string()
+  .refine(
+    (value) =>
+      /^\d{1,19}$/.test(value) && BigInt(value) <= BigInt('9223372036854775807')
+  )
 const admission = createKnowledgeGraphAdmission()
 
 function invalidRequestResponse() {

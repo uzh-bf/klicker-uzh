@@ -592,7 +592,7 @@ not paid completion proof. Continuation source commits: b9db0826f and eae42f4a3.
 
 ### 2026-09-13 dark-rollout readiness continuation
 
-Executable batch approved by user: prepare this existing PR for merge and deployment with GraphRAG behind GrowthBook. No merge, deployment, hosted flag activation, new corpus export or paid evaluation is authorized. Target integration is in progress at origin/v3-ai8207c964016b3f1c735c678e6563bfe96d604f5d, required for citation/scope fixes. Full-path review gates remain.
+Executable batch approved by user: prepare this existing PR for merge and deployment with GraphRAG behind GrowthBook. No merge, deployment, hosted flag activation, new corpus export or paid evaluation is authorized. Target integration completed at origin/v3-ai 8207c964016b3f1c735c678e6563bfe96d604f5d in bc6dd36f7a, required for citation/scope fixes. Full-path review gates remain.
 
 Compose the existing lecturer-owned chatbot policy with a default-off `chatbot-graphrag` GrowthBook capability. The lecturer retrieval switch is hidden until enabled; effective runtime retrieval also requires it. Evaluate against the chatbot owner's id, role, Catalyst and beta preference, never a participant's identity or approving administrator's cohort. Reuse the generic flag client's30-second refresh and120-second maximum payload age; do not promise an immediate global kill switch. Missing/unusable payload denies; a newly fetched off applies at the next check. Revalidate owner/cohort at tool checkpoints. Unchanged enabled policies may be saved when flag-off; new false-to-true transitions and publication enabling are denied. Explicit disable and unrelated edits remain allowed.
 
@@ -611,3 +611,41 @@ Terminal is a reviewed, verified dark-rollout source candidate on the existing d
 Exact continuation paths and obligations: main flag slice owns `packages/feature-flags/src/contracts.ts`, `apps/chat/src/lib/server/featureFlags.ts`, `apps/chat/src/services/graphQueryScope.ts`, `packages/graphql/src/services/chatbots.ts`, `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx`. Extend `apps/chat/test/graph-query-scope.test.ts`, `packages/graphql/test/chatbotRevisions.test.ts`; add `apps/chat/test/graph-feature-flag.test.ts` for owner attributes. Shared flag refresh/expiry tests: none added, reuse `packages/feature-flags/test/node.test.ts` because generic semantics unchanged. Diagnostics: extend existing route function; add `apps/chat/test/tool-diagnostics.test.ts` using exported helper if necessary. Identity: executor via trusted generic continuity owns exactly the two paths listed above, after target merge application; no overlapping integration changes touch those paths, so its uncommitted edits may proceed before the integration commit. Target integration commit stages only pre-existing merge index, never worker changes. Runtime source verification waits for integrated state.
 
 Map slice main owns `apps/chat/src/lib/server/knowledgeGraph.ts`, existing route/state tests `apps/chat/test/knowledge-graph-route.test.ts`, `apps/chat/test/knowledge-graph-state.test.ts`, shared viewer error clearing if existing behavior requires change (`packages/shared-components/src/knowledgeGraph/KnowledgeGraphViewer.tsx`). Extend route tests, reuse state tests if clearing already covered. Schema main owns `packages/prisma/src/prisma/schema/chat.prisma`, analytics mirror `apps/analytics/prisma/schema/chat.prisma`, one generated migration directory; extend `packages/graphql/test/chatbotRevisions.test.ts` for default/revision behavior. Validate migration reset with synthetic live/draft records and unchanged unrelated JSON fields inside a rollback-only disposable transaction. Chart main owns `deploy/charts/klicker-uzh-v3/templates/cm-chat.yaml`, rendering checks only (no new test). Documentation paths: existing project plan, `docs/chat-platform.md`, `docs/feature-flags.md`, `docs/adr/0009-kb-owns-two-derived-projections.md`; generated screenshot/review artifacts use existing project/_local root. Browser obligations extend `playwright/tests/Y-chat-knowledge-graph.spec.ts` as needed for flag-off/on and retained independent map control. All other paths remain unchanged except upstream integration or generated outputs.
+
+
+Dark-rollout source checkpoint: commits 65f784fd9a and f0a948024d are published to
+[PR5912](https://github.com/uzh-bf/klicker-uzh/pull/5912). Both independent slice
+reviews pass after the ConfigMap correction; both simplification passes are
+complete. Types40/40, lint7/7, pre-push build26/26, focused owner/scope/revision,
+fusion/diagnostic tests, synthetic migration rollback and browser flag-off/on
+checks pass. Current full package has88changed paths; final review and hosted CI
+remain pending. No deployment or hosted flag activation occurred.
+
+Existing OCR feedback is included in the same approved readiness package. Fix
+unavailable-neighbor retry and conditional listbox ARIA references in the viewer
+with a focused host-browser regression (executor owns viewer and existing spec).
+Main bounds node IDs to signed64-bit at HTTP and query construction, extending
+existing API/query tests;14query and39route tests pass. Document bounded sample
+ordering. Preserve the documented1000ms browsing ceiling and avoid a global
+candidate sort. Style-only refactors remain advisory. Correction source paths
+are the existing viewer/spec, queries/query test, graph route/route test and
+chat-platform documentation; no new file/dependency or authorization seam.
+The final review includes these corrections after their verification/commit.
+
+Real-content staging remains a subsequent controlled step: verify Chat graph
+credentials and fixed read permissions, actual document-service scope/citations,
+publication replacement and revocation, then use a fresh multi-course set with
+the existing evaluation framework. The exposed Finance holdout established no
+measured uplift and must not become tuning data. The authenticated local turn
+verified11 persisted passages; a separate signed probe checked8 against corpus
+bytes. Keep these distinct and do not claim11 independent byte comparisons.
+
+
+Correction verification: host Chromium regressions2/2 pass after canonical local
+runtime stop/start with the existing injection. The retry actually restores the
+overview; combobox references resolve only while the listbox exists. No visible
+layout or wording changed, so earlier screenshots remain applicable. The exact
+runtime is retained for the user's manual tests; no data deletion occurred.
+Hosted checks and gitleaks pass at f0a948024d, but OCR run34751629777 failed before
+review because `/usr/local/bin/ocr` is missing. Image/browser CI remains running.
+Source preparation cannot be called merge-ready until required reviews finish.
