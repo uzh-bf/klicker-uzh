@@ -20,7 +20,8 @@
     "redis_cache",
     "mailhog",
     "hatchet",
-    "litellm"
+    "litellm",
+    "oidc"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "waitFor": "postCreateCommand",
