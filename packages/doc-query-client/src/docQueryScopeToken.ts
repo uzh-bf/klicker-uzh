@@ -5,8 +5,8 @@ const DOC_QUERY_SCOPE_TOKEN_ALGORITHM = 'ES256'
 const DOC_QUERY_SCOPE_TOKEN_TTL_SECONDS = 5 * 60
 
 export class DocQueryScopeTokenError extends Error {
-  constructor(message: string) {
-    super(message)
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
     this.name = 'DocQueryScopeTokenError'
   }
 }
@@ -84,6 +84,8 @@ export async function signDocQueryScopeToken({
     if (error instanceof DocQueryScopeTokenError) {
       throw error
     }
-    throw new DocQueryScopeTokenError('Scope token signing failed')
+    throw new DocQueryScopeTokenError('Scope token signing failed', {
+      cause: error,
+    })
   }
 }
