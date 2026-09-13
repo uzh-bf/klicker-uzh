@@ -72,8 +72,13 @@ test.describe('Course chatbot drawer', () => {
       )
       .toBe(true)
 
-    const firstControl = page.getByTestId('course-chatbot-selector')
     const lastControl = page.getByTestId('course-chatbot-frame')
+    // Once the panel is wide enough it renders keyboard-operable resize handles
+    // ahead of the chatbot selector, so the dialog's first focusable control is
+    // the leading resize handle. Wait for the handles so both wrap assertions
+    // target the real ends of the dialog's tab order.
+    const firstControl = dialog.locator('[role="separator"]').first()
+    await expect(firstControl).toBeVisible()
 
     await firstControl.focus()
     await page.keyboard.press('Shift+Tab')
