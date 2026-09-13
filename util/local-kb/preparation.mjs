@@ -42,12 +42,16 @@ async function absent(path) {
 }
 
 function revisionAt(checkout, args) {
-  return execFileSync('git', ['-C', checkout, ...args], {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-    timeout: 5000,
-    env: { PATH: process.env.PATH, GIT_OPTIONAL_LOCKS: '0' },
-  }).trim()
+  return execFileSync(
+    'git',
+    ['-c', 'core.fsmonitor=false', '-C', checkout, ...args],
+    {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5000,
+      env: { PATH: process.env.PATH, GIT_OPTIONAL_LOCKS: '0' },
+    }
+  ).trim()
 }
 
 function managedReplacementBytes(config, inputs) {

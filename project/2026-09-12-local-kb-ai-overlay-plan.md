@@ -136,6 +136,19 @@ gitleaks passed before the explicitly recorded hook bypass. Full app checks
 and integrated final review remain pending. Simplifier recommended one shared
 managed rendering function, accepted. Correctness review is in progress.
 
+Correction a78d226785 passes 77 tests. Slice review found no implementation
+defect. Claude final review completed on the integrated range with four
+recoverable findings. Main verification confirms the ingestion Compose naming
+matches the pinned provider's `compose_project` implementation; moving it into
+a separate contract constant would not enforce future provider compatibility.
+The suggested repeated-continuation consistency issue does not apply: an
+existing continuation intent always rejects re-entry. Accepted the fsmonitor
+argument alignment. Values-free preflight found the retained state root and
+scraping directory at 0755; tighten those exact owned directories to 0700
+before execution, as documented. Candidate source and exact legacy managed
+profile passed the real read-only verifier. Full runtime acceptance remains
+pending; no PDF or model call has occurred.
+
 The user approved implementing, reviewing and executing a bounded
 `continue-setup` command on retained attempt C, followed by the original
 acceptance journey. The implementation branch is `rs/local-kb-setup-recovery`
