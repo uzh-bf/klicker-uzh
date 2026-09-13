@@ -4,12 +4,20 @@ import { loginLecturer } from '../util/workflow.js'
 import {
   CHATBOT_ID,
   chatUrl,
+  ensureChatbotSeeded,
   getEnrolledParticipantId,
   seedThread,
   setDisclaimerState,
   setParticipantToken,
   testImageUpload,
 } from '../util/chat.js'
+
+// The chatbot fixture is created by whichever chat spec runs first in a shard,
+// so this file cannot rely on another spec having seeded it. The upsert is
+// idempotent, so seeding it here as well keeps the file self-sufficient.
+test.beforeAll(async () => {
+  await ensureChatbotSeeded()
+})
 
 // Opt in after publishing the synthetic native graph with seed-graph-e2e.mjs.
 // The host launcher must preserve that disposable database between setup and test.
