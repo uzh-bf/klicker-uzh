@@ -130,6 +130,7 @@
       "specs": [
         "A-login.spec.ts",
         "Y-chat-lti-access.spec.ts",
+        "Y-chat-knowledge-graph.spec.ts",
         "Y-chat.spec.ts"
       ]
     },

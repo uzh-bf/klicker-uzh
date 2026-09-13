@@ -11,6 +11,7 @@ export const FEATURE_FLAG_DEFAULTS = {
   // stay live is a gap, not a finer control.
   'ai-beta': false,
   'learning-analytics': false,
+  'chatbot-graphrag': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

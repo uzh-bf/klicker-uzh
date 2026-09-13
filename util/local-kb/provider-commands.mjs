@@ -156,7 +156,7 @@ export function providerCommands(config) {
       'scripts/local_launcher.py',
       ...args,
     ],
-    env: { PYTHON_DOTENV_DISABLED: '1' },
+    env: { PYTHON_DOTENV_DISABLED: '1', PYTHONDONTWRITEBYTECODE: '1' },
   })
   return boundCommands({
     identity,

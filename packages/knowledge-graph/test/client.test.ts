@@ -18,6 +18,7 @@ import {
   closeKnowledgeGraphClient,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
+  readKnowledgeGraphSearchHints,
   searchKnowledgeGraph,
 } from '../src/client.js'
 import type { PublishedKnowledgeGraph } from '../src/publication.js'
@@ -86,7 +87,32 @@ describe('knowledge graph client', () => {
     expect(sdk.selectGraph).toHaveBeenCalledWith(context.graphName)
   })
 
-  it('uses roQuery with parameters and the configured timeout only', async () => {
+  it('retrieves related concept hints with read-only traversal and short timeouts', async () => {
+    sdk.roQuery
+      .mockResolvedValueOnce({ data: [exampleLectureNodeRows[0]] })
+      .mockResolvedValueOnce({ data: [exampleLectureNodeRows[1]] })
+    expect(
+      await readKnowledgeGraphSearchHints(context, 'Explain the example method')
+    ).toEqual(['Example metric'])
+    expect(sdk.roQuery).toHaveBeenCalledTimes(2)
+    expect(sdk.roQuery.mock.calls[1]?.[1]).toMatchObject({
+      params: { seedIds: ['12'] },
+      TIMEOUT: 500,
+    })
+    expect(sdk.query).not.toHaveBeenCalled()
+  })
+
+  it('never reads stale graphs for retrieval hints', async () => {
+    expect(
+      await readKnowledgeGraphSearchHints(
+        { ...context, isStale: true },
+        'example'
+      )
+    ).toEqual([])
+    expect(sdk.roQuery).not.toHaveBeenCalled()
+  })
+
+  it('uses roQuery with parameters and a hard browsing timeout cap', async () => {
     sdk.roQuery
       .mockResolvedValueOnce({ data: exampleLectureNodeRows })
       .mockResolvedValueOnce({ data: exampleLectureEdgeRows })
@@ -96,7 +122,7 @@ describe('knowledge graph client', () => {
     expect(sdk.roQuery).toHaveBeenCalledTimes(2)
     for (const [cypher, options] of sdk.roQuery.mock.calls) {
       expect(cypher).toEqual(expect.any(String))
-      expect(options).toMatchObject({ TIMEOUT: 4321 })
+      expect(options).toMatchObject({ TIMEOUT: 1000 })
     }
     expect(sdk.roQuery.mock.calls[1]?.[1]).toMatchObject({
       params: { nodeIds: ['12', '27', '31', '44', '58'] },
@@ -170,7 +196,7 @@ describe('knowledge graph client', () => {
     expect(sdk.roQuery.mock.calls[0]?.[0]).not.toContain(userText)
     expect(sdk.roQuery.mock.calls[0]?.[1]).toEqual({
       params: { searchText: userText },
-      TIMEOUT: 4321,
+      TIMEOUT: 1000,
     })
     expect(result.edges).toEqual([])
   })
