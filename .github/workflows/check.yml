@@ -35,9 +35,11 @@ jobs:
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: >-
-          bash util/check-git-identity.sh range "${PR_BASE_SHA}..${PR_HEAD_SHA}"
-          --published-glob 'refs/remotes/origin/v3*'
+        # Bound the range at the merge base so commits that arrived through a
+        # v3 sync merge are not re-scanned; range mode itself stays strict.
+        run: |
+          base=$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")
+          bash util/check-git-identity.sh range "${base}..${PR_HEAD_SHA}" --published-glob 'refs/remotes/origin/v3*'
 
       - name: Test Git identity guard
         run: node --test ./util/check-git-identity.test.mjs

@@ -13,7 +13,13 @@ function readWorkflow(name) {
 }
 
 // Evaluate the actual checked-in predicate against synthetic GitHub contexts.
-function evaluateGate(expression, github, needs = {}, cancelled = false) {
+function evaluateGate(
+  expression,
+  github,
+  needs = {},
+  cancelled = false,
+  vars = {}
+) {
   const normalized = expression.replace(
     /needs\.([a-z][a-z0-9-]*)/g,
     'needs["$1"]'
@@ -26,12 +32,14 @@ function evaluateGate(expression, github, needs = {}, cancelled = false) {
     'needs',
     'always',
     'cancelled',
+    'vars',
     `return (${normalized})`
   )(
     github,
     needs,
     () => true,
-    () => cancelled
+    () => cancelled,
+    vars
   )
 }
 
@@ -87,6 +95,54 @@ test('trusted review policy admits only lifecycle events and exact PR commands',
   }
 })
 
+test('staging promotion admits selected-source pushes before allocating a runner', () => {
+  const workflow = readWorkflow('deploy-stg-promote.yml')
+  const gate = workflow.jobs.promote.if
+
+  for (const selectedSource of ['v3', 'v3-ai', 'v3-audit']) {
+    for (const [event, conclusion, headBranch, expected] of [
+      ['push', 'success', selectedSource, true],
+      ['push', 'success', 'v3-unselected', false],
+      ['pull_request', 'success', selectedSource, false],
+      ['push', 'failure', selectedSource, false],
+      ['push', 'cancelled', selectedSource, false],
+      ['push', 'skipped', selectedSource, false],
+    ]) {
+      assert.equal(
+        evaluateGate(
+          gate,
+          {
+            event_name: 'workflow_run',
+            event: {
+              workflow_run: { event, conclusion, head_branch: headBranch },
+            },
+          },
+          {},
+          false,
+          { STG_SOURCE_BRANCH: selectedSource }
+        ),
+        expected
+      )
+    }
+  }
+
+  assert.equal(
+    evaluateGate(gate, {
+      event_name: 'workflow_run',
+      event: {
+        workflow_run: {
+          event: 'push',
+          conclusion: 'success',
+          head_branch: 'v3',
+        },
+      },
+    }),
+    false
+  )
+  assert.equal(evaluateGate(gate, { event_name: 'workflow_dispatch' }), true)
+  assert.deepEqual(workflow.on.workflow_run.branches, ['v3', 'v3*'])
+})
+
 test('terminal reporters run unconditionally so a skip cannot read as acceptable', () => {
   const graphql = readWorkflow('test-graphql.yml')
   const playwright = readWorkflow('test-playwright.yml')
@@ -117,15 +173,84 @@ test('terminal reporters run unconditionally so a skip cannot read as acceptable
   )
 })
 
+// Lifecycle events on a merged or closed pull request must not launch new
+// Playwright execution or reporting: the gate no longer exists, and the audit
+// observed a full post-merge run started by such an event. The open-state guard
+// subsumes the closed action, so the cancel job stays its only handler.
+test('playwright execution and reporting run only for open pull requests', () => {
+  const playwright = readWorkflow('test-playwright.yml')
+  const executionGate = playwright.jobs['test-playwright-execution'].if
+  const statusGate = playwright.jobs['test-playwright-status'].if
+
+  assert.equal(
+    readWorkflow('test-playwright.yml').jobs['cancel-closed-pr'].if,
+    "github.event_name == 'pull_request' && github.event.action == 'closed'"
+  )
+
+  const open = (action) => ({
+    event_name: 'pull_request',
+    event: {
+      action,
+      pull_request: { state: 'open', number: 1 },
+    },
+  })
+  const closedState = (action) => ({
+    event_name: 'pull_request',
+    event: {
+      action,
+      pull_request: { state: 'closed', number: 1 },
+    },
+  })
+
+  for (const action of [
+    'opened',
+    'synchronize',
+    'reopened',
+    'ready_for_review',
+    'edited',
+    'converted_to_draft',
+  ]) {
+    assert.equal(evaluateGate(executionGate, open(action)), true, action)
+    assert.equal(evaluateGate(statusGate, open(action)), true, action)
+    assert.equal(
+      evaluateGate(executionGate, closedState(action)),
+      false,
+      action
+    )
+    assert.equal(evaluateGate(statusGate, closedState(action)), false, action)
+  }
+  assert.equal(evaluateGate(executionGate, { event_name: 'push' }), true)
+  assert.equal(evaluateGate(statusGate, { event_name: 'push' }), true)
+})
+
+// The envelope emits a duplicate run id only for a fully validated equivalent
+// pull-request run; push validation must always execute independently. The
+// reporter therefore has to tie reuse acceptance to the event family instead of
+// rejecting every duplicate.
+test('the playwright reporter reuses only pull-request validation', () => {
+  const playwright = readWorkflow('test-playwright.yml')
+  const report = playwright.jobs['test-playwright-status'].steps.find(
+    (step) => step.name === 'Check result'
+  ).run
+
+  assert.match(
+    report,
+    /\[ -n "\$\{DUPLICATE_RUN_ID:-\}" \] && \[ "\$IS_PULL_REQUEST" != 'true' \]/
+  )
+  assert.match(report, /Push validation cannot be reused/)
+  assert.doesNotMatch(report, /Playwright validation cannot be reused/)
+})
+
 // Marking a draft PR ready fires ready_for_review on the unchanged head SHA and
-// re-runs every workflow that lists it. Drafts now run the identical suites and
-// builds, so a listed workflow must own a documented PR lifecycle role that
-// still needs the transition. Otherwise marking a PR ready duplicates
-// validation that already passed.
+// re-runs every workflow that lists it. Validation suites run identically for
+// drafts and ready PRs; the staging image builds are the documented exception:
+// drafts defer them and the boundary restores them. A listed workflow must own
+// a documented PR lifecycle role that still needs the transition, otherwise
+// marking a PR ready duplicates validation that already passed.
 const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'test-playwright.yml',
-    'drafts run the full suite, but ready_for_review is retained while the trusted reusable workflow at @v3 could still compute a partial draft plan; remove it once the route change lands on v3',
+    'the ready boundary runs the envelope so it can validate the existing full proof of an unchanged head instead of rebuilding and retesting it',
   ],
   [
     'check.yml',
@@ -140,6 +265,28 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'v3_sonarcloud.yml',
     'owned stable quality gate re-runs at the ready boundary',
+  ],
+  ...[
+    'v3_analytics-stg.yml',
+    'v3_auth-stg.yml',
+    'v3_backend-docker-stg.yml',
+    'v3_chat-stg.yml',
+    'v3_frontend-control-docker-stg.yml',
+    'v3_frontend-manage-docker-stg.yml',
+    'v3_frontend-pwa-docker-assessment-stg.yml',
+    'v3_frontend-pwa-docker-stg.yml',
+    'v3_hatchet-worker-general-stg.yml',
+    'v3_hatchet-worker-response-processor-stg.yml',
+    'v3_lti-stg.yml',
+    'v3_olat-api-stg.yml',
+    'v3_response-api-stg.yml',
+  ].map((name) => [
+    name,
+    'draft pull requests defer their staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head',
+  ]),
+  [
+    'v3_build-fallback.yml',
+    'the required image-build context recomputes at the ready boundary and validates the builds that the boundary restores',
   ],
 ])
 
