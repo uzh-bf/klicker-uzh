@@ -50,9 +50,11 @@ export interface MCPServerWithConfig {
 export interface MCPRequestContext {
   chatbotId: string
   participantId?: string
+  courseId?: string
   authMode: AuthMode
   kbIds?: readonly string[]
   sessionId?: string
+  knowledgeGraphRetrievalEnabled?: boolean
 }
 
 export interface MCPRequestOptions {
@@ -419,6 +421,30 @@ async function loadServerTools(
     }
     client = await createMCPClient(server, context, options)
     const rawTools = await client.tools()
+    if (
+      server.name === DOC_QUERY_MCP_SERVER_NAME &&
+      context.knowledgeGraphRetrievalEnabled === true
+    ) {
+      const rawName = requiredRawToolName ?? 'doc_query'
+      const tool = rawTools[rawName]
+      if (tool && typeof tool.execute === 'function') {
+        const [{ graphAssistedDocumentQuery }, { graphQueryDependencies }] =
+          await Promise.all([
+            import('./graphAssistedDocQuery'),
+            import('./graphQueryScope'),
+          ])
+        const execute = tool.execute.bind(tool)
+        rawTools[rawName] = {
+          ...tool,
+          // MCP callTool resolves one response. The SDK's generic tool type
+          // also permits streaming implementations, which this client does not use.
+          execute: graphAssistedDocumentQuery(
+            execute,
+            graphQueryDependencies(context)
+          ) as typeof execute,
+        }
+      }
+    }
 
     if (runtimePolicy.required && requiredRawToolName) {
       const rawToolName = requiredRawToolName

@@ -4,15 +4,21 @@ import type {
   KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import { describe, expect, it } from 'vitest'
-
+import { KNOWLEDGE_GRAPH_MAX_SUGGESTIONS } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphSearch.js'
 import {
-  type KnowledgeGraphState,
   initialKnowledgeGraphState,
+  isKnowledgeGraphBuildChangedError,
+  KNOWLEDGE_GRAPH_MAX_EDGES,
+  KNOWLEDGE_GRAPH_MAX_NODES,
+  KnowledgeGraphBuildChangedError,
+  type KnowledgeGraphState,
   knowledgeGraphReducer,
   mergeKnowledgeGraphResponse,
 } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphState.js'
 import {
+  edgeAskSelection,
   nextKnowledgeGraphZoom,
+  nodeAskSelection,
   relationshipLabels,
 } from '../../../packages/shared-components/src/knowledgeGraph/knowledgeGraphView.js'
 
@@ -161,6 +167,31 @@ describe('knowledge graph state', () => {
     expect(
       knowledgeGraphReducer(selectedEdge, { type: 'close-details' })
     ).toMatchObject({ selectedNodeId: null, selectedEdgeId: null })
+  })
+
+  it('makes room for an explicit search result when the canvas is full', () => {
+    const full = {
+      ...initialKnowledgeGraphState,
+      kbId: 'kb-a',
+      buildId: '1',
+      nodes: Array.from({ length: KNOWLEDGE_GRAPH_MAX_NODES }, (_, i) =>
+        node(String(i))
+      ),
+    }
+    const pending = knowledgeGraphReducer(full, {
+      type: 'request-started',
+      operation: 'search',
+      requestId: 1,
+    })
+    const focused = knowledgeGraphReducer(pending, {
+      type: 'request-succeeded',
+      operation: 'search',
+      requestId: 1,
+      response: response(1, [node('new')]),
+    })
+    expect(focused.nodes.map((entry) => entry.id)).toEqual(['new'])
+    expect(focused.selectedNodeId).toBe('new')
+    expect(focused.viewLimitReached).toBe(false)
   })
 
   it('focuses the first successful search result', () => {
@@ -353,6 +384,274 @@ describe('knowledge graph state', () => {
     expect(relationshipLabels(edge('10', '1', '2'), nodes)).toEqual({
       source: 'Alpha',
       target: 'Beta',
+    })
+  })
+})
+
+describe('knowledge graph bounded view and suggestions', () => {
+  function manyNodes(count: number, prefix = 'n'): KnowledgeGraphNode[] {
+    return Array.from({ length: count }, (_, index) =>
+      node(`${prefix}${index}`)
+    )
+  }
+
+  function repeatedEdges(count: number): KnowledgeGraphEdge[] {
+    return Array.from({ length: count }, (_, index) =>
+      edge(`e${index}`, 'n0', 'n1')
+    )
+  }
+
+  it('caps an overview replacement and drops edges without an admitted endpoint', () => {
+    const loading = knowledgeGraphReducer(initialKnowledgeGraphState, {
+      type: 'request-started',
+      operation: 'overview',
+      requestId: 1,
+    })
+    const capped = knowledgeGraphReducer(loading, {
+      type: 'request-succeeded',
+      operation: 'overview',
+      requestId: 1,
+      response: response(1, manyNodes(KNOWLEDGE_GRAPH_MAX_NODES + 1), [
+        edge('dangling', 'n0', 'missing'),
+      ]),
+    })
+
+    expect(capped.view).toBe('overview')
+    expect(capped.nodes).toHaveLength(KNOWLEDGE_GRAPH_MAX_NODES)
+    expect(capped.nodes[KNOWLEDGE_GRAPH_MAX_NODES - 1]?.id).toBe(
+      `n${KNOWLEDGE_GRAPH_MAX_NODES - 1}`
+    )
+    expect(capped.edges).toEqual([])
+    // The canvas limit is reported separately from the backend truncation flag.
+    expect(capped.viewLimitReached).toBe(true)
+    expect(capped.truncated).toBe(false)
+  })
+
+  it('admits only fitting incoming concepts and edges when merging a neighborhood', () => {
+    let state: KnowledgeGraphState = {
+      ...initialKnowledgeGraphState,
+      kbId: 'kb-a',
+      buildId: '1',
+      status: 'ready',
+      nodes: manyNodes(KNOWLEDGE_GRAPH_MAX_NODES),
+      edges: repeatedEdges(KNOWLEDGE_GRAPH_MAX_EDGES),
+    }
+    state = knowledgeGraphReducer(state, {
+      type: 'request-started',
+      operation: 'neighbors',
+      requestId: 2,
+    })
+    state = knowledgeGraphReducer(state, {
+      type: 'request-succeeded',
+      operation: 'neighbors',
+      requestId: 2,
+      response: response(
+        1,
+        [node('extra'), node('n0', { displayLabel: 'Updated' })],
+        [edge('e-new', 'n0', 'n1'), edge('dangling', 'extra', 'n0')]
+      ),
+    })
+
+    expect(state.nodes).toHaveLength(KNOWLEDGE_GRAPH_MAX_NODES)
+    expect(state.nodes.some((entry) => entry.id === 'extra')).toBe(false)
+    expect(state.nodes[0]?.displayLabel).toBe('Updated')
+    expect(state.edges).toHaveLength(KNOWLEDGE_GRAPH_MAX_EDGES)
+    expect(state.edges.some((entry) => entry.id === 'e-new')).toBe(false)
+    expect(state.edges.some((entry) => entry.id === 'dangling')).toBe(false)
+    expect(state.viewLimitReached).toBe(true)
+    expect(state.truncated).toBe(false)
+  })
+
+  it('invalidates a pending neighborhood when a replacement view starts', () => {
+    let state: KnowledgeGraphState = {
+      ...initialKnowledgeGraphState,
+      kbId: 'kb-a',
+      buildId: '1',
+      status: 'ready',
+      nodes: [node('1')],
+    }
+    state = knowledgeGraphReducer(state, {
+      type: 'request-started',
+      operation: 'neighbors',
+      requestId: 5,
+      input: '1',
+    })
+    state = knowledgeGraphReducer(state, {
+      type: 'request-started',
+      operation: 'search',
+      requestId: 6,
+      input: 'alpha',
+    })
+    expect(state.activeRequestIds.neighbors).toBeNull()
+
+    const late = knowledgeGraphReducer(state, {
+      type: 'request-succeeded',
+      operation: 'neighbors',
+      requestId: 5,
+      response: response(1, [node('late')]),
+    })
+
+    expect(late.nodes.map((entry) => entry.id)).toEqual(['1'])
+    expect(late.activeRequestIds.neighbors).toBeNull()
+  })
+
+  it('keeps only the newest suggestion response and bounds the list', () => {
+    let state = knowledgeGraphReducer(initialKnowledgeGraphState, {
+      type: 'suggestions-started',
+      requestId: 3,
+    })
+    expect(state.suggestionStatus).toBe('loading')
+
+    const stale = knowledgeGraphReducer(state, {
+      type: 'suggestions-succeeded',
+      requestId: 2,
+      response: response(1, manyNodes(3, 's')),
+    })
+    expect(stale.suggestionStatus).toBe('loading')
+
+    state = knowledgeGraphReducer(state, {
+      type: 'suggestions-succeeded',
+      requestId: 3,
+      response: response(
+        1,
+        manyNodes(KNOWLEDGE_GRAPH_MAX_SUGGESTIONS + 5, 's')
+      ),
+    })
+    expect(state.suggestionStatus).toBe('ready')
+    expect(state.suggestions).toHaveLength(KNOWLEDGE_GRAPH_MAX_SUGGESTIONS)
+    expect(state.suggestionResponse?.buildId).toBe('1')
+  })
+
+  it('reports a suggestion failure once and dismisses an in-flight response', () => {
+    let state = knowledgeGraphReducer(initialKnowledgeGraphState, {
+      type: 'suggestions-started',
+      requestId: 4,
+    })
+    const failed = knowledgeGraphReducer(state, {
+      type: 'suggestions-failed',
+      requestId: 4,
+    })
+    expect(failed).toMatchObject({
+      suggestionStatus: 'error',
+      suggestions: [],
+      suggestionResponse: null,
+    })
+
+    state = knowledgeGraphReducer(state, { type: 'dismiss-suggestions' })
+    expect(state).toMatchObject({
+      suggestionStatus: 'idle',
+      suggestions: [],
+      suggestionRequestId: null,
+    })
+
+    const late = knowledgeGraphReducer(state, {
+      type: 'suggestions-succeeded',
+      requestId: 4,
+      response: response(1, manyNodes(2, 's')),
+    })
+    expect(late.suggestions).toEqual([])
+    expect(late).toEqual(state)
+  })
+
+  it('selecting a suggestion replaces the view with its originating build and focuses the node', () => {
+    const suggestionResponse = response(
+      9,
+      [node('target', { displayLabel: 'Target' }), node('peer')],
+      [edge('t-e', 'target', 'peer')]
+    )
+    let state: KnowledgeGraphState = {
+      ...initialKnowledgeGraphState,
+      kbId: 'kb-a',
+      buildId: '1',
+      status: 'ready',
+      view: 'focused',
+      nodes: [node('old')],
+      edges: [edge('old-edge', 'old', 'old')],
+      selectedNodeId: 'old',
+    }
+    state = knowledgeGraphReducer(state, {
+      type: 'suggestions-started',
+      requestId: 8,
+    })
+    state = knowledgeGraphReducer(state, {
+      type: 'suggestions-succeeded',
+      requestId: 8,
+      response: suggestionResponse,
+    })
+
+    const unknown = knowledgeGraphReducer(state, {
+      type: 'select-suggestion',
+      response: suggestionResponse,
+      nodeId: 'missing',
+    })
+    expect(unknown).toEqual(state)
+
+    const selected = knowledgeGraphReducer(state, {
+      type: 'select-suggestion',
+      response: suggestionResponse,
+      nodeId: 'target',
+    })
+
+    expect(selected).toMatchObject({
+      buildId: '9',
+      view: 'focused',
+      selectedNodeId: 'target',
+      focusedNodeId: 'target',
+      selectedEdgeId: null,
+      searchResults: [],
+      suggestionStatus: 'idle',
+      suggestionRequestId: null,
+      activeRequestIds: { overview: null, search: null, neighbors: null },
+    })
+    expect(selected.nodes.map((entry) => entry.id)).toEqual(['target', 'peer'])
+    expect(selected.edges.map((entry) => entry.id)).toEqual(['t-e'])
+  })
+
+  it('recognises the build-changed protocol error', () => {
+    expect(
+      isKnowledgeGraphBuildChangedError(new KnowledgeGraphBuildChangedError())
+    ).toBe(true)
+    expect(
+      isKnowledgeGraphBuildChangedError({
+        code: 'KNOWLEDGE_GRAPH_BUILD_CHANGED',
+      })
+    ).toBe(true)
+    expect(isKnowledgeGraphBuildChangedError({ status: 409 })).toBe(false)
+    expect(isKnowledgeGraphBuildChangedError(new Error('plain'))).toBe(false)
+    expect(isKnowledgeGraphBuildChangedError(null)).toBe(false)
+  })
+})
+
+// Composer handoff carries display labels only, with bounded payload size.
+describe('knowledge graph question selection', () => {
+  it('bounds labels and omits graph metadata from the composer handoff', () => {
+    const selected = node('internal-id', {
+      displayLabel: 'x'.repeat(300),
+      summary: 'Do not copy',
+    })
+    expect(nodeAskSelection(selected)).toEqual({
+      kind: 'node',
+      label: 'x'.repeat(200),
+    })
+    const relationship: KnowledgeGraphEdge = {
+      id: 'edge-id',
+      source: selected.id,
+      target: 'missing-internal-id',
+      type: 'RELATED',
+      label: 'y'.repeat(300),
+      properties: { hidden: 'Do not copy' },
+    }
+    expect(
+      edgeAskSelection(
+        relationship,
+        new Map([[selected.id, selected]]),
+        'Unknown'
+      )
+    ).toEqual({
+      kind: 'edge',
+      label: 'y'.repeat(200),
+      source: 'x'.repeat(200),
+      target: 'Unknown',
     })
   })
 })

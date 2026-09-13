@@ -1,6 +1,77 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { inspectUnusedComposeProject } from './docker-preflight.mjs'
+import {
+  inspectUnusedComposeProject,
+  requireLocalAiEnvironment,
+  runLocalManaged,
+} from './docker-preflight.mjs'
+
+test('AI credentials reach only the explicit managed startup environment', async (t) => {
+  const names = ['UPSTREAM_OPENAI_API_KEY', 'UPSTREAM_OPENAI_BASE_URL']
+  const previous = names.map((name) => process.env[name])
+  t.after(() =>
+    names.forEach((name, index) => {
+      if (previous[index] === undefined) delete process.env[name]
+      else process.env[name] = previous[index]
+    })
+  )
+  const sentinel = 'synthetic-upstream-sentinel'
+  process.env.UPSTREAM_OPENAI_API_KEY = sentinel
+  process.env.UPSTREAM_OPENAI_BASE_URL = 'https://openrouter.ai/api/v1'
+  const args = [
+    'ensure',
+    '/synthetic/runtime',
+    '--profile',
+    'ai,chat,manage',
+    '--json',
+  ]
+  const captured = []
+  const execute = async (command, argv, options) => {
+    captured.push({ command, argv, options })
+    return { stdout: ' {} ' }
+  }
+  assert.equal(await runLocalManaged(args, 'openrouter', execute), '{}')
+  assert.equal(captured[0].options.env.UPSTREAM_OPENAI_API_KEY, sentinel)
+  assert.deepEqual(
+    Object.keys(captured[0].options.env).sort(),
+    ['HOME', 'PATH', ...names].sort()
+  )
+  assert.ok(!JSON.stringify(captured[0].argv).includes(sentinel))
+  await runLocalManaged(args, undefined, execute)
+  assert.equal(captured[1].options.env.UPSTREAM_OPENAI_API_KEY, undefined)
+  for (const forbidden of [
+    ['stop', '/synthetic/runtime'],
+    ['exec', '/synthetic/runtime'],
+    ['ensure', '/synthetic/runtime', '--profile', 'local-kb-setup', '--json'],
+  ]) {
+    await assert.rejects(
+      runLocalManaged(forbidden, 'openrouter', execute),
+      /restricted/
+    )
+  }
+  assert.equal(captured.length, 2)
+  await assert.rejects(
+    runLocalManaged(args, 'openrouter', async () => {
+      throw new Error(sentinel)
+    }),
+    { message: 'Local devrouter operation failed; output withheld.' }
+  )
+  for (const environment of [
+    {},
+    { UPSTREAM_OPENAI_API_KEY: ' ' },
+    {
+      UPSTREAM_OPENAI_API_KEY: sentinel,
+      UPSTREAM_OPENAI_BASE_URL: 'http://localhost:4000',
+    },
+  ]) {
+    assert.throws(
+      () =>
+        requireLocalAiEnvironment({ aiUpstream: 'openrouter' }, environment),
+      /runtime-injected/
+    )
+  }
+  assert.deepEqual(requireLocalAiEnvironment({}, process.env), {})
+})
 
 const compose = {
   name: 'isolated-test',
