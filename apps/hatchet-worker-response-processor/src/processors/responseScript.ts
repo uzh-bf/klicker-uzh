@@ -14,10 +14,11 @@ import type { ChainableCommander } from 'ioredis'
  * 3. integer and cumulative-magnitude validation for every counter target
  *    (returns -1)
  *
- * Counters are bounded to the double-safe integer range (2^53): JavaScript
- * consumers read these aggregates back as numbers, and Lua tonumber is exact
- * there. Values beyond it are treated as corrupted state rather than
- * overflowed counters.
+ * Counters are bounded to Number.MAX_SAFE_INTEGER (2^53 - 1) on both the
+ * TypeScript and Lua sides: JavaScript consumers read these aggregates back
+ * as numbers, and Lua tonumber is exact there. Values beyond it are treated
+ * as corrupted state rather than overflowed counters. Stored counters must
+ * additionally use the canonical integer form HINCRBY itself accepts.
  *
  * Return codes: 1 = applied, 0 = duplicate (nothing written),
  * -1 = invalid integer/counter state, -2 = wrong key type.
@@ -40,7 +41,7 @@ local function touchedKeyIndexes()
   return indexes
 end
 
-local safeBound = 9007199254740992
+local safeBound = 9007199254740991
 for keyIndex in pairs(touchedKeyIndexes()) do
   -- TYPE answers a status reply, which redis.call converts to a table with
   -- an ok field rather than a plain Lua string
@@ -61,11 +62,19 @@ for _ = 1, tonumber(ARGV[3]) do
   local field = ARGV[index + 1]
   local increment = ARGV[index + 2]
 
+  -- HINCRBY's own parser accepts only canonical integers: "0" or an
+  -- optional minus followed by a nonzero leading digit. Values like "01",
+  -- "00" or "-0" pass a loose digit pattern but abort HINCRBY mid-script,
+  -- so the preflight enforces the canonical form before any write. Lua
+  -- patterns have no alternation, so the "0" case is matched separately.
+  local function isCanonicalInteger(value)
+    return value == '0' or string.match(value, '^-?[1-9][0-9]*$') ~= nil
+  end
   local currentValue = redis.call('HGET', KEYS[keyIndex], field)
-  if currentValue and not string.match(currentValue, '^-?%d+$') then
+  if currentValue and not isCanonicalInteger(currentValue) then
     return -1
   end
-  if not string.match(increment, '^-?%d+$') then
+  if not isCanonicalInteger(increment) then
     return -1
   end
 

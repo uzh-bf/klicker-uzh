@@ -853,7 +853,27 @@ export async function processResponseMessage(
             pointsAwarded: -overCredit,
             xpAwarded: 0,
           })
-          await correctionPipeline.exec()
+          const correctionResults = await correctionPipeline.exec()
+          const correctionErrors = (
+            Array.isArray(correctionResults) ? correctionResults : []
+          )
+            .map(([error]) => error)
+            .filter((error) => error !== null)
+          if (
+            !Array.isArray(correctionResults) ||
+            correctionErrors.length > 0
+          ) {
+            // the response itself is committed and must not be retried; the
+            // residual bonus over-credit is an accepted, logged inconsistency
+            ctx.logger.error(
+              `Timing-bonus correction failed to apply fully (overCredit ${overCredit}): ${JSON.stringify(correctionErrors[0] ?? null)} ` +
+                JSON.stringify({
+                  messageId: message.messageId,
+                  sessionId: message.sessionId,
+                  instanceId: message.instanceId,
+                })
+            )
+          }
         }
       }
     }

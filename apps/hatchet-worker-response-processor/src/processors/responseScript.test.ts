@@ -505,6 +505,98 @@ describe('atomic response script against redis', { concurrency: false }, () => {
     )
   })
 
+  it('refuses noncanonical stored counter strings before any write', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+
+    for (const corruptValue of ['01', '00', '-0', '1.0', '+1']) {
+      const { responseKey, resultsKey } = setupKeys()
+      await redis.hset(resultsKey, 'participants', corruptValue)
+
+      const { keys, args } = buildResponseScriptInvocation({
+        operations: [
+          ...markerOp(responseKey, 'p-1'),
+          {
+            type: 'hincrby',
+            key: resultsKey,
+            field: 'participants',
+            increment: 1,
+          },
+        ],
+        participantResponseKey: responseKey,
+        participantResponseField: 'p-1',
+      })
+
+      assert.equal(
+        await runScript(keys, args),
+        -1,
+        `stored value ${corruptValue} must be refused`
+      )
+      assert.equal(
+        await redis.hget(responseKey, 'p-1'),
+        null,
+        'the marker must not be written for a noncanonical counter'
+      )
+      assert.equal(
+        await redis.hget(resultsKey, 'participants'),
+        corruptValue,
+        'the stored value must be unchanged'
+      )
+    }
+  })
+
+  it('accepts boundary counters up to the shared safe bound', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey } = setupKeys()
+    await redis.hset(resultsKey, 'participants', '9007199254740990')
+
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: [
+        ...markerOp(responseKey, 'p-1'),
+        {
+          type: 'hincrby',
+          key: resultsKey,
+          field: 'participants',
+          increment: 1,
+        },
+      ],
+      participantResponseKey: responseKey,
+      participantResponseField: 'p-1',
+    })
+
+    assert.equal(await runScript(keys, args), 1)
+    assert.equal(
+      await redis.hget(resultsKey, 'participants'),
+      '9007199254740991'
+    )
+  })
+
+  it('refuses the increment one past the shared safe bound', async (t) => {
+    if (!available) return t.skip('Redis not reachable')
+    const { responseKey, resultsKey } = setupKeys()
+    await redis.hset(resultsKey, 'participants', '9007199254740991')
+
+    const { keys, args } = buildResponseScriptInvocation({
+      operations: [
+        ...markerOp(responseKey, 'p-1'),
+        {
+          type: 'hincrby',
+          key: resultsKey,
+          field: 'participants',
+          increment: 1,
+        },
+      ],
+      participantResponseKey: responseKey,
+      participantResponseField: 'p-1',
+    })
+
+    assert.equal(await runScript(keys, args), -1)
+    assert.equal(await redis.hget(responseKey, 'p-1'), null)
+    assert.equal(
+      await redis.hget(resultsKey, 'participants'),
+      '9007199254740991'
+    )
+  })
+
   it('refuses wrong-type increment targets before any write', async (t) => {
     if (!available) return t.skip('Redis not reachable')
     const { responseKey, resultsKey } = setupKeys()

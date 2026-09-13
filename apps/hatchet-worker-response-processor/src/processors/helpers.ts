@@ -277,6 +277,8 @@ export function validateStudentResponse({
     return { valid: true }
   } else if (type === 'CASE_STUDY') {
     // response should be of the format { [caseId: string]: { [itemId: number]: { [criterionId: string]: number } } }
+    // assessment shape: { [caseId]: { [itemId]: { [criterionId]: number } } }
+    // — the item level already maps criterion ids to numeric responses
     let criterionCount = 0
     if (
       !response.assessment ||
@@ -288,30 +290,24 @@ export function validateStudentResponse({
           caseObj !== null &&
           Object.keys(caseObj).length > 0 &&
           Object.keys(caseObj).length <= MAX_RESPONSE_COLLECTION_SIZE &&
-          Object.values(caseObj).every(
-            (itemObj) =>
+          Object.entries(caseObj).every(
+            ([, itemObj]) =>
               typeof itemObj === 'object' &&
               itemObj !== null &&
               Object.keys(itemObj).length > 0 &&
-              Object.values(itemObj).every(
-                (itemEntries) =>
-                  typeof itemEntries === 'object' &&
-                  itemEntries !== null &&
-                  Object.entries(itemEntries).every(
-                    ([criterionId, criterionResponse]) => {
-                      criterionCount += 1
-                      return (
-                        typeof criterionResponse === 'number' &&
-                        Number.isInteger(criterionResponse) &&
-                        criterionId.length > 0 &&
-                        criterionId.length <= 128
-                      )
-                    }
-                  )
-              )
+              Object.entries(itemObj).every(([criterionId, criterionValue]) => {
+                criterionCount += 1
+                return (
+                  typeof criterionValue === 'number' &&
+                  Number.isInteger(criterionValue) &&
+                  criterionId.length > 0 &&
+                  criterionId.length <= 128
+                )
+              })
           )
       ) ||
-      criterionCount > MAX_CASE_STUDY_CRITERIA
+      criterionCount > MAX_CASE_STUDY_CRITERIA ||
+      criterionCount === 0
     ) {
       return {
         valid: false,

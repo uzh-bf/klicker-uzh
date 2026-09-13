@@ -1,26 +1,27 @@
+import { createHash, createHmac } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -28,7 +29,6 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -1262,14 +1262,58 @@ export async function activateLiveQuizBlock(
   // the participant announcement happens only after the cache is fully
   // initialized, so a fast first response cannot race the seeding and be
   // rejected as missing instance metadata
-  const seedingResults = await redisMulti.exec()
-  const seedingErrors = (seedingResults ?? [])
-    .map(([error]) => error)
-    .filter((error) => error !== null)
-  if (seedingErrors.length > 0) {
-    throw new Error(
-      `Failed to initialize response cache for block ${blockId} of live quiz ${quizId}: ${JSON.stringify(seedingErrors[0])}`
-    )
+  let seedingFailed = false
+  try {
+    const seedingResults = await redisMulti.exec()
+    if (!Array.isArray(seedingResults)) {
+      // a null result is not evidence of success
+      throw new Error('cache initialization returned no command results')
+    }
+    const seedingErrors = seedingResults
+      .map(([error]) => error)
+      .filter((error) => error !== null)
+    if (seedingErrors.length > 0) {
+      throw new Error(
+        `Failed to initialize response cache for block ${blockId} of live quiz ${quizId}: ${JSON.stringify(seedingErrors[0])}`
+      )
+    }
+  } catch (e) {
+    seedingFailed = true
+    throw e
+  } finally {
+    if (seedingFailed) {
+      // the database has already marked the block ACTIVE; revert the
+      // transition so a retried activation repairs the cache instead of
+      // returning early on the active-block guard. Publication never
+      // happened, so no responses can have arrived and reseeding on the
+      // retry cannot overwrite live counters.
+      try {
+        await ctx.prisma.liveQuiz.update({
+          where: { id: quizId },
+          data: {
+            activeBlock: quiz.activeBlockId
+              ? { connect: { id: quiz.activeBlockId } }
+              : { disconnect: true },
+            blocks: {
+              update: {
+                where: { id: blockId },
+                data: {
+                  status: newBlock.status,
+                  startedAt: newBlock.startedAt,
+                  expiresAt: newBlock.expiresAt,
+                },
+              },
+            },
+          },
+        })
+      } catch (compensationError) {
+        // surface the original failure; log the compensation failure so the
+        // stuck-active state is diagnosable and can be repaired manually
+        console.error(
+          `Failed to revert activation of block ${blockId} of live quiz ${quizId} after cache initialization failure: ${String(compensationError)}`
+        )
+      }
+    }
   }
 
   if (updatedQuiz.activeBlock?.expiresAt) {
@@ -1754,7 +1798,7 @@ export async function endLiveQuiz(
       })
 
       // track the achievement ids, which should be awarded to the participants
-      let newAchievements: Record<string, number> = {}
+      const newAchievements: Record<string, number> = {}
 
       // only award achievements, if the live quiz did contain questions with sample
       // solutions and at least three participants collected points

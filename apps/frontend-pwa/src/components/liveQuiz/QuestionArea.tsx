@@ -246,28 +246,43 @@ function QuestionArea({
     // save the response, if one was given before the time expired
     if (studentResponse.valid) {
       const inFlight = submissionInFlightRef.current
-      if (inFlight) {
-        // a manual submission is already carrying this answer; let it
-        // finish (its stack-state updates are suppressed above) instead of
-        // sending a second request
-        await inFlight
-      } else {
-        const submitted = await answerQuestion({
-          instanceId,
-          type: elementType,
-          input: studentResponse,
-          correlationKey,
-        })
-
-        // distinguish a failed auto-submission from a successful or skipped
-        // one: the stack completes either way, but a failure should be
-        // visible to the participant
-        if (!submitted) {
-          toast({
-            message: t('pwa.assessment.submissionGeneralError'),
-            type: 'error',
+      try {
+        if (inFlight) {
+          // a manual submission is already carrying this answer; let it
+          // finish (its stack-state updates are suppressed above) instead
+          // of sending a second request
+          const submitted = await inFlight
+          if (!submitted) {
+            toast({
+              message: t('pwa.assessment.submissionGeneralError'),
+              type: 'error',
+            })
+          }
+        } else {
+          const submitted = await answerQuestion({
+            instanceId,
+            type: elementType,
+            input: studentResponse,
+            correlationKey,
           })
+
+          // distinguish a failed auto-submission from a successful or
+          // skipped one: the stack completes either way, but a failure
+          // should be visible to the participant
+          if (!submitted) {
+            toast({
+              message: t('pwa.assessment.submissionGeneralError'),
+              type: 'error',
+            })
+          }
         }
+      } catch {
+        // a rejected submission or local persistence write must not bypass
+        // the terminal expiry cleanup below
+        toast({
+          message: t('pwa.assessment.submissionGeneralError'),
+          type: 'error',
+        })
       }
     }
 
@@ -328,6 +343,14 @@ function QuestionArea({
     else if (statusCode === 500) {
       toast({
         message: t('pwa.assessment.submissionServerError'),
+        type: 'error',
+      })
+    }
+    // status codes 0 and 1 (client-side invalid input and network or request
+    // failures) and any unrecognized code -> visible general error
+    else {
+      toast({
+        message: t('pwa.assessment.submissionGeneralError'),
         type: 'error',
       })
     }
