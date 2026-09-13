@@ -316,7 +316,7 @@ September 13 refreshed source audit: `origin/v3` at
 `8207c964016b3f1c735c678e6563bfe96d604f5d` contain no local MCP fixture
 adapter or fixture-specific request-handler branches. The adapter belongs only
 to unmerged [PR #5941](https://github.com/uzh-bf/klicker-uzh/pull/5941).
-Its removal is drafted: both request handlers and the complete `apps/chat/src`
+Its removal is committed in `b5e4520e00`: both request handlers and the complete `apps/chat/src`
 tree now match `origin/v3-ai`. Script-only JWT and fixture ownership checks
 remain in `apps/chat/scripts/`; generic endpoint configuration, private-network
 transport validation and the development graph loader remain ordinary runtime
@@ -337,9 +337,11 @@ Isolated `mcp` startup passed with healthy `mcp_postgres`, no drift, no app
 process and no routes. The real-schema harness, 55 focused Chat tests and Chat
 typecheck pass. Startup used the host Infisical operator and a free alternate
 Azurite binding (`10043`), preserving the other workspace holding `10003`.
-No model request ran. Browser/application acceptance, committed reviews and
-draft update remain open. Full hook checks are running through the repository's
-host/container split after an invalid all-container attempt hit host-only tests.
+No model request ran. Normal commit hooks passed through the repository's
+host/container split, and the full production build passed all 26 tasks.
+The simplifier identified duplicate collision checks already covered by complete
+domain validation; removing them preserved real-schema harness acceptance.
+Browser/application acceptance, final review and draft update remain open.
 
 The user approved the separate disposable database approach and explicitly
 included removal of already-merged fixture-specific Chat runtime code, if any.

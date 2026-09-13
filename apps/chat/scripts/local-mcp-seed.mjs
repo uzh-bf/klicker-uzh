@@ -185,21 +185,6 @@ function isCompleteDomain(state) {
   }
 }
 
-function hasNameCollision(server, nameMatches) {
-  return (
-    nameMatches.some((row) => row.id !== LOCAL_SERVER_ID) ||
-    (server === undefined && nameMatches.length !== 0)
-  )
-}
-
-function hasUnexpectedChatbotConsumer(configurations) {
-  return configurations.some(
-    (config) =>
-      config.chatbotId === LOCAL_CHATBOT_ID &&
-      config.mcpServerId !== LOCAL_SERVER_ID
-  )
-}
-
 async function readDomainState(tx) {
   const [
     users,
@@ -520,20 +505,6 @@ export async function repairLocalMcpSeed(
     await db.$transaction(
       async (tx) => {
         const state = await readDomainState(tx)
-
-        if (
-          state.servers.length > 1 ||
-          hasNameCollision(
-            state.servers.find((server) => server.id === LOCAL_SERVER_ID),
-            state.servers.filter((server) => server.name === LOCAL_SERVER_NAME)
-          )
-        ) {
-          throw new Error('Local MCP seed collision')
-        }
-
-        if (hasUnexpectedChatbotConsumer(state.configurations)) {
-          throw new Error('Local MCP consumer conflict')
-        }
 
         if (isEmptyDomain(state)) {
           await createLocalDomain(tx, token, interrupted, passwords)
