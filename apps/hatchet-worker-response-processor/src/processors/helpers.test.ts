@@ -106,12 +106,45 @@ describe('validateStudentResponse', () => {
     )
   })
 
-  it('rejects a case study with non-integer criterion responses', () => {
+  it('accepts fractional criterion responses from step-configured ranges', () => {
+    // criteria are numerical-range answers (e.g. 0-5 with step 0.5), so a
+    // fractional slider value is a legitimate response
+    assert.deepEqual(
+      validateStudentResponse({
+        type: 'CASE_STUDY',
+        response: {
+          assessment: { 'case-1': { 42: { 'criterion-1': 2.5 } } },
+        },
+      }),
+      { valid: true }
+    )
+  })
+
+  it('rejects non-finite and non-numeric criterion responses', () => {
+    for (const invalid of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      assert.equal(
+        validateStudentResponse({
+          type: 'CASE_STUDY',
+          response: {
+            assessment: { 'case-1': { 1: { 'criterion-1': invalid } } },
+          },
+        }).valid,
+        false
+      )
+    }
     assert.equal(
       validateStudentResponse({
         type: 'CASE_STUDY',
         response: {
-          assessment: { 'case-1': { 1: { 'criterion-1': 2.5 } } },
+          assessment: {
+            'case-1': {
+              1: {
+                // deliberately malformed runtime input: string criterion
+                // @ts-expect-error
+                'criterion-1': '3',
+              },
+            },
+          },
         },
       }).valid,
       false
@@ -125,7 +158,12 @@ describe('validateStudentResponse', () => {
         response: {
           assessment: {
             'case-1': {
-              1: { 'criterion-1': { value: 3 } },
+              1: {
+                // deliberately malformed runtime input: object where the
+                // typed criterion response expects a number
+                // @ts-expect-error
+                'criterion-1': { value: 3 },
+              },
             },
           },
         },
@@ -161,7 +199,11 @@ describe('validateStudentResponse', () => {
   it('rejects selection entries that collide with reserved aggregate field names', () => {
     const result = validateStudentResponse({
       type: 'SELECTION',
-      response: { selection: ['participants'] },
+      response: {
+        // deliberately malformed runtime input: a crafted string field name
+        // @ts-expect-error
+        selection: ['participants'],
+      },
     })
     assert.equal(result.valid, false)
 
@@ -186,7 +228,11 @@ describe('validateStudentResponse', () => {
     assert.equal(
       validateStudentResponse({
         type: 'SELECTION',
-        response: { selection: [null, -1] },
+        response: {
+          // deliberately malformed runtime input: null sentinel entry
+          // @ts-expect-error
+          selection: [null, -1],
+        },
       }).valid,
       false
     )

@@ -18,6 +18,11 @@ import { useTranslations } from 'next-intl'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
+import {
+  type BlockExpiryGate,
+  createBlockExpiryGate,
+  resetExpiryGate,
+} from '~/lib/blockExpiryGate'
 import { getClientSubmissionId } from '~/lib/clientSubmissionId'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
@@ -76,14 +81,22 @@ function QuestionArea({
   // the in-flight submission promise is shared between submit and expiry so
   // expiry can await a running manual submission instead of racing it
   const submissionInFlightRef = useRef<Promise<boolean> | null>(null)
-  // expiry is a terminal state for the current block execution: once set,
-  // late-arriving submission completions must not reopen the stack state
-  const blockExpiredRef = useRef(false)
+  // expiry is a terminal state for the current block execution. The gate is
+  // bound to the semantic (quiz, execution) identity, so a rerender that
+  // allocates a new instances array for the same execution cannot reset it,
+  // while a genuinely new execution gets a fresh gate. Submissions capture
+  // their gate instance, so a late completion from a previous execution
+  // still observes expiry and cannot leak state updates into the new one.
+  const expiryGateRef = useRef<BlockExpiryGate>(
+    createBlockExpiryGate(`${quizId}:${execution}`)
+  )
 
-  // a new block execution resets the terminal expiry state
   useEffect(() => {
-    blockExpiredRef.current = false
-  }, [instances])
+    expiryGateRef.current = resetExpiryGate(
+      expiryGateRef.current,
+      `${quizId}:${execution}`
+    )
+  }, [quizId, execution])
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -176,7 +189,10 @@ function QuestionArea({
 
   const onSubmit = async (): Promise<void> => {
     // one submission at a time, and never after the block has expired
-    if (submissionInFlightRef.current || blockExpiredRef.current) return
+    if (submissionInFlightRef.current || expiryGateRef.current.isExpired())
+      return
+    // state updates on completion belong to this block execution only
+    const submissionGate = expiryGateRef.current
 
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
@@ -205,7 +221,7 @@ function QuestionArea({
 
         // expiry is terminal: a manual submission completing after expiry
         // must not reopen the completed stack state
-        if (blockExpiredRef.current) return true
+        if (submissionGate.isExpired()) return true
 
         // calculate the new indices of remaining questions
         const newRemaining = (remainingQuestions ?? []).filter(
@@ -235,7 +251,7 @@ function QuestionArea({
 
   const onExpire = async (): Promise<void> => {
     // expiry is a terminal state for this block execution
-    blockExpiredRef.current = true
+    expiryGateRef.current.markExpired()
 
     const {
       id: instanceId,

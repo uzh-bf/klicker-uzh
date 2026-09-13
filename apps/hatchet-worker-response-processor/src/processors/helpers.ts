@@ -297,9 +297,14 @@ export function validateStudentResponse({
               Object.keys(itemObj).length > 0 &&
               Object.entries(itemObj).every(([criterionId, criterionValue]) => {
                 criterionCount += 1
+                // criteria are numerical-range answers with configurable
+                // min/max/step, so fractional values are legitimate; the
+                // processor hashes/stringifies them and increments the
+                // occurrence counter by 1, so no fractional Redis operation
+                // is involved. NaN/Infinity are rejected as corrupted input.
                 return (
                   typeof criterionValue === 'number' &&
-                  Number.isInteger(criterionValue) &&
+                  Number.isFinite(criterionValue) &&
                   criterionId.length > 0 &&
                   criterionId.length <= 128
                 )
