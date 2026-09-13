@@ -22,10 +22,12 @@ selection may succeed without an irrelevant suite. Missing, cancelled, failed,
 or unexpectedly skipped evidence blocks the summary. Ready PRs require the
 full eight-shard Playwright run.
 
-Stable `v3` has no bypass. Integration administrators may bypass CI only through
-a pull request; direct updates, force pushes, and deletion remain protected.
-Integration branches do not require freshness, approvals, resolved discussions,
-or linear history. A merge override does not qualify a staging candidate:
+Repository administrators may bypass CI on stable `v3` and on integration
+branches only through a pull request; direct updates, force pushes, and deletion
+remain protected on both. Stable `v3` still requires code-owner review,
+resolved discussions, linear history, and strict up-to-date status checks, while
+integration branches require none of those. A merge override does not qualify a
+staging candidate:
 promotion independently requires exact candidate push validation and images.
 Older integration branches must receive the reporting workflows before they
 can satisfy this baseline.
