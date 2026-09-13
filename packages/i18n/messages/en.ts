@@ -2682,7 +2682,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         generatedCount: '{generated} of {requested} generated',
         generated: 'Generated',
         unresolved: 'Unresolved',
-        warnings: 'Warnings',
+        warnings: 'Workflow warnings',
+        warningsHelp:
+          'Raised by the generation workflow, separate from the quality notes on individual elements.',
         retries: 'Retries',
         processing: 'The elements are being prepared',
         processingHelp:
@@ -2741,6 +2743,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         bloomLevel: 'Bloom: {level}',
         difficultyLevel: 'Difficulty: {level}',
         qualityAttention: 'Quality review recommended',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'The predicted difficulty should be reviewed before use.',
+          difficultyValidationFailed:
+            'The difficulty check did not pass for this element.',
+          manualReviewRequired: 'This element was flagged for manual review.',
+          other: 'Additional quality checks flagged this element.',
+          acceptedUnsaved: 'Accepted, but not yet saved to your library.',
+        },
         notApplicable: 'Not applicable',
         sourceUnavailable: 'Source unavailable',
         sourcesTitle: 'Sources',

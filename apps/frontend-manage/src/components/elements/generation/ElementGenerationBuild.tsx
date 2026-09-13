@@ -225,7 +225,12 @@ export default function ElementGenerationBuild({
             </dd>
           </div>
           <div className="rounded-lg bg-slate-50 p-3">
-            <dt className="text-slate-500">{t('build.warnings')}</dt>
+            <dt className="text-slate-500">
+              {t('build.warnings')}
+              <span className="mt-1 block text-xs text-slate-500">
+                {t('build.warningsHelp')}
+              </span>
+            </dt>
             <dd className="mt-1 text-lg font-semibold text-slate-900">
               {build.warningCount}
             </dd>
