@@ -139,6 +139,8 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       // is unchecked, so saving is blocked until both are provided.
       await expect(submit).toBeDisabled()
 
+      await expect(page.getByTestId('research-consent-no')).toBeHidden()
+      await page.getByTestId('research-consent-toggle').click()
       await page.getByTestId('research-consent-no').click()
       await expect(submit).toBeDisabled()
 

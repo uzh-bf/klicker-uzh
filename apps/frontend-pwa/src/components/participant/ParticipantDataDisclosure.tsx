@@ -46,6 +46,16 @@ function ParticipantDataDisclosure({
     <div className="space-y-2">
       {sections.map((section, index) => (
         <Collapsible
+          className={{
+            root: 'relative rounded-none border-0 border-b border-slate-200 p-3',
+            staticContent: 'pr-9',
+            content: 'pb-3 pt-2',
+            bottomWrapper: 'absolute right-2 top-2 mb-0 flex w-8',
+            trigger:
+              'h-8 items-center justify-center rounded text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2',
+            primary: 'hidden',
+            secondary: 'hidden',
+          }}
           key={section.key}
           data={{ cy: `participant-data-disclosure-${section.key}` }}
           customTrigger={

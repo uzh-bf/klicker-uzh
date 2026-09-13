@@ -144,7 +144,40 @@ legacy persisted operations remain schema-valid but missing required evidence
 fails closed in the service. Current UI callers use required-input operations.
 No automatic acceptance or consent fallback is provided.
 
-Final independent review and draft publication remain pending. The first
-milestone leaves KB, exports and analytics processing deferred. The older broad
-native goal remains blocked and is not replaced or declared complete by M1.
-Exact task runtime is active for remaining browser checks and will be stopped.
+Draft [PR #5923](https://github.com/uzh-bf/klicker-uzh/pull/5923) targets v3.
+The earlier integrated final review covers all 52 changed paths at 637c066889;
+its German-policy link correction is included in the document alignment below.
+The shared Git configuration blocker has cleared. Hosted exact-head CI and
+review of the updated UI remain pending. The first milestone leaves KB,
+exports and analytics processing deferred; the broader goal remains active.
+
+### Document alignment — 13 September 2026
+
+The user supplied updated Disclaimer KlickerUZH and privacy-policy DOCX files
+and requested verbatim final German wording with tracked changes accepted.
+The editable text controls wording; embedded screenshots guide layout. Main
+owns the two policy pages and verification; executor Archimedes owns signup,
+account completion, shared disclosure/choice UI and paired locale messages.
+A shared ParticipantDataUseChoices component serves the two existing callers.
+Research starts collapsed with a visible saved/default status; Learning
+Analytics starts open and still requires an explicit choice. Use design-system
+controls, two desktop columns and a stacked mobile layout with footer actions.
+The accepted policy intentionally describes deferred exports and analytics;
+copy alignment does not claim those later capabilities are delivered.
+
+Acceptance: one-off normalized comparison to accepted DOCX text (not a retained
+prose test), docs build, PWA typecheck, actual DE/EN desktop/mobile keyboard and
+choice interactions, unchanged false/false persistence, screenshot evidence.
+Reuse the existing server/migration checks because this changes presentation
+only. Preserve prior unpublished save-feedback correction and close its
+refresh-error behavior check. Git now works normally; the prior bare-repository
+blocker has cleared. No merge, ready marking, deployment or new schema work.
+
+Current verification: the accepted German DOCX policy and 15 disclaimer text
+blocks match in a one-off normalized comparison. Docs build, all 35 package
+typechecks, nine PWA helper tests, lint, schema sync, identity and repository
+contracts pass. Host launcher and CI contracts pass 112 tests. Browser captures
+cover German and English signup and assessment, including mobile footer actions;
+assessment renewal preserves both saved refusals. The focused signup test now
+expands the research disclosure before selecting refusal. Its host launcher is
+preparing the test runtime. Fresh review and publication remain pending.
