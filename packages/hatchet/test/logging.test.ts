@@ -7,6 +7,7 @@ import {
 } from '../src/auditLogging.js'
 import {
   createHatchetLoggerFactory,
+  drainTaskLogWrites,
   withHatchetTaskLogging,
 } from '../src/logging.js'
 
@@ -83,6 +84,7 @@ describe('withHatchetTaskLogging', () => {
     const result = wrapped({}, context)
     if (stage === 'failed') await expect(result).rejects.toBe(failure)
     else await expect(result).resolves.toBe('committed result')
+    await drainTaskLogWrites()
     expect(handler).toHaveBeenCalledOnce()
     expect(
       records.some((record) => record.event === `hatchet.task.${stage}`)
@@ -119,6 +121,8 @@ describe('withHatchetTaskLogging', () => {
     await expect(
       wrapped({ loggingContext: { correlationId: 'correlation-1' } }, context)
     ).rejects.toThrow('private detail')
+
+    await drainTaskLogWrites()
 
     expect(putLog).toHaveBeenCalledTimes(5)
     for (const call of putLog.mock.calls as unknown as unknown[][]) {
@@ -194,6 +198,7 @@ describe('withHatchetTaskLogging', () => {
 
     // The SDK can deliver null at runtime despite its object-only input type.
     await expect(wrapped(input as any, context)).resolves.toBe('done')
+    await drainTaskLogWrites()
     expect(handler).toHaveBeenCalledWith(input, context)
     expect(
       context.logger.info.mock.calls.map((call: any[]) => call[1].event)
@@ -219,6 +224,8 @@ describe('withHatchetTaskLogging', () => {
         context
       )
     ).resolves.toEqual({ success: true })
+
+    await drainTaskLogWrites()
 
     expect(handler).toHaveBeenCalledOnce()
     expect(context.logger.info).toHaveBeenCalledTimes(2)
@@ -250,6 +257,7 @@ describe('withHatchetTaskLogging', () => {
     })
 
     await expect(wrapped({}, context)).resolves.toBe('done')
+    await drainTaskLogWrites()
     expect(context.logger.info.mock.calls[0]?.[1]).not.toHaveProperty(
       'requestId'
     )
@@ -274,6 +282,7 @@ describe('withHatchetTaskLogging', () => {
       },
       context
     )
+    await drainTaskLogWrites()
 
     expect(context.logger.info.mock.calls[0]?.[1]).not.toHaveProperty(
       'requestId'
@@ -296,6 +305,8 @@ describe('withHatchetTaskLogging', () => {
       { loggingContext: { correlationId: 'correlation-1' } },
       context
     )
+
+    await drainTaskLogWrites()
 
     const innerCall = context.logger.info.mock.calls.find(
       (call: unknown[]) =>
@@ -411,6 +422,7 @@ describe('createHatchetLoggerFactory', () => {
       { loggingContext: { correlationId: 'correlation-1' } },
       context
     )
+    await drainTaskLogWrites()
 
     const innerRecord = records.find(
       ({ msg }) =>
