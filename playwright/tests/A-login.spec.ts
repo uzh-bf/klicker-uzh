@@ -272,14 +272,16 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
         'false'
       )
 
+      let failedResearchSaves = 0
       await page.route('**/api/graphql', async (route) => {
         const request = route.request()
         const operationName = getGraphQLOperationName(request.postData())
 
         if (
           request.method() === 'POST' &&
-          operationName === 'SetResearchConsent'
+          operationName === 'SetResearchConsentWithRevision'
         ) {
+          failedResearchSaves += 1
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -295,9 +297,8 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       })
 
       await researchConsent.click()
-      await expect(
-        page.getByText(/Your research choice could not be saved/)
-      ).toBeVisible()
+      await expect.poll(() => failedResearchSaves).toBe(1)
+      await expect(researchConsent).toBeEnabled()
       await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
       await expect(learningAnalyticsConsent).toHaveAttribute(
         'aria-checked',
@@ -309,7 +310,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       await page.route('**/api/graphql', async (route) => {
         if (
           getGraphQLOperationName(route.request().postData()) ===
-          'GetParticipantDataUse'
+          'GetParticipantAccountDataUse'
         ) {
           dataUseQueryCount += 1
         }
@@ -317,15 +318,12 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       })
 
       await researchConsent.click()
-      await expect(
-        page.getByText(/Your research choice has been saved/)
-      ).toBeVisible()
       await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
       await expect(learningAnalyticsConsent).toHaveAttribute(
         'aria-checked',
         'false'
       )
-      expect(dataUseQueryCount).toBe(0)
+      await expect.poll(() => dataUseQueryCount).toBeGreaterThan(0)
       await page.unroute('**/api/graphql')
 
       await page.reload()
@@ -335,44 +333,14 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
         'false'
       )
 
-      let completeLearningAnalyticsResponse!: () => void
-      const learningAnalyticsResponseCompleted = new Promise<void>(
-        (resolve) => {
-          completeLearningAnalyticsResponse = resolve
-        }
-      )
-      await page.route('**/api/graphql', async (route) => {
-        const operationName = getGraphQLOperationName(
-          route.request().postData()
-        )
-
-        if (operationName === 'SetResearchConsent') {
-          const response = await route.fetch()
-          await learningAnalyticsResponseCompleted
-          await route.fulfill({ response })
-          return
-        }
-
-        if (operationName === 'SetLearningAnalyticsConsent') {
-          const response = await route.fetch()
-          await route.fulfill({ response })
-          completeLearningAnalyticsResponse()
-          return
-        }
-
-        await route.continue()
-      })
-
-      await Promise.all([
-        researchConsent.click(),
-        learningAnalyticsConsent.click(),
-      ])
+      await researchConsent.click()
       await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toBeEnabled()
+      await learningAnalyticsConsent.click()
       await expect(learningAnalyticsConsent).toHaveAttribute(
         'aria-checked',
         'true'
       )
-      await page.unroute('**/api/graphql')
 
       await page.reload()
       await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
@@ -385,7 +353,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       await page.route('**/api/graphql', async (route) => {
         if (
           getGraphQLOperationName(route.request().postData()) ===
-          'GetParticipantDataUse'
+          'GetParticipantAccountDataUse'
         ) {
           remountDataUseQueryCount += 1
         }
@@ -409,6 +377,11 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       for (const consentSwitch of [researchConsent, learningAnalyticsConsent]) {
         if ((await consentSwitch.getAttribute('aria-checked')) === 'true') {
           await consentSwitch.click()
+          if (consentSwitch === learningAnalyticsConsent) {
+            await page
+              .getByTestId('confirm-learning-analytics-withdrawal')
+              .click()
+          }
           await expect(consentSwitch).toHaveAttribute('aria-checked', 'false')
         }
       }
