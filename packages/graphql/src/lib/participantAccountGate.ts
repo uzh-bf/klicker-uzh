@@ -1,14 +1,13 @@
 import { UserRole } from '@klicker-uzh/prisma/client'
-import { defaultFieldResolver, GraphQLError, type GraphQLSchema } from 'graphql'
-import type { Context } from './context.js'
 import {
   isParticipantDataUseComplete,
   participantAccountDataUseSelect,
 } from '@klicker-uzh/util'
+import { defaultFieldResolver, GraphQLError, type GraphQLSchema } from 'graphql'
+import type { Context } from './context.js'
 
 const supportFields = new Set([
   'Query.self',
-  'Query.selfDataUse',
   'Query.selfAccountDataUse',
   'Mutation.completeParticipantDataUse',
   'Mutation.loginParticipant',

@@ -1,6 +1,6 @@
 import type * as DB from '@klicker-uzh/prisma/client'
 /** The server-owned disclosure version submitted with participant choices. */
-export const PARTICIPANT_DATA_USE_DISCLOSURE_VERSION = 'v1'
+export const PARTICIPANT_DATA_USE_DISCLOSURE_VERSION = '2026-09-08'
 
 export const participantAccountDataUseSelect = {
   dataUseAcknowledgedAt: true,
@@ -22,10 +22,21 @@ export function isParticipantDataUseComplete(state: CompletionState | null) {
     state.dataUseAcknowledgedVersion ===
       PARTICIPANT_DATA_USE_DISCLOSURE_VERSION &&
     state.researchConsentChoiceAt !== null &&
-    state.researchConsentDisclosureVersion ===
-      PARTICIPANT_DATA_USE_DISCLOSURE_VERSION &&
+    state.researchConsentDisclosureVersion !== null &&
     state.learningAnalyticsChoiceAt !== null &&
-    state.learningAnalyticsDisclosureVersion ===
-      PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+    state.learningAnalyticsDisclosureVersion !== null
   )
 }
+
+export const participantDataUseSelect = {
+  researchConsent: true,
+  researchConsentChoiceAt: true,
+  researchConsentDisclosureVersion: true,
+  learningAnalyticsConsent: true,
+  learningAnalyticsChoiceAt: true,
+  learningAnalyticsDisclosureVersion: true,
+} satisfies DB.Prisma.ParticipantSelect
+
+export type ParticipantDataUseFields = DB.Prisma.ParticipantGetPayload<{
+  select: typeof participantDataUseSelect
+}>

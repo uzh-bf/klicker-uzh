@@ -3,7 +3,10 @@ import {
   requireDisposableDatabase,
 } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
-import { signJWT } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  signJWT,
+} from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import { EventEmitter } from 'events'
 import {
@@ -16,7 +19,6 @@ import {
   vi,
 } from 'vitest'
 import type { Context } from '../src/lib/context.js'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../src/lib/learningAnalytics.js'
 import {
   createParticipantAccount,
   loginParticipantWithLti,

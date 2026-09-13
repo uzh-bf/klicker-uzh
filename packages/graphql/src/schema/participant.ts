@@ -5,11 +5,13 @@ import type {
   SubscriptionKeysInput as SubscriptionKeysInputType,
   SubscriptionObjectInput as SubscriptionObjectInputType,
 } from '@klicker-uzh/types'
-import { levelFromXp } from '@klicker-uzh/util'
+import {
+  isParticipantDataUseComplete,
+  levelFromXp,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  type ParticipantDataUseFields,
+} from '@klicker-uzh/util'
 import builder from '../builder.js'
-import type { ParticipantDataUseFields } from '../lib/learningAnalytics.js'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../lib/learningAnalytics.js'
-import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 import type { ParticipantAccountDataUseFields } from '../services/participantAccountDataUse.js'
 import {
   AchievementRef,
@@ -152,14 +154,12 @@ export const ParticipantAccountDataUse = builder
       researchChoiceRecorded: t.boolean({
         resolve: (state) =>
           state.researchConsentChoiceAt !== null &&
-          state.researchConsentDisclosureVersion ===
-            PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+          state.researchConsentDisclosureVersion !== null,
       }),
       learningAnalyticsChoiceRecorded: t.boolean({
         resolve: (state) =>
           state.learningAnalyticsChoiceAt !== null &&
-          state.learningAnalyticsDisclosureVersion ===
-            PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+          state.learningAnalyticsDisclosureVersion !== null,
       }),
     }),
   })

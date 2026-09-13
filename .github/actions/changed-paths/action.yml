@@ -22,7 +22,8 @@ runs:
       shell: bash
       env:
         PATTERN: ${{ inputs.pattern }}
-        BASE_REF: ${{ github.base_ref }}
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
+        BEFORE_SHA: ${{ github.event.before }}
       run: |
         if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
           # Only shallow-fetch when the clone is already shallow. A full clone
@@ -36,11 +37,16 @@ runs:
           else
             git fetch origin "$BASE_REF"
           fi
-          diff=$(git diff --name-only "origin/$BASE_REF" HEAD) || diff=""
+          diff=$(git diff --name-only "$BASE_REF" HEAD) || diff=""
         else
-          # Deepen the shallow clone so the previous commit is available
-          git fetch --deepen=1 origin || true
-          diff=$(git diff --name-only HEAD^ HEAD) || diff=""
+          # Compare the complete push, including earlier commits in a batch.
+          # Missing/deleted initial refs fall back to running the suite below.
+          if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            git fetch --depth=1 origin "$BEFORE_SHA" || true
+            diff=$(git diff --name-only "$BEFORE_SHA" HEAD) || diff=""
+          else
+            diff=""
+          fi
         fi
 
         if [ -z "$diff" ]; then

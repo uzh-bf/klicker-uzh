@@ -62,4 +62,4 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 EXPOSE 3000
 
-CMD node apps/chat/server.js
+CMD ["node", "apps/chat/server.js"]

@@ -6,6 +6,7 @@ const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
   includeI18n = true,
+  pagesRouterOnly = false,
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
@@ -15,6 +16,12 @@ function getNextBaseConfig({
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
+    // Pages-only apps need no cross-router filter. Its initial Turbopack
+    // update can let an older development route scan overwrite a newer one.
+    // Remove the opt-in when an app starts using App Router routes.
+    ...(pagesRouterOnly && NODE_ENV === 'development'
+      ? { experimental: { clientRouterFilter: false } }
+      : {}),
     // Allow any *.localhost dev host (primary `<app>.klicker.localhost` and
     // worktree `<app>.klicker.<workspace>.localhost`) to reach Next dev
     // resources (HMR, fonts). Next 16 blocks cross-origin dev requests by

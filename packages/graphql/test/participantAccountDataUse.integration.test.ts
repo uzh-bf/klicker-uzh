@@ -3,11 +3,13 @@ import { createRequire } from 'node:module'
 
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  isParticipantDataUseComplete,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+} from '@klicker-uzh/util'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../src/lib/learningAnalytics.js'
-import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 import {
   completeParticipantDataUse,
   updateParticipantDataUseChoice,
@@ -496,10 +498,9 @@ describe('complete participant account data-use PostgreSQL integration', () => {
     const acknowledgementAt = new Date('2020-01-01T08:02:00.000Z')
     const participant = await createParticipant('acknowledgement-renewal', {
       researchConsentChoiceAt: researchChoiceAt,
-      researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      researchConsentDisclosureVersion: 'synthetic-previous-version',
       learningAnalyticsChoiceAt: analyticsChoiceAt,
-      learningAnalyticsDisclosureVersion:
-        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      learningAnalyticsDisclosureVersion: 'synthetic-previous-version',
       dataUseAcknowledgedAt: acknowledgementAt,
       dataUseAcknowledgedVersion: 'synthetic-previous-version',
       dataUseRevision: 3,
@@ -514,6 +515,13 @@ describe('complete participant account data-use PostgreSQL integration', () => {
       dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
       dataUseRevision: 4,
     })
+    expect(result.researchConsentDisclosureVersion).toBe(
+      'synthetic-previous-version'
+    )
+    expect(result.learningAnalyticsDisclosureVersion).toBe(
+      'synthetic-previous-version'
+    )
+    expect(isParticipantDataUseComplete(result)).toBe(true)
     expect(result.researchConsentChoiceAt).toEqual(researchChoiceAt)
     expect(result.learningAnalyticsChoiceAt).toEqual(analyticsChoiceAt)
     expect(result.dataUseAcknowledgedAt).toEqual(expect.any(Date))

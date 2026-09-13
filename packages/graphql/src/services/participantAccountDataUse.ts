@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
@@ -8,7 +9,6 @@ import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   participantDataUseSelect,
 } from '../lib/learningAnalytics.js'
-import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 
 const accountDataUseSelect = {
   ...participantDataUseSelect,
@@ -207,14 +207,12 @@ async function saveParticipantDataUse(
         const researchUnchanged =
           participant.researchConsent === request.researchConsent &&
           participant.researchConsentChoiceAt !== null &&
-          participant.researchConsentDisclosureVersion ===
-            request.disclosureVersion
+          participant.researchConsentDisclosureVersion !== null
         const analyticsUnchanged =
           participant.learningAnalyticsConsent ===
             request.learningAnalyticsConsent &&
           participant.learningAnalyticsChoiceAt !== null &&
-          participant.learningAnalyticsDisclosureVersion ===
-            request.disclosureVersion
+          participant.learningAnalyticsDisclosureVersion !== null
         const acknowledged =
           participant.dataUseAcknowledgedAt !== null &&
           participant.dataUseAcknowledgedVersion === request.disclosureVersion

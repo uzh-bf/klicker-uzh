@@ -11,8 +11,8 @@ import {
   Modal,
   Prose,
   Switch,
-  UserNotification,
   toast,
+  UserNotification,
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -69,7 +69,8 @@ function DataUseSettings() {
   ] = useMutation(SetLearningAnalyticsConsentWithRevisionDocument)
 
   const dataUse = data?.selfAccountDataUse
-  const saving = savingResearchConsent || savingLearningAnalyticsConsent
+  const saving =
+    savingResearchConsent || savingLearningAnalyticsConsent || reloading
 
   async function reloadDataUse() {
     setReloading(true)
@@ -100,14 +101,12 @@ function DataUseSettings() {
       })
 
       if (!result.data?.setResearchConsent) throw new Error('Save failed')
-      await refetch()
-      setConflict(false)
-
       toast({
         type: 'success',
         message: t('pwa.profile.researchConsentSaved'),
         options: { duration: 3500 },
       })
+      await reloadDataUse()
     } catch (error) {
       if (isDataUseConflict(error)) {
         setConflict(true)
@@ -141,14 +140,12 @@ function DataUseSettings() {
 
       if (!result.data?.setLearningAnalyticsConsent)
         throw new Error('Save failed')
-      await refetch()
-      setConflict(false)
-
       toast({
         type: 'success',
         message: t('pwa.profile.learningAnalyticsConsentSaved'),
         options: { duration: 3500 },
       })
+      await reloadDataUse()
     } catch (error) {
       if (isDataUseConflict(error)) {
         setConflict(true)

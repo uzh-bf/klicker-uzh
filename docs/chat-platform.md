@@ -492,6 +492,11 @@ participant had scrolled up, their position is preserved. Terminal incomplete,
 aborted, and tool-only turns still show valid completed sources instead of
 losing them on reload. The source component suppresses the section when
 normalization produces no sources.
+Within that section, sources with a valid rendered citation appear under
+“Cited in this answer”. Other eligible sources remain available behind a
+collapsed “Other retrieved material” disclosure. With no citations, including
+tool-only turns, all source cards start collapsed. Grouping preserves original
+source indices and does not claim to identify every source the model used.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -713,6 +718,20 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Runtime system-prompt policy
 
+Platform and image-description prompt prose lives in `apps/chat/src/prompts/*.hbs`.
+`src/lib/server/promptTemplates.ts` loads and caches repository-owned Handlebars
+templates with strict variables. Plaintext values use explicit triple-brace
+interpolation (`{{{value}}}`); ordinary double braces retain HTML escaping.
+These server assets produce model prompts, never HTML. Edit the template for
+wording and its typed context for new values; keep policy order and conditional
+inclusion in the TypeScript compiler. Stored lecturer text and course metadata are
+interpolation data, never template source. One final file newline is omitted from
+the rendered prompt. The renderer is Node-only and templates stay outside `public`.
+Chat's Next configuration explicitly traces these assets into the standalone build;
+its server starts from the app directory, which is also the template loading root.
+Templates are cached for the server process lifetime; restart the local Chat server
+after editing them and rebuild the standalone artifact before publishing changes.
+
 `src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text and the typed
 standard-mode context as configurable lecturer influence, not as the complete system policy. On
 every chat request, after the available MCP tool names are known, it composes the final prompt in
@@ -840,7 +859,12 @@ non-KB MCP servers retain their existing behavior.
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
   unique sources exist. That contract is appended to the system prompt only when a doc_query-style
   tool is actually available for the request.
-- **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
+- Before each tool continuation, `withModelCitationIndices` projects explicit
+  `citation_index` values onto model-facing source groups using the same message
+  normalizer as the UI. It follows call order, preserves repeated indices and
+  assigns null to ineligible or overflow sources. Stored and streamed tool results
+  stay unchanged; historical messages are excluded from the projection.
+- **Model compliance with the citation contract is unverified.** Request projection is unit-tested;
   whether a given model honours it needs a live model key, which the devcontainer does not carry.
 
 On the render side, `remarkCitationMarkers` rewrites `[n]` and contiguous `[n–m]` markers in
@@ -850,6 +874,11 @@ number. It skips anything inside a link label (including nested emphasis), and
 Normalization runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both
 the cards and the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf
 component.
+Valid rendered chips register their source index with the message-local context;
+cleanup removes registrations when text parts or answer branches change.
+Duplicate chips keep a source cited until the last registration is removed.
+Grouping therefore follows the existing Markdown renderer, including reference
+links, rather than scanning raw text for markers inside code or math.
 
 A chip must wrap **with** the word it cites, never start a line on its own — and the
 punctuation after it must not wrap alone either. Two mechanisms enforce that and both are
@@ -865,10 +894,13 @@ mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
-and fall back to a cleaned display URL when they carry no page; web links always lead with the
+documents display only the publisher's labeled page (`p. 12` / `S. 12`)
+and fall back to a cleaned display URL when no label is supplied; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+lead with a `12:34`-style position; images keep their type and any publisher page label.
+Physical PDF pages are used only for outbound navigation: validated public URLs with
+a `.pdf` pathname receive a positive integer `#page=` position on cards and passage
+links. Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
 structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
 `labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
 and prefers the structured start for the card and citation preview. Legacy results remain
@@ -948,9 +980,15 @@ A failed rating request (`chatStore.rateMessage`) rolls the optimistic vote back
 
 Ratings are currently **write-only**: nothing in the repository reads them back. There is no lecturer-facing view and no GraphQL field or aggregate over `ChatMessage.rating`, so votes accumulate in the database for a consumer that does not exist yet — do not cite them as a feedback loop that lecturers can act on.
 
-PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the trace exporter is nonfunctional: scores would be orphaned, and exact retry/order semantics would require a durable outbox rather than request-route network calls. Add analytical mirroring only after the OpenTelemetry integration below is operational and the delivery lifecycle is designed.
+PostgreSQL remains the only rating store. Do not mirror votes to Langfuse from the request route: exact retry and ordering semantics require a durable outbox. Add analytical mirroring only after that delivery lifecycle is designed.
 
-> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. Rating-score mirroring is disabled until the OTel major bump lands.
+Chat tracing uses the Langfuse JS/TS SDK v5 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. This combination emits OTLP traces to `/api/public/otel/v1/traces` and is compatible with the self-hosted Langfuse v4 server line, including the deployed v4.28.1 target, according to the [Langfuse compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning). The SDK compatibility test exercises AI SDK 7 generation spans through the real Langfuse processor with an in-memory exporter, which catches the previous OTel 1.x/2.x mismatch without claiming to exercise a live server or sending test data over the network.
+
+Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default, staging, and production values remain disabled; enabling an environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
+
+The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
+
+The trace contract is metadata-only: AI SDK input/output recording and media upload are disabled, image-description calls are explicitly untraced, and no participant `userId`, raw thread/message/chatbot ID, prompt, answer, tool argument/result, or image payload is exported. A deterministic pseudonymous session groups turns from one thread; the trace includes allowlisted model, routing, mode, reasoning, tool/attachment counts, lifecycle status, and response lengths. Export masking redacts Langfuse keys, bearer credentials, and data URLs as defense in depth. A privacy-preserving processor also replaces span status messages and removes exception-event attributes before Langfuse receives them; if that sanitization fails, the span is dropped. Export failures are fail-open and must never change the chat response. The batched processor owns delivery in the long-running chat process. Each traced route registers a [Next.js `after()` callback](https://nextjs.org/docs/app/api-reference/functions/after) that flushes the completed batch after the streamed response closes. The Chat image uses exec-form `CMD` so Next receives Kubernetes termination signals, and the pod allows a 90-second grace period for active requests and pending `after()` work. This does not guarantee that unbounded active requests finish before forced termination; live rollout must verify shutdown delivery.
 
 ## Client-state gotchas
 

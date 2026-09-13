@@ -1572,7 +1572,10 @@ const AssistantMessage: FC = () => {
       >
         {isPendingEmpty && <ThinkingDots />}
         <ImageAnalyzedChip />
-        <MessageSourcesProvider value={messageSources}>
+        <MessageSourcesProvider
+          key={messageSources.messageId}
+          value={messageSources}
+        >
           <AssistantMessageParts />
           {showSources && <SourcesSection />}
         </MessageSourcesProvider>

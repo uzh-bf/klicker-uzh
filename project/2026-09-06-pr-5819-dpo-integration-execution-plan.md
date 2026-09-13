@@ -2,11 +2,53 @@
 
 ## Outcome and authority
 
-Deliver the four packages in the [DPO integration roadmap](./2026-09-06-dpo-integration-roadmap.md) through ordinary PWA and Manage workflows, preserving existing styling and authoritative DPO wording. The roadmap owns policy, source pins, dependencies, decisions, and scope. This plan owns implementation and verification. Both must be read before execution.
+Deliver the milestones in the current order of the [DPO integration roadmap](./2026-09-06-dpo-integration-roadmap.md), preserving existing styling and authoritative DPO wording. The 12 September priority ruling below supersedes older all-package delivery gates. The roadmap owns policy, source pins, dependencies, decisions, and scope. This plan owns implementation and verification. Both must be read before execution.
 
 The user authorized local implementation, synthetic checks, configured reviews, local commits, task-branch pushes, and draft PR delivery. Core delivery is [PR #5819 — retained points and leaderboard publication](https://github.com/uzh-bf/klicker-uzh/pull/5819), branch `rs/dpo-core-integration`, targeting `v3`. AI changes retain their separate `rs/dpo-ai-integration` branch targeting `v3-ai`. The user explicitly approved incorporating the canonical consent prerequisites into the existing task branches, preserving provenance and migrations; the user also authorized direct attested ADMIN research downloads, including selected free text and transcripts, without a separate human review workflow. Shared-branch integration, marking ready, merging, deployment, real-data processing, and unrelated changes remain outside authority.
 
-**Terminal:** all four roadmap packages pass their applicable behavior checks against their own recorded target baselines, use real local persistence and synthetic transfers, are committed and independently reviewed, and their exact runtimes are stopped. Unavailable prerequisites leave the affected behavior incomplete. Review may assess both branch ranges together but must neither claim combined runtime proof nor require the separately owned future merge. Draft-only results, disabled required capabilities, and screenshots alone cannot satisfy this terminal. Main owns this boundary and continues independent work when a package is gated.
+**First-milestone terminal:** account creation, assessment entry, existing-account completion/renewal, saved participant choices, and the updated privacy policy pass the focused acceptance below. Publish a coherent reviewed draft containing that scope with verified exact-head checks and stop its exact runtimes. Required acceptance or persistence cannot be replaced by a visual demonstration. Exports, analytics processing/configuration and KB confirmations do not block this milestone. The overall DPO backlog remains incomplete until its later milestones pass their own checks. Marking ready, merging and deployment retain their separately named authority boundaries.
+
+## First milestone: account disclaimers and policy — 12 September 2026
+
+The user explicitly prioritized this milestone for Monday 14 September. Implement and verify it before KB work; KB upload confirmations follow second. Actual research/assessment exports and learning-analytics configuration, collection, computation and reports are deferred. Preserve the broader existing work and its contracts, including retained points and all-member group averages, without making that scoring change part of the first release.
+
+### Required behavior
+
+- Normal account creation displays the updated concise disclosures and independent research/analytics choices. Assessment entry displays the same collapsible structure with the additional identity, answer/result, audit-log, authorized-access and retention information, without adding ordinary account fields to assessment completion.
+- Existing participants in either normal PWA or assessment must complete the form if the current policies have not been acknowledged or either purpose choice has never been recorded. A saved `false` is complete. Legacy defaults alone do not establish a recorded choice. Preserve saved choices when only policy acknowledgement requires renewal.
+- Persist the two account-wide choices, choice metadata, acknowledgement version/time and concurrency revision atomically in the participant database. Retain narrowly scoped acknowledgement/choice history. Reject stale tabs and incomplete direct requests; do not use local storage or a JWT as evidence of current completion. Both optional purposes may be refused without losing course or assessment access after acknowledgement.
+- Keep saved-choice profile controls consistent with the policy. Preference capture does not activate a course, collection, computation, export, or dashboard. Preserve legitimate guest access and safe normal/assessment continuation. Include the backend assessment self-deletion restriction needed to support its notice.
+- Update the published-policy source in `apps/docs/docs/datenschutz.mdx` and its English counterpart from the supplied 8 September revision, including the user's later assessment clarification. Keep UI and policy links aligned. Describe deferred capabilities truthfully; do not introduce a claim about scoring retention, analytics availability, export availability or deletion timing that the first release cannot support.
+
+### Extraction and ownership
+
+Main owns the focused source/migration dependency cut, auth integration and delivery packaging. The existing broad core PR includes export services, scoring changes, an analytics schema foundation and a withdrawal processor. Do not publish the entire branch as the first milestone or remove these features destructively. Reuse canonical participant field names and acknowledgement semantics, and verify a migration path compatible with later DPO integration; do not import the full analytics schema merely to save two choices or rewrite already-applied migrations.
+
+For this extraction, replace W1's processing dependency with preference persistence: the first-milestone service writes participant choices and their audit event without calling `invalidateAnalyticsEligibility`, creating withdrawal work or starting its consumer. The existing full-DPO service retains those responsibilities for the later milestone. Bringing processing online later requires the writer/withdrawal integration before activation; a saved preference alone is not proof that the processing contract is implemented. Preserve the account row lock and revision checks independently of the analytics-wide lock. Consolidate the account-only regression cases and retain withdrawal-specific tests with their later owner.
+
+Before source extraction, record the exact target schema, canonical participant fields, generated account-only migration identity, and every overlapping operation in the retained broad migrations. Define the later migration path without duplicate column/table creation or edits to already-applied SQL. The existing bundled consent/analytics migration cannot be copied wholesale. Schema-equivalence and upgrade verification must cover both a current-target installation and the later combined DPO path. This reconciliation is a first-milestone implementation prerequisite; analytics computation and its schema are not.
+
+Delegate only settled, separable source work after that dependency cut is known. Preserve the existing core and AI worktrees, unpublished commits and KB WIP. Resolve the focused prerequisite PR packaging before any forge topology change. Core continues to target `v3`; any necessary AI auth adaptation targets `v3-ai` and preserves its current LTI account/guest/scoped-token handling. The future `v3` to `v3-ai` merge remains a compatibility obligation, not authority to merge either target.
+
+### Focused acceptance
+
+Use synthetic fixtures for new normal signup, first assessment entry, and existing participants in both modes with missing acknowledgement, outdated version, either missing choice, and both saved refusals. Verify reload and a new session, profile updates, safe return to the intended activity, duplicate submissions, stale-tab rejection and acknowledgement renewal without resetting choices. Exercise old-token/direct protected API requests and legitimate guest flows; assessment deletion must remain denied server-side.
+
+Verify the minimum schema-aware migration against the target schema without backfilling acceptance. Check DE/EN desktop/mobile forms, collapsed disclosure content, keyboard interaction, policy links and the rendered policy pages. Run focused persistence/auth tests plus required package checks and independent reviews on the extracted source. Historical full-branch checks are reusable only where the tested source and dependencies remain unchanged. Complete exact-head published checks before claiming draft delivery.
+
+### Milestone ownership and test portfolio
+
+This assignment supersedes the older feature-wide Delegation Map and verification dependencies for the first release. Main retains coupled auth, persistence, migration and integration decisions. Source workers receive only the settled owned subset; no worker owns topology or external effects.
+
+| Work | Milestone and owner | Test obligation and acceptance |
+| --- | --- | --- |
+| Participant fields, acknowledgement, revision and history; minimum migration | M1, main | Replace/consolidate existing account DB cases for the extracted dependencies; extend migration verification for the later combined path |
+| Normal signup, assessment entry, existing-account gate and profile | M1, one bounded source worker after the contract is fixed; main integrates auth | Extend existing auth/persistence cases and add focused missing-choice, saved-false, renewal and normal/assessment browser cases where absent |
+| German policy, English translation and concise disclosures | M1, main owns source alignment; bounded copy composition may be delegated | No prose-pinning tests; render pages, check links, manually compare the supplied source, and capture relevant DE/EN responsive interactions |
+| KB confirmation and transfer | M2, existing KB slice owner | Existing W4 tests plus real transfer/ingestion and direct-bypass acceptance; never a prerequisite for M1 |
+| Exports, LA processing and retained points | M3, existing W1 processing, W2 and W3 owners | Preserve existing withdrawal/export/scoring tests and later integration obligations; run only if their behavior changes, never as M1 completion gates |
+
+The first milestone stops at its reviewed, published draft with exact-head evidence and stopped runtime. It does not wait for M2/M3 and does not itself authorize ready marking, merging or deployment.
 
 ## Separate target baselines
 
@@ -107,6 +149,519 @@ Main retains schema, authorization, release, and withdrawal seams because their 
 Commit the approved plan before implementation. Commit coherent substantive slices, then run required simplifier and risk reviewer together when both apply. Main verifies and dispositions their findings. Run one integrated final reviewer on the complete committed local package after all required workflow evidence and exact runtime shutdown. Do not reuse draft review as functional integration review.
 
 ## Progress
+
+### Route and actual storage transfer verified — 2026-09-09, 17:41
+
+The target-branch route fix resolves the original 404. Main committed target
+integration as 71413d69d; all prior KB changes remain uncommitted. No CLI upgrade
+needed (host and verification use0.0.59; published0.0.62 is a separate retained
+execution recovery fix). No push or shared-target merge.
+
+The first transfer failed because selected manage,email omitted the existing
+Blob route. A new kb-storage profile was rejected by post-start's allowlist and
+rolled back. Main removed it and included blob in the existing Manage profile
+ONLY in the disposable verification config. Canonical manage,email ensure now
+succeeds with drift[]. Keep this test-local route setting for future runs.
+
+Actual synthetic upload succeeded through browser: both confirmations required,
+53-byte dpo-kb-synthetic.txt created as ADDED. Read-only scoped Prisma/Azurite
+proof passed after correcting its hostname guard to the exact provider alias:
+receiptBound:true, bothConfirmations:true, storedBytes:53; downloaded bytes equal
+synthetic input. Evidence /private/tmp/dpo-kb-transfer-proof-verified.log;
+screenshot /private/tmp/dpo-kb-upload-success.png. The verification-only proof
+script is packages/graphql/test/kb-transfer-proof.local.ts; do not copy into
+production source as an automated test without proper packaging.
+
+Browser closed. Exact canonical stop succeeded in
+/private/tmp/dpo-target-recovery-stop.log; provider reports Stopped and no exact
+workspace route remains in dpo-target-recovery-routes-final.json. Remaining work: ingestion and direct-service bypass
+proof, legacy renewal and exposure enforcement, KB review/commit, AI common
+contracts/export adapters, integrated review and both complete draft updates.
+
+### Target route recovery verified — 2026-09-09, 17:37
+
+Target merge committed as 71413d69d with KB work still unstaged/untracked.
+Existing stash retained. Five host runtime-readiness tests, one container
+Pages Router config test and 30 KB confirmation tests pass. Serial check graph
+passed30 tasks before the expected old-index SDL comparison; generated SDL
+is byte-identical to task source. Separate GraphQL check:ts and remaining five
+package checks pass. Staged secret and whitespace checks pass. Split host/
+container checks replace hooks (HUSKY=0) for the merge only. No push.
+
+Actual browser opens a newly created synthetic KB and its resource controls;
+the old 404 is resolved by upstream pagesRouterOnly/clientRouterFilter fix.
+Earlier synthetic KB no longer existed after managed startup; no retained or
+production database was intentionally mutated. Synthetic upload requires both
+checkboxes; first transfer failed with browser REQUEST_SEND_ERROR because
+manage,email profile does not publish existing blob route. Verification-only
+kb-storage profile adds apps:[blob], no extra services; canonical ensure
+manage,email,kb-storage runs in /private/tmp/dpo-kb-storage-route.log.
+Browser dpo-ai-kb stays active for current retry. Stop exact runtime afterward.
+
+### Target route-fix integration — 2026-09-09
+
+The user approved investigating/upgrading runtime or target state. Live host
+CLI and AI verification config are devrouter 0.0.59; latest published CLI is
+0.0.62, whose recovery fix does not address this application route failure.
+Current v3-ai contains cbcede7971 (PR5835), which explicitly fixes Pages Router
+Turbopack route-scan overwrite and adds dynamic-manifest readiness. This is a
+concrete readiness reason to integrate, not a freshness-only loop.
+
+Main owns this coupled merge/recovery. Target b004e203f73c9ef37fd0a8a081276ef41f3316c3
+merged into AI task without conflicts using --no-commit. Preserve MERGE_HEAD;
+merge commit awaits checks. All KB WIP was preserved in stash
+5a08925d7532a0e69350dc035f36a8a2af45dc1e and applied without conflicts; retain
+that backup. Index contains target integration only; KB WIP stays unstaged.
+97 target files synchronized into the existing disposable verification copy,
+retaining its runtime settings and blob port10013. Canonical ensure manage,email
+runs in /private/tmp/dpo-kb-target-route-recovery.log. Host runtime-readiness
+regressions run in /private/tmp/dpo-target-runtime-tests.log. No host CLI
+upgrade, shared-target merge, push, or release. Finish/reuse these exact runs.
+
+### KB durable confirmations in progress — 2026-09-09, 16:33
+
+AI task worktree remains on rs/dpo-ai-integration with uncommitted KB changes.
+Added schema-generated KBMaterialConfirmation migration and receipt pointers
+for resources, upload tickets and chatbot bindings. Verification migration and
+Prisma generation/build completed in the approved disposable AI checkout;
+logs /private/tmp/dpo-kb-migration-deploy.log and dpo-kb-prisma-build.log.
+Do not claim production migration or final schema review.
+
+Request upload/replacement and URL creation require both confirmations and the
+current notice. Final upload/replacement and retries validate actor/material
+and scope receipts. Attachment requires renewed confirmation, records the
+chatbot scope and renews existing material receipts transactionally. Removal
+of an audience permits continued preparation; additions/course changes deny
+stale use. Single-ingestion optimistic claim now checks version and receipt.
+GraphQL operations, schema and UI attachment controls are wired.
+
+Parent ran 30 focused pure/service-mock tests successfully; log
+/private/tmp/dpo-kb-receipt-tests-verified.log. GraphQL check:ts and KB component
+check pass in dpo-kb-types-final.log and dpo-kb-ui-types.log. Prisma and GraphQL
+builds pass with existing warnings. Scoped Biome formatting applied; existing
+span role=heading error in KnowledgeBaseChatbotBindings remains, plus existing
+warnings. Exact diff whitespace check passes. Banach completed; parent fixed
+one test constant typo and closed the child. No commit or push this continuation.
+
+Browser created only the synthetic KB 68dbce8c-bdef-4a1b-8ebe-e9e1355c43f1
+through Manage. Its detail route returns 404/PageNotFoundError ENOENT despite
+[id].tsx existing in container. Dynamic route absent in Next dev manifest.
+No document upload submitted. Earlier invocation mixed agent-browser versions;
+pinning @0.37.1 and fresh seeded login reproduced 404. Screenshot
+/private/tmp/dpo-kb-route-404.png; diagnostic dpo-kb-route-diagnostic.log.
+Browser closed. Canonical stop succeeded in /private/tmp/dpo-kb-stop.log.
+Provider volumes-home-git-klicke-af1a648d reports Stopped; exact source and
+provider absent from /private/tmp/dpo-kb-stopped-routes.json. No deletion.
+
+Remaining KB work: recover dynamic route via managed lifecycle and verify real
+synthetic transfer/ingestion; migrate existing knowledge.test.ts fixtures to
+new confirmation API and add direct service/database bypass checks; provide a
+usable confirmation renewal path for legacy unattached material (current bulk
+ingestion denies missing receipts); verify retrieval scope behavior, attachment
+renewal and concurrent changes. Full slice/final reviews, AI shared-core
+integration/export adapters and both full draft publications remain unfinished.
+Both live PRs remain OPEN/DRAFT at old published heads (5819 -> v3,
+5825 -> v3-ai). AI local upstream drift 28 ahead/0 behind; target v3-ai drift
+21 ahead/15 behind after fetch. Do not repeat target integration solely for drift.
+
+### AI target and LTI slice committed — 2026-09-09, 10:38
+
+AI target merge ccfda0f95 incorporates the already-resolved c939ab348a target;
+LTI fix/test commit 8a3d16210 follows it. KB UI remains uncommitted. No push.
+Five final LTI tests pass, including failed exchange without fallback and
+cookie-less valid return; log /private/tmp/dpo-ai-lti-test-final.log. Parent
+removed an overstrict no-cookie-write assertion: successful cookie-less return
+does not forbid an attempted cookie write. Existing production behavior stays.
+
+All 95 host CLI checks pass. Serial package checks pass 39/40; the sole failing
+wrapper is the known verification-index SDL diff, with identical generated
+schema and separate passing GraphQL TypeScript proof. Remaining lint, syncpack,
+agent instructions, identity, removed-document and Prisma-sync checks pass.
+Focused Biome passes with four pre-existing React-import warnings; staged
+Gitleaks scans pass. Commits used HUSKY=0 with these split host/container checks
+instead of trying to run host-only tests in a container or container packages
+on the host. Logs: /private/tmp/dpo-ai-host-checks.log,
+/private/tmp/dpo-ai-package-checks.log, /private/tmp/dpo-ai-other-checks.log,
+/private/tmp/dpo-ai-ui-biome.log. Gauss completed and is closed.
+
+Slice reviewer Turing (01a08551-0cd0-7cf0-bd84-a2e10d824406) and simplifier
+Confucius (01a08551-0d38-7cf1-baa9-2afb11325f2f) own the immutable LTI range.
+Collect those same reviews; neither is final-package review. Exact disposable
+shutdown passed; provider reports Stopped and zero source routes, with log
+/private/tmp/dpo-ai-final-stop.log. Browser is closed. Full KB receipt
+enforcement, AI shared-contract integration/export
+adapters, integrated final review and full draft publication remain incomplete.
+
+### AI source checks and first KB browser proof — 2026-09-09, 10:23
+
+KB, GraphQL TypeScript and Manage checks pass in the new disposable runtime.
+GraphQL generate passes and the resulting SDL is byte-identical to the AI
+task's staged target-merge SDL. The wrapper check:schema reports the expected
+diff against the verification checkout's older index; this is not generator
+drift. Logs: /private/tmp/dpo-ai-graphql-check.log,
+/private/tmp/dpo-ai-graphql-ts.log, /private/tmp/dpo-ai-manage-check.log.
+
+Delegated synthetic lecturer login reaches the ordinary knowledge-base page.
+Selecting the local synthetic TXT file shows both confirmations unchecked;
+one checked leaves Upload disabled, both enable it, and cancellation/reopening
+resets both for the same file. No upload was submitted. Screenshots inspected:
+/private/tmp/dpo-ai-kb-confirmation.png and /private/tmp/dpo-ai-kb-mobile.png
+(390px). The modal fits its viewport; full DE, keyboard, URL and replacement
+coverage remains outstanding. Browser session dpo-ai-kb is closed. This proves
+only client behavior: persisted receipt and direct-server enforcement remain
+unfinished. Gauss still owns the pending LTI regression harness.
+
+### Disposable AI verification restored — 2026-09-09, 10:19
+
+Approved restart exited zero. Azurite listens on loopback port 10013; the
+manage,email profile reports all required services healthy and drift empty.
+This closes startup recovery. KB package typecheck passes in the exact
+verification checkout; log /private/tmp/dpo-ai-kb-check.log. GraphQL typecheck
+is next. Native executor Gauss (01a0853d-f730-7122-8ba1-9a7f7cf38cb2) owns
+only focused LTI regression verification in the AI task worktree; parent owns
+synchronization, execution, and integration. No server attestation completion
+or draft publication is claimed. Stop the exact runtime after verification.
+
+### Bounded runtime recovery approved and executed — 2026-09-09, 10:16
+
+User explicitly approved the five-container recovery exception. Rechecked all
+five exact ownership labels, stopped those dependencies without deleting data,
+then canonical devrouter stop succeeded with zero routes. Devsy still reported
+Busy, so provider-level stopped proof remains incomplete. Canonical ensure with
+KB_GRAPH_BLOB_HOST_PORT=10013 and manage,email was admitted and is running its
+lifecycle hook. Preserve this operation; log
+/private/tmp/dpo-ai-approved-restart.log. The prior approval blocker is resolved.
+Remote fetch now puts core 34 ahead/3 behind origin/v3, AI 166 ahead/18 behind
+origin/v3; task heads and pending merge remain unchanged.
+
+Hooke completed and is closed. Its source mapping confirms KB confirmations
+remain client-only, with no GraphQL confirmation inputs, durable receipt, or
+ingestion binding. No KB import/copy operation exists; catalog imports apply
+only to elements and answer collections. Existing exposure is KBChatbot to
+Chatbot.courseId, with participant participation and publication gates.
+New attachment and replacement need renewed confirmation; retries may reuse
+the matching receipt. Preserve existing unattached preparation behavior when
+binding the preparation purpose separately from chatbot exposure. Do not add
+group/staff access models or send receipt actor/course data downstream.
+
+### Recovery approval still pending — 2026-09-09, 08:22
+
+The same managed-runtime recovery boundary has persisted for three goal turns.
+Provider state is still Busy. The explicit five-container stop exception is
+unanswered; automatic goal continuations are not approval. No raw stop, state
+edit, reset, or further startup retry was performed. Mark the goal blocked
+pending that ruling or repair of the owning tool. Preserve the native KB mapper
+Hooke (01a084cb-80c1-78c1-80ee-f07d136d49df): its supported wait remains
+nonterminal, so collect the same owner on resume rather than replacing it.
+Its mapping does not remove the runtime verification dependency. No new source
+changes or draft publication occurred during these waits.
+
+### Disposable AI lifecycle recovery blocked — 2026-09-09, 08:16
+
+Fresh remote-state checks preserve core HEAD 23acb5de8d (33 commits ahead of
+its task upstream, 34 ahead/2 behind origin/v3) and AI HEAD 3b9c982bd2 (task
+upstream equal, 166 ahead/17 behind origin/v3). Both existing PRs remain draft
+on their respective bases. The AI resolved target merge c939ab348a remains
+staged, with KB UI and LTI changes unstaged. Whitespace checks pass. No source
+commit or push occurred in this continuation.
+
+Initial fresh startup failed because Azurite's host port 10003 was occupied.
+Port 10013 has no listener and is supported by the existing
+KB_GRAPH_BLOB_HOST_PORT override; no source configuration edit is necessary.
+Managed stop returned `Workspace workloads remain running after stop.`
+Both documented repair and explicit manage,email startup with the new port
+now return `Reliability operation-request blocked.` The read-only reliability
+record proves phase stopping, desired stopped-by-user, drained interrupted
+ensure, and no worker. Do not repeat startup or manually edit its state.
+
+Exact provider volumes-home-git-klicke-af1a648d reports Busy, and its source
+has zero routes. Five Compose dependencies remain running: postgres, mailhog,
+redis_assessment, redis_cache, redis_exec, each named
+default-vo-1f434-<service>-1. Docker labels independently prove all five belong
+to this disposable checkout's .devcontainer directory. The app, Hatchet and
+Azurite containers are Created. No retained task data was reset or deleted.
+Logs: /private/tmp/dpo-ai-stop-resume.log,
+/private/tmp/dpo-ai-port-repair.log, /private/tmp/dpo-ai-port-ensure.log,
+/private/tmp/dpo-ai-doctor-resume.json.
+
+Recovery boundary: the lifecycle skill forbids bypassing managed lifecycle
+locks with raw container mutations. A narrowly approved exception could stop
+only those five verified disposable dependencies, then rerun canonical stop
+to obtain its real stop proof, and ensure manage,email with port 10013.
+This stops processes and preserves all volumes; no deletion or state-file
+repair is proposed. Otherwise the owning devrouter tool needs repair.
+Native explore Hooke owns the bounded current KB scope/binding mapping while
+main owns runtime recovery. Implementation verification and final delivery
+remain incomplete. This new capability blocker has one continuation so far;
+do not mark the active goal blocked prematurely.
+
+### Approval received; fresh AI verification provisioned — 2026-09-09
+
+User approved both pending decisions: create a fresh disposable AI verification
+environment while preserving retained data, and bind KB confirmations to existing
+course/chatbot access rather than introducing group/staff access controls.
+Goal is active again. These decisions supersede the blocked checkpoint below.
+
+Created detached verification checkout at
+/Volumes/HOME/Git/klicker/klicker-uzh/trees/rs/dpo-ai-verification from AI HEAD
+3b9c982bd2, applied the exact current task diff (including the resolved pending
+target merge), and copied the untracked KB confirmation component. The actual
+task worktree and pending merge remain untouched. New Compose-scoped pgdata,
+Azurite and Hatchet volumes belong to this new runtime; only the existing pnpm
+package cache is shared. Managed ensure uses manage,email and is queued behind
+another provider operation. Preserve its live process; no reset of retained
+core/AI data is authorized or attempted by this new provisioning step.
+
+
+### Awaiting AI environment and KB scope decisions — 2026-09-09, 01:43
+
+The same pending environment and product decisions have persisted across more
+than three goal continuations. Independent assessment presentation, privacy-link
+correction, scheduled withdrawal proof and bounded compatibility mapping are now
+complete. Further AI source accumulation without checks would not provide a
+reviewable integration. Pause the goal pending user input; do not mark complete.
+
+Required next input: authorize a fresh disposable AI verification environment
+while preserving retained data; settle whether KB attestations bind to existing
+course/chatbot access (recommended) or introduce the prototype's new group/staff
+access controls. The latter materially expands access semantics and cannot be
+inferred from generic implementation approval.
+
+Checkpoint verified: core HEAD 23acb5de8d, 33 unpublished commits; only this
+progress file is dirty. AI HEAD 3b9c982bd2 has resolved target merge c939ab348a
+staged but uncommitted, with KB UI and LTI adapter unstaged. Both diff checks
+pass. The named pre-integration stash remains. Both exact runtime providers
+report Stopped. No children remain active; no PR update or final review is
+claimed. Resume these exact worktrees and pending merge rather than recreating
+them after the decisions arrive.
+
+
+### AI compatibility mapping and LTI adapter — 2026-09-09
+
+Singer completed the bounded six-file comparison with concerns and is closed.
+The report distinguishes existing AI KB/generation/auth structures from core DPO
+additions. Preserve AI initialization, KB routes, secure partitioned cookies,
+typed LTI mutation, generation context and KB Hatchet contracts. Integrate shared
+account-gate, withdrawal and WebSocket checks as explicit additions, never by
+replacing whole files. Export routes travel with their service implementations.
+The pending AI target merge already restores its newer feature-flag contracts;
+verify current merged source rather than applying advice from the older head
+without checking it. The mapping is source evidence, not runtime compatibility.
+
+Main added the self-contained LTI adapter in AI's
+apps/frontend-pwa/src/lib/getParticipantToken.ts. Presence of the canonical probe
+cookie or jwt query now marks an attempted login, including empty values;
+failed attempts throw LTI_AUTHENTICATION_FAILED without fallback. Existing AI
+cookie security and mutation types are preserved. This corrects the mapper's
+truthiness recommendation to match the core attempted-login contract. Diff
+checks pass; change is unstaged and uncommitted, separate from the pending merge
+index and KB UI. Required behavior tests, browser proof and review await the
+authorized AI-compatible verification environment. No runtime was started.
+
+
+### Scheduled withdrawal delivery passed — 2026-09-09, 01:35
+
+The corrected guarded synthetic harness exited zero at 01:35:04. Actual Hatchet
+worker log records the withdrawal action at 01:35:00. The harness never calls
+the handler directly: it observes deletion of its analytics derivative,
+retained participant and immutable choice event, and a completedAt receipt.
+Its own cleanup passed. This closes real scheduled delivery for the existing
+cleanup service; prior seven-family regressions supply broader deletion coverage.
+Producing log: `/private/tmp/dpo-worker-delivery-clean-result.log`.
+
+The earlier cleanup-failure fixture was removed through the permitted participant
+cascade after the disposable guard: exactly one synthetic participant and owner.
+Log: `/private/tmp/dpo-worker-fixture-cleanup.log`. No real data was processed.
+Both temporary workflow-selection settings are removed. Canonical stop completed;
+provider volumes-home-git-klicker-klicker reports Stopped and the final route
+snapshot `/private/tmp/dpo-worker-final-routes.json` contains zero exact matches.
+Lorentz is complete and closed. Singer's cross-branch mapping remains active.
+AI verification and KB scope ruling still block their respective work; no draft
+PR publication or full-package completion is claimed.
+
+
+### Scheduled withdrawal acceptance in progress — 2026-09-09, 01:27
+
+First runtime fixture failed the PIN-course constraint before withdrawal creation;
+executor corrected it to SSO and completed. Parent verified the correction and
+closed Lorentz. Second run observed actual scheduled deletion and a completion
+receipt, then cleanup failed because the harness directly deleted immutable
+history. Parent removed that direct delete, preserving the allowed participant
+deletion cascade. The clean rerun is active; do not claim overall harness success
+until it exits zero. A prior synthetic fixture may remain from cleanup failure;
+identify only the synthetic-withdrawal-worker prefix in the guarded disposable
+database and remove its exact created records after the live run completes.
+
+Native executor Lorentz (`01a08352-e9bc-7483-a3f4-5a84c43beb45`) owns only the
+gitignored `withdrawal-worker-delivery.mjs` harness in the existing verification
+checkout. It creates and removes its own guarded synthetic fixture and observes
+the real scheduled worker without invoking the cleanup handler. Parent owns
+execution and receipt verification. After repeated design deliberation, parent
+redirected the same child to implement from the already verified schema.
+
+The exact disposable runtime is active under live-quiz,email while this check
+is in progress. Temporary harness-only HATCHET_WORKFLOWS forwarding is present
+in post-start.sh and turbo.json. Worker log confirms only
+participantAnalyticsWithdrawals is selected. Production handler, task registration,
+worker entrypoint and handler types match core source. Remove both harness-only
+settings and stop/verify the exact runtime after the check; no retention lease
+exists beyond active verification. AI runtime remains stopped.
+
+
+### Current assessment presentation verified — 2026-09-09, 01:19
+
+Core disposable runtime resumed successfully without bootstrap recreation.
+Current disclosure component and completion page match core source. Synthetic
+participant session verifies the four collapsed sections, assessment identity
+and audit-log collection, lecturer/assessment-staff access, and retention notice
+in EN desktop and DE mobile. The existing participant's saved independent
+choices are preserved; acknowledgement remains unchecked and submit disabled.
+This is presentation proof using NEXT_PUBLIC_IS_ASSESSMENT, not a new backend
+assessment-enforcement or external identity-provider test.
+
+Browser inspection found the research policy link rendered as literal Markdown
+on completion. Commit `23acb5de8` uses the existing DynamicMarkdown renderer.
+PWA container types and one-file Biome checks pass, as do staged Gitleaks,
+identity and diff checks. Unaffected prior checks were reused; host hooks were
+replaced with split host/container evidence. No prose-pinning test was added.
+The corrected link resolves to the policy; mobile viewport and scroll width
+both equal 390. Screenshots were visually inspected:
+`/private/tmp/dpo-assessment-current-collection-en.png`,
+`/private/tmp/dpo-assessment-current-retention-en-mobile.png`, and
+`/private/tmp/dpo-assessment-current-sharing-de-mobile.png`.
+
+Temporary flags are removed from verification post-start. Browser is closed;
+canonical stop completed, provider `volumes-home-git-klicker-klicker` is Stopped,
+and `/private/tmp/dpo-assessment-current-final-routes.json` has zero exact
+provider/source route matches. Scheduler source wiring exists on a five-minute
+cron, but actual delivery remains unverified. AI disposable-environment approval
+and KB audience-scope decision remain pending. No PR push/update occurred.
+
+
+### Target integration resumed — 2026-09-09
+
+Core target integration completed as `bd446c9a8a`, incorporating `origin/v3`
+at `3f6917ecc5`. Refreshed core is 33 ahead and zero behind its target,
+and 32 ahead of its published upstream. Both existing PRs remain open drafts
+against their respective targets.
+
+AI target `c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da` is integrated in the
+index but not committed pending checks. Three conflicts are resolved:
+preserve raw guarded migration instructions and participant-global consent
+documentation; await the new asynchronous feature-flag check while retaining
+analytics eligibility filtering and repeatable-read transactions. All four
+analytics feature checks are awaited. Staged and working diff checks pass.
+
+The seven pending KB UI files were preserved in stash
+`beb69999ceab84877d7f00b8a51752aeb3fbc11e`, then restored successfully after
+resolution. The backup remains; do not drop it without checking later changes.
+KB UI is unstaged and separate from the merge index. Exact AI runtime startup
+failed through managed devrouter. The managed tool unexpectedly reran
+`post-create.sh`, which reported `prisma reset/push never succeeded` at 01:08.
+Do not retry or claim no database effects: the failure does not establish
+whether earlier lifecycle steps changed retained state. No manual reset or
+bootstrap repair was performed. Canonical stop completed; provider
+`rs-dpo-ai-integration` reports Stopped. Preserve existing conflict-attribution
+child Singer. Integration commit, container checks and browser proof remain
+pending an authorized disposable runtime or safe runtime recovery.
+
+
+### Export correction reviewed; integration mapping — 2026-09-09, 00:58
+
+Slice review: done — Confucius found no qualifying findings in
+`36d9b0c0a..cf22d93ce`. UUID-array parameter binding preserves row locks,
+cohort comparison, research authorization and artifact identifier stripping.
+The simplifier also found no justified reduction. Both children are closed.
+
+Read-only merge-tree proof shows core HEAD merges cleanly with origin/v3
+(tree `22cc027b078b6d3bb83a1ba66f914195fea7fd3c`). Neither branch moved.
+Core-to-AI merge-tree exposes pre-existing and DPO overlap across auth,
+feature flags, runtime and schema. Native explorer Singer owns the bounded
+six-file conflict attribution, child `01a0833f-4b16-7e90-b7d2-ed547f2a9cec`.
+Keep core/AI source distinct and preserve dirty KB UI changes. AI is 19 ahead
+and 26 behind its own origin/v3-ai target at this snapshot. Compatibility
+remains unproven; target updates need deliberate integration before delivery.
+
+### Retention and cohort-lock fixes committed — 2026-09-09, 00:54
+
+Committed `36d9b0c0a` for retained private weekly timeline points and
+`cf22d93ce` for the research cohort UUID-array lock query. Their 13 PostgreSQL
+regressions passed against the current account contract; current four-file
+format check and staged secret/identity checks pass. No push occurred.
+
+Retention simplifier Maxwell completed with no suggested reduction and is
+closed. Retention risk reviewer Confucius completed with no qualifying findings
+for `de6da451f..36d9b0c0a`. The same child
+`01a08339-ad2d-7352-b5b8-0539669d0926` now owns the narrow export risk review.
+Export simplifier Arendt completed with no reduction needed and is closed.
+Preserve the active risk owner. The export changes query binding,
+not release policy. Full build and final package review remain outstanding.
+
+Exact verification provider is Stopped with zero source/provider route matches.
+No runtime or browser retained. Current ordinary signup/profile browser proof
+is recorded below; assessment-mode latest-source proof remains open.
+
+### Account slice review and current UI proof — 2026-09-09, 00:51
+
+Slice review: done — native McClintock returned no qualifying findings for
+`9e0b0ca00..fc59e64f9`, covering authorization, locks, withdrawal/re-enable,
+Python publication, migrations and supplied tests. Parent inspected the result;
+the acknowledgement renewal gate and separate analytics-choice eligibility are
+distinct contracts. This is slice evidence, not final package readiness. Both
+review children are closed; simplification was implemented in `de6da451f`.
+
+Current synchronized signup source now has browser proof in EN desktop and DE
+390px mobile: four collapsed disclosures, research initially allowed, LA unanswered,
+and disabled account creation. Collection disclosure expands correctly and mobile
+width equals scroll width. Current profile shows saved research true and LA false,
+with policy and guide links pointing to their intended destinations. Screenshot
+`/private/tmp/dpo-current-profile-links-mobile.png` captures the actual settings
+section and was visually inspected. Signup evidence is
+`/private/tmp/dpo-current-signup-en.png` and
+`/private/tmp/dpo-current-signup-de-mobile.png`. Assessment-mode latest-source
+browser proof remains open. No actual external identity provider login claimed.
+
+Browser closed; exact verification provider reports Stopped. No publication or
+PR update yet. Remaining work and separate target delivery are unchanged.
+
+### Core account slice committed and review active — 2026-09-09, 00:44
+
+Main committed account completion, disclosure, ingress enforcement and withdrawal
+as `fc59e64f9`, then the verified simplifier follow-up as `de6da451f`.
+The follow-up removes unused Python field-name options and a forwarding-only
+GraphQL utility module. Ten Python test groups, GraphQL types and focused format
+checks pass. Previous broad type/lint evidence remains applicable to unaffected
+content. Host policy checks pass all 78 tests; schema sync, dependency consistency,
+staged formatting, identity and redacted Gitleaks checks pass. Host hooks were
+replaced with their completed host/container checks, not treated as passing runs.
+
+Source comparison found stale UI copies in the verification tree: latest
+assessment wiring, disclosure copy and privacy links were absent. Main copied
+the exact current files and PWA typecheck passes. Earlier withdrawal-state proof
+remains valid for unchanged mutation/state logic; current-source browser proof
+of those presentation changes remains required. Do not claim the earlier
+assessment screenshots verify the latest source. Documentation was likewise
+synchronized before its formatting check.
+
+Darwin completed commit preparation and is closed. Its proposed monolithic host
+check command was rejected in favor of repository-required split execution.
+Preserve generated/applied migration history. Godel's simplification pass is
+complete and both findings are implemented. Slice reviewer McClintock remains
+active on the immutable original slice, child
+`01a0832c-d070-7211-ab81-e8c6a6cf561e`; preserve that owner. Final review is not
+yet due. Neither PR was pushed or updated.
+
+The separate weekly-point and research-export changes remain uncommitted.
+Their two PostgreSQL suites pass all 13 cases against the current account
+contract (`/private/tmp/dpo-retention-export-regressions.log`). They are not part
+of the account review range. KB scope question remains pending. Export LA/chat
+classes, KB server binding/transfer proof, scheduler delivery and target/AI
+integration remain unfinished.
+
+Exact verification runtime `trees/codex/dpo-verification`, provider
+`volumes-home-git-klicker-klicker`, is Stopped with zero matching routes. No
+runtime or browser retained. Next: disposition the active slice review, complete
+current-source UI proof, then continue the remaining packages and draft delivery.
 
 ### Profile withdrawal browser proof — 2026-09-09, 00:26
 
@@ -1225,3 +1780,30 @@ After the explicit ADMIN-download ruling, the core runtime was resumed for expor
 Native explore Boole completed export/audit mapping and was closed; findings and parent disposition are in `project/_local/reviews/2026-09-07-dpo-export-seams.md`. Native executor Aristotle completed the new request validator and focused test, then was closed. Parent verified the date correction and repaired the missing-acknowledgement test fixture, which had inadvertently restored acknowledgement through object spreading. All 14 focused tests pass, GraphQL generation/schema check/typecheck pass, and Biome checks pass for the touched validator and asset-route files. Logs: `/private/tmp/dpo-research-validator-test.log`, `/private/tmp/dpo-research-graphql-check.log`, `/private/tmp/dpo-validator-biome.log`. No export endpoint uses the helper yet; changes remain uncommitted pending package integration and applicable reviews.
 
 Docker recovered after the user's notification. Exact runtime reconciliation succeeded. The guide rendered in the browser at desktop and 390px mobile widths with no horizontal overflow; screenshots are `/private/tmp/dpo-guide-desktop.png` and `/private/tmp/dpo-guide-mobile.png`. All three fixed workbook URLs returned HTTP 200 with Excel content types and nonempty bodies. These requests used the development runtime; full production serving and the ordinary account completion route remain unverified. Browser session closed. Final provider status confirms core `Stopped`, and `/private/tmp/dpo-recovered-final-routes.json` has zero core route references. This supersedes the preceding unknown shutdown state. No child or browser is retained.
+
+
+### Core integration with the participant milestone — 13 September 2026
+
+Integrated source from participant milestone `3778bf9027` into the existing core
+worktree. Retained analytics withdrawal locking, invalidation and profile confirmation;
+canonical signup wording and shared choices come from the milestone. Policy renewal
+preserves historical choice timestamps and versions. Removed duplicate model and
+imports introduced by automatic merge. GraphQL generation and typecheck pass.
+
+The migration path now starts with the unchanged participant-policy migration,
+followed by generated `20260913150000_remaining_dpo_schema` and 17 separately
+executed concurrent index migrations. This supersedes the 22 older unpublished
+DPO migrations in this branch; none exists on `origin/v3`. The remaining schema
+was generated with Prisma 7.8 from the participant milestone schema to the core
+schema. Its owner preflight/check is retained because Prisma cannot express it.
+The milestone retains the immutable event triggers. No acceptance backfill was added.
+A rolled-back isolated-schema rehearsal passed; the full history subsequently
+applied through guarded `prisma:migrate:raw` to the empty disposable core database,
+including actual concurrent indexes. Prisma reports the database in sync.
+All 15 participant persistence/admission/history tests pass on that database.
+
+The merge is not yet committed. Export/scoring regression checks, complete package
+checks, independent integration review and draft updates remain pending. Managed
+core shutdown failed its recorded-resource guard and repair refused the stopping
+phase; do not claim the core runtime stopped. AI runtime was independently stopped
+and verified with zero routes after its audience-renewal regression passed.

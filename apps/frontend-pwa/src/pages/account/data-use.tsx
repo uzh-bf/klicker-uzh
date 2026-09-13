@@ -1,14 +1,22 @@
 import { useMutation, useQuery } from '@apollo/client'
 import Layout from '@components/Layout'
 import ParticipantDataDisclosure from '@components/participant/ParticipantDataDisclosure'
+import ParticipantDataUseChoices from '@components/participant/ParticipantDataUseChoices'
 import {
   CompleteParticipantDataUseDocument,
   GetParticipantAccountDataUseDocument,
+  SelfDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { participantDataUseReturn } from '@lib/participantDataUseReturn'
-import { Button, Checkbox, H1, UserNotification } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  H1,
+  H3,
+  UserNotification,
+} from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
@@ -30,6 +38,11 @@ function AccountDataUse() {
   const [acknowledged, setAcknowledged] = useState(false)
   const [failed, setFailed] = useState(false)
   const state = data?.selfAccountDataUse
+  const { data: selfData } = useQuery(SelfDocument, { skip: !isAssessment })
+  const identity =
+    selfData?.self?.email ??
+    selfData?.self?.institutionalEmail ??
+    selfData?.self?.username
   const researchChoice =
     research ?? (state?.researchChoiceRecorded ? state.researchConsent : true)
   const analyticsChoice =
@@ -68,7 +81,7 @@ function AccountDataUse() {
 
   return (
     <Layout>
-      <div className="mx-auto w-full max-w-2xl space-y-4">
+      <div className="mx-auto w-full max-w-2xl space-y-4 md:max-w-[1090px]">
         <H1>
           {t(
             isAssessment
@@ -84,105 +97,86 @@ function AccountDataUse() {
           </UserNotification>
         ) : (
           <form onSubmit={submit} className="space-y-4">
-            <ParticipantDataDisclosure isAssessment={isAssessment} />
-            {[
-              {
-                name: 'research',
-                title: t('pwa.createAccount.signup.researchConsentTitle'),
-                description: t(
-                  'pwa.createAccount.signup.researchConsentDescription'
-                ),
-                value: researchChoice,
-                set: setResearch,
-                yes: t('pwa.createAccount.signup.researchConsentYes'),
-                no: t('pwa.createAccount.signup.researchConsentNo'),
-              },
-              {
-                name: 'analytics',
-                title: t(
-                  'pwa.createAccount.signup.learningAnalyticsConsentTitle'
-                ),
-                description: t(
-                  'pwa.createAccount.signup.learningAnalyticsConsentDescription'
-                ),
-                value: analyticsChoice,
-                set: setAnalytics,
-                yes: t('pwa.createAccount.signup.learningAnalyticsConsentYes'),
-                no: t('pwa.createAccount.signup.learningAnalyticsConsentNo'),
-              },
-            ].map((choice) => (
-              <fieldset
-                key={choice.name}
-                className="space-y-2 rounded bg-slate-50 p-4"
-              >
-                <legend className="font-bold">{choice.title}</legend>
-                <DynamicMarkdown
-                  withProse
-                  withLinkButtons={false}
-                  className={{ root: 'prose-sm' }}
-                  content={choice.description}
+            <div className="flex flex-col gap-4 md:grid md:grid-cols-2">
+              <div className="space-y-4">
+                {isAssessment && (
+                  <section className="space-y-2 rounded bg-slate-50 p-4">
+                    <H3 className={{ root: 'mb-0 border-b' }}>
+                      {t('pwa.createAccount.signup.accessTitle')}
+                    </H3>
+                    {identity && (
+                      <>
+                        <p className="font-medium">{identity}</p>
+                        <p className="text-sm text-slate-600">
+                          {t('pwa.createAccount.signup.accessNoPassword')}
+                        </p>
+                      </>
+                    )}
+                  </section>
+                )}
+                <ParticipantDataDisclosure isAssessment={isAssessment} />
+              </div>
+              <div className="space-y-2 rounded md:bg-slate-50 md:p-4">
+                <H3 className={{ root: 'mb-0 border-b' }}>
+                  {t('pwa.createAccount.signup.dataUseTitle')}
+                </H3>
+                <ParticipantDataUseChoices
+                  disabled={saving}
+                  isAssessment={isAssessment}
+                  researchConsent={researchChoice}
+                  learningAnalyticsConsent={analyticsChoice}
+                  onResearchConsentChange={setResearch}
+                  onLearningAnalyticsConsentChange={setAnalytics}
+                  dataCy={{
+                    researchYes: 'account-data-use-research-true',
+                    researchNo: 'account-data-use-research-false',
+                    researchToggle: 'account-data-use-research-toggle',
+                    learningAnalyticsYes: 'account-data-use-analytics-true',
+                    learningAnalyticsNo: 'account-data-use-analytics-false',
+                    learningAnalyticsToggle:
+                      'account-data-use-analytics-toggle',
+                    learningAnalyticsPrivacy: 'account-data-use-privacy-policy',
+                  }}
                 />
-                {[true, false].map((value) => (
-                  <label
-                    key={String(value)}
-                    className="flex items-center gap-2"
-                  >
-                    <input
-                      type="radio"
-                      name={choice.name}
-                      required
-                      checked={choice.value === value}
-                      onChange={() => choice.set(value)}
-                      data-cy={`account-data-use-${choice.name}-${value}`}
-                    />
-                    {value ? choice.yes : choice.no}
-                  </label>
-                ))}
-              </fieldset>
-            ))}
-            <a
-              className="underline"
-              href="/api/data-use-assets/guide"
-              target="_blank"
-              rel="noreferrer"
-              data-cy="account-data-use-learning-analytics-guide"
-            >
-              {t('pwa.createAccount.signup.learningAnalyticsGuide')}
-            </a>
-            <Checkbox
-              checked={acknowledged}
-              onCheck={() => setAcknowledged(!acknowledged)}
-              data={{ cy: 'account-data-use-acknowledged' }}
-              label={
-                <DynamicMarkdown
-                  withProse
-                  withLinkButtons={false}
-                  content={t(
-                    isAssessment
-                      ? 'pwa.createAccount.signup.assessmentAcknowledgement'
-                      : 'pwa.createAccount.signup.acknowledgement'
-                  )}
-                />
-              }
-            />
+              </div>
+            </div>
             {failed && (
               <UserNotification type="error">
                 {t('shared.generic.systemError')}
               </UserNotification>
             )}
-            <Button
-              primary
-              type="submit"
-              loading={saving}
-              disabled={!acknowledged || analyticsChoice === undefined}
-              data={{ cy: 'account-data-use-submit' }}
-            >
-              {t(
-                isAssessment
-                  ? 'pwa.createAccount.signup.assessmentSubmit'
-                  : 'shared.generic.continue'
-              )}
-            </Button>
+            <div className="flex flex-col items-start justify-between gap-2 rounded bg-slate-100 p-4 md:flex-row md:items-center md:gap-4">
+              <Checkbox
+                checked={acknowledged}
+                onCheck={() => setAcknowledged(!acknowledged)}
+                data={{ cy: 'account-data-use-acknowledged' }}
+                label={
+                  <DynamicMarkdown
+                    withProse
+                    withLinkButtons={false}
+                    content={t(
+                      isAssessment
+                        ? 'pwa.createAccount.signup.assessmentAcknowledgement'
+                        : 'pwa.createAccount.signup.acknowledgement'
+                    )}
+                  />
+                }
+              />
+              <Button
+                primary
+                type="submit"
+                loading={saving}
+                disabled={!acknowledged || analyticsChoice === undefined}
+                className={{ root: 'w-full flex-none md:w-max' }}
+                data={{ cy: 'account-data-use-submit' }}
+              >
+                {t(
+                  isAssessment
+                    ? 'pwa.createAccount.signup.assessmentSubmit'
+                    : 'shared.generic.continue'
+                )}
+              </Button>
+            </div>
           </form>
         )}
       </div>

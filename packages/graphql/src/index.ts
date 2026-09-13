@@ -44,7 +44,6 @@ import './schema/subscription.js'
 // }
 
 import { handleProcessCourseDeletion } from './services/courseDeletion.js'
-import { handleParticipantAnalyticsWithdrawals } from './services/participantAnalyticsWithdrawal.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
@@ -69,6 +68,7 @@ import {
   handleSendPushNotifications,
   handleSendTeamsNotification,
 } from './services/notifications.js'
+import { handleParticipantAnalyticsWithdrawals } from './services/participantAnalyticsWithdrawal.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
 

@@ -1,4 +1,7 @@
-import { verifyJWT } from '@klicker-uzh/util'
+import {
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { toast } from '@uzh-bf/design-system'
 import generatePassword from 'generate-password'
 import { GetServerSidePropsContext } from 'next'
@@ -21,6 +24,7 @@ interface Props {
   username: string
   participantToken?: string
   cookiesAvailable?: boolean
+  dataUseDisclosureVersion: string
 }
 
 function CreateAccount({
@@ -29,6 +33,7 @@ function CreateAccount({
   username,
   participantToken,
   cookiesAvailable,
+  dataUseDisclosureVersion,
 }: Props) {
   const t = useTranslations()
   const router = useRouter()
@@ -58,7 +63,7 @@ function CreateAccount({
               isProfilePublic: true,
               signedLtiData,
               dataUse: {
-                disclosureVersion: 'v1',
+                disclosureVersion: dataUseDisclosureVersion,
                 researchConsent: values.researchConsent,
                 learningAnalyticsConsent: values.learningAnalyticsConsent,
                 acknowledged: values.acknowledged,
@@ -172,6 +177,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           signedLtiData: signedLtiData.token,
           ssoId: signedLtiData.ssoId,
           email: signedLtiData.email,
+          dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
           username: generatePassword.generate({
             length: 10,
             uppercase: true,
@@ -186,6 +192,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     return {
       props: {
+        dataUseDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         username: generatePassword.generate({
           length: 10,
           uppercase: true,

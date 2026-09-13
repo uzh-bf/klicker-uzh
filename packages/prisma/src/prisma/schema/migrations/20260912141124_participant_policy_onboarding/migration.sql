@@ -1,7 +1,13 @@
 -- AlterTable
 ALTER TABLE "Participant" ADD COLUMN     "dataUseAcknowledgedAt" TIMESTAMP(3),
 ADD COLUMN     "dataUseAcknowledgedVersion" TEXT,
-ADD COLUMN     "dataUseRevision" INTEGER NOT NULL DEFAULT 0;
+ADD COLUMN     "dataUseRevision" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "learningAnalyticsChoiceAt" TIMESTAMP(3),
+ADD COLUMN     "learningAnalyticsConsent" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "learningAnalyticsDisclosureVersion" TEXT,
+ADD COLUMN     "researchConsent" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "researchConsentChoiceAt" TIMESTAMP(3),
+ADD COLUMN     "researchConsentDisclosureVersion" TEXT;
 
 -- CreateTable
 CREATE TABLE "ParticipantDataUseEvent" (
