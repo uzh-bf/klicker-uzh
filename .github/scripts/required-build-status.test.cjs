@@ -194,7 +194,7 @@ test('active image builds share a registry build cache on same-repo PRs', () => 
         item.path +
           ' ' +
           id +
-          ' runs on a native ARM64 runner and must not install QEMU'
+          ' builds on a runner native to its target and must not use QEMU'
       )
 
       const buildStep = job.steps.find((step) =>
@@ -202,6 +202,21 @@ test('active image builds share a registry build cache on same-repo PRs', () => 
       )
       assert.ok(buildStep, item.path + ' ' + id + ' has a build-push step')
 
+      // Each job publishes its own image, so its registry cache ref must
+      // name that same image instead of a shared or sibling one.
+      const metadataStep = job.steps.find((step) =>
+        (step.uses || '').startsWith('docker/metadata-action@')
+      )
+      assert.ok(metadataStep, item.path + ' ' + id + ' has a metadata step')
+      const published =
+        /\$\{\{\s*env\.REGISTRY\s*\}\}\/(\s*)\$\{\{\s*env\.([A-Z0-9_]+)\s*\}\}-([a-z0-9]+)\s*$/.exec(
+          String(metadataStep.with.images || '').trim()
+        )
+      assert.ok(
+        published,
+        item.path + ' ' + id + ' publishes a resolvable image reference'
+      )
+      const cacheImage = 'ref={0}/{1}-' + published[3] + ':buildcache'
       assert.equal(
         buildStep.with['no-cache'],
         "${{ github.event_name == 'push' }}",
@@ -215,7 +230,8 @@ test('active image builds share a registry build cache on same-repo PRs', () => 
         assert.ok(
           value &&
             value.includes('type=registry,ref=') &&
-            value.includes('-arm:buildcache') &&
+            value.includes(cacheImage) &&
+            value.includes('env.' + published[2]) &&
             value.includes(
               'github.event.pull_request.head.repo.full_name == github.repository'
             ),
