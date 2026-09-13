@@ -898,13 +898,13 @@
       }
 
       elements.loadFrame.addEventListener('click', loadIframe)
-      elements.sendInit.addEventListener('click', function () {
+      elements.sendInit.addEventListener('click', () => {
         sendInit('manual')
       })
-      elements.sendAdvance.addEventListener('click', function () {
+      elements.sendAdvance.addEventListener('click', () => {
         sendHostAdvance('manual')
       })
-      elements.reloadFrame.addEventListener('click', function () {
+      elements.reloadFrame.addEventListener('click', () => {
         if (!elements.quizFrame.src) {
           appendLog(
             'warning',
@@ -925,17 +925,17 @@
         })
       })
       elements.clearLog.addEventListener('click', clearLog)
-      elements.applyHeight.addEventListener('click', function () {
+      elements.applyHeight.addEventListener('click', () => {
         setViewportHeight(elements.customHeight.value)
       })
 
-      document.querySelectorAll('[data-height]').forEach(function (button) {
-        button.addEventListener('click', function () {
+      document.querySelectorAll('[data-height]').forEach((button) => {
+        button.addEventListener('click', () => {
           setViewportHeight(button.dataset.height)
         })
       })
 
-      elements.quizFrame.addEventListener('load', function () {
+      elements.quizFrame.addEventListener('load', () => {
         appendLog('info', 'Iframe load event fired.', {
           iframeUrl: elements.quizFrame.src || null,
           autoInit: elements.autoInit.checked,
@@ -946,7 +946,7 @@
         }
       })
 
-      window.addEventListener('message', function (event) {
+      window.addEventListener('message', (event) => {
         const frameWindow = elements.quizFrame.contentWindow
 
         if (!frameWindow || event.source !== frameWindow) {

@@ -5,12 +5,14 @@ import { createHash } from 'node:crypto'
 import {
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
+  rmSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { createRequire } from 'node:module'
+import { tmpdir } from 'node:os'
 import {
   delimiter,
   dirname,
@@ -327,11 +329,59 @@ function createPhaseTimer(clock) {
   }
 }
 
-function logPhaseTimings(runtime, timer) {
+function logPhaseTimings(runtime, timer, queueWaitSeconds = 0) {
   const elapsed = timer.values()
+  const queueSuffix =
+    queueWaitSeconds >= 1 ? ` queue-wait≈${queueWaitSeconds}s` : ''
   runtime.log(
-    `[playwright:host] elapsed preparation=${elapsed.preparation.toFixed(1)}ms runtime=${elapsed.runtime.toFixed(1)}ms browser=${elapsed.browser.toFixed(1)}ms`
+    `[playwright:host] elapsed preparation=${elapsed.preparation.toFixed(1)}ms runtime=${elapsed.runtime.toFixed(1)}ms browser=${elapsed.browser.toFixed(1)}ms${queueSuffix}`
   )
+}
+
+const ENSURE_TELEMETRY_ENV = 'KLICKER_ENSURE_TELEMETRY'
+
+function runRuntimeEnsure(runtime, args) {
+  // The runtime reconciliation must keep streaming its progress live, so it
+  // runs through a tee instead of a captured pipe; the devrouter helper
+  // reports provider-queue contention on that output and the wait belongs in
+  // the phase summary separately from real work.
+  const telemetryFile = join(
+    tmpdir(),
+    `playwright-host-ensure-${process.pid}.log`
+  )
+  runtime.commandRunner(
+    'sh',
+    [
+      '-c',
+      'set -o pipefail; ensure_bin="$1"; shift; "$ensure_bin" "$@" 2>&1 | tee "$' +
+        ENSURE_TELEMETRY_ENV +
+        '"',
+      'playwright-host-ensure',
+      runtime.devrouter(),
+      ...args,
+    ],
+    {
+      env: {
+        ...runtime.environment,
+        [ENSURE_TELEMETRY_ENV]: telemetryFile,
+      },
+    }
+  )
+  return telemetryFile
+}
+
+function queueWaitSecondsFrom(readFile, telemetryFile) {
+  try {
+    const contents = readFile(telemetryFile, 'utf8')
+    const waits = [...contents.matchAll(/waited (\d+)s so far/g)].map((match) =>
+      Number(match[1])
+    )
+    return waits.length > 0 ? Math.max(...waits) : 0
+  } catch {
+    return 0
+  } finally {
+    rmSync(telemetryFile, { force: true })
+  }
 }
 
 export function readCommittedEnvironment(contents) {
@@ -613,6 +663,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     '.devcontainer/.runtime/account-production.json'
   )
   let orchestrationFailed = false
+  let queueWaitSeconds = 0
 
   try {
     const hostEnvironment = {
@@ -715,12 +766,13 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
 
     timer.begin('runtime')
     runtime.log('[playwright:host] Reconciling the devcontainer runtime')
-    runtime.commandRunner(runtime.devrouter(), [
+    const ensureTelemetry = runRuntimeEnsure(runtime, [
       'ensure',
       runtime.repoRoot,
       '--profile',
       runtimeProfile,
     ])
+    queueWaitSeconds = queueWaitSecondsFrom(runtime.readFile, ensureTelemetry)
 
     const workspace = resolveWorkspace(runtime)
     const postgresContainer = resolvePostgresContainer(runtime)
@@ -799,7 +851,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       }
     }
     timer.finish()
-    logPhaseTimings(runtime, timer)
+    logPhaseTimings(runtime, timer, queueWaitSeconds)
   }
 }
 

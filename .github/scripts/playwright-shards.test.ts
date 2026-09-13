@@ -29,10 +29,13 @@ const timings = JSON.parse(
   fs.readFileSync(path.join(repositoryRoot, 'playwright/timings.json'), 'utf8')
 )
 
-test('the profile manifest assigns every active spec exactly once', () => {
+test('the profile manifest assigns every active and production spec exactly once', () => {
   const profiles = parseProfileManifest(manifest, allFiles)
 
-  assert.deepEqual([...profiles.keys()].sort(), allFiles)
+  assert.deepEqual(
+    [...profiles.keys()].sort(),
+    [...new Set([...allFiles, ...productionSpecs(manifest, allFiles)])].sort()
+  )
 })
 
 test('production-designated specs tolerate absent files while ordinary specs fail closed', () => {

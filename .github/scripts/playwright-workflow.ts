@@ -33,10 +33,11 @@ type Workflow = {
 const EXECUTION_GROUP =
   // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub Actions expression contract
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
+// Lifecycle events on a merged or closed pull request must launch neither
+// execution nor reporting; the open-state guard subsumes the closed action.
 const OPEN_EVENT =
-  "github.event_name != 'pull_request' || github.event.action != 'closed'"
-const EXECUTION_EVENT =
-  "github.event_name != 'pull_request' || github.event.action != 'closed'"
+  "github.event_name != 'pull_request' || github.event.pull_request.state == 'open'"
+const EXECUTION_EVENT = OPEN_EVENT
 const CANCEL_EVENT =
   "github.event_name == 'pull_request' && github.event.action == 'closed'"
 
@@ -86,7 +87,7 @@ function validateCallerLifecycle(caller: Workflow) {
     }
   }
   if (execution?.if !== EXECUTION_EVENT) {
-    issues.push('execution must exclude only the closed PR event')
+    issues.push('execution must run only for open pull requests or pushes')
   }
   const status = jobs['test-playwright-status']
   // Unconditional for open events: a skipped required context can count as

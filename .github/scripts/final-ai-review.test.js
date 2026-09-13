@@ -65,7 +65,7 @@ function extractWorkflowStepScript(workflow, stepName) {
   const body = []
   for (let index = runIndex + 1; index < lines.length; index += 1) {
     const line = lines[index]
-    if (/^      - name: /.test(line)) break
+    if (/^ {6}- name: /.test(line)) break
     if (line.length === 0) {
       body.push('')
       continue
@@ -84,7 +84,7 @@ function extractWorkflowJobEnv(workflow, jobName) {
   const jobIndex = lines.findIndex((line) => line === `  ${jobName}:`)
   assert.ok(jobIndex >= 0, `missing workflow job: ${jobName}`)
   const nextJobIndex = lines.findIndex(
-    (line, index) => index > jobIndex && /^  \S/.test(line)
+    (line, index) => index > jobIndex && /^ {2}\S/.test(line)
   )
   const jobEndIndex = nextJobIndex < 0 ? lines.length : nextJobIndex
 
@@ -97,7 +97,7 @@ function extractWorkflowJobEnv(workflow, jobName) {
   const env = {}
   for (let index = envIndex + 1; index < jobEndIndex; index += 1) {
     const line = lines[index]
-    if (/^    \S/.test(line)) break
+    if (/^ {4}\S/.test(line)) break
     if (line.trim() === '') continue
     const separator = line.indexOf(':')
     assert.ok(separator > 0, `invalid job env entry: ${line}`)
@@ -516,15 +516,15 @@ test('grants clean evidence check access only to the required workflow jobs', ()
 test('pins trusted review code to the event workflow commit when the default branch moves', async () => {
   for (const workflow of ['../workflows/check-ocr-final-review.yml']) {
     const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
-    assert.match(source, /^  pull_request_target:/m)
-    assert.match(source, /^  issue_comment:/m)
+    assert.match(source, /^ {2}pull_request_target:/m)
+    assert.match(source, /^ {2}issue_comment:/m)
     assert.match(
       source,
       /GITHUB_WORKFLOW_SHA: \$\{\{ github\.workflow_sha \}\}/
     )
     assert.match(
       source,
-      /- name: Resolve trusted default-branch commit\n        id: resolve\n        uses: actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
+      /- name: Resolve trusted default-branch commit\n {8}id: resolve\n {8}uses: actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
     )
     assert.match(
       source,
@@ -540,7 +540,7 @@ test('pins trusted review code to the event workflow commit when the default bra
     )
 
     const script = source.match(
-      /- name: Resolve trusted default-branch commit[\s\S]*?\n          script: \|\n((?: {12}.*\n)+)/
+      /- name: Resolve trusted default-branch commit[\s\S]*?\n {10}script: \|\n((?: {12}.*\n)+)/
     )?.[1]
     assert.ok(script)
     const resolveTrustedPolicy = new Function(
@@ -2002,7 +2002,7 @@ test('retains only the rejected individual publisher input for one day', () => {
     'utf8'
   )
   const step = workflow.match(
-    /      - name: Upload rejected individual publisher input\n[\s\S]*?(?=\n      - name:|\n  finalize:)/
+    / {6}- name: Upload rejected individual publisher input\n[\s\S]*?(?=\n {6}- name:|\n {2}finalize:)/
   )?.[0]
 
   assert.ok(step)

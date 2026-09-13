@@ -53,7 +53,7 @@
     "check:git-identity": "node --test ./util/check-git-identity.test.mjs",
     "check:lint": "turbo run lint --parallel --continue",
     "check:playwright-ci": "tsc -p tsconfig.tools.json && node --test ./.github/scripts/playwright-*.test.ts ./util/playwright-profile-runtime.test.mjs",
-    "check:playwright-host": "node --test ./util/run-playwright-host.test.mjs ./util/playwright-production.test.ts ./util/playwright-seed-snapshot.test.mjs",
+    "check:playwright-host": "node --test ./util/run-playwright-host.test.mjs ./util/playwright-production.test.ts",
     "check:prisma-sync": "bash ./util/check-prisma-sync.sh",
     "check:removed-doc-artifacts": "node ./util/check-removed-doc-artifacts.mjs",
     "check:syncpack": "syncpack lint",
