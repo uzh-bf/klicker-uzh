@@ -636,10 +636,7 @@ function AssistantLayout({
   const t = useTranslations('chat.thread.learningContext')
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
-  const graphPanel = useChatGraphPanel(
-    chatbot.id,
-    showSidebar && knowledgeGraphVisible
-  )
+  const graphPanel = useChatGraphPanel(chatbot.id, knowledgeGraphVisible)
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextUnavailable = useChatContextStore(
@@ -690,14 +687,22 @@ function AssistantLayout({
               <ThreadSkeleton />
             </div>
           )}
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-            contextLabel={contextLabel}
-            contextualSuggestions={hasQuestionContext}
-            initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-          />
+          {/* Embedded mode shows no graph toggle, but the /graph deep link
+              stays reachable for direct embedding of the graph pane. */}
+          <ChatKnowledgeGraphPanel
+            chatbotId={chatbot.id}
+            open={graphPanel.open}
+            onClose={graphPanel.close}
+          >
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              contextLabel={contextLabel}
+              contextualSuggestions={hasQuestionContext}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            />
+          </ChatKnowledgeGraphPanel>
         </div>
       </main>
     </div>
