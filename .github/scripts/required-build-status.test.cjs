@@ -499,6 +499,17 @@ test('the changed-file step diffs the event head against the event merge base', 
   assert.equal(fs.existsSync(outputPath), false)
   fs.writeFileSync(outputPath, 'stale\n')
   const crissCross = runStep(crissCrossLeftSha, crissCrossRightSha)
+  assert.equal(
+    git(
+      '-C',
+      'checkout',
+      'merge-base',
+      '--all',
+      crissCrossLeftSha,
+      crissCrossRightSha
+    ).split('\n').length,
+    2
+  )
   assert.notEqual(crissCross.status, 0)
   assert.equal(fs.existsSync(outputPath), false)
   assert.equal(git('-C', 'checkout', 'rev-parse', 'HEAD'), mergeSha)
