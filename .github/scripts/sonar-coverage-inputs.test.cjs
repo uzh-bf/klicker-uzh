@@ -269,6 +269,30 @@ describe('collectCoverage', () => {
     assert.deepEqual(summarizeFailures(result.results), [])
   })
 
+  it('spends one shared wait window across every producer', async () => {
+    const transport = fakeTransport({
+      runs: () => [completedRun({ status: 'in_progress', conclusion: null })],
+      artifacts: [],
+    })
+    const result = await collectCoverage({
+      transport,
+      producers: [
+        '.github/workflows/test-unit.yml',
+        '.github/workflows/test-graphql.yml',
+      ],
+      headSha: EXPECTED_TREE.headSha,
+      baseSha: EXPECTED_TREE.baseSha,
+      treeSha: EXPECTED_TREE.treeSha,
+      limits: { waitMs: 30, pollMs: 10 },
+    })
+    assert.equal(transport.sleeps, 3)
+    assert.deepEqual(
+      result.results.map((entry) => entry.state),
+      [REASON.producerPending, REASON.producerPending]
+    )
+    assert.deepEqual(summarizeFailures(result.results), [])
+  })
+
   it('fails when a completed run cannot prove its coverage input', async () => {
     const transport = fakeTransport({
       runs: () => [completedRun()],

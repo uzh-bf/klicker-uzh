@@ -28,7 +28,10 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
     name: SonarCloud
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The ceiling must fit the whole job: the shared coverage window, the
+    # awaited quality gate, and the scan itself. A tighter ceiling lets a queued
+    # test run consume the analysis before the scanner ever starts.
+    timeout-minutes: 45
     steps:
       - name: Check out the analyzed revision
         uses: actions/checkout@v4
@@ -76,6 +79,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           COVERAGE_PRODUCER_WORKFLOWS: .github/workflows/test-unit.yml,.github/workflows/test-graphql.yml
+          # One bounded window shared by every producer and well inside the job
+          # timeout, so a queued or slow test run cannot consume the analysis.
+          COVERAGE_WAIT_SECONDS: '600'
         run: node .github/scripts/sonar-coverage-inputs.cjs
 
       - name: SonarCloud Scan

@@ -200,6 +200,8 @@ Record Python coverage only where tests actually run. Preserve untested
 production files in the denominator. Missing expected reports, invalid source
 paths, unsuccessful producers, or incompatible trees cannot become a green
 coverage result. A changed-package report is not whole-repository coverage.
+Keep the coverage wait inside one bounded window shared by every producer, and
+keep that window, the awaited quality gate, and the scan inside the job ceiling.
 
 Coverage changes must protect consequential behavior, not prose, translations,
 seed contents, or implementation-shaped assertions. New application runtimes
@@ -491,6 +493,7 @@ contracts; this table does not authorize brittle documentation or content tests.
 | Wrong source or stale PR reports pass | GitHub identifies runs/commits; extend event and artifact validation | Source/report consumer, W1/W3/W8 |
 | Test/generated files distort metrics | Heuristics and CPD warnings exist; add a small synthetic classification acceptance case | Sonar scope report, W2 |
 | Missing coverage looks complete | Existing test suites lack imports; add producer/consumer contract checks, preserve behavior tests | Existing unit/GraphQL jobs, W3 |
+| Wait budget consumes the analysis job | Ready-review run `34749901976` timed out in the coverage step; shared-window unit cases added, and a real analysis run must still complete under load | Coverage wait budget, W3 |
 | pnpm 11 graph loses vulnerabilities | Populated GitHub graph only; add representative transitive/workspace/patch detection and updater cases | Lockfile/parser and native review boundary, W4 |
 | Image report describes another artifact | Existing build/controller digest checks; extend receipt validation | Image workflow and controller, W5/W10 |
 | Language/security analysis silently absent | Existing CodeQL JS result; extend language/category acceptance | CodeQL workflow, W6 |
@@ -559,7 +562,7 @@ its dependent action. Read back effective settings and retain sanitized receipts
   - W3: `test-unit.yml` and `test-graphql.yml` publish LCOV as the
     `coverage-lcov` artifact, and the analysis imports a report only from a run
     bound to the analyzed head with a matching tested-source receipt
-    (`.github/scripts/sonar-coverage-inputs.cjs`, 23 unit cases). The unit
+    (`.github/scripts/sonar-coverage-inputs.cjs`, 24 unit cases). The unit
     suites invoke Vitest with the coverage flags directly because the first
     `pnpm … test -- --coverage` form forwarded a literal `--`; Vitest then ran in
     filter mode and published no LCOV without failing, and the artifact upload
@@ -578,7 +581,14 @@ its dependent action. Read back effective settings and retain sanitized receipts
     generated `packages/graphql/src/ops.ts`, stays in the report and reads as
     absent coverage instead of failing the analysis. The coverage threshold is
     deliberately unarmed, and frontend PWA coverage (Node test runner) is still
-    unpublished.
+    unpublished. The first ready-review analysis for this branch
+    (`34749901976`, head `07f41a39c9`) exposed a scheduling defect that unit
+    tests alone could not show: the wait window was applied per producer, so the
+    two producers consumed the whole 30-minute job ceiling while the scanner
+    step was skipped and the analysis never ran. The window is now shared by
+    every producer, the workflow pins it to 600 seconds, and the job ceiling is
+    45 minutes so the bounded wait, the awaited quality gate, and the scan fit
+    together.
   - W4: `dependency-review.yml` fails on high severity, and Dependabot now
     covers `uv` plus the twelve application Dockerfile directories. A read-only
     check of the GitHub dependency graph on 2026-09-12 resolved the graph

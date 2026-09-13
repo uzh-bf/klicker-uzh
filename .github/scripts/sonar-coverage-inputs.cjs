@@ -182,9 +182,17 @@ function summarizeFailures(results) {
 
 // Fetch the newest completed attempt of a producer workflow for one head,
 // waiting through a bounded window while a producer is still running so the
-// analysis does not race the tests it consumes.
-async function awaitProducerRun(transport, workflowPath, headSha, limits) {
-  const deadline = (await transport.now()) + limits.waitMs
+// analysis does not race the tests it consumes. The deadline is shared by every
+// producer, so the whole collection spends one budget instead of one per
+// producer: a per-producer window grows with the producer count and can consume
+// the analysis job's own timeout before the scanner starts.
+async function awaitProducerRun(
+  transport,
+  workflowPath,
+  headSha,
+  limits,
+  deadline
+) {
   let run = null
   for (;;) {
     const runs = await transport.listRuns(
@@ -202,8 +210,15 @@ async function collectCoverage(deps) {
   const { transport, producers, headSha, baseSha, treeSha, limits } = deps
   const results = []
   const lcovPaths = []
+  const deadline = (await transport.now()) + limits.waitMs
   for (const producer of producers) {
-    const run = await awaitProducerRun(transport, producer, headSha, limits)
+    const run = await awaitProducerRun(
+      transport,
+      producer,
+      headSha,
+      limits,
+      deadline
+    )
     const artifacts = run ? await transport.listArtifacts(run.id) : []
     const evidence = await transport.readJsonArtifact(
       artifacts,
@@ -270,7 +285,7 @@ async function main() {
     baseSha,
     treeSha,
     limits: {
-      waitMs: Number(process.env.COVERAGE_WAIT_SECONDS || 900) * 1000,
+      waitMs: Number(process.env.COVERAGE_WAIT_SECONDS || 600) * 1000,
       pollMs: Number(process.env.COVERAGE_POLL_SECONDS || 30) * 1000,
     },
   })
