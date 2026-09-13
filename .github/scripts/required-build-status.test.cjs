@@ -215,7 +215,9 @@ test('active image builds share a registry build cache on same-repo PRs', () => 
         assert.ok(
           value &&
             value.includes('type=registry,ref=') &&
-            value.includes('-arm:buildcache') &&
+            value.includes(
+              (id.endsWith('-amd') ? '-amd' : '-arm') + ':buildcache'
+            ) &&
             value.includes(
               'github.event.pull_request.head.repo.full_name == github.repository'
             ),
