@@ -2014,6 +2014,9 @@ export const Mutation = builder.mutationType({
         nullable: false,
         type: KBChatbotBinding,
         args: {
+          rightsConfirmed: t.arg.boolean({ required: true }),
+          personalDataConfirmed: t.arg.boolean({ required: true }),
+          noticeVersion: t.arg.string({ required: true }),
           kbId: t.arg.id({ required: true }),
           chatbotId: t.arg.id({ required: true }),
         },
@@ -2037,6 +2040,9 @@ export const Mutation = builder.mutationType({
         nullable: false,
         type: KBFileUpload,
         args: {
+          rightsConfirmed: t.arg.boolean({ required: true }),
+          personalDataConfirmed: t.arg.boolean({ required: true }),
+          noticeVersion: t.arg.string({ required: true }),
           kbId: t.arg.id({ required: true }),
           fileName: t.arg.string({ required: true }),
           contentType: t.arg.string({ required: true }),
@@ -2071,6 +2077,9 @@ export const Mutation = builder.mutationType({
         nullable: false,
         type: KBFileUpload,
         args: {
+          rightsConfirmed: t.arg.boolean({ required: true }),
+          personalDataConfirmed: t.arg.boolean({ required: true }),
+          noticeVersion: t.arg.string({ required: true }),
           kbId: t.arg.id({ required: true }),
           resourceId: t.arg.id({ required: true }),
           fileName: t.arg.string({ required: true }),
@@ -2102,6 +2111,9 @@ export const Mutation = builder.mutationType({
         nullable: false,
         type: KBResource,
         args: {
+          rightsConfirmed: t.arg.boolean({ required: true }),
+          personalDataConfirmed: t.arg.boolean({ required: true }),
+          noticeVersion: t.arg.string({ required: true }),
           kbId: t.arg.id({ required: true }),
           url: t.arg.string({ required: true }),
           title: t.arg.string({ required: true }),

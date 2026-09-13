@@ -44,6 +44,7 @@ function KnowledgeBaseReplaceFileModal({
     >
       <div className="mt-2">
         <KnowledgeBaseFileDropzone
+          key={`${kbId}:${resource.id}`}
           kbId={kbId}
           embedded
           replaceResource={resource}

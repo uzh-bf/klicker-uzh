@@ -14,6 +14,9 @@ import { useTranslations } from 'next-intl'
 import React, { type FormEvent, useState } from 'react'
 import { getGraphQLErrorCode } from '../graphqlError'
 import { refreshAfterMutation } from '../refreshAfterMutation'
+import KnowledgeBaseMaterialConfirmation, {
+  KB_MATERIAL_NOTICE_VERSION,
+} from './KnowledgeBaseMaterialConfirmation'
 
 function isValidWebUrl(value: string) {
   try {
@@ -34,6 +37,12 @@ function KnowledgeBaseUrlForm({
   onResourceCreated: () => Promise<unknown>
 }) {
   const t = useTranslations()
+  const [rightsConfirmed, setRightsConfirmed] = useState(false)
+  const [personalDataConfirmed, setPersonalDataConfirmed] = useState(false)
+  const resetConfirmations = () => {
+    setRightsConfirmed(false)
+    setPersonalDataConfirmed(false)
+  }
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [urlTouched, setUrlTouched] = useState(false)
@@ -45,7 +54,11 @@ function KnowledgeBaseUrlForm({
   )
   const urlValid = isValidWebUrl(url.trim())
   const urlInvalid = urlTouched && Boolean(url.trim()) && !urlValid
-  const valid = Boolean(title.trim()) && urlValid
+  const valid =
+    Boolean(title.trim()) &&
+    urlValid &&
+    rightsConfirmed &&
+    personalDataConfirmed
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -54,6 +67,9 @@ function KnowledgeBaseUrlForm({
     try {
       await createUrlResource({
         variables: {
+          rightsConfirmed,
+          personalDataConfirmed,
+          noticeVersion: KB_MATERIAL_NOTICE_VERSION,
           kbId,
           title: title.trim(),
           url: url.trim(),
@@ -79,6 +95,7 @@ function KnowledgeBaseUrlForm({
       onResourceCreated,
       'KB resources after link creation'
     )
+    resetConfirmations()
     setTitle('')
     setUrl('')
     setUrlTouched(false)
@@ -95,7 +112,10 @@ function KnowledgeBaseUrlForm({
           id="kb-url-title"
           autoComplete="off"
           value={title}
-          onChange={setTitle}
+          onChange={(value) => {
+            setTitle(value)
+            resetConfirmations()
+          }}
           label={t('kb.resourceTitleLabel')}
           required
           disabled={loading}
@@ -106,7 +126,10 @@ function KnowledgeBaseUrlForm({
           autoComplete="off"
           spellCheck={false}
           value={url}
-          onChange={setUrl}
+          onChange={(value) => {
+            setUrl(value)
+            resetConfirmations()
+          }}
           label={t('kb.urlLabel')}
           placeholder="https://"
           type="url"
@@ -121,7 +144,10 @@ function KnowledgeBaseUrlForm({
           id="kb-url-material-type"
           label={t('kb.materialType')}
           value={materialType}
-          onChange={(value) => setMaterialType(value as KbResourceMaterialType)}
+          onChange={(value) => {
+            setMaterialType(value as KbResourceMaterialType)
+            resetConfirmations()
+          }}
           items={[
             {
               value: KbResourceMaterialType.Unclassified,
@@ -149,6 +175,13 @@ function KnowledgeBaseUrlForm({
             {t('kb.invalidUrl')}
           </p>
         ) : null}
+        <KnowledgeBaseMaterialConfirmation
+          rightsConfirmed={rightsConfirmed}
+          personalDataConfirmed={personalDataConfirmed}
+          onRightsChange={setRightsConfirmed}
+          onPersonalDataChange={setPersonalDataConfirmed}
+          disabled={loading}
+        />
         <Button
           primary
           type="submit"

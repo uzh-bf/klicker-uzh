@@ -2632,7 +2632,7 @@ type Mutation {
   approveChatbotRevision(expectedRevisionVersion: Int!, id: String!): Chatbot
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   approveResponseExample(id: String!): ResponseExampleSet
-  attachKbToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
+  attachKbToChatbot(chatbotId: ID!, kbId: ID!, noticeVersion: String!, personalDataConfirmed: Boolean!, rightsConfirmed: Boolean!): KBChatbotBinding!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
@@ -2663,7 +2663,7 @@ type Mutation {
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   createKb(description: String, name: String!): KB!
-  createKbUrlResource(kbId: ID!, materialType: KBResourceMaterialType, title: String!, url: String!): KBResource!
+  createKbUrlResource(kbId: ID!, materialType: KBResourceMaterialType, noticeVersion: String!, personalDataConfirmed: Boolean!, rightsConfirmed: Boolean!, title: String!, url: String!): KBResource!
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
@@ -2770,8 +2770,8 @@ type Mutation {
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   requestCatalystAccess(institution: String!, useCase: String!): Boolean!
   requestCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionRequestPayload
-  requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, resourceId: ID!, sizeBytes: Int!): KBFileUpload!
-  requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
+  requestKbFileReplacement(contentType: String!, fileName: String!, kbId: ID!, noticeVersion: String!, personalDataConfirmed: Boolean!, resourceId: ID!, rightsConfirmed: Boolean!, sizeBytes: Int!): KBFileUpload!
+  requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, noticeVersion: String!, personalDataConfirmed: Boolean!, rightsConfirmed: Boolean!, sizeBytes: Int!): KBFileUpload!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback

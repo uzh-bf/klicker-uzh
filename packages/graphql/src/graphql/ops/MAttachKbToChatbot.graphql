@@ -1,5 +1,5 @@
-mutation AttachKbToChatbot($kbId: ID!, $chatbotId: ID!) {
-  attachKbToChatbot(kbId: $kbId, chatbotId: $chatbotId) {
+mutation AttachKbToChatbot($kbId: ID!, $chatbotId: ID!, $rightsConfirmed: Boolean!, $personalDataConfirmed: Boolean!, $noticeVersion: String!) {
+  attachKbToChatbot(kbId: $kbId, chatbotId: $chatbotId, rightsConfirmed: $rightsConfirmed, personalDataConfirmed: $personalDataConfirmed, noticeVersion: $noticeVersion) {
     chatbotId
     chatbotName
     enabledKbId

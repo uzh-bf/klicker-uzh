@@ -1,10 +1,16 @@
 mutation RequestKbFileUpload(
+  $rightsConfirmed: Boolean!
+  $personalDataConfirmed: Boolean!
+  $noticeVersion: String!
   $kbId: ID!
   $fileName: String!
   $contentType: String!
   $sizeBytes: Int!
 ) {
   requestKbFileUpload(
+    rightsConfirmed: $rightsConfirmed
+    personalDataConfirmed: $personalDataConfirmed
+    noticeVersion: $noticeVersion
     kbId: $kbId
     fileName: $fileName
     contentType: $contentType

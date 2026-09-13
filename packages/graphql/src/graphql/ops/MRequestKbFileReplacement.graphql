@@ -1,4 +1,7 @@
 mutation RequestKbFileReplacement(
+  $rightsConfirmed: Boolean!
+  $personalDataConfirmed: Boolean!
+  $noticeVersion: String!
   $kbId: ID!
   $resourceId: ID!
   $fileName: String!
@@ -6,6 +9,9 @@ mutation RequestKbFileReplacement(
   $sizeBytes: Int!
 ) {
   requestKbFileReplacement(
+    rightsConfirmed: $rightsConfirmed
+    personalDataConfirmed: $personalDataConfirmed
+    noticeVersion: $noticeVersion
     kbId: $kbId
     resourceId: $resourceId
     fileName: $fileName

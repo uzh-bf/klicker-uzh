@@ -103,12 +103,14 @@ function KnowledgeBaseAddResourceModal({
   const resourceForm =
     mode === 'website' ? (
       <KnowledgeBaseUrlForm
+        key={kbId}
         kbId={kbId}
         embedded
         onResourceCreated={handleResourceCreated}
       />
     ) : (
       <KnowledgeBaseFileDropzone
+        key={kbId}
         kbId={kbId}
         embedded
         onUploadStateChange={setUploadingDocument}

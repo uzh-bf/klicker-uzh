@@ -1775,6 +1775,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
     fileUploadError: 'Die Datei konnte nicht hochgeladen werden.',
     fileRejected: 'Wählen Sie eine unterstützte Datei mit maximal 25 MB.',
+    materialConfirmationTitle:
+      'Nutzungsrechte und personenbezogene Daten prüfen',
+    materialConfirmationDescription:
+      'Die Berechtigung zur Ablage im LMS deckt die Nutzung in einer KI-gestützten Wissensbasis und in Antworten nicht automatisch ab. Prüfen Sie Lizenzbedingungen, Quellenangaben sowie Beschränkungen von Nutzerkreis und Nutzungsdauer. Übliche Autorennamen und bibliografische Angaben dürfen enthalten sein; andere personenbezogene Daten dürfen nicht enthalten sein.',
+    rightsConfirmation:
+      'Ich bin berechtigt, dieses Material in der KI-gestützten Wissensbasis und in Antworten zu verwenden, und halte die geltenden Nutzungsbedingungen und Beschränkungen ein.',
+    personalDataConfirmation:
+      'Ich habe die ausgewählten Materialien geprüft. Sie enthalten ausser üblichen Autorennamen und bibliografischen Angaben keine personenbezogenen Daten.',
     replaceFile: 'Datei ersetzen',
     replaceFileTitle: 'Datei ersetzen',
     replaceAndIngest: 'Ersetzen und verarbeiten',
