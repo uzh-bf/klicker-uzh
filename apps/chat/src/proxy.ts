@@ -129,14 +129,7 @@ function passThroughWithScopedToken(
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-<<<<<<< HEAD
-||||||| parent of f16622559b (fix(logging): migrate v3-ai sync console calls to the structured logger)
-  const requestContext = resolveRequestContext({
-    requestId: request.headers.get('x-request-id'),
-    correlationId: request.headers.get('x-correlation-id'),
-  })
-  const log = edgeLogger.child(requestContext)
-=======
+
   const requestContext = resolveRequestContext({
     requestId: request.headers.get('x-request-id'),
     correlationId: request.headers.get('x-correlation-id'),
@@ -157,7 +150,6 @@ export async function proxy(request: NextRequest) {
     headers.set('x-correlation-id', requestContext.correlationId)
     return NextResponse.next({ request: { headers } })
   }
->>>>>>> f16622559b (fix(logging): migrate v3-ai sync console calls to the structured logger)
 
   // The embedded Manage assistant receives its locale as a query parameter,
   // but Chat's root layout resolves the active locale from the
@@ -279,25 +271,13 @@ export async function proxy(request: NextRequest) {
 
   try {
     await jwtVerify(participantToken, new TextEncoder().encode(appSecret))
-<<<<<<< HEAD
-  } catch (error) {
-    console.error('Invalid participant token:', error)
-    return redirectToNoLogin(request, hadGuestToken)
-||||||| parent of f16622559b (fix(logging): migrate v3-ai sync console calls to the structured logger)
-  } catch {
-    log.warn(
-      { event: 'participant_token.invalid' },
-      'Invalid participant token'
-    )
-    return redirectToNoLogin(request, hadGuestToken)
-=======
+
   } catch {
     log.warn(
       { event: 'participant_token.invalid' },
       'Invalid participant token'
     )
     return respond(redirectToNoLogin(request, hadGuestToken))
->>>>>>> f16622559b (fix(logging): migrate v3-ai sync console calls to the structured logger)
   }
 
   return passThroughWithScopedToken(request, null)
