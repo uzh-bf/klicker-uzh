@@ -1,5 +1,6 @@
 import pandas as pd
 import statistics
+from datetime import datetime
 
 from ..analytics_eligibility import (
     AnalyticsEligibilityContext,
@@ -7,6 +8,10 @@ from ..analytics_eligibility import (
     filter_dataframe_by_participants,
     is_course_learning_analytics_enabled,
     publish_analytics,
+)
+from ..research_contribution import (
+    contribution_scope_key,
+    retain_research_contribution,
 )
 
 
@@ -91,8 +96,14 @@ def compute_weekday_activity(
     activity_saturday = single_weekday_activity(saturdays, df_daily)
     activity_sunday = single_weekday_activity(sundays, df_daily)
 
+    # original per-participant activity dates feeding the weekday aggregation
+    active_dates_by_participant = {}
+    for _, row in df_daily.iterrows():
+        participant_id = str(row["participantId"])
+        active_dates_by_participant.setdefault(participant_id, []).append(row["timestamp"])
+
     def write(transaction):
-        transaction.aggregatedcourseanalytics.upsert(
+        result = transaction.aggregatedcourseanalytics.upsert(
             where={"courseId": course_id},
             data={
                 "create": {
@@ -118,6 +129,32 @@ def compute_weekday_activity(
                 },
             },
         )
+        aggregate_id = getattr(result, "id", None)
+        for participant_id, active_dates in active_dates_by_participant.items():
+            retain_research_contribution(
+                transaction,
+                family="AGGREGATED_COURSE_ANALYTICS",
+                participant_id=participant_id,
+                course_id=course_id,
+                scope_key=contribution_scope_key(
+                    "AGGREGATED_COURSE_ANALYTICS",
+                    course_id,
+                ),
+                scope={
+                    "courseId": course_id,
+                    "courseStartDate": course_start,
+                    "courseEndDate": course_end,
+                    "cohortParticipantCount": total_course_participants,
+                },
+                contributions={
+                    "activeDates": active_dates,
+                    "activeDays": len(active_dates),
+                },
+                eligibility=eligibility,
+                computed_at=datetime.now().strftime("%Y-%m-%d") + "T00:00:00.000Z",
+                binding="aggregatedCourseAnalyticsId",
+                result_row_id=aggregate_id,
+            )
 
     publish_analytics(db, eligibility, (course_id,), write)
 

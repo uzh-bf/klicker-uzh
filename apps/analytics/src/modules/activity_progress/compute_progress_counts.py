@@ -21,6 +21,22 @@ def compute_progress_counts(activity):
             .rename(columns={"id": "count", "trialsCount": "min_trials"})
         )
 
+        # original per-participant progress values and the counts derived from them
+        participant_stats = [
+            {
+                "participantId": str(participant_id),
+                "responseCount": int(statistics_row["count"]),
+                "minTrials": int(statistics_row["min_trials"]),
+                "started": bool(statistics_row["count"] <= num_elements),
+                "completed": bool(statistics_row["count"] == num_elements),
+                "repeated": bool(
+                    statistics_row["count"] == num_elements
+                    and statistics_row["min_trials"] >= 2
+                ),
+            }
+            for participant_id, statistics_row in df_statistics.iterrows()
+        ]
+
         # compute number of participants that have started the activity
         started_count = len(df_statistics[df_statistics["count"] <= num_elements])
 
@@ -34,5 +50,6 @@ def compute_progress_counts(activity):
 
     else:
         print("No responses found for activity", activity["id"])
+        participant_stats = []
 
-    return started_count, completed_count, repeated_count
+    return started_count, completed_count, repeated_count, participant_stats

@@ -34,6 +34,9 @@ def compute_instance_performance(
         ]
     )
 
+    # original per-participant response values that feed the instance rates
+    participant_instances = []
+
     for stack in activity["stacks"]:
         for instance in stack["elements"]:
             df_responses = pd.DataFrame(instance["responses"])
@@ -43,6 +46,21 @@ def compute_instance_performance(
 
             # count number of responses
             num_responses = len(df_responses)
+
+            for response in instance["responses"]:
+                participant_instances.append(
+                    {
+                        "participantId": response["participantId"],
+                        "instanceId": instance["id"],
+                        "trialsCount": response["trialsCount"],
+                        "correctCount": response["correctCount"],
+                        "partialCorrectCount": response["partialCorrectCount"],
+                        "wrongCount": response["wrongCount"],
+                        "firstResponseCorrectness": response.get("firstResponseCorrectness"),
+                        "lastResponseCorrectness": response.get("lastResponseCorrectness"),
+                        "averageTimeSpent": response["averageTimeSpent"],
+                    }
+                )
 
             if not total_only:
                 # compute correctness rates for first and last response
@@ -98,4 +116,4 @@ def compute_instance_performance(
 
             df_instance_performance.loc[len(df_instance_performance)] = instance_performance
 
-    return df_instance_performance
+    return df_instance_performance, participant_instances

@@ -47,7 +47,7 @@ for idx, course in df_courses.iterrows():
 
     for quiz in pqs:
         # compute instance performances
-        df_instance_performance = compute_instance_performance(
+        df_instance_performance, participant_instances = compute_instance_performance(
             db,
             quiz,
             eligibility=eligibility,
@@ -66,6 +66,9 @@ for idx, course in df_courses.iterrows():
             df_instance_performance,
             course_id,
             eligibility=eligibility,
+            participant_instances=participant_instances,
+            activity_type="practiceQuizzes",
+            activity_id=quiz["id"],
         )
 
         # save activity performance data
@@ -75,11 +78,14 @@ for idx, course in df_courses.iterrows():
             course_id,
             practice_quiz_id=quiz["id"],
             eligibility=eligibility,
+            participant_instances=participant_instances,
+            activity_type="practiceQuizzes",
+            activity_id=quiz["id"],
         )
 
     for ml in mls:
         # compute instance performances
-        df_instance_performance = compute_instance_performance(
+        df_instance_performance, participant_instances = compute_instance_performance(
             db,
             ml,
             total_only=True,
@@ -100,6 +106,9 @@ for idx, course in df_courses.iterrows():
             course_id,
             total_only=True,
             eligibility=eligibility,
+            participant_instances=participant_instances,
+            activity_type="microLearnings",
+            activity_id=ml["id"],
         )
 
         # save activity performance data
@@ -109,6 +118,9 @@ for idx, course in df_courses.iterrows():
             course_id,
             microlearning_id=ml["id"],
             eligibility=eligibility,
+            participant_instances=participant_instances,
+            activity_type="microLearnings",
+            activity_id=ml["id"],
         )
 
 # Disconnect from the database

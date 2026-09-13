@@ -40,4 +40,7 @@ def compute_aggregated_analytics(
             timestamp,
             analytics_type,
             eligibility,
+            df_participant=df_participant_analytics,
+            source_window_start=start_date,
+            source_window_end=end_date,
         )

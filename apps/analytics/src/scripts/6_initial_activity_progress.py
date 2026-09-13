@@ -48,7 +48,7 @@ for idx, course in df_courses.iterrows():
     pqs, mls = get_course_progress_activities(db, course_id, eligibility)
 
     for quiz in pqs:
-        started_count, completed_count, repeated_count = compute_progress_counts(quiz)
+        started_count, completed_count, repeated_count, participant_stats = compute_progress_counts(quiz)
 
         # store results in database table
         save_practice_quiz_progress(
@@ -60,10 +60,11 @@ for idx, course in df_courses.iterrows():
             course_id,
             quiz["id"],
             eligibility,
+            participant_stats=participant_stats,
         )
 
     for ml in mls:
-        started_count, completed_count, repeated_count = compute_progress_counts(ml)
+        started_count, completed_count, repeated_count, participant_stats = compute_progress_counts(ml)
 
         # store results in database table
         save_microlearning_progress(
@@ -74,6 +75,7 @@ for idx, course in df_courses.iterrows():
             course_id,
             ml["id"],
             eligibility,
+            participant_stats=participant_stats,
         )
 
 
