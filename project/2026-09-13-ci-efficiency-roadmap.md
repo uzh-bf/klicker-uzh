@@ -578,11 +578,12 @@ required from the user.
   repository, PRs and worktrees; user approved the first source package
   (Playwright event and coverage policy) as one draft PR. Slice 1 lifecycle
   guards committed `b12e5814eb`; slice 2 evidence-bound PR reuse committed
-  `46ac646644`; docs updated in this slice. 59 tests pass across
-  `ci-equivalent-run.test.cjs` and `ci-event-gates.test.cjs`; Biome format
-  clean. Test delta: 8 added / 0 changed / 0 removed. Coordination: zero file
-  overlap with PR #5936 and PR #5924. Remaining: push, draft PR, integrated
-  review, post-merge exact-head activation proof on a real unchanged-head
+  `46ac646644`; validator contract pinned `b6549bae82`; docs updated. 175
+  tests pass across the CI queue-policy and Playwright CI contract suites;
+  Biome format clean. Test delta: 13 added / 0 changed / 0 removed (the
+  reject-every-reuse validator test was rewritten to the new contract).
+  Coordination: zero file overlap with PR #5936 and PR #5924. Remaining: push,
+  draft PR, post-merge exact-head activation proof on a real unchanged-head
   transition (named gate).
 - Next action: receiving task reads this roadmap and the global handoff, refreshes
   `v3` and adjacent ownership, then resolves approval for the first source package.
