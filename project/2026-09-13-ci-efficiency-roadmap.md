@@ -716,3 +716,21 @@ required from the user.
   public workflow, and the roadmap keeps credential-adjacent reporting
   hosted. This strengthens the case for the org Team upgrade (20 -> 60 hosted
   concurrent jobs) as the single remaining lever outside repository source.
+- 2026-09-13 (d) cache-activation audit at 20:10Z: the merge is verified in
+  source (`git show origin/v3:.github/workflows/v3_auth-stg.yml` carries the
+  `no-cache: ${{ github.event_name == 'push' }}` / `cache-from` / `cache-to`
+  triple and QEMU appears only in the disabled AMD jobs), but the cache has
+  not yet been exercised. GHCR reports no `-arm:buildcache` tag on any of the
+  four largest repositories (`auth-arm`, `chat-arm`, `backend-docker-arm`,
+  `frontend-manage-arm`: absent across 100 versions each), so no pull-request
+  build has written the registry cache. Every image workflow run created after
+  the merge is a draft deferral (`build-arm` `skipped`) or a push publication
+  into the saturated hosted queue (`v3-ai` push runs `34779097222` and
+  siblings remain `queued`); the last pull-request builds that actually
+  executed (`34774712103` and siblings, 18:28Z) predate the merge. The
+  contract is deployed and inert, awaiting the first same-repository
+  non-draft pull request whose diff touches image inputs. `buildcache` is
+  written through the ordinary ghcr.io push-token path rather than the
+  Actions cache service, so the ~10 GiB quota does not apply and the
+  `mode=max` export is visible as a distinct tag in the repository's version
+  list once it happens.
