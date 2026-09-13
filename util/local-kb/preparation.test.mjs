@@ -35,6 +35,34 @@ import { providerImages, providerPorts } from './test-fixtures.mjs'
 
 const revision = 'a'.repeat(40)
 
+test('missing AI injection rejects setup, start and resume before any state or provider access', async (t) => {
+  const previous = process.env.UPSTREAM_OPENAI_API_KEY
+  delete process.env.UPSTREAM_OPENAI_API_KEY
+  t.after(() => {
+    if (previous !== undefined) process.env.UPSTREAM_OPENAI_API_KEY = previous
+  })
+  const config = { ...(await fixture()), aiUpstream: 'openrouter' }
+  const unexpected = () => assert.fail('must reject before side effects')
+  await assert.rejects(
+    claimObservedPreparation(config, revision, unexpected),
+    /runtime-injected/
+  )
+  for (const operation of [
+    initializeManagedApplication,
+    startInfrastructure,
+    resumeInfrastructure,
+  ]) {
+    await assert.rejects(
+      operation(config, revision, unexpected, unexpected, unexpected),
+      /runtime-injected/
+    )
+  }
+  await assert.rejects(
+    stat(join(config.project.runtimeCheckoutPath, '.local-kb')),
+    { code: 'ENOENT' }
+  )
+})
+
 function lifecycleRunner(config) {
   return async (command, environment) => {
     const name = Object.keys(config.providers).find(
@@ -147,8 +175,9 @@ async function setupReceipts(config) {
   }
 }
 
-async function installationFixture() {
+async function installationFixture(aiUpstream) {
   const config = await fixture()
+  if (aiUpstream) config.aiUpstream = aiUpstream
   const checkout = config.project.runtimeCheckoutPath
   await mkdir(join(checkout, '.devcontainer'))
   const paths = [
@@ -422,8 +451,18 @@ test('changed managed input prevents all installation writes', async () => {
   })
 })
 
-test('explicit resume requires stop evidence, serializes operations and retains failures', async () => {
-  const { config, checkout, read } = await installationFixture()
+test('explicit resume requires stop evidence, serializes operations and retains failures', async (t) => {
+  const names = ['UPSTREAM_OPENAI_API_KEY', 'UPSTREAM_OPENAI_BASE_URL']
+  const previous = names.map((name) => process.env[name])
+  t.after(() =>
+    names.forEach((name, index) => {
+      if (previous[index] === undefined) delete process.env[name]
+      else process.env[name] = previous[index]
+    })
+  )
+  process.env.UPSTREAM_OPENAI_API_KEY = 'synthetic-resume-sentinel'
+  process.env.UPSTREAM_OPENAI_BASE_URL = 'https://openrouter.ai/api/v1'
+  const { config, checkout, read } = await installationFixture('openrouter')
   await prepareLocalConfiguration(config, revision)
   await installManagedConfiguration(config, revision, read)
   const identity = {
@@ -446,7 +485,8 @@ test('explicit resume requires stop evidence, serializes operations and retains 
     if (fail) throw new Error('synthetic private failure')
     return ''
   }
-  const managed = async (args) => {
+  const managed = async (args, aiUpstream) => {
+    assert.equal(aiUpstream, args[0] === 'ensure' ? 'openrouter' : undefined)
     writes.push(args)
     return JSON.stringify({
       ...identity,
@@ -462,7 +502,12 @@ test('explicit resume requires stop evidence, serializes operations and retains 
   await startPreparedInfrastructure(config, revision, managed, docker)
   await assert.rejects(resume(), /successful stop/)
   for (let cycle = 0; cycle < 2; cycle++) {
+    delete process.env.UPSTREAM_OPENAI_API_KEY
     await stopPreparedInfrastructure(config, revision, managed, docker)
+    const before = writes.length
+    await assert.rejects(resume(), /runtime-injected/)
+    assert.equal(writes.length, before)
+    process.env.UPSTREAM_OPENAI_API_KEY = 'synthetic-resume-sentinel'
     assert.equal((await resume()).providerWorkerActivationRequested, true)
     await assert.rejects(resume(), /successful stop/)
   }
@@ -961,6 +1006,10 @@ test('candidate or configuration changes invalidate prepared state without chang
   const altered = structuredClone(config)
   altered.endpoints.postgres.url = 'http://127.0.0.1:25000/health'
   await assert.rejects(requirePreparation(altered, revision), /configuration/)
+  await assert.rejects(
+    requirePreparation({ ...config, aiUpstream: 'openrouter' }, revision),
+    /identity/
+  )
   assert.equal(await readFile(path, 'utf8'), before)
 })
 

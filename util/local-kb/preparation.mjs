@@ -7,6 +7,7 @@ import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
 import {
   inspectUnusedComposeProject,
+  requireLocalAiEnvironment,
   runLocalDocker,
   runLocalManaged,
 } from './docker-preflight.mjs'
@@ -39,6 +40,7 @@ export async function claimPreparation(
   inspect = inspectRuntimeCheckout
 ) {
   validateIsolatedConfig(config)
+  requireLocalAiEnvironment(config)
   if (!/^[a-f0-9]{40}$/.test(candidateRevision)) {
     throw new Error('An immutable candidate revision is required.')
   }
@@ -216,6 +218,7 @@ export async function initializeManagedApplication(
   runManaged = runLocalManaged,
   runDocker = runLocalDocker
 ) {
+  requireLocalAiEnvironment(config)
   const { directory } = await verifyClaim(config, candidateRevision)
   const storage = await readOwned(
     join(directory, 'storage-setup/complete.json')
@@ -1132,6 +1135,7 @@ export async function startPreparedInfrastructure(
   runDocker = runLocalDocker,
   runProvider = runProviderCommand
 ) {
+  requireLocalAiEnvironment(config)
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'start', async () => {
     await observeOwnedProviders(config, runtime, runDocker)
@@ -1156,6 +1160,7 @@ export async function resumePreparedInfrastructure(
   runDocker = runLocalDocker,
   runProvider = runProviderCommand
 ) {
+  requireLocalAiEnvironment(config)
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'resume', async () => {
     await requireStartedInfrastructure(runtime)
@@ -1234,13 +1239,10 @@ async function launchInfrastructure(
       ...infrastructureServices,
     ])
     const managed = JSON.parse(
-      await runManaged([
-        'ensure',
-        checkout,
-        '--profile',
-        'ai,chat,manage',
-        '--json',
-      ])
+      await runManaged(
+        ['ensure', checkout, '--profile', 'ai,chat,manage', '--json'],
+        config.aiUpstream
+      )
     )
     if (
       managed.kind !== 'linked' ||

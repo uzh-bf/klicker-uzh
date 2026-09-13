@@ -9,13 +9,6 @@ import type {
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import {
-  canonicalElementGenerationJson,
-  elementGenerationArtifactPayload,
-  elementGenerationOutputBlobName,
-  loadReadyElementGenerationGraph,
-  normalizeElementGenerationIdempotencyKey,
-} from './elementGenerationProvider.js'
-import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
   releaseUnclaimedElementGenerationSpend,
@@ -26,6 +19,13 @@ import {
   acquireElementGenerationLease,
   releaseElementGenerationLease,
 } from './elementGenerationLease.js'
+import {
+  canonicalElementGenerationJson,
+  elementGenerationArtifactPayload,
+  elementGenerationOutputBlobName,
+  loadReadyElementGenerationGraph,
+  normalizeElementGenerationIdempotencyKey,
+} from './elementGenerationProvider.js'
 import {
   generatedKPRIMElementInput,
   generatedMCElementInput,
@@ -826,7 +826,10 @@ async function synchronizeLeasedBuild(
               'ARTIFACT_INVALID',
               'Question-generation output could not be validated'
             )
-    console.error('[element-generation] Question synchronization failed')
+    ctx.log.error(
+      { event: 'question_generation.sync.failed' },
+      '[element-generation] Question synchronization failed'
+    )
     await ctx.prisma.elementGenerationBuild.updateMany({
       where: { id: build.id, syncLeaseOwner: leaseOwner },
       data: {

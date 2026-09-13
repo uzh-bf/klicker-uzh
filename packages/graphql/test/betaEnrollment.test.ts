@@ -34,6 +34,7 @@ function createContext({
   prisma?: TestPrisma
 } = {}) {
   const ctx = {
+    log: { error: vi.fn() },
     prisma,
     user: {
       sub: userId,
@@ -104,17 +105,20 @@ describe('beta enrollment service', () => {
         meta: { privateValue: 'synthetic-private-metadata' },
       })
     )
-    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     await expect(getBetaEnrollment({}, ctx)).resolves.toEqual({
       mayChange: false,
       membership: null,
       signupAvailable: true,
     })
-    expect(log).toHaveBeenCalledWith(expect.any(String), {
-      errorType: 'PrismaClientKnownRequestError',
-      prismaCode: 'P2022',
-    })
+    expect(ctx.log.error).toHaveBeenCalledWith(
+      {
+        event: 'beta_enrollment.read.failed',
+        errorType: 'PrismaClientKnownRequestError',
+        prismaCode: 'P2022',
+      },
+      'Failed to read beta preference'
+    )
   })
 
   it('keeps opt-out changeable without Catalyst when persisted membership is true', async () => {
@@ -269,7 +273,6 @@ describe('beta enrollment service', () => {
         meta: { privateValue: 'synthetic-private-metadata' },
       })
     )
-    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
 
     await getBetaEnrollment({}, ctx)
     await expect(
@@ -277,10 +280,14 @@ describe('beta enrollment service', () => {
     ).rejects.toMatchObject({
       extensions: { code: 'BETA_ENROLLMENT_UPDATE_FAILED' },
     })
-    expect(log).toHaveBeenCalledWith(expect.any(String), {
-      errorType: 'UnknownError',
-      prismaCode: undefined,
-    })
+    expect(ctx.log.error).toHaveBeenCalledWith(
+      {
+        event: 'beta_enrollment.update.failed',
+        errorType: 'UnknownError',
+        prismaCode: undefined,
+      },
+      'Failed to update beta preference'
+    )
     await expect(getBetaEnrollment({}, ctx)).resolves.toMatchObject({
       membership: false,
     })

@@ -20,8 +20,15 @@ export {
 export type ChatbotKnowledgeGraphReadRequest = { kbId?: string } & (
   | { operation: 'overview' }
   | { operation: 'search'; query: string }
-  | { operation: 'neighbors'; nodeId: string }
+  | { operation: 'neighbors'; nodeId: string; kbId: string; buildId: string }
 )
+
+export class KnowledgeGraphBuildChangedError extends Error {
+  constructor() {
+    super('Knowledge graph build changed')
+    this.name = 'KnowledgeGraphBuildChangedError'
+  }
+}
 
 function browserSafeSourceReference(
   source: KnowledgeGraphSourceReference
@@ -80,6 +87,16 @@ export async function readPublishedChatbotKnowledgeGraph(
     request.kbId
   )
 
+  if (publication.isStale) throw new KnowledgeGraphBuildChangedError()
+
+  if (
+    request.operation === 'neighbors' &&
+    (publication.kbId !== request.kbId ||
+      publication.buildId !== request.buildId)
+  ) {
+    throw new KnowledgeGraphBuildChangedError()
+  }
+
   const response =
     request.operation === 'overview'
       ? await readKnowledgeGraphOverview(publication)
@@ -87,5 +104,13 @@ export async function readPublishedChatbotKnowledgeGraph(
         ? await searchKnowledgeGraph(publication, request.query)
         : await readKnowledgeGraphNeighbors(publication, request.nodeId)
 
+  const current = await getPublishedKnowledgeGraphForChatbot(
+    prisma,
+    chatbotId,
+    publication.kbId
+  )
+  if (current.isStale || current.buildId !== publication.buildId) {
+    throw new KnowledgeGraphBuildChangedError()
+  }
   return browserSafeResponse(response)
 }

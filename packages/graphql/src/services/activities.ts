@@ -1954,17 +1954,26 @@ export async function setActivityReviewStatus(
           reasonCode: 'INSUFFICIENT_PERMISSION_OR_INVALID_STATE',
         })
       } catch (auditError) {
-        console.error('Failed to record rejected assessment review change', {
-          liveQuizId: activityId,
-          errorType: auditError instanceof Error ? auditError.name : 'unknown',
-        })
+        ctx.log.warn(
+          {
+            event: 'activity.assessment.rejection.record_failed',
+            liveQuizId: activityId,
+            errorType:
+              auditError instanceof Error ? auditError.name : 'unknown',
+          },
+          'Failed to record rejected assessment review change'
+        )
       }
     }
-    console.error('Error setting activity review status', {
-      activityId,
-      activityType,
-      errorType: error instanceof Error ? error.name : 'unknown',
-    })
+    ctx.log.error(
+      {
+        event: 'activity.review-status.update.failed',
+        activityId,
+        activityType,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
+      'Activity review status update failed'
+    )
     return null
   }
 

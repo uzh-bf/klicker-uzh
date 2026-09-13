@@ -100,6 +100,8 @@ export type AssessmentResponseCommand<TResponse = unknown> = {
   responseTimestamp: number
   receivedAt: string
   transportAttemptedAt: string
+  /** Additive diagnostic envelope consumed by the Hatchet logging bridge. */
+  loggingContext?: HatchetLoggingContext
 }
 
 export interface AssessmentResponseReceipt {
