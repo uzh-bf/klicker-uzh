@@ -4087,12 +4087,6 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
     await setParticipantToken(page, participantId)
     await resetChatState(participantId)
     await setDisclaimerState(participantId, 'accepted')
-    // The graph workspace only mounts while the chatbot exposes a graph.
-    const prisma = await getPrisma()
-    await prisma.chatbot.update({
-      where: { id: CHATBOT_ID },
-      data: { knowledgeGraphVisible: true },
-    })
   })
 
   test('A delayed response for a superseded graph keeps the newer selection', async ({
