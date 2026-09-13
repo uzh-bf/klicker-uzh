@@ -3936,6 +3936,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'For this live quiz no quiz leaderboard entries have been created yet.',
       deleteLeaderboardEntries:
         '{number} quiz leaderboard entries will be deleted and all participants will lose their collected points.',
+      removeLeaderboardAccess:
+        '{number} quiz leaderboard entries will no longer be available. Earned points are retained.',
       evaluationLinksEmbedding: 'Links for Embedding Evaluation Views',
       noLiveQuizzes: 'No live quizzes available',
       creationExplanation:
