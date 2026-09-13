@@ -1,5 +1,6 @@
 import { execFile, execFileSync } from 'node:child_process'
 import { promisify } from 'node:util'
+import { LOCAL_KB_MANAGED_PROFILE } from './isolated-config.mjs'
 
 const execute = promisify(execFile)
 
@@ -37,7 +38,7 @@ export async function runLocalManaged(
     (args.length !== 5 ||
       args[0] !== 'ensure' ||
       args[2] !== '--profile' ||
-      args[3] !== 'ai,chat,manage' ||
+      args[3] !== LOCAL_KB_MANAGED_PROFILE ||
       args[4] !== '--json')
   ) {
     throw new Error('Local AI environment is restricted to managed AI startup.')
