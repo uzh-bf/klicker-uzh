@@ -499,6 +499,7 @@ contracts; this table does not authorize brittle documentation or content tests.
 | Language/security analysis silently absent | Existing CodeQL JS result; extend language/category acceptance | CodeQL workflow, W6 |
 | Expired exception passes | No verified common exception policy; add only the selected policy's expiry/scope cases | Admission decision, W7/W8/W10 |
 | Candidate stranded or superseded during promotion | Existing `stg-release-promoter.test.js` and fixtures; extend ordering/identity/CAS coverage | Existing controller, W10 |
+| Scan job hides or breaks promotion admission | Controller fixtures emit the admitted scan jobs and the tests reject a disabled, unlisted, or misplaced ARM job | Existing controller, W10 |
 
 The exact synthetic CI/Sonar probes and external effects must be included in
 the executable package's approval. Do not create intentionally vulnerable
@@ -633,7 +634,29 @@ its dependent action. Read back effective settings and retain sanitized receipts
     analysis finishes (`.github/scripts/image-scan-admission.cjs`, 18 unit
     cases). Merging that source activates the requirement for later promotions,
     which is disclosed as a live effect; the scheduled reassessment and its
-    retention, cost, and owner decisions remain proposals.
+    retention, cost, and owner decisions remain proposals. That source also
+    added `scan-arm` and `scan-migrator-arm` as active ARM jobs, and the
+    candidate validator compared every active `-arm` job against the publisher
+    inventory alone, so it would have rejected a candidate that carries the
+    scans it now requires. `validateStagingWorkflow` derives the admitted scan
+    jobs from `SCAN_ADMISSION_INVENTORY`, keeps them out of the publisher and
+    runtime inventories, and still rejects a disabled scan job, an unlisted ARM
+    job, and an admitted scan job placed in another workflow
+    (`.github/scripts/stg-release-promoter.test.js`, 29 cases).
+  - Ready-head review disposition: the branch review at `4475c5d447`
+    (`34749421690`) failed closed as partial because two of its 23 review
+    requests timed out while building context, so it published no report and
+    left no finding to disposition. Its one verified finding was the scan-job
+    inventory defect described under W10, and this branch carries the fix.
+  - Pre-existing controller limits, not introduced here: on `v3`,
+    `validateStagingWorkflows` already rejects the real candidate workflows
+    because `STAGING_WORKFLOWS` lists `v3_mcp-lecturer-stg.yml` and
+    `v3_mcp-student-stg.yml`, which the default branch does not track, and
+    because no staging metadata step declares the full source SHA tag that
+    `hasFullShaTag` requires. Promotion is latent rather than active:
+    `vars.STG_RELEASE_PROMOTION_ENABLED` is not `true`, so recent
+    `deploy-stg-promote.yml` runs are skipped. Both limits need their own
+    decision before promotion is activated and remain untouched.
 - Outstanding gates: live Sonar settings and entitlement (W0), the trusted
   contributor analysis route (W1), ruleset application (W9), promotion
   admission
