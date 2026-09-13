@@ -124,6 +124,13 @@ export async function downloadAssessmentExport(
         if (artifact.byteCount > 10 * 1024 * 1024) {
           throw exportError('DATA_EXPORT_TOO_LARGE')
         }
+        const clock = await prisma.$queryRaw<
+          Array<{ now: Date }>
+        >`SELECT clock_timestamp() AS "now"`
+        const now = clock[0]?.now
+        if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+          throw exportError('DATA_EXPORT_CLOCK_FAILURE')
+        }
         await prisma.assessmentExportReceipt.update({
           where: { id: request.requestId },
           data: {
@@ -131,7 +138,7 @@ export async function downloadAssessmentExport(
             sha256: artifact.sha256,
             byteCount: artifact.byteCount,
             recordCount: artifact.recordCount,
-            releasedAt: new Date(),
+            releasedAt: now,
           },
         })
         checkCancellation()

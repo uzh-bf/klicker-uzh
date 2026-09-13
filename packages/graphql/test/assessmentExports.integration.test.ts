@@ -285,6 +285,9 @@ describe('assessment export PostgreSQL integration', () => {
     })
     expect(receipt?.attestedAt).toBeInstanceOf(Date)
     expect(receipt?.releasedAt).toBeInstanceOf(Date)
+    expect(receipt!.releasedAt!.getTime()).toBeGreaterThanOrEqual(
+      receipt!.attestedAt.getTime()
+    )
   })
 
   it('denies an outsider and a restricted session without creating receipts', async () => {
@@ -432,6 +435,43 @@ describe('assessment export PostgreSQL integration', () => {
         where: { id: request.requestId },
       })
     ).resolves.toMatchObject({ status: DataExportStatus.RELEASED })
+  })
+
+  it('fails closed when the database release clock is unavailable', async () => {
+    const request = buildCourseRequest(fixture.courseId)
+    fixtureIds.receipts.push(request.requestId)
+    const failingPrisma = prisma.$extends({
+      query: {
+        async $queryRaw({ args, query }) {
+          if (args.strings.join('').includes('clock_timestamp()')) return []
+          return query(args)
+        },
+      },
+    })
+
+    await expect(
+      downloadAssessmentExport(
+        request,
+        contextFor(
+          fixture.adminId,
+          UserLoginScope.FULL_ACCESS,
+          UserRole.USER,
+          failingPrisma as unknown as typeof prisma
+        )
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'DATA_EXPORT_CLOCK_FAILURE' },
+    })
+    await expect(
+      prisma.assessmentExportReceipt.findUnique({
+        where: { id: request.requestId },
+      })
+    ).resolves.toMatchObject({
+      status: DataExportStatus.FAILED,
+      sha256: null,
+      releasedAt: null,
+      failureCode: 'DATA_EXPORT_CLOCK_FAILURE',
+    })
   })
 
   it('records a failed audit receipt when the release write fails', async () => {
