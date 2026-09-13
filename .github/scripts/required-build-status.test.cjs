@@ -161,21 +161,22 @@ test('image build inventory mirrors the v3_*-stg.yml workflows', () => {
       workflow.on.pull_request.types.includes('edited'),
       item.path + ' must rebuild when a pull request is retargeted'
     )
+    // Draft pull requests defer their image builds, so every active build
+    // job must gate on the non-draft state and the workflow must restore
+    // the build when ready_for_review fires on the unchanged head.
+    assert.ok(
+      workflow.on.pull_request.types.includes('ready_for_review'),
+      item.path + ' must re-run its builds at the ready boundary'
+    )
     for (const [id, job] of Object.entries(workflow.jobs)) {
       if (job.if === INACTIVE_IF || !id.startsWith('build-')) continue
-      if (job.if !== undefined) {
-        assert.match(
-          job.if,
-          /github\.event_name != 'pull_request'/,
-          item.path + ' ' + id + ' would be skipped on push'
-        )
-      }
-      // Draft pull requests run the same builds as ready ones, so no build job
-      // may gate on the draft state.
-      assert.doesNotMatch(
-        String(job.if ?? ''),
-        /github\.event\.pull_request\.draft/,
-        item.path + ' ' + id + ' must not gate on the draft state'
+      assert.equal(
+        job.if,
+        "github.event_name != 'pull_request' || github.event.pull_request.draft == false",
+        item.path +
+          ' ' +
+          id +
+          ' must defer draft builds and always build on push'
       )
     }
   }
@@ -192,8 +193,8 @@ test('the fallback stays the always-reported image build contract', () => {
     'the required context must recompute when a pull request is retargeted'
   )
   assert.ok(
-    !workflow.on.pull_request.types.includes('ready_for_review'),
-    'the required context must not re-run on an unchanged head at the ready transition'
+    workflow.on.pull_request.types.includes('ready_for_review'),
+    'the required context must recompute at the ready boundary against the restored builds'
   )
   // No path filter: the required check must always be reported.
   for (const trigger of [workflow.on.push, workflow.on.pull_request]) {
@@ -504,18 +505,12 @@ test('the aggregate decision blocks failures and reports evidence', () => {
   assert.match(decision.reason, /v3_chat-stg\.yml/)
 })
 
-test('a draft pull request qualifies its builds instead of being deferred', async () => {
+test('a draft pull request defers its image builds without polling', async () => {
   const directory = scratch()
-  const github = fakeGithub({
-    jobsByRun: {
-      '100:1': [workflowJob({ id: 501 })],
-    },
-    runsByWorkflow: {
-      'v3_lti-stg.yml': [
-        workflowRun({ path: '.github/workflows/v3_lti-stg.yml' }),
-      ],
-    },
-  })
+  // any runs/jobs API call would prove the evaluation polled build state; a
+  // deferral must decide from the draft flag alone
+  const calls = []
+  const github = fakeGithub({ calls, jobsByRun: {}, runsByWorkflow: {} })
   const evidencePath = path.join(directory, 'required-ci-evidence.json')
   const decision = await evaluateBuildImagesStatus({
     changedFilesPath: changedFiles(directory, ['apps/lti/src/x.ts']),
@@ -535,11 +530,21 @@ test('a draft pull request qualifies its builds instead of being deferred', asyn
     rootDirectory: root,
   })
   assert.equal(decision.ok, true, JSON.stringify(decision))
+  assert.equal(
+    decision.reason,
+    'draft pull request: affected image builds are deferred until the pull request is marked ready'
+  )
+  assert.equal(
+    calls.filter((call) => call.endpoint === 'runs' || call.endpoint === 'jobs')
+      .length,
+    0,
+    'a deferral must not poll build runs'
+  )
   const evidence = readEvidence(directory)
   assert.equal(evidence.decision.outcome, 'pass')
-  assert.equal(evidence.selection.mode, 'affected')
-  assert.equal(evidence.selection.state, 'run')
-  assert.equal(evidence.builds.length, 1)
+  assert.equal(evidence.selection.mode, 'draft-skip')
+  assert.equal(evidence.selection.state, 'draft')
+  assert.equal(evidence.builds.length, 0)
   fs.rmSync(directory, { force: true, recursive: true })
 })
 

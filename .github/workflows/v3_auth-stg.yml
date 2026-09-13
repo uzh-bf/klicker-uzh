@@ -9,7 +9,7 @@ on:
     # branches: [ "v3" ]
     # "edited" re-evaluates the path filter when a pull request is retargeted,
     # so newly applicable images are built instead of keeping the old result.
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
       - 'apps/auth/**'
       # Any workspace package can be bundled into this image.
@@ -34,6 +34,9 @@ env:
 jobs:
   build-arm:
     runs-on: ubuntu-24.04-arm
+    # draft pull requests defer their image builds; marking the
+    # pull request ready re-runs this build on the unchanged head
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write

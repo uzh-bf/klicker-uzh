@@ -5,9 +5,11 @@ name: Build Fallback
 # required 'build-images-status' check is always reported and can never be
 # satisfied by a workflow-level path skip. It requires every actually affected
 # v3_*-stg.yml image build to succeed for the same event, branch and commit, and
-# passes only a validated no-change selection. Draft pull requests run the same
-# builds as ready ones, so a draft-era success stays authoritative and marking
-# the pull request ready re-runs nothing.
+# passes only a validated no-change selection. Draft pull requests defer their
+# image builds, so a draft evaluation passes without polling and marks the
+# evidence as a draft skip; marking the pull request ready fires
+# ready_for_review on the unchanged head, restores the deferred builds, and this
+# required context recomputes against them.
 on:
   push:
     branches:
@@ -17,9 +19,10 @@ on:
     branches:
       - 'v3'
       - 'v3*'
-    # "edited" re-evaluates the selection when a pull request is retargeted, and
-    # the drift-free build jobs cannot change at the ready boundary.
-    types: [opened, synchronize, reopened, edited]
+    # "edited" re-evaluates the selection when a pull request is retargeted;
+    # ready_for_review recomputes the required context against the builds that
+    # the ready boundary restores.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
