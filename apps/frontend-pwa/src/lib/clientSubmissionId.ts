@@ -13,12 +13,12 @@
  * identity and cannot be deduplicated against submissions sent before it.
  * This is a degraded fallback, not an equivalent guarantee.
  *
- * The identity represents a browser profile, not a person: tabs of the same
- * profile converge on the persisted id (the last writer of the storage copy
- * wins; web storage provides no cross-tab locking, so tabs initialized in
- * parallel may briefly hold different in-memory ids), and two people sharing
- * a browser profile during the same quiz execution share one anonymous
- * identity. Cross-tab coordination is explicitly deferred. This is
+ * The identity represents a browser profile, not a person: concurrently
+ * initialized tabs can retain different in-memory ids for their page
+ * lifetimes. The persisted value is last-writer-wins; existing tabs do not
+ * automatically adopt it. Two people sharing a browser profile during the
+ * same quiz execution likewise share one anonymous identity. Cross-tab
+ * coordination is explicitly deferred. This is
  * duplicate-submission protection, not anti-abuse protection — a client can
  * always forge fresh identifiers.
  */
