@@ -108,7 +108,10 @@ interface ChatState {
   ratingErrors: Record<string, boolean>
 
   // thread management actions
-  createThread: (chatbotId: string) => Promise<string>
+  createThread: (
+    chatbotId: string,
+    options?: { background?: boolean }
+  ) => Promise<string>
   loadThreads: (chatbotId: string) => Promise<void>
   switchToThread: (chatbotId: string, threadId: string) => Promise<boolean>
   /**
@@ -295,9 +298,12 @@ export const useChatStore = create<ChatState>((set, get) => {
      * @param chatbotId - The ID of the chatbot to create the thread for
      * @returns Promise<string> The ID of the created thread
      */
-    createThread: async (chatbotId: string) => {
+    createThread: async (
+      chatbotId: string,
+      options?: { background?: boolean }
+    ) => {
       try {
-        set({ isLoading: true })
+        if (!options?.background) set({ isLoading: true })
         const apiThread = await apiCall<ApiThread>(
           `/chatbots/${chatbotId}/threads`,
           {

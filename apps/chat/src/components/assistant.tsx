@@ -15,7 +15,6 @@ import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { RuntimeProvider } from '../app/RuntimeProvider'
 import { useChatGuestTokenBootstrap } from '../hooks/useChatGuestTokenBootstrap'
-import { useSettingsStore } from '../stores/settingsStore'
 import { useEmbedded } from '../hooks/useEmbedded'
 import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
 import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
@@ -29,8 +28,8 @@ import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import {
   EmbeddedCreditsBar,
+  EmbeddedNewConversation,
   EmbeddedSettings,
-  hasEmbeddedModeSettings,
 } from './embedded-settings'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import { ChatKnowledgeGraphWorkspace } from './knowledge-graph/ChatKnowledgeGraphWorkspace'
@@ -622,9 +621,7 @@ function AssistantLayout({
   initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations('chat.thread.learningContext')
-  const { showSidebar, showMinimalSettings } = useChatUi()
-  const creditsLoaded = useSettingsStore((state) => state.creditsLoaded)
-  const modeOptions = useSettingsStore((state) => state.modeOptions)
+  const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
   const pathname = usePathname()
   const graphMode = pathname === `/${chatbot.id}/graph`
@@ -653,13 +650,11 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      {(creditsLoaded ||
-        hasEmbeddedModeSettings(showMinimalSettings, modeOptions)) && (
-        <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
-          <EmbeddedCreditsBar />
-          <EmbeddedSettings />
-        </div>
-      )}
+      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
+        <EmbeddedCreditsBar />
+        <EmbeddedSettings />
+        <EmbeddedNewConversation />
+      </div>
       <main
         id="main-content"
         tabIndex={-1}

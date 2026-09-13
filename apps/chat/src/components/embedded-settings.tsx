@@ -1,7 +1,10 @@
 'use client'
 
-import { ChevronDown, Zap } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { ChevronDown, Plus, Zap } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useParams } from 'next/navigation'
+import { useRef, useState } from 'react'
+import { useChatStore } from '../stores/chatStore'
 import { twMerge } from 'tailwind-merge'
 import { isKnownMode } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -33,7 +36,7 @@ export function EmbeddedSettings() {
         value={selectedMode}
         onChange={(e) => setSelectedMode(e.target.value)}
         aria-label={t('chat.modes.switcherLabel')}
-        className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
+        className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none bg-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
       >
         {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`
             + isKnownMode, D3-pattern for unknown modes) — labels here must
@@ -108,5 +111,56 @@ export function EmbeddedCreditsBar() {
         </p>
       )}
     </div>
+  )
+}
+
+export function EmbeddedNewConversation() {
+  const t = useTranslations()
+  const locale = useLocale()
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const pending = useRef(false)
+  const [creating, setCreating] = useState(false)
+  const createThread = useChatStore((state) => state.createThread)
+  const blocked = useChatStore(
+    (state) =>
+      state.isLoading ||
+      state.participationRequired ||
+      Boolean(
+        state.threads.find((thread) => thread.id === state.activeThreadId)
+          ?.isRunning
+      )
+  )
+
+  const startConversation = async () => {
+    if (pending.current || blocked) return
+    pending.current = true
+    setCreating(true)
+    try {
+      const threadId = await createThread(chatbotId, { background: true })
+      window.history.pushState(
+        null,
+        '',
+        `/${chatbotId}/threads/${threadId}?embed=true&locale=${encodeURIComponent(locale)}`
+      )
+    } catch {
+      // Thread creation reports failures through the shared store.
+    } finally {
+      pending.current = false
+      setCreating(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      data-cy="chat-embedded-new-conversation"
+      onClick={startConversation}
+      disabled={blocked || creating}
+      aria-label={t('chat.sidebar.newChat')}
+      title={t('chat.sidebar.newChat')}
+      className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50"
+    >
+      <Plus aria-hidden="true" className="size-4" />
+    </button>
   )
 }
