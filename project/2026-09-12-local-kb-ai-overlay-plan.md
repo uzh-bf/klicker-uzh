@@ -342,8 +342,15 @@ question from that ingested content through the real retrieval service. The cite
 quotation matched the provider-ingested page text, so the answer came from retrieval
 rather than model memory. The receipt is `project/_local/2026-09-13-instance-f-qna-proof.md`.
 
-Three defects appeared only once the stack ran end to end, and all three are now
-fixed in source at `317662a438`:
+Three defects appeared only once the stack ran end to end. All three are fixed in
+source at `317662a438`, but the provenance of that run matters: the worker was
+started manually with `pnpm --filter @klicker-uzh/hatchet-worker-general run dev` and the
+MCP transport was normalized by running a copy of the seed script inside the
+runtime checkout. The run therefore proves the ingestion and retrieval path
+itself, including the Luna pin, and it is what established that the defects are
+real. It does not prove the launcher-owned `workers` profile or the
+`kb-retrieval-transport` stage; those rest on unit tests plus a fresh-stack run
+that has not happened yet. The defects:
 
 - The isolated profile started no Klicker Hatchet worker, so a resource created
   through Manage stayed `QUEUED` with a null `externalOperationId` and no error.
