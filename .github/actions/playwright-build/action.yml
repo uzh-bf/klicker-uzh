@@ -175,16 +175,7 @@ runs:
           apps/mcp-lecturer/dist
           apps/olat-api/dist
           apps/response-api/dist
-          packages/export/dist
-          packages/feature-flags/dist
-          packages/grading/dist
-          packages/graphql/dist
-          packages/hatchet/dist
-          packages/knowledge-graph/dist
-          packages/markdown/dist
-          packages/prisma/dist
-          packages/types/dist
-          packages/util/dist
+          packages/*/dist
         retention-days: 1
 
     - name: Extract Turbo build telemetry
