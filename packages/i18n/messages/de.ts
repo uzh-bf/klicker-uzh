@@ -4894,7 +4894,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       requestFailed:
         'Der Assessment-Export konnte nicht erstellt werden. Bitte versuche es erneut.',
       cancel: 'Abbrechen',
-      submit: 'Exportieren',
+      submit: 'Herunterladen',
     },
     researchExport: {
       menuLabel: 'Forschungsdaten exportieren',
@@ -4920,7 +4920,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       asynchronousResponses:
         'Asynchrone Antworten (Lernelemente, Microlearning)',
       learningAnalytics: 'Learning-Analytics-Daten (Einzel- und Gruppenwerte)',
-      chatTranscripts: 'Chat-Transkripte',
+      chatTranscripts: 'Chat-Transkripte und Freitext',
       unavailableHint:
         'Derzeit nicht verfügbar; der Kern unterstützt diese Datenklasse noch nicht.',
       classDataNote:
@@ -4949,7 +4949,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Forschungsexport konnte nicht erstellt werden. Bitte versuche es erneut.',
       downloadStarted: 'Der Download wurde gestartet.',
       cancel: 'Abbrechen',
-      submit: 'Forschungsdaten exportieren',
+      submit: 'Herunterladen',
     },
     pointCorrections: {
       stepIndicator: 'Schritt {current} von {total}',
