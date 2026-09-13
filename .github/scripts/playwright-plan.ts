@@ -926,25 +926,13 @@ export function choosePlaywrightRoute(input: RouteInput): RouteDecision {
     validDraft
   if (forceHosted) reasons.push('force-hosted-canary')
 
-  if (input.prDraft === 'true' && publicEligible && smartDraft) {
-    reasons.push('smart-draft-enabled')
-    return {
-      schemaVersion: ROUTE_SCHEMA_VERSION,
-      route: publicRollout && !forceHosted ? 'public-pr' : 'hosted',
-      selectorPrState: 'draft',
-      reasonCodes: [
-        ...new Set([
-          ...reasons,
-          publicRollout && !forceHosted
-            ? 'public-pr-rollout'
-            : 'hosted-fallback',
-        ]),
-      ].sort(compareNames),
-    }
-  }
-
-  if (input.prDraft === 'true' && !smartDraft) {
-    reasons.push('smart-draft-disabled')
+  // Every draft runs the ready-state selector and the full suite. The trusted
+  // route never returns the draft selector state, so a draft can never build
+  // the partial change-based plan, whatever the smart-draft controls say.
+  // The controls are still recorded for diagnostics and the force-hosted
+  // canary, but they cannot narrow a draft plan.
+  if (input.prDraft === 'true') {
+    reasons.push(smartDraft ? 'smart-draft-enabled' : 'smart-draft-disabled')
   }
   const publicReady =
     input.prDraft === 'false' && publicEligible && publicRollout && !forceHosted

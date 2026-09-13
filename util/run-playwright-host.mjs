@@ -6,10 +6,20 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
-import { delimiter, dirname, join, resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import {
+  delimiter,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { resolveDevrouter } from './devrouter-cli.mjs'
 import {
@@ -18,8 +28,61 @@ import {
   preserveLocalDatabase,
 } from './playwright-host-policy.mjs'
 
+const require = createRequire(import.meta.url)
+const {
+  parseProfileManifest,
+} = require('../.github/scripts/playwright-shards.ts')
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const PNPM_VERIFY_DEPS_ENV = 'pnpm_config_verify_deps_before_run'
+export const PLAYWRIGHT_PROFILE_FALLBACK = 'playwright'
+
+const PLAYWRIGHT_OPTIONS_WITH_VALUES = new Set([
+  '--browser',
+  '--config',
+  '--grep',
+  '--grep-invert',
+  '--global-timeout',
+  '--max-failures',
+  '--output',
+  '--project',
+  '--repeat-each',
+  '--reporter',
+  '--retries',
+  '--shard',
+  '--timeout',
+  '--trace',
+  '--ui-host',
+  '--ui-port',
+  '--update-source-method',
+  '--websocket',
+  '--workers',
+  '-c',
+  '-g',
+  '-p',
+])
+
+const PLAYWRIGHT_BOOLEAN_OPTIONS = new Set([
+  '--debug',
+  '--fail-on-flaky-tests',
+  '--forbid-only',
+  '--fully-parallel',
+  '--headed',
+  '--ignore-snapshots',
+  '--last-failed',
+  '--list',
+  '--no-deps',
+  '--pass-with-no-tests',
+  '--quiet',
+  '--ui',
+  '--update-snapshots',
+  '--version',
+  '--help',
+])
+
+function defaultClock() {
+  return Number(process.hrtime.bigint()) / 1_000_000
+}
 
 function fail(message) {
   throw new Error(`[playwright:host] ${message}`)
@@ -47,6 +110,135 @@ function run(command, args, { capture = false, env = process.env } = {}) {
 function commandExists(command) {
   const result = spawnSync(command, ['--version'], { stdio: 'ignore' })
   return result.status === 0
+}
+
+function optionName(option) {
+  return option.split('=', 1)[0]
+}
+
+function isWithinDirectory(directory, candidate) {
+  const relativePath = relative(directory, candidate)
+  return (
+    relativePath !== '' &&
+    !relativePath.startsWith(`..${sep}`) &&
+    relativePath !== '..' &&
+    !isAbsolute(relativePath)
+  )
+}
+
+function resolveExistingSpecFile(
+  argument,
+  { root, pathExists = existsSync } = {}
+) {
+  if (
+    typeof argument !== 'string' ||
+    !argument.endsWith('.spec.ts') ||
+    /[*?[\]]/.test(argument)
+  ) {
+    return undefined
+  }
+
+  const repositoryRoot = resolve(root)
+  const packageRoot = join(repositoryRoot, 'playwright')
+  const testsRoot = join(packageRoot, 'tests')
+  const candidates = isAbsolute(argument)
+    ? [resolve(argument)]
+    : [
+        resolve(repositoryRoot, argument),
+        resolve(packageRoot, argument),
+        ...(argument.includes('/') ? [] : [resolve(testsRoot, argument)]),
+      ]
+
+  for (const candidate of candidates) {
+    if (isWithinDirectory(testsRoot, candidate) && pathExists(candidate)) {
+      return candidate.slice(testsRoot.length + 1)
+    }
+  }
+
+  return null
+}
+
+function selectedSpecFiles(args, { root, pathExists = existsSync } = {}) {
+  const selected = []
+
+  const addFilter = (argument) => {
+    const file = resolveExistingSpecFile(argument, { root, pathExists })
+    if (!file) return false
+    selected.push(file)
+    return true
+  }
+
+  for (let index = 0; index < args.length; index++) {
+    const argument = args[index]
+
+    if (argument === '--') {
+      for (const filter of args.slice(index + 1)) {
+        if (!addFilter(filter)) return null
+      }
+      break
+    }
+
+    if (!argument.startsWith('-')) {
+      if (!addFilter(argument)) return null
+      continue
+    }
+
+    const name = optionName(argument)
+    if (argument.includes('=')) {
+      if (
+        !PLAYWRIGHT_OPTIONS_WITH_VALUES.has(name) &&
+        !PLAYWRIGHT_BOOLEAN_OPTIONS.has(name)
+      ) {
+        return null
+      }
+      continue
+    }
+
+    if (PLAYWRIGHT_OPTIONS_WITH_VALUES.has(name)) {
+      index++
+      continue
+    }
+
+    if (PLAYWRIGHT_BOOLEAN_OPTIONS.has(name)) continue
+
+    return null
+  }
+
+  return [...new Set(selected)]
+}
+
+export function inferPlaywrightProfile({
+  args,
+  root = repoRoot,
+  pathExists = existsSync,
+  readDirectory = readdirSync,
+  readFile = readFileSync,
+  parseProfileManifestFn = parseProfileManifest,
+} = {}) {
+  const selected = selectedSpecFiles(args, { root, pathExists })
+  if (!selected?.length) return PLAYWRIGHT_PROFILE_FALLBACK
+
+  try {
+    const testsRoot = join(root, 'playwright', 'tests')
+    const allFiles = readDirectory(testsRoot)
+      .filter((file) => typeof file === 'string' && file.endsWith('.spec.ts'))
+      .sort()
+    const manifest = JSON.parse(
+      readFile(join(root, 'playwright', 'profiles.json'), 'utf8')
+    )
+    const profiles = parseProfileManifestFn(manifest, allFiles)
+    const apps = new Set()
+
+    for (const file of selected) {
+      const profile = profiles.get(file)
+      if (!profile) return PLAYWRIGHT_PROFILE_FALLBACK
+      for (const app of profile.split(',')) apps.add(app)
+    }
+
+    return [...apps].sort().join(',') || PLAYWRIGHT_PROFILE_FALLBACK
+  } catch {
+    return PLAYWRIGHT_PROFILE_FALLBACK
+  }
 }
 
 function runPnpm(
@@ -83,6 +275,9 @@ function createRuntime({
   commandExistsFn = (command) => commandExists(command),
   pathExists = existsSync,
   readFile = readFileSync,
+  readDirectory = readdirSync,
+  parseProfileManifestFn = parseProfileManifest,
+  clock = defaultClock,
   root = repoRoot,
   environment = process.env,
   log = console.log,
@@ -97,10 +292,46 @@ function createRuntime({
     log,
     pathExists,
     readFile,
+    readDirectory,
+    parseProfileManifestFn,
+    clock,
     repoRoot: root,
     runPnpm: (args, env = environment) =>
       runPnpm(args, env, { runCommand: commandRunner, commandExistsFn }),
   }
+}
+
+function createPhaseTimer(clock) {
+  const elapsed = {
+    preparation: 0,
+    runtime: 0,
+    browser: 0,
+  }
+  let active = 'preparation'
+  let started = clock()
+
+  const finish = () => {
+    if (!active) return
+    elapsed[active] += Math.max(0, clock() - started)
+    active = undefined
+  }
+
+  return {
+    begin(phase) {
+      finish()
+      active = phase
+      started = clock()
+    },
+    finish,
+    values: () => elapsed,
+  }
+}
+
+function logPhaseTimings(runtime, timer) {
+  const elapsed = timer.values()
+  runtime.log(
+    `[playwright:host] elapsed preparation=${elapsed.preparation.toFixed(1)}ms runtime=${elapsed.runtime.toFixed(1)}ms browser=${elapsed.browser.toFixed(1)}ms`
+  )
 }
 
 export function readCommittedEnvironment(contents) {
@@ -197,6 +428,7 @@ export function resolvePlaywrightEnvironment({
   appSecret,
   databaseTemplate,
   databasePort,
+  postgresContainer,
   workspace,
 }) {
   const namespace = workspace ? `.${workspace}` : ''
@@ -214,6 +446,7 @@ export function resolvePlaywrightEnvironment({
     APP_SECRET: appSecret,
     COOKIE_DOMAIN: `klicker${namespace}.localhost`,
     DATABASE_URL: databaseUrl.toString(),
+    KLICKER_PLAYWRIGHT_POSTGRES_CONTAINER: postgresContainer,
     [HOST_RUNNER_ENV]: '1',
     PLAYWRIGHT_BASE_URL: studentUrl,
     NEXT_PUBLIC_GROWTHBOOK_API_HOST: `${appUrl('manage')}/__growthbook__`,
@@ -261,7 +494,11 @@ function resolveWorkspace(runtime) {
   return runtime.readFile(workspaceFile, 'utf8').trim()
 }
 
-function resolveDatabasePort(runtime, service = 'postgres', port = '5432/tcp') {
+export function resolvePostgresContainer(runtime) {
+  return resolveServiceContainer(runtime, 'postgres')
+}
+
+function resolveServiceContainer(runtime, service) {
   const workingDirectory = join(runtime.repoRoot, '.devcontainer')
   const containerIds = runtime
     .commandRunner(
@@ -282,13 +519,22 @@ function resolveDatabasePort(runtime, service = 'postgres', port = '5432/tcp') {
 
   if (containerIds.length !== 1) {
     fail(
-      `expected one Postgres container for ${workingDirectory}, found ${containerIds.length}`
+      `expected one ${service} container for ${workingDirectory}, found ${containerIds.length}`
     )
   }
+  return containerIds[0]
+}
+
+export function resolveDatabasePort(
+  runtime,
+  service = 'postgres',
+  port = '5432/tcp'
+) {
+  const containerId = resolveServiceContainer(runtime, service)
 
   const publishedPort = runtime.commandRunner(
     'docker',
-    ['port', containerIds[0], port],
+    ['port', containerId, port],
     { capture: true }
   )
 
@@ -361,46 +607,49 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
     production = false,
   } = parseLocalOptions(argv)
   const runtime = createRuntime(dependencies)
-  const hostEnvironment = {
-    ...runtime.environment,
-    [HOST_RUNNER_ENV]: '1',
-  }
-  preserveLocalDatabase({
-    ...hostEnvironment,
-    KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
-  })
-  assertPlaywrightHostBoundary({
-    cwd: dependencies.cwd,
-    env: hostEnvironment,
-    pathExists: runtime.pathExists,
-  })
-
-  if (mode === '--show-report') {
-    ensureHostDependencies(runtime, ['--list'])
-    runtime.runPnpm(
-      [
-        '--filter',
-        '@klicker-uzh/playwright',
-        'exec',
-        'playwright',
-        'show-report',
-        ...args,
-      ],
-      hostEnvironment
-    )
-    return
-  }
-
-  const printEnvironment = mode === '--print-env'
-
-  if (!printEnvironment) ensureHostDependencies(runtime, args)
-
+  const timer = createPhaseTimer(runtime.clock)
   const selectionPath = join(
     runtime.repoRoot,
     '.devcontainer/.runtime/account-production.json'
   )
   let orchestrationFailed = false
+
   try {
+    const hostEnvironment = {
+      ...runtime.environment,
+      [HOST_RUNNER_ENV]: '1',
+    }
+    preserveLocalDatabase({
+      ...hostEnvironment,
+      KLICKER_PLAYWRIGHT_PRESERVE_DATABASE: preserveDatabase ? '1' : '0',
+    })
+    assertPlaywrightHostBoundary({
+      cwd: dependencies.cwd,
+      env: hostEnvironment,
+      pathExists: runtime.pathExists,
+    })
+
+    if (mode === '--show-report') {
+      ensureHostDependencies(runtime, ['--list'])
+      timer.begin('browser')
+      runtime.runPnpm(
+        [
+          '--filter',
+          '@klicker-uzh/playwright',
+          'exec',
+          'playwright',
+          'show-report',
+          ...args,
+        ],
+        hostEnvironment
+      )
+      return
+    }
+
+    const printEnvironment = mode === '--print-env'
+
+    if (!printEnvironment) ensureHostDependencies(runtime, args)
+
     if (production) {
       const sourceSha = runtime.commandRunner(
         'git',
@@ -452,18 +701,29 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       unlinkSync(selectionPath)
     }
 
+    const runtimeProfile = production
+      ? 'manage,pwa,email'
+      : (profile ??
+        inferPlaywrightProfile({
+          args,
+          root: runtime.repoRoot,
+          pathExists: runtime.pathExists,
+          readDirectory: runtime.readDirectory,
+          readFile: runtime.readFile,
+          parseProfileManifestFn: runtime.parseProfileManifestFn,
+        }))
+
+    timer.begin('runtime')
     runtime.log('[playwright:host] Reconciling the devcontainer runtime')
     runtime.commandRunner(runtime.devrouter(), [
       'ensure',
       runtime.repoRoot,
-      ...(production
-        ? ['--profile', 'manage,pwa,email']
-        : profile === undefined
-          ? []
-          : ['--profile', profile]),
+      '--profile',
+      runtimeProfile,
     ])
 
     const workspace = resolveWorkspace(runtime)
+    const postgresContainer = resolvePostgresContainer(runtime)
     const databasePort = resolveDatabasePort(runtime)
     const committedEnvironment = readCommittedEnvironment(
       runtime.readFile(
@@ -482,6 +742,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       appSecret,
       databaseTemplate,
       databasePort,
+      postgresContainer,
       workspace,
     })
 
@@ -495,6 +756,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
         JSON.stringify(
           {
             databaseHost: `127.0.0.1:${databasePort}`,
+            postgresContainer,
             manageUrl: resolvedEnvironment.URL_MANAGE,
             studentUrl: resolvedEnvironment.URL_STUDENT,
             workspace: workspace || null,
@@ -506,6 +768,7 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
       return
     }
 
+    timer.begin('browser')
     runtime.log(
       `[playwright:host] Running on the host against ${resolvedEnvironment.URL_MANAGE}`
     )
@@ -535,6 +798,8 @@ export function main(argv = process.argv.slice(2), dependencies = {}) {
         if (!orchestrationFailed) throw cleanupError
       }
     }
+    timer.finish()
+    logPhaseTimings(runtime, timer)
   }
 }
 

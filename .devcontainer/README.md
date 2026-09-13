@@ -43,7 +43,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.59 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.72 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -93,7 +93,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.0.59. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.72. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -283,7 +283,8 @@ custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
 
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
-a nested API route, the committed shell pages of auth, PWA, manage, and control
+a nested API route. Auth must answer `200 application/json` at
+`/api/auth/providers`; the committed shell pages of PWA, manage, and control
 must answer `2xx` HTML or a redirect, and Response API must answer `200`
 JSON at `/healthz`. Profiles that include live-quiz workers also require one
 live runtime process for each worker below the exact managed Turbo root. Five
@@ -323,7 +324,7 @@ analytics image and lint CI so the root quality gate runs inside the container.
   Generation failures abort startup and retain the previous output; unchanged
   output is not rewritten.
 - Generating updated configuration does not change mounts in an existing
-  container. Devrouter 0.0.59 does not support warm mount reconciliation.
+  container. Devrouter 0.0.72 does not support warm mount reconciliation.
   Do not recreate or reset a retained workspace to apply a package addition or
   removal. Keep its data intact and resolve the supported lifecycle procedure
   separately. Unchanged package inventories retain the same volume names.
@@ -355,3 +356,50 @@ analytics image and lint CI so the root quality gate runs inside the container.
   seeded or synthetic content and expect the extra calls to add latency/cost.
 - Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
   fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.
+
+## Guarded retained-runtime recovery
+
+Use `devrouter ensure <checkout>` for normal startup. Use
+`devrouter ensure <checkout> --repair` only for a persisted degraded runtime.
+A healthy stopped runtime needs normal `ensure`, not repair. If an ordinary
+restart is appropriate, stop the exact checkout with `devrouter stop <checkout>`
+and confirm its provider is stopped and its routes are gone before restarting.
+
+The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
+the separately reviewed devrouter retained-recovery implementation. It is not
+an ordinary startup hook or a command to invoke manually. The repository-pinned
+0.0.72 release does not provide this recovery contract. The recovery performed
+for this branch used devrouter source revision
+`aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
+`recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact
+container identities and digest-bound journal. This is source-version evidence,
+not a claim that the contract is available in a published release. Confirm a
+release provides that contract before changing the repository version pin.
+
+The callback requires the provider to inject exact 64-character application
+and PostgreSQL container IDs. It assumes the canonical container mount
+`/workspaces/klicker-uzh`. Both restricted disposable databases must already be
+provisioned and marked; the callback explicitly initializes their schema and
+synthetic seeds after verifying their identities. This path therefore requires
+approval for that initialization. It never marks an existing retained database
+as disposable. The provisioning helper defaults to bootstrap login `klicker`
+for CI; the retained local environment explicitly selects the allow-listed
+`klicker-prod` login. Neither is the restricted `klicker_test` application login.
+
+The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
+When one of those files changes, review the semantic change and refresh its pin
+in the same commit. Run `pnpm run test:dev-runtime` to catch pin drift before
+publication. A pin failure must never be bypassed by deleting the guard.
+
+| Failure                                                               | Next action                                                                                                                                        |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Recovery source changed` or a mounted-source mismatch                | Compare the exact reviewed host and mounted files; update a pin only after reviewing the changed procedure.                                        |
+| `Repair requires a persisted degraded managed runtime`                | Use normal `ensure` for a stopped healthy runtime.                                                                                                 |
+| `Lifecycle worker completion is unknown` or an operation-request lock | Preserve the existing operation and inspect its owner/journal through devrouter; do not clear locks or start competing operations.                 |
+| `Managed stop Compose file identity changed`                          | Compare recorded and current source configuration through the provider's recovery preview; do not bypass identity checks with raw Docker commands. |
+| Disposable identity or schema refusal                                 | Stop initialization and verify configuration and marked identities without exposing connection strings; do not reset or reseed blindly.            |
+
+A partial recovery journal records work already performed. Resume only through
+the owning recovery command and its reviewed preview; repeating replacement
+can lose writable-layer data. If the installed tool lacks the required command,
+stop at that capability boundary instead of substituting raw Docker mutations.

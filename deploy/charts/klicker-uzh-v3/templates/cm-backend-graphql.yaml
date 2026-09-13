@@ -28,3 +28,22 @@ data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  {{- if .Values.backendGraphql.knowledgeGraph.host }}
+  KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
+  KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
+  KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
+  KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
+  {{- end }}
+  {{- if or .Values.hatchet.kbGraph.workflowName .Values.backendGraphql.elementGeneration.enabled }}
+  # Shared graph and element-generation semester quota ledger.
+  KB_GRAPH_COST_CURRENCY: {{ required "backendGraphql.knowledgeGraph.cost.currency is required when graph or element generation is enabled" .Values.backendGraphql.knowledgeGraph.cost.currency | quote }}
+  KB_GRAPH_STANDARD_ESTIMATE_MINOR_UNITS: {{ required "backendGraphql.knowledgeGraph.cost.standardEstimateMinorUnits is required when graph or element generation is enabled" .Values.backendGraphql.knowledgeGraph.cost.standardEstimateMinorUnits | quote }}
+  KB_GRAPH_HIGH_ESTIMATE_MINOR_UNITS: {{ required "backendGraphql.knowledgeGraph.cost.highEstimateMinorUnits is required when graph or element generation is enabled" .Values.backendGraphql.knowledgeGraph.cost.highEstimateMinorUnits | quote }}
+  KB_GRAPH_MAX_COST_MINOR_UNITS: {{ required "backendGraphql.knowledgeGraph.cost.maxCostMinorUnits is required when graph or element generation is enabled" .Values.backendGraphql.knowledgeGraph.cost.maxCostMinorUnits | quote }}
+  KB_GRAPH_SEMESTER_QUOTA_MINOR_UNITS: {{ required "backendGraphql.knowledgeGraph.cost.semesterQuotaMinorUnits is required when graph or element generation is enabled" .Values.backendGraphql.knowledgeGraph.cost.semesterQuotaMinorUnits | quote }}
+  KB_GRAPH_COST_PRICING_VERSION: {{ required "backendGraphql.knowledgeGraph.cost.pricingVersion is required when graph or element generation is enabled" .Values.backendGraphql.knowledgeGraph.cost.pricingVersion | quote }}
+  KB_GRAPH_BILLING_MODE: {{ required "backendGraphql.knowledgeGraph.cost.billingMode is required when graph or element generation is enabled" .Values.backendGraphql.knowledgeGraph.cost.billingMode | quote }}
+  {{- if .Values.backendGraphql.knowledgeGraph.cost.semesterKey }}
+  KB_GRAPH_SEMESTER_KEY: {{ .Values.backendGraphql.knowledgeGraph.cost.semesterKey | quote }}
+  {{- end }}
+  {{- end }}

@@ -157,6 +157,16 @@ function createCliFixture(): {
   const scriptDirectory = path.join(controlRoot, '.github/scripts')
   const controlTestsDirectory = path.join(controlRoot, 'playwright/tests')
   const candidateTestsDirectory = path.join(candidateRoot, 'playwright/tests')
+  const fixtureSpecs = [
+    'A-login.spec.ts',
+    'B-checkout.spec.ts',
+    'C-course.spec.ts',
+    'D-leaderboard.spec.ts',
+    'E-practice.spec.ts',
+    'F-quiz.spec.ts',
+    'G-lti.spec.ts',
+    'H-chat.spec.ts',
+  ]
 
   fs.mkdirSync(scriptDirectory, { recursive: true })
   fs.mkdirSync(controlTestsDirectory, { recursive: true })
@@ -172,6 +182,11 @@ function createCliFixture(): {
     path.join(controlTestsDirectory, 'A-login.spec.ts'),
     'export {}\n'
   )
+  for (const spec of fixtureSpecs.filter(
+    (spec) => spec !== 'A-login.spec.ts'
+  )) {
+    fs.writeFileSync(path.join(controlTestsDirectory, spec), 'export {}\n')
+  }
   fs.writeFileSync(
     path.join(controlRoot, '.devrouter.yml'),
     'profiles:\n  full:\n'
@@ -185,7 +200,7 @@ function createCliFixture(): {
     `${JSON.stringify(
       {
         version: 1,
-        groups: [{ profile: 'full', specs: ['A-login.spec.ts'] }],
+        groups: [{ profile: 'full', specs: fixtureSpecs }],
       },
       null,
       2
@@ -200,7 +215,7 @@ function createCliFixture(): {
           {
             id: 'account',
             pathPrefixes: ['apps/account/'],
-            specs: ['A-login.spec.ts'],
+            specs: fixtureSpecs,
           },
         ],
         docsOnlyPathPrefixes: ['docs/'],
@@ -216,7 +231,10 @@ function createCliFixture(): {
   fs.writeFileSync(
     path.join(controlRoot, 'playwright/timings.json'),
     `${JSON.stringify(
-      { version: 1, durations: [{ spec: 'A-login.spec.ts', duration: 1 }] },
+      {
+        version: 1,
+        durations: fixtureSpecs.map((spec) => ({ spec, duration: 1 })),
+      },
       null,
       2
     )}\n`
@@ -226,6 +244,11 @@ function createCliFixture(): {
     path.join(candidateTestsDirectory, 'A-login.spec.ts'),
     'export {}\n'
   )
+  for (const spec of fixtureSpecs.filter(
+    (spec) => spec !== 'A-login.spec.ts'
+  )) {
+    fs.writeFileSync(path.join(candidateTestsDirectory, spec), 'export {}\n')
+  }
   gitAt(candidateRoot, 'init', '-q', '-b', 'main')
   gitAt(candidateRoot, 'add', '.')
   commitFixture(candidateRoot, 'base')
@@ -524,23 +547,29 @@ test('the unified Node24 CLI uses trusted control and has no import side effect'
     assert.equal(routeText, `${JSON.stringify(route, null, 2)}\n`)
     assert.deepEqual(route, {
       schemaVersion: 1,
-      route: 'public-pr',
-      selectorPrState: 'draft',
-      reasonCodes: ['public-pr-rollout', 'smart-draft-enabled'],
+      route: 'hosted',
+      selectorPrState: 'ready',
+      reasonCodes: ['hosted-fallback', 'smart-draft-enabled'],
     })
-    assert.equal(plan.mode, 'selected')
-    assert.deepEqual(plan.selectedSpecs, ['tests/A-login.spec.ts'])
-    assert.equal(plan.shardCount, 1)
-    assert.deepEqual(plan.shards[0].files, ['tests/A-login.spec.ts'])
+    assert.equal(plan.mode, 'full')
+    assert.equal(plan.shardCount, 8)
+    assert.ok(
+      plan.shards.every((shard: { files: string[] }) => shard.files.length > 0)
+    )
     assert.equal(
       fs.readFileSync(githubOutput, 'utf8'),
       [
-        'route=public-pr',
-        'mode=selected',
-        'selector_pr_state=draft',
+        'route=hosted',
+        'mode=full',
+        'selector_pr_state=ready',
         'should_run=true',
-        'shard_matrix={"include":[{"shardIndex":1,"shardTotal":1}]}',
-        'reason_codes=spec-changed',
+        `shard_matrix=${JSON.stringify({
+          include: Array.from({ length: 8 }, (_, index) => ({
+            shardIndex: index + 1,
+            shardTotal: 8,
+          })),
+        })}`,
+        'reason_codes=ready-for-review,spec-changed',
         '',
       ].join('\n')
     )
@@ -605,7 +634,7 @@ test('ready same-repository public PRs fall back to hosted when rollout is off',
   })
 })
 
-test('smart draft canary enables selection without changing the full default', () => {
+test('drafts always use the ready-state hosted plan, whatever the controls say', () => {
   const disabled = choosePlaywrightRoute(
     pullRequest({ prDraft: 'true', publicRolloutEnabled: 'true' })
   )
@@ -616,15 +645,31 @@ test('smart draft canary enables selection without changing the full default', (
     reasonCodes: ['hosted-fallback', 'smart-draft-disabled'],
   })
 
-  const enabled = choosePlaywrightRoute(
-    pullRequest({ prDraft: 'true', smartDraftCanaryPr: '1234' })
+  // The enabled and canary controls are recorded for diagnostics but cannot
+  // narrow a draft plan: the route stays hosted and the selector stays ready.
+  for (const overrides of [
+    { smartDraftEnabled: 'true' },
+    { smartDraftCanaryPr: '1234' },
+  ]) {
+    const enabled = choosePlaywrightRoute(
+      pullRequest({ prDraft: 'true', ...overrides })
+    )
+    assert.equal(enabled.route, 'hosted')
+    assert.equal(enabled.selectorPrState, 'ready')
+    assert.ok(enabled.reasonCodes.includes('smart-draft-enabled'))
+    assert.ok(enabled.reasonCodes.includes('hosted-fallback'))
+  }
+
+  // With public rollout enabled, a draft must not switch to the public route
+  // either: both routes must run the ready-state full plan.
+  const publicDraft = choosePlaywrightRoute(
+    pullRequest({ prDraft: 'true', smartDraftEnabled: 'true' })
   )
-  assert.equal(enabled.route, 'public-pr')
-  assert.equal(enabled.selectorPrState, 'draft')
-  assert.ok(enabled.reasonCodes.includes('smart-draft-enabled'))
+  assert.equal(publicDraft.route, 'hosted')
+  assert.equal(publicDraft.selectorPrState, 'ready')
 })
 
-test('smart drafts fall back to hosted selection when public rollout is disabled', () => {
+test('a smart-draft control keeps drafts hosted and ready-state when rollout is off', () => {
   const route = choosePlaywrightRoute(
     pullRequest({
       prDraft: 'true',
@@ -633,7 +678,8 @@ test('smart drafts fall back to hosted selection when public rollout is disabled
     })
   )
   assert.equal(route.route, 'hosted')
-  assert.equal(route.selectorPrState, 'draft')
+  assert.equal(route.selectorPrState, 'ready')
+  assert.ok(route.reasonCodes.includes('smart-draft-enabled'))
   assert.ok(route.reasonCodes.includes('hosted-fallback'))
 })
 
@@ -709,7 +755,7 @@ test('a non-matching force-hosted canary does not override public execution', ()
   assert.ok(!route.reasonCodes.includes('force-hosted-canary'))
 })
 
-test('the force-hosted canary rolls a selected draft back to hosted execution', () => {
+test('the force-hosted canary keeps a draft hosted and ready-state', () => {
   const route = choosePlaywrightRoute(
     pullRequest({
       prDraft: 'true',
@@ -717,10 +763,16 @@ test('the force-hosted canary rolls a selected draft back to hosted execution', 
       forceHostedCanaryPr: '1234',
     })
   )
-  assert.equal(route.route, 'hosted')
-  assert.equal(route.selectorPrState, 'draft')
-  assert.ok(route.reasonCodes.includes('force-hosted-canary'))
-  assert.ok(route.reasonCodes.includes('hosted-fallback'))
+  assert.deepEqual(route, {
+    schemaVersion: 1,
+    route: 'hosted',
+    selectorPrState: 'ready',
+    reasonCodes: [
+      'force-hosted-canary',
+      'smart-draft-enabled',
+      'hosted-fallback',
+    ].sort(),
+  })
 })
 
 test('inconsistent caller route hints are rejected', () => {

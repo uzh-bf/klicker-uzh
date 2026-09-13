@@ -86,6 +86,17 @@ hatchet:
     apiUrl: ""
     tenantId: ""
     hostPort: ""
+  kbGraph:
+    disabled: false
+    hostPort: ""
+    apiUrl: ""
+    tlsStrategy: ""
+    workflowName: ""
+    timeoutSeconds: "21600"
+    standardGenerationModel: ""
+    standardCleaningModel: ""
+    highGenerationModel: ""
+    highCleaningModel: ""
   workers:
     general:
       replicaCount: 1
@@ -366,6 +377,42 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+
+  knowledgeGraph:
+    host: ''
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
+    # One shared semester ledger covers graph builds and element-generation
+    # dispatches. These values are non-secret and must be explicit before either
+    # producer is enabled.
+    cost:
+      currency: 'CHF'
+      standardEstimateMinorUnits: ''
+      highEstimateMinorUnits: ''
+      maxCostMinorUnits: ''
+      semesterQuotaMinorUnits: ''
+      pricingVersion: ''
+      billingMode: 'SEMESTER_QUOTA'
+      semesterKey: ''
+
+  # Non-secret coordinates for the unified Klicker-element generation adapter.
+  # The dedicated Hatchet token and Azure connection string must be supplied by
+  # the externally managed backend-graphql Secret before enabling this block.
+  elementGeneration:
+    enabled: false
+    hatchetHostPort: ''
+    hatchetServerUrl: ''
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: ''
+      flashcardMinorUnits: ''
+      flashcardRetryMinorUnits: ''
+      pricingVersion: ''
 
   replicaCount: 3
 

@@ -2,14 +2,22 @@ import fs from 'node:fs'
 import path from 'node:path'
 import YAML from 'yaml'
 
-type WorkflowStep = { uses?: string; run?: string }
+type WorkflowStep = {
+  uses?: string
+  run?: string
+  id?: string
+  name?: string
+  if?: string
+  'continue-on-error'?: boolean
+  with?: Record<string, unknown>
+}
 type WorkflowJob = {
   concurrency?: { group?: string; 'cancel-in-progress'?: boolean }
   if?: string
   needs?: unknown
   'runs-on'?: string
   'timeout-minutes'?: number
-  permissions?: Record<string, string>
+  permissions?: Record<string, string> | null
   uses?: string
   container?: unknown
   services?: unknown
@@ -27,8 +35,28 @@ const EXECUTION_GROUP =
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
 const OPEN_EVENT =
   "github.event_name != 'pull_request' || github.event.action != 'closed'"
-const CLOSED_EVENT =
+const EXECUTION_EVENT =
+  "github.event_name != 'pull_request' || github.event.action != 'closed'"
+const CANCEL_EVENT =
   "github.event_name == 'pull_request' && github.event.action == 'closed'"
+
+function hasExactPermissions(
+  actual: unknown,
+  expected: Record<string, string>
+): actual is Record<string, string> {
+  if (actual === null || actual === undefined || typeof actual !== 'object')
+    return false
+  const record = actual as Record<string, unknown>
+  const actualKeys = Object.keys(record).sort()
+  const expectedKeys = Object.keys(expected).sort()
+  return (
+    actualKeys.length === expectedKeys.length &&
+    actualKeys.every(
+      (key, index) =>
+        key === expectedKeys[index] && record[key] === expected[key]
+    )
+  )
+}
 
 function validateCallerLifecycle(caller: Workflow) {
   const issues: string[] = []
@@ -38,10 +66,11 @@ function validateCallerLifecycle(caller: Workflow) {
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
+    !caller.on.pull_request.types.includes('converted_to_draft') ||
     caller.concurrency !== undefined
   ) {
     issues.push(
-      'caller must preserve workflow identity and handle closed PRs without workflow concurrency'
+      'caller must preserve workflow identity and handle closed and converted-to-draft PRs without workflow concurrency'
     )
   }
   for (const [name, job] of Object.entries(jobs)) {
@@ -56,16 +85,56 @@ function validateCallerLifecycle(caller: Workflow) {
       issues.push(`${name} must remain outside execution concurrency`)
     }
   }
-  if (execution?.if !== OPEN_EVENT) {
-    issues.push('execution must exclude closed PR events')
+  if (execution?.if !== EXECUTION_EVENT) {
+    issues.push('execution must exclude only the closed PR event')
   }
-  for (const name of ['test-playwright-status', 'playwright-queue-telemetry']) {
-    if (jobs[name]?.if !== `always() && (${OPEN_EVENT})`) {
-      issues.push(`${name} must retain always() and exclude closed PR events`)
-    }
+  const status = jobs['test-playwright-status']
+  // Unconditional for open events: a skipped required context can count as
+  // acceptable, so the reporter must run and fail on cancellation itself.
+  const expectedStatusIf = `always() && (${OPEN_EVENT})`
+  if (status?.if !== expectedStatusIf) {
+    issues.push('status must run unconditionally for open events')
   }
   if (
-    close?.if !== CLOSED_EVENT ||
+    !hasExactPermissions(status?.permissions, { actions: 'read' }) ||
+    status?.['runs-on'] !== 'ubuntu-latest' ||
+    status?.container !== undefined ||
+    status?.services !== undefined ||
+    status?.steps?.some((step) => step.uses?.startsWith('actions/checkout@'))
+  ) {
+    issues.push(
+      'status must be hosted, checkout-free, and have only actions: read permission'
+    )
+  }
+  const queueStep = status?.steps?.find((step) => step.id === 'queue_telemetry')
+  if (queueStep?.if !== 'always() && !cancelled()') {
+    issues.push(
+      'queue telemetry must run for every non-cancelled status report'
+    )
+  }
+  if (queueStep?.['continue-on-error'] !== true) {
+    issues.push('queue telemetry must be best effort')
+  }
+  const queueUpload = status?.steps?.find(
+    (step) => step.name === 'Upload queue telemetry'
+  )
+  if (
+    queueUpload?.if !==
+    "always() && !cancelled() && steps.queue_telemetry.outcome != 'skipped'"
+  ) {
+    issues.push('queue telemetry upload must be cancellation-aware')
+  }
+  if (queueUpload?.['continue-on-error'] !== true) {
+    issues.push('queue telemetry upload must be best effort')
+  }
+  if (queueUpload?.with?.['if-no-files-found'] !== 'ignore') {
+    issues.push('queue telemetry upload must ignore a missing report')
+  }
+  if (jobs['playwright-queue-telemetry'] !== undefined) {
+    issues.push('queue telemetry must be part of the status job')
+  }
+  if (
+    close?.if !== CANCEL_EVENT ||
     close.needs !== undefined ||
     close['runs-on'] !== 'ubuntu-latest' ||
     close['timeout-minutes'] !== 5 ||
@@ -78,7 +147,7 @@ function validateCallerLifecycle(caller: Workflow) {
     close.steps[0].run !== ':'
   ) {
     issues.push(
-      'close cancellation must be an independent permission-free hosted no-op'
+      'close cancellation must be an independent permission-free hosted no-op that never cancels a draft'
     )
   }
   return issues
@@ -90,6 +159,11 @@ const EXPECTED_BUILD_ACTION =
   'uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3'
 const EXPECTED_SHARD_ACTION =
   'uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3'
+// The build artifact must cover every workspace package, not a hand-maintained
+// list that silently drops a package with its own build output (for example
+// packages/audit/dist). The wildcard keeps full coverage as packages are added.
+const PACKAGE_DIST_WILDCARD = 'packages/*/dist'
+const INDIVIDUAL_PACKAGE_DIST = /packages\/[^/*\s]+\/dist/
 
 function readWorkflow(root: string, name: string, issues: string[]) {
   const relativePath = `.github/workflows/${name}`
@@ -122,8 +196,10 @@ function namedSteps(text: string) {
 function validatePublicPlaywrightWorkflow(root: string) {
   const issues: string[] = []
   const caller = readWorkflow(root, 'test-playwright.yml', issues)
+  let callerParsed
   try {
-    issues.push(...validateCallerLifecycle(YAML.parse(caller)))
+    callerParsed = YAML.parse(caller)
+    issues.push(...validateCallerLifecycle(callerParsed))
   } catch {
     issues.push('caller lifecycle policy must be valid YAML')
   }
@@ -132,6 +208,12 @@ function validatePublicPlaywrightWorkflow(root: string) {
     'public-pr-playwright-shards.yml',
     issues
   )
+  let publicParsed
+  try {
+    publicParsed = YAML.parse(publicWorkflow)
+  } catch {
+    issues.push('public reusable workflow policy must be valid YAML')
+  }
   const seedWorkflow = readWorkflow(root, 'playwright-cache-seed.yml', issues)
   const publicActions = [
     readAction(root, 'playwright-build', issues),
@@ -169,6 +251,16 @@ function validatePublicPlaywrightWorkflow(root: string) {
       `caller must use the canonical reusable workflow ref: ${EXPECTED_CALL}`
     )
   }
+  // The trusted routing only accepts the automatic hint, so any other value
+  // would fail the reusable workflow instead of selecting a route.
+  if (
+    callerParsed?.jobs?.['test-playwright-execution']?.with?.route_hint !==
+    'auto'
+  ) {
+    issues.push(
+      'caller must pass route_hint: auto; the trusted routing rejects every other hint'
+    )
+  }
 
   for (const forbidden of [
     'pull_request_target',
@@ -186,8 +278,27 @@ function validatePublicPlaywrightWorkflow(root: string) {
     }
   }
 
-  if (!/^permissions:\s*\n\s+contents:\s+read\s*$/m.test(publicWorkflow)) {
-    issues.push('public workflow must grant only contents: read')
+  if (
+    publicParsed?.permissions !== undefined ||
+    publicParsed?.jobs?.prepare?.permissions !== undefined
+  ) {
+    issues.push(
+      'trusted preparation must inherit caller permissions for compatibility'
+    )
+  }
+  for (const name of [
+    'build-and-compile-hosted',
+    'build-and-compile-public-pr',
+    'test-playwright-hosted',
+    'test-playwright-public-pr',
+  ]) {
+    if (
+      !hasExactPermissions(publicParsed?.jobs?.[name]?.permissions, {
+        contents: 'read',
+      })
+    ) {
+      issues.push(`${name} must have only contents: read permission`)
+    }
   }
 
   const checkoutCount = (
@@ -253,6 +364,30 @@ function validatePublicPlaywrightWorkflow(root: string) {
   if ((publicWorkflow.match(/concurrency:/g) ?? []).length !== 0) {
     issues.push('called workflow must not define concurrency')
   }
+  const buildActionText = readAction(root, 'playwright-build', issues)
+  const buildArtifactUpload = namedSteps(buildActionText).find((step) =>
+    step.includes('name: playwright-build-artifact')
+  )
+  const archivesWildcard = buildArtifactUpload
+    ?.split('\n')
+    .some((line) => line.trim() === PACKAGE_DIST_WILDCARD)
+  if (!archivesWildcard) {
+    issues.push(
+      'the build artifact must archive ' +
+        PACKAGE_DIST_WILDCARD +
+        ' so every workspace package dist is covered'
+    )
+  }
+  if (
+    buildArtifactUpload &&
+    INDIVIDUAL_PACKAGE_DIST.test(buildArtifactUpload)
+  ) {
+    issues.push(
+      'the build artifact must not list individual package dist paths; ' +
+        PACKAGE_DIST_WILDCARD +
+        ' keeps coverage as packages are added'
+    )
+  }
   if (!publicWorkflow.includes('runs-on: ubuntu-latest')) {
     issues.push('the trusted preparation job must run on GitHub-hosted Ubuntu')
   }
@@ -284,23 +419,18 @@ function validatePublicPlaywrightWorkflow(root: string) {
     )
   }
 
-  const queueJobStart = caller.indexOf('  playwright-queue-telemetry:')
-  if (queueJobStart === -1) {
-    issues.push('caller must define the playwright-queue-telemetry job')
-  } else {
-    const queueJob = caller.slice(queueJobStart)
-    if (!queueJob.includes('runs-on: ubuntu-latest')) {
-      issues.push('queue telemetry must run on GitHub-hosted Ubuntu')
-    }
-    if (!queueJob.includes('permissions:\n      actions: read')) {
-      issues.push('queue telemetry must have only actions: read permission')
-    }
-    if (queueJob.includes('actions/checkout@')) {
-      issues.push('queue telemetry must not check out repository code')
-    }
-    if (queueJob.includes('public-pr-arm64')) {
-      issues.push('queue telemetry must not target the public runner pool')
-    }
+  const executionPermissions =
+    callerParsed?.jobs?.['test-playwright-execution']?.permissions
+  if (
+    !hasExactPermissions(executionPermissions, {
+      contents: 'read',
+      actions: 'read',
+      'pull-requests': 'read',
+    })
+  ) {
+    issues.push(
+      'caller execution must forward contents, actions, and pull-requests read permissions'
+    )
   }
 
   if (
