@@ -1,12 +1,16 @@
+import { createHash, randomUUID } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
+import {
+  LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS,
+  trackLiveQuizResponseIfActive,
+} from './responseTracking.js'
 
 const redis = new Redis({
+  ...LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS,
   family: 4,
   host: process.env.REDIS_HOST,
   password: process.env.REDIS_PASS ?? '',
@@ -21,6 +25,9 @@ const assessmentRedis = new Redis({
   port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6381),
   tls: process.env.REDIS_ASSESSMENT_TLS ? {} : undefined,
 })
+const assessmentTrackingRedis = assessmentRedis.duplicate(
+  LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS
+)
 
 const PORT = Number(process.env.PORT ?? 7078)
 const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
@@ -138,6 +145,32 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     response, // pass through as-is; worker validates
     cookie,
     responseTimestamp,
+  }
+
+  try {
+    const tracked = await trackLiveQuizResponseIfActive({
+      redisClient: redis,
+      liveQuizId: String(liveQuizId),
+      instanceId,
+      claimId: message.messageId,
+    })
+    if (!tracked) {
+      console.debug(
+        'Instance info key missing; skipping received-response tracking',
+        {
+          liveQuizId,
+          instanceId,
+          messageId: message.messageId,
+        }
+      )
+    }
+  } catch (error) {
+    console.error('Failed to track received response', {
+      messageId: message.messageId,
+      liveQuizId,
+      instanceId,
+      error,
+    })
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -312,6 +345,32 @@ async function handleAddAssessmentResponse(
     responseTimestamp,
   }
 
+  try {
+    const tracked = await trackLiveQuizResponseIfActive({
+      redisClient: assessmentTrackingRedis,
+      liveQuizId: String(liveQuizId),
+      instanceId,
+      claimId: correlationId,
+    })
+    if (!tracked) {
+      console.debug(
+        'Instance info key missing; skipping received-assessment tracking',
+        {
+          liveQuizId,
+          instanceId,
+          correlationId,
+        }
+      )
+    }
+  } catch (error) {
+    console.error('Failed to track received assessment response', {
+      correlationId,
+      liveQuizId,
+      instanceId,
+      error,
+    })
+  }
+
   // start the processing of an assessment response
   console.log(
     `Pushing event ${'response-received:assessment'} with payload`,
@@ -391,6 +450,7 @@ async function initializeService() {
   // test connection to Redis cache for standard responses
   console.log('Testing Redis (standard responses) connection...')
   try {
+    await redis.connect()
     await redis.ping()
     console.log('Redis connection established')
   } catch (error) {
@@ -405,6 +465,16 @@ async function initializeService() {
     console.log('Assessment Redis connection established')
   } catch (error) {
     console.error('Failed to connect to assessment Redis:', error)
+    throw error
+  }
+
+  console.log('Testing Redis (assessment tracking) connection...')
+  try {
+    await assessmentTrackingRedis.connect()
+    await assessmentTrackingRedis.ping()
+    console.log('Assessment tracking Redis connection established')
+  } catch (error) {
+    console.error('Failed to connect to assessment tracking Redis:', error)
     throw error
   }
 

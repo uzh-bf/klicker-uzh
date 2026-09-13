@@ -1,8 +1,10 @@
+import { strict as assert } from 'node:assert'
+import { createHash } from 'node:crypto'
 import {
-  NonRetryableError,
   type Context,
   type DurableContext,
   type JsonObject,
+  NonRetryableError,
   type UnknownInputType,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { prisma } from '@klicker-uzh/prisma'
@@ -16,14 +18,15 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import { strict as assert } from 'assert'
-import { createHash } from 'crypto'
 import { DEFAULT_POINTS } from '../constants.js'
 import { getAssessmentRedis } from '../redis.js'
+import { executeResponseAggregation } from './executeResponseAggregation.js'
 import {
+  createRedisCommandCollector,
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
   getFreeTextQuestionPointsDetails,
+  getLiveQuizResponseValidationShape,
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPointsDetails,
   updateLeaderboards,
@@ -155,6 +158,8 @@ export async function processAssessmentResponse(
     type: type as any,
     response,
     restrictions: parsedRestrictions,
+    choiceCount: Number(choiceCount),
+    validationShape: getLiveQuizResponseValidationShape(instanceInfo),
   })
 
   if (!valid) {
@@ -164,7 +169,7 @@ export async function processAssessmentResponse(
   }
 
   // ! Step 2: Switch between different types, validate response and compute awarded points and XP
-  let parsedSolutions = undefined
+  let parsedSolutions: unknown
   try {
     if (solutions) {
       parsedSolutions = JSON.parse(solutions)
@@ -468,6 +473,7 @@ export async function aggregateAssessmentResponses(
 ) {
   // destructure message into components required for results aggregation
   const {
+    correlationId,
     participantId,
     liveQuizId,
     blockId,
@@ -479,8 +485,9 @@ export async function aggregateAssessmentResponses(
     response,
   } = message
 
-  // set up redis pipeline for batched execution
-  const redis = redisExec.pipeline()
+  // Collect commands locally; the processing script claims the marker and
+  // applies this batch atomically.
+  const transaction = createRedisCommandCollector()
 
   // compose cache keys
   const liveQuizKey = `lq:${liveQuizId}`
@@ -489,7 +496,7 @@ export async function aggregateAssessmentResponses(
   // for gamified live quizzes, update the leaderboard and the participant xp
   if (isGamificationEnabled && elementType !== ElementType.CONTENT) {
     updateLeaderboards({
-      redisMulti: redis,
+      redisCommands: transaction,
       participantId,
       participantRole: UserRole.PARTICIPANT,
       liveQuizKey,
@@ -508,9 +515,9 @@ export async function aggregateAssessmentResponses(
       response
         .choices!.filter((choice) => choice.selected)
         .forEach((choice) => {
-          redis.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
+          transaction.hincrby(`${instanceKey}:results`, String(choice.ix), 1)
         })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -518,9 +525,13 @@ export async function aggregateAssessmentResponses(
       const MD5 = createHash('md5')
       MD5.update(response.value!)
       const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(`${instanceKey}:responseHashes`, responseHash, response.value!)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+      transaction.hset(
+        `${instanceKey}:responseHashes`,
+        responseHash,
+        response.value!
+      )
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -529,13 +540,13 @@ export async function aggregateAssessmentResponses(
       const MD5 = createHash('md5')
       MD5.update(cleanResponseValue)
       const responseHash = MD5.digest('hex')
-      redis.hincrby(`${instanceKey}:results`, responseHash, 1)
-      redis.hset(
+      transaction.hincrby(`${instanceKey}:results`, responseHash, 1)
+      transaction.hset(
         `${instanceKey}:responseHashes`,
         responseHash,
         cleanResponseValue
       )
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -549,9 +560,9 @@ export async function aggregateAssessmentResponses(
           return // skipped input fields should not be considered
         }
 
-        redis.hincrby(`${instanceKey}:results`, String(answerId), 1)
+        transaction.hincrby(`${instanceKey}:results`, String(answerId), 1)
       })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
@@ -574,8 +585,8 @@ export async function aggregateAssessmentResponses(
               const combinedHash = `${caseId}:${itemId}:${criterionId}:${responseHash}`
 
               // add the response hash / valid combination and/or increment the corresponding count
-              redis.hincrby(`${instanceKey}:results`, combinedHash, 1)
-              redis.hset(
+              transaction.hincrby(`${instanceKey}:results`, combinedHash, 1)
+              transaction.hset(
                 `${instanceKey}:responseHashes`,
                 combinedHash,
                 String(criterionResponse)
@@ -584,37 +595,26 @@ export async function aggregateAssessmentResponses(
           )
         })
       })
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
 
     case ElementType.CONTENT: {
       // increase number of participants on element (do not award points / ... for content elements)
-      redis.hincrby(`${instanceKey}:results`, 'participants', 1)
+      transaction.hincrby(`${instanceKey}:results`, 'participants', 1)
       break
     }
   }
 
-  try {
-    await redis.exec()
-    ctx.logger.info("Successfully aggregated a participant's results", {
-      correlationId: message.correlationId,
-      liveQuizId: message.liveQuizId,
-      instanceId: message.instanceId,
-    })
-    return { status: 200 }
-  } catch (e) {
-    ctx.logger.error(
-      `Redis pipeline for results aggregation failed: ${String(e)}` +
-        JSON.stringify({
-          correlationId: message.correlationId,
-          liveQuizId: message.liveQuizId,
-          instanceId: message.instanceId,
-        })
-    )
-    redis.discard()
-    throw new Error(
-      `Redis pipeline for results aggregation failed ${String(e)}`
-    )
-  }
+  return await executeResponseAggregation({
+    redis: redisExec,
+    ctx,
+    request: {
+      kind: 'assessment',
+      claimId: correlationId,
+      liveQuizId,
+      instanceId,
+      commands: transaction.commands,
+    },
+  })
 }

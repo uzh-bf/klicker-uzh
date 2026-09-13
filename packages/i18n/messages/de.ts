@@ -3154,6 +3154,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       firstBlock: 'Ersten Block starten',
       blockActive: 'Block schliessen',
       nextBlock: 'Nächsten Block starten',
+      responsesReceived: 'Empfangen: {number}',
+      responsesProcessed: 'Verarbeitet: {number}',
       endQuiz: 'Quiz beenden',
       audienceView: 'Publikumsansicht',
       evaluationResults: 'Auswertung (Resultate)',

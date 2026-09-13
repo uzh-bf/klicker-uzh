@@ -1,4 +1,8 @@
-import { DisplayMode, ElementOptionsInput } from '@klicker-uzh/types'
+import {
+  DisplayMode,
+  type ElementOptionsInput,
+  MAX_LIVE_QUIZ_CHOICES,
+} from '@klicker-uzh/types'
 
 function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
   // options and choices therein need to be defined
@@ -10,6 +14,13 @@ function validateSharedChoicesFields(options?: ElementOptionsInput | null) {
   // at least one choice needs to be defined
   if (options.choices.length === 0) {
     console.error('At least one choice is required')
+    return false
+  }
+
+  if (options.choices.length > MAX_LIVE_QUIZ_CHOICES) {
+    console.error(
+      `Choices questions may contain at most ${MAX_LIVE_QUIZ_CHOICES} choices`
+    )
     return false
   }
 
