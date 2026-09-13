@@ -82,7 +82,12 @@ function QuestionArea({
   const currentInstance = instances[activeInstance]
   // the in-flight submission promise is shared between submit and expiry so
   // expiry can await a running manual submission instead of racing it
-  const submissionInFlightRef = useRef<Promise<boolean> | null>(null)
+  // the pending submission is execution-owned: admission, expiry reuse, and
+  // cleanup consider only an operation belonging to the current execution
+  const submissionInFlightRef = useRef<{
+    identity: string
+    promise: Promise<boolean>
+  } | null>(null)
   // expiry is a terminal state for the current block execution. The gate and
   // the current-identity ref are bound to the semantic (quiz, execution)
   // identity, so a rerender that allocates a new instances array for the same
@@ -192,8 +197,14 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
-    // one submission at a time, and never after the block has expired
-    if (submissionInFlightRef.current || expiryGateRef.current.isExpired())
+    // one submission at a time within an execution, and never after the
+    // block has expired; a pending submission from a superseded execution
+    // does not block the current one from answering
+    const pending = submissionInFlightRef.current
+    if (
+      (pending && pending.identity === currentIdentityRef.current) ||
+      expiryGateRef.current.isExpired()
+    )
       return
     // state updates on completion belong to this block execution only; an
     // unexpired scope from a superseded execution is stale as well
@@ -206,60 +217,61 @@ function QuestionArea({
     setSubmitting(true)
 
     const runSubmission = async (): Promise<boolean> => {
-      try {
-        const {
-          id: instanceId,
-          elementType,
-          correlationKey,
-        } = instances[activeInstance]
+      const {
+        id: instanceId,
+        elementType,
+        correlationKey,
+      } = instances[activeInstance]
 
-        // if the question has been answered, add a response
-        const success = await answerQuestion({
-          instanceId,
-          type: elementType,
-          input: studentResponse,
-          correlationKey,
-        })
+      // if the question has been answered, add a response
+      const success = await answerQuestion({
+        instanceId,
+        type: elementType,
+        input: studentResponse,
+        correlationKey,
+      })
 
-        // if the submission was not successful, do not block another submission attempt
-        if (!success) return false
+      // if the submission was not successful, do not block another submission attempt
+      if (!success) return false
 
-        // update the stored responses
-        await updateStoredResponses(instanceId, quizId, execution)
+      // update the stored responses
+      await updateStoredResponses(instanceId, quizId, execution)
 
-        // expiry is terminal and superseded executions are stale: a manual
-        // submission completing after either must not touch the stack state
-        if (!submissionScope.canCommitUi(currentIdentityRef.current))
-          return true
+      // expiry is terminal and superseded executions are stale: a manual
+      // submission completing after either must not touch the stack state
+      if (!submissionScope.canCommitUi(currentIdentityRef.current)) return true
 
-        // calculate the new indices of remaining questions
-        const newRemaining = (remainingQuestions ?? []).filter(
-          (question) => !isDeepEqual(activeInstance, question)
-        )
+      // calculate the new indices of remaining questions
+      const newRemaining = (remainingQuestions ?? []).filter(
+        (question) => !isDeepEqual(activeInstance, question)
+      )
 
-        // update the active instance and the remaining questions
-        setActiveInstance(newRemaining[0] ?? instances.length - 1)
-        setRemainingQuestions(newRemaining)
+      // update the active instance and the remaining questions
+      setActiveInstance(newRemaining[0] ?? instances.length - 1)
+      setRemainingQuestions(newRemaining)
 
-        // if this was the last question of the block and gamification is enabled, show confetti
-        if (newRemaining.length === 0 && gamificationEnabled) {
-          setShowConfetti(true)
-        }
-
-        return true
-      } finally {
-        setSubmitting(false)
+      // if this was the last question of the block and gamification is enabled, show confetti
+      if (newRemaining.length === 0 && gamificationEnabled) {
+        setShowConfetti(true)
       }
+
+      return true
     }
 
     const submission = runSubmission().finally(() => {
-      // release the submission lock, but only if this submission still
-      // owns the slot (a later execution's submission may have replaced it)
-      if (submissionInFlightRef.current === submission) {
+      // release the submission lock and the busy indication, but only if
+      // this submission still owns the slot (a later execution's submission
+      // may have replaced both) — a superseded completion must not clear the
+      // newer request's busy state
+      if (submissionInFlightRef.current?.promise === submission) {
         submissionInFlightRef.current = null
+        setSubmitting(false)
       }
     })
-    submissionInFlightRef.current = submission
+    submissionInFlightRef.current = {
+      identity: currentIdentityRef.current,
+      promise: submission,
+    }
 
     await submission
   }
@@ -281,13 +293,19 @@ function QuestionArea({
 
     // save the response, if one was given before the time expired
     if (studentResponse.valid) {
-      const inFlight = submissionInFlightRef.current
+      // only a pending submission belonging to this execution may stand in
+      // for the answer; a superseded execution's pending operation neither
+      // blocks nor substitutes for this execution's own submission
+      const inFlight =
+        submissionInFlightRef.current?.identity === expiryScope.identity
+          ? submissionInFlightRef.current
+          : null
       try {
         if (inFlight) {
           // a manual submission is already carrying this answer; let it
           // finish (its stack-state updates are suppressed above) instead
           // of sending a second request
-          const submitted = await inFlight
+          const submitted = await inFlight.promise
           if (!submitted) {
             toast({
               message: t('pwa.assessment.submissionGeneralError'),
@@ -332,6 +350,11 @@ function QuestionArea({
       (index: number) => instances[index].id
     )
     await updateStoredResponses(remainingQuestionIds, quizId, execution)
+
+    // currency must be rechecked after the storage await: an execution
+    // change during the pending storage operations would otherwise let the
+    // stale cleanup empty the newly displayed execution's stack
+    if (!expiryScope.isCurrent(currentIdentityRef.current)) return
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
