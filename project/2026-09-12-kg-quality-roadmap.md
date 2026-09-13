@@ -295,6 +295,15 @@ The [LightRAG paper](https://arxiv.org/abs/2410.05779) motivates graph-enhanced 
 
 ## Latest acceptance checkpoint
 
-The [next acceptance evidence](2026-09-12-kg-next-acceptance.md#completed-experiment-evidence) records twelve additional successful builds, actual multi-chunk processing and a six-query retrieval comparison. Future legacy recipe lineage is now distinguishable without invalidating historical digests. These results extend engineering evidence; W1 publication and W8/W9 consumer acceptance remain open.
+The domain-selection publication acceptance now closes the W1 seam on the
+isolated synthetic stack: manage-UI domain selection drove a real reservation,
+worker dispatch, graph publication, page reload and participant graph read, and
+the explicit economics policy produced a different and expected type system from
+the generic variant. That run also exposed and fixed a generator defect where a
+graph that kept entities but lost every relationship was published as
+SUCCEEDED; the generator now rejects such a graph at the shared identity seam.
+See [publication-integration-progress.md](_local/kg-quality-next-acceptance/publication-integration-progress.md#correlated-domain-selection-publication-acceptance-2026-09-13).
+
+The [next acceptance evidence](2026-09-12-kg-next-acceptance.md#completed-experiment-evidence) records twelve additional successful builds, actual multi-chunk processing and a six-query retrieval comparison. Future legacy recipe lineage is now distinguishable without invalidating historical digests. These results extend engineering evidence; with the isolated publication binding closed, the W8/W9 consumer acceptance remains open.
 
 Prioritize the isolated publication binding, an effective content evidence treatment, and raw-source coverage within mixed retrieval before more domain/model tuning. The proposed content comparison was ineffective and made no paid generation calls. Mixed retrieval omitted one document's raw evidence for the conflict query; answers were not evaluated. Educator-calibrated semantic scoring and held-out scenarios remain necessary. Cumulative experimental ledger cost is USD2.59520654 of the existing USD20 ceiling with zero holds; this is not recurring spend authority.
