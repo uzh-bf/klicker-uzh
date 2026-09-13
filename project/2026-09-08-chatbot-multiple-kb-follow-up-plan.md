@@ -311,6 +311,49 @@ their own work packages.
 
 ## Progress
 
+September 13: committed the seed correction as `f90bbe4a93` and its independent
+test expectations as `b0116f4f49`. Both commits passed every normal pre-commit
+hook (40 check/build tasks, seven lint tasks, formatting, syncpack and host
+contract suites). Six integrated plural seed tests and five upstream isolated
+runtime seed tests passed. Host root tooling was installed from the unchanged
+lockfile with scripts disabled to support host hook tests.
+
+Simplifier disposition is complete; the risk reviewer found no implementation
+defect but requested protection for the enabled/undeleted query filter. That
+assertion is committed in `2d9b80da6a`. Its initial verification startup stalled
+after Prisma Rollup emitted output and was stopped. The existing route-free
+`mcp` profile then allowed all six TSX seed tests, Biome and every normal
+pre-commit hook to pass. Main closed this assertion-only review correction.
+Reports are in `project/_local/reviews/`. The final Claude review of
+`d1e1fafadd..2d9b80da6a` completed with one accepted seed/ownership mismatch:
+the full seed can persist another synthetic fixture's KB scope on the same
+chatbot, which the local MCP repair guard then rejects. Warm-start and isolated
+unit results do not prove reseed compatibility. The correction is not ready
+for publication. The user approved separating the local MCP fixture while
+preserving strict ownership and leaving response-example behavior unchanged.
+The bounded planner approved dedicated server/chatbot/course identities plus
+development/bootstrap-gated normalization before request scope resolution.
+Main owns both route integrations, the scope/client composition test and runtime
+proof; the trusted executor owned fixture creation, ownership and SQL acceptance.
+The identity split is committed in `d0cb2cd618` and verified: Chat typecheck, the
+full Chat suite (101 files, 1117 tests), 56 focused Chat tests, the prisma-data
+check, six plural seed tests, the SQL coexistence harness and Biome on all
+changed files. Verification found and fixed one real defect: the ownership guard
+required an explicit null `chatbotIdHeader`, so it rejected the seeded fixture
+whose column is simply absent; it now accepts absent or null and still rejects a
+set header. Local synthetic runtime and browser proof remain pending, as do
+publication, host final review and the human foundation approval.
+Canonical stop completed with exit zero. Fresh source-path status confirms
+stopped, empty active resources, no drift and zero exact routes.
+`origin/v3-ai` moved to `b3be22ee11`; merging it into this branch was clean
+because its newer commits touch only CI workflows and Chat source display, not
+the seed correction or fixture files. It is integrated at the current branch
+head, which has no conflict with the package.
+The reader compatibility PRs are merged, but deployed-reader evidence and
+live backfill remain separate prerequisites. Additive attachment editing is
+not implemented by these seed corrections.
+No push, deployment, live backfill or paid model request occurred.
+
 September 12 integration checkpoint: fast-forwarded this task branch to current
 `origin/v3-ai` (`d1e1fafadd`) because upstream changed the same seed source.
 The five task files reapplied cleanly; upstream isolated-runtime URL handling
