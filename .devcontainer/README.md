@@ -103,8 +103,9 @@ marker creation to work around a refusal.
 This repository pins devrouter 0.0.72. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
-additive and order-insensitive; omitting `--profile` keeps the all-on `full`
-default. The committed native `devcontainer.json` stays all-on for VS Code and
+additive and order-insensitive; omitting `--profile` selects `standard`, which
+excludes the deterministic MCP fixture. Explicit `full` selects all capabilities.
+The committed native `devcontainer.json` stays all-on for VS Code and
 direct DevPod use - only devrouter generated effective config selects less.
 Do not use 0.0.39 for managed profile transitions: 0.0.40 adds rollback-safe
 generated configuration when a cold or warm transition fails. Version 0.0.46
@@ -120,9 +121,10 @@ It does not apply changed mounts to retained containers.
 | --------------------------------------- | ----------------------------------------------------------------------------- |
 | `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis |
 | `ai`                                    | LiteLLM only - no routes, no app process                                      |
-| `mcp`                                   | The local MCP fixture (Benibot) only                                          |
+| `mcp`                                   | Deterministic MCP fixture and its separate disposable database                |
 | `email`                                 | MailHog only                                                                  |
-| `full` (default)                        | Everything, including LiteLLM, MailHog, and the MCP fixture                   |
+| `standard` (default)                    | All ordinary applications, LiteLLM and MailHog; no deterministic MCP fixture  |
+| `full`                                  | Every capability, including the isolated deterministic MCP database           |
 
 Postgres and Hatchet stay in the managed base for every profile (the backend
 treats both as boot-critical). Capability-only selections keep the idle app
@@ -159,8 +161,9 @@ workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
 
-The default starts the full profile. For focused activity tests, request the
-required profile union explicitly before the Playwright arguments:
+The launcher infers profiles from the selected specs and falls back to
+`playwright` when inference is unavailable. To override that selection, request
+the required profile union explicitly before the Playwright arguments:
 
 ```bash
 pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
@@ -468,8 +471,20 @@ disabled and the rest of the DevPod still starts normally.
 - Auto V2 sends its Luna-low classification and semantic embedding requests to
   the same upstream as the selected answer model. With OpenRouter, use only
   seeded or synthetic content and expect the extra calls to add latency/cost.
-- Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
-  fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.
+- Explicit `chat,ai,mcp` selects a synthetic Tutor/Explainer chatbot and the
+  read-only `doc_query` fixture at `http://localhost:1417/mcp`. Its log is
+  `/tmp/local-mcp.log`. The entire application process group uses a separate
+  `mcp_postgres` database while this profile is selected; ordinary development
+  data is not copied or modified. The mock uses the ordinary `KB` contract.
+- The mock database uses temporary in-memory storage. Conversations survive
+  page reloads while it runs, but stopping its database discards all mock data.
+  Dropping `mcp` restores the normal database. Local-only logins are
+  `lecturer` / `abcd` and `testuser1` / `abcdabcd`; no real accounts are loaded.
+- Bootstrap accepts only the dedicated fixture domain. Creating additional
+  courses, chatbots or knowledge bases in the mock database can reject the next
+  bootstrap. To start fresh, stop the exact checkout with
+  `devrouter stop <checkout>`; this discards its temporary mock database and
+  conversations.
 
 ## Guarded retained-runtime recovery
 

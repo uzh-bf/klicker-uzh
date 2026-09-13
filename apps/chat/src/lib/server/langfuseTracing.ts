@@ -274,7 +274,3 @@ export async function registerLangfuseTelemetry() {
     return false
   }
 }
-
-export function resetLangfuseTelemetryForTests() {
-  delete runtimeState.__klickerLangfuseRuntime
-}

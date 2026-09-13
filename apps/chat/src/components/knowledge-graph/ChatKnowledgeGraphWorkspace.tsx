@@ -1,7 +1,11 @@
 'use client'
 
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import {
+  KnowledgeGraphBuildChangedError,
+  KnowledgeGraphUnavailableError,
+} from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -65,14 +69,25 @@ function knowledgeGraphUrl(
   chatbotId: string,
   operation: 'overview' | 'search' | 'neighbors',
   input?: { key: 'q' | 'nodeId'; value: string },
-  kbId?: string
+  kbId?: string,
+  buildId?: string
 ): string {
   const searchParams = new URLSearchParams({ operation })
   if (kbId !== undefined) searchParams.set('kbId', kbId)
+  if (buildId !== undefined) searchParams.set('buildId', buildId)
   if (input !== undefined) {
     searchParams.set(input.key, input.value)
   }
   return `/api/chatbots/${encodeURIComponent(chatbotId)}/knowledge-graph?${searchParams.toString()}`
+}
+
+async function isKnowledgeGraphDisabled(response: Response): Promise<boolean> {
+  try {
+    const body = (await response.json()) as { code?: unknown }
+    return body.code === 'KNOWLEDGE_GRAPH_DISABLED'
+  } catch {
+    return false
+  }
 }
 
 async function readKnowledgeGraphResponse(
@@ -82,6 +97,9 @@ async function readKnowledgeGraphResponse(
   const response = await fetcher(url)
   if (response.status === 409) {
     const body: unknown = await response.json().catch(() => null)
+    if (isRecord(body) && body.code === 'KNOWLEDGE_GRAPH_BUILD_CHANGED') {
+      throw new KnowledgeGraphBuildChangedError()
+    }
     if (
       isRecord(body) &&
       body.code === 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED' &&
@@ -106,13 +124,16 @@ async function readKnowledgeGraphResponse(
     )
   }
   if (response.status === 403) {
-    useChatStore.getState().setParticipationRequired(true)
+    // A disabled map is not a participation failure.
+    if (!(await isKnowledgeGraphDisabled(response))) {
+      useChatStore.getState().setParticipationRequired(true)
+    }
     throw new ChatKnowledgeGraphRequestError(403, false)
   }
   if (!response.ok) {
     throw new ChatKnowledgeGraphRequestError(
       response.status,
-      response.status === 503
+      response.status === 503 || response.status === 429
     )
   }
 
@@ -221,7 +242,7 @@ export function createChatKnowledgeGraphDataSource(
         ),
         fetcher
       ),
-    neighbors: (nodeId) =>
+    neighbors: (nodeId, origin) =>
       readKnowledgeGraphResponse(
         knowledgeGraphUrl(
           chatbotId,
@@ -230,7 +251,8 @@ export function createChatKnowledgeGraphDataSource(
             key: 'nodeId',
             value: nodeId,
           },
-          kbId
+          origin.kbId,
+          origin.buildId
         ),
         fetcher
       ),
@@ -239,8 +261,10 @@ export function createChatKnowledgeGraphDataSource(
 
 export function ChatKnowledgeGraphWorkspace({
   chatbotId,
+  onAsk,
 }: {
   chatbotId: string
+  onAsk?: (selection: KnowledgeGraphAskSelection) => void
 }) {
   const t = useTranslations('pwa.chatbot')
   const [selection, setSelection] = useState<{
@@ -273,7 +297,7 @@ export function ChatKnowledgeGraphWorkspace({
     const wrapped: KnowledgeGraphDataSource = {
       overview: () => observe(source.overview()),
       search: (query) => observe(source.search(query)),
-      neighbors: (nodeId) => observe(source.neighbors(nodeId)),
+      neighbors: (nodeId, origin) => observe(source.neighbors(nodeId, origin)),
     }
     return wrapped
   }, [chatbotId, kbId])
@@ -288,7 +312,7 @@ export function ChatKnowledgeGraphWorkspace({
   return (
     <section
       aria-label="Knowledge graph workspace"
-      className="flex min-h-0 flex-1 flex-col gap-3 bg-[#FAFAFA] p-2 sm:p-3 md:p-4"
+      className="flex min-h-0 flex-1 flex-col gap-2 bg-[#FAFAFA] p-2"
       data-cy="chat-knowledge-graph-workspace"
     >
       {choices.length > 0 ? (
@@ -310,6 +334,7 @@ export function ChatKnowledgeGraphWorkspace({
         <ChatKnowledgeGraphViewer
           key={`${chatbotId}:${kbId ?? ''}`}
           dataSource={dataSource}
+          onAsk={onAsk}
         />
       ) : null}
     </section>

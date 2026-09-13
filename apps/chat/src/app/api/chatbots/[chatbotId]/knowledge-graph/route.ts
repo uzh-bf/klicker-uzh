@@ -1,20 +1,28 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   type ChatbotKnowledgeGraphReadRequest,
   isKnowledgeGraphNotPublishedError,
+  KnowledgeGraphBuildChangedError,
   KnowledgeGraphSelectionRequiredError,
   readPublishedChatbotKnowledgeGraph,
 } from '@/src/lib/server/knowledgeGraph'
 import { withRouteLogging } from '@/src/lib/server/requestLogging'
+import { createKnowledgeGraphAdmission } from '@/src/services/knowledgeGraphAdmission'
+import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
 const operationSchema = z.enum(['overview', 'search', 'neighbors'])
 const searchQuerySchema = z.string().trim().min(1).max(100)
-const nodeIdSchema = z.string().regex(/^\d+$/)
+const nodeIdSchema = z
+  .string()
+  .refine(
+    (value) =>
+      /^\d{1,19}$/.test(value) && BigInt(value) <= BigInt('9223372036854775807')
+  )
+const admission = createKnowledgeGraphAdmission()
 
 function invalidRequestResponse() {
   return NextResponse.json(
@@ -45,8 +53,21 @@ function parseReadRequest(
     const nodeId = nodeIdSchema.safeParse(
       req.nextUrl.searchParams.get('nodeId')
     )
-    return nodeId.success
-      ? { operation: 'neighbors', nodeId: nodeId.data }
+    const kbId = z
+      .string()
+      .uuid()
+      .safeParse(req.nextUrl.searchParams.get('kbId'))
+    const buildId = z
+      .string()
+      .uuid()
+      .safeParse(req.nextUrl.searchParams.get('buildId'))
+    return nodeId.success && kbId.success && buildId.success
+      ? {
+          operation: 'neighbors',
+          nodeId: nodeId.data,
+          kbId: kbId.data,
+          buildId: buildId.data,
+        }
       : null
   }
 
@@ -64,6 +85,18 @@ async function handleGET(
     return authResult.response
   }
 
+  // A disabled map exposes no graph data. It is not a participation failure,
+  // so it carries its own code instead of the participation-required response.
+  if (!authResult.chatbot.knowledgeGraphVisible) {
+    return NextResponse.json(
+      {
+        code: 'KNOWLEDGE_GRAPH_DISABLED',
+        error: 'Knowledge graph is disabled for this chatbot',
+      },
+      { status: 403 }
+    )
+  }
+
   const readRequest = parseReadRequest(req)
   if (readRequest === null) {
     return invalidRequestResponse()
@@ -77,13 +110,41 @@ async function handleGET(
   if (!kbId.success) return invalidRequestResponse()
   if (kbId.data !== undefined) readRequest.kbId = kbId.data
 
+  const slot = admission.acquire(authResult.participantId)
+  if (!slot.allowed) {
+    return NextResponse.json(
+      {
+        code: 'KNOWLEDGE_GRAPH_BUSY',
+        error: 'Please wait before trying again',
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(slot.retryAfterSeconds),
+          'Cache-Control': 'private, no-store',
+        },
+      }
+    )
+  }
+
   try {
     const response = await readPublishedChatbotKnowledgeGraph(
       chatbotId,
       readRequest
     )
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: { 'Cache-Control': 'private, no-store' },
+    })
   } catch (error) {
+    if (error instanceof KnowledgeGraphBuildChangedError) {
+      return NextResponse.json(
+        {
+          code: 'KNOWLEDGE_GRAPH_BUILD_CHANGED',
+          error: 'Reload the knowledge graph',
+        },
+        { status: 409 }
+      )
+    }
     if (error instanceof KnowledgeGraphSelectionRequiredError) {
       return NextResponse.json(
         { code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED', choices: error.choices },
@@ -112,6 +173,8 @@ async function handleGET(
       },
       { status: 503 }
     )
+  } finally {
+    slot.release()
   }
 }
 

@@ -200,6 +200,7 @@ test('binds explicit launcher identity and revision for derivable providers', ()
       assert.ok(entry.args.includes('--no-sync'))
       assert.ok(entry.args.includes('scripts/local_launcher.py'))
       assert.equal(entry.env.PYTHON_DOTENV_DISABLED, '1')
+      assert.equal(entry.env.PYTHONDONTWRITEBYTECODE, '1')
     }
   }
   const docStart = commands.providers.docProcessing.lifecycle.start.args

@@ -392,7 +392,16 @@ function safeDestination(value, field, projectIdentity, reserved) {
 }
 
 function validateInput(input) {
-  exactKeys(input, INPUT_KEYS, 'input')
+  exactKeys(
+    input,
+    Object.hasOwn(input, 'aiUpstream')
+      ? [...INPUT_KEYS, 'aiUpstream']
+      : INPUT_KEYS,
+    'input'
+  )
+  if (Object.hasOwn(input, 'aiUpstream')) {
+    ensure(input.aiUpstream === 'openrouter', 'aiUpstream must be openrouter.')
+  }
   canonicalPath(input.primaryCheckoutPath, 'primaryCheckoutPath')
   canonicalPath(input.runtimeCheckoutPath, 'runtimeCheckoutPath')
   strings(input.retainedCheckoutPaths, 'retainedCheckoutPaths')
@@ -486,6 +495,7 @@ function validateInput(input) {
   }
   return {
     primaryCheckoutPath: input.primaryCheckoutPath,
+    ...(input.aiUpstream ? { aiUpstream: input.aiUpstream } : {}),
     runtimeCheckoutPath: input.runtimeCheckoutPath,
     retainedCheckoutPaths: [...input.retainedCheckoutPaths],
     projectIdentity: input.projectIdentity,
@@ -603,6 +613,7 @@ function buildConfig(normalized) {
 
   return {
     schemaVersion: 'isolated-local-kb.provider-config.v2',
+    ...(normalized.aiUpstream ? { aiUpstream: normalized.aiUpstream } : {}),
     bindings: normalized.bindings,
     model: 'validation-only',
     deployment: {
@@ -662,12 +673,21 @@ function buildConfig(normalized) {
 // Validate persisted configuration through the same derivation as fresh input.
 // This also rejects altered graph edges, mounts and capability claims.
 function validateResolvedConfig(config) {
-  exactKeys(config, CONFIG_KEYS, 'config')
+  exactKeys(
+    config,
+    Object.hasOwn(config, 'aiUpstream')
+      ? [...CONFIG_KEYS, 'aiUpstream']
+      : CONFIG_KEYS,
+    'config'
+  )
   object(config.project, 'config.project')
   object(config.reserved, 'config.reserved')
   exactKeys(config.providers, PROVIDER_NAMES, 'config.providers')
   exactKeys(config.endpoints, ENDPOINT_NAMES, 'config.endpoints')
   const input = {
+    ...(Object.hasOwn(config, 'aiUpstream')
+      ? { aiUpstream: config.aiUpstream }
+      : {}),
     primaryCheckoutPath: config.project.primaryCheckoutPath,
     runtimeCheckoutPath: config.project.runtimeCheckoutPath,
     retainedCheckoutPaths: config.project.retainedCheckoutPaths,

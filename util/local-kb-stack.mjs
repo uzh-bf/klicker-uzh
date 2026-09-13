@@ -3,6 +3,7 @@ import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { renderBackingCompose } from './local-kb/backing-compose.mjs'
+import { requireLocalAiEnvironment } from './local-kb/docker-preflight.mjs'
 import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
 import {
   claimPreparation,
@@ -250,6 +251,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
       if (command === 'setup') {
+        requireLocalAiEnvironment(config)
         // Resolve pins and fresh source state before the exclusive claim or
         // any generated files, Docker operation, or managed lifecycle call.
         providerCommands(config)
