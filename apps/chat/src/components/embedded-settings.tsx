@@ -52,7 +52,7 @@ export function EmbeddedSettings() {
 }
 
 /**
- * Compact bottom-of-embed credits readout for embedded mode. Reads the same
+ * Compact embedded credits readout for embedded mode. Reads the same
  * `useSettingsStore` state (and its existing fetch) that `CreditsFooter` uses
  * for the sidebar — no separate fetching logic. Deliberately trimmed down
  * from `CreditsFooter` (no progress bar, no cost-hint/reset copy): a small
@@ -73,10 +73,7 @@ export function EmbeddedCreditsBar() {
   const exhausted = credits.current === 0
 
   return (
-    <div
-      data-cy="chat-embedded-credits-bar"
-      className="border-t px-3 py-1.5 text-xs"
-    >
+    <div data-cy="chat-embedded-credits-bar" className="min-w-0 text-xs">
       <div className="flex items-center gap-1.5">
         <Zap className="text-muted-foreground size-3.5 shrink-0" />
         <span className="text-muted-foreground truncate">

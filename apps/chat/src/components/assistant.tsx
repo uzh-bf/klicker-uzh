@@ -646,16 +646,9 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-4 sm:px-4 sm:py-3">
-        <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
-          {chatbot.name}
-        </h1>
+      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
+        <EmbeddedCreditsBar />
         <EmbeddedSettings />
-        <ChatGraphModeSwitch
-          chatbotId={chatbot.id}
-          compact
-          className="col-span-2 justify-self-end sm:col-span-1"
-        />
       </div>
       <main
         id="main-content"
@@ -689,7 +682,6 @@ function AssistantLayout({
             />
           )}
         </div>
-        <EmbeddedCreditsBar />
       </main>
     </div>
   )

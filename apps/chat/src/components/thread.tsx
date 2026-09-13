@@ -419,10 +419,7 @@ export const Thread: FC<ThreadProps> = ({
             {t('chat.composer.modeUnavailable')}
           </p>
         )}
-        {/* S6: standalone-only, same as ThreadScrollToBottom above — an
-            embedded widget has little vertical room and the embedding page
-            already carries the disclaimer context. */}
-        {!embedded && hasAvailableMode && <ComposerHint />}
+        {hasAvailableMode && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>
   )
