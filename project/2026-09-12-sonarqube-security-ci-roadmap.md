@@ -397,9 +397,10 @@ named release decisions before W10, even while unrelated PRs use new-code gates.
 **Acceptance:** the release-relevant backlog has owners, dispositions, and dates;
 an expired exception fails the intended policy; a sample hotspot receives real
 review. Update `docs/ci-and-deployment.md` and `docs/testing.md` with the implemented
-contracts. Correct the stale scanning claims in `.serena/memories/reference.md`
-when that file still exists. Update the repository verification skill only when
-its actual completion instructions become inaccurate.
+contracts. The tracked Serena memory store is removed with this package, so its
+stale scanning claims no longer exist to correct. Update the repository
+verification skill only when its actual completion instructions become
+inaccurate.
 **Delivery:** policy and implementation documentation with the corresponding
 source package; ClickUp writes and subscriptions require named authority.
 
@@ -596,10 +597,10 @@ its dependent action. Read back effective settings and retain sanitized receipts
     the two images the pilot scans.
   - W6: CodeQL v4 is SHA-pinned and covers JavaScript/TypeScript, Python, and
     GitHub Actions with a `security-extended` pilot that is not a required check.
-  - W7: `docs/ci-and-deployment.md`, `docs/testing.md`, and the scanning claims in
-    `.serena/memories/reference.md` describe the implemented contracts. ClickUp
-    triage, finding owners, and remediation dates remain unwritten because they
-    need authority.
+  - W7: `docs/ci-and-deployment.md` and `docs/testing.md` describe the
+    implemented contracts, and the tracked Serena memory store that carried a
+    stale scanning copy is removed from the repository. ClickUp triage, finding
+    owners, and remediation dates remain unwritten because they need authority.
   - W8: the analysis workflow now fails when the quality gate fails, and the
     ruleset delta for the effective SonarCloud App check (app `12526`, context
     `SonarCloud Code Analysis`) is prepared with a live read-back in the
