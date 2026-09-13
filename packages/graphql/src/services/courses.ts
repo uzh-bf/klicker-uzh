@@ -2263,9 +2263,7 @@ export async function correctAssessmentPointsLiveQuiz(
                     const draft = pointCorrectionAuditDraft({
                       before: correctionResult.before,
                       after: correctionResult.after,
-                      instance: instance as DB.ElementInstance & {
-                        elementBlock: DB.ElementBlock
-                      },
+                      instance: { ...instance, elementBlock: block },
                       producerOperationId: `${auditOperation.correlationId}:response:${correctionResult.after.id}`,
                     })
                     if (draft !== null) correctionDrafts.push(draft)
@@ -3712,7 +3710,7 @@ export async function deleteCourse(
 
       return { deleted, deletionCancelled: false }
     },
-    { timeout: 60000 }
+    { timeout: 1200000 }
   )
 
   if (!deletedCourse.deleted) {

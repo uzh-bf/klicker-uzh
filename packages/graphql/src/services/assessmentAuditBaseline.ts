@@ -417,10 +417,12 @@ export function assessmentSourceElementState(
       content: elementData.content,
       explanation: elementData.explanation ?? null,
       hasSampleSolution:
+        elementData.options != null &&
         'hasSampleSolution' in elementData.options
           ? (elementData.options.hasSampleSolution ?? false)
           : false,
       hasAnswerFeedbacks:
+        elementData.options != null &&
         'hasAnswerFeedbacks' in elementData.options
           ? (elementData.options.hasAnswerFeedbacks ?? false)
           : false,

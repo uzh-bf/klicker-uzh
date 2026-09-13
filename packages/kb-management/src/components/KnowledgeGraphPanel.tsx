@@ -394,6 +394,8 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
             kbId,
           })
         }
+      } else if (details?.code === 'KB_GRAPH_NO_COURSE_CONTENT') {
+        setOperationError(t('kb.graphNoCourseContent'))
       } else {
         setOperationError(t('kb.graphBuildError'))
       }

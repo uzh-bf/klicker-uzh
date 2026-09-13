@@ -41,3 +41,11 @@ fixture. And a capability the provider genuinely cannot offer locally stays
 absent rather than being simulated: the consumer's runner records what its local
 run does and does not prove, instead of relaxing a provider policy to make a
 test pass.
+
+Implementation note (2026-09-12). Klicker's isolated lifecycle invokes the
+provider launchers for setup, start, status and retained stop. Its Compose
+assembly now contains only Klicker's own backing services. Providers receive
+explicit port allocations and accepted private configuration inputs, and own
+their backing configuration and state. The read-only plan still reports
+`executable: false`: a plan does not verify installed dependencies or qualify
+ingestion, retrieval, model access or restart behavior.

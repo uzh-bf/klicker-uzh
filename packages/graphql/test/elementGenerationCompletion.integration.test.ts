@@ -36,6 +36,7 @@ function question(
     stem: 'Choose the correct answer',
     context: null,
     explanation: 'Explanation',
+    tags: ['synthetic-question'],
     choices: Array.from(
       { length: itemType === 'MC' ? 5 : itemType === 'KPRIM' ? 4 : 2 },
       (_, index) => ({
