@@ -1,6 +1,6 @@
-import { routing } from '@klicker-uzh/i18n'
 import { createEdgeLogger } from '@klicker-uzh/logging/edge'
 import { resolveRequestContext } from '@klicker-uzh/logging/request'
+import { routing } from '@klicker-uzh/i18n'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'

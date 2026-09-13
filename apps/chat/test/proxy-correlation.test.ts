@@ -1,30 +1,11 @@
 import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { NextRequest } from 'next/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-const mocks = vi.hoisted(() => ({
-  participantFindUnique: vi.fn(),
-}))
-
-vi.mock('@klicker-uzh/prisma', () => ({
-  prisma: {
-    participant: {
-      findUnique: (...args: unknown[]) => mocks.participantFindUnique(...args),
-    },
-  },
-}))
-import { signChatGuestToken } from '@/src/lib/server/ltiGuest'
+import { signChatGuestToken } from '../src/lib/server/ltiGuest'
 import { proxy as authProxy } from '../../auth/src/proxy'
 import { proxy as chatProxy } from '../src/proxy'
 
-afterEach(() => {
-  vi.unstubAllEnvs()
-  vi.restoreAllMocks()
-})
-
-mocks.participantFindUnique.mockResolvedValue({
-  isActive: true,
-  accounts: [{ type: 'credentials' }],
-})
+afterEach(() => vi.unstubAllEnvs())
 
 const headerCases: Record<string, string>[] = [
   {},
@@ -36,50 +17,53 @@ describe.each([
   ['Auth', authProxy, 'https://auth.test/api/auth/session'],
   ['Chat', chatProxy, 'https://chat.test/api/chatbots/synthetic/credits'],
 ] as const)('%s proxy diagnostic propagation', (_name, proxy, url) => {
-  it('echoes validated diagnostic IDs on every response', async (ctx) => {
+  it('echoes validated diagnostic IDs on every response', async () => {
     for (const headers of headerCases) {
       const requestHeaders = new Headers(headers)
       requestHeaders.set('cookie', 'synthetic_cookie=preserved')
       const response = await proxy(
         new NextRequest(url, { headers: requestHeaders })
       )
-      const requestId = response.headers.get('x-request-id')
-      const correlationId = response.headers.get('x-correlation-id')
-      expect(requestId).toMatch(/^[A-Za-z0-9._-]{1,128}$/)
-      expect(correlationId).toMatch(/^[A-Za-z0-9._-]{1,128}$/)
+      expect(response.headers.get('x-request-id')).toMatch(
+        /^[A-Za-z0-9._-]{1,128}$/
+      )
+      expect(response.headers.get('x-correlation-id')).toMatch(
+        /^[A-Za-z0-9._-]{1,128}$/
+      )
     }
   })
 })
 
 describe('Auth proxy forwards the response IDs to the Node handler', () => {
-  it.each(
-    headerCases
-  )('forwards %j to the forwarded request headers', async (headers) => {
-    const requestHeaders = new Headers(headers)
-    const response = await authProxy(
-      new NextRequest('https://auth.test/api/auth/session', {
-        headers: requestHeaders,
+  it.each(headerCases)(
+    'forwards %j to the pass-through request headers',
+    async (headers) => {
+      const requestHeaders = new Headers(headers)
+      const response = await authProxy(
+        new NextRequest('https://auth.test/api/auth/session', {
+          headers: requestHeaders,
+        })
+      )
+      const overrides = response.headers.get('x-middleware-override-headers')
+      const forwarded =
+        overrides === null ? new Headers(requestHeaders) : new Headers()
+      for (const key of (
+        response.headers.get('x-middleware-override-headers') ?? ''
+      ).split(',')) {
+        const value = response.headers.get(`x-middleware-request-${key}`)
+        if (value !== null) forwarded.set(key, value)
+      }
+      const nodeContext = resolveRequestContext({
+        requestId: forwarded.get('x-request-id'),
+        correlationId: forwarded.get('x-correlation-id'),
       })
-    )
-    const overrides = response.headers.get('x-middleware-override-headers')
-    const forwarded =
-      overrides === null ? new Headers(requestHeaders) : new Headers()
-    for (const key of (
-      response.headers.get('x-middleware-override-headers') ?? ''
-    ).split(',')) {
-      const value = response.headers.get(`x-middleware-request-${key}`)
-      if (value !== null) forwarded.set(key, value)
+      expect(response.headers.get('x-middleware-next')).toBe('1')
+      expect(nodeContext.requestId).toBe(response.headers.get('x-request-id'))
+      expect(nodeContext.correlationId).toBe(
+        response.headers.get('x-correlation-id')
+      )
     }
-    const nodeContext = resolveRequestContext({
-      requestId: forwarded.get('x-request-id'),
-      correlationId: forwarded.get('x-correlation-id'),
-    })
-    expect(response.headers.get('x-middleware-next')).toBe('1')
-    expect(nodeContext.requestId).toBe(response.headers.get('x-request-id'))
-    expect(nodeContext.correlationId).toBe(
-      response.headers.get('x-correlation-id')
-    )
-  })
+  )
 })
 
 describe('Chat proxy forwards the response IDs to the Node handler', () => {
@@ -104,12 +88,6 @@ describe('Chat proxy forwards the response IDs to the Node handler', () => {
     const overrides = response.headers.get('x-middleware-override-headers')
     const forwarded =
       overrides === null ? new Headers(requestHeaders) : new Headers()
-    for (const key of (
-      response.headers.get('x-middleware-override-headers') ?? ''
-    ).split(',')) {
-      const value = response.headers.get(`x-middleware-request-${key}`)
-      if (value !== null) forwarded.set(key, value)
-    }
     const nodeContext = resolveRequestContext({
       requestId: forwarded.get('x-request-id'),
       correlationId: forwarded.get('x-correlation-id'),
@@ -141,9 +119,6 @@ it('preserves Manage locale cookies and frame policy while forwarding IDs', asyn
   )
   expect(response.headers.get('x-middleware-request-x-correlation-id')).toBe(
     response.headers.get('x-correlation-id')
-  )
-  expect(response.headers.get('x-request-id')).toBe(
-    response.headers.get('x-middleware-request-x-request-id')
   )
   expect(response.headers.get('x-middleware-request-x-request-id')).toBe(
     response.headers.get('x-request-id')
