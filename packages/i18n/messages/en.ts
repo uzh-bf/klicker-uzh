@@ -4634,7 +4634,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       requestFailed:
         'The assessment export could not be created. Please try again.',
       cancel: 'Cancel',
-      submit: 'Export',
+      submit: 'Download',
     },
     researchExport: {
       menuLabel: 'Export research data',
@@ -4662,7 +4662,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Asynchronous responses (learning elements, microlearning)',
       learningAnalytics:
         'Learning Analytics data (individual and group values)',
-      chatTranscripts: 'Chat transcripts',
+      chatTranscripts: 'Chat transcripts and free text',
       unavailableHint:
         'Currently unavailable; the core export does not support this class yet.',
       classDataNote:
@@ -4690,7 +4690,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The research export could not be created. Please try again.',
       downloadStarted: 'The download has started.',
       cancel: 'Cancel',
-      submit: 'Export research data',
+      submit: 'Download',
     },
     pointCorrections: {
       stepIndicator: 'Step {current} of {total}',
