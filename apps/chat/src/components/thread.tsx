@@ -914,7 +914,7 @@ const Composer: FC<{ maxImageAttachments: number }> = ({
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
-              embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
+              embedded ? 'max-h-20 py-2 text-sm leading-6' : 'max-h-40 py-4'
             )}
           />
           <ComposerAction />
@@ -1439,7 +1439,9 @@ const UserMessage: FC = () => {
         data-cy="chat-user-message-content"
         className={twMerge(
           'bg-muted text-foreground break-words rounded-2xl px-5 py-2.5',
-          embedded ? 'max-w-[80%]' : 'max-w-[calc(var(--thread-max-width)*0.8)]'
+          embedded
+            ? 'max-w-[80%] text-sm leading-6'
+            : 'max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
         {attachments.length > 0 && (
