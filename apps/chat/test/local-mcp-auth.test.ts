@@ -358,7 +358,7 @@ describe('assertLocalSeedOwnership', () => {
 
   test.each([
     ['different server id', { id: 'another-server' }],
-    ['different server name', { name: 'KB' }],
+    ['different server name', { name: 'unrelated-server' }],
     ['different server URL', { url: 'http://localhost:2417/mcp' }],
     ['inactive server', { isActive: false }],
     ['chatbot header enabled', { chatbotIdHeader: 'x-chatbot-id' }],

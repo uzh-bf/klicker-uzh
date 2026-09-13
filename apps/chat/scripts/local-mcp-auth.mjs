@@ -1,28 +1,117 @@
 import { timingSafeEqual } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 import { importSPKI, jwtVerify } from 'jose'
 
-export {
-  assertLocalSeedOwnership,
-  LOCAL_CHATBOT_ID,
-  LOCAL_COURSE_ID,
-  LOCAL_COURSE_PIN,
-  LOCAL_COURSE_PIN_CODE,
-  LOCAL_FIXTURE_MARKER,
-  LOCAL_KB_ID,
-  LOCAL_MCP_SERVER_ID,
-  LOCAL_MCP_URL,
-  LOCAL_OWNER_ID,
-  LOCAL_SCOPE,
-  LOCAL_SERVER_ID,
-  LOCAL_SERVER_NAME,
-  LOCAL_SERVER_URL,
-  normalizeLocalMcpConfigurations,
-} from '../src/lib/server/localMcpFixture.mjs'
+export const LOCAL_SERVER_ID = 'b37c9d6e-2a14-4f8b-93c7-5e1d0a6f4b82'
+export const LOCAL_CHATBOT_ID = 'c84f1a72-6e35-4d9b-a0c8-2f7e5b3d1a96'
+export const LOCAL_COURSE_ID = 'd61e8b43-9f27-4c05-b2a6-7d3e1f8c5b90'
+export const LOCAL_OWNER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
+export const LOCAL_KB_ID = '35a72f62-a714-45f1-8b18-2cf5681b0c75'
+export const LOCAL_COURSE_PIN = 672945813
+export const LOCAL_COURSE_PIN_CODE = LOCAL_COURSE_PIN
+export const LOCAL_SERVER_NAME = 'KB'
+export const LOCAL_SERVER_URL = 'http://localhost:1417/mcp'
+export const LOCAL_MCP_URL = LOCAL_SERVER_URL
+export const LOCAL_FIXTURE_MARKER = {
+  localFixture: 'authenticated-local-mcp-v2',
+}
+export const LOCAL_SCOPE = {
+  required: true,
+  toolAlias: 'doc_query',
+  kb_ids: [LOCAL_KB_ID],
+}
+export const LOCAL_MCP_SERVER_ID = LOCAL_SERVER_ID
 
-import {
-  LOCAL_CHATBOT_ID,
-  LOCAL_KB_ID,
-} from '../src/lib/server/localMcpFixture.mjs'
+const ENCRYPTED_AUTH_SECRET_PATTERN = /^[a-f0-9]{32}:[a-f0-9]{32}:[a-f0-9]+$/i
+const LOCAL_CHAT_MODES = new Set(['tutor', 'explainer'])
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isEncryptedAuthSecret(value) {
+  return typeof value === 'string' && ENCRYPTED_AUTH_SECRET_PATTERN.test(value)
+}
+
+function isExactServer(server) {
+  return (
+    isPlainObject(server) &&
+    server.id === LOCAL_SERVER_ID &&
+    server.name === LOCAL_SERVER_NAME &&
+    server.url === LOCAL_SERVER_URL &&
+    server.authType === 'bearer' &&
+    isEncryptedAuthSecret(server.authSecret) &&
+    server.isActive === true &&
+    server.passChatbotId === false &&
+    server.chatbotIdHeader === null &&
+    isDeepStrictEqual(server.parameters, LOCAL_FIXTURE_MARKER)
+  )
+}
+
+function isExactConfiguration(config) {
+  if (!isPlainObject(config)) return false
+
+  if (config.mcpServer !== undefined && !isExactServer(config.mcpServer)) {
+    return false
+  }
+
+  const nestedServerId = config.mcpServer?.id
+  if (
+    (config.mcpServerId !== undefined &&
+      config.mcpServerId !== LOCAL_SERVER_ID) ||
+    (nestedServerId !== undefined && nestedServerId !== LOCAL_SERVER_ID) ||
+    (config.mcpServerId === undefined && nestedServerId !== LOCAL_SERVER_ID)
+  ) {
+    return false
+  }
+
+  return (
+    config.chatbotId === LOCAL_CHATBOT_ID &&
+    (config.ownerId === undefined || config.ownerId === LOCAL_OWNER_ID) &&
+    (config.courseId === undefined || config.courseId === LOCAL_COURSE_ID) &&
+    LOCAL_CHAT_MODES.has(config.chatMode) &&
+    typeof config.isEnabled === 'boolean' &&
+    config.priority === 0 &&
+    isDeepStrictEqual(config.allowedTools, ['doc_query']) &&
+    isDeepStrictEqual(config.parameters, LOCAL_SCOPE)
+  )
+}
+
+/**
+ * Assert that a persisted server and its dedicated configurations still
+ * describe this fixture.  The optional parent argument validates the parent
+ * identity when configuration rows omit denormalized owner/course fields.
+ *
+ * @param {unknown} server
+ * @param {unknown} configurations
+ * @param {{id?: unknown, ownerId?: unknown, courseId?: unknown}|null} [chatbot]
+ * @returns {true}
+ */
+export function assertLocalSeedOwnership(server, configurations, chatbot) {
+  if (
+    !isExactServer(server) ||
+    !Array.isArray(configurations) ||
+    configurations.length !== 2 ||
+    (chatbot !== undefined &&
+      (chatbot === null ||
+        chatbot.id !== LOCAL_CHATBOT_ID ||
+        chatbot.ownerId !== LOCAL_OWNER_ID ||
+        chatbot.courseId !== LOCAL_COURSE_ID)) ||
+    configurations.some((config) => !isExactConfiguration(config))
+  ) {
+    throw new Error('Local MCP seed ownership conflict')
+  }
+
+  const modes = new Set(configurations.map((config) => config.chatMode))
+  if (
+    modes.size !== 2 ||
+    [...modes].some((mode) => !LOCAL_CHAT_MODES.has(mode))
+  ) {
+    throw new Error('Local MCP seed ownership conflict')
+  }
+
+  return true
+}
 
 export async function createLocalAuthenticator(env) {
   for (const name of [

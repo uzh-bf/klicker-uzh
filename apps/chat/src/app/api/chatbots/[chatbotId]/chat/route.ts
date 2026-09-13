@@ -44,7 +44,6 @@ import {
   LANGFUSE_CHAT_TRACE_NAME,
   registerLangfuseTelemetry,
 } from '@/src/lib/server/langfuseTracing'
-import { normalizeLocalMcpConfigurations } from '@/src/lib/server/localMcpFixture.mjs'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -731,14 +730,9 @@ export async function POST(
     )
   }
 
-  const mcpConfigurations = normalizeLocalMcpConfigurations(
-    chatbot.mcpConfigurations ?? [],
-    chatbot,
-    process.env
-  )
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    mcpConfigurations,
+    chatbot.mcpConfigurations,
     chatbot.standardModeConfig
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
@@ -876,11 +870,11 @@ export async function POST(
     }
   }
 
-  const enabledMCPConfigurations = mcpConfigurations.filter(
+  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
     (config) => config.isEnabled !== false
   )
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
-    mcpConfigurations,
+    chatbot.mcpConfigurations ?? [],
     selectedMode
   )
 

@@ -311,6 +311,61 @@ their own work packages.
 
 ## Progress
 
+September 13 refreshed source audit: `origin/v3` at
+`927f23366f0b80867240382c40af81994b0b7fc9` and `origin/v3-ai` at
+`8207c964016b3f1c735c678e6563bfe96d604f5d` contain no local MCP fixture
+adapter or fixture-specific request-handler branches. The adapter belongs only
+to unmerged [PR #5941](https://github.com/uzh-bf/klicker-uzh/pull/5941).
+Its removal is drafted: both request handlers and the complete `apps/chat/src`
+tree now match `origin/v3-ai`. Script-only JWT and fixture ownership checks
+remain in `apps/chat/scripts/`; generic endpoint configuration, private-network
+transport validation and the development graph loader remain ordinary runtime
+support. This is source evidence, not a deployed-image audit.
+
+The approved replacement uses optional tmpfs-backed `mcp_postgres`, existing
+restricted disposable-database identity checks, ordinary Prisma schema push
+without data-loss flags, and a minimal synthetic Prisma seed. Explicit `mcp`
+selection gives the whole app group that database; canonical sourcing restores
+the normal database when `mcp` is dropped. Because Devrouter reserves `full` as
+all capabilities, the ordinary default is named `standard` and excludes mocks.
+Profile regression checks and the host lifecycle harness pass, including actual
+managed-helper child environment across mock-to-normal profile switching.
+`devrouter profile resolve` confirms the ordinary default excludes the mock.
+The seed worker delivered the existing seed module after its narrowed correction;
+main replaced the temporary-table harness with real Prisma-schema acceptance.
+Isolated `mcp` startup passed with healthy `mcp_postgres`, no drift, no app
+process and no routes. The real-schema harness, 55 focused Chat tests and Chat
+typecheck pass. Startup used the host Infisical operator and a free alternate
+Azurite binding (`10043`), preserving the other workspace holding `10003`.
+No model request ran. Browser/application acceptance, committed reviews and
+draft update remain open. Full hook checks are running through the repository's
+host/container split after an invalid all-container attempt hit host-only tests.
+
+The user approved the separate disposable database approach and explicitly
+included removal of already-merged fixture-specific Chat runtime code, if any.
+Main owns isolated database/bootstrap integration and final verification. The
+existing fixture executor owns removing the two route integrations, the shared
+production fixture module and normalization tests. A read-only source inventory
+compares refreshed `v3` and `v3-ai` with the task branch; normal preview behavior,
+local endpoint configuration and bundler compatibility are outside the removal.
+No deployment, live data modification or merge is included.
+
+September 13 scope review following the user's concern: draft PR #5941 adds
+fixture normalization to both production request handlers and a 200-line shared
+runtime module solely to accommodate a second local server identity. The server
+name is unique and the retrieval contract recognizes `KB`, so same-database
+identity separation caused this coupling. Recommend retaining the plural seed
+reconciliation, removing fixture-specific request handling, and putting the
+deterministic mock in a separate disposable local database using the ordinary
+retrieval contract. This supersedes the earlier same-database isolation design
+under the user's subsequent approval recorded above.
+The dedicated chatbot insert defaults to DRAFT, and temporary-table tests do not
+prove participant access or full-schema acceptance. Do not merge the existing
+draft based on those tests. The PR description now records these limitations.
+The task runtime at `trees/rs/chatbot-kb-clean-runtime` was canonically stopped;
+source-path status confirms stopped, empty active resources, no drift, and zero
+exact routes. STG was untouched. Evidence corrections in this plan remain local.
+
 September 13: committed the seed correction as `f90bbe4a93` and its independent
 test expectations as `b0116f4f49`. Both commits passed every normal pre-commit
 hook (40 check/build tasks, seven lint tasks, formatting, syncpack and host
@@ -338,21 +393,24 @@ proof; the trusted executor owned fixture creation, ownership and SQL acceptance
 The identity split is committed in `d0cb2cd618` and verified: Chat typecheck, the
 full Chat suite (101 files, 1117 tests), 56 focused Chat tests, the prisma-data
 check, six plural seed tests, the SQL coexistence harness and Biome on all
-changed files. Verification found and fixed one real defect: the ownership guard
-required an explicit null `chatbotIdHeader`, so it rejected the seeded fixture
-whose column is simply absent; it now accepts absent or null and still rejects a
-set header. Local synthetic runtime and browser proof remain pending, as do
-publication, host final review and the human foundation approval.
+changed files. Correction to the earlier verification account: the nullable
+`chatbotIdHeader` is present in the database schema and the fixture insert writes
+null. The missing value came from a hand-built test configuration, not a proven
+database defect. Allowing undefined was therefore not evidence of a runtime fix.
+Local synthetic runtime and browser proof remain pending, as do host final
+review and human foundation approval. The package was pushed to draft
+[PR #5941](https://github.com/uzh-bf/klicker-uzh/pull/5941).
 Canonical stop completed with exit zero. Fresh source-path status confirms
 stopped, empty active resources, no drift and zero exact routes.
-`origin/v3-ai` moved to `b3be22ee11`; merging it into this branch was clean
-because its newer commits touch only CI workflows and Chat source display, not
-the seed correction or fixture files. It is integrated at the current branch
-head, which has no conflict with the package.
+Merge `671ff52c49` integrated `v3-ai` at `4943651a5b`. The earlier claim that
+it included `b3be22ee11` was incorrect: the local remote-tracking ref was stale.
+A fresh fetch confirmed `b3be22ee11ca8d29b746b3d9120d352713f74e84` as the
+remote target; that later revision is not included in this merge.
 The reader compatibility PRs are merged, but deployed-reader evidence and
 live backfill remain separate prerequisites. Additive attachment editing is
 not implemented by these seed corrections.
-No push, deployment, live backfill or paid model request occurred.
+Ordinary draft publication occurred; no deployment, live backfill or paid model
+request is established by these verification receipts.
 
 September 12 integration checkpoint: fast-forwarded this task branch to current
 `origin/v3-ai` (`d1e1fafadd`) because upstream changed the same seed source.

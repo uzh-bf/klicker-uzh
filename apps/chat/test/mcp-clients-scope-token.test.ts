@@ -17,17 +17,6 @@ vi.mock('@klicker-uzh/util', () => ({
 }))
 
 import {
-  LOCAL_CHATBOT_ID,
-  LOCAL_COURSE_ID,
-  LOCAL_FIXTURE_MARKER,
-  LOCAL_KB_ID,
-  LOCAL_OWNER_ID,
-  LOCAL_SCOPE,
-  LOCAL_SERVER_ID,
-  LOCAL_SERVER_NAME,
-  normalizeLocalMcpConfigurations,
-} from '../src/lib/server/localMcpFixture.mjs'
-import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '../src/lib/server/mcpRuntimePolicy'
@@ -37,7 +26,6 @@ import {
 } from '../src/services/mcpClients'
 import {
   assertDocQueryTransportSecurity,
-  DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
   DOC_QUERY_TOOL_NAME,
   normalizeDocQueryKbId,
@@ -85,95 +73,6 @@ describe('current-v3 Doc Query scope', () => {
       close: vi.fn(),
       tools: clientToolsMock,
     })
-  })
-
-  test('normalizes only the owned local fixture into signed document retrieval', async () => {
-    const chatbot = {
-      id: LOCAL_CHATBOT_ID,
-      ownerId: LOCAL_OWNER_ID,
-      courseId: LOCAL_COURSE_ID,
-    }
-    const configurations = ['tutor', 'explainer'].map((chatMode) => ({
-      chatbotId: chatbot.id,
-      mcpServerId: LOCAL_SERVER_ID,
-      chatMode,
-      isEnabled: true,
-      priority: 0,
-      allowedTools: ['doc_query'],
-      parameters: { ...LOCAL_SCOPE },
-      mcpServer: {
-        id: LOCAL_SERVER_ID,
-        name: LOCAL_SERVER_NAME,
-        url: 'http://localhost:1417/mcp',
-        authType: 'bearer',
-        authSecret: `${'a'.repeat(32)}:${'b'.repeat(32)}:${'c'.repeat(32)}`,
-        parameters: { ...LOCAL_FIXTURE_MARKER },
-        isActive: true,
-        passChatbotId: false,
-      },
-    }))
-    const environment = {
-      NODE_ENV: 'development',
-      LOCAL_MCP_BOOTSTRAPPED: '1',
-    }
-    const normalized = normalizeLocalMcpConfigurations(
-      configurations,
-      chatbot,
-      environment
-    )
-    const selected = normalized.filter((config) => config.chatMode === 'tutor')
-    const kbIds = resolveMcpScope(normalized, 'tutor', selected)
-    expect(kbIds).toEqual([LOCAL_KB_ID])
-    const servers: MCPServerWithConfig[] = selected
-      .filter(
-        (configuration) =>
-          configuration.mcpServer.name === DOC_QUERY_MCP_SERVER_NAME
-      )
-      .map((configuration) => ({
-        server: {
-          id: configuration.mcpServer.id,
-          name: configuration.mcpServer.name,
-          url: configuration.mcpServer.url,
-          authType: configuration.mcpServer.authType,
-          authSecret: configuration.mcpServer.authSecret ?? '',
-          parameters: configuration.mcpServer.parameters,
-          isActive: configuration.mcpServer.isActive,
-          passChatbotId: configuration.mcpServer.passChatbotId,
-          chatbotIdHeader: undefined,
-        },
-        config: {
-          allowedTools: ['doc_query'],
-          parameters: configuration.parameters,
-          priority: configuration.priority,
-        },
-      }))
-    expect(servers).toHaveLength(1)
-    const handle = await getAggregatedMCPTools(servers, chatbot.id, {
-      kbIds,
-      sessionId: SESSION_ID,
-    })
-    expect(handle.tools).toHaveProperty(DOC_QUERY_TOOL_NAME)
-    expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith(
-      expect.objectContaining({ chatbotId: chatbot.id, kbIds })
-    )
-    expect(configurations[0].mcpServer.name).toBe(LOCAL_SERVER_NAME)
-    await handle.close()
-
-    for (const [candidate, env] of [
-      [chatbot, { ...environment, NODE_ENV: 'production' }],
-      [chatbot, { ...environment, LOCAL_MCP_BOOTSTRAPPED: undefined }],
-      [{ ...chatbot, ownerId: 'another-owner' }, environment],
-    ] as const) {
-      const unchanged = normalizeLocalMcpConfigurations(
-        configurations,
-        candidate,
-        env
-      )
-      expect(unchanged).toEqual(configurations)
-      expect(() =>
-        resolveMcpScope(unchanged, 'tutor', unchanged.slice(0, 1))
-      ).toThrow()
-    }
   })
 
   test('keeps bearer transport auth separate from the scope token header', async () => {
