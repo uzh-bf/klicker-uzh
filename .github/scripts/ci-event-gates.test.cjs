@@ -13,7 +13,13 @@ function readWorkflow(name) {
 }
 
 // Evaluate the actual checked-in predicate against synthetic GitHub contexts.
-function evaluateGate(expression, github, needs = {}, cancelled = false) {
+function evaluateGate(
+  expression,
+  github,
+  needs = {},
+  cancelled = false,
+  vars = {}
+) {
   const normalized = expression.replace(
     /needs\.([a-z][a-z0-9-]*)/g,
     'needs["$1"]'
@@ -26,12 +32,14 @@ function evaluateGate(expression, github, needs = {}, cancelled = false) {
     'needs',
     'always',
     'cancelled',
+    'vars',
     `return (${normalized})`
   )(
     github,
     needs,
     () => true,
-    () => cancelled
+    () => cancelled,
+    vars
   )
 }
 
@@ -87,6 +95,54 @@ test('trusted review policy admits only lifecycle events and exact PR commands',
   }
 })
 
+test('staging promotion admits selected-source pushes before allocating a runner', () => {
+  const workflow = readWorkflow('deploy-stg-promote.yml')
+  const gate = workflow.jobs.promote.if
+
+  for (const selectedSource of ['v3', 'v3-ai', 'v3-audit']) {
+    for (const [event, conclusion, headBranch, expected] of [
+      ['push', 'success', selectedSource, true],
+      ['push', 'success', 'v3-unselected', false],
+      ['pull_request', 'success', selectedSource, false],
+      ['push', 'failure', selectedSource, false],
+      ['push', 'cancelled', selectedSource, false],
+      ['push', 'skipped', selectedSource, false],
+    ]) {
+      assert.equal(
+        evaluateGate(
+          gate,
+          {
+            event_name: 'workflow_run',
+            event: {
+              workflow_run: { event, conclusion, head_branch: headBranch },
+            },
+          },
+          {},
+          false,
+          { STG_SOURCE_BRANCH: selectedSource }
+        ),
+        expected
+      )
+    }
+  }
+
+  assert.equal(
+    evaluateGate(gate, {
+      event_name: 'workflow_run',
+      event: {
+        workflow_run: {
+          event: 'push',
+          conclusion: 'success',
+          head_branch: 'v3',
+        },
+      },
+    }),
+    false
+  )
+  assert.equal(evaluateGate(gate, { event_name: 'workflow_dispatch' }), true)
+  assert.deepEqual(workflow.on.workflow_run.branches, ['v3', 'v3*'])
+})
+
 test('terminal reporters run unconditionally so a skip cannot read as acceptable', () => {
   const graphql = readWorkflow('test-graphql.yml')
   const playwright = readWorkflow('test-playwright.yml')
@@ -118,10 +174,11 @@ test('terminal reporters run unconditionally so a skip cannot read as acceptable
 })
 
 // Marking a draft PR ready fires ready_for_review on the unchanged head SHA and
-// re-runs every workflow that lists it. Drafts now run the identical suites and
-// builds, so a listed workflow must own a documented PR lifecycle role that
-// still needs the transition. Otherwise marking a PR ready duplicates
-// validation that already passed.
+// re-runs every workflow that lists it. Validation suites run identically for
+// drafts and ready PRs; the staging image builds are the documented exception:
+// drafts defer them and the boundary restores them. A listed workflow must own
+// a documented PR lifecycle role that still needs the transition, otherwise
+// marking a PR ready duplicates validation that already passed.
 const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'test-playwright.yml',
@@ -140,6 +197,28 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'v3_sonarcloud.yml',
     'owned stable quality gate re-runs at the ready boundary',
+  ],
+  ...[
+    'v3_analytics-stg.yml',
+    'v3_auth-stg.yml',
+    'v3_backend-docker-stg.yml',
+    'v3_chat-stg.yml',
+    'v3_frontend-control-docker-stg.yml',
+    'v3_frontend-manage-docker-stg.yml',
+    'v3_frontend-pwa-docker-assessment-stg.yml',
+    'v3_frontend-pwa-docker-stg.yml',
+    'v3_hatchet-worker-general-stg.yml',
+    'v3_hatchet-worker-response-processor-stg.yml',
+    'v3_lti-stg.yml',
+    'v3_olat-api-stg.yml',
+    'v3_response-api-stg.yml',
+  ].map((name) => [
+    name,
+    'draft pull requests defer their staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head',
+  ]),
+  [
+    'v3_build-fallback.yml',
+    'the required image-build context recomputes at the ready boundary and validates the builds that the boundary restores',
   ],
 ])
 
