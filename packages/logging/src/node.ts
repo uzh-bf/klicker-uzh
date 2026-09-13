@@ -28,10 +28,11 @@ export function createLogger(
 ): AppLogger {
   const environment =
     options.environment ?? process.env.NODE_ENV ?? 'production'
+  // Test silence must beat an ambient LOG_LEVEL so the suite output contract
+  // holds in environments that export LOG_LEVEL globally (devcontainers, CI).
   const configuredLevel =
     options.level ??
-    process.env.LOG_LEVEL ??
-    (environment === 'test' ? 'silent' : 'info')
+    (environment === 'test' ? 'silent' : (process.env.LOG_LEVEL ?? 'info'))
   const pretty =
     options.pretty ??
     (environment.toLowerCase() === 'development' &&
