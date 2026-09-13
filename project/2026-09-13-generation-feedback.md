@@ -51,7 +51,7 @@ Run simplification after substantive committed slices, combined applicable final
 
 ## Progress
 
-- Goal active; source mapping complete; implementation not started.
-- Substantive diff: 0 lines. Tests added/changed/removed: 0/0/0.
-- Local manage runtime preparation uses existing KB_GRAPH_BLOB_HOST_PORT=11003 override after default port collided with another task; startup underway.
-- Next: commit approved plan and execute S1.
+- Implemented S1 (`ecd208c73`) and S2 (`da0d937bd`). Both slices independently simplified and correctness-reviewed. No implementation defects found. The S1 missing real approval test is now covered. S2 suggested exact prose assertions were rejected under the repository content-testing rule; mapping inspected directly and in localized UI.
+- Four Chromium regressions passed (1.1m): canonical editor/save recovery, quality reasons and independent warning counts, all notification outcomes, and approval success/failure rearming. Full container build passed all 26 tasks (2m12s). Manage typecheck/lint, Biome, Playwright TypeScript/Prettier passed. Staged source/test scans found no secrets.
+- Real EN/DE desktop and compact captures produced. Existing horizontal-scroll table remains in use; reason column verified reachable. Pointer toast dismissal passed all four variants. Settled notification recapture underway after correcting the harness offset assumption from 16px to the observed 12px.
+- Next: finish screenshot gallery, stop exact runtime, integrated final review, task branch push and draft PR. No PR yet; no deployment or merge performed.
