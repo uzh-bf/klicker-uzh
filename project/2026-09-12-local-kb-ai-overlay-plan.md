@@ -118,6 +118,57 @@ S1; do not substitute an environment file or credential-bearing argument.
 
 ## Progress
 
+### Approved pending-ingestion recovery
+
+The user approved the local MinIO registry correction and one bounded recovery
+of attempt C. Provider source and workload pins stay unchanged. The separately
+published [MR !158](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/158)
+corrects future local starts. For this retained attempt, verify the Quay release
+label and digest, require the legacy local image reference absent, then add that
+local alias and verify image-ID equality. No provider source edits or claim
+rebinding are permitted. Initial ingestion credentials are part of setup;
+existing document-processing credentials must not be recreated.
+
+Extend the existing continuation with `--resume-ingestion-executor`, mutually
+exclusive with the profile-resume option at both CLI and function boundaries.
+Validate the root profile executor separately from the child ingestion executor:
+the child's resumeExecutor must link to the original root claim. Require exact
+root entries (claim, profile intent, resume-after-profile) and exact child
+entries (claim, bootstrap intent, document-processing reconciliation, ingestion
+intent), all matching candidate/config/context and their respective executors.
+
+Require original bootstrap containers exited and managed application absent.
+Scraping and document processing must have valid completed receipts and matching
+prepared/stopped native status. Retrieval remains untouched. Ingestion must
+have no completion receipt, all three native preparation states pending,
+infrastructure stopped, exact private state inventory (manifest, compose-project,
+project-configs), matching bound identity, no credential files, no owned
+containers/networks/volumes, and no occupied bound ingestion ports. Preserve
+pre-bootstrap checks and recheck immediately before setup. Boolean not-prepared
+alone never qualifies recovery.
+
+Create `setup-continuation/resume-after-ingestion` exclusively. Record claim,
+bootstrap intent and ingestion intent before the corresponding effects. Invoke
+the existing provider setup once, require its actual preparation success, then
+write the consumer receipt exclusively and continue normal downstream setup.
+On command, observation or receipt failure, retain the attempt and prohibit
+re-entry or downstream execution. Preserve every predecessor receipt.
+
+Delegation map: R1 main owns the coupled three existing source files and
+integration, with the state contract above as acceptance. R2 main owns existing
+test extensions until settled separable tests are assigned to a named executor;
+R3 main owns approved local proof after exact-source checks and reviews.
+Main retention reason is unresolved cross-system lifecycle coupling. No new
+source/test modules. Extend the existing preparation tests for lineage/state
+rejection, exactly-once invocation, concurrency, retained failure and downstream
+ordering; provider observation tests for all-pending versus mixed/missing states
+and withheld diagnostics; CLI tests for exclusive valid options and malformed
+arguments. No tests pin plan wording or manual image-alias commands.
+
+Baseline remains 81/81 passing source tests. The real acceptance journey remains
+unproven. Planner Jason requested the explicit lineage, pending-state and
+failure details above; the same planner approved the corrected scope.
+
 ### Approved retained setup continuation
 
 The profile repair completed, then executor bfcd67bbbfb511e963767ec4b978d384b13978b7
