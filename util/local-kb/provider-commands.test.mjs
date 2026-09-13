@@ -90,6 +90,39 @@ function providerStatus(config, name) {
   }
 }
 
+test('ingestion pending observation distinguishes untouched preparation from partial progress', async () => {
+  const { config } = resolveFixture('a')
+  for (const [preparation, pending] of [
+    [
+      { configuration: 'pending', credentials: 'pending', schema: 'pending' },
+      true,
+    ],
+    [
+      { configuration: 'prepared', credentials: 'pending', schema: 'pending' },
+      false,
+    ],
+    [{ configuration: 'pending', credentials: 'pending' }, false],
+    [
+      {
+        configuration: 'pending',
+        credentials: 'pending',
+        schema: 'pending',
+        extra: 'pending',
+      },
+      false,
+    ],
+  ]) {
+    const observed = await observeProviderLauncher(
+      config,
+      'ingestion',
+      async () =>
+        JSON.stringify({ ...providerStatus(config, 'ingestion'), preparation })
+    )
+    assert.equal(observed.pending, pending)
+    assert.equal(observed.prepared, false)
+  }
+})
+
 test('provider observation validates custody without promoting endpoint health to AI proof', async () => {
   const { config } = resolveFixture('a')
   const verbs = []

@@ -178,6 +178,25 @@ test('continue-setup accepts --resume-executor only after the seven explicit arg
   }
 })
 
+test('ingestion recovery option accepts one immutable predecessor only', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]
+  const option = ['--resume-ingestion-executor', 'c'.repeat(40)]
+  const accepted = runConfigPlan(input, 'continue-setup', [...base, ...option])
+  assert.equal(accepted.status, 1)
+  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  for (const extra of [
+    [...base, ...option, '--resume-executor', 'd'.repeat(40)],
+    [...base, ...option, ...option],
+    [...base, '--resume-ingestion-executor', 'invalid'],
+    [...option, ...base],
+  ]) {
+    const rejected = runConfigPlan(input, 'continue-setup', extra)
+    assert.equal(rejected.status, 1)
+    assert.match(rejected.stderr, /Usage:/)
+  }
+})
+
 test('config plan resolves a full synthetic input and rejects remote endpoints safely', () => {
   const valid = runConfigPlan(isolatedConfigInput())
   assert.equal(valid.error, undefined)

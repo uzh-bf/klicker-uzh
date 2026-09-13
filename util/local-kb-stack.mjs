@@ -219,11 +219,18 @@ function configPlan(config) {
   }
 }
 
+// Each recovery mode resumes one retained attempt and excludes the other.
+const recoveryOptions = {
+  '--resume-executor': 'resumeExecutor',
+  '--resume-ingestion-executor': 'resumeIngestionExecutor',
+}
+
 function parseArguments(args) {
+  const recoveryOption = recoveryOptions[args[7]]
   if (
     (args.length === 7 ||
       (args.length === 9 &&
-        args[7] === '--resume-executor' &&
+        recoveryOption !== undefined &&
         /^[a-f0-9]{40}$/.test(args[8]))) &&
     args[0] === 'continue-setup' &&
     args[1] === '--config' &&
@@ -237,7 +244,7 @@ function parseArguments(args) {
       configPath: args[2],
       candidateRevision: args[4],
       executorRevision: args[6],
-      resumeExecutor: args[8],
+      ...(args.length === 9 ? { [recoveryOption]: args[8] } : {}),
     }
   }
   if (
@@ -260,7 +267,7 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or <setup|start|resume|stop|status> --config <path> --candidate <commit>'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit>]'
   )
 }
 
@@ -272,6 +279,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       candidateRevision,
       executorRevision,
       resumeExecutor,
+      resumeIngestionExecutor,
     } = parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
@@ -284,7 +292,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
               config,
               candidateRevision,
               executorRevision,
-              { resumeExecutor }
+              { resumeExecutor, resumeIngestionExecutor }
             )
           )
         )

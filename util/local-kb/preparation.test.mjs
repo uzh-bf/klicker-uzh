@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { createPrivateKey, createPublicKey } from 'node:crypto'
+import { createHash, createPrivateKey, createPublicKey } from 'node:crypto'
 import {
   chmod,
   mkdir,
@@ -1529,6 +1529,190 @@ test('configuration setup writes private local material once without completing 
 const continuationContext = 'synthetic-local'
 const priorExecutor = 'e'.repeat(40)
 const nextExecutor = 'f'.repeat(40)
+
+async function pendingIngestionFixture() {
+  const retained = await retainedContinuationPrefix({ profileAttempt: true })
+  const { config, root } = retained
+  const failed = continuationRunner(config, root, { setupFailure: true })
+  await assert.rejects(
+    continuePreparation(config, revision, nextExecutor, {
+      ...failed.options,
+      resumeExecutor: priorExecutor,
+    })
+  )
+  const state = join(root, 'state/ingestion')
+  await mkdir(join(state, 'project-configs'), { recursive: true, mode: 0o700 })
+  const project = `ingestion-provider-${config.project.identity}-${createHash('sha256').update(`${config.providers.ingestion.sourcePath}:${state}`).digest('hex').slice(0, 12)}`
+  const p = config.bindings.ports.ingestion
+  const manifest = {
+    version: 1,
+    owner: 'provider-local-launcher',
+    source_root: config.providers.ingestion.sourcePath,
+    source_revision: config.providers.ingestion.revision,
+    instance: config.project.identity,
+    state_dir: state,
+    config_dir: join(state, 'project-configs'),
+    compose_project: project,
+    project_configs_fingerprint: 'a'.repeat(64),
+    preparation: {
+      configuration: 'pending',
+      credentials: 'pending',
+      schema: 'pending',
+    },
+    process: { infrastructure: 'stopped' },
+    runtime: {
+      ports: {
+        hatchet_http: p.hatchetHttp,
+        hatchet_grpc: p.hatchetGrpc,
+        pgvector: p.postgres,
+        azurite: p.azurite,
+        milvus: p.milvus,
+        milvus_health: p.milvusHealth,
+        milvus_attu: p.milvusAttu,
+      },
+      state_dsn_sha256: 'b'.repeat(64),
+      service_urls_sha256: 'c'.repeat(64),
+    },
+    workload: {
+      fingerprint: 'd'.repeat(64),
+      configuration: {
+        INGESTION_LOCAL_WORKER_IMAGE: config.bindings.images.worker,
+        INGESTION_LOCAL_API_IMAGE: config.bindings.images.api,
+        INGESTION_LOCAL_RUNTIME_ENV_FILE: join(root, 'ingestion-worker.env'),
+        INGESTION_LOCAL_API_ENV_FILE: join(root, 'ingestion-api.env'),
+        INGESTION_LOCAL_PRODUCER_REGISTRY_DIR: join(root, 'producer-registry'),
+        INGESTION_LOCAL_API_PORT: String(p.api),
+        INGESTION_LOCAL_DISPATCHER_PORT: String(p.dispatcher),
+      },
+    },
+  }
+  await writeFile(
+    join(state, '.provider-local-launcher.json'),
+    JSON.stringify(manifest),
+    { mode: 0o600 }
+  )
+  await writeFile(join(state, 'compose-project'), project, { mode: 0o600 })
+  const base = continuationRunner(config, root)
+  let prepared = false
+  const calls = []
+  const options = {
+    ...base.options,
+    resumeIngestionExecutor: nextExecutor,
+    portOccupied: async () => false,
+    run: async (command, env) => {
+      const name = Object.keys(config.providers).find(
+        (key) => config.providers[key].sourcePath === command.cwd
+      )
+      if (command.args.includes('setup')) {
+        calls.push(name)
+        await readFile(
+          join(
+            root,
+            'setup-continuation/resume-after-ingestion',
+            `${name}-intent.json`
+          )
+        )
+        if (name === 'ingestion') prepared = true
+        return '{}'
+      }
+      const status = JSON.parse(await base.options.run(command, env))
+      if (name === 'ingestion' && !prepared)
+        status.preparation = manifest.preparation
+      return JSON.stringify(status)
+    },
+  }
+  return { ...retained, state, manifest, options, calls }
+}
+
+test('pending ingestion recovery preserves predecessors and runs unfinished providers once', async () => {
+  const f = await pendingIngestionFixture()
+  const before = await readFile(join(f.child, 'claim.json'), 'utf8')
+  const result = await continuePreparation(
+    f.config,
+    revision,
+    '9'.repeat(40),
+    f.options
+  )
+  assert.equal(result.prepared, true)
+  assert.deepEqual(f.calls, ['ingestion', 'retrieval'])
+  assert.equal(await readFile(join(f.child, 'claim.json'), 'utf8'), before)
+  await assert.rejects(
+    continuePreparation(f.config, revision, '9'.repeat(40), f.options)
+  )
+  assert.deepEqual(f.calls, ['ingestion', 'retrieval'])
+})
+
+test('pending ingestion recovery rejects credential residue, occupied ports and foreign lineage', async () => {
+  for (const change of ['token', 'port', 'lineage', 'resources']) {
+    const f = await pendingIngestionFixture()
+    if (change === 'token')
+      await writeFile(join(f.state, 'ingestion.env'), 'synthetic', {
+        mode: 0o600,
+      })
+    if (change === 'port') f.options.portOccupied = async () => true
+    if (change === 'lineage') f.options.resumeIngestionExecutor = '0'.repeat(40)
+    if (change === 'resources') {
+      const original = f.options.runDocker
+      f.options.runDocker = async (args) =>
+        args.some((arg) =>
+          arg.startsWith('label=com.docker.compose.project=ingestion-provider-')
+        )
+          ? 'owned-resource'
+          : original(args)
+    }
+    await assert.rejects(
+      continuePreparation(f.config, revision, '9'.repeat(40), f.options)
+    )
+    assert.deepEqual(f.calls, [], change)
+  }
+})
+
+test('failed ingestion recovery retains intent and prevents downstream work or replay', async () => {
+  const f = await pendingIngestionFixture()
+  let attempts = 0
+  const run = f.options.run
+  f.options.run = async (command, env) => {
+    if (command.args.includes('setup')) {
+      attempts++
+      throw new Error('synthetic dependency failure')
+    }
+    return run(command, env)
+  }
+  await assert.rejects(
+    continuePreparation(f.config, revision, '9'.repeat(40), f.options),
+    /synthetic dependency failure/
+  )
+  const recovery = join(f.root, 'setup-continuation/resume-after-ingestion')
+  assert.deepEqual((await readdir(recovery)).sort(), [
+    'bootstrap-intent.json',
+    'claim.json',
+    'ingestion-intent.json',
+  ])
+  await assert.rejects(
+    continuePreparation(f.config, revision, '9'.repeat(40), f.options)
+  )
+  assert.equal(attempts, 1)
+  assert.deepEqual(f.calls, [])
+})
+
+test('continuation rejects combined recovery modes before runtime effects', async () => {
+  const { config, root } = await retainedContinuationPrefix({
+    profileAttempt: true,
+  })
+  const { calls, options } = continuationRunner(config, root)
+  await assert.rejects(
+    continuePreparation(config, revision, nextExecutor, {
+      ...options,
+      resumeExecutor: priorExecutor,
+      resumeIngestionExecutor: nextExecutor,
+    })
+  )
+  assert.deepEqual(calls, [])
+  assert.deepEqual((await readdir(join(root, 'setup-continuation'))).sort(), [
+    'claim.json',
+    'setup-profile-intent.json',
+  ])
+})
 
 // Rebuild the retained prefix the profile-repair executor left behind: one
 // private attempt holding its claim and profile intent, with scraping complete,

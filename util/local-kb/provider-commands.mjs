@@ -65,17 +65,34 @@ export async function observeProviderLauncher(
       throw new Error()
     }
     let prepared
+    let pending = false
+    let effectsAbsent = false
     let endpointReady = false
     let stopped = false
     if (name === 'ingestion') {
-      prepared = ['configuration', 'credentials', 'schema'].every(
+      const preparationStates = ['configuration', 'credentials', 'schema']
+      prepared = preparationStates.every(
         (key) => status.preparation?.[key] === 'prepared'
       )
+      // Only the provider's exact untouched preparation triple is a pending
+      // recovery candidate; a missing or additional key is partial progress.
+      pending =
+        typeof status.preparation === 'object' &&
+        status.preparation !== null &&
+        Object.keys(status.preparation).length === preparationStates.length &&
+        preparationStates.every((key) => status.preparation[key] === 'pending')
       if (
         !Array.isArray(status.process?.workloads) ||
         !Array.isArray(status.process?.infrastructure)
       )
         throw new Error()
+      // Ingestion workers run under a sibling Compose project, so the
+      // provider's own process lists are the only bounded place the consumer
+      // observes workload effects. Empty lists mean the provider created no
+      // container for this instance.
+      effectsAbsent =
+        status.process.workloads.length === 0 &&
+        status.process.infrastructure.length === 0
       endpointReady = status.process.workloads.some(
         (row) =>
           row.service === 'ingestion-api' &&
@@ -118,6 +135,7 @@ export async function observeProviderLauncher(
     return {
       provider: name,
       prepared,
+      ...(name === 'ingestion' ? { pending, effectsAbsent } : {}),
       endpointReady,
       stopped,
       aiQualified: false,
