@@ -16,7 +16,7 @@
 #
 # Profiles (devrouter >= 0.0.40) scope `devrouter ensure --profile <name>[,<name>]`
 # across three independent dimensions: routed apps, optional Compose services,
-# and managed processes. The default `full` preserves the everything-stack.
+# and managed processes. The default `standard` excludes deterministic mocks.
 # Merged selections are additive and order-insensitive. `util/profile-resolver.sh`
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
@@ -35,7 +35,14 @@ managedRuntime:
     # selected by every application profile because backend startup eagerly
     # creates all three. LiteLLM and MailHog are opt-in capabilities.
     profileServices:
-      [redis_exec, redis_assessment, redis_cache, litellm, mailhog]
+      [
+        redis_exec,
+        redis_assessment,
+        redis_cache,
+        litellm,
+        mailhog,
+        mcp_postgres,
+      ]
   processes: [klicker-dev, klicker-local-mcp]
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
@@ -74,7 +81,7 @@ profiles:
     devcontainerServices: [litellm]
   mcp:
     apps: []
-    devcontainerServices: []
+    devcontainerServices: [mcp_postgres]
     processes: [klicker-local-mcp]
   # ingestion workers only: registers the KB and graph workflow definitions
   # without application routes. The isolated local KB runtime combines it with
@@ -86,12 +93,31 @@ profiles:
   email:
     apps: []
     devcontainerServices: [mailhog]
-  # everything (current behavior); also the default when --profile is omitted
+  # All ordinary applications; deterministic MCP testing requires explicit mcp.
+  standard:
+    apps:
+      [
+        api,
+        auth,
+        blob,
+        chat,
+        control,
+        db,
+        lti,
+        manage,
+        olat-api,
+        pwa,
+        response-api,
+      ]
+    devcontainerServices:
+      [redis_exec, redis_assessment, redis_cache, litellm, mailhog]
+    processes: [klicker-dev]
+    default: true
+  # Devrouter reserves full as an unconditional union, including test services.
   full:
     apps: ['*']
     devcontainerServices: ['*']
     processes: ['*']
-    default: true
 apps:
   # backend GraphQL API
   - name: api

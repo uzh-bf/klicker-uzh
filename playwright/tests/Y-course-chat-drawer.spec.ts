@@ -72,9 +72,13 @@ test.describe('Course chatbot drawer', () => {
       )
       .toBe(true)
 
-    const firstControl = page.getByTestId('course-chatbot-selector')
+    // The tabbable resize separators are the first controls in the dialog
+    // (keyboard resizing via role="separator"), so the trap wraps between
+    // them and the chat frame.
+    const firstControl = dialog.locator('[data-resize-axis="height"]')
     const lastControl = page.getByTestId('course-chatbot-frame')
 
+    await expect(firstControl).toBeVisible()
     await firstControl.focus()
     await page.keyboard.press('Shift+Tab')
     await expect(lastControl).toBeFocused()

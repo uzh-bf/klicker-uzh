@@ -25,7 +25,10 @@ W2='--filter=@klicker-uzh/hatchet-worker-response-processor'
 # 'workers' is the component the isolated local KB runtime adds so its KB
 # ingestion workflows are registered next to the selected applications.
 CASES="
+standard|yes|no|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
 full|yes|yes|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
+playwright|yes|no|no|$B $A $M $P $C $T $R|auth chat frontend-control frontend-manage frontend-pwa response-api
+playwright,manage|yes|no|no|$B $A $M $P $C $T $R|auth frontend-manage chat frontend-control frontend-pwa response-api
 manage|yes|no|no|$B $A $M|auth frontend-manage
 pwa|yes|no|no|$B $A $P|auth frontend-pwa
 chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa

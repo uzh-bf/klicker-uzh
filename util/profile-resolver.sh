@@ -41,7 +41,7 @@ _profile_components() {
     component="${component#"${component%%[![:space:]]*}"}"
     component="${component%"${component##*[![:space:]]}"}"
     case "$component" in
-      full|manage|pwa|chat|live-quiz|mcp|ai|email|workers) ;;
+      standard|full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|workers) ;;
       *) return 2 ;;
     esac
     components+=("$component")
@@ -63,6 +63,10 @@ profile_wants() {
   for component in $components; do
     case "${component}" in
       full) return 0 ;;
+      standard) [ "$marker" != klicker-local-mcp ] && return 0 ;;
+      # 'playwright' mirrors the maximal routed app set from .devrouter.yml:
+      # every app, but neither workers nor optional processes.
+      playwright) [ "$marker" = klicker-dev ] && return 0 ;;
       manage|pwa|chat) [ "$marker" = klicker-dev ] && return 0 ;;
       # Worker selections start the dev process and require both worker
       # runtimes; live-quiz adds application routes, workers does not.
@@ -91,7 +95,10 @@ profile_turbo_filters() {
   components="$(_profile_components)" || return 2
   for component in $components; do
     case "${component}" in
-      full) return 0 ;;
+      standard|full) return 0 ;;
+      playwright)
+        filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT} ${KLICKER_PROFILE_PWA_ROOT} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_CONTROL_ROOT} ${KLICKER_PROFILE_RESPONSE_ROOT}"
+        ;;
       manage)
         filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT}"
         wants_manage=true
@@ -132,7 +139,8 @@ profile_readiness_apps() {
   components="$(_profile_components)" || return 2
   for component in $components; do
     case "${component}" in
-      full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
+      standard|full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
+      playwright) apps="${apps} chat frontend-control frontend-manage frontend-pwa response-api" ;;
       manage)
         apps="${apps} frontend-manage"
         wants_manage=true

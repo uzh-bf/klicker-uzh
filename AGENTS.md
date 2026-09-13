@@ -175,7 +175,7 @@ devrouter ensure .
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `full` profile runs every routed app plus the two Hatchet workers (no worker route); `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `standard` profile runs ordinary apps and workers without the deterministic MCP fixture; explicit `full` selects every capability. `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
 
 #### OpenRouter-backed local chat
 
@@ -224,8 +224,10 @@ usage class. Chat can select allow-listed Luna for a BASE selection before
 calling LiteLLM; current ADVANCED selections such as Auto are denied while no
 ADVANCED fallback is allow-listed.
 
-The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
-and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
+The explicit `mcp` profile creates a dedicated synthetic chatbot in an isolated
+temporary database, with a deterministic `doc_query` tool in Tutor and Explainer
+modes; see `.devcontainer/README.md` for its identity and lifecycle.
+`post-start.sh` runs the tool at `http://localhost:1417/mcp`;
 its source is `apps/chat/scripts/local-mcp-server.mjs` and its log is
 `/tmp/local-mcp.log`. Keep `Auto Mode` selected, then test the complete path in
 Chat with: “Use the local MCP tool to test the integration.

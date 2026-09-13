@@ -34,6 +34,17 @@ function createRepository(t) {
   return root
 }
 
+function createRepositoryWithRemote(t) {
+  const origin = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'git-identity-guard-origin-')
+  )
+  const root = createRepository(t)
+  t.after(() => fs.rmSync(origin, { recursive: true, force: true }))
+  git(origin, 'init', '-q', '--bare', '-b', 'main')
+  git(root, 'remote', 'add', 'origin', origin)
+  return root
+}
+
 function commit(root, name, email, ...paragraphs) {
   return commitWithIdentities(root, name, email, name, email, ...paragraphs)
 }
@@ -237,4 +248,73 @@ test('pre-push mode checks the exact outgoing range', (t) => {
     }
   )
   assertRejected(fixtureResult)
+})
+
+function runPrePush(root, localRef, localSha, remoteSha) {
+  return childProcess.spawnSync('bash', [guardPath, 'pre-push'], {
+    cwd: root,
+    encoding: 'utf8',
+    env: gitEnvironment,
+    input: `${localRef} ${localSha} ${localRef} ${remoteSha}\n`,
+  })
+}
+
+test('pre-push mode skips merged upstream history already on a remote', (t) => {
+  const root = createRepositoryWithRemote(t)
+  const base = commit(root, 'Developer', 'developer@example.com', 'base')
+  git(root, 'push', '-q', 'origin', 'main')
+
+  // a trailer commit that already reached the remote through another branch
+  git(root, 'switch', '-q', '-c', 'feature')
+  const upstream = commit(
+    root,
+    'Developer',
+    'developer@example.com',
+    'upstream work',
+    `Co-authored-by: ${fixtureName} <${fixtureEmail}>`
+  )
+  git(root, 'push', '-q', 'origin', 'feature')
+
+  // the local branch merges that branch, like an upstream sync merge
+  git(root, 'switch', '-q', 'main')
+  git(root, 'merge', '--no-ff', '-m', 'merge upstream', upstream)
+  const merged = git(root, 'rev-parse', 'HEAD')
+
+  assert.equal(
+    runPrePush(root, 'refs/heads/main', merged, base).status,
+    0,
+    'commits already pushed through the feature branch must not fail the push'
+  )
+})
+
+test('pre-push mode still rejects new fixture commits after an upstream merge', (t) => {
+  const root = createRepositoryWithRemote(t)
+  const base = commit(root, 'Developer', 'developer@example.com', 'base')
+  git(root, 'push', '-q', 'origin', 'main')
+
+  git(root, 'switch', '-q', '-c', 'feature')
+  const upstream = commit(
+    root,
+    'Developer',
+    'developer@example.com',
+    'upstream work',
+    `Co-authored-by: ${fixtureName} <${fixtureEmail}>`
+  )
+  git(root, 'push', '-q', 'origin', 'feature')
+  git(root, 'switch', '-q', 'main')
+  git(root, 'merge', '--no-ff', '-m', 'merge upstream', upstream)
+
+  const freshFixture = commit(root, fixtureName, fixtureEmail, 'fresh fixture')
+  assertRejected(runPrePush(root, 'refs/heads/main', freshFixture, base))
+
+  const freshTrailer = commit(
+    root,
+    'Developer',
+    'developer@example.com',
+    'fresh trailer',
+    `Co-authored-by: ${fixtureName} <${fixtureEmail}>`
+  )
+  assertRejected(
+    runPrePush(root, 'refs/heads/main', freshTrailer, freshFixture)
+  )
 })

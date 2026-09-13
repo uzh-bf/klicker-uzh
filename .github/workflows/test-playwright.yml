@@ -9,11 +9,15 @@ on:
         opened,
         synchronize,
         reopened,
-        # Retained while the trusted reusable workflow at @v3 could still
-        # compute a partial draft plan; remove once the route change lands on v3.
+        # The ready boundary runs the envelope so it can validate the draft-era
+        # full proof instead of rebuilding and retesting an unchanged head.
         ready_for_review,
+        # A base retarget must recompute validation; a title or body edit
+        # reuses the existing same-head proof through the envelope.
         edited,
+        # Converting back to a draft conservatively re-runs full validation.
         converted_to_draft,
+        # A closed pull request cancels its in-flight execution.
         closed,
       ]
 
@@ -36,8 +40,12 @@ jobs:
   # The called workflow is the only execution envelope. It recomputes the route
   # and selector state from the immutable event payload. Drafts run the same
   # full plan as ready pull requests, so the caller never gates on draft state.
+  # The open-state guard keeps lifecycle events on a merged or closed pull
+  # request (for example a post-merge title edit) from launching new execution.
   test-playwright-execution:
-    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.state == 'open'
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -51,14 +59,16 @@ jobs:
 
   # Always reports a status even when the canonical plan skips all tests.
   # This job intentionally stays outside the reusable workflow's concurrency
-  # group so a stale reporter cannot block the current invocation.
+  # group so a stale reporter cannot block the current invocation. Closed pull
+  # requests report nothing: their gate no longer exists, and reporting could
+  # only launch reporting work for a merged branch.
   test-playwright-status:
     needs: test-playwright-execution
     # Unconditional for open events: a skipped required context can count as
     # acceptable, so cancellation must fail inside the job instead.
     if: >-
       always() &&
-      (github.event_name != 'pull_request' || github.event.action != 'closed')
+      (github.event_name != 'pull_request' || github.event.pull_request.state == 'open')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -93,6 +103,9 @@ jobs:
             echo "- Mode: \`${MODE:-unknown}\`"
             echo "- Tests selected: \`${SHOULD_RUN:-unknown}\`"
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
+            if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
+              echo "- Reused validated run: \`${DUPLICATE_RUN_ID}\`"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
           # A cancelled invocation may be obsolete, but this job has no proof
@@ -109,13 +122,15 @@ jobs:
             echo 'Playwright execution returned an invalid route.'
             exit 1
           fi
-          # No reuse for a push or a pull request. The reusable workflow is
-          # pinned at @v3, so until this change is merged there it can still
-          # offer a duplicate run id from older code; the caller rejects every
-          # duplicate rather than trusting the offer. A reused run also cannot
-          # attest the full eight-shard execution that the source must prove.
-          if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
-            echo 'Playwright validation cannot be reused; it must run independently.'
+          # Push validation always runs independently. A pull-request lifecycle
+          # event may reuse validation: the trusted envelope emits a duplicate
+          # run id only after binding that run to the same pull request, head,
+          # base, merge tree, control revision, full plan and complete coverage,
+          # and then skips its own build and shards. Older envelopes cannot
+          # offer pull-request duplicates, so this acceptance stays inert until
+          # the reuse contract is live on the pinned control ref.
+          if [ -n "${DUPLICATE_RUN_ID:-}" ] && [ "$IS_PULL_REQUEST" != 'true' ]; then
+            echo 'Push validation cannot be reused; it must run independently.'
             exit 1
           fi
 
