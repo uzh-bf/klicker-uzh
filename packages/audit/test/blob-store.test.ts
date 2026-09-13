@@ -11,7 +11,7 @@ type StoredBlob = {
   contentType: string
   versionId: string
   expiresOn?: Date
-  policyMode?: 'Locked'
+  policyMode?: 'locked'
 }
 
 class MemoryContainer {
@@ -68,7 +68,7 @@ class MemoryContainer {
           }) {
             const stored = container.stored.get(name)!
             stored.expiresOn = policy.expiriesOn
-            stored.policyMode = 'Locked'
+            stored.policyMode = 'locked'
             container.policyCalls.push({
               name,
               versionId,
