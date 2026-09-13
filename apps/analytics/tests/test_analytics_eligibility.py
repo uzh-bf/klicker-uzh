@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timedelta, timezone
+import re
 import sys
 from pathlib import Path
 from unittest.mock import ANY
@@ -11,6 +12,24 @@ from modules import analytics_eligibility as eligibility_module
 
 PARTICIPANT_ID = "00000000-0000-0000-0000-000000000001"
 CHOICE_AT = datetime(2026, 9, 1, tzinfo=timezone.utc)
+# Source of the server-owned disclosure version below:
+# packages/util/src/participantAccountDataUse.ts
+PARTICIPANT_DATA_USE_SOURCE = Path(__file__).parents[3] / "packages" / "util" / "src" / "participantAccountDataUse.ts"
+
+
+def _read_server_disclosure_version():
+    """Read the server-owned version so cross-language drift fails this suite."""
+
+    match = re.search(
+        r"PARTICIPANT_DATA_USE_DISCLOSURE_VERSION\s*=\s*'([^']+)'",
+        PARTICIPANT_DATA_USE_SOURCE.read_text(encoding="utf-8"),
+    )
+    if match is None:
+        raise RuntimeError("PARTICIPANT_DATA_USE_DISCLOSURE_VERSION is missing from participantAccountDataUse.ts")
+    return match.group(1)
+
+
+SERVER_DISCLOSURE_VERSION = _read_server_disclosure_version()
 
 
 class _Model:
@@ -118,7 +137,7 @@ class AnalyticsEligibilityTests(unittest.TestCase):
     def setUp(self):
         self.context = eligibility_module.AnalyticsEligibilityContext(
             generation=0,
-            disclosure_version="v1",
+            disclosure_version=SERVER_DISCLOSURE_VERSION,
             participants=(eligibility_module.EligibleParticipant(PARTICIPANT_ID, CHOICE_AT),),
         )
 
@@ -129,7 +148,7 @@ class AnalyticsEligibilityTests(unittest.TestCase):
 
         self.assertEqual(captured.generation, 0)
         self.assertEqual(captured.participant_ids, (PARTICIPANT_ID,))
-        self.assertEqual(database.eligibility_parameters, ("v1",))
+        self.assertEqual(database.eligibility_parameters, (SERVER_DISCLOSURE_VERSION,))
         self.assertIn("NOT EXISTS", database.eligibility_query)
         self.assertIn("completedAt", database.eligibility_query)
         self.assertIn("$1", database.eligibility_query)
@@ -181,7 +200,7 @@ class AnalyticsEligibilityTests(unittest.TestCase):
                     "SELECT pg_advisory_xact_lock(CAST($1 AS integer), CAST($2 AS integer))",
                     eligibility_module.ANALYTICS_ADVISORY_LOCK,
                 ),
-                ("validate", ANY, (PARTICIPANT_ID, "v1")),
+                ("validate", ANY, (PARTICIPANT_ID, SERVER_DISCLOSURE_VERSION)),
             ],
         )
 
@@ -237,7 +256,11 @@ class AnalyticsEligibilityTests(unittest.TestCase):
         self.assertEqual(writes, [])
 
         empty_database = _Database()
-        empty_context = eligibility_module.AnalyticsEligibilityContext(0, "v1", ())
+        empty_context = eligibility_module.AnalyticsEligibilityContext(
+            0,
+            SERVER_DISCLOSURE_VERSION,
+            (),
+        )
         eligibility_module.publish_analytics(
             empty_database,
             empty_context,

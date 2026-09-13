@@ -9,7 +9,8 @@ from typing import Any
 
 
 # Keep this value aligned with the server-owned participant data-use disclosure.
-CURRENT_ANALYTICS_DISCLOSURE_VERSION = "v1"
+# Server source: packages/util/src/participantAccountDataUse.ts
+CURRENT_ANALYTICS_DISCLOSURE_VERSION = "2026-09-08"
 ANALYTICS_ELIGIBILITY_GENERATION_ID = 0
 ANALYTICS_ADVISORY_LOCK = (1279340545, 0)
 
