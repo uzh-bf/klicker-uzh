@@ -21,7 +21,12 @@ async function main() {
   assert.equal(url.search, '')
   process.env.PRISMA_LOG_LEVELS = 'none'
   const db = await createDisposableTestPrismaClient(url.toString())
+  let originalServer
   try {
+    originalServer = await db.chatbotMCPServer.findUnique({
+      where: { id: LOCAL_SERVER_ID },
+      select: { authSecret: true },
+    })
     // Bootstrap may already have created this exact fixture; never reset it.
     const beforeUsers = await db.user.count()
     const beforeChatbots = await db.chatbot.count()
@@ -123,7 +128,16 @@ async function main() {
       })
     }
   } finally {
-    await db.$disconnect()
+    try {
+      if (originalServer) {
+        await db.chatbotMCPServer.update({
+          where: { id: LOCAL_SERVER_ID },
+          data: { authSecret: originalServer.authSecret },
+        })
+      }
+    } finally {
+      await db.$disconnect()
+    }
   }
 }
 

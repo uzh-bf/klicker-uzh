@@ -480,6 +480,11 @@ disabled and the rest of the DevPod still starts normally.
   page reloads while it runs, but stopping its database discards all mock data.
   Dropping `mcp` restores the normal database. Local-only logins are
   `lecturer` / `abcd` and `testuser1` / `abcdabcd`; no real accounts are loaded.
+- Bootstrap accepts only the dedicated fixture domain. Creating additional
+  courses, chatbots or knowledge bases in the mock database can reject the next
+  bootstrap. To start fresh, stop the exact checkout with
+  `devrouter stop <checkout>`; this discards its temporary mock database and
+  conversations.
 
 ## Guarded retained-runtime recovery
 
