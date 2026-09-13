@@ -79,6 +79,30 @@ export function readAzureAuditStorageConfig(
   }
 }
 
+export function readAuditMediaSourceHosts(
+  environment: NodeJS.ProcessEnv = process.env
+): string[] {
+  const primary = requiredEnvironmentValue(
+    environment,
+    'BLOB_STORAGE_ACCOUNT_NAME'
+  )
+  const additional = (
+    environment.ASSESSMENT_AUDIT_ADDITIONAL_SOURCE_ACCOUNTS ?? ''
+  )
+    .split(',')
+    .map((account) => account.trim())
+    .filter(Boolean)
+  const accounts = [primary, ...additional]
+  if (accounts.some((account) => !/^[a-z0-9]{3,24}$/.test(account))) {
+    throw new TypeError(
+      'Audit media source accounts must be Azure storage account names'
+    )
+  }
+  return [...new Set(accounts)].map(
+    (account) => `${account}.blob.core.windows.net`
+  )
+}
+
 export function createAzureAuditClients(
   config: AzureAuditStorageConfig,
   credential: TokenCredential = createAzureAuditCredential()
