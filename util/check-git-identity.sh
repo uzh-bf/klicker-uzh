@@ -56,7 +56,22 @@ case "$mode" in
   range)
     shift
     [[ "$#" -gt 0 ]] || fail 'range mode requires a Git revision range'
-    check_range "$@"
+    range_spec=$1
+    shift
+    # Commits already published on the integration branches cannot be
+    # rewritten, so optional --published refs exclude them from the scan.
+    # Only commits that are new relative to every published integration
+    # branch must satisfy the identity contract.
+    exclusions=()
+    if [[ "${1:-}" == '--published' ]]; then
+      shift
+      for published_ref in "$@"; do
+        git rev-parse --verify -q "$published_ref" >/dev/null 2>&1 ||
+          continue
+        exclusions+=(--not "$published_ref")
+      done
+    fi
+    check_range "$range_spec" ${exclusions[@]+"${exclusions[@]}"}
     ;;
   *)
     fail "unknown mode: ${mode}"

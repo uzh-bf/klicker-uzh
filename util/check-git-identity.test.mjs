@@ -93,6 +93,45 @@ test('current mode rejects the fixture repository identity', (t) => {
   assertRejected(runGuard(root, 'current'))
 })
 
+test('range mode tolerates published fixture commits via --published refs', (t) => {
+  const root = createRepository(t)
+  const base = commit(root, 'Developer', 'developer@example.com', 'base')
+  // A fixture-identity commit that is already part of a published
+  // integration branch cannot be rewritten, so --published excludes it.
+  const published = commit(root, fixtureName, fixtureEmail, 'published fixture')
+  git(root, 'update-ref', 'refs/remotes/origin/v3-ai', published)
+  const clean = commit(root, 'Developer', 'developer@example.com', 'clean')
+
+  const tolerated = runGuard(
+    root,
+    'range',
+    `${base}..${clean}`,
+    '--published',
+    'origin/v3-ai'
+  )
+  assert.equal(tolerated.status, 0)
+
+  // Without the published exclusion the same range still rejects.
+  assertRejected(runGuard(root, 'range', `${base}..${clean}`))
+
+  // A brand-new fixture commit outside every published ref stays rejected.
+  const fresh = commit(root, fixtureName, fixtureEmail, 'fresh fixture')
+  assertRejected(
+    runGuard(root, 'range', `${clean}..${fresh}`, '--published', 'origin/v3-ai')
+  )
+
+  // Unresolvable published refs are skipped instead of failing the scan.
+  const withUnknownRef = runGuard(
+    root,
+    'range',
+    `${clean}..${fresh}`,
+    '--published',
+    'origin/does-not-exist',
+    'origin/v3-ai'
+  )
+  assertRejected(withUnknownRef)
+})
+
 test('range mode rejects fixture authors, committers, and co-author trailers', (t) => {
   const root = createRepository(t)
   const base = commit(root, 'Developer', 'developer@example.com', 'base')
