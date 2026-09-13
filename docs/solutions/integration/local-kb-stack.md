@@ -207,6 +207,34 @@ or establish successful retrieval.
 
 ## Provisioning and acceptance
 
+### Findings from the first completed end-to-end run
+
+One isolated run carried the whole sequence through: provider ingestion
+succeeded, the serving version matched the observed digest, Klicker reconciled
+the resource to `READY`, and one authenticated Chat turn answered from
+the ingested page and cited it. Three defects appeared only at runtime and are
+now handled by the launcher.
+
+Knowledge-base ingestion workflows are registered by
+`apps/hatchet-worker-general`. An application-only profile leaves that
+worker absent, so a resource created through Manage stays `QUEUED` with
+a null `externalOperationId` and no error. The lifecycle therefore adds
+a `workers` profile that starts both worker runtimes without
+publishing application routes.
+
+The seeded KB MCP server is parked with `authType: scope_token` and a null
+`authSecret`, while the Chat client requires a bearer transport secret
+before it exposes the tools of that server. Every Chat turn then fails with
+`503 Required chatbot tools are unavailable`. The retrieval-transport stage
+normalizes exactly that owned row under a serializable transaction and writes
+a fresh transport token. It never enables other servers and refuses a drifted
+name or retrieval URL.
+
+The provider callback URL is not reachable from the application container in
+this topology. Ingestion still completes because the active-operation monitor
+polls the provider, so treat the callback as a latency optimization rather than
+the completion path.
+
 Use fresh application storage and explicit local provider destinations. Normal
 Devrouter networking is supported; do not claim network-level internet blocking.
 Keep upstream credentials out of unrelated commands. Never reuse an old KB
