@@ -117,6 +117,70 @@ test('terminal reporters run unconditionally so a skip cannot read as acceptable
   )
 })
 
+// Lifecycle events on a merged or closed pull request must not launch new
+// Playwright execution or reporting: the gate no longer exists, and the audit
+// observed a full post-merge run started by such an event. The open-state guard
+// subsumes the closed action, so the cancel job stays its only handler.
+test('playwright execution and reporting run only for open pull requests', () => {
+  const playwright = readWorkflow('test-playwright.yml')
+  const executionGate = playwright.jobs['test-playwright-execution'].if
+  const statusGate = playwright.jobs['test-playwright-status'].if
+
+  assert.equal(
+    readWorkflow('test-playwright.yml').jobs['cancel-closed-pr'].if,
+    "github.event_name == 'pull_request' && github.event.action == 'closed'"
+  )
+
+  const open = (action) => ({
+    event_name: 'pull_request',
+    event: {
+      action,
+      pull_request: { state: 'open', number: 1 },
+    },
+  })
+  const closedState = (action) => ({
+    event_name: 'pull_request',
+    event: {
+      action,
+      pull_request: { state: 'closed', number: 1 },
+    },
+  })
+
+  for (const action of [
+    'opened',
+    'synchronize',
+    'reopened',
+    'ready_for_review',
+    'edited',
+    'converted_to_draft',
+  ]) {
+    assert.equal(evaluateGate(executionGate, open(action)), true, action)
+    assert.equal(evaluateGate(statusGate, open(action)), true, action)
+    assert.equal(evaluateGate(executionGate, closedState(action)), false, action)
+    assert.equal(evaluateGate(statusGate, closedState(action)), false, action)
+  }
+  assert.equal(evaluateGate(executionGate, { event_name: 'push' }), true)
+  assert.equal(evaluateGate(statusGate, { event_name: 'push' }), true)
+})
+
+// The envelope emits a duplicate run id only for a fully validated equivalent
+// pull-request run; push validation must always execute independently. The
+// reporter therefore has to tie reuse acceptance to the event family instead of
+// rejecting every duplicate.
+test('the playwright reporter reuses only pull-request validation', () => {
+  const playwright = readWorkflow('test-playwright.yml')
+  const report = playwright.jobs['test-playwright-status'].steps.find(
+    (step) => step.name === 'Check result'
+  ).run
+
+  assert.match(
+    report,
+    /\[ -n "\$\{DUPLICATE_RUN_ID:-\}" \] && \[ "\$IS_PULL_REQUEST" != 'true' \]/
+  )
+  assert.match(report, /Push validation cannot be reused/)
+  assert.doesNotMatch(report, /Playwright validation cannot be reused/)
+})
+
 // Marking a draft PR ready fires ready_for_review on the unchanged head SHA and
 // re-runs every workflow that lists it. Drafts now run the identical suites and
 // builds, so a listed workflow must own a documented PR lifecycle role that
@@ -125,7 +189,7 @@ test('terminal reporters run unconditionally so a skip cannot read as acceptable
 const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
   [
     'test-playwright.yml',
-    'drafts run the full suite, but ready_for_review is retained while the trusted reusable workflow at @v3 could still compute a partial draft plan; remove it once the route change lands on v3',
+    'the ready boundary runs the envelope so it can validate the existing full proof of an unchanged head instead of rebuilding and retesting it',
   ],
   [
     'check.yml',
