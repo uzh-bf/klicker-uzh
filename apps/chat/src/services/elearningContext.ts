@@ -225,3 +225,35 @@ export function formatElearningGroundingPolicy(
 }
 
 export type { ELearningMaterialAvailability, ELearningCompletionState }
+
+// History sent by the browser chooses a branch, but cannot author previous
+// assistant responses or alter the questions that carry saved page evidence.
+export function matchesPersistedLearningHistory(
+  messages: { id: string; role: string; content: string }[],
+  persisted: { id: string; role: string; content: unknown }[]
+): boolean {
+  if (!messages.length || messages.at(-1)?.role !== 'user') return false
+  if (new Set(messages.map((message) => message.id)).size !== messages.length)
+    return false
+  const rows = new Map(persisted.map((row) => [row.id, row]))
+  return messages.every((message, index) => {
+    const row = rows.get(message.id)
+    if (!row) return index === messages.length - 1 && message.role === 'user'
+    const content =
+      typeof row.content === 'string'
+        ? row.content
+        : Array.isArray(row.content)
+          ? row.content
+              .filter(
+                (part) =>
+                  part &&
+                  typeof part === 'object' &&
+                  part.type === 'text' &&
+                  typeof part.text === 'string'
+              )
+              .map((part) => part.text)
+              .join('')
+          : ''
+    return row.role === message.role && content === message.content
+  })
+}

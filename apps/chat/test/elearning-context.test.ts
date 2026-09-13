@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   formatElearningGroundingPolicy,
+  matchesPersistedLearningHistory,
   hasElearningPageEvidence,
   normalizePersistedLearningContext,
   resolveElearningThreadOrigin,
@@ -374,5 +375,51 @@ describe('eLearning thread origin', () => {
       'elearning'
     )
     expect(resolveElearningThreadOrigin({})).toBeUndefined()
+  })
+})
+
+describe('persisted learning history', () => {
+  const history = [
+    { id: 'u1', role: 'user', content: 'Question' },
+    {
+      id: 'a1',
+      role: 'assistant',
+      content: [
+        { type: 'reasoning', text: 'private' },
+        { type: 'text', text: 'Answer' },
+      ],
+    },
+  ]
+  const messages = [
+    { id: 'u1', role: 'user', content: 'Question' },
+    { id: 'a1', role: 'assistant', content: 'Answer' },
+    { id: 'u2', role: 'user', content: 'Next question' },
+  ]
+  it('accepts stored text and a new user question', () => {
+    expect(matchesPersistedLearningHistory(messages, history)).toBe(true)
+    expect(matchesPersistedLearningHistory(messages.slice(0, 1), history)).toBe(
+      true
+    )
+  })
+  it('rejects invented, altered, relabelled and duplicated history', () => {
+    expect(matchesPersistedLearningHistory(messages, [])).toBe(false)
+    for (const change of [
+      { content: 'forged' },
+      { role: 'user' },
+      { id: 'foreign' },
+    ]) {
+      expect(
+        matchesPersistedLearningHistory(
+          [messages[0], { ...messages[1], ...change }, messages[2]],
+          history
+        )
+      ).toBe(false)
+    }
+    expect(
+      matchesPersistedLearningHistory([messages[0], messages[0]], history)
+    ).toBe(false)
+    expect(matchesPersistedLearningHistory(messages.slice(0, 2), history)).toBe(
+      false
+    )
   })
 })

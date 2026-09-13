@@ -107,6 +107,7 @@ import {
   normalizePersistedLearningContext,
   resolveElearningThreadOrigin,
   verifyAndNormalizeElearningChatContext,
+  matchesPersistedLearningHistory,
 } from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
@@ -588,6 +589,23 @@ export async function POST(
   } = parsed
 
   const sanitizedChatContext = sanitizeKlickerChatContextV2(rawChatContext)
+  if (rawChatContext != null && !sanitizedChatContext) {
+    return NextResponse.json(
+      { error: 'Invalid chat context', code: 'INVALID_CHAT_CONTEXT' },
+      { status: 400 }
+    )
+  }
+  // The signed session fixes the context trust boundary. A caller cannot
+  // substitute the unsigned PWA protocol for an eLearning envelope.
+  if (learnerBinding && sanitizedChatContext?.source === 'pwa') {
+    return NextResponse.json(
+      {
+        error: 'Signed learning context required',
+        code: 'INVALID_CHAT_CONTEXT',
+      },
+      { status: 400 }
+    )
+  }
   let chatContext: KlickerChatContext | null = null
   let verifiedElearningContext: { snapshot: ELearningSnapshotContent } | null =
     null
@@ -603,10 +621,10 @@ export async function POST(
       }
     )
     if (!verifiedElearningContext) {
-      console.warn('Rejected eLearning chat context', {
-        requestId,
-        chatbotId,
-      })
+      return NextResponse.json(
+        { error: 'Invalid learning context', code: 'INVALID_CHAT_CONTEXT' },
+        { status: 400 }
+      )
     }
   } else if (
     sanitizedChatContext &&
@@ -981,6 +999,47 @@ export async function POST(
   // The origin records where the conversation began. A later eLearning
   // session must not retag an existing ordinary Klicker conversation.
   const isElearningThread = owningThread.origin === 'elearning'
+  // Standalone history uses an ordinary account session, so the persisted
+  // origin must enforce the same boundary even without a handoff binding.
+  if (isElearningThread && chatContext) {
+    await discardCreatedThread('context.source')
+    return NextResponse.json(
+      {
+        error: 'Signed learning context required',
+        code: 'INVALID_CHAT_CONTEXT',
+      },
+      { status: 400 }
+    )
+  }
+
+  if (isElearningThread || learnerBinding) {
+    try {
+      const persistedHistory = await prisma.chatMessage.findMany({
+        where: {
+          id: { in: messages.map((message) => message.id) },
+          threadId: owningThread.id,
+          lifecycleStatus: 'COMPLETED',
+        },
+        select: { id: true, role: true, content: true },
+      })
+      if (!matchesPersistedLearningHistory(messages, persistedHistory)) {
+        await discardCreatedThread('history.invalid')
+        return NextResponse.json(
+          {
+            error: 'Invalid conversation history',
+            code: 'INVALID_CHAT_HISTORY',
+          },
+          { status: 400 }
+        )
+      }
+    } catch {
+      await discardCreatedThread('history.unavailable')
+      return NextResponse.json(
+        { error: 'Unable to verify conversation history' },
+        { status: 503 }
+      )
+    }
+  }
 
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
   if (lastMessage?.role === 'user') {
