@@ -450,18 +450,7 @@ describe('Integration tests for knowledge base ingestion', () => {
               statusMessage: 'Newer same-status attempt',
             },
           })
-          return prisma.$transaction(async (tx) =>
-            callback(
-              Object.assign(Object.create(Object.getPrototypeOf(tx)), tx, {
-                kBResource: {
-                  updateMany: async (args) => tx.kBResource.updateMany(args),
-                },
-                kBIngestionRun: {
-                  create: async (args) => tx.kBIngestionRun.create(args),
-                },
-              })
-            )
-          )
+          return prisma.$transaction(async (tx) => callback(tx))
         },
       },
     } as unknown as ContextWithUser

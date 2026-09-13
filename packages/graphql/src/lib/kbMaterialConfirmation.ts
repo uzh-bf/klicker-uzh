@@ -53,15 +53,7 @@ export function getKbMaterialScopeFingerprint(
 
   const normalizedBindings = [...bindingsByChatbot.entries()]
     .map(([chatbotId, courseId]) => ({ chatbotId, courseId }))
-    .sort((left, right) => {
-      const chatbotComparison = compareStrings(left.chatbotId, right.chatbotId)
-      if (chatbotComparison !== 0) return chatbotComparison
-
-      if (left.courseId === right.courseId) return 0
-      if (left.courseId === null) return -1
-      if (right.courseId === null) return 1
-      return compareStrings(left.courseId, right.courseId)
-    })
+    .sort((left, right) => compareStrings(left.chatbotId, right.chatbotId))
 
   const canonicalScope = JSON.stringify({
     purpose: KB_MATERIAL_PURPOSE,
