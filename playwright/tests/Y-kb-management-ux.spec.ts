@@ -477,7 +477,11 @@ test.describe('Knowledge base management workspace', () => {
       await page.reload()
       await expect(detail).toBeVisible()
 
-      const resourceTable = page.getByRole('table')
+      // The imported-source inventory is a sibling table on the same page, so
+      // the resource table is selected by its accessible name.
+      const resourceTable = page.getByRole('table', {
+        name: /Resources|Ressourcen/,
+      })
       await expect(resourceTable).toBeVisible()
       await expect(
         resourceTable.getByRole('columnheader', { name: /Resource|Ressource/ })
@@ -668,7 +672,7 @@ test.describe('Knowledge base management workspace', () => {
         await page.setViewportSize({ width: 1440, height: 900 })
         await page.goto(`${manageUrl}${detailPath}`)
         const resourceRow = page
-          .getByRole('table')
+          .getByRole('table', { name: /Resources|Ressourcen/ })
           .getByRole('row')
           .filter({ hasText: resourceTitle })
         if (await resourceRow.count()) {
