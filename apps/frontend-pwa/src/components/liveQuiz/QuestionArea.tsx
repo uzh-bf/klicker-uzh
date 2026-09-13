@@ -1,39 +1,30 @@
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ElementInstance, ElementType } from '@klicker-uzh/graphql/dist/ops'
-import StudentElement, {
-  InstanceStackStudentResponseType,
-} from '@klicker-uzh/shared-components/src/StudentElement'
+import {
+  type ElementInstance,
+  ElementType,
+} from '@klicker-uzh/graphql/dist/ops'
 import useSingleStudentResponse from '@klicker-uzh/shared-components/src/hooks/useSingleStudentResponse'
 import LiveQuizProgress from '@klicker-uzh/shared-components/src/questions/LiveQuizProgress'
+import StudentElement, {
+  type InstanceStackStudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
 import { push } from '@socialgouv/matomo-next'
 import { H2, toast, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import localforage from 'localforage'
-import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
-import React, { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
+import { getClientSubmissionId } from '~/lib/clientSubmissionId'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
 const ConfettiExplosion = dynamic(() => import('react-confetti-explosion'), {
   ssr: false,
 })
-
-function getClientSubmissionId(storageKey: string) {
-  const clientIdKey = 'klicker-live-quiz-client-id'
-  let clientId = window.localStorage.getItem(clientIdKey)
-
-  if (!clientId) {
-    clientId =
-      globalThis.crypto?.randomUUID?.() ??
-      `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    window.localStorage.setItem(clientIdKey, clientId)
-  }
-
-  return `${clientId}:${storageKey}`
-}
 
 interface QuestionAreaProps {
   isBlockActive?: boolean
@@ -82,7 +73,17 @@ function QuestionArea({
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
-  const submittingRef = useRef(false)
+  // the in-flight submission promise is shared between submit and expiry so
+  // expiry can await a running manual submission instead of racing it
+  const submissionInFlightRef = useRef<Promise<boolean> | null>(null)
+  // expiry is a terminal state for the current block execution: once set,
+  // late-arriving submission completions must not reopen the stack state
+  const blockExpiredRef = useRef(false)
+
+  // a new block execution resets the terminal expiry state
+  useEffect(() => {
+    blockExpiredRef.current = false
+  }, [instances])
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -174,55 +175,67 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
-    if (submittingRef.current) return
-    submittingRef.current = true
+    // one submission at a time, and never after the block has expired
+    if (submissionInFlightRef.current || blockExpiredRef.current) return
 
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
-    try {
-      const {
-        id: instanceId,
-        elementType,
-        correlationKey,
-      } = instances[activeInstance]
+    const submission = (async () => {
+      try {
+        const {
+          id: instanceId,
+          elementType,
+          correlationKey,
+        } = instances[activeInstance]
 
-      // if the question has been answered, add a response
-      const success = await answerQuestion({
-        instanceId,
-        type: elementType,
-        input: studentResponse,
-        correlationKey,
-      })
+        // if the question has been answered, add a response
+        const success = await answerQuestion({
+          instanceId,
+          type: elementType,
+          input: studentResponse,
+          correlationKey,
+        })
 
-      // if the submission was not successful, do not block another submission attempt
-      if (!success) return
+        // if the submission was not successful, do not block another submission attempt
+        if (!success) return false
 
-      // update the stored responses
-      await updateStoredResponses(instanceId, quizId, execution)
+        // update the stored responses
+        await updateStoredResponses(instanceId, quizId, execution)
 
-      // calculate the new indices of remaining questions
-      const newRemaining = (remainingQuestions ?? []).filter(
-        (question) => !isDeepEqual(activeInstance, question)
-      )
+        // expiry is terminal: a manual submission completing after expiry
+        // must not reopen the completed stack state
+        if (blockExpiredRef.current) return true
 
-      // update the active instance and the remaining questions
-      setActiveInstance(newRemaining[0] ?? instances.length - 1)
-      setRemainingQuestions(newRemaining)
+        // calculate the new indices of remaining questions
+        const newRemaining = (remainingQuestions ?? []).filter(
+          (question) => !isDeepEqual(activeInstance, question)
+        )
 
-      // if this was the last question of the block and gamification is enabled, show confetti
-      if (newRemaining.length === 0 && gamificationEnabled) {
-        setShowConfetti(true)
+        // update the active instance and the remaining questions
+        setActiveInstance(newRemaining[0] ?? instances.length - 1)
+        setRemainingQuestions(newRemaining)
+
+        // if this was the last question of the block and gamification is enabled, show confetti
+        if (newRemaining.length === 0 && gamificationEnabled) {
+          setShowConfetti(true)
+        }
+
+        return true
+      } finally {
+        // release the submission lock on the submission button
+        submissionInFlightRef.current = null
+        setSubmitting(false)
       }
-    } finally {
-      // release the submission lock on the submission button
-      submittingRef.current = false
-      setSubmitting(false)
-    }
+    })()
+    submissionInFlightRef.current = submission
+
+    await submission
   }
 
   const onExpire = async (): Promise<void> => {
-    const isSubmitting = submittingRef.current
+    // expiry is a terminal state for this block execution
+    blockExpiredRef.current = true
 
     const {
       id: instanceId,
@@ -231,17 +244,30 @@ function QuestionArea({
     } = instances[activeInstance]
 
     // save the response, if one was given before the time expired
-    if (studentResponse.valid && !isSubmitting) {
-      submittingRef.current = true
-      try {
-        await answerQuestion({
+    if (studentResponse.valid) {
+      const inFlight = submissionInFlightRef.current
+      if (inFlight) {
+        // a manual submission is already carrying this answer; let it
+        // finish (its stack-state updates are suppressed above) instead of
+        // sending a second request
+        await inFlight
+      } else {
+        const submitted = await answerQuestion({
           instanceId,
           type: elementType,
           input: studentResponse,
           correlationKey,
         })
-      } finally {
-        submittingRef.current = false
+
+        // distinguish a failed auto-submission from a successful or skipped
+        // one: the stack completes either way, but a failure should be
+        // visible to the participant
+        if (!submitted) {
+          toast({
+            message: t('pwa.assessment.submissionGeneralError'),
+            type: 'error',
+          })
+        }
       }
     }
 
