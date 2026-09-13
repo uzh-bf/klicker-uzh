@@ -61,6 +61,9 @@ parameter and change nothing else:
    remediation-or-exception decisions come first. With
    `strict_required_status_checks_policy: true`, a permanently failing required
    check blocks every merge into `v3`.
+   A ready-head analysis of the roadmap branch (run `34752172541`) fails its
+   gate as well, and the analysis workflow now reports that failure instead of
+   hiding it behind a green run.
 2. A supported analysis route for fork and Dependabot pull requests, or an
    explicit decision to leave those pull requests permanently ineligible. Today
    they cannot receive `SONAR_TOKEN`, so their analysis fails closed and the
@@ -169,4 +172,3 @@ project's binding to the organization gate. The in-app browser session available
 to this task cannot reach `sonarcloud.io` (the approval review denied that
 navigation), so this evidence must come from the user or from an authorized
 session. It is the first blocker in the roadmap's critical path.
-
