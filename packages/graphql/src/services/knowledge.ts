@@ -1073,7 +1073,7 @@ export async function getKbImportedSourcesConnection(
   } catch (error) {
     console.error('Failed to load imported KB sources', {
       kbId,
-      errorType: error instanceof Error ? error.name : typeof error,
+      error,
     })
     throw new GraphQLError('Imported sources could not be loaded')
   }

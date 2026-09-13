@@ -135,6 +135,9 @@ function KnowledgeBaseImportedSourceList({ kbId }: { kbId: string }) {
           ...fetchMoreResult,
           getKbImportedSources: {
             ...fetchMoreResult.getKbImportedSources,
+            incomplete:
+              previous.getKbImportedSources.incomplete ||
+              fetchMoreResult.getKbImportedSources.incomplete,
             items: [
               ...previous.getKbImportedSources.items,
               ...fetchMoreResult.getKbImportedSources.items,
@@ -174,6 +177,14 @@ function KnowledgeBaseImportedSourceList({ kbId }: { kbId: string }) {
           className={{ root: 'mt-3' }}
           message={t('kb.importedSourcesIncomplete')}
           data={{ cy: 'kb-imported-sources-incomplete' }}
+        />
+      ) : null}
+      {error && connection ? (
+        <UserNotification
+          type="error"
+          className={{ root: 'mt-3' }}
+          message={t('kb.importedSourcesLoadError')}
+          data={{ cy: 'kb-imported-sources-error' }}
         />
       ) : null}
       {loading && !connection ? (
