@@ -589,3 +589,79 @@ required from the user.
   transition; merge authority stays with the user.
 - Next action: receiving task reads this roadmap and the global handoff, refreshes
   `v3` and adjacent ownership, then resolves approval for the first source package.
+- 2026-09-13 AMD audit and queue relief: PR #5948 was merged as squash
+  `1431b9aca3`; exact-head activation proof is still pending a real
+  unchanged-head transition because the Actions queue was saturated. AMD
+  verification: every `build-amd` job across the stg and prd image workflows,
+  including release tags, is gated `if: ${{ false }}` and consumes no runner
+  slots today. Ruling recorded: AMD stays disabled; any re-enable is limited to
+  prd-tag release artifacts, never branch or PR builds.
+- 2026-09-13 slice B2 (staging image build cache): all 14 active ARM64 image
+  jobs across the 13 `v3_*-stg.yml` workflows on `v3` now build
+  same-repository pull requests from a shared BuildKit registry cache
+  (`<image>-arm:buildcache` in ghcr.io, `mode=max`) while push publications
+  stay uncached. Fork and other cross-repository pull requests keep the
+  uncached path, the push-gated login jobs admit same-repo PRs for cache
+  access only, and the native ARM64 jobs no longer install QEMU. A policy
+  test pins the cache contract; 30 tests pass across the required-build-status
+  and event-gate suites; Prettier and Biome report clean formatting. Delivered
+  on branch `rs/ci-image-build-consolidation`.
+- 2026-09-13 slice B3 sequencing decision: PR #5936 is already merged into the
+  branch base (the earlier open-draft note was stale), and PR #5971 is
+  MERGEABLE/BLOCKED-only-by-required-checks. Full image-workflow consolidation
+  must wait for PR #5924: that open PR directly rewrites
+  `stg-release-promoter.js`, `stg-release-promoter-fixtures.js`,
+  `stg-release-promoter.test.js`, `deploy-stg-promote.yml`, and
+  `v3_backend-docker-stg.yml` — the same seams slice B3 replaces. Starting B3
+  now would force a large conflicting rewrite of the promotion controller's
+  fail-closed validation. Queue evidence at 18:21Z: every Playwright run since
+  17:40Z remains queued, so both the #5948 unchanged-head activation proof and
+  #5971's first live cached builds are runner-gated, not code-gated. Next
+  action after #5924 merges: rebase, then execute B3 as one package (single
+  affected-image matrix workflow, needs-based `build-images-status`, promoter
+  and sweeper updates).
+- 2026-09-13 queue-gate verification and remaining-slice audit: PR #5971 is a
+  draft, so every `build-arm` job correctly reported `skipping` through the
+  #5948-era draft-deferral gate — the first live post-merge observation of that
+  contract, though the required `build-images-status` confirmation is itself
+  queued (run `34774514076`, observed queued at 18:24Z and again after a
+  bounded wait; a seconds-long metadata job cannot start, confirming the
+  organization concurrency cap is the gate, not per-job logic). #5924 remains
+  OPEN at `d673956b`, so the B3 blocker stands. Remaining (e) packages were
+  audited against live source: `playwright/timings.json` is architecture-blind
+  (version 1, one duration table, written only from hosted v3 push runs of
+  `test-playwright.yml`, consumed by both the hosted sharder and the
+  public-PR selector). A per-architecture timing family (schema v2,
+  producer-tagged feedback, architecture-matched consumption with explicit
+  fallback) is the next ready package once ARM-side measurement data exists —
+  shipping the schema before any ARM writer would add contract without
+  measured payoff. Type-check caching and `check` path-scoping overlap #5924's
+  `check.yml` edits and stay sequenced behind it.
+- 2026-09-13 B3 execution spec (validated against #5924's full diff): #5924
+  adds image-scan admission to the promotion controller — new per-image scan
+  jobs inside the stg workflows, `SCAN_ADMISSION_INVENTORY` keyed by
+  `workflowPath`, `collectScanAdmission` retrying scan runs and binding scan
+  receipts to resolved digests, plus `v3_sonarcloud.yml` in
+  `REQUIRED_CI_WORKFLOWS`. This deepens the same per-file seams B3 must
+  restructure, so B3 executes only after #5924 merges and must then cover:
+  (1) `WORKFLOW_PATH_PATTERN` and `STAGING_WORKFLOWS` become a single
+  target-based inventory (`v3_images-stg.yml` matrix, one entry per image;
+  matrix job names replace `build-arm`/`build-migrator-arm` identifiers);
+  (2) `validateStagingWorkflow`'s job-id matching, the migrator
+  `needs:`-ordering check, and `collectBuildEvidence`'s per-workflow run
+  enumeration are rewritten against the single workflow and its matrix runs;
+  (3) `SCAN_ADMISSION_INVENTORY` re-keys from workflow paths to image targets,
+  and scan admission consumes the one workflow's run; (4)
+  `deploy-stg-promote.yml`'s 21-name `workflow_run` watch list collapses to
+  the non-image workflows plus the new workflow name, eliminating per-image
+  controller wakeups; (5) `v3_build-fallback.yml` is deleted — the new
+  workflow owns a `needs`-based `build-images-status` job preserving the exact
+  required context name and `required-ci-evidence` artifact contract;
+  (6) `cancel-closed-pr-checks.yml` sweeper entries and
+  `ci-event-gates.test.cjs` collapse to the single new concurrency group;
+  (7) the changed-file selection from #5936 moves into the new workflow's
+  plan job with its merge-base resolution and validated-selection evidence.
+  Fail-closed semantics preserved: plan failure fails the status, empty
+  selection skips builds and passes with evidence, any selected build
+  failure/cancellation fails the status, and the promoter's complete
+  exact-SHA candidate matrix is unchanged.
