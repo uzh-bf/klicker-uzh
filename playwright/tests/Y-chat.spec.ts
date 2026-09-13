@@ -4,6 +4,7 @@ import {
   CHATBOT_ID,
   chatUrl,
   clearChatCookies,
+  ensureChatbotSeeded,
   getEnrolledParticipantId,
   getMessageRating,
   mockChatStream,
@@ -4017,6 +4018,7 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
  */
 test.describe('Chatbot Knowledge Graph Selection', () => {
   let participantId: string
+  let previousVisibility: boolean | null = null
 
   const GRAPH_ALPHA = '11111111-1111-4111-8111-111111111111'
   const GRAPH_BETA = '22222222-2222-4222-8222-222222222222'
@@ -4052,12 +4054,37 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
     edges: [],
   })
 
+  test.beforeAll(async () => {
+    await ensureChatbotSeeded()
+    const prisma = await getPrisma()
+    const chatbot = await prisma.chatbot.findUniqueOrThrow({
+      where: { id: CHATBOT_ID },
+      select: { knowledgeGraphVisible: true },
+    })
+    previousVisibility = chatbot.knowledgeGraphVisible
+  })
+
+  test.afterAll(async () => {
+    if (previousVisibility === null) return
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { knowledgeGraphVisible: previousVisibility },
+    })
+  })
+
   test.beforeEach(async ({ page }) => {
     participantId = await getEnrolledParticipantId()
     await clearChatCookies(page)
     await setParticipantToken(page, participantId)
     await resetChatState(participantId)
     await setDisclaimerState(participantId, 'accepted')
+    // The graph workspace only mounts while the chatbot exposes a graph.
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { knowledgeGraphVisible: true },
+    })
   })
 
   test('A delayed response for a superseded graph keeps the newer selection', async ({
