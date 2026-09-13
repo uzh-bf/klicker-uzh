@@ -120,6 +120,22 @@ S1; do not substitute an environment file or credential-bearing argument.
 
 ### Approved retained setup continuation
 
+Runtime preflight found that installed devrouter 0.0.77 rejects the generated
+empty setup profile. Fold the bounded correction into this recovery: select
+the already-declared redis_exec service with no routes or managed processes.
+Accept only the exact previous empty profile representation, record intent
+before replacing that generated file, then revalidate with devrouter. No
+other generated configuration change is permitted. This adds the existing
+managed-configuration.mjs and isolated-config.test.mjs paths to R1. A synthetic
+profile resolve confirmed the corrected selection has zero routes/processes.
+
+Planner Pauli approved the continuation section before implementation. Source
+slice 575f46edbd passes 76 focused tests. Its normal app hook is unavailable
+because the app container is stopped; focused source checks and staged
+gitleaks passed before the explicitly recorded hook bypass. Full app checks
+and integrated final review remain pending. Simplifier recommended one shared
+managed rendering function, accepted. Correctness review is in progress.
+
 The user approved implementing, reviewing and executing a bounded
 `continue-setup` command on retained attempt C, followed by the original
 acceptance journey. The implementation branch is `rs/local-kb-setup-recovery`

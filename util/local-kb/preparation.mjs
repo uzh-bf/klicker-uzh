@@ -50,9 +50,35 @@ function revisionAt(checkout, args) {
   }).trim()
 }
 
+function managedReplacementBytes(config, inputs) {
+  const rendered = renderManagedConfiguration(config, {
+    devcontainer: JSON.parse(inputs[0]),
+    compose: parse(inputs[1]),
+    devrouter: parse(inputs[3]),
+  })
+  rendered.devcontainer.dockerComposeFile = [
+    'docker-compose.yml',
+    'docker-compose.devrouter.yml',
+  ]
+  // Devrouter appends this standard overlay for linked worktrees. It must
+  // not reintroduce the ordinary backing services or host port bindings.
+  return [
+    rendered.devcontainer,
+    rendered.compose,
+    { services: {} },
+    rendered.devrouter,
+  ].map((value) => `${JSON.stringify(value, null, 2)}\n`)
+}
+
 // The executor and retained application are separate immutable identities.
 // Only the managed configuration transformation may differ in the candidate.
-export async function verifyContinuationSources(config, candidate, executor) {
+export async function verifyContinuationSources(
+  config,
+  candidate,
+  executor,
+  allowLegacyProfile = false,
+  git = revisionAt
+) {
   const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
   const checkout = config.project.runtimeCheckoutPath
   const paths = [
@@ -63,13 +89,14 @@ export async function verifyContinuationSources(config, candidate, executor) {
   ]
   if (
     !/^[a-f0-9]{40}$/.test(executor) ||
-    revisionAt(root, ['rev-parse', 'HEAD']) !== executor ||
-    revisionAt(root, ['status', '--porcelain', '--untracked-files=normal']) ||
-    revisionAt(checkout, ['rev-parse', 'HEAD']) !== candidate ||
-    revisionAt(checkout, ['rev-parse', '--abbrev-ref', 'HEAD']) !== 'HEAD' ||
-    revisionAt(checkout, ['rev-parse', '--show-toplevel']) !== checkout ||
-    !revisionAt(checkout, ['rev-parse', '--git-dir']).includes('/worktrees/') ||
-    revisionAt(checkout, [
+    git(root, ['rev-parse', 'HEAD']) !== executor ||
+    git(root, ['status', '--porcelain', '--untracked-files=normal']) ||
+    git(checkout, ['rev-parse', 'HEAD']) !== candidate ||
+    git(checkout, ['rev-parse', '--abbrev-ref', 'HEAD']) !== 'HEAD' ||
+    git(checkout, ['rev-parse', '--show-toplevel']) !== checkout ||
+    git(checkout, ['ls-files', '--others', '--exclude-standard']) ||
+    !git(checkout, ['rev-parse', '--git-dir']).includes('/worktrees/') ||
+    git(checkout, [
       'diff',
       '--name-only',
       candidate,
@@ -84,21 +111,8 @@ export async function verifyContinuationSources(config, candidate, executor) {
   const inputs = paths.map((path) =>
     readCandidateFile(checkout, candidate, path)
   )
-  const rendered = renderManagedConfiguration(config, {
-    devcontainer: JSON.parse(inputs[0]),
-    compose: parse(inputs[1]),
-    devrouter: parse(inputs[3]),
-  })
-  rendered.devcontainer.dockerComposeFile = [
-    'docker-compose.yml',
-    'docker-compose.devrouter.yml',
-  ]
-  const expected = [
-    rendered.devcontainer,
-    rendered.compose,
-    { services: {} },
-    rendered.devrouter,
-  ]
+  const expected = managedReplacementBytes(config, inputs)
+  let profileRepair
   for (const [index, path] of paths.entries()) {
     const handle = await open(
       join(checkout, path),
@@ -106,18 +120,33 @@ export async function verifyContinuationSources(config, candidate, executor) {
     )
     try {
       const metadata = await handle.stat()
+      const actual = await handle.readFile('utf8')
+      if (index === 3 && allowLegacyProfile && actual !== expected[index]) {
+        const legacy = JSON.parse(expected[index])
+        legacy.profiles['local-kb-setup'] = {
+          apps: [],
+          devcontainerServices: [],
+          processes: [],
+        }
+        if (actual === `${JSON.stringify(legacy, null, 2)}\n`)
+          profileRepair = {
+            path: join(checkout, path),
+            previous: actual,
+            next: expected[index],
+          }
+      }
       if (
         !metadata.isFile() ||
         metadata.uid !== process.getuid() ||
         metadata.nlink !== 1 ||
-        (await handle.readFile('utf8')) !==
-          `${JSON.stringify(expected[index], null, 2)}\n`
+        (actual !== expected[index] && !(index === 3 && profileRepair))
       )
         throw new Error('Retained managed configuration has changed.')
     } finally {
       await handle.close()
     }
   }
+  return profileRepair
 }
 
 async function requireUnusedProvider(config, name, context, runDocker) {
@@ -199,7 +228,7 @@ export async function continuePreparation(
 ) {
   requireLocalAiEnvironment(config)
   const { directory, claim } = await verifyClaim(config, candidate)
-  await verifySources(config, candidate, executor)
+  const profileRepair = await verifySources(config, candidate, executor, true)
   const storage = await readOwned(
     join(directory, 'storage-setup/complete.json')
   )
@@ -237,7 +266,7 @@ export async function continuePreparation(
   if (
     managed.dockerContext !== context ||
     managed.repo?.path !== config.project.runtimeCheckoutPath ||
-    managed.repo?.valid !== true ||
+    (managed.repo?.valid !== true && !profileRepair) ||
     managed.repo?.managedRuntime?.workspace
   )
     throw new Error(
@@ -264,6 +293,10 @@ export async function continuePreparation(
   await requirePrivateDirectory(
     join(directory, 'provider-setup'),
     'Provider attempt must be private.'
+  )
+  await requirePrivateDirectory(
+    join(directory, 'state'),
+    'Provider state root must be private.'
   )
   for (const path of [
     'prepared.json',
@@ -308,6 +341,10 @@ export async function continuePreparation(
       await unusedProvider(config, name, context, runDocker)
       return 'untouched'
     }
+    await requirePrivateDirectory(
+      join(directory, 'state', name),
+      'Prepared provider state must be private.'
+    )
     const observed = await observeProviderLauncher(
       config,
       name,
@@ -335,6 +372,51 @@ export async function continuePreparation(
     executor,
     context,
   })
+  if (profileRepair) {
+    await writeExclusive(join(attempt, 'setup-profile-intent.json'), {
+      candidate,
+      executor,
+    })
+    const handle = await open(
+      profileRepair.path,
+      constants.O_RDWR | constants.O_NOFOLLOW
+    )
+    try {
+      const metadata = await handle.stat()
+      if (
+        !metadata.isFile() ||
+        metadata.uid !== process.getuid() ||
+        metadata.nlink !== 1 ||
+        (await handle.readFile('utf8')) !== profileRepair.previous
+      )
+        throw new Error('Setup profile changed before repair.')
+      const bytes = Buffer.from(profileRepair.next)
+      if (
+        (await handle.write(bytes, 0, bytes.length, 0)).bytesWritten !==
+        bytes.length
+      )
+        throw new Error('Incomplete setup profile repair; state retained.')
+      await handle.truncate(bytes.length)
+      await handle.sync()
+    } finally {
+      await handle.close()
+    }
+    const repaired = JSON.parse(
+      await runManaged([
+        'status',
+        '--repo',
+        config.project.runtimeCheckoutPath,
+        '--json',
+      ])
+    )
+    if (
+      repaired.dockerContext !== context ||
+      repaired.repo?.path !== config.project.runtimeCheckoutPath ||
+      repaired.repo?.valid !== true ||
+      repaired.repo?.managedRuntime?.workspace
+    )
+      throw new Error('Repaired setup profile could not be qualified.')
+  }
   await verifySources(config, candidate, executor)
   await observeBacking(config, { directory, context }, runDocker)
   await runDocker([
@@ -508,28 +590,10 @@ export async function installManagedConfiguration(
       }
       inputs.push(candidate)
     }
-    const rendered = renderManagedConfiguration(config, {
-      devcontainer: JSON.parse(inputs[0]),
-      compose: parse(inputs[1]),
-      devrouter: parse(inputs[3]),
-    })
+    const replacements = managedReplacementBytes(config, inputs)
     await mkdir(join(directory, 'managed-installation'), { mode: 0o700 })
-    // Devrouter appends this standard overlay for linked worktrees. It must
-    // not reintroduce the ordinary backing services or host port bindings.
-    const replacements = [
-      rendered.devcontainer,
-      rendered.compose,
-      { services: {} },
-      rendered.devrouter,
-    ]
-    rendered.devcontainer.dockerComposeFile = [
-      'docker-compose.yml',
-      'docker-compose.devrouter.yml',
-    ]
     for (const [index, file] of handles.entries()) {
-      const bytes = Buffer.from(
-        `${JSON.stringify(replacements[index], null, 2)}\n`
-      )
+      const bytes = Buffer.from(replacements[index])
       const { bytesWritten } = await file.write(bytes, 0, bytes.length, 0)
       if (bytesWritten !== bytes.length) {
         throw new Error(

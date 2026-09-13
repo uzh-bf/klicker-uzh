@@ -80,9 +80,7 @@ test('managed application configuration shares only the isolated provider networ
   assert.equal(result.devrouter.profiles.mcp, undefined)
   assert.equal(result.devrouter.profiles.manage.default, true)
   assert.deepEqual(result.devrouter.profiles['local-kb-setup'], {
-    apps: [],
-    devcontainerServices: [],
-    processes: [],
+    devcontainerServices: ['redis_exec'],
   })
   assert.equal(
     result.compose.services.litellm.environment.UPSTREAM_OPENAI_API_KEY,

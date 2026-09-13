@@ -31,10 +31,37 @@ import {
   resumePreparedInfrastructure as resumeInfrastructure,
   startPreparedInfrastructure as startInfrastructure,
   stopPreparedInfrastructure as stopInfrastructure,
+  verifyContinuationSources,
 } from './preparation.mjs'
 import { providerImages, providerPorts } from './test-fixtures.mjs'
 
 const revision = 'a'.repeat(40)
+
+test('continuation source checks reject executor and candidate drift before reading managed files', async () => {
+  const config = await fixture()
+  for (const failure of ['executor', 'dirty', 'candidate-file']) {
+    const git = (path, args) => {
+      const runtime = path === config.project.runtimeCheckoutPath
+      if (args[0] === 'status')
+        return failure === 'dirty' ? ' M source.mjs' : ''
+      if (args[0] === 'diff')
+        return failure === 'candidate-file' ? 'source.mjs' : ''
+      if (args[0] === 'ls-files') return ''
+      if (args.includes('--git-dir')) return '/synthetic/.git/worktrees/runtime'
+      if (args.includes('--show-toplevel')) return path
+      if (args.includes('--abbrev-ref')) return 'HEAD'
+      return runtime
+        ? revision
+        : failure === 'executor'
+          ? 'c'.repeat(40)
+          : 'b'.repeat(40)
+    }
+    await assert.rejects(
+      verifyContinuationSources(config, revision, 'b'.repeat(40), false, git),
+      /verified executor and candidate/
+    )
+  }
+})
 
 test('explicit continuation reconciles prepared stages and initializes the untouched tail once', async () => {
   for (const failure of [
@@ -42,6 +69,11 @@ test('explicit continuation reconciles prepared stages and initializes the untou
     'source',
     'context',
     'partial',
+    'managed',
+    'unused',
+    'docker-resource',
+    'profile-repair',
+    'profile-drift',
     'after-effect',
   ]) {
     const config = await fixture()
@@ -55,6 +87,12 @@ test('explicit continuation reconciles prepared stages and initializes the untou
       unusedProject
     )
     const root = join(config.project.runtimeCheckoutPath, '.local-kb')
+    const repair = ['profile-repair', 'profile-drift'].includes(failure)
+    const profilePath = join(
+      config.project.runtimeCheckoutPath,
+      '.devrouter.yml'
+    )
+    if (repair) await writeFile(profilePath, 'old', { mode: 0o600 })
     await mkdir(join(root, 'managed-installation'), { mode: 0o700 })
     await writeFile(
       join(root, 'managed-installation/complete.json'),
@@ -76,7 +114,10 @@ test('explicit continuation reconciles prepared stages and initializes the untou
       runManaged: async () =>
         JSON.stringify({
           dockerContext: 'synthetic-local',
-          repo: { path: config.project.runtimeCheckoutPath, valid: true },
+          repo: {
+            path: config.project.runtimeCheckoutPath,
+            valid: failure !== 'managed',
+          },
         }),
       observeBacking: async () =>
         ['postgres', 'hatchet'].map((service) => ({
@@ -85,6 +126,12 @@ test('explicit continuation reconciles prepared stages and initializes the untou
         })),
       verifySources: async () => {
         if (failure === 'source') throw new Error('source mismatch')
+        if (repair)
+          return {
+            path: profilePath,
+            previous: failure === 'profile-drift' ? 'changed' : 'old',
+            next: 'corrected',
+          }
       },
       runDocker: async (args) =>
         args[0] === 'context'
@@ -93,8 +140,17 @@ test('explicit continuation reconciles prepared stages and initializes the untou
               ? 'foreign'
               : 'synthetic-local'
             : 'unix:///synthetic/docker.sock'
-          : '',
-      unusedProvider: async () => {},
+          : failure === 'docker-resource' &&
+              args.some((value) => value.includes('ingestion-provider-'))
+            ? 'existing-resource'
+            : '',
+      unusedProvider:
+        failure === 'docker-resource'
+          ? undefined
+          : async () => {
+              if (failure === 'unused')
+                throw new Error('existing provider resources')
+            },
       run: async (command, env) => {
         if (command.args.includes('setup')) {
           calls.push(command.cwd.split('/').at(-1))
@@ -119,12 +175,21 @@ test('explicit continuation reconciles prepared stages and initializes the untou
     }
     const execute = () =>
       continuePreparation(config, revision, 'b'.repeat(40), options)
-    if (failure) {
+    if (failure && failure !== 'profile-repair') {
       await assert.rejects(execute())
       assert.deepEqual(calls, failure === 'after-effect' ? ['ingestion'] : [])
       if (failure === 'after-effect') {
         await assert.rejects(execute())
         assert.deepEqual(calls, ['ingestion'])
+      }
+      if (failure === 'docker-resource') {
+        await assert.rejects(stat(join(root, 'setup-continuation')), {
+          code: 'ENOENT',
+        })
+        await assert.rejects(
+          stat(join(root, 'provider-setup/ingestion.json')),
+          { code: 'ENOENT' }
+        )
       }
     } else {
       assert.equal((await execute()).prepared, true)
@@ -132,6 +197,11 @@ test('explicit continuation reconciles prepared stages and initializes the untou
       await assert.rejects(execute())
       assert.deepEqual(calls, ['ingestion', 'retrieval', 'application'])
     }
+    if (repair)
+      assert.equal(
+        await readFile(profilePath, 'utf8'),
+        failure === 'profile-repair' ? 'corrected' : 'old'
+      )
     assert.equal(
       await readFile(join(root, 'provider-setup/scraping.json'), 'utf8'),
       original

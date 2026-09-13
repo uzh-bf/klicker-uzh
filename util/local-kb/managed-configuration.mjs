@@ -114,9 +114,7 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
   }
   profiles.manage.default = true
   profiles['local-kb-setup'] = {
-    apps: [],
-    devcontainerServices: [],
-    processes: [],
+    devcontainerServices: ['redis_exec'],
   }
   return {
     devcontainer: {
