@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process'
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
 import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { createConnection } from 'node:net'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
 import {
@@ -23,10 +25,373 @@ import {
   renderProviderRouting,
 } from './managed-configuration.mjs'
 import {
+  observeProviderLauncher,
   observeProviderLaunchers,
   providerCommands,
   runProviderCommand,
 } from './provider-commands.mjs'
+
+async function absent(path) {
+  try {
+    await lstat(path)
+    return false
+  } catch (error) {
+    if (error.code === 'ENOENT') return true
+    throw error
+  }
+}
+
+function revisionAt(checkout, args) {
+  return execFileSync('git', ['-C', checkout, ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+    timeout: 5000,
+    env: { PATH: process.env.PATH, GIT_OPTIONAL_LOCKS: '0' },
+  }).trim()
+}
+
+// The executor and retained application are separate immutable identities.
+// Only the managed configuration transformation may differ in the candidate.
+export async function verifyContinuationSources(config, candidate, executor) {
+  const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
+  const checkout = config.project.runtimeCheckoutPath
+  const paths = [
+    '.devcontainer/devcontainer.json',
+    '.devcontainer/docker-compose.yml',
+    '.devcontainer/docker-compose.devrouter.yml',
+    '.devrouter.yml',
+  ]
+  if (
+    !/^[a-f0-9]{40}$/.test(executor) ||
+    revisionAt(root, ['rev-parse', 'HEAD']) !== executor ||
+    revisionAt(root, ['status', '--porcelain', '--untracked-files=normal']) ||
+    revisionAt(checkout, ['rev-parse', 'HEAD']) !== candidate ||
+    revisionAt(checkout, ['rev-parse', '--abbrev-ref', 'HEAD']) !== 'HEAD' ||
+    revisionAt(checkout, ['rev-parse', '--show-toplevel']) !== checkout ||
+    !revisionAt(checkout, ['rev-parse', '--git-dir']).includes('/worktrees/') ||
+    revisionAt(checkout, [
+      'diff',
+      '--name-only',
+      candidate,
+      '--',
+      '.',
+      ...paths.map((path) => `:(exclude)${path}`),
+    ])
+  )
+    throw new Error(
+      'Continuation requires verified executor and candidate sources.'
+    )
+  const inputs = paths.map((path) =>
+    readCandidateFile(checkout, candidate, path)
+  )
+  const rendered = renderManagedConfiguration(config, {
+    devcontainer: JSON.parse(inputs[0]),
+    compose: parse(inputs[1]),
+    devrouter: parse(inputs[3]),
+  })
+  rendered.devcontainer.dockerComposeFile = [
+    'docker-compose.yml',
+    'docker-compose.devrouter.yml',
+  ]
+  const expected = [
+    rendered.devcontainer,
+    rendered.compose,
+    { services: {} },
+    rendered.devrouter,
+  ]
+  for (const [index, path] of paths.entries()) {
+    const handle = await open(
+      join(checkout, path),
+      constants.O_RDONLY | constants.O_NOFOLLOW
+    )
+    try {
+      const metadata = await handle.stat()
+      if (
+        !metadata.isFile() ||
+        metadata.uid !== process.getuid() ||
+        metadata.nlink !== 1 ||
+        (await handle.readFile('utf8')) !==
+          `${JSON.stringify(expected[index], null, 2)}\n`
+      )
+        throw new Error('Retained managed configuration has changed.')
+    } finally {
+      await handle.close()
+    }
+  }
+}
+
+async function requireUnusedProvider(config, name, context, runDocker) {
+  const state = join(
+    config.project.runtimeCheckoutPath,
+    '.local-kb/state',
+    name
+  )
+  if (!(await absent(state)))
+    throw new Error(
+      `Provider ${name} has retained state; setup is not permitted.`
+    )
+  if (name === 'ingestion') {
+    const suffix = createHash('sha256')
+      .update(`${config.providers.ingestion.sourcePath}:${state}`)
+      .digest('hex')
+      .slice(0, 12)
+    const project = `ingestion-provider-${config.project.identity}-${suffix}`
+    for (const resource of ['container', 'network', 'volume']) {
+      if (
+        (
+          await runDocker([
+            '--context',
+            context,
+            resource,
+            'ls',
+            ...(resource === 'container' ? ['--all'] : []),
+            '--quiet',
+            '--filter',
+            `label=com.docker.compose.project=${project}`,
+          ])
+        ).trim()
+      )
+        throw new Error(
+          'Untouched ingestion provider has existing Docker resources.'
+        )
+    }
+  } else if (name === 'retrieval') {
+    await new Promise((resolve, reject) => {
+      const socket = createConnection({
+        host: '127.0.0.1',
+        port: config.bindings.ports.retrieval.api,
+      })
+      socket.setTimeout(2000)
+      socket.once('connect', () => {
+        socket.destroy()
+        reject(new Error('Retrieval listener is already occupied.'))
+      })
+      socket.once('timeout', () => {
+        socket.destroy()
+        reject(new Error('Retrieval listener state is unknown.'))
+      })
+      socket.once('error', (error) =>
+        error.code === 'ECONNREFUSED'
+          ? resolve()
+          : reject(new Error('Retrieval listener state is unknown.'))
+      )
+    })
+  } else
+    throw new Error(
+      'Only untouched ingestion and retrieval stages may be initialized.'
+    )
+}
+
+// Explicit recovery never retries an ambiguous stage or recreates credentials.
+export async function continuePreparation(
+  config,
+  candidate,
+  executor,
+  {
+    run = runProviderCommand,
+    runDocker = runLocalDocker,
+    runManaged = runLocalManaged,
+    observeBacking = observeOwnedProviders,
+    verifySources = verifyContinuationSources,
+    unusedProvider = requireUnusedProvider,
+    initializeApplication = initializeManagedApplication,
+  } = {}
+) {
+  requireLocalAiEnvironment(config)
+  const { directory, claim } = await verifyClaim(config, candidate)
+  await verifySources(config, candidate, executor)
+  const storage = await readOwned(
+    join(directory, 'storage-setup/complete.json')
+  )
+  const installation = await readOwned(
+    join(directory, 'managed-installation/complete.json')
+  )
+  const context = (await runDocker(['context', 'show'])).trim()
+  const endpoint = (
+    await runDocker([
+      'context',
+      'inspect',
+      context,
+      '--format',
+      '{{.Endpoints.docker.Host}}',
+    ])
+  ).trim()
+  if (
+    !storage.initialized ||
+    storage.context !== context ||
+    installation.candidateRevision !== candidate ||
+    !endpoint.startsWith('unix:///') ||
+    /[\r\n]/.test(endpoint)
+  )
+    throw new Error(
+      'Continuation prerequisites do not match local prepared storage.'
+    )
+  const managed = JSON.parse(
+    await runManaged([
+      'status',
+      '--repo',
+      config.project.runtimeCheckoutPath,
+      '--json',
+    ])
+  )
+  if (
+    managed.dockerContext !== context ||
+    managed.repo?.path !== config.project.runtimeCheckoutPath ||
+    managed.repo?.valid !== true ||
+    managed.repo?.managedRuntime?.workspace
+  )
+    throw new Error(
+      'Continuation requires valid managed configuration and an unused managed runtime.'
+    )
+  const backing = await observeBacking(
+    config,
+    { directory, context },
+    runDocker
+  )
+  for (const name of ['postgres', 'hatchet']) {
+    const rows = backing.filter(({ service }) => service === name)
+    if (rows.length !== 1 || !['running', 'exited'].includes(rows[0].state))
+      throw new Error(
+        'Continuation requires the original owned bootstrap containers.'
+      )
+  }
+  const composition = await readOwned(join(directory, 'providers.compose.json'))
+  if (
+    JSON.stringify(composition) !==
+    JSON.stringify(renderConsumerBacking(config))
+  )
+    throw new Error('Retained provider composition has changed.')
+  await requirePrivateDirectory(
+    join(directory, 'provider-setup'),
+    'Provider attempt must be private.'
+  )
+  for (const path of [
+    'prepared.json',
+    'application-setup',
+    'provider-setup/complete.json',
+    'infrastructure-operation',
+  ])
+    if (!(await absent(join(directory, path))))
+      throw new Error(
+        'Continuation requires an unfinished provider prefix and untouched application.'
+      )
+  // A managed container may exist even if its application receipt was never written.
+  for (const label of [
+    'devcontainer.local_folder',
+    'devpod.workspace.source',
+  ]) {
+    if (
+      (
+        await runDocker([
+          '--context',
+          context,
+          'container',
+          'ls',
+          '--all',
+          '--quiet',
+          '--filter',
+          `label=${label}=${config.project.runtimeCheckoutPath}`,
+        ])
+      ).trim()
+    )
+      throw new Error('Retained application runtime already exists.')
+  }
+  const commands = providerCommands(config)
+  const retrieval = await readOwned(
+    join(directory, 'retrieval-environment.json')
+  )
+  const classify = async (name) => {
+    const missing = await absent(
+      join(directory, 'provider-setup', `${name}.json`)
+    )
+    if (missing && (await absent(join(directory, 'state', name)))) {
+      await unusedProvider(config, name, context, runDocker)
+      return 'untouched'
+    }
+    const observed = await observeProviderLauncher(
+      config,
+      name,
+      run,
+      { DOCKER_CONTEXT: context },
+      retrieval
+    )
+    if (!observed.prepared || !observed.stopped)
+      throw new Error(`Provider ${name} must be prepared and stopped.`)
+    if (
+      !missing &&
+      (await readOwned(join(directory, 'provider-setup', `${name}.json`)))
+        .setupCompleted !== true
+    )
+      throw new Error('Invalid provider completion receipt.')
+    return missing ? 'reconcile' : 'complete'
+  }
+  const classifications = []
+  for (const name of commands.lifecycleOrder)
+    classifications.push(await classify(name))
+  const attempt = join(directory, 'setup-continuation')
+  await mkdir(attempt, { mode: 0o700 })
+  await writeExclusive(join(attempt, 'claim.json'), {
+    ...claim,
+    executor,
+    context,
+  })
+  await verifySources(config, candidate, executor)
+  await observeBacking(config, { directory, context }, runDocker)
+  await runDocker([
+    '--context',
+    context,
+    'compose',
+    '--project-name',
+    config.project.identity,
+    '--file',
+    join(directory, 'bootstrap.compose.json'),
+    'start',
+    'postgres',
+    'hatchet',
+  ])
+  for (const [index, name] of commands.lifecycleOrder.entries()) {
+    const disposition = await classify(name)
+    if (disposition !== classifications[index])
+      throw new Error('Provider state changed during continuation.')
+    if (disposition === 'complete') continue
+    if (disposition === 'untouched') {
+      await writeExclusive(join(attempt, `${name}-intent.json`), {
+        candidate,
+        executor,
+      })
+      await run(commands.providers[name].lifecycle.setup, {
+        ...(name === 'retrieval' ? retrieval : {}),
+        DOCKER_CONTEXT: context,
+      })
+      const observed = await observeProviderLauncher(
+        config,
+        name,
+        run,
+        { DOCKER_CONTEXT: context },
+        retrieval
+      )
+      if (!observed.prepared)
+        throw new Error(`Provider ${name} preparation is incomplete.`)
+    } else
+      await writeExclusive(join(attempt, `${name}-reconciliation.json`), {
+        candidate,
+        executor,
+        prepared: true,
+      })
+    await writeExclusive(join(directory, 'provider-setup', `${name}.json`), {
+      setupCompleted: true,
+    })
+  }
+  await writeExclusive(join(directory, 'provider-setup/complete.json'), {
+    candidateRevision: candidate,
+    context,
+    initialized: true,
+  })
+  await initializeApplication(config, candidate, runManaged, runDocker)
+  await completePreparation(config, candidate)
+  await writeExclusive(join(attempt, 'complete.json'), { candidate, executor })
+  return { prepared: true, applicationStarted: false, aiQualified: false }
+}
 
 function renderConsumerBacking(config) {
   return { name: config.project.identity, ...renderBackingCompose(config) }

@@ -3,6 +3,7 @@ import test from 'node:test'
 import { resolveLocalKbConfig } from '../local-kb-stack.mjs'
 import { resolveIsolatedConfig } from './isolated-config.mjs'
 import {
+  observeProviderLauncher,
   observeProviderLaunchers,
   providerCommands,
 } from './provider-commands.mjs'
@@ -135,6 +136,114 @@ test('provider observation rejects foreign revisions and suppresses provider dia
     }),
     (error) => !error.message.includes('synthetic-private-value')
   )
+})
+
+test('observes only the requested provider with confined environment', async () => {
+  const { config, commands } = resolveFixture('a')
+  const calls = []
+  const run = async (command, environment) => {
+    calls.push({ command, environment })
+    const name = Object.keys(config.providers).find(
+      (key) => config.providers[key].sourcePath === command.cwd
+    )
+    return JSON.stringify(providerStatus(config, name))
+  }
+
+  const docProcessing = await observeProviderLauncher(
+    config,
+    'docProcessing',
+    run,
+    { OBSERVED: 'caller' },
+    { MILVUS_URI: 'KLICKER_LOCAL_RETRIEVAL_MILVUS_URI' }
+  )
+  assert.equal(calls.length, 1)
+  assert.deepEqual(
+    calls[0].command,
+    commands.providers.docProcessing.lifecycle.status
+  )
+  assert.deepEqual(calls[0].environment, { OBSERVED: 'caller' })
+  assert.deepEqual(docProcessing, {
+    provider: 'docProcessing',
+    prepared: true,
+    endpointReady: true,
+    stopped: false,
+    aiQualified: false,
+  })
+
+  calls.length = 0
+  const retrieval = await observeProviderLauncher(
+    config,
+    'retrieval',
+    run,
+    { OBSERVED: 'caller' },
+    { MILVUS_URI: 'KLICKER_LOCAL_RETRIEVAL_MILVUS_URI' }
+  )
+  assert.equal(calls.length, 1)
+  assert.deepEqual(
+    calls[0].command,
+    commands.providers.retrieval.lifecycle.status
+  )
+  assert.deepEqual(calls[0].environment, {
+    MILVUS_URI: 'KLICKER_LOCAL_RETRIEVAL_MILVUS_URI',
+    OBSERVED: 'caller',
+  })
+  assert.equal(retrieval.provider, 'retrieval')
+})
+
+test('rejects unknown provider names before dispatch', async () => {
+  const { config } = resolveFixture('a')
+  for (const name of ['unknown', 'constructor']) {
+    let dispatched = false
+    await assert.rejects(
+      observeProviderLauncher(config, name, async () => {
+        dispatched = true
+        return '{}'
+      }),
+      /not a known local-KB provider launcher/
+    )
+    assert.equal(dispatched, false)
+  }
+})
+
+test('rejects foreign provider identity or revision without leaking output', async () => {
+  const { config } = resolveFixture('a')
+  const cases = [
+    {
+      name: 'scraping',
+      status: {
+        ...providerStatus(config, 'scraping'),
+        source_revision: 'f'.repeat(40),
+      },
+    },
+    {
+      name: 'docProcessing',
+      status: {
+        ...providerStatus(config, 'docProcessing'),
+        instance_id: 'foreign-local-kb',
+      },
+    },
+    {
+      name: 'ingestion',
+      status: {
+        ...providerStatus(config, 'ingestion'),
+        instance: { name: 'foreign-local-kb' },
+      },
+    },
+  ]
+  for (const { name, status } of cases) {
+    await assert.rejects(
+      observeProviderLauncher(config, name, async () =>
+        JSON.stringify({
+          ...status,
+          privateDiagnostic: 'synthetic-private-value',
+        })
+      ),
+      (error) =>
+        error.message.includes(
+          `Provider ${name} observation is unavailable or mismatched`
+        ) && !error.message.includes('synthetic-private-value')
+    )
+  }
 })
 
 test('bound launchers separate setup inputs from retained start and stop', () => {

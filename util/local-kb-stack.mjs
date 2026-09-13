@@ -8,6 +8,7 @@ import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
 import {
   claimPreparation,
   completePreparation,
+  continuePreparation,
   initializeManagedApplication,
   initializeProviderLaunchers,
   initializeProviderStorage,
@@ -220,6 +221,22 @@ function configPlan(config) {
 
 function parseArguments(args) {
   if (
+    args.length === 7 &&
+    args[0] === 'continue-setup' &&
+    args[1] === '--config' &&
+    args[3] === '--candidate' &&
+    args[5] === '--executor' &&
+    /^[a-f0-9]{40}$/.test(args[4]) &&
+    /^[a-f0-9]{40}$/.test(args[6])
+  ) {
+    return {
+      command: args[0],
+      configPath: args[2],
+      candidateRevision: args[4],
+      executorRevision: args[6],
+    }
+  }
+  if (
     args.length === 5 &&
     ['setup', 'start', 'resume', 'stop', 'status'].includes(args[0]) &&
     args[1] === '--config' &&
@@ -245,12 +262,23 @@ function parseArguments(args) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const { command, configPath, candidateRevision } = parseArguments(
-      process.argv.slice(2)
-    )
+    const { command, configPath, candidateRevision, executorRevision } =
+      parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
-      if (command === 'setup') {
+      if (command === 'continue-setup') {
+        requireLocalAiEnvironment(config)
+        requireProviderSources(config)
+        console.log(
+          JSON.stringify(
+            await continuePreparation(
+              config,
+              candidateRevision,
+              executorRevision
+            )
+          )
+        )
+      } else if (command === 'setup') {
         requireLocalAiEnvironment(config)
         // Resolve pins and fresh source state before the exclusive claim or
         // any generated files, Docker operation, or managed lifecycle call.

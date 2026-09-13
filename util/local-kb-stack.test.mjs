@@ -131,6 +131,25 @@ test('opt-in setup rejects missing injection before provider or preparation acce
   assert.match(result.stderr, /runtime-injected OpenRouter/)
 })
 
+test('continuation requires an immutable executor and rejects missing AI injection before effects', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const missing = runConfigPlan(input, 'continue-setup', [
+    '--candidate',
+    'a'.repeat(40),
+  ])
+  assert.equal(missing.status, 1)
+  assert.equal(missing.stdout, '')
+  const result = runConfigPlan(input, 'continue-setup', [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+  ])
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /runtime-injected OpenRouter/)
+})
+
 test('config plan resolves a full synthetic input and rejects remote endpoints safely', () => {
   const valid = runConfigPlan(isolatedConfigInput())
   assert.equal(valid.error, undefined)

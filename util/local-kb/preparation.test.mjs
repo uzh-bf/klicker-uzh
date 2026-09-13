@@ -17,6 +17,7 @@ import { resolveIsolatedConfig } from './isolated-config.mjs'
 import {
   claimPreparation as claimObservedPreparation,
   completePreparation,
+  continuePreparation,
   deliverHatchetToken,
   initializeManagedApplication,
   initializeProviderLaunchers,
@@ -34,6 +35,109 @@ import {
 import { providerImages, providerPorts } from './test-fixtures.mjs'
 
 const revision = 'a'.repeat(40)
+
+test('explicit continuation reconciles prepared stages and initializes the untouched tail once', async () => {
+  for (const failure of [
+    false,
+    'source',
+    'context',
+    'partial',
+    'after-effect',
+  ]) {
+    const config = await fixture()
+    await claimPreparation(config, revision)
+    await prepareLocalConfiguration(config, revision)
+    await initializeProviderStorage(
+      config,
+      revision,
+      async (args) =>
+        args.includes('exec') ? 'synthetic.header.signature' : '',
+      unusedProject
+    )
+    const root = join(config.project.runtimeCheckoutPath, '.local-kb')
+    await mkdir(join(root, 'managed-installation'), { mode: 0o700 })
+    await writeFile(
+      join(root, 'managed-installation/complete.json'),
+      JSON.stringify({ candidateRevision: revision }),
+      { mode: 0o600 }
+    )
+    await mkdir(join(root, 'provider-setup'), { mode: 0o700 })
+    const original = JSON.stringify({ setupCompleted: true })
+    await writeFile(join(root, 'provider-setup/scraping.json'), original, {
+      mode: 0o600,
+    })
+    for (const name of ['scraping', 'docProcessing'])
+      await mkdir(join(root, 'state', name), { recursive: true, mode: 0o700 })
+    if (failure === 'partial')
+      await mkdir(join(root, 'application-setup'), { mode: 0o700 })
+    const calls = []
+    const runner = lifecycleRunner(config)
+    const options = {
+      runManaged: async () =>
+        JSON.stringify({
+          dockerContext: 'synthetic-local',
+          repo: { path: config.project.runtimeCheckoutPath, valid: true },
+        }),
+      observeBacking: async () =>
+        ['postgres', 'hatchet'].map((service) => ({
+          service,
+          state: 'exited',
+        })),
+      verifySources: async () => {
+        if (failure === 'source') throw new Error('source mismatch')
+      },
+      runDocker: async (args) =>
+        args[0] === 'context'
+          ? args[1] === 'show'
+            ? failure === 'context'
+              ? 'foreign'
+              : 'synthetic-local'
+            : 'unix:///synthetic/docker.sock'
+          : '',
+      unusedProvider: async () => {},
+      run: async (command, env) => {
+        if (command.args.includes('setup')) {
+          calls.push(command.cwd.split('/').at(-1))
+          if (failure === 'after-effect') throw new Error('withheld')
+          return '{}'
+        }
+        return runner(command, env)
+      },
+      initializeApplication: async () => {
+        calls.push('application')
+        await mkdir(join(root, 'application-setup'), { mode: 0o700 })
+        await writeFile(
+          join(root, 'application-setup/complete.json'),
+          JSON.stringify({
+            candidateRevision: revision,
+            context: 'synthetic-local',
+            workspace: 'synthetic',
+          }),
+          { mode: 0o600 }
+        )
+      },
+    }
+    const execute = () =>
+      continuePreparation(config, revision, 'b'.repeat(40), options)
+    if (failure) {
+      await assert.rejects(execute())
+      assert.deepEqual(calls, failure === 'after-effect' ? ['ingestion'] : [])
+      if (failure === 'after-effect') {
+        await assert.rejects(execute())
+        assert.deepEqual(calls, ['ingestion'])
+      }
+    } else {
+      assert.equal((await execute()).prepared, true)
+      assert.deepEqual(calls, ['ingestion', 'retrieval', 'application'])
+      await assert.rejects(execute())
+      assert.deepEqual(calls, ['ingestion', 'retrieval', 'application'])
+    }
+    assert.equal(
+      await readFile(join(root, 'provider-setup/scraping.json'), 'utf8'),
+      original
+    )
+  }
+})
 
 test('missing AI injection rejects setup, start and resume before any state or provider access', async (t) => {
   const previous = process.env.UPSTREAM_OPENAI_API_KEY
