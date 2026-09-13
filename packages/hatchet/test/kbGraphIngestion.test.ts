@@ -74,6 +74,7 @@ function createBuild(overrides: Record<string, unknown> = {}) {
     domainPolicyId: null,
     domainPolicyVersion: null,
     domainPolicyLanguage: null,
+    focusTopic: null,
     createdAt: CREATED_AT,
     status: KBGraphBuildStatus.QUEUED,
     externalOperationId: null,
@@ -532,6 +533,29 @@ describe('KB graph external dispatch', () => {
     expect(explicitPayload).not.toHaveProperty('allowed_entity_types')
   })
 
+  it('adds the lecturer focus only for a build that has one', () => {
+    const legacyPayload = buildExternalKBGraphPayload(
+      createBuild(),
+      [SOURCE_URL],
+      externalEnv
+    )
+    expect(legacyPayload).not.toHaveProperty('focus_topic')
+
+    const focusedPayload = buildExternalKBGraphPayload(
+      createBuild({ focusTopic: 'Capital budgeting' }),
+      [SOURCE_URL],
+      {
+        ...externalEnv,
+        KB_GRAPH_DOMAIN_CATALOG_REVISION: DOMAIN_CATALOG_REVISION,
+      }
+    )
+    // A focus is guidance on top of the selection, so it is dispatched without
+    // implying a policy the lecturer never chose.
+    expect(focusedPayload).toMatchObject({ focus_topic: 'Capital budgeting' })
+    expect(focusedPayload).not.toHaveProperty('domain_policy')
+    expect(focusedPayload).not.toHaveProperty('language')
+  })
+
   it('rejects an explicit build before the provider call when the capability gate is closed', async () => {
     const build = createBuild({
       domainPolicyId: 'finance',
@@ -567,6 +591,35 @@ describe('KB graph external dispatch', () => {
     expect(prisma.kBGraphQuota.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { reservedMinorUnits: { decrement: 100 } },
+      })
+    )
+  })
+
+  it('rejects a focused build before the provider call when the capability gate is closed', async () => {
+    const build = createBuild({ focusTopic: 'Capital budgeting' })
+    const prisma = createDispatchPrisma({ build })
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          // A rollout that closed the gate never applies a recorded focus.
+          env: { ...externalEnv, KB_GRAPH_DOMAIN_CATALOG_REVISION: '' },
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorCode: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED',
+        }),
       })
     )
   })

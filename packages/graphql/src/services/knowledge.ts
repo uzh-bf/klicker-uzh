@@ -62,6 +62,10 @@ const KB_MAX_PAGE_SIZE = 50
 const KB_BULK_DELETE_LIMIT = 50
 const KB_BULK_INGEST_DISPATCH_CONCURRENCY = 8
 const KB_CURSOR_VERSION = 1
+// Mirrors the provider's CourseKGInput.focus_topic bound. The provider rejects
+// longer values, so the request is refused before a cost reservation exists
+// rather than failing after dispatch.
+const KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH = 300
 const KB_MCP_SERVER_NAME = 'KB'
 const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
@@ -2461,6 +2465,8 @@ export interface KBKnowledgeGraphConfig {
   domainPolicyId: string | null
   domainPolicyVersion: number | null
   domainPolicyLanguage: string | null
+  /** Lecturer focus recorded on the reported build; null means no focus. */
+  focusTopic: string | null
   /** Domain selection frozen on the currently published build, when it has one. */
   publishedDomainPolicyId: string | null
   publishedDomainPolicyVersion: number | null
@@ -2510,6 +2516,7 @@ const KB_GRAPH_BUILD_CONFIG_SELECT = {
   domainPolicyId: true,
   domainPolicyVersion: true,
   domainPolicyLanguage: true,
+  focusTopic: true,
   sourceContentDigest: true,
   startedAt: true,
   finishedAt: true,
@@ -2661,6 +2668,37 @@ function resolveRequestedKBGraphDomainSelection(
   return resolution.selection
 }
 
+/**
+ * Normalizes a lecturer-supplied build focus. The focus is prompt guidance, so
+ * a blank value is the same as no focus. It rides the same provider contract as
+ * the explicit domain selection, so a deployment whose capability gate is
+ * closed refuses one it cannot honor instead of recording guidance that is
+ * dropped later.
+ */
+function resolveRequestedKBGraphFocusTopic(
+  focusTopic: string | null | undefined,
+  env: NodeJS.ProcessEnv = process.env
+): string | null {
+  const normalized = focusTopic?.trim()
+  if (!normalized) {
+    return null
+  }
+  if (normalized.length > KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH) {
+    throw new GraphQLError(
+      `A graph build focus may contain at most ${KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH} characters.`,
+      { extensions: { code: 'KB_GRAPH_FOCUS_TOPIC_TOO_LONG' } }
+    )
+  }
+  const catalog = getDefaultKBGraphDomainCatalog()
+  if (!isKBGraphDomainCapabilityEnabled(catalog.revision, env)) {
+    throw new GraphQLError(
+      kbGraphDomainRejectionMessage('CAPABILITY_DISABLED'),
+      { extensions: { code: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED } }
+    )
+  }
+  return normalized
+}
+
 export function getKBGraphBuildConfig(
   kb: {
     id: string
@@ -2676,6 +2714,7 @@ export function getKBGraphBuildConfig(
     domainPolicyId?: string | null
     domainPolicyVersion?: number | null
     domainPolicyLanguage?: string | null
+    focusTopic?: string | null
     sourceContentDigest: string
     startedAt: Date | null
     finishedAt: Date | null
@@ -2737,6 +2776,7 @@ export function getKBGraphBuildConfig(
     domainPolicyId: build?.domainPolicyId ?? null,
     domainPolicyVersion: build?.domainPolicyVersion ?? null,
     domainPolicyLanguage: build?.domainPolicyLanguage ?? null,
+    focusTopic: build?.focusTopic ?? null,
     publishedDomainPolicyId: publishedDomain?.domainPolicyId ?? null,
     publishedDomainPolicyVersion: publishedDomain?.domainPolicyVersion ?? null,
     publishedDomainPolicyLanguage:
@@ -2959,12 +2999,14 @@ export async function rebuildKbKnowledgeGraph(
     domainPolicyId,
     domainPolicyVersion,
     domainPolicyLanguage,
+    focusTopic,
   }: {
     kbId: string
     qualityTier?: DB.KBGraphQualityTier | null
     domainPolicyId?: string | null
     domainPolicyVersion?: number | null
     domainPolicyLanguage?: string | null
+    focusTopic?: string | null
   },
   ctx: ContextWithUser
 ): Promise<KBKnowledgeGraphConfig> {
@@ -2978,6 +3020,7 @@ export async function rebuildKbKnowledgeGraph(
     domainPolicyVersion,
     language: domainPolicyLanguage,
   })
+  const requestedFocusTopic = resolveRequestedKBGraphFocusTopic(focusTopic)
   const result = await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     const kb = await prisma.kB.findUniqueOrThrow({
@@ -3074,6 +3117,7 @@ export async function rebuildKbKnowledgeGraph(
         requestedById: ctx.user.sub,
         qualityTier,
         ...domainFields,
+        focusTopic: requestedFocusTopic,
         sourceContentDigest,
         graphName: getKnowledgeGraphName(kbId, buildId),
         graphmlBlobName: getKBGraphArtifactBlobName(buildId),
