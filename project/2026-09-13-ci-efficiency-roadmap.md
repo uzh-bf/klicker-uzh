@@ -620,3 +620,20 @@ required from the user.
   action after #5924 merges: rebase, then execute B3 as one package (single
   affected-image matrix workflow, needs-based `build-images-status`, promoter
   and sweeper updates).
+- 2026-09-13 queue-gate verification and remaining-slice audit: PR #5971 is a
+  draft, so every `build-arm` job correctly reported `skipping` through the
+  #5948-era draft-deferral gate — the first live post-merge observation of that
+  contract, though the required `build-images-status` confirmation is itself
+  queued (run `34774514076`, observed queued at 18:24Z and again after a
+  bounded wait; a seconds-long metadata job cannot start, confirming the
+  organization concurrency cap is the gate, not per-job logic). #5924 remains
+  OPEN at `d673956b`, so the B3 blocker stands. Remaining (e) packages were
+  audited against live source: `playwright/timings.json` is architecture-blind
+  (version 1, one duration table, written only from hosted v3 push runs of
+  `test-playwright.yml`, consumed by both the hosted sharder and the
+  public-PR selector). A per-architecture timing family (schema v2,
+  producer-tagged feedback, architecture-matched consumption with explicit
+  fallback) is the next ready package once ARM-side measurement data exists —
+  shipping the schema before any ARM writer would add contract without
+  measured payoff. Type-check caching and `check` path-scoping overlap #5924's
+  `check.yml` edits and stay sequenced behind it.
