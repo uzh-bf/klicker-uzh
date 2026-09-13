@@ -342,6 +342,7 @@ function boundCommands({
       'MILVUS_COLLECTION_NAME',
       'OPENAI_BASE_URL',
       'OPENAI_API_KEY',
+      'RETRIEVAL_MODEL',
     ]) {
       args.push('--env', `${name}=KLICKER_LOCAL_RETRIEVAL_${name}`)
     }

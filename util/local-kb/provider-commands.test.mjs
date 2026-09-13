@@ -499,6 +499,7 @@ test('maps explicit host environment for every retrieval lifecycle verb', () => 
       'MILVUS_COLLECTION_NAME',
       'OPENAI_BASE_URL',
       'OPENAI_API_KEY',
+      'RETRIEVAL_MODEL',
     ]) {
       assert.ok(entry.args.includes(`${name}=KLICKER_LOCAL_RETRIEVAL_${name}`))
     }

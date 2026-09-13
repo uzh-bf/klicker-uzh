@@ -176,6 +176,9 @@ export function renderProviderLocalConfiguration(credentials, input) {
       KLICKER_LOCAL_RETRIEVAL_MILVUS_COLLECTION_NAME: bindings.collection,
       KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL: host.model,
       KLICKER_LOCAL_RETRIEVAL_OPENAI_API_KEY: 'local-kb-no-upstream',
+      // The isolated model gateway serves the Luna family only, so the
+      // retrieval answer model must override the doc-query production default.
+      KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_MODEL: 'gpt-5.6-luna',
     },
     scrapingApiKey: credentials.scraping,
     docProcessing: {
