@@ -527,7 +527,7 @@ describe('PRD direct-Chat canary receipt and output boundaries', () => {
 
   test('rejects historical and mismatched receipt discriminators', async () => {
     const directory = await mkdtemp(
-      join(tmpdir(), 'direct-chat-canary-receipt-v2-')
+      join(tmpdir(), 'direct-chat-canary-receipt-discriminator-')
     )
     const path = join(directory, 'receipt.json')
     try {
