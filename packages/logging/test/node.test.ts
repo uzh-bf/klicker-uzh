@@ -67,7 +67,7 @@ describe('createLogger', () => {
     expect(capture.records()[0]).not.toHaveProperty('pid')
     expect(capture.records()[0]).not.toHaveProperty('hostname')
     expect(
-      Math.abs((capture.records()[0].time as number) - Date.now())
+      Math.abs(((capture.records()[0]?.time as number) ?? 0) - Date.now())
     ).toBeLessThan(60_000)
   })
 
