@@ -1753,27 +1753,61 @@ test('profile resume requires the exact retained attempt and creates one exclusi
     ['missing-attempt', { profileAttempt: false }, { code: 'ENOENT' }],
     [
       'extra-entry',
-      { extraEntry: true },
+      {
+        setup: ({ parent }) =>
+          writeFile(join(parent, 'extra.json'), '{}', { mode: 0o600 }),
+      },
       /Profile resume does not match the retained prefix/,
     ],
     [
       'claim-drift',
-      { claimDrift: true },
+      {
+        setup: ({ parent }) =>
+          writeFile(
+            join(parent, 'claim.json'),
+            JSON.stringify({ executor: nextExecutor }),
+            { mode: 0o600 }
+          ),
+      },
       /Profile resume does not match the retained prefix/,
     ],
     [
       'intent-drift',
-      { intentDrift: true },
+      {
+        setup: ({ parent }) =>
+          writeFile(
+            join(parent, 'setup-profile-intent.json'),
+            JSON.stringify({
+              candidate: '0'.repeat(40),
+              executor: priorExecutor,
+            }),
+            { mode: 0o600 }
+          ),
+      },
       /Profile resume does not match the retained prefix/,
     ],
     [
       'prefix-drift',
-      { docProcessingReceipt: true },
+      {
+        setup: ({ root }) =>
+          writeFile(
+            join(root, 'provider-setup/docProcessing.json'),
+            JSON.stringify({ setupCompleted: true }),
+            { mode: 0o600 }
+          ),
+      },
       /Retained provider prefix has changed/,
     ],
     [
       'bootstrap-bytes',
-      { bootstrapDrift: true },
+      {
+        setup: ({ root }) =>
+          writeFile(
+            join(root, 'bootstrap.compose.json'),
+            JSON.stringify({ name: 'drifted' }),
+            { mode: 0o600 }
+          ),
+      },
       /Retained bootstrap composition has changed/,
     ],
     [
@@ -1806,7 +1840,10 @@ test('profile resume requires the exact retained attempt and creates one exclusi
     // is refused by the parent inventory rather than a second mkdir.
     [
       'reentry',
-      { child: true },
+      {
+        setup: ({ parent }) =>
+          mkdir(join(parent, 'resume-after-profile'), { mode: 0o700 }),
+      },
       /Profile resume does not match the retained prefix/,
     ],
   ]
@@ -1817,38 +1854,13 @@ test('profile resume requires the exact retained attempt and creates one exclusi
     })
     const claimPath = join(parent, 'claim.json')
     const intentPath = join(parent, 'setup-profile-intent.json')
+    await overrides.setup?.({ root, parent })
     const before = profileAttempt
       ? await Promise.all([
           readFile(claimPath, 'utf8'),
           readFile(intentPath, 'utf8'),
         ])
       : undefined
-    if (overrides.extraEntry)
-      await writeFile(join(parent, 'extra.json'), '{}', { mode: 0o600 })
-    if (overrides.claimDrift)
-      await writeFile(claimPath, JSON.stringify({ executor: nextExecutor }), {
-        mode: 0o600,
-      })
-    if (overrides.intentDrift)
-      await writeFile(
-        intentPath,
-        JSON.stringify({ candidate: '0'.repeat(40), executor: priorExecutor }),
-        { mode: 0o600 }
-      )
-    if (overrides.docProcessingReceipt)
-      await writeFile(
-        join(root, 'provider-setup/docProcessing.json'),
-        JSON.stringify({ setupCompleted: true }),
-        { mode: 0o600 }
-      )
-    if (overrides.bootstrapDrift)
-      await writeFile(
-        join(root, 'bootstrap.compose.json'),
-        JSON.stringify({ name: 'drifted' }),
-        { mode: 0o600 }
-      )
-    if (overrides.child)
-      await mkdir(join(parent, 'resume-after-profile'), { mode: 0o700 })
     const { calls, options } = continuationRunner(config, root, overrides)
     await assert.rejects(
       continuePreparation(config, revision, nextExecutor, {
@@ -1859,12 +1871,7 @@ test('profile resume requires the exact retained attempt and creates one exclusi
       name
     )
     assert.deepEqual(calls, [], name)
-    if (
-      profileAttempt &&
-      !overrides.extraEntry &&
-      !overrides.claimDrift &&
-      !overrides.intentDrift
-    )
+    if (profileAttempt)
       assert.deepEqual(
         await Promise.all([
           readFile(claimPath, 'utf8'),
