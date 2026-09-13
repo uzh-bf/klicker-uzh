@@ -4901,7 +4901,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       title: 'Forschungsdaten exportieren',
       classification: 'Personendaten ohne direkte Identifikatoren',
       classificationNote:
-        'Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungsprojekt und nur durch dessen Mitarbeitende verwendet werden.',
+        'Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungs- oder Lehrprojekt der Universität Zürich und nur durch dessen Mitarbeitende verwendet werden.',
       projectDetailsTitle: 'Angaben zum Forschungsprojekt',
       projectDetailsDescription:
         'Diese Angaben werden mit jedem Export gespeichert. Es gibt kein Genehmigungsverfahren in KlickerUZH; du bist für die Zulässigkeit deines Projekts verantwortlich.',
@@ -4924,10 +4924,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       unavailableHint:
         'Derzeit nicht verfügbar; der Kern unterstützt diese Datenklasse noch nicht.',
       classDataNote:
-        'Gesprächsfreitext kann persönliche Angaben enthalten, auch wenn Kontokennungen entfernt sind. Beschränke die Auswahl auf die für dein Projekt erforderlichen Daten. Der konkrete Datenumfang und die Schutzmassnahmen werden gesondert festgelegt.',
+        'Gesprächsfreitext kann persönliche Angaben enthalten, auch wenn Kontokennungen entfernt sind. Beschränke die Auswahl auf die für dein Projekt erforderlichen Daten.',
       attestationTitle: 'Mit dem Download bestätige ich:',
       attestationPurpose:
-        'Zweckbindung. Ich verwende die Daten nur für das oben angegebene Forschungsprojekt und nur für den angegebenen Zweck.',
+        'Zweckbindung. Ich verwende die Daten nur für das oben angegebene Forschungs- oder Lehrprojekt der Universität Zürich und nur für den angegebenen Zweck.',
       attestationReidentification:
         'Keine Reidentifizierung oder unzulässige Verknüpfung. Ich versuche nicht, Personen zu identifizieren, und verknüpfe die Datei nicht mit anderen Daten, die eine Identifizierung ermöglichen könnten.',
       attestationAccess:

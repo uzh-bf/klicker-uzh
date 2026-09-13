@@ -4800,7 +4800,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       title: 'Export research data',
       classification: 'Personal data without direct identifiers',
       classificationNote:
-        'This file contains personal data without direct identifiers. Individual people may still be identifiable. The data may be used only for the stated research project and only by its staff.',
+        'This file contains personal data without direct identifiers. Individual people may still be identifiable. The data may be used only for the stated research or teaching project at the University of Zurich and only by its staff.',
       projectDetailsTitle: 'Research project details',
       projectDetailsDescription:
         'These details are stored with every export. KlickerUZH has no approval process; you are responsible for the lawfulness of your project.',
@@ -4825,10 +4825,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       unavailableHint:
         'Currently unavailable; the core export does not support this class yet.',
       classDataNote:
-        'Conversation free text may contain personal information, even when account identifiers have been removed. Limit your selection to the data required for your project. The specific data scope and protective measures are determined separately.',
+        'Conversation free text may contain personal information, even when account identifiers have been removed. Limit your selection to the data required for your project.',
       attestationTitle: 'With the download I confirm:',
       attestationPurpose:
-        'Purpose limitation. I use the data only for the research project specified above and only for the stated purpose.',
+        'Purpose limitation. I use the data only for the research or teaching project at the University of Zurich specified above and only for the stated purpose.',
       attestationReidentification:
         'No re-identification or impermissible linkage. I do not attempt to identify people and do not link the file with other data that could enable identification.',
       attestationAccess:
