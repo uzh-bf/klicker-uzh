@@ -279,7 +279,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
 
         if (
           request.method() === 'POST' &&
-          operationName === 'SetResearchConsentWithRevision'
+          operationName === 'SetResearchConsent'
         ) {
           failedResearchSaves += 1
           await route.fulfill({

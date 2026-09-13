@@ -1340,7 +1340,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       learningAnalyticsConsentTitle: 'Learning analytics',
       learningAnalyticsConsentDescription:
         'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
-      learningAnalyticsGuide: 'Learn more',
       learningAnalyticsConsentSaved:
         'Your learning-analytics choice has been saved.',
       learningAnalyticsConsentFailed:

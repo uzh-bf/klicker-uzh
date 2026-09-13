@@ -1,5 +1,12 @@
+import { faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Markdown } from '@klicker-uzh/markdown'
-import { Collapsible, H4 } from '@uzh-bf/design-system'
+import {
+  H4,
+  ShadcnCollapsible,
+  ShadcnCollapsibleContent,
+  ShadcnCollapsibleTrigger,
+} from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
@@ -11,7 +18,7 @@ function ParticipantDataDisclosure({
   isAssessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
 }: ParticipantDataDisclosureProps) {
   const t = useTranslations()
-  const [openSection, setOpenSection] = useState<number | null>(null)
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
 
   const sections = [
     {
@@ -43,47 +50,46 @@ function ParticipantDataDisclosure({
   ] as const
 
   return (
-    <div className="space-y-2">
-      {sections.map((section, index) => (
-        <Collapsible
-          className={{
-            root: 'relative rounded-none border-0 border-b border-slate-200 p-3',
-            staticContent: 'pr-9',
-            content: 'pb-3 pt-2',
-            bottomWrapper: 'absolute right-2 top-2 mb-0 flex w-8',
-            trigger:
-              'h-8 items-center justify-center rounded text-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2',
-            primary: 'hidden',
-            secondary: 'hidden',
-          }}
-          key={section.key}
-          data={{ cy: `participant-data-disclosure-${section.key}` }}
-          customTrigger={
-            <>
-              <span className="sr-only">
+    <div>
+      {sections.map((section) => {
+        const open = openSections[section.key] ?? false
+        return (
+          <ShadcnCollapsible
+            className="border-b border-slate-200"
+            key={section.key}
+            open={open}
+            onOpenChange={() =>
+              setOpenSections((current) => ({
+                ...current,
+                [section.key]: !open,
+              }))
+            }
+          >
+            <ShadcnCollapsibleTrigger
+              className="flex w-full flex-row items-center justify-between gap-3 py-3 text-left"
+              data-cy={`participant-data-disclosure-${section.key}`}
+            >
+              <H4 className={{ root: 'mb-0' }}>
                 {t(`pwa.createAccount.signup.${section.title}`)}
-              </span>
-              <span aria-hidden="true">
-                {openSection === index ? '⌃' : '⌄'}
-              </span>
-            </>
-          }
-          open={openSection === index}
-          onChange={() =>
-            setOpenSection((current) => (current === index ? null : index))
-          }
-          staticContent={
-            <H4>{t(`pwa.createAccount.signup.${section.title}`)}</H4>
-          }
-        >
-          <Markdown
-            withProse
-            withLinkButtons={false}
-            className={{ root: 'prose-sm' }}
-            content={t(`pwa.createAccount.signup.${section.notice}`)}
-          />
-        </Collapsible>
-      ))}
+              </H4>
+              <FontAwesomeIcon
+                aria-hidden="true"
+                className="shrink-0 text-slate-500"
+                icon={open ? faChevronUp : faChevronDown}
+                size="sm"
+              />
+            </ShadcnCollapsibleTrigger>
+            <ShadcnCollapsibleContent className="pb-3">
+              <Markdown
+                withProse
+                withLinkButtons={false}
+                className={{ root: 'prose-sm' }}
+                content={t(`pwa.createAccount.signup.${section.notice}`)}
+              />
+            </ShadcnCollapsibleContent>
+          </ShadcnCollapsible>
+        )
+      })}
     </div>
   )
 }

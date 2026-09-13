@@ -249,8 +249,10 @@ describe('complete participant account data-use PostgreSQL integration', () => {
         'mutation { setResearchConsent(consent: true) { researchConsent } }',
       contextValue: ctx,
     })
-    expect(old.errors?.[0]?.extensions.code).toBe(
-      'PARTICIPANT_DATA_USE_INVALID_INPUT'
+    expect(old.errors).toBeDefined()
+    expect(old.data).toBeUndefined()
+    expect(old.errors?.[0]?.message).toMatch(
+      /expectedRevision|disclosureVersion/
     )
     const current = await graphql({
       schema,

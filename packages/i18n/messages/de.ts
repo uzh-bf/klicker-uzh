@@ -1348,7 +1348,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       learningAnalyticsConsentTitle: 'Learning Analytics',
       learningAnalyticsConsentDescription:
         'Erhalte persönliche Einblicke in Dein Lernen. Nur Du siehst Deine persönlichen Einblicke; Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar; Kurszugang und Punkte bleiben unverändert. Learning Analytics erfasst Daten nur, wenn es für Dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden Learning-Analytics-Daten automatisch gelöscht.',
-      learningAnalyticsGuide: 'Mehr erfahren',
       learningAnalyticsConsentSaved:
         'Deine Learning-Analytics-Einstellung wurde gespeichert.',
       learningAnalyticsConsentFailed:

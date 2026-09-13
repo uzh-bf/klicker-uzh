@@ -490,8 +490,8 @@ export const Mutation = builder.mutationType({
         type: ParticipantDataUse,
         args: {
           consent: t.arg.boolean({ required: true }),
-          expectedRevision: t.arg.int(),
-          disclosureVersion: t.arg.string(),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await updateParticipantDataUseChoice('research', args, ctx)
@@ -503,8 +503,8 @@ export const Mutation = builder.mutationType({
         type: ParticipantDataUse,
         args: {
           consent: t.arg.boolean({ required: true }),
-          expectedRevision: t.arg.int(),
-          disclosureVersion: t.arg.string(),
+          expectedRevision: t.arg.int({ required: true }),
+          disclosureVersion: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await updateParticipantDataUseChoice('analytics', args, ctx)

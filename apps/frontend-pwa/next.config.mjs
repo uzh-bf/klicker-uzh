@@ -13,13 +13,6 @@ let nextConfig = {
   }),
 }
 
-nextConfig.outputFileTracingIncludes = {
-  ...nextConfig.outputFileTracingIncludes,
-  '/api/data-use-assets/*': [
-    '../../packages/shared-components/assets/data-use/*',
-  ],
-}
-
 nextConfig.transpilePackages = Array.from(
   new Set([...(nextConfig.transpilePackages ?? []), 'formik'])
 )

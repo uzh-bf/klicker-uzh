@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
   GetParticipantAccountDataUseDocument,
-  SetLearningAnalyticsConsentWithRevisionDocument,
-  SetResearchConsentWithRevisionDocument,
+  SetLearningAnalyticsConsentDocument,
+  SetResearchConsentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -60,12 +60,12 @@ function DataUseSettings() {
     { fetchPolicy: 'network-only' }
   )
   const [setResearchConsent, { loading: savingResearchConsent }] = useMutation(
-    SetResearchConsentWithRevisionDocument
+    SetResearchConsentDocument
   )
   const [
     setLearningAnalyticsConsent,
     { loading: savingLearningAnalyticsConsent },
-  ] = useMutation(SetLearningAnalyticsConsentWithRevisionDocument)
+  ] = useMutation(SetLearningAnalyticsConsentDocument)
 
   const dataUse = data?.selfAccountDataUse
   const saving =
@@ -284,15 +284,7 @@ function DataUseSettings() {
           data={{ cy: 'participant-learning-analytics-consent' }}
         />
         <Prose className={{ root: 'prose-sm' }}>
-          {t('pwa.profile.learningAnalyticsConsentDescription')}{' '}
-          <a
-            href="/api/data-use-assets/guide"
-            target="_blank"
-            rel="noopener noreferrer"
-            data-cy="participant-learning-analytics-guide"
-          >
-            {t('pwa.profile.learningAnalyticsGuide')}
-          </a>
+          {t('pwa.profile.learningAnalyticsConsentDescription')}
         </Prose>
       </div>
 
