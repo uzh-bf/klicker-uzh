@@ -1,4 +1,6 @@
 import { routing } from '@klicker-uzh/i18n'
+import { createEdgeLogger } from '@klicker-uzh/logging/edge'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
@@ -10,6 +12,11 @@ import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
+
+const edgeLogger = createEdgeLogger({
+  service: 'chat',
+  level: process.env.LOG_LEVEL,
+})
 
 function applyFrameAncestorsCSP(response: NextResponse) {
   const allowed = process.env.ALLOWED_FRAME_ANCESTORS
@@ -118,18 +125,21 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
 // request carries no verified token) and can therefore never authorize.
 function passThroughWithScopedToken(
   request: NextRequest,
-  scopedToken: string | null
+  scopedToken: string | null,
+  requestContext: { requestId: string; correlationId: string }
 ) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set(CHAT_SCOPED_TOKEN_HEADER, scopedToken ?? '')
-  return applyFrameAncestorsCSP(
-    NextResponse.next({ request: { headers: requestHeaders } })
-  )
+  requestHeaders.set('x-request-id', requestContext.requestId)
+  requestHeaders.set('x-correlation-id', requestContext.correlationId)
+  const response = NextResponse.next({ request: { headers: requestHeaders } })
+  response.headers.set('x-request-id', requestContext.requestId)
+  response.headers.set('x-correlation-id', requestContext.correlationId)
+  return applyFrameAncestorsCSP(response)
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-
   const requestContext = resolveRequestContext({
     requestId: request.headers.get('x-request-id'),
     correlationId: request.headers.get('x-correlation-id'),
@@ -222,7 +232,8 @@ export async function proxy(request: NextRequest) {
       // rather than the presence of a cookie.
       return passThroughWithScopedToken(
         request,
-        chatGuestToken === guestQueryToken ? guestQueryToken : null
+        chatGuestToken === guestQueryToken ? guestQueryToken : null,
+        requestContext
       )
     }
     // Invalid transport → try the next candidate.
@@ -248,7 +259,8 @@ export async function proxy(request: NextRequest) {
     ) {
       return passThroughWithScopedToken(
         request,
-        pwaEmbedToken === pwaEmbedQueryToken ? pwaEmbedQueryToken : null
+        pwaEmbedToken === pwaEmbedQueryToken ? pwaEmbedQueryToken : null,
+        requestContext
       )
     }
   }
@@ -271,7 +283,6 @@ export async function proxy(request: NextRequest) {
 
   try {
     await jwtVerify(participantToken, new TextEncoder().encode(appSecret))
-
   } catch {
     log.warn(
       { event: 'participant_token.invalid' },
@@ -280,7 +291,7 @@ export async function proxy(request: NextRequest) {
     return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
-  return passThroughWithScopedToken(request, null)
+  return passThroughWithScopedToken(request, null, requestContext)
 }
 
 export const config = {
