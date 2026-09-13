@@ -685,3 +685,34 @@ required from the user.
   event-gate tests, Prettier clean. Follow-up still open: per-architecture
   timing families with route-matched consumption, which needs measured
   x64 data and a human decision before either route changes its balance.
+- 2026-09-13 (a) activation audit at 19:50Z, PR #5948 post-merge:
+  **lifecycle guard verified live.** Five pull-request runs on merged or
+  closed pull requests report `test-playwright-execution` as `skipped` while
+  `cancel-closed-pr` succeeds — external-attested activation of the open-state
+  guard rather than a repository claim. The work is real, but incomplete.
+  **Reuse marker not yet observed: no run has published a non-empty
+  `duplicate_run_id`.** Of 40+ Playwright runs since the merge, each one with
+  run metadata shows `duplicate_run_id=`. The reuse step only executes for
+  push-on-non-v3, `ready_for_review`, `edited`, or `reopened` events, and in
+  the one `ready_for_review` case available (PR #5970 at 18:32:13Z on head
+  `29262f4e`) the same-head predecessor runs were cancelled before completing
+  a full proof, so the conservatively correct outcome was a real build.
+  Reuse is deployed and inert rather than proven by a positive case.
+  **AMENDMENT — corroborated by the merge guard.** Merge of #5971 at 19:36:47Z
+  produced run `34778229849` on the unchanged head `c2511ee2` with
+  `test-playwright-execution` `skipped`; the concurrent run `34778195485` was
+  cancelled by supersession. Together these show the guard prevents both a
+  post-merge revalidation launch and a duplicate execution for one head.
+- 2026-09-13 throughput attribution at 19:55Z: the eight-shard wave is not the
+  pool's constraint. Run `34776822028` placed build and all eight shards on
+  `public-pr-arm64-01` through `-08` and completed every execution job
+  successfully; only the required `test-playwright-status` reporter remained
+  queued, because it runs on GitHub-hosted runners. Repository-wide state at
+  that moment: 13 runs in progress, 299 queued, 0 waiting. The hosted
+  concurrency cap, not ARM capacity, now dominates the observed queue. Any
+  further pool-side optimization cannot shorten the critical path while the
+  reporter waits behind that cap. Moving that trusted required context to the
+  persistent public pool is not available: the runner group admits exactly one
+  public workflow, and the roadmap keeps credential-adjacent reporting
+  hosted. This strengthens the case for the org Team upgrade (20 -> 60 hosted
+  concurrent jobs) as the single remaining lever outside repository source.
