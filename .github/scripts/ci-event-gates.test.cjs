@@ -280,6 +280,8 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
     'v3_lti-stg.yml',
     'v3_olat-api-stg.yml',
     'v3_response-api-stg.yml',
+    'v3_mcp-lecturer-stg.yml',
+    'v3_mcp-student-stg.yml',
   ].map((name) => [
     name,
     'draft pull requests defer their staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head',
