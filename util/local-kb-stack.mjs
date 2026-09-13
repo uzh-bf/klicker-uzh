@@ -226,7 +226,9 @@ const recoveryOptions = {
 }
 
 function parseArguments(args) {
-  const recoveryOption = recoveryOptions[args[7]]
+  const recoveryOption = Object.hasOwn(recoveryOptions, args[7])
+    ? recoveryOptions[args[7]]
+    : undefined
   if (
     (args.length === 7 ||
       (args.length === 9 &&

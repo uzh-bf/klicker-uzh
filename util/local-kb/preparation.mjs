@@ -267,10 +267,9 @@ function sameEntries(actual, expected) {
 
 const providerManifestName = '.provider-local-launcher.json'
 
-// The provider's first setup step writes its manifest and Compose record and
-// then fails while preparing dependencies. Its state directory therefore holds
-// no credential file and no generated project configuration of its own, which
-// would appear as additional entries.
+// Before dependency preparation completes, the provider creates its manifest,
+// Compose record and project-configs directory. Credential files at the state
+// root would indicate later progress and exclude this recovery path.
 const pendingIngestionInventory = [
   providerManifestName,
   'compose-project',

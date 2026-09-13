@@ -189,6 +189,8 @@ test('ingestion recovery option accepts one immutable predecessor only', () => {
     [...base, ...option, '--resume-executor', 'd'.repeat(40)],
     [...base, ...option, ...option],
     [...base, '--resume-ingestion-executor', 'invalid'],
+    [...base, '__proto__', 'c'.repeat(40)],
+    [...base, 'constructor', 'c'.repeat(40)],
     [...option, ...base],
   ]) {
     const rejected = runConfigPlan(input, 'continue-setup', extra)
