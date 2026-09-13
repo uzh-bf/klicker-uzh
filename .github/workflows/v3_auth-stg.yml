@@ -50,9 +50,6 @@ jobs:
           rm apps/auth/.env.production
           mv apps/auth/.env.stg apps/auth/.env.production
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -77,7 +74,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: true
+          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
