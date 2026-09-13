@@ -46,7 +46,7 @@ Record per-run logs, raw/cleaned graphs, chunks, recipes, request ranges and sem
 - Planner: native independent construction pass completed; omission semantics, phase ceiling, effective ablation and extra publication-build accounting incorporated.
 - Main retains runtime/budget execution; settled harness preparation is delegated despite the planner's conservative all-main suggestion.
 - Local Manage startup initially hit another worktree's Blob port10003. Existing `KB_GRAPH_BLOB_HOST_PORT=18440` override clears the collision without stopping its owner. Managed startup completed; the runtime was subsequently stopped.
-- Four pilot builds and eight remaining repetitions passed on frozen generator source. Publication remains blocked by missing isolated bindings.
+- Four pilot builds and eight remaining repetitions passed on frozen generator source. The publication seam that this batch originally recorded as blocked was closed later on the same isolated synthetic stack; see Completed publication evidence below.
 - Verified provenance correction: record nullable legacy course profile in generator recipe parameters and omit its null default from canonical bytes. Preserve historical and strict recipe validation; old missing metadata does not establish historical strict execution. The fix was prepared outside the evaluated tree and applied after all graph and retrieval calls completed. Relevant source: generator generation_recipe.py and tasks.py; existing recipe and workflow tests. Graph-bound artifact hashes continue to separate outputs.
 - The original staged delivery failed because a Git fixture inherited hook context. The correction below resolves that defect and the complete check portfolio passes without disabling hooks.
 
@@ -59,20 +59,38 @@ All seven executed merge proposals in the multi-document runs were singular/plur
 
 The six-query retrieval comparison completed in naive and mixed modes using copied graph storage and a common 5,000-token ceiling. Naive returned all three source chunks for every query. Mixed returned three chunks for lookup, two for comparison/cross-document reasoning and one for terminology/conflict/unanswerability. In the conflict case, the selected raw chunks omitted the other document. Graph descriptions may retain some information, so this is an evidence-selection limitation rather than proof of an incorrect answer. No answers or participant-chat turns were generated or scored.
 
-The content comparison stopped before paid calls: existing new-question generation paths both omit graph descriptions, making the proposed evidence-mode comparison ineffective. Three offline tests confirmed that behavior. Publication stopped after seeded UI login and KB access because isolated catalog, generator and FalkorDB bindings were unavailable; no publication build was submitted.
+The content comparison stopped before paid calls: existing new-question generation paths both omit graph descriptions, making the proposed evidence-mode comparison ineffective. Three offline tests confirmed that behavior.
 
-Cumulative ledger spend is USD2.59520654, including conservative historical charges, with zero holds under the USD20 cap. This batch added USD0.42161248: USD0.41761074 for graphs and USD0.00400174 for retrieval. The ledger, not the graph-only summary, is the final total.
+At that point publication stopped after seeded UI login and KB access because isolated catalog, generator and FalkorDB bindings were unavailable, and no publication build had been submitted. The bindings were supplied afterwards and the publication acceptance completed; see Completed publication evidence below. Ledger spend at this point was USD2.59520654, including conservative historical charges, with zero holds under the USD20 cap. This batch added USD0.42161248: USD0.41761074 for graphs and USD0.00400174 for retrieval. The ledger, not the graph-only summary, is the total.
 
 A provenance defect was corrected after all paid runs: future legacy recipes record their course profile while strict/default and historical canonical digests remain compatible. Old recipes without the marker remain ambiguous; this does not implement replay reconstruction. The fix changes metadata, not the evaluated graph algorithm. At generator9876293, 1,118 tests passed with one skip excluding pre-existing DOCX tooling failures. After the behavior-preserving simplification committed asfd75e6b, all13 recipe tests and Ruff passed. Independent slice review confirmed compatibility. The source is pushed to the existing draft MR; exact-head CI663570 passed all gating jobs with the existing allowed legacy audit failure. Integrated final review confirmed source correctness; its stale-progress documentation finding has been corrected locally.
 
+## Completed publication evidence
+
+The publication binding that this batch had recorded as missing was supplied later, and acceptance completed on an isolated synthetic stack. A real manage-UI domain selection produced a budget reservation, worker dispatch, graph publication, page reload and a participant graph read. Four correlated builds ran against one synthetic knowledge base and resource; every build settled at CHF 2.00.
+
+| Build | Domain policy | Nodes / edges | graphSha256 (prefix) |
+| --- | --- | --- | --- |
+| 77174526-6f76-439d-8d72-cfc4bb7a3a2e | economics-v1 | 30 / 34 | 3365a410 |
+| a1377768-a908-401e-958a-a70921f526de | general-academic-v1 | 36 / 24 | b449f013 |
+| caf3da5b-84df-4047-852c-4a2d2fa69c5f | economics-v1 | 39 / 0 (broken) | a3407013 |
+| ebeaad73-7738-4878-ace9-5dfbca6b80bd | economics-v1 | 35 / 29 | 4460f108 |
+
+Domain selection changes the extracted type system as intended. Economics produced Akteur, Datensatz, Fall, Formel, Indikator, Institution, Konzept, Methode, Modell, Theorie and Wirtschaftspolitische Maßnahme; General Academic produced Formel, Institution, Konzept, Messgröße, Methode, Prozess and Theorie. The economics measurement type Indikator maps to the generic Messgröße for the same source. Resolved policy ids and the balanced quality profile are recorded in each bundle's generation_recipe.json.
+
+Build caf3da5b exposed a generator defect: it reported SUCCEEDED with 39 entities and zero relationships. LightRAG keeps only relationship rows that split into exactly five tuple-delimited fields and drops the rest with a logger warning; the extraction model omitted the separator for that build, so every relationship row parsed as four fields. The generator now rejects that shape at the identity seam the CLI runner and the Hatchet task share. The guard was probed against all three cached builds, rejects caf3da5b, accepts the healthy graphs, and the fresh rebuild ebeaad73 exercised it in the live worker. Generator MR !17 carries the fix and its regression test.
+
+The published economics build served 35 nodes and 29 relationships with isStale=false, and the manage viewer rendered all 35 concept nodes and 29 relationships. The first participant read returned 503 because the acceptance app held a FalkorDB client from before the generator stack restart; recreating the app container resolved it. That is an environment-lifecycle artifact, not a product defect, and the accepted run records the restart.
+
+The reconciled ledger total after publication is USD2.82446340. This batch's own added spend is USD0.42161248, unchanged; the publication graphs and their graph reads are counted separately above. Zero holds, under the existing USD20 cap. No worker image was published and no production state was touched.
+
 ## Remaining acceptance and order
 
-1. Supply the existing isolated catalog/generator/FalkorDB integration and prove a real schema-v1 UI build through publication and reload. Infrastructure changes remain outside this batch.
-2. Define and implement an effective content evidence treatment, inspect paired generating requests, then run the bounded matched comparison. Do not infer effectiveness from the option name.
-3. Preserve raw-source coverage when graph context consumes the retrieval budget; evaluate claims, citations, conflicts and abstention through a bound participant-chat corpus.
-4. Expand to reviewed multi-document scenarios and blinded educator scoring before policy/model tuning or adoption claims.
+1. Define and implement an effective content evidence treatment, inspect paired generating requests, then run the bounded matched comparison. Do not infer effectiveness from the option name.
+2. Preserve raw-source coverage when graph context consumes the retrieval budget; evaluate claims, citations, conflicts and abstention through a bound participant-chat corpus.
+3. Expand to reviewed multi-document scenarios and blinded educator scoring before policy/model tuning or adoption claims.
 
-The runtime used for publication was stopped with zero task routes and the browser closed. The evaluation container is also stopped. Both draft descriptions are updated and read back. The generator source is pushed. These Klicker documents and the fixture repair are now committed after the complete normal check portfolio passed; task-branch push remains the next delivery step. This document does not claim full acceptance or deployment readiness.
+The publication runtime was stopped with zero task routes and the browser closed. The evaluation container is also stopped. Both draft descriptions are updated and read back, and the generator fix and these Klicker documents are committed and pushed on their draft branches. This document claims the publication and graph-quality acceptance recorded above, not downstream content or participant-chat quality, and not deployment readiness.
 
 
 ## Commit-hook correction
