@@ -665,3 +665,72 @@ required from the user.
   selection skips builds and passes with evidence, any selected build
   failure/cancellation fails the status, and the promoter's complete
   exact-SHA candidate matrix is unchanged.
+- 2026-09-13 timing-architecture provenance slice (branch
+  `rs/playwright-timing-architecture`): PR #5971 merged as `136a867280`,
+  verified live on `v3` (cache contract in the ARM jobs, QEMU only in the
+  disabled AMD jobs). The hazard this slice closes: `playwright/timings.json`
+  holds the weights regenerated from ARM64 run `34692527245` in PR #5921,
+  which replaced the earlier x86-measured weights because they no longer
+  reflected ARM64 reality, while the only automated writer runs from hosted
+  x64 `v3` pushes — its next timing PR would have silently restored the
+  mismatch. The updater now requires `--architecture`, records it in the
+  table, and refuses to replace a table calibrated for another architecture
+  (no write, explicit reason, no timing PR); an untagged table is adopted by
+  the producing architecture. The workflow derives the architecture from the
+  run's recorded route (`hosted` -> `x64`, `public-pr` -> `arm64`) and fails
+  closed on an unknown route. Evidence: 14/14 python timing tests (3 new:
+  architecture recorded, cross-architecture replacement refused with the file
+  byte-identical, untagged table adopted), 8/8 `get-shard-files` tests against
+  the real tagged table, 23/23 selector and plan-metadata tests, 9/9
+  event-gate tests, Prettier clean. Follow-up still open: per-architecture
+  timing families with route-matched consumption, which needs measured
+  x64 data and a human decision before either route changes its balance.
+- 2026-09-13 (a) activation audit at 19:50Z, PR #5948 post-merge:
+  **lifecycle guard verified live.** Five pull-request runs on merged or
+  closed pull requests report `test-playwright-execution` as `skipped` while
+  `cancel-closed-pr` succeeds — external-attested activation of the open-state
+  guard rather than a repository claim. The work is real, but incomplete.
+  **Reuse marker not yet observed: no run has published a non-empty
+  `duplicate_run_id`.** Of 40+ Playwright runs since the merge, each one with
+  run metadata shows `duplicate_run_id=`. The reuse step only executes for
+  push-on-non-v3, `ready_for_review`, `edited`, or `reopened` events, and in
+  the one `ready_for_review` case available (PR #5970 at 18:32:13Z on head
+  `29262f4e`) the same-head predecessor runs were cancelled before completing
+  a full proof, so the conservatively correct outcome was a real build.
+  Reuse is deployed and inert rather than proven by a positive case.
+  **AMENDMENT — corroborated by the merge guard.** Merge of #5971 at 19:36:47Z
+  produced run `34778229849` on the unchanged head `c2511ee2` with
+  `test-playwright-execution` `skipped`; the concurrent run `34778195485` was
+  cancelled by supersession. Together these show the guard prevents both a
+  post-merge revalidation launch and a duplicate execution for one head.
+- 2026-09-13 throughput attribution at 19:55Z: the eight-shard wave is not the
+  pool's constraint. Run `34776822028` placed build and all eight shards on
+  `public-pr-arm64-01` through `-08` and completed every execution job
+  successfully; only the required `test-playwright-status` reporter remained
+  queued, because it runs on GitHub-hosted runners. Repository-wide state at
+  that moment: 13 runs in progress, 299 queued, 0 waiting. The hosted
+  concurrency cap, not ARM capacity, now dominates the observed queue. Any
+  further pool-side optimization cannot shorten the critical path while the
+  reporter waits behind that cap. Moving that trusted required context to the
+  persistent public pool is not available: the runner group admits exactly one
+  public workflow, and the roadmap keeps credential-adjacent reporting
+  hosted. This strengthens the case for the org Team upgrade (20 -> 60 hosted
+  concurrent jobs) as the single remaining lever outside repository source.
+- 2026-09-13 (d) cache-activation audit at 20:10Z: the merge is verified in
+  source (`git show origin/v3:.github/workflows/v3_auth-stg.yml` carries the
+  `no-cache: ${{ github.event_name == 'push' }}` / `cache-from` / `cache-to`
+  triple and QEMU appears only in the disabled AMD jobs), but the cache has
+  not yet been exercised. GHCR reports no `-arm:buildcache` tag on any of the
+  four largest repositories (`auth-arm`, `chat-arm`, `backend-docker-arm`,
+  `frontend-manage-arm`: absent across 100 versions each), so no pull-request
+  build has written the registry cache. Every image workflow run created after
+  the merge is a draft deferral (`build-arm` `skipped`) or a push publication
+  into the saturated hosted queue (`v3-ai` push runs `34779097222` and
+  siblings remain `queued`); the last pull-request builds that actually
+  executed (`34774712103` and siblings, 18:28Z) predate the merge. The
+  contract is deployed and inert, awaiting the first same-repository
+  non-draft pull request whose diff touches image inputs. `buildcache` is
+  written through the ordinary ghcr.io push-token path rather than the
+  Actions cache service, so the ~10 GiB quota does not apply and the
+  `mode=max` export is visible as a distinct tag in the repository's version
+  list once it happens.
