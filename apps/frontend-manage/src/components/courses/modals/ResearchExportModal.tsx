@@ -29,6 +29,7 @@ interface ResearchExportFormValues {
 
 interface ResearchExportModalProps {
   courseId: string
+  courseName: string
   onClose: () => void
 }
 
@@ -162,7 +163,11 @@ function ResearchExportAcknowledgement({ disabled }: { disabled: boolean }) {
   )
 }
 
-function ResearchExportModal({ courseId, onClose }: ResearchExportModalProps) {
+function ResearchExportModal({
+  courseId,
+  courseName,
+  onClose,
+}: ResearchExportModalProps) {
   const t = useTranslations()
   const today = new Date().toISOString().slice(0, 10)
   const activeController = useRef<AbortController | null>(null)
@@ -314,13 +319,6 @@ function ResearchExportModal({ courseId, onClose }: ResearchExportModalProps) {
       >
         {({ isSubmitting, isValid }) => (
           <Form className="flex flex-col gap-4">
-            <div className="space-y-1 text-sm text-gray-700">
-              <p className="font-semibold text-gray-900">
-                {t('manage.researchExport.classification')}
-              </p>
-              <p>{t('manage.researchExport.classificationNote')}</p>
-            </div>
-
             <section
               className="space-y-3"
               aria-labelledby="research-export-project"
@@ -448,6 +446,20 @@ function ResearchExportModal({ courseId, onClose }: ResearchExportModalProps) {
                 {t('manage.researchExport.classDataNote')}
               </p>
             </fieldset>
+
+            <dl className="space-y-1 text-sm text-gray-700">
+              <dt className="font-semibold text-gray-900">
+                {t('manage.researchExport.scopeLabel')}
+              </dt>
+              <dd>{courseName}</dd>
+              <dt className="pt-2 font-semibold text-gray-900">
+                {t('manage.researchExport.classificationLabel')}
+              </dt>
+              <dd>{t('manage.researchExport.classification')}</dd>
+            </dl>
+            <p className="text-sm text-gray-700">
+              {t('manage.researchExport.classificationNote')}
+            </p>
 
             <div className="space-y-2 text-sm text-gray-700">
               <h2 className="text-base font-semibold text-gray-900">

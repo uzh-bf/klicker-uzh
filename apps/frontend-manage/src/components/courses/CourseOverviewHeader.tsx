@@ -340,6 +340,7 @@ function CourseOverviewHeader({
       {researchExportModal && course.isManager ? (
         <ResearchExportModal
           courseId={course.id}
+          courseName={course.name}
           onClose={() => setResearchExportModal(false)}
         />
       ) : null}

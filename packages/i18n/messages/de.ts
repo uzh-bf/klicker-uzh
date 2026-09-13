@@ -4738,6 +4738,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     researchExport: {
       menuLabel: 'Forschungsdaten exportieren',
       title: 'Forschungsdaten exportieren',
+      scopeLabel: 'Datenumfang',
+      classificationLabel: 'Klassifikation',
       classification: 'Personendaten ohne direkte Identifikatoren',
       classificationNote:
         'Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungs- oder Lehrprojekt der Universität Zürich und nur durch dessen Mitarbeitende verwendet werden.',

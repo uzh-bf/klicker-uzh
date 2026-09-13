@@ -4639,6 +4639,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     researchExport: {
       menuLabel: 'Export research data',
       title: 'Export research data',
+      scopeLabel: 'Data scope',
+      classificationLabel: 'Classification',
       classification: 'Personal data without direct identifiers',
       classificationNote:
         'This file contains personal data without direct identifiers. Individual people may still be identifiable. The data may be used only for the stated research or teaching project at the University of Zurich and only by its staff.',
