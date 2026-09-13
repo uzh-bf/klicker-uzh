@@ -3193,6 +3193,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für dieses Live-Quiz wurden noch keine Quiz-Leaderboard-Einträge erstellt.',
       deleteLeaderboardEntries:
         'Alle Quiz-Leaderboard-Einträge werden gelöscht und alle Teilnehmenden verlieren ihre gesammelten Punkte.',
+      removeLeaderboardAccess:
+        '{number} Quiz-Ranglisteneinträge sind danach nicht mehr verfügbar. Gesammelte Punkte bleiben erhalten.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:

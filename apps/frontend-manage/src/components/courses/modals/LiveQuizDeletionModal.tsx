@@ -115,6 +115,25 @@ function LiveQuizDeletionModal({
           confirmationType="delete"
           data={{ cy: 'confirm-deletion-confusion-feedbacks' }}
         />
+        <ConfirmationItem
+          label={
+            summary.numOfLeaderboardEntries === 0
+              ? t('manage.liveQuizzes.noLeaderboardEntriesToDelete')
+              : t('manage.liveQuizzes.removeLeaderboardAccess', {
+                  number: summary.numOfLeaderboardEntries,
+                })
+          }
+          onClick={() => {
+            setConfirmations((prev) => ({
+              ...prev,
+              deleteLeaderboardEntries: true,
+            }))
+          }}
+          confirmed={confirmations.deleteLeaderboardEntries}
+          notApplicable={summary.numOfLeaderboardEntries === 0}
+          confirmationType="delete"
+          data={{ cy: 'confirm-deletion-leaderboard-entries' }}
+        />
       </div>
     </ActivityConfirmationModal>
   )
