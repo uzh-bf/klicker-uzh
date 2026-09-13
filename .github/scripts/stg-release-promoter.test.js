@@ -296,6 +296,62 @@ test('validates the candidate workflow set and only inventories active ARM publi
   )
 })
 
+test('admits inventoried scan jobs without treating them as publishers', () => {
+  const definitions = fixtureDefinitions()
+  assert.match(definitions[1].content, /^  scan-arm:$/m)
+  assert.match(definitions[1].content, /^  scan-migrator-arm:$/m)
+
+  const workflows = validWorkflows()
+  assert.deepEqual(
+    workflows[1].jobs.map((job) => job.id),
+    ['build-arm', 'build-migrator-arm']
+  )
+
+  const disabledScan = fixtureDefinitions()
+  disabledScan[1].content = disabledScan[1].content.replace(
+    "  scan-arm:\n    if: github.event_name != 'pull_request'",
+    '  scan-arm:\n    if: ${{ false }}'
+  )
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: disabledScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /active ARM job inventory changed/
+  )
+
+  const extraArm = fixtureDefinitions()
+  extraArm[1].content +=
+    '  publish-extra-arm:\n    runs-on: ubuntu-24.04-arm\n    steps:\n      - uses: actions/checkout@v3\n'
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: extraArm,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /active ARM job inventory changed/
+  )
+
+  const misplacedScan = fixtureDefinitions()
+  misplacedScan[0].content +=
+    "  scan-arm:\n    if: github.event_name != 'pull_request'\n    runs-on: ubuntu-24.04-arm\n    steps:\n      - uses: actions/checkout@v3\n"
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: misplacedScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /active ARM job inventory changed/
+  )
+})
+
 test('rejects unsafe workflow publication changes', () => {
   assert.throws(
     () =>

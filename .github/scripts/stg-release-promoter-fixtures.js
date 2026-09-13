@@ -31,12 +31,23 @@ const FIXTURE_STAGING_WORKFLOWS = Object.freeze([
   },
 ])
 
+function scanJobDefinition(id, needs) {
+  return `  ${id}:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04-arm
+    needs: ${needs}
+    steps:
+      - uses: actions/checkout@v3
+`
+}
+
 function workflowDefinition({
   activeAmd = false,
   image,
   migrator = false,
   pushBranches = ["'v3'", "'v3*'"],
   fullShaTag = true,
+  scans = false,
 }) {
   const imageEnvironment = migrator
     ? `  MIGRATOR_IMAGE_NAME: \${{ github.repository }}/${image}-migrator`
@@ -88,6 +99,17 @@ ${tagLines}
       - uses: docker/metadata-action@v4
 `
     : ''
+  // The admission inventory adds one scan job per published image. Those jobs
+  // are active ARM jobs that publish nothing, so a candidate that carries them
+  // still has to validate against the publisher inventory.
+  const scanJobs = scans
+    ? [
+        scanJobDefinition('scan-arm', 'build-arm'),
+        ...(migrator
+          ? [scanJobDefinition('scan-migrator-arm', 'build-migrator-arm')]
+          : []),
+      ].join('')
+    : ''
   return `name: Build Docker image for ${image} (stg)
 
 on:
@@ -116,7 +138,7 @@ ${tagLines}
         with:
           push: \${{ github.event_name != 'pull_request' }}
           tags: \${{ steps.meta.outputs.tags }}
-${amdJob}${migratorJobs}
+${amdJob}${migratorJobs}${scanJobs}
 `
 }
 
@@ -129,6 +151,7 @@ function fixtureDefinitions(options = {}) {
         activeAmd: mcp,
         image: backend ? 'backend-docker' : mcp ? 'mcp-lecturer' : 'auth',
         migrator: backend,
+        scans: backend,
         ...options,
       }),
       path,

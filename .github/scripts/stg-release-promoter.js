@@ -433,6 +433,7 @@ function validateStagingWorkflow({
   expectedWorkflow,
   repository,
   sourceBranch,
+  scanInventory = SCAN_ADMISSION_INVENTORY,
 }) {
   if (!WORKFLOW_PATH_PATTERN.test(workflowPath)) {
     throw new Error(`${workflowPath} is not an approved staging workflow path`)
@@ -467,11 +468,25 @@ function validateStagingWorkflow({
   const activeArmJobs = jobs.filter(
     (job) => job.id.endsWith('-arm') && !isDisabledJob(job)
   )
-  const expectedJobIds = expectedWorkflow.jobs.map((job) => job.id).sort()
+  // The admission inventory decides which job scans which image, and those
+  // scan jobs are active ARM jobs in the same workflow. They publish no image,
+  // so they are expected here and excluded from the publisher checks below.
+  const scanJobIds = scanInventory
+    .filter((entry) => entry.workflowPath === workflowPath)
+    .map((entry) => entry.scanJob)
+    .sort()
+  const expectedPublisherJobIds = expectedWorkflow.jobs
+    .map((job) => job.id)
+    .sort()
+  const expectedJobIds = [...expectedPublisherJobIds, ...scanJobIds].sort()
   const actualJobIds = activeArmJobs.map((job) => job.id).sort()
   if (canonicalJson(actualJobIds) !== canonicalJson(expectedJobIds)) {
     throw new Error(`${workflowPath} active ARM job inventory changed`)
   }
+
+  const activePublisherArmJobs = activeArmJobs.filter(
+    (job) => !scanJobIds.includes(job.id)
+  )
 
   const activeNonRuntimeJobs = jobs.filter(
     (job) => expectedNonRuntimeJobIds.includes(job.id) && !isDisabledJob(job)
@@ -486,7 +501,7 @@ function validateStagingWorkflow({
     throw new Error(`${workflowPath} active non-runtime job inventory changed`)
   }
 
-  const publisherJobs = [...activeArmJobs, ...activeNonRuntimeJobs]
+  const publisherJobs = [...activePublisherArmJobs, ...activeNonRuntimeJobs]
   const images = publisherJobs.map((job) => {
     if (
       job.id.endsWith('-arm') &&
@@ -558,7 +573,7 @@ function validateStagingWorkflow({
     throw new Error(`${workflowPath} has an unexpected active image publisher`)
   }
 
-  const hasMigratorJob = expectedJobIds.includes('build-migrator-arm')
+  const hasMigratorJob = expectedPublisherJobIds.includes('build-migrator-arm')
   if (
     hasMigratorJob &&
     !/^    needs:\s*build-migrator-arm\s*$/m.test(
@@ -584,7 +599,7 @@ function validateStagingWorkflow({
     throw new Error(`${workflowPath} runtime image inventory changed`)
   }
 
-  const runtimeJobIds = new Set(expectedJobIds)
+  const runtimeJobIds = new Set(expectedPublisherJobIds)
   return {
     name: workflowName,
     path: workflowPath,
@@ -597,6 +612,7 @@ function validateStagingWorkflows({
   repository,
   sourceBranch,
   expectedWorkflows = STAGING_WORKFLOWS,
+  scanInventory = SCAN_ADMISSION_INVENTORY,
 }) {
   assertSafeSourceBranch(sourceBranch)
   const paths = definitions.map((definition) => definition.path).sort()
@@ -616,6 +632,7 @@ function validateStagingWorkflows({
         expectedWorkflow,
         repository,
         sourceBranch,
+        scanInventory,
       })
     })
     .sort((left, right) => left.path.localeCompare(right.path))
