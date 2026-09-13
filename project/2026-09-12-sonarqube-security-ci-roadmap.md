@@ -41,8 +41,8 @@ can continue within an approved implementation package.
 | Roadmap checkout | `trees/rs/sonarqube-workflow-roadmap` |
 | Artifact root | Existing `project/`; this file is the roadmap authority |
 | Boundary owner | Main session owning the approved package |
-| Current terminal condition | Reviewed source implementation on draft PR #5924; live activation not started |
-| PR | [Draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924), targeting `v3` |
+| Current terminal condition | Reviewed source implementation on ready PR #5924; live activation not started |
+| PR | [PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924), ready for review, targeting `v3` |
 
 The primary checkout has unrelated changes and is 68 commits behind the recorded
 remote baseline. Primary Git metadata writes were denied by the sandbox when
@@ -533,11 +533,12 @@ its dependent action. Read back effective settings and retain sanitized receipts
 
 ## Progress and review provenance
 
-- Status: source implementation in progress on [draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924); no live effect applied.
+- Status: source implementation complete on [PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924), ready for review; no live effect applied.
 - Completed: repository and GitHub investigation, documentation research,
-  planner approval, documentation delivery, and the source implementation of
-  W1, W2, W3, W4, W5 (pilot), W6, W7, W8, and W10, together with the W0, W8,
-  W9, and W10 activation packets.
+  planner approval, documentation delivery, the source implementation of
+  W1, W2, W3, W4, W5 (pilot), W6, W7, W8, and W10, the W0, W8, W9, and W10
+  activation packets, and removal of the tracked Serena memory store whose
+  scanning copy duplicated `docs/`.
 - Investigation baseline: `b824ae26126bd33b44112dc27aad0ce42dbe1c4b`; reconciled
   source baseline `8c6a4c74f3bba3b73a5b5c3a185f6a1f0d3e89f5`.
 - Delivery layer: source only. No runtime was started, no Sonar setting was

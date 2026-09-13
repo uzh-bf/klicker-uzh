@@ -5,7 +5,7 @@ Proposed settings and schedule changes for the
 Every packet below is a proposal. Nothing in this file has been applied: no
 ruleset, Sonar project setting, subscription, schedule, or promotion ref was
 changed by the source work on
-[draft PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924).
+[PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924).
 
 ## Live read-back
 
