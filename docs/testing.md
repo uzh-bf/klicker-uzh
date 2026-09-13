@@ -341,9 +341,13 @@ introduce cross-file ordering assumptions.
 `check:all` + identity guard, pre-push = outgoing-commit identity guard +
 `build`). `util/check-git-identity.sh` rejects the exact selector fixture
 identity in repository configuration, effective author/committer state, or
-outgoing commit authors, committers, or co-author trailers. The pull-request
+outgoing commit authors, committers, or co-author trailers. Outgoing means not
+yet reachable from a remote-tracking ref: commits that already reached any
+remote (typically through a v3 sync merge) were scanned when they were first
+pushed and are skipped on later pushes. The pull-request
 check repeats the commit-range guard on GitHub, where local hooks cannot be
-assumed. The second pre-commit check catches any test that mutates Git
+assumed, and bounds the range at the PR merge base so merged upstream history
+is not re-scanned. The second pre-commit check catches any test that mutates Git
 configuration while `check:all` runs. The Prisma package check regenerates the
 raw Prisma 7 client before typechecking; no generated-source patch remains.
 Clean CI jobs therefore do not depend on generated files left by an earlier
