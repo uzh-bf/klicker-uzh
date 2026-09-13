@@ -125,8 +125,9 @@ The executor must be committed and clean; the retained application remains at
 its original detached revision. The command verifies provider status, preserves
 completed receipts, and reconciles missing receipts only for prepared, stopped
 providers. It initializes ingestion or retrieval only when their state and
-runtime resources are absent. It never retries a failed provider or token
-operation. An incomplete continuation is retained and cannot be invoked again.
+runtime resources are absent, except for the explicitly approved pending-ingestion
+recovery below. It never implicitly retries a failed provider or token operation.
+An incomplete continuation is retained and cannot be invoked again.
 
 If an operator has verified that a continuation stopped after its profile repair
 and before bootstrap startup, the explicit `--resume-executor <original-commit>`
@@ -137,6 +138,19 @@ provider prefix. It records a separate exclusive child attempt and never erases
 the original evidence. Any additional intent or child attempt blocks re-entry.
 Absence of an intent alone does not prove that a previous process had no effects;
 verify its recorded failure before using this option.
+
+For a verified failure before ingestion dependency preparation completed,
+`--resume-ingestion-executor <child-commit>` permits one separate recovery.
+The argument names the profile-resume child executor; its claim must link to
+the original root claim. Require all three native ingestion preparation states
+pending, only the manifest, `compose-project`, and `project-configs` entries in
+its state directory, no credential files, no ingestion Compose containers,
+networks or volumes, no occupied bound ingestion port, and exited bootstrap
+containers. Scraping and document processing must already be prepared and
+stopped with completed receipts. The command retains predecessor evidence and
+creates an exclusive sibling attempt before invoking ingestion setup once.
+Any failure prevents downstream work and another invocation. This option is
+mutually exclusive with `--resume-executor`; it does not authorize token rotation.
 
 Before continuation, check ownership and permissions of `.local-kb/state` and
 its existing provider directories. They must be real owner-private directories

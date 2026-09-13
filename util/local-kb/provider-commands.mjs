@@ -74,8 +74,9 @@ export async function observeProviderLauncher(
       prepared = preparationStates.every(
         (key) => status.preparation?.[key] === 'prepared'
       )
-      // Only the provider's exact untouched preparation triple is a pending
-      // recovery candidate; a missing or additional key is partial progress.
+      // The provider reports a full status triple. Only all-pending values
+      // qualify here; retained inventory and manifest bindings independently
+      // distinguish recoverable state from partial progress.
       pending =
         typeof status.preparation === 'object' &&
         status.preparation !== null &&
