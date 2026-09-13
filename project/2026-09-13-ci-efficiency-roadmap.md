@@ -665,3 +665,23 @@ required from the user.
   selection skips builds and passes with evidence, any selected build
   failure/cancellation fails the status, and the promoter's complete
   exact-SHA candidate matrix is unchanged.
+- 2026-09-13 timing-architecture provenance slice (branch
+  `rs/playwright-timing-architecture`): PR #5971 merged as `136a867280`,
+  verified live on `v3` (cache contract in the ARM jobs, QEMU only in the
+  disabled AMD jobs). The hazard this slice closes: `playwright/timings.json`
+  holds the weights regenerated from ARM64 run `34692527245` in PR #5921,
+  which replaced the earlier x86-measured weights because they no longer
+  reflected ARM64 reality, while the only automated writer runs from hosted
+  x64 `v3` pushes — its next timing PR would have silently restored the
+  mismatch. The updater now requires `--architecture`, records it in the
+  table, and refuses to replace a table calibrated for another architecture
+  (no write, explicit reason, no timing PR); an untagged table is adopted by
+  the producing architecture. The workflow derives the architecture from the
+  run's recorded route (`hosted` -> `x64`, `public-pr` -> `arm64`) and fails
+  closed on an unknown route. Evidence: 14/14 python timing tests (3 new:
+  architecture recorded, cross-architecture replacement refused with the file
+  byte-identical, untagged table adopted), 8/8 `get-shard-files` tests against
+  the real tagged table, 23/23 selector and plan-metadata tests, 9/9
+  event-gate tests, Prettier clean. Follow-up still open: per-architecture
+  timing families with route-matched consumption, which needs measured
+  x64 data and a human decision before either route changes its balance.
