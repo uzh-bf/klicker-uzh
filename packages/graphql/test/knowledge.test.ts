@@ -1095,6 +1095,106 @@ describe('Integration tests for knowledge base CRUD', () => {
     expect(configurations.every(({ isEnabled }) => isEnabled)).toBe(true)
   })
 
+  it('renews existing resource receipts for both chatbot audiences before ingestion', async () => {
+    const kb = await createKb({ name: 'Renewed receipts' }, userOneCtx)
+    const firstCourse = await seedCourse({}, userOneCtx)
+    const firstChatbot = await prisma.chatbot.create({
+      data: {
+        name: 'First tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: firstCourse.id,
+      },
+    })
+    const resource = await createKbUrlResource(
+      {
+        kbId: kb.id,
+        title: 'Lecture recording',
+        url: 'https://example.com/lecture',
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
+
+    await attachKbToChatbot(
+      {
+        kbId: kb.id,
+        chatbotId: firstChatbot.id,
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
+    const firstRenewal = await prisma.kBResource.findUniqueOrThrow({
+      where: { id: resource.id },
+      select: { materialConfirmationId: true },
+    })
+    const firstReceipt = await prisma.kBMaterialConfirmation.findUniqueOrThrow({
+      where: { id: firstRenewal.materialConfirmationId! },
+    })
+    expect(JSON.parse(firstReceipt.scopeSnapshot)).toEqual([
+      { chatbotId: firstChatbot.id, courseId: firstCourse.id },
+    ])
+
+    const secondCourse = await seedCourse({}, userOneCtx)
+    const secondChatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Second tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: secondCourse.id,
+      },
+    })
+
+    await attachKbToChatbot(
+      {
+        kbId: kb.id,
+        chatbotId: secondChatbot.id,
+        ...KB_MATERIAL_CONFIRMATION,
+      },
+      userOneCtx
+    )
+    const renewals = await prisma.kBResource.findMany({
+      where: { kbId: kb.id, deletedAt: null },
+    })
+    expect(renewals).toHaveLength(1)
+    expect(renewals[0]!.materialConfirmationId).not.toBe(
+      firstRenewal.materialConfirmationId
+    )
+    const renewedReceipt =
+      await prisma.kBMaterialConfirmation.findUniqueOrThrow({
+        where: { id: renewals[0]!.materialConfirmationId! },
+      })
+    const renewedScope = JSON.parse(renewedReceipt.scopeSnapshot)
+    expect(renewedScope).toHaveLength(2)
+    expect(renewedScope).toEqual(
+      expect.arrayContaining([
+        { chatbotId: firstChatbot.id, courseId: firstCourse.id },
+        { chatbotId: secondChatbot.id, courseId: secondCourse.id },
+      ])
+    )
+    expect(renewedReceipt.scopeFingerprint).toBe(
+      getKbMaterialScopeFingerprint(renewedScope)
+    )
+
+    const runNoWait = vi
+      .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
+      .mockResolvedValue({} as never)
+
+    await expect(
+      ingestKbResource({ id: resource.id }, userOneCtx)
+    ).resolves.toMatchObject({
+      id: resource.id,
+      status: KBResourceStatus.QUEUED,
+      resourceVersion: 1,
+      materialConfirmationId: renewals[0]!.materialConfirmationId,
+    })
+    expect(runNoWait).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: resource.id,
+        kbId: kb.id,
+        resourceVersion: 1,
+      })
+    )
+  })
+
   it('rejects an empty knowledge base name', async () => {
     await expect(createKb({ name: '   ' }, userOneCtx)).rejects.toThrow(
       'KB name is required'
