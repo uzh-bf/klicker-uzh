@@ -453,7 +453,15 @@ test('managed installation replaces only candidate config and neutralizes the li
 })
 
 test('application setup initializes once and retains failures without replay', async () => {
-  for (const failure of [false, 'application', 'blob']) {
+  for (const [failure, callCount] of [
+    [false, 5],
+    ['runtime-start', 1],
+    ['provider-routing', 1],
+    ['blob-readiness', 2],
+    ['database-schema', 3],
+    ['database-seed', 4],
+    ['blob-setup', 5],
+  ]) {
     const { config, checkout, read } = await installationFixture()
     await prepareLocalConfiguration(config, revision)
     await installManagedConfiguration(config, revision, read)
@@ -467,32 +475,41 @@ test('application setup initializes once and retains failures without replay', a
     const calls = []
     const managed = async (args) => {
       calls.push(args)
+      if (
+        (failure === 'runtime-start' && args[0] === 'ensure') ||
+        (failure === 'database-schema' && args.includes('prisma:push:raw')) ||
+        (failure === 'database-seed' && args.includes('seed:raw')) ||
+        (failure === 'blob-setup' &&
+          args.includes('src/scripts/setupLocalBlobStorage.ts'))
+      )
+        throw new Error('synthetic private error must not escape')
       if (args[0] === 'ensure')
         return JSON.stringify({
-          kind: 'linked',
+          kind: failure === 'provider-routing' ? 'primary' : 'linked',
           repoPath: checkout,
           workspace: 'synthetic-runtime',
           profile: 'local-kb-setup',
         })
-      if (failure === 'application')
-        throw new Error('synthetic private error must not escape')
       return ''
     }
     const docker = async (args) => {
       calls.push(args)
       assert.ok(args.includes('--wait'))
       assert.equal(args.at(-1), 'blob')
-      if (failure === 'blob') throw new Error('synthetic Blob unavailable')
+      if (failure === 'blob-readiness')
+        throw new Error('synthetic Blob unavailable')
       return ''
     }
     const run = () =>
       initializeManagedApplication(config, revision, managed, docker)
     if (failure) {
-      await assert.rejects(
-        run(),
-        /^Error: Managed application setup failed; partial state is retained and output withheld\.$/
-      )
-      assert.equal(calls.length, failure === 'blob' ? 2 : 3)
+      await assert.rejects(run(), (error) => {
+        assert.ok(error.message.includes(`failed at ${failure};`))
+        assert.equal(error.message.includes('synthetic'), false)
+        assert.equal(error.cause, undefined)
+        return true
+      })
+      assert.equal(calls.length, callCount)
     } else {
       assert.deepEqual(await run(), { initialized: true })
       assert.equal(calls.length, 5)

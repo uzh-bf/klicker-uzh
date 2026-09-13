@@ -1055,6 +1055,7 @@ export async function initializeManagedApplication(
     '--file',
     join(directory, 'providers.compose.json'),
   ]
+  let stage = 'runtime-start'
   try {
     const result = JSON.parse(
       await runManaged([
@@ -1065,7 +1066,9 @@ export async function initializeManagedApplication(
         '--json',
       ])
     )
+    stage = 'provider-routing'
     await installProviderRouting(config, candidateRevision, result)
+    stage = 'blob-readiness'
     await runDocker([
       ...compose,
       '--file',
@@ -1078,7 +1081,7 @@ export async function initializeManagedApplication(
       '--no-deps',
       'blob',
     ])
-    for (const command of [
+    for (const [index, command] of [
       ['pnpm', '--filter', '@klicker-uzh/prisma', 'run', 'prisma:push:raw'],
       ['pnpm', '--filter', '@klicker-uzh/prisma-data', 'run', 'seed:raw'],
       [
@@ -1091,9 +1094,11 @@ export async function initializeManagedApplication(
         'tsx',
         'src/scripts/setupLocalBlobStorage.ts',
       ],
-    ]) {
+    ].entries()) {
+      stage = ['database-schema', 'database-seed', 'blob-setup'][index]
       await runManaged(['exec', checkout, '--', ...command])
     }
+    stage = 'completion-receipt'
     await writeExclusive(join(attempt, 'complete.json'), {
       candidateRevision,
       workspace: result.workspace,
@@ -1102,7 +1107,7 @@ export async function initializeManagedApplication(
     return { initialized: true }
   } catch {
     throw new Error(
-      'Managed application setup failed; partial state is retained and output withheld.'
+      `Managed application setup failed at ${stage}; partial state is retained and output withheld.`
     )
   }
 }
