@@ -115,4 +115,5 @@ and timing evidence, and squash-merge after non-review checks pass.
 - [x] S2 setup changes limited to measured bottlenecks. Restore-only caches and
       disposable per-shard databases remain; runner and route summaries were
       added instead of adding unproven setup complexity.
-- [ ] S3 exact-head checks pass and the follow-up PR is merged.
+- [x] S3 exact-head checks passed and PR #5648 merged as
+      `f0659e1301254320b2f67a0a4be752ebf6a41c0f`.

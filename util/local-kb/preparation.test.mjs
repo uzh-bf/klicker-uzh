@@ -13,14 +13,13 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { docProcessingImageRevision } from './doc-processing-compose.mjs'
-import { ingestionImageRevision } from './ingestion-compose.mjs'
 import { resolveIsolatedConfig } from './isolated-config.mjs'
 import {
   claimPreparation as claimObservedPreparation,
   completePreparation,
   deliverHatchetToken,
   initializeManagedApplication,
+  initializeProviderLaunchers,
   initializeProviderStorage,
   inspectPreparedInfrastructure,
   inspectRuntimeCheckout,
@@ -28,14 +27,92 @@ import {
   installProviderRouting,
   prepareLocalConfiguration,
   requirePreparation,
-  resumePreparedInfrastructure,
-  startPreparedInfrastructure,
-  stopPreparedInfrastructure,
+  resumePreparedInfrastructure as resumeInfrastructure,
+  startPreparedInfrastructure as startInfrastructure,
+  stopPreparedInfrastructure as stopInfrastructure,
 } from './preparation.mjs'
-import { retrievalImageRevision } from './retrieval-compose.mjs'
-import { scrapingImageRevision } from './scraping-compose.mjs'
+import { providerImages, providerPorts } from './test-fixtures.mjs'
 
 const revision = 'a'.repeat(40)
+
+function lifecycleRunner(config) {
+  return async (command, environment) => {
+    const name = Object.keys(config.providers).find(
+      (key) => config.providers[key].sourcePath === command.cwd
+    )
+    if (name === 'retrieval') {
+      assert.equal(
+        environment.KLICKER_LOCAL_RETRIEVAL_MILVUS_URI,
+        config.bindings.hostBases.milvus
+      )
+      assert.equal(
+        environment.KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL,
+        config.bindings.hostBases.model
+      )
+    }
+    if (!command.args.includes('status')) {
+      assert.ok(command.args.includes('start') || command.args.includes('stop'))
+      return '{}'
+    }
+    const common = {
+      instance: config.project.identity,
+      source_revision: config.providers[name].revision,
+    }
+    if (name === 'ingestion')
+      return JSON.stringify({
+        instance: { name: common.instance },
+        source: { revision: common.source_revision },
+        preparation: {
+          configuration: 'prepared',
+          credentials: 'prepared',
+          schema: 'prepared',
+        },
+        process: { infrastructure: [], workloads: [] },
+      })
+    if (name === 'docProcessing')
+      return JSON.stringify({
+        ...common,
+        instance_id: common.instance,
+        ownership: 'verified',
+        setup: 'ready',
+        ready: false,
+        api: 'stopped',
+      })
+    if (name === 'scraping')
+      return JSON.stringify({
+        ...common,
+        owned: true,
+        setup: { prepared: true },
+        readiness: { api: false },
+        runtime: { api: { running: false }, services: [] },
+      })
+    return JSON.stringify({
+      ...common,
+      prepared: true,
+      ready: false,
+      runtime: 'stopped',
+    })
+  }
+}
+
+const startPreparedInfrastructure = (config, revision, managed, docker) =>
+  startInfrastructure(
+    config,
+    revision,
+    managed,
+    docker,
+    lifecycleRunner(config)
+  )
+const stopPreparedInfrastructure = (config, revision, managed, docker) =>
+  stopInfrastructure(config, revision, managed, docker, lifecycleRunner(config))
+const resumePreparedInfrastructure = (config, revision, managed, docker) =>
+  resumeInfrastructure(
+    config,
+    revision,
+    managed,
+    docker,
+    lifecycleRunner(config)
+  )
 const claimPreparation = (config, candidate) =>
   claimObservedPreparation(config, candidate, () => true)
 const unusedProject = () => ({ unused: true, context: 'synthetic-local' })
@@ -44,6 +121,14 @@ async function setupReceipts(config) {
   const directory = join(config.project.runtimeCheckoutPath, '.local-kb')
   for (const [name, receipt] of [
     ['storage-setup', { initialized: true, context: 'synthetic-local' }],
+    [
+      'provider-setup',
+      {
+        initialized: true,
+        context: 'synthetic-local',
+        candidateRevision: revision,
+      },
+    ],
     [
       'application-setup',
       {
@@ -207,7 +292,7 @@ test('application setup initializes once and retains failures without replay', a
   }
 })
 
-test('prepared infrastructure starts without migrations or consumers and retains failures', async () => {
+test('explicit startup orders provider activation without repeating setup and retains failures', async () => {
   for (const failure of [false, true]) {
     const { config, checkout, read } = await installationFixture()
     await prepareLocalConfiguration(config, revision)
@@ -222,6 +307,7 @@ test('prepared infrastructure starts without migrations or consumers and retains
     await setupReceipts(config)
     await completePreparation(config, revision)
     const calls = []
+    const phases = []
     const docker = async (args) => {
       calls.push(args)
       if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
@@ -231,10 +317,23 @@ test('prepared infrastructure starts without migrations or consumers and retains
     }
     const managed = async (args) => {
       calls.push(args)
-      return JSON.stringify({ ...identity, profile: 'manage,chat' })
+      phases.push('applications-and-model')
+      return JSON.stringify({ ...identity, profile: 'ai,chat,manage' })
+    }
+    const provider = async (command, environment) => {
+      assert.equal(environment.DOCKER_CONTEXT, 'synthetic-local')
+      if (command.args.includes('start')) {
+        const name = Object.keys(config.providers).find(
+          (key) => config.providers[key].sourcePath === command.cwd
+        )
+        phases.push(name)
+        if (name === 'retrieval')
+          assert.ok(environment.KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL)
+      }
+      return lifecycleRunner(config)(command, environment)
     }
     const run = () =>
-      startPreparedInfrastructure(config, revision, managed, docker)
+      startInfrastructure(config, revision, managed, docker, provider)
     if (failure) {
       await assert.rejects(
         run(),
@@ -245,14 +344,21 @@ test('prepared infrastructure starts without migrations or consumers and retains
       assert.deepEqual(await run(), {
         infrastructureStarted: true,
         aiQualified: false,
-        workersStarted: false,
+        providerWorkerActivationRequested: true,
       })
       assert.equal(calls.length, 4)
+      assert.deepEqual(phases, [
+        'scraping',
+        'docProcessing',
+        'applications-and-model',
+        'ingestion',
+        'retrieval',
+      ])
       assert.deepEqual(calls[3], [
         'ensure',
         checkout,
         '--profile',
-        'manage,chat',
+        'ai,chat,manage',
         '--json',
       ])
     }
@@ -268,6 +374,35 @@ test('prepared infrastructure starts without migrations or consumers and retains
     await assert.rejects(run(), { code: 'EEXIST' })
     // The repeated local-context observation is read-only.
     assert.equal(calls.length, before + 2)
+    if (!failure) {
+      const shutdown = []
+      await stopInfrastructure(
+        config,
+        revision,
+        async () => {
+          shutdown.push('applications-and-model')
+          return JSON.stringify({ ...identity, stopped: true })
+        },
+        docker,
+        async (command, environment) => {
+          assert.equal(environment.DOCKER_CONTEXT, 'synthetic-local')
+          if (command.args.includes('stop'))
+            shutdown.push(
+              Object.keys(config.providers).find(
+                (key) => config.providers[key].sourcePath === command.cwd
+              )
+            )
+          return lifecycleRunner(config)(command, environment)
+        }
+      )
+      assert.deepEqual(shutdown, [
+        'retrieval',
+        'ingestion',
+        'docProcessing',
+        'scraping',
+        'applications-and-model',
+      ])
+    }
   }
 })
 
@@ -315,7 +450,7 @@ test('explicit resume requires stop evidence, serializes operations and retains 
     writes.push(args)
     return JSON.stringify({
       ...identity,
-      profile: 'manage,chat',
+      profile: 'ai,chat,manage',
       stopped: true,
     })
   }
@@ -328,7 +463,7 @@ test('explicit resume requires stop evidence, serializes operations and retains 
   await assert.rejects(resume(), /successful stop/)
   for (let cycle = 0; cycle < 2; cycle++) {
     await stopPreparedInfrastructure(config, revision, managed, docker)
-    assert.equal((await resume()).workersStarted, false)
+    assert.equal((await resume()).providerWorkerActivationRequested, true)
     await assert.rejects(resume(), /successful stop/)
   }
   const launches = writes.filter((args) => args.includes('up'))
@@ -400,7 +535,7 @@ test('interrupted stop evidence permits shutdown but not resume', async () => {
     writes.push(args)
     return JSON.stringify({
       ...identity,
-      profile: 'manage,chat',
+      profile: 'ai,chat,manage',
       stopped: true,
     })
   }
@@ -496,8 +631,8 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
         mode: 'managed',
         workspace: 'synthetic-runtime',
         status: 'ready',
-        profile: 'manage,chat',
-        activeProfile: 'manage,chat',
+        profile: 'ai,chat,manage',
+        activeProfile: 'ai,chat,manage',
         drift: [],
       },
     },
@@ -506,24 +641,62 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
     assert.deepEqual(args, ['status', '--repo', checkout, '--json'])
     return JSON.stringify(managedObservation)
   }
+  const observeProvider = async (command) => {
+    const name = Object.keys(config.providers).find(
+      (key) => config.providers[key].sourcePath === command.cwd
+    )
+    assert.ok(command.args.includes('status'))
+    const common = {
+      instance: config.project.identity,
+      source_revision: config.providers[name].revision,
+    }
+    if (name === 'ingestion')
+      return JSON.stringify({
+        instance: { name: common.instance },
+        source: { revision: common.source_revision },
+        preparation: {},
+        process: { infrastructure: [], workloads: [] },
+      })
+    if (name === 'docProcessing')
+      return JSON.stringify({
+        ...common,
+        instance_id: common.instance,
+        ownership: 'verified',
+        setup: 'ready',
+        ready: false,
+      })
+    if (name === 'scraping')
+      return JSON.stringify({
+        ...common,
+        owned: true,
+        setup: { prepared: true },
+        readiness: { api: false },
+      })
+    return JSON.stringify({ ...common, prepared: true, ready: false })
+  }
   const status = await inspectPreparedInfrastructure(
     config,
     revision,
     docker,
-    observeManaged
+    observeManaged,
+    observeProvider
   )
   assert.deepEqual(status.providers, [
     { service: 'postgres', state: 'running', health: 'unreported' },
   ])
   assert.equal(status.aiQualified, false)
+  assert.equal(status.launchers.length, 4)
+  assert.ok(
+    status.launchers.every((row) => !row.endpointReady && !row.aiQualified)
+  )
   assert.equal(status.infrastructureHealthy, false)
   assert.deepEqual(
     status.infrastructure.find(({ service }) => service === 'postgres'),
     { service: 'postgres', status: 'readiness-unverified' }
   )
   assert.deepEqual(
-    status.infrastructure.find(({ service }) => service === 'ingestion-api'),
-    { service: 'ingestion-api', status: 'missing' }
+    status.infrastructure.find(({ service }) => service === 'blob'),
+    { service: 'blob', status: 'missing' }
   )
   const services = status.infrastructure.map(({ service }) => service)
   for (const condition of [
@@ -555,7 +728,8 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
       config,
       revision,
       observation,
-      observeManaged
+      observeManaged,
+      observeProvider
     )
     assert.equal(result.infrastructureHealthy, condition === 'healthy')
     assert.equal(result.aiQualified, false)
@@ -574,7 +748,8 @@ test('status is read-only and stop refuses foreign provider ownership', async ()
       config,
       revision,
       docker,
-      async () => JSON.stringify(observation)
+      async () => JSON.stringify(observation),
+      observeProvider
     )
     assert.equal(result.managedRuntimeObserved, true)
     assert.equal(result.managedRuntimeReady, false)
@@ -669,10 +844,10 @@ async function fixture() {
       {
         path: `/synthetic/providers/${name}`,
         revision: {
-          ingestion: ingestionImageRevision,
-          scraping: scrapingImageRevision,
-          retrieval: retrievalImageRevision,
-          docProcessing: docProcessingImageRevision,
+          ingestion: 'a'.repeat(40),
+          scraping: 'b'.repeat(40),
+          retrieval: '8'.repeat(40),
+          docProcessing: 'd'.repeat(40),
         }[name],
       },
     ])
@@ -692,24 +867,8 @@ async function fixture() {
         { ...value, clean: true },
       ])
     ),
-    endpoints: Object.fromEntries(
-      [
-        'klicker',
-        'postgres',
-        'hatchet',
-        'redis',
-        'blob',
-        'ingestion',
-        'dispatcher',
-        'callback',
-        'scraping',
-        'crawl4ai',
-        'milvus',
-        'objectBacking',
-        'retrieval',
-        'docProcessing',
-      ].map((name, i) => [name, `http://127.0.0.1:${19000 + i}/health`])
-    ),
+    ports: providerPorts(),
+    images: { ...providerImages },
   })
 }
 
@@ -832,6 +991,96 @@ test('Hatchet token delivery is private, one-shot and rejects injectable output'
   assert.equal(await readFile(path, 'utf8'), original)
 })
 
+test('provider setup invokes supported launchers once and retains partial failure', async () => {
+  for (const failure of [false, 'docProcessing', 'malformed', 'context']) {
+    const config = await fixture()
+    await claimPreparation(config, revision)
+    await prepareLocalConfiguration(config, revision)
+    await initializeProviderStorage(
+      config,
+      revision,
+      async (args) =>
+        args.includes('exec') ? 'synthetic.header.signature' : '',
+      unusedProject
+    )
+    const calls = []
+    const run = async (command, env) => {
+      assert.equal(env.DOCKER_CONTEXT, 'synthetic-local')
+      const provider = command.cwd.split('/').at(-1)
+      calls.push({ provider, args: command.args, env })
+      if (provider === failure) throw new Error('synthetic private diagnostic')
+      if (failure === 'malformed') return '{}'
+      const instance = config.project.identity
+      const source_revision = config.providers[provider].revision
+      return JSON.stringify(
+        provider === 'ingestion'
+          ? {
+              instance: { name: instance },
+              source: { revision: source_revision },
+              preparation: {
+                configuration: 'prepared',
+                credentials: 'prepared',
+                schema: 'prepared',
+              },
+            }
+          : provider === 'docProcessing'
+            ? { instance_id: instance, source_revision, setup: 'ready' }
+            : { instance, source_revision, prepared: true }
+      )
+    }
+    const docker = async (args) =>
+      args[1] === 'show'
+        ? failure === 'context'
+          ? 'other'
+          : 'synthetic-local'
+        : 'unix:///synthetic/docker.sock'
+    const execute = () =>
+      initializeProviderLaunchers(config, revision, run, docker)
+    if (failure) {
+      await assert.rejects(execute(), /context|partial state/)
+    } else {
+      assert.deepEqual(await execute(), { providersInitialized: true })
+      assert.deepEqual(
+        calls.map(({ provider }) => provider),
+        ['scraping', 'docProcessing', 'ingestion', 'retrieval']
+      )
+      assert.equal(
+        calls.at(-1).env.KLICKER_LOCAL_RETRIEVAL_MILVUS_URI,
+        config.bindings.hostBases.milvus
+      )
+      assert.ok(
+        calls.every(
+          ({ args }) => args.includes('setup') && !args.includes('start')
+        )
+      )
+    }
+    const count = calls.length
+    if (failure === 'context') assert.equal(count, 0)
+    else {
+      await assert.rejects(execute(), { code: 'EEXIST' })
+      assert.equal(calls.length, count)
+    }
+    if (failure === 'docProcessing') {
+      assert.deepEqual(
+        calls.map(({ provider }) => provider),
+        ['scraping', 'docProcessing']
+      )
+      const path = join(
+        config.project.runtimeCheckoutPath,
+        '.local-kb/provider-setup'
+      )
+      assert.equal(
+        JSON.parse(await readFile(join(path, 'scraping.json'), 'utf8'))
+          .setupCompleted,
+        true
+      )
+      await assert.rejects(stat(join(path, 'complete.json')), {
+        code: 'ENOENT',
+      })
+    }
+  }
+})
+
 test('storage setup runs migrations once and does not qualify the full runtime', async () => {
   const config = await fixture()
   await claimPreparation(config, revision)
@@ -849,14 +1098,7 @@ test('storage setup runs migrations once and does not qualify the full runtime',
   )
   assert.deepEqual(
     calls.map((args) => args.at(-1)),
-    [
-      'postgres',
-      'hatchet-setup',
-      'ingestion-setup',
-      'doc-processing-setup',
-      'hatchet',
-      '/config/authdisabled-token',
-    ]
+    ['postgres', 'hatchet-setup', 'hatchet', '/config/authdisabled-token']
   )
   await assert.rejects(requirePreparation(config, revision), { code: 'ENOENT' })
   await assert.rejects(
@@ -865,7 +1107,7 @@ test('storage setup runs migrations once and does not qualify the full runtime',
       code: 'EEXIST',
     }
   )
-  assert.equal(calls.length, 6)
+  assert.equal(calls.length, 4)
   assert.equal(
     (
       await stat(
@@ -914,8 +1156,8 @@ test('storage collision prevents every setup command', async () => {
       revision,
       async () => assert.fail('must not mutate Docker'),
       (compose) => {
-        assert.ok(compose.volumes.milvus)
-        assert.ok(compose.volumes['document-processing'])
+        assert.ok(compose.volumes.postgres)
+        assert.equal(compose.volumes['document-processing'], undefined)
         return { unused: false, reason: 'existing-project-or-storage' }
       }
     ),
@@ -949,7 +1191,7 @@ test('configuration setup writes private local material once without completing 
     configured: true,
   })
   const directory = join(config.project.runtimeCheckoutPath, '.local-kb')
-  const environment = join(directory, 'ingestion.env')
+  const environment = join(directory, 'ingestion-worker.env')
   const bootstrapPath = join(directory, 'bootstrap.compose.json')
   const bootstrap = JSON.parse(await readFile(bootstrapPath, 'utf8'))
   assert.equal(bootstrap.name, config.project.identity)
@@ -959,9 +1201,18 @@ test('configuration setup writes private local material once without completing 
   const providers = JSON.parse(
     await readFile(join(directory, 'providers.compose.json'), 'utf8')
   )
-  assert.ok(providers.services['ingestion-api'])
-  assert.ok(providers.services['doc-query'])
-  assert.ok(providers.volumes.milvus)
+  assert.equal(providers.services['ingestion-api'], undefined)
+  assert.equal(providers.services['doc-query'], undefined)
+  assert.equal(providers.volumes.milvus, undefined)
+  for (const name of [
+    'ingestion-api.env',
+    'ingestion-worker.env',
+    'doc-processing.json',
+    'scraping-api-key',
+    'retrieval-environment.json',
+  ]) {
+    assert.equal((await stat(join(directory, name))).mode & 0o777, 0o600)
+  }
   // Hatchet publishes this file in the separate storage-initialization phase.
   await deliverHatchetToken(config, revision, 'synthetic.header.signature')
   for (const service of Object.values(providers.services)) {

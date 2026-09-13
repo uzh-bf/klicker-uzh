@@ -9,7 +9,8 @@ import { isDeepStrictEqual } from 'node:util'
  *   retainedEndpointOrigins,
  *   providerRoots: { [name]: { path, revision } },
  *   providerObservations: { [name]: { path, revision, clean: true } },
- *   endpoints: { [name]: url },
+ *   ports: explicit provider and consumer port allocations,
+ *   images: { api, worker }: immutable ingestion image references,
  * }
  *
  * The returned object is a validation model, not rendered Compose/devrouter
@@ -17,8 +18,8 @@ import { isDeepStrictEqual } from 'node:util'
  * occurs here. Roots and health are arrays for plan and inspection
  * consumers; providers, sourceMounts, and mutableState are keyed lifecycle
  * data. Launcher bindings derive from project, providers, and endpoints.
- * Doc Processing is an explicit, local-only but unqualified capability until
- * main's integration layer supplies its concrete local service.
+ * Provider state roots belong to the provider launchers; this model does not
+ * invent their internal volume names or prove runtime capabilities.
  */
 
 const PROVIDER_STATE_KEYS = {
@@ -41,8 +42,8 @@ const STATE_OWNERS = {
   milvus: 'ingestion',
   milvusMetadata: 'ingestion',
   objectBacking: 'ingestion',
-  callback: 'callback',
-  docQuery: 'docQuery',
+  callback: 'ingestion',
+  docQuery: 'retrieval',
   documentProcessing: 'docProcessing',
 }
 
@@ -99,7 +100,7 @@ const GRAPH_NODES = [
   [
     'ingestionApi',
     'provider-service',
-    ['postgres', 'redis', 'hatchet', 'blob', 'ingestionOutbox'],
+    ['ingestionBacking', 'ingestionOutbox'],
     'ingestion',
     null,
     'ingestion',
@@ -107,15 +108,7 @@ const GRAPH_NODES = [
   [
     'ingestionWorkers',
     'provider-workers',
-    [
-      'ingestionApi',
-      'postgres',
-      'redis',
-      'hatchet',
-      'blob',
-      'scraping',
-      'documentProcessing',
-    ],
+    ['ingestionApi', 'ingestionBacking', 'scraping', 'documentProcessing'],
     null,
     null,
     'ingestion',
@@ -123,7 +116,7 @@ const GRAPH_NODES = [
   [
     'ingestionOutbox',
     'provider-state',
-    ['postgres'],
+    ['ingestionBacking'],
     null,
     'ingestionOutbox',
     'ingestion',
@@ -139,13 +132,16 @@ const GRAPH_NODES = [
   [
     'scraping',
     'provider-service',
-    ['scraperCache', 'crawl4ai'],
+    ['scrapingBacking', 'scraperCache', 'crawl4ai'],
     'scraping',
     null,
     'scraping',
   ],
   ['scraperCache', 'provider-state', [], null, 'scraperCache', 'scraping'],
-  ['crawl4ai', 'service', [], 'crawl4ai', null, null],
+  ['crawl4ai', 'service', ['scrapingBacking'], 'crawl4ai', null, 'scraping'],
+  ['ingestionBacking', 'provider-backing', [], null, null, 'ingestion'],
+  ['scrapingBacking', 'provider-backing', [], null, null, 'scraping'],
+  ['docProcessingBacking', 'provider-backing', [], null, null, 'docProcessing'],
   [
     'milvus',
     'service',
@@ -174,7 +170,7 @@ const GRAPH_NODES = [
   [
     'documentProcessing',
     'provider-service',
-    ['postgres'],
+    ['docProcessingBacking'],
     'docProcessing',
     'documentProcessing',
     'docProcessing',
@@ -195,7 +191,8 @@ const INPUT_KEYS = [
   'retainedEndpointOrigins',
   'providerRoots',
   'providerObservations',
-  'endpoints',
+  'ports',
+  'images',
 ]
 const CONFIG_KEYS = [
   'schemaVersion',
@@ -212,11 +209,11 @@ const CONFIG_KEYS = [
   'dependencyGraph',
   'capabilities',
   'integrationRequirements',
+  'bindings',
 ]
 const IDENTIFIER = /^[a-z][a-z0-9-]{2,63}$/
 const REVISION = /^[0-9a-f]{40}$/i
 const VOLUME_NAME = /^[a-z][a-z0-9-]{2,127}$/
-const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 const LOCAL_PROTOCOLS = new Set([
   'http:',
   'https:',
@@ -293,6 +290,65 @@ function identifier(value, field) {
   ensure(IDENTIFIER.test(value), `${field} must be a lowercase identifier.`)
 }
 
+// Immutable port contract for the isolated local-KB provider stack. Every port
+// is supplied by the caller; nothing is allocated here. A retained endpoint at
+// any protocol or host reserves its numeric port so a fresh stack cannot bind
+// an address an existing stack already owns.
+const PROVIDER_PORT_GROUPS = {
+  klicker: ['backend', 'model', 'blob'],
+  ingestion: [
+    'api',
+    'dispatcher',
+    'hatchetHttp',
+    'hatchetGrpc',
+    'postgres',
+    'azurite',
+    'milvus',
+    'milvusHealth',
+    'milvusAttu',
+  ],
+  docProcessing: ['api', 'postgres', 'hatchetHttp', 'hatchetGrpc'],
+  scraping: ['api', 'crawl4ai', 'postgres'],
+  retrieval: ['api'],
+}
+const PROVIDER_PORT_GROUPS_KEYS = Object.keys(PROVIDER_PORT_GROUPS)
+const INSTANCE = /^[a-z0-9][a-z0-9-]*$/
+const INSTANCE_MAX_LENGTH = 48
+
+function instanceIdentifier(value) {
+  string(value, 'instance')
+  ensure(
+    value.length <= INSTANCE_MAX_LENGTH,
+    'instance must be at most 48 characters.'
+  )
+  ensure(
+    INSTANCE.test(value),
+    'instance must be a lowercase [a-z0-9][a-z0-9-]* identifier.'
+  )
+}
+
+function portNumber(value, field) {
+  ensure(
+    Number.isInteger(value) && value >= 1024 && value <= 65535,
+    `${field} must be an integer between 1024 and 65535.`
+  )
+  return value
+}
+
+function endpointPortNumber(value) {
+  let endpoint
+  try {
+    endpoint = new URL(value)
+  } catch {
+    invalid('retainedEndpointOrigins contains an invalid URL.')
+  }
+  ensure(
+    LOCAL_PROTOCOLS.has(endpoint.protocol) && endpoint.hostname,
+    'retainedEndpointOrigins contains an unsupported endpoint.'
+  )
+  return endpoint.port ? Number(endpoint.port) : null
+}
+
 function inside(parent, child) {
   const childRelative = relative(parent, child)
   return (
@@ -333,48 +389,6 @@ function safeDestination(value, field, projectIdentity, reserved) {
       !/(^|-)(default|old|primary|remote|retained|shared)(-|$)/.test(value),
     `${field} uses a retained or shared destination.`
   )
-}
-
-function localEndpoint(value, field, name, reservedOrigins) {
-  string(value, field)
-  let parsed
-  try {
-    parsed = new URL(value)
-  } catch {
-    invalid(`${field} must be a local URL.`)
-  }
-  ensure(
-    LOCAL_PROTOCOLS.has(parsed.protocol) && parsed.hostname && parsed.port,
-    `${field} must use an explicit local protocol, host and port.`
-  )
-  ensure(
-    !parsed.username && !parsed.password,
-    `${field} must not contain credentials.`
-  )
-  ensure(
-    !parsed.search && !parsed.hash,
-    `${field} must not contain query parameters or fragments.`
-  )
-  const host = parsed.hostname.toLowerCase()
-  ensure(
-    LOCAL_HOSTS.has(host) || ENDPOINT_HOSTS[name].includes(host),
-    `${field} must use a loopback or declared local service host.`
-  )
-  const origin = `${parsed.protocol}//${host}:${parsed.port}`
-  for (const reserved of reservedOrigins) {
-    let reservedUrl
-    try {
-      reservedUrl = new URL(reserved)
-    } catch {
-      invalid('retainedEndpointOrigins contains an invalid URL.')
-    }
-    const reservedOrigin = `${reservedUrl.protocol}//${reservedUrl.hostname.toLowerCase()}:${reservedUrl.port}`
-    ensure(
-      reservedOrigin !== origin,
-      `${field} reuses a retained or remote endpoint.`
-    )
-  }
-  return { value, origin }
 }
 
 function validateInput(input) {
@@ -437,23 +451,39 @@ function validateInput(input) {
     'checkout and provider paths'
   )
 
-  exactKeys(input.endpoints, ENDPOINT_NAMES, 'endpoints')
-  const endpoints = {}
-  const origins = []
-  for (const name of ENDPOINT_NAMES) {
-    const parsed = localEndpoint(
-      input.endpoints[name],
-      `endpoints.${name}`,
-      name,
-      input.retainedEndpointOrigins
-    )
-    endpoints[name] = parsed.value
-    origins.push(parsed.origin)
-  }
-  ensure(
-    new Set(origins).size === origins.length,
-    'endpoints must use unique local origins.'
+  const bindings = resolveProviderBindings(
+    input.ports,
+    input.projectIdentity,
+    input.retainedEndpointOrigins
   )
+  exactKeys(input.images, ['api', 'worker'], 'images')
+  for (const name of ['api', 'worker']) {
+    ensure(
+      typeof input.images[name] === 'string' &&
+        /^[a-zA-Z0-9][a-zA-Z0-9._:/-]*@sha256:[a-f0-9]{64}$/.test(
+          input.images[name]
+        ),
+      `images.${name} must be an immutable image reference.`
+    )
+  }
+  bindings.images = { ...input.images }
+  const host = bindings.hostBases
+  const endpoints = {
+    klicker: `${host.backend}/graphql`,
+    postgres: 'postgresql://postgres:5432/klicker',
+    hatchet: 'http://hatchet:8888/api/v1/meta',
+    redis: 'redis://redis:6379/0',
+    blob: host.blob,
+    ingestion: `${host.ingestion}/ready`,
+    dispatcher: `${host.dispatcher}/health`,
+    callback: `${host.backend}/health`,
+    scraping: `${host.scraping}/ready`,
+    crawl4ai: `http://127.0.0.1:${bindings.ports.scraping.crawl4ai}/health`,
+    milvus: `http://127.0.0.1:${bindings.ports.ingestion.milvusHealth}/healthz`,
+    objectBacking: 'http://minio:9000/minio/health/live',
+    retrieval: host.retrieval.replace(/\/mcp$/, '/health'),
+    docProcessing: `${host.docProcessing}/health`,
+  }
   return {
     primaryCheckoutPath: input.primaryCheckoutPath,
     runtimeCheckoutPath: input.runtimeCheckoutPath,
@@ -464,6 +494,7 @@ function validateInput(input) {
     retainedEndpointOrigins: [...input.retainedEndpointOrigins],
     providers,
     endpoints,
+    bindings,
   }
 }
 
@@ -476,6 +507,17 @@ function deriveState(normalized) {
   return Object.fromEntries(
     Object.entries(STATE_OWNERS).map(([name, owner]) => {
       const suffix = kebab(name)
+      if (PROVIDER_NAMES.includes(owner)) {
+        return [
+          name,
+          {
+            owner,
+            path: `${root}/${owner}`,
+            managedBy: 'provider-launcher',
+            generated: true,
+          },
+        ]
+      }
       return [
         name,
         {
@@ -514,6 +556,7 @@ function deriveGraph(endpoints, state) {
 function buildConfig(normalized) {
   const mutableState = deriveState(normalized)
   for (const state of Object.values(mutableState)) {
+    if (state.managedBy === 'provider-launcher') continue
     safeDestination(
       state.volumeName,
       'volumeName',
@@ -559,7 +602,8 @@ function buildConfig(normalized) {
   )
 
   return {
-    schemaVersion: 'isolated-local-kb.validation.v1',
+    schemaVersion: 'isolated-local-kb.provider-config.v2',
+    bindings: normalized.bindings,
     model: 'validation-only',
     deployment: {
       model: 'validation-only',
@@ -606,10 +650,10 @@ function buildConfig(normalized) {
     },
     integrationRequirements: [
       {
-        id: 'rendered-local-deployment',
+        id: 'provider-runtime-qualification',
         status: 'required',
         description:
-          'Render this validation model into concrete Compose/devrouter services before execution.',
+          'Qualify the provider launchers and their installed local dependencies before claiming runtime readiness.',
       },
     ],
   }
@@ -650,9 +694,8 @@ function validateResolvedConfig(config) {
         },
       ])
     ),
-    endpoints: Object.fromEntries(
-      ENDPOINT_NAMES.map((name) => [name, config.endpoints[name].url])
-    ),
+    ports: config.bindings?.ports,
+    images: config.bindings?.images,
   }
   ensure(
     isDeepStrictEqual(config, resolveIsolatedConfig(input)),
@@ -663,6 +706,96 @@ function validateResolvedConfig(config) {
 
 export function resolveIsolatedConfig(input) {
   return buildConfig(validateInput(input))
+}
+
+/**
+ * Pure input:
+ * {
+ *   ports: { klicker: { backend, model, blob },
+ *            ingestion: { api, dispatcher, hatchetHttp, hatchetGrpc, postgres,
+ *                         azurite, milvus, milvusHealth, milvusAttu },
+ *            docProcessing: { api, postgres, hatchetHttp, hatchetGrpc },
+ *            scraping: { api, crawl4ai, postgres },
+ *            retrieval: { api } },
+ *   instance: lowercase identifier,
+ *   retainedEndpointOrigins: [url],
+ * }
+ *
+ * The result is a host/container binding model, not rendered Compose or
+ * devrouter configuration. Ports are returned unchanged; callers allocate all
+ * of them. No filesystem, Git, network, provider, or secret access occurs here.
+ */
+export function resolveProviderBindings(
+  ports,
+  instance,
+  retainedEndpointOrigins = []
+) {
+  instanceIdentifier(instance)
+  exactKeys(ports, PROVIDER_PORT_GROUPS_KEYS, 'ports')
+  const resolved = {}
+  const selected = new Set()
+  for (const [group, names] of Object.entries(PROVIDER_PORT_GROUPS)) {
+    exactKeys(ports[group], names, `ports.${group}`)
+    resolved[group] = {}
+    for (const name of names) {
+      const value = portNumber(ports[group][name], `ports.${group}.${name}`)
+      ensure(
+        !selected.has(value),
+        `ports.${group}.${name} duplicates another selected port.`
+      )
+      selected.add(value)
+      resolved[group][name] = value
+    }
+  }
+
+  strings(retainedEndpointOrigins, 'retainedEndpointOrigins')
+  const retained = new Set()
+  for (const origin of retainedEndpointOrigins) {
+    const port = endpointPortNumber(origin)
+    if (port !== null) retained.add(port)
+  }
+  for (const [group, names] of Object.entries(PROVIDER_PORT_GROUPS)) {
+    for (const name of names) {
+      ensure(
+        !retained.has(resolved[group][name]),
+        `ports.${group}.${name} reuses a retained endpoint port.`
+      )
+    }
+  }
+
+  const suffix = instance.replaceAll('-', '_')
+  const host = (port) => `http://127.0.0.1:${port}`
+  const container = (port) => `http://host.docker.internal:${port}`
+
+  return {
+    schemaVersion: 'isolated-local-kb.provider-bindings.v1',
+    instance,
+    ports: resolved,
+    collection: `local_cli_ingestion_${suffix}`,
+    stateSchema: `ingestion_state_${suffix}`,
+    hostBases: {
+      backend: host(resolved.klicker.backend),
+      model: `${host(resolved.klicker.model)}/v1`,
+      blob: `${host(resolved.klicker.blob)}/klickerdev`,
+      ingestion: host(resolved.ingestion.api),
+      dispatcher: host(resolved.ingestion.dispatcher),
+      scraping: host(resolved.scraping.api),
+      docProcessing: host(resolved.docProcessing.api),
+      milvus: host(resolved.ingestion.milvus),
+      retrieval: `${host(resolved.retrieval.api)}/mcp`,
+    },
+    containerBases: {
+      backend: container(resolved.klicker.backend),
+      model: `${container(resolved.klicker.model)}/v1`,
+      blob: `${container(resolved.klicker.blob)}/klickerdev`,
+      ingestion: container(resolved.ingestion.api),
+      dispatcher: container(resolved.ingestion.dispatcher),
+      scraping: container(resolved.scraping.api),
+      docProcessing: container(resolved.docProcessing.api),
+      milvus: 'http://milvus-standalone:19530',
+      retrieval: `${container(resolved.retrieval.api)}/mcp`,
+    },
+  }
 }
 
 export function validateIsolatedConfig(config) {
