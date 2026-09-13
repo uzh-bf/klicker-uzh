@@ -332,3 +332,41 @@ C, preserve failures, and stop the exact runtime after the original proof.
   has zero running app containers. No bypass or commit occurred. The 68 passing
   launcher tests do not replace the full container check suite.
 - Runtime setup, PDF ingestion, retrieval, and retained restart remain unrun.
+
+### End-to-end proof and the runtime defects it exposed
+
+Instance f completed the acceptance journey that this plan exists to reach. One isolated
+stack at the Luna pin carried provider ingestion to `succeeded`, reconciled the
+resource to `READY` with `activeResourceVersion = 1`, and then answered a Chat
+question from that ingested content through the real retrieval service. The cited
+quotation matched the provider-ingested page text, so the answer came from retrieval
+rather than model memory. The receipt is `project/_local/2026-09-13-instance-f-qna-proof.md`.
+
+Three defects appeared only once the stack ran end to end, and all three are now
+fixed in source at `317662a438`:
+
+- The isolated profile started no Klicker Hatchet worker, so a resource created
+  through Manage stayed `QUEUED` with a null `externalOperationId` and no error.
+  KB ingestion workflows are registered only by `apps/hatchet-worker-general`.
+  A new `workers` profile starts both worker runtimes without adding routes.
+- The seeded KB MCP server was parked as `scope_token` with a null
+  `authSecret`, while the Chat client requires a bearer transport secret and
+  otherwise fails closed. Every KB chat turn returned HTTP 503
+  `Required chatbot tools are unavailable`. The new `kb-retrieval-transport` stage
+  normalizes exactly that owned row and nothing else.
+- The provider callback URL is unreachable from the application container. Ingestion
+  still completes because `monitorActiveKBIngestions` polls, so the callback is a
+  latency optimization and not the completion path. The polling fallback is what
+  delivered the terminal state; the callback itself remains untested.
+
+The prior candidate-blocking failures at instances b, c and e remain accurate for
+their own revisions: the document-processing token failure and the discarded
+subprocess stderr were real. This run reached its terminal state on a later
+candidate, so those blockers describe superseded revisions rather than open work.
+
+Source checks on the merged head: launcher suite 87/87, profile-resolver contract
+pass, and the Chat transport test 7/7. Application hooks could not run because the
+task runtime is stopped, so equivalent host checks were run in their place.
+
+Open boundaries: no teardown, deletion, merge, deployment, or graph activation was
+performed. Instance f is left running for the user's own inspection.
