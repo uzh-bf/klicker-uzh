@@ -20,6 +20,7 @@ import {
   resolveEffectiveMCPConfigurations,
   resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
+import { normalizeLocalMcpConfigurations } from '@/src/lib/server/localMcpFixture.mjs'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -160,12 +161,17 @@ export async function POST(
     )
   }
 
-  const enabledMCPConfigurations = chatbot.mcpConfigurations.filter(
+  const mcpConfigurations = normalizeLocalMcpConfigurations(
+    chatbot.mcpConfigurations,
+    chatbot,
+    process.env
+  )
+  const enabledMCPConfigurations = mcpConfigurations.filter(
     (configuration) => configuration.isEnabled !== false
   )
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
-    chatbot.mcpConfigurations,
+    mcpConfigurations,
     chatbot.standardModeConfig
   )
   const selectedMode = resolveRequestedChatMode(
@@ -180,7 +186,7 @@ export async function POST(
   }
 
   const modeConfigurations = resolveEffectiveMCPConfigurations(
-    chatbot.mcpConfigurations,
+    mcpConfigurations,
     selectedMode
   )
   if (

@@ -10,9 +10,13 @@ import {
   assertLocalSeedOwnership,
   createLocalAuthenticator,
   LOCAL_CHATBOT_ID,
+  LOCAL_COURSE_ID,
   LOCAL_FIXTURE_MARKER,
   LOCAL_KB_ID,
+  LOCAL_OWNER_ID,
   LOCAL_SCOPE,
+  LOCAL_SERVER_ID,
+  LOCAL_SERVER_NAME,
 } from '../scripts/local-mcp-auth.mjs'
 
 const SYNTHETIC_TRANSPORT_TOKEN = 'synthetic-transport-token'
@@ -21,9 +25,8 @@ const SYNTHETIC_ISSUER = 'synthetic-local-chat'
 const SYNTHETIC_AUDIENCE = 'synthetic-doc-query'
 const SYNTHETIC_SUBJECT = 'synthetic-session'
 const SYNTHETIC_JTI = 'synthetic-jti'
-const SYNTHETIC_OWNER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
-const SYNTHETIC_COURSE_ID = '7c12e44e-d083-4acf-845e-4c34aaff6b49'
-const SYNTHETIC_OTHER_CHATBOT_ID = '9f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+const LEGACY_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+const OTHER_CHATBOT_ID = '9f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 const SYNTHETIC_AUTH_SECRET = [
   'a'.repeat(32),
   'b'.repeat(32),
@@ -64,15 +67,15 @@ async function createSyntheticFixture(
   > = {}
 ): Promise<SyntheticFixture> {
   const { privateKey, publicKey } = await generateKeyPair('ES256')
+  const generation = overrides.LOCAL_MCP_GENERATION ?? SYNTHETIC_GENERATION
   const env: AuthEnvironment = {
-    LOCAL_MCP_GENERATION:
-      overrides.LOCAL_MCP_GENERATION ?? SYNTHETIC_GENERATION,
+    LOCAL_MCP_GENERATION: generation,
     LOCAL_MCP_PUBLIC_KEY: await exportSPKI(publicKey),
     LOCAL_MCP_TRANSPORT_TOKEN:
       overrides.LOCAL_MCP_TRANSPORT_TOKEN ?? SYNTHETIC_TRANSPORT_TOKEN,
     DOC_QUERY_SCOPE_AUDIENCE: SYNTHETIC_AUDIENCE,
     DOC_QUERY_SCOPE_ISSUER: SYNTHETIC_ISSUER,
-    DOC_QUERY_SCOPE_KID: overrides.LOCAL_MCP_GENERATION ?? SYNTHETIC_GENERATION,
+    DOC_QUERY_SCOPE_KID: generation,
   }
 
   return {
@@ -127,86 +130,50 @@ async function expectRejectedScopeToken(
   expect(await fixture.authenticate(headersFor(token)), label).toBe(false)
 }
 
-function legacyServer(overrides: Record<string, unknown> = {}) {
+function dedicatedServer(overrides: Record<string, unknown> = {}) {
   return {
-    name: 'KB',
+    id: LOCAL_SERVER_ID,
+    name: LOCAL_SERVER_NAME,
     url: 'http://localhost:1417/mcp',
     isActive: true,
-    passChatbotId: true,
+    passChatbotId: false,
     chatbotIdHeader: null,
-    authType: 'none',
-    authSecret: null,
-    parameters: null,
-    ...overrides,
-  }
-}
-
-function authenticatedServer(overrides: Record<string, unknown> = {}) {
-  return legacyServer({
     authType: 'bearer',
     authSecret: SYNTHETIC_AUTH_SECRET,
     parameters: { ...LOCAL_FIXTURE_MARKER },
-    passChatbotId: false,
     ...overrides,
-  })
-}
-
-function scopeTokenServer(overrides: Record<string, unknown> = {}) {
-  return legacyServer({
-    authType: 'scope_token',
-    authSecret: null,
-    parameters: null,
-    passChatbotId: false,
-    ...overrides,
-  })
+  }
 }
 
 function seedConfig(chatMode: string, overrides: Record<string, unknown> = {}) {
   return {
+    id: `synthetic-${chatMode}`,
+    mcpServerId: LOCAL_SERVER_ID,
     chatbotId: LOCAL_CHATBOT_ID,
-    ownerId: SYNTHETIC_OWNER_ID,
-    courseId: SYNTHETIC_COURSE_ID,
+    ownerId: LOCAL_OWNER_ID,
+    courseId: LOCAL_COURSE_ID,
     chatMode,
     isEnabled: true,
     priority: 0,
     allowedTools: ['doc_query'],
-    parameters: null,
+    parameters: { ...LOCAL_SCOPE },
     ...overrides,
   }
 }
 
-function legacyConfigs() {
-  return [seedConfig('tutor'), seedConfig('explainer')]
-}
-
-function authenticatedConfigs(isEnabled: [boolean, boolean] = [true, true]) {
+function dedicatedConfigs(isEnabled: [boolean, boolean] = [true, true]) {
   return [
-    seedConfig('tutor', {
-      isEnabled: isEnabled[0],
-      parameters: { ...LOCAL_SCOPE },
-    }),
-    seedConfig('explainer', {
-      isEnabled: isEnabled[1],
-      parameters: { ...LOCAL_SCOPE },
-    }),
-  ]
-}
-
-function scopeTokenConfigs(
-  parameters: Record<string, unknown> | null = null,
-  isEnabled: [boolean, boolean] = [true, false]
-) {
-  return [
-    seedConfig('tutor', { isEnabled: isEnabled[0], parameters }),
-    seedConfig('explainer', { isEnabled: isEnabled[1], parameters }),
+    seedConfig('tutor', { isEnabled: isEnabled[0] }),
+    seedConfig('explainer', { isEnabled: isEnabled[1] }),
   ]
 }
 
 function expectOwnershipConflict(
   server: Record<string, unknown>,
-  configs: Array<Record<string, unknown>>
+  configs: Array<Record<string, unknown>>,
+  chatbot: Record<string, unknown> | undefined = undefined
 ) {
-  expect(() => assertLocalSeedOwnership(server, configs)).toThrow(
+  expect(() => assertLocalSeedOwnership(server, configs, chatbot)).toThrow(
     'Local MCP seed ownership conflict'
   )
 }
@@ -286,7 +253,11 @@ describe('createLocalAuthenticator', () => {
   test('rejects scope JWTs with wrong binding claims or signing metadata', async () => {
     const cases: Array<[string, ScopeTokenOptions]> = [
       ['wrong knowledge base', { claims: { kb_id: 'synthetic-other-kb' } }],
-      ['wrong chatbot', { claims: { chatbot_id: SYNTHETIC_OTHER_CHATBOT_ID } }],
+      ['wrong chatbot', { claims: { chatbot_id: OTHER_CHATBOT_ID } }],
+      [
+        'old response-example chatbot',
+        { claims: { chatbot_id: LEGACY_CHATBOT_ID } },
+      ],
       ['wrong key id', { kid: 'synthetic-rotated-key' }],
       ['wrong issuer', { issuer: 'synthetic-other-issuer' }],
       ['wrong audience', { audience: 'synthetic-other-audience' }],
@@ -338,56 +309,17 @@ describe('createLocalAuthenticator', () => {
     ).resolves.toBe(true)
   })
 })
-
 describe('assertLocalSeedOwnership', () => {
-  test.each([
-    { required: true, toolAlias: 'doc_query', kb_ids: [LOCAL_KB_ID] },
-    { required: true, toolAlias: 'doc_query', kb_id: LOCAL_KB_ID },
-  ])('accepts a persisted owned scope during local seed conversion', (scope) => {
-    const configs = authenticatedConfigs().map((config) => ({
-      ...config,
-      parameters: JSON.parse(JSON.stringify(scope)),
-    }))
-    expect(() =>
-      assertLocalSeedOwnership(authenticatedServer(), configs)
-    ).not.toThrow()
-  })
-
-  test.each([
-    ['null parameters', null],
-    ['empty parameters', {}],
-  ])('accepts the exact legacy seed with %s', (_label, parameters) => {
-    expect(() =>
-      assertLocalSeedOwnership(legacyServer({ parameters }), legacyConfigs())
-    ).not.toThrow()
-  })
-
-  test.each([
-    ['null parameters', null],
-    ['empty parameters', {}],
-  ])('accepts the exact scope_token seed with %s', (_label, parameters) => {
+  test('accepts the exact dedicated marked fixture with disabled configs', () => {
     expect(() =>
       assertLocalSeedOwnership(
-        scopeTokenServer({ parameters }),
-        scopeTokenConfigs(parameters)
-      )
-    ).not.toThrow()
-  })
-
-  test('accepts the marked authenticated seed with disabled configs', () => {
-    expect(() =>
-      assertLocalSeedOwnership(
-        authenticatedServer(),
-        authenticatedConfigs([true, false])
-      )
-    ).not.toThrow()
-  })
-
-  test('accepts persisted plural scope for the owned scope-token seed', () => {
-    expect(() =>
-      assertLocalSeedOwnership(
-        scopeTokenServer(),
-        scopeTokenConfigs(JSON.parse(JSON.stringify(LOCAL_SCOPE)))
+        dedicatedServer(),
+        dedicatedConfigs([true, false]),
+        {
+          id: LOCAL_CHATBOT_ID,
+          ownerId: LOCAL_OWNER_ID,
+          courseId: LOCAL_COURSE_ID,
+        }
       )
     ).not.toThrow()
   })
@@ -397,211 +329,86 @@ describe('assertLocalSeedOwnership', () => {
     { ...LOCAL_SCOPE, kb_id: LOCAL_KB_ID },
     { ...LOCAL_SCOPE, extra: true },
   ])('rejects broadened or ambiguous fixture scopes', (parameters) => {
-    expectOwnershipConflict(scopeTokenServer(), scopeTokenConfigs(parameters))
     expectOwnershipConflict(
-      authenticatedServer(),
-      authenticatedConfigs().map((config) => ({ ...config, parameters }))
+      dedicatedServer(),
+      dedicatedConfigs().map((config) => ({ ...config, parameters }))
     )
   })
 
-  test('rejects a disabled legacy configuration', () => {
-    expectOwnershipConflict(legacyServer(), [
-      seedConfig('tutor', { isEnabled: false }),
-      ...legacyConfigs().slice(1),
-    ])
+  test('rejects an unmarked legacy KB server even with the old chatbot', () => {
+    expectOwnershipConflict(
+      {
+        id: 'legacy-kb-server',
+        name: 'KB',
+        url: 'http://localhost:1417/mcp',
+        isActive: true,
+        passChatbotId: true,
+        chatbotIdHeader: null,
+        authType: 'none',
+        authSecret: null,
+        parameters: null,
+      },
+      dedicatedConfigs().map((config) => ({
+        ...config,
+        mcpServerId: 'legacy-kb-server',
+        chatbotId: LEGACY_CHATBOT_ID,
+      }))
+    )
   })
 
   test.each([
-    ['legacy', legacyServer(), legacyConfigs()],
-    ['scope_token', scopeTokenServer(), scopeTokenConfigs(null, [true, false])],
+    ['different server id', { id: 'another-server' }],
+    ['different server name', { name: 'KB' }],
+    ['different server URL', { url: 'http://localhost:2417/mcp' }],
+    ['inactive server', { isActive: false }],
+    ['chatbot header enabled', { chatbotIdHeader: 'x-chatbot-id' }],
+    ['wrong auth type', { authType: 'scope_token' }],
+    ['wrong auth secret shape', { authSecret: 'not-encrypted' }],
+    ['unmarked server', { parameters: { localFixture: 'other-fixture' } }],
     [
-      'authenticated',
-      authenticatedServer(),
-      authenticatedConfigs([true, false]),
+      'extra server parameter',
+      { parameters: { ...LOCAL_FIXTURE_MARKER, extra: true } },
     ],
-  ])('rejects an additional chatbot consumer for the %s seed', (_label, server, configs) => {
-    expectOwnershipConflict(server, [
-      ...configs,
+  ])('rejects %s', (_label, overrides) => {
+    expectOwnershipConflict(dedicatedServer(overrides), dedicatedConfigs())
+  })
+
+  test.each([
+    ['changed chatbot', { chatbotId: OTHER_CHATBOT_ID }],
+    ['changed owner', { ownerId: '86158456-2802-5739-bf8c-bee9dcff9932' }],
+    ['changed course', { courseId: '8d23f55e-f194-5be0-bf5f-5d45bbc06750' }],
+    ['nonboolean configuration state', { isEnabled: 'enabled' }],
+    ['nonzero priority', { priority: 1 }],
+    ['additional allowed tool', { allowedTools: ['doc_query', 'other_tool'] }],
+    ['ambiguous scope', { parameters: { ...LOCAL_SCOPE, extra: true } }],
+    ['unsupported chat mode', { chatMode: 'quizzer' }],
+    ['wrong server relation', { mcpServerId: 'another-server' }],
+  ])('rejects %s', (_label, overrides) => {
+    expectOwnershipConflict(dedicatedServer(), [
+      seedConfig('tutor', overrides),
+      dedicatedConfigs()[1],
+    ])
+  })
+
+  test('rejects duplicate modes and extra consumers', () => {
+    expectOwnershipConflict(dedicatedServer(), [
+      seedConfig('tutor'),
+      seedConfig('tutor', { id: 'synthetic-extra-tutor' }),
+    ])
+    expectOwnershipConflict(dedicatedServer(), [
+      ...dedicatedConfigs(),
       seedConfig('tutor', {
-        chatbotId: SYNTHETIC_OTHER_CHATBOT_ID,
-        parameters: server.authType === 'bearer' ? { ...LOCAL_SCOPE } : null,
+        id: 'synthetic-extra-consumer',
+        chatbotId: OTHER_CHATBOT_ID,
       }),
     ])
   })
 
-  test('rejects a configuration change for either seed mode', () => {
-    expectOwnershipConflict(legacyServer(), [
-      seedConfig('tutor', { parameters: { ...LOCAL_SCOPE } }),
-      seedConfig('explainer'),
-    ])
-    expectOwnershipConflict(authenticatedServer(), [
-      seedConfig('tutor', {
-        allowedTools: ['doc_query', 'other_tool'],
-        parameters: { ...LOCAL_SCOPE },
-      }),
-      ...authenticatedConfigs().slice(1),
-    ])
-    expectOwnershipConflict(scopeTokenServer(), [
-      seedConfig('tutor', { parameters: { scope: 'synthetic-other-scope' } }),
-      ...scopeTokenConfigs().slice(1),
-    ])
-  })
-
-  test('rejects changed scope_token ownership fields', () => {
-    const validConfigs = scopeTokenConfigs(null, [true, false])
-    const cases: Array<
-      [string, Record<string, unknown>, Array<Record<string, unknown>>]
-    > = [
-      [
-        'changed owner',
-        {},
-        [
-          seedConfig('tutor', {
-            ownerId: '86158456-2802-5739-bf8c-bee9dcff9932',
-          }),
-          ...validConfigs.slice(1),
-        ],
-      ],
-      ['changed URL', { url: 'http://localhost:2417/mcp' }, validConfigs],
-      [
-        'additional allowed tool',
-        {},
-        [
-          seedConfig('tutor', { allowedTools: ['doc_query', 'other_tool'] }),
-          ...validConfigs.slice(1),
-        ],
-      ],
-      [
-        'credential-bearing scope_token server',
-        { authSecret: SYNTHETIC_AUTH_SECRET },
-        validConfigs,
-      ],
-      [
-        'scope_token chatbot ID forwarding enabled',
-        { passChatbotId: true },
-        validConfigs,
-      ],
-    ]
-
-    for (const [_label, serverOverrides, configs] of cases) {
-      expectOwnershipConflict(scopeTokenServer(serverOverrides), configs)
-    }
-  })
-
-  test('rejects server and configuration changes outside the owned seed', () => {
-    const cases: Array<
-      [string, Record<string, unknown>, Array<Record<string, unknown>>]
-    > = [
-      ['different server name', { name: 'KB-copy' }, authenticatedConfigs()],
-      [
-        'different server URL',
-        { url: 'http://localhost:2417/mcp' },
-        authenticatedConfigs(),
-      ],
-      ['inactive server', { isActive: false }, authenticatedConfigs()],
-      [
-        'chatbot header enabled',
-        { chatbotIdHeader: 'x-chatbot-id' },
-        authenticatedConfigs(),
-      ],
-      [
-        'unmarked bearer server',
-        { parameters: { localFixture: 'other-fixture' } },
-        authenticatedConfigs(),
-      ],
-      [
-        'extra server parameter',
-        { parameters: { ...LOCAL_FIXTURE_MARKER, extra: true } },
-        authenticatedConfigs(),
-      ],
-      [
-        'changed chatbot',
-        {},
-        [
-          seedConfig('tutor', {
-            chatbotId: SYNTHETIC_OTHER_CHATBOT_ID,
-            parameters: { ...LOCAL_SCOPE },
-          }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-      [
-        'changed owner',
-        {},
-        [
-          seedConfig('tutor', {
-            ownerId: '86158456-2802-5739-bf8c-bee9dcff9932',
-            parameters: { ...LOCAL_SCOPE },
-          }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-      [
-        'changed course',
-        {},
-        [
-          seedConfig('tutor', {
-            courseId: '8d23f55e-f194-5be0-bf5f-5d45bbc06750',
-            parameters: { ...LOCAL_SCOPE },
-          }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-      [
-        'nonboolean configuration state',
-        {},
-        [
-          seedConfig('tutor', {
-            isEnabled: 'enabled',
-            parameters: { ...LOCAL_SCOPE },
-          }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-      [
-        'nonzero priority',
-        {},
-        [
-          seedConfig('tutor', {
-            priority: 1,
-            parameters: { ...LOCAL_SCOPE },
-          }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-      [
-        'additional allowed tool',
-        {},
-        [
-          seedConfig('tutor', {
-            allowedTools: ['doc_query', 'other_tool'],
-            parameters: { ...LOCAL_SCOPE },
-          }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-      [
-        'extra configuration parameter',
-        {},
-        [
-          seedConfig('tutor', {
-            parameters: { ...LOCAL_SCOPE, extra: true },
-          }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-      [
-        'unsupported chat mode',
-        {},
-        [
-          seedConfig('quizzer', { parameters: { ...LOCAL_SCOPE } }),
-          ...authenticatedConfigs().slice(1),
-        ],
-      ],
-    ]
-
-    for (const [_label, serverOverrides, configs] of cases) {
-      expectOwnershipConflict(authenticatedServer(serverOverrides), configs)
-    }
+  test('rejects a mismatched parent identity when supplied', () => {
+    expectOwnershipConflict(dedicatedServer(), dedicatedConfigs(), {
+      id: LOCAL_CHATBOT_ID,
+      ownerId: 'another-owner',
+      courseId: LOCAL_COURSE_ID,
+    })
   })
 })

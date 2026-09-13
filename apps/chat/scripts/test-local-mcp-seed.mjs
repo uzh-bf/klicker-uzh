@@ -6,27 +6,32 @@ import pg from 'pg'
 
 import {
   LOCAL_CHATBOT_ID,
+  LOCAL_COURSE_ID,
+  LOCAL_COURSE_PIN,
   LOCAL_FIXTURE_MARKER,
+  LOCAL_OWNER_ID,
   LOCAL_SCOPE,
+  LOCAL_SERVER_ID,
+  LOCAL_SERVER_NAME,
+  LOCAL_SERVER_URL,
 } from './local-mcp-auth.mjs'
 import { repairLocalMcpSeed } from './local-mcp-seed.mjs'
 
 const { Client } = pg
 
 const EXPECTED_CWD = '/workspaces/klicker-uzh'
-const SERVER_ID = 'local-mcp-test-server'
+const GLOBAL_SERVER_ID = 'global-kb-server'
+const GLOBAL_CHATBOT_ID = 'global-kb-chatbot'
+const GLOBAL_CONFIG_ID = 'global-kb-config'
+const GLOBAL_OWNER_ID = 'global-owner'
+const GLOBAL_COURSE_ID = 'global-course'
 const TUTOR_CONFIG_ID = 'local-mcp-test-tutor'
 const EXPLAINER_CONFIG_ID = 'local-mcp-test-explainer'
 const EXTRA_CONFIG_ID = 'local-mcp-test-extra'
 const EXTRA_CHATBOT_ID = 'local-mcp-test-extra-chatbot'
-const SYNTHETIC_OWNER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
-const SYNTHETIC_COURSE_ID = '7c12e44e-d083-4acf-845e-4c34aaff6b49'
 const SYNTHETIC_TOKEN_A = 'local-mcp-transport-token-a'
 const SYNTHETIC_TOKEN_B = 'local-mcp-transport-token-b'
 const SYNTHETIC_TIMESTAMP = '2000-01-01T00:00:00.000Z'
-const SYNTHETIC_START_DATE = '2020-01-01'
-const SYNTHETIC_END_DATE = '2055-01-01'
-const SYNTHETIC_PIN_CODE = 934671825
 const SYNTHETIC_AUTH_SECRET =
   '00000000000000000000000000000000:11111111111111111111111111111111:22222222'
 const AUTH_SECRET_PATTERN = /^[a-f0-9]{32}:[a-f0-9]{32}:[a-f0-9]+$/i
@@ -65,7 +70,9 @@ function validateRuntimeContext() {
     'invalid database URL protocol'
   )
   requireTrue(
-    ['postgres', 'localhost', '127.0.0.1'].includes(parsedUrl.hostname),
+    ['postgres', 'localhost', '127.0.0.1', '[::1]', '::1'].includes(
+      parsedUrl.hostname
+    ),
     'invalid database URL host'
   )
   requireTrue(parsedUrl.search === '', 'database URL query is not allowed')
@@ -126,7 +133,7 @@ async function createTemporarySchema(db) {
       priority integer NOT NULL DEFAULT 0,
       "allowedTools" jsonb,
       parameters jsonb,
-      "updatedAt" timestamptz NOT NULL DEFAULT NOW()
+      "updatedAt" timestamptz NOT NULL
     )
   `)
 }
@@ -139,88 +146,145 @@ async function clearSyntheticFixture(db) {
   await db.query('DELETE FROM "User"')
 }
 
-async function insertSyntheticOwner(db, shortname = 'lecturer') {
+async function insertOwner(db, id, shortname) {
   await db.query('INSERT INTO "User" (id, shortname) VALUES ($1, $2)', [
-    SYNTHETIC_OWNER_ID,
+    id,
     shortname,
   ])
 }
 
-async function insertSyntheticCourse(db) {
+async function insertCourse(db, id, ownerId, pinCode = LOCAL_COURSE_PIN) {
   await db.query(
     'INSERT INTO "Course" (id, "ownerId", name, "displayName", "pinCode", "startDate", "endDate", "groupDeadlineDate", "isGamificationEnabled", "isGroupCreationEnabled", "updatedAt") VALUES ($1, $2, $3, $3, $4, $5, $6, $6, false, false, $7)',
     [
-      SYNTHETIC_COURSE_ID,
-      SYNTHETIC_OWNER_ID,
-      'Synthetic local runtime fixture',
-      SYNTHETIC_PIN_CODE,
-      SYNTHETIC_START_DATE,
-      SYNTHETIC_END_DATE,
+      id,
+      ownerId,
+      `Synthetic course ${id}`,
+      pinCode,
+      '2020-01-01',
+      '2055-01-01',
       SYNTHETIC_TIMESTAMP,
     ]
   )
 }
 
-async function insertSyntheticChatbot(db) {
+async function insertChatbot(db, id, ownerId, courseId) {
   await db.query(
     'INSERT INTO "Chatbot" (id, "ownerId", "courseId", name, "updatedAt") VALUES ($1, $2, $3, $4, $5)',
-    [
-      LOCAL_CHATBOT_ID,
-      SYNTHETIC_OWNER_ID,
-      SYNTHETIC_COURSE_ID,
-      'Synthetic local MCP fixture',
-      SYNTHETIC_TIMESTAMP,
-    ]
+    [id, ownerId, courseId, `Synthetic chatbot ${id}`, SYNTHETIC_TIMESTAMP]
   )
 }
 
-async function insertSyntheticServer(
+async function insertServer(
   db,
-  { authType = 'none', authSecret = null, parameters = null } = {}
+  {
+    id,
+    name,
+    authType = 'none',
+    authSecret = null,
+    parameters = null,
+    url = LOCAL_SERVER_URL,
+    isActive = true,
+    passChatbotId = id !== LOCAL_SERVER_ID,
+    chatbotIdHeader = null,
+  }
 ) {
   await db.query(
     'INSERT INTO "ChatbotMCPServer" (id, name, "authType", "authSecret", parameters, url, "isActive", "passChatbotId", "chatbotIdHeader", "updatedAt") VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10)',
     [
-      SERVER_ID,
-      'KB',
+      id,
+      name,
       authType,
       authSecret,
       parameters === null ? null : JSON.stringify(parameters),
-      'http://localhost:1417/mcp',
-      true,
-      true,
-      null,
+      url,
+      isActive,
+      passChatbotId,
+      chatbotIdHeader,
       SYNTHETIC_TIMESTAMP,
     ]
   )
 }
 
-async function resetSyntheticFixture(db) {
-  await clearSyntheticFixture(db)
-  await insertSyntheticOwner(db)
-  await insertSyntheticCourse(db)
-  await insertSyntheticChatbot(db)
-  await insertSyntheticServer(db)
+async function insertConfig(
+  db,
+  { id, serverId, chatbotId, chatMode, isEnabled = true, parameters = null }
+) {
+  await db.query(
+    'INSERT INTO "ChatbotMCPConfig" (id, "mcpServerId", "chatbotId", "chatMode", "isEnabled", priority, "allowedTools", parameters, "updatedAt") VALUES ($1, $2, $3, $4, $5, 0, $6::jsonb, $7::jsonb, $8)',
+    [
+      id,
+      serverId,
+      chatbotId,
+      chatMode,
+      isEnabled,
+      JSON.stringify(['doc_query']),
+      parameters === null ? null : JSON.stringify(parameters),
+      SYNTHETIC_TIMESTAMP,
+    ]
+  )
+}
 
-  for (const [id, chatMode] of [
-    [TUTOR_CONFIG_ID, 'tutor'],
-    [EXPLAINER_CONFIG_ID, 'explainer'],
-  ]) {
-    await db.query(
-      'INSERT INTO "ChatbotMCPConfig" (id, "mcpServerId", "chatbotId", "chatMode", "isEnabled", priority, "allowedTools", parameters, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)',
-      [
-        id,
-        SERVER_ID,
-        LOCAL_CHATBOT_ID,
-        chatMode,
-        true,
-        0,
-        JSON.stringify(['doc_query']),
-        null,
-        SYNTHETIC_TIMESTAMP,
-      ]
-    )
-  }
+async function insertDedicatedParents(db) {
+  await insertOwner(db, LOCAL_OWNER_ID, 'lecturer')
+  await insertCourse(db, LOCAL_COURSE_ID, LOCAL_OWNER_ID)
+  await insertChatbot(db, LOCAL_CHATBOT_ID, LOCAL_OWNER_ID, LOCAL_COURSE_ID)
+}
+
+async function insertGlobalRows(db) {
+  await insertOwner(db, GLOBAL_OWNER_ID, 'global-owner')
+  await insertCourse(db, GLOBAL_COURSE_ID, GLOBAL_OWNER_ID, 934671826)
+  await insertChatbot(db, GLOBAL_CHATBOT_ID, GLOBAL_OWNER_ID, GLOBAL_COURSE_ID)
+  await insertServer(db, {
+    id: GLOBAL_SERVER_ID,
+    name: 'KB',
+    authType: 'scope_token',
+  })
+  await insertConfig(db, {
+    id: GLOBAL_CONFIG_ID,
+    serverId: GLOBAL_SERVER_ID,
+    chatbotId: GLOBAL_CHATBOT_ID,
+    chatMode: 'tutor',
+    isEnabled: false,
+    parameters: {
+      required: true,
+      toolAlias: 'doc_query',
+      kb_ids: ['11111111-1111-4111-8111-111111111111'],
+    },
+  })
+}
+
+async function resetSyntheticFixture(db, { withGlobal = true } = {}) {
+  await clearSyntheticFixture(db)
+  if (withGlobal) await insertGlobalRows(db)
+  await insertDedicatedParents(db)
+  await insertServer(db, {
+    id: LOCAL_SERVER_ID,
+    name: LOCAL_SERVER_NAME,
+    authType: 'bearer',
+    authSecret: SYNTHETIC_AUTH_SECRET,
+    parameters: LOCAL_FIXTURE_MARKER,
+  })
+  await insertConfig(db, {
+    id: TUTOR_CONFIG_ID,
+    serverId: LOCAL_SERVER_ID,
+    chatbotId: LOCAL_CHATBOT_ID,
+    chatMode: 'tutor',
+    parameters: LOCAL_SCOPE,
+  })
+  await insertConfig(db, {
+    id: EXPLAINER_CONFIG_ID,
+    serverId: LOCAL_SERVER_ID,
+    chatbotId: LOCAL_CHATBOT_ID,
+    chatMode: 'explainer',
+    parameters: LOCAL_SCOPE,
+  })
+}
+
+async function resetCreationFixture(db) {
+  await clearSyntheticFixture(db)
+  await insertGlobalRows(db)
+  await insertOwner(db, LOCAL_OWNER_ID, 'lecturer')
 }
 
 async function resetMissingParentFixture(
@@ -233,63 +297,62 @@ async function resetMissingParentFixture(
   } = {}
 ) {
   await clearSyntheticFixture(db)
-  if (includeOwner) await insertSyntheticOwner(db, ownerShortname)
-  if (existingParents.includes('course')) await insertSyntheticCourse(db)
-  if (existingParents.includes('chatbot')) await insertSyntheticChatbot(db)
-  await insertSyntheticServer(db, server)
+  await insertGlobalRows(db)
+  if (includeOwner) await insertOwner(db, LOCAL_OWNER_ID, ownerShortname)
+  if (existingParents.includes('course')) {
+    await insertCourse(db, LOCAL_COURSE_ID, LOCAL_OWNER_ID)
+  }
+  if (existingParents.includes('chatbot')) {
+    await insertChatbot(db, LOCAL_CHATBOT_ID, LOCAL_OWNER_ID, LOCAL_COURSE_ID)
+  }
+  await insertServer(db, {
+    id: LOCAL_SERVER_ID,
+    name: LOCAL_SERVER_NAME,
+    ...server,
+  })
 }
 
 async function addExtraConsumer(db) {
-  await db.query(
-    'INSERT INTO "Chatbot" (id, "ownerId", "courseId", name, "updatedAt") VALUES ($1, $2, $3, $4, $5)',
-    [
-      EXTRA_CHATBOT_ID,
-      SYNTHETIC_OWNER_ID,
-      SYNTHETIC_COURSE_ID,
-      'Synthetic extra MCP consumer',
-      SYNTHETIC_TIMESTAMP,
-    ]
-  )
-  await db.query(
-    'INSERT INTO "ChatbotMCPConfig" (id, "mcpServerId", "chatbotId", "chatMode", "isEnabled", priority, "allowedTools", parameters, "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)',
-    [
-      EXTRA_CONFIG_ID,
-      SERVER_ID,
-      EXTRA_CHATBOT_ID,
-      'extra',
-      true,
-      0,
-      JSON.stringify(['doc_query']),
-      null,
-      SYNTHETIC_TIMESTAMP,
-    ]
-  )
+  await insertChatbot(db, EXTRA_CHATBOT_ID, LOCAL_OWNER_ID, LOCAL_COURSE_ID)
+  await insertConfig(db, {
+    id: EXTRA_CONFIG_ID,
+    serverId: LOCAL_SERVER_ID,
+    chatbotId: EXTRA_CHATBOT_ID,
+    chatMode: 'extra',
+  })
 }
 
 async function snapshot(db) {
-  const { rows: servers } = await db.query(
-    'SELECT id, name, "authType", "authSecret", parameters, url, "isActive", "passChatbotId", "chatbotIdHeader", "updatedAt" FROM "ChatbotMCPServer" ORDER BY id'
-  )
-  const { rows: configs } = await db.query(
-    'SELECT id, "mcpServerId", "chatbotId", "chatMode", "isEnabled", priority, "allowedTools", parameters, "updatedAt" FROM "ChatbotMCPConfig" ORDER BY id'
-  )
-  const { rows: chatbots } = await db.query(
-    'SELECT id, "ownerId", "courseId", name, "updatedAt" FROM "Chatbot" ORDER BY id'
-  )
-  const { rows: courses } = await db.query(
-    'SELECT id, "ownerId", name, "displayName", "pinCode", "startDate", "endDate", "groupDeadlineDate", "isGamificationEnabled", "isGroupCreationEnabled", "updatedAt" FROM "Course" ORDER BY id'
-  )
-  const { rows: users } = await db.query(
-    'SELECT id, shortname FROM "User" ORDER BY id'
-  )
-  return { chatbots, configs, courses, servers, users }
+  const tables = [
+    ['servers', 'SELECT * FROM "ChatbotMCPServer" ORDER BY id'],
+    ['configs', 'SELECT * FROM "ChatbotMCPConfig" ORDER BY id'],
+    ['chatbots', 'SELECT * FROM "Chatbot" ORDER BY id'],
+    ['courses', 'SELECT * FROM "Course" ORDER BY id'],
+    ['users', 'SELECT * FROM "User" ORDER BY id'],
+  ]
+  const result = {}
+  for (const [name, query] of tables) {
+    result[name] = (await db.query(query)).rows
+  }
+  return result
 }
 
 function requireAuthenticatedFixture(state, message) {
-  requireTrue(state.servers.length === 1, `${message}: server count`)
-  requireTrue(state.configs.length === 2, `${message}: config count`)
-  const [server] = state.servers
+  const server = state.servers.find((row) => row.id === LOCAL_SERVER_ID)
+  const configs = state.configs.filter(
+    (row) => row.mcpServerId === LOCAL_SERVER_ID
+  )
+  requireTrue(server !== undefined, `${message}: server`)
+  requireTrue(configs.length === 2, `${message}: config count`)
+  requireTrue(server.name === LOCAL_SERVER_NAME, `${message}: server name`)
+  requireTrue(server.url === LOCAL_SERVER_URL, `${message}: server URL`)
   requireTrue(server.authType === 'bearer', `${message}: auth type`)
+  requireTrue(server.isActive === true, `${message}: active state`)
+  requireTrue(server.passChatbotId === false, `${message}: chatbot header mode`)
+  requireTrue(
+    server.chatbotIdHeader === null || server.chatbotIdHeader === undefined,
+    `${message}: chatbot header`
+  )
   requireTrue(
     typeof server.authSecret === 'string' &&
       AUTH_SECRET_PATTERN.test(server.authSecret),
@@ -300,7 +363,18 @@ function requireAuthenticatedFixture(state, message) {
     LOCAL_FIXTURE_MARKER,
     `${message}: server marker`
   )
-  for (const config of state.configs) {
+  const course = state.courses.find((row) => row.id === LOCAL_COURSE_ID)
+  requireTrue(course !== undefined, `${message}: course`)
+  requireTrue(course.ownerId === LOCAL_OWNER_ID, `${message}: course owner`)
+  requireTrue(course.pinCode === LOCAL_COURSE_PIN, `${message}: course PIN`)
+  const chatbot = state.chatbots.find((row) => row.id === LOCAL_CHATBOT_ID)
+  requireTrue(chatbot !== undefined, `${message}: chatbot`)
+  requireTrue(chatbot.ownerId === LOCAL_OWNER_ID, `${message}: chatbot owner`)
+  requireTrue(
+    chatbot.courseId === LOCAL_COURSE_ID,
+    `${message}: chatbot course`
+  )
+  for (const config of configs) {
     requireJsonEqual(
       config.allowedTools,
       ['doc_query'],
@@ -310,59 +384,16 @@ function requireAuthenticatedFixture(state, message) {
   }
 }
 
-function requireRecoveredParents(state, message) {
-  requireTrue(state.users.length === 1, `${message}: user count`)
-  const [user] = state.users
-  requireTrue(user.id === SYNTHETIC_OWNER_ID, `${message}: user id`)
-  requireTrue(user.shortname === 'lecturer', `${message}: user shortname`)
-
-  requireTrue(state.courses.length === 1, `${message}: course count`)
-  const [course] = state.courses
-  requireTrue(course.id === SYNTHETIC_COURSE_ID, `${message}: course id`)
-  requireTrue(course.ownerId === SYNTHETIC_OWNER_ID, `${message}: course owner`)
-  requireTrue(Number.isInteger(course.pinCode), `${message}: course pin`)
-  for (const [field, value] of [
-    ['start date', course.startDate],
-    ['end date', course.endDate],
-    ['group deadline', course.groupDeadlineDate],
-  ]) {
-    requireTrue(
-      value instanceof Date && !Number.isNaN(value.getTime()),
-      `${message}: course ${field}`
-    )
-  }
-  requireTrue(
-    course.isGamificationEnabled === false,
-    `${message}: course gamification flag`
-  )
-  requireTrue(
-    course.isGroupCreationEnabled === false,
-    `${message}: course group flag`
-  )
-
-  requireTrue(state.chatbots.length === 1, `${message}: chatbot count`)
-  const [chatbot] = state.chatbots
-  requireTrue(chatbot.id === LOCAL_CHATBOT_ID, `${message}: chatbot id`)
-  requireTrue(
-    chatbot.ownerId === SYNTHETIC_OWNER_ID,
-    `${message}: chatbot owner`
-  )
-  requireTrue(
-    chatbot.courseId === SYNTHETIC_COURSE_ID,
-    `${message}: chatbot course`
-  )
-  requireTrue(
-    typeof chatbot.name === 'string' && chatbot.name.length > 0,
-    `${message}: chatbot name`
-  )
-}
-
-function stableRecoveredFixture(state) {
-  const withoutUpdatedAt = ({ updatedAt, ...row }) => row
+function unrelatedRows(state) {
   return {
-    chatbots: state.chatbots,
-    configs: state.configs.map(withoutUpdatedAt),
-    courses: state.courses,
+    chatbots: state.chatbots.filter((row) => row.id !== LOCAL_CHATBOT_ID),
+    configs: state.configs.filter(
+      (row) =>
+        row.mcpServerId !== LOCAL_SERVER_ID &&
+        row.chatbotId !== LOCAL_CHATBOT_ID
+    ),
+    courses: state.courses.filter((row) => row.id !== LOCAL_COURSE_ID),
+    servers: state.servers.filter((row) => row.id !== LOCAL_SERVER_ID),
     users: state.users,
   }
 }
@@ -392,102 +423,111 @@ async function requireRepairRejectedWithoutWrites(
 async function runAcceptance(db) {
   await createTemporarySchema(db)
 
-  await resetSyntheticFixture(db)
+  await resetCreationFixture(db)
+  const creationBefore = await snapshot(db)
   await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_A, () => false)
-  const firstRotation = await snapshot(db)
-  requireAuthenticatedFixture(firstRotation, 'initial repair')
-
-  const firstAuthSecret = firstRotation.servers[0].authSecret
-  requireTrue(
-    decrypt(firstAuthSecret) === SYNTHETIC_TOKEN_A,
-    'initial repair stored the wrong token'
+  const created = await snapshot(db)
+  requireAuthenticatedFixture(created, 'initial creation')
+  requireJsonEqual(
+    unrelatedRows(created),
+    unrelatedRows(creationBefore),
+    'initial creation changed unrelated KB rows'
   )
-  await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_B, () => false)
-  const secondRotation = await snapshot(db)
-  requireAuthenticatedFixture(secondRotation, 'repeat repair')
   requireTrue(
-    decrypt(secondRotation.servers[0].authSecret) === SYNTHETIC_TOKEN_B,
+    decrypt(
+      created.servers.find((row) => row.id === LOCAL_SERVER_ID).authSecret
+    ) === SYNTHETIC_TOKEN_A,
+    'initial creation stored the wrong token'
+  )
+
+  await db.query(
+    'UPDATE "ChatbotMCPConfig" SET "isEnabled" = false WHERE id = $1',
+    [EXPLAINER_CONFIG_ID]
+  )
+  const enabledBeforeRotation = (await snapshot(db)).configs
+    .filter((row) => row.mcpServerId === LOCAL_SERVER_ID)
+    .map((row) => [row.chatMode, row.isEnabled])
+  const rotationBefore = await snapshot(db)
+  await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_B, () => false)
+  const rotated = await snapshot(db)
+  requireAuthenticatedFixture(rotated, 'repeat repair')
+  requireJsonEqual(
+    unrelatedRows(rotated),
+    unrelatedRows(rotationBefore),
+    'repeat repair changed unrelated KB rows'
+  )
+  requireTrue(
+    decrypt(
+      rotated.servers.find((row) => row.id === LOCAL_SERVER_ID).authSecret
+    ) === SYNTHETIC_TOKEN_B,
     'repeat repair stored the wrong token'
+  )
+  requireJsonEqual(
+    rotated.configs
+      .filter((row) => row.mcpServerId === LOCAL_SERVER_ID)
+      .map((row) => [row.chatMode, row.isEnabled]),
+    enabledBeforeRotation,
+    'repeat repair changed configuration enablement'
   )
 
   await addExtraConsumer(db)
-  const ownershipBefore = await snapshot(db)
-  await requireRepairRejected(
+  await requireRepairRejectedWithoutWrites(
     db,
     SYNTHETIC_TOKEN_A,
     () => false,
     'ownership conflict was accepted'
   )
-  const ownershipAfter = await snapshot(db)
-  requireJsonEqual(
-    ownershipAfter,
-    ownershipBefore,
-    'ownership conflict changed the snapshot'
-  )
 
   await resetSyntheticFixture(db)
-  const rollbackBefore = await snapshot(db)
-  await db.query(`
-    ALTER TABLE "ChatbotMCPConfig"
-    ADD CONSTRAINT "local_mcp_test_reject_scope"
-    CHECK (parameters IS NULL OR NOT (parameters ? 'required'))
-  `)
-  await requireRepairRejected(
+  await db.query(
+    'UPDATE "ChatbotMCPConfig" SET parameters = $1::jsonb WHERE id = $2',
+    [JSON.stringify({ ...LOCAL_SCOPE, extra: true }), TUTOR_CONFIG_ID]
+  )
+  await requireRepairRejectedWithoutWrites(
     db,
     SYNTHETIC_TOKEN_A,
     () => false,
-    'second update failure was accepted'
+    'invalid configuration scope was accepted'
   )
-  const rollbackAfter = await snapshot(db)
-  requireJsonEqual(
-    rollbackAfter,
-    rollbackBefore,
-    'failed second update changed the snapshot'
+
+  await resetSyntheticFixture(db)
+  await db.query('UPDATE "User" SET shortname = $1 WHERE id = $2', [
+    'not-lecturer',
+    LOCAL_OWNER_ID,
+  ])
+  await requireRepairRejectedWithoutWrites(
+    db,
+    SYNTHETIC_TOKEN_A,
+    () => false,
+    'changed complete-fixture ownership was accepted'
+  )
+
+  await resetCreationFixture(db)
+  await db.query(`
+    ALTER TABLE "ChatbotMCPConfig"
+    ADD CONSTRAINT "local_mcp_test_reject_scope"
+    CHECK ("mcpServerId" <> '${LOCAL_SERVER_ID}' OR parameters IS NULL OR NOT (parameters ? 'required'))
+  `)
+  await requireRepairRejectedWithoutWrites(
+    db,
+    SYNTHETIC_TOKEN_A,
+    () => false,
+    'creation insertion failure was accepted'
   )
   await db.query(
     'ALTER TABLE "ChatbotMCPConfig" DROP CONSTRAINT "local_mcp_test_reject_scope"'
   )
 
-  await resetSyntheticFixture(db)
-  const interruptionBefore = await snapshot(db)
-  await requireRepairRejected(
+  await resetCreationFixture(db)
+  let creationInterruptionChecks = 0
+  await requireRepairRejectedWithoutWrites(
     db,
     SYNTHETIC_TOKEN_A,
-    () => true,
-    'interruption was accepted'
-  )
-  const interruptionAfter = await snapshot(db)
-  requireJsonEqual(
-    interruptionAfter,
-    interruptionBefore,
-    'interruption before the write changed the snapshot'
-  )
-
-  await resetMissingParentFixture(db)
-  const missingParentBefore = await snapshot(db)
-  requireTrue(
-    missingParentBefore.courses.length === 0 &&
-      missingParentBefore.chatbots.length === 0 &&
-      missingParentBefore.configs.length === 0,
-    'missing-parent fixture was not empty'
-  )
-  await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_A, () => false)
-  const recovered = await snapshot(db)
-  requireAuthenticatedFixture(recovered, 'missing-parent recovery')
-  requireRecoveredParents(recovered, 'missing-parent recovery')
-  const recoveredShape = stableRecoveredFixture(recovered)
-  await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_B, () => false)
-  const repeatedRecovery = await snapshot(db)
-  requireAuthenticatedFixture(repeatedRecovery, 'missing-parent repeat')
-  requireRecoveredParents(repeatedRecovery, 'missing-parent repeat')
-  requireJsonEqual(
-    stableRecoveredFixture(repeatedRecovery),
-    recoveredShape,
-    'missing-parent repeat changed the fixture shape'
-  )
-  requireTrue(
-    decrypt(repeatedRecovery.servers[0].authSecret) === SYNTHETIC_TOKEN_B,
-    'missing-parent repeat stored the wrong token'
+    () => {
+      creationInterruptionChecks += 1
+      return creationInterruptionChecks > 1
+    },
+    'creation interruption was accepted'
   )
 
   await resetMissingParentFixture(db, {
@@ -497,19 +537,43 @@ async function runAcceptance(db) {
       parameters: LOCAL_FIXTURE_MARKER,
     },
   })
+  const recoveryBefore = await snapshot(db)
   await repairLocalMcpSeed(db, SYNTHETIC_TOKEN_A, () => false)
-  const authenticatedRecovery = await snapshot(db)
-  requireAuthenticatedFixture(
-    authenticatedRecovery,
-    'authenticated missing-parent recovery'
-  )
-  requireRecoveredParents(
-    authenticatedRecovery,
-    'authenticated missing-parent recovery'
+  const recovered = await snapshot(db)
+  requireAuthenticatedFixture(recovered, 'missing-parent recovery')
+  requireJsonEqual(
+    unrelatedRows(recovered),
+    unrelatedRows(recoveryBefore),
+    'missing-parent recovery changed unrelated KB rows'
   )
   requireTrue(
-    decrypt(authenticatedRecovery.servers[0].authSecret) === SYNTHETIC_TOKEN_A,
-    'authenticated missing-parent recovery stored the wrong token'
+    recovered.courses.some((row) => row.id === LOCAL_COURSE_ID),
+    'course was not restored'
+  )
+  requireTrue(
+    recovered.chatbots.some((row) => row.id === LOCAL_CHATBOT_ID),
+    'chatbot was not restored'
+  )
+
+  await resetCreationFixture(db)
+  await insertServer(db, {
+    id: 'reserved-name-server',
+    name: LOCAL_SERVER_NAME,
+  })
+  await requireRepairRejectedWithoutWrites(
+    db,
+    SYNTHETIC_TOKEN_A,
+    () => false,
+    'dedicated name collision was accepted'
+  )
+
+  await resetCreationFixture(db)
+  await insertServer(db, { id: LOCAL_SERVER_ID, name: 'KB' })
+  await requireRepairRejectedWithoutWrites(
+    db,
+    SYNTHETIC_TOKEN_A,
+    () => false,
+    'dedicated ID collision was accepted'
   )
 
   for (const existingParents of [
@@ -526,15 +590,19 @@ async function runAcceptance(db) {
     )
   }
 
-  await resetMissingParentFixture(db, { ownerShortname: 'not-lecturer' })
+  await resetCreationFixture(db)
+  await db.query('UPDATE "User" SET shortname = $1 WHERE id = $2', [
+    'not-lecturer',
+    LOCAL_OWNER_ID,
+  ])
   await requireRepairRejectedWithoutWrites(
     db,
     SYNTHETIC_TOKEN_A,
     () => false,
     'wrong owner was accepted'
   )
-
-  await resetMissingParentFixture(db, { includeOwner: false })
+  await resetCreationFixture(db)
+  await db.query('DELETE FROM "User" WHERE id = $1', [LOCAL_OWNER_ID])
   await requireRepairRejectedWithoutWrites(
     db,
     SYNTHETIC_TOKEN_A,
@@ -555,6 +623,24 @@ async function runAcceptance(db) {
     server: {
       authType: 'bearer',
       authSecret: SYNTHETIC_AUTH_SECRET,
+      parameters: LOCAL_FIXTURE_MARKER,
+    },
+  })
+  await db.query('UPDATE "ChatbotMCPServer" SET url = $1 WHERE id = $2', [
+    'http://localhost:2417/mcp',
+    LOCAL_SERVER_ID,
+  ])
+  await requireRepairRejectedWithoutWrites(
+    db,
+    SYNTHETIC_TOKEN_A,
+    () => false,
+    'invalid server URL was accepted'
+  )
+
+  await resetMissingParentFixture(db, {
+    server: {
+      authType: 'bearer',
+      authSecret: SYNTHETIC_AUTH_SECRET,
       parameters: { localFixture: 'invalid' },
     },
   })
@@ -565,32 +651,21 @@ async function runAcceptance(db) {
     'invalid server marker was accepted'
   )
 
-  await resetMissingParentFixture(db)
-  let interruptionChecks = 0
-  await requireRepairRejectedWithoutWrites(
-    db,
-    SYNTHETIC_TOKEN_A,
-    () => {
-      interruptionChecks += 1
-      return interruptionChecks > 1
-    },
-    'post-insertion interruption was accepted'
-  )
-
-  await resetMissingParentFixture(db)
-  await db.query(`
-    ALTER TABLE "ChatbotMCPConfig"
-    ADD CONSTRAINT "local_mcp_test_reject_recovery_config"
-    CHECK ("chatMode" <> 'explainer')
-  `)
+  await resetCreationFixture(db)
+  await insertCourse(db, LOCAL_COURSE_ID, LOCAL_OWNER_ID)
+  await insertChatbot(db, LOCAL_CHATBOT_ID, LOCAL_OWNER_ID, LOCAL_COURSE_ID)
+  await insertConfig(db, {
+    id: 'local-mcp-missing-server-config',
+    serverId: GLOBAL_SERVER_ID,
+    chatbotId: LOCAL_CHATBOT_ID,
+    chatMode: 'tutor',
+    parameters: LOCAL_SCOPE,
+  })
   await requireRepairRejectedWithoutWrites(
     db,
     SYNTHETIC_TOKEN_A,
     () => false,
-    'recovery insertion failure was accepted'
-  )
-  await db.query(
-    'ALTER TABLE "ChatbotMCPConfig" DROP CONSTRAINT "local_mcp_test_reject_recovery_config"'
+    'missing server with existing parent/config was accepted'
   )
 }
 
