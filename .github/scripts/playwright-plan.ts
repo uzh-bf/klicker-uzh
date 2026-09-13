@@ -528,11 +528,13 @@ export function selectFromChanges({
   candidateSpecs,
   manifest,
   prState,
+  productionSet = new Set<string>(),
 }: {
   changes: ChangeRecord[]
   candidateSpecs: string[]
   manifest: RelevanceManifest
   prState: SelectorPrState
+  productionSet?: Set<string>
 }): SelectionResult {
   if (prState !== 'draft' && prState !== 'ready') {
     fail(`unsupported pull request state ${prState}`)
@@ -596,6 +598,8 @@ export function selectFromChanges({
         if (oldSpec && !candidateSet.has(oldSpec)) {
           reasonCodes.add('spec-renamed')
         }
+      } else if (oldSpec && productionSet.has(oldSpec)) {
+        // Production-lane spec changes are owned by the dedicated workflow.
       } else if (oldSpec) {
         full = true
         reasonCodes.add('spec-deleted')
@@ -608,7 +612,9 @@ export function selectFromChanges({
     const changedPath = change.paths[0]
     const spec = specFromPath(changedPath)
     if (spec) {
-      if (change.kind === 'D') {
+      if (productionSet.has(spec)) {
+        // Production-lane spec changes are owned by the dedicated workflow.
+      } else if (change.kind === 'D') {
         full = true
         reasonCodes.add('spec-deleted')
       } else if (candidateSet.has(spec)) {
@@ -724,6 +730,7 @@ export function buildSelectionPlan({
     candidateSpecs,
     manifest: relevanceManifest,
     prState: prState as SelectorPrState,
+    productionSet: production,
   })
   const profileMap = new Map(Object.entries(assignments))
   const trustedTimings = readJson(

@@ -84,6 +84,12 @@ function normalizedProfileManifest(manifest: unknown): ProfileManifest {
       fail('every profile group needs a profile string')
     }
     const profile = canonicalProfile(rawGroup.profile)
+    if (
+      rawGroup.runtime !== undefined &&
+      rawGroup.runtime !== 'production-webpack'
+    ) {
+      fail(`unsupported profile runtime ${rawGroup.runtime}`)
+    }
     if (!Array.isArray(rawGroup.specs) || rawGroup.specs.length === 0) {
       fail(`profile ${profile} needs at least one spec`)
     }
@@ -111,8 +117,11 @@ function profileData(
 
   for (const group of normalized.groups) {
     const profile = group.profile
+    // Production-lane specs are designated by this manifest before their
+    // files land on this branch; the dedicated production workflow owns them.
+    const productionLane = group.runtime === 'production-webpack'
     for (const spec of group.specs) {
-      if (!activeFiles.has(spec)) {
+      if (!activeFiles.has(spec) && !productionLane) {
         fail(`profile ${profile} references inactive spec ${spec}`)
       }
       if (profiles.has(spec)) {

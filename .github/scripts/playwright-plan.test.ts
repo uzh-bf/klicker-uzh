@@ -321,6 +321,33 @@ test('selects a directly changed spec and assigns its trusted profile', () => {
   assert.deepEqual(plan.shards[0].files, ['tests/A-login.spec.ts'])
 })
 
+test('production-designated specs stay out of ordinary plans', () => {
+  const plan = buildSelectionPlan({
+    controlRoot: repositoryRoot,
+    candidateSpecs: ['A-login.spec.ts', 'A-account-lti.spec.ts'],
+    changes: [change('M', 'playwright/tests/A-login.spec.ts')],
+    baseSha: 'base',
+    headSha: 'head',
+    mergeBase: 'merge',
+    prState: 'draft',
+  })
+
+  assert.equal(plan.mode, 'selected')
+  assert.ok(!plan.candidateSpecs.includes('tests/A-account-lti.spec.ts'))
+  assert.deepEqual(plan.selectedSpecs, ['tests/A-login.spec.ts'])
+
+  const ignored = selectFromChanges({
+    changes: [change('A', 'playwright/tests/A-account-lti.spec.ts')],
+    candidateSpecs: ['A-login.spec.ts', 'Y-chat.spec.ts'],
+    manifest: fixtureManifest(),
+    prState: 'draft',
+    productionSet: new Set(['A-account-lti.spec.ts']),
+  })
+  assert.equal(ignored.mode, 'skip')
+  assert.deepEqual(ignored.selectedSpecs, [])
+  assert.ok(!ignored.reasonCodes.includes('spec-deleted'))
+})
+
 test('maps known feature paths, skips documentation, and fails unknown paths closed', () => {
   const manifest = fixtureManifest()
   const base = {

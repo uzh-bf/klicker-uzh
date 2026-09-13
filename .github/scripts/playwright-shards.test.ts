@@ -35,6 +35,43 @@ test('the profile manifest assigns every active spec exactly once', () => {
   assert.deepEqual([...profiles.keys()].sort(), allFiles)
 })
 
+test('production-designated specs tolerate absent files while ordinary specs fail closed', () => {
+  const profiles = parseProfileManifest(
+    {
+      version: 1,
+      groups: [
+        { profile: 'manage', specs: ['A-login.spec.ts'] },
+        {
+          profile: 'pwa',
+          runtime: 'production-webpack',
+          specs: ['future-production.spec.ts'],
+        },
+      ],
+    },
+    ['A-login.spec.ts']
+  )
+  assert.equal(profiles.get('A-login.spec.ts'), 'manage')
+  assert.equal(profiles.get('future-production.spec.ts'), 'pwa')
+
+  assert.throws(
+    () =>
+      parseProfileManifest(
+        {
+          version: 1,
+          groups: [
+            {
+              profile: 'manage',
+              runtime: 'candidate-webpack',
+              specs: ['A-login.spec.ts'],
+            },
+          ],
+        },
+        ['A-login.spec.ts']
+      ),
+    /unsupported profile runtime/
+  )
+})
+
 test('activity lifecycle specs select the worker-bearing live-quiz profile', () => {
   const profiles = parseProfileManifest(manifest, allFiles)
   const activityLifecycleSpecs = [
@@ -274,6 +311,6 @@ test('production and ordinary lanes partition the complete inventory exactly onc
         },
         ['synthetic.spec.ts']
       ),
-    /unsupported Playwright runtime/
+    /unsupported profile runtime/
   )
 })
