@@ -11,9 +11,6 @@ function validateMCOptions(options?: ElementOptionsInput | null) {
       (choice) => choice.correct === true
     )
     if (correctAnswers.length === 0) {
-      console.error(
-        'At least one correct answer is required for MC questions with sample solution'
-      )
       return false
     }
   }
