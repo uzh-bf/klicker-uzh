@@ -128,6 +128,16 @@ providers. It initializes ingestion or retrieval only when their state and
 runtime resources are absent. It never retries a failed provider or token
 operation. An incomplete continuation is retained and cannot be invoked again.
 
+If an operator has verified that a continuation stopped after its profile repair
+and before bootstrap startup, the explicit `--resume-executor <original-commit>`
+option permits one bounded continuation of that prefix. It requires exactly the
+original claim and profile intent, corrected configuration, absent managed
+allocation and routes, stopped bootstrap containers, and the expected prepared
+provider prefix. It records a separate exclusive child attempt and never erases
+the original evidence. Any additional intent or child attempt blocks re-entry.
+Absence of an intent alone does not prove that a previous process had no effects;
+verify its recorded failure before using this option.
+
 Before continuation, check ownership and permissions of `.local-kb/state` and
 its existing provider directories. They must be real owner-private directories
 (`0700`); provider setup may have created them with a broader default mode.

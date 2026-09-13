@@ -150,6 +150,34 @@ test('continuation requires an immutable executor and rejects missing AI injecti
   assert.match(result.stderr, /runtime-injected OpenRouter/)
 })
 
+test('continue-setup accepts --resume-executor only after the seven explicit arguments', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+    '--resume-executor',
+  ]
+  const accepted = runConfigPlan(input, 'continue-setup', [
+    ...base,
+    'c'.repeat(40),
+  ])
+  assert.equal(accepted.status, 1)
+  assert.equal(accepted.stdout, '')
+  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  for (const extra of [
+    [...base, 'c'.repeat(40), 'extra'],
+    [...base],
+    [...base, 'not-a-sha'],
+  ]) {
+    const rejected = runConfigPlan(input, 'continue-setup', extra)
+    assert.equal(rejected.status, 1)
+    assert.equal(rejected.stdout, '')
+    assert.match(rejected.stderr, /Usage:/)
+  }
+})
+
 test('config plan resolves a full synthetic input and rejects remote endpoints safely', () => {
   const valid = runConfigPlan(isolatedConfigInput())
   assert.equal(valid.error, undefined)

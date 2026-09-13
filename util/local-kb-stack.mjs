@@ -221,7 +221,10 @@ function configPlan(config) {
 
 function parseArguments(args) {
   if (
-    args.length === 7 &&
+    (args.length === 7 ||
+      (args.length === 9 &&
+        args[7] === '--resume-executor' &&
+        /^[a-f0-9]{40}$/.test(args[8]))) &&
     args[0] === 'continue-setup' &&
     args[1] === '--config' &&
     args[3] === '--candidate' &&
@@ -234,6 +237,7 @@ function parseArguments(args) {
       configPath: args[2],
       candidateRevision: args[4],
       executorRevision: args[6],
+      resumeExecutor: args[8],
     }
   }
   if (
@@ -262,8 +266,13 @@ function parseArguments(args) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const { command, configPath, candidateRevision, executorRevision } =
-      parseArguments(process.argv.slice(2))
+    const {
+      command,
+      configPath,
+      candidateRevision,
+      executorRevision,
+      resumeExecutor,
+    } = parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
       if (command === 'continue-setup') {
@@ -274,7 +283,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             await continuePreparation(
               config,
               candidateRevision,
-              executorRevision
+              executorRevision,
+              { resumeExecutor }
             )
           )
         )

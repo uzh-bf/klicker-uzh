@@ -4,6 +4,7 @@ import {
   chmod,
   mkdir,
   mkdtemp,
+  readdir,
   readFile,
   realpath,
   stat,
@@ -111,14 +112,27 @@ test('explicit continuation reconciles prepared stages and initializes the untou
     const calls = []
     const runner = lifecycleRunner(config)
     const options = {
-      runManaged: async () =>
-        JSON.stringify({
-          dockerContext: 'synthetic-local',
-          repo: {
-            path: config.project.runtimeCheckoutPath,
-            valid: failure !== 'managed',
-          },
-        }),
+      // The workspace verb reports retained allocation; the identity field in
+      // the status payload must stay informational.
+      runManaged: async (args) =>
+        JSON.stringify(
+          args[0] === 'workspace'
+            ? [
+                {
+                  worktreePath: config.project.runtimeCheckoutPath,
+                  devpodStatus: 'absent',
+                  routeCount: 0,
+                },
+              ]
+            : {
+                dockerContext: 'synthetic-local',
+                repo: {
+                  path: config.project.runtimeCheckoutPath,
+                  valid: failure !== 'managed',
+                  managedRuntime: { workspace: 'synthetic-retained' },
+                },
+              }
+        ),
       observeBacking: async () =>
         ['postgres', 'hatchet'].map((service) => ({
           service,
@@ -1510,4 +1524,439 @@ test('configuration setup writes private local material once without completing 
     publicKey.export({ type: 'spki', format: 'pem' }),
     verification.keys[0].pem
   )
+})
+
+const continuationContext = 'synthetic-local'
+const priorExecutor = 'e'.repeat(40)
+const nextExecutor = 'f'.repeat(40)
+
+// Rebuild the retained prefix the profile-repair executor left behind: one
+// private attempt holding its claim and profile intent, with scraping complete,
+// document processing reconcilable and ingestion/retrieval untouched.
+async function retainedContinuationPrefix({ profileAttempt = false } = {}) {
+  const config = await fixture()
+  const claim = await claimPreparation(config, revision)
+  await prepareLocalConfiguration(config, revision)
+  await initializeProviderStorage(
+    config,
+    revision,
+    async (args) => (args.includes('exec') ? 'synthetic.header.signature' : ''),
+    unusedProject
+  )
+  const root = join(config.project.runtimeCheckoutPath, '.local-kb')
+  await mkdir(join(root, 'managed-installation'), { mode: 0o700 })
+  await writeFile(
+    join(root, 'managed-installation/complete.json'),
+    JSON.stringify({ candidateRevision: revision }),
+    { mode: 0o600 }
+  )
+  await mkdir(join(root, 'provider-setup'), { mode: 0o700 })
+  await writeFile(
+    join(root, 'provider-setup/scraping.json'),
+    JSON.stringify({ setupCompleted: true }),
+    { mode: 0o600 }
+  )
+  for (const name of ['scraping', 'docProcessing'])
+    await mkdir(join(root, 'state', name), { recursive: true, mode: 0o700 })
+  const parent = join(root, 'setup-continuation')
+  const child = join(parent, 'resume-after-profile')
+  if (profileAttempt) {
+    await mkdir(parent, { mode: 0o700 })
+    await writeFile(
+      join(parent, 'claim.json'),
+      JSON.stringify({
+        ...claim,
+        executor: priorExecutor,
+        context: continuationContext,
+      }),
+      { mode: 0o600 }
+    )
+    await writeFile(
+      join(parent, 'setup-profile-intent.json'),
+      JSON.stringify({ candidate: revision, executor: priorExecutor }),
+      { mode: 0o600 }
+    )
+  }
+  return { config, claim, root, parent, child }
+}
+
+function continuationRunner(config, root, overrides = {}) {
+  const calls = []
+  const observed = {}
+  const runner = lifecycleRunner(config)
+  const options = {
+    runDocker: async (args) => {
+      if (args[0] === 'context')
+        return args[1] === 'show'
+          ? continuationContext
+          : 'unix:///synthetic/docker.sock'
+      if (args.includes('compose') && args.includes('start')) {
+        observed.composeStart = [...args]
+        // The bootstrap intent must exist inside the current attempt before
+        // the bootstrap services are started.
+        observed.intentAtStart = await readFile(
+          join(
+            root,
+            'setup-continuation',
+            'resume-after-profile',
+            'bootstrap-intent.json'
+          ),
+          'utf8'
+        )
+      }
+      return overrides.docker ? overrides.docker(args) : ''
+    },
+    runManaged: async (args) =>
+      JSON.stringify(
+        args[0] === 'workspace'
+          ? (overrides.workspace ?? [
+              {
+                worktreePath: config.project.runtimeCheckoutPath,
+                devpodStatus: 'absent',
+                routeCount: 0,
+              },
+            ])
+          : {
+              dockerContext: continuationContext,
+              repo: {
+                path: config.project.runtimeCheckoutPath,
+                valid: true,
+                managedRuntime: { workspace: 'synthetic-retained' },
+              },
+            }
+      ),
+    observeBacking: async () =>
+      overrides.backing ??
+      ['postgres', 'hatchet'].map((service) => ({
+        service,
+        state: 'exited',
+      })),
+    verifySources: async () => overrides.profileRepair,
+    run: async (command, env) => {
+      if (command.args.includes('setup')) {
+        calls.push(command.cwd.split('/').at(-1))
+        if (overrides.setupFailure) throw new Error('withheld')
+        return '{}'
+      }
+      return runner(command, env)
+    },
+    unusedProvider: async () => {},
+    initializeApplication: async () => {
+      calls.push('application')
+      await mkdir(join(root, 'application-setup'), { mode: 0o700 })
+      await writeFile(
+        join(root, 'application-setup/complete.json'),
+        JSON.stringify({
+          candidateRevision: revision,
+          context: continuationContext,
+          workspace: 'synthetic',
+        }),
+        { mode: 0o600 }
+      )
+    },
+  }
+  return { calls, observed, options }
+}
+
+test('managed workspace allocation must be exactly absent with zero routes', async () => {
+  const cases = [
+    ['missing', () => []],
+    [
+      'duplicate',
+      (config) => [
+        {
+          worktreePath: config.project.runtimeCheckoutPath,
+          devpodStatus: 'absent',
+          routeCount: 0,
+        },
+        {
+          worktreePath: config.project.runtimeCheckoutPath,
+          devpodStatus: 'absent',
+          routeCount: 0,
+        },
+      ],
+    ],
+    [
+      'owned',
+      (config) => [
+        {
+          worktreePath: config.project.runtimeCheckoutPath,
+          devpodStatus: 'running',
+          routeCount: 0,
+        },
+      ],
+    ],
+    [
+      'unknown',
+      (config) => [
+        {
+          worktreePath: config.project.runtimeCheckoutPath,
+          devpodStatus: 'unknown',
+          routeCount: 0,
+        },
+      ],
+    ],
+    [
+      'routes',
+      (config) => [
+        {
+          worktreePath: config.project.runtimeCheckoutPath,
+          devpodStatus: 'absent',
+          routeCount: 1,
+        },
+      ],
+    ],
+    [
+      'other-path',
+      () => [
+        {
+          worktreePath: '/synthetic/checkouts/elsewhere',
+          devpodStatus: 'absent',
+          routeCount: 0,
+        },
+      ],
+    ],
+  ]
+  for (const [name, build] of cases) {
+    const { config, root } = await retainedContinuationPrefix()
+    const { options } = continuationRunner(config, root, {
+      workspace: build(config),
+    })
+    await assert.rejects(
+      continuePreparation(config, revision, nextExecutor, options),
+      /Managed runtime allocation must be absent with zero routes/,
+      name
+    )
+  }
+})
+
+test('retained application runtime labels reject continuation before effects', async () => {
+  for (const label of [
+    'devcontainer.local_folder',
+    'devpod.workspace.source',
+  ]) {
+    const { config, root } = await retainedContinuationPrefix()
+    const exact = `label=${label}=${config.project.runtimeCheckoutPath}`
+    const { options } = continuationRunner(config, root, {
+      docker: (args) => (args.includes(exact) ? 'abcdef012345\n' : ''),
+    })
+    await assert.rejects(
+      continuePreparation(config, revision, nextExecutor, options),
+      /Retained application runtime already exists/,
+      label
+    )
+  }
+})
+
+test('profile resume requires the exact retained attempt and creates one exclusive child', async () => {
+  const cases = [
+    ['missing-attempt', { profileAttempt: false }, { code: 'ENOENT' }],
+    [
+      'extra-entry',
+      { extraEntry: true },
+      /Profile resume does not match the retained prefix/,
+    ],
+    [
+      'claim-drift',
+      { claimDrift: true },
+      /Profile resume does not match the retained prefix/,
+    ],
+    [
+      'intent-drift',
+      { intentDrift: true },
+      /Profile resume does not match the retained prefix/,
+    ],
+    [
+      'prefix-drift',
+      { docProcessingReceipt: true },
+      /Retained provider prefix has changed/,
+    ],
+    [
+      'bootstrap-bytes',
+      { bootstrapDrift: true },
+      /Retained bootstrap composition has changed/,
+    ],
+    [
+      'backing-running',
+      {
+        backing: ['postgres', 'hatchet'].map((service) => ({
+          service,
+          state: service === 'postgres' ? 'running' : 'exited',
+        })),
+      },
+      /Continuation requires the original owned bootstrap containers/,
+    ],
+    [
+      'profile-repair',
+      {
+        profileRepair: {
+          path: '/synthetic/.devrouter.yml',
+          previous: 'old',
+          next: 'new',
+        },
+      },
+      /Profile resume requires a corrected profile and original executor/,
+    ],
+    [
+      'invalid-resume-executor',
+      { resumeExecutor: 'not-a-sha' },
+      /Profile resume requires a corrected profile and original executor/,
+    ],
+    // A prior resume left its child inside the exclusive attempt, so reentry
+    // is refused by the parent inventory rather than a second mkdir.
+    [
+      'reentry',
+      { child: true },
+      /Profile resume does not match the retained prefix/,
+    ],
+  ]
+  for (const [name, overrides, expected] of cases) {
+    const profileAttempt = overrides.profileAttempt !== false
+    const { config, root, parent } = await retainedContinuationPrefix({
+      profileAttempt,
+    })
+    const claimPath = join(parent, 'claim.json')
+    const intentPath = join(parent, 'setup-profile-intent.json')
+    const before = profileAttempt
+      ? await Promise.all([
+          readFile(claimPath, 'utf8'),
+          readFile(intentPath, 'utf8'),
+        ])
+      : undefined
+    if (overrides.extraEntry)
+      await writeFile(join(parent, 'extra.json'), '{}', { mode: 0o600 })
+    if (overrides.claimDrift)
+      await writeFile(claimPath, JSON.stringify({ executor: nextExecutor }), {
+        mode: 0o600,
+      })
+    if (overrides.intentDrift)
+      await writeFile(
+        intentPath,
+        JSON.stringify({ candidate: '0'.repeat(40), executor: priorExecutor }),
+        { mode: 0o600 }
+      )
+    if (overrides.docProcessingReceipt)
+      await writeFile(
+        join(root, 'provider-setup/docProcessing.json'),
+        JSON.stringify({ setupCompleted: true }),
+        { mode: 0o600 }
+      )
+    if (overrides.bootstrapDrift)
+      await writeFile(
+        join(root, 'bootstrap.compose.json'),
+        JSON.stringify({ name: 'drifted' }),
+        { mode: 0o600 }
+      )
+    if (overrides.child)
+      await mkdir(join(parent, 'resume-after-profile'), { mode: 0o700 })
+    const { calls, options } = continuationRunner(config, root, overrides)
+    await assert.rejects(
+      continuePreparation(config, revision, nextExecutor, {
+        ...options,
+        resumeExecutor: overrides.resumeExecutor ?? priorExecutor,
+      }),
+      expected,
+      name
+    )
+    assert.deepEqual(calls, [], name)
+    if (
+      profileAttempt &&
+      !overrides.extraEntry &&
+      !overrides.claimDrift &&
+      !overrides.intentDrift
+    )
+      assert.deepEqual(
+        await Promise.all([
+          readFile(claimPath, 'utf8'),
+          readFile(intentPath, 'utf8'),
+        ]),
+        before,
+        name
+      )
+  }
+
+  // One exclusive child, with the parent receipts left exactly as found.
+  const { config, claim, root, parent, child } =
+    await retainedContinuationPrefix({ profileAttempt: true })
+  const { calls, observed, options } = continuationRunner(config, root)
+  const before = await Promise.all([
+    readFile(join(parent, 'claim.json'), 'utf8'),
+    readFile(join(parent, 'setup-profile-intent.json'), 'utf8'),
+  ])
+  const resumeOptions = { ...options, resumeExecutor: priorExecutor }
+  const result = await continuePreparation(
+    config,
+    revision,
+    nextExecutor,
+    resumeOptions
+  )
+  assert.equal(result.prepared, true)
+  assert.deepEqual(calls, ['ingestion', 'retrieval', 'application'])
+  assert.equal(observed.composeStart !== undefined, true)
+  assert.equal(
+    observed.intentAtStart,
+    JSON.stringify({ candidate: revision, executor: nextExecutor })
+  )
+  assert.deepEqual((await readdir(parent)).sort(), [
+    'claim.json',
+    'resume-after-profile',
+    'setup-profile-intent.json',
+  ])
+  assert.deepEqual(
+    await Promise.all([
+      readFile(join(parent, 'claim.json'), 'utf8'),
+      readFile(join(parent, 'setup-profile-intent.json'), 'utf8'),
+    ]),
+    before
+  )
+  assert.deepEqual((await readdir(child)).sort(), [
+    'bootstrap-intent.json',
+    'claim.json',
+    'complete.json',
+    'docProcessing-reconciliation.json',
+    'ingestion-intent.json',
+    'retrieval-intent.json',
+  ])
+  assert.equal(
+    await readFile(join(child, 'claim.json'), 'utf8'),
+    JSON.stringify({
+      ...claim,
+      executor: nextExecutor,
+      context: continuationContext,
+      resumeExecutor: priorExecutor,
+    })
+  )
+  assert.equal(
+    await readFile(join(child, 'bootstrap-intent.json'), 'utf8'),
+    JSON.stringify({ candidate: revision, executor: nextExecutor })
+  )
+  await assert.rejects(
+    continuePreparation(config, revision, nextExecutor, resumeOptions)
+  )
+  assert.deepEqual(calls, ['ingestion', 'retrieval', 'application'])
+
+  // A failure after the child claim retains the child and its receipts.
+  const failed = await retainedContinuationPrefix({ profileAttempt: true })
+  const failure = continuationRunner(failed.config, failed.root, {
+    setupFailure: true,
+  })
+  const failureOptions = {
+    ...failure.options,
+    resumeExecutor: priorExecutor,
+  }
+  await assert.rejects(
+    continuePreparation(failed.config, revision, nextExecutor, failureOptions),
+    /withheld/
+  )
+  assert.deepEqual(failure.calls, ['ingestion'])
+  assert.deepEqual((await readdir(failed.child)).sort(), [
+    'bootstrap-intent.json',
+    'claim.json',
+    'docProcessing-reconciliation.json',
+    'ingestion-intent.json',
+  ])
+  await assert.rejects(
+    continuePreparation(failed.config, revision, nextExecutor, failureOptions)
+  )
+  assert.deepEqual(failure.calls, ['ingestion'])
 })

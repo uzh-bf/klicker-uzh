@@ -120,6 +120,21 @@ S1; do not substitute an environment file or credential-bearing argument.
 
 ### Approved retained setup continuation
 
+The profile repair completed, then executor bfcd67bbbfb511e963767ec4b978d384b13978b7
+stopped before bootstrap with `Repaired setup profile could not be qualified`.
+The user approved correcting and continuing this exact retained prefix. Planner
+Mill approved the corrected design: use exact-path workspace allocation status
+`absent` and zero routes, not the workspace identity field. Preserve Docker
+label checks. Explicit `--resume-executor` validates the original two-file
+attempt and creates one exclusive child, never clearing its parent. Require
+the known provider prefix (scraping complete, document processing reconcile,
+ingestion/retrieval untouched), original exited bootstrap containers, exact
+bootstrap configuration, and corrected managed bytes before effects. Write a
+bootstrap intent before starting services. Missing intent alone is never proof
+of absent effects: execution authority is limited to the observed failed
+executor above and original candidate 8207c964. Main owns source and runtime;
+executor owns existing regression tests. No new modules or generalized retry.
+
 Runtime preflight found that installed devrouter 0.0.77 rejects the generated
 empty setup profile. Fold the bounded correction into this recovery: select
 the already-declared redis_exec service with no routes or managed processes.

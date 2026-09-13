@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
-import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises'
+import { lstat, mkdir, open, readdir, realpath, unlink } from 'node:fs/promises'
 import { createConnection } from 'node:net'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -228,6 +228,7 @@ export async function continuePreparation(
     verifySources = verifyContinuationSources,
     unusedProvider = requireUnusedProvider,
     initializeApplication = initializeManagedApplication,
+    resumeExecutor,
   } = {}
 ) {
   requireLocalAiEnvironment(config)
@@ -270,30 +271,88 @@ export async function continuePreparation(
   if (
     managed.dockerContext !== context ||
     managed.repo?.path !== config.project.runtimeCheckoutPath ||
-    (managed.repo?.valid !== true && !profileRepair) ||
-    managed.repo?.managedRuntime?.workspace
+    (managed.repo?.valid !== true && !profileRepair)
   )
     throw new Error(
       'Continuation requires valid managed configuration and an unused managed runtime.'
     )
-  const backing = await observeBacking(
-    config,
-    { directory, context },
-    runDocker
-  )
-  for (const name of ['postgres', 'hatchet']) {
-    const rows = backing.filter(({ service }) => service === name)
-    if (rows.length !== 1 || !['running', 'exited'].includes(rows[0].state))
+  const verifyUnusedManaged = async () => {
+    const inventory = JSON.parse(
+      await runManaged([
+        'workspace',
+        'ls',
+        '--repo',
+        config.project.runtimeCheckoutPath,
+        '--json',
+      ])
+    )
+    const rows = Array.isArray(inventory)
+      ? inventory.filter(
+          (row) => row.worktreePath === config.project.runtimeCheckoutPath
+        )
+      : []
+    if (
+      rows.length !== 1 ||
+      rows[0].devpodStatus !== 'absent' ||
+      rows[0].routeCount !== 0
+    )
       throw new Error(
-        'Continuation requires the original owned bootstrap containers.'
+        'Managed runtime allocation must be absent with zero routes.'
       )
+    for (const label of [
+      'devcontainer.local_folder',
+      'devpod.workspace.source',
+    ]) {
+      if (
+        (
+          await runDocker([
+            '--context',
+            context,
+            'container',
+            'ls',
+            '--all',
+            '--quiet',
+            '--filter',
+            `label=${label}=${config.project.runtimeCheckoutPath}`,
+          ])
+        ).trim()
+      )
+        throw new Error('Retained application runtime already exists.')
+    }
   }
+  await verifyUnusedManaged()
+  const verifyBacking = async () => {
+    const backing = await observeBacking(
+      config,
+      { directory, context },
+      runDocker
+    )
+    for (const name of ['postgres', 'hatchet']) {
+      const rows = backing.filter(({ service }) => service === name)
+      if (
+        rows.length !== 1 ||
+        !(resumeExecutor ? ['exited'] : ['running', 'exited']).includes(
+          rows[0].state
+        )
+      )
+        throw new Error(
+          'Continuation requires the original owned bootstrap containers.'
+        )
+    }
+  }
+  await verifyBacking()
   const composition = await readOwned(join(directory, 'providers.compose.json'))
   if (
     JSON.stringify(composition) !==
     JSON.stringify(renderConsumerBacking(config))
   )
     throw new Error('Retained provider composition has changed.')
+  if (
+    JSON.stringify(
+      await readOwned(join(directory, 'bootstrap.compose.json'))
+    ) !== JSON.stringify(renderConsumerBacking(config))
+  )
+    throw new Error('Retained bootstrap composition has changed.')
   await requirePrivateDirectory(
     join(directory, 'provider-setup'),
     'Provider attempt must be private.'
@@ -312,27 +371,6 @@ export async function continuePreparation(
       throw new Error(
         'Continuation requires an unfinished provider prefix and untouched application.'
       )
-  // A managed container may exist even if its application receipt was never written.
-  for (const label of [
-    'devcontainer.local_folder',
-    'devpod.workspace.source',
-  ]) {
-    if (
-      (
-        await runDocker([
-          '--context',
-          context,
-          'container',
-          'ls',
-          '--all',
-          '--quiet',
-          '--filter',
-          `label=${label}=${config.project.runtimeCheckoutPath}`,
-        ])
-      ).trim()
-    )
-      throw new Error('Retained application runtime already exists.')
-  }
   const commands = providerCommands(config)
   const retrieval = await readOwned(
     join(directory, 'retrieval-environment.json')
@@ -369,12 +407,47 @@ export async function continuePreparation(
   const classifications = []
   for (const name of commands.lifecycleOrder)
     classifications.push(await classify(name))
-  const attempt = join(directory, 'setup-continuation')
+  let attempt = join(directory, 'setup-continuation')
+  if (resumeExecutor !== undefined) {
+    if (!/^[a-f0-9]{40}$/.test(resumeExecutor) || profileRepair)
+      throw new Error(
+        'Profile resume requires a corrected profile and original executor.'
+      )
+    await requirePrivateDirectory(
+      attempt,
+      'Continuation attempt must be private.'
+    )
+    const entries = (await readdir(attempt)).sort()
+    if (
+      JSON.stringify(entries) !==
+        JSON.stringify(['claim.json', 'setup-profile-intent.json']) ||
+      JSON.stringify(await readOwned(join(attempt, 'claim.json'))) !==
+        JSON.stringify({ ...claim, executor: resumeExecutor, context }) ||
+      JSON.stringify(
+        await readOwned(join(attempt, 'setup-profile-intent.json'))
+      ) !== JSON.stringify({ candidate, executor: resumeExecutor })
+    )
+      throw new Error('Profile resume does not match the retained prefix.')
+    const expected = {
+      scraping: 'complete',
+      docProcessing: 'reconcile',
+      ingestion: 'untouched',
+      retrieval: 'untouched',
+    }
+    if (
+      commands.lifecycleOrder.some(
+        (name, index) => classifications[index] !== expected[name]
+      )
+    )
+      throw new Error('Retained provider prefix has changed.')
+    attempt = join(attempt, 'resume-after-profile')
+  }
   await mkdir(attempt, { mode: 0o700 })
   await writeExclusive(join(attempt, 'claim.json'), {
     ...claim,
     executor,
     context,
+    ...(resumeExecutor ? { resumeExecutor } : {}),
   })
   if (profileRepair) {
     await writeExclusive(join(attempt, 'setup-profile-intent.json'), {
@@ -416,13 +489,21 @@ export async function continuePreparation(
     if (
       repaired.dockerContext !== context ||
       repaired.repo?.path !== config.project.runtimeCheckoutPath ||
-      repaired.repo?.valid !== true ||
-      repaired.repo?.managedRuntime?.workspace
+      repaired.repo?.valid !== true
     )
       throw new Error('Repaired setup profile could not be qualified.')
   }
   await verifySources(config, candidate, executor)
-  await observeBacking(config, { directory, context }, runDocker)
+  await verifyUnusedManaged()
+  await verifyBacking()
+  for (const [index, name] of commands.lifecycleOrder.entries()) {
+    if ((await classify(name)) !== classifications[index])
+      throw new Error('Provider state changed before bootstrap startup.')
+  }
+  await writeExclusive(join(attempt, 'bootstrap-intent.json'), {
+    candidate,
+    executor,
+  })
   await runDocker([
     '--context',
     context,
