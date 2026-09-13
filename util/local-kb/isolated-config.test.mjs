@@ -9,6 +9,10 @@ import {
   validateIsolatedConfig,
 } from './isolated-config.mjs'
 import {
+  localCredentialNames,
+  renderProviderLocalConfiguration,
+} from './local-configuration.mjs'
+import {
   renderManagedConfiguration,
   renderProviderRouting,
 } from './managed-configuration.mjs'
@@ -245,6 +249,27 @@ test('resolves two independent stacks with complete provider and state ownership
 test('backing services use isolated volumes and keep Hatchet setup separate', () => {
   const first = renderBackingCompose(resolveIsolatedConfig(makeInput('a')))
   const second = renderBackingCompose(resolveIsolatedConfig(makeInput('b')))
+  const databaseHosts = new Set()
+  for (const name of ['a', 'b']) {
+    const config = resolveIsolatedConfig(makeInput(name))
+    const compose = renderBackingCompose(config)
+    const { environment } = renderProviderLocalConfiguration(
+      Object.fromEntries(
+        localCredentialNames.map((key) => [key, 'a'.repeat(64)])
+      ),
+      config.bindings
+    )
+    const [hostname] = compose.services.postgres.networks.default.aliases
+    assert.notEqual(hostname, 'postgres')
+    assert.equal(databaseHosts.has(hostname), false)
+    databaseHosts.add(hostname)
+    for (const connection of [
+      environment.klicker.DATABASE_URL,
+      environment.klicker.SHADOW_DATABASE_URL,
+      environment.hatchet.DATABASE_URL,
+    ])
+      assert.equal(new URL(connection).hostname, hostname)
+  }
   const names = new Set(Object.values(first.volumes).map(({ name }) => name))
   assert.ok(Object.values(second.volumes).every(({ name }) => !names.has(name)))
   assert.deepEqual(first.services['hatchet-setup'].profiles, ['local-kb-setup'])
@@ -269,7 +294,18 @@ test('backing services use isolated volumes and keep Hatchet setup separate', ()
       service === first.services.blob ? ['127.0.0.1:18002:10000'] : undefined
     )
     assert.equal(service.network_mode, undefined)
-    assert.deepEqual(service.networks, ['default'])
+    assert.deepEqual(
+      service.networks,
+      service === first.services.postgres
+        ? {
+            default: {
+              aliases: [
+                `${resolveIsolatedConfig(makeInput('a')).bindings.instance}-postgres`,
+              ],
+            },
+          }
+        : ['default']
+    )
     assert.equal(service.restart, 'no')
     for (const mount of service.volumes) {
       if (typeof mount === 'string') {
