@@ -24,6 +24,10 @@ paths = [
   # Documentation-only fixture snippets with deliberately illustrative values.
   '''^\.agents/skills/playwright-best-practices/advanced/authentication-flows\.md$''',
   '''^project/plans_future/PLAN-k6-load-testing\.md$''',
+  # Planning docs that record full 40-character git commit SHAs ("refreshed
+  # at <sha>"); the sourcegraph-access-token default rule matches any 40-hex
+  # string, so those SHAs are verified false positives.
+  '''^project/2026-08-29-pr-5667-question-generation-ux-audit-and-roadmap\.md$''',
   # Generated build output (gitignored, never committed) — only present after a
   # local build. CI scans a clean checkout where these do not exist; excluding
   # them keeps a local `gitleaks dir` on a built tree quiet.
