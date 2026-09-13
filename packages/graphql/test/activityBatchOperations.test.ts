@@ -10,6 +10,7 @@ import {
   ReviewStatus,
 } from '@klicker-uzh/prisma/client'
 import {
+  DisplayMode,
   ElementData,
   ElementInstanceResults,
   ElementOptions,
@@ -139,6 +140,7 @@ describe('Integration tests for batch operations on activities', () => {
       {
         ...(args.ownerId ? { ownerId: args.ownerId } : {}),
         options: {
+          displayMode: DisplayMode.LIST,
           choices: [{ ix: 0, value: 'Synthetic choice', correct: true }],
           hasSampleSolution: true,
           hasAnswerFeedbacks: false,
