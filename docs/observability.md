@@ -96,6 +96,14 @@ Pino adapter without creating a per-response logger. The bridge is never used
 as implicit cross-process state. Hatchet's UI keeps its native task association
 and metadata, while the container line contains the full portable Pino record.
 
+Diagnostic task records (lifecycle and info-level) never block the task:
+the wrapper schedules them on an ordered, per-attempt background queue, so a
+Hatchet round trip is not added to the task's critical path — failure records
+are the exception and are awaited (bounded against a degraded API) so failure
+evidence is durable before a retry or rethrow. Workers drain the background
+queue before exiting (`drainTaskLogWrites`), so shutdown does not drop pending
+diagnostic writes.
+
 The audit-entry task records only that an entry was received plus validated
 diagnostic context. Its historical `info` text and any business correlation
 identifier remain task payload data and are never emitted as Pino fields.
