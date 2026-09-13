@@ -307,7 +307,8 @@ prepare_runtime() {
   done
   ensure_dependencies
   echo '[dev-runtime] Building selected application dependencies before startup.'
-  (cd "$ROOT" && pnpm exec turbo run build "$@")
+  # Invoke the installed binary directly to avoid pnpm wrapper children.
+  (cd "$ROOT" && ./node_modules/.bin/turbo run build "$@")
   # Turbo can return before its Git subprocess exits. Preparation must leave
   # no live children for the managed process lifecycle to accept it.
   local preparation_pgid preparation_deadline preparation_processes

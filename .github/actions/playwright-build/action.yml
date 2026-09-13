@@ -107,9 +107,9 @@ runs:
         started=$(date +%s)
         set +e
         set -o pipefail
-        pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
+        node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-prisma.jsonl pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
         prisma_status=("${PIPESTATUS[@]}")
-        pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+        node .ci-control/.github/scripts/playwright-resource-sampler.cjs playwright-resources-build.jsonl pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
         build_status=("${PIPESTATUS[@]}")
         status=0
         if [ "${prisma_status[0]}" -ne 0 ] ||
@@ -162,22 +162,12 @@ runs:
           apps/frontend-manage/.next \
           apps/frontend-pwa/.next
 
-    - name: Archive logging runtime output
-      shell: bash
-      run: |
-        set -euo pipefail
-        test -s packages/logging/dist/node.js
-        test -s packages/logging/dist/edge.js
-        test -s packages/logging/dist/request.js
-        tar -cf playwright-logging-dist.tar -C packages/logging dist
-
     - name: Upload Playwright build outputs
       uses: actions/upload-artifact@v4
       with:
         name: playwright-build-artifact
         path: |
           playwright-next-builds.tar
-          playwright-logging-dist.tar
           apps/backend-docker/dist
           apps/hatchet-worker-general/dist
           apps/hatchet-worker-response-processor/dist
@@ -185,18 +175,7 @@ runs:
           apps/mcp-lecturer/dist
           apps/olat-api/dist
           apps/response-api/dist
-          packages/audit/dist
-          packages/export/dist
-          packages/feature-flags/dist
-          packages/grading/dist
-          packages/graphql/dist
-          packages/hatchet/dist
-          packages/knowledge-graph/dist
-          packages/logging/dist
-          packages/markdown/dist
-          packages/prisma/dist
-          packages/types/dist
-          packages/util/dist
+          packages/*/dist
         retention-days: 1
 
     - name: Extract Turbo build telemetry
@@ -229,6 +208,9 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-build-telemetry
-        path: playwright-build-telemetry.json
+        path: |
+          playwright-build-telemetry.json
+          playwright-resources-prisma.jsonl
+          playwright-resources-build.jsonl
         if-no-files-found: ignore
         retention-days: 7

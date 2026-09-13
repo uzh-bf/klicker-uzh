@@ -10,6 +10,9 @@ apps:
       bindings:
         turboFilters: ['--filter=@klicker-uzh/auth']
         serviceEndpoints: ['http://127.0.0.1:3010']
+    blob:
+      bindings:
+        managedServices: ['azurite']
     chat:
       bindings:
         turboFilters: ['--filter=@klicker-uzh/chat']

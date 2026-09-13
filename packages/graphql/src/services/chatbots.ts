@@ -1637,11 +1637,10 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         },
       },
       knowledgeBases: {
-        where: { isEnabled: true },
+        where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
           kb: { select: { id: true, name: true } },
         },
-        take: 1,
       },
     },
     orderBy: { updatedAt: 'desc' },
@@ -1775,7 +1774,11 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       usageSummary,
       disclaimerSummary,
       mcpConfigurations,
-      enabledKnowledgeBase: chatbot.knowledgeBases[0]?.kb ?? null,
+      enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
+      enabledKnowledgeBase:
+        chatbot.knowledgeBases.length === 1
+          ? (chatbot.knowledgeBases[0]?.kb ?? null)
+          : null,
     }
   })
 }

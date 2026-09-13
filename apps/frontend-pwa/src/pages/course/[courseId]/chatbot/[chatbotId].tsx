@@ -1,9 +1,9 @@
 import { EnsureParticipationDocument } from '@klicker-uzh/graphql/dist/ops'
 import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { UserNotification } from '@uzh-bf/design-system'
-import type { GetServerSidePropsContext } from 'next'
-import Link from 'next/link'
+import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import Layout from '../../../../components/Layout'
 import { initializeApollo } from '../../../../lib/apollo'
 import { mintPwaChatEmbedExchangeToken } from '../../../../lib/chatbot/embedAuth'
@@ -28,12 +28,6 @@ function getChatBaseUrl() {
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const { createSsrRequestLogging } = await import('@lib/server/logger')
-  const { logFailure, requestContext } = createSsrRequestLogging(
-    ctx.req.headers,
-    '/course/:courseId/chatbot/:chatbotId'
-  )
-
   try {
     if (
       typeof ctx.params?.courseId !== 'string' ||
@@ -47,7 +41,27 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo(undefined, ctx, requestContext)
+    // Verified LTI chatbot launches use Chat's account-or-guest entry.
+    // Chat verifies the signed target before resolving identity or participation.
+    if (
+      typeof ctx.query.jwt === 'string' &&
+      process.env.ASSESSMENT_MODE !== 'true'
+    ) {
+      const chatBase = getChatBaseUrl()
+      if (chatBase) {
+        const target = new URL('/auth/lti', chatBase)
+        target.searchParams.set('courseId', ctx.params.courseId)
+        target.searchParams.set('chatbotId', ctx.params.chatbotId)
+        target.searchParams.set('jwt', ctx.query.jwt)
+        ctx.res.setHeader('Cache-Control', 'no-store')
+        ctx.res.setHeader('Referrer-Policy', 'no-referrer')
+        return {
+          redirect: { destination: target.toString(), permanent: false },
+        }
+      }
+    }
+
+    const apolloClient = initializeApollo(undefined, ctx)
     const courseId = ctx.params.courseId as string
     const chatbotId = ctx.params.chatbotId as string
     const embedded = parseEmbedParam(ctx.query.embed)
@@ -84,9 +98,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       })
 
       ensureSuccess = Boolean(result.data?.ensureParticipation)
-    } catch {
+    } catch (err) {
       ensureSuccess = false
-      logFailure('participation_setup_failed')
+      console.error('Failed to ensure participation before chatbot redirect', {
+        courseId,
+        err,
+      })
     }
 
     if (!ensureSuccess) {
@@ -150,8 +167,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         permanent: false,
       },
     }
-  } catch {
-    logFailure('data_load_failed')
+  } catch (error) {
+    console.error('Error in getServerSideProps on chatbot:', error)
 
     return {
       redirect: {

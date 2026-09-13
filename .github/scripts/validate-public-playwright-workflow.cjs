@@ -6,7 +6,9 @@ const EXECUTION_GROUP =
   '${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}'
 const OPEN_EVENT =
   "github.event_name != 'pull_request' || github.event.action != 'closed'"
-const CLOSED_EVENT =
+const EXECUTION_EVENT =
+  "github.event_name != 'pull_request' || github.event.action != 'closed'"
+const CANCEL_EVENT =
   "github.event_name == 'pull_request' && github.event.action == 'closed'"
 
 function hasExactPermissions(actual, expected) {
@@ -31,10 +33,11 @@ function validateCallerLifecycle(caller) {
   if (
     caller?.name !== 'Klicker automated testing with playwright' ||
     !caller?.on?.pull_request?.types?.includes('closed') ||
+    !caller.on.pull_request.types.includes('converted_to_draft') ||
     caller.concurrency !== undefined
   ) {
     issues.push(
-      'caller must preserve workflow identity and handle closed PRs without workflow concurrency'
+      'caller must preserve workflow identity and handle closed and converted-to-draft PRs without workflow concurrency'
     )
   }
   for (const [name, job] of Object.entries(jobs)) {
@@ -49,15 +52,15 @@ function validateCallerLifecycle(caller) {
       issues.push(`${name} must remain outside execution concurrency`)
     }
   }
-  if (execution?.if !== OPEN_EVENT) {
-    issues.push('execution must exclude closed PR events')
+  if (execution?.if !== EXECUTION_EVENT) {
+    issues.push('execution must exclude only the closed PR event')
   }
   const status = jobs['test-playwright-status']
-  const expectedStatusIf = `always() && !cancelled() && needs.test-playwright-execution.result != 'cancelled' && (${OPEN_EVENT})`
+  // Unconditional for open events: a skipped required context can count as
+  // acceptable, so the reporter must run and fail on cancellation itself.
+  const expectedStatusIf = `always() && (${OPEN_EVENT})`
   if (status?.if !== expectedStatusIf) {
-    issues.push(
-      'status must always report open events while excluding cancellation'
-    )
+    issues.push('status must run unconditionally for open events')
   }
   if (
     !hasExactPermissions(status?.permissions, { actions: 'read' }) ||
@@ -98,7 +101,7 @@ function validateCallerLifecycle(caller) {
     issues.push('queue telemetry must be part of the status job')
   }
   if (
-    close?.if !== CLOSED_EVENT ||
+    close?.if !== CANCEL_EVENT ||
     close.needs !== undefined ||
     close['runs-on'] !== 'ubuntu-latest' ||
     close['timeout-minutes'] !== 5 ||
@@ -111,7 +114,7 @@ function validateCallerLifecycle(caller) {
     close.steps[0].run !== ':'
   ) {
     issues.push(
-      'close cancellation must be an independent permission-free hosted no-op'
+      'close cancellation must be an independent permission-free hosted no-op that never cancels a draft'
     )
   }
   return issues
@@ -123,6 +126,11 @@ const EXPECTED_BUILD_ACTION =
   'uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3'
 const EXPECTED_SHARD_ACTION =
   'uses: uzh-bf/klicker-uzh/.github/actions/playwright-shard@refs/heads/v3'
+// The build artifact must cover every workspace package, not a hand-maintained
+// list that silently drops a package with its own build output (for example
+// packages/audit/dist). The wildcard keeps full coverage as packages are added.
+const PACKAGE_DIST_WILDCARD = 'packages/*/dist'
+const INDIVIDUAL_PACKAGE_DIST = /packages\/[^/*\s]+\/dist/
 
 function readWorkflow(root, name, issues) {
   const relativePath = `.github/workflows/${name}`
@@ -187,6 +195,16 @@ function validatePublicPlaywrightWorkflow(root) {
   if (!caller.includes(EXPECTED_CALL)) {
     issues.push(
       `caller must use the canonical reusable workflow ref: ${EXPECTED_CALL}`
+    )
+  }
+  // The trusted routing only accepts the automatic hint, so any other value
+  // would fail the reusable workflow instead of selecting a route.
+  if (
+    callerParsed?.jobs?.['test-playwright-execution']?.with?.route_hint !==
+    'auto'
+  ) {
+    issues.push(
+      'caller must pass route_hint: auto; the trusted routing rejects every other hint'
     )
   }
 
@@ -291,6 +309,30 @@ function validatePublicPlaywrightWorkflow(root) {
 
   if ((publicWorkflow.match(/concurrency:/g) ?? []).length !== 0) {
     issues.push('called workflow must not define concurrency')
+  }
+  const buildActionText = readAction(root, 'playwright-build', issues)
+  const buildArtifactUpload = namedSteps(buildActionText).find((step) =>
+    step.includes('name: playwright-build-artifact')
+  )
+  const archivesWildcard = buildArtifactUpload
+    ?.split('\n')
+    .some((line) => line.trim() === PACKAGE_DIST_WILDCARD)
+  if (!archivesWildcard) {
+    issues.push(
+      'the build artifact must archive ' +
+        PACKAGE_DIST_WILDCARD +
+        ' so every workspace package dist is covered'
+    )
+  }
+  if (
+    buildArtifactUpload &&
+    INDIVIDUAL_PACKAGE_DIST.test(buildArtifactUpload)
+  ) {
+    issues.push(
+      'the build artifact must not list individual package dist paths; ' +
+        PACKAGE_DIST_WILDCARD +
+        ' keeps coverage as packages are added'
+    )
   }
   if (!publicWorkflow.includes('runs-on: ubuntu-latest')) {
     issues.push('the trusted preparation job must run on GitHub-hosted Ubuntu')

@@ -30,6 +30,7 @@ import {
   getModelsForChatbot,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
+import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -1264,10 +1265,9 @@ async function handlePOST(
       ...studentPracticeTools,
     }
     const toolNames = Object.keys(chatTools)
+    const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? toolNames.find(isDocQueryToolName)
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await failOrDiscardUnstartedClaim('mcp.quizzer')
@@ -1814,16 +1814,21 @@ async function handlePOST(
         tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: quizzerDocQueryToolName
-          ? ({ stepNumber }) =>
+        prepareStep: docQueryToolName
+          ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
               stepNumber === 0
                 ? {
                     toolChoice: {
                       type: 'tool' as const,
-                      toolName: quizzerDocQueryToolName,
+                      toolName: docQueryToolName,
                     },
                   }
-                : {}
+                : {
+                    messages: [
+                      ...initialMessages,
+                      ...withModelCitationIndices(responseMessages, steps),
+                    ],
+                  }
           : undefined,
         stopWhen: isStepCount(5),
         instructions: effectiveSystemPrompt,
