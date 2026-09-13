@@ -41,7 +41,7 @@ _profile_components() {
     component="${component#"${component%%[![:space:]]*}"}"
     component="${component%"${component##*[![:space:]]}"}"
     case "$component" in
-      standard|full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email) ;;
+      standard|full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|workers) ;;
       *) return 2 ;;
     esac
     components+=("$component")
@@ -68,7 +68,9 @@ profile_wants() {
       # every app, but neither workers nor optional processes.
       playwright) [ "$marker" = klicker-dev ] && return 0 ;;
       manage|pwa|chat) [ "$marker" = klicker-dev ] && return 0 ;;
-      live-quiz)
+      # Worker selections start the dev process and require both worker
+      # runtimes; live-quiz adds application routes, workers does not.
+      live-quiz|workers)
         case "$marker" in
           klicker-dev|klicker-workers) return 0 ;;
         esac
@@ -109,6 +111,12 @@ profile_turbo_filters() {
       live-quiz)
         filters="${filters} ${KLICKER_PROFILE_PWA_ROOT} ${KLICKER_PROFILE_CONTROL_ROOT} ${KLICKER_PROFILE_RESPONSE_ROOT} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
         ;;
+      # Worker-only selections carry no application routes or readiness probes.
+      # Both worker roots match the klicker-workers contract that post-start
+      # verifies by waiting for both worker runtimes to become live.
+      workers)
+        filters="${filters} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
+        ;;
       mcp|ai|email) ;;
       *) return 2 ;;
     esac
@@ -143,7 +151,7 @@ profile_readiness_apps() {
         wants_chat=true
         ;;
       live-quiz) apps="${apps} frontend-control frontend-pwa response-api" ;;
-      mcp|ai|email) ;;
+      mcp|ai|email|workers) ;;
       *) return 2 ;;
     esac
   done

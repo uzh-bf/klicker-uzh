@@ -8,6 +8,7 @@ import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
 import {
   claimPreparation,
   completePreparation,
+  continuePreparation,
   initializeManagedApplication,
   initializeProviderLaunchers,
   initializeProviderStorage,
@@ -96,6 +97,12 @@ export function inspectIsolatedProviderSources(config) {
         ).trim()
       const root = git(['rev-parse', '--show-toplevel'])
       const head = git(['rev-parse', 'HEAD'])
+      const environments = new Set([
+        '!! .venv/',
+        ...(name === 'ingestion'
+          ? ['!! modules/ingestion-api/.venv/', '!! modules/ingestion/.venv/']
+          : []),
+      ])
       const clean = git([
         'status',
         '--porcelain',
@@ -106,7 +113,7 @@ export function inspectIsolatedProviderSources(config) {
       ])
         .split('\0')
         .filter(Boolean)
-        .every((entry) => entry === '!! .venv/')
+        .every((entry) => environments.has(entry))
       return {
         name,
         sourceAvailable: true,
@@ -218,7 +225,36 @@ function configPlan(config) {
   }
 }
 
+// Each recovery mode resumes one retained attempt and excludes the other.
+const recoveryOptions = {
+  '--resume-executor': 'resumeExecutor',
+  '--resume-ingestion-executor': 'resumeIngestionExecutor',
+}
+
 function parseArguments(args) {
+  const recoveryOption = Object.hasOwn(recoveryOptions, args[7])
+    ? recoveryOptions[args[7]]
+    : undefined
+  if (
+    (args.length === 7 ||
+      (args.length === 9 &&
+        recoveryOption !== undefined &&
+        /^[a-f0-9]{40}$/.test(args[8]))) &&
+    args[0] === 'continue-setup' &&
+    args[1] === '--config' &&
+    args[3] === '--candidate' &&
+    args[5] === '--executor' &&
+    /^[a-f0-9]{40}$/.test(args[4]) &&
+    /^[a-f0-9]{40}$/.test(args[6])
+  ) {
+    return {
+      command: args[0],
+      configPath: args[2],
+      candidateRevision: args[4],
+      executorRevision: args[6],
+      ...(args.length === 9 ? { [recoveryOption]: args[8] } : {}),
+    }
+  }
   if (
     args.length === 5 &&
     ['setup', 'start', 'resume', 'stop', 'status'].includes(args[0]) &&
@@ -239,18 +275,36 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or <setup|start|resume|stop|status> --config <path> --candidate <commit>'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit>]'
   )
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const { command, configPath, candidateRevision } = parseArguments(
-      process.argv.slice(2)
-    )
+    const {
+      command,
+      configPath,
+      candidateRevision,
+      executorRevision,
+      resumeExecutor,
+      resumeIngestionExecutor,
+    } = parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
-      if (command === 'setup') {
+      if (command === 'continue-setup') {
+        requireLocalAiEnvironment(config)
+        requireProviderSources(config)
+        console.log(
+          JSON.stringify(
+            await continuePreparation(
+              config,
+              candidateRevision,
+              executorRevision,
+              { resumeExecutor, resumeIngestionExecutor }
+            )
+          )
+        )
+      } else if (command === 'setup') {
         requireLocalAiEnvironment(config)
         // Resolve pins and fresh source state before the exclusive claim or
         // any generated files, Docker operation, or managed lifecycle call.
