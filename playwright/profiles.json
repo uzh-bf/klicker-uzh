@@ -53,6 +53,21 @@
         "V-template.spec.ts",
         "W4-activity-wizard-safety.spec.ts"
       ]
+    },
+    {
+      "profile": "manage,pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-production.spec.ts"]
+    },
+    {
+      "profile": "email,pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-registration.spec.ts"]
+    },
+    {
+      "profile": "pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-lti.spec.ts"]
     }
   ]
 }
