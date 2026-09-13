@@ -86,6 +86,16 @@ jobs:
             group: Build Docker image for olat-api (stg)
           - workflow: Build Docker image for response-api (stg)
             group: Build Docker image for response-api (stg)
+          # The MCP entries cover workflows that exist only on the v3-ai and
+          # v3-audit integration branches. On v3 itself no run ever occupies
+          # those groups, so the legs finish as harmless no-ops while the
+          # matrix stays single-sourced across the sync chain.
+          - workflow: Test lecturer MCP server
+            group: Test lecturer MCP server
+          - workflow: Build Docker image for mcp-lecturer (stg)
+            group: Build Docker image for mcp-lecturer (stg)
+          - workflow: Build Docker image for mcp-student (stg)
+            group: Build Docker image for mcp-student (stg)
     concurrency:
       group: ${{ matrix.group }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true

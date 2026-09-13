@@ -345,6 +345,22 @@ const CLOSED_PR_SWEEPER_EXCLUSIONS = new Map([
   ],
 ])
 
+// Entries for workflows that exist only on the v3-ai/v3-audit integration
+// branches. They stay in the single v3-owned matrix; on v3 the legs join a
+// group no run ever occupies, and requiring the standard name-derived prefix
+// keeps the allowlist honest while the workflows are absent there.
+const CLOSED_PR_SWEEPER_INTEGRATION_ONLY = new Map([
+  ['Test lecturer MCP server', 'v3-ai integration-branch validation suite'],
+  [
+    'Build Docker image for mcp-lecturer (stg)',
+    'v3-ai integration-branch image build',
+  ],
+  [
+    'Build Docker image for mcp-student (stg)',
+    'v3-ai integration-branch image build',
+  ],
+])
+
 test('closed-pr sweeper covers every per-PR workflow concurrency group', () => {
   const sweeper = readWorkflow('cancel-closed-pr-checks.yml')
   const job = sweeper.jobs['cancel-closed-pr-checks']
@@ -404,10 +420,14 @@ test('closed-pr sweeper covers every per-PR workflow concurrency group', () => {
   }
 
   for (const e of entries) {
+    const matchesLive = [...targets.values()].some(
+      (t) => t.name === e.workflow && t.prefix === e.group
+    )
+    const integrationOnly =
+      CLOSED_PR_SWEEPER_INTEGRATION_ONLY.has(e.workflow) &&
+      e.group === e.workflow
     assert.ok(
-      [...targets.values()].some(
-        (t) => t.name === e.workflow && t.prefix === e.group
-      ),
+      matchesLive || integrationOnly,
       'sweeper entry matches no live per-PR workflow: ' + e.workflow
     )
   }
