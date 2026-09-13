@@ -2555,8 +2555,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementProgress:
         '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
       succeeded: '{label} ist bereit.',
+      incomplete:
+        '{label} wurde mit weniger Elementen als angefordert abgeschlossen.',
+      reviewRequired: '{label} wartet auf Ihre Entscheidung.',
       failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
       open: 'Ergebnis öffnen',
+      review: 'Ergebnis prüfen',
     },
     elementGeneration: {
       eyebrow: 'KI-unterstützte Erstellung',
@@ -2718,7 +2722,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         generatedCount: '{generated} von {requested} generiert',
         generated: 'Generiert',
         unresolved: 'Ungelöst',
-        warnings: 'Warnungen',
+        warnings: 'Ablaufwarnungen',
+        warningsHelp:
+          'Vom Generierungsablauf gemeldet, unabhängig von den Qualitätshinweisen einzelner Elemente.',
         retries: 'Wiederholungen',
         processing: 'Die Elemente werden vorbereitet',
         processingHelp:
@@ -2777,6 +2783,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         bloomLevel: 'Bloom: {level}',
         difficultyLevel: 'Schwierigkeit: {level}',
         qualityAttention: 'Qualitätsprüfung empfohlen',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'Die geschätzte Schwierigkeit sollte vor der Verwendung geprüft werden.',
+          difficultyValidationFailed:
+            'Die Schwierigkeitsprüfung war für dieses Element nicht erfolgreich.',
+          manualReviewRequired:
+            'Dieses Element wurde zur manuellen Prüfung markiert.',
+          other: 'Weitere Qualitätsprüfungen haben dieses Element markiert.',
+          acceptedUnsaved:
+            'Angenommen, aber noch nicht in Ihrer Bibliothek gespeichert.',
+        },
         notApplicable: 'Nicht anwendbar',
         sourceUnavailable: 'Quelle nicht verfügbar',
         sourcesTitle: 'Quellen',
