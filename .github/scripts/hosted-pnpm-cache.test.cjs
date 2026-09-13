@@ -115,12 +115,17 @@ test('the check push is the only configured hosted writer and helper edits reach
     (step) => step.uses === './.github/actions/changed-paths'
   )
   assert.match(actionPath, new RegExp(filter.with.pattern))
-  for (const event of ['push', 'pull_request']) {
-    assert.ok(
-      workflows[2].on[event].paths.includes(
-        '.github/actions/setup-node-pnpm/**'
-      )
-    )
+  // The unit selector moved from workflow-level paths to a job so a required
+  // status can always report; the filter must still cover helper edits.
+  const unitFilter = workflows[2].jobs.filter.steps.find(
+    (step) => step.uses === './.github/actions/changed-paths'
+  )
+  for (const marker of [
+    '\\.github/actions/setup-node-pnpm/',
+    '\\.github/workflows/test-unit\\.yml$',
+    '\\.github/scripts/required-ci-status\\.cjs$',
+  ]) {
+    assert.ok(unitFilter.with.pattern.includes(marker), marker)
   }
 })
 

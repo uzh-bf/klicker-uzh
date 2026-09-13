@@ -476,3 +476,4 @@ jobs:
           shard-index: ${{ matrix.shardIndex }}
           shard-total: ${{ matrix.shardTotal }}
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
+          workers: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}

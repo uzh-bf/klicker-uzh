@@ -51,7 +51,7 @@
     },
     {
       "profile": "pwa,chat",
-      "specs": ["Y-course-chat-drawer.spec.ts"]
+      "specs": ["Y-chat-lti-access.spec.ts", "Y-course-chat-drawer.spec.ts"]
     },
     {
       "profile": "manage,live-quiz",

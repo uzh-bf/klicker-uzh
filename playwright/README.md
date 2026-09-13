@@ -49,6 +49,46 @@ Direct local `playwright test` calls fail before database cleanup. Never run
 Playwright or install its browsers inside the devcontainer. GitHub Actions keeps
 using the official Playwright container directly.
 
+## Fast local iterations
+
+Explicit spec paths automatically select the union of their entries in
+`profiles.json`. Broad runs and filters that cannot be resolved safely use the
+`playwright` runtime profile, which excludes optional AI and email services.
+Override inference with `--runtime-profile` before Playwright arguments.
+Applying a profile reconciles the runtime downward: services outside the
+selected profile (for example LiteLLM, MailHog or the local MCP process) are
+stopped, so pass `--runtime-profile` explicitly when you need them running.
+
+Use one worker per runtime: specs share seeded identities and database-wide resets.
+Concurrent shards require separate worktrees and complete isolated runtimes,
+including PostgreSQL, Redis, Hatchet and report directories. A second browser
+worker or a cloned database alone does not provide that isolation.
+
+Normal runs clean and seed the synthetic database. `--preserve-database` is only
+for debugging an existing baseline; it is not clean-run acceptance evidence.
+
+### Seed snapshots (opt-in)
+
+Clean runs normally clean and seed the synthetic database on every reset.
+Optionally, set `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1` to capture the seeded
+baseline into the git-ignored `playwright/.cache/seed-snapshot/` directory
+after a successful seed; later runs, including the per-spec `CLEANUP` resets,
+then restore that baseline in a single PostgreSQL transaction on the disposable
+`klicker_test` database instead of deleting and re-inserting every row. The
+launcher passes the exact Postgres container to the helper; it never connects
+to another database.
+
+Snapshotting stays opt-in because, measured on the reference host, a restore is
+not faster than the normal cleanup and seed reset — it is retained for its
+exact-baseline guarantee, not as a speed feature. Restore is refused in CI,
+under `--preserve-database`, and whenever the cache key no longer binds the
+Prisma schema, migrations, seed implementation, seed constants, lockfile,
+PostgreSQL major version, timezone and year, or when the live schema
+fingerprint drifted. Those runs fall back to the normal cleanup and seed path.
+A restore that fails mid-flight aborts the run instead of continuing on partial
+state. Delete the cache directory to force a fresh capture; a new snapshot is
+captured automatically after the next successful clean seed.
+
 ## Useful commands
 
 ```bash

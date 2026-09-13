@@ -677,10 +677,7 @@ async function resolveOrCreateParticipantForLti(
   // caller could mint a token for an arbitrary subject or email. Only accept
   // LTI 1.3, which is verified by apps/lti before the JWT is issued.
   if (ltiData.scope !== 'LTI1.3') {
-    ctx.log.warn(
-      { event: 'lti.account.resolve.rejected', reason: 'unsupported_scope' },
-      'LTI account resolution rejected'
-    )
+    console.warn(`event=lti_rejected_scope scope=${ltiData.scope}`)
     return { type: 'unsupported_scope' }
   }
 
@@ -717,9 +714,8 @@ async function resolveOrCreateParticipantForLti(
             })
           : accountBySsoId
 
-      ctx.log.info(
-        { event: 'lti.account.resolved', mode: 'linked_by_ssoid' },
-        'LTI account resolved'
+      console.info(
+        `event=lti_linked_by_ssoid participantId=${account.participant.id} ssoType=${account.ssoType}`
       )
 
       await ensureParticipation(account.participant.id)
@@ -737,13 +733,8 @@ async function resolveOrCreateParticipantForLti(
       })
 
       if (matchedParticipants.length > 1) {
-        ctx.log.warn(
-          {
-            event: 'lti.account.resolve.rejected',
-            reason: 'duplicate_email',
-            matchCount: matchedParticipants.length,
-          },
-          'LTI account resolution rejected'
+        console.warn(
+          `event=lti_conflict_duplicate_email matches=${matchedParticipants.length}`
         )
         return { type: 'conflict_duplicate_email' }
       }
@@ -775,13 +766,8 @@ async function resolveOrCreateParticipantForLti(
                 })
               : accountForSsoType
 
-          ctx.log.info(
-            {
-              event: 'lti.account.resolved',
-              mode: 'linked_by_email',
-              reusedSsoType: true,
-            },
-            'LTI account resolved'
+          console.info(
+            `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=true`
           )
 
           await ensureParticipation(account.participant.id)
@@ -807,13 +793,8 @@ async function resolveOrCreateParticipantForLti(
           include: { participant: true },
         })
 
-        ctx.log.info(
-          {
-            event: 'lti.account.resolved',
-            mode: 'linked_by_email',
-            reusedSsoType: false,
-          },
-          'LTI account resolved'
+        console.info(
+          `event=lti_linked_by_email participantId=${account.participant.id} ssoType=${account.ssoType} reusedSsoType=false`
         )
 
         await ensureParticipation(account.participant.id)
@@ -874,9 +855,8 @@ async function resolveOrCreateParticipantForLti(
       include: { participant: true },
     })
 
-    ctx.log.info(
-      { event: 'lti.account.resolved', mode: 'created_new' },
-      'LTI account resolved'
+    console.info(
+      `event=lti_created_new participantId=${account.participant.id} ssoType=${account.ssoType}`
     )
 
     await ensureParticipation(account.participant.id)
@@ -933,10 +913,7 @@ export async function createParticipantAccount(
       ctx
     )
     if (resolved.type !== 'resolved') {
-      ctx.log.warn(
-        { event: 'lti.account.create.rejected', reason: resolved.type },
-        'LTI account creation rejected'
-      )
+      console.warn(`event=lti_create_account_failed type=${resolved.type}`)
       return null
     }
 
@@ -955,11 +932,8 @@ export async function createParticipantAccount(
         participant: account.participant,
         participantToken: jwt,
       }
-    } catch {
-      ctx.log.error(
-        { event: 'lti.account.login.failed' },
-        'LTI account login failed'
-      )
+    } catch (e) {
+      console.error(e)
       return null
     }
   }
@@ -1056,10 +1030,7 @@ export async function createParticipantAccount(
       participant,
     }
   } catch (e) {
-    ctx.log.error(
-      { event: 'participant.account.create.failed' },
-      'Participant account creation failed'
-    )
+    console.error(e)
     await sendTeamsNotification({
       scope: 'graphql/createParticipantAccount',
       text: `Failed to create participant account: ${email} with error: ${
@@ -1101,10 +1072,7 @@ export async function loginParticipantWithLti(
   )
 
   if (resolved.type !== 'resolved') {
-    ctx.log.warn(
-      { event: 'lti.account.login.rejected', reason: resolved.type },
-      'LTI account login rejected'
-    )
+    console.warn(`event=lti_login_failed type=${resolved.type}`)
     return null
   }
 
@@ -1771,4 +1739,114 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
     { liveQuizId: liveQuiz.id, userId: ctx.user.sub },
     ctx.prisma
   )
+}
+
+/** Resolve a verified chatbot launch without registering a normal account. */
+export async function loginParticipantForLtiChatbot(
+  {
+    signedLtiData,
+    courseId,
+    chatbotId,
+    participantToken,
+  }: {
+    signedLtiData: string
+    courseId: string
+    chatbotId: string
+    participantToken?: string | null
+  },
+  ctx: Context
+): Promise<{
+  status: 'ACCOUNT' | 'GUEST' | 'DENIED'
+  participantId?: string
+  participantToken?: string
+}> {
+  const denied = { status: 'DENIED' as const }
+  const issuer = process.env.APP_ORIGIN_LTI
+  const secret = process.env.APP_SECRET
+  const accountIssuer = process.env.APP_ORIGIN_API
+  if (!issuer || !secret || !accountIssuer) return denied
+  let launch: Awaited<ReturnType<typeof verifyJWT>>
+  try {
+    launch = await verifyJWT(signedLtiData, secret, { issuer })
+  } catch {
+    return denied
+  }
+  const binding = launch.chatbotLaunch as
+    | { courseId?: unknown; chatbotId?: unknown }
+    | undefined
+  if (
+    launch.scope !== 'LTI1.3' ||
+    !launch.sub ||
+    typeof launch.exp !== 'number' ||
+    binding?.courseId !== courseId ||
+    binding?.chatbotId !== chatbotId
+  )
+    return denied
+
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: {
+      id: chatbotId,
+      courseId,
+      status: DB.ChatbotStatus.PUBLISHED,
+      course: { isAssessmentEnabled: false, deletionRequestedAt: null },
+    },
+    select: { id: true },
+  })
+  if (!chatbot) return denied
+
+  let participant: DB.Participant | null = null
+  if (participantToken) {
+    let session: Awaited<ReturnType<typeof verifyJWT>> | undefined
+    try {
+      session = await verifyJWT(participantToken, secret, {
+        issuer: accountIssuer,
+      })
+    } catch {
+      // An expired browser session does not invalidate the verified LMS launch.
+    }
+    if (
+      session?.role === DB.UserRole.PARTICIPANT &&
+      session.sub &&
+      typeof session.exp === 'number'
+    ) {
+      participant = await ctx.prisma.participant.findFirst({
+        where: {
+          id: session.sub,
+          isActive: true,
+          accounts: { none: { type: 'lti_guest' } },
+        },
+      })
+    }
+  }
+  if (!participant) {
+    const resolved = await resolveOrCreateParticipantForLti(
+      { signedLtiData, allowCreate: false },
+      ctx
+    )
+    if (resolved.type === 'not_found' || resolved.type === 'missing_email')
+      return { status: 'GUEST' }
+    if (
+      resolved.type !== 'resolved' ||
+      !resolved.account.participant.isActive ||
+      resolved.account.type === 'lti_guest'
+    )
+      return denied
+    participant = resolved.account.participant
+  }
+  await ctx.prisma.participation.upsert({
+    where: {
+      courseId_participantId: { courseId, participantId: participant.id },
+    },
+    create: { courseId, participantId: participant.id, isActive: false },
+    update: {},
+  })
+  const token = await doParticipantLogin(
+    { participantId: participant.id, participantLocale: participant.locale },
+    ctx
+  )
+  return {
+    status: 'ACCOUNT',
+    participantId: participant.id,
+    participantToken: token,
+  }
 }

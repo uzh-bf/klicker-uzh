@@ -2107,6 +2107,7 @@ describe('Integration tests for user group management', () => {
           displayName: 'Assessment permission evidence quiz',
           ownerId: userOne.id,
           isAssessmentEnabled: true,
+          pinCode: 'AB12CD',
         },
       })
       await prisma.permission.create({
@@ -2121,6 +2122,9 @@ describe('Integration tests for user group management', () => {
           liveQuizId,
           lifecycleEpoch: 1,
           coverageState: 'COVERED',
+          baselineId: randomUUID(),
+          baselineKind: 'CREATION',
+          activatedAt: new Date(),
         },
       })
       await recomputeDerivedPermissions({ liveQuizId }, prisma)
