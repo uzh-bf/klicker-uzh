@@ -28,6 +28,9 @@ export * from './crypto.js'
 // export everything from the identity module
 export * from './identity.js'
 
+// export everything from the submission id module
+export * from './submissionId.js'
+
 // export everything from the chat usage module
 export * from './chatUsage.js'
 

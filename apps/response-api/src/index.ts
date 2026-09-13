@@ -1,10 +1,14 @@
+import { createHash } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  isValidSubmissionId,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
 
 const redis = new Redis({
   family: 4,
@@ -111,6 +115,15 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     )
   }
 
+  // a supplied submission id must be a bounded opaque identifier; reject it
+  // explicitly instead of silently treating it as absent
+  if (
+    payload.submissionId !== undefined &&
+    !isValidSubmissionId(payload.submissionId)
+  ) {
+    return badRequest(req, res, 'invalid_submission_id')
+  }
+
   // Only forward participant-related cookies. If both exist, include both.
   let cookie: string | undefined
   if (typeof req.headers['cookie'] === 'string') {
@@ -154,7 +167,15 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   const eventName = isAuthenticatedParticipant
     ? 'response-received:authenticated'
     : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
+  // deliberate allowlist: no forwarded cookies, raw answer contents or
+  // client submission identifiers in routine logs
+  console.log(`Pushing event ${eventName}`, {
+    messageId: message.messageId,
+    sessionId: message.sessionId,
+    instanceId: message.instanceId,
+    participant: isAuthenticatedParticipant ? 'authenticated' : 'anonymous',
+    hasSubmissionId: message.submissionId !== undefined,
+  })
 
   await hatchetClient.events.push(eventName, message)
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
