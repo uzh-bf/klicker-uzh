@@ -227,6 +227,8 @@ test('the fallback stays the always-reported image build contract', () => {
   const report = job.steps.find(
     (step) => step.name === 'Report affected image build status'
   )
+  // A failed changed-file step must still publish its selection evidence.
+  assert.equal(report.if, '$' + '{{ !cancelled() }}')
   // A draft must not be deferred: no draft input and no draft gate anywhere.
   assert.equal(report.env.PR_DRAFT, undefined)
   assert.doesNotMatch(source, /pull_request\.draft/)
@@ -241,7 +243,14 @@ test('the fallback stays the always-reported image build contract', () => {
 
 test('the changed-file step diffs the event head against the event merge base', (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'build-status-diff-'))
-  t.after(() => fs.rmSync(directory, { force: true, recursive: true }))
+  t.after(() =>
+    fs.rmSync(directory, {
+      force: true,
+      maxRetries: 10,
+      recursive: true,
+      retryDelay: 50,
+    })
+  )
   // Git exports repository-local variables to hooks. Fixture repositories must
   // not inherit them, or `git -C` can still mutate the parent repository.
   const environment = Object.fromEntries(
@@ -318,6 +327,43 @@ test('the changed-file step diffs the event head against the event merge base', 
   )
   const mergeSha = git('-C', 'source', 'rev-parse', 'HEAD')
 
+  // A criss-cross history: two sibling merges of the same two parents in
+  // opposite order have two merge bases, so no single base is unambiguous.
+  git('-C', 'source', 'checkout', '-q', '-b', 'left', ancestor)
+  fs.mkdirSync(path.join(source, 'apps/chat/src'), { recursive: true })
+  fs.writeFileSync(path.join(source, 'apps/chat/src/left.ts'), 'left\n')
+  git('-C', 'source', 'add', '-A')
+  git('-C', 'source', 'commit', '-q', '-m', 'left change')
+  git('-C', 'source', 'checkout', '-q', '-b', 'right', ancestor)
+  fs.mkdirSync(path.join(source, 'apps/chat/src'), { recursive: true })
+  fs.writeFileSync(path.join(source, 'apps/chat/src/right.ts'), 'right\n')
+  git('-C', 'source', 'add', '-A')
+  git('-C', 'source', 'commit', '-q', '-m', 'right change')
+  git('-C', 'source', 'checkout', '-q', '-b', 'merge-left', 'left')
+  git(
+    '-C',
+    'source',
+    'merge',
+    '-q',
+    '--no-ff',
+    '-m',
+    'merge right into left',
+    'right'
+  )
+  const crissCrossLeftSha = git('-C', 'source', 'rev-parse', 'HEAD')
+  git('-C', 'source', 'checkout', '-q', '-b', 'merge-right', 'right')
+  git(
+    '-C',
+    'source',
+    'merge',
+    '-q',
+    '--no-ff',
+    '-m',
+    'merge left into right',
+    'left'
+  )
+  const crissCrossRightSha = git('-C', 'source', 'rev-parse', 'HEAD')
+
   git('clone', '-q', '--bare', 'source', 'origin.git')
   git('--git-dir=origin.git', 'symbolic-ref', 'HEAD', 'refs/heads/merge')
   const mergeParents = git(
@@ -329,6 +375,16 @@ test('the changed-file step diffs the event head against the event merge base', 
     mergeSha
   )
   assert.equal(mergeParents.split(' ').length, 3)
+  const crissCrossBases = git(
+    '--git-dir=origin.git',
+    'merge-base',
+    '--all',
+    crissCrossLeftSha,
+    crissCrossRightSha
+  )
+    .trim()
+    .split('\n')
+  assert.equal(crissCrossBases.length, 2)
   // Unrelated history is advertised by the same origin, so its fetch succeeds
   // and only the merge-base comparison can fail.
   git('init', '-q', '-b', 'unrelated', 'unrelated')
@@ -432,6 +488,7 @@ test('the changed-file step diffs the event head against the event merge base', 
   )
 
   // Unrelated ancestry and a missing endpoint both fail and clear the output.
+  // An ambiguous merge base must fail the same way.
   fs.writeFileSync(outputPath, 'stale\n')
   const unrelated = runStep(baseSha, unrelatedSha)
   assert.notEqual(unrelated.status, 0)
@@ -439,6 +496,10 @@ test('the changed-file step diffs the event head against the event merge base', 
   fs.writeFileSync(outputPath, 'stale\n')
   const missing = runStep('f'.repeat(40), headSha)
   assert.notEqual(missing.status, 0)
+  assert.equal(fs.existsSync(outputPath), false)
+  fs.writeFileSync(outputPath, 'stale\n')
+  const crissCross = runStep(crissCrossLeftSha, crissCrossRightSha)
+  assert.notEqual(crissCross.status, 0)
   assert.equal(fs.existsSync(outputPath), false)
   assert.equal(git('-C', 'checkout', 'rev-parse', 'HEAD'), mergeSha)
 })

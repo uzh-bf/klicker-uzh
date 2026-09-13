@@ -63,7 +63,12 @@ jobs:
           fi
           # Publisher path filters use the PR head's changes since the merge
           # base. Base-only changes must not require undispatched publishers.
-          if ! git diff --name-only "$BASE_SHA...$HEAD_SHA" \
+          if ! merge_base=$(git merge-base --all "$BASE_SHA" "$HEAD_SHA") ||
+            [[ -z "$merge_base" || "$merge_base" == *$'\n'* ]]; then
+            echo "::error::pull-request comparison requires one unambiguous merge base"
+            exit 1
+          fi
+          if ! git diff --name-only "$merge_base" "$HEAD_SHA" \
             > "$CHANGED_FILES_PATH"; then
             rm -f "$CHANGED_FILES_PATH"
             echo "::error::unable to establish pull-request merge-base comparison"
@@ -72,6 +77,7 @@ jobs:
           echo "changed files: event head compared with event merge base"
 
       - name: Report affected image build status
+        if: ${{ !cancelled() }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           BUILD_STATUS_EVIDENCE_PATH: ${{ runner.temp }}/required-ci-evidence.json
