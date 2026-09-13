@@ -11,7 +11,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   MAX_KB_SOURCE_SIZE_BYTES,
-  MAX_KB_TOTAL_SIZE_BYTES,
+  resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
 import {
   buildKBIngestionSource,
@@ -124,7 +124,7 @@ export function validateKBIngestionWorkerConfig(
   }
 }
 
-async function persistPreparedSource({
+async function admitIngestionSource({
   input,
   prisma,
   source,
@@ -134,10 +134,10 @@ async function persistPreparedSource({
   prisma: KBIngestionPrisma
   source: KBIngestionSource
   env: NodeJS.ProcessEnv
-}): Promise<KBIngestionSource | undefined> {
-  const persisted = await prisma.$transaction(async (tx) => {
+}): Promise<KBIngestionSource | string | undefined> {
+  return prisma.$transaction(async (tx) => {
     if (!(await lockPersistedKbScope(tx, input))) {
-      return false
+      return undefined
     }
     const currentResource = await tx.kBResource.findFirst({
       where: {
@@ -146,11 +146,42 @@ async function persistPreparedSource({
         deletedAt: null,
         kb: { deletedAt: null },
       },
-      select: { sizeBytes: true },
+      select: {
+        sizeBytes: true,
+        contentSha256: true,
+        mimeType: true,
+        ingestionAttemptId: true,
+        resourceVersion: true,
+        status: true,
+        externalOperationId: true,
+        kb: { select: { storageLimitMiB: true } },
+      },
     })
-    if (!currentResource) {
-      return false
+    if (
+      !currentResource ||
+      currentResource.ingestionAttemptId !== input.ingestionAttemptId ||
+      currentResource.resourceVersion !== input.resourceVersion ||
+      (currentResource.status !== KBResourceStatus.QUEUED &&
+        currentResource.status !== KBResourceStatus.PROCESSING)
+    ) {
+      return undefined
     }
+    if (currentResource.externalOperationId) {
+      return currentResource.externalOperationId
+    }
+    const cachedSource =
+      currentResource.contentSha256 &&
+      currentResource.mimeType &&
+      currentResource.sizeBytes !== null
+        ? buildKBIngestionSource(
+            input,
+            currentResource.mimeType,
+            currentResource.contentSha256,
+            currentResource.sizeBytes,
+            env
+          )
+        : undefined
+    source = cachedSource ?? source
     const [resources, unknownSizeResources, uploadTickets] = await Promise.all([
       tx.kBResource.aggregate({
         where: { kbId: input.kbId },
@@ -172,7 +203,10 @@ async function persistPreparedSource({
       (uploadTickets._sum.sizeBytes ?? 0) -
       (currentResource.sizeBytes ?? MAX_KB_SOURCE_SIZE_BYTES) +
       source.sizeBytes
-    if (projectedSizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
+    if (
+      projectedSizeBytes >
+      resolveKBStorageLimitBytes(currentResource.kb.storageLimitMiB)
+    ) {
       const finishedAt = new Date()
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {
@@ -214,7 +248,11 @@ async function persistPreparedSource({
           throw new Error('KB ingestion source could not be correlated')
         }
       }
-      return false
+      return undefined
+    }
+
+    if (cachedSource) {
+      return cachedSource
     }
 
     const resourceUpdate = await tx.kBResource.updateMany({
@@ -238,7 +276,7 @@ async function persistPreparedSource({
       },
     })
     if (resourceUpdate.count !== 1) {
-      return false
+      return undefined
     }
     const runUpdate = await tx.kBIngestionRun.updateMany({
       where: {
@@ -255,44 +293,8 @@ async function persistPreparedSource({
     if (runUpdate.count !== 1) {
       throw new Error('KB ingestion source could not be correlated')
     }
-    return true
-  })
-  if (persisted) {
     return source
-  }
-
-  const current = await prisma.kBResource.findUnique({
-    where: { id: input.resourceId },
-    select: {
-      ingestionAttemptId: true,
-      resourceVersion: true,
-      contentSha256: true,
-      mimeType: true,
-      sizeBytes: true,
-      kbId: true,
-      deletedAt: true,
-      kb: { select: { deletedAt: true } },
-    },
   })
-  if (
-    current?.ingestionAttemptId !== input.ingestionAttemptId ||
-    current.resourceVersion !== input.resourceVersion ||
-    current.kbId !== input.kbId ||
-    current.deletedAt !== null ||
-    current.kb.deletedAt !== null ||
-    !current.contentSha256 ||
-    !current.mimeType ||
-    current.sizeBytes === null
-  ) {
-    return undefined
-  }
-  return buildKBIngestionSource(
-    input,
-    current.mimeType,
-    current.contentSha256,
-    current.sizeBytes,
-    env
-  )
 }
 
 export async function dispatchKBIngestion(
@@ -340,7 +342,7 @@ export async function dispatchKBIngestion(
     }
 
     let source =
-      resource.contentSha256 && resource.mimeType && resource.sizeBytes
+      resource.contentSha256 && resource.mimeType && resource.sizeBytes !== null
         ? buildKBIngestionSource(
             input,
             resource.mimeType,
@@ -354,17 +356,18 @@ export async function dispatchKBIngestion(
         dependencies.prepareSource ??
         ((sourceInput, sourceEnv) =>
           prepareKBIngestionSource(sourceInput, sourceEnv))
-      const preparedSource = await prepareSource(input, env)
-      source = await persistPreparedSource({
-        input,
-        prisma: dependencies.prisma,
-        source: preparedSource,
-        env,
-      })
-      if (!source) {
-        return undefined
-      }
+      source = await prepareSource(input, env)
     }
+    const admitted = await admitIngestionSource({
+      input,
+      prisma: dependencies.prisma,
+      source,
+      env,
+    })
+    if (typeof admitted === 'string' || !admitted) {
+      return admitted
+    }
+    source = admitted
 
     const client = dependencies.client ?? createKBIngestionApiClient({ env })
     const operationId = await client.acceptResource({

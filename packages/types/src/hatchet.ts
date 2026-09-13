@@ -20,9 +20,32 @@ export interface HatchetHandlerGlobalContext {
   tasks: PreparedHatchetTasks
 }
 
-export const MAX_KB_RESOURCE_COUNT = 100
+export const MAX_KB_RESOURCE_COUNT = 1000
 export const MAX_KB_SOURCE_SIZE_BYTES = 25 * 1024 * 1024
-export const MAX_KB_TOTAL_SIZE_BYTES = 500 * 1024 * 1024
+const KB_BYTES_PER_MIB = 1024 * 1024
+export const DEFAULT_KB_STORAGE_LIMIT_MIB = 500
+export const MAX_KB_STORAGE_LIMIT_MIB = 2_147_483_647
+export const MAX_KB_TOTAL_SIZE_BYTES =
+  DEFAULT_KB_STORAGE_LIMIT_MIB * KB_BYTES_PER_MIB
+
+export function resolveKBStorageLimitBytes(
+  storageLimitMiB: number | null | undefined
+): number {
+  const effectiveLimitMiB = storageLimitMiB ?? DEFAULT_KB_STORAGE_LIMIT_MIB
+  if (
+    !Number.isSafeInteger(effectiveLimitMiB) ||
+    effectiveLimitMiB <= 0 ||
+    effectiveLimitMiB > MAX_KB_STORAGE_LIMIT_MIB
+  ) {
+    throw new Error('Invalid KB storage limit')
+  }
+
+  const limitBytes = effectiveLimitMiB * KB_BYTES_PER_MIB
+  if (!Number.isSafeInteger(limitBytes)) {
+    throw new Error('Invalid KB storage limit')
+  }
+  return limitBytes
+}
 
 type IngestKBResourceInputBase = JsonObject & {
   resourceId: string
