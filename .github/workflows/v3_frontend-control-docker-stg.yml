@@ -11,9 +11,25 @@ on:
     # so newly applicable images are built instead of keeping the old result.
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
+      # The Dockerfile runs 'turbo prune --scope=@klicker-uzh/frontend-control'. Only that
+      # workspace dependency closure reaches the image, so a change outside
+      # it cannot alter this build and must not trigger it.
       - 'apps/frontend-control/**'
-      # Any workspace package can be bundled into this image.
-      - 'packages/**'
+      - 'packages/audit/**'
+      - 'packages/doc-query-client/**'
+      - 'packages/feature-flags/**'
+      - 'packages/grading/**'
+      - 'packages/graphql/**'
+      - 'packages/hatchet/**'
+      - 'packages/i18n/**'
+      - 'packages/knowledge-graph/**'
+      - 'packages/markdown/**'
+      - 'packages/next-config/**'
+      - 'packages/prisma/**'
+      - 'packages/shared-components/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
+      - 'packages/word-cloud/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
@@ -21,7 +37,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.dockerignore'
-      - '.github/workflows/v3_frontend-control**'
+      - '.github/workflows/v3_frontend-control-docker-stg**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -50,14 +66,11 @@ jobs:
           rm apps/frontend-control/.env.production
           mv apps/frontend-control/.env.stg apps/frontend-control/.env.production
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
@@ -92,7 +105,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: true
+          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
