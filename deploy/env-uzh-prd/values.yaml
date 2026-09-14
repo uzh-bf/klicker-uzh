@@ -572,6 +572,21 @@ backendGraphql:
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
 
+  elementGeneration:
+    enabled: true
+    hatchetHostPort: 'hatchet-grpc.prd-hatchet-svc.svc.cluster.local:7070'
+    hatchetServerUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: '1'
+      flashcardMinorUnits: '1'
+      flashcardRetryMinorUnits: '1'
+      pricingVersion: 'prd-elements-v1'
+
   replicaCount: 6
 
   autoscaling:
