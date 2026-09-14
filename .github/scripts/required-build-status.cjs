@@ -42,11 +42,13 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/auth/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
       'packages/i18n/**',
+      'packages/knowledge-graph/**',
       'packages/markdown/**',
       'packages/next-config/**',
       'packages/prisma/**',
@@ -63,10 +65,12 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/backend-docker/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
+      'packages/knowledge-graph/**',
       'packages/prisma/**',
       'packages/types/**',
       'packages/util/**',
@@ -79,11 +83,13 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/chat/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
       'packages/i18n/**',
+      'packages/knowledge-graph/**',
       'packages/markdown/**',
       'packages/next-config/**',
       'packages/prisma/**',
@@ -102,11 +108,13 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-control/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
       'packages/i18n/**',
+      'packages/knowledge-graph/**',
       'packages/markdown/**',
       'packages/next-config/**',
       'packages/prisma/**',
@@ -123,11 +131,14 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-manage/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
       'packages/i18n/**',
+      'packages/kb-management/**',
+      'packages/knowledge-graph/**',
       'packages/markdown/**',
       'packages/next-config/**',
       'packages/prisma/**',
@@ -144,11 +155,13 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-pwa/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
       'packages/i18n/**',
+      'packages/knowledge-graph/**',
       'packages/markdown/**',
       'packages/next-config/**',
       'packages/prisma/**',
@@ -165,11 +178,13 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-pwa/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
       'packages/i18n/**',
+      'packages/knowledge-graph/**',
       'packages/markdown/**',
       'packages/next-config/**',
       'packages/prisma/**',
@@ -186,10 +201,12 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/hatchet-worker-general/**',
+      'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
       'packages/graphql/**',
       'packages/hatchet/**',
+      'packages/knowledge-graph/**',
       'packages/prisma/**',
       'packages/types/**',
       'packages/util/**',
@@ -204,6 +221,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
       'apps/hatchet-worker-response-processor/**',
       'packages/grading/**',
       'packages/hatchet/**',
+      'packages/knowledge-graph/**',
       'packages/prisma/**',
       'packages/types/**',
       'packages/util/**',
@@ -229,7 +247,10 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/mcp-lecturer/**',
-      SHARED_PACKAGES_GLOB,
+      'packages/grading/**',
+      'packages/prisma/**',
+      'packages/types/**',
+      'packages/util/**',
       ...ROOT_BUILD_GLOBS,
       '.github/workflows/v3_mcp-lecturer**',
     ],
@@ -239,7 +260,15 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/mcp-student/**',
-      SHARED_PACKAGES_GLOB,
+      'packages/doc-query-client/**',
+      'packages/feature-flags/**',
+      'packages/grading/**',
+      'packages/graphql/**',
+      'packages/hatchet/**',
+      'packages/knowledge-graph/**',
+      'packages/prisma/**',
+      'packages/types/**',
+      'packages/util/**',
       ...ROOT_BUILD_GLOBS,
       '.github/workflows/v3_mcp-student**',
     ],
@@ -264,6 +293,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
       'apps/response-api/**',
       'packages/grading/**',
       'packages/hatchet/**',
+      'packages/knowledge-graph/**',
       'packages/prisma/**',
       'packages/types/**',
       'packages/util/**',

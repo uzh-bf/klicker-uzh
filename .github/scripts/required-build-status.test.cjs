@@ -90,6 +90,24 @@ function activeBuildJobs(workflow) {
     .map(([id]) => id)
 }
 
+// Each image prunes to the workspace package its own app glob names, so the
+// mapping is derived instead of listed: branches carry extra images (the MCP
+// servers exist only on v3-ai and v3-audit) that a fixed list cannot describe.
+function imageRootPackages() {
+  const roots = {}
+  for (const file of presentImageWorkflows(root)) {
+    const workflow = readWorkflow(file)
+    const appGlob = (workflow.on.pull_request.paths || []).find((glob) =>
+      /^apps\/[^/]+\/\*\*$/.test(String(glob))
+    )
+    if (!appGlob) continue
+    const directory = String(appGlob).replace(/\/\*\*$/, '')
+    if (!fs.existsSync(path.join(root, directory, 'package.json'))) continue
+    roots[file] = readPackageJson(directory).name
+  }
+  return roots
+}
+
 const REPOSITORY = 'uzh-bf/klicker-uzh'
 const PR_SHA = 'a'.repeat(40)
 const MERGE_SHA = 'b'.repeat(40)
@@ -727,21 +745,7 @@ test('a packages-only pull request never resolves to a no-change', () => {
 // would miss a real input, anything wider wakes a runner for an unrelated change.
 test('a workspace package change selects exactly the images that bundle it', () => {
   const graph = workspaceGraph()
-  const packageForImage = {
-    'v3_auth-stg.yml': '@klicker-uzh/auth',
-    'v3_backend-docker-stg.yml': '@klicker-uzh/backend-docker',
-    'v3_chat-stg.yml': '@klicker-uzh/chat',
-    'v3_frontend-control-docker-stg.yml': '@klicker-uzh/frontend-control',
-    'v3_frontend-manage-docker-stg.yml': '@klicker-uzh/frontend-manage',
-    'v3_frontend-pwa-docker-assessment-stg.yml': '@klicker-uzh/frontend-pwa',
-    'v3_frontend-pwa-docker-stg.yml': '@klicker-uzh/frontend-pwa',
-    'v3_hatchet-worker-general-stg.yml': '@klicker-uzh/hatchet-worker-general',
-    'v3_hatchet-worker-response-processor-stg.yml':
-      '@klicker-uzh/hatchet-worker-response-processor',
-    'v3_lti-stg.yml': '@klicker-uzh/lti-service',
-    'v3_olat-api-stg.yml': '@klicker-uzh/olat-api',
-    'v3_response-api-stg.yml': '@klicker-uzh/response-api',
-  }
+  const packageForImage = imageRootPackages()
   const presentFiles = presentImageWorkflows(root)
 
   for (const [workspacePackage, directory] of Object.entries(
@@ -772,21 +776,7 @@ test('a workspace package change selects exactly the images that bundle it', () 
 
 test('every image path filter lists its own dependency closure', () => {
   const graph = workspaceGraph()
-  const packageForImage = {
-    'v3_auth-stg.yml': '@klicker-uzh/auth',
-    'v3_backend-docker-stg.yml': '@klicker-uzh/backend-docker',
-    'v3_chat-stg.yml': '@klicker-uzh/chat',
-    'v3_frontend-control-docker-stg.yml': '@klicker-uzh/frontend-control',
-    'v3_frontend-manage-docker-stg.yml': '@klicker-uzh/frontend-manage',
-    'v3_frontend-pwa-docker-assessment-stg.yml': '@klicker-uzh/frontend-pwa',
-    'v3_frontend-pwa-docker-stg.yml': '@klicker-uzh/frontend-pwa',
-    'v3_hatchet-worker-general-stg.yml': '@klicker-uzh/hatchet-worker-general',
-    'v3_hatchet-worker-response-processor-stg.yml':
-      '@klicker-uzh/hatchet-worker-response-processor',
-    'v3_lti-stg.yml': '@klicker-uzh/lti-service',
-    'v3_olat-api-stg.yml': '@klicker-uzh/olat-api',
-    'v3_response-api-stg.yml': '@klicker-uzh/response-api',
-  }
+  const packageForImage = imageRootPackages()
   for (const [image, rootPackage] of Object.entries(packageForImage)) {
     const workflow = readWorkflow(image)
     const declared = new Set(

@@ -17,6 +17,7 @@ on:
       - 'apps/hatchet-worker-response-processor/**'
       - 'packages/grading/**'
       - 'packages/hatchet/**'
+      - 'packages/knowledge-graph/**'
       - 'packages/prisma/**'
       - 'packages/types/**'
       - 'packages/util/**'

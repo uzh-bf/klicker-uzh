@@ -17,6 +17,7 @@ on:
       - 'apps/response-api/**'
       - 'packages/grading/**'
       - 'packages/hatchet/**'
+      - 'packages/knowledge-graph/**'
       - 'packages/prisma/**'
       - 'packages/types/**'
       - 'packages/util/**'
