@@ -557,6 +557,31 @@ activation and performance separately. No infrastructure change is currently
 required from the user.
 
 ## Progress
+- 2026-09-13 slice C1 (affected-image path filters): each `v3_*-stg.yml`
+  pull-request filter now lists that image's transitive workspace dependency
+  closure (`turbo prune --scope=<package> --docker`) instead of the blanket
+  `packages/**`. Measured on today's traffic: PR-side image builds executed
+  980.7 hosted minutes across 152 `build-arm` jobs, and every node image
+  matched nearly every `packages/**` change. On nine representative changed
+  files the selection drops from 86 to 40 image builds, including
+  `packages/transactional`/`packages/prisma-data` (12 -> 1, chat only),
+  `packages/word-cloud` (12 -> 6, Next images only) and `packages/export`
+  (12 -> 0). Root manifests and `.dockerignore` still select every node image,
+  analytics keeps its dependency-free filters, and pushes to `v3`/`v3*` still
+  build all images because push triggers have no path filter. The evaluator's
+  `IMAGE_WORKFLOWS` inventory and the twelve workflow filters were rewritten
+  together; three new tests derive each closure from the workspace manifests
+  and fail if a filter omits a real dependency or wakes an unrelated image.
+  Verification: 24/24 required-build-status tests, 9/9 event gates, 57/57
+  across the three CI suites, Prettier clean, stable across three runs.
+  Delivered on branch `rs/ci-image-edit-reuse`.
+- Remaining known avoidable work, unchanged by C1: the image workflows still
+  rebuild on `edited` and `ready_for_review` for an unchanged head (measured
+  97 extra unchanged-head runs across the repository in two days), and the five
+  `Build Fallback` pollers occupy hosted runners for up to 2103s per event.
+  Both need the B3 consolidation or a same-head reuse contract and stay
+  sequenced behind PR #5924.
+
 
 - Planning and local takeover artifacts completed on 2026-09-13; implementation
   has not started.
@@ -734,3 +759,63 @@ required from the user.
   Actions cache service, so the ~10 GiB quota does not apply and the
   `mode=max` export is visible as a distinct tag in the repository's version
   list once it happens.
+- 2026-09-13 Playwright reuse defect found and fixed (branch
+  `rs/ci-metadata-edit-guard`): the merged equivalent-run contract could never
+  fire. `findEquivalentPullRequestRun` selected its candidate as the newest
+  `pull_request` run for the head, filtered only by pull-request number. The
+  event validating reuse is itself a run of the same workflow on the same
+  head, so it was always the newest entry, and a still-executing run is never
+  both `completed` and `successful`. Every lifecycle event therefore fell
+  through to full validation. Fix: exclude `context.runId` from the
+  pull-request candidate set, the same established pattern
+  `required-build-status.cjs` already uses. Two regression tests pin the
+  contract — a completed run is reused while its own event run is in flight,
+  and the current run can never qualify itself as reusable evidence. A probe
+  confirmed fail-closed behaviour is intact: a cancelled or failed earlier run
+  is still rejected and a newer completed run still wins. Evidence: 144/144
+  tests pass across the six `check.yml` gate files. Live corroboration: PR
+  #5922 fired a third full wave at 21:21:57Z on unchanged head `ab5164bc`
+  from a body edit, with the same merge tree as its 16:58 predecessor that had
+  already succeeded on the same route; that pair also differed in control
+  revision, which reuse legitimately rejects, so the live case corroborates
+  rather than demonstrates the bug. Fleet measurement across the 40 newest
+  pull requests, one commit each: 430 image suites collapse to 284
+  `(path, head)` groups, with 146 extra runs, 107 of them non-skipped.
+  Expectation-setting: reuse now requires the same control revision, base,
+  head and merge tree, so it fires in quiet windows rather than on every
+  lifecycle event; qualify it with a real unchanged-head transition after
+  merge instead of promising an immediate win.
+- 2026-09-13 required-gate false-failure attribution: the 35-minute
+  `build-images-status` failures were not a live defect. Run `34770188746`
+  (PR #5922, `action: edited`) failed with
+  `v3_analytics-stg.yml (no run for this event, branch and commit)` plus a
+  queued sibling; its downloaded evidence artifact reports
+  `changed files: two-endpoint comparison (conservative)`, an old
+  conservative fallback that exists only in base `f00e272a`. Both
+  `origin/v3` and `origin/v3-ai` now carry the merge-base version from
+  #5936 (`dfadccd1db`, an ancestor of `origin/v3`), so that cause is already
+  fixed. The remaining genuine cause is plain hosted-queue saturation: run
+  `34773533734` (PR #5924) failed on a single queued sibling after 60 polls x
+  30s. That is roadmap item B3 and stays blocked until #5924 merges.
+- 2026-09-13 metadata-only edited slice (branch `rs/ci-metadata-edit-skip`):
+  PR #5977 merged as `6bcd91e4c9`; the reuse fix is live on `v3` at
+  `ci-equivalent-run.cjs` lines 235/253. This slice removes the sibling waste
+  class: 21 workflows list `edited`, and a title or body edit previously
+  re-launched every one of them on an unchanged head even though the path
+  diff is byte-identical to the event before it. The `changed-paths`
+  composite now returns `should_run=false` for a pull_request `edited` event
+  without `changes.base.from` (title/body only) and still computes the real
+  diff when `changes.base.from` is present (base retarget). The four
+  path-filtered suites (`test-unit`, `test-graphql`, `test-olat-api`,
+  `test-intl-production`) already treat `should_run=false` as a validated
+  `no-change` selection, so their required status stays green without
+  executing. `check-gitleaks` keeps its unconditional run; `check`,
+  `public-pr-playwright-shards`, and the `v3_*-stg.yml` image workflows are
+  not changed here because their edited-event behaviour is contractual
+  (required context, reusable-run lifecycle, and draft-deferral/retarget
+  recompute respectively) and belong to their own packages. Evidence: 5 new
+  behavioural tests run the composite's exact script against temp repositories
+  with a local origin remote (metadata-only edit skips, base retarget
+  re-selects, synchronize and reopened still select, empty push diff still
+  fails open). Scope note: image-workflow `edited` re-runs are governed by the
+  B3 consolidation package and remain blocked on #5924.
