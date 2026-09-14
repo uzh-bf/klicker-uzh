@@ -46,9 +46,12 @@ Older integration branches must receive the reporting workflows before they
 can satisfy this baseline.
 
 Biome and Knip advisory steps, AI reviews, CodeQL analysis, and the SonarCloud
-analysis upload remain outside this deterministic required baseline. The
-SonarCloud workflow uploads analysis without an explicit quality-gate wait.
-Those checks must not be described as enforced test results.
+analysis remain outside this deterministic required baseline. The SonarCloud
+workflow waits for the quality gate, so a failing gate fails that workflow
+instead of leaving a green run beside a red gate, and it fails closed with a
+named reason when an event cannot receive the analysis credential. Neither
+workflow is a required status check. Those checks must not be described as
+enforced test results.
 
 ## PR gates
 
@@ -103,7 +106,8 @@ neither Node nor pnpm.
 - **Format + lint**: `check` runs blocking Biome + Prettier formatting and the blocking Turbo/ESLint safety net. Biome lint remains advisory. The same job also runs `check:prisma-sync`, `check:agents-md`, and `check:removed-doc-artifacts`.
 - **Unused code**: `check` runs Knip **advisory** (non-blocking); ratchet it to blocking only after the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
-- **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
+- **Security analysis**: `codeql-analysis.yml` analyzes JavaScript/TypeScript, the analytics Python sources, and the GitHub Actions workflows with SHA-pinned CodeQL v4 actions, and runs the `security-extended` suite as a pilot; the job is not a required check. `v3_sonarcloud.yml` pins the Sonar scanner, derives the project version from the root `package.json`, waits for the quality gate, and imports LCOV coverage only from a test run that belongs to the analyzed head and recorded the same tested source tree, rewriting the imported report paths to repository-relative form (`.github/scripts/sonar-coverage-inputs.cjs`, `.github/scripts/sonar-coverage-transport.cjs`); a missing or unverified report leaves coverage "not computed" in SonarCloud instead of reporting a satisfied metric, and no coverage threshold is armed yet. The import spends one bounded wait window shared by every producer, so a queued test run cannot consume the analysis job before the scanner starts. Fork and Dependabot pull requests cannot receive `SONAR_TOKEN`, so their analysis fails closed with a named unavailable result rather than an authorization error. `dependency-review.yml` reviews changed dependencies and fails on high severity. GitHub's dependency graph resolves the pinned pnpm 11.5 workspace: the `v3` SBOM records 4,487 npm packages with 10,757 dependency edges, and the 336 open alerts are attributed to the root `pnpm-lock.yaml` (250), workspace `package.json` files (83), and `apps/analytics/uv.lock` (3), with resolved npm versions matching the `pnpm-workspace.yaml` override targets. Detection and graph coverage are verified; PR-time blocking of a newly introduced vulnerable dependency, and triage of the existing backlog, are not. Trivy scanning is piloted on the staging backend-docker image and migrator by `v3_backend-docker-stg.yml`, and the trusted staging controller admits a candidate only when the receipt of each scanned image matches the digest it is about to promote. The pilot scope is still those two images, so the other staging images publish no receipt yet. Because the controller runs the workflow definition of its own revision, this admission applies to the controller once this source reaches the default branch.
+- **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JavaScript/TypeScript, Python, and Actions; weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 - **Playwright timing feedback**: `update-playwright-timings.yml` listens for a successful direct `v3` run of `test-playwright`, validates all eight compact JUnit artifacts, and opens or updates one human-reviewed timing PR on `automation/playwright-timings`. It requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with repository contents and pull-request write permissions. The default `GITHUB_TOKEN` is deliberately insufficient because PRs it creates do not trigger their required checks; the timing workflow never auto-merges.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
@@ -114,10 +118,14 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
 - **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, OpenRouter configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OpenCodeReview 1.11.0 is also qualified before publication against a fake OpenAI-compatible endpoint with a synthetic one-file diff; that probe checks the released binary's model, high reasoning, tool request, 16,384-token completion cap, automatic provider routing, and one-round effort wiring. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
-The individual and stack final-review jobs disable OCR's background updater
+The draft, individual and stack review jobs disable OCR's background updater
 with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.11.0
 otherwise starts a background global npm update even for `ocr version`, so a
-pinned installation alone does not keep the executable immutable. Each review
+pinned installation alone does not keep the executable immutable. That
+background reinstall deletes and re-extracts the package while the same job
+starts its review, so a job without the guard fails on module resolution
+instead of reviewing the diff. `ocr-self-update-guard.test.cjs` fails any
+workflow job that runs the action without the guard. Each review
 attempt verifies the pinned version before running. Process failures retain
 their exit code and write only a fixed stage, exit status and numeric output
 sizes to the job summary: stdout for that attempt and explicitly labelled
@@ -305,8 +313,10 @@ ref update:
   triggers, active ARM jobs, runtime image repositories, and backend migrator
   ordering. Intentionally disabled AMD jobs are excluded.
 - The code check, secret scan, GraphQL, Playwright, unit, OLAT, translation,
-  and image-build summary jobs all have successful push runs for the exact
-  candidate SHA, repository, and selected branch. The newest matching run and
+  image-build summary, and SonarCloud analysis jobs all have successful push
+  runs for the exact candidate SHA, repository, and selected branch. The Sonar
+  job only succeeds once the awaited quality gate passes, so a green workflow
+  that hid a failed gate cannot qualify a candidate. The newest matching run and
   its current attempt are required; duplicate terminal jobs fail validation.
   Candidate pushes run GraphQL, unit, OLAT, both translation smoke jobs, and
   all eight Playwright shards. PR-only no-change selections cannot qualify a
@@ -319,6 +329,10 @@ ref update:
   validated `Docker-Content-Digest` header. The controller reads the registry
   inventory twice and fails if any digest is absent or changes during
   collection.
+- Every image that publishes a scan is covered by that run: the scan job
+  succeeded, and a receipt names the same source revision, run, attempt, image
+  repository, and digest the controller is about to promote. A rebuild after
+  the scan therefore cannot be promoted as the scanned artifact.
 
 The sorted evidence becomes a canonical JSON receipt with the controller run and source SHA,
 source and candidate revisions, workflow/run/job identities, registry tags and

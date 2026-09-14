@@ -15,6 +15,9 @@ on:
       - 'Test lightweight unit suites'
       - 'Test OLAT-API functionalities'
       - 'Production translation context'
+      # A candidate whose quality gate is still running is reconsidered when the
+      # analysis finishes, instead of waiting for the next candidate push.
+      - 'Perform sonarcloud analysis'
       - 'Build Fallback'
       - 'Build Docker image for analytics (stg)'
       - 'Build Docker image for auth (stg)'
