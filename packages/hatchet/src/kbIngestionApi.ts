@@ -20,6 +20,11 @@ const KB_INGESTION_REQUEST_TIMEOUT_MS = 10_000
 const KB_SOURCE_FETCH_TIMEOUT_MS = 30_000
 const MAX_KB_SOURCE_BYTES = 25 * 1024 * 1024
 const MAX_KB_SOURCE_REDIRECTS = 3
+// Public sites reject anonymous source fetches: Wikimedia answers 403 to
+// requests without a descriptive User-Agent, which surfaces as an ingestion
+// that cannot be started.
+const KB_SOURCE_USER_AGENT =
+  'KlickerUZH-KB-Ingestion/1.0 (+https://klicker.uzh.ch)'
 const SUPPORTED_BLOB_INGESTION_MIME_TYPES = new Set([
   'application/pdf',
   'text/plain',
@@ -470,6 +475,7 @@ function requestPinnedUrl(url: URL, address: string): Promise<IncomingMessage> {
       {
         headers: {
           Accept: [...SUPPORTED_URL_INGESTION_MIME_TYPES].join(', '),
+          'User-Agent': KB_SOURCE_USER_AGENT,
           Connection: 'close',
         },
         lookup: pinnedLookup,
