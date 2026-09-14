@@ -16,6 +16,12 @@ permissions:
 
 jobs:
   ocr-review:
+    # The CLI spawns a detached `npm i -g` self-update on its first invocation
+    # unless this is set. That global reinstall removes and re-extracts the
+    # package while the review is starting, so the job dies on a
+    # module-resolution error instead of reviewing the pull request.
+    env:
+      OCR_NO_UPDATE: '1'
     if: >-
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.draft == true
@@ -42,7 +48,7 @@ jobs:
           NODE
 
       - name: Run OpenCodeReview
-        uses: alibaba/open-code-review@66120291271b2e605e420e9f11fbd6448f06163f # v1.9.10
+        uses: alibaba/open-code-review@c7dd11e03eeeb84991d60e3f847be30f7de1c20d # v1.11.0
         with:
           llm_url: https://openrouter.ai/api/v1/chat/completions
           llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}

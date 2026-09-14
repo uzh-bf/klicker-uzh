@@ -173,6 +173,7 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
 
   const trustedProfileSet = new Set(trustedProfileNames)
   const profiles = new Map()
+  const productionSpecs = new Set()
 
   for (const group of manifest.groups) {
     const profile = canonicalProfile(group?.profile)
@@ -182,14 +183,26 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
       }
     }
 
+    if (group.runtime !== undefined && group.runtime !== 'production-webpack') {
+      fail(`unsupported trusted profile runtime ${group.runtime}`)
+    }
+    // Production-lane specs are designated by the trusted manifest before
+    // their files land on this branch; the dedicated production workflow owns
+    // them and ordinary lanes must never run them.
+    const productionLane = group.runtime === 'production-webpack'
+
     if (!Array.isArray(group.specs) || group.specs.length === 0) {
       fail(`trusted profile ${profile} needs specs`)
     }
 
     for (const spec of group.specs) {
-      if (!TEST_FILE_PATTERN.test(spec) || !trustedSpecs.includes(spec)) {
+      if (!TEST_FILE_PATTERN.test(spec)) {
         fail(`trusted profile ${profile} references invalid spec ${spec}`)
       }
+      if (!productionLane && !trustedSpecs.includes(spec)) {
+        fail(`trusted profile ${profile} references invalid spec ${spec}`)
+      }
+      if (productionLane) productionSpecs.add(spec)
       if (profiles.has(spec)) {
         fail(`trusted spec ${spec} has duplicate profile assignments`)
       }
@@ -202,10 +215,14 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
     fail(`trusted specs without profiles: ${missing.join(', ')}`)
   }
 
-  return profiles
+  return { profiles, productionSpecs }
 }
 
-function validateRelevanceManifest(manifest, trustedSpecs) {
+function validateRelevanceManifest(
+  manifest,
+  trustedSpecs,
+  productionSpecs = new Set()
+) {
   if (!manifest || manifest.version !== SELECTOR_SCHEMA_VERSION) {
     fail(`unsupported relevance manifest schema version ${manifest?.version}`)
   }
@@ -236,7 +253,7 @@ function validateRelevanceManifest(manifest, trustedSpecs) {
       fail(`relevance group ${group.id} contains duplicate specs`)
     }
     for (const spec of group.specs) {
-      if (!trustedSpecSet.has(spec)) {
+      if (!trustedSpecSet.has(spec) && !productionSpecs.has(spec)) {
         fail(`relevance group ${group.id} references inactive spec ${spec}`)
       }
     }
@@ -386,7 +403,13 @@ function specFromPath(changedPath) {
   return match?.[1] ?? null
 }
 
-function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
+function selectFromChanges({
+  changes,
+  candidateSpecs,
+  manifest,
+  prState,
+  productionSet = new Set(),
+}) {
   if (prState !== 'draft' && prState !== 'ready') {
     fail(`unsupported pull request state ${prState}`)
   }
@@ -449,6 +472,8 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
         if (oldSpec && !candidateSet.has(oldSpec)) {
           reasonCodes.add('spec-renamed')
         }
+      } else if (oldSpec && productionSet.has(oldSpec)) {
+        // Production-lane spec changes are owned by the dedicated workflow.
       } else if (oldSpec) {
         full = true
         reasonCodes.add('spec-deleted')
@@ -461,7 +486,9 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
     const changedPath = change.paths[0]
     const spec = specFromPath(changedPath)
     if (spec) {
-      if (change.kind === 'D') {
+      if (productionSet.has(spec)) {
+        // Production-lane spec changes are owned by the dedicated workflow.
+      } else if (change.kind === 'D') {
         full = true
         reasonCodes.add('spec-deleted')
       } else if (candidateSet.has(spec)) {
@@ -529,16 +556,22 @@ function buildSelectionPlan({
   const trustedSpecs = listTrustedSpecs(controlRoot)
   const runtimeApps = readRuntimeApps(controlRoot)
   const trustedProfileNames = readTrustedProfileNames(controlRoot)
-  const trustedProfiles = parseTrustedProfiles(
+  const { profiles: trustedProfiles, productionSpecs } = parseTrustedProfiles(
     controlRoot,
     trustedSpecs,
     trustedProfileNames
   )
+  // Only trusted control can move an existing spec out of ordinary shards.
+  // Production-lane specs always run in the dedicated production workflow,
+  // and remaining candidate-only specs retain the maximal-profile fallback
+  // until they land.
+  const productionSet = new Set(productionSpecs)
+  candidateSpecs = candidateSpecs.filter((spec) => !productionSet.has(spec))
   const relevanceManifest = readJson(
     path.join(controlRoot, 'playwright/relevance-manifest.json'),
     'relevance manifest'
   )
-  validateRelevanceManifest(relevanceManifest, trustedSpecs)
+  validateRelevanceManifest(relevanceManifest, trustedSpecs, productionSet)
 
   const maximalProfile = trustedProfileNames.includes('full')
     ? 'full'
@@ -553,6 +586,7 @@ function buildSelectionPlan({
     candidateSpecs,
     manifest: relevanceManifest,
     prState,
+    productionSet,
   })
   const profileMap = new Map(Object.entries(assignments))
   const trustedTimings = readJson(
