@@ -406,7 +406,7 @@ function validateExecutionBoundary(env) {
       fail('database_url_non_local')
     }
     const bootstrap = spawnSync(
-      'bash',
+      '/bin/bash',
       ['util/dev-runtime.sh', 'require-bootstrap'],
       {
         cwd: EXPECTED_CWD,
@@ -983,6 +983,8 @@ async function executeCases({
   const runId = randomUUID()
   const allReceipts = [...receipts]
   const summary = { completed: 0, failed: 0, skipped: 0 }
+  let runError = null
+  let restoreError = null
 
   try {
     fixture = await inspectFixture(client, selected)
@@ -1134,9 +1136,10 @@ async function executeCases({
       }
       if (stopAfterAttempt) break
     }
+  } catch (error) {
+    runError = error
   } finally {
     uninstallSignalHandlers()
-    let restoreError = null
     if (fixture) {
       try {
         await restoreFixture(client, fixture)
@@ -1147,8 +1150,12 @@ async function executeCases({
     await client.$disconnect().catch((error) => {
       restoreError ||= error
     })
-    if (restoreError) throw new EvaluationError('fixture_restore_failed')
   }
+
+  // A failed restore leaves mutated fixture state behind for the next run to
+  // adopt, so it is reported ahead of the error that interrupted the run.
+  if (restoreError) fail('fixture_restore_failed')
+  if (runError) throw runError
 
   return { runId, summary }
 }

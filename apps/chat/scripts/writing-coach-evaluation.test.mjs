@@ -22,6 +22,63 @@ function validBundle(cases) {
   }
 }
 
+function createFixtureClient({ chatbot, creditRow, mcpConfigs, readback }) {
+  return {
+    async $executeRawUnsafe() {
+      return 1
+    },
+    async $queryRawUnsafe(text) {
+      if (text.includes('ChatUsageCredits')) {
+        return readback?.creditRow ?? (creditRow ? [creditRow] : [])
+      }
+      if (text.includes('standardModeConfig')) {
+        return [{ standardModeConfig: chatbot.standardModeConfig }]
+      }
+      if (text.includes('ChatbotMCPConfig')) {
+        return mcpConfigs.map((config) => ({
+          id: config.id,
+          isEnabled: config.isEnabled,
+        }))
+      }
+      return [
+        {
+          creditInitialCredits: chatbot.creditInitialCredits,
+          creditResetPeriod: chatbot.creditResetPeriod,
+          creditResetAmount: chatbot.creditResetAmount,
+          creditMaxCredits: chatbot.creditMaxCredits,
+        },
+      ]
+    },
+  }
+}
+
+function restoreFixtureInput() {
+  return {
+    chatbot: {
+      standardModeConfig: { writingCoachEnabled: true },
+      creditInitialCredits: 40,
+      creditResetPeriod: 'MONTHLY',
+      creditResetAmount: 40,
+      creditMaxCredits: 100,
+    },
+    mcpConfigs: [{ id: 'mcp-config-fixture', isEnabled: true }],
+    server: { id: 'mcp-server-fixture' },
+    participant: { id: 'participant-fixture' },
+    creditRow: {
+      participantId: 'participant-fixture',
+      chatbotId: 'chatbot-fixture',
+      current: '12',
+      total: '100',
+      periodStartedAt: '2026-09-01',
+      lastResetAt: null,
+      resetCount: 0,
+      acceptedDisclaimerId: null,
+      disclaimerAcceptedAt: null,
+      disclaimerDeclined: false,
+    },
+  }
+}
+
 test('bundle validation rejects case ids that would escape the receipts directory', () => {
   assert.doesNotThrow(() =>
     validateBundle(
@@ -73,6 +130,24 @@ test('resumed receipts are only authoritative for the bundle they recorded', () 
     latestReceipt(receipts, 'draft-1', true)?.bundleFingerprint,
     'current'
   )
+})
+
+test('restore returns the fixture to its recorded baseline', async () => {
+  const fixture = restoreFixtureInput()
+  await assert.doesNotReject(
+    restoreFixture(createFixtureClient(fixture), fixture)
+  )
+})
+
+test('restore fails when the readback does not match the recorded baseline', async () => {
+  const fixture = restoreFixtureInput()
+  const client = createFixtureClient({
+    ...fixture,
+    readback: { creditRow: [{ ...fixture.creditRow, current: '0' }] },
+  })
+  await assert.rejects(restoreFixture(client, fixture), (error) => {
+    return error?.code === 'fixture_restore_readback_failed'
+  })
 })
 
 test('database client requires the repository disposable database guard', async () => {
