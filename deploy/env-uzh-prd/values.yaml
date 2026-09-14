@@ -43,7 +43,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.76
+        tag: v3.4.0-alpha.77
       resources:
         requests:
           cpu: 50m
@@ -608,7 +608,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.76
+    tag: v3.4.0-alpha.77
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -938,7 +938,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.76
+      tag: v3.4.0-alpha.77
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
