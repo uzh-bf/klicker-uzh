@@ -1102,8 +1102,19 @@ export async function POST(
       throw error
     }
 
-    if (scopedKbIds?.length && courseImageStoreConfigured()) {
-      mcpTools = withCourseImageTool(mcpTools, scopedKbIds, readCourseImage)
+    let imageDecisionPending = false
+    const imageDecisionEnabled = Boolean(
+      scopedKbIds?.length && courseImageStoreConfigured()
+    )
+    if (imageDecisionEnabled && scopedKbIds) {
+      mcpTools = withCourseImageTool(
+        mcpTools,
+        scopedKbIds,
+        readCourseImage,
+        (pending) => {
+          imageDecisionPending = pending
+        }
+      )
     }
     const toolNames = Object.keys(mcpTools || {})
     const quizzerDocQueryToolName =
@@ -1584,17 +1595,25 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: initialCourseSearchTool
-          ? ({ stepNumber }) =>
-              stepNumber === 0
-                ? {
-                    toolChoice: {
-                      type: 'tool' as const,
-                      toolName: initialCourseSearchTool,
-                    },
-                  }
-                : {}
-          : undefined,
+        prepareStep:
+          initialCourseSearchTool || imageDecisionEnabled
+            ? ({ stepNumber }) =>
+                stepNumber === 0 && initialCourseSearchTool
+                  ? {
+                      toolChoice: {
+                        type: 'tool' as const,
+                        toolName: initialCourseSearchTool,
+                      },
+                    }
+                  : imageDecisionPending
+                    ? {
+                        toolChoice: {
+                          type: 'tool' as const,
+                          toolName: 'show_course_image',
+                        },
+                      }
+                    : {}
+            : undefined,
         stopWhen: isStepCount(5),
         instructions: systemPrompt,
 

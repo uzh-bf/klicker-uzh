@@ -55,7 +55,11 @@ export function startCourseImageDemoModel() {
           if (id)
             toolCall = {
               name: 'show_course_image',
-              arguments: JSON.stringify({ asset_id: id[1] }),
+              arguments: JSON.stringify({
+                asset_id: id[1],
+                reason:
+                  'The student explicitly requested a figure returned by this course search.',
+              }),
             }
           else
             text =

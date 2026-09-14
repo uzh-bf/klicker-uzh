@@ -17,7 +17,15 @@ const fixture = JSON.parse(
 const candidate = courseImageCandidates(fixture)[0]!
 const options = { toolCallId: 'synthetic', messages: [], context: undefined }
 async function call(tools: ToolSet, name: string, input: unknown) {
-  return tools[name]!.execute!(input, options)
+  return tools[name]!.execute!(
+    name === 'show_course_image'
+      ? {
+          ...(input as object),
+          reason: 'The retrieved passage identifies the requested figure.',
+        }
+      : input,
+    options
+  )
 }
 function searchTools(result: unknown = fixture): ToolSet {
   return {
@@ -29,6 +37,59 @@ function searchTools(result: unknown = fixture): ToolSet {
 }
 
 describe('course image selection', () => {
+  it('preserves text-only and illustrated search results in their original order', async () => {
+    const result = structuredClone(fixture)
+    const textOnly = {
+      ...result.sources[0].chunks[0],
+      content: 'Text-only evidence',
+    }
+    delete textOnly.visual_assets
+    result.sources[0].chunks.unshift(textOnly)
+    const before = structuredClone(result)
+    const read = vi.fn()
+    const tools = withCourseImageTool(
+      searchTools(result),
+      [candidate.kb_id],
+      read
+    )
+    expect(await call(tools, 'KB_doc_query', { query: 'course concept' })).toBe(
+      result
+    )
+    expect(result).toEqual(before)
+    expect(read).not.toHaveBeenCalled()
+  })
+  it('requires a decision only after scoped candidates, and clears it after skipping', async () => {
+    const pending = vi.fn()
+    const tools = withCourseImageTool(
+      searchTools(),
+      [candidate.kb_id],
+      vi.fn(),
+      pending
+    )
+    expect(pending).not.toHaveBeenCalled()
+    await call(tools, 'KB_doc_query', { query: 'concept' })
+    expect(pending).toHaveBeenLastCalledWith(true)
+    await call(tools, 'show_course_image', { asset_id: null })
+    expect(pending).toHaveBeenLastCalledWith(false)
+    await call(tools, 'KB_doc_query', { query: 'another concept' })
+    expect(pending).toHaveBeenLastCalledWith(true)
+  })
+  it('does not require a decision for empty or out-of-scope results', async () => {
+    for (const [result, scope] of [
+      [{}, [candidate.kb_id]],
+      [fixture, []],
+    ] as const) {
+      const pending = vi.fn()
+      const tools = withCourseImageTool(
+        searchTools(result),
+        scope,
+        vi.fn(),
+        pending
+      )
+      await call(tools, 'KB_doc_query', { query: 'concept' })
+      expect(pending).not.toHaveBeenCalled()
+    }
+  })
   it('preserves exact figure page instead of the chunk starting page', () => {
     expect(candidate.physical_page_number).toBe(2)
     expect(
@@ -60,7 +121,11 @@ describe('course image selection', () => {
     await call(tools, 'KB_doc_query', { query: 'diagram' })
     expect(
       await call(tools, 'show_course_image', { asset_id: candidate.asset_id })
-    ).toEqual({ status: 'selected', image: candidate })
+    ).toEqual({
+      status: 'selected',
+      image: candidate,
+      reason: 'The retrieved passage identifies the requested figure.',
+    })
     expect(read).toHaveBeenCalledTimes(1)
     const other = withCourseImageTool(searchTools(), [], read)
     await call(other, 'KB_doc_query', { query: 'diagram' })
@@ -138,4 +203,18 @@ it('bounds concurrent image selections to three', async () => {
     3
   )
   expect(read).toHaveBeenCalledTimes(3)
+})
+
+it('can decline an image without reading storage or producing a card', async () => {
+  const read = vi.fn()
+  const tools = withCourseImageTool(searchTools(), [candidate.kb_id], read)
+  await call(tools, 'KB_doc_query', { query: 'simple factual question' })
+  const result = await call(tools, 'show_course_image', { asset_id: null })
+  expect(result.status).toBe('skipped')
+  expect(read).not.toHaveBeenCalled()
+  expect(
+    selectedCourseImages([
+      { type: 'tool-call', toolName: 'show_course_image', result },
+    ])
+  ).toEqual([])
 })
