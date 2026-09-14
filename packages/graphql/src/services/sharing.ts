@@ -772,9 +772,9 @@ export async function requestCatalogCollection(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    ctx.log.warn(
-      { event: 'access-request.rejected', reason: 'no_approver' },
-      'Access request rejected'
+    console.log(
+      'No admin or owner could be found on the catalog collection ',
+      catalogCollectionId
     )
     return null
   }
@@ -1155,9 +1155,9 @@ export async function requestCatalogObject(
 
   // if there is no admin or owner on the object anymore, do not allow requesting access to it (nobody could approve such requests)
   if (adminOwnerPermissions.length === 0) {
-    ctx.log.warn(
-      { event: 'access-request.rejected', reason: 'no_approver' },
-      'Access request rejected'
+    console.log(
+      'No admin or owner could be found on the catalog collection ',
+      catalogCollectionId
     )
     return false
   }
@@ -4386,18 +4386,17 @@ function emitElementPermissionInvalidation(
 }
 
 function invalidateElementPermission(
-  { permissionId }: { elementId: number; permissionId: number },
+  { elementId, permissionId }: { elementId: number; permissionId: number },
   ctx: ContextWithUser
 ) {
   try {
     emitElementPermissionInvalidation({ permissionId }, ctx)
-  } catch {
-    ctx.log.warn(
-      {
-        event: 'sharing.permission.invalidation_failed',
-        outcome: 'continuing',
-      },
-      'Failed to invalidate shared element permission'
+  } catch (error) {
+    console.error(
+      'Failed to invalidate permission %s after sharing element %s',
+      permissionId,
+      elementId,
+      error
     )
   }
 }
@@ -4659,13 +4658,7 @@ async function shareElementForBatch(
         continue
       }
 
-      ctx.log.error(
-        {
-          event: 'sharing.element.failed',
-          outcome: 'transaction_failed',
-        },
-        'Failed to share element'
-      )
+      console.error('Failed to share element %s', elementId, error)
       return {
         elementId,
         status: 'FAILED',
