@@ -819,3 +819,37 @@ required from the user.
   re-selects, synchronize and reopened still select, empty push diff still
   fails open). Scope note: image-workflow `edited` re-runs are governed by the
   B3 consolidation package and remain blocked on #5924.
+- 2026-09-14 build-cache scope slice (branch `rs/playwright-build-cache-scope`):
+  draft PR #5987 at head `b9a906ae73` fixes the (e) cache-compatibility
+  defect where the build fingerprint mixed build inputs with orchestration
+  and telemetry files. The four telemetry/scheduling files
+  (`playwright-telemetry.cjs`, `turbo-telemetry.cjs`,
+  `public-pr-playwright-shards.yml`, `test-playwright.yml`) previously
+  invalidated every cached build artifact on both routes when edited, even
+  though build outputs were identical. The fingerprint now hashes only
+  build-relevant files; `CACHE_SCHEMA` bumps 2 → 3 so artifacts reseed
+  under the corrected contract, and trusted run-reuse still binds the
+  orchestration files through the control revision. Shard jobs consume only
+  `dependency-fingerprint` and build artifacts, so their key scope is
+  unchanged. Evidence: 5/5 cache-contract tests including a new invariance
+  case (telemetry edits preserve, build-relevant edits invalidate), 124/124
+  across the six check.yml gate suites, Biome clean. Activation evidence
+  (warm artifact reuse on a post-merge PR) is a later live proof.
+- 2026-09-14 (d) BuildKit registry cache activated: the first pull_request
+  builds from a cache-enabled head wrote the first `-arm:buildcache` tags.
+  PR #5986 (non-draft v3-ai reconciliation, head `da9fd928`) carried the
+  cache triple and its `chat` build completed 00:41:56Z; GHCR records
+  `chat-arm:buildcache` written 01:20:50Z, `auth-arm:buildcache` at
+  01:11:50Z, `frontend-manage-arm:buildcache` at 01:04:36Z, and
+  `backend-docker-arm:buildcache` at 00:10:53Z. The contract is no longer
+  inert: subsequent same-repository PR builds now import these layers.
+  Warm-consumer timing proof (a PR build measurably faster on cache hit)
+  remains the follow-up observation for the next image-touching PR wave.
+  2026-09-14 exact-head CI on draft PR #5987 at head `7f0af1c522`:
+  `check` passed in 3m56s (run 34795721832, job 103828312555), including
+  the updated cache-contract suite; `build-images-status` passed; the
+  full hosted Playwright route passed prepare, build (4m43s) and all
+  eight shards (9m40s–14m34s). Remaining pending items are the four
+  path-filtered status reporters and the hosted reporter queued behind
+  the organization concurrency cap; `ocr-review` failed as the known
+  external-agent flake and carries no required weight for this change.
