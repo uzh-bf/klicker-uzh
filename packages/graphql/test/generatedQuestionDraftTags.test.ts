@@ -46,12 +46,15 @@ const currentInput = {
   choices,
 }
 
+// Draft updates always normalize the legacy string tags, so a client that omits
+// them still persists an empty legacy array beside the structured selection.
 const expectedCurrent = {
   itemType: 'SC' as const,
   name: currentInput.name,
   stem: currentInput.stem,
   context: null,
   explanation: null,
+  tags: [],
   choices,
 }
 
