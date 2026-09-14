@@ -35,35 +35,34 @@ describe.each([
 })
 
 describe('Auth proxy forwards the response IDs to the Node handler', () => {
-  it.each(headerCases)(
-    'forwards %j to the pass-through request headers',
-    async (headers) => {
-      const requestHeaders = new Headers(headers)
-      const response = await authProxy(
-        new NextRequest('https://auth.test/api/auth/session', {
-          headers: requestHeaders,
-        })
-      )
-      const overrides = response.headers.get('x-middleware-override-headers')
-      const forwarded =
-        overrides === null ? new Headers(requestHeaders) : new Headers()
-      for (const key of (
-        response.headers.get('x-middleware-override-headers') ?? ''
-      ).split(',')) {
-        const value = response.headers.get(`x-middleware-request-${key}`)
-        if (value !== null) forwarded.set(key, value)
-      }
-      const nodeContext = resolveRequestContext({
-        requestId: forwarded.get('x-request-id'),
-        correlationId: forwarded.get('x-correlation-id'),
+  it.each(
+    headerCases
+  )('forwards %j to the pass-through request headers', async (headers) => {
+    const requestHeaders = new Headers(headers)
+    const response = await authProxy(
+      new NextRequest('https://auth.test/api/auth/session', {
+        headers: requestHeaders,
       })
-      expect(response.headers.get('x-middleware-next')).toBe('1')
-      expect(nodeContext.requestId).toBe(response.headers.get('x-request-id'))
-      expect(nodeContext.correlationId).toBe(
-        response.headers.get('x-correlation-id')
-      )
+    )
+    const overrides = response.headers.get('x-middleware-override-headers')
+    const forwarded =
+      overrides === null ? new Headers(requestHeaders) : new Headers()
+    for (const key of (
+      response.headers.get('x-middleware-override-headers') ?? ''
+    ).split(',')) {
+      const value = response.headers.get(`x-middleware-request-${key}`)
+      if (value !== null) forwarded.set(key, value)
     }
-  )
+    const nodeContext = resolveRequestContext({
+      requestId: forwarded.get('x-request-id'),
+      correlationId: forwarded.get('x-correlation-id'),
+    })
+    expect(response.headers.get('x-middleware-next')).toBe('1')
+    expect(nodeContext.requestId).toBe(response.headers.get('x-request-id'))
+    expect(nodeContext.correlationId).toBe(
+      response.headers.get('x-correlation-id')
+    )
+  })
 })
 
 describe('Chat proxy forwards the response IDs to the Node handler', () => {
