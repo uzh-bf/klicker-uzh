@@ -158,6 +158,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-lcov
+          # A re-run replaces the prior attempt's artifact; upload-artifact v4
+          # rejects a duplicate name and would fail an otherwise green retry.
+          overwrite: true
           path: |
             apps/*/coverage/lcov.info
             packages/*/coverage/lcov.info

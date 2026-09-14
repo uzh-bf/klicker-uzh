@@ -6,6 +6,7 @@ settings:
 
 overrides:
   '@vitest/coverage-v8': 3.2.4
+  vitest: 3.2.4
   axios@<=0.31.1: 0.32.0
   fast-xml-parser@>=5.0.0 <5.7.0: 5.7.0
   glob@>=10.2.0 <10.5.0: 10.5.0
@@ -560,7 +561,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.6.1)
       yaml:
         specifier: ~2.6.1
@@ -1560,7 +1561,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   apps/response-api:
@@ -1640,7 +1641,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   packages/feature-flags:
@@ -1665,7 +1666,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   packages/grading:
@@ -1705,7 +1706,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   packages/graphql:
@@ -1922,7 +1923,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
       web-push:
         specifier: ~3.6.7
@@ -2102,7 +2103,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   packages/next-config:
@@ -2262,7 +2263,7 @@ importers:
         specifier: ~10.0.0
         version: 10.0.0
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
       xml2js:
         specifier: ~0.6.2
@@ -2502,7 +2503,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   packages/word-cloud:
@@ -2542,7 +2543,7 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
       vitest:
-        specifier: ~3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   playwright:
@@ -15214,9 +15215,6 @@ packages:
   magic-string@0.25.9:
     resolution: {integrity: sha512-RmF0AsMzgt25qzqqLc1+MbHmhdx0ojF2Fvs4XnOqz2ZOBXzzkEwc/dJQZCYHAn7v1jbVOjAZfK8msRn4BxO4VQ==}
 
-  magic-string@0.30.18:
-    resolution: {integrity: sha512-yi8swmWbO17qHhwIBNeeZxTceJMeBvWJaId6dyvTSOwTipqeHhMhOrz6513r1sOKnpvQ7zkhlG8tPrpilwTxHQ==}
-
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -18823,9 +18821,6 @@ packages:
   std-env@3.10.0:
     resolution: {integrity: sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==}
 
-  std-env@3.9.0:
-    resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
-
   stdin-discarder@0.2.2:
     resolution: {integrity: sha512-UhDfHmA92YAlNnCfhmq0VeNL5bDbiZGg7sZ2IvPsXubGkiNa9EC+tUTsjBRsYUAz87btI6/1wf4XoVvQ3uRnmQ==}
     engines: {node: '>=18'}
@@ -19231,10 +19226,6 @@ packages:
 
   tinyexec@0.3.2:
     resolution: {integrity: sha512-KQQR9yN7R5+OSwaK0XQoj22pwHoTlgYqmUscPYoknOoWCWfj/5/ABTMRi69FrKU5ffPVh5QcFikpWJI/P1ocHA==}
-
-  tinyglobby@0.2.14:
-    resolution: {integrity: sha512-tX5e7OM1HnYr2+a2C/4V0htOcSQcoSTH9KgJnVvNm5zm/cyEWKJ7j7YutsH9CxMdtOkkLFy2AHrMci9IM8IPZQ==}
-    engines: {node: '>=12.0.0'}
 
   tinyglobby@0.2.16:
     resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
@@ -35526,10 +35517,6 @@ snapshots:
     dependencies:
       sourcemap-codec: 1.4.8
 
-  magic-string@0.30.18:
-    dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.5
-
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -40455,8 +40442,6 @@ snapshots:
 
   std-env@3.10.0: {}
 
-  std-env@3.9.0: {}
-
   stdin-discarder@0.2.2: {}
 
   stickyfill@1.1.1: {}
@@ -40965,11 +40950,6 @@ snapshots:
   tinybench@2.9.0: {}
 
   tinyexec@0.3.2: {}
-
-  tinyglobby@0.2.14:
-    dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
 
   tinyglobby@0.2.16:
     dependencies:
@@ -41676,7 +41656,7 @@ snapshots:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.14
+      postcss: 8.5.26
       rollup: 4.62.2
       tinyglobby: 0.2.17
     optionalDependencies:
@@ -41693,7 +41673,7 @@ snapshots:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.14
+      postcss: 8.5.26
       rollup: 4.62.2
       tinyglobby: 0.2.17
     optionalDependencies:
@@ -41718,13 +41698,13 @@ snapshots:
       chai: 5.3.3
       debug: 4.4.3(supports-color@5.5.0)
       expect-type: 1.2.2
-      magic-string: 0.30.18
+      magic-string: 0.30.21
       pathe: 2.0.3
       picomatch: 4.0.4
-      std-env: 3.9.0
+      std-env: 3.10.0
       tinybench: 2.9.0
       tinyexec: 0.3.2
-      tinyglobby: 0.2.14
+      tinyglobby: 0.2.17
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
       vite: 7.3.2(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.6.1)
@@ -41760,13 +41740,13 @@ snapshots:
       chai: 5.3.3
       debug: 4.4.3(supports-color@5.5.0)
       expect-type: 1.2.2
-      magic-string: 0.30.18
+      magic-string: 0.30.21
       pathe: 2.0.3
       picomatch: 4.0.4
-      std-env: 3.9.0
+      std-env: 3.10.0
       tinybench: 2.9.0
       tinyexec: 0.3.2
-      tinyglobby: 0.2.14
+      tinyglobby: 0.2.17
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
       vite: 7.3.2(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)

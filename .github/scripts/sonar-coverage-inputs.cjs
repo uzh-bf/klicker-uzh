@@ -26,7 +26,9 @@ const REASON = Object.freeze({
   producerFailed: 'producer-failed',
   selectionNoChange: 'selection-no-change',
   evidenceMissing: 'evidence-missing',
+  evidenceUnreadable: 'evidence-unreadable',
   coverageMissing: 'coverage-missing',
+  coverageUnreadable: 'coverage-unreadable',
   receiptMissing: 'receipt-missing',
   receiptMismatch: 'receipt-mismatch',
   runIdentityMismatch: 'run-identity-mismatch',
@@ -37,7 +39,9 @@ const REASON = Object.freeze({
 // runs without that coverage input.
 const FAILING_REASONS = new Set([
   REASON.evidenceMissing,
+  REASON.evidenceUnreadable,
   REASON.coverageMissing,
+  REASON.coverageUnreadable,
   REASON.receiptMismatch,
   REASON.runIdentityMismatch,
 ])
@@ -220,14 +224,31 @@ async function collectCoverage(deps) {
       deadline
     )
     const artifacts = run ? await transport.listArtifacts(run.id) : []
-    const evidence = await transport.readJsonArtifact(
-      artifacts,
-      'required-ci-evidence'
-    )
-    const receipt = await transport.readJsonArtifact(
-      artifacts,
-      'ci-validation-receipt'
-    )
+    // One malformed artifact must not abort the collection or discard the
+    // other producer's verified input: the failure is reported for this
+    // producer and keeps the decision table the single reporting path.
+    let evidence = null
+    let receipt = null
+    try {
+      evidence = await transport.readJsonArtifact(
+        artifacts,
+        'required-ci-evidence'
+      )
+      receipt = await transport.readJsonArtifact(
+        artifacts,
+        'ci-validation-receipt'
+      )
+    } catch (error) {
+      results.push({
+        producer,
+        runId: run ? run.id : null,
+        selection: null,
+        state: REASON.evidenceUnreadable,
+        importable: false,
+        detail: error && error.message,
+      })
+      continue
+    }
     const decision = decideProducer({
       run,
       artifacts,
@@ -243,10 +264,21 @@ async function collectCoverage(deps) {
       ...decision,
     }
     if (decision.importable) {
-      const paths = await transport.extractLcov(
-        decision.artifactId,
-        workflowFileName(producer)
-      )
+      let paths = []
+      try {
+        paths = await transport.extractLcov(
+          decision.artifactId,
+          workflowFileName(producer)
+        )
+      } catch (error) {
+        results.push({
+          ...result,
+          state: REASON.coverageUnreadable,
+          importable: false,
+          detail: error && error.message,
+        })
+        continue
+      }
       if (paths.length === 0) {
         results.push({
           ...result,

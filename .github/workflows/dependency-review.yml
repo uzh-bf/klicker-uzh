@@ -34,3 +34,6 @@ jobs:
         with:
           # Roadmap policy blocks High and Critical severities.
           fail-on-severity: high
+          # The permission above exists for this PR comment; the input must
+          # stay enabled so the job does not carry an unused write scope.
+          comment-summary-in-pr: true

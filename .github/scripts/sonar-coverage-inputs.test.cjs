@@ -57,11 +57,13 @@ function fakeTransport(script) {
       return script.artifacts || []
     },
     async readJsonArtifact(_artifacts, name) {
+      if (script.onReadJson) return script.onReadJson(_artifacts, name)
       if (name === 'required-ci-evidence') return script.evidence
       if (name === 'ci-validation-receipt') return script.receipt
       return null
     },
     async extractLcov(_artifactId, label) {
+      if (script.onExtractLcov) return script.onExtractLcov(_artifactId, label)
       return ['coverage-inputs/' + label + '/lcov.info']
     },
     now() {
@@ -329,5 +331,84 @@ describe('collectCoverage', () => {
     })
     assert.equal(result.results[0].state, REASON.producerFailed)
     assert.deepEqual(summarizeFailures(result.results), [])
+  })
+
+  it('reports an unreadable evidence artifact and keeps the other producer input', async () => {
+    let evidenceReads = 0
+    const transport = fakeTransport({
+      runs: () => [completedRun()],
+      artifacts: [COVERAGE_ARTIFACT],
+      evidence: EVIDENCE_RUN,
+      receipt: RECEIPT,
+      onReadJson: (_artifacts, name) => {
+        if (name !== 'required-ci-evidence') {
+          return name === 'ci-validation-receipt' ? RECEIPT : null
+        }
+        evidenceReads += 1
+        if (evidenceReads === 1) {
+          throw new Error(
+            'expected exactly one JSON file in required-ci-evidence, found 2'
+          )
+        }
+        return EVIDENCE_RUN
+      },
+    })
+    const result = await collectCoverage({
+      transport,
+      producers: [
+        '.github/workflows/test-unit.yml',
+        '.github/workflows/test-graphql.yml',
+      ],
+      headSha: EXPECTED_TREE.headSha,
+      baseSha: EXPECTED_TREE.baseSha,
+      treeSha: EXPECTED_TREE.treeSha,
+      limits: { waitMs: 10, pollMs: 5 },
+    })
+    assert.deepEqual(
+      result.results.map((entry) => entry.state),
+      [REASON.evidenceUnreadable, REASON.imported]
+    )
+    assert.match(result.results[0].detail, /exactly one JSON file/)
+    assert.deepEqual(result.lcovPaths, [
+      'coverage-inputs/test-graphql.yml/lcov.info',
+    ])
+    assert.deepEqual(summarizeFailures(result.results), [result.results[0]])
+  })
+
+  it('reports an unreadable coverage artifact and keeps the other producer input', async () => {
+    const transport = fakeTransport({
+      runs: () => [completedRun()],
+      artifacts: [COVERAGE_ARTIFACT],
+      evidence: EVIDENCE_RUN,
+      receipt: RECEIPT,
+      onExtractLcov: (_artifactId, label) => {
+        if (label === 'test-unit.yml') {
+          throw new Error(
+            'test-unit.yml/lcov.info records no source files to map'
+          )
+        }
+        return ['coverage-inputs/' + label + '/lcov.info']
+      },
+    })
+    const result = await collectCoverage({
+      transport,
+      producers: [
+        '.github/workflows/test-unit.yml',
+        '.github/workflows/test-graphql.yml',
+      ],
+      headSha: EXPECTED_TREE.headSha,
+      baseSha: EXPECTED_TREE.baseSha,
+      treeSha: EXPECTED_TREE.treeSha,
+      limits: { waitMs: 10, pollMs: 5 },
+    })
+    assert.deepEqual(
+      result.results.map((entry) => entry.state),
+      [REASON.coverageUnreadable, REASON.imported]
+    )
+    assert.match(result.results[0].detail, /records no source files/)
+    assert.deepEqual(result.lcovPaths, [
+      'coverage-inputs/test-graphql.yml/lcov.info',
+    ])
+    assert.deepEqual(summarizeFailures(result.results), [result.results[0]])
   })
 })
