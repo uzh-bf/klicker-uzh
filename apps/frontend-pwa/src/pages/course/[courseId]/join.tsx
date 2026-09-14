@@ -40,7 +40,9 @@ function JoinCourse({
   const [showError, setError] = useState(false)
   // Read the PIN directly so the value is present when the form mounts;
   // Formik does not re-apply initialValues updated after mounting.
-  const initialPin = router.query.pin ? String(router.query.pin) : ''
+  const initialPin = Array.isArray(router.query.pin)
+    ? router.query.pin[0]
+    : (router.query.pin ?? '')
 
   const joinCourseWithPinSchema = Yup.object({
     pin: Yup.number()
