@@ -15,6 +15,7 @@ on:
       # workspace dependency closure reaches the image, so a change outside
       # it cannot alter this build and must not trigger it.
       - 'apps/hatchet-worker-response-processor/**'
+      - 'packages/audit/**'
       - 'packages/grading/**'
       - 'packages/hatchet/**'
       - 'packages/knowledge-graph/**'
