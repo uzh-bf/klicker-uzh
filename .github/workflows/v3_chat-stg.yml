@@ -15,6 +15,7 @@ on:
       # workspace dependency closure reaches the image, so a change outside
       # it cannot alter this build and must not trigger it.
       - 'apps/chat/**'
+      - 'packages/audit/**'
       - 'packages/doc-query-client/**'
       - 'packages/feature-flags/**'
       - 'packages/grading/**'

@@ -42,6 +42,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/auth/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -65,6 +66,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/backend-docker/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -83,6 +85,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/chat/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -108,6 +111,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-control/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -131,6 +135,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-manage/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -155,6 +160,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-pwa/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -178,6 +184,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/frontend-pwa/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -201,6 +208,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/hatchet-worker-general/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
@@ -219,6 +227,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/hatchet-worker-response-processor/**',
+      'packages/audit/**',
       'packages/grading/**',
       'packages/hatchet/**',
       'packages/knowledge-graph/**',
@@ -260,6 +269,7 @@ const IMAGE_WORKFLOWS = Object.freeze([
   {
     globs: [
       'apps/mcp-student/**',
+      'packages/audit/**',
       'packages/doc-query-client/**',
       'packages/feature-flags/**',
       'packages/grading/**',
