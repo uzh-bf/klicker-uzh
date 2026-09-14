@@ -105,6 +105,19 @@ function QuestionArea({
     const identity = `${quizId}:${execution}`
     currentIdentityRef.current = identity
     expiryGateRef.current = resetExpiryGate(expiryGateRef.current, identity)
+
+    // a pending submission from a superseded execution must not own the
+    // current execution's controls: detach it and release the busy
+    // indication so the submit button is available here. The old request
+    // itself is not cancelled — its persistence is execution-keyed and its
+    // completion cleanup is ownership-guarded.
+    if (
+      submissionInFlightRef.current &&
+      submissionInFlightRef.current.identity !== identity
+    ) {
+      submissionInFlightRef.current = null
+      setSubmitting(false)
+    }
   }, [quizId, execution])
 
   // initialize student response with default state (FT question) - is overwritten on instance change

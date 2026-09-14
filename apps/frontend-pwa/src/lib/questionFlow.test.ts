@@ -48,10 +48,15 @@ function createHarness() {
   storageDeferred.resolve()
   const networkSendsByExecution: string[] = []
 
-  // mirrors the identity-change effect
+  // mirrors the identity-change effect, including detaching a pending
+  // submission from a superseded execution and releasing the busy state
   function setExecution(identity: string) {
     currentIdentity = identity
     gate = resetExpiryGate(gate, identity)
+    if (inFlight && inFlight.identity !== identity) {
+      inFlight = null
+      submitting = false
+    }
     // the new execution's initialization supplies its own stack state
     remainingQuestions = [0, 1]
     activeInstance = 0
@@ -149,6 +154,9 @@ function createHarness() {
         activeInstance,
         submittedAt,
         confetti,
+        // mirrors canSubmit={!!studentResponse.valid && !submitting} with a
+        // valid answer supplied
+        canSubmit: !submitting,
       }
     },
     get networkSendsByExecution() {
@@ -265,5 +273,39 @@ describe('question submission/expiry flow', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     assert.deepEqual(harness.state.remainingQuestions, [])
+  })
+
+  it('releases the submit control when a superseded submission is pending', async () => {
+    const harness = createHarness()
+    const oldSubmission = harness.onSubmit()
+    assert.equal(harness.state.submitting, true)
+
+    // the same mounted component receives a new execution while submission
+    // A is pending: the submit control must become available again
+    harness.setExecution('quiz-1:execution-1')
+    assert.equal(
+      harness.state.canSubmit,
+      true,
+      'the new execution must not inherit the disabled submit button'
+    )
+    assert.equal(harness.state.inFlight, null)
+
+    // the new execution submits its own answer while A is still pending
+    const newSubmission = harness.onSubmit()
+    assert.deepEqual(harness.networkSendsByExecution, [
+      'quiz-1:execution-0',
+      'quiz-1:execution-1',
+    ])
+
+    // resolving A must not release B's busy indication
+    harness.resolveNetwork(true)
+    await Promise.resolve()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await Promise.all([oldSubmission, newSubmission])
+
+    // B advances its stack and releases the control
+    assert.deepEqual(harness.state.remainingQuestions, [1])
+    assert.equal(harness.state.submittedAt, 1000)
+    assert.equal(harness.state.submitting, false)
   })
 })
