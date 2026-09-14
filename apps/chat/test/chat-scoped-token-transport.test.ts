@@ -44,6 +44,10 @@ function chatbotUrl(query: string, chatbotId = CHATBOT_ID) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.participantFindUnique.mockResolvedValue({
+    isActive: true,
+    accounts: [],
+  })
   vi.stubEnv('APP_SECRET', 'test-app-secret')
   vi.stubEnv('APP_CHAT_GUEST_SECRET', 'test-guest-secret')
 })
@@ -421,5 +425,24 @@ describe('identity-to-chatbot scoped authorization', () => {
     if ('response' in authorization) {
       expect(authorization.response.status).toBe(403)
     }
+  })
+})
+
+describe('scoped account fallback liveness', () => {
+  it.each([
+    null,
+    { isActive: false, accounts: [] },
+  ])('rejects a valid scoped token when its account is unavailable: %j', async (participant) => {
+    mocks.participantFindUnique.mockResolvedValue(participant)
+    const token = await signPwaEmbedSessionToken({
+      participantId: 'participant-1',
+      chatbotId: CHATBOT_ID,
+      courseId: COURSE_A,
+    })
+    const identity = await resolveParticipantIdentity({
+      scopedFallbackToken: token,
+    })
+    expect(identity).not.toHaveProperty('participantId')
+    if ('response' in identity) expect(identity.response.status).toBe(401)
   })
 })

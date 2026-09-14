@@ -233,6 +233,9 @@ function runStatusReporter(t, overrides = {}) {
   return {
     ...result,
     output: `${result.stdout}${result.stderr}`,
+    summary: fs.existsSync(summaryPath)
+      ? fs.readFileSync(summaryPath, 'utf8')
+      : '',
     metadata: fs.existsSync(metadataPath)
       ? Object.fromEntries(
           fs
@@ -344,26 +347,48 @@ test('status reporter accepts one full plan for drafts and ready and rejects any
   assert.equal(pushSkippedSelection.status, 1, pushSkippedSelection.output)
 })
 
-test('status reporter rejects every equivalent-run reuse', (t) => {
-  // The reusable workflow pinned at @v3 can still offer a duplicate run id from
-  // older code, so the caller rejects every push and pull request duplicate.
+test('status reporter reuses only validated pull-request runs', (t) => {
+  // Push validation must always execute: a duplicate offered on a push is
+  // rejected whatever it contains.
   const rejected = {
     'numeric push run id': {
       IS_PULL_REQUEST: 'false',
       ROUTE: 'hosted',
       DUPLICATE_RUN_ID: '123',
     },
-    'non-numeric run id': {
+    'non-numeric push run id': {
       IS_PULL_REQUEST: 'false',
       ROUTE: 'hosted',
       DUPLICATE_RUN_ID: '123abc',
     },
-    'pull request reuse': { DUPLICATE_RUN_ID: '123' },
   }
   for (const [name, overrides] of Object.entries(rejected)) {
     const result = runStatusReporter(t, overrides)
     assert.equal(result.status, 1, `${name}: ${result.output}`)
     assert.equal(result.metadata.duplicate_run_id, overrides.DUPLICATE_RUN_ID)
+  }
+
+  // A pull-request lifecycle event accepts the duplicate only from the trusted
+  // envelope, which validated every identity, plan and coverage binding before
+  // offering it and skipped its own build and shards.
+  const reused = runStatusReporter(t, {
+    ROUTE: 'hosted',
+    DUPLICATE_RUN_ID: '123',
+  })
+  assert.equal(reused.status, 0, reused.output)
+  assert.equal(reused.metadata.duplicate_run_id, '123')
+  assert.match(reused.summary, /Reused validated run: `123`/)
+
+  // Reuse cannot launder a cancelled or failed execution into a green gate.
+  for (const [name, overrides] of [
+    [
+      'cancelled reuse',
+      { DUPLICATE_RUN_ID: '123', EXECUTION_RESULT: 'cancelled' },
+    ],
+    ['failed reuse', { DUPLICATE_RUN_ID: '123', EXECUTION_RESULT: 'failure' }],
+    ['reuse without full mode', { DUPLICATE_RUN_ID: '123', MODE: 'selected' }],
+  ]) {
+    assert.equal(runStatusReporter(t, overrides).status, 1, name)
   }
 })
 

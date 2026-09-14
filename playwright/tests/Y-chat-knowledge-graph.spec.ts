@@ -21,6 +21,13 @@ test.beforeAll(async () => {
 
 // Opt in after publishing the synthetic native graph with seed-graph-e2e.mjs.
 // The host launcher must preserve that disposable database between setup and test.
+
+// The global Playwright seed creates no chatbots: the participant layout 404s
+// without the row and the lecturer knowledge view stays empty without it.
+test.beforeAll(async () => {
+  await ensureChatbotSeeded()
+})
+
 test('Native knowledge graph exploration and lecturer visibility policy', async ({
   page,
 }) => {

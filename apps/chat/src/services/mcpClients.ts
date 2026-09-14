@@ -68,6 +68,31 @@ export interface MCPToolsHandle {
   close: () => Promise<void>
 }
 
+const MCP_AUTHORIZATION_STATUS_CODES = new Set([401, 403])
+
+/**
+ * The MCP SDK surfaces an HTTP credentials rejection as an `UnauthorizedError`,
+ * a streamable-HTTP error carrying a numeric `code`, or a client error with
+ * `statusCode`. Those are identity or tenant boundaries rather than transient
+ * outages, so a required-tool caller must keep them fail-closed.
+ */
+function isMcpAuthorizationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ((error as { name?: unknown }).name === 'UnauthorizedError') return true
+
+  for (const key of ['statusCode', 'code'] as const) {
+    const value = (error as Record<string, unknown>)[key]
+    if (
+      typeof value === 'number' &&
+      MCP_AUTHORIZATION_STATUS_CODES.has(value)
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
 
 function toToolNameHash(rawName: string): string {
@@ -499,12 +524,20 @@ async function loadServerTools(
     return { tools: filteredTools, close }
   } catch (error) {
     await close()
-    if (
-      error instanceof RequiredMCPUnavailableError ||
-      runtimePolicy.required
-    ) {
+    if (error instanceof RequiredMCPUnavailableError) {
       console.error('Required MCP tools unavailable', { server: server.name })
-      throw new RequiredMCPUnavailableError()
+      // Preserve a scope violation raised while resolving the request so the
+      // caller cannot degrade an isolation failure into an answer.
+      throw error
+    }
+    if (runtimePolicy.required) {
+      console.error('Required MCP tools unavailable', { server: server.name })
+      // A credentials rejection from the endpoint is an identity or tenant
+      // boundary, so it stays fail-closed like a scope violation; only a
+      // genuine outage may fall through to a degraded answer.
+      throw new RequiredMCPUnavailableError(
+        isMcpAuthorizationError(error) ? 'scope_violation' : 'unavailable'
+      )
     }
 
     console.error('Optional MCP tools unavailable', { server: server.name })
@@ -588,50 +621,4 @@ export async function getAggregatedMCPTools(
   console.log('Available tools:', Object.keys(aggregatedTools))
 
   return { tools: aggregatedTools, close }
-}
-
-/**
- * Legacy function for backward compatibility with environment variables
- * @deprecated Use getAggregatedMCPTools with database configuration instead
- */
-export async function getMCPTools(
-  chatbotId: string,
-  participantId: string,
-  authMode: AuthMode
-): Promise<MCPToolsHandle> {
-  console.log(' Using legacy MCP configuration from environment variables')
-
-  const mcpKey = process.env.MCP_KEY
-  const mcpUrl = process.env.MCP_URL
-
-  if (!mcpUrl) {
-    console.log('No MCP_URL environment variable found, returning empty tools')
-    return { tools: {}, close: async () => {} }
-  }
-
-  // Create a legacy server configuration
-  const legacyServer: MCPServerConfig = {
-    id: 'legacy-env-server',
-    name: 'Legacy_MCP',
-    url: mcpUrl,
-    authType: mcpKey ? 'bearer' : 'none',
-    authSecret: mcpKey,
-  }
-
-  const legacyConfig: MCPConfigSettings = {
-    allowedTools: undefined, // No filtering for legacy mode
-    priority: 0,
-  }
-
-  try {
-    const serverHandle = await loadServerTools(
-      { server: legacyServer, config: legacyConfig },
-      { chatbotId, participantId, authMode },
-      {}
-    )
-    return serverHandle
-  } catch (error) {
-    console.error('Failed to load legacy MCP Tools:', error)
-    return { tools: {}, close: async () => {} }
-  }
 }
