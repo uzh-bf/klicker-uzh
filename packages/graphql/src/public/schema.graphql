@@ -2050,7 +2050,7 @@ type Mutation {
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
-  createParticipantAccount(courseId: String, dataUse: ParticipantInitialDataUseInput, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
+  createParticipantAccount(courseId: String, dataUse: ParticipantInitialDataUseInput!, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup

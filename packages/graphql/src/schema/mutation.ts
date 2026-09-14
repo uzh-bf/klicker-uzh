@@ -340,7 +340,10 @@ export const Mutation = builder.mutationType({
           isProfilePublic: t.arg.boolean({ required: true }),
           courseId: t.arg.string({ required: false }),
           signedLtiData: t.arg.string({ required: false }),
-          dataUse: t.arg({ type: ParticipantInitialDataUseInput }),
+          dataUse: t.arg({
+            type: ParticipantInitialDataUseInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.createParticipantAccount(args, ctx)

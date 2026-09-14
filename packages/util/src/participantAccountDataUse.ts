@@ -27,16 +27,3 @@ export function isParticipantDataUseComplete(state: CompletionState | null) {
     state.learningAnalyticsDisclosureVersion !== null
   )
 }
-
-export const participantDataUseSelect = {
-  researchConsent: true,
-  researchConsentChoiceAt: true,
-  researchConsentDisclosureVersion: true,
-  learningAnalyticsConsent: true,
-  learningAnalyticsChoiceAt: true,
-  learningAnalyticsDisclosureVersion: true,
-} satisfies DB.Prisma.ParticipantSelect
-
-export type ParticipantDataUseFields = DB.Prisma.ParticipantGetPayload<{
-  select: typeof participantDataUseSelect
-}>

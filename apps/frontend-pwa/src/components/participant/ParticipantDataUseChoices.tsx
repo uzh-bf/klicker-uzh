@@ -40,6 +40,11 @@ interface ParticipantDataUseChoicesProps {
   dataCy: ParticipantDataUseChoicesDataCy
 }
 
+function consentToRadioValue(consent: boolean | undefined): '' | 'yes' | 'no' {
+  if (consent === undefined) return ''
+  return consent ? 'yes' : 'no'
+}
+
 function ParticipantDataUseChoices({
   isAssessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
   disabled,
@@ -54,21 +59,20 @@ function ParticipantDataUseChoices({
   const [learningAnalyticsOpen, setLearningAnalyticsOpen] = useState(true)
 
   // the collapsed research section always shows the currently recorded choice
-  const researchBadge =
-    researchConsent === undefined
-      ? {
-          variant: 'outline' as const,
-          label: t('pwa.createAccount.signup.researchConsentBadgeUnanswered'),
-        }
-      : researchConsent
-        ? {
-            variant: 'default' as const,
-            label: t('pwa.createAccount.signup.researchConsentBadgeAllowed'),
-          }
-        : {
-            variant: 'secondary' as const,
-            label: t('pwa.createAccount.signup.researchConsentBadgeRefused'),
-          }
+  const researchBadge = {
+    '': {
+      variant: 'outline' as const,
+      label: t('pwa.createAccount.signup.researchConsentBadgeUnanswered'),
+    },
+    yes: {
+      variant: 'default' as const,
+      label: t('pwa.createAccount.signup.researchConsentBadgeAllowed'),
+    },
+    no: {
+      variant: 'secondary' as const,
+      label: t('pwa.createAccount.signup.researchConsentBadgeRefused'),
+    },
+  }[consentToRadioValue(researchConsent)]
 
   const researchOptions = [
     {
@@ -152,13 +156,7 @@ function ParticipantDataUseChoices({
               aria-required="true"
               className="mt-1 grid-cols-2 gap-2"
               disabled={disabled}
-              value={
-                researchConsent === undefined
-                  ? ''
-                  : researchConsent
-                    ? 'yes'
-                    : 'no'
-              }
+              value={consentToRadioValue(researchConsent)}
               onValueChange={(value) => {
                 if (value === 'yes' || value === 'no') {
                   onResearchConsentChange(value === 'yes')
@@ -236,13 +234,7 @@ function ParticipantDataUseChoices({
               aria-required="true"
               className="mt-2 gap-2 sm:grid-cols-2"
               disabled={disabled}
-              value={
-                learningAnalyticsConsent === undefined
-                  ? ''
-                  : learningAnalyticsConsent
-                    ? 'yes'
-                    : 'no'
-              }
+              value={consentToRadioValue(learningAnalyticsConsent)}
               onValueChange={(value) => {
                 if (value === 'yes' || value === 'no') {
                   onLearningAnalyticsConsentChange(value === 'yes')
