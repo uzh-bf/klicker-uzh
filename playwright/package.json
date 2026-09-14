@@ -2,12 +2,14 @@
   "private": true,
   "name": "@klicker-uzh/playwright",
   "devDependencies": {
+    "@axe-core/playwright": "~4.12.1",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@playwright/test": "~1.58.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.10.1",
     "bcryptjs": "~2.4.3",
+    "ioredis": "~5.4.1",
     "jose": "~5.9.4",
     "typescript": "~6.0.3"
   },

@@ -2,50 +2,57 @@
 // #region
 
 model AnswerCollection {
-    id         Int  @id @default(autoincrement())
-    originalId Int? // id of the original answer collection after import (copy)
+  id                       Int     @id @default(autoincrement())
+  originalId               Int? // id of the original answer collection after import (copy)
+  importFingerprint        String?
+  importFingerprintVersion Int?
 
-    name        String
-    description String
-    version     Int     @default(1)
-    isDeleted   Boolean @default(false)
+  name        String
+  description String
+  version     Int     @default(1)
+  isDeleted   Boolean @default(false)
 
-    // link to the join table including all catalog assignments
-    catalogAssignments CatalogCollectionAssignment[]
+  // link to the join table including all catalog assignments
+  catalogAssignments CatalogCollectionAssignment[]
 
-    entries AnswerCollectionEntry[]
+  entries AnswerCollectionEntry[]
 
-    linkedElements Element[] // elements that use this answer collection
+  linkedElements Element[] // elements that use this answer collection
 
-    linkedTemplates ActivityTemplate[] @relation("TemplateAnswerCollectionUsages") // templates that contain elements using this answer collection
+  linkedTemplates ActivityTemplate[] @relation("TemplateAnswerCollectionUsages") // templates that contain elements using this answer collection
 
-    directPermissions Permission[]
-    permissions       DerivedPermission[]
-    accessRequests    AccessRequest[]
-    activityLog       ActivityLogEntry[]
+  directPermissions Permission[]
+  permissions       DerivedPermission[]
+  accessRequests    AccessRequest[]
+  activityLog       ActivityLogEntry[]
 
-    owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    ownerId String @db.Uuid
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, importFingerprint])
+  @@index([ownerId, importFingerprintVersion, importFingerprint], map: "AnswerCollection_owner_fpv_fp_idx")
+  @@index([ownerId, importFingerprintVersion, importFingerprint, isDeleted, id], map: "AnswerCollection_owner_fpv_fp_id_idx")
+  @@index([importFingerprintVersion, isDeleted, id], map: "AnswerCollection_repair_fpv_deleted_id_idx")
 }
 
 model AnswerCollectionEntry {
-    id    Int    @id @default(autoincrement())
-    value String
+  id    Int    @id @default(autoincrement())
+  value String
 
-    collection   AnswerCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    collectionId Int
+  collection   AnswerCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  collectionId Int
 
-    // elements where this entry is used as a sample solution -> deletion not allowed
-    itemUsages     Element[]          @relation("ElementAnswerCollectionUsedItems")
-    templateUsages ActivityTemplate[] @relation("TemplateAnswerCollectionUsedItems")
+  // elements where this entry is used as a sample solution -> deletion not allowed
+  itemUsages     Element[]          @relation("ElementAnswerCollectionUsedItems")
+  templateUsages ActivityTemplate[] @relation("TemplateAnswerCollectionUsedItems")
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@unique([collectionId, value])
+  @@unique([collectionId, value])
 }
 
 // #endregion
@@ -53,22 +60,154 @@ model AnswerCollectionEntry {
 // ----- MEDIA LIBRARY -----
 // #region
 model MediaFile {
-    id String @id @default(uuid()) @db.Uuid
+  id String @id @default(uuid()) @db.Uuid
 
-    href        String  @unique
-    name        String
-    type        String
-    description String?
+  href        String  @unique
+  name        String
+  type        String
+  description String?
 
-    originalId String?
+  originalId               String?
+  contentHash              String?
+  importFingerprintVersion Int?
 
-    owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    ownerId String @db.Uuid
+  importStagingRecords ImportMediaStaging[]
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
 
-    @@unique([ownerId, originalId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, originalId])
+  @@index([importFingerprintVersion, id], map: "MediaFile_import_fpv_id_idx")
+}
+
+// #endregion
+
+// ----- IMPORT / EXPORT DURABLE STATE -----
+// #region
+
+enum ImportExportPackageArtifactDirection {
+  IMPORT
+  EXPORT
+}
+
+enum ImportExportPackageArtifactState {
+  PENDING
+  UPLOADING
+  READY
+  FAILED
+}
+
+enum ElementImportReceiptState {
+  PENDING
+  COMPLETE
+}
+
+enum ImportMediaStagingState {
+  RESERVED
+  COPIED
+  FINALIZED
+  CLEANUP_PENDING
+}
+
+model ImportExportPackageArtifact {
+  id        String                               @id @default(uuid()) @db.Uuid
+  direction ImportExportPackageArtifactDirection
+  state     ImportExportPackageArtifactState     @default(PENDING)
+
+  storageContainer String
+  storageBlob      String
+  reservedBytes    Int
+  bytes            Int?
+  sha256           String?
+  expiresAt        DateTime
+  completedAt      DateTime?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  receipts ElementImportReceipt[] @relation("ElementImportReceiptArtifactRecord")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storageContainer, storageBlob], map: "PackageArtifact_storage_target_key")
+  @@index([ownerId, expiresAt], map: "PackageArtifact_owner_expiry_idx")
+  @@index([expiresAt], map: "PackageArtifact_expiry_idx")
+  @@index([state, expiresAt], map: "PackageArtifact_state_expiry_idx")
+}
+
+model ElementImportReceipt {
+  id  String @id @default(uuid()) @db.Uuid
+  jti String @unique(map: "ElementImportReceipt_jti_key") @db.Uuid
+
+  // Immutable token-binding identity retained after the short-lived artifact record expires.
+  sourceArtifactId String  @db.Uuid
+  artifactRecordId String? @db.Uuid
+  packageHash      String
+  selectionDigest  String
+
+  /// [PrismaElementImportSelectedRefs]
+  selectedElementRefs Json
+
+  state          ElementImportReceiptState @default(PENDING)
+  leaseId        String?                   @db.Uuid
+  leaseExpiresAt DateTime?
+
+  /// [PrismaElementImportCreatedElementIds]
+  createdElementIds          Json
+  /// [PrismaElementImportCreatedAnswerCollectionIds]
+  createdAnswerCollectionIds Json
+
+  completedAt        DateTime?
+  retentionExpiresAt DateTime?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  artifactRecord ImportExportPackageArtifact? @relation("ElementImportReceiptArtifactRecord", fields: [artifactRecordId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  mediaStaging   ImportMediaStaging[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([artifactRecordId], map: "ElementImportReceipt_artifact_record_idx")
+  @@index([ownerId], map: "ElementImportReceipt_owner_idx")
+  @@index([state, leaseExpiresAt], map: "ElementImportReceipt_state_lease_idx")
+  @@index([state, retentionExpiresAt], map: "ElementImportReceipt_state_retention_idx")
+}
+
+model ImportMediaStaging {
+  id               String                  @id @default(uuid()) @db.Uuid
+  operationId      String                  @db.Uuid
+  packageMediaRef  String
+  contentHash      String
+  storageContainer String
+  storageBlob      String
+  state            ImportMediaStagingState @default(RESERVED)
+  createdBlob      Boolean                 @default(false)
+  expiresAt        DateTime
+
+  receipt   ElementImportReceipt @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  receiptId String               @db.Uuid
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  mediaFile   MediaFile? @relation(fields: [mediaFileId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  mediaFileId String?    @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([receiptId, packageMediaRef], map: "ImportMediaStaging_receipt_ref_key")
+  @@unique([storageContainer, storageBlob], map: "ImportMediaStaging_storage_target_key")
+  @@index([operationId], map: "ImportMediaStaging_operation_idx")
+  @@index([state, expiresAt], map: "ImportMediaStaging_state_expiry_idx")
+  @@index([ownerId, expiresAt], map: "ImportMediaStaging_owner_expiry_idx")
+  @@index([mediaFileId], map: "ImportMediaStaging_media_file_idx")
 }
 
 // #endregion
