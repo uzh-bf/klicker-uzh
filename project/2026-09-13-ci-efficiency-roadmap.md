@@ -853,3 +853,75 @@ required from the user.
   path-filtered status reporters and the hosted reporter queued behind
   the organization concurrency cap; `ocr-review` failed as the known
   external-agent flake and carries no required weight for this change.
+
+- 2026-09-14 queue anatomy and Dependabot fan-out slice (branch
+  `rs/ci-dependabot-fanout`): the merged work did not hold, and the queue was
+  full again at 10:40Z. Live counts: 286–300 runs queued and 7 in progress;
+  **208 of those queued runs (about 70%) belong to `dependabot/*` branches**,
+  against 78 open non-Dependabot pull requests. The wave opened 22 update pull
+  requests in twenty minutes (`#6002`–`#6021`): nine separate
+  `docker/apps/<dir>/library/node-26.8-alpine` pull requests for one shared
+  base-image bump, six `uv` analytics bumps, and four `github-actions` bumps.
+  Each of those pull requests fires roughly thirteen workflows and then
+  consumes the most expensive route in the repository: `playwright-route.cjs`
+  deliberately routes bot-authored pull requests to hosted with
+  `selectorPrState: 'ready'` (`playwright-route.test.cjs` line 117), so every
+  Dependabot pull request runs the full eight-shard suite on hosted runners and
+  cannot use the self-hosted ARM64 pool. `check-ocr-review.yml` already exempts
+  Dependabot, which is why only the final review appears in the queued set.
+  Slice contents: `.github/dependabot.yml` now groups the `uv` and
+  `github-actions` ecosystems, replaces the twelve per-directory `docker`
+  entries with one `directories: ['/apps/*']` entry, and sets
+  `open-pull-requests-limit` plus `groups.<name>.group-by: dependency-name`,
+  which is the documented option for producing one pull request per updated
+  image across directories. The next wave should therefore open about four
+  pull requests instead of twenty-two, removing roughly 200 queued runs of the
+  current backlog. Verification limit: the option set is documented in the
+  Dependabot reference (`directories` supports globbing, `group-by:
+  dependency-name` collapses multi-directory updates), but the file is only
+  validated by GitHub after it reaches the default branch, so the reduction is
+  an expectation until the next scheduled run.
+- 2026-09-14 open routing decision from the same data: with base-image pull
+  requests routed to the full hosted suite, the cost per Dependabot pull
+  request is eight hosted shards plus the shared check, SonarCloud and CodeQL.
+  Deciding whether a base-image tag bump needs full Playwright coverage is a
+  routing/product decision, not a configuration repair, so it is proposed here
+  rather than changed.
+- 2026-09-14 B3 pre-flight blocks the roadmap's original execution spec: the
+  trusted controller is read from the default branch (`actions/checkout` with
+  `ref: github.workflow_sha`) while the candidate tree is
+  `vars.STG_SOURCE_BRANCH`. That variable is **not** `v3`: `refs/heads/stg-release`
+  resolves to `cb1599d9a5`, which is contained in `origin/v3-audit` and not in
+  `v3`, and v3 push runs of `deploy-stg-promote.yml` are correctly skipped as
+  `wrong branch`. The candidate therefore carries **fifteen** staging image
+  workflows, including `v3_mcp-lecturer-stg.yml` and `v3_mcp-student-stg.yml`,
+  which do not exist on `v3` at all; `STAGING_WORKFLOWS` and the `Build Fallback`
+  `workflow_run` list name them precisely so the trusted inventory matches that
+  branch. Consequences the original spec must absorb before the matrix
+  consolidation ships: (1) collapsing `v3`'s thirteen files alone changes the
+  candidate set on `v3-audit` and fails the controller closed until `v3` is
+  merged into `v3-audit`; (2) the two `mcp-*` entries keep **active** `build-amd`
+  legs (`nonRuntimeJobs`), unlike the thirteen `v3` files whose `build-amd` jobs
+  are already inert `if: ${{ false }}`, so a consolidated matrix that omits them
+  would drop MCP staging images from the promotion contract; (3) the MCP
+  workflows live on the integration branches, so the landing plan has to either
+  keep them as legacy files in the inventory or add their legs to the
+  consolidated workflow on `v3-audit`. B3 also now has a measured wakeup target:
+  the current 21-name `workflow_run` list produced **44 controller runs for the
+  single `v3` commit `0c2a7a6a33`**, almost all of them skipped. The controller
+  itself was healthy when checked — `deploy-stg-promote.yml` succeeded at 06:28Z
+  on `cbc6ba43a1`, and `build-images-status` is the required context from
+  rulesets `v3 quality and merge protection` and `v3 integration baseline CI`
+  (a job name, not a workflow name), so a workflow rename keeps the context.
+- 2026-09-14 second selection finding, not yet sliced: metadata-only pull
+  requests are still costly outside the four path-filtered suites. Neither
+  `test-playwright.yml` nor `check.yml` carries a path filter, so a pull request
+  that changes only prose still runs the full typecheck and the complete
+  Playwright suite; branch `docs/writing-coach-proposal` held **18 queued runs**
+  in the same snapshot. The #5977 metadata rule cannot simply be extended here,
+  because the required `build-images-status` reporter binds the *newest* run for
+  the same head, event and branch rather than the newest non-metadata run: the
+  run list carries no event action, so a skip would either be read as an
+  unexpected `skipped` failure or let a later metadata edit overwrite an earlier
+  failed build. A sound version needs an explicit signal in the evidence
+  artifact or a run-age comparison, which is why it is scoped separately.
