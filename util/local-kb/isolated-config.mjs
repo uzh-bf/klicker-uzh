@@ -28,6 +28,12 @@ const PROVIDER_STATE_KEYS = {
   retrieval: ['docQuery'],
   docProcessing: ['documentProcessing'],
 }
+
+// The isolated runtime starts the routed Klicker applications, the local model
+// gateway and the ingestion workers. Without the worker component the KB
+// ingestion workflows are never registered, so a queued resource stays queued.
+export const LOCAL_KB_MANAGED_PROFILE = 'ai,chat,manage,workers'
+
 const PROVIDER_NAMES = Object.keys(PROVIDER_STATE_KEYS)
 
 const STATE_OWNERS = {

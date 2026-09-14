@@ -4,10 +4,15 @@ import test from 'node:test'
 import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
 import {
+  LOCAL_KB_MANAGED_PROFILE,
   resolveIsolatedConfig,
   resolveProviderBindings,
   validateIsolatedConfig,
 } from './isolated-config.mjs'
+import {
+  localCredentialNames,
+  renderProviderLocalConfiguration,
+} from './local-configuration.mjs'
 import {
   renderManagedConfiguration,
   renderProviderRouting,
@@ -79,10 +84,20 @@ test('managed application configuration shares only the isolated provider networ
   assert.equal(result.devrouter.profiles.full, undefined)
   assert.equal(result.devrouter.profiles.mcp, undefined)
   assert.equal(result.devrouter.profiles.manage.default, true)
+  // The isolated runtime starts the ingestion workers, so its generated
+  // configuration keeps the worker capability and no extra application routes.
+  assert.deepEqual(result.devrouter.profiles.workers.apps, [])
+  assert.deepEqual(result.devrouter.profiles.workers.processes, ['klicker-dev'])
+  // Devrouter canonicalizes a merged selection by sorting the selected names
+  // and reports that string as the observed profile identity, so the launcher
+  // must compare its startup against this exact form.
+  assert.deepEqual(
+    LOCAL_KB_MANAGED_PROFILE.split(',').sort(),
+    LOCAL_KB_MANAGED_PROFILE.split(',')
+  )
+  assert.equal(result.devrouter.profiles.email, undefined)
   assert.deepEqual(result.devrouter.profiles['local-kb-setup'], {
-    apps: [],
-    devcontainerServices: [],
-    processes: [],
+    devcontainerServices: ['redis_exec'],
   })
   assert.equal(
     result.compose.services.litellm.environment.UPSTREAM_OPENAI_API_KEY,
@@ -247,6 +262,27 @@ test('resolves two independent stacks with complete provider and state ownership
 test('backing services use isolated volumes and keep Hatchet setup separate', () => {
   const first = renderBackingCompose(resolveIsolatedConfig(makeInput('a')))
   const second = renderBackingCompose(resolveIsolatedConfig(makeInput('b')))
+  const databaseHosts = new Set()
+  for (const name of ['a', 'b']) {
+    const config = resolveIsolatedConfig(makeInput(name))
+    const compose = renderBackingCompose(config)
+    const { environment } = renderProviderLocalConfiguration(
+      Object.fromEntries(
+        localCredentialNames.map((key) => [key, 'a'.repeat(64)])
+      ),
+      config.bindings
+    )
+    const [hostname] = compose.services.postgres.networks.default.aliases
+    assert.notEqual(hostname, 'postgres')
+    assert.equal(databaseHosts.has(hostname), false)
+    databaseHosts.add(hostname)
+    for (const connection of [
+      environment.klicker.DATABASE_URL,
+      environment.klicker.SHADOW_DATABASE_URL,
+      environment.hatchet.DATABASE_URL,
+    ])
+      assert.equal(new URL(connection).hostname, hostname)
+  }
   const names = new Set(Object.values(first.volumes).map(({ name }) => name))
   assert.ok(Object.values(second.volumes).every(({ name }) => !names.has(name)))
   assert.deepEqual(first.services['hatchet-setup'].profiles, ['local-kb-setup'])
@@ -271,7 +307,18 @@ test('backing services use isolated volumes and keep Hatchet setup separate', ()
       service === first.services.blob ? ['127.0.0.1:18002:10000'] : undefined
     )
     assert.equal(service.network_mode, undefined)
-    assert.deepEqual(service.networks, ['default'])
+    assert.deepEqual(
+      service.networks,
+      service === first.services.postgres
+        ? {
+            default: {
+              aliases: [
+                `${resolveIsolatedConfig(makeInput('a')).bindings.instance}-postgres`,
+              ],
+            },
+          }
+        : ['default']
+    )
     assert.equal(service.restart, 'no')
     for (const mount of service.volumes) {
       if (typeof mount === 'string') {

@@ -95,6 +95,7 @@ test('provider configuration separates backing ownership and agrees on retrieval
     reader.KLICKER_LOCAL_RETRIEVAL_MILVUS_URI,
     'http://127.0.0.1:31009'
   )
+  assert.equal(reader.KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_MODEL, 'gpt-5.6-luna')
   assert.equal(project.vector_store.milvus.uri, worker.MILVUS_URI)
   assert.equal(
     project.vector_store.collection_name,
