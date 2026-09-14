@@ -890,14 +890,24 @@ required from the user.
 - 2026-09-14 B3 pre-flight blocks the roadmap's original execution spec: the
   trusted controller is read from the default branch (`actions/checkout` with
   `ref: github.workflow_sha`) while the candidate tree is
-  `vars.STG_SOURCE_BRANCH`. That variable is **not** `v3`: `refs/heads/stg-release`
-  resolves to `cb1599d9a5`, which is contained in `origin/v3-audit` and not in
-  `v3`, and v3 push runs of `deploy-stg-promote.yml` are correctly skipped as
-  `wrong branch`. The candidate therefore carries **fifteen** staging image
+  `vars.STG_SOURCE_BRANCH`. That variable is **not** `v3`. The promotion receipt
+  from controller run 34813630732 (artifact
+  `stg-release-promotion-receipt-cb1599d9a596860c6fc988d84fae4d44f7650309`)
+  records `"source_branch":"v3-audit"`, `"schema_version":"stg-release-promotion/v2"`,
+  `"controller_sha":"cbc6ba43a1"`, decision `{"action":"fast-forward","mode":"apply"}`
+  and a verified push of candidate `cb1599d9a5` onto `refs/heads/stg-release`
+  (previous release `dda3cd04a8`), so automatic promotion is live and currently
+  tracks `v3-audit`. Beware the misleading field: the promote run's own
+  `head_branch` reads `v3` because the workflow file comes from the default
+  branch, while `github.event.workflow_run.head_branch` — the value the branch
+  gate compares — is `v3-audit`; every v3-branch event is skipped by that gate.
+  The candidate therefore carries **fifteen** staging image
   workflows, including `v3_mcp-lecturer-stg.yml` and `v3_mcp-student-stg.yml`,
   which do not exist on `v3` at all; `STAGING_WORKFLOWS` and the `Build Fallback`
   `workflow_run` list name them precisely so the trusted inventory matches that
-  branch. Consequences the original spec must absorb before the matrix
+  branch, and the same receipt lists `mcp-lecturer-arm` and `mcp-student-arm`
+  among the fifteen promoted images. Consequences the original spec must absorb
+  before the matrix
   consolidation ships: (1) collapsing `v3`'s thirteen files alone changes the
   candidate set on `v3-audit` and fails the controller closed until `v3` is
   merged into `v3-audit`; (2) the two `mcp-*` entries keep **active** `build-amd`
@@ -906,11 +916,13 @@ required from the user.
   would drop MCP staging images from the promotion contract; (3) the MCP
   workflows live on the integration branches, so the landing plan has to either
   keep them as legacy files in the inventory or add their legs to the
-  consolidated workflow on `v3-audit`. B3 also now has a measured wakeup target:
+  consolidated workflow on `v3-audit`, and they are not clones of the thirteen:
+  each also wraps publication in a `publish_guard` step that the `v3` files do
+  not have. B3 also now has a measured wakeup target:
   the current 21-name `workflow_run` list produced **44 controller runs for the
   single `v3` commit `0c2a7a6a33`**, almost all of them skipped. The controller
-  itself was healthy when checked — `deploy-stg-promote.yml` succeeded at 06:28Z
-  on `cbc6ba43a1`, and `build-images-status` is the required context from
+  itself was healthy when checked, as the receipt above shows, and
+  `build-images-status` is the required context from
   rulesets `v3 quality and merge protection` and `v3 integration baseline CI`
   (a job name, not a workflow name), so a workflow rename keeps the context.
 - 2026-09-14 second selection finding, not yet sliced: metadata-only pull
