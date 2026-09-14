@@ -9,9 +9,9 @@ import {
   isParticipantDataUseComplete,
   levelFromXp,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-  type ParticipantDataUseFields,
 } from '@klicker-uzh/util'
 import builder from '../builder.js'
+import type { ParticipantDataUseFields } from '../lib/learningAnalytics.js'
 import type { ParticipantAccountDataUseFields } from '../services/participantAccountDataUse.js'
 import {
   AchievementRef,
