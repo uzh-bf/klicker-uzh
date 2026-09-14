@@ -714,3 +714,29 @@ its dependent action. Read back effective settings and retain sanitized receipts
   owed. The standing gates are unchanged: obtain authorized Sonar settings
   evidence for W0, then decide the fork and Dependabot analysis route before
   any merge enforcement.
+
+### Post-merge verification — 2026-09-14
+
+- Merged source: [PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924) is
+  `51b0ed152c8a0da4c31a50557e57fa86161126a0`. The W8 workflow contract and the
+  W10 promotion admission are therefore live effects, not prepared source.
+- W8 confirmed live: the analysis of `v3` head `0c2a7a6a33`
+  ([run 34831956644](https://github.com/uzh-bf/klicker-uzh/actions/runs/34831956644))
+  uploaded its report and failed closed with `QUALITY GATE STATUS: FAILED`
+  instead of leaving a green workflow beside a red gate. Which conditions fail
+  stays dashboard-only evidence (W0). Draft pull requests still skip analysis.
+- W5 regression, observed live on the same push: `scan-arm` and
+  `scan-migrator-arm` failed. Both images publish a single-platform index whose
+  only child is `linux/arm64`, the scan ran without an explicit platform, and
+  Trivy resolved `linux/amd64` and aborted with `no child with platform
+  linux/amd64 in index`. No scan artifact was produced, and
+  `build-images-status` was red for that candidate.
+- Consequence for W10: admission rejects a candidate whose scan produced no
+  receipt (`no receipt covers the promoted digest`). A candidate that carries
+  the scan jobs, such as the next `v3` merge into `v3-audit`, therefore cannot
+  be promoted until the scan succeeds. `TRIVY_PLATFORM=linux/arm64` is set on
+  both scan jobs in `.github/workflows/v3_backend-docker-stg.yml`.
+- Verification limit: the scan jobs are gated to non-pull-request events, so the
+  fix is proven by the controller validation suite (29 cases, including the
+  real-file workflow contract) rather than by a publication run. The first
+  `v3` or `v3-*` push after the fix is the acceptance run.
