@@ -80,6 +80,7 @@ jobs:
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
             .github/scripts/required-ci-status.test.cjs \
+            .github/scripts/ocr-self-update-guard.test.cjs \
             .github/scripts/stg-release-promoter.test.js \
             .github/scripts/required-build-status.test.cjs \
             .github/scripts/sonar-coverage-inputs.test.cjs \
