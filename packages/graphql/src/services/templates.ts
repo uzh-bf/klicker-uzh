@@ -20,7 +20,7 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
-import { manipulateElement } from './elements.js'
+import { manipulateElementInTransaction } from './elements.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 
@@ -1794,7 +1794,7 @@ export async function createLiveQuizFromTemplate(
             }
 
             // create a new element based on the provided data
-            const createdElement = await manipulateElement(
+            const createdElement = await manipulateElementInTransaction(
               { ...values, options, templateId },
               { ...ctx, prisma }
             )

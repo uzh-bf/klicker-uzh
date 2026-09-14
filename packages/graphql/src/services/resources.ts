@@ -5,32 +5,50 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import {
+  ensureAnswerCollectionAndLinkedElementFingerprintsCurrent,
+  ensureAnswerCollectionFingerprintCurrent,
+} from './importExportFingerprints.js'
 import { validateTemplateAccessible } from './templates.js'
 
 // ! Answer Collections
 // #region
-async function incrementCollectionVersion(
-  { collectionId }: { collectionId: number },
-  ctx: ContextWithUser
+async function lockAnswerCollectionForDidacticMutation(
+  collectionId: number,
+  prisma: PrismaTransactionContextWithUser['prisma']
 ) {
-  const collection = await ctx.prisma.answerCollection.update({
-    where: {
-      id: collectionId,
-    },
+  await prisma.$queryRaw`
+    SELECT "id"
+    FROM "public"."AnswerCollection"
+    WHERE "id" = ${collectionId}
+    FOR UPDATE
+  `
+}
+
+async function markAnswerCollectionDidacticChange(
+  collectionId: number,
+  prisma: PrismaTransactionContextWithUser['prisma']
+) {
+  await prisma.answerCollection.update({
+    where: { id: collectionId },
     data: {
-      version: {
-        increment: 1,
-      },
+      version: { increment: 1 },
     },
   })
+  await ensureAnswerCollectionAndLinkedElementFingerprintsCurrent(
+    collectionId,
+    prisma
+  )
+}
 
-  // invalidate the answer collection
+function invalidateAnswerCollection(
+  collectionId: number,
+  ctx: ContextWithUser
+) {
   ctx.emitter.emit('invalidate', {
     typename: 'AnswerCollection',
     id: collectionId,
   })
-
-  return collection
 }
 
 export async function createAnswerCollection(
@@ -65,6 +83,8 @@ export async function createAnswerCollection(
         entries: true,
       },
     })
+
+    await ensureAnswerCollectionFingerprintCurrent(newCollection.id, prisma)
 
     // trigger recomputation of derived permissions (-> owner should get new one)
     await recomputeDerivedPermissions(
@@ -106,9 +126,10 @@ export async function duplicateAnswerCollection(
 
   // create a new collection with the same entries
   const duplicatedCollection = await ctx.prisma.$transaction(async (prisma) => {
+    const name = `${collection.name} (Copy)`
     const newCollection = await prisma.answerCollection.create({
       data: {
-        name: `${collection.name} (Copy)`,
+        name,
         description: collection.description,
         entries: {
           create: collection.entries.map((entry) => ({
@@ -123,6 +144,8 @@ export async function duplicateAnswerCollection(
       },
       include: { entries: true },
     })
+
+    await ensureAnswerCollectionFingerprintCurrent(newCollection.id, prisma)
 
     // trigger recomputation of derived permissions (-> owner should get new one)
     await recomputeDerivedPermissions(
@@ -432,6 +455,7 @@ export async function modifyAnswerCollection(
       },
       include: { entries: true },
     })
+    await ensureAnswerCollectionFingerprintCurrent(id, tx)
 
     // invalidate the answer collection
     ctx.emitter.emit('invalidate', {
@@ -682,17 +706,19 @@ export async function editAnswerCollectionEntry(
   }: { id: number; value: string; collectionId: number },
   ctx: ContextWithUser
 ) {
-  // update entry in the database
-  const updatedEntry = await ctx.prisma.answerCollectionEntry.update({
-    where: { id, collectionId },
-    data: { value },
-  })
-
-  // increment version of the collection to keep track of changes
-  await incrementCollectionVersion(
-    { collectionId: updatedEntry.collectionId },
-    ctx
+  const updatedEntry = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockAnswerCollectionForDidacticMutation(collectionId, prisma)
+      const entry = await prisma.answerCollectionEntry.update({
+        where: { id, collectionId },
+        data: { value },
+      })
+      await markAnswerCollectionDidacticChange(collectionId, prisma)
+      return entry
+    },
+    { timeout: 60000 }
   )
+  invalidateAnswerCollection(collectionId, ctx)
 
   return updatedEntry
 }
@@ -715,16 +741,18 @@ export async function deleteAnswerCollectionEntry(
     return null
   }
 
-  // delete answer option from the database
-  const updatedEntry = await ctx.prisma.answerCollectionEntry.delete({
-    where: { id },
-  })
-
-  // increment version of the collection to keep track of changes
-  await incrementCollectionVersion(
-    { collectionId: updatedEntry.collectionId },
-    ctx
+  const updatedEntry = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockAnswerCollectionForDidacticMutation(collectionId, prisma)
+      const deletedEntry = await prisma.answerCollectionEntry.delete({
+        where: { id },
+      })
+      await markAnswerCollectionDidacticChange(collectionId, prisma)
+      return deletedEntry
+    },
+    { timeout: 60000 }
   )
+  invalidateAnswerCollection(collectionId, ctx)
 
   return updatedEntry.id
 }
@@ -733,16 +761,21 @@ export async function addAnswerCollectionOption(
   { collectionId, value }: { collectionId: number; value: string },
   ctx: ContextWithUser
 ) {
-  // add new answer option to the database
-  const newEntry = await ctx.prisma.answerCollectionEntry.create({
-    data: {
-      value,
-      collection: { connect: { id: collectionId } },
+  const newEntry = await ctx.prisma.$transaction(
+    async (prisma) => {
+      await lockAnswerCollectionForDidacticMutation(collectionId, prisma)
+      const entry = await prisma.answerCollectionEntry.create({
+        data: {
+          value,
+          collection: { connect: { id: collectionId } },
+        },
+      })
+      await markAnswerCollectionDidacticChange(collectionId, prisma)
+      return entry
     },
-  })
-
-  // increment version of the collection to keep track of changes
-  await incrementCollectionVersion({ collectionId: newEntry.collectionId }, ctx)
+    { timeout: 60000 }
+  )
+  invalidateAnswerCollection(collectionId, ctx)
 
   return newEntry
 }

@@ -1,0 +1,16 @@
+query GetElementExportPackagePreview($elementIds: [Int!]!) {
+  getElementExportPackagePreview(elementIds: $elementIds) {
+    answerCollections {
+      ref
+      name
+      description
+      elementNames
+      entries {
+        id
+        value
+      }
+    }
+    errors
+    warnings
+  }
+}

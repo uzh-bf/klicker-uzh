@@ -1,0 +1,3 @@
+mutation FinalizeFileUpload($mediaFileId: ID!) {
+  finalizeFileUpload(mediaFileId: $mediaFileId)
+}

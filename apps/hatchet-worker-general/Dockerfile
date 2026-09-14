@@ -37,6 +37,7 @@ FROM base AS runtime
 WORKDIR /app
 
 ARG NODE_ENV="production"
+ENV NODE_ENV=$NODE_ENV
 
 RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
@@ -58,6 +59,6 @@ COPY --from=builder /app/apps/hatchet-worker-general/dist/ /app/apps/hatchet-wor
 
 USER nodejs
 
-EXPOSE 3000
+EXPOSE 8081
 
 CMD node /app/apps/hatchet-worker-general/dist/index.js

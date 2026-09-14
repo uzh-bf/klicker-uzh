@@ -1,63 +1,49 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { handlers } from '@klicker-uzh/graphql'
-import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
+import {
+  assertImportExportPackageStorageConfig,
+  getImportExportStartupResponsibilities,
+  handlers,
+  initializeImportExportRuntimeConfig,
+} from '@klicker-uzh/graphql'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import logger from './logger.js'
+import {
+  createWorkerHealthController,
+  markWorkerReadyAfterRegistration,
+  startWorkerHealthServer,
+  waitForWorkerRegistration,
+} from './workerHealth.js'
+import { selectHatchetWorkflows } from './workflowSelection.js'
 
 const HATCHET_WORKER_NAME =
   process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
 
-function selectWorkflows(workflows: PreparedHatchetTasks) {
-  // Select which workflows to load using an env var and keep it type-safe.
-  // If no env var is provided, default to ALL available workflows dynamically.
-  const defaultWorkflowKeys = Object.keys(workflows) as Array<
-    keyof PreparedHatchetTasks
-  >
-
-  // Parse requested keys; treat empty/whitespace as "unset" so we default to all
-  const envRaw = process.env.HATCHET_WORKFLOWS
-  const requestedKeysRaw = envRaw
-    ? envRaw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : undefined
-
-  const hasRequested =
-    Array.isArray(requestedKeysRaw) && requestedKeysRaw.length > 0
-
-  const validSelectedKeys = (
-    hasRequested
-      ? requestedKeysRaw.filter(
-          (k): k is keyof PreparedHatchetTasks => k in workflows
-        )
-      : defaultWorkflowKeys
-  ) as Array<keyof PreparedHatchetTasks>
-
-  if (hasRequested) {
-    const unknown = requestedKeysRaw.filter((k) => !(k in workflows))
-    if (unknown.length) {
-      logger.warn(
-        {
-          unknownKeys: unknown,
-          availableKeys: Object.keys(workflows),
-        },
-        'HATCHET_WORKFLOWS contains unknown task keys'
-      )
-    }
+function readHealthPort() {
+  const value = process.env.HATCHET_HEALTH_PORT ?? '8081'
+  if (!/^[1-9][0-9]*$/.test(value)) {
+    throw new Error('HATCHET_HEALTH_PORT must be a positive integer.')
   }
-
-  const selectedWorkflows = validSelectedKeys.map((k) => workflows[k])
-
-  return selectedWorkflows
+  const port = Number(value)
+  if (!Number.isSafeInteger(port) || port > 65_535) {
+    throw new Error('HATCHET_HEALTH_PORT must be between 1 and 65535.')
+  }
+  return port
 }
 
 async function main() {
+  const importExportConfig = initializeImportExportRuntimeConfig()
+  const importExportResponsibilities = getImportExportStartupResponsibilities(
+    'general-worker',
+    importExportConfig
+  )
+  if (importExportResponsibilities.requiresPackageStorage) {
+    assertImportExportPackageStorageConfig()
+  }
   logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
 
   const redisExec = new Redis({
@@ -121,25 +107,44 @@ async function main() {
     handlers,
   })
 
-  const workflows = selectWorkflows(preparedWorkflows)
-  const selectedKeys = Object.keys(preparedWorkflows).filter((k) =>
-    workflows.includes((preparedWorkflows as any)[k])
-  )
-  logger.info({ selectedKeys }, 'Selected workflows')
+  const selected = selectHatchetWorkflows(preparedWorkflows, {
+    requireImportExportMaintenance: importExportResponsibilities.maintenance,
+  })
+  logger.info({ selectedKeys: selected.keys }, 'Selected workflows')
+
+  const health = createWorkerHealthController()
+  const healthPort = readHealthPort()
+  await startWorkerHealthServer({ controller: health, port: healthPort })
+  logger.info({ healthPort }, 'Worker health server started')
 
   logger.info(
-    { workerName: HATCHET_WORKER_NAME, workflowCount: workflows.length },
+    {
+      workerName: HATCHET_WORKER_NAME,
+      workflowCount: selected.workflows.length,
+    },
     'Creating Hatchet worker'
   )
 
   const worker = await hatchetClient.worker(HATCHET_WORKER_NAME, {
-    workflows,
+    workflows: selected.workflows,
   })
 
   logger.info('Starting worker to process jobs...')
-  await worker.start()
+  const workerRun = worker.start().catch((error) => {
+    health.markControlPlaneLost()
+    throw error
+  })
 
-  logger.info('Worker started successfully and ready to process jobs')
+  await markWorkerReadyAfterRegistration({
+    controller: health,
+    registration: waitForWorkerRegistration(worker.nonDurable),
+    workerRun,
+  })
+  logger.info('Worker registered successfully and ready to process jobs')
+
+  await workerRun
+  health.markControlPlaneLost()
+  throw new Error('Hatchet worker stopped unexpectedly.')
 }
 
 process.on('unhandledRejection', (reason) => {

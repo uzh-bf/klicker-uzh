@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { ElementManipulationInput } from '@klicker-uzh/types'
+import { MAX_ELEMENT_POINTS_MULTIPLIER } from './elementDomain.js'
 
 function validateElementInputs({
   id,
@@ -100,12 +101,15 @@ function validateElementInputs({
     return false
   }
 
-  // if pointsMultiplier is provided, it has to be a number
+  // if pointsMultiplier is provided, it has to match the authoring UI range
   if (
     typeof pointsMultiplier !== 'undefined' &&
-    (typeof pointsMultiplier !== 'number' || pointsMultiplier <= 0)
+    (typeof pointsMultiplier !== 'number' ||
+      !Number.isInteger(pointsMultiplier) ||
+      pointsMultiplier <= 0 ||
+      pointsMultiplier > MAX_ELEMENT_POINTS_MULTIPLIER)
   ) {
-    console.error('Points multiplier must be a positive number')
+    console.error('Points multiplier must be an integer between 1 and 4')
     return false
   }
 

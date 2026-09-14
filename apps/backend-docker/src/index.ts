@@ -160,11 +160,9 @@ console.log('Hatchet tasks initialized.', Object.keys(tasks))
 
 const { app, yogaApp } = prepareApp({
   prisma,
-  redisCache,
   redisExec,
   redisAssessmentExec,
   pubSub,
-  cache,
   emitter,
   hatchet: hatchetClient,
   tasks,

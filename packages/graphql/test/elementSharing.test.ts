@@ -15,6 +15,7 @@ import {
 } from '@klicker-uzh/util'
 import { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
+import { IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION } from '../src/lib/importExportFingerprintCanonicalization.js'
 import {
   addObjectToCatalog,
   cancelObjectSharingRequest,
@@ -2268,6 +2269,10 @@ describe('Integration tests for sharing functionalities of elements (questions, 
     expect(importedSEs2.length).toBe(1)
     expect(importedSEs2[0]!.originalId).toBe(String(SE.id))
     expect(importedSEs2[0]!.name).toBe(SE.name)
+    expect(importedSEs2[0]).toMatchObject({
+      importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+      importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+    })
 
     // verify that a derived READ permission has been created for user 5 on the answer collection
     const derivedPermission1 = await prisma.derivedPermission.findUnique({
@@ -2315,6 +2320,12 @@ describe('Integration tests for sharing functionalities of elements (questions, 
     expect(importedACs3[0]!.name).toContain(SE.name)
     expect(importedACs3[1]!.originalId).toBe(String(SE.id))
     expect(importedACs3[1]!.name).toContain(SE.name)
+    for (const imported of importedACs3) {
+      expect(imported).toMatchObject({
+        importFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        importFingerprintVersion: IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION,
+      })
+    }
   })
 
   it('Verify that element sharing requests can be cancelled by the initiator', async () => {
