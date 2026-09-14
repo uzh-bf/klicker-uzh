@@ -48,7 +48,7 @@ jobs:
           NODE
 
       - name: Run OpenCodeReview
-        uses: alibaba/open-code-review@c7dd11e03eeeb84991d60e3f847be30f7de1c20d # v1.11.0
+        uses: alibaba/open-code-review@8d023aafcec05f8ba5628fca3eaba88078e5d201 # v1.11.1
         with:
           llm_url: https://openrouter.ai/api/v1/chat/completions
           llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}

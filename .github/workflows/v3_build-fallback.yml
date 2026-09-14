@@ -43,7 +43,7 @@ jobs:
       BUILD_STATUS_RETRY_DELAY_MS: '30000'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Determine changed files
         if: github.event_name == 'pull_request'
@@ -94,7 +94,7 @@ jobs:
 
       - name: Upload build status evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           if-no-files-found: error
           name: required-ci-evidence

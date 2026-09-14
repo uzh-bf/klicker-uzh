@@ -48,7 +48,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
       - name: Check out exact trusted source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -67,12 +67,12 @@ jobs:
           test "$actual_sha" = "$EVENT_SHA"
 
       - name: Define node version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: package.json
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.5.0
           run_install: false
@@ -88,7 +88,7 @@ jobs:
       - name: Restore pnpm cache
         id: pnpm-cache
         continue-on-error: true
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.STORE_PATH }}
           key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
@@ -96,7 +96,7 @@ jobs:
       - name: Restore Turbo cache
         id: turbo-cache
         continue-on-error: true
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .turbo
           key: playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
@@ -156,7 +156,7 @@ jobs:
       - name: Save pnpm cache
         if: steps.build.outcome == 'success' && steps.pnpm-cache.outputs.cache-hit != 'true'
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ${{ env.STORE_PATH }}
           key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
@@ -164,7 +164,7 @@ jobs:
       - name: Save Turbo cache
         if: steps.build.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true'
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .turbo
           key: playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
@@ -189,7 +189,7 @@ jobs:
       - name: Upload seed telemetry
         if: always()
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-cache-seed-telemetry-${{ runner.arch }}
           path: playwright-cache-seed-telemetry.json
