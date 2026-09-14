@@ -150,6 +150,8 @@ services:
 volumes:
   pgdata:
   pnpm_store:
+    external: true
+    name: klicker-uzh-pnpm-store-v1
   hatchet_lite_config:
 
 networks:

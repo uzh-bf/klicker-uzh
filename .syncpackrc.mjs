@@ -81,7 +81,8 @@ export default {
       // render surfaces; a split version silently breaks chemistry rendering.
       // Docs keeps its policy-required tilde dev range, so only the exact
       // production surfaces are compared here.
-      label: 'katex must be aligned across markdown, chat, docs and frontend apps',
+      label:
+        'katex must be aligned across markdown, chat, docs and frontend apps',
       dependencies: ['katex'],
       packages: [
         '@klicker-uzh/markdown',
