@@ -50,13 +50,7 @@ const PREVIEW_MAX_BODY_BYTES = 512 * 1024
 const previewRateLimiter = createRateLimiter(20, 5 * 60 * 1000)
 
 const previewOptionsSchema = z.object({
-  selectedMode: z
-    .string()
-    .trim()
-    .min(1)
-    .max(100)
-    .transform((value) => value.toLowerCase())
-    .default('tutor'),
+  selectedMode: z.string().trim().min(1).max(100).default('tutor'),
   selectedModel: z.string().trim().min(1).max(100).optional(),
   reasoningEffort: z.string().trim().min(1).max(100).nullable().optional(),
 })
