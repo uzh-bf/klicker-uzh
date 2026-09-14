@@ -9,7 +9,10 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
       - 'apps/mcp-lecturer/**'
-      - 'packages/**'
+      - 'packages/grading/**'
+      - 'packages/prisma/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'turbo.json'
