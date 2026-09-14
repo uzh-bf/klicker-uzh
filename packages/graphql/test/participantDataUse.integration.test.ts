@@ -6,12 +6,11 @@ import {
   LEARNING_ANALYTICS_ADVISORY_LOCK,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
 } from '../src/lib/learningAnalytics.js'
-import { completeParticipantDataUse } from '../src/services/participantAccountDataUse.js'
 import {
-  getParticipantDataUse,
-  setLearningAnalyticsConsent,
-  setResearchConsent,
-} from '../src/services/participants.js'
+  completeParticipantDataUse,
+  updateParticipantDataUseChoice,
+} from '../src/services/participantAccountDataUse.js'
+import { getParticipantDataUse } from '../src/services/participants.js'
 
 const TEST_PREFIX = `participant-data-use-integration-${Date.now()}`
 const fixtureIds = {
@@ -154,7 +153,8 @@ describe('participant data-use PostgreSQL integration', () => {
     const holder = await holdLearningAnalyticsWriterGate()
     try {
       let settled = false
-      const mutation = setLearningAnalyticsConsent(
+      const mutation = updateParticipantDataUseChoice(
+        'analytics',
         choiceInput(true, completedRevision),
         ctx
       ).then((result) => {
@@ -202,7 +202,8 @@ describe('participant data-use PostgreSQL integration', () => {
     try {
       const startedAt = Date.now()
 
-      const timedOut = setLearningAnalyticsConsent(
+      const timedOut = updateParticipantDataUseChoice(
+        'analytics',
         choiceInput(true, completedRevision),
         ctx
       )
@@ -221,7 +222,11 @@ describe('participant data-use PostgreSQL integration', () => {
       holder.release()
       await holder.done
       await expect(
-        setLearningAnalyticsConsent(choiceInput(true, completedRevision), ctx)
+        updateParticipantDataUseChoice(
+          'analytics',
+          choiceInput(true, completedRevision),
+          ctx
+        )
       ).resolves.toMatchObject({
         learningAnalyticsConsent: true,
         learningAnalyticsChoiceAt: expect.any(Date),
@@ -239,9 +244,12 @@ describe('participant data-use PostgreSQL integration', () => {
     const ctx = participantContext(participant.id)
     await completeParticipant(participant.id)
     const holder = await holdLearningAnalyticsWriterGate()
-    let researchMutation: ReturnType<typeof setResearchConsent> | undefined
+    let researchMutation:
+      | ReturnType<typeof updateParticipantDataUseChoice>
+      | undefined
     try {
-      researchMutation = setResearchConsent(
+      researchMutation = updateParticipantDataUseChoice(
+        'research',
         choiceInput(true, completedRevision),
         ctx
       )
@@ -285,7 +293,7 @@ describe('participant data-use PostgreSQL integration', () => {
     })
 
     await expect(
-      setLearningAnalyticsConsent(choiceInput(true, 0), ctx)
+      updateParticipantDataUseChoice('analytics', choiceInput(true, 0), ctx)
     ).rejects.toMatchObject({
       extensions: { code: 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' },
     })

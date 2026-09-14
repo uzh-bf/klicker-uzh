@@ -63,16 +63,18 @@ destination through `participantDataUseReturn`, which accepts local destinations
 and removes launch credentials.
 
 Account creation and completion record the acknowledgement and independent
-choices through the revisioned data-use service. Settings submit the displayed
-disclosure version and expected revision; a stale page cannot silently overwrite
-a newer choice. Research starts allowed on the creation form, whereas Learning
+choices through the revisioned data-use service. Creation, completion, and
+settings all submit the disclosure version bundled with the displayed
+disclosure text together with the expected revision; a page whose bundled
+version no longer matches the server-required version must reload before it
+can save. Research starts allowed on the creation form, whereas Learning
 Analytics requires an explicit answer. These UI defaults do not backfill legacy
-accounts. Analytics withdrawal atomically records the new choice, its audit event,
-and a durable cleanup request, and invalidates analytics eligibility. The scheduled
-worker deletes the participant's derived analytics and completes the request in
-one transaction. Pending cleanup blocks publication even after re-enablement.
-A successful settings response confirms the choice and cleanup request; it does
-not claim that asynchronous deletion has already completed.
+accounts. Analytics withdrawal atomically records the new choice, its audit
+event, and a durable cleanup request in one transaction. Executing that
+cleanup - deleting derived analytics data, invalidating analytics eligibility,
+and gating publication on pending cleanup - is a later layer; this layer only
+persists the request. A successful settings response therefore confirms the
+persisted choice and cleanup request, not any completed deletion.
 
 Assessment completion uses the same four disclosure sections with additional
 identity, answer, audit-log, access and retention information. In the assessment

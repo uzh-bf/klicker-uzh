@@ -5,6 +5,8 @@ import {
   SetResearchConsentDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/dist/participantAccountDataUse'
+import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import {
   Button,
   H3,
@@ -16,38 +18,6 @@ import {
 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-
-function getGraphQLErrorCode(error: unknown): string | undefined {
-  if (!error || typeof error !== 'object') return undefined
-
-  const candidate = error as {
-    extensions?: { code?: unknown }
-    graphQLErrors?: unknown
-    errors?: unknown
-    cause?: unknown
-  }
-  if (typeof candidate.extensions?.code === 'string') {
-    return candidate.extensions.code
-  }
-
-  for (const nestedErrors of [candidate.graphQLErrors, candidate.errors]) {
-    if (!Array.isArray(nestedErrors)) continue
-    for (const nestedError of nestedErrors) {
-      const code = getGraphQLErrorCode(nestedError)
-      if (code) return code
-    }
-  }
-
-  return candidate.cause ? getGraphQLErrorCode(candidate.cause) : undefined
-}
-
-function isDataUseConflict(error: unknown) {
-  const code = getGraphQLErrorCode(error)
-  return (
-    code === 'PARTICIPANT_DATA_USE_STALE_REVISION' ||
-    code === 'PARTICIPANT_DATA_USE_INVALID_INPUT'
-  )
-}
 
 function DataUseSettings() {
   const t = useTranslations()
@@ -70,6 +40,12 @@ function DataUseSettings() {
   const dataUse = data?.selfAccountDataUse
   const saving =
     savingResearchConsent || savingLearningAnalyticsConsent || reloading
+  // The disclosure text is bundled with this frontend build; if the server
+  // already requires a newer version, the displayed content cannot record
+  // choices until the page has been reloaded with matching content.
+  const versionMismatch =
+    dataUse != null &&
+    dataUse.currentDisclosureVersion !== PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
 
   async function reloadDataUse() {
     setReloading(true)
@@ -88,14 +64,14 @@ function DataUseSettings() {
   }
 
   async function updateResearchConsent(consent: boolean) {
-    if (!dataUse || saving || conflict) return
+    if (!dataUse || saving || conflict || versionMismatch) return
 
     try {
       const result = await setResearchConsent({
         variables: {
           consent,
           expectedRevision: dataUse.dataUseRevision,
-          disclosureVersion: dataUse.currentDisclosureVersion,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         },
       })
 
@@ -125,15 +101,17 @@ function DataUseSettings() {
     }
   }
 
-  async function updateLearningAnalyticsConsent(consent: boolean) {
-    if (!dataUse || saving || conflict) return
+  async function updateLearningAnalyticsConsent(
+    consent: boolean
+  ): Promise<boolean> {
+    if (!dataUse || saving || conflict || versionMismatch) return false
 
     try {
       const result = await setLearningAnalyticsConsent({
         variables: {
           consent,
           expectedRevision: dataUse.dataUseRevision,
-          disclosureVersion: dataUse.currentDisclosureVersion,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
         },
       })
 
@@ -145,6 +123,7 @@ function DataUseSettings() {
         options: { duration: 3500 },
       })
       await reloadDataUse()
+      return true
     } catch (error) {
       if (isDataUseConflict(error)) {
         setConflict(true)
@@ -153,7 +132,7 @@ function DataUseSettings() {
           message: t('pwa.profile.dataUseConflict'),
           options: { duration: 6000 },
         })
-        return
+        return false
       }
 
       toast({
@@ -161,13 +140,16 @@ function DataUseSettings() {
         message: t('pwa.profile.learningAnalyticsConsentFailed'),
         options: { duration: 6000 },
       })
+      return false
     }
   }
 
   async function confirmLearningAnalyticsWithdrawal() {
     if (saving) return
-    await updateLearningAnalyticsConsent(false)
-    setWithdrawalConfirmationOpen(false)
+    const saved = await updateLearningAnalyticsConsent(false)
+    if (saved) {
+      setWithdrawalConfirmationOpen(false)
+    }
   }
 
   function handleLearningAnalyticsChange(consent: boolean) {
@@ -222,7 +204,7 @@ function DataUseSettings() {
         </Prose>
       </div>
 
-      {conflict && (
+      {(conflict || versionMismatch) && (
         <UserNotification type="error">
           <div className="flex flex-col items-start gap-2">
             <span>{t('pwa.profile.dataUseConflict')}</span>
@@ -241,7 +223,7 @@ function DataUseSettings() {
       <div className="flex flex-col gap-2 rounded border bg-white p-3">
         <Switch
           checked={dataUse.researchConsent}
-          disabled={saving || conflict}
+          disabled={saving || conflict || versionMismatch}
           onCheckedChange={(consent) => void updateResearchConsent(consent)}
           label={`${t('pwa.profile.researchConsentTitle')}: ${
             dataUse.researchConsent
@@ -270,7 +252,7 @@ function DataUseSettings() {
       <div className="flex flex-col gap-2 rounded border bg-white p-3">
         <Switch
           checked={dataUse.learningAnalyticsConsent}
-          disabled={saving || conflict}
+          disabled={saving || conflict || versionMismatch}
           onCheckedChange={handleLearningAnalyticsChange}
           label={`${t('pwa.profile.learningAnalyticsConsentTitle')}: ${
             dataUse.learningAnalyticsConsent

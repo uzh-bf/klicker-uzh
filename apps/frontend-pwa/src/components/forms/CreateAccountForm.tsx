@@ -3,7 +3,14 @@ import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
-import { Button, Checkbox, FormikTextField, H3 } from '@uzh-bf/design-system'
+import {
+  Button,
+  Checkbox,
+  FormikSwitchField,
+  FormikTextField,
+  H3,
+  Prose,
+} from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
@@ -51,6 +58,19 @@ function CreateAccountForm({
       .string()
       .required()
       .min(8, t('pwa.profile.passwordMinLength', { length: '8' })),
+    passwordRepetition: yup.string().when('password', {
+      is: (val: string) => val && val.length > 0,
+      then: (schema) =>
+        schema
+          .required(t('pwa.profile.identicalPasswords'))
+          .min(8, t('pwa.profile.passwordMinLength', { length: '8' }))
+          .oneOf(
+            [yup.ref('password'), 'null'],
+            t('pwa.profile.identicalPasswords')
+          ),
+      otherwise: (schema) =>
+        schema.oneOf([''], t('pwa.profile.identicalPasswords')),
+    }),
     researchConsent: yup
       .boolean()
       .required(t('pwa.createAccount.signup.dataUseChoiceRequired')),
@@ -74,6 +94,7 @@ function CreateAccountForm({
         email: initialEmail?.toLowerCase() ?? '',
         username: initialUsername,
         password: '',
+        passwordRepetition: '',
         isProfilePublic: true,
         researchConsent: true,
         learningAnalyticsConsent: undefined as boolean | undefined,
@@ -135,6 +156,38 @@ function CreateAccountForm({
                   type="password"
                   data={{ cy: 'password-field' }}
                 />
+                <FormikTextField
+                  required
+                  name="passwordRepetition"
+                  label={t('shared.generic.passwordRepetition')}
+                  className={{
+                    label: 'mt-0 text-black',
+                  }}
+                  type="password"
+                  data={{ cy: 'password-repetition-field' }}
+                />
+
+                <div>
+                  <div className="font-bold">
+                    {t('pwa.profile.publicProfile')}
+                  </div>
+                  <div className="space-between flex flex-row gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                      <FormikSwitchField
+                        name="isProfilePublic"
+                        data={{ cy: 'toggle-profile-public-setting' }}
+                      />
+                      {values.isProfilePublic
+                        ? t('shared.generic.yes')
+                        : t('shared.generic.no')}
+                    </div>
+                    <div className="flex-1">
+                      <Prose className={{ root: 'prose-sm' }}>
+                        {t('pwa.profile.isProfilePublic')}
+                      </Prose>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="mt-4">
                 <ParticipantDataDisclosure isAssessment={isAssessment} />

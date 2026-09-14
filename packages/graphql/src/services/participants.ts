@@ -13,8 +13,6 @@ import {
   participantDataUseSelect,
 } from '../lib/learningAnalytics.js'
 
-import { updateParticipantDataUseChoice } from './participantAccountDataUse.js'
-
 dayjs.extend(isoWeek)
 
 export async function getSelf(
@@ -259,12 +257,6 @@ export async function getParticipation(
   return participation
 }
 
-type ParticipantConsentArgs = {
-  consent: boolean
-  expectedRevision?: number | null
-  disclosureVersion?: string | null
-}
-
 export async function getParticipantDataUse(
   ctx: ContextWithUser
 ): Promise<ParticipantDataUseFields | null> {
@@ -274,22 +266,6 @@ export async function getParticipantDataUse(
     where: { id: ctx.user.sub },
     select: participantDataUseSelect,
   })
-}
-
-export async function setResearchConsent(
-  input: ParticipantConsentArgs,
-  ctx: ContextWithUser
-): Promise<ParticipantDataUseFields | null> {
-  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
-  return updateParticipantDataUseChoice('research', input, ctx)
-}
-
-export async function setLearningAnalyticsConsent(
-  input: ParticipantConsentArgs,
-  ctx: ContextWithUser
-): Promise<ParticipantDataUseFields | null> {
-  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
-  return updateParticipantDataUseChoice('analytics', input, ctx)
 }
 
 // interface RegisterParticipantFromLTIArgs {

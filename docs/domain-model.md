@@ -32,8 +32,11 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 Research and learning-analytics choices are participant-global current state on
 `Participant`, not course-scoped history. `researchConsent` and
 `learningAnalyticsConsent` both default to `false`; their choice timestamps and
-disclosure-version fields describe the current decision. This foundation has no
-append-only choice ledger.
+disclosure-version fields describe the current decision. Every completion and
+choice change is also appended to `ParticipantDataUseEvent`, an audit row per
+participant and revision; an immutability trigger blocks updates, deletes, and
+truncation, and analytics withdrawal requests reference the revision that
+recorded them.
 
 `researchConsent = true` allows a future research export to include all stored
 canonical data for that participant; `false` excludes all of it. Returning to

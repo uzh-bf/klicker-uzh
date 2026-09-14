@@ -139,6 +139,9 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       await page.getByTestId('email-field').fill(`${username}@test.uzh.ch`)
       await page.getByTestId('username-field-account-creation').fill(username)
       await page.getByTestId('password-field').fill('signupPassword123!')
+      await page
+        .getByTestId('password-repetition-field')
+        .fill('signupPassword123!')
 
       const submit = page.getByTestId('create-profile-button')
       // The learning-analytics choice starts unanswered and the acknowledgement

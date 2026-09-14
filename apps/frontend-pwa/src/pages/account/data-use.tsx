@@ -9,6 +9,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/dist/participantAccountDataUse'
+import { isDataUseConflict } from '@lib/participantDataUseConflicts'
 import { participantDataUseReturn } from '@lib/participantDataUseReturn'
 import {
   Button,
@@ -37,7 +39,13 @@ function AccountDataUse() {
   const [analytics, setAnalytics] = useState<boolean>()
   const [acknowledged, setAcknowledged] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [conflict, setConflict] = useState(false)
   const state = data?.selfAccountDataUse
+  // The disclosure text is bundled with this frontend build; a server-side
+  // newer required version means the displayed content cannot record choices.
+  const versionMismatch =
+    state != null &&
+    state.currentDisclosureVersion !== PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
   const { data: selfData } = useQuery(SelfDocument, { skip: !isAssessment })
   const identity =
     selfData?.self?.email ??
@@ -53,14 +61,22 @@ function AccountDataUse() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
-    if (!state || !acknowledged || analyticsChoice === undefined || saving)
+    if (
+      !state ||
+      !acknowledged ||
+      analyticsChoice === undefined ||
+      saving ||
+      conflict ||
+      versionMismatch
+    ) {
       return
+    }
     setFailed(false)
     try {
       const result = await complete({
         variables: {
           expectedRevision: state.dataUseRevision,
-          disclosureVersion: state.currentDisclosureVersion,
+          disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
           researchConsent: researchChoice,
           learningAnalyticsConsent: analyticsChoice,
           acknowledged,
@@ -73,7 +89,17 @@ function AccountDataUse() {
       await router.replace(
         participantDataUseReturn(saved ?? '/', window.location.origin)
       )
-    } catch {
+    } catch (error) {
+      if (isDataUseConflict(error)) {
+        // The persisted state changed elsewhere; reset to the reloaded
+        // choices so a plain retry cannot overwrite the newer decision.
+        setConflict(true)
+        setAcknowledged(false)
+        setResearch(undefined)
+        setAnalytics(undefined)
+        await refetch()
+        return
+      }
       setFailed(true)
       await refetch()
     }
@@ -145,6 +171,11 @@ function AccountDataUse() {
                 {t('shared.generic.systemError')}
               </UserNotification>
             )}
+            {(conflict || versionMismatch) && (
+              <UserNotification type="error">
+                {t('pwa.profile.dataUseConflict')}
+              </UserNotification>
+            )}
             <div className="flex flex-col items-start justify-between gap-2 rounded bg-slate-100 p-4 md:flex-row md:items-center md:gap-4">
               <Checkbox
                 checked={acknowledged}
@@ -166,7 +197,12 @@ function AccountDataUse() {
                 primary
                 type="submit"
                 loading={saving}
-                disabled={!acknowledged || analyticsChoice === undefined}
+                disabled={
+                  !acknowledged ||
+                  analyticsChoice === undefined ||
+                  conflict ||
+                  versionMismatch
+                }
                 className={{ root: 'w-full flex-none md:w-max' }}
                 data={{ cy: 'account-data-use-submit' }}
               >

@@ -60,7 +60,7 @@ function CreateAccount({
               email: values.email.trim().toLowerCase(),
               username: values.username.trim(),
               password: values.password.trim(),
-              isProfilePublic: true,
+              isProfilePublic: values.isProfilePublic,
               signedLtiData,
               dataUse: {
                 disclosureVersion: dataUseDisclosureVersion,
