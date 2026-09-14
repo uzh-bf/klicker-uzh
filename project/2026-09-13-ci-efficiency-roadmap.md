@@ -819,3 +819,19 @@ required from the user.
   re-selects, synchronize and reopened still select, empty push diff still
   fails open). Scope note: image-workflow `edited` re-runs are governed by the
   B3 consolidation package and remain blocked on #5924.
+- 2026-09-14 build-cache scope slice (branch `rs/playwright-build-cache-scope`):
+  draft PR #5987 at head `b9a906ae73` fixes the (e) cache-compatibility
+  defect where the build fingerprint mixed build inputs with orchestration
+  and telemetry files. The four telemetry/scheduling files
+  (`playwright-telemetry.cjs`, `turbo-telemetry.cjs`,
+  `public-pr-playwright-shards.yml`, `test-playwright.yml`) previously
+  invalidated every cached build artifact on both routes when edited, even
+  though build outputs were identical. The fingerprint now hashes only
+  build-relevant files; `CACHE_SCHEMA` bumps 2 → 3 so artifacts reseed
+  under the corrected contract, and trusted run-reuse still binds the
+  orchestration files through the control revision. Shard jobs consume only
+  `dependency-fingerprint` and build artifacts, so their key scope is
+  unchanged. Evidence: 5/5 cache-contract tests including a new invariance
+  case (telemetry edits preserve, build-relevant edits invalidate), 124/124
+  across the six check.yml gate suites, Biome clean. Activation evidence
+  (warm artifact reuse on a post-merge PR) is a later live proof.
