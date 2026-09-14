@@ -481,6 +481,13 @@ test.describe('Knowledge graph suggestion request lifecycle', () => {
     )
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph?embed=true`)
+    // A fresh context always meets the chatbot's disclaimer gate; accept it
+    // like openSuggestionGraph does, or the workspace never loads the graph.
+    const accept = page.getByTestId('chat-disclaimer-accept')
+    const search = page.getByTestId('knowledge-graph-search')
+    await expect(search.or(accept)).toBeVisible()
+    if (await accept.isVisible()) await accept.click()
+    await expect(search).toBeVisible()
     const input = page.getByTestId('chat-composer-input')
     await expect(input).toBeVisible()
     const sent: string[] = []
