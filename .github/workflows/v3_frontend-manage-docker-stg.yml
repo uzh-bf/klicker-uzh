@@ -24,6 +24,7 @@ on:
       - 'packages/i18n/**'
       - 'packages/kb-management/**'
       - 'packages/knowledge-graph/**'
+      - 'packages/logging/**'
       - 'packages/markdown/**'
       - 'packages/next-config/**'
       - 'packages/prisma/**'

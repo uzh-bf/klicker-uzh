@@ -16,6 +16,7 @@ on:
       - 'packages/graphql/**'
       - 'packages/hatchet/**'
       - 'packages/knowledge-graph/**'
+      - 'packages/logging/**'
       - 'packages/prisma/**'
       - 'packages/types/**'
       - 'packages/util/**'
