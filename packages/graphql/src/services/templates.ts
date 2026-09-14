@@ -1308,10 +1308,7 @@ export async function editActivityTemplate(
     // TODO: once activity overview has been unified (shared types), update the return type for efficient cache updates
     return true
   } catch (error) {
-    ctx.log.error(
-      { event: 'activity-template.rename.failed' },
-      'Activity template rename failed'
-    )
+    console.log(error)
     return false
   }
 }
@@ -1670,12 +1667,9 @@ export async function createLiveQuizFromTemplate(
             })
 
             if (!existingElement) {
-              ctx.log.warn(
-                {
-                  event: 'activity-template.instance.failed',
-                  reason: 'existing_element_unavailable',
-                },
-                'Activity template instantiation failed'
+              console.log(
+                'Failed to find element with id',
+                element.existingElementId
               )
               throw new Error(
                 'Existing element does not exist or user does not have access to it'
@@ -1830,12 +1824,9 @@ export async function createLiveQuizFromTemplate(
 
             // throw an error if the element could not be created
             if (!createdElement) {
-              ctx.log.error(
-                {
-                  event: 'activity-template.instance.failed',
-                  reason: 'element_creation_failed',
-                },
-                'Activity template instantiation failed'
+              console.log(
+                'Failed to create new element from form inputs',
+                values
               )
               throw new Error('Failed to create new element')
             }
@@ -1858,13 +1849,7 @@ export async function createLiveQuizFromTemplate(
             })
 
             if (!newElement) {
-              ctx.log.error(
-                {
-                  event: 'activity-template.instance.failed',
-                  reason: 'created_element_unavailable',
-                },
-                'Activity template instantiation failed'
-              )
+              console.log('Failed to fetch newly created element')
               throw new Error('Failed to fetch newly created element')
             }
 
