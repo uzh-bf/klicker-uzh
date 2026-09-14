@@ -280,6 +280,13 @@ jobs:
     permissions:
       contents: read
       packages: read
+    env:
+      # Both arm images publish a single-platform index whose only child is
+      # linux/arm64. Trivy derives an unspecified --platform from the scanner
+      # it happens to run as, which selected linux/amd64 on this runner and
+      # failed with "no child with platform linux/amd64 in index". The platform
+      # is part of the scan contract the receipt records below.
+      TRIVY_PLATFORM: linux/arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -369,6 +376,9 @@ jobs:
     permissions:
       contents: read
       packages: read
+    env:
+      # See scan-arm: the migrator image is arm64-only as well.
+      TRIVY_PLATFORM: linux/arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
