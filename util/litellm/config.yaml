@@ -152,6 +152,15 @@ model_list:
       api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
       timeout: 60
 
+  # Isolated course-image demo alias for Azure's OpenAI-compatible v1 endpoint.
+  # Callers opt in explicitly; the OpenRouter embedding alias above is unchanged.
+  - model_name: 'course-image-embedding'
+    litellm_params:
+      model: 'openai/text-embedding-3-small'
+      api_base: 'os.environ/UPSTREAM_OPENAI_BASE_URL'
+      api_key: 'os.environ/UPSTREAM_OPENAI_API_KEY'
+      timeout: 60
+
 request_timeout: 600
 
 router_settings:

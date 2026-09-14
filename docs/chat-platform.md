@@ -968,16 +968,38 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Streaming failures need both client and server evidence**: a client-side generic error bubble does not distinguish a provider failure from a response-pipe failure. For staging smoke tests, correlate the browser request time with the chat pod logs and check for `failed to pipe response`, `stream.error`, and `stream.finish` before changing ingress timeouts or model routing.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
-## Explicit course-image display (experimental)
+## Contextual course-image display (experimental)
 
 Image selection is a tool result, not a Markdown URL. When
 `CHAT_COURSE_IMAGE_STORE_PATH` is configured and the mode has a valid KB scope,
 the chat route wraps course-search tools with a request-local candidate registry
 and adds `show_course_image`. Only validated, manifest-bound `visual_assets`
 from a successful search in that request and KB scope can be selected. The prompt
-limits selection to explicit student requests. This is model instruction, not a
-language-specific keyword authorization rule; automatic image suggestions and
-model inspection of pixels remain outside this slice.
+allows explicit requests and context-based selection when retrieved text clearly
+connects a figure to the question. The tool requires a short selection reason,
+persisted alongside the descriptor. Simple factual questions, weak associations,
+and text-only requests should receive no image. This is model judgment, not a
+deterministic relevance gate. The model does not inspect the image pixels. Image tools do not force retrieval; candidate-bearing searches require the decision described below. Existing mode-specific
+search policy remains in charge (including Quizzer's initial search). When a course-search tool is available, the first model step now searches by
+default. A small exact EN/DE acknowledgment/greeting allowlist (after case,
+whitespace and trailing-punctuation normalization) skips this requirement.
+Short or uncertain follow-ups such as "Why?" still search, as do greetings
+followed by questions. Explicit instructions not to consult course material
+are also exempt. Quizzer retains its existing initial-search requirement.
+Only the latest user message controls this rule; later steps remain automatic except for the conditional image decision below. Chatbots without a search tool retain their ordinary
+behavior unless Quizzer or an explicit grounding request requires the tool,
+in which case the existing required-MCP error applies. This is a deterministic
+policy, not a relevance classifier, and can retrieve for off-topic messages.
+The wrapper
+returns the original search result without filtering or reordering passages.
+The model may select a supported figure, explicitly skip with a null asset_id,
+or answer without calling the image tool when no usable candidates were returned.
+When a completed search returns validated, in-scope image candidates, the
+request-local wrapper marks a decision pending. The next model step must call
+`show_course_image` with an asset or null and a reason. Any executed decision
+clears the pending flag; a later search with candidates can request a new decision.
+Empty, invalid, and out-of-scope results do not trigger it. This requires a decision,
+not an image, and does not change retrieval ranking or guarantee selection quality.
 
 Selected descriptors are persisted in normal assistant tool-call content. The
 image route under the owned thread/message checks participant authentication,
@@ -1037,6 +1059,17 @@ Learning-cycle queries still use the synthetic fixture; other queries use the
 existing local component adapter. This is demo dispatch, not general multi-document
 ranking. The LLM selects an image from the returned references; the local adapter
 still uses BM25/page filtering rather than Milvus or an embedding model.
+
+The private demo can also run the existing ingestion `embed_chunks` and
+Milvus writer followed by doc-query `setup_pipeline`/`run_query`. That runtime
+uses a separate local collection and preserves visual metadata. Chat applies
+the default-search and conditional image-decision policy described above. The opt-in `course-image-embedding` LiteLLM alias sends
+the plain embedding deployment name to an OpenAI-compatible upstream (used with
+Azure v1 here); it does not change the OpenRouter alias. BFI full-text embedding
+requires its own destination/payload authorization. The verified local configuration
+uses hybrid top 100 and the existing GPT-4.1 LLM reranker top 20; it is not proof
+of parity with a deployed tenant configuration. Reranker fallbacks are rejected
+by the demo runner rather than reported as successful full retrieval.
 
 The guarded `apps/chat/scripts/prepare-course-image-demo.mjs` is dry-run by default;
 `DRY_RUN=false` enables AI access only for the known seeded Benibot owner after
