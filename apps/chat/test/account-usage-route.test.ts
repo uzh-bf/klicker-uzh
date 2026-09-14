@@ -196,12 +196,14 @@ function chatbot(overrides: Record<string, unknown> = {}) {
 
 function createRequest({
   selectedModel = 'gpt-4.1',
+  content = 'Explain this.',
   selectedMode = 'tutor',
   assistantMessageId = 'assistant-1',
   images = [],
   threadId = 'thread-1',
   allowRegeneration = false,
 }: {
+  content?: string
   selectedModel?: string
   selectedMode?: string
   assistantMessageId?: string
@@ -213,7 +215,7 @@ function createRequest({
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      messages: [{ id: 'message-1', role: 'user', content: 'Explain this.' }],
+      messages: [{ id: 'message-1', role: 'user', content }],
       threadId,
       selectedModel,
       selectedMode,
@@ -516,6 +518,73 @@ describe('account usage chat route', () => {
       toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
     })
     expect(prepareStep({ stepNumber: 1 })).toEqual({})
+  })
+
+  test('explicit course grounding searches once without requiring image selection', async () => {
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({ KB_doc_query: {} })
+    const response = await POST(
+      createRequest({
+        content: 'Please ground that explanation in the course material.',
+      }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+    expect(response.status).toBe(200)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+    }) => unknown
+    expect(prepareStep({ stepNumber: 0 })).toEqual({
+      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+    })
+    expect(prepareStep({ stepNumber: 1 })).toEqual({})
+    expect(mocks.streamConfig?.toolChoice).toBe('auto')
+  })
+
+  test('explicit grounding fails visibly when the search tool is unavailable', async () => {
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+    const response = await POST(
+      createRequest({ content: 'Please use the course material.' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+    expect(response.status).toBe(503)
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    'Where does a company get its money?',
+    'Why?',
+    'Thanks, but how does that work?',
+  ])('defaults to first-step search for %s', async (content) => {
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      KB_doc_query: {},
+      show_course_image: {},
+    })
+    const response = await POST(createRequest({ content }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+    const prepareStep = mocks.streamConfig?.prepareStep as (input: {
+      stepNumber: number
+    }) => unknown
+    expect(prepareStep({ stepNumber: 0 })).toEqual({
+      toolChoice: { type: 'tool', toolName: 'KB_doc_query' },
+    })
+    expect(prepareStep({ stepNumber: 1 })).toEqual({})
+  })
+
+  test('standalone greetings do not require course search', async () => {
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      KB_doc_query: {},
+      show_course_image: {},
+    })
+    const response = await POST(
+      createRequest({ selectedMode: 'tutor', content: 'Hello!' }),
+      {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      }
+    )
+    expect(response.status).toBe(200)
+    expect(mocks.streamConfig?.prepareStep).toBeUndefined()
+    expect(mocks.streamConfig?.toolChoice).toBe('auto')
   })
 
   test('routes zero-credit ADVANCED usage to Luna BASE', async () => {

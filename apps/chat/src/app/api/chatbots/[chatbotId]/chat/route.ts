@@ -25,6 +25,10 @@ import {
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import {
+  requestsCourseGrounding,
+  shouldSearchCourseMaterial,
+} from '@/src/lib/server/courseGroundingRequest'
+import {
   courseImageStoreConfigured,
   readCourseImage,
 } from '@/src/lib/server/courseImageStore'
@@ -1107,8 +1111,21 @@ export async function POST(
         ? toolNames.find(isDocQueryToolName)
         : undefined
 
-    if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
-      await failOrDiscardUnstartedClaim('mcp.quizzer')
+    const latestUserText =
+      messages.findLast((message) => message.role === 'user')?.content ?? ''
+    const explicitCourseGrounding = requestsCourseGrounding(latestUserText)
+    const availableCourseSearch = toolNames.find(isDocQueryToolName)
+    const initialCourseSearchTool =
+      quizzerDocQueryToolName ??
+      (shouldSearchCourseMaterial(latestUserText)
+        ? availableCourseSearch
+        : undefined)
+
+    if (
+      (selectedMode === 'quizzer' || explicitCourseGrounding) &&
+      !initialCourseSearchTool
+    ) {
+      await failOrDiscardUnstartedClaim('mcp.course-grounding')
       return NextResponse.json(
         {
           error: 'Required MCP tool unavailable',
@@ -1567,13 +1584,13 @@ export async function POST(
         tools: promptCacheRequest?.tools ?? mcpTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        prepareStep: quizzerDocQueryToolName
+        prepareStep: initialCourseSearchTool
           ? ({ stepNumber }) =>
               stepNumber === 0
                 ? {
                     toolChoice: {
                       type: 'tool' as const,
-                      toolName: quizzerDocQueryToolName,
+                      toolName: initialCourseSearchTool,
                     },
                   }
                 : {}
