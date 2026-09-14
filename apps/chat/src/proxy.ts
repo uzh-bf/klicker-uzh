@@ -126,7 +126,8 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
 function passThroughWithScopedToken(
   request: NextRequest,
   scopedToken: string | null,
-  requestContext: { requestId: string; correlationId: string }
+  requestContext: { requestId: string; correlationId: string },
+  queryLocale: { locale: string; path: string } | null = null
 ) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set(CHAT_SCOPED_TOKEN_HEADER, scopedToken ?? '')
@@ -135,6 +136,13 @@ function passThroughWithScopedToken(
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   response.headers.set('x-request-id', requestContext.requestId)
   response.headers.set('x-correlation-id', requestContext.correlationId)
+  if (queryLocale) {
+    response.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale.locale,
+      path: queryLocale.path,
+    })
+  }
   return applyFrameAncestorsCSP(response)
 }
 
@@ -161,25 +169,35 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request: { headers } })
   }
 
-  // The embedded Manage assistant receives its locale as a query parameter,
-  // but Chat's root layout resolves the active locale from the
-  // NEXT_LOCALE cookie. Promote only a narrowly validated locale so iframe
-  // requests render in the same language without broadening the cookie scope.
-  if (pathname === '/manage') {
-    const requestedLocale = request.nextUrl.searchParams.get('locale')
-    if (hasLocale(routing.locales, requestedLocale)) {
-      request.cookies.set({
-        name: 'NEXT_LOCALE',
-        value: requestedLocale,
-      })
-      const response = nextResponse()
-      response.cookies.set({
-        name: 'NEXT_LOCALE',
-        value: requestedLocale,
-        path: '/manage',
-      })
-      return respond(response)
-    }
+  // The embedded Manage assistant and the eLearning handoff receive their locale
+  // as a query parameter, but Chat's root layout resolves the active locale from
+  // the NEXT_LOCALE cookie. That cookie cannot be stored in a cookie-blocked
+  // iframe, so promote a narrowly validated query locale onto the request
+  // itself; the effective language then does not depend on cookie acceptance.
+  const requestedLocale = request.nextUrl.searchParams.get('locale')
+  const queryLocale = hasLocale(routing.locales, requestedLocale)
+    ? requestedLocale
+    : null
+
+  if (pathname === '/manage' && queryLocale) {
+    request.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale,
+    })
+    const response = nextResponse()
+    response.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale,
+      path: '/manage',
+    })
+    return respond(response)
+  }
+
+  if (queryLocale) {
+    request.cookies.set({
+      name: 'NEXT_LOCALE',
+      value: queryLocale,
+    })
   }
 
   if (
@@ -194,7 +212,11 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/auth/lti') ||
-    pathname.startsWith('/auth/pwa-embed')
+    pathname.startsWith('/auth/pwa-embed') ||
+    // The eLearning handoff is an unauthenticated entrypoint: the route
+    // verifies its own signed grant, and the arriving iframe carries no chat
+    // session yet, so the identity gate must not divert it to /noLogin.
+    pathname.startsWith('/auth/elearning')
   ) {
     return respond(nextResponse())
   }
@@ -203,6 +225,12 @@ export async function proxy(request: NextRequest) {
   if (pathSegments.length === 0) {
     return respond(nextResponse())
   }
+
+  // Persist the promoted language for this conversation's own path so later
+  // navigations inside the embedded chat keep it even without the query.
+  const promotedLocale = queryLocale
+    ? { locale: queryLocale, path: `/${pathSegments[0]}` }
+    : null
 
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
   // future "switch to anonymous" flow only needs to set this cookie.
@@ -233,7 +261,8 @@ export async function proxy(request: NextRequest) {
       return passThroughWithScopedToken(
         request,
         chatGuestToken === guestQueryToken ? guestQueryToken : null,
-        requestContext
+        requestContext,
+        promotedLocale
       )
     }
     // Invalid transport → try the next candidate.
@@ -260,7 +289,8 @@ export async function proxy(request: NextRequest) {
       return passThroughWithScopedToken(
         request,
         pwaEmbedToken === pwaEmbedQueryToken ? pwaEmbedQueryToken : null,
-        requestContext
+        requestContext,
+        promotedLocale
       )
     }
   }
@@ -291,7 +321,12 @@ export async function proxy(request: NextRequest) {
     return respond(redirectToNoLogin(request, hadGuestToken))
   }
 
-  return passThroughWithScopedToken(request, null, requestContext)
+  return passThroughWithScopedToken(
+    request,
+    null,
+    requestContext,
+    promotedLocale
+  )
 }
 
 export const config = {

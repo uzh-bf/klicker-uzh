@@ -49,6 +49,9 @@ async function handleGET(
         modelId: msg.modelId ?? null,
         reasoningEffort: msg.reasoningEffort ?? null,
         reasoningContent: msg.reasoningContent ?? null,
+        // Persisted verified learning-context snapshot; null for turns
+        // without eLearning provenance.
+        learningContext: msg.learningContext ?? null,
         rating: msg.rating ?? null,
         creditsUsed:
           msg.creditsUsed != null

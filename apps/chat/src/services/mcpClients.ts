@@ -17,6 +17,7 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { getRouteLogger } from '@/src/lib/server/requestLogging'
+import { sanitizeDocQueryResult } from './docQueryResult'
 import {
   assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
@@ -68,6 +69,31 @@ export interface MCPRequestOptions {
 export interface MCPToolsHandle {
   tools: Record<string, any>
   close: () => Promise<void>
+}
+
+const MCP_AUTHORIZATION_STATUS_CODES = new Set([401, 403])
+
+/**
+ * The MCP SDK surfaces an HTTP credentials rejection as an `UnauthorizedError`,
+ * a streamable-HTTP error carrying a numeric `code`, or a client error with
+ * `statusCode`. Those are identity or tenant boundaries rather than transient
+ * outages, so a required-tool caller must keep them fail-closed.
+ */
+function isMcpAuthorizationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ((error as { name?: unknown }).name === 'UnauthorizedError') return true
+
+  for (const key of ['statusCode', 'code'] as const) {
+    const value = (error as Record<string, unknown>)[key]
+    if (
+      typeof value === 'number' &&
+      MCP_AUTHORIZATION_STATUS_CODES.has(value)
+    ) {
+      return true
+    }
+  }
+
+  return false
 }
 
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
@@ -496,7 +522,19 @@ async function loadServerTools(
           modelToolName,
           usedNames
         )
-        filteredTools[namespacedName] = toolDefinition
+        filteredTools[namespacedName] =
+          (toolName === 'doc_query' || modelToolName === 'doc_query') &&
+          typeof toolDefinition.execute === 'function'
+            ? {
+                ...toolDefinition,
+                execute: async (
+                  ...args: Parameters<
+                    NonNullable<typeof toolDefinition.execute>
+                  >
+                ) =>
+                  sanitizeDocQueryResult(await toolDefinition.execute(...args)),
+              }
+            : toolDefinition
         usedNames.add(namespacedName)
       }
     })
@@ -512,10 +550,7 @@ async function loadServerTools(
     return { tools: filteredTools, close }
   } catch (error) {
     await close()
-    if (
-      error instanceof RequiredMCPUnavailableError ||
-      runtimePolicy.required
-    ) {
+    if (error instanceof RequiredMCPUnavailableError) {
       log.error(
         {
           event: 'chat.mcp.tools.load_failed',
@@ -524,7 +559,25 @@ async function loadServerTools(
         },
         'Required MCP tools unavailable'
       )
-      throw new RequiredMCPUnavailableError()
+      // Preserve a scope violation raised while resolving the request so the
+      // caller cannot degrade an isolation failure into an answer.
+      throw error
+    }
+    if (runtimePolicy.required) {
+      log.error(
+        {
+          event: 'chat.mcp.tools.load_failed',
+          outcome: 'required_unavailable',
+          err: toSafeError('Required MCP tools unavailable'),
+        },
+        'Required MCP tools unavailable'
+      )
+      // A credentials rejection from the endpoint is an identity or tenant
+      // boundary, so it stays fail-closed like a scope violation; only a
+      // genuine outage may fall through to a degraded answer.
+      throw new RequiredMCPUnavailableError(
+        isMcpAuthorizationError(error) ? 'scope_violation' : 'unavailable'
+      )
     }
 
     log.warn(
@@ -634,64 +687,4 @@ export async function getAggregatedMCPTools(
   )
 
   return { tools: aggregatedTools, close }
-}
-
-/**
- * Legacy function for backward compatibility with environment variables
- * @deprecated Use getAggregatedMCPTools with database configuration instead
- */
-export async function getMCPTools(
-  chatbotId: string,
-  participantId: string,
-  authMode: AuthMode,
-  log: AppLogger = getRouteLogger()
-): Promise<MCPToolsHandle> {
-  log.info(
-    { event: 'chat.mcp.configuration.selected', outcome: 'legacy_environment' },
-    'Selected legacy MCP configuration'
-  )
-
-  const mcpKey = process.env.MCP_KEY
-  const mcpUrl = process.env.MCP_URL
-
-  if (!mcpUrl) {
-    log.info(
-      { event: 'chat.mcp.load.completed', outcome: 'not_configured' },
-      'No MCP server configured'
-    )
-    return { tools: {}, close: async () => {} }
-  }
-
-  // Create a legacy server configuration
-  const legacyServer: MCPServerConfig = {
-    id: 'legacy-env-server',
-    name: 'Legacy_MCP',
-    url: mcpUrl,
-    authType: mcpKey ? 'bearer' : 'none',
-    authSecret: mcpKey,
-  }
-
-  const legacyConfig: MCPConfigSettings = {
-    allowedTools: undefined, // No filtering for legacy mode
-    priority: 0,
-  }
-
-  try {
-    const serverHandle = await loadServerTools(
-      { server: legacyServer, config: legacyConfig },
-      { chatbotId, participantId, authMode },
-      {},
-      log
-    )
-    return serverHandle
-  } catch (error) {
-    log.error(
-      {
-        event: 'chat.mcp.load.failed',
-        err: toSafeError('MCP tool loading failed'),
-      },
-      'Failed to load MCP tools'
-    )
-    return { tools: {}, close: async () => {} }
-  }
 }

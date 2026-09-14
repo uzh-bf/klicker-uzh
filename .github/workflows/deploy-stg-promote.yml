@@ -32,6 +32,7 @@ on:
       - 'Build Docker image for olat-api (stg)'
       - 'Build Docker image for response-api (stg)'
     types: [completed]
+    branches: ['v3', 'v3*']
   workflow_dispatch:
     inputs:
       sha:
@@ -72,7 +73,8 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.conclusion == 'success')
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == vars.STG_SOURCE_BRANCH)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

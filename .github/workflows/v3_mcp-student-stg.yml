@@ -6,7 +6,7 @@ on:
       - 'v3'
       - 'v3*'
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
       - 'apps/mcp-student/**'
       - 'packages/**'
@@ -28,6 +28,9 @@ env:
 jobs:
   build-arm:
     runs-on: ubuntu-24.04-arm
+    # draft pull requests defer their image builds; marking the
+    # pull request ready re-runs this build on the unchanged head
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write
@@ -81,6 +84,9 @@ jobs:
 
   build-amd:
     runs-on: ubuntu-latest
+    # draft pull requests defer their image builds; marking the
+    # pull request ready re-runs this build on the unchanged head
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write

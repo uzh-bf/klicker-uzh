@@ -115,6 +115,18 @@ the expected EXPERT_df_fineco_expert binding is already reachable through an
 authorized synthetic environment with a finite response bound. Do not replace
 that gate with the local canary or establish a tunnel from this workflow.
 
+eLearning-origin cases extend the same target. Set
+`KLICKER_EVAL_ELEARNING_HANDOFF_SECRET` to the shared eLearning handoff secret
+of the local stack; the target then requires it as soon as any
+`source: elearning` case is present, signs the short-lived handoff grant,
+launches `/auth/elearning`, and tags the thread `origin: elearning` so the chat
+route answers from the persisted page snapshot. The elearning fixture fields
+carry learner and course binding identity only; questions and judged criteria
+live in the fixture body as with FineCo. Point `--gt-dir` at a run directory
+filled from `data/ground_truth/elearning_examples/`; that directory documents
+the four grounding archetypes and the values to replace. Never point a run at
+the template directory itself: the placeholders are not a runnable case.
+
 After any target or judge run, stop the exact worktree with
 devrouter stop /absolute/path/to/klicker-uzh/trees/WORKSPACE and verify the
 provider is stopped and no route remains. Keep generated QA, receipts, and
