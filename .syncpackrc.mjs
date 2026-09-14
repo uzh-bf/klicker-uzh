@@ -43,6 +43,15 @@ export default {
       packages: ['@klicker-uzh/monorepo'],
     },
     {
+      // The unqualified vitest overrides rewrite the lockfile specifiers to
+      // the exact pin, and verifyDepsBeforeRun compares spec strings, so the
+      // manifests must carry the exact release too (see #5924).
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['vitest', '@vitest/coverage-v8'],
+      packages: ['**'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],
