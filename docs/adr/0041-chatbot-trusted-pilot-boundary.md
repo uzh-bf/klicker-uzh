@@ -24,6 +24,12 @@ invariants.
 
 ## Decision
 
+- `User.aiFeaturesEnabled`, default `false`, is the sole account-level approval
+  gate for chatbot publication and model usage. Chat admission and publication
+  paths check it before provider work or publication, even when account usage
+  enforcement is disabled. The beta preference and the server-side `ai-beta`
+  rollout control eligibility and authoring rollout separately; neither grants
+  this approval. Per-chatbot publication review remains unchanged.
 - Account usage enforcement remains **default-off**. Lifecycle attempt
   tracking uses an independent default-off switch. The initial R1 rollout writes
   a hidden `IN_PROGRESS` marker before provider work, while supported
@@ -47,10 +53,16 @@ invariants.
   bounded contract. Every entry has an integer `maxOutputTokens` value from 1
   through 4096, supplied-invalid JSON is rejected rather than replaced by a
   warning fallback, and model-class/fallback invariants remain fail-closed.
-- New chatbots start with the safe pilot policy: model selection disabled,
-  GPT-5.6 Luna as the only allowed base model and fallback, low and medium
-  reasoning, the standard prompt override unset, and no MCP relation. Existing
-  chatbot rows are not migrated or normalized by this policy.
+- New chatbots start with the safe pilot policy: model selection disabled and
+  exactly one allowed `auto` model. The registry must provide exactly one
+  non-reasoning, non-fallback `ADVANCED` Auto entry before creation; no
+  reasoning configuration is stored. Existing chatbot rows are not migrated or
+  normalized by this policy. They remain readable through the current
+  `CHAT_PRIMARY_MODEL_ID`-aware automatic resolver, with retired-only lists
+  retaining the Luna fallback. The strict owner-only
+  `updateChatbotModelPolicy` mutation canonicalizes fixed and participant-choice
+  rows, while `updateChatbotModelSettings` remains available for rolling
+  clients.
 - Manage renders a localized lifecycle status for every chatbot. A participant
   link is rendered only for `PUBLISHED`; every other state explains that the
   link becomes available after publication. Published model-policy edits stay
@@ -59,6 +71,8 @@ invariants.
   provider hard caps, secret or configuration writes, enforcement activation,
   deployment, and live smoke testing are separate tasks requiring explicit
   authority and their own evidence.
+- Token provisioning and validation are not defined by this ADR; v3-ai owns
+  that workflow.
 - R2 lifecycle attempt tracking may be enabled only after all Chat pods run
   R1-compatible, complete-only readers. R1 then becomes the application
   rollback floor because R2 may leave `IN_PROGRESS` or `FAILED` rows. A

@@ -1,4 +1,5 @@
 const crypto = require('node:crypto')
+const { isEligibleBaseBranch } = require('./final-ai-review-shared')
 const MAX_COMPARE_FILES = 300
 const MAX_STACK_HISTORY = 1_000
 const STACK_PAGE_SIZE = 100
@@ -260,10 +261,12 @@ async function resolveNativeStackMembership({
   }
   if (members[0]) {
     if (
-      members[0].pull.base?.ref !== context.payload.repository.default_branch ||
+      !isEligibleBaseBranch({ baseRef: members[0].pull.base?.ref, context }) ||
       members[0].pull.base?.repo?.full_name !== repository
     ) {
-      reasons.push('stack root does not target the default branch')
+      reasons.push(
+        'stack root does not target the default branch or a consolidation branch'
+      )
     }
   }
   for (let index = 1; index < members.length; index += 1) {

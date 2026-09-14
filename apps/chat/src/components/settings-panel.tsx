@@ -1,16 +1,15 @@
 'use client'
 
+import { Select } from '@uzh-bf/design-system'
+import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import { type ModelID } from '../lib/config/models'
+import type { ModelID } from '../lib/config/models'
 import {
   formatReasoningEffort,
   type ReasoningEffort,
 } from '../lib/config/reasoning'
 import { useSettingsStore } from '../stores/settingsStore'
-
-import { Select } from '@uzh-bf/design-system'
-import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react'
-import { useTranslations } from 'next-intl'
 
 /**
  * Ids that tie each visible label to the control it names. The design system
@@ -139,9 +138,13 @@ export function SettingsPanel() {
                       ?.name || selectedModel}
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    {t('chat.settingsPanel.autoSelectionInfo')}{' '}
+                    {selectedModel === 'auto'
+                      ? t('chat.settingsPanel.autoSelectionInfo')
+                      : t('chat.settingsPanel.fixedModelInfo')}{' '}
                     {credits.current > 0
-                      ? t('chat.settingsPanel.usingPrimaryModel')
+                      ? selectedModel === 'auto'
+                        ? t('chat.settingsPanel.usingPrimaryModel')
+                        : null
                       : t('chat.settingsPanel.usingFallbackModel')}
                   </p>
                 </>

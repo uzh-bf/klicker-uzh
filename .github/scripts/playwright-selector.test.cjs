@@ -13,6 +13,21 @@ const {
 } = require('./playwright-selector.cjs')
 
 const repositoryRoot = path.join(__dirname, '../..')
+const localGitEnvironmentVariables = childProcess
+  .execFileSync(
+    'git',
+    ['-C', repositoryRoot, 'rev-parse', '--local-env-vars'],
+    { encoding: 'utf8' }
+  )
+  .trim()
+  .split('\n')
+
+// Git exports repository-local variables to hooks. Clear them before any
+// fixture command or selector call so temporary repositories stay isolated.
+for (const variable of localGitEnvironmentVariables) {
+  delete process.env[variable]
+}
+
 const relevanceManifest = JSON.parse(
   fs.readFileSync(
     path.join(repositoryRoot, 'playwright/relevance-manifest.json'),
@@ -42,11 +57,13 @@ function change(kind, ...paths) {
   return { kind, status: kind, paths }
 }
 
-function gitAt(root, ...args) {
+function gitAtWithEnvironment(root, inheritedEnvironment, ...args) {
   // Git exports repository-local variables to hooks. Fixture repositories must
   // not inherit them, or `git -C` can still mutate the parent repository.
   const env = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+    Object.entries(inheritedEnvironment).filter(
+      ([key]) => !key.startsWith('GIT_')
+    )
   )
 
   return childProcess.execFileSync('git', ['-C', root, ...args], {
@@ -54,6 +71,10 @@ function gitAt(root, ...args) {
     env,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
+}
+
+function gitAt(root, ...args) {
+  return gitAtWithEnvironment(root, process.env, ...args)
 }
 
 function commitFixture(root, message) {
@@ -91,6 +112,35 @@ function createCandidate() {
   const baseSha = gitAt(root, 'rev-parse', 'HEAD').trim()
   return { root, baseSha }
 }
+
+test('fixture git commands ignore an inherited parent repository', () => {
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'selector-parent-'))
+  const candidate = fs.mkdtempSync(path.join(os.tmpdir(), 'selector-child-'))
+
+  try {
+    gitAt(parent, 'init', '-q', '-b', 'main')
+    gitAt(candidate, 'init', '-q', '-b', 'main')
+    gitAtWithEnvironment(
+      candidate,
+      {
+        ...process.env,
+        GIT_DIR: path.join(parent, '.git'),
+        GIT_WORK_TREE: parent,
+      },
+      'config',
+      'test.fixtureScope',
+      'candidate'
+    )
+    assert.equal(
+      gitAt(candidate, 'config', '--get', 'test.fixtureScope').trim(),
+      'candidate'
+    )
+    assert.throws(() => gitAt(parent, 'config', '--get', 'test.fixtureScope'))
+  } finally {
+    fs.rmSync(parent, { recursive: true, force: true })
+    fs.rmSync(candidate, { recursive: true, force: true })
+  }
+})
 
 test('parses rename-aware null-delimited diff records', () => {
   assert.deepEqual(
@@ -187,6 +237,46 @@ test('ready state overrides a documentation-only diff with the full candidate su
     plan.selectedSpecs.slice().sort()
   )
   assert.ok(plan.reasonCodes.includes('ready-for-review'))
+})
+
+test('production-designated specs stay out of ordinary plans', () => {
+  // The trusted manifest designates account specs as production-webpack
+  // before their files exist on this branch; the dedicated production
+  // workflow owns them and ordinary lanes must ignore their changes.
+  const productionSpec = 'A-account-lti.spec.ts'
+  const candidateSpecs = [...trustedCandidateSpecs, productionSpec]
+
+  const added = buildSelectionPlan({
+    controlRoot: repositoryRoot,
+    candidateSpecs,
+    changes: [change('A', `playwright/tests/${productionSpec}`)],
+    baseSha: 'base',
+    headSha: 'head',
+    mergeBase: 'merge',
+    prState: 'draft',
+  })
+  assert.equal(added.mode, 'skip')
+  assert.ok(!added.candidateSpecs.includes(`tests/${productionSpec}`))
+  assert.deepEqual(added.selectedSpecs, [])
+  assert.ok(!added.reasonCodes.includes('spec-deleted'))
+
+  const ready = buildSelectionPlan({
+    controlRoot: repositoryRoot,
+    candidateSpecs,
+    changes: [change('M', 'docs/ci.md')],
+    baseSha: 'base',
+    headSha: 'head',
+    mergeBase: 'merge',
+    prState: 'ready',
+  })
+  assert.equal(ready.mode, 'full')
+  assert.ok(!ready.candidateSpecs.includes(`tests/${productionSpec}`))
+  assert.ok(!ready.selectedSpecs.includes(`tests/${productionSpec}`))
+  assert.equal(ready.shardCount, 8)
+  assert.deepEqual(
+    ready.shards.flatMap((shard) => shard.files).sort(),
+    ready.selectedSpecs.slice().sort()
+  )
 })
 
 test('new and renamed specs receive the maximal trusted runtime profile', () => {

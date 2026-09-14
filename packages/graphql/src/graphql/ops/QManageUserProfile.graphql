@@ -1,0 +1,16 @@
+query ManageUserProfile {
+  userProfile {
+    id
+    email
+    sendProjectUpdates
+    shortname
+    role
+    locale
+    firstLogin
+    catalyst
+    catalystTier
+    privatePreview
+    numChatbots
+  }
+  userScope
+}

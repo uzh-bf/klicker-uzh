@@ -2,24 +2,34 @@ import { useMutation } from '@apollo/client'
 import {
   CreateGroupActivityDocument,
   EditGroupActivityDocument,
-  Element,
+  type Element,
   ElementType,
-  GroupActivity,
+  type GroupActivity,
   ParameterType,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  resolveActivityWizardMode,
+  useActivityWizardRecovery,
+} from '@lib/activityWizardRecovery'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { FormikProps } from 'formik'
+import type { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from 'react'
 import * as yup from 'yup'
 import useCoursesGroupActivitySplit from '../../../../lib/hooks/useCoursesGroupActivitySplit'
-import { ElementSelectCourse } from '../../ActivityCreation'
+import type { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import WizardLayout, {
-  GroupActivityClueFormValues,
-  GroupActivityFormValues,
+  type GroupActivityClueFormValues,
+  type GroupActivityFormValues,
 } from '../WizardLayout'
 import GroupActivityDescriptionStep from './GroupActivityDescriptionStep'
 import GroupActivityInformationStep from './GroupActivityInformationStep'
@@ -62,6 +72,7 @@ interface GroupActivityWizardProps {
   courses: ElementSelectCourse[]
   selection: Record<number, Element>
   resetSelection: () => void
+  restoreSelection: (selection: Record<number, Element>) => void
   initialValues?: GroupActivity
   editMode: boolean
   duplicationMode: boolean
@@ -73,6 +84,7 @@ function GroupActivityWizard({
   courses,
   selection,
   resetSelection,
+  restoreSelection,
   initialValues,
   editMode,
   duplicationMode,
@@ -300,6 +312,18 @@ function GroupActivityWizard({
     courseId: initialValues?.course?.id || formDefaultValues.courseId,
   })
 
+  const { recoveryProps, closeWizardAndClearSnapshot } =
+    useActivityWizardRecovery({
+      snapshot: {
+        mode: resolveActivityWizardMode({ editMode, duplicationMode }),
+        activityType: 'GROUP_ACTIVITY',
+        sourceId: initialValues?.id ? String(initialValues.id) : undefined,
+      },
+      form: { data: formData, ref: formRef, setData: setFormData },
+      elements: { selected: selection, restore: restoreSelection },
+      lifecycle: { isCompleted: isWizardCompleted, close: closeWizard },
+    })
+
   const [createGroupActivity, { data: creationData }] = useMutation(
     CreateGroupActivityDocument
   )
@@ -352,6 +376,7 @@ function GroupActivityWizard({
       disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
       workflowItems={workflowItems}
       isCompleted={isWizardCompleted}
+      {...recoveryProps}
       completionStep={
         <CompletionStep
           completionSuccessMessage={(elementName) => (
@@ -380,7 +405,7 @@ function GroupActivityWizard({
           }}
           resetForm={() => setFormData(formDefaultValues)}
           setStepNumber={setActiveStep}
-          onCloseWizard={closeWizard}
+          onCloseWizard={closeWizardAndClearSnapshot}
         />
       }
       steps={[
@@ -400,7 +425,7 @@ function GroupActivityWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep + 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <GroupActivityDescriptionStep
           key="group-activity-description-step"
@@ -420,7 +445,7 @@ function GroupActivityWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <GroupActivitySettingsStep
           key="group-activity-settings-step"
@@ -443,7 +468,7 @@ function GroupActivityWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <GroupActivityStackClues
           key="group-activity-stack-clues"
@@ -465,7 +490,7 @@ function GroupActivityWizard({
           onSubmit={(newValues: GroupActivityFormValues) =>
             handleSubmit({ ...formData, ...newValues })
           }
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
       ]}
       saveFormData={() => {

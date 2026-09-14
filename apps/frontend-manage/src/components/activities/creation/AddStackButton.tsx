@@ -105,7 +105,7 @@ function AddStackButton({
               }
               resetSelection?.()
             }}
-            data={{ cy: 'add-stack-with-selected' }}
+            data={{ cy: `add-selection-to-one-${type}` }}
             ref={drop}
           >
             <Button.Icon icon={faSquare} />
@@ -155,7 +155,7 @@ function AddStackButton({
               })
               resetSelection?.()
             }}
-            data={{ cy: 'add-stack-with-selected' }}
+            data={{ cy: `create-one-${type}-per-selected-element` }}
             ref={drop}
           >
             <div className="flex flex-row gap-1">

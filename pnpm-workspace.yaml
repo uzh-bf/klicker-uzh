@@ -3,6 +3,10 @@ packages:
   - packages/*
   - playwright
 
+# Do not let pnpm repair stale links before the host launcher can control the
+# exact stop, install, and runtime-reconciliation order.
+verifyDepsBeforeRun: error
+
 # Delay automated dependency resolution for newly published packages by 14 days
 # to reduce exposure to compromised releases. Manual emergency exceptions should
 # be exact package/version selectors reviewed with the matching package.json bump.
@@ -10,9 +14,19 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
-  # K5 (playwright-profile-runtime-plan): exact Devrouter release verified for
-  # side-effect-free, repository-owned CI profile bindings before startup.
-  - '@devrouter/cli@0.0.51'
+  # Reviewed Next.js 16.3.4 release train; keep the 14-day policy for other releases.
+  - 'next@16.3.4'
+  - 'eslint-config-next@16.3.4'
+  - '@next/env@16.3.4'
+  - '@next/eslint-plugin-next@16.3.4'
+  - '@next/swc-darwin-x64@16.3.4'
+  - '@next/swc-darwin-arm64@16.3.4'
+  - '@next/swc-linux-x64-gnu@16.3.4'
+  - '@next/swc-linux-x64-musl@16.3.4'
+  - '@next/swc-win32-x64-msvc@16.3.4'
+  - '@next/swc-linux-arm64-gnu@16.3.4'
+  - '@next/swc-linux-arm64-musl@16.3.4'
+  - '@next/swc-win32-arm64-msvc@16.3.4'
   # Internal UZH design-system release: the exact 4.1.8 consumer bump is
   # reviewed and verified in this PR.
   - '@uzh-bf/design-system@4.1.8'
@@ -39,6 +53,11 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/provider@4.0.5'
 
 overrides:
+  # The coverage provider is loaded by the workspace's vitest 3.2.4 and refuses
+  # to run against a different version, so both are pinned to that same
+  # release in lockstep instead of floating to the newest matching 3.2.x.
+  '@vitest/coverage-v8': 3.2.4
+  'vitest': 3.2.4
   'axios@<=0.31.1': 0.32.0
   'fast-xml-parser@>=5.0.0 <5.7.0': 5.7.0
   'glob@>=10.2.0 <10.5.0': 10.5.0
@@ -47,6 +66,10 @@ overrides:
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
 
 packageExtensions:
+  # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
+  '@uzh-bf/design-system@4.1.8':
+    dependencies:
+      '@tailwindcss/aspect-ratio': 0.4.2
   'recharts@2.15.3':
     peerDependencies:
       '@types/react': '*'

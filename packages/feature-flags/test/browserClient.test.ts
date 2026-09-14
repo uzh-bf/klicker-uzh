@@ -6,6 +6,7 @@ type TestFeatures = {
   'default-on-flag': boolean
   'targeted-flag': boolean
   'identifier-flag': boolean
+  'catalyst-flag': boolean
 }
 
 const enabledAttributes: FeatureFlagAttributes = {
@@ -48,6 +49,15 @@ describe('createBrowserFeatureFlagClient', () => {
               rules: [
                 {
                   condition: { email: 'user@example.com' },
+                  force: true,
+                },
+              ],
+            },
+            'catalyst-flag': {
+              defaultValue: false,
+              rules: [
+                {
+                  condition: { catalyst: true },
                   force: true,
                 },
               ],
@@ -217,6 +227,7 @@ describe('createBrowserFeatureFlagClient', () => {
     await setAttributes({
       id: 'user-id',
       actorType: 'user',
+      catalyst: true,
       role: 'USER',
       email: 'user@example.com',
     })
@@ -225,9 +236,55 @@ describe('createBrowserFeatureFlagClient', () => {
     expect(growthbook.getAttributes()).toEqual({
       id: 'user-id',
       actorType: 'user',
+      catalyst: true,
       role: 'USER',
       environment: 'test',
     })
+    expect(growthbook.isOn('catalyst-flag')).toBe(true)
+  })
+
+  it('refreshes feature definitions without the browser cache', async () => {
+    const { growthbook, initialize, refresh } =
+      createBrowserFeatureFlagClient<TestFeatures>({
+        apiHost: 'https://growthbook.test',
+        clientKey: 'sdk-test',
+        environment: 'test',
+      })
+
+    await initialize()
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          features: {
+            'default-on-flag': { defaultValue: false },
+          },
+        })
+      )
+    )
+
+    await expect(refresh()).resolves.toBe(true)
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(growthbook.isOn('default-on-flag')).toBe(false)
+  })
+
+  it('reports a failed no-cache refresh while keeping the prior payload', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const { growthbook, initialize, refresh } =
+      createBrowserFeatureFlagClient<TestFeatures>({
+        apiHost: 'https://growthbook.test',
+        clientKey: 'sdk-test',
+        environment: 'test',
+      })
+
+    await initialize()
+    expect(growthbook.isOn('default-on-flag')).toBe(true)
+    mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
+
+    await expect(refresh()).resolves.toBe(false)
+    expect(growthbook.isOn('default-on-flag')).toBe(true)
+    expect(warn).toHaveBeenCalledWith(
+      '[feature-flags] Browser refresh failed; keeping the last usable payload'
+    )
   })
 
   it('initializes once and fails closed without configuration', async () => {

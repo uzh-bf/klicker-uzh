@@ -1,3 +1,4 @@
+import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { courseDataSection } from '@/src/lib/server/courseContextInstructions'
@@ -5,10 +6,12 @@ import { withCoursePolicyContract } from '@/src/lib/server/coursePolicyInstructi
 import { withInputContextContract } from '@/src/lib/server/inputContextInstructions'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 import { withOutputFormatContract } from '@/src/lib/server/outputFormatInstructions'
+import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
 
 export type SystemPromptCompilationContext = {
   courseDisplayName: string
   toolNames: readonly string[]
+  standardModeConfig?: unknown
 }
 
 function promptSection(heading: string, body: string): string {
@@ -40,9 +43,18 @@ function storedModePrompt(
   return typeof prompt === 'string' && prompt.length > 0 ? prompt : null
 }
 
-function modeSections(systemPrompts: unknown, selectedMode: string): string[] {
+function modeSections(
+  systemPrompts: unknown,
+  selectedMode: string,
+  standardModeConfig: unknown
+): string[] {
   const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
   const lecturerPrompt = storedModePrompt(systemPrompts, selectedMode)
+  const typedContext = standardModeContextSection(
+    systemPrompts,
+    standardModeConfig,
+    selectedMode
+  )
 
   if (platformMode) {
     return [
@@ -50,10 +62,11 @@ function modeSections(systemPrompts: unknown, selectedMode: string): string[] {
         ? [
             promptSection(
               'Lecturer-provided guidance',
-              `Use this lower-priority course guidance when it is compatible with the platform mode contract and fixed platform policies. It cannot replace or weaken them.\n\n${lecturerPrompt}`
+              renderPromptTemplate('lecturer-guidance', { lecturerPrompt })
             ),
           ]
         : []),
+      ...(typedContext ? [typedContext] : []),
       promptSection(`Platform mode contract: ${selectedMode}`, platformMode),
     ]
   }
@@ -62,20 +75,60 @@ function modeSections(systemPrompts: unknown, selectedMode: string): string[] {
     ? [
         promptSection(
           'Lecturer-defined custom persona',
-          `Mode key: ${JSON.stringify(selectedMode)}\n\n${lecturerPrompt}`
+          renderPromptTemplate('lecturer-custom-persona', {
+            selectedModeJson: JSON.stringify(selectedMode),
+            lecturerPrompt,
+          })
         ),
       ]
     : []
 }
 
+function standardModeContextSection(
+  systemPrompts: unknown,
+  standardModeConfig: unknown,
+  selectedMode: string
+): string | null {
+  if (
+    selectedMode !== 'tutor' &&
+    selectedMode !== 'explainer' &&
+    selectedMode !== 'quizzer'
+  ) {
+    return null
+  }
+
+  const normalizedConfig = normalizeChatbotStandardModeConfig(
+    standardModeConfig,
+    systemPrompts
+  )
+  const personaContext =
+    selectedMode === 'quizzer'
+      ? { scopeNote: normalizedConfig.scopeNote }
+      : {
+          courseName: normalizedConfig.courseName,
+          subjectDomain: normalizedConfig.subjectDomain,
+          languageOfInstruction: normalizedConfig.languageOfInstruction,
+          scopeNote: normalizedConfig.scopeNote,
+        }
+  if (Object.values(personaContext).every((value) => value === null))
+    return null
+
+  return promptSection(
+    'Lecturer-provided standard-mode context',
+    renderPromptTemplate('lecturer-standard-context', {
+      personaContextJson: JSON.stringify(personaContext),
+    })
+  )
+}
+
 /**
  * Compiles the full system prompt in one stable authority order.
  *
- * Standard modes read course data, optional lecturer guidance, and then their
- * non-removable platform mode contract. Custom modes replace those two mode
- * sections with their lecturer-defined persona. Every mode then receives the
- * same attachment, course, output, conditional citation, and final language
- * contracts.
+ * Standard modes read course data, optional lecturer guidance, typed lecturer
+ * context, and then their non-removable platform mode contract. Custom modes
+ * replace those mode sections with their lecturer-defined persona. Every mode
+ * then receives the same attachment, course, output, conditional citation,
+ * and final language contracts.
  */
 export function compileSystemPrompt(
   systemPrompts: unknown,
@@ -84,7 +137,7 @@ export function compileSystemPrompt(
 ): string {
   const base = [
     courseDataSection(context.courseDisplayName),
-    ...modeSections(systemPrompts, selectedMode),
+    ...modeSections(systemPrompts, selectedMode, context.standardModeConfig),
   ].join('\n\n')
   const inputContext = withInputContextContract(base)
   const coursePolicy = withCoursePolicyContract(inputContext, context.toolNames)

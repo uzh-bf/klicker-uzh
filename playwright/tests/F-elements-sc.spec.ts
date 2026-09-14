@@ -59,8 +59,7 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing answer option 1 should re-disable save
-    await page.getByTestId('insert-answer-field-1').click()
-    await page.getByTestId('insert-answer-field-1').clear()
+    await clearEditorField(page, 'insert-answer-field-1')
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     await fillAnswerField(page, 1, SC.choices[1])

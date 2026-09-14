@@ -77,7 +77,7 @@ async function resetUsage(usedCredits = 0, budgetCredits = 10) {
   })
   await prisma.user.update({
     where: { id: OWNER_ID },
-    data: { aiChatbotPublishingEnabled: true },
+    data: { aiFeaturesEnabled: true },
   })
   await prisma.chatAccountUsage.upsert({
     where: {
@@ -114,6 +114,8 @@ async function resetToPreviousUsage(usedCredits = 0, budgetCredits = 10) {
 }
 
 async function cleanup() {
+  const { requireDisposableDatabase } = await import('@klicker-uzh/prisma')
+  await requireDisposableDatabase(prisma)
   await prisma.participant.deleteMany({ where: { id: PARTICIPANT_ID } })
   await prisma.user.deleteMany({ where: { id: OWNER_ID } })
 }
@@ -123,7 +125,6 @@ describePostgres('account usage PostgreSQL integration', () => {
     ;({ prisma } = await import('@klicker-uzh/prisma'))
     accountUsage = await import('../src/services/accountUsage')
     threadService = await import('../src/services/threads')
-    await prisma.$connect()
     await cleanup()
 
     await prisma.user.create({
@@ -131,7 +132,7 @@ describePostgres('account usage PostgreSQL integration', () => {
         id: OWNER_ID,
         email: `${TEST_KEY}@example.invalid`,
         shortname: TEST_KEY,
-        aiChatbotPublishingEnabled: true,
+        aiFeaturesEnabled: true,
       },
     })
     await prisma.course.create({
@@ -210,7 +211,7 @@ describePostgres('account usage PostgreSQL integration', () => {
 
     await prisma.user.update({
       where: { id: OWNER_ID },
-      data: { aiChatbotPublishingEnabled: false },
+      data: { aiFeaturesEnabled: false },
     })
     expect(
       await accountUsage.isChatAccountUsageAvailable({
@@ -222,7 +223,7 @@ describePostgres('account usage PostgreSQL integration', () => {
 
     await prisma.user.update({
       where: { id: OWNER_ID },
-      data: { aiChatbotPublishingEnabled: true },
+      data: { aiFeaturesEnabled: true },
     })
     await prisma.chatAccountUsage.deleteMany({
       where: { ownerId: OWNER_ID, usageClass: 'BASE' },

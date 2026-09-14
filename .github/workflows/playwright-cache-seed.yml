@@ -38,7 +38,11 @@ jobs:
 
   seed:
     needs: validate-source
-    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04-arm, ubuntu-24.04]
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
@@ -87,9 +91,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
-          restore-keys: |
-            playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
 
       - name: Restore Turbo cache
         id: turbo-cache
@@ -157,7 +159,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
 
       - name: Save Turbo cache
         if: steps.build.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true'
@@ -172,7 +174,7 @@ jobs:
         continue-on-error: true
         env:
           PLAYWRIGHT_TELEMETRY_PHASE: cache-seed
-          PLAYWRIGHT_ROUTE: trusted-hosted-arm64
+          PLAYWRIGHT_ROUTE: trusted-hosted
           PLAYWRIGHT_MODE: full
           PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
           PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
@@ -189,7 +191,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-cache-seed-telemetry
+          name: playwright-cache-seed-telemetry-${{ runner.arch }}
           path: playwright-cache-seed-telemetry.json
           if-no-files-found: ignore
-          retention-days: 1
+          retention-days: 7

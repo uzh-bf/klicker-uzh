@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-31'
+timestamp: '2026-09-01'
 tags:
   - frontend
   - chat
@@ -139,6 +139,18 @@ registries that violate that invariant.
 External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
 conservative, because a missing class must never imply base usage.
 
+New chatbots use a fixed Auto policy by default: the owner projection contains
+one effective `auto` model and no reasoning entries. The strict owner-only
+`updateChatbotModelPolicy` mutation requires exactly one active model for fixed
+mode, one supported reasoning effort when that model supports reasoning, and at
+least one active model plus valid reasoning entries for every selected
+reasoning model in participant-choice mode. The older
+`updateChatbotModelSettings` mutation remains unchanged for rolling clients.
+Legacy fixed rows are readable without a migration: empty or multi-model values
+resolve through the current `CHAT_PRIMARY_MODEL_ID`-aware runtime semantics,
+while a retired-only list falls back to Luna. Participant-choice empty lists
+display all active models and are made explicit only by a strict save.
+
 Registry costs use Azure Global Standard short-context USD prices per one
 million input and output tokens, verified on 2026-08-24. The schema does not
 model cached-input, cache-write, or long-context rates. Auto uses the accepted
@@ -246,10 +258,29 @@ has a healthcheck, and is included in
 classifier and `openai/text-embedding-3-small` for semantic corpus matching,
 then invokes the selected answer model. With an OpenRouter upstream, all of
 those requests cross the same external provider boundary and add latency and
-usage cost. A model call still requires the operator's local
+usage cost. A model call still requires a caller-injected
 `UPSTREAM_OPENAI_API_KEY`; without it, verify service health, model exposure,
 picker state, and request error handling, but do not claim an end-to-end answer
 stream.
+
+For a local developer-Foundry run, map `AZURE_OPENAI_API_KEY` and
+`AZURE_OPENAI_BASE_URL` to the generic `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` variables with the approved secret manager while
+starting the exact devrouter worktree. The repository has no dependency on a
+personal secret operator. The VPN is required. Stop and restart an existing
+worktree when its LiteLLM container was started without those values; a warm
+ensure does not replace service-container environment. The direct
+`gpt-5.6-luna` entry pins `num_retries` to zero for bounded target evaluation;
+the fixed effort aliases remain internal router targets.
+
+The local target-evaluation adapter is a host loopback boundary, not another
+Chat product route. It authenticates a seeded participant against the
+namespaced API and Chat origins, sends only the question and resolved mode,
+drains the UI stream, and reads back the persisted assistant message. Expected
+answers remain in the evaluator, and raw tool arguments/results remain inside
+the target process. The committed KB_doc_query canary proves synthetic
+transport and persistence only; it must not be reported as FineCo quality or
+replace an authorized EXPERT_df_fineco_expert binding.
 
 Local LiteLLM enables `LITELLM_REASONING_AUTO_SUMMARY` for the Responses path.
 That maps each routed alias's fixed `reasoning_effort` to a visible summary
@@ -360,15 +391,21 @@ use their platform-owned localized purpose descriptions in `src/components/mode-
 custom modes use their configured description.
 
 `src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
-defaults with stored per-mode overrides and custom modes, honours `enabled: false`, excludes modes
-that cannot satisfy the chatbot's required-MCP policy, and exposes Quizzer only with a provably
-restricted course `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per
-MCP server, including disabled exact rows; inherited optional bindings are narrowed to
-`doc_query`, while required single-tool aliases preserve their raw tool restriction and remain
-fail-closed. The layout, participant settings endpoint, chat request validation, and request-time
-MCP selection all use this resolver. The browser receives resolved mode descriptions but never
-MCP server configuration. If explicit opt-outs leave no effective mode, the client replaces the
-composer with a localized unavailable notice and suppresses edit and retry generation actions
+defaults with the nullable typed `Chatbot.standardModeConfig`, stored per-mode overrides, and
+custom modes. A valid typed value owns all three standard-mode flags and must keep Tutor or
+Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
+knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
+opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
+derives Quizzer from its legacy opt-out/default. Custom-mode flags remain legacy-controlled. The
+resolver excludes modes that cannot satisfy
+the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
+`doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
+including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
+required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
+layout, participant settings endpoint, chat request validation, and request-time MCP selection all
+use this resolver. The browser receives resolved mode descriptions but never MCP server
+configuration. If typed flags or explicit opt-outs leave no effective mode, the client replaces
+the composer with a localized unavailable notice and suppresses edit and retry generation actions
 instead of allowing requests the server would reject.
 
 Platform standard-mode contract changes apply automatically to every chatbot that exposes that
@@ -455,6 +492,11 @@ participant had scrolled up, their position is preserved. Terminal incomplete,
 aborted, and tool-only turns still show valid completed sources instead of
 losing them on reload. The source component suppresses the section when
 normalization produces no sources.
+Within that section, sources with a valid rendered citation appear under
+“Cited in this answer”. Other eligible sources remain available behind a
+collapsed “Other retrieved material” disclosure. With no citations, including
+tool-only turns, all source cards start collapsed. Grouping preserves original
+source indices and does not claim to identify every source the model used.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -528,6 +570,84 @@ later v3-ai sync reconciles without a diff. That sync is sequenced by
 [ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
 v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
+## Lecturer authoring and publication contract
+
+The owner-facing GraphQL contract lives in
+`packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
+can create a course-bound `DRAFT` chatbot before their account is authorized to
+publish. The course is fixed after creation. Metadata and model policy are
+editable in `DRAFT`, `REJECTED`, and `PUBLISHED`; they are read-only in
+`PENDING_APPROVAL` and `PAUSED`. Disclaimer content is editable only in
+`DRAFT` and `REJECTED`.
+
+`saveChatbotDisclaimer` accepts the lecturer-editable title and introduction
+plus the disclaimer ID the client loaded. It normalizes line endings and outer
+whitespace, validates both fields, and rejects introduction Markdown outside
+paragraphs, bold, italic, ordered or unordered lists, and line breaks. It then
+uses transactional copy-on-write. The replacement retains the internal name,
+description, and media fields. A stale expected ID fails with
+`CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op keeps the existing ID.
+This preserves the participant acceptance contract: acceptance and Manage's
+accepted count apply only when
+`acceptedDisclaimerId` equals the chatbot's current disclaimer ID. See
+[ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
+
+`requestChatbotPublication` still requires the live account capability from
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
+linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
+`PENDING_APPROVAL`. A dedicated Boolean query exposes only this live capability
+to Catalyst and full-access lecturers; it does not expose account budget data.
+Submission never publishes automatically; the existing administrator approval
+remains a separate transition.
+
+Manage exposes draft preparation through
+`apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
+limited to the lecturer's owned, non-archived courses, and the newly created
+chatbot is selected immediately. The workspace keeps chatbot selection in a
+persistent desktop rail and a compact mobile selector. Its URL identifies the
+selected chatbot plus the `overview`, `setup`, `advanced`, or `usage` view; the
+setup view optionally uses `step=basics`, `step=disclaimer`, or `step=review`
+as the initial accordion section hint. Invalid deep links fall back to the
+first valid lifecycle view or section. Published chatbots preserve any valid
+setup-section hint while keeping their read-only Disclaimer and Review
+contracts.
+Navigation, chatbot switching, and creation protect unsaved Formik, Slate, and
+model-policy changes, and block while an affected mutation is pending.
+
+Draft and rejected chatbots use the setup view as one page with a multiple-open
+accordion containing Basics, Disclaimer, and Review and submit. Each section
+keeps its form mounted when collapsed, so unsaved Formik and Slate input remains
+available while lecturers inspect another section. Basics saves the name and
+description, Disclaimer saves the lecturer-written introduction while showing
+the fixed participant preview, and Review and submit summarizes the saved
+configuration before showing the publication request form.
+The course remains read-only after creation. Publication inputs are preparation
+fields in the Review and submit section and persist only when the lecturer submits the existing
+publication mutation. A successful Basics or Disclaimer save opens the next
+accordion section after the refetched chatbot is complete. Edit actions in the
+review section open the relevant accordion section, while the workspace
+navigation guard still prevents dirty or pending changes from being discarded
+silently.
+
+The selected course is read-only. Name, description, and model settings follow
+the metadata lifecycle matrix above; the disclaimer title and introduction are
+editable only for `DRAFT` and `REJECTED` chatbots. `ContentInput` keeps its full
+toolbar by default and uses the `basic` preset for disclaimer introductions,
+retaining simple formatting while omitting media, video, math, code, and quote
+controls. The lecturer preview renders the fixed `chat.disclaimer.*` sections
+without participant actions, and its Slate editor remounts when either the
+chatbot or current disclaimer ID changes so a selection change cannot retain
+stale text.
+
+The publication section keeps `DRAFT` and `REJECTED` request details editable
+for preparation, but enables submission only when a complete disclaimer, the
+live account publication capability, and clean, settled Basics and Disclaimer
+forms are present. While publication is pending, those sibling forms are
+locked so late edits cannot be lost during the lifecycle transition.
+`PENDING_APPROVAL`, `PAUSED`, and `PUBLISHED` chatbots show read-only
+publication details, while a rejected request retains its review comment for
+correction and resubmission.
+
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
 disclaimer action failures, and thread-list failures are localized with retry affordances where
@@ -598,28 +718,45 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Runtime system-prompt policy
 
-`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text as configurable
-lecturer influence, not as the complete system policy. On every chat request, after the available
-MCP tool names are known, it composes the final prompt in this order:
+Platform and image-description prompt prose lives in `apps/chat/src/prompts/*.hbs`.
+`src/lib/server/promptTemplates.ts` loads and caches repository-owned Handlebars
+templates with strict variables. Plaintext values use explicit triple-brace
+interpolation (`{{{value}}}`); ordinary double braces retain HTML escaping.
+These server assets produce model prompts, never HTML. Edit the template for
+wording and its typed context for new values; keep policy order and conditional
+inclusion in the TypeScript compiler. Stored lecturer text and course metadata are
+interpolation data, never template source. One final file newline is omitted from
+the rendered prompt. The renderer is Node-only and templates stay outside `public`.
+Chat's Next configuration explicitly traces these assets into the standalone build;
+its server starts from the app directory, which is also the template loading root.
+Templates are cached for the server process lifetime; restart the local Chat server
+after editing them and rebuild the standalone artifact before publishing changes.
+
+`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats stored text and the typed
+standard-mode context as configurable lecturer influence, not as the complete system policy. On
+every chat request, after the available MCP tool names are known, it composes the final prompt in
+this order:
 
 1. server-sourced course data containing JSON-serialized `Course.displayName`;
 2. lower-priority lecturer guidance for a standard mode, when stored;
-3. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
+3. one JSON-serialized typed lecturer context section for Tutor or Explainer, or a scope-note-only
+   section for Quizzer, when valid and present;
+4. the platform-owned Tutor, Explainer, or Quizzer contract from `DEFAULT_PROMPT`, or instead the
    lecturer-defined persona for a custom mode;
-4. fixed image-attachment description handling from
+5. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-5. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
+6. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
    integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-6. fixed Markdown, inline/display mathematics, and fenced-code rules from
+7. fixed Markdown, inline/display mathematics, and fenced-code rules from
    `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
-7. the conditional citation policy when a `doc_query`-style tool is available; and
-8. the fixed conversation-language and Swiss Standard German policy from
+8. the conditional citation policy when a `doc_query`-style tool is available; and
+9. the fixed conversation-language and Swiss Standard German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
-The course-data section explicitly treats its entire JSON value as data rather than instructions.
-Quotes, newlines, and instruction-like text in a display name therefore cannot gain prompt
-authority. A custom mode omits the standard-mode contract but still receives every fixed platform
-section.
+The course-data and typed-context sections explicitly treat their entire JSON values as data
+rather than instructions. Quotes, newlines, and instruction-like text in a display name or typed
+persona field therefore cannot gain prompt authority. A custom mode omits both standard-mode
+sections but still receives every fixed platform section.
 
 The fixed policy explicitly overrides conflicting lecturer text, examples, retrieved material,
 tool output, and user attempts to change platform rules. It keeps answers within the owning course,
@@ -695,6 +832,23 @@ message write. Chat may create a short-lived thread and assistant lifecycle clai
 preflight, but it marks the attempt failed and discards that new thread before returning `503`. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
 
+The current-v3 Doc Query binding is the same reserved policy plus a `kb_id` on
+the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
+"kb_id": "<UUID>" }`. The target server name is exactly `KB`. Enabled `KB`
+configurations must contain at most one binding per stored mode, with one server
+ID and one normalized UUID across the chatbot. The selected effective mode must
+resolve exactly one matching binding; Quizzer may safely inherit Tutor's
+restricted `doc_query` binding under ADR 0021.
+Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
+`503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
+keeps the opaque bearer transport credential in `Authorization` and adds a
+five-minute ES256 token only in `X-Doc-Query-Scope-Token`. Its claims contain
+`kb_id`, `chatbot_id`, the owning thread as `sub`, and a request `jti`; issuer,
+audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
+`DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and
+`DOC_QUERY_SCOPE_PRIVATE_KEY`. Chatbots without an enabled `KB` binding and
+non-KB MCP servers retain their existing behavior.
+
 - `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
   that range stays literal text in the answer — which is the intended failure mode, not a bug.
 - Citation numbering is local to one assistant message and resets to `[1]` for every new message;
@@ -705,7 +859,12 @@ configs without the reserved keys retain the existing optional/fail-open behavio
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
   unique sources exist. That contract is appended to the system prompt only when a doc_query-style
   tool is actually available for the request.
-- **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
+- Before each tool continuation, `withModelCitationIndices` projects explicit
+  `citation_index` values onto model-facing source groups using the same message
+  normalizer as the UI. It follows call order, preserves repeated indices and
+  assigns null to ineligible or overflow sources. Stored and streamed tool results
+  stay unchanged; historical messages are excluded from the projection.
+- **Model compliance with the citation contract is unverified.** Request projection is unit-tested;
   whether a given model honours it needs a live model key, which the devcontainer does not carry.
 
 On the render side, `remarkCitationMarkers` rewrites `[n]` and contiguous `[n–m]` markers in
@@ -715,6 +874,11 @@ number. It skips anything inside a link label (including nested emphasis), and
 Normalization runs once per message in `AssistantMessage` (`useMessageSources`) and reaches both
 the cards and the chips through `MessageSourcesContext` — do not re-parse the tool JSON in a leaf
 component.
+Valid rendered chips register their source index with the message-local context;
+cleanup removes registrations when text parts or answer branches change.
+Duplicate chips keep a source cited until the last registration is removed.
+Grouping therefore follows the existing Markdown renderer, including reference
+links, rather than scanning raw text for markers inside code or math.
 
 A chip must wrap **with** the word it cites, never start a line on its own — and the
 punctuation after it must not wrap alone either. Two mechanisms enforce that and both are
@@ -730,10 +894,13 @@ mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
-and fall back to a cleaned display URL when they carry no page; web links always lead with the
+documents display only the publisher's labeled page (`p. 12` / `S. 12`)
+and fall back to a cleaned display URL when no label is supplied; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+lead with a `12:34`-style position; images keep their type and any publisher page label.
+Physical PDF pages are used only for outbound navigation: validated public URLs with
+a `.pdf` pathname receive a positive integer `#page=` position on cards and passage
+links. Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
 structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
 `labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
 and prefers the structured start for the card and citation preview. Legacy results remain
@@ -757,17 +924,23 @@ from forcing horizontal overflow in containers narrower than 230px (mobile and
 embedded mode).
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
-"No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
+"No results" is claimed only for an explicitly empty source collection, never from the number
+of displayable citations. A cancelled call leaves the
 literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
 its result, and labelling that as an empty search would be a lie.
 
-Expanding the chip no longer dumps raw JSON for a successful doc_query: `getDocQueryPanelContent`
-(same file, pure, tested in `test/tool-fallback-doc-query.test.ts`) yields a friendly panel — the
-model's search query (parsed defensively from the possibly-streaming args JSON by
-`parseDocQueryArgsQuery`) plus a "results appear as sources below" hint keyed on the parsed-`done`
-state. The raw tool-name/args/result path is preserved wherever the friendly panel would lie or be
-empty: non-doc_query tools, running/failed calls, unparseable results, and the doneEmpty +
-unreadable-args combination (which would otherwise render a blank panel).
+The expanded RAG panel displays readable chunks grouped by source, with full-text disclosure,
+original source links when supplied, and each chunk's own locator. `docQueryResult.ts` interprets
+retrieval independently of citation eligibility. Previously excluded unnamed sources remain
+unnumbered, preserving historical citation associations. Group citation badges use the shared
+message source context rather than restarting numbering for each tool call.
+
+Documents-mode `source_url` takes precedence over a safe public `reference` for navigation only;
+it does not change legacy identity or deduplication. Internal ingestion endpoints and unsafe URLs
+never become source links. Missing provenance stays unavailable; document text is not an origin
+metadata channel. Unknown locator semantics preserve the original link without inventing a jump
+target. RAG error and unknown states use friendly disclosure without raw provider payloads;
+unrelated tools retain their existing fallback.
 
 ## Streamed Markdown math
 
@@ -807,9 +980,15 @@ A failed rating request (`chatStore.rateMessage`) rolls the optimistic vote back
 
 Ratings are currently **write-only**: nothing in the repository reads them back. There is no lecturer-facing view and no GraphQL field or aggregate over `ChatMessage.rating`, so votes accumulate in the database for a consumer that does not exist yet — do not cite them as a feedback loop that lecturers can act on.
 
-PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the trace exporter is nonfunctional: scores would be orphaned, and exact retry/order semantics would require a durable outbox rather than request-route network calls. Add analytical mirroring only after the OpenTelemetry integration below is operational and the delivery lifecycle is designed.
+PostgreSQL remains the only rating store. Do not mirror votes to Langfuse from the request route: exact retry and ordering semantics require a durable outbox. Add analytical mirroring only after that delivery lifecycle is designed.
 
-> **Known gap:** `apps/chat` pins `@opentelemetry/sdk-trace-node@1.26.0` while `@langfuse/otel` needs 2.x, so span export throws and **no trace currently reaches Langfuse**. Rating-score mirroring is disabled until the OTel major bump lands.
+Chat tracing uses the Langfuse JS/TS SDK v5 and OpenTelemetry 2 through `@langfuse/otel`, `@langfuse/tracing`, `@langfuse/vercel-ai-sdk`, and `@opentelemetry/sdk-node`. This combination emits OTLP traces to `/api/public/otel/v1/traces` and is compatible with the self-hosted Langfuse v4 server line, including the deployed v4.28.1 target, according to the [Langfuse compatibility matrix](https://langfuse.com/self-hosting/upgrade/versioning). The SDK compatibility test exercises AI SDK 7 generation spans through the real Langfuse processor with an in-memory exporter, which catches the previous OTel 1.x/2.x mismatch without claiming to exercise a live server or sending test data over the network.
+
+Tracing is a strict opt-in. It starts only when `CHAT_ENABLE_AI_TELEMETRY=true` and `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and an explicit self-hosted `LANGFUSE_BASE_URL` are all present. The Helm default, staging, and production values remain disabled; enabling an environment requires a separate privacy and operational review. `LANGFUSE_TRACING_ENVIRONMENT` and `LANGFUSE_RELEASE` label observations for filtering and regressions.
+
+The Helm chart requires an HTTPS URL when `chat.telemetry.baseUrl` is configured.
+
+The trace contract is metadata-only: AI SDK input/output recording and media upload are disabled, image-description calls are explicitly untraced, and no participant `userId`, raw thread/message/chatbot ID, prompt, answer, tool argument/result, or image payload is exported. A deterministic pseudonymous session groups turns from one thread; the trace includes allowlisted model, routing, mode, reasoning, tool/attachment counts, lifecycle status, and response lengths. Export masking redacts Langfuse keys, bearer credentials, and data URLs as defense in depth. A privacy-preserving processor also replaces span status messages and removes exception-event attributes before Langfuse receives them; if that sanitization fails, the span is dropped. Export failures are fail-open and must never change the chat response. The batched processor owns delivery in the long-running chat process. Each traced route registers a [Next.js `after()` callback](https://nextjs.org/docs/app/api-reference/functions/after) that flushes the completed batch after the streamed response closes. The Chat image uses exec-form `CMD` so Next receives Kubernetes termination signals, and the pod allows a 90-second grace period for active requests and pending `after()` work. This does not guarantee that unbounded active requests finish before forced termination; live rollout must verify shutdown delivery.
 
 ## Client-state gotchas
 

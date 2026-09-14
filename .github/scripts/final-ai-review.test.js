@@ -6,17 +6,19 @@ const path = require('node:path')
 const test = require('node:test')
 
 const {
+  isConsolidationBaseBranch,
+  isEligibleBaseBranch,
+} = require('./final-ai-review-shared')
+
+const {
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
   FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
   FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
-  GENERATED_PROMOTION_STATUS,
-  PROMOTION_FILE,
   authorizeFinalReview,
   buildIndividualCleanReviewEvidenceDigest,
   buildIndividualCleanEvidenceMetadata,
-  buildExpectedPromotionContent,
   buildOCRConfig,
   buildOpenRouterToolCanaryRequest,
   buildReviewPlan,
@@ -26,10 +28,7 @@ const {
   decideFinalStatus,
   encodeMetadata,
   finalizeFinalReview,
-  getStagingSourceBranch,
-  verifyPromotionBuilds,
   hasCurrentSuccessfulFinalReview,
-  hasVerifiedGeneratedPromotionStatus,
   isFinalReviewCommand,
   isTrustedPermission,
   initializeFinalReview,
@@ -40,18 +39,405 @@ const {
   parseReviewMetadata,
   planOCRResume,
   publishFinalReview,
-  promotionBody,
   removeOCRConfig,
   resolveFinalReviewLockKey,
   renderFinalReviewChunks,
   resolveCleanReviewRange,
   requiresColdIncrementalReview,
   startFinalReview,
-  validatePromotionContract,
   validateOCRResult,
   verifyOpenRouterToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
+
+function extractWorkflowStepScript(workflow, stepName) {
+  const lines = workflow.split(/\r?\n/)
+  const stepIndex = lines.findIndex(
+    (line) => line === `      - name: ${stepName}`
+  )
+  assert.ok(stepIndex >= 0, `missing workflow step: ${stepName}`)
+
+  const runIndex = lines.findIndex(
+    (line, index) => index > stepIndex && line === '        run: |'
+  )
+  assert.ok(runIndex > stepIndex, `missing run block: ${stepName}`)
+
+  const body = []
+  for (let index = runIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index]
+    if (/^      - name: /.test(line)) break
+    if (line.length === 0) {
+      body.push('')
+      continue
+    }
+    assert.ok(
+      line.startsWith('          '),
+      `unexpected indentation in run block: ${stepName}`
+    )
+    body.push(line.slice(10))
+  }
+  return body.join('\n')
+}
+
+function extractWorkflowJobEnv(workflow, jobName) {
+  const lines = workflow.split(/\r?\n/)
+  const jobIndex = lines.findIndex((line) => line === `  ${jobName}:`)
+  assert.ok(jobIndex >= 0, `missing workflow job: ${jobName}`)
+  const nextJobIndex = lines.findIndex(
+    (line, index) => index > jobIndex && /^  \S/.test(line)
+  )
+  const jobEndIndex = nextJobIndex < 0 ? lines.length : nextJobIndex
+
+  const envIndex = lines.findIndex(
+    (line, index) =>
+      index > jobIndex && index < jobEndIndex && line === '    env:'
+  )
+  assert.ok(envIndex > jobIndex, `missing job env: ${jobName}`)
+
+  const env = {}
+  for (let index = envIndex + 1; index < jobEndIndex; index += 1) {
+    const line = lines[index]
+    if (/^    \S/.test(line)) break
+    if (line.trim() === '') continue
+    const separator = line.indexOf(':')
+    assert.ok(separator > 0, `invalid job env entry: ${line}`)
+    const key = line.slice(6, separator).trim()
+    const rawValue = line.slice(separator + 1).trim()
+    env[key] = rawValue.replace(/^(['"])(.*)\1$/, '$2')
+  }
+  return env
+}
+
+function extractShellFunction(script, functionName) {
+  const lines = script.split('\n')
+  const startIndex = lines.findIndex(
+    (line) => line.trim() === `${functionName}() {`
+  )
+  assert.ok(startIndex >= 0, `missing shell function: ${functionName}`)
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (lines[index].trim() === '}') {
+      return lines.slice(startIndex, index + 1).join('\n')
+    }
+  }
+  assert.fail(`unterminated shell function: ${functionName}`)
+}
+
+function expectedOCRArgs({ from, to, timeout, budget, sessionId }) {
+  return [
+    '--from',
+    from,
+    '--to',
+    to,
+    '--audience',
+    'agent',
+    '--effort',
+    'low',
+    '--timeout',
+    String(timeout),
+    '--max-tokens-budget',
+    String(budget),
+    '--format',
+    'json',
+    '--background',
+    'synthetic-background',
+    '--rule',
+    '.github/open-code-review/final-review-rules.json',
+    ...(sessionId ? ['--resume', sessionId] : []),
+  ]
+}
+
+function ocrInvocation({ kind, budget, sessionId }) {
+  const resume = sessionId ? ` "\${SESSION_ID}"` : ''
+  if (kind === 'individual') {
+    return `run_ocr_attempt "\${OUTPUT_PATH}" ${budget}${resume}`
+  }
+  return `run_ocr_attempt "\${REVIEW_FROM}" "\${HEAD_SHA}" ${budget} "\${OUTPUT_PATH}"${resume}`
+}
+
+function assertNoOCRSentinels(result) {
+  for (const output of [
+    result.process.stdout,
+    result.process.stderr,
+    result.summary,
+  ]) {
+    assert.doesNotMatch(output, /OCR_[A-Z_]+SENTINEL/)
+  }
+}
+
+function assertOCRSummary(result, stage, expectedExit) {
+  const match =
+    stage === 'review'
+      ? result.summary.match(
+          /^OCR stage=review exit=(\d+) stdout_bytes=[ \t]*(\d+) stderr_total_bytes=[ \t]*(\d+)\n$/
+        )
+      : result.summary.match(/^OCR stage=version exit=(\d+)\n$/)
+  assert.ok(match, 'missing structured OCR summary')
+  assert.equal(Number(match[1]), expectedExit)
+  if (stage === 'review') {
+    assert.equal(Number(match[2]), Buffer.byteLength(result.stdoutSentinel))
+    assert.equal(Number(match[3]), Buffer.byteLength(result.stderrSentinel))
+  }
+}
+
+function assertReviewAttempt(result, form, expectedExit) {
+  assert.equal(result.process.status, expectedExit, form.name)
+  assert.equal(result.process.stdout, '', form.name)
+  assert.equal(result.process.stderr, '', form.name)
+  assertNoOCRSentinels(result)
+  assertOCRSummary(result, 'review', expectedExit)
+  assert.equal(result.output, result.stdoutSentinel, form.name)
+  assert.equal(result.ocrStderr, result.stderrSentinel, form.name)
+
+  const lines = result.calls.trim().split('\n')
+  assert.equal(lines.shift(), 'version no_update=1', form.name)
+  assert.equal(lines.shift(), 'review no_update=1', form.name)
+  assert.deepEqual(
+    lines.map((line) => line.replace(/^review_arg=/, '')),
+    expectedOCRArgs({
+      from: form.reviewFrom,
+      to: form.reviewTo,
+      timeout: form.timeout,
+      budget: form.budget,
+      sessionId: form.sessionId,
+    }),
+    form.name
+  )
+}
+
+function assertVersionAttempt(result, expectedExit) {
+  assert.equal(result.process.status, expectedExit)
+  assert.equal(result.process.stdout, '')
+  assertNoOCRSentinels(result)
+  assertOCRSummary(result, 'version', expectedExit)
+  assert.equal(result.output, null)
+  assert.equal(result.ocrStderr, '')
+  assert.equal(result.calls.trim(), 'version no_update=1')
+}
+
+function executeExtractedOCRAttempt({
+  workflow,
+  jobName,
+  stepName,
+  invocation,
+  environment,
+  versionMode = 'ok',
+  versionStatus = 0,
+  reviewStatus = 0,
+}) {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-review-ocr-shell-')
+  )
+  const outputPath = path.join(directory, 'result.json')
+  const stderrPath = path.join(directory, 'ocr-stderr.log')
+  const summaryPath = path.join(directory, 'step-summary.md')
+  const callsPath = path.join(directory, 'ocr-calls.log')
+  const stdoutSentinel = 'OCR_STDOUT_SENTINEL'
+  const stderrSentinel = 'OCR_STDERR_SENTINEL'
+  const versionSentinel = 'OCR_VERSION_SENTINEL'
+  const functionText = extractShellFunction(
+    extractWorkflowStepScript(workflow, stepName),
+    'run_ocr_attempt'
+  )
+  const jobEnv = extractWorkflowJobEnv(workflow, jobName)
+  assert.equal(jobEnv.OCR_NO_UPDATE, '1', `missing OCR_NO_UPDATE: ${jobName}`)
+
+  fs.writeFileSync(stderrPath, '')
+  fs.writeFileSync(summaryPath, '')
+  fs.writeFileSync(callsPath, '')
+
+  const childEnv = {
+    PATH: process.env.PATH ?? '/usr/bin:/bin',
+    HOME: directory,
+    LC_ALL: 'C',
+    OCR_NO_UPDATE: jobEnv.OCR_NO_UPDATE,
+    OCR_CALLS_PATH: callsPath,
+    OCR_REVIEW_STATUS: String(reviewStatus),
+    OCR_STDERR_SENTINEL: stderrSentinel,
+    OCR_STDOUT_SENTINEL: stdoutSentinel,
+    OCR_VERSION_MODE: versionMode,
+    OCR_VERSION_OUTPUT:
+      versionMode === 'drift'
+        ? `open-code-review v1.10.0 ${versionSentinel}`
+        : 'open-code-review v1.11.0 synthetic',
+    OCR_VERSION_STATUS: String(versionStatus),
+    OCR_VERSION_STDERR: 'OCR_VERSION_STDERR_SENTINEL',
+    OUTPUT_PATH: outputPath,
+    STDERR_PATH: stderrPath,
+    GITHUB_STEP_SUMMARY: summaryPath,
+    GITHUB_OUTPUT: path.join(directory, 'github-output'),
+    REVIEW_FROM: environment.reviewFrom,
+    HEAD_SHA: environment.reviewTo,
+    BACKGROUND: 'synthetic-background',
+    REVIEW_JOB_STARTED_AT: String(Math.floor(Date.now() / 1000)),
+    SESSION_ID: environment.sessionId ?? '',
+  }
+
+  const script = [
+    'set -euo pipefail',
+    functionText,
+    '',
+    'ocr() {',
+    '  local command="${1:-}"',
+    '  case "${command}" in',
+    '    version)',
+    '      printf \'version no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
+    '      if [[ "${OCR_VERSION_MODE}" == \'fail\' ]]; then',
+    '        printf \'%s\' "${OCR_VERSION_STDERR}" >&2',
+    '        return "${OCR_VERSION_STATUS}"',
+    '      fi',
+    '      printf \'%s\' "${OCR_VERSION_OUTPUT}"',
+    '      ;;',
+    '    review)',
+    '      printf \'review no_update=%s\\n\' "${OCR_NO_UPDATE-}" >>"${OCR_CALLS_PATH}"',
+    '      shift',
+    '      while (($#)); do',
+    '        printf \'review_arg=%s\\n\' "$1" >>"${OCR_CALLS_PATH}"',
+    '        shift',
+    '      done',
+    '      printf \'%s\' "${OCR_STDOUT_SENTINEL}"',
+    '      printf \'%s\' "${OCR_STDERR_SENTINEL}" >&2',
+    '      return "${OCR_REVIEW_STATUS}"',
+    '      ;;',
+    '    *)',
+    '      return 99',
+    '      ;;',
+    '  esac',
+    '}',
+    '',
+    invocation,
+  ].join('\n')
+
+  const run = spawnSync('bash', ['-c', script], {
+    encoding: 'utf8',
+    env: childEnv,
+  })
+  assert.equal(run.error, undefined)
+
+  const readIfPresent = (filePath) =>
+    fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null
+  const result = {
+    process: run,
+    output: readIfPresent(outputPath),
+    ocrStderr: fs.readFileSync(stderrPath, 'utf8'),
+    summary: fs.readFileSync(summaryPath, 'utf8'),
+    calls: fs.readFileSync(callsPath, 'utf8'),
+    stdoutSentinel,
+    stderrSentinel,
+  }
+  fs.rmSync(directory, { recursive: true, force: true })
+  return result
+}
+
+test('executes both workflow OCR command boundaries with pinned version diagnostics', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const individualFrom = '1'.repeat(40)
+  const individualTo = '2'.repeat(40)
+  const stackFrom = '3'.repeat(40)
+  const stackTo = '4'.repeat(40)
+  const forms = [
+    {
+      name: 'individual full',
+      jobName: 'review',
+      stepName: 'Run final review',
+      kind: 'individual',
+      budget: 1000000,
+      timeout: 45,
+      reviewFrom: individualFrom,
+      reviewTo: individualTo,
+      sessionId: '',
+    },
+    {
+      name: 'individual resume',
+      jobName: 'review',
+      stepName: 'Run final review',
+      kind: 'individual',
+      budget: 250000,
+      timeout: 45,
+      reviewFrom: individualFrom,
+      reviewTo: individualTo,
+      sessionId: 'individual-session',
+    },
+    {
+      name: 'stack full',
+      jobName: 'review_stack',
+      stepName: 'Run cumulative code review',
+      kind: 'stack',
+      budget: 20000000,
+      timeout: 30,
+      reviewFrom: stackFrom,
+      reviewTo: stackTo,
+      sessionId: '',
+    },
+    {
+      name: 'stack range',
+      jobName: 'review_stack',
+      stepName: 'Run cumulative code review',
+      kind: 'stack',
+      budget: 750000,
+      timeout: 30,
+      reviewFrom: stackFrom,
+      reviewTo: stackTo,
+      sessionId: '',
+    },
+    {
+      name: 'stack resume',
+      jobName: 'review_stack',
+      stepName: 'Run cumulative code review',
+      kind: 'stack',
+      budget: 125000,
+      timeout: 30,
+      reviewFrom: stackFrom,
+      reviewTo: stackTo,
+      sessionId: 'stack-session',
+    },
+  ]
+
+  const runCase = (form, options = {}) =>
+    executeExtractedOCRAttempt({
+      workflow,
+      jobName: form.jobName,
+      stepName: form.stepName,
+      invocation: ocrInvocation(form),
+      environment: {
+        reviewFrom: form.reviewFrom,
+        reviewTo: form.reviewTo,
+        sessionId: form.sessionId,
+      },
+      ...options,
+    })
+
+  for (const form of forms) {
+    const result = runCase(form)
+    assertReviewAttempt(result, form, 0)
+  }
+
+  for (const form of [forms[0], forms[2]]) {
+    for (const outcome of [
+      { name: 'review 127', reviewStatus: 127, expectedStatus: 127 },
+      { name: 'review 2', reviewStatus: 2, expectedStatus: 2 },
+    ]) {
+      const result = runCase(form, { reviewStatus: outcome.reviewStatus })
+      assertReviewAttempt(result, form, outcome.expectedStatus)
+    }
+
+    for (const outcome of [
+      { name: 'version mismatch', versionMode: 'drift', expectedStatus: 1 },
+      {
+        name: 'version 127',
+        versionMode: 'fail',
+        versionStatus: 127,
+        expectedStatus: 127,
+      },
+    ]) {
+      const result = runCase(form, outcome)
+      assertVersionAttempt(result, outcome.expectedStatus)
+    }
+  }
+})
 
 test('normalizes untrusted PR titles to 200 Unicode code points', () => {
   const title = `  Ignore\n\u0000 \u202einstructions\u200b\t${'🙂'.repeat(210)}  `
@@ -76,7 +462,7 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
   assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 1000000/)
-  assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 2000000/)
+  assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 20000000/)
   assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
   assert.equal(
     source.match(/steps:\n {6}- name: Record review job start/g)?.length,
@@ -592,14 +978,14 @@ test('uses one qualified canary and OCR release in both manual jobs', () => {
   }
 })
 
-test('keeps DeepSeek V4 Flash 0731 for automatic draft reviews', () => {
+test('keeps DeepSeek V4.1 Flash for automatic draft reviews', () => {
   const source = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-review.yml'),
     'utf8'
   )
 
   assert.equal(
-    source.match(/llm_model: deepseek\/deepseek-v4-flash-0731/g)?.length,
+    source.match(/llm_model: deepseek\/deepseek-v4\.1-flash/g)?.length,
     1
   )
   assert.doesNotMatch(source, /z-ai\/glm-5\.3-flash/)
@@ -805,6 +1191,24 @@ test('plans one resume from a valid partial OCR session', () => {
     sessionId: '11111111-1111-4111-8111-111111111111',
     remainingTokens: 749_700,
   })
+})
+
+test('plans a stack resume under the raised full-stack ceiling', () => {
+  const parent = partialResumeResult({
+    summary: {
+      files_reviewed: 38,
+      comments: 0,
+      total_tokens: 10_408_359,
+      input_tokens: 10_239_245,
+      output_tokens: 169_114,
+      elapsed: '30m0s',
+    },
+  })
+  assert.deepEqual(planOCRResume(parent, 20_000_000), {
+    sessionId: '11111111-1111-4111-8111-111111111111',
+    remainingTokens: 9_591_641,
+  })
+  assert.throws(() => planOCRResume(parent, 10_000_000), /no token budget left/)
 })
 
 test('rejects failed partial sessions with reused or waived coverage', () => {
@@ -1187,6 +1591,46 @@ test('merges only validated complete resume usage within the original ceiling', 
   assert.equal(merged.summary.output_tokens, 110)
   assert.equal(merged.summary.total_tokens, 500)
   assert.equal(validateOCRResult(merged), merged)
+})
+
+test('merges stack resume usage below the raised ceiling only', () => {
+  const initial = partialResumeResult({
+    summary: {
+      files_reviewed: 38,
+      comments: 0,
+      total_tokens: 10_408_359,
+      input_tokens: 10_239_245,
+      output_tokens: 169_114,
+      elapsed: '30m0s',
+    },
+  })
+  const resumed = completedResumeResult(initial, {
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 9_591_640,
+      input_tokens: 9_422_526,
+      output_tokens: 169_114,
+      elapsed: '12m0s',
+    },
+  })
+  const merged = mergeOCRResumeResults(initial, resumed, 20_000_000)
+  assert.equal(merged.summary.total_tokens, 19_999_999)
+
+  const resumedOver = completedResumeResult(initial, {
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 9_591_642,
+      input_tokens: 9_422_528,
+      output_tokens: 169_114,
+      elapsed: '12m0s',
+    },
+  })
+  assert.throws(
+    () => mergeOCRResumeResults(initial, resumedOver, 20_000_000),
+    /exceeded the original token budget/
+  )
 })
 
 test('rejects incorrect resume lineage, identity, and incomplete coverage', () => {
@@ -2408,6 +2852,146 @@ test('authorizes a verified native stack member', async () => {
   assert.equal(outputs.get('stack_id'), 'stack-42')
 })
 
+test('treats default-branch-prefixed branches as consolidation bases', () => {
+  const context = reviewContext()
+  for (const baseRef of ['v3-ai', 'v3-polls', 'v3-course-qa', 'v3-x.y_z']) {
+    assert.equal(isEligibleBaseBranch({ baseRef, context }), true, baseRef)
+    assert.equal(
+      isConsolidationBaseBranch({ baseRef, defaultBranch: 'v3' }),
+      true,
+      baseRef
+    )
+  }
+  assert.equal(isEligibleBaseBranch({ baseRef: 'v3', context }), true)
+  assert.equal(
+    isConsolidationBaseBranch({ baseRef: 'v3', defaultBranch: 'v3' }),
+    false
+  )
+  for (const baseRef of [
+    'v3-',
+    'v3-ai/feature',
+    'v3--ai',
+    'v4-ai',
+    'xv3-ai',
+    'feature/v3-ai',
+    'main',
+    undefined,
+    null,
+  ]) {
+    assert.equal(
+      isEligibleBaseBranch({ baseRef, context }),
+      false,
+      String(baseRef)
+    )
+  }
+  assert.equal(
+    isEligibleBaseBranch({
+      baseRef: 'main-ai',
+      context: {
+        ...context,
+        payload: { repository: { default_branch: 'main' } },
+      },
+    }),
+    true
+  )
+})
+
+test('authorizes a verified native stack member whose root targets a consolidation branch', async () => {
+  const parentPull = {
+    number: 41,
+    state: 'open',
+    draft: false,
+    title: 'Parent change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Stacked change',
+    base: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/child-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const stackResponse = [
+    {
+      id: 'stack-42',
+      pull_requests: [
+        {
+          number: 41,
+          state: 'open',
+          draft: false,
+          head: { sha: 'c'.repeat(40) },
+        },
+        {
+          number: 42,
+          state: 'open',
+          draft: false,
+          head: { sha: 'a'.repeat(40) },
+        },
+      ],
+    },
+  ]
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github: reviewGithub({
+        pull,
+        stackResponse,
+        comparison: { status: 'ahead', files: [] },
+        pullsByNumber: { 41: parentPull },
+      }).github,
+      context: reviewContext(),
+      core,
+    }),
+    true
+  )
+  assert.equal(outputs.get('scope_kind'), 'native-stack')
+  assert.equal(outputs.get('stack_id'), 'stack-42')
+
+  const unrelatedRoot = {
+    ...parentPull,
+    base: { ...parentPull.base, ref: 'feature/v3-ai' },
+  }
+  const notices = []
+  assert.equal(
+    await authorizeFinalReview({
+      github: reviewGithub({
+        pull,
+        stackResponse,
+        comparison: { status: 'ahead', files: [] },
+        pullsByNumber: { 41: unrelatedRoot },
+      }).github,
+      context: reviewContext(),
+      core: { ...core, notice: (message) => notices.push(message) },
+    }),
+    false
+  )
+  assert.equal(outputs.get('authorized'), 'false')
+  assert.match(notices.join('\n'), /consolidation branch/)
+})
+
 test('authorizes a pull request targeting a designated consolidation branch', async () => {
   const pull = {
     number: 42,
@@ -2481,8 +3065,6 @@ test('keeps the pending status for a consolidation-branch pull request', async (
     github,
     context,
     core: { info: () => {}, notice: () => {}, setOutput: () => {} },
-    sourceBranch: 'v3-ai',
-    trustedSha: 'd'.repeat(40),
   })
 
   assert.equal(statuses.length, 1)
@@ -2531,8 +3113,6 @@ test('rejects a pull request targeting an unlisted integration branch', async ()
     github,
     context,
     core: { info: () => {}, notice: () => {}, setOutput: () => {} },
-    sourceBranch: 'v3',
-    trustedSha: 'd'.repeat(40),
   })
 
   assert.equal(statuses.length, 1)
@@ -3365,445 +3945,58 @@ test('rejects duplicate disposition markers as ambiguous', () => {
   assert.equal(parseDispositionRecord(`${marker}\n${marker}`), null)
 })
 
-function promotionFile(release, tag = 'v3-ai') {
-  const tags = Array.from(
-    { length: 17 },
-    (_, index) => `service${index}:\n  tag: ${tag}`
-  )
-  const annotations = Array.from(
-    { length: 16 },
-    (_, index) =>
-      `rollout${index}:\n  podAnnotations:\n    rollout.klicker.uzh.ch/release: '${release}'`
-  )
-  return [...tags, ...annotations].join('\n')
-}
-
-function validPromotionInput(sourceBranch = 'v3-ai') {
-  const targetSha = '123456789abc'.padEnd(40, 'd')
-  const shortSha = targetSha.slice(0, 12)
-  const baseContent = promotionFile('aaaaaaaaaaaa')
-  const expected = buildExpectedPromotionContent(
-    baseContent,
-    shortSha,
-    sourceBranch
-  )
-
-  return {
-    pull: {
-      state: 'open',
-      draft: false,
-      baseRef: sourceBranch,
-      baseSha: 'b'.repeat(40),
-      baseRepo: 'uzh-bf/klicker-uzh',
-      headRef: `chore/promote-stg-${shortSha}`,
-      headRepo: 'uzh-bf/klicker-uzh',
-      title: `chore(deploy): promote ${shortSha} to stg [skip ci]`,
-      body: promotionBody(targetSha),
-    },
-    permission: 'write',
-    repository: 'uzh-bf/klicker-uzh',
-    defaultBranch: 'v3',
-    sourceBranch,
-    commits: [
-      {
-        message: `chore(deploy): promote ${shortSha} to stg`,
-        parents: ['b'.repeat(40)],
-      },
-    ],
-    files: [{ filename: PROMOTION_FILE, status: 'modified' }],
-    baseContent,
-    headContent: expected.content,
-    targetIsAncestor: true,
-    buildEvidence: {
-      valid: true,
-      sourceBranch,
-      targetSha,
-    },
-  }
-}
-
-test('accepts current and source-switch generated promotions', () => {
-  assert.equal(validatePromotionContract(validPromotionInput()).valid, true)
-  assert.equal(
-    validatePromotionContract(validPromotionInput('release-candidate')).valid,
-    true
-  )
-})
-
-test('requires non-empty dynamic promotion inventories', () => {
-  const noTags = validPromotionInput()
-  noTags.baseContent = noTags.baseContent.replace(/^([ \t]+tag: ).*$/gm, '')
-  noTags.headContent = buildExpectedPromotionContent(
-    noTags.baseContent,
-    noTags.buildEvidence.targetSha.slice(0, 12),
-    noTags.sourceBranch
-  ).content
-  assert.equal(validatePromotionContract(noTags).valid, false)
-
-  const noAnnotations = validPromotionInput()
-  noAnnotations.baseContent = noAnnotations.baseContent.replace(
-    /^([ \t]*rollout\.klicker\.uzh\.ch\/release: ).*$/gm,
-    ''
-  )
-  noAnnotations.headContent = buildExpectedPromotionContent(
-    noAnnotations.baseContent,
-    noAnnotations.buildEvidence.targetSha.slice(0, 12),
-    noAnnotations.sourceBranch
-  ).content
-  assert.equal(validatePromotionContract(noAnnotations).valid, false)
-})
-
-test('staging promoter targets the selected source without fixed value counts', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/deploy-stg-promote.yml'),
-    'utf8'
-  )
-
-  assert.match(workflow, /Build Docker image for mcp-lecturer \(stg\)/)
-  assert.match(workflow, /Build Docker image for mcp-student \(stg\)/)
-  assert.match(
-    workflow,
-    /ref: \$\{\{ steps\.target\.outputs\.source_branch \}\}/
-  )
-  assert.ok(workflow.includes('--base "$SOURCE_BRANCH"'))
-  assert.ok(workflow.includes('Verified generated staging promotion'))
-  assert.doesNotMatch(workflow, /expected 15/)
-})
-
-test('requires every trusted exact-SHA staging build run for a promotion', async () => {
-  const workflowPaths = [
-    '.github/workflows/v3_auth-stg.yml',
-    '.github/workflows/v3_chat-stg.yml',
-  ]
-  const targetSha = 'a'.repeat(40)
-  const trustedSha = 'd'.repeat(40)
-  const context = reviewContext()
-  const workflowDefinitions = new Map(
-    workflowPaths.map((workflowPath) => [
-      `${workflowPath}:${trustedSha}`,
-      `name: ${workflowPath}`,
-    ])
-  )
-  for (const workflowPath of workflowPaths) {
-    workflowDefinitions.set(
-      `${workflowPath}:${targetSha}`,
-      `name: ${workflowPath}`
-    )
-  }
-  const github = {
-    rest: {
-      repos: {
-        getContent: async ({ path: filePath, ref }) =>
-          filePath === '.github/workflows'
-            ? {
-                data: workflowPaths.map((workflowPath) => ({
-                  name: workflowPath.split('/').at(-1),
-                  path: workflowPath,
-                  type: 'file',
-                })),
-              }
-            : {
-                data: {
-                  type: 'file',
-                  encoding: 'base64',
-                  content: Buffer.from(
-                    workflowDefinitions.get(`${filePath}:${ref}`) ?? ''
-                  ).toString('base64'),
-                },
-              },
-      },
-      actions: {
-        listWorkflowRunsForRepo: async (params) => ({
-          data: {
-            workflow_runs: [
-              {
-                conclusion: 'success',
-                event: 'push',
-                head_branch: 'v3',
-                head_sha: targetSha,
-                path: params.workflow_id,
-                repository: { full_name: 'uzh-bf/klicker-uzh' },
-                status: 'completed',
-              },
-            ],
-          },
-        }),
-      },
-    },
-    paginate: async (endpoint, params) =>
-      (await endpoint(params)).data.workflow_runs,
-  }
-
-  const evidence = await verifyPromotionBuilds({
-    github,
-    context,
-    sourceBranch: 'v3',
-    targetSha,
-    trustedSha,
-  })
-
-  assert.equal(evidence.valid, true)
-  assert.deepEqual(evidence.workflowPaths, workflowPaths)
-
-  workflowDefinitions.set(
-    `${workflowPaths[1]}:${targetSha}`,
-    'name: changed on the target'
-  )
-  const changedDefinition = await verifyPromotionBuilds({
-    github,
-    context,
-    sourceBranch: 'v3',
-    targetSha,
-    trustedSha,
-  })
-  assert.equal(changedDefinition.valid, false)
-  assert.match(changedDefinition.reason, /definition/)
-})
-
-test('CLI verifier adapter covers promotion pagination and missing variables', async () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-gh-'))
-  const executable = path.join(directory, 'gh')
-  fs.writeFileSync(
-    executable,
-    `#!/usr/bin/env node
-const endpoint = process.argv.at(-1)
-if (endpoint.includes('/actions/variables/')) {
-  process.stderr.write('gh: 404 Not Found')
-  process.exit(1)
-}
-if (endpoint.includes('/pulls/42/commits')) {
-  process.stdout.write(JSON.stringify([[{ sha: 'commit' }]]))
-} else if (endpoint.includes('/pulls/42/files')) {
-  process.stdout.write(JSON.stringify([[{ filename: 'deploy/env-uzh-stg/values.yaml' }]]))
-} else if (endpoint.includes('/actions/workflows/v3_auth-stg.yml/runs')) {
-  process.stdout.write(JSON.stringify([{ workflow_runs: [{ conclusion: 'success', head_sha: 'a'.repeat(40) }] }]))
-} else {
-  process.stdout.write(JSON.stringify({ ok: true }))
-}
-`,
-    { mode: 0o700 }
-  )
-  const originalPath = process.env.PATH
-  process.env.PATH = `${directory}:${originalPath ?? ''}`
-  try {
-    const { github } = createGhGithub({
-      repository: 'uzh-bf/klicker-uzh',
-      defaultBranch: 'v3',
-    })
-    assert.deepEqual(
-      await github.paginate(github.rest.pulls.listCommits, {
-        pull_number: 42,
-      }),
-      [{ sha: 'commit' }]
-    )
-    assert.deepEqual(
-      await github.paginate(github.rest.pulls.listFiles, { pull_number: 42 }),
-      [{ filename: 'deploy/env-uzh-stg/values.yaml' }]
-    )
-    assert.deepEqual(
-      await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
-        workflow_id: '.github/workflows/v3_auth-stg.yml',
-        event: 'push',
-        head_sha: 'a'.repeat(40),
-        status: 'completed',
-      }),
-      [{ conclusion: 'success', head_sha: 'a'.repeat(40) }]
-    )
-    assert.equal(
-      await getStagingSourceBranch({
-        github,
-        context: reviewContext(),
-        defaultBranch: 'v3',
-      }),
-      'v3'
-    )
-  } finally {
-    if (originalPath == null) delete process.env.PATH
-    else process.env.PATH = originalPath
-    fs.rmSync(directory, { recursive: true, force: true })
-  }
-})
-
-test('verifies the generated-promotion no-report status through the repository verifier', async () => {
-  const input = validPromotionInput()
+test('treats chore/promote-stg-* as ordinary final-review policy', async () => {
   const pull = {
     number: 42,
-    state: input.pull.state,
-    draft: input.pull.draft,
-    title: input.pull.title,
-    body: input.pull.body,
-    user: { login: 'reviewer' },
+    state: 'open',
+    draft: false,
+    title: 'Legacy-named staging change',
     base: {
-      ref: input.pull.baseRef,
-      repo: { full_name: input.pull.baseRepo },
-      sha: input.pull.baseSha,
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
     head: {
-      ref: input.pull.headRef,
-      repo: { full_name: input.pull.headRepo },
+      ref: 'chore/promote-stg-123456789abc',
       sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
   }
-  const trustedSha = 'd'.repeat(40)
-  const workflowPath = '.github/workflows/v3_auth-stg.yml'
-  const statusEndpoint = async () => ({ data: [] })
-  const commitsEndpoint = {}
-  const filesEndpoint = {}
-  const workflowRunsEndpoint = async () => ({ data: { workflow_runs: [] } })
-  const workflow = {
-    conclusion: 'success',
-    event: 'push',
-    head_branch: input.sourceBranch,
-    head_sha: input.buildEvidence.targetSha,
-    path: workflowPath,
-    repository: { full_name: input.repository },
-    status: 'completed',
-  }
+  const statuses = []
   const github = {
     rest: {
-      actions: {
-        listWorkflowRunsForRepo: workflowRunsEndpoint,
-        getWorkflowRun: async () => ({
-          data: {
-            conclusion: 'success',
-            event: 'pull_request_target',
-            head_branch: 'v3',
-            id: 123,
-            path: '.github/workflows/check-ocr-final-review.yml',
-            repository: { full_name: input.repository },
-          },
-        }),
-      },
-      pulls: {
-        listCommits: commitsEndpoint,
-        listFiles: filesEndpoint,
-      },
       repos: {
-        compareCommitsWithBasehead: async () => ({
-          data: { status: 'ahead' },
-        }),
-        getCollaboratorPermissionLevel: async () => ({
-          data: { user: { permission: 'write' } },
-        }),
-        getContent: async ({ path: filePath, ref }) => {
-          if (filePath === '.github/workflows') {
-            return {
-              data: [
-                {
-                  name: 'v3_auth-stg.yml',
-                  path: workflowPath,
-                  type: 'file',
-                },
-              ],
-            }
-          }
-          if (filePath === workflowPath) {
-            return {
-              data: {
-                content: Buffer.from('trusted workflow').toString('base64'),
-                encoding: 'base64',
-                type: 'file',
-              },
-            }
-          }
-          return {
-            data: {
-              content: Buffer.from(
-                filePath === PROMOTION_FILE
-                  ? ref === pull.base.sha
-                    ? input.baseContent
-                    : input.headContent
-                  : ''
-              ).toString('base64'),
-              encoding: 'base64',
-              type: 'file',
-            },
-          }
-        },
-        listCommitStatusesForRef: statusEndpoint,
+        createCommitStatus: async (status) => statuses.push(status),
       },
     },
-    paginate: async (endpoint) => {
-      if (endpoint === statusEndpoint) {
-        return [
-          {
-            context: 'final-ai-review',
-            description: GENERATED_PROMOTION_STATUS,
-            state: 'success',
-            target_url:
-              'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
-          },
-        ]
-      }
-      if (endpoint === commitsEndpoint) {
-        return [
-          {
-            commit: { message: input.commits[0].message },
-            parents: [{ sha: input.commits[0].parents[0] }],
-          },
-        ]
-      }
-      if (endpoint === filesEndpoint) return input.files
-      if (endpoint === workflowRunsEndpoint) return [workflow]
-      throw new Error('unexpected pagination endpoint')
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
     },
   }
 
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'pending')
   assert.equal(
-    await hasVerifiedGeneratedPromotionStatus({
-      github,
-      context: reviewContext(),
-      pull,
-      sourceBranch: input.sourceBranch,
-      trustedSha,
-    }),
-    true
+    statuses[0].description,
+    `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
   )
-})
 
-test('rejects every material promotion-contract deviation', () => {
-  const mutations = [
-    (input) => {
-      input.pull.draft = true
-    },
-    (input) => {
-      input.permission = 'read'
-    },
-    (input) => {
-      input.pull.headRepo = 'attacker/fork'
-    },
-    (input) => {
-      input.pull.baseRef = 'v3'
-    },
-    (input) => {
-      input.pull.title = 'chore(deploy): bypass review'
-    },
-    (input) => {
-      input.pull.body = `${input.pull.body}extra`
-    },
-    (input) => {
-      input.commits.push(input.commits[0])
-    },
-    (input) => {
-      input.commits[0].parents[0] = 'c'.repeat(40)
-    },
-    (input) => {
-      input.files.push({ filename: 'extra.txt', status: 'added' })
-    },
-    (input) => {
-      input.headContent += '\nuntrusted: true\n'
-    },
-    (input) => {
-      input.targetIsAncestor = false
-    },
-    (input) => {
-      input.buildEvidence.valid = false
-    },
-  ]
-
-  for (const mutate of mutations) {
-    const input = validPromotionInput()
-    mutate(input)
-    assert.equal(validatePromotionContract(input).valid, false)
-  }
+  const source = fs.readFileSync(
+    path.join(__dirname, 'final-ai-review.js'),
+    'utf8'
+  )
+  assert.doesNotMatch(
+    source,
+    /Generated staging promotion|isPromotionCandidate|validatePromotionContract/
+  )
 })

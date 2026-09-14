@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import type { MouseEvent } from 'react'
+import { type MouseEvent, useLayoutEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { resolveCitationSource } from '@/src/lib/sources/normalizeSources'
@@ -26,8 +26,18 @@ export const CITATION_CHIP_JOINER = '\u2060'
  */
 export function CitationChip({ index }: { index: number }) {
   const t = useTranslations()
-  const { messageId, sources } = useMessageSourcesContext()
+  const { messageId, registerCitation, sources } = useMessageSourcesContext()
   const source = resolveCitationSource(index, sources)
+  const sourceIndex = source?.index
+
+  // Register the link that actually resolved to a source. The hook stays
+  // unconditional so invalid markers and valid markers follow the same hook
+  // order, while its cleanup mirrors every registration for duplicate chips,
+  // Strict Mode, and replaced streamed text parts.
+  useLayoutEffect(() => {
+    if (sourceIndex === undefined) return
+    return registerCitation(sourceIndex)
+  }, [registerCitation, sourceIndex])
 
   if (!source) return <>{`[${index}]`}</>
 
