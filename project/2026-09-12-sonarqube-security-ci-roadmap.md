@@ -665,6 +665,18 @@ its dependent action. Read back effective settings and retain sanitized receipts
     `coverage-unreadable` with the other producer's verified input preserved
     (26 unit cases, including the two aggregate-path cases). The incremental
     review of `788c8b7544` is re-triggered and pending.
+  - Second review round at `794ad2d5df` (run `34793220405`, full mode) did
+    not re-report any of the six fixed findings and published two new ones,
+    both verified and fixed in `6616c9dcc6` with a trusted disposition: the
+    staging validator now requires each inventoried scan job to carry one
+    distinct full-SHA trivy revision and the `image-scan-receipt.cjs check`
+    step, so a refactored scan job fails validation instead of inheriting
+    trust from its own receipt metadata (the real scan jobs have two trivy
+    steps sharing one SHA, so the check collapses refs to one revision; two
+    new negative cases, real-file before/after verified), and the scan jobs'
+    checkouts moved to `actions/checkout@v4` while the pre-existing
+    build-job tags stay the recorded follow-up. The promoter suite is 29
+    cases. The review of `6616c9dcc6` is re-triggered and pending.
   - Head-check state: the expected Sonar quality-gate failure is the W8
     contract with the W0 gap. The other red checks on this branch are queue
     or environment effects, not source defects: `build-images-status` timed
@@ -692,7 +704,7 @@ its dependent action. Read back effective settings and retain sanitized receipts
   and the image scan cannot be proven from source alone. Expect the Sonar quality
   gate to fail this pull request while W0 and the policy decisions stay open, and
   treat the image scan as unproven until a publication run exercises it.
-- Next action: read and disposition the incremental review of `788c8b7544`
-  when it completes. The standing gates are unchanged: obtain authorized Sonar
+- Next action: read and disposition the review of `6616c9dcc6` when it
+  completes. The standing gates are unchanged: obtain authorized Sonar
   settings evidence for W0, then decide the fork and Dependabot analysis route
   before any merge enforcement.
