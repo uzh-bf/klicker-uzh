@@ -1,5 +1,8 @@
 import { join } from 'node:path'
-import { validateIsolatedConfig } from './isolated-config.mjs'
+import {
+  LOCAL_KB_MANAGED_PROFILE,
+  validateIsolatedConfig,
+} from './isolated-config.mjs'
 
 const redisServices = ['redis_exec', 'redis_assessment', 'redis_cache']
 const applicationRoutes = ['api', 'auth', 'manage', 'pwa', 'chat', 'blob']
@@ -112,11 +115,22 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
     profiles[name] = devrouter.profiles[name]
     delete profiles[name].default
   }
+  // The isolated runtime starts the ingestion workers, so the generated
+  // configuration exposes the matching capability alongside applications.
+  const workerProfile = LOCAL_KB_MANAGED_PROFILE.split(',').at(-1)
+  if (!devrouter.profiles?.[workerProfile]) {
+    throw new Error(`Missing managed worker profile: ${workerProfile}`)
+  }
+  if (
+    !Array.isArray(devrouter.profiles[workerProfile].apps) ||
+    devrouter.profiles[workerProfile].apps.length !== 0
+  ) {
+    throw new Error('The managed worker profile must define no routes.')
+  }
+  profiles[workerProfile] = devrouter.profiles[workerProfile]
   profiles.manage.default = true
   profiles['local-kb-setup'] = {
-    apps: [],
-    devcontainerServices: [],
-    processes: [],
+    devcontainerServices: ['redis_exec'],
   }
   return {
     devcontainer: {

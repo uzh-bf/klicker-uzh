@@ -118,6 +118,159 @@ S1; do not substitute an environment file or credential-bearing argument.
 
 ## Progress
 
+### Approved pending-ingestion recovery
+
+The user approved the local MinIO registry correction and one bounded recovery
+of attempt C. Provider source and workload pins stay unchanged. The separately
+published [MR !158](https://gitlab.uzh.ch/ai-infrastructure/services/data-ingestion/-/merge_requests/158)
+corrects future local starts. For this retained attempt, verify the Quay release
+label and digest, require the legacy local image reference absent, then add that
+local alias and verify image-ID equality. No provider source edits or claim
+rebinding are permitted. Initial ingestion credentials are part of setup;
+existing document-processing credentials must not be recreated.
+
+Extend the existing continuation with `--resume-ingestion-executor`, mutually
+exclusive with the profile-resume option at both CLI and function boundaries.
+Validate the root profile executor separately from the child ingestion executor:
+the child's resumeExecutor must link to the original root claim. Require exact
+root entries (claim, profile intent, resume-after-profile) and exact child
+entries (claim, bootstrap intent, document-processing reconciliation, ingestion
+intent), all matching candidate/config/context and their respective executors.
+
+Require original bootstrap containers exited and managed application absent.
+Scraping and document processing must have valid completed receipts and matching
+prepared/stopped native status. Retrieval remains untouched. Ingestion must
+have no completion receipt, all three native preparation states pending,
+infrastructure stopped, exact private state inventory (manifest, compose-project,
+project-configs), matching bound identity, no credential files, no owned
+containers/networks/volumes, and no occupied bound ingestion ports. Preserve
+pre-bootstrap checks and recheck immediately before setup. Boolean not-prepared
+alone never qualifies recovery.
+
+Create `setup-continuation/resume-after-ingestion` exclusively. Record claim,
+bootstrap intent and ingestion intent before the corresponding effects. Invoke
+the existing provider setup once, require its actual preparation success, then
+write the consumer receipt exclusively and continue normal downstream setup.
+On command, observation or receipt failure, retain the attempt and prohibit
+re-entry or downstream execution. Preserve every predecessor receipt.
+
+Delegation map: R1 main owns the coupled three existing source files and
+integration, with the state contract above as acceptance. R2 main owns existing
+test extensions until settled separable tests are assigned to a named executor;
+R3 main owns approved local proof after exact-source checks and reviews.
+Main retention reason is unresolved cross-system lifecycle coupling. No new
+source/test modules. Extend the existing preparation tests for lineage/state
+rejection, exactly-once invocation, concurrency, retained failure and downstream
+ordering; provider observation tests for all-pending versus mixed/missing states
+and withheld diagnostics; CLI tests for exclusive valid options and malformed
+arguments. No tests pin plan wording or manual image-alias commands.
+
+Baseline remains 81/81 passing source tests. The real acceptance journey remains
+unproven. Planner Jason requested the explicit lineage, pending-state and
+failure details above; the same planner approved the corrected scope.
+
+### Approved retained setup continuation
+
+The profile repair completed, then executor bfcd67bbbfb511e963767ec4b978d384b13978b7
+stopped before bootstrap with `Repaired setup profile could not be qualified`.
+The user approved correcting and continuing this exact retained prefix. Planner
+Mill approved the corrected design: use exact-path workspace allocation status
+`absent` and zero routes, not the workspace identity field. Preserve Docker
+label checks. Explicit `--resume-executor` validates the original two-file
+attempt and creates one exclusive child, never clearing its parent. Require
+the known provider prefix (scraping complete, document processing reconcile,
+ingestion/retrieval untouched), original exited bootstrap containers, exact
+bootstrap configuration, and corrected managed bytes before effects. Write a
+bootstrap intent before starting services. Missing intent alone is never proof
+of absent effects: execution authority is limited to the observed failed
+executor above and original candidate 8207c964. Main owns source and runtime;
+executor owns existing regression tests. No new modules or generalized retry.
+
+Runtime preflight found that installed devrouter 0.0.77 rejects the generated
+empty setup profile. Fold the bounded correction into this recovery: select
+the already-declared redis_exec service with no routes or managed processes.
+Accept only the exact previous empty profile representation, record intent
+before replacing that generated file, then revalidate with devrouter. No
+other generated configuration change is permitted. This adds the existing
+managed-configuration.mjs and isolated-config.test.mjs paths to R1. A synthetic
+profile resolve confirmed the corrected selection has zero routes/processes.
+
+Planner Pauli approved the continuation section before implementation. Source
+slice 575f46edbd passes 76 focused tests. Its normal app hook is unavailable
+because the app container is stopped; focused source checks and staged
+gitleaks passed before the explicitly recorded hook bypass. Full app checks
+and integrated final review remain pending. Simplifier recommended one shared
+managed rendering function, accepted. Correctness review is in progress.
+
+Correction a78d226785 passes 77 tests. Slice review found no implementation
+defect. Claude final review completed on the integrated range with four
+recoverable findings. Main verification confirms the ingestion Compose naming
+matches the pinned provider's `compose_project` implementation; moving it into
+a separate contract constant would not enforce future provider compatibility.
+The suggested repeated-continuation consistency issue does not apply: an
+existing continuation intent always rejects re-entry. Accepted the fsmonitor
+argument alignment. Values-free preflight found the retained state root and
+scraping directory at 0755; tighten those exact owned directories to 0700
+before execution, as documented. Candidate source and exact legacy managed
+profile passed the real read-only verifier. Full runtime acceptance remains
+pending; no PDF or model call has occurred.
+
+The user approved implementing, reviewing and executing a bounded
+`continue-setup` command on retained attempt C, followed by the original
+acceptance journey. The implementation branch is `rs/local-kb-setup-recovery`
+in the same worktree, based on `3d31c0d9cb67f80c1ec09d0f954c555eed46e467`.
+Runtime candidate remains `8207c964016b3f1c735c678e6563bfe96d604f5d`.
+This correction is full-path because it crosses retained lifecycle state.
+No KB product model changes; existing provider lifecycle contracts compose.
+
+The command must preserve normal setup's exclusive claim and normal start's
+requirement for complete preparation. It validates the original claim,
+configuration digest, actual detached candidate, managed configuration bytes,
+completed storage receipt and exact local Docker context. Recovery runs from
+a separately committed clean implementation checkout; it records that code
+revision, without copying code into C or changing C's claim. The operator
+reviews the exact executor/candidate pair before execution.
+
+Before effects, observe providers individually. A private completed receipt
+plus matching prepared native status is skipped. A provider with matching
+prepared native status and no consumer receipt may be reconciled by writing
+the missing receipt exclusively. Failed observations never imply unused
+state. New setup requires an absent provider state directory, absent consumer
+receipt, no owned runtime resources, and no previous continuation intent.
+For ingestion, check its configured deterministic Compose project for
+containers, networks and volumes; retrieval must have no state or occupied
+listener. Recheck before invoking setup and retain an intent before effects.
+If untouched ownership cannot be established, fail without initialization.
+
+Use one private exclusive continuation directory to prevent simultaneous or
+repeated continuation. A failed continuation remains retained. Do not add a
+general retry engine. Validate the entire stage classification first, then
+continue in the existing dependency order. Preserve all prior receipts.
+Only restore verified existing consumer bootstrap services when needed;
+never rerun token creation or storage initialization. After validated provider
+success, write the existing aggregate completion receipt. Managed application
+initialization is allowed only when its attempt and managed runtime are
+proven absent; reuse the existing initialization and completion operations.
+No automatic application start or model call occurs in this command.
+
+Delegation: R1 main owns lifecycle decisions and integration; a bounded
+executor may own settled source/test changes. R2 main owns exact runtime
+qualification and acceptance because it couples credentials, state and UI.
+R1 source scope is util/local-kb/preparation.mjs, provider-commands.mjs,
+util/local-kb-stack.mjs and their existing tests. R2 updates this plan and
+docs/solutions/integration/local-kb-stack.md. No new source modules.
+
+Test portfolio: extend preparation tests for valid partial continuation,
+zero repeated completed-stage setup calls, exclusive intents, identity or
+configuration drift, ambiguous state, partial application setup and failures
+after effects; extend provider observation tests for individual identity and
+readiness validation; extend CLI tests for pre-effect rejection. Reuse the
+71 passing baseline tests. Documentation needs no content-pinning tests.
+Commit the plan, implement one cohesive source slice, run focused checks,
+then simplifier and slice review, integrated final review and normal draft
+delivery. New merge authority is not implied. Execute only reviewed code on
+C, preserve failures, and stop the exact runtime after the original proof.
+
 - Recovery correction: attempt B never created a preparation claim. The strict
   source check rejected Python/test caches and local review artifacts in two
   provider worktrees. Preserve those worktrees and use clean detached provider
@@ -179,3 +332,48 @@ S1; do not substitute an environment file or credential-bearing argument.
   has zero running app containers. No bypass or commit occurred. The 68 passing
   launcher tests do not replace the full container check suite.
 - Runtime setup, PDF ingestion, retrieval, and retained restart remain unrun.
+
+### End-to-end proof and the runtime defects it exposed
+
+Instance f completed the acceptance journey that this plan exists to reach. One isolated
+stack at the Luna pin carried provider ingestion to `succeeded`, reconciled the
+resource to `READY` with `activeResourceVersion = 1`, and then answered a Chat
+question from that ingested content through the real retrieval service. The cited
+quotation matched the provider-ingested page text, so the answer came from retrieval
+rather than model memory. The receipt is `project/_local/2026-09-13-instance-f-qna-proof.md`.
+
+Three defects appeared only once the stack ran end to end. All three are fixed in
+source at `317662a438`, but the provenance of that run matters: the worker was
+started manually with `pnpm --filter @klicker-uzh/hatchet-worker-general run dev` and the
+MCP transport was normalized by running a copy of the seed script inside the
+runtime checkout. The run therefore proves the ingestion and retrieval path
+itself, including the Luna pin, and it is what established that the defects are
+real. It does not prove the launcher-owned `workers` profile or the
+`kb-retrieval-transport` stage; those rest on unit tests plus a fresh-stack run
+that has not happened yet. The defects:
+
+- The isolated profile started no Klicker Hatchet worker, so a resource created
+  through Manage stayed `QUEUED` with a null `externalOperationId` and no error.
+  KB ingestion workflows are registered only by `apps/hatchet-worker-general`.
+  A new `workers` profile starts both worker runtimes without adding routes.
+- The seeded KB MCP server was parked as `scope_token` with a null
+  `authSecret`, while the Chat client requires a bearer transport secret and
+  otherwise fails closed. Every KB chat turn returned HTTP 503
+  `Required chatbot tools are unavailable`. The new `kb-retrieval-transport` stage
+  normalizes exactly that owned row and nothing else.
+- The provider callback URL is unreachable from the application container. Ingestion
+  still completes because `monitorActiveKBIngestions` polls, so the callback is a
+  latency optimization and not the completion path. The polling fallback is what
+  delivered the terminal state; the callback itself remains untested.
+
+The prior candidate-blocking failures at instances b, c and e remain accurate for
+their own revisions: the document-processing token failure and the discarded
+subprocess stderr were real. This run reached its terminal state on a later
+candidate, so those blockers describe superseded revisions rather than open work.
+
+Source checks on the merged head: launcher suite 87/87, profile-resolver contract
+pass, and the Chat transport test 7/7. Application hooks could not run because the
+task runtime is stopped, so equivalent host checks were run in their place.
+
+Open boundaries: no teardown, deletion, merge, deployment, or graph activation was
+performed. Instance f is left running for the user's own inspection.

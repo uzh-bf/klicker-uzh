@@ -85,8 +85,9 @@ export function renderProviderLocalConfiguration(credentials, input) {
       'Local setup requires one fresh hex credential per service purpose.'
     )
   }
+  const databaseHost = `${bindings.instance}-postgres`
   const database = (name) =>
-    `postgresql://local_kb:${credentials.database}@postgres:5432/${name}`
+    `postgresql://local_kb:${credentials.database}@${databaseHost}:5432/${name}`
   const project = 'klicker-course-materials'
   const backend = container.backend
   const blobKey = Buffer.from(credentials.blob, 'hex').toString('base64')
@@ -148,8 +149,8 @@ export function renderProviderLocalConfiguration(credentials, input) {
       AZURE_STORAGE_CONNECTION_STRING: artifactConnection,
     },
     klicker: {
-      DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test`,
-      SHADOW_DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@postgres:5432/klicker_test_shadow`,
+      DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@${databaseHost}:5432/klicker_test`,
+      SHADOW_DATABASE_URL: `postgresql://klicker_test:${credentials.klickerDatabase}@${databaseHost}:5432/klicker_test_shadow`,
       REDIS_HOST: 'redis_exec',
       REDIS_PORT: '6379',
       REDIS_CACHE_HOST: 'redis_cache',
@@ -175,6 +176,9 @@ export function renderProviderLocalConfiguration(credentials, input) {
       KLICKER_LOCAL_RETRIEVAL_MILVUS_COLLECTION_NAME: bindings.collection,
       KLICKER_LOCAL_RETRIEVAL_OPENAI_BASE_URL: host.model,
       KLICKER_LOCAL_RETRIEVAL_OPENAI_API_KEY: 'local-kb-no-upstream',
+      // The isolated model gateway serves the Luna family only, so the
+      // retrieval answer model must override the doc-query production default.
+      KLICKER_LOCAL_RETRIEVAL_RETRIEVAL_MODEL: 'gpt-5.6-luna',
     },
     scrapingApiKey: credentials.scraping,
     docProcessing: {

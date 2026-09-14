@@ -83,10 +83,7 @@ async function scheduleAssessmentAuditMediaRenewal(ctx: ContextWithUser) {
   } catch {
     // The daily renewal cron remains the recovery path when Hatchet is
     // unavailable at the end of a quiz.
-    ctx.log.warn(
-      { event: 'live_quiz.audit_media.renewal.failed' },
-      'Assessment audit media renewal could not be scheduled'
-    )
+    console.warn('Assessment audit media renewal could not be scheduled')
   }
 }
 
@@ -110,15 +107,11 @@ async function recordRejectedAssessmentAction(
   } catch (error) {
     // An audit failure must not turn an already-rejected teaching action into
     // a server error. The ordinary monitor observes storage failures.
-    ctx.log.error(
-      {
-        event: 'live_quiz.audit.rejection.record_failed',
-        actionType: input.actionType,
-        liveQuizId: input.liveQuizId,
-        errorType: error instanceof Error ? error.name : 'unknown',
-      },
-      'Failed to record rejected assessment action'
-    )
+    console.error('Failed to record rejected assessment action', {
+      actionType: input.actionType,
+      liveQuizId: input.liveQuizId,
+      errorType: error instanceof Error ? error.name : 'unknown',
+    })
   }
 }
 
@@ -652,16 +645,10 @@ export async function manipulateLiveQuiz(
         liveQuizId: activity.id,
       })
       if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
-        ctx.log.warn({
-          event: 'live_quiz.audit.activation.coverage_gap',
-          liveQuizId: activity.id,
-        })
+        console.warn('New assessment audit activation recorded a coverage gap')
       }
     } catch {
-      ctx.log.warn({
-        event: 'live_quiz.audit.activation.pending',
-        liveQuizId: activity.id,
-      })
+      console.warn('New assessment audit activation remains pending')
     }
   }
   return {
@@ -1007,21 +994,13 @@ export async function startLiveQuiz(
           liveQuizId: quiz.id,
         })
         if (readiness === 'UNCOVERED') {
-          ctx.log.warn(
-            {
-              event: 'live_quiz.audit.coverage.uncovered',
-              liveQuizId: quiz.id,
-            },
-            'Starting selected assessment without audit coverage'
+          console.warn(
+            'Starting selected assessment without audit coverage; teaching continues'
           )
         }
       } catch {
-        ctx.log.warn(
-          {
-            event: 'live_quiz.audit.readiness.unavailable',
-            liveQuizId: quiz.id,
-          },
-          'Assessment audit readiness unavailable'
+        console.warn(
+          'Assessment audit readiness unavailable; teaching continues'
         )
       }
     }
@@ -4249,11 +4228,9 @@ export const handlePublishScheduledLiveQuiz: HatchetHandlers['handlePublishSched
 
       return true
     } catch (error) {
-      executionCtx.logger.error('Error publishing scheduled live quiz', {
-        extra: {
-          liveQuizId,
-          errorType: error instanceof Error ? error.name : 'unknown',
-        },
+      console.error('Error publishing scheduled live quiz', {
+        liveQuizId,
+        errorType: error instanceof Error ? error.name : 'unknown',
       })
       await sendTeamsNotification({
         scope: 'hatchet/live-quiz-start',

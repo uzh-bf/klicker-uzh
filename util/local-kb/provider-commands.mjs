@@ -14,95 +14,138 @@ export async function observeProviderLaunchers(
   const commands = providerCommands(config)
   const observations = []
   for (const name of commands.lifecycleOrder) {
-    try {
-      const status = JSON.parse(
-        await run(commands.providers[name].lifecycle.status, {
-          ...(name === 'retrieval' ? retrievalEnvironment : {}),
-          ...environment,
-        })
+    observations.push(
+      await observeProviderLauncher(
+        config,
+        name,
+        run,
+        environment,
+        retrievalEnvironment
       )
-      const identity =
-        name === 'ingestion'
-          ? status.instance?.name
-          : name === 'docProcessing'
-            ? status.instance_id
-            : status.instance
-      const revision =
-        name === 'ingestion' ? status.source?.revision : status.source_revision
-      if (
-        identity !== config.project.identity ||
-        revision !== config.providers[name].revision
-      ) {
-        throw new Error()
-      }
-      let prepared
-      let endpointReady = false
-      let stopped = false
-      if (name === 'ingestion') {
-        prepared = ['configuration', 'credentials', 'schema'].every(
-          (key) => status.preparation?.[key] === 'prepared'
-        )
-        if (
-          !Array.isArray(status.process?.workloads) ||
-          !Array.isArray(status.process?.infrastructure)
-        )
-          throw new Error()
-        endpointReady = status.process.workloads.some(
-          (row) =>
-            row.service === 'ingestion-api' &&
-            row.state === 'running' &&
-            row.health === 'healthy'
-        )
-        stopped = [
-          ...status.process.infrastructure,
-          ...status.process.workloads,
-        ].every((row) => ['exited', 'created', 'dead'].includes(row.state))
-      } else if (name === 'docProcessing') {
-        if (
-          status.ownership !== 'verified' ||
-          typeof status.ready !== 'boolean'
-        )
-          throw new Error()
-        prepared = status.setup === 'ready'
-        endpointReady = status.ready
-        stopped =
-          status.api === 'stopped' &&
-          Object.values(status.workers ?? {}).every(
-            (state) => state === 'stopped'
-          )
-      } else if (name === 'scraping') {
-        if (status.owned !== true || typeof status.readiness?.api !== 'boolean')
-          throw new Error()
-        prepared = status.setup?.prepared === true
-        endpointReady = status.readiness.api
-        stopped =
-          status.runtime?.api?.running === false &&
-          Array.isArray(status.runtime?.services) &&
-          status.runtime.services.length === 0
-      } else {
-        if (
-          typeof status.ready !== 'boolean' ||
-          typeof status.prepared !== 'boolean'
-        )
-          throw new Error()
-        prepared = status.prepared
-        endpointReady = status.ready
-        stopped = status.runtime === 'stopped'
-      }
-      observations.push({
-        provider: name,
-        prepared,
-        endpointReady,
-        stopped,
-        aiQualified: false,
-      })
-    } catch {
-      throw new Error(
-        `Provider ${name} observation is unavailable or mismatched; output withheld.`
-      )
-    }
+    )
   }
   return observations
+}
+
+// Observe one bound provider launcher. Unknown provider names are rejected
+// before any provider command is dispatched, and only the bounded observation
+// fields leave this function.
+export async function observeProviderLauncher(
+  config,
+  name,
+  run = runProviderCommand,
+  environment = {},
+  retrievalEnvironment = {}
+) {
+  const commands = providerCommands(config)
+  if (!commands.lifecycleOrder.includes(name)) {
+    throw new Error(
+      `Provider ${name} is not a known local-KB provider launcher.`
+    )
+  }
+  try {
+    const status = JSON.parse(
+      await run(commands.providers[name].lifecycle.status, {
+        ...(name === 'retrieval' ? retrievalEnvironment : {}),
+        ...environment,
+      })
+    )
+    const identity =
+      name === 'ingestion'
+        ? status.instance?.name
+        : name === 'docProcessing'
+          ? status.instance_id
+          : status.instance
+    const revision =
+      name === 'ingestion' ? status.source?.revision : status.source_revision
+    if (
+      identity !== config.project.identity ||
+      revision !== config.providers[name].revision
+    ) {
+      throw new Error()
+    }
+    let prepared
+    let pending = false
+    let effectsAbsent = false
+    let endpointReady = false
+    let stopped = false
+    if (name === 'ingestion') {
+      const preparationStates = ['configuration', 'credentials', 'schema']
+      prepared = preparationStates.every(
+        (key) => status.preparation?.[key] === 'prepared'
+      )
+      // The provider reports a full status triple. Only all-pending values
+      // qualify here; retained inventory and manifest bindings independently
+      // distinguish recoverable state from partial progress.
+      pending =
+        typeof status.preparation === 'object' &&
+        status.preparation !== null &&
+        Object.keys(status.preparation).length === preparationStates.length &&
+        preparationStates.every((key) => status.preparation[key] === 'pending')
+      if (
+        !Array.isArray(status.process?.workloads) ||
+        !Array.isArray(status.process?.infrastructure)
+      )
+        throw new Error()
+      // Ingestion workers run under a sibling Compose project, so the
+      // provider's own process lists are the only bounded place the consumer
+      // observes workload effects. Empty lists mean the provider created no
+      // container for this instance.
+      effectsAbsent =
+        status.process.workloads.length === 0 &&
+        status.process.infrastructure.length === 0
+      endpointReady = status.process.workloads.some(
+        (row) =>
+          row.service === 'ingestion-api' &&
+          row.state === 'running' &&
+          row.health === 'healthy'
+      )
+      stopped = [
+        ...status.process.infrastructure,
+        ...status.process.workloads,
+      ].every((row) => ['exited', 'created', 'dead'].includes(row.state))
+    } else if (name === 'docProcessing') {
+      if (status.ownership !== 'verified' || typeof status.ready !== 'boolean')
+        throw new Error()
+      prepared = status.setup === 'ready'
+      endpointReady = status.ready
+      stopped =
+        status.api === 'stopped' &&
+        Object.values(status.workers ?? {}).every(
+          (state) => state === 'stopped'
+        )
+    } else if (name === 'scraping') {
+      if (status.owned !== true || typeof status.readiness?.api !== 'boolean')
+        throw new Error()
+      prepared = status.setup?.prepared === true
+      endpointReady = status.readiness.api
+      stopped =
+        status.runtime?.api?.running === false &&
+        Array.isArray(status.runtime?.services) &&
+        status.runtime.services.length === 0
+    } else {
+      if (
+        typeof status.ready !== 'boolean' ||
+        typeof status.prepared !== 'boolean'
+      )
+        throw new Error()
+      prepared = status.prepared
+      endpointReady = status.ready
+      stopped = status.runtime === 'stopped'
+    }
+    return {
+      provider: name,
+      prepared,
+      ...(name === 'ingestion' ? { pending, effectsAbsent } : {}),
+      endpointReady,
+      stopped,
+      aiQualified: false,
+    }
+  } catch {
+    throw new Error(
+      `Provider ${name} observation is unavailable or mismatched; output withheld.`
+    )
+  }
 }
 
 // Capture provider diagnostics: child output may contain private connection
@@ -299,6 +342,7 @@ function boundCommands({
       'MILVUS_COLLECTION_NAME',
       'OPENAI_BASE_URL',
       'OPENAI_API_KEY',
+      'RETRIEVAL_MODEL',
     ]) {
       args.push('--env', `${name}=KLICKER_LOCAL_RETRIEVAL_${name}`)
     }
