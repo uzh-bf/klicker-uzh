@@ -17,6 +17,13 @@ nextConfig.transpilePackages = Array.from(
   new Set([...(nextConfig.transpilePackages ?? []), 'formik'])
 )
 
+if (process.env.NODE_ENV === 'development') {
+  nextConfig.experimental = {
+    ...nextConfig.experimental,
+    turbopackFileSystemCacheForDev: false,
+  }
+}
+
 if (process.env.NODE_ENV !== 'test') {
   const withPWA = withPWAInit(
     getNextPWAConfig({ NODE_ENV: process.env.NODE_ENV })

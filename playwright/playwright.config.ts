@@ -17,8 +17,13 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
-  // Serial execution by default (mirrors Cypress sequential spec ordering)
-  workers: isCI ? 1 : 1,
+  // Serial execution by default (mirrors Cypress sequential spec ordering).
+  // Routes can raise this via PLAYWRIGHT_WORKERS to run spec files in parallel.
+  workers:
+    Number.isInteger(Number(process.env.PLAYWRIGHT_WORKERS)) &&
+    Number(process.env.PLAYWRIGHT_WORKERS) > 0
+      ? Number(process.env.PLAYWRIGHT_WORKERS)
+      : 1,
   timeout: 60_000,
   expect: {
     timeout: 10_000,
