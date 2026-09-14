@@ -83,6 +83,13 @@ profiles:
     apps: []
     devcontainerServices: [mcp_postgres]
     processes: [klicker-local-mcp]
+  # ingestion workers only: registers the KB and graph workflow definitions
+  # without application routes. The isolated local KB runtime combines it with
+  # the application and model selections.
+  workers:
+    apps: []
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
+    processes: [klicker-dev]
   email:
     apps: []
     devcontainerServices: [mailhog]

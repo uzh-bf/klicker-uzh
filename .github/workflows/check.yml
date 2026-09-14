@@ -85,6 +85,7 @@ jobs:
         run: |
           node --test \
             .github/scripts/ci-equivalent-run.test.cjs \
+            .github/scripts/changed-paths.test.cjs \
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
             .github/scripts/required-ci-status.test.cjs \

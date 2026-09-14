@@ -421,6 +421,32 @@ test('an unchanged-head ready transition reuses the completed full run', async (
   assert.equal((await findEquivalentRun(options)).id, 12)
 })
 
+// The event that validates reuse is itself a run of the same workflow on the
+// same head, so it is always the newest entry the listing returns. Selecting
+// the newest run would therefore select a run that is still executing, which is
+// never successful, and the reuse path could never fire.
+test('a completed run is reused while its own event run is still in flight', async () => {
+  const { state, options } = prPlaywrightFixture()
+  const completed = state.run
+  const current = {
+    ...completed,
+    id: 99,
+    run_attempt: 1,
+    status: 'in_progress',
+    conclusion: null,
+  }
+  state.runs = [completed, current]
+  options.context.runId = current.id
+  assert.equal((await findEquivalentRun(options)).id, completed.id)
+})
+
+test('the current run can never qualify itself as reusable evidence', async () => {
+  const { state, options } = prPlaywrightFixture()
+  state.runs = [state.run]
+  options.context.runId = state.run.id
+  assert.equal(await findEquivalentRun(options), null)
+})
+
 test('a public-route transition reuses only matching public coverage', async () => {
   const { state, options } = prPlaywrightFixture()
   const success = { status: 'completed', conclusion: 'success' }

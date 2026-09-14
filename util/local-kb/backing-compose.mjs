@@ -50,6 +50,9 @@ export function renderBackingCompose(config) {
     services: {
       postgres: {
         ...common,
+        networks: {
+          default: { aliases: [`${config.bindings.instance}-postgres`] },
+        },
         image: 'postgres:15',
         env_file: environmentFile('postgres'),
         volumes: [

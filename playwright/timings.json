@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "architecture": "arm64",
   "durations": [
     {
       "spec": "tests/0-baseline-ops.spec.ts",

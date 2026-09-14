@@ -22,6 +22,8 @@ W1='--filter=@klicker-uzh/hatchet-worker-general'
 W2='--filter=@klicker-uzh/hatchet-worker-response-processor'
 
 # selection|wants klicker-dev|wants klicker-local-mcp|wants klicker-workers|turbo filters|readiness apps
+# 'workers' is the component the isolated local KB runtime adds so its KB
+# ingestion workflows are registered next to the selected applications.
 CASES="
 standard|yes|no|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
 full|yes|yes|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
@@ -31,6 +33,7 @@ manage|yes|no|no|$B $A $M|auth frontend-manage
 pwa|yes|no|no|$B $A $P|auth frontend-pwa
 chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 live-quiz|yes|no|yes|$B $A $P $T $R $W1 $W2|auth frontend-control frontend-pwa response-api
+workers|yes|no|yes|$B $A $W1 $W2|auth
 ai|no|no|no|||
 mcp|no|yes|no|||
 email|no|no|no|||
@@ -43,6 +46,7 @@ chat,pwa|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 pwa,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 chat,manage|yes|no|no|$B $A $C $P $M $L|auth chat frontend-pwa frontend-manage mcp-lecturer
 manage,chat|yes|no|no|$B $A $C $P $M $L|auth chat frontend-pwa frontend-manage mcp-lecturer
+ai,chat,manage,workers|yes|no|yes|$B $A $C $P $M $W1 $W2 $L|auth chat frontend-pwa frontend-manage mcp-lecturer
 "
 
 while IFS='|' read -r selection wants_dev wants_mcp wants_workers want_filters want_readiness; do
