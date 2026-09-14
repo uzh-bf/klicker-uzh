@@ -7,11 +7,20 @@ on:
       - 'v3*'
   pull_request:
     # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-evaluates the path filter when a pull request is retargeted,
+    # so newly applicable images are built instead of keeping the old result.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
       - 'apps/backend-docker/**'
-      - 'packages/graphql/**'
-      - 'packages/prisma/**'
+      # Any workspace package can be bundled into this image.
+      - 'packages/**'
+      # Root dependency and build inputs: the image build runs turbo prune
+      # against these files, so a root dependency change can alter any image.
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - '.dockerignore'
       - '.github/workflows/v3_backend-docker**'
 
 concurrency:
@@ -25,7 +34,6 @@ env:
 
 jobs:
   build-arm:
-    if: github.event.pull_request.draft == false
     # Gate the app image on the migrator image so the two tags can never drift
     # apart in the dangerous direction. If the migrator build fails, this job is
     # skipped and the backend tag stays put, leaving the migrator ahead of the
@@ -35,6 +43,9 @@ jobs:
     # schema.
     needs: build-migrator-arm
     runs-on: ubuntu-24.04-arm
+    # draft pull requests defer their image builds; marking the
+    # pull request ready re-runs this build on the unchanged head
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write
@@ -42,14 +53,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
@@ -70,7 +78,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: true
+          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
   build-amd:
     if: ${{ false }}
@@ -114,8 +124,10 @@ jobs:
           platforms: linux/amd64
           labels: ${{ steps.meta.outputs.labels }}
   build-migrator-arm:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
+    # draft pull requests defer their image builds; marking the
+    # pull request ready re-runs this build on the unchanged head
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write
@@ -123,14 +135,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
@@ -151,7 +160,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: true
+          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache', env.REGISTRY, env.MIGRATOR_IMAGE_NAME) || '' }}
+          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache,mode=max', env.REGISTRY, env.MIGRATOR_IMAGE_NAME) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
   build-migrator-amd:
     if: ${{ false }}

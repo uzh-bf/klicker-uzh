@@ -4,7 +4,10 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    types: [opened, synchronize, reopened]
+    # "edited" re-validates the changed package set when a PR is retargeted;
+    # "ready_for_review" recomputes the required context at the ready boundary
+    # so a draft-era success cannot stand in for the ready state.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -32,7 +35,11 @@ jobs:
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bash util/check-git-identity.sh range "${PR_BASE_SHA}..${PR_HEAD_SHA}"
+        # Bound the range at the merge base so commits that arrived through a
+        # v3 sync merge are not re-scanned; range mode itself stays strict.
+        run: |
+          base=$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")
+          bash util/check-git-identity.sh range "${base}..${PR_HEAD_SHA}"
 
       - name: Test Git identity guard
         run: node --test ./util/check-git-identity.test.mjs
@@ -65,8 +72,20 @@ jobs:
       - name: Check hosted pnpm cache policy
         run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
 
+      - name: Check CI queue policy
+        run: |
+          node --test \
+            .github/scripts/ci-equivalent-run.test.cjs \
+            .github/scripts/ci-obsolete-runs.test.cjs \
+            .github/scripts/ci-event-gates.test.cjs \
+            .github/scripts/required-ci-status.test.cjs \
+            .github/scripts/stg-release-promoter.test.js \
+            .github/scripts/required-build-status.test.cjs
+
       - name: Check Playwright CI contracts
-        run: pnpm run check:playwright-ci
+        run: |
+          pnpm run check:playwright-ci
+          node --test .github/scripts/playwright-resource-sampler.test.cjs
 
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
@@ -111,7 +130,7 @@ jobs:
             git fetch origin ${{ github.base_ref }}
             pnpm exec turbo run build --filter="...[origin/${{ github.base_ref }}...HEAD]"
           else
-            pnpm exec turbo run build --filter="...[HEAD~1...HEAD]"
+            pnpm exec turbo run build
           fi
 
       - name: Check typescript types
@@ -120,7 +139,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             pnpm exec turbo run check --filter="...[origin/${{ github.base_ref }}...HEAD]"
           else
-            pnpm exec turbo run check --filter="...[HEAD~1...HEAD]"
+            pnpm exec turbo run check
           fi
 
       - name: Check unused code and dependencies (knip, advisory)

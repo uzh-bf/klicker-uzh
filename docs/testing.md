@@ -166,16 +166,24 @@ global cleanup and seed only for a local host-launcher run. An explicit request
 in CI or without the launcher marker fails before setup instead of resetting
 the database. Individual specs still own their fixture writes and cleanup. Use this only
 when the required baseline already exists, and never against real course data.
-Without these options, runtime selection and database setup remain unchanged.
+Explicit spec paths infer the smallest runtime union from `playwright/profiles.json`.
+Broad or unresolved filters use the maximal `playwright` profile. An explicit
+`--runtime-profile` takes precedence. Applying a profile reconciles the runtime
+downward and stops services outside it, so pass `--runtime-profile` explicitly
+when optional services such as LiteLLM or MailHog must stay up. Normal database
+cleanup and seeding remain
+the acceptance default. Keep one worker for a shared runtime because per-spec
+cleanup resets shared fixed identities; parallel shards need separate complete
+worktree runtimes, including Redis and Hatchet.
 
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
-|               | Playwright (`playwright/`)                                 |
-| ------------- | ---------------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                           |
-| Infisical env | `dev-playwright`                                           |
-| Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
-| CI            | official Playwright container, 8-way shard, all PRs        |
+|               | Playwright (`playwright/`)                            |
+| ------------- | ----------------------------------------------------- |
+| Local command | `pnpm playwright:host -- <args>`                      |
+| Infisical env | `dev-playwright`                                      |
+| Seed          | own `seedDatabase()` in `global-setup.ts`             |
+| CI            | official Playwright container, 8-way shard, ready PRs |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
@@ -247,9 +255,11 @@ Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
 `public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
-across the two-host public pool; pushes, fork PRs, drafts, bots, private
-repositories, and
-disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+across the two-host public pool; pushes, fork PRs, bots, private
+repositories, and disabled rollouts keep all eight shards on GitHub-hosted
+runners. Draft PRs never enter either route: the caller skips the reusable
+execution workflow and `test-playwright-status` reports an explicit successful
+skip, so no Playwright worker is allocated until the PR is marked ready. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
 public-PR routes to be selected. The workflow tars the five `.next` trees before
@@ -282,7 +292,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-CI installs `@devrouter/cli` version `0.0.55` through
+CI installs `@devrouter/cli` version `0.0.72` through
 `.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
 scripts disabled. The shard action uses the trusted control checkout's installer
 and passes its absolute executable path to the runtime adapter, including for
@@ -320,9 +330,13 @@ introduce cross-file ordering assumptions.
 `check:all` + identity guard, pre-push = outgoing-commit identity guard +
 `build`). `util/check-git-identity.sh` rejects the exact selector fixture
 identity in repository configuration, effective author/committer state, or
-outgoing commit authors, committers, or co-author trailers. The pull-request
+outgoing commit authors, committers, or co-author trailers. Outgoing means not
+yet reachable from a remote-tracking ref: commits that already reached any
+remote (typically through a v3 sync merge) were scanned when they were first
+pushed and are skipped on later pushes. The pull-request
 check repeats the commit-range guard on GitHub, where local hooks cannot be
-assumed. The second pre-commit check catches any test that mutates Git
+assumed, and bounds the range at the PR merge base so merged upstream history
+is not re-scanned. The second pre-commit check catches any test that mutates Git
 configuration while `check:all` runs. The Prisma package check regenerates the
 raw Prisma 7 client before typechecking; no generated-source patch remains.
 Clean CI jobs therefore do not depend on generated files left by an earlier

@@ -219,7 +219,7 @@ function CourseListButton({
             {icon ? <FontAwesomeIcon icon={icon} /> : null}
             <Link
               href={`/courses/${course.id}`}
-              className="text-primary-100 min-w-0 break-all hover:underline focus:outline-none focus-visible:underline"
+              className="hover:text-uzh-blue-100 min-w-0 break-all font-bold focus:outline-none focus-visible:underline"
               data-cy={data?.cy}
               data-test={data?.test}
             >

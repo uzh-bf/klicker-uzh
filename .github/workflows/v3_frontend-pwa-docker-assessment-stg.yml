@@ -7,10 +7,20 @@ on:
       - 'v3*'
   pull_request:
     # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-evaluates the path filter when a pull request is retargeted,
+    # so newly applicable images are built instead of keeping the old result.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
       - 'apps/frontend-pwa/**'
-      - 'packages/feature-flags/**'
+      # Any workspace package can be bundled into this image.
+      - 'packages/**'
+      # Root dependency and build inputs: the image build runs turbo prune
+      # against these files, so a root dependency change can alter any image.
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'turbo.json'
+      - '.dockerignore'
       - '.github/workflows/v3_frontend-pwa**'
 
 concurrency:
@@ -23,8 +33,10 @@ env:
 
 jobs:
   build-arm:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
+    # draft pull requests defer their image builds; marking the
+    # pull request ready re-runs this build on the unchanged head
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write
@@ -38,14 +50,11 @@ jobs:
           rm apps/frontend-pwa/.env.production
           mv apps/frontend-pwa/.env.assessment.stg apps/frontend-pwa/.env.production
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
@@ -66,7 +75,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: true
+          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
