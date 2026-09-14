@@ -1,4 +1,4 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:26.8-alpine AS base
 
 ARG NODE_ENV production
 ENV NODE_ENV $NODE_ENV
