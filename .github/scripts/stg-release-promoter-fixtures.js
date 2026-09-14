@@ -37,7 +37,12 @@ function scanJobDefinition(id, needs) {
     runs-on: ubuntu-24.04-arm
     needs: ${needs}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Scan the pushed image for vulnerabilities
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
+      - name: Enforce the fixable HIGH/CRITICAL policy
+        run: |
+          node .github/scripts/image-scan-receipt.cjs check
 `
 }
 

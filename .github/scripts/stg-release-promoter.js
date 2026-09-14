@@ -488,6 +488,41 @@ function validateStagingWorkflow({
     (job) => !scanJobIds.includes(job.id)
   )
 
+  // Admission reads candidate-authored receipts, so each scan job must still
+  // contain the steps the policy depends on: one trivy action revision pinned
+  // to a full SHA and the receipt check that enforces the fixable finding
+  // gate. A refactored scan job then fails validation instead of inheriting
+  // trust from its own receipt metadata.
+  for (const scanJobId of scanJobIds) {
+    const scanJob = activeArmJobs.find((job) => job.id === scanJobId)
+    const trivyRefs = [
+      ...new Set(
+        extractActionSteps(scanJob, workflowPath)
+          .map(
+            (step) =>
+              step.match(
+                /^(?:      - uses|        uses):\s*aquasecurity\/trivy-action@([^\s#]+)/m
+              )?.[1]
+          )
+          .filter(Boolean)
+      ),
+    ]
+    if (trivyRefs.length !== 1 || !/^[0-9a-f]{40}$/.test(trivyRefs[0])) {
+      throw new Error(
+        `${workflowPath}/${scanJobId} does not pin one trivy action revision`
+      )
+    }
+    if (
+      !/^\s*node\s+\.github\/scripts\/image-scan-receipt\.cjs\s+check(?:\s|$)/m.test(
+        scanJob.content
+      )
+    ) {
+      throw new Error(
+        `${workflowPath}/${scanJobId} does not enforce the scan policy`
+      )
+    }
+  }
+
   const activeNonRuntimeJobs = jobs.filter(
     (job) => expectedNonRuntimeJobIds.includes(job.id) && !isDisabledJob(job)
   )

@@ -350,6 +350,38 @@ test('admits inventoried scan jobs without treating them as publishers', () => {
       }),
     /active ARM job inventory changed/
   )
+
+  const floatingScan = fixtureDefinitions()
+  floatingScan[1].content = floatingScan[1].content.replace(
+    '        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8',
+    '        uses: aquasecurity/trivy-action@v0.36.0'
+  )
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: floatingScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /scan-arm does not pin one trivy action revision/
+  )
+
+  const uncheckedScan = fixtureDefinitions()
+  uncheckedScan[1].content = uncheckedScan[1].content.replace(
+    '          node .github/scripts/image-scan-receipt.cjs check\n',
+    ''
+  )
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: uncheckedScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /scan-arm does not enforce the scan policy/
+  )
 })
 
 test('rejects unsafe workflow publication changes', () => {
