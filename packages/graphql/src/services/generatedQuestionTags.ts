@@ -67,7 +67,9 @@ export function questionTagSelectionWrite(
 ): QuestionTagSelectionWrite {
   const hasSelection =
     input.tagSelection !== undefined && input.tagSelection !== null
-  const hasLegacyTags = input.tags !== undefined
+  // Both representations treat an explicit null as absent, so a legacy client
+  // that sends null does not silently clear the stored selection.
+  const hasLegacyTags = input.tags !== undefined && input.tags !== null
   if (hasSelection && hasLegacyTags) {
     tagSelectionError('Supply either tags or a tag selection, not both')
   }
@@ -89,21 +91,6 @@ export function questionTagSelectionWrite(
   return stored
     ? { mode: 'selection', selection: normalizeQuestionTagSelection(stored) }
     : { mode: 'none' }
-}
-
-export function questionTagSelectionsEqual(
-  left: GeneratedQuestionTagSelection | null | undefined,
-  right: GeneratedQuestionTagSelection | null | undefined
-): boolean {
-  if (!left || !right) return !left === !right
-  return (
-    left.existingTagIds.length === right.existingTagIds.length &&
-    left.existingTagIds.every(
-      (id, index) => id === right.existingTagIds[index]
-    ) &&
-    left.newTagNames.length === right.newTagNames.length &&
-    left.newTagNames.every((name, index) => name === right.newTagNames[index])
-  )
 }
 
 // Existing ids are validated against the owner in the same transaction that
@@ -136,15 +123,28 @@ export async function resolveQuestionTagSelection(
     }
   }
 
-  for (const name of selection.newTagNames) {
-    const existing = await transaction.tag.findUnique({
-      where: { ownerId_name: { ownerId, name } },
-      select: { id: true },
+  // One batched lookup keeps the locked keep transaction short; names that are
+  // genuinely missing are still created one by one so a concurrent creation of
+  // the same owner/name tag stays detectable by the conflict retry.
+  const existingIdsByName = new Map<string, number>()
+  if (selection.newTagNames.length > 0) {
+    const existing = await transaction.tag.findMany({
+      where: { ownerId, name: { in: selection.newTagNames } },
+      select: { id: true, name: true },
     })
-    if (existing) {
-      if (!seen.has(existing.id)) {
-        seen.add(existing.id)
-        resolvedIds.push(existing.id)
+    for (const tag of existing) {
+      if (!existingIdsByName.has(tag.name)) {
+        existingIdsByName.set(tag.name, tag.id)
+      }
+    }
+  }
+
+  for (const name of selection.newTagNames) {
+    const existingId = existingIdsByName.get(name)
+    if (existingId !== undefined) {
+      if (!seen.has(existingId)) {
+        seen.add(existingId)
+        resolvedIds.push(existingId)
       }
       continue
     }
@@ -233,5 +233,3 @@ export async function withQuestionTagConflictRetry<T>(
     }
   }
 }
-
-export { suggestGeneratedQuestionTags } from '@klicker-uzh/types'

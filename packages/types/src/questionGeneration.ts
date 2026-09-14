@@ -289,7 +289,9 @@ export function normalizeGeneratedQuestionTagLabel(value: string): string {
 }
 
 function generatedQuestionTagKey(value: string): string {
-  return normalizeGeneratedQuestionTagLabel(value).toLocaleLowerCase()
+  // An explicit locale keeps the key stable across server, browser and ICU
+  // versions; an unpinned locale lowercases differently under e.g. Turkish.
+  return normalizeGeneratedQuestionTagLabel(value).toLocaleLowerCase('en')
 }
 
 function generatedQuestionTagTokens(value: string): string[] {

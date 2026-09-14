@@ -3,7 +3,6 @@ import { suggestGeneratedQuestionTags } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
 import {
   normalizeQuestionTagSelection,
-  questionTagSelectionsEqual,
   questionTagSelectionWrite,
   resolveQuestionTagSelection,
   withQuestionTagConflictRetry,
@@ -18,14 +17,17 @@ function tagTransaction(ownerTags: TagRow[]) {
       findMany: async ({
         where,
       }: {
-        where: { ownerId: string; id: { in: number[] } }
-      }) => ownerTags.filter((tag) => where.id.in.includes(tag.id)),
-      findUnique: async ({
-        where,
-      }: {
-        where: { ownerId_name: { ownerId: string; name: string } }
+        where: {
+          ownerId: string
+          id?: { in: number[] }
+          name?: { in: string[] }
+        }
       }) =>
-        ownerTags.find((tag) => tag.name === where.ownerId_name.name) ?? null,
+        ownerTags.filter((tag) =>
+          where.id !== undefined
+            ? where.id.in.includes(tag.id)
+            : (where.name?.in.includes(tag.name) ?? false)
+        ),
       create: async ({ data }: { data: { name: string } }) => {
         const row = { id: 900 + created.length, name: data.name }
         created.push(row)
@@ -161,22 +163,6 @@ describe('generated question tag selection', () => {
         undefined
       )
     ).toThrowError(/not both/)
-  })
-
-  it('compares selections by order-insensitive ids', () => {
-    expect(
-      questionTagSelectionsEqual(
-        { existingTagIds: [1], newTagNames: ['A'] },
-        { existingTagIds: [1], newTagNames: ['A'] }
-      )
-    ).toBe(true)
-    expect(questionTagSelectionsEqual(undefined, undefined)).toBe(true)
-    expect(
-      questionTagSelectionsEqual(undefined, {
-        existingTagIds: [],
-        newTagNames: [],
-      })
-    ).toBe(false)
   })
 })
 

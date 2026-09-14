@@ -10,11 +10,6 @@ import {
 // are exact names and are created only with a successful Keep.
 export type GeneratedTagSelection = GeneratedQuestionTagSelection
 
-export const EMPTY_TAG_SELECTION: GeneratedTagSelection = {
-  existingTagIds: [],
-  newTagNames: [],
-}
-
 // Advisory labels produced by generation. The generated GraphQL client is
 // regenerated from the tracked operations, so this reader tolerates a snapshot
 // that does not expose the field yet and never treats it as required.
@@ -34,7 +29,9 @@ export function persistedTagSelection(current: {
   } | null
 }): GeneratedTagSelection {
   const selection = current.tagSelection
-  if (!selection) return EMPTY_TAG_SELECTION
+  // A fresh object keeps this helper side-effect free: a caller that mutates
+  // the returned arrays cannot corrupt the shared empty selection.
+  if (!selection) return { existingTagIds: [], newTagNames: [] }
   return {
     existingTagIds: Array.isArray(selection.existingTagIds)
       ? [...selection.existingTagIds]
@@ -98,7 +95,7 @@ export function resolveManualTagNames(
 ): GeneratedTagSelection {
   const existingIdsByLabel = new Map<string, number>()
   for (const tag of userTags) {
-    const label = tag.name
+    const label = normalizeGeneratedQuestionTagLabel(tag.name)
     if (!existingIdsByLabel.has(label)) existingIdsByLabel.set(label, tag.id)
   }
 

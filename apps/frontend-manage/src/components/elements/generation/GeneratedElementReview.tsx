@@ -836,6 +836,9 @@ export default function GeneratedElementReview({
       </div>
       {selectedDraft ? (
         <GeneratedDraftEditor
+          // Remount per draft so a local tag override, the revision fence and
+          // the form values never leak from the previously opened draft.
+          key={selectedDraft.id}
           build={build}
           draft={selectedDraft}
           onClose={() => setSelectedDraft(undefined)}
