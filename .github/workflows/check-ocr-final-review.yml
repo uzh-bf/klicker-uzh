@@ -15,6 +15,21 @@ on:
   issue_comment:
     types: [created]
 
+# Obsolete envelope runs must not pile up behind the status locks while newer
+# events for the same pull request already carry the authoritative state. PR
+# events share one lane per pull request, and the two slash commands share one
+# command lane, so a newer invocation replaces its own predecessor. Any other
+# comment gets a unique lane and can never cancel an in-flight review.
+concurrency:
+  group: >-
+    final-ai-review-${{ (github.event_name == 'pull_request_target' &&
+    format('pr-{0}', github.event.pull_request.number)) ||
+    (github.event_name == 'issue_comment' &&
+    (github.event.comment.body == '/final-review' ||
+    github.event.comment.body == '/final-review-stack') &&
+    format('cmd-{0}', github.event.issue.number)) || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   trusted_policy:
     if: >-

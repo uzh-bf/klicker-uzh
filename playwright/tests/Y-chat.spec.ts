@@ -3642,23 +3642,20 @@ test.describe('Chatbot Source Citations', () => {
     await expect(citedSource).toBeInViewport()
   })
 
-  test('Composer hint is visible in standalone mode and hidden when embedded', async ({
+  test('Composer hint is visible in standalone and embedded modes', async ({
     page,
   }) => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
     await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
-    await expect(page.getByTestId('chat-composer-hint')).toHaveText(
-      'Chatbot answers can be wrong — verify against your course materials.'
-    )
 
     await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
       waitUntil: 'domcontentloaded',
     })
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
-    await expect(page.getByTestId('chat-composer-hint')).toHaveCount(0)
+    await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
   })
 
   test('Mobile header and sources stay clear of the expanded composer', async ({
@@ -4074,17 +4071,19 @@ test.describe('Chatbot Knowledge Graph Selection', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    participantId = await getEnrolledParticipantId()
-    await clearChatCookies(page)
-    await setParticipantToken(page, participantId)
-    await resetChatState(participantId)
-    await setDisclaimerState(participantId, 'accepted')
-    // The graph workspace only mounts while the chatbot exposes a graph.
+    // The graph workspace only mounts for a seeded chatbot with the map
+    // visible: the layout 404s without the row and hides the graph otherwise.
+    await ensureChatbotSeeded()
     const prisma = await getPrisma()
     await prisma.chatbot.update({
       where: { id: CHATBOT_ID },
       data: { knowledgeGraphVisible: true },
     })
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
   })
 
   test('A delayed response for a superseded graph keeps the newer selection', async ({

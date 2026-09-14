@@ -93,6 +93,7 @@ import {
   KB,
   KBChatbotBinding,
   KBConnection,
+  KBImportedSourceConnection,
   KBIngestionRun,
   KBIngestionStatus,
   KBResourceConnection,
@@ -1558,6 +1559,22 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbResourcesConnection(args, ctx)
+        },
+      }),
+
+      getKbImportedSources: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBImportedSourceConnection,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbImportedSourcesConnection(
+            args,
+            ctx
+          )
         },
       }),
 
