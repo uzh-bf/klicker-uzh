@@ -1,4 +1,3 @@
-import { AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   ChatbotStatus,
@@ -20,7 +19,6 @@ import {
   verifyChatGuestToken,
 } from '@/src/lib/server/ltiGuest'
 import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
-import { getRouteLogger } from './requestLogging'
 
 export type { AuthMode }
 
@@ -31,8 +29,6 @@ export interface ParticipantIdentity {
     chatbotId: string
     courseId: string
   }
-  // Opaque eLearning learner pseudonym carried by handoff-minted tokens.
-  learnerBinding?: string
 }
 
 // The identity transports a participant request can carry. Every consumer (API
@@ -77,45 +73,31 @@ export function extractChatTransportTokens(
 // account cookie stays. Guest-first ordering means the switch takes effect
 // without clearing the account cookie or changing this code.
 export async function getParticipantId(
-  req: NextRequest,
-  log: AppLogger = getRouteLogger()
+  req: NextRequest
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
-  return resolveParticipantIdentity(extractChatTransportTokens(req), log)
+  return resolveParticipantIdentity(extractChatTransportTokens(req))
 }
 
 /**
  * Resolve a participant identity from the request's transports. Every branch
  * verifies a signature; none trusts a caller-supplied identity value.
  */
-export async function resolveParticipantIdentity(
-  {
-    participantToken,
-    chatGuestToken,
-    pwaEmbedToken,
-    scopedFallbackToken,
-  }: ChatTransportTokens,
-  log: AppLogger = getRouteLogger()
-): Promise<ParticipantIdentity | { response: NextResponse }> {
+export async function resolveParticipantIdentity({
+  participantToken,
+  chatGuestToken,
+  pwaEmbedToken,
+  scopedFallbackToken,
+}: ChatTransportTokens): Promise<
+  ParticipantIdentity | { response: NextResponse }
+> {
   if (chatGuestToken) {
     try {
       const payload = await verifyChatGuestToken(chatGuestToken)
       if (payload.sub) {
-        return {
-          participantId: payload.sub,
-          authMode: 'anonymous',
-          ...(payload.learnerBinding
-            ? { learnerBinding: payload.learnerBinding }
-            : {}),
-        }
+        return { participantId: payload.sub, authMode: 'anonymous' }
       }
-    } catch {
-      log.info(
-        {
-          event: 'chat.authentication.rejected',
-          outcome: 'invalid_guest_token',
-        },
-        'Rejected chat guest token'
-      )
+    } catch (error) {
+      console.error('Chat guest token verification failed:', error)
       // Fall through to the scoped PWA embed / account session below.
     }
   }
@@ -135,27 +117,12 @@ export async function resolveParticipantIdentity(
             chatbotId: payload.chatbotId,
             courseId: payload.courseId,
           },
-          ...(payload.learnerBinding
-            ? { learnerBinding: payload.learnerBinding }
-            : {}),
         }
       }
-      log.info(
-        {
-          event: 'chat.authentication.rejected',
-          outcome: 'invalid_embed_account',
-        },
-        'Rejected PWA embed session token subject'
-      )
+      console.error('PWA embed session token subject is not an active account')
       // Fall through to the scoped fallback token / account session below.
-    } catch {
-      log.info(
-        {
-          event: 'chat.authentication.rejected',
-          outcome: 'invalid_embed_token',
-        },
-        'Rejected PWA embed session token'
-      )
+    } catch (error) {
+      console.error('PWA embed session token verification failed:', error)
       // Fall through to the scoped fallback token / account session below.
     }
   }
@@ -165,7 +132,7 @@ export async function resolveParticipantIdentity(
     if (fallbackIdentity) return fallbackIdentity
   }
 
-  return getParticipantIdFromToken(participantToken, log)
+  return getParticipantIdFromToken(participantToken)
 }
 
 /**
@@ -190,14 +157,9 @@ async function isActiveAccountParticipant(
 }
 
 export async function getParticipantIdFromToken(
-  participantToken: string | undefined,
-  log: AppLogger = getRouteLogger()
+  participantToken: string | undefined
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
   if (!participantToken) {
-    log.info(
-      { event: 'chat.authentication.rejected', outcome: 'missing_token' },
-      'Rejected chat authentication'
-    )
     return {
       response: NextResponse.json(
         { error: 'No authentication token found' },
@@ -242,10 +204,6 @@ export async function getParticipantIdFromToken(
         : null
 
     if (!participantId || jwtPayload.payload.role !== UserRole.PARTICIPANT) {
-      log.info(
-        { event: 'chat.authentication.rejected', outcome: 'invalid_token' },
-        'Rejected chat authentication'
-      )
       return {
         response: NextResponse.json(
           { error: 'Invalid authentication token' },
@@ -264,11 +222,8 @@ export async function getParticipantIdFromToken(
     }
 
     return { participantId, authMode: 'account' }
-  } catch {
-    log.info(
-      { event: 'chat.authentication.rejected', outcome: 'invalid_token' },
-      'Rejected chat authentication'
-    )
+  } catch (error) {
+    console.error('JWT verification failed:', error)
     return {
       response: NextResponse.json(
         { error: 'Invalid authentication token' },
@@ -289,13 +244,7 @@ async function getScopedTokenIdentity(
     try {
       const payload = await verifyChatGuestToken(token)
       if (payload.sub) {
-        return {
-          participantId: payload.sub,
-          authMode: 'anonymous',
-          ...(payload.learnerBinding
-            ? { learnerBinding: payload.learnerBinding }
-            : {}),
-        }
+        return { participantId: payload.sub, authMode: 'anonymous' }
       }
     } catch {
       return null
@@ -305,7 +254,6 @@ async function getScopedTokenIdentity(
   if (scope === PWA_CHAT_EMBED_SESSION_SCOPE) {
     try {
       const payload = await verifyPwaEmbedSessionToken(token)
-      if (!(await isActiveAccountParticipant(payload.sub))) return null
       return {
         participantId: payload.sub,
         authMode: 'account',
@@ -313,9 +261,6 @@ async function getScopedTokenIdentity(
           chatbotId: payload.chatbotId,
           courseId: payload.courseId,
         },
-        ...(payload.learnerBinding
-          ? { learnerBinding: payload.learnerBinding }
-          : {}),
       }
     } catch {
       return null
@@ -388,23 +333,21 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
 
 export async function withChatbotAuth(
   req: NextRequest,
-  chatbotId: string,
-  log: AppLogger = getRouteLogger()
+  chatbotId: string
 ): Promise<
   | {
       participantId: string
       authMode: AuthMode
-      learnerBinding?: string
       chatbot: { courseId: string; knowledgeGraphVisible: boolean }
     }
   | { response: NextResponse }
 > {
-  const participantResult = await getParticipantId(req, log)
+  const participantResult = await getParticipantId(req)
   if ('response' in participantResult) {
     return participantResult
   }
 
-  return authorizeIdentityForChatbot(participantResult, chatbotId, log)
+  return authorizeIdentityForChatbot(participantResult, chatbotId)
 }
 
 /**
@@ -415,18 +358,16 @@ export async function withChatbotAuth(
  */
 export async function authorizeIdentityForChatbot(
   participantResult: ParticipantIdentity,
-  chatbotId: string,
-  log: AppLogger = getRouteLogger()
+  chatbotId: string
 ): Promise<
   | {
       participantId: string
       authMode: AuthMode
-      learnerBinding?: string
       chatbot: { courseId: string; knowledgeGraphVisible: boolean }
     }
   | { response: NextResponse }
 > {
-  const { participantId, authMode, learnerBinding } = participantResult
+  const { participantId, authMode } = participantResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     courseId: true,
@@ -453,25 +394,18 @@ export async function authorizeIdentityForChatbot(
 
   const participationResult = await requireParticipation(
     participantId,
-    chatbotResult.chatbot.courseId,
-    log
+    chatbotResult.chatbot.courseId
   )
   if ('response' in participationResult) {
     return participationResult
   }
 
-  return {
-    participantId,
-    authMode,
-    ...(learnerBinding ? { learnerBinding } : {}),
-    chatbot: chatbotResult.chatbot,
-  }
+  return { participantId, authMode, chatbot: chatbotResult.chatbot }
 }
 
 export async function requireParticipation(
   participantId: string,
-  courseId: string,
-  log: AppLogger = getRouteLogger()
+  courseId: string
 ): Promise<{ ok: true } | { response: NextResponse }> {
   try {
     const participation = await prisma.participation.findUnique({
@@ -494,14 +428,8 @@ export async function requireParticipation(
     }
 
     return { ok: true }
-  } catch {
-    log.error(
-      {
-        event: 'chat.participation.check.failed',
-        err: toSafeError('Error checking participation'),
-      },
-      'Error checking participation'
-    )
+  } catch (error) {
+    console.error('Error checking participation:', error)
     return {
       response: NextResponse.json(
         { error: 'Error checking participation' },
