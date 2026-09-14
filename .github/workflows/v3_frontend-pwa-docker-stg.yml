@@ -23,6 +23,7 @@ on:
       - 'packages/hatchet/**'
       - 'packages/i18n/**'
       - 'packages/knowledge-graph/**'
+      - 'packages/logging/**'
       - 'packages/markdown/**'
       - 'packages/next-config/**'
       - 'packages/prisma/**'
