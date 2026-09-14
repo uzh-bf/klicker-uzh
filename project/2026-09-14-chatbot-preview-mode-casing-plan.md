@@ -58,3 +58,25 @@ Non-goals and boundaries:
 - The current live workaround, a lowercase stored mode key, stays valid while
   the fix is developed.
 <!-- item:end -->
+
+## Progress
+
+- 2026-09-14: W1 v2 delivered on `rs/chatbot-preview-mode-casing` as commits
+  `a066fbe3f0` (plan and contract, verbatim) and `f6780d0222` (fix), pushed as
+  draft PR #6025 against `v3-ai`. The preview route no longer case-folds
+  `selectedMode`; `apps/chat/test/owner-preview-route.test.ts` adds resolver and
+  route parity cases for `Ethik-Rollenspiel`, `ethik-rollenspiel`, `Tutor`, and
+  `TUTOR`.
+- Coordinator verification: the frozen item bytes are unchanged
+  (`ef6a952e964b60bd4413835da7a2f177a9da4d86c0afeb1dafe08dbfa47775f2`), the
+  diff touches only the preview route schema and the new test file, the
+  focused suite re-runs green (23/23), and the child reported the full chat
+  suite at 1297 passed / 33 skipped. Post-fix `toLowerCase` search in the
+  preview route returns nothing.
+- Open items: PR checks were still running at acceptance; the `ocr-review`
+  check failed on its LLM configuration, which is an infrastructure failure and
+  not a finding against this change. Merge, deployment, and the follow-up data
+  change below remain separately gated.
+- Follow-up after the fix is deployed: rename the stored custom mode key back to
+  `Ethik-Rollenspiel` and re-verify the owner preview. Until then the lowercase
+  key workaround stays valid.
