@@ -1,6 +1,4 @@
 import { routing } from '@klicker-uzh/i18n'
-import { createEdgeLogger } from '@klicker-uzh/logging/edge'
-import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import type { NextRequest } from 'next/server'
@@ -12,11 +10,6 @@ import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
 } from '@/src/lib/pwaEmbedAuth'
-
-const edgeLogger = createEdgeLogger({
-  service: 'chat',
-  level: process.env.LOG_LEVEL,
-})
 
 function applyFrameAncestorsCSP(response: NextResponse) {
   const allowed = process.env.ALLOWED_FRAME_ANCESTORS
@@ -125,79 +118,39 @@ function redirectToNoLogin(request: NextRequest, ltiContext: boolean) {
 // request carries no verified token) and can therefore never authorize.
 function passThroughWithScopedToken(
   request: NextRequest,
-  scopedToken: string | null,
-  requestContext: { requestId: string; correlationId: string },
-  queryLocale: { locale: string; path: string } | null = null
+  scopedToken: string | null
 ) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set(CHAT_SCOPED_TOKEN_HEADER, scopedToken ?? '')
-  requestHeaders.set('x-request-id', requestContext.requestId)
-  requestHeaders.set('x-correlation-id', requestContext.correlationId)
-  const response = NextResponse.next({ request: { headers: requestHeaders } })
-  response.headers.set('x-request-id', requestContext.requestId)
-  response.headers.set('x-correlation-id', requestContext.correlationId)
-  if (queryLocale) {
-    response.cookies.set({
-      name: 'NEXT_LOCALE',
-      value: queryLocale.locale,
-      path: queryLocale.path,
-    })
-  }
-  return applyFrameAncestorsCSP(response)
+  return applyFrameAncestorsCSP(
+    NextResponse.next({ request: { headers: requestHeaders } })
+  )
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const requestContext = resolveRequestContext({
-    requestId: request.headers.get('x-request-id'),
-    correlationId: request.headers.get('x-correlation-id'),
-  })
-  const log = edgeLogger.child(requestContext)
-  // Every response echoes the validated diagnostic IDs (the logging
-  // contract): redirects and pass-throughs included.
-  const respond = (response: NextResponse) => {
-    response.headers.set('x-request-id', requestContext.requestId)
-    response.headers.set('x-correlation-id', requestContext.correlationId)
-    return applyFrameAncestorsCSP(response)
-  }
-  // Pass-throughs inject the resolved IDs into the forwarded request headers
-  // so the Node handler's logging carries the same correlation.
-  const nextResponse = () => {
-    const headers = new Headers(request.headers)
-    headers.set('x-request-id', requestContext.requestId)
-    headers.set('x-correlation-id', requestContext.correlationId)
-    return NextResponse.next({ request: { headers } })
-  }
 
-  // The embedded Manage assistant and the eLearning handoff receive their locale
-  // as a query parameter, but Chat's root layout resolves the active locale from
-  // the NEXT_LOCALE cookie. That cookie cannot be stored in a cookie-blocked
-  // iframe, so promote a narrowly validated query locale onto the request
-  // itself; the effective language then does not depend on cookie acceptance.
-  const requestedLocale = request.nextUrl.searchParams.get('locale')
-  const queryLocale = hasLocale(routing.locales, requestedLocale)
-    ? requestedLocale
-    : null
-
-  if (pathname === '/manage' && queryLocale) {
-    request.cookies.set({
-      name: 'NEXT_LOCALE',
-      value: queryLocale,
-    })
-    const response = nextResponse()
-    response.cookies.set({
-      name: 'NEXT_LOCALE',
-      value: queryLocale,
-      path: '/manage',
-    })
-    return respond(response)
-  }
-
-  if (queryLocale) {
-    request.cookies.set({
-      name: 'NEXT_LOCALE',
-      value: queryLocale,
-    })
+  // The embedded Manage assistant receives its locale as a query parameter,
+  // but Chat's root layout resolves the active locale from the
+  // NEXT_LOCALE cookie. Promote only a narrowly validated locale so iframe
+  // requests render in the same language without broadening the cookie scope.
+  if (pathname === '/manage') {
+    const requestedLocale = request.nextUrl.searchParams.get('locale')
+    if (hasLocale(routing.locales, requestedLocale)) {
+      request.cookies.set({
+        name: 'NEXT_LOCALE',
+        value: requestedLocale,
+      })
+      const response = NextResponse.next({
+        request: { headers: request.headers },
+      })
+      response.cookies.set({
+        name: 'NEXT_LOCALE',
+        value: requestedLocale,
+        path: '/manage',
+      })
+      return applyFrameAncestorsCSP(response)
+    }
   }
 
   if (
@@ -212,25 +165,15 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/auth/lti') ||
-    pathname.startsWith('/auth/pwa-embed') ||
-    // The eLearning handoff is an unauthenticated entrypoint: the route
-    // verifies its own signed grant, and the arriving iframe carries no chat
-    // session yet, so the identity gate must not divert it to /noLogin.
-    pathname.startsWith('/auth/elearning')
+    pathname.startsWith('/auth/pwa-embed')
   ) {
-    return respond(nextResponse())
+    return applyFrameAncestorsCSP(NextResponse.next())
   }
 
   const pathSegments = pathname.split('/').filter(Boolean)
   if (pathSegments.length === 0) {
-    return respond(nextResponse())
+    return applyFrameAncestorsCSP(NextResponse.next())
   }
-
-  // Persist the promoted language for this conversation's own path so later
-  // navigations inside the embedded chat keep it even without the query.
-  const promotedLocale = queryLocale
-    ? { locale: queryLocale, path: `/${pathSegments[0]}` }
-    : null
 
   // 1. chat_participant_token (anonymous LTI guest) — checked first so a
   // future "switch to anonymous" flow only needs to set this cookie.
@@ -260,9 +203,7 @@ export async function proxy(request: NextRequest) {
       // rather than the presence of a cookie.
       return passThroughWithScopedToken(
         request,
-        chatGuestToken === guestQueryToken ? guestQueryToken : null,
-        requestContext,
-        promotedLocale
+        chatGuestToken === guestQueryToken ? guestQueryToken : null
       )
     }
     // Invalid transport → try the next candidate.
@@ -288,9 +229,7 @@ export async function proxy(request: NextRequest) {
     ) {
       return passThroughWithScopedToken(
         request,
-        pwaEmbedToken === pwaEmbedQueryToken ? pwaEmbedQueryToken : null,
-        requestContext,
-        promotedLocale
+        pwaEmbedToken === pwaEmbedQueryToken ? pwaEmbedQueryToken : null
       )
     }
   }
@@ -301,32 +240,24 @@ export async function proxy(request: NextRequest) {
   const participantToken = request.cookies.get('participant_token')?.value
 
   if (!participantToken) {
-    return respond(redirectToNoLogin(request, hadGuestToken))
+    return redirectToNoLogin(request, hadGuestToken)
   }
 
   // Fail closed when APP_SECRET is missing — the previous `|| ''` fallback
   // would have used an empty signing key, which is not a meaningful gate.
   const appSecret = process.env.APP_SECRET
   if (!appSecret) {
-    return respond(redirectToNoLogin(request, hadGuestToken))
+    return redirectToNoLogin(request, hadGuestToken)
   }
 
   try {
     await jwtVerify(participantToken, new TextEncoder().encode(appSecret))
-  } catch {
-    log.warn(
-      { event: 'participant_token.invalid' },
-      'Invalid participant token'
-    )
-    return respond(redirectToNoLogin(request, hadGuestToken))
+  } catch (error) {
+    console.error('Invalid participant token:', error)
+    return redirectToNoLogin(request, hadGuestToken)
   }
 
-  return passThroughWithScopedToken(
-    request,
-    null,
-    requestContext,
-    promotedLocale
-  )
+  return passThroughWithScopedToken(request, null)
 }
 
 export const config = {

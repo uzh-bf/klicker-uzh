@@ -5,6 +5,7 @@ import {
   requireLocalAiEnvironment,
   runLocalManaged,
 } from './docker-preflight.mjs'
+import { LOCAL_KB_MANAGED_PROFILE } from './isolated-config.mjs'
 
 test('AI credentials reach only the explicit managed startup environment', async (t) => {
   const names = ['UPSTREAM_OPENAI_API_KEY', 'UPSTREAM_OPENAI_BASE_URL']
@@ -22,7 +23,7 @@ test('AI credentials reach only the explicit managed startup environment', async
     'ensure',
     '/synthetic/runtime',
     '--profile',
-    'ai,chat,manage',
+    LOCAL_KB_MANAGED_PROFILE,
     '--json',
   ]
   const captured = []

@@ -131,6 +131,74 @@ test('opt-in setup rejects missing injection before provider or preparation acce
   assert.match(result.stderr, /runtime-injected OpenRouter/)
 })
 
+test('continuation requires an immutable executor and rejects missing AI injection before effects', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const missing = runConfigPlan(input, 'continue-setup', [
+    '--candidate',
+    'a'.repeat(40),
+  ])
+  assert.equal(missing.status, 1)
+  assert.equal(missing.stdout, '')
+  const result = runConfigPlan(input, 'continue-setup', [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+  ])
+  assert.equal(result.status, 1)
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /runtime-injected OpenRouter/)
+})
+
+test('continue-setup accepts --resume-executor only after the seven explicit arguments', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = [
+    '--candidate',
+    'a'.repeat(40),
+    '--executor',
+    'b'.repeat(40),
+    '--resume-executor',
+  ]
+  const accepted = runConfigPlan(input, 'continue-setup', [
+    ...base,
+    'c'.repeat(40),
+  ])
+  assert.equal(accepted.status, 1)
+  assert.equal(accepted.stdout, '')
+  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  for (const extra of [
+    [...base, 'c'.repeat(40), 'extra'],
+    [...base],
+    [...base, 'not-a-sha'],
+  ]) {
+    const rejected = runConfigPlan(input, 'continue-setup', extra)
+    assert.equal(rejected.status, 1)
+    assert.equal(rejected.stdout, '')
+    assert.match(rejected.stderr, /Usage:/)
+  }
+})
+
+test('ingestion recovery option accepts one immutable predecessor only', () => {
+  const input = isolatedConfigInput({ aiUpstream: 'openrouter' })
+  const base = ['--candidate', 'a'.repeat(40), '--executor', 'b'.repeat(40)]
+  const option = ['--resume-ingestion-executor', 'c'.repeat(40)]
+  const accepted = runConfigPlan(input, 'continue-setup', [...base, ...option])
+  assert.equal(accepted.status, 1)
+  assert.match(accepted.stderr, /runtime-injected OpenRouter/)
+  for (const extra of [
+    [...base, ...option, '--resume-executor', 'd'.repeat(40)],
+    [...base, ...option, ...option],
+    [...base, '--resume-ingestion-executor', 'invalid'],
+    [...base, '__proto__', 'c'.repeat(40)],
+    [...base, 'constructor', 'c'.repeat(40)],
+    [...option, ...base],
+  ]) {
+    const rejected = runConfigPlan(input, 'continue-setup', extra)
+    assert.equal(rejected.status, 1)
+    assert.match(rejected.stderr, /Usage:/)
+  }
+})
+
 test('config plan resolves a full synthetic input and rejects remote endpoints safely', () => {
   const valid = runConfigPlan(isolatedConfigInput())
   assert.equal(valid.error, undefined)
@@ -288,6 +356,15 @@ test('source observation rejects dirty, mismatched and missing provider checkout
     mkdirSync(join(path, '.venv'))
     writeFileSync(join(path, '.venv/pyvenv.cfg'), 'synthetic fixture')
     assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
+    for (const module of ['ingestion-api', 'ingestion']) {
+      const environment = join(path, 'modules', module, '.venv')
+      mkdirSync(environment, { recursive: true })
+      writeFileSync(join(environment, 'pyvenv.cfg'), 'synthetic fixture')
+    }
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, true)
+    config.roots[0].name = 'retrieval'
+    assert.equal(inspectIsolatedProviderSources(config)[0].qualified, false)
+    config.roots[0].name = 'ingestion'
     writeFileSync(join(path, '.env'), 'SYNTHETIC_ONLY=true')
     assert.equal(inspectIsolatedProviderSources(config)[0].qualified, false)
     rmSync(join(path, '.env'))

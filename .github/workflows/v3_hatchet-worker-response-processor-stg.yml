@@ -11,9 +11,17 @@ on:
     # so newly applicable images are built instead of keeping the old result.
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
+      # The Dockerfile runs 'turbo prune --scope=@klicker-uzh/hatchet-worker-response-processor'. Only that
+      # workspace dependency closure reaches the image, so a change outside
+      # it cannot alter this build and must not trigger it.
       - 'apps/hatchet-worker-response-processor/**'
-      # Any workspace package can be bundled into this image.
-      - 'packages/**'
+      - 'packages/audit/**'
+      - 'packages/grading/**'
+      - 'packages/hatchet/**'
+      - 'packages/knowledge-graph/**'
+      - 'packages/prisma/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
@@ -21,7 +29,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.dockerignore'
-      - '.github/workflows/v3_hatchet-worker-response-processor**'
+      - '.github/workflows/v3_hatchet-worker-response-processor-stg**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -43,9 +51,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -86,7 +91,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: true
+          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
   build-amd:
     if: ${{ false }}
