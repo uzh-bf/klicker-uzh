@@ -2795,6 +2795,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         saveElementsError:
           'The accepted elements could not be saved. Please try again.',
         tagSelection: {
+          missingHint:
+            'A selected tag is no longer available. Remove it or choose another tag before saving.',
+          removeMissing: 'Remove unavailable tag {id}',
           title: 'Tags',
           existingLabel: 'Matching tags',
           existingHint:

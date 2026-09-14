@@ -13,7 +13,7 @@ import {
 } from '@uzh-bf/design-system'
 import { useFormikContext } from 'formik'
 import { useTranslations } from 'next-intl'
-import { Suspense, useState } from 'react'
+import { type ReactNode, Suspense, useState } from 'react'
 import SuspendedTagInput from '../tags/SuspendedTagInput'
 import { ElementEditMode } from './ElementEditModal'
 import { ElementFormTypes } from './types'
@@ -27,7 +27,7 @@ interface ElementInformationFieldsProps {
   values: ElementFormTypes
   isSubmitting: boolean
   inputsDisabled?: boolean
-  hideCanonicalTags?: boolean
+  tagInput?: ReactNode
 }
 
 function ElementInformationFields({
@@ -37,7 +37,7 @@ function ElementInformationFields({
   values,
   isSubmitting,
   inputsDisabled = false,
-  hideCanonicalTags = false,
+  tagInput,
 }: ElementInformationFieldsProps) {
   const t = useTranslations()
   const statusOptions = useStatusOptions()
@@ -131,7 +131,7 @@ function ElementInformationFields({
       </div>
 
       <div className="mt-2 flex flex-row gap-2">
-        {!isTemplate && !hideCanonicalTags ? (
+        {!isTemplate ? (
           <div className="flex w-full flex-col" data-cy="element-tag-input">
             <FormLabel
               required={false}
@@ -139,9 +139,11 @@ function ElementInformationFields({
               labelType="small"
               tooltip={t('manage.elements.tagsTooltip')}
             />
-            <Suspense fallback={<Loader />}>
-              <SuspendedTagInput disabled={inputsDisabled || isSubmitting} />
-            </Suspense>
+            {tagInput ?? (
+              <Suspense fallback={<Loader />}>
+                <SuspendedTagInput disabled={inputsDisabled || isSubmitting} />
+              </Suspense>
+            )}
           </div>
         ) : null}
       </div>

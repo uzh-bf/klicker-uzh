@@ -34,11 +34,18 @@ export default function useGeneratedTagSelection({
   }
 
   function toggleExistingTag(tagId: number) {
+    const name = selectableExisting.find((tag) => tag.id === tagId)?.name
+    const selected =
+      selection.existingTagIds.includes(tagId) ||
+      (name !== undefined && selection.newTagNames.includes(name))
     commit({
-      existingTagIds: selection.existingTagIds.includes(tagId)
+      existingTagIds: selected
         ? selection.existingTagIds.filter((id) => id !== tagId)
         : [...selection.existingTagIds, tagId],
-      newTagNames: selection.newTagNames,
+      newTagNames:
+        name === undefined
+          ? selection.newTagNames
+          : selection.newTagNames.filter((entry) => entry !== name),
     })
   }
 

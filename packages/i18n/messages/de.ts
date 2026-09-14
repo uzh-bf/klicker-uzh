@@ -2836,6 +2836,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         saveElementsError:
           'Die angenommenen Elemente konnten nicht gespeichert werden. Versuchen Sie es erneut.',
         tagSelection: {
+          missingHint:
+            'Ein ausgewählter Tag ist nicht mehr verfügbar. Entferne ihn oder wähle vor dem Speichern einen anderen Tag.',
+          removeMissing: 'Nicht verfügbaren Tag {id} entfernen',
           title: 'Tags',
           existingLabel: 'Passende Tags',
           existingHint:

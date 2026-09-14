@@ -339,7 +339,7 @@ export function suggestGeneratedQuestionTags(
     index: number
     tag: GeneratedQuestionTagCandidate
   }> = []
-  const proposals: Array<{ index: number; label: string }> = []
+  const proposals: string[] = []
 
   suggestedTags.forEach((suggestion, index) => {
     if (typeof suggestion !== 'string') return
@@ -377,7 +377,7 @@ export function suggestGeneratedQuestionTags(
       return
     }
 
-    proposals.push({ index, label })
+    proposals.push(label)
   })
 
   const existingTagIds: number[] = []
@@ -393,13 +393,10 @@ export function suggestGeneratedQuestionTags(
   const proposedKeys = new Set<string>()
   for (const proposal of proposals) {
     if (newTagNames.length === MAX_GENERATED_QUESTION_TAG_MATCHES) break
-    const key = generatedQuestionTagKey(proposal.label)
+    const key = generatedQuestionTagKey(proposal)
     if (proposedKeys.has(key)) continue
-    if (existingTags.some((tag) => generatedQuestionTagKey(tag.name) === key)) {
-      continue
-    }
     proposedKeys.add(key)
-    newTagNames.push(proposal.label)
+    newTagNames.push(proposal)
   }
 
   return { existingTagIds, newTagNames }

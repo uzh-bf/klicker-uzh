@@ -146,6 +146,11 @@ and removal; retain manual tag search and entry. A selected suggestion becomes
 part of editable state; refreshing suggestions never resets dirty form fields.
 Refresh owner tag data after successful creation.
 
+User correction on 2026-09-12: keep the tag input at the canonical editor
+location directly below the title, with suggestions beside that input. Generated
+draft behavior must be opt-in; preserve the normal library editor layout,
+autosave, save and dismissal interactions.
+
 Wire an explicit Save draft action to the revision-checked draft update for
 title and selected tags. On success, replace the local revision with the server
 revision and mark the editor saved. On failure, keep local edits visible and
@@ -232,3 +237,10 @@ overwriting reviewed work, or separately gated deployment.
   activate handlers reliably; observed DOM clicks were used for interactions.
 - Latest frontend-manage TypeScript check passes. Required committed reviews,
   full checks and draft publication remain pending. STG is unchanged.
+
+- User-requested placement correction: generated tags now occupy the canonical
+  tag field below the title; restored the shared library editor layout. Scoped
+  Biome and frontend-manage TypeScript checks passed. Browser verification is
+  incomplete: the resumed local generation page reports configuration missing;
+  the existing fixture runner is unavailable. Changes remain uncommitted and
+  unpublished pending restored browser fixtures and package finish gates.

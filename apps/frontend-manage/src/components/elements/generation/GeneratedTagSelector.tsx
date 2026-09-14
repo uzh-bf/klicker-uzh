@@ -61,6 +61,7 @@ export default function GeneratedTagSelector({
   onDraftSaved,
   onSaved,
   onSaving,
+  onDirtyChange,
 }: {
   draftId: string
   revision: number
@@ -75,6 +76,7 @@ export default function GeneratedTagSelector({
   suggestedExisting: Tag[]
   newProposals: string[]
   onDraftSaved: (revision: number) => void
+  onDirtyChange: (dirty: boolean) => void
   onSaving: (saving: boolean) => void
   onSaved: () => Promise<void>
 }) {
@@ -106,7 +108,14 @@ export default function GeneratedTagSelector({
     [selectableExisting]
   )
 
-  const isDirty = formik.dirty
+  const [savedSelection, setSavedSelection] = useState(tagSelection)
+  const isDirty =
+    formik.dirty ||
+    JSON.stringify(tagSelection) !== JSON.stringify(savedSelection)
+  const missingIds = tagSelection.existingTagIds.filter(
+    (id) => !selectableExisting.some((tag) => tag.id === id)
+  )
+  useEffect(() => onDirtyChange(isDirty), [isDirty, onDirtyChange])
   const savingDraft = saveState === 'saving' || updateState.loading
 
   useEffect(() => {
@@ -164,6 +173,7 @@ export default function GeneratedTagSelector({
         return
       }
       formik.resetForm({ values })
+      setSavedSelection(tagSelection)
       setSaveState('saved')
       onDraftSaved(saved.revision)
       try {
@@ -183,14 +193,42 @@ export default function GeneratedTagSelector({
   }
 
   return (
-    <section
-      className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4"
-      data-cy="generated-element-tags"
-    >
-      <h3 className="font-semibold text-slate-900">
-        {t('review.tagSelection.title')}
-      </h3>
+    <section className="w-full" data-cy="generated-element-tags">
+      <div data-cy="generated-tag-input">
+        <Creatable
+          isDisabled={savingDraft}
+          isClearable
+          isMulti
+          value={names.map((name) => ({ label: name, value: name }))}
+          options={options}
+          classNames={{ container: () => 'w-full h-9' }}
+          onChange={(newValue) =>
+            setManualNames(newValue.map((option) => option.value))
+          }
+          onCreateOption={(newTag) => setManualNames([...names, newTag])}
+          placeholder={t('review.tagSelection.placeholder')}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          {t('review.tagSelection.existingHint')}
+        </p>
+      </div>
 
+      {missingIds.length > 0 ? (
+        <UserNotification type="error" className={{ root: 'mt-3' }}>
+          <p>{t('review.tagSelection.missingHint')}</p>
+          {missingIds.map((id) => (
+            <Button
+              key={id}
+              type="button"
+              disabled={savingDraft}
+              onClick={() => toggleExistingTag(id)}
+              data={{ cy: `generated-tag-remove-missing-${id}` }}
+            >
+              {t('review.tagSelection.removeMissing', { id })}
+            </Button>
+          ))}
+        </UserNotification>
+      ) : null}
       {suggestedExisting.length > 0 ? (
         <div className="mt-3">
           <FormLabel
@@ -203,7 +241,10 @@ export default function GeneratedTagSelector({
               <TagChip
                 key={tag.id}
                 label={tag.name}
-                selected={tagSelection.existingTagIds.includes(tag.id)}
+                selected={
+                  tagSelection.existingTagIds.includes(tag.id) ||
+                  tagSelection.newTagNames.includes(tag.name)
+                }
                 disabled={savingDraft}
                 dataCy={`generated-tag-existing-${tag.id}`}
                 onToggle={() => toggleExistingTag(tag.id)}
@@ -237,30 +278,6 @@ export default function GeneratedTagSelector({
           </p>
         </div>
       ) : null}
-
-      <div className="mt-3" data-cy="generated-tag-input">
-        <FormLabel
-          label={t('review.tagSelection.manualLabel')}
-          labelType="small"
-          required={false}
-        />
-        <Creatable
-          isDisabled={savingDraft}
-          isClearable
-          isMulti
-          value={names.map((name) => ({ label: name, value: name }))}
-          options={options}
-          classNames={{ container: () => 'w-full h-9' }}
-          onChange={(newValue) =>
-            setManualNames(newValue.map((option) => option.value))
-          }
-          onCreateOption={(newTag) => setManualNames([...names, newTag])}
-          placeholder={t('review.tagSelection.placeholder')}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          {t('review.tagSelection.existingHint')}
-        </p>
-      </div>
 
       {saveState === 'conflict' ? (
         <UserNotification type="error" className={{ root: 'mt-3' }}>

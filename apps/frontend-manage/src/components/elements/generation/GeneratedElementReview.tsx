@@ -321,6 +321,7 @@ function GeneratedDraftEditor({
   })
   const [revision, setRevision] = useState(draft.revision)
   const [savingDraft, setSavingDraft] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const groups = useMemo(
     () => groupTagSuggestions(draftSuggestedTags(draft), ownerTags),
     [draft, ownerTags]
@@ -352,8 +353,8 @@ function GeneratedDraftEditor({
       mode={ElementEditMode.EDIT}
       loading={false}
       inputsDisabled={savingDraft}
+      hasUnsavedChanges={hasUnsavedChanges}
       initialValues={readyValues}
-      hideCanonicalTags={isQuestion}
       titleOverride={t('review.editTitle')}
       submitLabel={t('review.keep')}
       submitErrorMessage={t('review.actionError')}
@@ -392,22 +393,23 @@ function GeneratedDraftEditor({
         },
       }}
       supplementaryContent={
-        <>
-          <GeneratedDraftSources build={build} draft={draft} />
-          {isQuestion ? (
-            <GeneratedTagSelector
-              draftId={draft.id}
-              revision={revision}
-              selection={selection}
-              selectableExisting={ownerTags}
-              suggestedExisting={groups.suggestedExisting}
-              newProposals={groups.newProposals}
-              onDraftSaved={setRevision}
-              onSaved={onChanged}
-              onSaving={setSavingDraft}
-            />
-          ) : null}
-        </>
+        <GeneratedDraftSources build={build} draft={draft} />
+      }
+      tagInput={
+        isQuestion ? (
+          <GeneratedTagSelector
+            draftId={draft.id}
+            revision={revision}
+            selection={selection}
+            selectableExisting={ownerTags}
+            suggestedExisting={groups.suggestedExisting}
+            newProposals={groups.newProposals}
+            onDraftSaved={setRevision}
+            onSaved={onChanged}
+            onSaving={setSavingDraft}
+            onDirtyChange={setHasUnsavedChanges}
+          />
+        ) : null
       }
       discardChangesPrompt={{
         title: t('review.discardChangesTitle'),

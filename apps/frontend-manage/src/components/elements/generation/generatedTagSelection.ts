@@ -96,12 +96,10 @@ export function resolveManualTagNames(
   names: string[],
   userTags: Tag[]
 ): GeneratedTagSelection {
-  const existingIdsByLabel = new Map<string, number[]>()
+  const existingIdsByLabel = new Map<string, number>()
   for (const tag of userTags) {
     const label = tag.name
-    const ids = existingIdsByLabel.get(label) ?? []
-    ids.push(tag.id)
-    existingIdsByLabel.set(label, ids)
+    if (!existingIdsByLabel.has(label)) existingIdsByLabel.set(label, tag.id)
   }
 
   const existingTagIds: number[] = []
@@ -112,7 +110,7 @@ export function resolveManualTagNames(
     const label = normalizeGeneratedQuestionTagLabel(name)
     if (!label) continue
 
-    const match = existingIdsByLabel.get(label)?.[0]
+    const match = existingIdsByLabel.get(label)
     if (typeof match === 'number') {
       if (!seenIds.has(match)) {
         seenIds.add(match)
