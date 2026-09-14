@@ -5,6 +5,9 @@ import { USER_ID_TEST } from '../constants.js'
 const FIXTURE_PREFIX = 'Synthetic question-generation review fixture'
 
 const BUILD_ID = 'b0000000-0000-4000-8000-000000000001'
+const ATTENTION_BUILD_ID = 'b0000000-0000-4000-8000-000000000002'
+const GATE_BUILD_ID = 'b0000000-0000-4000-8000-000000000003'
+const FIXTURE_BUILD_IDS = [BUILD_ID, ATTENTION_BUILD_ID, GATE_BUILD_ID]
 
 const KB_ID = 'b0000000-0000-4000-8000-000000000010'
 const GRAPH_BUILD_ID = 'b0000000-0000-4000-8000-000000000011'
@@ -17,6 +20,14 @@ export type QuestionGenerationReviewFixture = {
   draftIdsByType: Record<'SC' | 'MC' | 'KPRIM' | 'FLASHCARD', string>
   // Synthetic owner tags that make the suggestion matching verifiable.
   tagIdByExistingName: Record<string, number>
+  attentionBuildId: string
+  attentionDraftIds: {
+    mixedFlags: string
+    unknownFlags: string
+    noFlags: string
+    acceptedUnsaved: string
+  }
+  gateBuildId: string
 }
 
 // One suggestion resolves to each seeded owner tag and one stays a proposal, so
@@ -98,6 +109,27 @@ function draftValues(type: 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD', index: number) {
   }
 }
 
+function attentionDraftId(index: number) {
+  return `b0000000-0000-4000-8000-${String(200 + index).padStart(12, '0')}`
+}
+
+function attentionDraft(index: number, qualityFlags: string[]) {
+  const values = draftValues('SC', index)
+  return {
+    id: attentionDraftId(index),
+    sourceElementId: `synthetic-attention-${index + 1}`,
+    order: index,
+    elementType: 'SC' as const,
+    original: values.original,
+    current: values.current,
+    citations: [],
+    bloomLevel: 'understand',
+    targetDifficulty: 3,
+    predictedDifficulty: 3.2,
+    qualityFlags,
+  }
+}
+
 function buildConfiguration() {
   return {
     itemType: 'SC',
@@ -123,7 +155,7 @@ function buildConfiguration() {
 async function deleteFixtureRows() {
   const prisma = await getPrisma()
   const drafts = await prisma.generatedElementDraft.findMany({
-    where: { buildId: BUILD_ID },
+    where: { buildId: { in: FIXTURE_BUILD_IDS } },
     select: { savedElementId: true },
   })
   const savedElementIds = drafts.flatMap((draft) =>
@@ -134,7 +166,7 @@ async function deleteFixtureRows() {
     await prisma.element.deleteMany({ where: { id: { in: savedElementIds } } })
   }
   await prisma.elementGenerationBuild.deleteMany({
-    where: { id: BUILD_ID },
+    where: { id: { in: FIXTURE_BUILD_IDS } },
   })
   await prisma.kBGraphBuild.deleteMany({ where: { id: GRAPH_BUILD_ID } })
   await prisma.kB.deleteMany({ where: { id: KB_ID } })
@@ -286,6 +318,68 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
     },
   })
 
+  const attentionBuildId = ATTENTION_BUILD_ID
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: attentionBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-attention`,
+      configurationHash: 'synthetic-configuration-attention',
+      configuration: buildConfiguration(),
+      requestedElementCount: 4,
+      generatedElementCount: 4,
+      warningCount: 2,
+      status: DB.ElementGenerationBuildStatus.COMPLETED,
+      stage: 'completed',
+      completedAt: new Date('2026-08-29T09:00:00.000Z'),
+      drafts: {
+        create: [
+          attentionDraft(0, [
+            'difficulty_review_required',
+            'difficulty_validation_failed',
+            'manual_review_required',
+            'weak_distractors',
+          ]),
+          attentionDraft(1, ['weak_distractors', 'synthetic_review_flag']),
+          attentionDraft(2, []),
+          {
+            ...attentionDraft(3, []),
+            decision: DB.GeneratedElementDecision.ACCEPTED,
+          },
+        ],
+      },
+    },
+  })
+
+  // The design-review build carries just enough design summary to render the
+  // approval gate; the review gate itself is exercised against it.
+  const gateBuildId = GATE_BUILD_ID
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: gateBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-design-review`,
+      configurationHash: 'synthetic-configuration-design-review',
+      configuration: buildConfiguration(),
+      requestedElementCount: 4,
+      status: DB.ElementGenerationBuildStatus.WAITING_FOR_DESIGN_REVIEW,
+      stage: 'waiting_for_design_review',
+      designSummary: {
+        title: `${FIXTURE_PREFIX} design`,
+        questionCount: 4,
+        objectives: [],
+        modules: [],
+        sources: [],
+        slots: [],
+        warnings: [],
+      },
+    },
+  })
+
   return {
     primaryBuildId,
     tagIdByExistingName,
@@ -300,6 +394,14 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
       KPRIM: 'b0000000-0000-4000-8000-000000000110',
       FLASHCARD: 'b0000000-0000-4000-8000-000000000115',
     },
+    attentionBuildId,
+    attentionDraftIds: {
+      mixedFlags: attentionDraftId(0),
+      unknownFlags: attentionDraftId(1),
+      noFlags: attentionDraftId(2),
+      acceptedUnsaved: attentionDraftId(3),
+    },
+    gateBuildId,
   }
 }
 

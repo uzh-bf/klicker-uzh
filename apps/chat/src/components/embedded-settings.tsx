@@ -1,29 +1,42 @@
 'use client'
 
-import { ChevronDown, Zap } from 'lucide-react'
-import { useTranslations } from 'next-intl'
+import { ChevronDown, Plus, Zap } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useParams } from 'next/navigation'
+import { useRef, useState } from 'react'
+import { useChatStore } from '../stores/chatStore'
 import { twMerge } from 'tailwind-merge'
 import { isKnownMode } from '../lib/config/modes'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
+
+/**
+ * Whether the embedded mode select has anything to offer. Shared by the bar
+ * that decides whether it has any content at all and by the select itself, so
+ * the two can never disagree about the empty state.
+ */
+export function hasEmbeddedModeSettings(
+  showMinimalSettings: boolean,
+  modeOptions: Record<string, string>
+) {
+  return showMinimalSettings && Object.keys(modeOptions).length > 1
+}
 
 export function EmbeddedSettings() {
   const t = useTranslations()
   const { showMinimalSettings } = useChatUi()
   const { selectedMode, modeOptions, setSelectedMode } = useSettingsStore()
 
-  if (!showMinimalSettings) return null
-
+  if (!hasEmbeddedModeSettings(showMinimalSettings, modeOptions)) return null
   const modeKeys = Object.keys(modeOptions)
-  if (modeKeys.length <= 1) return null
 
   return (
-    <div className="relative min-w-0 max-w-[12rem] shrink sm:max-w-xs">
+    <div className="relative ml-auto min-w-0 max-w-[12rem] shrink sm:max-w-xs">
       <select
         value={selectedMode}
         onChange={(e) => setSelectedMode(e.target.value)}
         aria-label={t('chat.modes.switcherLabel')}
-        className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
+        className="border-input bg-background text-foreground hover:border-ring focus-visible:ring-ring w-full cursor-pointer appearance-none bg-none truncate rounded-md border py-1 pl-2 pr-6 text-xs outline-none transition-colors focus-visible:ring-1"
       >
         {/* Same localized-label source as mode-switcher.tsx (`chat.modes.*`
             + isKnownMode, D3-pattern for unknown modes) — labels here must
@@ -52,7 +65,7 @@ export function EmbeddedSettings() {
 }
 
 /**
- * Compact bottom-of-embed credits readout for embedded mode. Reads the same
+ * Compact embedded credits readout for embedded mode. Reads the same
  * `useSettingsStore` state (and its existing fetch) that `CreditsFooter` uses
  * for the sidebar — no separate fetching logic. Deliberately trimmed down
  * from `CreditsFooter` (no progress bar, no cost-hint/reset copy): a small
@@ -73,10 +86,7 @@ export function EmbeddedCreditsBar() {
   const exhausted = credits.current === 0
 
   return (
-    <div
-      data-cy="chat-embedded-credits-bar"
-      className="border-t px-3 py-1.5 text-xs"
-    >
+    <div data-cy="chat-embedded-credits-bar" className="min-w-0 text-xs">
       <div className="flex items-center gap-1.5">
         <Zap className="text-muted-foreground size-3.5 shrink-0" />
         <span className="text-muted-foreground truncate">
@@ -101,5 +111,56 @@ export function EmbeddedCreditsBar() {
         </p>
       )}
     </div>
+  )
+}
+
+export function EmbeddedNewConversation() {
+  const t = useTranslations()
+  const locale = useLocale()
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const pending = useRef(false)
+  const [creating, setCreating] = useState(false)
+  const createThread = useChatStore((state) => state.createThread)
+  const blocked = useChatStore(
+    (state) =>
+      state.isLoading ||
+      state.participationRequired ||
+      Boolean(
+        state.threads.find((thread) => thread.id === state.activeThreadId)
+          ?.isRunning
+      )
+  )
+
+  const startConversation = async () => {
+    if (pending.current || blocked) return
+    pending.current = true
+    setCreating(true)
+    try {
+      const threadId = await createThread(chatbotId, { background: true })
+      window.history.pushState(
+        null,
+        '',
+        `/${chatbotId}/threads/${threadId}?embed=true&locale=${encodeURIComponent(locale)}`
+      )
+    } catch {
+      // Thread creation reports failures through the shared store.
+    } finally {
+      pending.current = false
+      setCreating(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      data-cy="chat-embedded-new-conversation"
+      onClick={startConversation}
+      disabled={blocked || creating}
+      aria-label={t('chat.sidebar.newChat')}
+      title={t('chat.sidebar.newChat')}
+      className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50"
+    >
+      <Plus aria-hidden="true" className="size-4" />
+    </button>
   )
 }

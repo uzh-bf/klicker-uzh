@@ -14,6 +14,8 @@ const MAX_OPTION_LENGTH = 10_000
 const MAX_OPTION_COUNT = 10
 const MC_OPTION_COUNT = 5
 const KPRIM_OPTION_COUNT = 4
+const MAX_TAG_COUNT = 20
+const MAX_TAG_LENGTH = 200
 
 export type UpdateGeneratedQuestionDraftInput = {
   draftId: string
@@ -25,16 +27,30 @@ export type UpdateGeneratedQuestionDraftInput = {
 
 export type GeneratedQuestionEditableInputValue = Omit<
   GeneratedQuestionEditable,
-  'itemType' | 'context' | 'explanation' | 'choices' | 'tagSelection'
+  'itemType' | 'context' | 'explanation' | 'choices' | 'tags' | 'tagSelection'
 > & {
   itemType?: QuestionGenerationItemType | null
   context?: string | null
   explanation?: string | null
+  tags?: string[] | null
   choices: Array<
     Omit<GeneratedQuestionEditable['choices'][number], 'feedback'> & {
       feedback?: string | null
     }
   >
+}
+
+function normalizeTags(value: string[] | null | undefined): string[] {
+  const tags = [...new Set((value ?? []).map((tag) => tag.trim()))].filter(
+    (tag) => tag.length > 0
+  )
+  if (
+    tags.length > MAX_TAG_COUNT ||
+    tags.some((tag) => tag.length > MAX_TAG_LENGTH)
+  ) {
+    return draftError('Generated question tags are invalid')
+  }
+  return tags
 }
 
 export type GeneratedQuestionDecisionInput = 'OPEN' | 'ACCEPTED' | 'REJECTED'
@@ -103,6 +119,7 @@ export function normalizeGeneratedQuestionEditable(
       MAX_OPTION_LENGTH
     ),
   }))
+  const tags = normalizeTags(value.tags)
   if (
     choices.some((choice) => typeof choice.correct !== 'boolean') ||
     (itemType === 'SC' &&
@@ -136,6 +153,7 @@ export function normalizeGeneratedQuestionEditable(
       'Draft explanation',
       MAX_STEM_LENGTH
     ),
+    tags,
     choices,
   }
 }

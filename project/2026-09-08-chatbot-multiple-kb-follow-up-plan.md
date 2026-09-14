@@ -2,6 +2,21 @@
 
 ## Approval summary
 
+September 12 delivery update: the reader foundation merged into `v3-ai` in
+[PR #5879](https://github.com/uzh-bf/klicker-uzh/pull/5879), commit
+`1f139428d506cb6a647a9021f9830eb65f983c13`. The user approved a compatibility
+transition before the requested plural-only cleanup. First deliver readers
+accepting both `kb_id: id` and `kb_ids: [id]`, without changing stored rows or
+writers. After those readers are deployed, backfill managed configurations,
+switch writers, and remove singular support. The final application contract
+uses plural fields; the singular compatibility descriptions below apply only
+during the transition. JWT claim compatibility remains a separate service
+contract. No deployment or live backfill is authorized by source approval.
+
+The compatibility follow-up is on `rs/chatbot-kb-scope-transition`. The
+unpublished cleanup is preserved in `trees/rs/chatbot-multiple-kb`; do not apply
+its strict reader or migration before the deployment prerequisite is proven.
+
 Let chatbot owners add and remove existing authorized knowledge bases in the
 Knowledge tab. Zero attachments remains valid; up to 32 may be active. Adding
 one preserves the others. Detaching never deletes a knowledge base or resources.
@@ -295,6 +310,194 @@ restructuring, preview accounting, graph tools and research analytics stay with
 their own work packages.
 
 ## Progress
+
+September 13 refreshed source audit: `origin/v3` at
+`927f23366f0b80867240382c40af81994b0b7fc9` and `origin/v3-ai` at
+`8207c964016b3f1c735c678e6563bfe96d604f5d` contain no local MCP fixture
+adapter or fixture-specific request-handler branches. The adapter belongs only
+to unmerged [PR #5941](https://github.com/uzh-bf/klicker-uzh/pull/5941).
+Its removal is committed in `b5e4520e00`: both request handlers and the complete `apps/chat/src`
+tree now match `origin/v3-ai`. Script-only JWT and fixture ownership checks
+remain in `apps/chat/scripts/`; generic endpoint configuration, private-network
+transport validation and the development graph loader remain ordinary runtime
+support. This is source evidence, not a deployed-image audit.
+
+The approved replacement uses optional tmpfs-backed `mcp_postgres`, existing
+restricted disposable-database identity checks, ordinary Prisma schema push
+without data-loss flags, and a minimal synthetic Prisma seed. Explicit `mcp`
+selection gives the whole app group that database; canonical sourcing restores
+the normal database when `mcp` is dropped. Because Devrouter reserves `full` as
+all capabilities, the ordinary default is named `standard` and excludes mocks.
+Profile regression checks and the host lifecycle harness pass, including actual
+managed-helper child environment across mock-to-normal profile switching.
+`devrouter profile resolve` confirms the ordinary default excludes the mock.
+The seed worker delivered the existing seed module after its narrowed correction;
+main replaced the temporary-table harness with real Prisma-schema acceptance.
+Isolated `mcp` startup passed with healthy `mcp_postgres`, no drift, no app
+process and no routes. The real-schema harness, 55 focused Chat tests and Chat
+typecheck pass. Startup used the host Infisical operator and a free alternate
+Azurite binding (`10043`), preserving the other workspace holding `10003`.
+No model request ran. Normal commit hooks passed through the repository's
+host/container split, and the full production build passed all 26 tasks.
+The simplifier identified duplicate collision checks already covered by complete
+domain validation; removing them preserved real-schema harness acceptance.
+Browser/application acceptance, final review and draft update remain open.
+
+The user approved the separate disposable database approach and explicitly
+included removal of already-merged fixture-specific Chat runtime code, if any.
+Main owns isolated database/bootstrap integration and final verification. The
+existing fixture executor owns removing the two route integrations, the shared
+production fixture module and normalization tests. A read-only source inventory
+compares refreshed `v3` and `v3-ai` with the task branch; normal preview behavior,
+local endpoint configuration and bundler compatibility are outside the removal.
+No deployment, live data modification or merge is included.
+
+September 13 scope review following the user's concern: draft PR #5941 adds
+fixture normalization to both production request handlers and a 200-line shared
+runtime module solely to accommodate a second local server identity. The server
+name is unique and the retrieval contract recognizes `KB`, so same-database
+identity separation caused this coupling. Recommend retaining the plural seed
+reconciliation, removing fixture-specific request handling, and putting the
+deterministic mock in a separate disposable local database using the ordinary
+retrieval contract. This supersedes the earlier same-database isolation design
+under the user's subsequent approval recorded above.
+The dedicated chatbot insert defaults to DRAFT, and temporary-table tests do not
+prove participant access or full-schema acceptance. Do not merge the existing
+draft based on those tests. The PR description now records these limitations.
+The task runtime at `trees/rs/chatbot-kb-clean-runtime` was canonically stopped;
+source-path status confirms stopped, empty active resources, no drift, and zero
+exact routes. STG was untouched. Evidence corrections in this plan remain local.
+
+September 13: committed the seed correction as `f90bbe4a93` and its independent
+test expectations as `b0116f4f49`. Both commits passed every normal pre-commit
+hook (40 check/build tasks, seven lint tasks, formatting, syncpack and host
+contract suites). Six integrated plural seed tests and five upstream isolated
+runtime seed tests passed. Host root tooling was installed from the unchanged
+lockfile with scripts disabled to support host hook tests.
+
+Simplifier disposition is complete; the risk reviewer found no implementation
+defect but requested protection for the enabled/undeleted query filter. That
+assertion is committed in `2d9b80da6a`. Its initial verification startup stalled
+after Prisma Rollup emitted output and was stopped. The existing route-free
+`mcp` profile then allowed all six TSX seed tests, Biome and every normal
+pre-commit hook to pass. Main closed this assertion-only review correction.
+Reports are in `project/_local/reviews/`. The final Claude review of
+`d1e1fafadd..2d9b80da6a` completed with one accepted seed/ownership mismatch:
+the full seed can persist another synthetic fixture's KB scope on the same
+chatbot, which the local MCP repair guard then rejects. Warm-start and isolated
+unit results do not prove reseed compatibility. The correction is not ready
+for publication. The user approved separating the local MCP fixture while
+preserving strict ownership and leaving response-example behavior unchanged.
+The bounded planner approved dedicated server/chatbot/course identities plus
+development/bootstrap-gated normalization before request scope resolution.
+Main owns both route integrations, the scope/client composition test and runtime
+proof; the trusted executor owned fixture creation, ownership and SQL acceptance.
+The identity split is committed in `d0cb2cd618` and verified: Chat typecheck, the
+full Chat suite (101 files, 1117 tests), 56 focused Chat tests, the prisma-data
+check, six plural seed tests, the SQL coexistence harness and Biome on all
+changed files. Correction to the earlier verification account: the nullable
+`chatbotIdHeader` is present in the database schema and the fixture insert writes
+null. The missing value came from a hand-built test configuration, not a proven
+database defect. Allowing undefined was therefore not evidence of a runtime fix.
+Local synthetic runtime and browser proof remain pending, as do host final
+review and human foundation approval. The package was pushed to draft
+[PR #5941](https://github.com/uzh-bf/klicker-uzh/pull/5941).
+Canonical stop completed with exit zero. Fresh source-path status confirms
+stopped, empty active resources, no drift and zero exact routes.
+Merge `671ff52c49` integrated `v3-ai` at `4943651a5b`. The earlier claim that
+it included `b3be22ee11` was incorrect: the local remote-tracking ref was stale.
+A fresh fetch confirmed `b3be22ee11ca8d29b746b3d9120d352713f74e84` as the
+remote target; that later revision is not included in this merge.
+The reader compatibility PRs are merged, but deployed-reader evidence and
+live backfill remain separate prerequisites. Additive attachment editing is
+not implemented by these seed corrections.
+Ordinary draft publication occurred; no deployment, live backfill or paid model
+request is established by these verification receipts.
+
+September 12 integration checkpoint: fast-forwarded this task branch to current
+`origin/v3-ai` (`d1e1fafadd`) because upstream changed the same seed source.
+The five task files reapplied cleanly; upstream isolated-runtime URL handling
+and its tests remain intact. The pre-integration patch is also preserved in
+stash `c09618d6c51232fbe14211316557c3b570cbbfcd`. No target branch was changed.
+The source slice is 171 substantive changed lines, excluding this plan.
+Affected integration checks and full pre-commit checks require a new bounded
+verification runtime; the previous one-shot startup/check/stop is complete.
+Commit and immutable-slice review remain pending. No PR exists for this branch.
+
+September 12 subsequent approved retry: installed Devrouter 0.0.77 completed
+the exact Infisical-injected startup with `managedRuntime.status=ready`, matching
+desired/active resources and no drift. The corrected local MCP fixture started.
+Auth, Chat, PWA, Manage and lecturer MCP readiness contracts passed; host Manage
+returned HTTP 200 with trusted TLS verification. No model request was made.
+Canonical stop exited zero and removed six routes. Fresh source-path readback
+reports stopped, empty active resources, no drift and zero exact routes.
+The focused four-file Biome check now exits zero after two test-format corrections;
+four existing seed-file lint warnings remain. Startup build warnings are not a
+passing full typecheck. Browser interaction and model/retrieval proof remain open.
+
+September 12 latest verification supersedes the runtime/check status below.
+The user approved the Devrouter TLS source fix, additive shared certificate
+reconciliation, and one exact startup/check/stop attempt. The dedicated
+Devrouter task completed certificate reconciliation. The reviewed source at
+`76c4ea92ae2f9ed8804693213d9bd49d22061665` reached local MCP startup but failed
+the fixture ownership guard; it did not establish application readiness.
+Trusted curl against the exact Chat hostname returned `TLS_VERIFY=0` and
+HTTP 404. TLS coverage is verified; application recovery is not.
+
+Main corrected the fixture guard to compare persisted array values structurally
+and accept only the exact owned legacy or plural fixture scopes. Broadened and
+mixed scopes remain rejected. The changed source passes 67 focused Chat tests,
+six seed reconciliation tests, the Prisma data package check, and diff whitespace
+validation. Formatting remains unverified: its managed exec failed because
+Docker could not find container `77d452dd87ff`. No second startup was attempted.
+These source changes remain uncommitted and require review.
+
+The reviewed-source stop completed successfully with `stopped: true`.
+Source-path status reports stopped with empty active app/service/process sets;
+Devsy reports `Stopped`, and exact source/hostname route filtering finds zero
+routes. Historical degraded process-start state remains recorded. The Devrouter
+owner received these receipts. The next runtime attempt must be coordinated
+with that owner and separately authorized under the one-attempt boundary.
+No deployment, live data changes, paid model calls, or resource deletion occurred.
+
+September 12 continuation checkpoint: the replacement execution checkout is
+`trees/rs/chatbot-kb-clean-runtime`, branch `rs/chatbot-kb-clean-runtime`, at
+`21ef2e9818b3e50e592fca3db8bdd9e22f8df524`. The old checkout, unresolved merge
+and named cleanup stash remain preserved. The strict reader and migration have
+not been restored: their deployment/backfill prerequisite still needs explicit
+reconciliation. The merged foundation does not itself prove deployed state.
+
+The replacement runtime completed synthetic bootstrap with a temporary serial
+package-build diagnostic. That is successful recovery, not a proven permanent
+Rollup fix. Internal application readiness passed. Fresh deterministic checks
+passed 42 Chat scope/owner-preview tests and three GraphQL plural-reader tests;
+no paid model calls or live data changes occurred. Final host HTTPS readiness
+failed: the workspace receives Traefik's default certificate, and the configured
+leaf lacks its hostname SAN. The dedicated Devrouter task owns source diagnosis;
+shared certificates and trust have not been changed here.
+
+The bounded `plural_seed_writers` executor resumed and drafted plural persisted
+scopes in the local MCP and Prisma synthetic seed writers, with existing-test
+coverage for zero/one/many bindings and stale-key reconciliation. Main is
+checking the diff; checks on this changed source remain pending. Singleton JWT
+claims remain unchanged as a separate contract.
+Main owns integration, migration safety, verification and delivery. The Prisma
+seed package check passed on unchanged source. The temporary serial-build
+override was removed. Browser acceptance, the remaining cleanup, additive
+editing, migration proof and final review remain outstanding.
+
+Canonical stop of this replacement checkout returned `stopped: true` and the
+source-path route inventory reports zero routes. The dedicated Devrouter task
+confirmed that its prior authorization does not cover the newly identified
+certificate-coverage lifecycle defect. Its proposed source fix and any shared
+certificate reconciliation need a named approval; do not bypass TLS checks.
+
+Fresh remote evidence: `origin/stg-release` at `b7dd78ac44` contains compatibility
+commit `7d378475c0`. This is release-ref ancestry, not a deployed-image receipt.
+Current target `origin/v3-ai` is `0f841214d7`; its two commits after this checkout
+change generated-question tags, so no new integration was performed merely
+for target movement. Additive attach, partial detach and deletion reconciliation
+remain source work to implement after the current preparatory slice.
 
 September 8: initial source mapping and native planning rounds identified
 deletion recomputation, preview truncation and graph browsing. The user accepted

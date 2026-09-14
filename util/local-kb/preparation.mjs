@@ -1,27 +1,865 @@
 import { execFileSync } from 'node:child_process'
 import { createHash, generateKeyPairSync, randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
-import { lstat, mkdir, open, realpath, unlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { lstat, mkdir, open, readdir, realpath, unlink } from 'node:fs/promises'
+import { createConnection } from 'node:net'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
 import { renderBackingCompose } from './backing-compose.mjs'
-import { renderProviderCompose } from './compose.mjs'
 import {
   inspectUnusedComposeProject,
+  requireLocalAiEnvironment,
   runLocalDocker,
   runLocalManaged,
 } from './docker-preflight.mjs'
-import { validateIsolatedConfig } from './isolated-config.mjs'
+import {
+  LOCAL_KB_MANAGED_PROFILE,
+  validateIsolatedConfig,
+} from './isolated-config.mjs'
 import {
   localCredentialNames,
   localRetrievalScope,
-  renderLocalConfiguration,
   renderLocalRetrievalConfiguration,
+  renderProviderLocalConfiguration,
 } from './local-configuration.mjs'
 import {
   renderManagedConfiguration,
   renderProviderRouting,
 } from './managed-configuration.mjs'
+import {
+  observeProviderLauncher,
+  observeProviderLaunchers,
+  providerCommands,
+  runProviderCommand,
+} from './provider-commands.mjs'
+
+async function absent(path) {
+  try {
+    await lstat(path)
+    return false
+  } catch (error) {
+    if (error.code === 'ENOENT') return true
+    throw error
+  }
+}
+
+function revisionAt(checkout, args) {
+  return execFileSync(
+    'git',
+    ['-c', 'core.fsmonitor=false', '-C', checkout, ...args],
+    {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 5000,
+      env: { PATH: process.env.PATH, GIT_OPTIONAL_LOCKS: '0' },
+    }
+  ).trim()
+}
+
+function managedReplacementBytes(config, inputs) {
+  const rendered = renderManagedConfiguration(config, {
+    devcontainer: JSON.parse(inputs[0]),
+    compose: parse(inputs[1]),
+    devrouter: parse(inputs[3]),
+  })
+  rendered.devcontainer.dockerComposeFile = [
+    'docker-compose.yml',
+    'docker-compose.devrouter.yml',
+  ]
+  // Devrouter appends this standard overlay for linked worktrees. It must
+  // not reintroduce the ordinary backing services or host port bindings.
+  return [
+    rendered.devcontainer,
+    rendered.compose,
+    { services: {} },
+    rendered.devrouter,
+  ].map((value) => `${JSON.stringify(value, null, 2)}\n`)
+}
+
+// The executor and retained application are separate immutable identities.
+// Only the managed configuration transformation may differ in the candidate.
+export async function verifyContinuationSources(
+  config,
+  candidate,
+  executor,
+  allowLegacyProfile = false,
+  git = revisionAt
+) {
+  const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
+  const checkout = config.project.runtimeCheckoutPath
+  const paths = [
+    '.devcontainer/devcontainer.json',
+    '.devcontainer/docker-compose.yml',
+    '.devcontainer/docker-compose.devrouter.yml',
+    '.devrouter.yml',
+  ]
+  if (
+    !/^[a-f0-9]{40}$/.test(executor) ||
+    git(root, ['rev-parse', 'HEAD']) !== executor ||
+    git(root, ['status', '--porcelain', '--untracked-files=normal']) ||
+    git(checkout, ['rev-parse', 'HEAD']) !== candidate ||
+    git(checkout, ['rev-parse', '--abbrev-ref', 'HEAD']) !== 'HEAD' ||
+    git(checkout, ['rev-parse', '--show-toplevel']) !== checkout ||
+    git(checkout, ['ls-files', '--others', '--exclude-standard']) ||
+    !git(checkout, ['rev-parse', '--git-dir']).includes('/worktrees/') ||
+    git(checkout, [
+      'diff',
+      '--name-only',
+      candidate,
+      '--',
+      '.',
+      ...paths.map((path) => `:(exclude)${path}`),
+    ])
+  )
+    throw new Error(
+      'Continuation requires verified executor and candidate sources.'
+    )
+  const inputs = paths.map((path) =>
+    readCandidateFile(checkout, candidate, path)
+  )
+  const expected = managedReplacementBytes(config, inputs)
+  let profileRepair
+  for (const [index, path] of paths.entries()) {
+    const handle = await open(
+      join(checkout, path),
+      constants.O_RDONLY | constants.O_NOFOLLOW
+    )
+    try {
+      const metadata = await handle.stat()
+      const actual = await handle.readFile('utf8')
+      if (index === 3 && allowLegacyProfile && actual !== expected[index]) {
+        const legacy = JSON.parse(expected[index])
+        legacy.profiles['local-kb-setup'] = {
+          apps: [],
+          devcontainerServices: [],
+          processes: [],
+        }
+        if (actual === `${JSON.stringify(legacy, null, 2)}\n`)
+          profileRepair = {
+            path: join(checkout, path),
+            previous: actual,
+            next: expected[index],
+          }
+      }
+      if (
+        !metadata.isFile() ||
+        metadata.uid !== process.getuid() ||
+        metadata.nlink !== 1 ||
+        (actual !== expected[index] && !(index === 3 && profileRepair))
+      )
+        throw new Error('Retained managed configuration has changed.')
+    } finally {
+      await handle.close()
+    }
+  }
+  return profileRepair
+}
+
+async function requireUnusedProvider(config, name, context, runDocker) {
+  const state = join(
+    config.project.runtimeCheckoutPath,
+    '.local-kb/state',
+    name
+  )
+  if (!(await absent(state)))
+    throw new Error(
+      `Provider ${name} has retained state; setup is not permitted.`
+    )
+  if (name === 'ingestion') {
+    await requireAbsentComposeResources(
+      runDocker,
+      context,
+      ingestionComposeProject(config, state),
+      'Untouched ingestion provider has existing Docker resources.'
+    )
+  } else if (name === 'retrieval') {
+    await new Promise((resolve, reject) => {
+      const socket = createConnection({
+        host: '127.0.0.1',
+        port: config.bindings.ports.retrieval.api,
+      })
+      socket.setTimeout(2000)
+      socket.once('connect', () => {
+        socket.destroy()
+        reject(new Error('Retrieval listener is already occupied.'))
+      })
+      socket.once('timeout', () => {
+        socket.destroy()
+        reject(new Error('Retrieval listener state is unknown.'))
+      })
+      socket.once('error', (error) =>
+        error.code === 'ECONNREFUSED'
+          ? resolve()
+          : reject(new Error('Retrieval listener state is unknown.'))
+      )
+    })
+  } else
+    throw new Error(
+      'Only untouched ingestion and retrieval stages may be initialized.'
+    )
+}
+
+// The provider derives its Compose project from the source root and state
+// directory; only that exact value can observe the provider's own resources.
+function ingestionComposeProject(config, state) {
+  const suffix = createHash('sha256')
+    .update(`${config.providers.ingestion.sourcePath}:${state}`)
+    .digest('hex')
+    .slice(0, 12)
+  return `ingestion-provider-${config.project.identity}-${suffix}`
+}
+
+// Provider-owned containers, networks and volumes all carry the Compose
+// project label; any listed resource means setup already had an effect.
+async function requireAbsentComposeResources(
+  runDocker,
+  context,
+  project,
+  message
+) {
+  for (const resource of ['container', 'network', 'volume']) {
+    if (
+      (
+        await runDocker([
+          '--context',
+          context,
+          resource,
+          'ls',
+          ...(resource === 'container' ? ['--all'] : []),
+          '--quiet',
+          '--filter',
+          `label=com.docker.compose.project=${project}`,
+        ])
+      ).trim()
+    )
+      throw new Error(message)
+  }
+}
+
+// A bound port may be held by a retained provider start its own stop path did
+// not remove. Occupancy is reported, never attributed to an owner.
+async function occupiedLocalPort(port) {
+  return new Promise((resolve, reject) => {
+    const socket = createConnection({ host: '127.0.0.1', port })
+    socket.setTimeout(2000)
+    socket.once('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.once('timeout', () => {
+      socket.destroy()
+      reject(new Error('Local port occupancy is unknown.'))
+    })
+    socket.once('error', (error) =>
+      error.code === 'ECONNREFUSED'
+        ? resolve(false)
+        : reject(new Error('Local port occupancy is unknown.'))
+    )
+  })
+}
+
+function sameEntries(actual, expected) {
+  if (typeof actual !== 'object' || actual === null) return false
+  const keys = Object.keys(expected)
+  return (
+    Object.keys(actual).length === keys.length &&
+    keys.every((key) => actual[key] === expected[key])
+  )
+}
+
+const providerManifestName = '.provider-local-launcher.json'
+
+// Before dependency preparation completes, the provider creates its manifest,
+// Compose record and project-configs directory. Credential files at the state
+// root would indicate later progress and exclude this recovery path.
+const pendingIngestionInventory = [
+  providerManifestName,
+  'compose-project',
+  'project-configs',
+]
+const providerDigest = /^[a-f0-9]{64}$/
+
+// A recovery candidate is the retained ingestion attempt that stopped before
+// any credential, container or listener existed. Every other retained shape is
+// partial progress and must not be resumed.
+async function verifyPendingIngestion(
+  config,
+  directory,
+  context,
+  observed,
+  runDocker,
+  portOccupied
+) {
+  const rejected = () =>
+    new Error('Retained ingestion state is not an untouched preparation.')
+  if (!observed.pending || !observed.effectsAbsent) throw rejected()
+  const state = join(directory, 'state', 'ingestion')
+  if (
+    JSON.stringify((await readdir(state)).sort()) !==
+    JSON.stringify(pendingIngestionInventory)
+  )
+    throw rejected()
+  const configDirectory = join(state, 'project-configs')
+  if (!(await lstat(configDirectory)).isDirectory()) throw rejected()
+  const project = ingestionComposeProject(config, state)
+  let manifest
+  let record
+  try {
+    manifest = await readOwned(join(state, providerManifestName))
+    const handle = await open(
+      join(state, 'compose-project'),
+      constants.O_RDONLY | constants.O_NOFOLLOW
+    )
+    try {
+      const metadata = await handle.stat()
+      if (!metadata.isFile() || metadata.uid !== process.getuid())
+        throw new Error()
+      record = (await handle.readFile('utf8')).trim()
+    } finally {
+      await handle.close()
+    }
+  } catch {
+    throw rejected()
+  }
+  const runtimeRoot = join(config.project.runtimeCheckoutPath, '.local-kb')
+  // The retained manifest binds the original provider, source and workload
+  // pins. Recovering it must never rebind any of them.
+  const workload = {
+    INGESTION_LOCAL_WORKER_IMAGE: config.bindings.images.worker,
+    INGESTION_LOCAL_API_IMAGE: config.bindings.images.api,
+    INGESTION_LOCAL_RUNTIME_ENV_FILE: join(runtimeRoot, 'ingestion-worker.env'),
+    INGESTION_LOCAL_API_ENV_FILE: join(runtimeRoot, 'ingestion-api.env'),
+    INGESTION_LOCAL_PRODUCER_REGISTRY_DIR: join(
+      runtimeRoot,
+      'producer-registry'
+    ),
+    INGESTION_LOCAL_API_PORT: String(config.bindings.ports.ingestion.api),
+    INGESTION_LOCAL_DISPATCHER_PORT: String(
+      config.bindings.ports.ingestion.dispatcher
+    ),
+  }
+  const ports = {
+    hatchet_http: config.bindings.ports.ingestion.hatchetHttp,
+    hatchet_grpc: config.bindings.ports.ingestion.hatchetGrpc,
+    pgvector: config.bindings.ports.ingestion.postgres,
+    azurite: config.bindings.ports.ingestion.azurite,
+    milvus: config.bindings.ports.ingestion.milvus,
+    milvus_health: config.bindings.ports.ingestion.milvusHealth,
+    milvus_attu: config.bindings.ports.ingestion.milvusAttu,
+  }
+  const runtime = manifest?.runtime
+  if (
+    manifest?.version !== 1 ||
+    manifest.owner !== 'provider-local-launcher' ||
+    manifest.source_root !== config.providers.ingestion.sourcePath ||
+    manifest.instance !== config.project.identity ||
+    manifest.state_dir !== state ||
+    manifest.config_dir !== configDirectory ||
+    manifest.compose_project !== project ||
+    manifest.source_revision !== config.providers.ingestion.revision ||
+    record !== project ||
+    !providerDigest.test(manifest.project_configs_fingerprint ?? '') ||
+    typeof runtime !== 'object' ||
+    runtime === null ||
+    !sameEntries(runtime.ports, ports) ||
+    !providerDigest.test(runtime.state_dsn_sha256 ?? '') ||
+    !providerDigest.test(runtime.service_urls_sha256 ?? '') ||
+    typeof manifest.workload !== 'object' ||
+    manifest.workload === null ||
+    !sameEntries(manifest.workload.configuration, workload) ||
+    !providerDigest.test(manifest.workload.fingerprint ?? '')
+  )
+    throw rejected()
+  await requireAbsentComposeResources(
+    runDocker,
+    context,
+    project,
+    'Retained ingestion state still owns Docker resources.'
+  )
+  for (const port of Object.values(config.bindings.ports.ingestion))
+    if (await portOccupied(port))
+      throw new Error('A retained ingestion port is still occupied.')
+}
+
+const ingestionResumeRootEntries = [
+  'claim.json',
+  'resume-after-profile',
+  'setup-profile-intent.json',
+]
+const ingestionResumeChildEntries = [
+  'bootstrap-intent.json',
+  'claim.json',
+  'docProcessing-reconciliation.json',
+  'ingestion-intent.json',
+]
+
+// Only the exact retained profile-repair child authorizes one sibling
+// ingestion attempt. Its own claim must link to the original root claim, and
+// every receipt must record the child executor, so a predecessor cannot be
+// confused with a foreign or rebuilt attempt.
+async function requireIngestionResumePrefix(
+  attempt,
+  { claim, candidate, context, resumeIngestionExecutor }
+) {
+  const rejected = () =>
+    new Error('Ingestion resume does not match the retained prefix.')
+  try {
+    if (
+      JSON.stringify((await readdir(attempt)).sort()) !==
+      JSON.stringify(ingestionResumeRootEntries)
+    )
+      throw new Error()
+    const child = join(attempt, 'resume-after-profile')
+    if (
+      JSON.stringify((await readdir(child)).sort()) !==
+      JSON.stringify(ingestionResumeChildEntries)
+    )
+      throw new Error()
+    const childClaim = await readOwned(join(child, 'claim.json'))
+    const childExecutor = childClaim?.executor
+    // The child records the original root executor, which must still own the
+    // retained root claim and its profile intent.
+    const rootExecutor = childClaim?.resumeExecutor
+    if (
+      !/^[a-f0-9]{40}$/.test(childExecutor ?? '') ||
+      !/^[a-f0-9]{40}$/.test(rootExecutor ?? '') ||
+      childExecutor !== resumeIngestionExecutor ||
+      JSON.stringify(childClaim) !==
+        JSON.stringify({
+          ...claim,
+          executor: childExecutor,
+          context,
+          resumeExecutor: rootExecutor,
+        })
+    )
+      throw new Error()
+    const rootClaim = await readOwned(join(attempt, 'claim.json'))
+    if (
+      JSON.stringify(rootClaim) !==
+        JSON.stringify({ ...claim, executor: rootExecutor, context }) ||
+      JSON.stringify(
+        await readOwned(join(attempt, 'setup-profile-intent.json'))
+      ) !== JSON.stringify({ candidate, executor: rootExecutor })
+    )
+      throw new Error()
+    for (const [name, receipt] of [
+      ['bootstrap-intent.json', { candidate, executor: childExecutor }],
+      [
+        'docProcessing-reconciliation.json',
+        { candidate, executor: childExecutor, prepared: true },
+      ],
+      ['ingestion-intent.json', { candidate, executor: childExecutor }],
+    ])
+      if (
+        JSON.stringify(await readOwned(join(child, name))) !==
+        JSON.stringify(receipt)
+      )
+        throw new Error()
+  } catch {
+    throw rejected()
+  }
+}
+
+// Explicit recovery never retries an ambiguous stage or recreates credentials.
+export async function continuePreparation(
+  config,
+  candidate,
+  executor,
+  {
+    run = runProviderCommand,
+    runDocker = runLocalDocker,
+    runManaged = runLocalManaged,
+    observeBacking = observeOwnedProviders,
+    verifySources = verifyContinuationSources,
+    unusedProvider = requireUnusedProvider,
+    initializeApplication = initializeManagedApplication,
+    resumeExecutor,
+    resumeIngestionExecutor,
+    portOccupied = occupiedLocalPort,
+  } = {}
+) {
+  if (resumeExecutor !== undefined && resumeIngestionExecutor !== undefined)
+    throw new Error('Continuation accepts one recovery executor.')
+  requireLocalAiEnvironment(config)
+  const { directory, claim } = await verifyClaim(config, candidate)
+  const profileRepair = await verifySources(config, candidate, executor, true)
+  const storage = await readOwned(
+    join(directory, 'storage-setup/complete.json')
+  )
+  const installation = await readOwned(
+    join(directory, 'managed-installation/complete.json')
+  )
+  const context = (await runDocker(['context', 'show'])).trim()
+  const endpoint = (
+    await runDocker([
+      'context',
+      'inspect',
+      context,
+      '--format',
+      '{{.Endpoints.docker.Host}}',
+    ])
+  ).trim()
+  if (
+    !storage.initialized ||
+    storage.context !== context ||
+    installation.candidateRevision !== candidate ||
+    !endpoint.startsWith('unix:///') ||
+    /[\r\n]/.test(endpoint)
+  )
+    throw new Error(
+      'Continuation prerequisites do not match local prepared storage.'
+    )
+  const managed = JSON.parse(
+    await runManaged([
+      'status',
+      '--repo',
+      config.project.runtimeCheckoutPath,
+      '--json',
+    ])
+  )
+  if (
+    managed.dockerContext !== context ||
+    managed.repo?.path !== config.project.runtimeCheckoutPath ||
+    (managed.repo?.valid !== true && !profileRepair)
+  )
+    throw new Error(
+      'Continuation requires valid managed configuration and an unused managed runtime.'
+    )
+  const verifyUnusedManaged = async () => {
+    const inventory = JSON.parse(
+      await runManaged([
+        'workspace',
+        'ls',
+        '--repo',
+        config.project.runtimeCheckoutPath,
+        '--json',
+      ])
+    )
+    const rows = Array.isArray(inventory)
+      ? inventory.filter(
+          (row) => row.worktreePath === config.project.runtimeCheckoutPath
+        )
+      : []
+    if (
+      rows.length !== 1 ||
+      rows[0].devpodStatus !== 'absent' ||
+      rows[0].routeCount !== 0
+    )
+      throw new Error(
+        'Managed runtime allocation must be absent with zero routes.'
+      )
+    for (const label of [
+      'devcontainer.local_folder',
+      'devpod.workspace.source',
+    ]) {
+      if (
+        (
+          await runDocker([
+            '--context',
+            context,
+            'container',
+            'ls',
+            '--all',
+            '--quiet',
+            '--filter',
+            `label=${label}=${config.project.runtimeCheckoutPath}`,
+          ])
+        ).trim()
+      )
+        throw new Error('Retained application runtime already exists.')
+    }
+  }
+  await verifyUnusedManaged()
+  // Both recovery modes resume an attempt that stopped while the original
+  // bootstrap containers were already shut down.
+  const recovered = [resumeExecutor, resumeIngestionExecutor].some(
+    (value) => value !== undefined
+  )
+  const verifyBacking = async () => {
+    const backing = await observeBacking(
+      config,
+      { directory, context },
+      runDocker
+    )
+    for (const name of ['postgres', 'hatchet']) {
+      const rows = backing.filter(({ service }) => service === name)
+      if (
+        rows.length !== 1 ||
+        !(recovered ? ['exited'] : ['running', 'exited']).includes(
+          rows[0].state
+        )
+      )
+        throw new Error(
+          'Continuation requires the original owned bootstrap containers.'
+        )
+    }
+  }
+  await verifyBacking()
+  const composition = await readOwned(join(directory, 'providers.compose.json'))
+  if (
+    JSON.stringify(composition) !==
+    JSON.stringify(renderConsumerBacking(config))
+  )
+    throw new Error('Retained provider composition has changed.')
+  if (
+    JSON.stringify(
+      await readOwned(join(directory, 'bootstrap.compose.json'))
+    ) !== JSON.stringify(renderConsumerBacking(config))
+  )
+    throw new Error('Retained bootstrap composition has changed.')
+  await requirePrivateDirectory(
+    join(directory, 'provider-setup'),
+    'Provider attempt must be private.'
+  )
+  await requirePrivateDirectory(
+    join(directory, 'state'),
+    'Provider state root must be private.'
+  )
+  for (const path of [
+    'prepared.json',
+    'application-setup',
+    'provider-setup/complete.json',
+    'infrastructure-operation',
+  ])
+    if (!(await absent(join(directory, path))))
+      throw new Error(
+        'Continuation requires an unfinished provider prefix and untouched application.'
+      )
+  const commands = providerCommands(config)
+  const retrieval = await readOwned(
+    join(directory, 'retrieval-environment.json')
+  )
+  const classify = async (name) => {
+    const missing = await absent(
+      join(directory, 'provider-setup', `${name}.json`)
+    )
+    if (missing && (await absent(join(directory, 'state', name)))) {
+      await unusedProvider(config, name, context, runDocker)
+      return 'untouched'
+    }
+    await requirePrivateDirectory(
+      join(directory, 'state', name),
+      'Prepared provider state must be private.'
+    )
+    const observed = await observeProviderLauncher(
+      config,
+      name,
+      run,
+      { DOCKER_CONTEXT: context },
+      retrieval
+    )
+    if (resumeIngestionExecutor !== undefined && name === 'ingestion') {
+      if (!missing)
+        throw new Error('Retained ingestion completion is not resumable.')
+      await verifyPendingIngestion(
+        config,
+        directory,
+        context,
+        observed,
+        runDocker,
+        portOccupied
+      )
+      return 'pending-ingestion'
+    }
+    if (!observed.prepared || !observed.stopped)
+      throw new Error(`Provider ${name} must be prepared and stopped.`)
+    if (
+      !missing &&
+      (await readOwned(join(directory, 'provider-setup', `${name}.json`)))
+        .setupCompleted !== true
+    )
+      throw new Error('Invalid provider completion receipt.')
+    return missing ? 'reconcile' : 'complete'
+  }
+  const classifications = []
+  for (const name of commands.lifecycleOrder)
+    classifications.push(await classify(name))
+  let attempt = join(directory, 'setup-continuation')
+  if (resumeExecutor !== undefined) {
+    if (!/^[a-f0-9]{40}$/.test(resumeExecutor) || profileRepair)
+      throw new Error(
+        'Profile resume requires a corrected profile and original executor.'
+      )
+    await requirePrivateDirectory(
+      attempt,
+      'Continuation attempt must be private.'
+    )
+    const entries = (await readdir(attempt)).sort()
+    if (
+      JSON.stringify(entries) !==
+        JSON.stringify(['claim.json', 'setup-profile-intent.json']) ||
+      JSON.stringify(await readOwned(join(attempt, 'claim.json'))) !==
+        JSON.stringify({ ...claim, executor: resumeExecutor, context }) ||
+      JSON.stringify(
+        await readOwned(join(attempt, 'setup-profile-intent.json'))
+      ) !== JSON.stringify({ candidate, executor: resumeExecutor })
+    )
+      throw new Error('Profile resume does not match the retained prefix.')
+    const expected = {
+      scraping: 'complete',
+      docProcessing: 'reconcile',
+      ingestion: 'untouched',
+      retrieval: 'untouched',
+    }
+    if (
+      commands.lifecycleOrder.some(
+        (name, index) => classifications[index] !== expected[name]
+      )
+    )
+      throw new Error('Retained provider prefix has changed.')
+    attempt = join(attempt, 'resume-after-profile')
+  } else if (resumeIngestionExecutor !== undefined) {
+    if (!/^[a-f0-9]{40}$/.test(resumeIngestionExecutor) || profileRepair)
+      throw new Error(
+        'Ingestion resume requires a corrected profile and original executor.'
+      )
+    await requirePrivateDirectory(
+      attempt,
+      'Continuation attempt must be private.'
+    )
+    await requireIngestionResumePrefix(attempt, {
+      claim,
+      candidate,
+      context,
+      resumeIngestionExecutor,
+    })
+    const expected = {
+      scraping: 'complete',
+      docProcessing: 'complete',
+      ingestion: 'pending-ingestion',
+      retrieval: 'untouched',
+    }
+    if (
+      commands.lifecycleOrder.some(
+        (name, index) => classifications[index] !== expected[name]
+      )
+    )
+      throw new Error('Retained provider prefix has changed.')
+    attempt = join(attempt, 'resume-after-ingestion')
+  }
+  await mkdir(attempt, { mode: 0o700 })
+  await writeExclusive(join(attempt, 'claim.json'), {
+    ...claim,
+    executor,
+    context,
+    ...(resumeExecutor ? { resumeExecutor } : {}),
+    ...(resumeIngestionExecutor ? { resumeIngestionExecutor } : {}),
+  })
+  if (profileRepair) {
+    await writeExclusive(join(attempt, 'setup-profile-intent.json'), {
+      candidate,
+      executor,
+    })
+    const handle = await open(
+      profileRepair.path,
+      constants.O_RDWR | constants.O_NOFOLLOW
+    )
+    try {
+      const metadata = await handle.stat()
+      if (
+        !metadata.isFile() ||
+        metadata.uid !== process.getuid() ||
+        metadata.nlink !== 1 ||
+        (await handle.readFile('utf8')) !== profileRepair.previous
+      )
+        throw new Error('Setup profile changed before repair.')
+      const bytes = Buffer.from(profileRepair.next)
+      if (
+        (await handle.write(bytes, 0, bytes.length, 0)).bytesWritten !==
+        bytes.length
+      )
+        throw new Error('Incomplete setup profile repair; state retained.')
+      await handle.truncate(bytes.length)
+      await handle.sync()
+    } finally {
+      await handle.close()
+    }
+    const repaired = JSON.parse(
+      await runManaged([
+        'status',
+        '--repo',
+        config.project.runtimeCheckoutPath,
+        '--json',
+      ])
+    )
+    if (
+      repaired.dockerContext !== context ||
+      repaired.repo?.path !== config.project.runtimeCheckoutPath ||
+      repaired.repo?.valid !== true
+    )
+      throw new Error('Repaired setup profile could not be qualified.')
+  }
+  await verifySources(config, candidate, executor)
+  await verifyUnusedManaged()
+  await verifyBacking()
+  for (const [index, name] of commands.lifecycleOrder.entries()) {
+    if ((await classify(name)) !== classifications[index])
+      throw new Error('Provider state changed before bootstrap startup.')
+  }
+  await writeExclusive(join(attempt, 'bootstrap-intent.json'), {
+    candidate,
+    executor,
+  })
+  await runDocker([
+    '--context',
+    context,
+    'compose',
+    '--project-name',
+    config.project.identity,
+    '--file',
+    join(directory, 'bootstrap.compose.json'),
+    'start',
+    'postgres',
+    'hatchet',
+  ])
+  for (const [index, name] of commands.lifecycleOrder.entries()) {
+    const disposition = await classify(name)
+    if (disposition !== classifications[index])
+      throw new Error('Provider state changed during continuation.')
+    if (disposition === 'complete') continue
+    if (disposition === 'untouched' || disposition === 'pending-ingestion') {
+      await writeExclusive(join(attempt, `${name}-intent.json`), {
+        candidate,
+        executor,
+      })
+      await run(commands.providers[name].lifecycle.setup, {
+        ...(name === 'retrieval' ? retrieval : {}),
+        DOCKER_CONTEXT: context,
+      })
+      const observed = await observeProviderLauncher(
+        config,
+        name,
+        run,
+        { DOCKER_CONTEXT: context },
+        retrieval
+      )
+      if (!observed.prepared)
+        throw new Error(`Provider ${name} preparation is incomplete.`)
+    } else
+      await writeExclusive(join(attempt, `${name}-reconciliation.json`), {
+        candidate,
+        executor,
+        prepared: true,
+      })
+    await writeExclusive(join(directory, 'provider-setup', `${name}.json`), {
+      setupCompleted: true,
+    })
+  }
+  await writeExclusive(join(directory, 'provider-setup/complete.json'), {
+    candidateRevision: candidate,
+    context,
+    initialized: true,
+  })
+  await initializeApplication(config, candidate, runManaged, runDocker)
+  await completePreparation(config, candidate)
+  await writeExclusive(join(attempt, 'complete.json'), { candidate, executor })
+  return { prepared: true, applicationStarted: false, aiQualified: false }
+}
+
+function renderConsumerBacking(config) {
+  return { name: config.project.identity, ...renderBackingCompose(config) }
+}
 
 // A failed setup deliberately retains its claim. It must not be mistaken for
 // an unused runtime on the next invocation.
@@ -31,6 +869,7 @@ export async function claimPreparation(
   inspect = inspectRuntimeCheckout
 ) {
   validateIsolatedConfig(config)
+  requireLocalAiEnvironment(config)
   if (!/^[a-f0-9]{40}$/.test(candidateRevision)) {
     throw new Error('An immutable candidate revision is required.')
   }
@@ -133,28 +972,10 @@ export async function installManagedConfiguration(
       }
       inputs.push(candidate)
     }
-    const rendered = renderManagedConfiguration(config, {
-      devcontainer: JSON.parse(inputs[0]),
-      compose: parse(inputs[1]),
-      devrouter: parse(inputs[3]),
-    })
+    const replacements = managedReplacementBytes(config, inputs)
     await mkdir(join(directory, 'managed-installation'), { mode: 0o700 })
-    // Devrouter appends this standard overlay for linked worktrees. It must
-    // not reintroduce the ordinary backing services or host port bindings.
-    const replacements = [
-      rendered.devcontainer,
-      rendered.compose,
-      { services: {} },
-      rendered.devrouter,
-    ]
-    rendered.devcontainer.dockerComposeFile = [
-      'docker-compose.yml',
-      'docker-compose.devrouter.yml',
-    ]
     for (const [index, file] of handles.entries()) {
-      const bytes = Buffer.from(
-        `${JSON.stringify(replacements[index], null, 2)}\n`
-      )
+      const bytes = Buffer.from(replacements[index])
       const { bytesWritten } = await file.write(bytes, 0, bytes.length, 0)
       if (bytesWritten !== bytes.length) {
         throw new Error(
@@ -208,6 +1029,7 @@ export async function initializeManagedApplication(
   runManaged = runLocalManaged,
   runDocker = runLocalDocker
 ) {
+  requireLocalAiEnvironment(config)
   const { directory } = await verifyClaim(config, candidateRevision)
   const storage = await readOwned(
     join(directory, 'storage-setup/complete.json')
@@ -236,6 +1058,7 @@ export async function initializeManagedApplication(
     '--file',
     join(directory, 'providers.compose.json'),
   ]
+  let stage = 'runtime-start'
   try {
     const result = JSON.parse(
       await runManaged([
@@ -246,7 +1069,9 @@ export async function initializeManagedApplication(
         '--json',
       ])
     )
+    stage = 'provider-routing'
     await installProviderRouting(config, candidateRevision, result)
+    stage = 'blob-readiness'
     await runDocker([
       ...compose,
       '--file',
@@ -259,7 +1084,7 @@ export async function initializeManagedApplication(
       '--no-deps',
       'blob',
     ])
-    for (const command of [
+    for (const [index, command] of [
       ['pnpm', '--filter', '@klicker-uzh/prisma', 'run', 'prisma:push:raw'],
       ['pnpm', '--filter', '@klicker-uzh/prisma-data', 'run', 'seed:raw'],
       [
@@ -272,9 +1097,20 @@ export async function initializeManagedApplication(
         'tsx',
         'src/scripts/setupLocalBlobStorage.ts',
       ],
-    ]) {
+      // The shared seed parks the KB MCP server in its inert scoped shape, so
+      // the isolated runtime supplies the transport credential its retrieval
+      // service is paired with before any chat request can load the tool.
+      ['node', 'apps/chat/scripts/local-kb-retrieval-seed.mjs'],
+    ].entries()) {
+      stage = [
+        'database-schema',
+        'database-seed',
+        'blob-setup',
+        'kb-retrieval-transport',
+      ][index]
       await runManaged(['exec', checkout, '--', ...command])
     }
+    stage = 'completion-receipt'
     await writeExclusive(join(attempt, 'complete.json'), {
       candidateRevision,
       workspace: result.workspace,
@@ -283,7 +1119,7 @@ export async function initializeManagedApplication(
     return { initialized: true }
   } catch {
     throw new Error(
-      'Managed application setup failed; partial state is retained and output withheld.'
+      `Managed application setup failed at ${stage}; partial state is retained and output withheld.`
     )
   }
 }
@@ -495,22 +1331,17 @@ async function claimInfrastructureAttempt(runtime, operation) {
 // in place so another invocation cannot silently rotate service credentials.
 export async function prepareLocalConfiguration(config, candidateRevision) {
   const { directory } = await verifyClaim(config, candidateRevision)
-  const providers = renderProviderCompose(config)
-  const bootstrap = {
-    name: config.project.identity,
-    ...renderBackingCompose(config),
-  }
-  bootstrap.services['ingestion-setup'] = providers.services['ingestion-setup']
-  bootstrap.services['doc-processing-setup'] =
-    providers.services['doc-processing-setup']
-  bootstrap.volumes['document-processing'] =
-    providers.volumes['document-processing']
+  const providers = renderConsumerBacking(config)
+  const bootstrap = renderConsumerBacking(config)
   const configurationClaim = join(directory, 'configuration-claimed')
   await mkdir(configurationClaim, { mode: 0o700 })
   const credentials = Object.fromEntries(
     localCredentialNames.map((name) => [name, randomBytes(32).toString('hex')])
   )
-  const generated = renderLocalConfiguration(credentials)
+  const generated = renderProviderLocalConfiguration(
+    credentials,
+    config.bindings
+  )
   const { publicKey, privateKey } = generateKeyPairSync('ec', {
     namedCurve: 'prime256v1',
   })
@@ -529,6 +1360,19 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
         .join('\n') + '\n'
     await writeExclusive(join(directory, `${name}.env`), content, String)
   }
+  await writeExclusive(
+    join(directory, 'doc-processing.json'),
+    generated.docProcessing
+  )
+  await writeExclusive(
+    join(directory, 'scraping-api-key'),
+    generated.scrapingApiKey,
+    String
+  )
+  await writeExclusive(
+    join(directory, 'retrieval-environment.json'),
+    generated.retrievalEnvironment
+  )
   const registry = join(directory, 'producer-registry')
   const initialization = join(directory, 'postgres-init')
   const retrieval = join(directory, 'doc-query-tools')
@@ -548,7 +1392,10 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
   )
   await writeExclusive(
     join(retrieval, 'knowledge-bases.yaml'),
-    renderLocalRetrievalConfiguration(publicKey),
+    renderLocalRetrievalConfiguration(
+      publicKey,
+      generated.project.vector_store.collection_name
+    ),
     JSON.stringify,
     0o644
   )
@@ -570,6 +1417,93 @@ export async function prepareLocalConfiguration(config, candidateRevision) {
   await writeExclusive(join(directory, 'bootstrap.compose.json'), bootstrap)
   await writeExclusive(join(directory, 'providers.compose.json'), providers)
   return { configured: true }
+}
+
+// Keep each provider's setup attempt even on failure. Retained start must not
+// repair or repeat initialization behind the user's back.
+export async function initializeProviderLaunchers(
+  config,
+  candidateRevision,
+  run = runProviderCommand,
+  runDocker = runLocalDocker
+) {
+  const { directory } = await verifyClaim(config, candidateRevision)
+  const storage = await readOwned(
+    join(directory, 'storage-setup/complete.json')
+  )
+  const context = (await runDocker(['context', 'show'])).trim()
+  if (context !== storage.context) {
+    throw new Error(
+      'Provider launchers require the prepared local Docker context.'
+    )
+  }
+  const endpoint = (
+    await runDocker([
+      'context',
+      'inspect',
+      context,
+      '--format',
+      '{{.Endpoints.docker.Host}}',
+    ])
+  ).trim()
+  if (!endpoint.startsWith('unix:///') || /[\r\n]/.test(endpoint)) {
+    throw new Error('Provider launchers require a local Docker endpoint.')
+  }
+  const attempt = join(directory, 'provider-setup')
+  await mkdir(attempt, { mode: 0o700 })
+  const commands = providerCommands(config)
+  const retrievalEnvironment = await readOwned(
+    join(directory, 'retrieval-environment.json')
+  )
+  for (const provider of commands.lifecycleOrder) {
+    try {
+      const output = await run(commands.providers[provider].lifecycle.setup, {
+        ...(provider === 'retrieval' ? retrievalEnvironment : {}),
+        DOCKER_CONTEXT: context,
+      })
+      const status = JSON.parse(output)
+      const instance =
+        provider === 'ingestion'
+          ? status.instance?.name
+          : provider === 'docProcessing'
+            ? status.instance_id
+            : status.instance
+      const revision =
+        provider === 'ingestion'
+          ? status.source?.revision
+          : status.source_revision
+      const prepared =
+        provider === 'ingestion'
+          ? ['configuration', 'credentials', 'schema'].every(
+              (key) => status.preparation?.[key] === 'prepared'
+            )
+          : provider === 'docProcessing'
+            ? status.setup === 'ready'
+            : status.prepared === true
+      if (
+        instance !== config.project.identity ||
+        revision !== config.providers[provider].revision ||
+        !prepared
+      ) {
+        throw new Error(
+          'Provider preparation evidence is incomplete or mismatched.'
+        )
+      }
+      await writeExclusive(join(attempt, `${provider}.json`), {
+        setupCompleted: true,
+      })
+    } catch {
+      throw new Error(
+        `Provider ${provider} setup failed; partial state is retained.`
+      )
+    }
+  }
+  await writeExclusive(join(attempt, 'complete.json'), {
+    candidateRevision,
+    context,
+    initialized: true,
+  })
+  return { providersInitialized: true }
 }
 
 // Explicit setup checks all owned volumes before invoking the host runner.
@@ -607,8 +1541,6 @@ export async function initializeProviderStorage(
   const steps = [
     ['up', '--detach', '--wait', '--wait-timeout', '120', 'postgres'],
     ['run', '--no-deps', 'hatchet-setup'],
-    ['run', '--no-deps', 'ingestion-setup'],
-    ['run', '--no-deps', 'doc-processing-setup'],
     ['up', '--detach', '--no-deps', 'hatchet'],
   ]
   for (const [index, args] of steps.entries()) {
@@ -742,7 +1674,7 @@ async function preparedRuntime(config, candidateRevision, runDocker) {
   )
   if (
     JSON.stringify(composition) !==
-      JSON.stringify(renderProviderCompose(config)) ||
+      JSON.stringify(renderConsumerBacking(config)) ||
     JSON.stringify(routing) !== JSON.stringify(renderProviderRouting(workspace))
   ) {
     throw new Error('Prepared provider configuration has changed.')
@@ -784,7 +1716,7 @@ async function observeOwnedProviders(config, runtime, runDocker) {
   )
     .split(/\s+/)
     .filter(Boolean)
-  const services = renderProviderCompose(config).services
+  const services = renderConsumerBacking(config).services
   const rows = []
   for (const id of ids) {
     if (!/^[a-f0-9]{12,64}$/.test(id))
@@ -829,25 +1761,14 @@ async function observeOwnedProviders(config, runtime, runDocker) {
   return rows
 }
 
-const infrastructureServices = [
-  'postgres',
-  'redis',
-  'blob',
-  'hatchet',
-  'milvus-etcd',
-  'minio',
-  'milvus',
-  'crawl4ai',
-  'scraping',
-  'ingestion-api',
-  'doc-processing',
-]
+const infrastructureServices = ['postgres', 'redis', 'blob', 'hatchet']
 
 export async function inspectPreparedInfrastructure(
   config,
   candidateRevision,
   runDocker = runLocalDocker,
-  runManaged = runLocalManaged
+  runManaged = runLocalManaged,
+  runProvider = runProviderCommand
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   const providers = await observeOwnedProviders(config, runtime, runDocker)
@@ -888,8 +1809,15 @@ export async function inspectPreparedInfrastructure(
       status: health === 'unreported' ? 'readiness-unverified' : health,
     }
   })
+  const launchers = await observeProviderLaunchers(
+    config,
+    runProvider,
+    { DOCKER_CONTEXT: runtime.context },
+    await readOwned(join(runtime.directory, 'retrieval-environment.json'))
+  )
   return {
     providers,
+    launchers,
     infrastructure,
     infrastructureHealthy: infrastructure.every(
       ({ status }) => status === 'healthy'
@@ -898,8 +1826,8 @@ export async function inspectPreparedInfrastructure(
     managedRuntimeStatus: managed.status,
     managedRuntimeReady:
       managed.status === 'ready' &&
-      managed.profile === 'manage,chat' &&
-      managed.activeProfile === 'manage,chat' &&
+      managed.profile === LOCAL_KB_MANAGED_PROFILE &&
+      managed.activeProfile === LOCAL_KB_MANAGED_PROFILE &&
       managed.drift.length === 0,
     aiQualified: false,
   }
@@ -909,7 +1837,8 @@ export async function stopPreparedInfrastructure(
   config,
   candidateRevision,
   runManaged = runLocalManaged,
-  runDocker = runLocalDocker
+  runDocker = runLocalDocker,
+  runProvider = runProviderCommand
 ) {
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'stop', async () => {
@@ -934,7 +1863,8 @@ export async function stopPreparedInfrastructure(
       config,
       runtime,
       runManaged,
-      runDocker
+      runDocker,
+      runProvider
     )
     // Shutdown is safe after a partial attempt, but cannot authorize replay.
     if (incomplete) return result
@@ -952,8 +1882,46 @@ export async function stopPreparedInfrastructure(
   })
 }
 
-async function stopInfrastructure(config, runtime, runManaged, runDocker) {
+async function stopInfrastructure(
+  config,
+  runtime,
+  runManaged,
+  runDocker,
+  runProvider
+) {
   await observeOwnedProviders(config, runtime, runDocker)
+  const environment = { DOCKER_CONTEXT: runtime.context }
+  const retrievalEnvironment = await readOwned(
+    join(runtime.directory, 'retrieval-environment.json')
+  )
+  const preStop = await observeProviderLaunchers(
+    config,
+    runProvider,
+    environment,
+    retrievalEnvironment
+  )
+  const commands = providerCommands(config)
+  for (const name of commands.stopOrder) {
+    if (
+      name === 'retrieval' &&
+      preStop.find((row) => row.provider === name)?.neverStarted
+    ) {
+      continue
+    }
+    await runProvider(commands.providers[name].lifecycle.stop, {
+      ...(name === 'retrieval' ? retrievalEnvironment : {}),
+      ...environment,
+    })
+  }
+  const launchers = await observeProviderLaunchers(
+    config,
+    runProvider,
+    environment,
+    retrievalEnvironment
+  )
+  if (launchers.some((row) => !row.stopped)) {
+    throw new Error('Provider shutdown is incomplete; data is retained.')
+  }
   const managed = JSON.parse(
     await runManaged(['stop', runtime.checkout, '--json'])
   )
@@ -989,20 +1957,30 @@ async function stopInfrastructure(config, runtime, runManaged, runDocker) {
   return { stopped: true, dataRetained: true }
 }
 
-// This phase starts no queue consumers or model-dependent services. A failed
-// attempt remains claimed; another invocation cannot silently resume work.
+// Provider activation is explicit. A failed attempt remains claimed; another
+// invocation cannot silently resume queue processing or initialization.
 export async function startPreparedInfrastructure(
   config,
   candidateRevision,
   runManaged = runLocalManaged,
-  runDocker = runLocalDocker
+  runDocker = runLocalDocker,
+  runProvider = runProviderCommand
 ) {
+  requireLocalAiEnvironment(config)
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'start', async () => {
     await observeOwnedProviders(config, runtime, runDocker)
     const attempt = join(runtime.directory, 'infrastructure-start')
     await mkdir(attempt, { mode: 0o700 })
-    return launchInfrastructure(config, runtime, attempt, runManaged, runDocker)
+    return launchInfrastructure(
+      config,
+      runtime,
+      attempt,
+      runManaged,
+      runDocker,
+      undefined,
+      runProvider
+    )
   })
 }
 
@@ -1010,8 +1988,10 @@ export async function resumePreparedInfrastructure(
   config,
   candidateRevision,
   runManaged = runLocalManaged,
-  runDocker = runLocalDocker
+  runDocker = runLocalDocker,
+  runProvider = runProviderCommand
 ) {
+  requireLocalAiEnvironment(config)
   const runtime = await preparedRuntime(config, candidateRevision, runDocker)
   return withInfrastructureOperation(runtime, 'resume', async () => {
     await requireStartedInfrastructure(runtime)
@@ -1040,7 +2020,8 @@ export async function resumePreparedInfrastructure(
       attempt,
       runManaged,
       runDocker,
-      cycle + 1
+      cycle + 1,
+      runProvider
     )
   })
 }
@@ -1051,10 +2032,29 @@ async function launchInfrastructure(
   attempt,
   runManaged,
   runDocker,
-  cycle
+  cycle,
+  runProvider
 ) {
   const { checkout, directory, context, workspace } = runtime
+  let stage = 'provider observation'
   try {
+    const commands = providerCommands(config)
+    const environment = { DOCKER_CONTEXT: context }
+    const retrievalEnvironment = await readOwned(
+      join(directory, 'retrieval-environment.json')
+    )
+    const prepared = await observeProviderLaunchers(
+      config,
+      runProvider,
+      environment,
+      retrievalEnvironment
+    )
+    if (prepared.some((row) => !row.prepared)) throw new Error()
+    for (const name of ['scraping', 'docProcessing']) {
+      stage = `provider ${name} start`
+      await runProvider(commands.providers[name].lifecycle.start, environment)
+    }
+    stage = 'consumer backing services'
     await runDocker([
       '--context',
       context,
@@ -1072,23 +2072,34 @@ async function launchInfrastructure(
       '180',
       ...infrastructureServices,
     ])
+    stage = 'managed application startup'
     const managed = JSON.parse(
-      await runManaged([
-        'ensure',
-        checkout,
-        '--profile',
-        'manage,chat',
-        '--json',
-      ])
+      await runManaged(
+        ['ensure', checkout, '--profile', LOCAL_KB_MANAGED_PROFILE, '--json'],
+        config.aiUpstream
+      )
     )
     if (
       managed.kind !== 'linked' ||
       managed.repoPath !== checkout ||
       managed.workspace !== workspace ||
-      managed.profile !== 'manage,chat'
+      managed.profile !== LOCAL_KB_MANAGED_PROFILE
     ) {
       throw new Error('Managed startup identity differs from preparation.')
     }
+    stage = 'provider ingestion start'
+    await runProvider(commands.providers.ingestion.lifecycle.start, environment)
+    stage = 'provider retrieval start'
+    await runProvider(commands.providers.retrieval.lifecycle.start, {
+      ...retrievalEnvironment,
+      ...environment,
+    })
+    await observeProviderLaunchers(
+      config,
+      runProvider,
+      environment,
+      retrievalEnvironment
+    )
     await writeExclusive(join(attempt, 'complete.json'), {
       candidateRevision: runtime.candidateRevision,
       context,
@@ -1098,16 +2109,20 @@ async function launchInfrastructure(
     return {
       infrastructureStarted: true,
       aiQualified: false,
-      workersStarted: false,
+      providerWorkerActivationRequested: true,
     }
-  } catch {
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
     throw new Error(
-      'Infrastructure startup failed; partial state is retained and output withheld.'
+      `Infrastructure startup failed at ${stage}: ${reason}; partial state is retained and output withheld.`
     )
   }
 }
 
 async function readApplicationSetup(directory, candidateRevision) {
+  const providers = await readOwned(
+    join(directory, 'provider-setup/complete.json')
+  )
   const application = await readOwned(
     join(directory, 'application-setup/complete.json')
   )
@@ -1119,7 +2134,10 @@ async function readApplicationSetup(directory, candidateRevision) {
     !/^[a-z0-9][a-z0-9-]*$/.test(application.workspace ?? '') ||
     !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(application.context ?? '') ||
     storage.initialized !== true ||
-    storage.context !== application.context
+    storage.context !== application.context ||
+    providers.initialized !== true ||
+    providers.candidateRevision !== candidateRevision ||
+    providers.context !== storage.context
   ) {
     throw new Error(
       'Application setup evidence does not match prepared storage.'

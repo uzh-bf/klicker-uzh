@@ -343,6 +343,7 @@ function normalizedKeepPayload(
     stem: input.content,
     context: null,
     explanation: input.explanation ?? null,
+    tags: input.tags ?? [],
     choices,
     ...(tagSelection ? { tagSelection } : {}),
   }
@@ -366,6 +367,8 @@ function normalizedKeepPayload(
     },
     basePoints: input.basePoints,
     pointsMultiplier: input.pointsMultiplier,
+    // Structured selections are applied by id after manipulation; only the
+    // legacy name input still travels as element tag names.
     tags: tagWrite.mode === 'legacy' ? tagWrite.selection.newTagNames : [],
   }
   return { current, elementInput, tagWrite }
@@ -698,6 +701,7 @@ export async function updateGeneratedElementDraft(
     stem: input.current.prompt,
     context: input.current.context ?? null,
     explanation: input.current.explanation ?? null,
+    tags: input.current.tags ?? [],
     choices: input.current.choices.map((choice) => ({
       ...choice,
       feedback: choice.feedback ?? null,

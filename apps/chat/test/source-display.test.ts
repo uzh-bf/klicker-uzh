@@ -155,31 +155,35 @@ describe('getDisplayUrl', () => {
 })
 
 describe('getSourceSecondaryLine', () => {
-  test.each(['36', ' 36 '])('omits an identical page label (%s)', (label) => {
+  test.each(['36', ' 36 '])('uses the publisher label (%s)', (label) => {
     expect(
       getSourceSecondaryLine(source({ page: 36, labeledPage: label }), t)
-    ).toBe(getSourceSecondaryLine(source({ page: 36 }), t))
+    ).toBe('p. 36')
   })
 
   test('documents lead with the page', () => {
     expect(
       getSourceSecondaryLine(
-        source({ page: 12, url: 'https://example.com/lecture-01.pdf' }),
+        source({
+          page: 13,
+          labeledPage: '12',
+          url: 'https://example.com/lecture-01.pdf',
+        }),
         t
       )
     ).toBe('p. 12')
   })
 
-  test('documents pair the page with a labeled page', () => {
+  test('documents show only the Roman publisher label', () => {
     expect(
       getSourceSecondaryLine(source({ page: 4, labeledPage: 'IV' }), t)
-    ).toBe('p. 4 · IV')
+    ).toBe('p. IV')
   })
 
   test('documents keep a bare numeric publisher label', () => {
     expect(
       getSourceSecondaryLine(source({ page: 4, labeledPage: '12' }), t)
-    ).toBe('p. 4 · 12')
+    ).toBe('p. 12')
   })
 
   test('documents without a page fall back to the url', () => {
@@ -218,12 +222,27 @@ describe('getSourceSecondaryLine', () => {
   })
 
   test('images show the type label and page', () => {
-    expect(getSourceSecondaryLine(source({ type: 'image', page: 7 }), t)).toBe(
-      'Image · p. 7'
-    )
+    expect(
+      getSourceSecondaryLine(
+        source({ type: 'image', page: 13, labeledPage: '7' }),
+        t
+      )
+    ).toBe('Image · p. 7')
   })
 
   test('is null when nothing is known', () => {
     expect(getSourceSecondaryLine(source(), t)).toBeNull()
   })
+})
+
+test.each([
+  'document',
+  'image',
+  'video',
+] as const)('never substitutes physical pages for missing %s labels', (type) => {
+  for (const labeledPage of [undefined, '', '   ']) {
+    expect(
+      getSourceSecondaryLine(source({ type, page: 13, labeledPage }), t)
+    ).toBe(getSourceSecondaryLine(source({ type }), t))
+  }
 })

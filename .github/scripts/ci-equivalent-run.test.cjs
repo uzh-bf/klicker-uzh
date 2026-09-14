@@ -14,7 +14,7 @@ function fixture() {
     state: 'open',
     draft: false,
     head: {
-      ref: 'v3-feature',
+      ref: 'feature-unit',
       sha: 'head',
       repo: { id: 1, full_name: 'uzh-bf/klicker-uzh' },
     },
@@ -28,7 +28,7 @@ function fixture() {
     status: 'completed',
     conclusion: 'success',
     event: 'pull_request',
-    head_branch: 'v3-feature',
+    head_branch: 'feature-unit',
     head_sha: 'head',
     repository: { full_name: 'uzh-bf/klicker-uzh' },
     head_repository: { full_name: 'uzh-bf/klicker-uzh' },
@@ -99,7 +99,7 @@ function fixture() {
       context: {
         repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
         eventName: 'push',
-        ref: 'refs/heads/v3-feature',
+        ref: 'refs/heads/feature-unit',
         sha: 'head',
       },
       kind: 'unit',
@@ -125,6 +125,9 @@ test('reuses only actual successful latest-attempt unit coverage', async () => {
 for (const [name, change] of Object.entries({
   'default branch': (s, o) => {
     o.context.ref = 'refs/heads/v3'
+  },
+  'integration branch': (s, o) => {
+    o.context.ref = 'refs/heads/v3-audit'
   },
   'manual run': (s, o) => {
     o.context.eventName = 'workflow_dispatch'
@@ -364,6 +367,163 @@ test('Playwright reuse binds the trusted control revision and prior full plan', 
   assert.equal(outputs.duplicate_run_id, '')
 })
 
+// A pull-request lifecycle event reuses the same head's completed full run
+// when every identity, coverage, plan, control and route binding matches.
+function prPlaywrightFixture() {
+  const { state, options } = fixture()
+  options.kind = 'playwright'
+  options.controlSha = 'control'
+  options.plan = fullPlan()
+  options.route = 'hosted'
+  options.readPlan = async () => ({
+    ...fullPlan(),
+    headSha: 'head',
+    baseSha: 'base',
+  })
+  options.context = {
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    eventName: 'pull_request',
+    payload: {
+      action: 'ready_for_review',
+      pull_request: {
+        number: 1,
+        head: { sha: 'head', ref: 'feature-unit' },
+        base: { sha: 'base' },
+      },
+    },
+  }
+  state.run.path = '.github/workflows/test-playwright.yml'
+  state.run.referenced_workflows = [
+    {
+      path: 'uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3',
+      sha: 'control',
+    },
+  ]
+  const success = { status: 'completed', conclusion: 'success' }
+  state.jobs.splice(
+    0,
+    state.jobs.length,
+    { name: 'execution / build-and-compile-hosted', ...success },
+    ...Array.from({ length: 8 }, (_, i) => ({
+      name: `execution / test-playwright-hosted (${i + 1}, 8)`,
+      ...success,
+    }))
+  )
+  return { state, options }
+}
+
+test('an unchanged-head ready transition reuses the completed full run', async () => {
+  const { options } = prPlaywrightFixture()
+  assert.equal((await findEquivalentRun(options)).id, 12)
+  options.context.payload.action = 'edited'
+  assert.equal((await findEquivalentRun(options)).id, 12)
+  options.context.payload.action = 'reopened'
+  assert.equal((await findEquivalentRun(options)).id, 12)
+})
+
+// The event that validates reuse is itself a run of the same workflow on the
+// same head, so it is always the newest entry the listing returns. Selecting
+// the newest run would therefore select a run that is still executing, which is
+// never successful, and the reuse path could never fire.
+test('a completed run is reused while its own event run is still in flight', async () => {
+  const { state, options } = prPlaywrightFixture()
+  const completed = state.run
+  const current = {
+    ...completed,
+    id: 99,
+    run_attempt: 1,
+    status: 'in_progress',
+    conclusion: null,
+  }
+  state.runs = [completed, current]
+  options.context.runId = current.id
+  assert.equal((await findEquivalentRun(options)).id, completed.id)
+})
+
+test('the current run can never qualify itself as reusable evidence', async () => {
+  const { state, options } = prPlaywrightFixture()
+  state.runs = [state.run]
+  options.context.runId = state.run.id
+  assert.equal(await findEquivalentRun(options), null)
+})
+
+test('a public-route transition reuses only matching public coverage', async () => {
+  const { state, options } = prPlaywrightFixture()
+  const success = { status: 'completed', conclusion: 'success' }
+  state.jobs.splice(
+    0,
+    state.jobs.length,
+    { name: 'execution / build-and-compile-public-pr', ...success },
+    ...Array.from({ length: 8 }, (_, i) => ({
+      name: `execution / test-playwright-public-pr (${i + 1}, 8)`,
+      ...success,
+    }))
+  )
+  assert.equal(await findEquivalentRun(options), null)
+  options.route = 'public-pr'
+  assert.equal((await findEquivalentRun(options)).id, 12)
+  state.jobs[1].conclusion = 'skipped'
+  assert.equal(await findEquivalentRun(options), null)
+})
+
+for (const [name, change] of Object.entries({
+  'non-reuse action': (s, o) => {
+    o.context.payload.action = 'synchronize'
+  },
+  'missing payload pull request': (s, o) => {
+    delete o.context.payload.pull_request
+  },
+  'payload head drift': (s, o) => {
+    o.context.payload.pull_request.head.sha = 'new'
+  },
+  'payload base drift': (s, o) => {
+    o.context.payload.pull_request.base.sha = 'new'
+  },
+  'unknown route': (s, o) => {
+    o.route = 'bogus'
+  },
+  'stale merge tree': (s) => {
+    s.merge.commit.tree.sha = 'different'
+  },
+  'stale merge parent': (s) => {
+    s.merge.parents[1].sha = 'old-head'
+  },
+  'receipt tree mismatch': (s, o) => {
+    o.readReceipt = async () => ({
+      schemaVersion: 1,
+      event: 'pull_request',
+      runId: 12,
+      runAttempt: 2,
+      headSha: 'head',
+      baseSha: 'base',
+      treeSha: 'other-tree',
+      controlSha: 'control',
+    })
+  },
+})) {
+  test(`pull-request reuse stays closed for ${name}`, async () => {
+    const { state, options } = prPlaywrightFixture()
+    change(state, options)
+    assert.equal(await findEquivalentRun(options), null)
+  })
+}
+
+test('pull-request reuse falls back to validation on API failure', async () => {
+  const { options } = prPlaywrightFixture()
+  options.github.rest.pulls.get = async () => {
+    throw new Error('unavailable')
+  }
+  const outputs = {}
+  options.core = {
+    setOutput: (key, value) => {
+      outputs[key] = value
+    },
+    info() {},
+  }
+  assert.equal(await reportEquivalentRun(options), null)
+  assert.equal(outputs.duplicate_run_id, '')
+})
+
 test('a rerun started during proof invalidates an earlier success', async () => {
   const { state, options } = fixture()
   let reads = 0
@@ -408,6 +568,37 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
     workflow.jobs.prepare.outputs.duplicate_run_id,
     '${{ steps.equivalent.outputs.duplicate_run_id }}'
   )
+  // Reuse is offered only from the push path and from pull-request lifecycle
+  // events that kept the merge input unchanged; the receipt that binds the
+  // tested tree must be produced on both routes.
+  assert.equal(
+    workflow.jobs.prepare.steps.find((step) => step.id === 'equivalent').if,
+    `(github.event_name == 'push' && github.ref != 'refs/heads/v3') || (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action))`
+  )
+  assert.match(
+    workflow.jobs.prepare.steps.find((step) => step.id === 'equivalent').with
+      .script,
+    /route: JSON\.parse\(fs\.readFileSync\('route\.json', 'utf8'\)\)\.route/
+  )
+  for (const name of [
+    'build-and-compile-hosted',
+    'build-and-compile-public-pr',
+  ]) {
+    assert.ok(
+      workflow.jobs[name].steps.some(
+        (step) => step.name === 'Record tested source tree'
+      ),
+      name
+    )
+    assert.ok(
+      workflow.jobs[name].steps.some(
+        (step) =>
+          step.uses === 'actions/upload-artifact@v4' &&
+          step.with?.name === 'ci-validation-receipt'
+      ),
+      name
+    )
+  }
   for (const name of [
     'build-and-compile-hosted',
     'build-and-compile-public-pr',
@@ -423,17 +614,9 @@ test('reuse wiring preserves the canonical plan and execution gates', () => {
   const units = YAML.parse(
     fs.readFileSync(path.join(__dirname, '../workflows/test-unit.yml'), 'utf8')
   )
-  assert.equal(
-    units.jobs['equivalent-validation'].if,
-    "github.event_name == 'push' && github.ref != 'refs/heads/v3' && github.run_attempt > 1"
-  )
-  assert.equal(units.jobs['test-unit'].needs, 'equivalent-validation')
+  assert.equal(units.jobs['equivalent-validation'], undefined)
+  assert.equal(units.jobs['test-unit'].needs, 'filter')
   assert.ok(units.jobs['test-unit'].if.includes('!cancelled()'))
-  assert.ok(
-    units.jobs['test-unit'].if.includes(
-      "needs.equivalent-validation.outputs.duplicate_run_id == ''"
-    )
-  )
 })
 
 for (const field of [

@@ -24,6 +24,8 @@ export interface ApiThread {
   createdAt: string
   updatedAt: string
   lastChatMode?: string | null
+  // Conversation origin ('elearning' | 'pwa'); null for legacy threads.
+  origin?: string | null
 }
 
 /**
@@ -92,6 +94,9 @@ export interface ApiMessage {
   reasoningContent?: string | null
   creditsUsed?: number | null
   rating?: MessageRating | null
+  // Verified learning-context snapshot for eLearning-origin user
+  // messages; null otherwise.
+  learningContext?: unknown
   imageAttachments?: ApiImageAttachment[]
   parentId?: string | null
   createdAt: string
@@ -165,6 +170,7 @@ export const convertApiThreadToThread = (apiThread: ApiThread): Thread => ({
   createdAt: new Date(apiThread.createdAt),
   updatedAt: new Date(apiThread.updatedAt),
   lastChatMode: apiThread.lastChatMode ?? null,
+  origin: apiThread.origin ?? null,
 })
 
 /**
@@ -227,6 +233,7 @@ export const convertApiMessageToMessage = (
     reasoningContent: apiMessage.reasoningContent ?? null,
     creditsUsed: apiMessage.creditsUsed ?? null,
     rating: apiMessage.rating ?? null,
+    learningContext: apiMessage.learningContext ?? null,
     imageAttachments: sortAttachmentsByPosition(
       apiMessage.imageAttachments ?? []
     ),

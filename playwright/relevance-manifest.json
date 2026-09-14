@@ -130,6 +130,7 @@
       "specs": [
         "A-login.spec.ts",
         "Y-chat-lti-access.spec.ts",
+        "Y-chat-knowledge-graph.spec.ts",
         "Y-chat.spec.ts"
       ]
     },
@@ -164,6 +165,25 @@
         "X-review.spec.ts",
         "Y-chat.spec.ts",
         "Z-credential-verification.spec.ts"
+      ]
+    },
+    {
+      "id": "account-production",
+      "pathPrefixes": [
+        "apps/frontend-pwa/",
+        "apps/frontend-manage/",
+        "apps/auth/",
+        "apps/lti/",
+        "packages/shared-components/",
+        "packages/i18n/",
+        "packages/graphql/",
+        "packages/prisma/",
+        "packages/transactional/"
+      ],
+      "specs": [
+        "A-account-production.spec.ts",
+        "A-account-registration.spec.ts",
+        "A-account-lti.spec.ts"
       ]
     }
   ]

@@ -617,6 +617,22 @@ export function normalizeGeneratedTagSuggestions(value: unknown): string[] {
   return [...suggestions]
 }
 
+// The element tags keep the plain string-name semantics of a legacy suggestion
+// list, so this reader bounds the count but not the length of a label. The
+// advisory review channel has its own grapheme-bounded reader above.
+function normalizeSuggestedTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const tags: string[] = []
+  for (const candidate of value) {
+    if (typeof candidate !== 'string') continue
+    const tag = normalizedPlainText(candidate)
+    if (!tag || tags.includes(tag)) continue
+    tags.push(tag)
+    if (tags.length === 5) break
+  }
+  return tags
+}
+
 export function deriveGeneratedQuestionName(
   title: unknown,
   stem: string
@@ -1464,6 +1480,7 @@ function normalizeFinalQuestion(
     stem: question.stem.trim(),
     context: optionalText(question.context_inline),
     explanation: optionalText(question.explanation),
+    tags: normalizeSuggestedTags(question.suggested_tags),
     choices,
     bloomLevel: question.bloom_level,
     targetDifficulty:

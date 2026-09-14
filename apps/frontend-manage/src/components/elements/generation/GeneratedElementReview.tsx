@@ -60,6 +60,49 @@ function draftNeedsAttention(draft: GeneratedElementDraftData) {
   )
 }
 
+type QualityReasonKey =
+  | 'review.qualityReasons.difficultyReviewRequired'
+  | 'review.qualityReasons.difficultyValidationFailed'
+  | 'review.qualityReasons.manualReviewRequired'
+  | 'review.qualityReasons.other'
+  | 'review.qualityReasons.acceptedUnsaved'
+
+const QUALITY_FLAG_REASON_KEYS = new Map<string, QualityReasonKey>([
+  [
+    'difficulty_review_required',
+    'review.qualityReasons.difficultyReviewRequired',
+  ],
+  [
+    'difficulty_validation_failed',
+    'review.qualityReasons.difficultyValidationFailed',
+  ],
+  ['manual_review_required', 'review.qualityReasons.manualReviewRequired'],
+])
+
+// Quality flags are bounded but open-ended strings from the generation worker.
+// Known flags receive a dedicated reason; all unknown flags collapse into a
+// single generic reason, so raw upstream values never reach the interface.
+function draftQualityReasonKeys(draft: GeneratedElementDraftData) {
+  const reasonKeys = [
+    ...new Set(
+      draft.qualityFlags.flatMap((flag) => {
+        const reasonKey = QUALITY_FLAG_REASON_KEYS.get(flag)
+        return reasonKey ? [reasonKey] : []
+      })
+    ),
+  ]
+  if (draft.qualityFlags.some((flag) => !QUALITY_FLAG_REASON_KEYS.has(flag))) {
+    reasonKeys.push('review.qualityReasons.other')
+  }
+  if (
+    draft.decision === GeneratedElementDecision.Accepted &&
+    draft.savedElementId === null
+  ) {
+    reasonKeys.push('review.qualityReasons.acceptedUnsaved')
+  }
+  return reasonKeys
+}
+
 function draftMatchesFilter(
   draft: GeneratedElementDraftData,
   filter: ReviewFilter
@@ -630,6 +673,7 @@ export default function GeneratedElementReview({
           <tbody className="divide-y divide-slate-100">
             {drafts.map((draft) => {
               const needsAttention = draftNeedsAttention(draft)
+              const reasonKeys = draftQualityReasonKeys(draft)
               const difficultyKey = difficultyLabelKey(draft.targetDifficulty)
               const editable =
                 draft.decision === GeneratedElementDecision.Open ||
@@ -688,10 +732,19 @@ export default function GeneratedElementReview({
                           })
                         : t('review.notApplicable')}
                     </div>
-                    {draft.qualityFlags.length > 0 ? (
-                      <div className="mt-1 text-xs font-medium text-amber-800">
-                        {t('review.qualityAttention')}
-                      </div>
+                    {reasonKeys.length > 0 ? (
+                      <ul
+                        className="mt-1 space-y-1 text-xs font-medium text-amber-800"
+                        aria-label={
+                          draft.qualityFlags.length > 0
+                            ? t('review.qualityAttention')
+                            : undefined
+                        }
+                      >
+                        {reasonKeys.map((reasonKey) => (
+                          <li key={reasonKey}>{t(reasonKey)}</li>
+                        ))}
+                      </ul>
                     ) : null}
                   </td>
                   <td className="px-4 py-3">

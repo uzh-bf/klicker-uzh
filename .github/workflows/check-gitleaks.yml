@@ -4,7 +4,8 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    types: [opened, synchronize, reopened]
+    # "edited" re-scans the introduced range when a PR is retargeted to a new base.
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
