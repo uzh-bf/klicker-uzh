@@ -22,6 +22,19 @@ selection may succeed without an irrelevant suite. Missing, cancelled, failed,
 or unexpectedly skipped evidence blocks the summary. Ready PRs require the
 full eight-shard Playwright run.
 
+Each image workflow declares its own pull-request path filter as the transitive
+workspace dependency closure of that image. Every Dockerfile runs
+`turbo prune --scope=<workspace package> --docker`, so only those directories
+can reach the build. A change to a package the image never bundles no longer
+triggers it: `packages/transactional` and `packages/prisma-data` select only
+chat, `packages/word-cloud` and the other frontend-only shared packages select
+the six Next images, and `packages/export` selects none. Root manifests,
+`turbo.json` and `.dockerignore` still select every node image, and a push to
+`v3`/`v3*` still builds all of them because push triggers carry no path filter.
+`required-build-status.test.cjs` derives each closure from the workspace
+manifests, so adding a workspace dependency to an image without widening its
+filter fails the suite rather than silently skipping a needed build.
+
 Repository administrators may bypass CI on stable `v3` and on integration
 branches only through a pull request; direct updates, force pushes, and deletion
 remain protected on both. Stable `v3` still requires code-owner review,

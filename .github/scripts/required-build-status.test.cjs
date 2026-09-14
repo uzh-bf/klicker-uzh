@@ -32,6 +32,54 @@ function readSource(name) {
   return fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8')
 }
 
+function readPackageJson(relativeDirectory) {
+  return JSON.parse(
+    fs.readFileSync(path.join(root, relativeDirectory, 'package.json'), 'utf8')
+  )
+}
+
+// The workspace dependency graph that the image path filters must mirror.
+function workspaceGraph() {
+  const directories = {}
+  for (const base of ['apps', 'packages']) {
+    for (const name of fs.readdirSync(path.join(root, base)).sort()) {
+      const relative = base + '/' + name
+      if (!fs.existsSync(path.join(root, relative, 'package.json'))) continue
+      directories[readPackageJson(relative).name] = relative
+    }
+  }
+  const edges = {}
+  for (const [name, relative] of Object.entries(directories)) {
+    const manifest = readPackageJson(relative)
+    const declared = new Set()
+    for (const field of [
+      'dependencies',
+      'devDependencies',
+      'peerDependencies',
+      'optionalDependencies',
+    ]) {
+      for (const dependency of Object.keys(manifest[field] || {})) {
+        if (directories[dependency]) declared.add(dependency)
+      }
+    }
+    edges[name] = [...declared]
+  }
+  return { directories, edges }
+}
+
+function dependencyClosure(graph, rootPackage) {
+  const reached = new Set()
+  const pending = [rootPackage]
+  while (pending.length > 0) {
+    for (const dependency of graph.edges[pending.pop()] || []) {
+      if (reached.has(dependency)) continue
+      reached.add(dependency)
+      pending.push(dependency)
+    }
+  }
+  return new Set([rootPackage, ...reached])
+}
+
 // build-amd jobs are gated with an always-false condition, so only the active
 // build jobs are required for a run.
 const INACTIVE_IF = '$' + '{{ false }}'
@@ -671,6 +719,119 @@ test('a packages-only pull request never resolves to a no-change', () => {
     selectionMode({ binding: { event: 'pull_request' }, expected }),
     'affected'
   )
+})
+
+// Each image Dockerfile runs 'turbo prune --scope=<workspace package> --docker',
+// so only that package's transitive workspace dependency closure reaches the
+// build. The path filter must select exactly that closure: anything narrower
+// would miss a real input, anything wider wakes a runner for an unrelated change.
+test('a workspace package change selects exactly the images that bundle it', () => {
+  const graph = workspaceGraph()
+  const packageForImage = {
+    'v3_auth-stg.yml': '@klicker-uzh/auth',
+    'v3_backend-docker-stg.yml': '@klicker-uzh/backend-docker',
+    'v3_chat-stg.yml': '@klicker-uzh/chat',
+    'v3_frontend-control-docker-stg.yml': '@klicker-uzh/frontend-control',
+    'v3_frontend-manage-docker-stg.yml': '@klicker-uzh/frontend-manage',
+    'v3_frontend-pwa-docker-assessment-stg.yml': '@klicker-uzh/frontend-pwa',
+    'v3_frontend-pwa-docker-stg.yml': '@klicker-uzh/frontend-pwa',
+    'v3_hatchet-worker-general-stg.yml': '@klicker-uzh/hatchet-worker-general',
+    'v3_hatchet-worker-response-processor-stg.yml':
+      '@klicker-uzh/hatchet-worker-response-processor',
+    'v3_lti-stg.yml': '@klicker-uzh/lti-service',
+    'v3_olat-api-stg.yml': '@klicker-uzh/olat-api',
+    'v3_response-api-stg.yml': '@klicker-uzh/response-api',
+  }
+  const presentFiles = presentImageWorkflows(root)
+
+  for (const [workspacePackage, directory] of Object.entries(
+    graph.directories
+  )) {
+    if (!directory.startsWith('packages/')) continue
+    // An image bundles this package when the package is part of the image
+    // root's own transitive dependency closure.
+    const expectedImages = Object.entries(packageForImage)
+      .filter(([, rootPackage]) =>
+        dependencyClosure(graph, rootPackage).has(workspacePackage)
+      )
+      .map(([path]) => path)
+      .sort()
+
+    const { expected } = selectImageWorkflows({
+      changedFiles: [directory + '/src/index.ts'],
+      eventName: 'pull_request',
+      presentFiles,
+    })
+    assert.deepEqual(
+      expected.map((entry) => entry.path).sort(),
+      expectedImages,
+      directory + ' must select exactly the images that bundle it'
+    )
+  }
+})
+
+test('every image path filter lists its own dependency closure', () => {
+  const graph = workspaceGraph()
+  const packageForImage = {
+    'v3_auth-stg.yml': '@klicker-uzh/auth',
+    'v3_backend-docker-stg.yml': '@klicker-uzh/backend-docker',
+    'v3_chat-stg.yml': '@klicker-uzh/chat',
+    'v3_frontend-control-docker-stg.yml': '@klicker-uzh/frontend-control',
+    'v3_frontend-manage-docker-stg.yml': '@klicker-uzh/frontend-manage',
+    'v3_frontend-pwa-docker-assessment-stg.yml': '@klicker-uzh/frontend-pwa',
+    'v3_frontend-pwa-docker-stg.yml': '@klicker-uzh/frontend-pwa',
+    'v3_hatchet-worker-general-stg.yml': '@klicker-uzh/hatchet-worker-general',
+    'v3_hatchet-worker-response-processor-stg.yml':
+      '@klicker-uzh/hatchet-worker-response-processor',
+    'v3_lti-stg.yml': '@klicker-uzh/lti-service',
+    'v3_olat-api-stg.yml': '@klicker-uzh/olat-api',
+    'v3_response-api-stg.yml': '@klicker-uzh/response-api',
+  }
+  for (const [image, rootPackage] of Object.entries(packageForImage)) {
+    const workflow = readWorkflow(image)
+    const declared = new Set(
+      workflow.on.pull_request.paths.filter((glob) => glob.endsWith('/**'))
+    )
+    for (const member of dependencyClosure(graph, rootPackage)) {
+      const directory = graph.directories[member]
+      assert.ok(
+        declared.has(directory + '/**'),
+        image + ' must trigger on ' + directory + ', a workspace dependency'
+      )
+    }
+  }
+})
+
+test('image path filters omit unrelated workspaces', () => {
+  const presentFiles = presentImageWorkflows(root)
+  // packages/word-cloud is only bundled by the six frontend images, and
+  // packages/transactional only by chat. A change there must never wake the
+  // backend, worker, lti, olat-api or response-api images.
+  const expectations = [
+    ['packages/word-cloud/src/index.ts', 'v3_backend-docker-stg.yml'],
+    ['packages/word-cloud/src/index.ts', 'v3_olat-api-stg.yml'],
+    ['packages/transactional/src/index.ts', 'v3_response-api-stg.yml'],
+    [
+      'packages/transactional/src/index.ts',
+      'v3_hatchet-worker-general-stg.yml',
+    ],
+  ]
+  for (const [changedFile, excluded] of expectations) {
+    const { expected } = selectImageWorkflows({
+      changedFiles: [changedFile],
+      eventName: 'pull_request',
+      presentFiles,
+    })
+    const selected = expected.map((entry) => entry.path)
+    assert.ok(
+      !selected.includes(excluded),
+      changedFile + ' must not select ' + excluded
+    )
+    assert.ok(
+      selected.length > 0,
+      changedFile + ' must still select the images that bundle it'
+    )
+  }
 })
 
 test('a docs-only pull request is a validated no-change', () => {

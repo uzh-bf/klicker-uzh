@@ -11,9 +11,17 @@ on:
     # so newly applicable images are built instead of keeping the old result.
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
+      # The Dockerfile runs 'turbo prune --scope=@klicker-uzh/backend-docker'. Only that
+      # workspace dependency closure reaches the image, so a change outside
+      # it cannot alter this build and must not trigger it.
       - 'apps/backend-docker/**'
-      # Any workspace package can be bundled into this image.
-      - 'packages/**'
+      - 'packages/feature-flags/**'
+      - 'packages/grading/**'
+      - 'packages/graphql/**'
+      - 'packages/hatchet/**'
+      - 'packages/prisma/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
@@ -21,7 +29,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.dockerignore'
-      - '.github/workflows/v3_backend-docker**'
+      - '.github/workflows/v3_backend-docker-stg**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
