@@ -201,25 +201,14 @@ the acceptance default. Keep one worker for a shared runtime because per-spec
 cleanup resets shared fixed identities; parallel shards need separate complete
 worktree runtimes, including Redis and Hatchet.
 
-With `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1`, local host-launcher runs snapshot
-the clean synthetic seed into the git-ignored `playwright/.cache/seed-snapshot/`
-cache and restore it transactionally instead of reseeding. Snapshotting stays
-opt-in because measured restore times are not faster than the normal cleanup
-and seed reset; it exists for its exact-baseline guarantee. The cache key binds
-the Prisma schema, migrations, seed implementation and constants, lockfile,
-PostgreSQL major version, timezone and year, plus a live schema fingerprint;
-any drift falls back to cleanup and reseed. Snapshots are refused in CI and
-under `--preserve-database`, and a failed restore stops the run rather than
-continuing on partial state.
-
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
-|               | Playwright (`playwright/`)                                                                                          |
-| ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                                                                                    |
-| Infisical env | `dev-playwright`                                                                                                    |
-| Seed          | own `seedDatabase()` in `global-setup.ts`; opt-in `KLICKER_PLAYWRIGHT_SEED_SNAPSHOT=1` restores a captured baseline |
-| CI            | official Playwright container, 8-way shard, ready PRs                                                               |
+|               | Playwright (`playwright/`)                            |
+| ------------- | ----------------------------------------------------- |
+| Local command | `pnpm playwright:host -- <args>`                      |
+| Infisical env | `dev-playwright`                                      |
+| Seed          | own `seedDatabase()` in `global-setup.ts`             |
+| CI            | official Playwright container, 8-way shard, ready PRs |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
@@ -402,9 +391,13 @@ introduce cross-file ordering assumptions.
 `check:all` + identity guard, pre-push = outgoing-commit identity guard +
 `build`). `util/check-git-identity.sh` rejects the exact selector fixture
 identity in repository configuration, effective author/committer state, or
-outgoing commit authors, committers, or co-author trailers. The pull-request
+outgoing commit authors, committers, or co-author trailers. Outgoing means not
+yet reachable from a remote-tracking ref: commits that already reached any
+remote (typically through a v3 sync merge) were scanned when they were first
+pushed and are skipped on later pushes. The pull-request
 check repeats the commit-range guard on GitHub, where local hooks cannot be
-assumed. The second pre-commit check catches any test that mutates Git
+assumed, and bounds the range at the PR merge base so merged upstream history
+is not re-scanned. The second pre-commit check catches any test that mutates Git
 configuration while `check:all` runs. The Prisma package check regenerates the
 raw Prisma 7 client before typechecking; no generated-source patch remains.
 Clean CI jobs therefore do not depend on generated files left by an earlier

@@ -31,6 +31,8 @@ export interface ParticipantIdentity {
     chatbotId: string
     courseId: string
   }
+  // Opaque eLearning learner pseudonym carried by handoff-minted tokens.
+  learnerBinding?: string
 }
 
 // The identity transports a participant request can carry. Every consumer (API
@@ -98,7 +100,13 @@ export async function resolveParticipantIdentity(
     try {
       const payload = await verifyChatGuestToken(chatGuestToken)
       if (payload.sub) {
-        return { participantId: payload.sub, authMode: 'anonymous' }
+        return {
+          participantId: payload.sub,
+          authMode: 'anonymous',
+          ...(payload.learnerBinding
+            ? { learnerBinding: payload.learnerBinding }
+            : {}),
+        }
       }
     } catch {
       log.info(
@@ -127,6 +135,9 @@ export async function resolveParticipantIdentity(
             chatbotId: payload.chatbotId,
             courseId: payload.courseId,
           },
+          ...(payload.learnerBinding
+            ? { learnerBinding: payload.learnerBinding }
+            : {}),
         }
       }
       log.info(
@@ -278,7 +289,13 @@ async function getScopedTokenIdentity(
     try {
       const payload = await verifyChatGuestToken(token)
       if (payload.sub) {
-        return { participantId: payload.sub, authMode: 'anonymous' }
+        return {
+          participantId: payload.sub,
+          authMode: 'anonymous',
+          ...(payload.learnerBinding
+            ? { learnerBinding: payload.learnerBinding }
+            : {}),
+        }
       }
     } catch {
       return null
@@ -288,6 +305,7 @@ async function getScopedTokenIdentity(
   if (scope === PWA_CHAT_EMBED_SESSION_SCOPE) {
     try {
       const payload = await verifyPwaEmbedSessionToken(token)
+      if (!(await isActiveAccountParticipant(payload.sub))) return null
       return {
         participantId: payload.sub,
         authMode: 'account',
@@ -295,6 +313,9 @@ async function getScopedTokenIdentity(
           chatbotId: payload.chatbotId,
           courseId: payload.courseId,
         },
+        ...(payload.learnerBinding
+          ? { learnerBinding: payload.learnerBinding }
+          : {}),
       }
     } catch {
       return null
@@ -373,6 +394,7 @@ export async function withChatbotAuth(
   | {
       participantId: string
       authMode: AuthMode
+      learnerBinding?: string
       chatbot: { courseId: string; knowledgeGraphVisible: boolean }
     }
   | { response: NextResponse }
@@ -399,11 +421,12 @@ export async function authorizeIdentityForChatbot(
   | {
       participantId: string
       authMode: AuthMode
+      learnerBinding?: string
       chatbot: { courseId: string; knowledgeGraphVisible: boolean }
     }
   | { response: NextResponse }
 > {
-  const { participantId, authMode } = participantResult
+  const { participantId, authMode, learnerBinding } = participantResult
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     courseId: true,
@@ -437,7 +460,12 @@ export async function authorizeIdentityForChatbot(
     return participationResult
   }
 
-  return { participantId, authMode, chatbot: chatbotResult.chatbot }
+  return {
+    participantId,
+    authMode,
+    ...(learnerBinding ? { learnerBinding } : {}),
+    chatbot: chatbotResult.chatbot,
+  }
 }
 
 export async function requireParticipation(
