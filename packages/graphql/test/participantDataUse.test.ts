@@ -35,10 +35,8 @@ describe('participant data-use API', () => {
       expect(participantFields).not.toHaveProperty(field)
     }
 
-    const queryField = schema.getQueryType()!.getFields().selfDataUse
-    expect(queryField).toBeDefined()
-    if (!queryField) return
-    expect(queryField.type.toString()).toBe('ParticipantDataUse')
-    expect(queryField.args).toHaveLength(0)
+    // The type exists for the consent mutations; no root field publishes it
+    // directly, so incomplete participants never read it past the gate.
+    expect(schema.getQueryType()!.getFields().selfDataUse).toBeUndefined()
   })
 })

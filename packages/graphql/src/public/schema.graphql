@@ -2752,7 +2752,6 @@ type Query {
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
   selfAccountDataUse: ParticipantAccountDataUse
-  selfDataUse: ParticipantDataUse
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentAssessmentResults(courseId: String!): StudentAssessmentResults

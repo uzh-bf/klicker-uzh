@@ -1356,8 +1356,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Teilnahme an Learning Analytics beenden?',
       learningAnalyticsWithdrawalConfirmation:
         'Learning Analytics ausschalten? Deine persönlichen LA-Daten und Einblicke werden automatisch gelöscht. Deine Antworten und Punkte für den Kursbetrieb bleiben erhalten.',
-      learningAnalyticsWithdrawalUnavailable:
-        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden, weil der Widerruf derzeit nicht verfügbar ist. Deine gespeicherte Einstellung bleibt unverändert.',
       dataUseCanonicalDataNotice:
         'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
       dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',

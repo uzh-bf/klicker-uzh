@@ -239,6 +239,48 @@ describe('participant data-use PostgreSQL integration', () => {
     }
   }, 15_000)
 
+  it('persists the analytics withdrawal request with its recording audit event', async () => {
+    const participant = await createParticipant('withdrawal-request')
+    const ctx = participantContext(participant.id)
+    await completeParticipant(participant.id, {
+      learningAnalyticsConsent: true,
+    })
+
+    await updateParticipantDataUseChoice(
+      'analytics',
+      choiceInput(false, completedRevision),
+      ctx
+    )
+
+    const withdrawalRevision = completedRevision + 1
+    await expect(
+      prisma.participantDataUseEvent.findUnique({
+        where: {
+          participantId_revision: {
+            participantId: participant.id,
+            revision: withdrawalRevision,
+          },
+        },
+      })
+    ).resolves.toMatchObject({
+      learningAnalyticsConsent: false,
+      acknowledged: true,
+    })
+    await expect(
+      prisma.participantAnalyticsWithdrawal.findUnique({
+        where: {
+          participantId_withdrawalRevision: {
+            participantId: participant.id,
+            withdrawalRevision,
+          },
+        },
+      })
+    ).resolves.toMatchObject({
+      requestedAt: expect.any(Date),
+      completedAt: null,
+    })
+  })
+
   it('updates research consent while the learning-analytics lock is held', async () => {
     const participant = await createParticipant('research-while-locked')
     const ctx = participantContext(participant.id)

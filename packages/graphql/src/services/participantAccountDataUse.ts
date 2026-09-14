@@ -88,12 +88,9 @@ export async function initialParticipantDataUseData(
   input: ReturnType<typeof validateInitialParticipantDataUse>,
   prisma: DB.Prisma.TransactionClient
 ) {
-  await prisma.$executeRaw`
-    SELECT pg_advisory_xact_lock(
-      ${LEARNING_ANALYTICS_ADVISORY_LOCK.classId},
-      ${LEARNING_ANALYTICS_ADVISORY_LOCK.objectId}
-    )
-  `
+  // Account creation records the initial choice for a participant that no
+  // analytics writer can observe until this transaction commits, so it must
+  // not queue every signup behind the global learning-analytics lock.
   const clock = await prisma.$queryRaw<Array<{ now: Date }>>`
     SELECT clock_timestamp() AS "now"
   `

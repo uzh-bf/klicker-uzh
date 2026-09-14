@@ -1348,8 +1348,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Stop participating in Learning Analytics?',
       learningAnalyticsWithdrawalConfirmation:
         'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
-      learningAnalyticsWithdrawalUnavailable:
-        'Your Learning Analytics choice could not be saved because withdrawal is currently unavailable. Your saved choice is unchanged.',
       dataUseCanonicalDataNotice:
         'These choices do not delete your account, course participation, activity submissions, or responses.',
       dataUsePrivacyPolicy: 'Read the privacy policy.',

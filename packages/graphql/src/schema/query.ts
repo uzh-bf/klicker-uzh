@@ -87,7 +87,6 @@ import { MicroLearning } from './microLearning.js'
 import {
   Participant,
   ParticipantAccountDataUse,
-  ParticipantDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
@@ -160,14 +159,6 @@ export const Query = builder.queryType({
         nullable: true,
         type: ParticipantAccountDataUse,
         resolve: (_, _args, ctx) => getParticipantAccountDataUse(ctx),
-      }),
-
-      selfDataUse: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: ParticipantDataUse,
-        resolve: async (_, __, ctx) => {
-          return await ParticipantService.getParticipantDataUse(ctx)
-        },
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
