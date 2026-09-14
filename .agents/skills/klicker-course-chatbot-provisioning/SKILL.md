@@ -60,7 +60,7 @@ Per course: the owning account, the course row, and the source materials.
 
 ## OLAT embed link
 
-`https://lti.klicker.uzh.ch?redirectTo=` + URL-encoded `https://pwa.klicker.uzh.ch/{course.language}/course/{courseId}/chatbot/{chatbotId}?embed=true`
+`https://lti.klicker.uzh.ch?redirectTo=` + URL-encoded `https://pwa.klicker.uzh.ch/{course.language}/course/{courseId}/chatbot/{chatbotId}`
 
 The LTI app authenticates the OLAT launch and appends the participant JWT to the target. A GET without a launch answers `401 NO_LTIK_OR_IDTOKEN_FOUND` — that is the liveness contract. A working embed is proven only by a real launch from OLAT.
 
