@@ -845,3 +845,11 @@ required from the user.
   inert: subsequent same-repository PR builds now import these layers.
   Warm-consumer timing proof (a PR build measurably faster on cache hit)
   remains the follow-up observation for the next image-touching PR wave.
+  2026-09-14 exact-head CI on draft PR #5987 at head `7f0af1c522`:
+  `check` passed in 3m56s (run 34795721832, job 103828312555), including
+  the updated cache-contract suite; `build-images-status` passed; the
+  full hosted Playwright route passed prepare, build (4m43s) and all
+  eight shards (9m40s–14m34s). Remaining pending items are the four
+  path-filtered status reporters and the hosted reporter queued behind
+  the organization concurrency cap; `ocr-review` failed as the known
+  external-agent flake and carries no required weight for this change.
