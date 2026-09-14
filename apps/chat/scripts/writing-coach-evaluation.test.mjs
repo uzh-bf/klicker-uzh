@@ -8,11 +8,16 @@ import {
   MAX_ATTEMPTED_SUBMISSIONS,
   createDatabaseClient,
   latestReceipt,
+  readStaleLock,
   restoreFixture,
   validateBundle,
   validateCurrentBaseUsage,
   withFileLock,
 } from './writing-coach-evaluation.mjs'
+
+// A pid that is guaranteed not to be running, so a lock recorded by a crashed
+// run can be told apart from one held by a live process.
+const DEAD_PID = 2147483646
 
 function validBundle(cases) {
   return {
@@ -98,6 +103,32 @@ test('bundle validation rejects case ids that would escape the receipts director
   }
 })
 
+test('bundle validation rejects follow-ups whose parent is not earlier in the bundle', () => {
+  const child = {
+    id: 'child',
+    mode: 'writing-coach',
+    question: 'Draft.',
+    followUpTo: 'parent',
+  }
+  const parent = { id: 'parent', mode: 'writing-coach', question: 'Draft.' }
+  assert.doesNotThrow(() => validateBundle(validBundle([parent, child])))
+  for (const cases of [
+    [child, parent],
+    [child],
+    [
+      { ...parent, id: 'a', followUpTo: 'b' },
+      { ...parent, id: 'b', followUpTo: 'a' },
+    ],
+  ]) {
+    assert.throws(
+      () => validateBundle(validBundle(cases)),
+      (error) =>
+        error?.code === 'case_follow_up_order_invalid' ||
+        error?.code === 'case_follow_up_target_missing'
+    )
+  }
+})
+
 test('a stale submission lock is reclaimed instead of blocking the run', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'writing-coach-lock-'))
   const lockPath = join(directory, 'submission-counter.lock')
@@ -105,12 +136,49 @@ test('a stale submission lock is reclaimed instead of blocking the run', async (
     await writeFile(
       lockPath,
       JSON.stringify({
-        pid: 1,
+        pid: DEAD_PID,
         createdAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+        token: 'dead-owner',
       })
     )
     assert.equal(await withFileLock(lockPath, async () => 'ran'), 'ran')
     await assert.rejects(readFile(lockPath, 'utf8'), { code: 'ENOENT' })
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('only a lock whose owner is gone is reclaimable', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'writing-coach-lock-'))
+  const lockPath = join(directory, 'submission-counter.lock')
+  try {
+    await writeFile(
+      lockPath,
+      JSON.stringify({
+        pid: process.pid,
+        createdAt: new Date(0).toISOString(),
+        token: 'live-owner',
+      })
+    )
+    const live = await readStaleLock(lockPath)
+    assert.equal(live.stale, false)
+    assert.equal(JSON.parse(live.content).token, 'live-owner')
+
+    await writeFile(
+      lockPath,
+      JSON.stringify({
+        pid: DEAD_PID,
+        createdAt: new Date().toISOString(),
+        token: 'dead-owner',
+      })
+    )
+    assert.equal((await readStaleLock(lockPath)).stale, true)
+
+    await rm(lockPath, { force: true })
+    assert.deepEqual(await readStaleLock(lockPath), {
+      stale: true,
+      content: null,
+    })
   } finally {
     await rm(directory, { recursive: true, force: true })
   }

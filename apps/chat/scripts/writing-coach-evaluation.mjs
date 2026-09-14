@@ -150,25 +150,48 @@ async function writeJsonAtomically(path, value) {
 
 /**
  * A crashed run can leave the lock file behind, because the lock is released by
- * the same process that created it. Judging a leftover lock only by its own
- * metadata keeps a stale file from blocking every later run until a developer
- * removes it by hand.
+ * the same process that created it. Asking whether that process still runs
+ * keeps a leftover file from blocking every later run until a developer removes
+ * it by hand, without reclaiming the lock of a suspended owner that is about to
+ * write the submission counter again.
  */
-async function isStaleLock(path) {
+function lockOwnerIsAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false
   try {
-    const lock = JSON.parse(await readFile(path, 'utf8'))
-    const createdAt = Date.parse(lock?.createdAt ?? '')
-    return (
-      Number.isFinite(createdAt) && Date.now() - createdAt > LOCK_STALE_AFTER_MS
-    )
+    process.kill(pid, 0)
+    return true
   } catch (error) {
-    if (error?.code === 'ENOENT') return true
-    try {
-      const stats = await stat(path)
-      return Date.now() - stats.mtimeMs > LOCK_STALE_AFTER_MS
-    } catch {
-      return true
+    // A lock owned by another user is alive; only a missing process is gone.
+    return error?.code === 'EPERM'
+  }
+}
+
+/**
+ * Reclaiming a leftover lock by age alone would steal it from a suspended but
+ * live process, and both holders would then update the submission counter from
+ * the same starting value. The recorded owner decides, and the raw record is
+ * returned so the caller can avoid unlinking a replacement lock by path.
+ */
+export async function readStaleLock(path) {
+  let content = null
+  try {
+    content = await readFile(path, 'utf8')
+    const lock = JSON.parse(content)
+    if (Number.isInteger(lock?.pid)) {
+      return { stale: !lockOwnerIsAlive(lock.pid), content }
     }
+  } catch (error) {
+    if (error?.code === 'ENOENT') return { stale: true, content: null }
+  }
+  // An unreadable or foreign lock record falls back to the file age.
+  try {
+    const stats = await stat(path)
+    return {
+      stale: Date.now() - stats.mtimeMs > LOCK_STALE_AFTER_MS,
+      content,
+    }
+  } catch {
+    return { stale: true, content }
   }
 }
 
@@ -181,13 +204,22 @@ export async function withFileLock(path, operation) {
         JSON.stringify({
           pid: process.pid,
           createdAt: new Date().toISOString(),
+          token: randomUUID(),
         })
       )
       break
     } catch (error) {
       if (error?.code !== 'EEXIST') fail('submission_counter_lock_failed')
-      if (await isStaleLock(path)) {
-        await unlink(path).catch(() => {})
+      const stale = await readStaleLock(path)
+      if (stale.stale) {
+        if (stale.content === null) {
+          await unlink(path).catch(() => {})
+        } else {
+          const replacement = await readFile(path, 'utf8').catch(() => null)
+          if (replacement === stale.content) {
+            await unlink(path).catch(() => {})
+          }
+        }
         continue
       }
       await new Promise((resolvePromise) =>
@@ -267,10 +299,19 @@ export function validateBundle(bundle) {
     }
     casesById.set(item.id, item)
   }
+  // Cases run in bundle order, so a parent that appears later would only fail
+  // once its child is already running. Rejecting that ordering also rejects
+  // follow-up cycles, which always contain a forward reference.
+  const precedingIds = new Set()
   for (const item of bundle.cases) {
-    if (item.followUpTo && !casesById.has(item.followUpTo)) {
-      fail('case_follow_up_target_missing')
+    if (item.followUpTo && !precedingIds.has(item.followUpTo)) {
+      fail(
+        casesById.has(item.followUpTo)
+          ? 'case_follow_up_order_invalid'
+          : 'case_follow_up_target_missing'
+      )
     }
+    precedingIds.add(item.id)
   }
   return { casesById, cases: bundle.cases }
 }
@@ -939,24 +980,24 @@ function baseReceipt(runId, item, config, readback, parent, fingerprint) {
  * The fixture mutations of a run are only undone by the `finally` block below,
  * so an interrupted run would otherwise leave exhausted credits, a disabled MCP
  * binding or a replaced standard-mode config behind for the next run to adopt
- * as its baseline.
+ * as its baseline. The handler therefore stops the run instead of restoring on
+ * its own: a restore that races the still-running loop could be overwritten by
+ * the loop's next mutation. A second signal exits immediately.
  */
-function installSignalHandlers(client, fixture) {
-  let restoring = false
+function installSignalHandlers(onCancel) {
+  let signalled = false
   const handler = (signal) => {
-    if (restoring) return
-    restoring = true
+    if (signalled) {
+      process.stderr.write(
+        `writing-coach-evaluation: ${signal} received again, exiting without restoring\n`
+      )
+      process.exit(1)
+    }
+    signalled = true
     process.stderr.write(
-      `writing-coach-evaluation: ${signal} received, restoring fixture\n`
+      `writing-coach-evaluation: ${signal} received, stopping after the current step\n`
     )
-    void restoreFixture(client, fixture)
-      .catch(() => {
-        process.stderr.write(
-          'writing-coach-evaluation: fixture_restore_failed\n'
-        )
-        process.exitCode = 1
-      })
-      .finally(() => process.exit(1))
+    onCancel()
   }
   process.on('SIGINT', handler)
   process.on('SIGTERM', handler)
@@ -983,15 +1024,19 @@ async function executeCases({
   const runId = randomUUID()
   const allReceipts = [...receipts]
   const summary = { completed: 0, failed: 0, skipped: 0 }
+  let cancelled = false
   let runError = null
   let restoreError = null
 
   try {
     fixture = await inspectFixture(client, selected)
     target = createTarget(env)
-    uninstallSignalHandlers = installSignalHandlers(client, fixture)
+    uninstallSignalHandlers = installSignalHandlers(() => {
+      cancelled = true
+    })
 
     for (const item of selected) {
+      if (cancelled) break
       const previous = latestReceipt(allReceipts, item.id)
       if (
         resume &&
@@ -1037,6 +1082,7 @@ async function executeCases({
       // Exhausted credits are prepared for this case only: latching the
       // fallback state for the rest of the run would make every later case
       // depend on its position relative to the fallback case.
+      if (cancelled) break
       let exhaustionPreconditions = null
       let exhaustionReadback = null
       if (item.requiresExhaustedCredits === true) {
@@ -1156,6 +1202,7 @@ async function executeCases({
   // adopt, so it is reported ahead of the error that interrupted the run.
   if (restoreError) fail('fixture_restore_failed')
   if (runError) throw runError
+  if (cancelled) fail('run_interrupted')
 
   return { runId, summary }
 }
