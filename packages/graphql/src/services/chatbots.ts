@@ -424,7 +424,11 @@ const chatbotOwnerSelect = {
 type ChatbotWithOwnerCourse = {
   systemPrompts: unknown
   standardModeConfig: unknown
-  mcpConfigurations?: {
+  // Required: `shapeChatbotResponse` derives the Writing Coach unavailability
+  // reason from these rows, so a caller that forgets to spread
+  // `chatbotOwnerSelect` fails to compile instead of silently reporting the
+  // mode as available.
+  mcpConfigurations: {
     chatMode: string
     isEnabled: boolean
     parameters: unknown

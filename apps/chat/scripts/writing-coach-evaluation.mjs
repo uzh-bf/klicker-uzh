@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { realpathSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import {
@@ -9,6 +9,7 @@ import {
   readFile,
   readdir,
   rename,
+  stat,
   unlink,
   writeFile,
 } from 'node:fs/promises'
@@ -21,6 +22,7 @@ import {
   KlickerEvaluationTarget,
   validateLocalOrigin,
 } from './klicker-evaluation-target.mjs'
+import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
 import {
   LOCAL_CHATBOT_ID,
   LOCAL_FIXTURE_MARKER,
@@ -32,6 +34,8 @@ export const SYNTHETIC_OWNER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
 export const SYNTHETIC_COURSE_ID = '7c12e44e-d083-4acf-845e-4c34aaff6b49'
 export const SYNTHETIC_PARTICIPANT_USERNAME = 'testuser1'
 export const MAX_ATTEMPTED_SUBMISSIONS = 72
+const CASE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/
+const LOCK_STALE_AFTER_MS = 30_000
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = resolve(scriptDirectory, '../../..')
@@ -144,15 +148,51 @@ async function writeJsonAtomically(path, value) {
   }
 }
 
-async function withFileLock(path, operation) {
+/**
+ * A crashed run can leave the lock file behind, because the lock is released by
+ * the same process that created it. Judging a leftover lock only by its own
+ * metadata keeps a stale file from blocking every later run until a developer
+ * removes it by hand.
+ */
+async function isStaleLock(path) {
+  try {
+    const lock = JSON.parse(await readFile(path, 'utf8'))
+    const createdAt = Date.parse(lock?.createdAt ?? '')
+    return (
+      Number.isFinite(createdAt) && Date.now() - createdAt > LOCK_STALE_AFTER_MS
+    )
+  } catch (error) {
+    if (error?.code === 'ENOENT') return true
+    try {
+      const stats = await stat(path)
+      return Date.now() - stats.mtimeMs > LOCK_STALE_AFTER_MS
+    } catch {
+      return true
+    }
+  }
+}
+
+export async function withFileLock(path, operation) {
   let handle
   for (let attempt = 0; attempt < 100; attempt += 1) {
     try {
       handle = await open(path, 'wx', 0o600)
+      await handle.writeFile(
+        JSON.stringify({
+          pid: process.pid,
+          createdAt: new Date().toISOString(),
+        })
+      )
       break
     } catch (error) {
       if (error?.code !== 'EEXIST') fail('submission_counter_lock_failed')
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, 25))
+      if (await isStaleLock(path)) {
+        await unlink(path).catch(() => {})
+        continue
+      }
+      await new Promise((resolvePromise) =>
+        setTimeout(resolvePromise, Math.min(25 + attempt * 10, 250))
+      )
     }
   }
   if (!handle) fail('submission_counter_lock_timeout')
@@ -188,7 +228,7 @@ async function reserveSubmission() {
   })
 }
 
-function validateBundle(bundle) {
+export function validateBundle(bundle) {
   if (!isObject(bundle) || !Array.isArray(bundle.cases)) fail('cases_invalid')
   if (
     !isObject(bundle.defaults) ||
@@ -204,8 +244,9 @@ function validateBundle(bundle) {
       !isObject(item) ||
       typeof item.id !== 'string' ||
       !item.id ||
+      !CASE_ID_PATTERN.test(item.id) ||
       casesById.has(item.id) ||
-      !['tutor', 'explainer', 'quizzer', 'writing-coach'].includes(item.mode) ||
+      !CHAT_MODE_KEYS.includes(item.mode) ||
       typeof item.question !== 'string' ||
       !item.question
     ) {
@@ -241,7 +282,13 @@ async function loadBundle() {
   } catch {
     fail('cases_read_failed')
   }
-  return { bundle, ...validateBundle(bundle) }
+  // A receipt is only honoured on resume when it was produced from the same
+  // bundle revision, so persisted evidence stays tied to the exact cases.
+  const fingerprint = createHash('sha256')
+    .update(JSON.stringify(bundle))
+    .digest('hex')
+    .slice(0, 16)
+  return { bundle, fingerprint, ...validateBundle(bundle) }
 }
 
 function selectCases(cases, casesById, selectedIds) {
@@ -300,7 +347,11 @@ async function readAttemptReceipts() {
       typeof receipt.caseId === 'string' &&
       typeof receipt.startedAt === 'string'
     ) {
-      receipts.push(receipt)
+      // The path travels with the receipt so a re-attempt can replace it.
+      receipts.push({
+        ...receipt,
+        receiptFilePath: resolve(receiptRoot, entry.name),
+      })
     }
   }
   return receipts.sort((left, right) =>
@@ -308,20 +359,26 @@ async function readAttemptReceipts() {
   )
 }
 
-function latestReceipt(receipts, caseId, completedOnly = false) {
+export function latestReceipt(
+  receipts,
+  caseId,
+  completedOnly = false,
+  fingerprint = null
+) {
   const matching = receipts.filter(
     (receipt) =>
       receipt.caseId === caseId &&
-      (!completedOnly || receipt.status === 'completed')
+      (!completedOnly || receipt.status === 'completed') &&
+      (!fingerprint || receipt.bundleFingerprint === fingerprint)
   )
   return matching.at(-1) ?? null
 }
 
-function validateSelectionDependencies(selected, receipts) {
+function validateSelectionDependencies(selected, receipts, fingerprint) {
   const selectedIds = new Set(selected.map((item) => item.id))
   for (const item of selected) {
     if (!item.followUpTo || selectedIds.has(item.followUpTo)) continue
-    if (!latestReceipt(receipts, item.followUpTo, true)) {
+    if (!latestReceipt(receipts, item.followUpTo, true, fingerprint)) {
       fail(`follow_up_receipt_missing:${item.followUpTo}`)
     }
   }
@@ -568,6 +625,16 @@ async function inspectFixture(client, selected) {
     [participant.id, LOCAL_CHATBOT_ID]
   )
   const creditRow = creditResult.rows[0] ?? null
+  // An interrupted run leaves the exhausted fallback state behind. Adopting it
+  // as the baseline would make the exhaustion permanent for the local
+  // participant and silently change what every later case measures.
+  if (
+    creditRow &&
+    chatbot.creditResetPeriod === 'NONE' &&
+    Number(creditRow.current) === 0
+  ) {
+    fail('fixture_credit_baseline_exhausted')
+  }
 
   const fallbackSelected = selected.some(
     (item) => item.requiresExhaustedCredits === true
@@ -817,6 +884,11 @@ async function runCountedTurn(target, input) {
   const previousSubmitTurn = target.submitTurn
   let submissionNumber = null
   target.submitTurn = async function countedSubmitTurn(...arguments_) {
+    if (submissionNumber !== null) {
+      // A second submission inside one turn would spend another authorised
+      // attempt while the receipt can only report one of them.
+      throw new EvaluationError('multiple_submissions_in_turn')
+    }
     submissionNumber = await reserveSubmission()
     return previousSubmitTurn.apply(this, arguments_)
   }
@@ -832,19 +904,24 @@ async function runCountedTurn(target, input) {
 }
 
 function receiptPath(caseId) {
-  return resolve(
+  if (!CASE_ID_PATTERN.test(caseId)) fail('receipt_case_id_invalid')
+  const path = resolve(
     receiptRoot,
     `attempt-${new Date().toISOString().replaceAll(':', '-')}-${caseId}-${randomUUID()}.json`
   )
+  if (dirname(path) !== receiptRoot) fail('receipt_path_invalid')
+  return path
 }
 
-function baseReceipt(runId, item, config, readback, parent) {
+function baseReceipt(runId, item, config, readback, parent, fingerprint) {
   return {
     schemaVersion: 1,
     kind: 'writing-coach-evaluation-attempt',
     runId,
     attemptId: randomUUID(),
     caseId: item.id,
+    bundleFingerprint: fingerprint,
+    question: item.question,
     mode: item.mode,
     language: item.language ?? null,
     context: item.context ?? null,
@@ -858,31 +935,84 @@ function baseReceipt(runId, item, config, readback, parent) {
   }
 }
 
-async function executeCases({ bundle, selected, receipts, resume, env }) {
+/**
+ * The fixture mutations of a run are only undone by the `finally` block below,
+ * so an interrupted run would otherwise leave exhausted credits, a disabled MCP
+ * binding or a replaced standard-mode config behind for the next run to adopt
+ * as its baseline.
+ */
+function installSignalHandlers(client, fixture) {
+  let restoring = false
+  const handler = (signal) => {
+    if (restoring) return
+    restoring = true
+    process.stderr.write(
+      `writing-coach-evaluation: ${signal} received, restoring fixture\n`
+    )
+    void restoreFixture(client, fixture)
+      .catch(() => {
+        process.stderr.write(
+          'writing-coach-evaluation: fixture_restore_failed\n'
+        )
+        process.exitCode = 1
+      })
+      .finally(() => process.exit(1))
+  }
+  process.on('SIGINT', handler)
+  process.on('SIGTERM', handler)
+  return () => {
+    process.off('SIGINT', handler)
+    process.off('SIGTERM', handler)
+  }
+}
+
+async function executeCases({
+  bundle,
+  fingerprint,
+  selected,
+  receipts,
+  resume,
+  env,
+}) {
   validateExecutionBoundary(env)
   await mkdir(receiptRoot, { recursive: true, mode: 0o700 })
   const client = await createDatabaseClient(env)
   let fixture
   let target
+  let uninstallSignalHandlers = () => {}
   const runId = randomUUID()
   const allReceipts = [...receipts]
   const summary = { completed: 0, failed: 0, skipped: 0 }
-  let creditsPrepared = false
 
   try {
     fixture = await inspectFixture(client, selected)
     target = createTarget(env)
+    uninstallSignalHandlers = installSignalHandlers(client, fixture)
 
     for (const item of selected) {
       const previous = latestReceipt(allReceipts, item.id)
-      if (resume && previous?.status === 'completed') {
+      if (
+        resume &&
+        previous?.status === 'completed' &&
+        previous.bundleFingerprint === fingerprint &&
+        previous.question === item.question
+      ) {
         summary.skipped += 1
         continue
+      }
+      if (previous) {
+        // One receipt per case: a re-attempt replaces the earlier attempt,
+        // which a follow-up case would otherwise pick up as its parent.
+        if (previous.receiptFilePath) {
+          await unlink(previous.receiptFilePath).catch(() => {})
+        }
+        const staleIndex = allReceipts.indexOf(previous)
+        if (staleIndex !== -1) allReceipts.splice(staleIndex, 1)
       }
 
       let parent = null
       if (item.followUpTo) {
-        parent = latestReceipt(allReceipts, item.followUpTo, true)
+        parent = latestReceipt(allReceipts, item.followUpTo, true, fingerprint)
         if (!parent) {
           const failedReceipt = {
             schemaVersion: 1,
@@ -902,19 +1032,14 @@ async function executeCases({ bundle, selected, receipts, resume, env }) {
         }
       }
 
+      // Exhausted credits are prepared for this case only: latching the
+      // fallback state for the rest of the run would make every later case
+      // depend on its position relative to the fallback case.
       let exhaustionPreconditions = null
       let exhaustionReadback = null
       if (item.requiresExhaustedCredits === true) {
         exhaustionPreconditions = fallbackPreconditions(fixture)
-        let exhaustedState
-        if (!creditsPrepared) {
-          exhaustedState = await prepareExhaustedCredits(client, fixture)
-          creditsPrepared = true
-        } else {
-          exhaustedState = assertExhaustedCredits(
-            await readFallbackState(client, fixture.participant.id)
-          )
-        }
+        const exhaustedState = await prepareExhaustedCredits(client, fixture)
         const baseUsageReadback = validateCurrentBaseUsage(
           await readCurrentBaseUsage(client)
         )
@@ -943,7 +1068,7 @@ async function executeCases({ bundle, selected, receipts, resume, env }) {
       const history = parent?.history || []
       const startedAt = new Date().toISOString()
       const receipt = {
-        ...baseReceipt(runId, item, config, readback, parent),
+        ...baseReceipt(runId, item, config, readback, parent, fingerprint),
         startedAt,
         status: 'failed',
         submissionNumber: null,
@@ -1004,9 +1129,13 @@ async function executeCases({ bundle, selected, receipts, resume, env }) {
       }
       await writeJsonAtomically(receiptPath(item.id), receipt)
       allReceipts.push(receipt)
+      if (item.requiresExhaustedCredits === true) {
+        await restoreFixture(client, fixture)
+      }
       if (stopAfterAttempt) break
     }
   } finally {
+    uninstallSignalHandlers()
     let restoreError = null
     if (fixture) {
       try {
@@ -1024,7 +1153,14 @@ async function executeCases({ bundle, selected, receipts, resume, env }) {
   return { runId, summary }
 }
 
-async function dryRun({ bundle, selected, receipts, resume, env }) {
+async function dryRun({
+  bundle,
+  fingerprint,
+  selected,
+  receipts,
+  resume,
+  env,
+}) {
   const counter = (await readJson(counterPath)) ?? { attemptedSubmissions: 0 }
   if (
     !Number.isInteger(counter.attemptedSubmissions) ||
@@ -1033,10 +1169,12 @@ async function dryRun({ bundle, selected, receipts, resume, env }) {
   ) {
     fail('submission_counter_invalid')
   }
-  validateSelectionDependencies(selected, receipts)
+  validateSelectionDependencies(selected, receipts, fingerprint)
   const requestedSubmissions = resume
     ? selected.filter(
-        (item) => latestReceipt(receipts, item.id)?.status !== 'completed'
+        (item) =>
+          latestReceipt(receipts, item.id, false, fingerprint)?.status !==
+          'completed'
       ).length
     : selected.length
   if (
@@ -1078,13 +1216,14 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
       printHelp()
       return
     }
-    const { bundle, cases, casesById } = await loadBundle()
+    const { bundle, fingerprint, cases, casesById } = await loadBundle()
     const selected = selectCases(cases, casesById, arguments_.caseIds)
     const receipts = await readAttemptReceipts()
-    validateSelectionDependencies(selected, receipts)
+    validateSelectionDependencies(selected, receipts, fingerprint)
     const result = arguments_.dryRun
       ? await dryRun({
           bundle,
+          fingerprint,
           selected,
           receipts,
           resume: arguments_.resume,
@@ -1092,6 +1231,7 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
         })
       : await executeCases({
           bundle,
+          fingerprint,
           selected,
           receipts,
           resume: arguments_.resume,

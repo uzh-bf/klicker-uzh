@@ -310,6 +310,46 @@ test('failed disclaimer setup does not poison a later session retry', async () =
   }
 })
 
+test('a continued turn may only hang off the trailing assistant message', async () => {
+  const target = new KlickerEvaluationTarget({
+    apiOrigin: 'https://api.klicker.localhost',
+    chatOrigin: 'https://chat.klicker.localhost',
+    apiKey: 'target-key',
+    participantUsername: 'synthetic-participant',
+    participantPassword: 'synthetic-password',
+    groundTruthDirectory: '/tmp/unused-ground-truth',
+    canaryFixture: '/tmp/unused-canary.json',
+    requestTimeoutMs: 1000,
+  })
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => {
+    throw new Error('the parent invariant must fail before any request')
+  }
+  try {
+    await assert.rejects(
+      target.runTurn({
+        question: 'Synthetic draft.',
+        mode: 'writing-coach',
+        parentId: 'assistant-without-history',
+      }),
+      { code: 'chat_parent_without_history' }
+    )
+    await assert.rejects(
+      target.runTurn({
+        question: 'Synthetic revision.',
+        mode: 'writing-coach',
+        history: [
+          { id: 'assistant-in-history', role: 'assistant', content: 'Draft.' },
+        ],
+        parentId: 'assistant-from-another-thread',
+      }),
+      { code: 'chat_parent_history_mismatch' }
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('target rejects malformed and incomplete UI streams', async () => {
   const target = new KlickerEvaluationTarget({
     apiOrigin: 'https://api.klicker.localhost',

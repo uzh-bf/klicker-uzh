@@ -6,6 +6,8 @@ import { createServer } from 'node:http'
 import { basename, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
+
 export const DEFAULT_CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 export const DEFAULT_MODEL_ID = 'gpt-5.6-luna'
 export const DEFAULT_MAX_STREAM_BYTES = 8 * 1024 * 1024
@@ -637,13 +639,25 @@ export class KlickerEvaluationTarget {
     mode,
     threadId,
     history = [],
-    parentId = null,
+    parentId,
     expectedSelectedModelId = this.modelId,
     maxStreamBytes = this.maxStreamBytes,
   }) {
-    if (!['tutor', 'explainer', 'quizzer', 'writing-coach'].includes(mode)) {
+    if (!CHAT_MODE_KEYS.includes(mode)) {
       throw evaluationError('chat_mode_invalid')
     }
+    // `history` and `parentId` describe the same conversation: a turn that
+    // continues a thread may only hang off the trailing assistant message of the
+    // history it submits, and an empty history is a root turn.
+    const trailingAssistantMessage =
+      history.at(-1)?.role === 'assistant' ? history.at(-1) : null
+    if (parentId && !trailingAssistantMessage) {
+      throw evaluationError('chat_parent_without_history')
+    }
+    if (parentId && trailingAssistantMessage?.id !== parentId) {
+      throw evaluationError('chat_parent_history_mismatch')
+    }
+    const resolvedParentId = parentId ?? trailingAssistantMessage?.id ?? null
     await this.ensureSession()
     const currentThreadId = threadId || (await this.createThread())
     const userMessageId = randomUUID()
@@ -656,7 +670,7 @@ export class KlickerEvaluationTarget {
       assistantMessageId,
       maxStreamBytes,
       history,
-      parentId,
+      parentId: resolvedParentId,
     })
     const message = await this.readCompletedMessage(
       currentThreadId,

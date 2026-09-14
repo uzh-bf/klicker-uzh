@@ -675,6 +675,12 @@ function ChatbotAuthoring({
                     setFieldValue,
                   }) => {
                     const controlsDisabled = isSubmitting || publicationPending
+                    // Writing Coach is removed from the participant-facing mode
+                    // set while a required tool binding belongs to another mode,
+                    // so in that state it cannot satisfy the "keep one
+                    // conversational mode enabled" invariant on its own.
+                    const writingCoachCannotHoldInvariant =
+                      writingCoachUnavailableReason === 'REQUIRED_TOOL_BINDING'
 
                     return (
                       <Form className="space-y-4">
@@ -741,7 +747,8 @@ function ChatbotAuthoring({
                               controlsDisabled ||
                               (values.tutorEnabled &&
                                 !values.explainerEnabled &&
-                                !values.writingCoachEnabled)
+                                (!values.writingCoachEnabled ||
+                                  writingCoachCannotHoldInvariant))
                             }
                             enabled={values.tutorEnabled}
                             mode="tutor"
@@ -764,7 +771,8 @@ function ChatbotAuthoring({
                               controlsDisabled ||
                               (values.explainerEnabled &&
                                 !values.tutorEnabled &&
-                                !values.writingCoachEnabled)
+                                (!values.writingCoachEnabled ||
+                                  writingCoachCannotHoldInvariant))
                             }
                             enabled={values.explainerEnabled}
                             mode="explainer"
@@ -803,9 +811,10 @@ function ChatbotAuthoring({
                             )}
                             disabled={
                               controlsDisabled ||
-                              (values.writingCoachEnabled &&
-                                !values.tutorEnabled &&
-                                !values.explainerEnabled)
+                              (!values.tutorEnabled &&
+                                !values.explainerEnabled &&
+                                (values.writingCoachEnabled ||
+                                  writingCoachCannotHoldInvariant))
                             }
                             enabled={values.writingCoachEnabled}
                             mode="writing-coach"
