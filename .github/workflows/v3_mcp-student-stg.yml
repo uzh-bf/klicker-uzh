@@ -9,7 +9,15 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
       - 'apps/mcp-student/**'
-      - 'packages/**'
+      - 'packages/doc-query-client/**'
+      - 'packages/feature-flags/**'
+      - 'packages/grading/**'
+      - 'packages/graphql/**'
+      - 'packages/hatchet/**'
+      - 'packages/knowledge-graph/**'
+      - 'packages/prisma/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'turbo.json'

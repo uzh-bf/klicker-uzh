@@ -11,9 +11,16 @@ on:
     # so newly applicable images are built instead of keeping the old result.
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
+      # The Dockerfile runs 'turbo prune --scope=@klicker-uzh/hatchet-worker-response-processor'. Only that
+      # workspace dependency closure reaches the image, so a change outside
+      # it cannot alter this build and must not trigger it.
       - 'apps/hatchet-worker-response-processor/**'
-      # Any workspace package can be bundled into this image.
-      - 'packages/**'
+      - 'packages/grading/**'
+      - 'packages/hatchet/**'
+      - 'packages/knowledge-graph/**'
+      - 'packages/prisma/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
@@ -21,7 +28,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.dockerignore'
-      - '.github/workflows/v3_hatchet-worker-response-processor**'
+      - '.github/workflows/v3_hatchet-worker-response-processor-stg**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
