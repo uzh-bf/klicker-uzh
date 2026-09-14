@@ -154,6 +154,9 @@ export const KBKnowledgeGraphConfigType = KBKnowledgeGraphConfigRef.implement({
     domainPolicyLanguage: t.exposeString('domainPolicyLanguage', {
       nullable: true,
     }),
+    // Lecturer focus that steered extraction emphasis on the reported build.
+    // Null means the build ran without a focus.
+    focusTopic: t.exposeString('focusTopic', { nullable: true }),
     publishedDomainPolicyId: t.exposeString('publishedDomainPolicyId', {
       nullable: true,
     }),

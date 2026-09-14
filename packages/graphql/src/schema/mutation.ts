@@ -2169,6 +2169,7 @@ export const Mutation = builder.mutationType({
           domainPolicyId: t.arg.id({ required: false }),
           domainPolicyVersion: t.arg.int({ required: false }),
           domainPolicyLanguage: t.arg.string({ required: false }),
+          focusTopic: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.rebuildKbKnowledgeGraph(args, ctx)

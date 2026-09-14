@@ -26,6 +26,7 @@ query GetKbKnowledgeGraphDomainConfig($kbId: ID!) {
     domainPolicyId
     domainPolicyVersion
     domainPolicyLanguage
+    focusTopic
     publishedDomainPolicyId
     publishedDomainPolicyVersion
     publishedDomainPolicyLanguage
