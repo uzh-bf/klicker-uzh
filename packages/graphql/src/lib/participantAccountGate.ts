@@ -3,8 +3,28 @@ import {
   isParticipantDataUseComplete,
   participantAccountDataUseSelect,
 } from '@klicker-uzh/util'
-import { defaultFieldResolver, GraphQLError, type GraphQLSchema } from 'graphql'
+import {
+  BasePlugin,
+  type PothosOutputFieldConfig,
+  type SchemaTypes,
+} from '@pothos/core'
+import SchemaBuilder from '@pothos/core'
+import { GraphQLError, type GraphQLFieldResolver } from 'graphql'
 import type { Context } from './context.js'
+
+declare global {
+  export namespace PothosSchemaTypes {
+    interface Plugins<Types extends SchemaTypes> {
+      participantAccountGate: PothosParticipantAccountGatePlugin
+    }
+    interface SchemaBuilderOptions<Types extends SchemaTypes> {
+      participantAccountGate: Record<string, never>
+    }
+    interface V3SchemaBuilderOptions<Types extends SchemaTypes> {
+      participantAccountGate: never
+    }
+  }
+}
 
 const supportFields = new Set([
   'Query.self',
@@ -33,27 +53,57 @@ export async function requireParticipantAccountCompletion(ctx: Context) {
   }
 }
 
-export function applyParticipantAccountGate(schema: GraphQLSchema) {
-  for (const root of [
-    schema.getQueryType(),
-    schema.getMutationType(),
-    schema.getSubscriptionType(),
-  ]) {
-    if (!root) continue
-    for (const field of Object.values(root.getFields())) {
-      if (supportFields.has(`${root.name}.${field.name}`)) continue
-      const resolve = field.resolve ?? defaultFieldResolver
-      field.resolve = async (source, args, ctx: Context, info) => {
-        await requireParticipantAccountCompletion(ctx)
-        return resolve(source, args, ctx, info)
-      }
-      const subscribe = field.subscribe
-      if (subscribe) {
-        field.subscribe = async (source, args, ctx: Context, info) => {
-          await requireParticipantAccountCompletion(ctx)
-          return subscribe(source, args, ctx, info)
-        }
-      }
+function isSupportField(fieldConfig: PothosOutputFieldConfig<SchemaTypes>) {
+  return supportFields.has(`${fieldConfig.parentType}.${fieldConfig.name}`)
+}
+
+// Root fields carry the account boundary; nested object resolvers reuse the
+// parent field's authorization and must not trigger a second completion check.
+function isRootField(fieldConfig: PothosOutputFieldConfig<SchemaTypes>) {
+  return ['Query', 'Mutation', 'Subscription'].includes(fieldConfig.parentType)
+}
+
+/**
+ * The data-use gate must register after the scope-auth plugin so a field's
+ * own authorization decision always precedes the completion check; an
+ * unauthorized caller keeps receiving the field's authorization error
+ * instead of a consent error from an outer wrapper.
+ */
+export class PothosParticipantAccountGatePlugin extends BasePlugin<SchemaTypes> {
+  override wrapResolve(
+    resolver: GraphQLFieldResolver<unknown, SchemaTypes['Context'], object>,
+    fieldConfig: PothosOutputFieldConfig<SchemaTypes>
+  ): GraphQLFieldResolver<unknown, SchemaTypes['Context'], object> {
+    if (!isRootField(fieldConfig) || isSupportField(fieldConfig))
+      return resolver
+    return async (source, args, ctx, info) => {
+      await requireParticipantAccountCompletion(ctx as Context)
+      return resolver(source, args, ctx, info)
     }
   }
+
+  override wrapSubscribe(
+    subscriber: GraphQLFieldResolver<unknown, SchemaTypes['Context'], object>,
+    fieldConfig: PothosOutputFieldConfig<SchemaTypes>
+  ): GraphQLFieldResolver<unknown, SchemaTypes['Context'], object> {
+    if (!isRootField(fieldConfig) || isSupportField(fieldConfig))
+      return subscriber
+    return async (source, args, ctx, info) => {
+      await requireParticipantAccountCompletion(ctx as Context)
+      return subscriber(source, args, ctx, info)
+    }
+  }
+}
+
+export const participantAccountGatePluginName = 'participantAccountGate'
+
+// Test files re-evaluate this module while the externalized Pothos builder
+// keeps its static plugin registry, so registration must be idempotent.
+try {
+  SchemaBuilder.registerPlugin(
+    participantAccountGatePluginName,
+    PothosParticipantAccountGatePlugin
+  )
+} catch {
+  // Already registered by an earlier evaluation of this module.
 }

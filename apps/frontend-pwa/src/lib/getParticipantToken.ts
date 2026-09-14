@@ -15,8 +15,6 @@ export default async function getParticipantToken({
 }) {
   const { query } = ctx
   const cookies = nookies.get(ctx)
-  const ltiAttempted =
-    cookies['lti-token'] !== undefined || query.jwt !== undefined
 
   // if the user already has a participant token, skip registration
   // fetch the relevant data directly
@@ -26,7 +24,7 @@ export default async function getParticipantToken({
       : cookies['participant_token']) ?? query.participantToken
 
   // TODO: only check for existing participantToken once participation issues with LTI are resolved
-  if (participantToken && !ltiAttempted) {
+  if (participantToken && !cookies['lti-token'] && !query.jwt) {
     return {
       participantToken,
       cookiesAvailable:
@@ -100,7 +98,6 @@ export default async function getParticipantToken({
     } else {
       // LTI auth attempted but failed -- clear stale token to prevent session leakage
       participantToken = null
-      if (ltiAttempted) throw new Error('LTI_AUTHENTICATION_FAILED')
     }
 
     return {
@@ -109,7 +106,6 @@ export default async function getParticipantToken({
       cookiesAvailable,
     }
   } catch (e) {
-    if (ltiAttempted) throw new Error('LTI_AUTHENTICATION_FAILED')
     console.error(e)
   }
 

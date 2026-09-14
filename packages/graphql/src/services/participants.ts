@@ -941,10 +941,10 @@ export async function upsertDailyTimelineEntry({
         type: DB.TimelineEntryType.DAILY,
       },
     },
-      create: {
-        type: DB.TimelineEntryType.DAILY,
-        timestamp: new Date(),
-        collectedPoints: participation.isActive ? pointsAwarded : 0,
+    create: {
+      type: DB.TimelineEntryType.DAILY,
+      timestamp: new Date(),
+      collectedPoints: participation.isActive ? pointsAwarded : 0,
       collectedXp: xpAwarded,
       computedAt: new Date(),
       course: {

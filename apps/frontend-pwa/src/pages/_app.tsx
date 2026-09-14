@@ -1,5 +1,4 @@
 import { ApolloProvider } from '@apollo/client'
-import ParticipantAccountGate from '@components/participant/ParticipantAccountGate'
 import { Capacitor } from '@capacitor/core'
 import {
   ActionPerformed,
@@ -27,7 +26,7 @@ const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
-  const { locale, pathname } = useRouter()
+  const { locale } = useRouter()
 
   const apolloClient = useApollo(pageProps)
 
@@ -102,13 +101,7 @@ function App({ Component, pageProps }: AppProps) {
       >
         <ApolloProvider client={apolloClient}>
           <Toaster closeButton position="top-right" />
-          <ParticipantAccountGate
-            key={pathname}
-            participantToken={pageProps.participantToken}
-            cookiesAvailable={pageProps.cookiesAvailable}
-          >
-            <Component {...pageProps} />
-          </ParticipantAccountGate>
+          <Component {...pageProps} />
         </ApolloProvider>
       </NextIntlClientProvider>
       <style>{`

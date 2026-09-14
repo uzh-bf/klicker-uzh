@@ -4,7 +4,6 @@ export { default as enhanceContext } from './lib/context.js'
 export { getChatModelRegistry } from './services/chatbots.js'
 
 import builder from './builder.js'
-import { applyParticipantAccountGate } from './lib/participantAccountGate.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
@@ -74,8 +73,6 @@ export const schema = builder.toSchema({
     // oneOf: upperDirectiveTransformer,
   },
 })
-
-applyParticipantAccountGate(schema)
 
 export const handlers: HatchetHandlers = {
   handleFinalRandomGroupAssignments,

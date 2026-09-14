@@ -152,10 +152,16 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
         url: (process.env.NEXT_PUBLIC_API_URL as string)
           .replace('http://', 'ws://')
           .replace('https://', 'wss://'),
-        connectionParams: () => {
-          const token = sessionStorage.getItem('participant_token')
-          return token ? { authorization: `Bearer ${token}` } : {}
-        },
+        // connectionParams: () => {
+        //   // Note: getSession() is a placeholder function created by you
+        //   const session = getSession();
+        //   if (!session) {
+        //     return {};
+        //   }
+        //   return {
+        //     Authorization: `Bearer ${session.token}`,
+        //   };
+        // },
       })
     )
 

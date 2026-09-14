@@ -27,7 +27,6 @@ They are unrelated models — never conflate them. A `Participant` joins a `Cour
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Participant access to a published chatbot is likewise authorized by the existence of the course `Participation`, regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`). Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
 
-
 ### Participant data-use choices
 
 Research and learning-analytics choices are participant-global current state on

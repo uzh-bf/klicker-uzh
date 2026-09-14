@@ -25,7 +25,7 @@ A `Bearer` authorization header is always the final fallback (assessment live-qu
 
 NextAuth (Auth.js) with `@auth/prisma-adapter`, JWT session strategy with a custom `encode` (so the backend can verify the same token), configured in `apps/auth/src/pages/api/auth/[...nextauth].ts`. Two provider groups:
 
-- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope is `openid email profile https://login.eduid.ch/authz/User.Read`, following the SWITCH integration guide (`profile` is what releases `given_name`/`family_name`, `User.Read` the `swissEduPerson*` and affiliation claims). Without Edu-ID credentials (typical local dev), this provider is absent — use delegated login.
+- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope is `openid email profile https://login.eduid.ch/authz/User.Read`, following the SWITCH integration guide (`profile` is what releases `given_name`/`family_name`, `User.Read` the `swissEduPerson*` and affiliation claims). The devcontainer supplies a synthetic `EDUID_CLIENT_SECRET` plus the local OIDC mock's issuer, so the provider is registered there too; in deployments without credentials the provider stays absent — use delegated login.
 - **Delegated login** (`CredentialsProvider`) — authenticates against `User.shortname` + a `UserLogin` record. Each `UserLogin` carries a `UserLoginScope` that ends up as `token.scope` in the JWT callback: the ladder `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY` is enforced field-by-field in the API layer ([three-layer auth](./graphql-api-layer.md)). Edu-ID logins get scope `EDUID`.
 
 Both edu-ID providers set `idToken: true`, which makes NextAuth build the profile from the ID token alone and never call the UserInfo endpoint. Whether a given attribute reaches the ID token is a per-claim setting in the AAI Resource Registry, not something this repository controls, and edu-ID does not advertise `claims_parameter_supported`, so the `claims` request parameter in the provider config is not honoured — the requested scopes plus the Resource Registry settings decide everything. Set `EDUID_FETCH_USERINFO=true` to additionally call UserInfo and merge its claims over the ID token ones, which makes the Resource Registry's ID-token settings irrelevant; the flag defaults to off.
@@ -52,17 +52,15 @@ A valid participant JWT establishes identity, but does not establish that the
 account has completed the current data-use disclosure. The shared
 `isParticipantDataUseComplete` predicate requires the current acknowledgement
 version and separately recorded research and Learning Analytics choices.
-`applyParticipantAccountGate` checks persisted state before protected GraphQL
-queries, mutations and subscription admission. Its explicit support-field list
+The registered `participantAccountGate` Pothos plugin checks persisted state
+before protected GraphQL root fields and runs after the scope-auth plugin, so a
+field's own authorization error always wins. Its explicit support-field list
 keeps login, self-state, completion and account support accessible while locked.
 Lecturer and temporary-participant roles retain their separate authorization.
-
-The PWA's `ParticipantAccountGate` initializes the existing cookie-less token
-storage before protected queries and redirects incomplete participants to
-`/account/data-use`. The saved return destination passes through
-`participantDataUseReturn`, which accepts local destinations and removes launch
-credentials. An explicit failed LTI launch must not reuse a previous participant
-identity or fall back to guest access.
+The PWA redirects incomplete participants to `/account/data-use` when an API
+call answers with `PARTICIPANT_DATA_USE_COMPLETION_REQUIRED`, storing the return
+destination through `participantDataUseReturn`, which accepts local destinations
+and removes launch credentials.
 
 Account creation and completion record the acknowledgement and independent
 choices through the revisioned data-use service. Settings submit the displayed
