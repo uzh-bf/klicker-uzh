@@ -237,7 +237,9 @@ while push publications stay fully uncached. Fork and other cross-repository
 pull requests keep the uncached build path, and the push-gated registry login
 jobs extend that login to same-repo PRs only for cache reads and writes. The
 native ARM64 `-arm` jobs no longer install QEMU; the disabled `-amd` jobs
-retain theirs.
+retain theirs. The two MCP staging workflows keep their active \`build-amd\`
+jobs (validated as non-runtime publishers by the release receipt) and follow
+the same cache contract with an \`-amd:buildcache\` registry cache.
 
 Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile changes must keep monorepo-root context assumptions.
 
