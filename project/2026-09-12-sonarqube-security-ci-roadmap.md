@@ -663,8 +663,8 @@ its dependent action. Read back effective settings and retain sanitized receipts
     bounds the per-producer artifact reads and extraction, mapping a
     malformed artifact to the new failing reasons `evidence-unreadable` and
     `coverage-unreadable` with the other producer's verified input preserved
-    (26 unit cases, including the two aggregate-path cases). The incremental
-    review of `788c8b7544` is re-triggered and pending.
+    (26 unit cases, including the two aggregate-path cases). The follow-up
+    review of that head ran as the second round below.
   - Second review round at `794ad2d5df` (run `34793220405`, full mode) did
     not re-report any of the six fixed findings and published two new ones,
     both verified and fixed in `6616c9dcc6` with a trusted disposition: the
@@ -676,7 +676,13 @@ its dependent action. Read back effective settings and retain sanitized receipts
     new negative cases, real-file before/after verified), and the scan jobs'
     checkouts moved to `actions/checkout@v4` while the pre-existing
     build-job tags stay the recorded follow-up. The promoter suite is 29
-    cases. The review of `6616c9dcc6` is re-triggered and pending.
+    cases.
+  - Terminal review state: the review at `22039cced2` (run `34805881168`,
+    covering every source and documentation change on this branch) completed
+    clean — the finalize receipt records `CLEAN_REVIEW: true` and published
+    no findings or comments. All eight findings published across the two
+    earlier rounds are fixed and dispositioned; no correction pass is owed.
+    Commits after that review are documentation-only status records.
   - Head-check state: the expected Sonar quality-gate failure is the W8
     contract with the W0 gap. The other red checks on this branch are queue
     or environment effects, not source defects: `build-images-status` timed
@@ -704,7 +710,7 @@ its dependent action. Read back effective settings and retain sanitized receipts
   and the image scan cannot be proven from source alone. Expect the Sonar quality
   gate to fail this pull request while W0 and the policy decisions stay open, and
   treat the image scan as unproven until a publication run exercises it.
-- Next action: read and disposition the review of `6616c9dcc6` when it
-  completes. The standing gates are unchanged: obtain authorized Sonar
-  settings evidence for W0, then decide the fork and Dependabot analysis route
-  before any merge enforcement.
+- Next action: the final-review loop is closed and no correction pass is
+  owed. The standing gates are unchanged: obtain authorized Sonar settings
+  evidence for W0, then decide the fork and Dependabot analysis route before
+  any merge enforcement.
