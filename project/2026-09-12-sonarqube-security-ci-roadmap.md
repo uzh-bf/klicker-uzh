@@ -500,6 +500,7 @@ contracts; this table does not authorize brittle documentation or content tests.
 | Expired exception passes | No verified common exception policy; add only the selected policy's expiry/scope cases | Admission decision, W7/W8/W10 |
 | Candidate stranded or superseded during promotion | Existing `stg-release-promoter.test.js` and fixtures; extend ordering/identity/CAS coverage | Existing controller, W10 |
 | Scan job hides or breaks promotion admission | Controller fixtures emit the admitted scan jobs and the tests reject a disabled, unlisted, or misplaced ARM job | Existing controller, W10 |
+| One malformed artifact discards verified coverage | `collectCoverage` bounds per-producer reads and extraction and reports `evidence-unreadable`/`coverage-unreadable` while the other producer still imports | Coverage input aggregation, W3 |
 
 The exact synthetic CI/Sonar probes and external effects must be included in
 the executable package's approval. Do not create intentionally vulnerable
@@ -537,7 +538,7 @@ its dependent action. Read back effective settings and retain sanitized receipts
 
 ## Progress and review provenance
 
-- Status: source implementation complete on [PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924), ready for review; no live effect applied.
+- Status: source implementation complete on [PR #5924](https://github.com/uzh-bf/klicker-uzh/pull/5924), ready for review; one clean full review with six medium findings, all verified and dispositioned as fixed; no live effect applied.
 - Completed: repository and GitHub investigation, documentation research,
   planner approval, documentation delivery, the source implementation of
   W1, W2, W3, W4, W5 (pilot), W6, W7, W8, and W10, the W0, W8, W9, and W10
@@ -565,7 +566,7 @@ its dependent action. Read back effective settings and retain sanitized receipts
   - W3: `test-unit.yml` and `test-graphql.yml` publish LCOV as the
     `coverage-lcov` artifact, and the analysis imports a report only from a run
     bound to the analyzed head with a matching tested-source receipt
-    (`.github/scripts/sonar-coverage-inputs.cjs`, 24 unit cases). The unit
+    (`.github/scripts/sonar-coverage-inputs.cjs`, 26 unit cases). The unit
     suites invoke Vitest with the coverage flags directly because the first
     `pnpm … test -- --coverage` form forwarded a literal `--`; Vitest then ran in
     filter mode and published no LCOV without failing, and the artifact upload
@@ -648,6 +649,31 @@ its dependent action. Read back effective settings and retain sanitized receipts
     requests timed out while building context, so it published no report and
     left no finding to disposition. Its one verified finding was the scan-job
     inventory defect described under W10, and this branch carries the fix.
+  - Clean full review at `d673956b8f` (run `34773293418`, model
+    `z-ai/glm-5.3-flash`, 24 files, coverage complete) published six medium
+    findings; all six were verified against the tree and fixed in
+    `788c8b7544`, and the trusted disposition comment records each fix. The
+    fixes: `comment-summary-in-pr: true` justifies dependency review's
+    `pull-requests: write` scope; `vitest` is pinned in lockstep with the
+    coverage provider (lockfile regenerated with `pnpm 11.5.0
+    --lockfile-only`; only in-range transitives floated); both `coverage-lcov`
+    uploads and the `ci-validation-receipt` upload set `overwrite: true` so a
+    re-run replaces its artifact instead of failing on the duplicate-name
+    check or keeping a stale `runAttempt` receipt; and `collectCoverage`
+    bounds the per-producer artifact reads and extraction, mapping a
+    malformed artifact to the new failing reasons `evidence-unreadable` and
+    `coverage-unreadable` with the other producer's verified input preserved
+    (26 unit cases, including the two aggregate-path cases). The incremental
+    review of `788c8b7544` is re-triggered and pending.
+  - Head-check state: the expected Sonar quality-gate failure is the W8
+    contract with the W0 gap. The other red checks on this branch are queue
+    or environment effects, not source defects: `build-images-status` timed
+    out waiting for a queued `build-arm` run that then passed; the
+    `test-playwright-public-pr` (8, 8) shard hit an auth-redirect race in the
+    embedding-modal spec while a hosted shard failed the same evening on
+    `v3`; Dependency Review and CodeQL repeats carried the installation
+    rate-limit signature from the 12:45Z storm and passed on earlier heads of
+    this branch.
   - Pre-existing controller limits, not introduced here: on `v3`,
     `validateStagingWorkflows` already rejects the real candidate workflows
     because `STAGING_WORKFLOWS` lists `v3_mcp-lecturer-stg.yml` and
@@ -666,6 +692,7 @@ its dependent action. Read back effective settings and retain sanitized receipts
   and the image scan cannot be proven from source alone. Expect the Sonar quality
   gate to fail this pull request while W0 and the policy decisions stay open, and
   treat the image scan as unproven until a publication run exercises it.
-- Next action: obtain authorized Sonar settings evidence for W0, then decide the
-  fork and Dependabot analysis route before any merge enforcement. Marking the
-  pull request ready for review is a separate, separately authorized step.
+- Next action: read and disposition the incremental review of `788c8b7544`
+  when it completes. The standing gates are unchanged: obtain authorized Sonar
+  settings evidence for W0, then decide the fork and Dependabot analysis route
+  before any merge enforcement.
