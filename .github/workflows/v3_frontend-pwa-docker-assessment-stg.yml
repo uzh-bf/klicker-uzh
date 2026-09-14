@@ -11,9 +11,25 @@ on:
     # so newly applicable images are built instead of keeping the old result.
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
+      # The Dockerfile runs 'turbo prune --scope=@klicker-uzh/frontend-pwa'. Only that
+      # workspace dependency closure reaches the image, so a change outside
+      # it cannot alter this build and must not trigger it.
       - 'apps/frontend-pwa/**'
-      # Any workspace package can be bundled into this image.
-      - 'packages/**'
+      - 'packages/audit/**'
+      - 'packages/doc-query-client/**'
+      - 'packages/feature-flags/**'
+      - 'packages/grading/**'
+      - 'packages/graphql/**'
+      - 'packages/hatchet/**'
+      - 'packages/i18n/**'
+      - 'packages/knowledge-graph/**'
+      - 'packages/markdown/**'
+      - 'packages/next-config/**'
+      - 'packages/prisma/**'
+      - 'packages/shared-components/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
+      - 'packages/word-cloud/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
@@ -21,7 +37,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.dockerignore'
-      - '.github/workflows/v3_frontend-pwa**'
+      - '.github/workflows/v3_frontend-pwa-docker-assessment-stg**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
