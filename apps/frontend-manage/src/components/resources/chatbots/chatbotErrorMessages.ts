@@ -137,7 +137,14 @@ export function getChatbotMutationErrorKey(
  * The message a server-side validation error carries. The custom-mode section
  * names the offending field in that message, so it shows the message itself
  * instead of the generic invalid-input notice.
+ *
+ * Only validation errors describe a fixable field. Network, transport and
+ * server failures carry technical text ("Failed to fetch", a status line) that
+ * belongs in the localized fallback rather than in front of the lecturer, so
+ * this returns undefined for them.
  */
 export function getChatbotGraphQLErrorMessage(error: unknown) {
+  if (getGraphQLErrorCode(error) !== 'BAD_USER_INPUT') return undefined
+
   return getGraphQLErrorMessage(error)
 }
