@@ -108,6 +108,8 @@ vi.mock('@/src/services/credits', () => ({
 
 vi.mock('@/src/services/accountUsage', () => {
   return {
+    CHAT_MODEL_UNAVAILABLE_ADVANCED: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    CHAT_MODEL_UNAVAILABLE_BASE: 'CHAT_MODEL_UNAVAILABLE_BASE',
     CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
     ChatTurnConflictError: mocks.ChatTurnConflictError,
     claimChatTurn: mocks.claimChatTurn,

@@ -154,7 +154,7 @@ function createChatbot(
       },
     ],
     modelSelection: false,
-    owner: { aiFeaturesEnabled: true },
+    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'KST-1' },
     ownerId: 'owner-id',
     standardModeConfig: defaultStandardModeConfig,
     systemPrompts: { tutor: 'Tutor instructions' },
@@ -264,6 +264,64 @@ describe('POST owner preview chat', () => {
     expect(mocks.getModelsForChatbot).not.toHaveBeenCalled()
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getChatModel).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  it('refuses an advanced model for an account without a cost center', async () => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({
+        modelSelection: true,
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+    setRequestOptions({
+      selectedMode: 'tutor',
+      selectedModel: 'advanced-model',
+    })
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  it('still previews a base model without a cost center', async () => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  it('refuses a base model for an account without AI approval', async () => {
+    mocks.findChatbot.mockResolvedValue(
+      createChatbot({
+        owner: { aiFeaturesEnabled: false, aiChatbotCostCenter: 'KST-1' },
+      })
+    )
+
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Account AI approval is required for preview',
+    })
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
