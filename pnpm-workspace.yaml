@@ -87,6 +87,19 @@ overrides:
   'deepmerge-ts@>=7.0.0 <8.0.0': 8.0.0
   'nodemailer@>=6.0.0 <9.1.0': 9.1.0
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
+  # Image-scan remediation (2026-09-15): backend-docker image advisories, same
+  # class as the 2026-09-14 batch — lift only the vulnerable lines to their
+  # published fixes.
+  'brace-expansion@>=1.0.0 <1.1.18': 1.1.18
+  'brace-expansion@>=2.0.0 <2.1.4': 2.1.4
+  'brace-expansion@>=5.0.0 <5.0.9': 5.0.9
+  'ip-address@>=10.0.0 <10.3.1': 10.3.1
+  'lodash@>=4.17.0 <4.18.1': 4.18.1
+  'tmp@>=0.2.0 <0.2.7': 0.2.7
+  # The next-intl peer-context hash includes @babel/core; a 7.28.3/7.28.6 split
+  # gave packages/shared-components and the frontends different translation
+  # contexts. Consolidate the patch line so every importer resolves one copy.
+  '@babel/core@>=7.28.0 <7.29.0': 7.28.6
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
