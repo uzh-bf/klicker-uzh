@@ -62,9 +62,37 @@ async function runHostCommand(
       env: { PATH: process.env.PATH, HOME: process.env.HOME, ...environment },
     })
     return stdout.trim()
-  } catch {
-    throw new Error(`Local ${command} operation failed; output withheld.`)
+  } catch (error) {
+    throw new Error(
+      `Local ${command} operation failed${boundedFailure(error)}; output withheld.`
+    )
   }
+}
+
+// Devrouter failures are local operational facts, not secrets. Forward the
+// final stderr line with long identifiers and credential-like values redacted
+// so a withheld failure still names its reason.
+function boundedFailure(error) {
+  const details = []
+  if (typeof error?.code === 'number') details.push(`exit ${error.code}`)
+  else if (typeof error?.code === 'string' && error.code)
+    details.push(error.code)
+  if (error?.signal) details.push(`signal ${error.signal}`)
+  const stderr = typeof error?.stderr === 'string' ? error.stderr : ''
+  const line = stderr
+    .split('\n')
+    .map((row) => row.trim())
+    .filter(Boolean)
+    .pop()
+  if (line) {
+    details.push(
+      line
+        .replace(/(sk|pk)[-_][A-Za-z0-9._-]+/g, '<redacted>')
+        .replace(/[A-Za-z0-9+/_-]{40,}/g, '<redacted>')
+        .slice(0, 240)
+    )
+  }
+  return details.length ? ` (${details.join('; ')})` : ''
 }
 
 function readDocker(args) {

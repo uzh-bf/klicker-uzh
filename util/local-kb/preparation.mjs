@@ -1894,7 +1894,7 @@ async function stopInfrastructure(
   const retrievalEnvironment = await readOwned(
     join(runtime.directory, 'retrieval-environment.json')
   )
-  await observeProviderLaunchers(
+  const preStop = await observeProviderLaunchers(
     config,
     runProvider,
     environment,
@@ -1902,6 +1902,12 @@ async function stopInfrastructure(
   )
   const commands = providerCommands(config)
   for (const name of commands.stopOrder) {
+    if (
+      name === 'retrieval' &&
+      preStop.find((row) => row.provider === name)?.neverStarted
+    ) {
+      continue
+    }
     await runProvider(commands.providers[name].lifecycle.stop, {
       ...(name === 'retrieval' ? retrievalEnvironment : {}),
       ...environment,
@@ -2105,9 +2111,10 @@ async function launchInfrastructure(
       aiQualified: false,
       providerWorkerActivationRequested: true,
     }
-  } catch {
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
     throw new Error(
-      `Infrastructure startup failed at ${stage}; partial state is retained and output withheld.`
+      `Infrastructure startup failed at ${stage}: ${reason}; partial state is retained and output withheld.`
     )
   }
 }

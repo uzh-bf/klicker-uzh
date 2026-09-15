@@ -53,9 +53,16 @@ test('AI credentials reach only the explicit managed startup environment', async
   assert.equal(captured.length, 2)
   await assert.rejects(
     runLocalManaged(args, 'openrouter', async () => {
-      throw new Error(sentinel)
+      throw Object.assign(new Error('ignored'), {
+        code: 1,
+        stderr:
+          "synthetic-private-value\nError: Container 'abc123' does not belong to the exact worktree.",
+      })
     }),
-    { message: 'Local devrouter operation failed; output withheld.' }
+    (error) =>
+      error.message.includes('exit 1') &&
+      error.message.includes('does not belong to the exact worktree') &&
+      !error.message.includes('synthetic-private-value')
   )
   for (const environment of [
     {},
