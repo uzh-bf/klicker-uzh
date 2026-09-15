@@ -740,3 +740,46 @@ its dependent action. Read back effective settings and retain sanitized receipts
   fix is proven by the controller validation suite (29 cases, including the
   real-file workflow contract) rather than by a publication run. The first
   `v3` or `v3-*` push after the fix is the acceptance run.
+
+### Image-scan remediation — 2026-09-14
+
+- W5 acceptance reached: with `TRIVY_PLATFORM=linux/arm64` live, both scan jobs
+  produced an immutable-digest report and receipt on the `v3` head
+  `d8e52d63f5`
+  ([run 34851061155](https://github.com/uzh-bf/klicker-uzh/actions/runs/34851061155)).
+  The receipt recorded architecture `linux/arm64`, digest
+  `sha256:1c0ea15abefa1b9393afe516982f7f4a849c8266fd7999b482e950b0b35c0c90` and
+  engine `v0.74.0`. The platform defect recorded above is closed.
+- The scans then failed on their final step, `Enforce the fixable HIGH/CRITICAL
+  policy`: the backend image carried 60 fixable HIGH/CRITICAL findings across 26
+  packages and the migrator image 12 across 8. Both image builds passed, so a
+  `v3` push still reported a red `build-images-status`, and `v3-audit`
+  promotion would inherit the same failure once `v3` merged into it.
+- Where the findings came from: the pinned `node:24.16.0-alpine` tag carried
+  openssl `3.5.7-r0` and an npm whose vendored tree held the CRITICAL `tar`
+  `7.5.13` plus `undici`, `brace-expansion`, `ip-address`, `sigstore` and
+  `pacote`; the images' own pnpm `11.5.0` carried the same class of vendored
+  advisories; and the workspace still resolved below-fix versions of `next`,
+  `nodemailer`, `axios`, `sharp`, `ws`, `validator`, `mysql2`,
+  `deepmerge-ts`, `@grpc/grpc-js` and `@opentelemetry/propagator-jaeger`,
+  among others.
+- Remediation shipped as one package: base tag `node:24.21.0-alpine`;
+  `apk upgrade --no-cache` plus `npm@11.19.1` in every Dockerfile build stage;
+  the toolchain pin moved to pnpm `11.25.0` in `package.json`, the CI
+  workflows and actions, the devcontainer and all Dockerfiles; range-scoped
+  `overrides` in `pnpm-workspace.yaml` for every remaining below-fix transitive
+  dependency; and npm overrides for `mysql2`/`deepmerge-ts` in the migrator's
+  standalone Prisma install, which no Prisma release fixes yet. Three pins cross
+  a major because the advisory has no fix inside the older line (`nodemailer`,
+  `deepmerge-ts`, `@opentelemetry/propagator-jaeger`); each is commented as
+  such in `pnpm-workspace.yaml`.
+- Consequence to expect in review: adding overrides invalidates the resolved
+  graph, so pnpm regenerated `pnpm-lock.yaml` wholesale (~2.8k changed lines)
+  instead of only the overridden entries. The unrelated patch-level moves in that
+  diff are that re-resolution, not a deliberate dependency upgrade.
+- Local acceptance, run offline with the same engine, flags and policy script as
+  CI: the migrator image built for `linux/arm64` and scanned to **0**
+  HIGH/CRITICAL findings, and the backend image built and scanned to **0** as
+  well. `image-scan-receipt.cjs check` passes for both reports. The
+  receipt-level proof still comes from the first `v3` or `v3-*` push after this
+  package merges, because the scan jobs are gated to non-pull-request events.

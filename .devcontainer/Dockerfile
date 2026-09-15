@@ -1,7 +1,7 @@
 # Dev container image for klicker-uzh (monorepo).
 # glibc base (bookworm) for painless Prisma/esbuild/sharp native binaries — the
 # prod images can stay Alpine, the dev image favors fewer surprises. (GOTCHAS #7)
-FROM node:24.16.0-bookworm-slim
+FROM node:24.21.0-bookworm-slim
 
 ENV PNPM_HOME="/pnpm" \
     PATH="/pnpm:$PATH" \
@@ -22,7 +22,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.12 /uv /uvx /bin/
 
 # Install pnpm with npm (not corepack — signature verification can fail on a
 # pinned Node). Mirror the repo's packageManager pin. (GOTCHAS #8)
-RUN npm install -g pnpm@11.5.0
+RUN npm install -g pnpm@11.25.0
 
 # Use a stable path for the machine-local store mounted by Compose. (GOTCHAS #9)
 RUN pnpm config set store-dir "$PNPM_HOME/.pnpm-store"

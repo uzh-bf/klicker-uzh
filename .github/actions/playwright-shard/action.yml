@@ -66,7 +66,7 @@ runs:
     - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 11.5.0
+        version: 11.25.0
         run_install: false
 
     - name: Compute cache contract

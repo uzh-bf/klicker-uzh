@@ -78,7 +78,7 @@ Per-commit workflows: required `check` (one install covering format, syncpack,
 lint, schema and guide drift, incremental builds and types, plus advisory Knip)
 and required `check-gitleaks`. Branch protection binds both contexts to GitHub
 Actions and no longer requires the former split check jobs. The Node/pnpm
-workflow uses pnpm 11.5.0, pins Node 24 via the root Volta configuration
+workflow uses pnpm 11.25.0, pins Node 24 via the root Volta configuration
 (`package.json`), and uses the Turbo remote cache; `check-gitleaks` is a
 standalone secret scan that installs the Gitleaks binary directly and needs
 neither Node nor pnpm.

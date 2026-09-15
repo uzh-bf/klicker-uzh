@@ -1,5 +1,12 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:24.21.0-alpine AS base
 
+# The pinned Node tag ships Alpine packages and an npm whose vendored dependency
+# tree carry fixable HIGH/CRITICAL advisories (openssl 3.5.7, tar, undici,
+# brace-expansion, ip-address). "apk add" never upgrades a package that the base
+# image already installed, so the OS packages and npm are upgraded explicitly.
+# Every stage inherits this layer, including the scanned runtime image.
+RUN apk upgrade --no-cache \
+ && npm i -g --ignore-scripts npm@11.19.1
 
 FROM base AS deps
 WORKDIR /app
@@ -7,7 +14,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@11.25.0 turbo@2.10.11
 
 COPY . .
 
@@ -20,7 +27,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@11.25.0 turbo@2.10.11
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -38,7 +45,7 @@ WORKDIR /app
 
 ARG NODE_ENV="production"
 
-RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@11.25.0 turbo@2.10.11
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
