@@ -228,6 +228,41 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 
 ## Progress
 
+- 2026-09-15 (S4 STG deployed, real-video proof pending): the producer revision is live on
+  STG. klicker-uzh-video-ai PR #123 squash-merged to `main` as `1ef6a0b7` and the digest
+  promotion merged as PR #124 -> `b3cfa52a`; `checks`, `package` and
+  `hatchet-worker-smoke` are green at that head. The promotion replaced the API digest
+  `sha256:c434651396a513314bd3a6b12e2301581e64668b7ca14ef2b13c3463ae5579af` with
+  `sha256:c33ddcb12f29f6cfa626453744c0c9503b2b3adf23b61b8c2a01b29124723409` and the worker
+  digest `sha256:e0896e52bb3f7c14e90703a021c73a7b0a5afe7892221419f681557f05ffc669` with
+  `sha256:27a3bacdc8acff26b3a2ca31270cc5ca9fb46d33b4a1e00e49012f5a87ddd819`. ArgoCD
+  `app-video-processing` (namespace `argo`) synced to `b3cfa52a` and all three Deployments
+  carried the new digests; the worker ConfigMap already named
+  `/opt/ingestion-policies/informatik_und_wirtschaft_hs26_eligibility_v1.json`, so no config
+  change was needed. The rollout then exposed an unwritten STG prerequisite: the STG database
+  predates the migration ledger and the first API pod crash-looped with
+  `SchemaMigrationRequired`, because the documented `video-processing-migrate` deployment step
+  had never been run on STG (PRD carries the same gap). Migration v1
+  `video-processing-initial-schema` (checksum `435bdcfbd40909d07dcce2de5aa76e3bf04bf7bf3c43631c6e75ea04b7088367`)
+  is additive-only and idempotent; a values-free readback first confirmed every table, all 32
+  job columns, all 15 reservation columns and all 7 indexes already existed, so applying it
+  recorded only the ledger row and left the 65 existing jobs intact. The API pod then reached
+  1/1 Running. The one-recording proof is *not* done: the user-supplied cluster tunnel dropped
+  mid-run (`localhost:6443` and the STG database forward both refuse connections), and the
+  artifact readback needs cluster access because the STG blob endpoint resolves only inside the
+  cluster. The deployed API is reachable over its public ingress
+  (`https://video.ai.stg.df-app.ch/health` -> 200; `/jobs` without a key -> 401), so the run
+  resumes as soon as the tunnel returns. PRD promotion stays gated on that proof.
+- 2026-09-15 (STG API-key name drift, open): the STG Infisical project `video-processing`
+  (environment `stg`) stores the service credential as `VIDEO_PROCESSING_API_KEY2`; there is
+  no `VIDEO_PROCESSING_API_KEY` at that path. Both df-cloud's STG ExternalSecret mapping
+  (`src/apps/klicker/functions.ts`, `convertExternalSecret('api-key',
+  'VIDEO_PROCESSING_API_KEY')`) and the local `rs-infisical-operator` profile
+  `video-processing-stg` name the unsuffixed key, so operator injection returns HTTP 404 and
+  the intended key path is unavailable. PRD's project has the unsuffixed name and matches its
+  mapping. Whether the STG ExternalSecret is currently syncing or holding an older value needs
+  a cluster readback; the running API enforces a non-empty key, so the Secret carries one. Values
+  were never read or printed: the finding rests on names, environments and timestamps only.
 - 2026-09-15 (S3 STG delivered): the serving side is live on STG with per-stage receipts.
   `ingestion_stg_manifest_validate` had been red on `main` since `fe68f4a9`
   doubled the STG durable-control slots to 16 without updating either
