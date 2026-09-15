@@ -2050,6 +2050,19 @@ async function launchInfrastructure(
       retrievalEnvironment
     )
     if (prepared.some((row) => !row.prepared)) throw new Error()
+    // A provider whose own status reports an internally inconsistent recorded
+    // process set refuses its start verb until that set is stopped. Reconcile
+    // only that case, and only through the provider's own stop: retained data,
+    // consumer containers and healthy-but-unready providers are untouched.
+    for (const name of commands.stopOrder) {
+      const row = prepared.find((item) => item.provider === name)
+      if (row?.inconsistent !== true) continue
+      stage = `provider ${name} reconciliation`
+      await runProvider(commands.providers[name].lifecycle.stop, {
+        ...(name === 'retrieval' ? retrievalEnvironment : {}),
+        ...environment,
+      })
+    }
     for (const name of ['scraping', 'docProcessing']) {
       stage = `provider ${name} start`
       await runProvider(commands.providers[name].lifecycle.start, environment)

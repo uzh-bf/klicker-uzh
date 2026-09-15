@@ -57,6 +57,8 @@ function ElementEditForm({
   inputsDisabled = false,
   templateId,
   preserveDraftOnDismiss = false,
+  tagInput,
+  hasUnsavedChanges = false,
   onClose,
   onSuccess,
   mode,
@@ -84,6 +86,8 @@ function ElementEditForm({
   templateId?: string
   // flag to preserve dirty drafts when the modal is dismissed (creation only)
   preserveDraftOnDismiss?: boolean
+  tagInput?: ReactNode
+  hasUnsavedChanges?: boolean
   // modal state props
   onClose: () => void
   onSuccess: () => void
@@ -154,7 +158,7 @@ function ElementEditForm({
   const requestClose = useCallback(() => {
     const formikContext = formikRef.current
 
-    if (discardChangesPrompt && formikContext?.dirty) {
+    if (discardChangesPrompt && (formikContext?.dirty || hasUnsavedChanges)) {
       setDiscardChangesOpen(true)
       return
     }
@@ -199,6 +203,7 @@ function ElementEditForm({
     onClose()
   }, [
     discardChangesPrompt,
+    hasUnsavedChanges,
     onClose,
     preserveDraftOnDismiss,
     setAutoSavedElement,
@@ -311,6 +316,7 @@ function ElementEditForm({
                   <div className="flex-1">
                     <Form className="w-full" id="question-manipulation-form">
                       <ElementInformationFields
+                        tagInput={tagInput}
                         isTemplate={isTemplate}
                         elementId={elementId}
                         inputsDisabled={inputsDisabled}
