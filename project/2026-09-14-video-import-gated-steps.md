@@ -2,7 +2,11 @@
 
 Parent plan `project/2026-09-14-course-chatbot-video-import-plan.md`, slices S1 and S2. Drafted 2026-09-14 on
 branch `rs/course-video-import-plan`. Status 2026-09-15: S1 executed on STG only (MR !581, merge `8c0c01e266`,
-`app-up` changed the `backend-graphql` ExternalSecret alone); PRD and S2 onward are not started.
+`app-up` changed the `backend-graphql` ExternalSecret alone); S3 is delivered on STG (deployment MR !878 ->
+`9a106c0d5a`, pins MR !877 -> `661c716e`, doc-query v0.13.0). S4 item 1-2 is done: the producer merged
+(`1ef6a0b7`), the STG digests were promoted (PR #124 -> `b3cfa52a`) and the one-recording proof passed on STG
+(job `stg-ingestion-source-proof-20260915`, published `ingestion_source.json`, policy digest verified against
+the tracked descriptor). S4 item 3 (PRD promotion) onward, and S2, remain not started and separately gated.
 
 ## Correction: the `KB` row uses `authType = 'bearer'`
 
