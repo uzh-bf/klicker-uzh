@@ -294,6 +294,7 @@ describe('course enrollment authorization', () => {
         ownerId,
         name: 'Synthetic deleted course',
         displayName: 'Deleted course',
+        pinCode: Math.floor(Math.random() * 900000000) + 100000000,
         authType: CourseAuthType.PIN,
         startDate: new Date(),
         endDate: new Date(),
