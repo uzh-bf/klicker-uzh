@@ -129,7 +129,7 @@
     "node": "=24"
   },
   "volta": {
-    "node": "24.16.0",
+    "node": "24.21.0",
     "pnpm": "11.5.0"
   },
   "packageManager": "pnpm@11.5.0"
