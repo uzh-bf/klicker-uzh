@@ -621,13 +621,19 @@ export async function setAiFeatures(
     })
     if (existingBudget) return
 
-    await prisma.chatAccountUsage.create({
-      data: {
-        ownerId: targetUser.id,
-        usageClass: DB.ChatUsageClass.BASE,
-        monthStart,
-        budgetCredits: DEFAULT_BASE_CHAT_BUDGET_CREDITS,
-      },
+    // The write is duplicate-tolerant because a concurrent enable for the same
+    // owner passes the check above too. Without it the composite key turns the
+    // second insert into a P2002 that would roll back the entitlement update.
+    await prisma.chatAccountUsage.createMany({
+      data: [
+        {
+          ownerId: targetUser.id,
+          usageClass: DB.ChatUsageClass.BASE,
+          monthStart,
+          budgetCredits: DEFAULT_BASE_CHAT_BUDGET_CREDITS,
+        },
+      ],
+      skipDuplicates: true,
     })
   })
   await sendTeamsNotification({
