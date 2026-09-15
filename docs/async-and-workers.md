@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-09-02'
+timestamp: '2026-09-05'
 tags:
   - backend
   - hatchet
@@ -26,6 +26,76 @@ Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatche
 
 Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setupClient`): `HATCHET_CLIENT_HOST_PORT` for gRPC worker and event traffic, and `HATCHET_API_URL` for HTTP API operations such as programmatic scheduled runs. Both must target the same Hatchet installation. A healthy worker proves only the gRPC path; publication and delayed aggregation can still fail if the HTTP URL points to a retired service.
 
+## Worker runtime contract
+
+Each worker pod owns a separate Hatchet identity and slot budget. The slot
+values are per pod, not deployment-wide totals. The base chart defines the
+shared runtime defaults; the STG/PRD overlays only override values that differ
+by environment. The merged values render into the worker-specific ConfigMaps.
+
+| Mode             | Worker name                                    | Non-durable slots | Durable slots | Workflow collection                                             |
+| ---------------- | ---------------------------------------------- | ----------------: | ------------: | --------------------------------------------------------------- |
+| General          | `hatchet-worker-general`                       |               100 |          1000 | `HATCHET_WORKFLOWS` selection, defaulting to all prepared tasks |
+| Regular response | `hatchet-worker-response-processor`            |               100 |          1000 | Authenticated and anonymous response processing                 |
+| Assessment       | `hatchet-worker-response-processor-assessment` |               100 |          1000 | Assessment response processing and aggregation                  |
+
+These explicit values preserve the effective defaults of the pinned Hatchet
+TypeScript SDK 1.9.4: 100 non-durable slots and 1000 durable slots per pod.
+W2 therefore makes no capacity reduction or throughput claim. W3 must measure
+queue depth, task duration, retries, and resource consumption before changing
+these values or deriving KEDA targets.
+
+The response processor selects regular versus assessment mode from
+`ASSESSMENT_MODE === 'true'`. `HATCHET_WORKER_NAME` is a per-deployment
+override: never provide one shared value to both response processor
+Deployments, because the mode-specific identities preserve their distinct
+capacity contracts. The other runtime settings are `HATCHET_WORKER_SLOTS`,
+`HATCHET_WORKER_DURABLE_SLOTS`, `HATCHET_WORKER_HEALTH_PORT`, and
+`HATCHET_WORKER_STARTUP_TIMEOUT_MS`.
+
+During a rolling replacement, queued work routed to the former shared
+assessment identity may need the normal Hatchet retry or replay path. W2 does
+not migrate live assignments between worker identities.
+
+The general worker keeps its existing `HATCHET_WORKFLOWS` selection. Unknown
+keys are warned about and filtered; an unset or empty value selects all
+prepared tasks. The response processor keeps the exact regular and assessment
+workflow collections declared in
+`apps/hatchet-worker-response-processor/src/index.ts`.
+
+## Health and termination
+
+The shared runtime in `packages/hatchet/src/worker-runtime.ts` serves two local
+HTTP endpoints. General workers use port 8001, regular-response workers use
+8002, and assessment workers use 8003 by default:
+
+- `/healthz` is the liveness endpoint. It returns 200 while the process is
+  starting, ready, or draining, and 503 after a fault or stop.
+- `/readyz` is the intake-readiness endpoint. It returns 200 only in the ready
+  state and 503 while starting, draining, faulted, or stopped.
+
+On `SIGTERM` or `SIGINT`, the runtime first enters `draining`, which makes the
+pod unready before the SDK termination path runs. `/readyz` is a rollout and
+observability signal; it is not an independent Hatchet intake control. The
+actual intake boundary is the pinned SDK's listener-unregister path while it
+finishes its stop sequence. Kubernetes gives each worker 90 seconds through
+`terminationGracePeriodSeconds`; if the SDK does not finish within that
+window, the platform may terminate the process and the workflow system's retry
+behavior must make the work safe to retry. W2 makes no exactly-once claim.
+
+The Helm chart maps `/healthz` to liveness and `/readyz` to readiness for all
+three worker Deployments. A startup failure can close the health server in the
+same turn that it marks the process faulted, so a probe is not guaranteed to
+observe the transient fault response before the process exits.
+
+Worker PodDisruptionBudgets are explicit per environment. Staging sets
+`minAvailable: 0` for all three single-replica workers, so a voluntary node
+drain can evict them without a PDB deadlock; this provides no worker
+availability guarantee during that disruption. Production keeps one general
+worker and two regular-response and assessment workers available. The base
+chart defaults all three worker budgets to one. These values do not change
+replica ownership or replica counts.
+
 ## Response ingest (`apps/response-api`)
 
 Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
@@ -39,7 +109,11 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
 - `aggregateAssessmentResponsesTask` — keyed by `instanceId`
 
-`apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
+`apps/hatchet-worker-general` (`src/index.ts`) selects workflows via the
+`HATCHET_WORKFLOWS` env var. It defaults to all workflows and ignores unknown
+keys with a warning. The KB integration gates are applied after this optional
+allow-list, so an explicitly requested but disabled KB workflow is still not
+registered:
 
 - `create-audit-log-entry` (event-driven)
 - `process-course-duplication` — async course duplication worker implemented by `packages/graphql/src/services/courseDuplication.ts`. A task-local constant concurrency bucket allows one running duplication globally and queues additional duplication jobs for up to 60 minutes with group round-robin scheduling; unrelated Hatchet tasks retain their own concurrency. The GraphQL mutation stores job state in Redis and returns a job id; it retries an ambiguous Hatchet event publication with the same job id, and republishes an existing pending job on a later mutation retry, so a lost acknowledgement cannot open a second copy or strand the job. Each attempt allows 30 minutes, above the ten-minute database transaction limit, and waits 60 seconds before the first retry so a crashed worker's lease can expire. The worker uses a renewable, token-checked process lease plus a separate 120-second heartbeat key refreshed on the same cadence; rethrows generic failures for Hatchet retries; and records only access or partial-copy failures as terminal. Stale-job normalization (`COURSE_DUPLICATION_STALE_AFTER_MS`, currently 75 minutes — 15 minutes beyond the queue timeout) only fires when the record is old **and** no fresh heartbeat exists, then reconciles against Postgres before declaring failure: because a running attempt refreshes the record before starting and the copied course carries the job id as its primary key, live or committed work is not misclassified as a stale failure. Terminal records strip the stored mutation payload (including any notification email) and identity fields for the remainder of their TTL. A scheduled sweep (`sweep-stale-course-duplications`, every 5 minutes) normalizes abandoned jobs server-side, so recovery no longer depends on a user polling. The manage frontend polls `courseDuplicationStatuses` until the job completes or fails, then shows a localized action to open the copied course without navigating automatically.
@@ -48,6 +122,54 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
+
+## Knowledge-base ingestion
+
+`packages/hatchet/src/index.ts:prepareHatchetTasks` registers six local workflows:
+
+- `ingest-kb-resource` accepts the selected resource, version, and attempt identifiers, prepares the exact source bytes, then calls `packages/hatchet/src/kbIngestion.ts:dispatchKBIngestion`. Dispatch awaits `POST /v1/resources`, stores the returned operation identifier, and reuses the same version, digest, source URL, and idempotency key when an attempt is retried. Source identity and accepted-operation correlation update `KBResource` and its `KBIngestionRun` in one transaction.
+- `monitor-kb-ingestions` is an overdue-delivery fallback for the signed webhook path. Every five minutes, `packages/hatchet/src/kbIngestion.ts:monitorActiveKBIngestions` selects timestamped operations accepted at least five minutes earlier. A legacy or interrupted row that has an external operation id but no recorded start timestamp is eligible immediately so it cannot remain unmonitored. The task rotates through at most 32 eligible operations, polls `GET /v1/operations/{operation_id}` eight at a time, and applies only responses matching the local operation, resource version, and content digest. Operation state, safe error details, and active serving identity update atomically. A succeeded replacement remains `PROCESSING` with a `SUCCEEDED` run while an older version is serving; it becomes `READY` only when the observed digest and actively serving version/digest match.
+- `delete-kb-resource` sends the exact canonical `DELETE /v1/resources/{external_resource_id}` request with the delete-run UUID as its stable idempotency key. Polling and webhooks fence that attempt as `DELETE`, require `expected_sha256=null`, and consider the tombstone served only when both active serving fields are null.
+- `maintain-kb-resources` runs every 15 minutes with one active run. Each pass handles at most 32 items per class and at most eight concurrently: re-dispatching a live `QUEUED` UPSERT that is at least one maintenance interval old and still has no external operation id; re-enqueuing a `QUEUED` graph build that is equally stale and carries neither an external operation id nor a dispatch claim; retrying undispatched tombstones with their stable attempt; starting a freshly fenced attempt after a terminal external delete failure; removing expired unconfirmed uploads after the 24-hour grace; retiring the FalkorDB graph of a build that is neither active nor published after the 24-hour graph grace, keeping the GraphML export of any build that produced one; purging every remaining GraphML export and graph of a knowledge base 30 days after it was deleted; deleting confirmed blob storage only after the current external delete succeeded; hard-deleting those resource rows; and finally removing empty pending KBs that never built a graph. UPSERT recovery reuses the stored `ingestionAttemptId`, so the external Idempotency-Key stays stable whether the earlier process crashed before or after acceptance. The bounded windows rotate on each schedule slot so retained failures cannot starve later rows, and dispatch setup failures do not stop independent storage or row cleanup. Storage or API failures retain the exact ticket or tombstone for another pass (`packages/hatchet/src/kbMaintenance.ts:maintainKBResources`).
+- `build-kb-knowledge-graph` rechecks the global graph kill switch, the persisted per-KB opt-in, and a complete cost reservation at the worker effect boundary before dispatching the active KB's immutable source manifest to the external graph workflow. It first records a conditional durable dispatch claim. A queued build that fails those gates is failed closed, releases an ordinary reservation, or holds an incomplete legacy reservation for human review; if the provider accepts a run but its id cannot be correlated and persisted, the claim keeps the reservation and active KB build slot in `NEEDS_HUMAN_REVIEW` and prevents a duplicate external start. A later retry of the same build asks the provider before parking it again, but only once the dispatch claim is older than a 15-minute in-flight grace: inside that window a duplicate task run leaves the build untouched, because a sibling attempt may still be inside the provider call and "no run yet" is not evidence that no run will start. Past the grace, a recovered run is correlated, a definitive "no run for this build id" is released as an ordinary `KB_GRAPH_DISPATCH_FAILED` that frees the quota and the slot, and only an unanswered lookup keeps the hold. The worker correlates the returned run id and never publishes an unverified graph or artifact path.
+- `monitor-kb-graph-builds` runs every minute, rotates through at most 32 active builds per tick, and polls at most eight concurrently. Every provider status, result, cancellation, and ambiguity-recovery call has a ten-second deadline, so one stalled provider call cannot overrun the sweep or block independent builds; a call timeout aborts its underlying request before the concurrency slot is reused and leaves the correlated build fenced for the next tick. The monitor cancels build-timeout runs and requires a versioned terminal-result callback before settlement or publication. Provider `COMPLETED` is not sufficient. A missing callback or malformed result clears the active slot without moving the published pointer and holds the reservation as `NEEDS_HUMAN_REVIEW`; a valid non-success result with metering settles actual usage without publishing, while a non-success result without metering releases only an ordinary `RESERVED` build. A late success after a timeout is reconciled under KB and serving-resource locks: it can reclaim the slot and publish only when no newer build exists and the pinned source digest still matches; stale or superseded late results settle metered usage without publication. A malformed or late failure result remains held and every callback still passes the same identity, artifact, currency, counter, and metering checks.
+
+Single and bulk lecturer deletion both create their fenced runs inside the database transaction and enqueue only after commit. Bulk dispatch is bounded to eight concurrent tasks; each rejection records retry state independently so one unavailable Hatchet call cannot prevent sibling tombstones or later W5 maintenance.
+
+`ingestAllKbResources` uses the same post-commit dispatch pattern for UPSERTs. It locks the parent KB, walks non-deleted resources in stable ID order, classifies each resource from its latest desired and active serving identities, and conditionally claims eligible rows before creating their append-only runs. `QUEUED` and `PROCESSING` resources are not duplicated, and an active serving version newer than the lecturer revision is not downgraded. The mutation dispatches the claimed payloads through `ingest-kb-resource` in batches of eight; each queue rejection compensates only its still-current queued attempt with `QUEUE_DISPATCH_FAILED`. The complete-KB counts returned to Manage are informational, while the locked mutation result is authoritative.
+
+File replacement uses the same ingestion workflow without a second candidate lifecycle. A target-bound upload ticket records the expected resource version. Confirmation locks the KB, atomically makes the uploaded blob the canonical source, increments the version, creates an UPSERT run, consumes the ticket, and dispatches that run. The active serving identity remains unchanged until normal callback or polling settlement. If dispatch fails, the new canonical source remains `FAILED` and the ordinary retry action creates a fresh attempt for it. The old blob is deleted best-effort after the transaction; source-file rollback is deliberately not offered, and cleanup failure cannot undo the confirmed replacement. A resource with an unconsumed replacement ticket remains a tombstone until the existing ticket-retention sweep removes the abandoned candidate, so the restrictive relation cannot make hard-delete maintenance fail repeatedly.
+
+Operation events also return through the raw-body `/api/webhooks/kb-ingestion` route registered before end-user JWT middleware by `apps/backend-docker/src/kbHttpRoutes.ts:registerKBHttpRoutes`. `packages/graphql/src/services/knowledgeWebhooks.ts:handleKBIngestionWebhook` accepts the strict canonical event body and the four `X-Ingestion-*` headers, verifies an HMAC-SHA256 signature within the five-minute replay window against the current or previous webhook secret, then applies the same operation/version/digest correlation guards and atomic resource/run updates as polling. Client-initiated lifecycle events remain attempt-scoped. The distinct platform `resource.content_refreshed` event requires a non-null serving version/hash matching `resource_version`, locks the live resource, writes a terminal UPSERT ledger row correlated to `operation_id`, and advances only the active serving fields and `ingestedAt`; repeated delivery is deduplicated by operation ID and an older refresh is retained as `SUPERSEDED`. The owner resource list resolves its operation status through the resource's stored attempt rather than ledger timestamp order, so a refresh cannot display success over a concurrent lecturer operation. Later serving events can complete a successful replacement cutover; terminal run guards prevent delayed processing or failure events from regressing it.
+
+URL resources are registered only with public HTTP(S) destinations using ports 80 or 443 and without credentials, fragments, or secret-like query parameters. Before dispatch, every redirect hop is resolved to a public IPv4 address and fetched through that pinned address while the original public URL remains the ingestion source identity. URL sources may be PDF, plain text, or HTML; uploaded and reconstructed blobs remain PDF or plain text only. Klicker submits the original URL plus its observed MIME type, display name, and SHA-256 digest to the data-ingestion Resource API. The observed byte size remains local for quota accounting because the Resource API request has no size field. Data-ingestion owns parsing, chunking, embedding, indexing, and normal signed callback delivery. Private blobs are exposed through the authenticated backend source gateway; no Azure storage credential or SAS URL crosses the API contract.
+
+Source preparation also verifies that the task's KB id matches the resource's persisted live parent. It records the exact fetched byte size. Under a parent-KB row lock, URL replacement accounting applies `current usage - previous resource size + observed size`; an over-limit candidate becomes `FAILED` with `KB_STORAGE_LIMIT_REACHED` before any external API call. Lecturer Markdown uploads are deliberately stored as `text/plain`.
+
+The interim backend kill switch `KB_INGESTION_DISABLED=true` is checked by `packages/graphql/src/services/knowledge.ts:assertKbIngestionEnabled`. It refuses new upload tickets, URL resources, and ingestion attempts while leaving reads, deletion, cleanup, and already-queued worker reconciliation live. `KB_INGESTION_WORKER_DISABLED=true` is the separate rollout gate for the general worker: it skips ingestion configuration validation and excludes ingestion dispatch, deletion, and polling workflows while unrelated work remains registered. Resource maintenance stays registered when graph work is enabled, but suppresses external ingestion retries while preserving graph crash-window recovery and independent cleanup. When both ingestion and graph work are disabled, resource maintenance is also omitted. Close the backend gate first and let active operations drain before closing the worker gate. When the worker gate is explicitly open, partial ingestion configuration fails startup.
+
+The separate `KB_GRAPH_DISABLED=true` switch refuses graph opt-in and rebuild mutations. The general worker skips graph configuration validation, graph dispatch and monitoring registration, and graph re-enqueue from resource maintenance while this gate is closed. Resource ingestion maintenance remains registered when basic ingestion is enabled, including cleanup of retained graph artifacts. The dispatch effect also checks the graph gate before an external start, fails an unstarted queued build closed, and continues reconciling a run already accepted externally. The switch does not revoke an already published graph. Graph settings must be injected into both the GraphQL backend and the general worker.
+
+With `KB_INGESTION_WORKER_DISABLED=false`, or with any of the three required ingestion connection settings present while the gate is unset, the general worker requires `KB_INGESTION_API_URL`, `KB_INGESTION_API_KEY`, and `KB_SOURCE_GATEWAY_URL`; `KB_INGESTION_PROJECT_ID` defaults to `klicker-course-materials`. A legacy environment with the gate and all three required settings absent is treated as disabled instead of registering unusable workflows. The backend requires `KB_SOURCE_GATEWAY_KEY` and `KB_WEBHOOK_SECRET`, with optional `KB_WEBHOOK_PREVIOUS_SECRET` during webhook-key rotation. The API key, gateway key, and webhook keys are secrets and must stay outside chart ConfigMaps.
+
+KB graph builds use the separate `KB_GRAPH_HATCHET_*` connection and workflow settings plus `KB_GRAPH_TIMEOUT_SECONDS` and the named standard/high model pairs. The worker validates a partially configured graph integration at startup, then dispatches only a pinned build manifest and reconciles its external run. The GraphQL backend owns quota reservation and exposes `settleKbKnowledgeGraphResult` for the W1 terminal-result handoff; `prepareHatchetTasks` accepts the result-fetch and settlement callbacks so the worker never treats provider status as a publication contract. The production backend and general worker explicitly pass `getKBGraphTerminalResult` (the external Hatchet run output) and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; omitting either adapter is not a supported runtime composition. `KB_GRAPH_HATCHET_CLIENT_TOKEN` remains in the general-worker secret; the non-secret settings belong under `hatchet.kbGraph` in the chart values. The startup gate is armed only by the ConfigMap-owned `KB_GRAPH_*` names, deliberately excluding that token: a secret rollout on its own must never fail the general worker's startup and stop every unrelated job. Once the gate is armed the token is still required, so the secret must carry it before `hatchet.kbGraph.workflowName` is set. Graph build input URLs and generated Blob SAS values must never be logged or placed in ConfigMaps.
+
+Native graph builds canonicalize every source artifact to `${resourceId}.md`, regardless of whether the original resource was an uploaded document or a URL. `packages/graphql/src/services/questionGenerationGraph.ts:questionGenerationSourceSnapshot` must preserve that filename when preparing question-generation evidence. Artifact validation remains extension-aware and rejects the original upload or URL basename when it does not identify the graph artifact.
+
+Question and flashcard synchronization share the acquisition and token-fenced
+release functions in [elementGenerationLease.ts](../packages/graphql/src/services/elementGenerationLease.ts).
+The callers retain their status predicates, failure handling and transitions;
+the short synchronization lease does not replace the durable dispatch and
+accounting claims that fence external generation effects.
+
+Initial question and flashcard results complete through
+[elementGenerationCompletion.ts](../packages/graphql/src/services/elementGenerationCompletion.ts).
+One transaction inserts review drafts and conditionally completes the build;
+losing the lease or failing the draft-count check rolls back both operations.
+Provider-specific content conversion, accepted source states and draft-count
+rules remain distinct compatibility constraints within this shared Element
+operation. Completion creates drafts, not ordinary Elements, and does not
+settle usage or dispatch another generation run.
 
 ## Course duplication operations
 

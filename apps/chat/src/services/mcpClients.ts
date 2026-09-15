@@ -3,16 +3,18 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
 import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
+import type { AuthMode } from '@/src/lib/server/ltiGuest'
+import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import { sanitizeDocQueryResult } from './docQueryResult'
 import {
   assertDocQueryRequestScope,
   assertDocQueryTransportSecurity,
@@ -45,11 +47,53 @@ export interface MCPServerWithConfig {
   config: MCPConfigSettings
 }
 
+export interface MCPRequestContext {
+  chatbotId: string
+  participantId?: string
+  courseId?: string
+  authMode: AuthMode
+  kbIds?: readonly string[]
+  sessionId?: string
+  knowledgeGraphRetrievalEnabled?: boolean
+}
+
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
   kbIds?: readonly string[]
   sessionId?: string
 }
+
+export interface MCPToolsHandle {
+  tools: Record<string, any>
+  close: () => Promise<void>
+}
+
+const MCP_AUTHORIZATION_STATUS_CODES = new Set([401, 403])
+
+/**
+ * The MCP SDK surfaces an HTTP credentials rejection as an `UnauthorizedError`,
+ * a streamable-HTTP error carrying a numeric `code`, or a client error with
+ * `statusCode`. Those are identity or tenant boundaries rather than transient
+ * outages, so a required-tool caller must keep them fail-closed.
+ */
+function isMcpAuthorizationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  if ((error as { name?: unknown }).name === 'UnauthorizedError') return true
+
+  for (const key of ['statusCode', 'code'] as const) {
+    const value = (error as Record<string, unknown>)[key]
+    if (
+      typeof value === 'number' &&
+      MCP_AUTHORIZATION_STATUS_CODES.has(value)
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
+const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
 
 function toToolNameHash(rawName: string): string {
   return createHash('sha256')
@@ -118,32 +162,31 @@ function toSafeToolName(
 async function applyDocQueryAuthHeaders(
   headers: Record<string, string>,
   server: MCPServerConfig,
-  chatbotId: string,
-  options: MCPRequestOptions,
+  context: MCPRequestContext,
   authType: string
 ): Promise<boolean> {
   if (server.name !== DOC_QUERY_MCP_SERVER_NAME) return false
-  if (!options.kbIds || !options.sessionId) {
+  if (!context.kbIds || !context.sessionId) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
   if (authType !== 'bearer' || !server.authSecret) {
     throw new Error('Doc Query transport authentication is invalid')
   }
   if (
-    typeof options.sessionId !== 'string' ||
-    options.sessionId.trim().length === 0
+    typeof context.sessionId !== 'string' ||
+    context.sessionId.trim().length === 0
   ) {
     throw new Error('Scoped knowledge retrieval is not available')
   }
 
   assertDocQueryTransportSecurity(server.url)
 
-  const kbIds = normalizeDocQueryKbIds(options.kbIds)
+  const kbIds = normalizeDocQueryKbIds(context.kbIds)
   headers.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
   const token = await signDocQueryScopeToken({
     kbIds,
-    chatbotId,
-    sessionId: options.sessionId,
+    chatbotId: context.chatbotId,
+    sessionId: context.sessionId,
     jti: randomUUID(),
   })
   headers[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
@@ -153,26 +196,16 @@ async function applyDocQueryAuthHeaders(
 /**
  * Creates authentication headers based on server auth type
  */
-async function createAuthHeaders(
+export async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string,
-  options: MCPRequestOptions = {}
+  context: MCPRequestContext
 ): Promise<Record<string, string>> {
   const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
   }) as Record<string, string>
-
   const authType = server.authType.toLowerCase()
 
-  if (
-    await applyDocQueryAuthHeaders(
-      baseHeaders,
-      server,
-      chatbotId,
-      options,
-      authType
-    )
-  ) {
+  if (await applyDocQueryAuthHeaders(baseHeaders, server, context, authType)) {
     return baseHeaders
   }
 
@@ -180,7 +213,28 @@ async function createAuthHeaders(
   if (server.passChatbotId) {
     const raw = server.chatbotIdHeader || 'Chatbot-ID'
     const headerName = raw.replace(/[^A-Za-z0-9-]/g, '') || 'Chatbot-ID'
-    baseHeaders[headerName] = chatbotId
+    baseHeaders[headerName] = context.chatbotId
+  }
+
+  // Per-participant JWT mint for the Klicker MCP server. Identity
+  // comes from the caller's verified participant cookie, not a static
+  // shared secret, so the MCP server can apply row-level auth.
+  if (authType === 'klicker-participant-jwt') {
+    if (!context.participantId) {
+      throw new Error(
+        'Participant identity is required for participant MCP auth'
+      )
+    }
+    const token = await mintParticipantMcpJwt(
+      context.participantId,
+      context.authMode
+    )
+    baseHeaders.Authorization = `Bearer ${token}`
+    return baseHeaders
+  }
+
+  if (authType === 'scope_token') {
+    throw new Error('Scoped knowledge retrieval is not available')
   }
 
   if (!server.authSecret) {
@@ -208,7 +262,7 @@ async function createAuthHeaders(
 
         for (const [name, value] of Object.entries(parsed.headers)) {
           if (
-            !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
+            !HTTP_HEADER_NAME_PATTERN.test(name) ||
             name === '__proto__' ||
             name === 'constructor' ||
             name === 'prototype' ||
@@ -230,7 +284,6 @@ async function createAuthHeaders(
       baseHeaders.Authorization = `Basic ${encoded}`
       break
     }
-    case 'none':
     default:
       // No additional auth headers
       break
@@ -239,36 +292,71 @@ async function createAuthHeaders(
   return baseHeaders
 }
 
+function normalizeMCPRequest(
+  contextOrChatbotId: MCPRequestContext | string,
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
+): { context: MCPRequestContext; options: MCPRequestOptions } {
+  if (typeof contextOrChatbotId !== 'string') {
+    return {
+      context: contextOrChatbotId,
+      options:
+        typeof participantIdOrOptions === 'string'
+          ? {}
+          : participantIdOrOptions,
+    }
+  }
+
+  const options =
+    typeof participantIdOrOptions === 'string' ? {} : participantIdOrOptions
+
+  return {
+    context: {
+      chatbotId: contextOrChatbotId,
+      participantId:
+        typeof participantIdOrOptions === 'string'
+          ? participantIdOrOptions
+          : undefined,
+      authMode,
+      kbIds: options.kbIds,
+      sessionId: options.sessionId,
+    },
+    options,
+  }
+}
+
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
-async function createMCPClient(
+export async function createMCPClient(
   server: MCPServerConfig,
-  chatbotId: string,
-  options: MCPRequestOptions = {}
+  contextOrChatbotId: MCPRequestContext | string,
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
 
-  try {
-    const headers = await createAuthHeaders(server, chatbotId, options)
+  const { context, options } = normalizeMCPRequest(
+    contextOrChatbotId,
+    participantIdOrOptions,
+    authMode
+  )
 
-    const httpTransport = new StreamableHTTPClientTransport(
-      new URL(server.url),
-      {
-        requestInit: {
-          headers,
-          redirect: 'error',
-          ...(options.requestTimeoutMs
-            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
-            : {}),
-        },
-      }
-    )
+  try {
+    const headers = await createAuthHeaders(server, context)
 
     const client = await createSDKMCPClient({
-      transport: httpTransport,
+      transport: {
+        type: 'http',
+        url: server.url,
+        headers,
+        redirect: 'error',
+      },
+      ...(options.requestTimeoutMs !== undefined
+        ? { initializationOptions: { timeout: options.requestTimeoutMs } }
+        : {}),
     })
 
     console.log(`MCP Client for ${server.name} initialized successfully`)
@@ -308,12 +396,28 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  chatbotId: string,
-  options: MCPRequestOptions = {}
-): Promise<Record<string, any>> {
+  context: MCPRequestContext,
+  options: MCPRequestOptions
+): Promise<MCPToolsHandle> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
   let requiredRawToolName: string | undefined
+  let client: Awaited<ReturnType<typeof createMCPClient>> | undefined
+
+  const close = async () => {
+    const activeClient = client
+    client = undefined
+    if (!activeClient) return
+
+    try {
+      await activeClient.close()
+    } catch (error) {
+      console.warn('Failed to close MCP client', {
+        server: server.name,
+        errorType: error instanceof Error ? error.name : typeof error,
+      })
+    }
+  }
 
   if (runtimePolicy.required) {
     const configuredTool = config.allowedTools?.[0]
@@ -333,15 +437,39 @@ async function loadServerTools(
     if (runtimePolicy.required) {
       throw new RequiredMCPUnavailableError()
     }
-    return {}
+    return { tools: {}, close }
   }
 
   try {
     if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
-      assertDocQueryRequestScope(config.parameters, options.kbIds)
+      assertDocQueryRequestScope(config.parameters, context.kbIds)
     }
-    const client = await createMCPClient(server, chatbotId, options)
+    client = await createMCPClient(server, context, options)
     const rawTools = await client.tools()
+    if (
+      server.name === DOC_QUERY_MCP_SERVER_NAME &&
+      context.knowledgeGraphRetrievalEnabled === true
+    ) {
+      const rawName = requiredRawToolName ?? 'doc_query'
+      const tool = rawTools[rawName]
+      if (tool && typeof tool.execute === 'function') {
+        const [{ graphAssistedDocumentQuery }, { graphQueryDependencies }] =
+          await Promise.all([
+            import('./graphAssistedDocQuery'),
+            import('./graphQueryScope'),
+          ])
+        const execute = tool.execute.bind(tool)
+        rawTools[rawName] = {
+          ...tool,
+          // MCP callTool resolves one response. The SDK's generic tool type
+          // also permits streaming implementations, which this client does not use.
+          execute: graphAssistedDocumentQuery(
+            execute,
+            graphQueryDependencies(context)
+          ) as typeof execute,
+        }
+      }
+    }
 
     if (runtimePolicy.required && requiredRawToolName) {
       const rawToolName = requiredRawToolName
@@ -373,7 +501,19 @@ async function loadServerTools(
           modelToolName,
           usedNames
         )
-        filteredTools[namespacedName] = toolDefinition
+        filteredTools[namespacedName] =
+          (toolName === 'doc_query' || modelToolName === 'doc_query') &&
+          typeof toolDefinition.execute === 'function'
+            ? {
+                ...toolDefinition,
+                execute: async (
+                  ...args: Parameters<
+                    NonNullable<typeof toolDefinition.execute>
+                  >
+                ) =>
+                  sanitizeDocQueryResult(await toolDefinition.execute(...args)),
+              }
+            : toolDefinition
         usedNames.add(namespacedName)
       }
     })
@@ -381,19 +521,28 @@ async function loadServerTools(
     console.log(
       `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`
     )
-    return filteredTools
+    return { tools: filteredTools, close }
   } catch (error) {
-    if (
-      error instanceof RequiredMCPUnavailableError ||
-      runtimePolicy.required
-    ) {
+    await close()
+    if (error instanceof RequiredMCPUnavailableError) {
       console.error('Required MCP tools unavailable', { server: server.name })
-      throw new RequiredMCPUnavailableError()
+      // Preserve a scope violation raised while resolving the request so the
+      // caller cannot degrade an isolation failure into an answer.
+      throw error
+    }
+    if (runtimePolicy.required) {
+      console.error('Required MCP tools unavailable', { server: server.name })
+      // A credentials rejection from the endpoint is an identity or tenant
+      // boundary, so it stays fail-closed like a scope violation; only a
+      // genuine outage may fall through to a degraded answer.
+      throw new RequiredMCPUnavailableError(
+        isMcpAuthorizationError(error) ? 'scope_violation' : 'unavailable'
+      )
     }
 
     console.error('Optional MCP tools unavailable', { server: server.name })
     // Return empty object to allow other servers to continue loading
-    return {}
+    return { tools: {}, close }
   }
 }
 
@@ -402,14 +551,21 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string,
-  options: MCPRequestOptions = {}
-): Promise<Record<string, any>> {
+  contextOrChatbotId: MCPRequestContext | string,
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
+): Promise<MCPToolsHandle> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
+
+  const { context, options } = normalizeMCPRequest(
+    contextOrChatbotId,
+    participantIdOrOptions,
+    authMode
+  )
 
   if (serversWithConfigs.length === 0) {
     console.log('No MCP servers configured')
-    return {}
+    return { tools: {}, close: async () => {} }
   }
 
   // Sort by priority (lower number = higher priority)
@@ -419,19 +575,29 @@ export async function getAggregatedMCPTools(
 
   const aggregatedTools: Record<string, any> = {}
   const requiredToolNames = new Set<string>()
+  const serverHandles: MCPToolsHandle[] = []
+
+  let closePromise: Promise<void> | undefined
+  const close = () => {
+    closePromise ??= Promise.all(
+      serverHandles.map((handle) => handle.close())
+    ).then(() => undefined)
+    return closePromise
+  }
 
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
     try {
+      const serverHandle = await loadServerTools(
+        serverWithConfig,
+        context,
+        options
+      )
+      serverHandles.push(serverHandle)
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
       )
-      const serverTools = await loadServerTools(
-        serverWithConfig,
-        chatbotId,
-        options
-      )
-      for (const [name, def] of Object.entries(serverTools)) {
+      for (const [name, def] of Object.entries(serverHandle.tools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def
           if (runtimePolicy.required) requiredToolNames.add(name)
@@ -440,7 +606,10 @@ export async function getAggregatedMCPTools(
         }
       }
     } catch (error) {
-      if (error instanceof RequiredMCPUnavailableError) throw error
+      if (error instanceof RequiredMCPUnavailableError) {
+        await close()
+        throw error
+      }
 
       console.error(
         `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
@@ -451,46 +620,5 @@ export async function getAggregatedMCPTools(
   console.log(`Total aggregated tools: ${Object.keys(aggregatedTools).length}`)
   console.log('Available tools:', Object.keys(aggregatedTools))
 
-  return aggregatedTools
-}
-
-/**
- * Legacy function for backward compatibility with environment variables
- * @deprecated Use getAggregatedMCPTools with database configuration instead
- */
-export async function getMCPTools(chatbotId: string) {
-  console.log(' Using legacy MCP configuration from environment variables')
-
-  const mcpKey = process.env.MCP_KEY
-  const mcpUrl = process.env.MCP_URL
-
-  if (!mcpUrl) {
-    console.log('No MCP_URL environment variable found, returning empty tools')
-    return {}
-  }
-
-  // Create a legacy server configuration
-  const legacyServer: MCPServerConfig = {
-    id: 'legacy-env-server',
-    name: 'Legacy_MCP',
-    url: mcpUrl,
-    authType: mcpKey ? 'bearer' : 'none',
-    authSecret: mcpKey,
-  }
-
-  const legacyConfig: MCPConfigSettings = {
-    allowedTools: undefined, // No filtering for legacy mode
-    priority: 0,
-  }
-
-  try {
-    const serverTools = await loadServerTools(
-      { server: legacyServer, config: legacyConfig },
-      chatbotId
-    )
-    return serverTools
-  } catch (error) {
-    console.error('Failed to load legacy MCP Tools:', error)
-    return {}
-  }
+  return { tools: aggregatedTools, close }
 }

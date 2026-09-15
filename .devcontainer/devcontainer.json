@@ -15,10 +15,12 @@
   "runServices": [
     "app",
     "postgres",
+    "mcp_postgres",
     "redis_exec",
     "redis_assessment",
     "redis_cache",
     "mailhog",
+    "azurite",
     "hatchet",
     "litellm"
   ],

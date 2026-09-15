@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.4.0-alpha.75",
+  "version": "3.4.0-alpha.76",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -83,6 +83,7 @@
     "script:prod": "../../util/_run_with_infisical.sh --env prd tsx",
     "start": "node -r dotenv/config dist/index.js",
     "start:test": "nyc --silent node -r dotenv/config --import ./scripts/playwright-feature-flags.mjs dist/index.js",
+    "test": "tsx --test test/*.test.ts",
     "test:run": "tsx --test \"src/**/*.test.ts\""
   },
   "engines": {

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
-const transportConstructorMock = vi.hoisted(() => vi.fn())
 const clientToolsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
@@ -17,17 +16,6 @@ vi.mock('@klicker-uzh/util', () => ({
   safeDecrypt: (value: string) => value,
 }))
 
-vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
-  StreamableHTTPClientTransport: class {
-    constructor(
-      readonly url: URL,
-      readonly options: { requestInit: { headers: Record<string, string> } }
-    ) {
-      transportConstructorMock(url, options)
-    }
-  },
-}))
-
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -39,8 +27,10 @@ import {
 import {
   assertDocQueryTransportSecurity,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
+  DOC_QUERY_TOOL_NAME,
   normalizeDocQueryKbId,
   resolveMcpScope,
+  resolveMcpScopeSessionId,
 } from '../src/services/mcpScope'
 
 const KB_ID = '7016810d-31e9-4b39-9529-cd46feb2bf63'
@@ -79,7 +69,10 @@ describe('current-v3 Doc Query scope', () => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
     clientToolsMock.mockResolvedValue({ doc_query: {} })
-    createSDKMCPClientMock.mockResolvedValue({ tools: clientToolsMock })
+    createSDKMCPClientMock.mockResolvedValue({
+      close: vi.fn(),
+      tools: clientToolsMock,
+    })
   })
 
   test('keeps bearer transport auth separate from the scope token header', async () => {
@@ -88,19 +81,18 @@ describe('current-v3 Doc Query scope', () => {
       sessionId: SESSION_ID,
     })
 
-    expect(transportConstructorMock).toHaveBeenCalledWith(
-      new URL('https://mcp.example.test'),
-      {
-        requestInit: {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer opaque-transport-token',
-            [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
-          },
-          redirect: 'error',
+    expect(createSDKMCPClientMock).toHaveBeenCalledWith({
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer opaque-transport-token',
+          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer scope-token',
         },
-      }
-    )
+        redirect: 'error',
+      },
+    })
     expect(signDocQueryScopeTokenMock).toHaveBeenCalledWith({
       kbIds: [KB_ID],
       chatbotId: CHATBOT_ID,
@@ -160,7 +152,7 @@ describe('current-v3 Doc Query scope', () => {
       )
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
-    expect(transportConstructorMock).not.toHaveBeenCalled()
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
   })
 
   test('accepts HTTPS and internal cleartext endpoints', async () => {
@@ -179,10 +171,11 @@ describe('current-v3 Doc Query scope', () => {
         kbIds: [KB_ID],
         sessionId: SESSION_ID,
       })
-      expect(transportConstructorMock).toHaveBeenCalledWith(
-        new URL(url),
+      expect(createSDKMCPClientMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          requestInit: expect.objectContaining({
+          transport: expect.objectContaining({
+            type: 'http',
+            url,
             headers: expect.objectContaining({
               Authorization: 'Bearer opaque-transport-token',
             }),
@@ -239,6 +232,19 @@ describe('current-v3 Doc Query scope', () => {
     expect(
       resolveMcpScope([target, explainerTarget], 'explainer', [explainerTarget])
     ).toEqual([KB_ID])
+  })
+
+  test.each([
+    { kb_id: KB_ID },
+    { kb_ids: [KB_ID] },
+  ])('accepts a singleton scope during the parameter transition: %j', (scope) => {
+    const config = {
+      chatMode: 'tutor',
+      parameters: { required: true, toolAlias: 'doc_query', ...scope },
+      mcpServer: { id: 'kb-server', name: 'KB' },
+    }
+
+    expect(resolveMcpScope([config], 'tutor', [config])).toEqual([KB_ID])
   })
 
   test('canonicalizes kb_ids and rejects mixed or mismatched scopes', () => {
@@ -322,7 +328,6 @@ describe('current-v3 Doc Query scope', () => {
 
     for (const kbIds of [
       [],
-      [KB_ID],
       [KB_ID, KB_ID],
       Array.from(
         { length: 33 },
@@ -372,7 +377,7 @@ describe('current-v3 Doc Query scope', () => {
     ).rejects.toMatchObject({ code: REQUIRED_MCP_UNAVAILABLE_CODE })
 
     expect(signDocQueryScopeTokenMock).not.toHaveBeenCalled()
-    expect(transportConstructorMock).not.toHaveBeenCalled()
+    expect(createSDKMCPClientMock).not.toHaveBeenCalled()
   })
 
   test('accepts a Tutor binding safely inherited by Quizzer', () => {
@@ -505,5 +510,33 @@ describe('current-v3 Doc Query scope', () => {
         )
       )
     ).toThrowError(RequiredMCPUnavailableError)
+  })
+
+  test('keeps the citation card aligned with the runtime tool name', () => {
+    expect(DOC_QUERY_TOOL_NAME).toBe('KB_doc_query')
+  })
+
+  test('never signs a client-supplied foreign thread as the session subject', () => {
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: 'foreign-thread',
+        owningThreadId: undefined,
+        fallbackId: 'server-request',
+      })
+    ).toBeNull()
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: 'owned-thread',
+        owningThreadId: 'owned-thread',
+        fallbackId: 'server-request',
+      })
+    ).toBe('owned-thread')
+    expect(
+      resolveMcpScopeSessionId({
+        requestedThreadId: null,
+        owningThreadId: undefined,
+        fallbackId: 'server-request',
+      })
+    ).toBe('server-request')
   })
 })

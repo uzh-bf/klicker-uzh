@@ -1,0 +1,5 @@
+mutation StartElementGeneration($input: StartElementGenerationInput!) {
+  startElementGeneration(input: $input) {
+    ...ElementGenerationBuildData
+  }
+}

@@ -13,7 +13,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.auth.autoscaling.enabled }}
+  {{- if hasKey .Values.auth "replicaCount" }}
   replicas: {{ .Values.auth.replicaCount }}
   {{- end }}
   selector:
@@ -43,7 +43,7 @@ spec:
         - name: auth
           securityContext:
             {{- toYaml .Values.auth.securityContext | nindent 12 }}
-          image: "{{ .Values.auth.image.repository }}:{{ .Values.auth.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.auth.image.repository }}:{{ .Values.global.imageTag | default .Values.auth.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.auth.image.pullPolicy }}
           ports:
             - name: http
@@ -92,7 +92,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.frontendPWA.autoscaling.enabled }}
+  {{- if and (hasKey .Values.frontendPWA "replicaCount") (not .Values.frontendPWA.autoscaling.enabled) }}
   replicas: {{ .Values.frontendPWA.replicaCount }}
   {{- end }}
   selector:
@@ -122,7 +122,7 @@ spec:
         - name: frontend-pwa
           securityContext:
             {{- toYaml .Values.frontendPWA.securityContext | nindent 12 }}
-          image: "{{ .Values.frontendPWA.image.repository }}:{{ .Values.frontendPWA.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.frontendPWA.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendPWA.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.frontendPWA.image.pullPolicy }}
           ports:
             - name: http
@@ -171,7 +171,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.frontendManage.autoscaling.enabled }}
+  {{- if and (hasKey .Values.frontendManage "replicaCount") (not .Values.frontendManage.autoscaling.enabled) }}
   replicas: {{ .Values.frontendManage.replicaCount }}
   {{- end }}
   selector:
@@ -201,7 +201,7 @@ spec:
         - name: frontend-manage
           securityContext:
             {{- toYaml .Values.frontendManage.securityContext | nindent 12 }}
-          image: "{{ .Values.frontendManage.image.repository }}:{{ .Values.frontendManage.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.frontendManage.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendManage.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.frontendManage.image.pullPolicy }}
           ports:
             - name: http
@@ -250,7 +250,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.frontendControl.autoscaling.enabled }}
+  {{- if hasKey .Values.frontendControl "replicaCount" }}
   replicas: {{ .Values.frontendControl.replicaCount }}
   {{- end }}
   selector:
@@ -280,7 +280,7 @@ spec:
         - name: frontend-control
           securityContext:
             {{- toYaml .Values.frontendControl.securityContext | nindent 12 }}
-          image: "{{ .Values.frontendControl.image.repository }}:{{ .Values.frontendControl.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.frontendControl.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendControl.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.frontendControl.image.pullPolicy }}
           ports:
             - name: http
@@ -329,7 +329,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.backendGraphql.autoscaling.enabled }}
+  {{- if and (hasKey .Values.backendGraphql "replicaCount") (not .Values.backendGraphql.autoscaling.enabled) }}
   replicas: {{ .Values.backendGraphql.replicaCount }}
   {{- end }}
   selector:
@@ -359,7 +359,7 @@ spec:
         - name: backend-graphql
           securityContext:
             {{- toYaml .Values.backendGraphql.securityContext | nindent 12 }}
-          image: "{{ .Values.backendGraphql.image.repository }}:{{ .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.backendGraphql.image.repository }}:{{ .Values.global.imageTag | default .Values.backendGraphql.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.backendGraphql.image.pullPolicy }}
           ports:
             - name: http
@@ -418,7 +418,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.olatApi.autoscaling.enabled }}
+  {{- if hasKey .Values.olatApi "replicaCount" }}
   replicas: {{ .Values.olatApi.replicaCount }}
   {{- end }}
   selector:
@@ -447,7 +447,7 @@ spec:
         - name: olat-api
           securityContext:
             {{- toYaml .Values.olatApi.securityContext | nindent 12 }}
-          image: "{{ .Values.olatApi.image.repository }}:{{ .Values.olatApi.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.olatApi.image.repository }}:{{ .Values.global.imageTag | default .Values.olatApi.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.olatApi.image.pullPolicy }}
           ports:
             - name: http
@@ -501,7 +501,7 @@ spec:
   strategy:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  {{- if not .Values.lti.autoscaling.enabled }}
+  {{- if hasKey .Values.lti "replicaCount" }}
   replicas: {{ .Values.lti.replicaCount }}
   {{- end }}
   selector:
@@ -531,7 +531,7 @@ spec:
         - name: lti
           securityContext:
             {{- toYaml .Values.lti.securityContext | nindent 12 }}
-          image: "{{ .Values.lti.image.repository }}:{{ .Values.lti.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.lti.image.repository }}:{{ .Values.global.imageTag | default .Values.lti.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.lti.image.pullPolicy }}
           ports:
             - name: http

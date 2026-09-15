@@ -14,10 +14,15 @@ import { type Locale, NextIntlClientProvider } from 'next-intl'
 import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import LearningAnalyticsRouteGuard from '~/components/featureFlags/LearningAnalyticsRouteGuard'
+import { MANAGE_ASSISTANT_APP_CONTENT_ID } from '../components/assistant/manageAssistantConfig'
+import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWidget'
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
+import { GenerationStatusProvider } from '../components/generation/GenerationStatusProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
+import { isPublicLiveQuizEvaluationRoute } from '../lib/isPublicLiveQuizEvaluationRoute'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -28,7 +33,9 @@ const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
-  const { locale } = useRouter()
+  const router = useRouter()
+  const { locale, pathname } = router
+  const isPublicEvaluation = isPublicLiveQuizEvaluationRoute(router)
 
   const apolloClient = useApollo(pageProps)
 
@@ -43,28 +50,53 @@ function App({ Component, pageProps }: AppProps) {
     ? (locale as (typeof routing.locales)[number])
     : routing.defaultLocale
 
+  const appContent = (
+    <>
+      <Toaster closeButton position="top-right" />
+      <div id={MANAGE_ASSISTANT_APP_CONTENT_ID} className="contents">
+        {pathname.startsWith('/analytics') ? (
+          <LearningAnalyticsRouteGuard>
+            <Component {...pageProps} />
+          </LearningAnalyticsRouteGuard>
+        ) : (
+          <Component {...pageProps} />
+        )}
+      </div>
+      {/* Mounted here rather than in Layout so that navigating between
+        authenticated Manage pages does not tear down the assistant
+        and reload its iframe mid-conversation. Public HMAC
+        evaluations must not issue the assistant's identity query. */}
+      {isPublicEvaluation ? null : <ManageAssistantWidget />}
+    </>
+  )
+
   return (
     <div
       id="__app"
       className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
     >
       <ApolloProvider client={apolloClient}>
-        <NextIntlClientProvider
-          timeZone="Europe/Zurich"
-          messages={pageProps.messages}
-          locale={validLocale}
-          onError={onError}
-          getMessageFallback={getMessageFallback}
-        >
-          <DndProvider backend={HTML5Backend}>
-            <ManageFeatureFlagProvider>
+        <ManageFeatureFlagProvider>
+          <NextIntlClientProvider
+            timeZone="Europe/Zurich"
+            messages={pageProps.messages}
+            locale={validLocale}
+            onError={onError}
+            getMessageFallback={getMessageFallback}
+          >
+            <DndProvider backend={HTML5Backend}>
               <CourseDuplicationProvider>
-                <Toaster closeButton position="top-right" />
-                <Component {...pageProps} />
+                {isPublicEvaluation ? (
+                  appContent
+                ) : (
+                  <GenerationStatusProvider>
+                    {appContent}
+                  </GenerationStatusProvider>
+                )}
               </CourseDuplicationProvider>
-            </ManageFeatureFlagProvider>
-          </DndProvider>
-        </NextIntlClientProvider>
+            </DndProvider>
+          </NextIntlClientProvider>
+        </ManageFeatureFlagProvider>
       </ApolloProvider>
 
       <style>{`

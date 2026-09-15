@@ -74,8 +74,10 @@ const env = [
   'NEXT_PUBLIC_API_URL_SSR=http://127.0.0.1:3000/graphql',
   'NEXT_PUBLIC_PWA_URL=http://127.0.0.1:3001',
   'NEXT_PUBLIC_MANAGE_URL=http://127.0.0.1:3002',
+  'NEXT_PUBLIC_CHAT_URL=$APP_ORIGIN_CHAT',
   'APP_ORIGIN_PWA=http://127.0.0.1:3001',
   'APP_ORIGIN_MANAGE=http://127.0.0.1:3002',
+  'APP_ORIGIN_CHAT=http://127.0.0.1:3004',
   'NEXT_PUBLIC_ENV=production',
 ].join('\n')
 writeFileSync(join(context, `apps/${app}/.env.production`), env)
