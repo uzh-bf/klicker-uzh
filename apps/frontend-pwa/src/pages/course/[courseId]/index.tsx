@@ -9,11 +9,12 @@ import {
   LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import getCourseAssessmentRedirect from '@lib/getCourseAssessmentRedirect'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import {
@@ -27,21 +28,21 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../../components/Layout'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
+import Layout from '../../../components/Layout'
+import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 
 interface Props {
   courseId: string
@@ -664,6 +665,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
+
+    const redirect = await getCourseAssessmentRedirect({
+      apolloClient,
+      courseId: ctx.params.courseId,
+      ctx,
+    })
+    if (redirect) return { redirect }
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,

@@ -344,6 +344,7 @@ export const StudentCourse = builder.objectType(StudentCourseRef, {
   fields: (t) => ({
     id: t.exposeID('id'),
     displayName: t.exposeString('displayName'),
+    isAssessmentEnabled: t.exposeBoolean('isAssessmentEnabled'),
     pinCode: t.exposeInt('pinCode', { nullable: true }),
     color: t.exposeString('color'),
     description: t.exposeString('description', { nullable: true }),
