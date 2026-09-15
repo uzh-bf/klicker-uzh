@@ -46,6 +46,7 @@ export default async function OwnerPreviewPage({
       status: true,
       systemPrompts: true,
       standardModeConfig: true,
+      customModeConfig: true,
       modelSelection: true,
       allowedModelIds: true,
       allowedReasoningEffortsByModel: true,
@@ -66,7 +67,11 @@ export default async function OwnerPreviewPage({
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    {
+      allowUnapprovedModes: true,
+      customModeConfig: chatbot.customModeConfig,
+    }
   )
   const availableModels = getModelsForChatbot(chatbot)
   const automaticModelId = getAutomaticModelId(chatbot.allowedModelIds)

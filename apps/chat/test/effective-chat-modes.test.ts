@@ -31,7 +31,7 @@ function config({
 }
 
 describe('effective chatbot modes', () => {
-  test('composes platform and stored modes while preserving custom copy', () => {
+  test('composes platform and stored modes while preserving custom copy in owner preview', () => {
     expect(
       resolveEffectiveChatModeOptions(
         {
@@ -42,7 +42,9 @@ describe('effective chatbot modes', () => {
           explainer: { description: 'Stored Explainer description' },
           custom: { description: 'Custom mode description' },
         },
-        []
+        [],
+        null,
+        { allowUnapprovedModes: true }
       )
     ).toEqual({
       tutor: 'Guides students with focused questions, hints, and feedback.',
@@ -50,6 +52,85 @@ describe('effective chatbot modes', () => {
         'Explains course concepts directly with definitions and grounded examples.',
       custom: 'Custom mode description',
     })
+  })
+
+  test('advertises only approved custom modes without unapproved stored keys', () => {
+    expect(
+      resolveEffectiveChatModeOptions(
+        {
+          tutor: { prompt: 'Custom Tutor prompt' },
+          'Draft-Mode': { description: 'Draft mode' },
+        },
+        [],
+        null,
+        {
+          customModeConfig: {
+            modes: [
+              {
+                key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+                name: 'Ethik-Rollenspiel',
+                description: 'Practises ethical reasoning in a role play.',
+                personaText: 'Act as the role-play counterpart.',
+              },
+            ],
+          },
+        }
+      )
+    ).toEqual({
+      explainer:
+        'Explains course concepts directly with definitions and grounded examples.',
+      tutor: 'Guides students with focused questions, hints, and feedback.',
+      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b':
+        'Practises ethical reasoning in a role play.',
+    })
+  })
+
+  test('keeps unapproved stored keys and approved custom modes in owner preview', () => {
+    const modeOptions = resolveEffectiveChatModeOptions(
+      {
+        tutor: { prompt: 'Custom Tutor prompt' },
+        'Draft-Mode': { description: 'Draft mode' },
+      },
+      [],
+      null,
+      {
+        allowUnapprovedModes: true,
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+              name: 'Ethik-Rollenspiel',
+              description: null,
+              personaText: null,
+            },
+          ],
+        },
+      }
+    )
+
+    expect(modeOptions['Draft-Mode']).toBe('Draft mode')
+    expect(modeOptions['cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b']).toBe(
+      'Ethik-Rollenspiel'
+    )
+  })
+
+  test('ignores a custom-mode entry that reuses a standard-mode key', () => {
+    const modeOptions = resolveEffectiveChatModeOptions(null, [], null, {
+      customModeConfig: {
+        modes: [
+          {
+            key: 'tutor',
+            name: 'Tutor replacement',
+            description: 'Replacement description',
+            personaText: null,
+          },
+        ],
+      },
+    })
+
+    expect(modeOptions.tutor).toBe(
+      'Guides students with focused questions, hints, and feedback.'
+    )
   })
 
   test('honours explicit mode opt-outs', () => {

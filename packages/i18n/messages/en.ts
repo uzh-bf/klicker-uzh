@@ -4750,6 +4750,30 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Quizzer may still be hidden when its course-material capability is unavailable.',
       chatbotModeEnabled: 'Enabled',
       chatbotModeDisabled: 'Disabled',
+      chatbotCustomModesTitle: 'Custom modes',
+      chatbotCustomModesDescription:
+        'Add up to {count} custom modes with their own name, description, and persona text. Custom modes are reviewed together with the chatbot revision.',
+      chatbotCustomModesEmpty:
+        'No custom modes yet. Add one to offer participants an additional mode.',
+      chatbotCustomModesNone: 'No custom modes are configured.',
+      chatbotCustomModesCount: '{count} of {max} custom modes used',
+      chatbotCustomMode: 'Custom mode {number}',
+      chatbotCustomModeName: 'Mode name',
+      chatbotCustomModeDescription: 'Short description',
+      chatbotCustomModePersonaText: 'Persona and instructions',
+      chatbotCustomModePersonaPlaceholder:
+        'Describe how this mode should respond to participants.',
+      chatbotCustomModeAdd: 'Add custom mode',
+      chatbotCustomModeRemove: 'Remove',
+      chatbotCustomModesLimit: 'At most {count} custom modes are supported.',
+      chatbotCustomModesDuplicate: 'Each custom mode needs a unique name.',
+      chatbotCustomModesReadonly:
+        'Custom modes cannot be edited in this chatbot status.',
+      chatbotCustomModesSave: 'Save custom modes',
+      chatbotCustomModesSaving: 'Saving…',
+      chatbotCustomModesSaveSuccess: 'Custom modes saved.',
+      chatbotCustomModesSaveError:
+        'Could not save the custom modes. Please try again.',
       chatbotFraming: 'Chatbot framing',
       chatbotFramingDescription:
         'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
