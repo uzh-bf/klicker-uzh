@@ -1,4 +1,5 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
+import { applyParticipantAccountGate } from './lib/participantAccountGate.js'
 
 export { default as enhanceContext } from './lib/context.js'
 export { getChatModelRegistry } from './services/chatbots.js'
@@ -73,6 +74,8 @@ export const schema = builder.toSchema({
     // oneOf: upperDirectiveTransformer,
   },
 })
+
+applyParticipantAccountGate(schema)
 
 export const handlers: HatchetHandlers = {
   handleFinalRandomGroupAssignments,

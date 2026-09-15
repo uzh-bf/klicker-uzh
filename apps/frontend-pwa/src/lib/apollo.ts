@@ -22,6 +22,7 @@ import Router from 'next/router'
 import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
+import { participantDataUseReturn } from './participantDataUseReturn'
 
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -92,6 +93,22 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
           )}`
         )
 
+        if (
+          isBrowser &&
+          extensions?.code === 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' &&
+          Router.pathname !== '/account/data-use'
+        ) {
+          sessionStorage.setItem(
+            'participant_data_use_return',
+            participantDataUseReturn(
+              window.location.href,
+              window.location.origin
+            )
+          )
+          void Router.replace('/account/data-use')
+          return
+        }
+
         // redirect the user to the login page on errors
         if (isBrowser && message === 'Unauthorized') {
           Router.push(
@@ -135,16 +152,10 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
         url: (process.env.NEXT_PUBLIC_API_URL as string)
           .replace('http://', 'ws://')
           .replace('https://', 'wss://'),
-        // connectionParams: () => {
-        //   // Note: getSession() is a placeholder function created by you
-        //   const session = getSession();
-        //   if (!session) {
-        //     return {};
-        //   }
-        //   return {
-        //     Authorization: `Bearer ${session.token}`,
-        //   };
-        // },
+        connectionParams: () => {
+          const token = sessionStorage.getItem('participant_token')
+          return token ? { authorization: `Bearer ${token}` } : {}
+        },
       })
     )
 
