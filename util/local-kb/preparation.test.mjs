@@ -825,6 +825,65 @@ test('interrupted stop evidence permits shutdown but not resume', async () => {
   }
 })
 
+test('stop is idempotent for a prepared provider that was never started', async () => {
+  const { config, checkout, read } = await installationFixture()
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  const identity = {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  }
+  await installProviderRouting(config, revision, identity)
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  const lifecycle = []
+  let retrievalsStopped = 0
+  const base = lifecycleRunner(config)
+  const provider = async (command, environment) => {
+    const name = Object.keys(config.providers).find(
+      (key) => config.providers[key].sourcePath === command.cwd
+    )
+    if (name === 'retrieval' && command.args.includes('stop'))
+      retrievalsStopped += 1
+    if (!command.args.includes('status')) lifecycle.push(name)
+    if (name === 'retrieval' && command.args.includes('status'))
+      return JSON.stringify({
+        instance: config.project.identity,
+        source_revision: config.providers.retrieval.revision,
+        prepared: true,
+        ready: false,
+        runtime: 'not_observed',
+      })
+    return base(command, environment)
+  }
+  const managed = async (args) => {
+    if (args[0] === 'stop')
+      return JSON.stringify({
+        ...identity,
+        stopped: true,
+      })
+    throw new Error('unexpected managed call')
+  }
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('ls')) return ''
+    if (args.includes('inspect')) return []
+    return ''
+  }
+  assert.deepEqual(
+    await stopInfrastructure(config, revision, managed, docker, provider),
+    { stopped: true, dataRetained: true }
+  )
+  // The never-started retrieval instance is observed, not stopped.
+  assert.equal(retrievalsStopped, 0)
+  const stoppedProviders = lifecycle.filter(
+    (name, index) => lifecycle.indexOf(name) === index
+  )
+  assert.deepEqual(stoppedProviders, ['ingestion', 'docProcessing', 'scraping'])
+})
+
 test('status is read-only and stop refuses foreign provider ownership', async () => {
   const { config, checkout, read } = await installationFixture()
   await prepareLocalConfiguration(config, revision)

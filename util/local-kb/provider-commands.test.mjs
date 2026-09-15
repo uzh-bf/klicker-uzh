@@ -6,6 +6,7 @@ import {
   observeProviderLauncher,
   observeProviderLaunchers,
   providerCommands,
+  runProviderCommand,
 } from './provider-commands.mjs'
 import { LAUNCHER_CONTRACTS } from './provider-launcher-contract.mjs'
 import { providerImages, providerPorts } from './test-fixtures.mjs'
@@ -223,6 +224,22 @@ test('observes only the requested provider with confined environment', async () 
   assert.equal(retrieval.provider, 'retrieval')
 })
 
+test('retrieval observation treats a never-started instance as stopped without effects', async () => {
+  const { config } = resolveFixture('a')
+  const observed = await observeProviderLauncher(
+    config,
+    'retrieval',
+    async () =>
+      JSON.stringify({
+        ...providerStatus(config, 'retrieval'),
+        runtime: 'not_observed',
+      })
+  )
+  assert.equal(observed.neverStarted, true)
+  assert.equal(observed.stopped, true)
+  assert.equal(observed.prepared, true)
+})
+
 test('rejects unknown provider names before dispatch', async () => {
   const { config } = resolveFixture('a')
   for (const name of ['unknown', 'constructor']) {
@@ -277,6 +294,26 @@ test('rejects foreign provider identity or revision without leaking output', asy
         ) && !error.message.includes('synthetic-private-value')
     )
   }
+})
+
+test('provider failures disclose only bounded values-free facts', async () => {
+  const failure = Object.assign(new Error('synthetic private diagnostic'), {
+    code: 3,
+    stderr: '{"error": "state_not_found"}\nsynthetic-private-value',
+  })
+  await assert.rejects(
+    runProviderCommand(
+      { executable: 'synthetic', args: ['status'], cwd: '/synthetic', env: {} },
+      {},
+      async () => {
+        throw failure
+      }
+    ),
+    (error) =>
+      error.message.includes('exit 3') &&
+      error.message.includes('provider code state_not_found') &&
+      !error.message.includes('synthetic-private-value')
+  )
 })
 
 test('bound launchers separate setup inputs from retained start and stop', () => {

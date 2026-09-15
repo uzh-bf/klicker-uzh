@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { validateIsolatedConfig } from './isolated-config.mjs'
 
+const promisifiedExecFile = promisify(execFile)
+
 // Only project identity and bounded readiness fields leave provider observation.
 // A healthy endpoint does not prove workflow registration or model execution.
 export async function observeProviderLaunchers(
@@ -69,6 +71,7 @@ export async function observeProviderLauncher(
     let effectsAbsent = false
     let endpointReady = false
     let stopped = false
+    let neverStarted = false
     if (name === 'ingestion') {
       const preparationStates = ['configuration', 'credentials', 'schema']
       prepared = preparationStates.every(
@@ -131,12 +134,16 @@ export async function observeProviderLauncher(
         throw new Error()
       prepared = status.prepared
       endpointReady = status.ready
-      stopped = status.runtime === 'stopped'
+      // A prepared instance without a runtime record was never started; its
+      // stop command has no runtime effects and would otherwise fail.
+      neverStarted = status.runtime === 'not_observed'
+      stopped = neverStarted || status.runtime === 'stopped'
     }
     return {
       provider: name,
       prepared,
       ...(name === 'ingestion' ? { pending, effectsAbsent } : {}),
+      ...(neverStarted ? { neverStarted } : {}),
       endpointReady,
       stopped,
       aiQualified: false,
@@ -150,29 +157,45 @@ export async function observeProviderLauncher(
 
 // Capture provider diagnostics: child output may contain private connection
 // settings and must never be forwarded by the consumer lifecycle.
-export async function runProviderCommand(command, environment = {}) {
+export async function runProviderCommand(
+  command,
+  environment = {},
+  execute = promisifiedExecFile
+) {
   const inherited = Object.fromEntries(
     ['HOME', 'PATH', 'LANG', 'LC_ALL', 'TMPDIR', 'USER']
       .filter((key) => process.env[key] !== undefined)
       .map((key) => [key, process.env[key]])
   )
   try {
-    const { stdout } = await promisify(execFile)(
-      command.executable,
-      command.args,
-      {
-        cwd: command.cwd,
-        env: { ...inherited, ...environment, ...command.env },
-        timeout: 20 * 60 * 1000,
-        maxBuffer: 1024 * 1024,
-      }
-    )
+    const { stdout } = await execute(command.executable, command.args, {
+      cwd: command.cwd,
+      env: { ...inherited, ...environment, ...command.env },
+      timeout: 20 * 60 * 1000,
+      maxBuffer: 1024 * 1024,
+    })
     return stdout
-  } catch {
+  } catch (error) {
     throw new Error(
-      'Provider command failed; output withheld and state retained.'
+      `Provider command failed${providerFailure(error)}; output withheld and state retained.`
     )
   }
+}
+
+// Disclosure stays values-free: only the provider's own stable error code
+// crosses the boundary; connection settings and arbitrary child output never do.
+function providerFailure(error) {
+  const details = []
+  if (typeof error?.code === 'number') details.push(`exit ${error.code}`)
+  else if (typeof error?.code === 'string' && error.code)
+    details.push(error.code)
+  if (error?.signal) details.push(`signal ${error.signal}`)
+  const stderr = typeof error?.stderr === 'string' ? error.stderr : ''
+  const stable = stderr.match(
+    /\{\s*"error"\s*:\s*"([A-Za-z0-9_.-]{1,64})"\s*\}/
+  )
+  if (stable) details.push(`provider code ${stable[1]}`)
+  return details.length ? ` (${details.join(', ')})` : ''
 }
 
 // Setup alone initializes schemas and credentials. Retained start and stop

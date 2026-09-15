@@ -1,5 +1,10 @@
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  resolveEffectiveChatModeOptions,
+  resolveRequestedChatMode,
+  type ChatModeMCPConfiguration,
+} from '@/src/lib/server/effectiveChatModes'
 
 const mocks = vi.hoisted(() => ({
   buildPromptCacheRequest: vi.fn(),
@@ -168,6 +173,27 @@ function setRequestOptions(options: Record<string, unknown>) {
   mocks.readBoundedJson.mockResolvedValue({
     ok: true,
     value: { messages: uiMessages, ...options },
+  })
+}
+
+function createCustomModeChatbot() {
+  const [tutorConfiguration] = createChatbot().mcpConfigurations as Array<
+    Record<string, unknown>
+  >
+
+  return createChatbot({
+    mcpConfigurations: [
+      tutorConfiguration,
+      {
+        ...tutorConfiguration,
+        chatMode: 'Ethik-Rollenspiel',
+        priority: 2,
+      },
+    ],
+    systemPrompts: {
+      'Ethik-Rollenspiel': 'Ethik instructions',
+      tutor: 'Tutor instructions',
+    },
   })
 }
 
@@ -537,6 +563,78 @@ describe('POST owner preview chat', () => {
     expect(response.status).toBe(400)
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      resolvedMode: 'Ethik-Rollenspiel',
+      selectedMode: 'Ethik-Rollenspiel',
+      status: 200,
+    },
+    {
+      resolvedMode: 'ethik-rollenspiel',
+      selectedMode: 'ethik-rollenspiel',
+      status: 400,
+    },
+    {
+      resolvedMode: 'tutor',
+      selectedMode: 'Tutor',
+      status: 200,
+    },
+    {
+      resolvedMode: 'tutor',
+      selectedMode: 'TUTOR',
+      status: 200,
+    },
+  ])('resolves $selectedMode like the participant route', async ({
+    selectedMode,
+    resolvedMode,
+    status,
+  }) => {
+    const chatbot = createCustomModeChatbot()
+    mocks.findChatbot.mockResolvedValue(chatbot)
+
+    const modeOptions = resolveEffectiveChatModeOptions(
+      chatbot.systemPrompts,
+      chatbot.mcpConfigurations as ChatModeMCPConfiguration[],
+      chatbot.standardModeConfig
+    )
+    expect(Object.hasOwn(modeOptions, 'Ethik-Rollenspiel')).toBe(true)
+    expect(resolveRequestedChatMode(modeOptions, selectedMode)).toBe(
+      resolvedMode
+    )
+
+    setRequestOptions({ selectedMode })
+    const response = await POST(request(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-id' }),
+    })
+
+    expect(response.status).toBe(status)
+    if (status === 400) {
+      expect(await response.json()).toEqual({
+        error: 'Unsupported chat mode: ethik-rollenspiel',
+      })
+      expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+      expect(mocks.streamText).not.toHaveBeenCalled()
+      return
+    }
+
+    expect(mocks.compileSystemPrompt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'Ethik-Rollenspiel': 'Ethik instructions',
+        tutor: 'Tutor instructions',
+      }),
+      resolvedMode,
+      {
+        courseDisplayName: 'Test Course',
+        toolNames: ['KB_doc_query'],
+        standardModeConfig: defaultStandardModeConfig,
+      }
+    )
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ kbIds: [originalKbId] })
+    )
   })
 
   it('uses saved standard mode availability before MCP or model work', async () => {
