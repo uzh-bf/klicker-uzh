@@ -40,6 +40,10 @@ const CANDIDATE_SHA = 'a'.repeat(40)
 const CURRENT_SHA = 'b'.repeat(40)
 const NEXT_SHA = 'c'.repeat(40)
 
+async function fixtureScanAdmission() {
+  return { attempts: [{ attempt: 1, failures: [] }], entries: [], valid: true }
+}
+
 async function fixtureCiEvidence({ run }) {
   const workflow = REQUIRED_CI_WORKFLOWS[run.id - 500]
   return {
@@ -289,6 +293,94 @@ test('validates the candidate workflow set and only inventories active ARM publi
   assert.equal(
     workflows.every((workflow) => workflow.name.endsWith('(stg)')),
     true
+  )
+})
+
+test('admits inventoried scan jobs without treating them as publishers', () => {
+  const definitions = fixtureDefinitions()
+  assert.match(definitions[1].content, /^  scan-arm:$/m)
+  assert.match(definitions[1].content, /^  scan-migrator-arm:$/m)
+
+  const workflows = validWorkflows()
+  assert.deepEqual(
+    workflows[1].jobs.map((job) => job.id),
+    ['build-arm', 'build-migrator-arm']
+  )
+
+  const disabledScan = fixtureDefinitions()
+  disabledScan[1].content = disabledScan[1].content.replace(
+    "  scan-arm:\n    if: github.event_name != 'pull_request'",
+    '  scan-arm:\n    if: ${{ false }}'
+  )
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: disabledScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /active ARM job inventory changed/
+  )
+
+  const extraArm = fixtureDefinitions()
+  extraArm[1].content +=
+    '  publish-extra-arm:\n    runs-on: ubuntu-24.04-arm\n    steps:\n      - uses: actions/checkout@v3\n'
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: extraArm,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /active ARM job inventory changed/
+  )
+
+  const misplacedScan = fixtureDefinitions()
+  misplacedScan[0].content +=
+    "  scan-arm:\n    if: github.event_name != 'pull_request'\n    runs-on: ubuntu-24.04-arm\n    steps:\n      - uses: actions/checkout@v3\n"
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: misplacedScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /active ARM job inventory changed/
+  )
+
+  const floatingScan = fixtureDefinitions()
+  floatingScan[1].content = floatingScan[1].content.replace(
+    '        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8',
+    '        uses: aquasecurity/trivy-action@v0.36.0'
+  )
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: floatingScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /scan-arm does not pin one trivy action revision/
+  )
+
+  const uncheckedScan = fixtureDefinitions()
+  uncheckedScan[1].content = uncheckedScan[1].content.replace(
+    '          node .github/scripts/image-scan-receipt.cjs check\n',
+    ''
+  )
+  assert.throws(
+    () =>
+      validateStagingWorkflows({
+        definitions: uncheckedScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /scan-arm does not enforce the scan policy/
   )
 })
 
@@ -1439,6 +1531,7 @@ test('writes receipts before rejecting uncertain or mismatched post-push readbac
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1512,6 +1605,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   try {
     const result = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_dispatch', {
@@ -1548,6 +1642,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     }
     const rerun = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github: rerunGithub,
       context: reviewContext('workflow_dispatch', {
@@ -1574,6 +1669,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const automatic = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1585,6 +1681,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const enabled = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1619,6 +1716,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1738,6 +1836,7 @@ test('requires complete candidate CI before a release write', async (t) => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         github,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,
@@ -1823,6 +1922,7 @@ test('rejects manual apply when controller or release changed after dry run', as
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getScanAdmission: fixtureScanAdmission,
         ...args,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,

@@ -6,6 +6,8 @@ import {
   assertNoPostgresEnvironmentOverrides,
   validateDisposableDatabaseUrl,
 } from '../../../packages/prisma/src/disposableDatabase.ts'
+import { loadLocalMcpDocuments } from './local-mcp-documents.mjs'
+import { loadLocalMcpFixture } from './local-mcp-fixture.mjs'
 import { repairLocalMcpSeed } from './local-mcp-seed.mjs'
 
 const ROOT = '/workspaces/klicker-uzh'
@@ -65,6 +67,15 @@ try {
   )
     throw new Error('Local MCP runtime boundary rejected')
 
+  // Validate the optional additional identity before any owned process stops,
+  // so a broken fixture file fails closed without disturbing a healthy runtime.
+  const fixture = loadLocalMcpFixture(process.env)
+  if (fixture !== null) {
+    loadLocalMcpDocuments(
+      { LOCAL_MCP_DOCUMENTS_FILE: fixture.documentsFile },
+      []
+    )
+  }
   ownsProcesses = true
   stopOwnedProcesses()
   if (interrupted) throw new Error('Local MCP startup interrupted')
@@ -94,7 +105,7 @@ try {
     )
     if (schema.status !== 0)
       throw new Error('Local MCP schema preparation failed')
-    await repairLocalMcpSeed(db, token, () => interrupted)
+    await repairLocalMcpSeed(db, token, () => interrupted, fixture)
   } finally {
     await db.$disconnect()
   }
