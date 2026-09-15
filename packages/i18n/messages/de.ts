@@ -2907,6 +2907,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Das Element konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
         saveElementsError:
           'Die angenommenen Elemente konnten nicht gespeichert werden. Versuchen Sie es erneut.',
+        tagSelection: {
+          missingHint:
+            'Ein ausgewählter Tag ist nicht mehr verfügbar. Entferne ihn oder wähle vor dem Speichern einen anderen Tag.',
+          removeMissing: 'Nicht verfügbaren Tag {id} entfernen',
+          title: 'Tags',
+          existingLabel: 'Passende Tags',
+          existingHint:
+            'Ein bereits vorhandener Name wählt den bestehenden Tag aus, statt einen neuen zu erstellen.',
+          newLabel: 'Vorgeschlagene neue Tags',
+          newHint: 'Neue Tags werden erst beim Behalten des Elements erstellt.',
+          manualLabel: 'Alle Tags',
+          placeholder: 'Tags auswählen oder eingeben',
+          saveDraft: 'Entwurf speichern',
+          unsaved: 'Ungespeicherte Änderungen',
+          saved: 'Entwurf gespeichert.',
+          saveError:
+            'Der Entwurf konnte nicht gespeichert werden. Versuchen Sie es erneut.',
+          conflict:
+            'Dieser Entwurf wurde anderswo geändert. Laden Sie neu, bevor Sie speichern.',
+        },
       },
       decisions: {
         OPEN: 'Offen',
