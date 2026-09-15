@@ -316,6 +316,62 @@ test('provider failures disclose only bounded values-free facts', async () => {
   )
 })
 
+// Each provider facade names its stable failure code in its own shape. The
+// consumer must surface that code, because operators otherwise see only a bare
+// exit status and cannot tell a recoverable partial start from a real fault.
+test('provider failures surface every provider code shape', async () => {
+  const shapes = [
+    ['state_not_found', '{"error": "state_not_found"}'],
+    ['start_partial', 'Error [start_partial]: a recorded provider process\n'],
+    ['strict_mode_required', 'local launcher failed: strict_mode_required\n'],
+  ]
+  for (const [code, stderr] of shapes) {
+    const failure = Object.assign(new Error('synthetic private diagnostic'), {
+      code: 1,
+      stderr: `${stderr}synthetic-private-value\n`,
+    })
+    await assert.rejects(
+      runProviderCommand(
+        {
+          executable: 'synthetic',
+          args: ['start'],
+          cwd: '/synthetic',
+          env: {},
+        },
+        {},
+        async () => {
+          throw failure
+        }
+      ),
+      (error) =>
+        error.message.includes(`provider code ${code}`) &&
+        !error.message.includes('synthetic-private-value')
+    )
+  }
+})
+
+test('provider failures do not disclose unmatched stderr', async () => {
+  const failure = Object.assign(new Error('synthetic private diagnostic'), {
+    code: 1,
+    stderr:
+      'Traceback\nDOC_PROCESSING_DATABASE_URL=postgresql://hatchet:hatchet@127.0.0.1:29751\n',
+  })
+  await assert.rejects(
+    runProviderCommand(
+      { executable: 'synthetic', args: ['start'], cwd: '/synthetic', env: {} },
+      {},
+      async () => {
+        throw failure
+      }
+    ),
+    (error) =>
+      error.message.includes('exit 1') &&
+      !error.message.includes('provider code') &&
+      !error.message.includes('hatchet') &&
+      !error.message.includes('29751')
+  )
+})
+
 test('bound launchers separate setup inputs from retained start and stop', () => {
   const { config } = resolveFixture('a')
   const bindings = config.bindings
