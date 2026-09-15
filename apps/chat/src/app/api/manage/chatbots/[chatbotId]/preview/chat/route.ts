@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
+import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   consumeStream,
   convertToModelMessages,
@@ -32,6 +33,10 @@ import { withOwnerPreviewAuth } from '@/src/lib/server/ownerPreviewAuth'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import {
+  CHAT_MODEL_UNAVAILABLE_ADVANCED,
+  CHAT_MODEL_UNAVAILABLE_BASE,
+} from '@/src/services/accountUsage'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
@@ -134,7 +139,9 @@ export async function POST(
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId, ownerId: auth.userId },
     include: {
-      owner: { select: { aiFeaturesEnabled: true } },
+      owner: {
+        select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+      },
       course: {
         select: { displayName: true },
       },
@@ -228,6 +235,28 @@ export async function POST(
   }
 
   const { model: selectedModel, reasoningEffort } = modelResolution
+
+  // Preview is owner-funded and writes no usage row, so it skips the budget
+  // pre-check. Class admission still applies: an account without a cost center
+  // cannot start an advanced preview turn, exactly as in the participant route.
+  if (
+    !isChatUsageClassEntitled({
+      usageClass: selectedModel.usageClass,
+      aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
+    })
+  ) {
+    return NextResponse.json(
+      {
+        error: 'Chat model usage is unavailable',
+        code:
+          selectedModel.usageClass === 'BASE'
+            ? CHAT_MODEL_UNAVAILABLE_BASE
+            : CHAT_MODEL_UNAVAILABLE_ADVANCED,
+      },
+      { status: 403 }
+    )
+  }
 
   const kbConfigurations: MCPServerWithConfig[] = modeConfigurations
     .filter(

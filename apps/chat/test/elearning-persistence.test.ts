@@ -236,7 +236,7 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: CHATBOT_ID,
     ownerId: 'owner-1',
-    owner: { aiFeaturesEnabled: true },
+    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
     course: { displayName: 'Informatik und Wirtschaft' },
     allowedModelIds: ['gpt-4.1'],
     modelSelection: true,
