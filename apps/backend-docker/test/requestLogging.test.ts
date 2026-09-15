@@ -125,6 +125,19 @@ describe('requestLoggingMiddleware', () => {
     expect(line).not.toContain('private')
   })
 
+  it('records server failures at error level', () => {
+    const test = harness()
+    requestLoggingMiddleware(test.root)(test.req, test.res, vi.fn())
+    ;(test.res as unknown as { statusCode: number }).statusCode = 500
+    ;(test.res as unknown as EventEmitter).emit('finish')
+    expect(test.records).toHaveLength(1)
+    expect(test.records[0]).toMatchObject({
+      level: 'error',
+      event: 'http.request.completed',
+      http: { route: '/api/graphql', statusCode: 500 },
+    })
+  })
+
   it('suppresses health completion records', () => {
     const test = harness('/healthz')
     requestLoggingMiddleware(test.root)(test.req, test.res, vi.fn())

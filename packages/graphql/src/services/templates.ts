@@ -1965,7 +1965,8 @@ export async function createLiveQuizFromTemplate(
         // The template copy has already committed. Rollout failure is durably
         // recorded by the activation service; returning the created quiz keeps
         // a transient audit gap from causing a duplicate copy on retry.
-        console.warn('Assessment template copied without audit coverage', {
+        ctx.log.warn({
+          event: 'live_quiz.template.copied_without_audit',
           liveQuizId: newLiveQuiz.id,
         })
       } else {
@@ -1999,10 +2000,13 @@ export async function createLiveQuizFromTemplate(
         })
       }
     } catch (error) {
-      console.error('Assessment template copy audit activation failed', {
-        liveQuizId: newLiveQuiz.id,
-        errorType: error instanceof Error ? error.name : 'unknown',
-      })
+      ctx.log.error(
+        {
+          liveQuizId: newLiveQuiz.id,
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Assessment template copy audit activation failed'
+      )
     }
   }
 

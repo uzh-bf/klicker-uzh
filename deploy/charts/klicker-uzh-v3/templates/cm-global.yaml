@@ -8,6 +8,12 @@ metadata:
 data:
   GROWTHBOOK_ENV: {{ .Values.global.deploymentEnvironment | quote }}
 
+  {{- if .Values.logging.logLevel }}
+  # Pino threshold for every server app (packages/logging). Empty keeps the
+  # application default (info); test environments force silent independently.
+  LOG_LEVEL: {{ .Values.logging.logLevel | quote }}
+  {{- end }}
+
   # Canonical app origins (single source of truth)
   APP_ORIGIN_API: {{ .Values.global.appOrigins.api | quote }}
   APP_ORIGIN_AUTH: {{ .Values.global.appOrigins.auth | quote }}

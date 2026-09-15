@@ -7,11 +7,15 @@ import {
   getChatbotLaunchBinding,
   resolveLaunchTarget,
 } from './launchTarget.js'
+import { logger } from './logger.js'
 import { resolvePlatforms } from './platforms.js'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_LTI) {
-  console.error('APP_ORIGIN_LTI is required but not defined')
+  logger.fatal(
+    { event: 'service.configuration_invalid', variable: 'APP_ORIGIN_LTI' },
+    'APP_ORIGIN_LTI is required but not defined'
+  )
   process.exit(1)
 }
 
@@ -68,7 +72,10 @@ if (process.env.LTI_DB_TYPE === 'postgres') {
 // @ts-ignore The type here is wrong, a Promise is accepted as per official docs
 Provider.onConnect(async (token, req, res) => {
   if (!process.env.APP_ORIGIN_LTI) {
-    console.error('APP_ORIGIN_LTI is required but not defined')
+    logger.fatal(
+      { event: 'service.configuration_invalid', variable: 'APP_ORIGIN_LTI' },
+      'APP_ORIGIN_LTI is required but not defined'
+    )
     process.exit(1)
   }
 
@@ -77,9 +84,12 @@ Provider.onConnect(async (token, req, res) => {
   })
 
   if (!launchTarget.ok) {
-    console.error(
-      `event=lti_launch_rejected targetSource=${launchTarget.source ?? 'null'} reason=${launchTarget.reason} rawType=${getRawType(launchTarget.rawValue)}`
-    )
+    logger.warn({
+      event: 'lti.launch.rejected',
+      targetSource: launchTarget.source ?? null,
+      reason: launchTarget.reason,
+      rawType: getRawType(launchTarget.rawValue),
+    })
 
     // remove lti token to avoid issues caused by this cookie
     res.clearCookie('lti-token', {
@@ -122,9 +132,11 @@ Provider.onConnect(async (token, req, res) => {
   res.setHeader('Referrer-Policy', 'no-referrer')
 
   const redirectUrl = appendJwt(launchTarget.target, jwt)
-  console.log(
-    `event=lti_launch_redirect targetSource=${launchTarget.source} targetHost=${launchTarget.target.hostname}`
-  )
+  logger.info({
+    event: 'lti.launch.redirect',
+    targetSource: launchTarget.source,
+    targetHost: launchTarget.target.hostname,
+  })
 
   return res.redirect(redirectUrl)
 })
@@ -134,7 +146,7 @@ const setup = async () => {
   const result = await Provider.deploy({
     port: Number(process.env.LTI_PORT) ?? 4000,
   })
-  console.log(result)
+  logger.debug({ result }, 'LTI provider deployed')
 
   for (const registration of platforms) {
     const platform = await Provider.registerPlatform(registration)
@@ -142,13 +154,14 @@ const setup = async () => {
       throw new Error('Failed to register platform')
     }
   }
-  console.log(`Registered ${platforms.length} LTI platforms`)
+  logger.info(
+    { event: 'lti.platforms.registered', count: platforms.length },
+    'LTI platforms registered'
+  )
 }
 
 // Get user and context information
 Provider.app.get('/info', async (req, res) => {
-  console.log('GET-request to /info: ')
-
   const token = res.locals.token
 
   const info: {
@@ -172,7 +185,10 @@ Provider.app.get('/info', async (req, res) => {
 })
 
 setup().catch(() => {
-  console.error('LTI platform initialization failed')
+  logger.fatal(
+    { event: 'service.start_failed' },
+    'LTI platform initialization failed'
+  )
   process.exit(1)
 })
 

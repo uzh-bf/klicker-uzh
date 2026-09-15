@@ -8,6 +8,7 @@ import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
 import {
   createHatchetClient,
   createHatchetWorkerRuntime,
+  drainTaskLogWrites,
   getKBGraphTerminalResult,
   prepareHatchetTasks,
   resolveWorkerRuntimeConfig,
@@ -205,6 +206,9 @@ async function main() {
     { event: 'hatchet.worker.stopped' },
     'Worker runtime stopped after termination'
   )
+  // Flush pending background task log writes before exiting; the explicit
+  // exit below would otherwise drop them.
+  await drainTaskLogWrites()
   // The drain is complete here, but the Redis and Prisma clients opened above
   // keep the event loop alive and node runs as PID 1, so exit explicitly
   // instead of waiting for the kubelet's SIGKILL at the end of the grace period.

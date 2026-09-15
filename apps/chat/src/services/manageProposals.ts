@@ -1,8 +1,10 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import { AuditLogType, ObjectType } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
 import { z } from 'zod'
+import { logger } from '@/src/lib/server/logger'
 import {
   choicesProposalPayloadSchema,
   freeTextProposalPayloadSchema,
@@ -234,10 +236,15 @@ export async function recordProposalConfirmationAudit({
         type: AuditLogType.ASSISTANT_PROPOSAL_CONFIRMED,
       },
     })
-  } catch (error) {
-    console.error(
-      'Failed to record Manage-assistant proposal confirmation audit entry:',
-      error
+  } catch {
+    logger.error(
+      {
+        event: 'chat.audit.confirm.failed',
+        err: toSafeError(
+          'Failed to record Manage-assistant proposal confirmation audit entry'
+        ),
+      },
+      'Failed to record Manage-assistant proposal confirmation audit entry'
     )
   }
 }

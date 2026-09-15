@@ -1,4 +1,7 @@
-import { withHatchetTaskLogging } from '@klicker-uzh/hatchet'
+import {
+  drainTaskLogWrites,
+  withHatchetTaskLogging,
+} from '@klicker-uzh/hatchet'
 import type { CourseDeletionEvent } from '@klicker-uzh/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -181,6 +184,11 @@ describe('course deletion worker', () => {
     }
 
     await run({ ...event, loggingContext }, context)
+
+    // Diagnostic facade writes are queued off the task critical path and
+    // flushed by the worker's shutdown drain; the echo therefore only lands
+    // after an explicit drain in tests.
+    await drainTaskLogWrites()
 
     expect(context.logger.warn).toHaveBeenCalledWith(
       'Deletion warning [correlationId=correlation-1]',

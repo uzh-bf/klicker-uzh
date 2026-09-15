@@ -1,6 +1,22 @@
 import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
+const loggingRecords = vi.hoisted(() => [] as Record<string, unknown>[])
+
+vi.mock('@/src/lib/server/logger', async () => {
+  const { createLogger } = await import('@klicker-uzh/logging/node')
+  return {
+    logger: createLogger(
+      { service: 'chat-test', environment: 'production' },
+      {
+        write: (line) => {
+          loggingRecords.push(JSON.parse(line))
+        },
+      }
+    ),
+  }
+})
+
 const mocks = vi.hoisted(() => ({
   close: vi.fn(),
   getAuthenticatedManageUser: vi.fn(),
@@ -42,6 +58,7 @@ async function expectState(response: Response, status: number, state: string) {
 
 describe('GET /api/manage/capabilities', () => {
   beforeEach(() => {
+    loggingRecords.length = 0
     mocks.close.mockReset().mockResolvedValue(undefined)
     mocks.getAuthenticatedManageUser.mockReset().mockResolvedValue({
       catalyst: true,
@@ -155,8 +172,14 @@ describe('GET /api/manage/capabilities', () => {
     )
 
     await expectState(await GET(request()), 503, 'unavailable')
-    expect(warning).toHaveBeenCalledWith(
-      'Manage assistant capability preflight is unavailable'
+    expect(loggingRecords).toContainEqual(
+      expect.objectContaining({
+        event: 'chat.manage.capability.unavailable',
+        correlationId: expect.any(String),
+      })
+    )
+    expect(JSON.stringify(loggingRecords)).not.toContain(
+      'private upstream detail'
     )
     warning.mockRestore()
   })

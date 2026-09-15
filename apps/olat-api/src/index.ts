@@ -44,12 +44,15 @@ if (!API_KEY) {
 
 function logRequestFailure(req: Request, res: Response, message: string) {
   const log = requestLogger(res) ?? logger
+  // The completion listener skips requests with an explicit failure record,
+  // so each failed request produces exactly one HTTP record.
+  res.locals.logFailureRecorded = true
   log.error(
     {
       event: 'http.request.failed',
       http: {
         method: req.method,
-        route: res.locals.logRoute ?? 'unmatched',
+        route: res.locals.logRoute ?? '/unmatched',
         statusCode: StatusCode.INTERNAL_SERVER_ERROR,
         ...(typeof res.locals.logStartedAt === 'number'
           ? {
