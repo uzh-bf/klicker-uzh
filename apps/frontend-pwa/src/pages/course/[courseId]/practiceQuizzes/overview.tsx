@@ -8,6 +8,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, H3, UserNotification } from '@uzh-bf/design-system'
@@ -23,17 +24,20 @@ function PracticeQuizOverview({
   courseId,
   participantToken,
   cookiesAvailable,
+  tokenSource,
 }: {
   isInactive: boolean
   courseId: string
   participantToken?: string
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
 }) {
   const t = useTranslations()
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
   })
 
   const { data, loading } = useQuery(
@@ -146,11 +150,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        courseId: ctx.params.courseId,
+        ctx,
+      })
     const result = await apolloClient.query({
       query: GetCoursePublishedPracticeQuizzesDocument,
       variables: {
@@ -168,6 +173,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           courseId: ctx.params.courseId,
           participantToken: participantToken ?? null,
           cookiesAvailable,
+          tokenSource,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -179,6 +185,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         props: {
           participantToken,
           cookiesAvailable,
+          tokenSource,
           courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,

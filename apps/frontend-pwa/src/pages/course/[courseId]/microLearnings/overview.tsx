@@ -3,29 +3,32 @@ import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
 import { GetCoursePublishedMicroLearningsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
 import { participantRedirect } from '@lib/participantRedirect'
-import ParticipantRedirect from '../../../../components/ParticipantRedirect'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
+import ParticipantRedirect from '../../../../components/ParticipantRedirect'
 
 function MicroLearningsOverview({
   isInactive,
   courseId,
   participantToken,
   cookiesAvailable,
+  tokenSource,
   redirectTo,
 }: {
   isInactive: boolean
   courseId: string
   participantToken?: string
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
   redirectTo?: string
 }) {
   const t = useTranslations()
@@ -33,6 +36,7 @@ function MicroLearningsOverview({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
   })
 
   const { data, loading } = useQuery(GetCoursePublishedMicroLearningsDocument, {
@@ -46,6 +50,7 @@ function MicroLearningsOverview({
         participantToken={participantToken}
         redirectTo={redirectTo}
         cookiesAvailable={cookiesAvailable}
+        tokenSource={tokenSource}
       />
     )
   }
@@ -124,11 +129,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        courseId: ctx.params.courseId,
+        ctx,
+      })
     const result = await apolloClient.query({
       query: GetCoursePublishedMicroLearningsDocument,
       variables: {
@@ -145,6 +151,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           courseId: ctx.params.courseId,
           participantToken: participantToken ?? null,
           cookiesAvailable,
+          tokenSource,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -167,6 +174,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         props: {
           participantToken,
           cookiesAvailable,
+          tokenSource,
           courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,

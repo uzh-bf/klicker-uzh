@@ -164,19 +164,24 @@ function JoinCourse({
                 // Account creation no longer enrolls, so the PIN join must
                 // survive the login detour: sending the join target through
                 // login brings the logged-in participant back to this page,
-                // where the prefilled form completes the enrollment.
+                // where the prefilled form completes the enrollment. The
+                // course destination is kept even without a PIN so the
+                // participant can enter one manually after login.
                 const pin = Array.isArray(router.query.pin)
                   ? router.query.pin[0]
                   : router.query.pin
+                const joinSearch = new URLSearchParams()
+                if (pin) {
+                  joinSearch.set('pin', pin)
+                }
+                const joinTarget = `/course/${courseId}/join${
+                  joinSearch.size > 0 ? `?${joinSearch.toString()}` : ''
+                }`
                 await router.push({
                   pathname: '/login',
                   query: {
                     newAccount: true,
-                    ...(pin
-                      ? {
-                          redirect_to: `/course/${courseId}/join?pin=${pin}`,
-                        }
-                      : {}),
+                    redirect_to: joinTarget,
                   },
                 })
               }}

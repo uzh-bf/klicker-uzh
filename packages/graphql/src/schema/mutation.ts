@@ -256,7 +256,12 @@ export const Mutation = builder.mutationType({
 
       sendMagicLink: t.boolean({
         nullable: true,
-        args: { usernameOrEmail: t.arg.string({ required: true }) },
+        args: {
+          usernameOrEmail: t.arg.string({ required: true }),
+          // Optional same-origin return target carried through the magic link,
+          // e.g. a course join page that must survive the login detour.
+          redirectTo: t.arg.string({ required: false }),
+        },
         resolve: async (_, args, ctx) => {
           // TODO: at some point we should do rate limiting or similar things here (to prevent spamming)
           return AccountService.sendMagicLink(args, ctx)

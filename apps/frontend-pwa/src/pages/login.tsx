@@ -118,6 +118,9 @@ function Login({ redirectPath }: Readonly<LoginProps>) {
       const result = await sendMagicLink({
         variables: {
           usernameOrEmail: values.usernameOrEmail.trim(),
+          // Carry the validated return target (e.g. a course join page)
+          // through the magic link so the enrollment step survives login.
+          redirectTo: redirectPath,
         },
       })
 

@@ -14,7 +14,9 @@ import type { Context, ContextWithUser } from '../src/lib/context.js'
 import {
   createParticipantAccount,
   loginParticipantWithLti,
+  sendMagicLink,
 } from '../src/services/accounts.js'
+import { hydrateTemplate, sendEmail } from '../src/services/email.js'
 import {
   joinCourseLeaderboard,
   joinCourseWithPin,
@@ -281,5 +283,90 @@ describe('course enrollment authorization', () => {
         where: { participantId: user.id, courseId },
       })
     ).toMatchObject({ score: 27 })
+  })
+
+  it('rejects LTI enrollment into a course marked for deletion', async () => {
+    const deletedCourseId = randomUUID()
+    const user = await participant()
+    await prisma.course.create({
+      data: {
+        id: deletedCourseId,
+        ownerId,
+        name: 'Synthetic deleted course',
+        displayName: 'Deleted course',
+        authType: CourseAuthType.PIN,
+        startDate: new Date(),
+        endDate: new Date(),
+        groupDeadlineDate: new Date(),
+        deletionRequestedAt: new Date(),
+      },
+    })
+    const signedLtiData = await signJWT(
+      { sub: randomUUID(), email: user.email!, scope: 'LTI1.3' },
+      process.env.APP_SECRET!,
+      { expiresIn: '5m' }
+    )
+
+    expect(
+      await loginParticipantWithLti(
+        { signedLtiData, courseId: deletedCourseId },
+        context()
+      )
+    ).toBeNull()
+    expect(
+      await createParticipantAccount(
+        {
+          signedLtiData,
+          courseId: deletedCourseId,
+          email: user.email!,
+          username: `deleted-course-${randomUUID().slice(0, 8)}`,
+          password: 'synthetic-password',
+          isProfilePublic: false,
+        },
+        context()
+      )
+    ).toBeNull()
+    expect(
+      await prisma.participation.count({
+        where: { participantId: user.id, courseId: deletedCourseId },
+      })
+    ).toBe(0)
+
+    await prisma.course.delete({ where: { id: deletedCourseId } })
+  })
+
+  it('carries a safe join return target through the magic link and drops unsafe ones', async () => {
+    vi.mocked(hydrateTemplate).mockImplementation(
+      async ({ variables }) => `<a href="${variables?.LINK ?? ''}">login</a>`
+    )
+
+    const safeUser = await participant()
+    await sendMagicLink(
+      {
+        usernameOrEmail: safeUser.email!,
+        redirectTo: '/course/course-id/join?pin=123456789',
+      },
+      context()
+    )
+    const safeCall = vi.mocked(sendEmail).mock.calls.at(-1)![0] as {
+      html: string
+    }
+    expect(safeCall.html).toContain(
+      `redirect_to=${encodeURIComponent('/course/course-id/join?pin=123456789')}`
+    )
+
+    const unsafeUser = await participant()
+    await sendMagicLink(
+      {
+        usernameOrEmail: unsafeUser.email!,
+        redirectTo: 'https://evil.example/phish',
+      },
+      context()
+    )
+    const unsafeCall = vi.mocked(sendEmail).mock.calls.at(-1)![0] as {
+      html: string
+    }
+    expect(unsafeCall.html).not.toContain('redirect_to')
+    expect(unsafeCall.html).not.toContain('evil.example')
   })
 })

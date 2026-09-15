@@ -392,4 +392,160 @@ test.describe('LTI course enrollment', () => {
       ).toBe(0)
     })
   }
+
+  test('raw query token does not replace an established session', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const otherId = randomUUID()
+    participantIds.push(otherId)
+    await prisma.participant.create({
+      data: {
+        id: otherId,
+        username: otherId,
+        password: 'unused-synthetic-password',
+      },
+    })
+    const sessionA = await signJwt({
+      sub: participantId,
+      role: UserRole.PARTICIPANT,
+    })
+    await page.addInitScript((value) => {
+      sessionStorage.setItem('participant_token', value)
+    }, sessionA)
+
+    // An induced link carrying B's raw relay token must not substitute A.
+    const relayTokenB = await signJwt({
+      sub: otherId,
+      role: UserRole.PARTICIPANT,
+    })
+    await page.goto(
+      `/course/${courseId}/docs?participantToken=${encodeURIComponent(relayTokenB)}`
+    )
+    await expect(page).toHaveURL(/\/docs$/)
+    expect(
+      await page.evaluate(() => {
+        const value = sessionStorage.getItem('participant_token')!
+        return JSON.parse(
+          atob(value.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/'))
+        ).sub
+      })
+    ).toBe(participantId)
+    expect(
+      await prisma.participation.count({
+        where: { courseId, participantId: otherId },
+      })
+    ).toBe(0)
+  })
+
+  test('malformed raw query token does not break an established session', async ({
+    page,
+  }) => {
+    const sessionA = await signJwt({
+      sub: participantId,
+      role: UserRole.PARTICIPANT,
+    })
+    await page.addInitScript((value) => {
+      sessionStorage.setItem('participant_token', value)
+    }, sessionA)
+
+    await page.goto(`/course/${courseId}/docs?participantToken=garbage`)
+    await expect(page).toHaveURL(/\/docs$/)
+    expect(
+      await page.evaluate(() => {
+        const value = sessionStorage.getItem('participant_token')!
+        return JSON.parse(
+          atob(value.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/'))
+        ).sub
+      })
+    ).toBe(participantId)
+  })
+
+  test('PIN-less join signup returns to the join page without enrolling', async ({
+    page,
+  }) => {
+    const username = `join-${randomUUID().slice(0, 8)}`
+    await page.goto(`/course/${courseId}/join`)
+    await page
+      .locator('input[name="email"]')
+      .fill(`${randomUUID()}@example.com`)
+    await page
+      .locator('[data-cy="username-field-account-creation"]')
+      .fill(username)
+    await page.locator('input[name="password"]').fill('synthetic-password')
+    await page
+      .locator('input[name="passwordRepetition"]')
+      .fill('synthetic-password')
+    await page.locator('[data-cy="tos-checkbox"]').click()
+    await page.locator('[data-cy="create-profile-button"]').click()
+    await page.waitForURL(/\/login/)
+
+    await page.locator('input[name="usernameOrEmail"]').fill(username)
+    await page.locator('input[name="password"]').fill('synthetic-password')
+    await page.locator('[data-cy="submit-login"]').click()
+
+    // The course context survives the login detour even without a PIN;
+    // returning to the join page must not itself create membership.
+    await page.waitForURL(new RegExp(`/course/${courseId}/join$`))
+    const prisma = await getPrisma()
+    const account = await prisma.participant.findUniqueOrThrow({
+      where: { username },
+    })
+    participantIds.push(account.id)
+    expect(
+      await prisma.participation.count({
+        where: { courseId, participantId: account.id },
+      })
+    ).toBe(0)
+  })
+
+  test('magic-link login preserves the join intent and completes enrollment', async ({
+    page,
+  }) => {
+    const coursePin = pinSequence - 1
+    const username = `magic-${randomUUID().slice(0, 8)}`
+    await page.goto(`/course/${courseId}/join?pin=${coursePin}`)
+    await page
+      .locator('input[name="email"]')
+      .fill(`${randomUUID()}@example.com`)
+    await page
+      .locator('[data-cy="username-field-account-creation"]')
+      .fill(username)
+    await page.locator('input[name="password"]').fill('synthetic-password')
+    await page
+      .locator('input[name="passwordRepetition"]')
+      .fill('synthetic-password')
+    await page.locator('[data-cy="tos-checkbox"]').click()
+    await page.locator('[data-cy="create-profile-button"]').click()
+    await page.waitForURL(/\/login/)
+
+    // Emulate the emailed magic link: a synthetic OTP-scoped token carrying
+    // the join return target instead of reading a real mailbox.
+    const prisma = await getPrisma()
+    const account = await prisma.participant.findUniqueOrThrow({
+      where: { username },
+    })
+    participantIds.push(account.id)
+    const otp = signJwt({
+      sub: account.id,
+      role: UserRole.PARTICIPANT,
+      scope: 'OTP',
+    })
+    await page.goto(
+      `/magicLogin?token=${encodeURIComponent(otp)}&redirect_to=${encodeURIComponent(`/course/${courseId}/join?pin=${coursePin}`)}`
+    )
+
+    await page.waitForURL(
+      new RegExp(`/course/${courseId}/join\\?pin=${coursePin}`)
+    )
+    await expect(page.locator('[data-cy="join-course"]')).toBeEnabled()
+    await page.locator('[data-cy="join-course"]').click()
+    await expect
+      .poll(() =>
+        prisma.participation.count({
+          where: { courseId, participantId: account.id },
+        })
+      )
+      .toBe(1)
+  })
 })

@@ -1,4 +1,5 @@
 import type { GetServerSidePropsContext } from 'next'
+import type { ParticipantTokenSource } from './getParticipantToken'
 
 export function preserveLtiQuery(
   destination: string,
@@ -13,11 +14,13 @@ export async function participantRedirect({
   destination,
   participantToken,
   cookiesAvailable,
+  tokenSource,
   locale,
 }: {
   destination: string
   participantToken?: string | null
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
   locale?: string
 }) {
   // Reconcile browser storage with the resolved session before leaving the course page.
@@ -27,6 +30,7 @@ export async function participantRedirect({
         redirectTo: destination,
         participantToken,
         cookiesAvailable: cookiesAvailable ?? false,
+        tokenSource,
         messages: (await import(`@klicker-uzh/i18n/messages/${locale ?? 'en'}`))
           .default,
       },

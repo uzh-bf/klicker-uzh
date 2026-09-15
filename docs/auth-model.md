@@ -35,7 +35,7 @@ The NextAuth cookie domain is derived by stripping the first subdomain label fro
 ## Participant login (`apps/frontend-pwa`)
 
 - **Username/password** — PWA `LoginForm` → login mutation → `participant_token` cookie; the PWA Apollo client additionally sends the token as `Bearer` from sessionStorage.
-- **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`).
+- **Magic link** — `services/accounts.ts:sendMagicLink` signs a 15-minute JWT and emails `${APP_ORIGIN_PWA}/magicLogin?token=…`; the `magicLogin` page exchanges it via `LoginParticipantMagicLinkDocument` (`loginParticipantMagicLink`). The login page can pass a validated return target to `sendMagicLink`, which embeds it in the emailed link only when it is a same-origin relative path; the `magicLogin` page re-validates the `redirect_to` query value before navigating there after login.
 - **Edu-ID for participants** — separate NextAuth config in the same auth app (`EduIDParticipantProvider`), same `EDUID_CLIENT_SECRET` gating.
 - **Temporary (anonymous)** — `temporary_participant_token` cookie, role `TEMPORARY_PARTICIPANT`.
 - **LTI 1.3 only** — `apps/lti` (ltijs). Launch targets resolve in strict precedence `custom claim (klicker_redirect_to)` → `query redirectTo`, with **no env fallback**; validation fails closed on the first present-but-invalid source and checks URL hostnames exact/subdomain against `COOKIE_DOMAIN` and `DF_DOMAIN` — never substring matching (`apps/lti/src/launchTarget.ts`).
@@ -57,7 +57,11 @@ resolution; assessment courses retain their invitation rules.
 
 Course LTI entry pages process a fresh handoff even when a participant session
 already exists. The LTI-resolved account receives participation before an empty
-activity state or redirect. Repeated launches preserve existing opt-in and
+activity state or redirect. Courses marked for deletion are excluded from LTI
+enrollment at the shared resolver boundary (`loginParticipantWithLti`, LTI
+account creation, and the participation upsert), so a launch into a
+deletion-requested course resolves no participation; activity queries reject
+such courses independently. Repeated launches preserve existing opt-in and
 leaderboard scores. Cookie-blocked redirects store the participant session in
 browser session storage before navigating; legacy course aliases preserve the
 query handoff until it reaches an enrollment entry point.
@@ -65,10 +69,14 @@ query handoff until it reaches an enrollment entry point.
 The participant session travels as an HttpOnly cookie when cookies are
 available and falls back to session storage plus a `participantToken` query
 relay when they are not. Course pages reconcile session storage with a freshly
-resolved handoff, so a course link carrying a valid `participantToken` query
-value can replace the stored session of a cookie-blocked browser; signature-
-verified handoffs and server-set cookies are the trusted sources, while the
-raw query value is accepted as-is for legacy relay flows.
+resolved handoff, and the reconciliation is provenance-gated:
+`getParticipantToken` reports where a token came from (`session` for the
+server-set cookie, `query` for a raw `?participantToken=` relay, `lti` for a
+freshly verified handoff), and only the verified `lti` source may replace a
+session a cookie-blocked browser has already established. A raw query value
+still initializes an absent session (the legacy relay contract) but never
+substitutes an existing one; letting it do so would allow an induced link to
+switch the victim's identity (login CSRF).
 
 The existing LTI identity JWT does not bind a course. Enrollment still accepts
 the course separately, and redirect validation checks the destination host,
