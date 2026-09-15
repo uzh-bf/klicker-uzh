@@ -825,6 +825,14 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
     loginInfo:
       'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
+    restart: {
+      title: 'Login',
+      info: 'Your login attempt could not be continued. Please choose how you would like to log in again.',
+      errorInfo:
+        'The login provider reported an error. Please choose how you would like to log in again.',
+      studentLogin: 'Student login (assessment)',
+      lecturerLogin: 'Lecturer login',
+    },
   },
   pwa: {
     general: {
