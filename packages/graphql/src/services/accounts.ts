@@ -587,17 +587,48 @@ export async function setAiFeatures(
     return 2
   }
 
-  await ctx.prisma.user.update({
-    where: { id: targetUser.id },
-    data: {
-      aiFeaturesEnabled: enabled,
-      ...(requestedTier === undefined
-        ? {}
-        : { aiSubscriptionTier: requestedTier }),
-      ...(requestedCostCenter === undefined
-        ? {}
-        : { aiChatbotCostCenter: requestedCostCenter }),
-    },
+  const now = new Date()
+  const monthStart = getZurichMonthStart(now)
+
+  await ctx.prisma.$transaction(async (prisma) => {
+    await prisma.user.update({
+      where: { id: targetUser.id },
+      data: {
+        aiFeaturesEnabled: enabled,
+        ...(requestedTier === undefined
+          ? {}
+          : { aiSubscriptionTier: requestedTier }),
+        ...(requestedCostCenter === undefined
+          ? {}
+          : { aiChatbotCostCenter: requestedCostCenter }),
+      },
+    })
+
+    // Enabling an account seeds the base-class budget for the current Zurü
+    // month, so a newly entitled account can chat without an administrator
+    // setting a budget first. A budget that was already set for this month or
+    // an earlier one is left untouched, because the effective usage carries
+    // the most recent earlier row forward.
+    if (!enabled) return
+
+    const existingBudget = await prisma.chatAccountUsage.findFirst({
+      where: {
+        ownerId: targetUser.id,
+        usageClass: DB.ChatUsageClass.BASE,
+        monthStart: { lte: monthStart },
+      },
+      select: { ownerId: true },
+    })
+    if (existingBudget) return
+
+    await prisma.chatAccountUsage.create({
+      data: {
+        ownerId: targetUser.id,
+        usageClass: DB.ChatUsageClass.BASE,
+        monthStart,
+        budgetCredits: DEFAULT_BASE_CHAT_BUDGET_CREDITS,
+      },
+    })
   })
   await sendTeamsNotification({
     scope: 'graphql/setAiFeatures',
