@@ -247,12 +247,39 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
   is additive-only and idempotent; a values-free readback first confirmed every table, all 32
   job columns, all 15 reservation columns and all 7 indexes already existed, so applying it
   recorded only the ledger row and left the 65 existing jobs intact. The API pod then reached
-  1/1 Running. The one-recording proof is *not* done: the user-supplied cluster tunnel dropped
-  mid-run (`localhost:6443` and the STG database forward both refuse connections), and the
-  artifact readback needs cluster access because the STG blob endpoint resolves only inside the
-  cluster. The deployed API is reachable over its public ingress
-  (`https://video.ai.stg.df-app.ch/health` -> 200; `/jobs` without a key -> 401), so the run
-  resumes as soon as the tunnel returns. PRD promotion stays gated on that proof.
+  1/1 Running. The user-supplied cluster tunnel dropped twice mid-run (`localhost:6443` and the
+  STG database forward both refused connections) and the artifact readback needs cluster access
+  because the STG blob endpoint resolves only inside the cluster; the deployed API is reachable
+  over its public ingress (`https://video.ai.stg.df-app.ch/health` -> 200; `/jobs` without a
+  key -> 401), and the run resumed each time the tunnel returned.
+- 2026-09-15 (S4 one-recording proof, STG): the real-video proof passed on STG. One recording,
+  `11.05 Künstliche Intelligenz - Prototypische KI-Anwendungen.mp4` (235.5 s, 20 923 774 B,
+  source `sha256:0fd99f0c7c9787f4dda29f7dbea396ff84ef1fbad293989e4d7e293a95322fcd`), was
+  submitted as job `stg-ingestion-source-proof-20260915` (`dispatch_id
+  d473d3a6-2bdf-4143-96fa-f86449f95438`, Hatchet) and completed on attempt 1 with no error,
+  2 m 52 s of processing (prepare-video 27.6 s, describe-frames 34.0 s, transcribe 141.2 s,
+  build-chunks 28 ms, review 15 ms). VLM spend on the job ledger was `$0.0165035` (12
+  generations, 29 504 tokens), an order of magnitude under the `$1.00` per-job cap. The
+  publication step wrote `artifacts/stg-ingestion-source-proof-20260915/learning_units/ingestion_source.json`
+  (36 207 B, object `sha256:b7b69f891a2b0a7e644e92d73d478b5e2f40a136277a1d0d10fff368be136cfd`,
+  `schema_version video_ingestion_source.v1`); a pod-side readback listed all eight learning-unit
+  artifacts. The source carries 10 units: 6 eligible, 3 quarantined (`keep_in_queue`, reason
+  `ingestion_policy_keep_in_queue`), 1 excluded (`export_excluded`), with 10 embedding units.
+  The published `policy_sha256 sha256:08863ea7d71d576530c4fa7b3418f842f089a761f5dce2e1f9481a9b842ff683`
+  equals the raw hash of the tracked descriptor
+  `src/video_ai/ingestion_policies/informatik_und_wirtschaft_hs26_eligibility_v1.json`
+  (`policy_id informatik-und-wirtschaft-hs26-eligibility.v1`), so the applied policy is the
+  reviewed one, not a default. The proof ran on the promoted digests: API pod image
+  `…-video-processing-api@sha256:c33ddcb1…` and worker `…-video-processing-worker@sha256:27a3bacd…`,
+  with ArgoCD `app-video-processing` `Synced`/`Suspended` at `b3cfa52a`. One live drift had to
+  be cleared to run it, and it is not in Git: both KEDA `ScaledObject`s carried a hand-set
+  `autoscaling.keda.sh/paused-replicas: "0"` (applied by `kubectl-annotate` 2026-08-08), which
+  creates no HPA and leaves the workflow worker at zero replicas, so the job sat `queued`; the
+  annotation was removed on `video-processing-worker-workflow` only, the HPA and worker pod
+  appeared, and the job ran. The transcription route is still paused. Three stale July jobs
+  (`s8-case5-acoustic-78`, `s8-case5-acoustic-78-r2`, `s8-case4-dense-807`, all
+  `attempt_count: 0` from 2026-07-28) are explained by the same pause. PRD promotion (STEP S4
+  item 3) is now unblocked on the STG proof and remains a separately gated action.
 - 2026-09-15 (STG API-key name drift, open): the STG Infisical project `video-processing`
   (environment `stg`) stores the service credential as `VIDEO_PROCESSING_API_KEY2`; there is
   no `VIDEO_PROCESSING_API_KEY` at that path. Both df-cloud's STG ExternalSecret mapping
