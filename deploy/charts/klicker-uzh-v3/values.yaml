@@ -187,8 +187,6 @@ assessmentAudit:
   pilotLiveQuizIds: ''
   tableEndpoint: ''
   blobEndpoint: ''
-  # Additional trusted media accounts; the backend identity must have read access.
-  additionalSourceAccounts: []
   backendMedia:
     serviceAccountName: ''
   worker:

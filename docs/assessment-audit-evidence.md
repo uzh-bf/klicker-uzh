@@ -89,7 +89,7 @@ Hatchet command ── response processor transaction ─┤
                                                      ▼
                              Azure Table append-only evidence
 
-assessment snapshot → stream/lock owned media → verify snapshot again
+assessment snapshot (including image URLs) → verify snapshot again
                                                 │
                                                 └─ scope + root/parts + outbox
                                                    in one Prisma transaction
@@ -239,13 +239,11 @@ as its business write. Uncovered quizzes keep their prior behavior; once a
 scope is covered, invalid or conflicting evidence aborts the business
 transaction.
 
-Media introduced by an instance refresh is discovered and staged in immutable
-Blob storage before the database transaction. The transaction verifies that
-the staged canonical media-reference set still matches the effective
-after-state before it emits capture/replacement evidence. Klicker-owned capture
-failures abort the refresh;
-external media remains reference-only and marks the instance change with the
-stable `LECTURER_CONTENT_MUTATION_EXTERNAL_MEDIA_NOT_CAPTURED` limitation.
+Image URLs introduced by an instance refresh are preserved in the normalized
+before/after content in the same transaction as the refresh. No image download,
+source-account check, media lookup, or Blob write is required. URL changes alter
+the effective content hash and remain audited; unavailable image bytes do not
+abort the refresh or add an external-media limitation.
 
 Assessment runtime-session events describe the execution session of a LiveQuiz,
 using its UUID as `sessionId`. They are not participant browser/focus sessions
@@ -298,26 +296,21 @@ valid outbox delivery-state shape.
 ## Assessment activation and rollout
 
 Audit coverage is sticky per `(liveQuizId, lifecycleEpoch)`. Activation first
-loads and canonicalizes an explicit assessment snapshot, discovers and streams
-its owned media into immutable content-addressed blobs, and then opens a second
-database transaction. That transaction reloads the snapshot, rejects any
+loads and canonicalizes an explicit assessment snapshot including image URLs,
+and then opens a second database transaction. That transaction reloads the snapshot, rejects any
 concurrent change, and atomically writes the scope, baseline root and parts,
 activation event, and rollout-inventory outcome. Exact retries are idempotent;
 different evidence for an already activated scope fails closed.
 
-Before media capture, activation reserves the lifecycle scope as `ACTIVATING`.
-Capture or baseline failures transition that reservation to `FAILED`; an
-interrupted process leaves a durable `ACTIVATING` marker for reconciliation.
-The marker is never treated as covered evidence, and monitoring evaluates only
-the latest lifecycle per quiz so a repaired retry clears the active failure
-signal. Content-addressed Blob versions remain immutable until their retention
-policy permits cleanup; the reservation prevents a staged version from being
-an untracked evidence object while the cleanup/reconciliation worker is
-fast-follow work.
+Before baseline preparation, activation reserves the lifecycle scope as
+`ACTIVATING`. Baseline failures transition that reservation to `FAILED`; an
+interrupted process leaves a durable marker for reconciliation. Image access
+and retention cannot fail preparation because no image storage is contacted.
+Historical failures and previously captured immutable evidence are preserved.
 
 The baseline includes effective quiz configuration, ordered blocks and element
 instances, effective element content and scoring, active participant UUIDs,
-effective permissions, immutable media references, and explicit limitations. It
+effective permissions, and image URLs embedded in effective content. It
 does not copy participant profiles, PINs, or other authentication material.
 Baseline parts are independently hashed, and the root commits to each part key
 and full canonical-part hash. Snapshot comparison uses that incremental root
@@ -336,7 +329,7 @@ but the failed gap is durably recorded for a later repair scan.
 
 Starting an assessment remains teaching-available and emits a stable warning if
 the latest lifecycle epoch is not covered. Reopening is stricter because it
-creates a new evidence lifecycle: owned media is staged first, then the business
+creates a new evidence lifecycle: the URL-containing snapshot is prepared, then the business
 reset, incremented lifecycle epoch, new baseline, and activation evidence commit
 in one transaction. If that preparation or commit fails, reopening is blocked
 without partially resetting the quiz.
@@ -393,13 +386,24 @@ keeps shared assessment context, excludes events scoped to other participants,
 and reports whether any target-participant evidence was found. Evidence without
 a baseline reports `BASELINE_MISSING`; it never claims covered status.
 
-Owned assessment media is copied through a bounded-memory stream path. Source
-URLs must be query-free HTTPS URLs on explicitly configured Blob accounts, and every
-copy is hashed while streaming. The destination name is content addressed;
-conditional creation plus metadata verification makes identical retries safe
-and a differing replay a hard conflict. Capture locks the returned blob version
-with a version-level immutability policy and never exposes content update or
-delete operations.
+### Image evidence contract
+
+Image URLs are sufficient audit evidence (product decision, 2026-09-15).
+New baselines and element changes retain the original URLs in question content,
+explanations, choices and feedback. The hashed evidence proves the recorded URL;
+it does not guarantee that the image bytes remain available or unchanged.
+`COVERED` does not imply an archived copy of every referenced image.
+
+Activation, reopening, rollout and element refreshes do not query media records,
+download images, validate source accounts, or create/verify image retention
+locks. They require no source-image Azure role. Image unavailability cannot
+fail coverage. Text evidence still uses the transactional outbox and the
+existing integrity checks; this does not disable audit validation generally.
+
+The media adapters and version-1 media event schemas remain for historical
+captured evidence and its retention. New URL-only baselines emit no
+`MEDIA_REFERENCE` parts or image-capture limitations. Existing failures are not
+rewritten and previously captured blobs are not deleted or unlocked.
 
 Audit Blob adapters write `sha256` and `bytelength` metadata with lowercase
 names. Azure property responses lowercased the former `byteLength` name, which
@@ -408,31 +412,13 @@ Reads accept case-insensitive names for existing copies, require every matching
 value to agree, and reject missing or conflicting integrity metadata. Existing
 Blob metadata is never rewritten to repair casing.
 
-The primary source account remains `BLOB_STORAGE_ACCOUNT_NAME`. Additional
-trusted Azure account names can be supplied as a comma-separated
-`ASSESSMENT_AUDIT_ADDITIONAL_SOURCE_ACCOUNTS`; the chart exposes this as
-`assessmentAudit.additionalSourceAccounts` (empty by default). Names are
-validated and converted to exact Blob service hosts. Wildcards, arbitrary
-hosts, credentials and non-UUID container paths remain rejected. The same
-allowlist is used by capture and the Azure source adapter; redirects or
-anonymous HTTP fallbacks are not introduced.
-
-Staging explicitly includes the legacy `klickeruzhprodimages` account because
-copied ElementInstance snapshots can retain image references in explanations,
-feedback or other nested content, even when question text has no image. The
-backend media workload identity needs Storage Blob Data Reader access to each
-source account/container it reads. Configuration alone does not grant Azure
-permissions. Owned references still require capture; they are never silently
-reclassified as external limitations. Existing failed coverage is not changed
-by deployment, and source Element edits do not rewrite published snapshots.
-
 Azure returns the version policy mode as lowercase `locked` / `unlocked`,
 while the JavaScript SDK request enum uses `Locked` / `Unlocked`. The adapters
 compare response modes case-insensitively; a missing or unlocked policy still
 fails verification. Test providers must return lowercase response modes so
 capture, replay and retention renewal exercise the real service contract.
 
-Audit capture tolerates `application/octet-stream` source metadata only for
+The retained legacy media adapter tolerates `application/octet-stream` source metadata only for
 images whose file signature matches the database MIME type. Detection runs on
 the already-staged temporary file before immutable persistence; bytes are never
 re-encoded. The existing evidence `mimeType` is the matched image type. Exact
@@ -446,7 +432,8 @@ change element rendering, uploads, source Blob metadata or database records.
 
 `AuditRetentionIndex` contains an append-only reverse index from immutable media
 versions to the assessment scopes that reference them. This includes baseline
-media parts and media captured or replaced by a covered source-element change.
+media parts and historical media capture/replacement events. URL-only
+baselines add no new entries to this media index.
 The daily media-policy worker streams covered scope references from baseline-part
 outbox evidence in keyset pages (100 scopes, 250 events). It validates each
 content-address binding before yielding, without a global deduplication map.

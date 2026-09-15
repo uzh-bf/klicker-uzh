@@ -9,7 +9,6 @@ import {
   AzureImmutableAuditMediaStore,
   auditMediaContentAddress,
   captureAssessmentMedia,
-  readAuditMediaSourceHosts,
   renewActiveAssessmentMediaPolicies,
   sha256Hex,
 } from '../src/index.js'
@@ -395,18 +394,16 @@ describe('Azure immutable audit media store', () => {
         },
       },
       store,
-      allowedHosts: readAuditMediaSourceHosts({
-        BLOB_STORAGE_ACCOUNT_NAME: 'primarymedia',
-        ASSESSMENT_AUDIT_ADDITIONAL_SOURCE_ACCOUNTS: 'copiedmedia',
-      }),
+      allowedHosts: [
+        'primarymedia.blob.core.windows.net',
+        'copiedmedia.blob.core.windows.net',
+      ],
       retainUntil: new Date('2027-10-01T00:00:00Z'),
     }
     await expect(
       captureAssessmentMedia({
         ...input,
-        allowedHosts: readAuditMediaSourceHosts({
-          BLOB_STORAGE_ACCOUNT_NAME: 'primarymedia',
-        }),
+        allowedHosts: ['primarymedia.blob.core.windows.net'],
       })
     ).rejects.toThrow('host is not allowlisted')
     expect(container.stored.size).toBe(0)

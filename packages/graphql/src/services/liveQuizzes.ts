@@ -41,7 +41,6 @@ import {
 } from './activities.js'
 import {
   assessmentIsSelectedForAuditActivation,
-  createAssessmentAuditMediaDependencies,
   loadAssessmentAuditSnapshot,
   type PreparedAssessmentAuditActivation,
   persistPreparedAssessmentAuditActivationInTransaction,
@@ -3353,7 +3352,6 @@ export async function resetAssessmentLiveQuiz(
       preparedAuditReopening = await prepareReopeningAssessmentAuditActivation({
         client: ctx.prisma,
         liveQuizId: liveQuiz.id,
-        media: createAssessmentAuditMediaDependencies(),
       })
     } catch {
       await recordRejectedAssessmentAction(ctx, {

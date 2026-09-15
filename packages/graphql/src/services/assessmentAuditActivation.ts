@@ -2,33 +2,20 @@ import { randomUUID } from 'node:crypto'
 import {
   type AuditActor,
   type AuditEventDraft,
-  type AuditMediaSource,
   type AuditTransactionClient,
-  AzureBlobAuditMediaSource,
-  AzureImmutableAuditMediaStore,
   type BaselinePartPayload,
   type BaselineRootPayload,
   buildAssessmentBaseline,
   canonicalizeJson,
-  captureAssessmentMedia,
-  createAzureAuditClients,
-  createAzureAuditCredential,
   createTrustedAuditContext,
-  discoverBaselineMediaReferences,
   emitAuditEvents,
-  extractBaselineMediaUrls,
-  type ImmutableAuditMediaStore,
   type RolloutBaselinePayload,
-  readAuditMediaSourceHosts,
-  readAzureAuditStorageConfig,
-  retentionBatchFor,
   runInAuditTransaction,
 } from '@klicker-uzh/audit'
 import type { Prisma } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   type AssessmentBaselineSnapshot,
-  assessmentBaselineMarkdown,
   buildAssessmentBaselineContents,
 } from './assessmentAuditBaseline.js'
 
@@ -100,14 +87,8 @@ type BaselineQuizRecord = Prisma.LiveQuizGetPayload<{
 
 type BaselineReadClient = Pick<
   Prisma.TransactionClient,
-  'liveQuiz' | 'mediaFile' | 'assessmentAuditScope'
+  'liveQuiz' | 'assessmentAuditScope'
 >
-
-export type AssessmentAuditMediaDependencies = {
-  source: AuditMediaSource
-  store: ImmutableAuditMediaStore
-  allowedHosts: readonly string[]
-}
 
 export type PreparedAssessmentAuditActivation = {
   liveQuizId: string
@@ -133,22 +114,6 @@ export type AssessmentAuditRolloutObservation = {
   scanId: string
   observedAt: string
   observedLifecycleState: RolloutBaselinePayload['observedLifecycleState']
-}
-
-export function createAssessmentAuditMediaDependencies(
-  environment: NodeJS.ProcessEnv = process.env
-): AssessmentAuditMediaDependencies {
-  const allowedHosts = readAuditMediaSourceHosts(environment)
-  const credential = createAzureAuditCredential()
-  const clients = createAzureAuditClients(
-    readAzureAuditStorageConfig(environment),
-    credential
-  )
-  return {
-    source: new AzureBlobAuditMediaSource(credential, allowedHosts),
-    store: new AzureImmutableAuditMediaStore(clients.blobs.media),
-    allowedHosts,
-  }
 }
 
 function mapQuizRecord(record: BaselineQuizRecord): AssessmentBaselineSnapshot {
@@ -185,51 +150,10 @@ export async function loadAssessmentBaselineSnapshot(
   return quiz
 }
 
-export async function captureAssessmentAuditSnapshotMedia(input: {
-  client: BaselineReadClient
-  snapshot: AssessmentBaselineSnapshot
-  media: AssessmentAuditMediaDependencies
-  capturedAt: Date
-}) {
-  const markdown = assessmentBaselineMarkdown(input.snapshot)
-  const referencedUrls = extractBaselineMediaUrls(markdown)
-  const knownMedia =
-    referencedUrls.length === 0
-      ? []
-      : await input.client.mediaFile.findMany({
-          where: { href: { in: referencedUrls } },
-          select: { id: true, href: true, type: true },
-        })
-  const discovery = discoverBaselineMediaReferences({
-    markdown,
-    knownMedia: knownMedia.map((media) => ({
-      id: media.id,
-      href: media.href,
-      mimeType: media.type,
-    })),
-  })
-  const capturedMedia: Array<
-    PreparedAssessmentAuditActivation['capturedMedia'][number]
-  > = []
-  const retainUntil = retentionBatchFor(input.capturedAt)
-  for (const reference of discovery.owned) {
-    const captured = await captureAssessmentMedia({
-      reference,
-      source: input.media.source,
-      store: input.media.store,
-      allowedHosts: input.media.allowedHosts,
-      retainUntil,
-    })
-    capturedMedia.push(captured.media)
-  }
-  return { capturedMedia, limitations: discovery.limitations }
-}
-
 async function prepareAssessmentAuditActivationInternal(input: {
   client: BaselineReadClient
   liveQuizId: string
   baselineKind: BaselineRootPayload['baselineKind']
-  media: AssessmentAuditMediaDependencies
   baselineId?: string
   lifecycleEpoch?: number
   capturedAt?: Date
@@ -264,10 +188,8 @@ async function prepareAssessmentAuditActivationInternal(input: {
       ? latestScope.lifecycleEpoch
       : (latestScope?.lifecycleEpoch ?? 0) + 1)
   const baselineId = input.baselineId ?? randomUUID()
-  // Reserve the epoch before touching immutable Blob storage. If the process
-  // dies after capture but before the coverage transaction commits, this
-  // durable reservation is the reconciler's proof that the blob may be an
-  // orphan; it is never interpreted as covered evidence by readers.
+  // Reserve the epoch before preparing evidence so interrupted attempts remain
+  // visible to reconciliation and are never mistaken for covered evidence.
   await input.client.assessmentAuditScope.upsert({
     where: {
       liveQuizId_lifecycleEpoch: {
@@ -285,17 +207,11 @@ async function prepareAssessmentAuditActivationInternal(input: {
     update: {},
   })
 
-  let capturedMedia: PreparedAssessmentAuditActivation['capturedMedia']
-  let limitations: PreparedAssessmentAuditActivation['limitations']
+  // Image URLs are preserved in the effective content; image bytes are not
+  // required evidence and must never introduce a storage dependency here.
+  const capturedMedia: PreparedAssessmentAuditActivation['capturedMedia'] = []
+  const limitations: PreparedAssessmentAuditActivation['limitations'] = []
   try {
-    const captured = await captureAssessmentAuditSnapshotMedia({
-      client: input.client,
-      snapshot,
-      media: input.media,
-      capturedAt,
-    })
-    capturedMedia = captured.capturedMedia
-    limitations = captured.limitations
     const contents = buildAssessmentBaselineContents({
       snapshot,
       capturedMedia,
@@ -340,7 +256,7 @@ async function prepareAssessmentAuditActivationInternal(input: {
         data: { coverageState: DB.AssessmentAuditCoverageState.FAILED },
       })
     } catch {
-      // Preserve the original capture failure. The reservation remains
+      // Preserve the original baseline failure. The reservation remains
       // ACTIVATING for a later reconciliation attempt.
     }
     throw error
@@ -351,7 +267,6 @@ export async function prepareAssessmentAuditActivation(input: {
   client: BaselineReadClient
   liveQuizId: string
   baselineKind: BaselineRootPayload['baselineKind']
-  media: AssessmentAuditMediaDependencies
   baselineId?: string
   lifecycleEpoch?: number
   capturedAt?: Date
@@ -363,7 +278,6 @@ export async function prepareAssessmentAuditActivation(input: {
 export async function prepareReopeningAssessmentAuditActivation(input: {
   client: BaselineReadClient
   liveQuizId: string
-  media: AssessmentAuditMediaDependencies
   baselineId?: string
   capturedAt?: Date
   now?: () => Date
@@ -631,8 +545,8 @@ export async function persistPreparedAssessmentAuditActivation(input: {
     )
   } catch (error) {
     // The activation transaction intentionally rolls back on a changed
-    // assessment or an outbox failure. Keep the pre-capture reservation
-    // durable so the orphan-media reconciler can account for this attempt.
+    // assessment or an outbox failure. Keep the activation reservation
+    // durable so reconciliation can account for this attempt.
     try {
       await input.client.assessmentAuditScope.updateMany({
         where: {
@@ -706,7 +620,6 @@ export async function activateAssessmentAudit(input: {
   baselineKind: BaselineRootPayload['baselineKind']
   actor: Extract<AuditActor, { kind: 'USER' | 'SYSTEM' }>
   correlationId?: string
-  media?: AssessmentAuditMediaDependencies
   baselineId?: string
   lifecycleEpoch?: number
   capturedAt?: Date
@@ -716,7 +629,6 @@ export async function activateAssessmentAudit(input: {
     client: input.client,
     liveQuizId: input.liveQuizId,
     baselineKind: input.baselineKind,
-    media: input.media ?? createAssessmentAuditMediaDependencies(),
     baselineId: input.baselineId,
     lifecycleEpoch: input.lifecycleEpoch,
     capturedAt: input.capturedAt,

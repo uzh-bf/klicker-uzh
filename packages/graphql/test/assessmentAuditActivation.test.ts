@@ -10,7 +10,6 @@ import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
 import { activeAssessmentMediaReferences } from '../src/services/assessmentAudit.js'
 import {
-  type AssessmentAuditMediaDependencies,
   persistPreparedAssessmentAuditActivation,
   persistPreparedAssessmentAuditActivationInTransaction,
   prepareAssessmentAuditActivation,
@@ -20,20 +19,6 @@ import {
   assessmentAuditUserOperation,
   emitCoveredAssessmentAuditEvents,
 } from '../src/services/assessmentAuditProducers.js'
-
-const unavailableMedia: AssessmentAuditMediaDependencies = {
-  allowedHosts: ['test.blob.core.windows.net'],
-  source: {
-    async open() {
-      throw new Error('Test assessment has no media to capture')
-    },
-  },
-  store: {
-    async createFromFile() {
-      throw new Error('Test assessment has no media to store')
-    },
-  },
-}
 
 describe('assessment audit activation', () => {
   let userId: string
@@ -88,7 +73,6 @@ describe('assessment audit activation', () => {
       client: prisma,
       liveQuizId,
       baselineKind: 'CREATION',
-      media: unavailableMedia,
       capturedAt,
       now: () => new Date(capturedAt.getTime() + 500),
     })
@@ -184,7 +168,6 @@ describe('assessment audit activation', () => {
     const prepared = await prepareReopeningAssessmentAuditActivation({
       client: prisma,
       liveQuizId,
-      media: unavailableMedia,
       capturedAt: new Date(finishedAt.getTime() + 500),
       now: () => new Date(finishedAt.getTime() + 750),
     })
@@ -233,7 +216,6 @@ describe('assessment audit activation', () => {
     const prepared = await prepareReopeningAssessmentAuditActivation({
       client: prisma,
       liveQuizId,
-      media: unavailableMedia,
     })
 
     await expect(

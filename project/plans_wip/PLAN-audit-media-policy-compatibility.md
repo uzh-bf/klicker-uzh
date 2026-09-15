@@ -1,3 +1,6 @@
+> Superseded on 2026-09-15 by [URL-only image evidence](PLAN-audit-image-url-evidence.md).
+> The source-account capture approach below records the earlier decision only.
+
 # Audit media policy compatibility
 
 ## Goal
