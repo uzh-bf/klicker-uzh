@@ -29,8 +29,8 @@ import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
-  getModelsForChatbot,
   getParticipantFallbackModelId,
+  resolveChatbotFallbackModel,
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
@@ -772,23 +772,6 @@ export async function POST(
   // widen later uses back to `undefined`; every assignment below is checked.
   let selectedModelConfig: ChatModelConfig = initialModelConfig
 
-  // Enforce per-chatbot model allow-list
-  // Automatic selection is authoritative when a persisted allow-list contains
-  // only retired models: getAutomaticModelId resolves that state to Luna, the
-  // unconditional base fallback, so the stale list must not reject the turn.
-  if (
-    allowedIds &&
-    !allowedIds.has(selectedModelConfig.id) &&
-    selectedModelConfig.id !== automaticModelId &&
-    (hasActiveAllowedModel ||
-      selectedModelConfig.id !== getParticipantFallbackModelId())
-  ) {
-    return NextResponse.json(
-      { error: `Model not available for this chatbot: ${selectedModel}` },
-      { status: 400 }
-    )
-  }
-
   const selectParticipantFallback = () => {
     const fallbackModelId = getParticipantFallbackModelId()
     const fallbackModelConfig = modelRegistry.find(
@@ -801,13 +784,14 @@ export async function POST(
     return true
   }
 
-  // Anonymous LTI guests stay on the chatbot's allowed fallback model. Apply
-  // this after automatic and explicit selection so later credit handling
-  // cannot restore an advanced model for a guest with remaining credits.
-  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
-    const guestFallback = getModelsForChatbot(chatbot).find(
-      (modelConfig) => modelConfig.fallback
-    )
+  // Anonymous LTI guests always run on the platform fallback model. The guest
+  // persona has no credit balance, so no allow-list and no requested model may
+  // widen it. Resolved from the registry rather than the chatbot's allow-list:
+  // a lecturer restricting the participant-visible models must not be able to
+  // strand guests without a model. Applied before the allow-list check below
+  // because the fallback is intentionally outside most allow-lists.
+  if (authMode === 'anonymous') {
+    const guestFallback = resolveChatbotFallbackModel(chatbot)
     if (!guestFallback) {
       return NextResponse.json(
         { error: 'No fallback model available for guest access' },
@@ -816,6 +800,24 @@ export async function POST(
     }
     selectedModel = guestFallback.id
     selectedModelConfig = guestFallback
+  }
+
+  // Enforce per-chatbot model allow-list for account sessions.
+  // Automatic selection is authoritative when a persisted allow-list contains
+  // only retired models: getAutomaticModelId resolves that state to Luna, the
+  // unconditional base fallback, so the stale list must not reject the turn.
+  if (
+    authMode !== 'anonymous' &&
+    allowedIds &&
+    !allowedIds.has(selectedModelConfig.id) &&
+    selectedModelConfig.id !== automaticModelId &&
+    (hasActiveAllowedModel ||
+      selectedModelConfig.id !== getParticipantFallbackModelId())
+  ) {
+    return NextResponse.json(
+      { error: `Model not available for this chatbot: ${selectedModel}` },
+      { status: 400 }
+    )
   }
 
   if (!selectedModelConfig.fallback) {
