@@ -87,6 +87,17 @@ overrides:
   'deepmerge-ts@>=7.0.0 <8.0.0': 8.0.0
   'nodemailer@>=6.0.0 <9.1.0': 9.1.0
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
+  # Image-scan residue (2026-09-15): the five packages below enter the backend
+  # image only on the integration lineage, which copies the dist trees of
+  # packages/audit, packages/knowledge-graph, packages/doc-query-client and
+  # packages/kb-management. The 2026-09-14 remediation above was measured on
+  # v3, where none of those packages exist, so it never covered these transitives.
+  # Each entry lifts only versions below their published fix.
+  'brace-expansion@>=1.0.0 <1.1.18': 1.1.18
+  'brace-expansion@>=2.0.0 <2.1.4': 2.1.4
+  'ip-address@>=10.0.0 <10.3.1': 10.3.1
+  'lodash@>=4.0.0 <4.18.1': 4.18.1
+  'tmp@>=0.2.0 <0.2.7': 0.2.7
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
