@@ -183,11 +183,22 @@ Operator side, per recording:
 
 Committed bindings live at `modules/ingestion-cli/src/ingestion_cli/course_targets/<slug>.yaml`
 in data-ingestion (seven courses). Environment for a PRD run (host shell, via
-`rs-infisical-operator --profile klicker-prd run --map ...`):
+`rs-infisical-operator`):
 `VIDEO_PROCESSING_SERVICE_URL=https://video.ai.prd.df-app.ch`, `VIDEO_PROCESSING_API_KEY`,
-`VIDEO_PROCESSING_STORAGE_ACCOUNT_URL=https://prdvideoprocessing.blob.core.windows.net`,
+`VIDEO_PROCESSING_STORAGE_ACCOUNT_URL=https://prdvideoprocessingpq8ul.blob.core.windows.net`,
 `VIDEO_PROCESSING_STORAGE_CONTAINER=video-processing`, plus `KLICKER_MILVUS_URI` and
-`KLICKER_MILVUS_TOKEN` for the target project config.
+`KLICKER_MILVUS_WRITER_TOKEN` for the target project config.
+
+Three prerequisites are not yet met; the first two were found by reading live state and the
+third by attempting the run. The account URL above is the live one from
+`configmap/video-processing-storage`; `prdvideoprocessing.blob.core.windows.net` does not
+resolve. The environment spans two operator profiles — the service credential is readable in
+`video-processing-prd` and the Milvus pair in `klicker-prd` / `klicker-stg`, while `run` reads
+one profile per invocation. And the published source is read with the operator's own
+`DefaultAzureCredential`, so the operator needs a container-scoped `Storage Blob Data Reader`
+on `prdvideoprocessingpq8ul/video-processing` (and the STG equivalent
+`stgvideoprocessingv5rtr/video-processing`); today only the in-cluster workload identities hold
+data-plane access.
 
 | Course | Account | Course id | Chatbot id | KB id |
 | --- | --- | --- | --- | --- |
@@ -227,6 +238,73 @@ answerable only from the imported lecture cites it by name and timestamp;
 manifest (job, source counts, prepare, activation count, inventory row, citation).
 
 ## Progress
+
+- 2026-09-15 (S4 PRD promoted, real-video proof passed on both environments): PR #123's
+  revision is live on PRD. The digests promoted in PR #125 (merge
+  `bfdccd7a4690724ac932706cf8b1a544b50db71b`) are the API
+  `sha256:c33ddcb12f29f6cfa626453744c0c9503b2b3adf23b61b8c2a01b29124723409` and the worker
+  `sha256:27a3bacdc8acff26b3a2ca31270cc5ca9fb46d33b4a1e00e49012f5a87ddd819`; ArgoCD
+  `app-video-processing` is `Synced` at `bfdccd7a` in `argo` on both clusters and every
+  Deployment carries those digests. One real recording was submitted to each environment. On
+  PRD, job `prd-ingestion-source-proof-20260915` (`dispatch_id
+  9fd0a1ce-80b4-4e71-b3f7-df295f929a73`) completed on attempt 1 in 242 s and published
+  `artifacts/prd-ingestion-source-proof-20260915/learning_units/ingestion_source.json`
+  (35 597 B, object `sha256:61c1fc741c413aea00e648645cf4ea28aa7c30a7a1298fbf78f1d1549e9a81b5`),
+  with 10 source units: 7 eligible, 3 quarantined, 0 excluded, and 10 embedding units; VLM spend
+  on the job ledger was `$0.24`, under the `$5.00` PRD cap, on the internal
+  `klickeruzh/azure/gpt-5.6-luna` route. On STG, job `stg-ingestion-source-proof-20260915`
+  published 36 207 B (`sha256:b7b69f891a2b0a7e644e92d73d478b5e2f40a136277a1d0d10fff368be136cfd`)
+  with 10 units: 6 eligible, 3 quarantined, 1 excluded, on the OpenRouter Gemini route. Both
+  objects were re-read this session from inside the respective API pod — the only client with
+  data-plane access — and both still declare
+  `policy_sha256 sha256:08863ea7d71d576530c4fa7b3418f842f089a761f5dce2e1f9481a9b842ff683`, the
+  raw hash of the tracked descriptor, so the applied policy is the reviewed one. Both proofs used
+  the same source recording (`sha256:0fd99f0c7c9787f4dda29f7dbea396ff84ef1fbad293989e4d7e293a95322fcd`,
+  20 923 774 B). An earlier note that PRD carries the same migration-ledger gap as STG was wrong:
+  PRD's ledger already had v1 applied on 2026-08-24.
+- 2026-09-15 (KEDA pause drift cleared on both STG routes): the hand-set
+  `autoscaling.keda.sh/paused-replicas: "0"` annotation (applied by `kubectl-annotate`
+  2026-08-08, absent from Git) has now been removed from both STG `ScaledObject`s, not only the
+  workflow route. Live readback: both are `Paused=False` with no `pausedReplicaCount`, both HPAs
+  exist, both worker Deployments sit at 0/0 (correct at zero demand), and both PRD
+  `ScaledObject`s are likewise unpaused. STG now matches Git; nothing remains to decide here
+  unless the transcription route should be re-paused deliberately.
+- 2026-09-15 (STG ExternalSecret drift pinned): the STG ExternalSecret
+  `df-infra-k8s-es-inf-stg-apps-video-processing-secrets` is `Ready=False` /
+  `SecretSyncedError`. Its event names the cause exactly: `spec.data[1]` (`remoteRef.key
+  VIDEO_PROCESSING_API_KEY`) returns `APIError … status-code=404 … "Secret with name
+  'VIDEO_PROCESSING_API_KEY' not found"` against `workspaceSlug=video-processing` environment
+  `stg`. The in-cluster `SecretStore` itself is healthy (`Ready`, "store validated"), and the
+  operator profile `video-processing-stg` also now returns HTTP 404 for that name, so the drift
+  is a missing key in the STG Infisical project, not an operator-profile gap. The Secret object
+  still carries a working value (all five keys, created 2026-07-17, last successful sync
+  2026-08-20) because `DeletionPolicy: Retain` and the target `video-processing-secrets` remain
+  unmanaged on failure, and the running API enforces a non-empty key — so this is latent, not
+  currently breaking. Repair options: create/rename the key in the STG Infisical project to the
+  unsuffixed name (matches PRD and the df-cloud mapping), or point the mapping at the suffixed
+  name that exists there. Values were never read or printed.
+- 2026-09-15 (S4 pilot import blocked on blob data-plane read): the operator side is ready —
+  the CLI, the seven bindings and the results lane all work — but the run cannot fetch the
+  published source. `fetch_published_source` reads through `AzureBlobArtifactStore` with
+  `account_url` + `DefaultAzureCredential`, so it uses the operator's own identity; the signed-in
+  `roland.schlaefli@df.uzh.ch` holds no blob data-plane role on `prdvideoprocessingpq8ul`. The
+  account's `Storage Blob Data Contributor` grantees are `managed-identity-prd-video-processing-api`
+  and `…-worker`; the STG account `stgvideoprocessingv5rtr` names its two managed identities
+  likewise, and `az storage blob list --auth-mode login` is denied on both. The operator already
+  holds exactly this pattern container-scoped elsewhere (`stgaiinfraingestionceebc`: Contributor
+  on `eduai`, `klicker`, `web-index-catalogs`, Reader on `catalog-ingestion-handoff`), so a
+  container-scoped `Storage Blob Data Reader` on `prdvideoprocessingpq8ul/video-processing` and
+  `stgvideoprocessingv5rtr/video-processing` follows established convention. A request to read
+  the storage-account key as an alternative was rejected by automatic approval review as
+  credential extraction after failed authentication; that workaround is not pursued.
+- 2026-09-15 (recording availability): no recording for a bound course is present. The PRD
+  digests and the STG digests were proven with
+  `Informatik und Wirtschaft/11.05 Künstliche Intelligenz - Prototypische KI-Anwendungen.mp4`
+  from `klicker-uzh-video-ai/input/`, which belongs to a UZH course that has no binding here.
+  `Strukturierte_Produkte/` still holds only three PDFs, and no new video file has appeared
+  anywhere under `/Users/rschlae` since 2026-09-01. The pilot therefore needs either an SP
+  recording supplied by the user, or an explicit decision to run any available recording into the
+  SP binding (the binding is per course, not per recording). Not chosen silently.
 
 - 2026-09-15 (S4 STG deployed, real-video proof pending): the producer revision is live on
   STG. klicker-uzh-video-ai PR #123 squash-merged to `main` as `1ef6a0b7` and the digest

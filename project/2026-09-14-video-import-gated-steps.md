@@ -7,6 +7,12 @@ branch `rs/course-video-import-plan`. Status 2026-09-15: S1 executed on STG only
 (`1ef6a0b7`), the STG digests were promoted (PR #124 -> `b3cfa52a`) and the one-recording proof passed on STG
 (job `stg-ingestion-source-proof-20260915`, published `ingestion_source.json`, policy digest verified against
 the tracked descriptor). S4 item 3 (PRD promotion) onward, and S2, remain not started and separately gated.
+Update 2026-09-15: S4 item 3 is now done too — PR #125 promoted the same digests to PRD, ArgoCD
+`app-video-processing` is `Synced` at `bfdccd7a` in `argo` on both clusters, and the
+one-recording proof passed on PRD as well (job `prd-ingestion-source-proof-20260915`, published
+35 597 B, 7 eligible / 3 quarantined / 0 excluded, same policy digest). Item 4 and the item 5
+`--activate` write are blocked on blob data-plane read access for the operator identity, recorded
+in the parent plan's progress. Item 5 is the only PRD corpus write this lane makes.
 
 ## Correction: the `KB` row uses `authType = 'bearer'`
 
