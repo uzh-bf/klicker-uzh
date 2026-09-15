@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/lti-service",
-  "version": "3.4.0-alpha.75",
+  "version": "3.4.0-alpha.76",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
     "cross-env": "7.0.3",
@@ -34,7 +35,8 @@
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev:lti",
     "dev:lti": "pnpm run dev",
     "dev:run": "nodemon -w dist/ --exec 'node ./dist/index.js'",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test:run": "node --test tests/*.test.mjs"
   },
   "engines": {
     "node": "=24"

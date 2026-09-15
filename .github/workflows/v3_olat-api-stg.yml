@@ -11,10 +11,15 @@ on:
     # so newly applicable images are built instead of keeping the old result.
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
+      # The Dockerfile runs 'turbo prune --scope=@klicker-uzh/olat-api'. Only that
+      # workspace dependency closure reaches the image, so a change outside
+      # it cannot alter this build and must not trigger it.
       - 'apps/olat-api/**'
-
-      # Any workspace package can be bundled into this image.
-      - 'packages/**'
+      - 'packages/grading/**'
+      - 'packages/prisma/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
+      - 'packages/logging/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
@@ -22,7 +27,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.dockerignore'
-      - '.github/workflows/v3_olat-api**'
+      - '.github/workflows/v3_olat-api-stg**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -60,8 +65,22 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
 
       - name: Build and push Docker image
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -101,6 +120,10 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-amd
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3

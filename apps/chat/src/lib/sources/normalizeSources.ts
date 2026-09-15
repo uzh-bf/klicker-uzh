@@ -4,6 +4,8 @@ import type { ChatSource, ChatSourceType } from './types'
 
 export const MAX_SOURCES = 12
 const EXCERPT_MAX_LENGTH = 240
+const GENERIC_DOCUMENT_TITLE = 'Document'
+const SANITIZED_DOCUMENT_REFERENCE_RE = /^document-[0-9a-f]{16}$/
 
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see
 // `toSafeToolName` in `services/mcpClients.ts`). Match the namespaced form or
@@ -35,7 +37,9 @@ interface SourceCandidate {
   type: ChatSourceType
   title: string
   page?: number
+  pageEnd?: number
   labeledPage?: string
+  labeledPageEnd?: string
   startSec?: number
   endSec?: number
   url?: string
@@ -104,7 +108,9 @@ export function normalizeSourcesFromParts(
         type: candidate.type,
         title: candidate.title,
         page: candidate.page,
+        pageEnd: candidate.pageEnd,
         labeledPage: candidate.labeledPage,
+        labeledPageEnd: candidate.labeledPageEnd,
         startSec: candidate.startSec,
         endSec: candidate.endSec,
         url: candidate.url,
@@ -114,6 +120,35 @@ export function normalizeSourcesFromParts(
   }
 
   return sources
+}
+
+/**
+ * Counts retrieved documents for the doc_query activity chip. Documents-mode
+ * results count valid source entries with chunks, once per source document;
+ * this is intentionally independent of the capped, deduplicated card list.
+ */
+export function countDocQueryDocuments(
+  payload: Record<string, unknown>
+): number {
+  if (payload.mode !== 'documents') {
+    return normalizeAnswerModeSources(payload).length
+  }
+
+  const rawSources = Array.isArray(payload.sources) ? payload.sources : []
+  return rawSources.reduce((count, rawSource) => {
+    if (
+      !rawSource ||
+      typeof rawSource !== 'object' ||
+      Array.isArray(rawSource)
+    ) {
+      return count
+    }
+
+    const source = rawSource as Record<string, unknown>
+    if (!getFirstChunk(source)) return count
+
+    return count + 1
+  }, 0)
 }
 
 /** Maps original source positions to the message registry without renumbering. */
@@ -280,7 +315,7 @@ function lastPathSegment(value: string): string | undefined {
 
 // Resource ingestion gateways are machine-to-machine fetch endpoints, never
 // participant source links, even when exposed through a public API hostname.
-function isIngestionReference(value: string | undefined): boolean {
+export function isIngestionReference(value: string | undefined): boolean {
   if (!value) return false
   try {
     const url = new URL(value)
@@ -301,6 +336,109 @@ function isUrlLike(value: string): boolean {
 
 function hasFileExtension(value: string): boolean {
   return /\.[a-z0-9]{1,8}$/i.test(value)
+}
+
+function isSanitizedDocumentReference(value: string | undefined): boolean {
+  return value !== undefined && SANITIZED_DOCUMENT_REFERENCE_RE.test(value)
+}
+
+// One shared guard for the chunk shape, so the reader and the page-envelope
+// helper cannot drift apart on what counts as a chunk record.
+function isChunkRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function getFirstChunk(
+  source: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  const rawChunks = Array.isArray(source.chunks) ? source.chunks : []
+  const firstChunk = rawChunks[0]
+  return isChunkRecord(firstChunk) ? firstChunk : undefined
+}
+
+/**
+ * The page envelope of one source's retrieved chunks.
+ *
+ * The payload carries no relevance score or rank (see the doc_query payload
+ * contract), so the lowest and highest page across the chunks is a lossless
+ * summary of the material retrieval returned. `page` keeps its meaning as the
+ * navigation anchor and is the lowest physical page; `pageEnd` is only set
+ * when retrieval spans more than one page. A printed page label is free-form
+ * ("Kapitel IV", "S. 8"), so `labeledPageEnd` is only derived when every
+ * chunk label is a plain integer, and the first label is kept as a fallback
+ * whenever a range cannot be formed.
+ */
+function getPageEnvelope(rawChunks: readonly unknown[]): {
+  page?: number
+  pageEnd?: number
+  labeledPage?: string
+  labeledPageEnd?: string
+} {
+  const pages: number[] = []
+  const labels: string[] = []
+
+  for (const rawChunk of rawChunks) {
+    if (!isChunkRecord(rawChunk)) continue
+    const page = cleanPage(rawChunk.page_number)
+    if (page !== undefined) pages.push(page)
+    const label = cleanString(rawChunk.labeled_page_number)
+    if (label !== undefined) labels.push(label)
+  }
+
+  // A chunk set is bounded by the retrieval payload, not by this module, so
+  // the extremes are taken in one pass rather than by spreading the array into
+  // `Math.min`/`Math.max`, which would throw a `RangeError` on a very large set
+  // and abort normalization of every source instead of degrading one card.
+  let page: number | undefined
+  let maxPage: number | undefined
+  for (const value of pages) {
+    page = page === undefined ? value : Math.min(page, value)
+    maxPage = maxPage === undefined ? value : Math.max(maxPage, value)
+  }
+
+  // NaN marks a label that is not a plain integer, so `every` over the numbers
+  // decides whether the set can carry a range at all.
+  const labelNumbers = labels.map((label) =>
+    /^\d+$/.test(label) ? Number(label) : Number.NaN
+  )
+  const numberedLabels =
+    labels.length > 0 && labelNumbers.every((value) => Number.isFinite(value))
+
+  let labeledPage = labels[0]
+  let labeledPageEnd: string | undefined
+  if (numberedLabels) {
+    let lowest = Number.POSITIVE_INFINITY
+    let highest = Number.NEGATIVE_INFINITY
+    let lowestIndex = 0
+    let highestIndex = 0
+    for (const [index, value] of labelNumbers.entries()) {
+      if (value < lowest) {
+        lowest = value
+        lowestIndex = index
+      }
+      if (value > highest) {
+        highest = value
+        highestIndex = index
+      }
+    }
+    // `numberedLabels` already proves the array is non-empty and every entry
+    // finite, so the loop always leaves `lowestIndex` on a real label.
+    labeledPage = labels[lowestIndex]
+    const highestLabel = labels[highestIndex]
+    if (highest > lowest && highestLabel !== undefined) {
+      labeledPageEnd = highestLabel
+    }
+  }
+
+  return {
+    page,
+    pageEnd:
+      maxPage !== undefined && page !== undefined && maxPage > page
+        ? maxPage
+        : undefined,
+    labeledPage,
+    labeledPageEnd,
+  }
 }
 
 function truncateExcerpt(value: string | undefined): string | undefined {
@@ -340,6 +478,11 @@ function buildDedupeKey(params: {
   endSec?: number
 }): string {
   const { url, title, page, labeledPage, startSec, endSec } = params
+  // Deliberately keyed on the start page/label, never on the retrieved range:
+  // two doc_query calls for the same resource can return overlapping but
+  // different chunk sets, and keying on the envelope would then split one
+  // document into duplicate cards. `page` is the lowest retrieved page, so it
+  // is stable for the same resource even when the first chunk changes.
   const base = url
     ? `url:${url}|${page ?? ''}|${labeledPage ?? ''}`
     : `title:${title}|${page ?? ''}|${labeledPage ?? ''}`
@@ -414,34 +557,38 @@ function normalizeDocumentsModeSources(
     const source = rawSource as Record<string, unknown>
 
     const reference = cleanString(source.reference)
+    const firstChunk = getFirstChunk(source)
     const explicitTitle =
       cleanString(source.title) ??
       cleanString(source.display_name) ??
       cleanString(source.file_name)
     const ingestionReference = isIngestionReference(reference)
+    const sanitizedDocumentReference = isSanitizedDocumentReference(reference)
     const referenceIsUrl = reference ? isUrlLike(reference) : false
     const url = referenceIsUrl && !ingestionReference ? reference : undefined
 
     // Title fallback: explicit title -> (if reference is a URL) a short name
-    // derived from its last path segment -> the raw reference -> skip.
+    // derived from its last path segment -> a generic document label for a
+    // sanitized opaque identity with chunks -> raw reference -> skip. An
+    // unnamed ingestion reference is never a source: its retrieval still
+    // renders from the raw payload, but it must not become a citation.
     const title =
       explicitTitle ??
       (ingestionReference
         ? undefined
-        : referenceIsUrl && reference
-          ? (lastPathSegment(reference) ?? reference)
-          : reference)
+        : sanitizedDocumentReference
+          ? firstChunk
+            ? GENERIC_DOCUMENT_TITLE
+            : undefined
+          : referenceIsUrl && reference
+            ? (lastPathSegment(reference) ?? reference)
+            : reference)
     if (!title) continue
 
-    const rawChunks = Array.isArray(source.chunks) ? source.chunks : []
-    const firstChunk =
-      rawChunks.length > 0 && rawChunks[0] && typeof rawChunks[0] === 'object'
-        ? (rawChunks[0] as Record<string, unknown>)
-        : undefined
-
     const excerpt = truncateExcerpt(cleanString(firstChunk?.content))
-    const page = cleanPage(firstChunk?.page_number)
-    const labeledPage = cleanString(firstChunk?.labeled_page_number)
+    const { page, pageEnd, labeledPage, labeledPageEnd } = getPageEnvelope(
+      Array.isArray(source.chunks) ? source.chunks : []
+    )
     const { startSec, endSec } = cleanVideoRange(firstChunk ?? {})
 
     const typeHint = [
@@ -456,7 +603,9 @@ function normalizeDocumentsModeSources(
       type,
       title,
       page,
+      pageEnd,
       labeledPage,
+      labeledPageEnd,
       url: getPublicSourceUrl(source.source_url) ?? getPublicSourceUrl(url),
       excerpt,
       startSec,

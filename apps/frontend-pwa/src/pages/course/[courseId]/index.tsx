@@ -9,10 +9,11 @@ import {
   LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import { parseEmbedParam } from '@klicker-uzh/shared-components/src/utils/parseEmbedParam'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -28,31 +29,35 @@ import {
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../../components/Layout'
+import { CourseChatDrawer } from '../../../components/chatbot/CourseChatDrawer'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
+import Layout from '../../../components/Layout'
+import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
+import { buildCourseChatContext } from '../../../lib/chatbot/chatContext'
 
 interface Props {
   courseId: string
   participantToken?: string
   cookiesAvailable?: boolean
+  embedded: boolean
 }
 
 function CourseOverview({
   courseId,
   participantToken,
   cookiesAvailable,
+  embedded,
 }: Props) {
   const t = useTranslations()
   const router = useRouter()
@@ -71,6 +76,15 @@ function CourseOverview({
     participantToken,
     cookiesAvailable,
   })
+
+  const chatContext = useMemo(
+    () =>
+      buildCourseChatContext({
+        courseId,
+        locale: router.locale ?? 'en',
+      }),
+    [courseId, router.locale]
+  )
 
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
@@ -129,14 +143,16 @@ function CourseOverview({
     loading
   ) {
     return (
-      <Layout displayName={t('shared.generic.leaderboard')}>
+      <Layout embedded={embedded} displayName={t('shared.generic.leaderboard')}>
         <Loader />
       </Layout>
     )
   }
 
   if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return (
+      <Layout embedded={embedded}>{t('shared.generic.systemError')}</Layout>
+    )
   }
 
   const {
@@ -177,6 +193,7 @@ function CourseOverview({
   if (!participation && !course.description) {
     return (
       <Layout
+        embedded={embedded}
         displayName={t('shared.generic.leaderboard')}
         course={course ?? undefined}
       >
@@ -184,12 +201,19 @@ function CourseOverview({
           type="info"
           message={t('pwa.courses.courseOverviewOnlyWithLogin')}
         />
+        <CourseChatDrawer
+          courseId={courseId}
+          context={chatContext}
+          embedded={embedded}
+          enabled={Boolean(participantToken)}
+        />
       </Layout>
     )
   }
 
   return (
     <Layout
+      embedded={embedded}
       displayName={t('shared.generic.leaderboard')}
       course={course ?? undefined}
     >
@@ -648,11 +672,23 @@ function CourseOverview({
           })}
         />
       )}
+      <CourseChatDrawer
+        courseId={courseId}
+        context={chatContext}
+        embedded={embedded}
+        enabled={Boolean(participantToken)}
+      />
     </Layout>
   )
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
+  const { logFailure, requestContext } = createSsrRequestLogging(
+    ctx.req.headers,
+    '/course/:courseId'
+  )
+
   try {
     if (typeof ctx.params?.courseId !== 'string') {
       return {
@@ -663,7 +699,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo(undefined, ctx, requestContext)
+    const embedded = parseEmbedParam(ctx.query.embed)
 
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
@@ -676,6 +713,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         props: {
           participantToken,
           cookiesAvailable,
+          embedded,
           courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
@@ -686,12 +724,13 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     return addApolloState(apolloClient, {
       props: {
         courseId: ctx.params.courseId,
+        embedded,
         messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
           .default,
       },
     })
-  } catch (error) {
-    console.error('Error in getServerSideProps on course overview:', error)
+  } catch {
+    logFailure('data_load_failed')
 
     // remove the lti-token, if it is defined
     try {
@@ -699,8 +738,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
-    } catch (nookiesError) {
-      console.error(nookiesError)
+    } catch {
+      logFailure('cookie_cleanup_failed')
     }
 
     // redirect to lti error page with redirect back to this page

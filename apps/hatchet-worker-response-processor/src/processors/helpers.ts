@@ -22,70 +22,80 @@ import {
   TIME_TO_ZERO_BONUS,
 } from '../constants.js'
 
-type RedisLeaderboardOperations = {
-  hincrby(key: string, field: string, increment: number): unknown
+type LeaderboardUpdate = {
+  key: string
+  field: string
+  increment: number
 }
 
-/**
- * Bounds on accepted response dimensions. They exist to cap the number of
- * Redis operations one response can generate inside the atomic script, not
- * to describe realistic question sizes (real selections and case studies
- * stay far below them).
- */
-export const MAX_RESPONSE_COLLECTION_SIZE = 1000
-export const MAX_CASE_STUDY_CRITERIA = 5000
-
-// selection entries may carry the skipped sentinels (-1, null, undefined);
-// every other entry must be an integer so it cannot collide with reserved
-// aggregate field names such as "participants"
-function isSelectionEntry(entry: unknown): boolean {
-  return (
-    entry === null ||
-    entry === undefined ||
-    entry === -1 ||
-    (typeof entry === 'number' && Number.isInteger(entry))
-  )
-}
-
-export function updateLeaderboards({
-  redisMulti,
-  participantId,
-  participantRole,
-  liveQuizKey,
-  sessionBlockId,
-  pointsAwarded,
-  xpAwarded,
-}: {
-  redisMulti: RedisLeaderboardOperations
+type LeaderboardInput = {
   participantId: string
   participantRole: string
   liveQuizKey: string
   sessionBlockId: string
   pointsAwarded: number
   xpAwarded: number
-}) {
+}
+
+export function getLeaderboardUpdates({
+  participantId,
+  participantRole,
+  liveQuizKey,
+  sessionBlockId,
+  pointsAwarded,
+  xpAwarded,
+}: LeaderboardInput): LeaderboardUpdate[] {
   // depending on the participant account type (permanent student account or
   // temporary pseudonym), set the correct points / experience points
   if (participantRole === 'PARTICIPANT') {
-    redisMulti.hincrby(
-      `${liveQuizKey}:b:${sessionBlockId}:lb`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(`${liveQuizKey}:lb`, participantId, pointsAwarded)
-    redisMulti.hincrby(`${liveQuizKey}:xp`, participantId, xpAwarded)
-  } else if (participantRole === 'TEMPORARY_PARTICIPANT') {
+    return [
+      {
+        key: `${liveQuizKey}:b:${sessionBlockId}:lb`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:lb`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:xp`,
+        field: participantId,
+        increment: xpAwarded,
+      },
+    ]
+  }
+  if (participantRole === 'TEMPORARY_PARTICIPANT') {
     // temporary participants are only granted points, xp cannot be collected
-    redisMulti.hincrby(
-      `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
-    redisMulti.hincrby(
-      `${liveQuizKey}:lbTemporary`,
-      participantId,
-      pointsAwarded
-    )
+    return [
+      {
+        key: `${liveQuizKey}:b:${sessionBlockId}:lbTemporary`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+      {
+        key: `${liveQuizKey}:lbTemporary`,
+        field: participantId,
+        increment: pointsAwarded,
+      },
+    ]
+  }
+  return []
+}
+
+export function updateLeaderboards({
+  redisMulti,
+  ...input
+}: {
+  // narrowed to the hincrby capability so both the Redis pipeline and the
+  // atomic operation collector can drive it
+  redisMulti: {
+    hincrby(key: string, field: string, increment: number): unknown
+  }
+} & LeaderboardInput) {
+  for (const update of getLeaderboardUpdates(input)) {
+    redisMulti.hincrby(update.key, update.field, update.increment)
   }
 }
 
@@ -123,6 +133,27 @@ function getPointsWithDefaults(instanceInfo: Record<string, string>) {
   }
 }
 
+/**
+ * Bounds on accepted response dimensions. They exist to cap the number of
+ * Redis operations one response can generate inside the atomic script, not
+ * to describe realistic question sizes (real selections and case studies
+ * stay far below them).
+ */
+export const MAX_RESPONSE_COLLECTION_SIZE = 1000
+export const MAX_CASE_STUDY_CRITERIA = 5000
+
+// selection entries may carry the skipped sentinels (-1, null, undefined);
+// every other entry must be an integer so it cannot collide with reserved
+// aggregate field names such as "participants"
+function isSelectionEntry(entry: unknown): boolean {
+  return (
+    entry === null ||
+    entry === undefined ||
+    entry === -1 ||
+    (typeof entry === 'number' && Number.isInteger(entry))
+  )
+}
+
 export function validateStudentResponse({
   type,
   response,
@@ -141,7 +172,9 @@ export function validateStudentResponse({
   response: LiveQuizResponseInput
   restrictions?: NumericalRestrictions | FreeTextRestrictions
   choiceCount?: string
-}): { valid: boolean; message?: string } {
+}):
+  | { valid: true; reasonCode?: never; message?: never }
+  | { valid: false; reasonCode: string; message: string } {
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     // response should be of format { ix: number, selected: boolean | undefined }[]
     const parsedChoiceCount =
@@ -164,7 +197,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for choices question ${JSON.stringify(response)}`,
+        reasonCode: 'CHOICES_FORMAT_INVALID',
+        message: 'Invalid response submitted for choices question',
       }
     }
 
@@ -175,7 +209,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for single choice question ${JSON.stringify(response)}`,
+        reasonCode: 'SINGLE_CHOICE_SELECTION_INVALID',
+        message: 'Invalid response submitted for single choice question',
       }
     }
 
@@ -186,7 +221,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for multiple choice question ${JSON.stringify(response)}`,
+        reasonCode: 'MULTIPLE_CHOICE_SELECTION_INVALID',
+        message: 'Invalid response submitted for multiple choice question',
       }
     }
 
@@ -194,7 +230,8 @@ export function validateStudentResponse({
     if (type === 'KPRIM' && response.choices.length !== 4) {
       return {
         valid: false,
-        message: `Invalid response submitted for KPRIM question ${JSON.stringify(response)}`,
+        reasonCode: 'KPRIM_CHOICE_COUNT_INVALID',
+        message: 'Invalid response submitted for KPRIM question',
       }
     }
 
@@ -209,7 +246,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for numerical question ${JSON.stringify(response)}`,
+        reasonCode: 'NUMERICAL_FORMAT_INVALID',
+        message: 'Invalid response submitted for numerical question',
       }
     }
 
@@ -226,7 +264,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Numerical response ${parsedResponse} out of bounds for numerical question with restrictions ${JSON.stringify(restrictions)}`,
+        reasonCode: 'NUMERICAL_OUT_OF_BOUNDS',
+        message: 'Numerical response is outside the allowed bounds',
       }
     }
 
@@ -236,7 +275,8 @@ export function validateStudentResponse({
     if (!response.value || typeof response.value !== 'string') {
       return {
         valid: false,
-        message: `Invalid response submitted for free text question ${JSON.stringify(response)}`,
+        reasonCode: 'FREE_TEXT_FORMAT_INVALID',
+        message: 'Invalid response submitted for free text question',
       }
     }
 
@@ -250,6 +290,7 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
+        reasonCode: 'FREE_TEXT_TOO_LONG',
         message: `Free text response exceeds maximum length of ${restrictions.maxLength} characters for free text question`,
       }
     }
@@ -270,7 +311,8 @@ export function validateStudentResponse({
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+        reasonCode: 'SELECTION_FORMAT_INVALID',
+        message: 'Invalid response submitted for selection question',
       }
     }
 
@@ -278,7 +320,10 @@ export function validateStudentResponse({
   } else if (type === 'CASE_STUDY') {
     // response should be of the format { [caseId: string]: { [itemId: number]: { [criterionId: string]: number } } }
     // assessment shape: { [caseId]: { [itemId]: { [criterionId]: number } } }
-    // — the item level already maps criterion ids to numeric responses
+    // — criterion values are numerical-range answers with configurable
+    // min/max/step, so finite fractional values are legitimate; the
+    // processor hashes them and increments occurrence counters by 1. NaN,
+    // infinities, and non-numerics are rejected.
     let criterionCount = 0
     if (
       !response.assessment ||
@@ -289,34 +334,32 @@ export function validateStudentResponse({
           typeof caseObj === 'object' &&
           caseObj !== null &&
           Object.keys(caseObj).length > 0 &&
-          Object.keys(caseObj).length <= MAX_RESPONSE_COLLECTION_SIZE &&
-          Object.entries(caseObj).every(
-            ([, itemObj]) =>
-              typeof itemObj === 'object' &&
-              itemObj !== null &&
-              Object.keys(itemObj).length > 0 &&
-              Object.entries(itemObj).every(([criterionId, criterionValue]) => {
-                criterionCount += 1
-                // criteria are numerical-range answers with configurable
-                // min/max/step, so fractional values are legitimate; the
-                // processor hashes/stringifies them and increments the
-                // occurrence counter by 1, so no fractional Redis operation
-                // is involved. NaN/Infinity are rejected as corrupted input.
-                return (
-                  typeof criterionValue === 'number' &&
-                  Number.isFinite(criterionValue) &&
-                  criterionId.length > 0 &&
-                  criterionId.length <= 128
-                )
-              })
-          )
+          Object.entries(caseObj).every(([, itemObj]) => {
+            if (
+              typeof itemObj !== 'object' ||
+              itemObj === null ||
+              Object.keys(itemObj).length === 0
+            ) {
+              return false
+            }
+            return Object.entries(itemObj).every(([criterionId, value]) => {
+              criterionCount += 1
+              return (
+                typeof value === 'number' &&
+                Number.isFinite(value) &&
+                criterionId.length > 0 &&
+                criterionId.length <= 128
+              )
+            })
+          })
       ) ||
-      criterionCount > MAX_CASE_STUDY_CRITERIA ||
-      criterionCount === 0
+      criterionCount === 0 ||
+      criterionCount > MAX_CASE_STUDY_CRITERIA
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+        reasonCode: 'CASE_STUDY_FORMAT_INVALID',
+        message: 'Invalid response submitted for case study question',
       }
     }
 
@@ -326,7 +369,8 @@ export function validateStudentResponse({
     if (!response.viewed) {
       return {
         valid: false,
-        message: `Invalid response submitted for content question ${JSON.stringify(response)}`,
+        reasonCode: 'CONTENT_RESPONSE_INVALID',
+        message: 'Invalid response submitted for content question',
       }
     }
 
@@ -335,7 +379,8 @@ export function validateStudentResponse({
 
   return {
     valid: false,
-    message: `Provided invalid question type in answer submission: ${type}`,
+    reasonCode: 'ELEMENT_TYPE_UNSUPPORTED',
+    message: 'Provided invalid question type in answer submission',
   }
 }
 

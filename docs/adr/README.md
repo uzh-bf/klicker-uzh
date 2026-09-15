@@ -14,6 +14,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0001](./0001-automate-db-migrations-via-argocd-presync-hook.md) — Automate database migrations via an ArgoCD PreSync hook
 - [0001](./0001-chat-locale-from-cookie.md) — Chat resolves its locale from a cookie, in a chat-local `getRequestConfig`
 - [0002](./0002-message-feedback-as-a-rating-field.md) — Message feedback is a nullable field on `ChatMessage`
+- [0002](./0002-standardize-server-logging-on-pino.md) — Standardize server logging on Pino
 - [0003](./0003-promote-stg-via-release-annotation-write-back.md) — Promote to staging by writing the built commit into a release annotation
 - [0003](./0003-chat-framework-upgrade.md) — Fold the chat framework upgrade into the v3 student-chat branch
 - [0004](./0004-chat-citations-from-tool-call-parts.md) — Chat citations are derived from tool-call parts
@@ -34,6 +35,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0037](./0037-standard-activity-formats.md) — Practice quizzes, microlearnings, and group activities are standard capabilities
 - [0041](./0041-chatbot-trusted-pilot-boundary.md) — Stage chatbot usage enforcement and keep the trusted pilot operations-assisted
 - [0042](./0042-version-chatbot-disclaimers-by-replacement.md) — Version lecturer-edited chatbot disclaimers by transactional replacement
+- [0043](./0043-sonar-analysis-credential-and-coverage-input-boundary.md) — Sonar analysis credentials stay out of contributor-controlled execution
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

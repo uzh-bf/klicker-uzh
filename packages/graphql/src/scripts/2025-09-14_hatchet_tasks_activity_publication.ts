@@ -1,4 +1,8 @@
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import {
+  createHatchetClient,
+  getKBGraphTerminalResult,
+  prepareHatchetTasks,
+} from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
@@ -10,6 +14,7 @@ import {
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
 } from '../services/groups.js'
+import { settleKbKnowledgeGraphResult } from '../services/knowledge.js'
 import {
   handleAssessmentLiveQuizBlockClosureAggregation,
   handlePublishScheduledLiveQuiz,
@@ -34,6 +39,7 @@ const DRY_RUN = false
 //    ongoing asynchronous activities with a defined completion date.
 
 async function run() {
+  const hatchetClient = createHatchetClient()
   const emitter = new EventEmitter()
   const redisExec = new Redis({
     family: 4,
@@ -74,6 +80,18 @@ async function run() {
       handleStandardLiveQuizBlockClosureAggregation,
       handleAssessmentLiveQuizBlockClosureAggregation,
     },
+    getKBGraphTerminalResult,
+    settleKBGraphTerminalResult: ({
+      buildId,
+      result,
+      finishedAt,
+      allowLateSuccess,
+    }) =>
+      settleKbKnowledgeGraphResult(
+        prisma,
+        { buildId, result, allowLateSuccess },
+        finishedAt
+      ),
   })
 
   // get all live quizzes that are scheduled for publication and add a corresponding hatchet task instance

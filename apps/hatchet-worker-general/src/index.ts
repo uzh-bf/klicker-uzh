@@ -1,64 +1,79 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
+import EventEmitter from 'node:events'
+import { createServer } from 'node:http'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { handlers } from '@klicker-uzh/graphql'
-import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
-import EventEmitter from 'events'
+import { renderAssessmentAuditPrometheusMetrics } from '@klicker-uzh/audit'
+import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
+import {
+  createHatchetClient,
+  createHatchetWorkerRuntime,
+  drainTaskLogWrites,
+  getKBGraphTerminalResult,
+  prepareHatchetTasks,
+  resolveWorkerRuntimeConfig,
+} from '@klicker-uzh/hatchet'
+import { toSafeError } from '@klicker-uzh/logging/node'
+import { prisma } from '@klicker-uzh/prisma'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import logger from './logger.js'
+import {
+  selectWorkflows,
+  validateKBWorkerConfiguration,
+} from './workflowSelection.js'
 
-const HATCHET_WORKER_NAME =
-  process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
-
-function selectWorkflows(workflows: PreparedHatchetTasks) {
-  // Select which workflows to load using an env var and keep it type-safe.
-  // If no env var is provided, default to ALL available workflows dynamically.
-  const defaultWorkflowKeys = Object.keys(workflows) as Array<
-    keyof PreparedHatchetTasks
-  >
-
-  // Parse requested keys; treat empty/whitespace as "unset" so we default to all
-  const envRaw = process.env.HATCHET_WORKFLOWS
-  const requestedKeysRaw = envRaw
-    ? envRaw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : undefined
-
-  const hasRequested =
-    Array.isArray(requestedKeysRaw) && requestedKeysRaw.length > 0
-
-  const validSelectedKeys = (
-    hasRequested
-      ? requestedKeysRaw.filter(
-          (k): k is keyof PreparedHatchetTasks => k in workflows
-        )
-      : defaultWorkflowKeys
-  ) as Array<keyof PreparedHatchetTasks>
-
-  if (hasRequested) {
-    const unknown = requestedKeysRaw.filter((k) => !(k in workflows))
-    if (unknown.length) {
-      logger.warn(
-        {
-          unknownKeys: unknown,
-          availableKeys: Object.keys(workflows),
-        },
-        'HATCHET_WORKFLOWS contains unknown task keys'
-      )
-    }
+function startAuditMetricsServer(): void {
+  const portValue = process.env.ASSESSMENT_AUDIT_METRICS_PORT
+  if (portValue === undefined || portValue === '') {
+    return
   }
-
-  const selectedWorkflows = validSelectedKeys.map((k) => workflows[k])
-
-  return selectedWorkflows
+  const port = Number(portValue)
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error('ASSESSMENT_AUDIT_METRICS_PORT must be a valid port')
+  }
+  const environment = process.env.ASSESSMENT_AUDIT_ENVIRONMENT ?? 'unknown'
+  const role = process.env.ASSESSMENT_AUDIT_WORKER_ROLE ?? 'general'
+  const server = createServer((request, response) => {
+    if (request.url === '/healthz') {
+      response.writeHead(200, { 'content-type': 'text/plain' })
+      response.end('ok\n')
+      return
+    }
+    if (request.url === '/metrics') {
+      response.writeHead(200, {
+        'content-type': 'text/plain; version=0.0.4; charset=utf-8',
+      })
+      response.end(renderAssessmentAuditPrometheusMetrics(environment, role))
+      return
+    }
+    response.writeHead(404, { 'content-type': 'text/plain' })
+    response.end('not found\n')
+  })
+  server.listen(port, '0.0.0.0', () => {
+    logger.info({ port }, 'Assessment audit metrics server listening')
+  })
 }
 
+const hatchetClient = createHatchetClient({ logger })
+
 async function main() {
-  logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
+  const auditWorkerEnabled =
+    process.env.ASSESSMENT_AUDIT_WORKER_ENABLED === 'true'
+  const integrationState = auditWorkerEnabled
+    ? { ingestionDisabled: true, graphDisabled: true }
+    : validateKBWorkerConfiguration()
+  const runtimeConfig = resolveWorkerRuntimeConfig('general')
+  logger.info(
+    {
+      event: 'hatchet.worker.starting',
+      workerName: runtimeConfig.name,
+      ...integrationState,
+    },
+    'Starting Hatchet worker'
+  )
+
+  startAuditMetricsServer()
 
   const redisExec = new Redis({
     family: 4,
@@ -109,7 +124,7 @@ async function main() {
 
   const emitter = new EventEmitter()
 
-  logger.info('Connecting to Hatchet...')
+  logger.info({ event: 'hatchet.worker.connecting' }, 'Connecting to Hatchet')
 
   const preparedWorkflows = prepareHatchetTasks({
     hatchet: hatchetClient,
@@ -119,37 +134,107 @@ async function main() {
     redisAssessmentExec,
     redisCache,
     handlers,
+    getKBGraphTerminalResult,
+    kbIngestionDispatchEnabled: !integrationState.ingestionDisabled,
+    kbGraphDispatchEnabled: !integrationState.graphDisabled,
+    settleKBGraphTerminalResult: ({
+      buildId,
+      result,
+      finishedAt,
+      allowLateSuccess,
+    }) =>
+      settleKbKnowledgeGraphResult(
+        prisma,
+        { buildId, result, allowLateSuccess },
+        finishedAt
+      ),
   })
 
-  const workflows = selectWorkflows(preparedWorkflows)
-  const selectedKeys = Object.keys(preparedWorkflows).filter((k) =>
-    workflows.includes((preparedWorkflows as any)[k])
+  const selection = selectWorkflows(preparedWorkflows, {
+    ...integrationState,
+    auditWorkerEnabled,
+    auditWorkerRole: process.env.ASSESSMENT_AUDIT_WORKER_ROLE,
+    requestedWorkflowNames: process.env.HATCHET_WORKFLOWS,
+  })
+  if (selection.unknownKeys.length > 0) {
+    logger.warn(
+      {
+        event: 'hatchet.workflow.selection.invalid',
+        unknownKeyCount: selection.unknownKeys.length,
+        availableKeyCount: Object.keys(preparedWorkflows).length,
+      },
+      'HATCHET_WORKFLOWS contains unknown task keys'
+    )
+  }
+  if (selection.disabledKeys.length > 0) {
+    logger.info(
+      {
+        event: 'hatchet.workflow.disabled',
+        disabledWorkflowCount: selection.disabledKeys.length,
+      },
+      'KB integration gates excluded workflows'
+    )
+  }
+  const { workflows, selectedKeys } = selection
+  logger.info(
+    { event: 'hatchet.workflow.selected', workflowCount: selectedKeys.length },
+    'Selected workflows'
   )
-  logger.info({ selectedKeys }, 'Selected workflows')
 
   logger.info(
-    { workerName: HATCHET_WORKER_NAME, workflowCount: workflows.length },
+    {
+      event: 'hatchet.worker.creating',
+      workerName: runtimeConfig.name,
+      workflowCount: workflows.length,
+    },
     'Creating Hatchet worker'
   )
 
-  const worker = await hatchetClient.worker(HATCHET_WORKER_NAME, {
+  const runtime = createHatchetWorkerRuntime({
+    config: runtimeConfig,
     workflows,
+    workerFactory: (name, options) => hatchetClient.worker(name, options),
   })
 
-  logger.info('Starting worker to process jobs...')
-  await worker.start()
+  logger.info(
+    { event: 'hatchet.worker.starting_jobs' },
+    'Starting worker to process jobs'
+  )
+  await runtime.start()
 
-  logger.info('Worker started successfully and ready to process jobs')
+  logger.info(
+    { event: 'hatchet.worker.stopped' },
+    'Worker runtime stopped after termination'
+  )
+  // Flush pending background task log writes before exiting; the explicit
+  // exit below would otherwise drop them.
+  await drainTaskLogWrites()
+  // The drain is complete here, but the Redis and Prisma clients opened above
+  // keep the event loop alive and node runs as PID 1, so exit explicitly
+  // instead of waiting for the kubelet's SIGKILL at the end of the grace period.
+  process.exit(0)
 }
 
-process.on('unhandledRejection', (reason) => {
-  logger.fatal({ err: reason }, 'Unhandled promise rejection')
+process.on('unhandledRejection', () => {
+  logger.fatal(
+    {
+      event: 'process.unhandled_rejection',
+      err: toSafeError('Unhandled rejection'),
+    },
+    'Unhandled promise rejection'
+  )
   // Let the process crash; orchestration should restart it
   process.exit(1)
 })
 
-process.on('uncaughtException', (err) => {
-  logger.fatal({ err }, 'Uncaught exception')
+process.on('uncaughtException', () => {
+  logger.fatal(
+    {
+      event: 'process.uncaught_exception',
+      err: toSafeError('Uncaught exception'),
+    },
+    'Uncaught exception'
+  )
   process.exit(1)
 })
 

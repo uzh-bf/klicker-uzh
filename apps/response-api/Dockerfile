@@ -1,4 +1,9 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:24.21.0-alpine AS base
+
+# See apps/backend-docker/Dockerfile: patched Alpine packages and npm for every
+# stage, including any scanned runtime image.
+RUN apk upgrade --no-cache \
+ && npm i -g --ignore-scripts npm@11.19.1
 
 
 FROM base AS deps
@@ -37,22 +42,29 @@ FROM base AS runtime
 WORKDIR /app
 
 ARG NODE_ENV="production"
+ENV NODE_ENV=${NODE_ENV}
 
 RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
 
-RUN pnpm i --prod --ignore-scripts
+# See apps/backend-docker/Dockerfile: the install, the toolchain teardown and
+# the cache removal share one RUN so no build state lands in a committed layer.
+RUN pnpm i --prod --ignore-scripts \
+ && npm rm -g --ignore-scripts pnpm turbo \
+ && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
+COPY --from=builder /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder /app/packages/logging/dist/ /app/packages/logging/dist/
 COPY --from=builder /app/apps/response-api/dist/ /app/apps/response-api/dist/
 
 USER nodejs

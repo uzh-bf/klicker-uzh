@@ -6,6 +6,14 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  {{- if .Values.assessmentAudit.enabled }}
+  ASSESSMENT_AUDIT_ENVIRONMENT: {{ required "assessmentAudit.environment is required when assessment audit is enabled" .Values.assessmentAudit.environment | quote }}
+  ASSESSMENT_AUDIT_ROLLOUT: {{ .Values.assessmentAudit.rollout | quote }}
+  ASSESSMENT_AUDIT_PILOT_LIVE_QUIZ_IDS: {{ .Values.assessmentAudit.pilotLiveQuizIds | quote }}
+  ASSESSMENT_AUDIT_TABLE_ENDPOINT: {{ required "assessmentAudit.tableEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.tableEndpoint | quote }}
+  ASSESSMENT_AUDIT_BLOB_ENDPOINT: {{ required "assessmentAudit.blobEndpoint is required when assessment audit is enabled" .Values.assessmentAudit.blobEndpoint | quote }}
+  AZURE_TOKEN_CREDENTIALS: WorkloadIdentityCredential
+  {{- end }}
   API_DOMAIN: {{ .Values.backendGraphql.apiDomain | quote }}
   APP_MANAGE_DOMAIN: {{ .Values.backendGraphql.appManageDomain | quote }}
   APP_STUDENT_DOMAIN: {{ .Values.backendGraphql.appStudentDomain | quote }}
@@ -16,6 +24,14 @@ data:
   COOKIE_DOMAIN: {{ .Values.backendGraphql.cookieDomain | quote }}
   {{- if .Values.backendGraphql.debug }}
   DEBUG: {{ .Values.backendGraphql.debug | quote }}
+  {{ end }}
+  {{- if .Values.backendGraphql.kbIngestionDisabled }}
+  # interim kill switch: refuses new KB content ingestion while reads/deletes/serving stay live
+  KB_INGESTION_DISABLED: {{ .Values.backendGraphql.kbIngestionDisabled | quote }}
+  {{ end }}
+  {{- if .Values.backendGraphql.kbGraphDisabled }}
+  # parked graph lifecycle: refuses new graph opt-ins and dispatches
+  KB_GRAPH_DISABLED: {{ .Values.backendGraphql.kbGraphDisabled | quote }}
   {{ end }}
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
@@ -46,4 +62,19 @@ data:
   {{- if .Values.backendGraphql.knowledgeGraph.cost.semesterKey }}
   KB_GRAPH_SEMESTER_KEY: {{ .Values.backendGraphql.knowledgeGraph.cost.semesterKey | quote }}
   {{- end }}
+  {{- end }}
+  {{- if .Values.backendGraphql.elementGeneration.enabled }}
+  # Secret values KB_QUESTION_GENERATION_HATCHET_CLIENT_TOKEN and
+  # KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING come from backend-graphql.
+  KB_GENERATION_HATCHET_CLIENT_HOST_PORT: {{ required "backendGraphql.elementGeneration.hatchetHostPort is required when element generation is enabled" .Values.backendGraphql.elementGeneration.hatchetHostPort | quote }}
+  KB_GENERATION_HATCHET_CLIENT_SERVER_URL: {{ required "backendGraphql.elementGeneration.hatchetServerUrl is required when element generation is enabled" .Values.backendGraphql.elementGeneration.hatchetServerUrl | quote }}
+  KB_GRAPH_ARTIFACT_CONTAINER: {{ required "backendGraphql.elementGeneration.graphArtifactContainer is required when element generation is enabled" .Values.backendGraphql.elementGeneration.graphArtifactContainer | quote }}
+  KB_GRAPH_ARTIFACT_PREFIX: {{ required "backendGraphql.elementGeneration.graphArtifactPrefix is required when element generation is enabled" .Values.backendGraphql.elementGeneration.graphArtifactPrefix | quote }}
+  KB_QUESTION_INPUT_CONTAINER: {{ required "backendGraphql.elementGeneration.inputContainer is required when element generation is enabled" .Values.backendGraphql.elementGeneration.inputContainer | quote }}
+  KB_QUESTION_OUTPUT_CONTAINER: {{ required "backendGraphql.elementGeneration.outputContainer is required when element generation is enabled" .Values.backendGraphql.elementGeneration.outputContainer | quote }}
+  KB_QUESTION_OUTPUT_PREFIX: {{ required "backendGraphql.elementGeneration.outputPrefix is required when element generation is enabled" .Values.backendGraphql.elementGeneration.outputPrefix | quote }}
+  KB_ELEMENT_GENERATION_QUESTION_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.questionMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.questionMinorUnits | quote }}
+  KB_ELEMENT_GENERATION_FLASHCARD_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.flashcardMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.flashcardMinorUnits | quote }}
+  KB_ELEMENT_GENERATION_FLASHCARD_RETRY_COST_MINOR_UNITS: {{ required "backendGraphql.elementGeneration.cost.flashcardRetryMinorUnits is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.flashcardRetryMinorUnits | quote }}
+  KB_ELEMENT_GENERATION_COST_PRICING_VERSION: {{ required "backendGraphql.elementGeneration.cost.pricingVersion is required when element generation is enabled" .Values.backendGraphql.elementGeneration.cost.pricingVersion | quote }}
   {{- end }}

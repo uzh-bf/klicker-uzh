@@ -19,7 +19,8 @@ import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CourseChatDrawer } from '../../../../components/chatbot/CourseChatDrawer'
 import Footer from '../../../../components/common/Footer'
 import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
@@ -47,6 +48,7 @@ import {
   type PracticeQuizProgressState,
   summarizePracticeQuizCompletion,
 } from '../../../../components/practiceQuiz/progress'
+import { buildPracticeQuizChatContext } from '../../../../lib/chatbot/chatContext'
 
 function PracticeQuizPage({
   courseId,
@@ -116,6 +118,17 @@ function PracticeQuizPage({
   })
 
   const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const chatContext = useMemo(
+    () =>
+      buildPracticeQuizChatContext({
+        courseId,
+        currentIx,
+        locale: router.locale ?? 'en',
+        practiceQuiz: data?.practiceQuiz ?? null,
+        totalSteps,
+      }),
+    [courseId, currentIx, data?.practiceQuiz, router.locale, totalSteps]
+  )
 
   useEffect(() => {
     if (!embedded) return
@@ -412,6 +425,12 @@ function PracticeQuizPage({
           previewOnly={data.practiceQuiz.isOwner ?? undefined}
         />
       )}
+      <CourseChatDrawer
+        courseId={courseId}
+        context={chatContext}
+        embedded={embedded}
+        enabled={Boolean(participantToken)}
+      />
       {!embedded && (
         <Footer
           browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practiceQuizzes/${id}`}
@@ -422,6 +441,12 @@ function PracticeQuizPage({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
+  const { logFailure, requestContext } = createSsrRequestLogging(
+    ctx.req.headers,
+    '/course/:courseId/practiceQuizzes/:id'
+  )
+
   try {
     if (
       typeof ctx.params?.courseId !== 'string' ||
@@ -435,7 +460,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       }
     }
 
-    const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo(undefined, ctx, requestContext)
 
     const embedded = parseEmbedParam(ctx.query.embed)
     const focusedEmbedRequested = embedded && ctx.query.embedMode === 'focused'
@@ -471,8 +496,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           .default,
       },
     })
-  } catch (error) {
-    console.error('Error in getServerSideProps on practice quiz:', error)
+  } catch {
+    logFailure('data_load_failed')
 
     // remove the lti-token, if it is defined
     try {
@@ -480,8 +505,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
-    } catch (nookiesError) {
-      console.error(nookiesError)
+    } catch {
+      logFailure('cookie_cleanup_failed')
     }
 
     // redirect to lti error page with redirect back to this page

@@ -1,21 +1,40 @@
 import {
   ConcurrencyLimitStrategy,
+  type JsonObject,
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
-import { hatchetClient } from '@klicker-uzh/hatchet'
-import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
-  aggregateAssessmentResponses,
-  processAssessmentResponse,
-} from './processors/assessmentProcessor.js'
+  createHatchetClient,
+  createHatchetWorkerRuntime,
+  drainTaskLogWrites,
+  resolveWorkerRuntimeConfig,
+  withHatchetTaskLogging,
+} from '@klicker-uzh/hatchet'
+import type {
+  AssessmentResponseCommand,
+  LiveQuizResponseInput,
+} from '@klicker-uzh/types'
+import { logger } from './logger.js'
+import {
+  resolveResponseProcessorMode,
+  resolveResponseProcessorWorkerMode,
+  selectResponseProcessorWorkflows,
+} from './mode.js'
+import { aggregateAssessmentResponses } from './processors/assessmentAggregation.js'
+import { processAssessmentResponse } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
+
+const hatchetClient = createHatchetClient({ logger })
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
   retries: 1,
   defaultPriority: Priority.MEDIUM,
   onEvents: ['response-received:anonymous'],
-  fn: processResponseMessage,
+  fn: withHatchetTaskLogging({
+    taskName: 'process-anonymous-response',
+    handler: processResponseMessage,
+  }),
   // defaultFilters: [
   // TODO: what could we use filters for?
   //   {
@@ -30,18 +49,15 @@ export const processAuthenticatedResponseTask = hatchetClient.durableTask({
   retries: 3,
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:authenticated'],
-  fn: processResponseMessage,
+  fn: withHatchetTaskLogging({
+    taskName: 'process-authenticated-response',
+    handler: processResponseMessage,
+  }),
 })
 
-export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
-  correlationId: string
-  participantId: string
-  liveQuizId: string
-  instanceId: string
-  response: LiveQuizResponseInput
-  cookie?: string
-  responseTimestamp: number
-}>({
+export const processAssessmentResponseWorkflow = hatchetClient.workflow<
+  AssessmentResponseCommand<LiveQuizResponseInput> & JsonObject
+>({
   name: 'process-assessment-response-workflow',
   defaultPriority: Priority.HIGH,
   onEvents: ['response-received:assessment'],
@@ -49,25 +65,11 @@ export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
 processAssessmentResponseWorkflow.durableTask({
   name: 'process-assessment-response',
   retries: 3,
-  fn: (input, ctx) => processAssessmentResponse(input, ctx),
+  fn: withHatchetTaskLogging({
+    taskName: 'process-assessment-response',
+    handler: processAssessmentResponse,
+  }),
 })
-processAssessmentResponseWorkflow.onFailure({
-  name: 'log-assessment-response-failure',
-  fn: async (input, ctx) => {
-    const error = JSON.stringify(ctx.errors)
-    const message = `[ERROR] [AddResponse Assessment] ${error}.`
-
-    // log the error
-    ctx.logger.error(message)
-
-    // push the error to the audit log
-    ctx.v1.events.push('create-audit-log-entry', {
-      correlationId: input.correlationId,
-      info: message,
-    })
-  },
-})
-
 export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
   name: 'aggregate-assessment-responses',
   retries: 1,
@@ -78,34 +80,64 @@ export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
     limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
   },
   onEvents: ['response-processed:aggregation'],
-  fn: aggregateAssessmentResponses,
+  fn: withHatchetTaskLogging({
+    taskName: 'aggregate-assessment-responses',
+    handler: aggregateAssessmentResponses,
+  }),
 })
 
 async function main() {
-  console.log('Starting response processor worker...')
+  const mode = resolveResponseProcessorMode()
+  const runtimeConfig = resolveWorkerRuntimeConfig(
+    resolveResponseProcessorWorkerMode(mode)
+  )
+  const regularWorkflows = [
+    processAuthenticatedResponseTask,
+    processAnonymousResponseTask,
+  ]
+  const assessmentWorkflows = [
+    processAssessmentResponseWorkflow,
+    aggregateAssessmentResponsesTask,
+  ]
+  const workflows = selectResponseProcessorWorkflows({
+    mode,
+    regular: regularWorkflows,
+    assessment: assessmentWorkflows,
+  })
 
-  const mode =
-    process.env.ASSESSMENT_MODE === 'true' ? 'assessment' : 'live-quiz'
-  const workflows =
-    process.env.ASSESSMENT_MODE === 'true'
-      ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
-      : [processAuthenticatedResponseTask, processAnonymousResponseTask]
-
-  console.log(`Mode: ${mode}`)
-  console.log(`Workflows: ${workflows.length}`)
-
-  console.log('Creating worker...')
-  const worker = await hatchetClient.worker(
-    'hatchet-worker-response-processor',
+  logger.info(
     {
-      workflows,
-    }
+      event: 'hatchet.worker.starting',
+      mode,
+      workflowCount: workflows.length,
+    },
+    'Starting response processor worker'
   )
 
-  console.log('▶Starting worker to process responses...')
-  await worker.start()
+  logger.info({ event: 'hatchet.worker.creating' }, 'Creating worker')
+  const runtime = createHatchetWorkerRuntime({
+    config: runtimeConfig,
+    workflows,
+    workerFactory: (name, options) => hatchetClient.worker(name, options),
+  })
 
-  console.log('Response processor worker started successfully!')
+  logger.info(
+    { event: 'hatchet.worker.starting_jobs' },
+    'Starting response processing'
+  )
+  await runtime.start()
+
+  logger.info(
+    { event: 'hatchet.worker.stopped', mode },
+    'Response processor worker stopped'
+  )
+  // Flush pending background task log writes before exiting; the explicit
+  // exit below would otherwise drop them.
+  await drainTaskLogWrites()
+  // The drain is complete here, but the Redis and Prisma clients opened above
+  // keep the event loop alive and node runs as PID 1, so exit explicitly
+  // instead of waiting for the kubelet's SIGKILL at the end of the grace period.
+  process.exit(0)
 }
 
 await main()

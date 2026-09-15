@@ -67,7 +67,9 @@ If `apps/analytics` complains about schema drift or a schema edit isn't visible:
 lsof -nP -iTCP:5432 -sTCP:LISTEN   # repeat for 6379 6380 6381 7077 8888 80 443
 ```
 
-`Bind for :::5432 failed: port is already allocated` means another stack holds the port — stop it or don't start the colliding service. Plain localhost and legacy host-based paths publish fixed ports, so only one such stack runs per machine. Parallel devcontainer worktrees use the port-free base compose file plus `.devcontainer/docker-compose.devrouter.yml`; the one-at-a-time fallback uses `.devcontainer/docker-compose.localhost.yml`. If manage media uploads fail with an Azure Blob CORS error while GraphQL auth still works, check the storage account before changing app CORS. The media library uploads directly from the browser to Azure Blob Storage via SAS, so its CORS rule must allow the actual local origin. Use exact origins for production/staging accounts and dev-only localhost rules for a dedicated dev storage account.
+`Bind for :::5432 failed: port is already allocated` means another stack holds the port — stop it or don't start the colliding service. Plain localhost and legacy host-based paths publish fixed ports, so only one such stack runs per machine. Parallel devcontainer worktrees use the port-free base compose file plus `.devcontainer/docker-compose.devrouter.yml`; the one-at-a-time fallback uses `.devcontainer/docker-compose.localhost.yml`.
+
+The managed DevPod needs no Azure credentials for media or KB uploads: it starts a Blob-only Azurite service, routes `blob.klicker[.<workspace>].localhost`, and configures the exact Manage origin as local Blob CORS during `post-start.sh`. `Blob storage is not configured` means the app process predates that environment; run `devrouter ensure .` and retry against the printed Blob route. A browser CORS failure with working GraphQL should first be reproduced as an `OPTIONS` request to that route using the exact Manage origin. Do not print the SAS query. Production and staging Azure accounts still require exact deployed origins; never add localhost CORS to them.
 
 ## Check 6 — infra bring-up / server status (headless-safe)
 
@@ -121,6 +123,22 @@ Continuation for app work: `.github/scripts/wait-for-infra.sh`, then `./util/_cr
 ## Check 7 — Hatchet and workers (config-derived)
 
 Feature "does nothing" / mutation fails `workflow not found` → the Hatchet engine or a worker is missing, or a worker points at the wrong DB. Workers need the **same `DATABASE_URL`, `APP_SECRET`, Redis settings** as the apps, plus `HATCHET_CLIENT_TOKEN`. See [docs/async-and-workers.md](../../../docs/async-and-workers.md).
+
+Assessment audit deployments are deliberately split by identity class. The
+dispatcher worker must use `ASSESSMENT_AUDIT_WORKER_ROLE=dispatcher` and select
+only `dispatchAssessmentAuditOutbox,monitorAssessmentAudit`; the media-policy
+worker must use `ASSESSMENT_AUDIT_WORKER_ROLE=media-policy` and select only
+`renewAssessmentAuditMediaPolicies`. The ordinary worker must select neither.
+A mismatch is expected to fail at startup. Baseline media capture runs in the
+GraphQL backend under its separate Blob-only service account, so a healthy
+dispatcher does not prove that activation media capture is authorized.
+
+For image-baseline failures, check source Blob read access under the backend
+identity separately from audit destination access. After a successful read,
+compare Blob content type with `MediaFile.type`: generic binary metadata is
+accepted only when audit signature detection matches the expected image type.
+Do not rewrite source images or database metadata to hide a genuine mismatch.
+See [assessment audit evidence](../../../docs/assessment-audit-evidence.md).
 
 ## Check 8 — database state (config-derived)
 

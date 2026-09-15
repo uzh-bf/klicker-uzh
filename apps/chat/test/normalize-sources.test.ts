@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
+  countDocQueryDocuments,
   isDocQueryToolName,
   normalizeSourcesFromParts,
 } from '../src/lib/sources/normalizeSources'
@@ -84,6 +85,26 @@ describe('resource citation provenance', () => {
               reference:
                 'https://api.example.org/api/ingestion/resources/item/versions/3',
               chunks: [],
+            },
+          ],
+        }),
+      ])
+    ).toEqual([])
+  })
+
+  test('keeps an unnamed ingestion source with a chunk out of the citation list', () => {
+    const reference =
+      'https://api.example.org/api/ingestion/resources/item/versions/3'
+    // The retrieved chunks still render from the raw payload, but the entry
+    // must not gain a citation index or a participant-facing origin link.
+    expect(
+      normalizeSourcesFromParts([
+        toolCallPart('KB_doc_query', {
+          mode: 'documents',
+          sources: [
+            {
+              reference,
+              chunks: [{ content: 'Synthetic excerpt', page_number: 4 }],
             },
           ],
         }),
@@ -435,6 +456,25 @@ describe('normalizeSourcesFromParts', () => {
     expect(result).toEqual([])
   })
 
+  test('does not expose response-example anchors as current answer sources', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('search_response_examples', {
+        degraded: false,
+        examples: [
+          {
+            id: '00000000-0000-4000-8000-000000000001',
+            referenceAnswer: 'Example guidance [example-source-1].',
+            sourceAnchors: [
+              { citationIndex: 1, citationAnchor: 'Synthetic page 4' },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
   test('ignores tool-call parts flagged as isError', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart(
@@ -613,6 +653,56 @@ describe('normalizeSourcesFromParts', () => {
     })
   })
 
+  test('normalizes the sanitized opaque reference in the nested envelope', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        content: [{ type: 'text', text: '{"mode":"documents"}' }],
+        structuredContent: {
+          result: JSON.stringify({
+            mode: 'documents',
+            sources: [
+              {
+                reference: 'document-0123456789abcdef',
+                chunks: [{ content: 'Synthetic excerpt', page_number: 6 }],
+              },
+            ],
+          }),
+        },
+      }),
+    ])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      title: 'Document',
+      page: 6,
+      excerpt: 'Synthetic excerpt',
+    })
+    expect(result[0]?.url).toBeUndefined()
+    expect(result[0]?.id).toMatch(/^url:document-[0-9a-f]{16}\|6\|$/)
+  })
+
+  test('counts documents once rather than counting chunks or rendered cards', () => {
+    expect(
+      countDocQueryDocuments({
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'document-0123456789abcdef',
+            chunks: [
+              { content: 'first', page_number: 1 },
+              { content: 'second', page_number: 2 },
+            ],
+          },
+          {
+            reference: 'document-fedcba9876543210',
+            title: 'Empty synthetic document',
+            chunks: [],
+          },
+        ],
+      })
+    ).toBe(1)
+  })
+
   test('envelope with non-JSON text content yields no sources', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart('KB_doc_query', {
@@ -704,5 +794,123 @@ describe('normalizeSourcesFromParts', () => {
     ])
 
     expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
+  })
+})
+
+// The retrieval payload carries no relevance score or rank, so the card has to
+// summarize what came back with the page envelope of the returned chunks.
+describe('retrieved page envelope', () => {
+  function documentSource(chunks: Array<Record<string, unknown>>) {
+    return normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'https://example.org/vorlesung-05.pdf',
+            title: 'Vorlesung 5 – Risk Measures',
+            chunks: chunks.map((chunk) => ({ content: 'Synthetic', ...chunk })),
+          },
+        ],
+      }),
+    ])
+  }
+
+  test('derives the envelope from every chunk, not only the first', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: '12' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 89,
+      labeledPage: '6',
+      labeledPageEnd: '89',
+    })
+  })
+
+  test('keeps the lowest retrieved page as the navigation anchor', () => {
+    const result = documentSource([
+      { page_number: 12, labeled_page_number: '12' },
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 89,
+      labeledPage: '6',
+      labeledPageEnd: '89',
+    })
+  })
+
+  test('keeps a single-page source single', () => {
+    const result = documentSource([
+      { page_number: 7, labeled_page_number: '7' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 7, labeledPage: '7' })
+    expect(result[0]?.pageEnd).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('collapses an envelope whose extremes tie', () => {
+    const result = documentSource([
+      { page_number: 4, labeled_page_number: '4' },
+      { page_number: 4, labeled_page_number: '4' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 4, labeledPage: '4' })
+    expect(result[0]?.pageEnd).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps a non-numeric label single', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: 'Kapitel IV' },
+      { page_number: 12, labeled_page_number: 'Kapitel VII' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 12,
+      labeledPage: 'Kapitel IV',
+    })
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps labels single when only some of them are numeric', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: 'Anhang' },
+    ])
+
+    expect(result[0]?.labeledPage).toBe('6')
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('ignores an N/A chunk label and keeps the physical envelope', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: 'N/A' },
+      { page_number: 12, labeled_page_number: 'N/A' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 6, pageEnd: 12 })
+    expect(result[0]?.labeledPage).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps the dedupe identity tied to the start page', () => {
+    const first = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+    const second = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: '12' },
+    ])
+
+    expect(first[0]?.id).toBe(second[0]?.id)
   })
 })

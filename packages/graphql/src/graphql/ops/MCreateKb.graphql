@@ -1,0 +1,5 @@
+mutation CreateKb($name: String!, $description: String) {
+  createKb(name: $name, description: $description) {
+    id
+  }
+}

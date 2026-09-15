@@ -1,15 +1,26 @@
 // import { useSentry } from '@envelop/sentry'
+
+import { createRequire } from 'node:module'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
 // import { useResponseCache } from '@graphql-yoga/plugin-response-cache'
+import {
+  forcedFeatureFlagPayload,
+  normalizeFeatureFlagEnvironment,
+} from '@klicker-uzh/feature-flags'
 import { enhanceContext, schema } from '@klicker-uzh/graphql'
 import { verifyJWT } from '@klicker-uzh/util'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
-import { createRequire } from 'node:module'
+import { registerKBHttpRoutes } from './kbHttpRoutes.js'
+import { logger } from './logger.js'
+import {
+  requestLoggingMiddleware,
+  setRequestLogRoute,
+} from './requestLogging.js'
 
 const require = createRequire(import.meta.url)
 const persistedOperations = require('@klicker-uzh/graphql/dist/server.json')
@@ -22,6 +33,7 @@ function prepareApp({
   cache,
   emitter,
   hatchet,
+  elementGenerationRuntime,
   tasks,
   featureFlags,
 }: any) {
@@ -37,29 +49,20 @@ function prepareApp({
 
   const app = express()
 
-  // Share the preload's current membership with the local test browser.
-  // No management endpoint is exposed, and production never mounts this route.
-  if (
-    process.env.NODE_ENV === 'test' &&
-    process.env.GROWTHBOOK_API_HOST === 'https://growthbook.test' &&
-    process.env.GROWTHBOOK_CLIENT_KEY === 'sdk-test'
-  ) {
-    app.get(
-      '/__growthbook__/api/features/sdk-test',
-      async (_req, res, next) => {
-        try {
-          const response = await fetch(
-            'https://growthbook.test/api/features/sdk-test'
+  app.use(requestLoggingMiddleware(logger))
+
+  // Local browsers use the same explicit development flags as the backend.
+  if (process.env.NODE_ENV === 'development') {
+    app.get('/__growthbook__/api/features/sdk-test', (_req, res) => {
+      res.set('Cache-Control', 'no-store').json({
+        features: forcedFeatureFlagPayload(
+          process.env.FEATURE_FLAGS_FORCED_ON,
+          normalizeFeatureFlagEnvironment(
+            process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV
           )
-          res
-            .set('Cache-Control', 'no-store')
-            .status(response.status)
-            .json(await response.json())
-        } catch (error) {
-          next(error)
-        }
-      }
-    )
+        ),
+      })
+    })
   }
 
   app.use(
@@ -122,15 +125,23 @@ function prepareApp({
     if (token) {
       try {
         user = await verifyJWT(token, process.env.APP_SECRET as string)
-      } catch (error) {
+      } catch {
         // JWT verification failed, continue with user = null
-        console.log('JWT verification failed:', error)
+        req.locals.log.info(
+          { event: 'auth.jwt.rejected' },
+          'JWT authentication rejected'
+        )
       }
     }
 
-    req.locals = { user }
+    req.locals = { ...req.locals, user }
     next()
   }
+
+  // The ingestion bridge authenticates with its own gateway key and webhook
+  // signature. Register these routes before the end-user JWT middleware so a
+  // system bearer key is never interpreted as a Klicker session token.
+  registerKBHttpRoutes(app, { prisma })
 
   app.use(cookieParser())
   app.use(jwtMiddleware)
@@ -176,7 +187,6 @@ function prepareApp({
       //   // appendTags: args => {}, // if you wish to add custom "tags" to the Sentry transaction created per operation
       //   // configureScope: (args, scope) => {}, // if you wish to modify the Sentry scope
       //   // skip: (executionArgs) => {
-      //   //   console.log(executionArgs)
       //   //   if (!executionArgs.operationName) {
       //   //     return true
       //   //   }
@@ -193,10 +203,11 @@ function prepareApp({
       pubSub,
       emitter,
       hatchet,
+      elementGenerationRuntime,
       tasks,
       featureFlags,
     }),
-    logging: true,
+    logging: false,
     cors: false,
     maskedErrors: !process.env.DEBUG,
     graphqlEndpoint: '/api/graphql',
@@ -206,7 +217,7 @@ function prepareApp({
     res.send('OK')
   })
 
-  app.use('/api/graphql', yogaApp as any)
+  app.use('/api/graphql', setRequestLogRoute('/api/graphql'), yogaApp as any)
 
   return { app, yogaApp }
 }

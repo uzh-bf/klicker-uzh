@@ -1,16 +1,17 @@
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  CaseStudyElementData,
-  ElementOptionsInput,
-  SelectionElementData,
-  TemplateBlockInput,
+  type CaseStudyElementData,
+  type ElementOptionsInput,
+  type SelectionElementData,
+  type TemplateBlockInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   MISSING_CATALOG_COLLECTION_ID,
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   processElementData,
   propagateActivityToElements,
   recomputeDerivedPermissions,
@@ -20,6 +21,12 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import {
+  assessmentAuditUserOperation,
+  assessmentLifecycleDraft,
+  emitCoveredAssessmentAuditEvents,
+} from './assessmentAuditProducers.js'
+import { activateNewAssessmentAuditIfSelected } from './assessmentAuditRollout.js'
 import { manipulateElement } from './elements.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
@@ -452,6 +459,21 @@ export async function createActivityTemplate(
   )
 
   if (error || noInstances) {
+    return false
+  }
+
+  // Assessment quizzes are evidence-bearing objects. Converting one into a
+  // template would change its lifecycle without a corresponding audit event;
+  // keep the operation explicit and fail closed until a dedicated template
+  // transition producer exists.
+  if (
+    !copyBeforeConversion &&
+    activityType === ActivityType.LIVE_QUIZ &&
+    activity !== null &&
+    activity !== undefined &&
+    'isAssessmentEnabled' in activity &&
+    activity.isAssessmentEnabled
+  ) {
     return false
   }
 
@@ -1286,7 +1308,10 @@ export async function editActivityTemplate(
     // TODO: once activity overview has been unified (shared types), update the return type for efficient cache updates
     return true
   } catch (error) {
-    console.log(error)
+    ctx.log.error(
+      { event: 'activity-template.rename.failed' },
+      'Activity template rename failed'
+    )
     return false
   }
 }
@@ -1556,6 +1581,7 @@ export async function createLiveQuizFromTemplate(
       id: template.liveQuizId,
       status: DB.PublicationStatus.TEMPLATE,
     },
+    include: { permissions: { where: { userId: ctx.user.sub } } },
   })
 
   if (!templateLiveQuiz) {
@@ -1644,9 +1670,12 @@ export async function createLiveQuizFromTemplate(
             })
 
             if (!existingElement) {
-              console.log(
-                'Failed to find element with id',
-                element.existingElementId
+              ctx.log.warn(
+                {
+                  event: 'activity-template.instance.failed',
+                  reason: 'existing_element_unavailable',
+                },
+                'Activity template instantiation failed'
               )
               throw new Error(
                 'Existing element does not exist or user does not have access to it'
@@ -1776,7 +1805,7 @@ export async function createLiveQuizFromTemplate(
             }
 
             // combine the element options depending on the element type
-            let options: ElementOptionsInput | undefined | null = undefined
+            let options: ElementOptionsInput | undefined | null
             if (
               values.type === DB.ElementType.SC ||
               values.type === DB.ElementType.MC ||
@@ -1801,9 +1830,12 @@ export async function createLiveQuizFromTemplate(
 
             // throw an error if the element could not be created
             if (!createdElement) {
-              console.log(
-                'Failed to create new element from form inputs',
-                values
+              ctx.log.error(
+                {
+                  event: 'activity-template.instance.failed',
+                  reason: 'element_creation_failed',
+                },
+                'Activity template instantiation failed'
               )
               throw new Error('Failed to create new element')
             }
@@ -1826,7 +1858,13 @@ export async function createLiveQuizFromTemplate(
             })
 
             if (!newElement) {
-              console.log('Failed to fetch newly created element')
+              ctx.log.error(
+                {
+                  event: 'activity-template.instance.failed',
+                  reason: 'created_element_unavailable',
+                },
+                'Activity template instantiation failed'
+              )
               throw new Error('Failed to fetch newly created element')
             }
 
@@ -1916,6 +1954,61 @@ export async function createLiveQuizFromTemplate(
     },
     { timeout: 60000 }
   )
+
+  if (newLiveQuiz.isAssessmentEnabled) {
+    try {
+      const outcome = await activateNewAssessmentAuditIfSelected({
+        client: ctx.prisma,
+        liveQuizId: newLiveQuiz.id,
+      })
+      if (outcome === DB.AssessmentAuditRolloutOutcome.FAILED) {
+        // The template copy has already committed. Rollout failure is durably
+        // recorded by the activation service; returning the created quiz keeps
+        // a transient audit gap from causing a duplicate copy on retry.
+        ctx.log.warn({
+          event: 'live_quiz.template.copied_without_audit',
+          liveQuizId: newLiveQuiz.id,
+        })
+      } else {
+        const auditOperation = assessmentAuditUserOperation({
+          userId: ctx.user.sub,
+          requiredPermission: 'WRITE',
+        })
+        const copied =
+          templateLiveQuiz.ownerId === ctx.user.sub ||
+          templateLiveQuiz.permissions.length > 0
+        await runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
+          await emitCoveredAssessmentAuditEvents({
+            tx,
+            auditTx,
+            liveQuizId: newLiveQuiz.id,
+            courseId: newLiveQuiz.courseId,
+            operation: auditOperation,
+            drafts: [
+              assessmentLifecycleDraft({
+                eventType: copied ? 'ASSESSMENT_COPIED' : 'ASSESSMENT_IMPORTED',
+                producerOperationId: `${auditOperation.correlationId}:${copied ? 'copied' : 'imported'}`,
+                fromState: null,
+                toState: 'DRAFT',
+                reasonCode: copied
+                  ? 'CREATED_FROM_ACCESSIBLE_TEMPLATE'
+                  : 'IMPORTED_FROM_CATALOG_TEMPLATE',
+                sourceLiveQuizId: templateLiveQuiz.id,
+              }),
+            ],
+          })
+        })
+      }
+    } catch (error) {
+      ctx.log.error(
+        {
+          liveQuizId: newLiveQuiz.id,
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Assessment template copy audit activation failed'
+      )
+    }
+  }
 
   return newLiveQuiz.id
 }

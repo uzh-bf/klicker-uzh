@@ -1,0 +1,36 @@
+mutation KeepGeneratedElementDraft(
+  $draftId: ID!
+  $expectedRevision: Int!
+  $status: ElementStatus!
+  $type: GeneratableElementType!
+  $name: String!
+  $content: String!
+  $explanation: String
+  $options: OptionsChoicesInput
+  $basePoints: Boolean!
+  $pointsMultiplier: Int!
+  $tags: [String!]
+  $choiceIds: [ID!]
+) {
+  keepGeneratedElementDraft(
+    draftId: $draftId
+    expectedRevision: $expectedRevision
+    status: $status
+    type: $type
+    name: $name
+    content: $content
+    explanation: $explanation
+    options: $options
+    basePoints: $basePoints
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+    choiceIds: $choiceIds
+  ) {
+    id
+    revision
+    decision
+    savedElementId
+    savedAt
+    updatedAt
+  }
+}

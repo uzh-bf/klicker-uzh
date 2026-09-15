@@ -10,7 +10,7 @@ Facts (schema layout, seed paths, gotchas): [docs/data-and-migrations.md](../../
 ## The ritual (in full, every time)
 
 ```bash
-# 1. edit the right area file in packages/prisma/src/prisma/schema/ (15 schema files)
+# 1. edit the right area file in packages/prisma/src/prisma/schema/ (16 schema files)
 pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw # 2. create/apply + regenerate TS client
 pnpm run prisma:sync         # 3. mirror model files into apps/analytics — NEVER skip
 pnpm run build               # 4. regenerate Prisma client + dependent packages
@@ -31,13 +31,26 @@ Provenance: steps 2 requires a database; on a machine without one running, write
 
 ## Rules that prevent real incidents
 
-- **Pick the right area file** — don't create new `.prisma` files; `js.prisma` is generators-only and the shared `datasource.prisma` declares only the provider. JavaScript URLs live in `packages/prisma/prisma.config.ts`.
+- **Pick the right area file** — use an existing area by default. Add a new area
+  file only for a deliberately distinct, bounded subsystem whose ownership and
+  invariants are documented and reviewed; `assessmentAudit.prisma` is the
+  current example. `js.prisma` is generators-only and the shared
+  `datasource.prisma` declares only the provider. JavaScript URLs live in
+  `packages/prisma/prisma.config.ts`.
 - **Migrations may carry data backfills** (plain SQL in the migration file — `ROW_NUMBER()` example in `20260414223500_*`). Write the backfill in the same migration as the DDL.
 - **Every migration must be expand-contract (backward-compatible).** Deployments apply migrations as an ArgoCD PreSync hook _while the previous app version is still serving_, so a drop/rename/narrowing that the old code still depends on takes production down. Split it across releases: add and backfill first, switch the code, remove in a later release. There is no automatic undo — a wrong migration is recovered by rolling forward with a compensating one, and a failed one blocks every deploy to that environment ([runbook](../../../docs/data-and-migrations.md#recovering-a-failed-migration-hook)). Lock-heavy DDL runs unattended with no `lock_timeout`: an `ACCESS EXCLUSIVE` wait queues app queries behind it.
 - **Typed Json fields are two edits**: `/// [TypeName]` doc comment on the field AND the declaration in `packages/graphql/src/types/app.ts` (`PrismaJson` namespace, shape from `@klicker-uzh/types`).
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
+- **KB ingestion has two state axes** — `KBResource` holds the latest operation plus active serving identity; `KBIngestionRun` is append-only. Lecturer runs use the ingestion attempt/idempotency UUID; a signed `resource.content_refreshed` webhook uses its event UUID and persists the platform operation ID. Signed callbacks are the normal settlement path; the Klicker monitor polls timestamped operations only after its five-minute callback grace. A legacy or interrupted operation with an external id but no recorded start timestamp is eligible immediately so it cannot remain unmonitored. A platform refresh may advance only serving identity and must not overwrite a current lecturer operation; resource-list operation status and filtering must resolve through the stored attempt, not the newest ledger row; a failed replacement must not erase the active version.
+- **KB graph pointers are untrusted state** — `KB.publishedGraphBuildId` is a plain UUID rather than a relation. A reader must verify that the resolved `KBGraphBuild` belongs to the requested KB and is `SUCCEEDED` before using its graph name; retain old per-build graphs through a grace period and never sweep the active or published graph.
+- **KB graph cost state is a locked ledger** — `KBGraphQuota` is unique per owner and semester, `KBGraphBuild.costStatus` fences reservation settlement by build id, and `dispatchClaimedAt` durably distinguishes an unattempted dispatch from an accepted-but-uncorrelated provider run. All monetary and persisted usage counters stay within PostgreSQL `INTEGER` bounds. Use the `ON CONFLICT DO NOTHING` insert followed by a row lock for concurrent first reservations; valid metered non-success terminal results settle actual usage without publishing, while invalid, mismatched, overflowed, or cleanup-fenced results become `NEEDS_HUMAN_REVIEW` and retain the reservation. A timed-out success may publish only after locked no-newer-build and current-digest reconciliation; stale or superseded late results settle without publication.
+- **KB/chatbot activation is a database invariant** — `KBChatbot` may keep disabled history, but a SQL partial unique index permits only one enabled KB per chatbot. Prisma cannot express that index; preserve and verify it in the migration SQL.
+- **KB deletion retains correlation state** — `KB`/`KBResource` tombstones hide owner reads immediately, while `KBIngestionOperation.DELETE` runs remain until external serving is empty and storage cleanup succeeds. Preserve the restrictive `KBUploadTicket` relation so pending uploads block parent hard deletion.
+- **KB quotas count retained allocations** — include every resource row (including tombstones) plus every upload ticket for the 100-item limit, and sum resource plus ticket `sizeBytes` for the 500 MiB limit. Allocate under the parent-KB row lock; confirmation consumes a reservation rather than claiming quota again. An unknown-size URL row reserves the full 25 MiB source limit until the worker records its measured size.
+- **KB scale operations preserve stable order** — resource cursors use immutable `createdAt` plus UUID, and bulk mutations lock the live parent before sorted resource ids. Do not make `createdAt` mutable or introduce a competing child-first lock order.
+- **KB owner cascade is not a cleanup mechanism** — `KB.owner` currently uses `onDelete: Cascade`; deleting a User would remove resource/run correlation before external and Blob cleanup. Any future account-deletion or GDPR flow must complete the KB tombstone lifecycle before deleting the User.
 
 ## Seeds — two independent paths
 

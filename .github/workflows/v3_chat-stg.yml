@@ -11,9 +11,28 @@ on:
     # so newly applicable images are built instead of keeping the old result.
     types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
+      # The Dockerfile runs 'turbo prune --scope=@klicker-uzh/chat'. Only that
+      # workspace dependency closure reaches the image, so a change outside
+      # it cannot alter this build and must not trigger it.
       - 'apps/chat/**'
-      # Any workspace package can be bundled into this image.
-      - 'packages/**'
+      - 'packages/audit/**'
+      - 'packages/doc-query-client/**'
+      - 'packages/feature-flags/**'
+      - 'packages/grading/**'
+      - 'packages/graphql/**'
+      - 'packages/hatchet/**'
+      - 'packages/i18n/**'
+      - 'packages/knowledge-graph/**'
+      - 'packages/logging/**'
+      - 'packages/markdown/**'
+      - 'packages/next-config/**'
+      - 'packages/prisma/**'
+      - 'packages/prisma-data/**'
+      - 'packages/shared-components/**'
+      - 'packages/transactional/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
+      - 'packages/word-cloud/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
@@ -21,7 +40,7 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.dockerignore'
-      - '.github/workflows/v3_chat**'
+      - '.github/workflows/v3_chat-stg**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -65,8 +84,22 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
 
       - name: Build and push Docker image
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -82,6 +115,7 @@ jobs:
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
             NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
             NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}
   build-amd:
     if: ${{ false }}
     runs-on: ubuntu-latest
@@ -116,6 +150,10 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-amd
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -130,3 +168,4 @@ jobs:
             NEXT_PUBLIC_ENV=${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'staging' }}
             NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
             NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}

@@ -1,4 +1,9 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:24.21.0-alpine AS base
+
+# See apps/backend-docker/Dockerfile: patched Alpine packages and npm for every
+# stage, including any scanned runtime image.
+RUN apk upgrade --no-cache \
+ && npm i -g --ignore-scripts npm@11.19.1
 
 
 FROM base AS builder
@@ -50,6 +55,10 @@ ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
 ENV NEXT_TELEMETRY_DISABLED 1
 
 COPY --from=builder /app/out/full/ .
+# Next.js inlines the assistant target during this build. Both deployment
+# workflows replace .env.production first, so fail instead of silently hiding
+# the launcher when either environment loses the mapping.
+RUN grep -qx 'NEXT_PUBLIC_CHAT_URL=$APP_ORIGIN_CHAT' apps/frontend-manage/.env.production
 RUN pnpm run build --filter=@klicker-uzh/frontend-manage
 
 

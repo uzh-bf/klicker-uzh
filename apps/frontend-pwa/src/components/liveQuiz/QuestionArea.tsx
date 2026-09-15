@@ -51,7 +51,7 @@ interface QuestionAreaProps {
     type: ElementType
     answer: any
     correlationKey?: string | null
-    submissionId?: string
+    submissionId: string
   }) => Promise<{ statusCode: number; responseTimestamp?: number }>
   quizId: string
   execution: number

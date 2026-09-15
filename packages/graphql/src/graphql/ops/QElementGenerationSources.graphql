@@ -1,0 +1,16 @@
+query ElementGenerationSources {
+  elementGenerationSources {
+    graphBuildId
+    kbId
+    kbName
+    indexedAt
+    isStale
+    sourceCount
+    sources {
+      resourceId
+      title
+      sourceFile
+      pageCount
+    }
+  }
+}

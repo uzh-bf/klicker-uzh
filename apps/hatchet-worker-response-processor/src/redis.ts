@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis'
+import { logger } from './logger.js'
 
 let redis: Redis
 export function getRedis() {
@@ -8,12 +9,15 @@ export function getRedis() {
         family: 4,
         host: process.env.REDIS_HOST,
         password: process.env.REDIS_PASS ?? '',
-        port: Number(process.env.REDIS_PORT) ?? 6379,
+        port: Number(process.env.REDIS_PORT ?? 6379),
         tls: process.env.REDIS_TLS ? {} : undefined,
       })
-    } catch (e) {
-      console.error('Redis connection error', e)
-      throw e
+    } catch {
+      logger.error(
+        { event: 'dependency.unavailable', dependency: 'redis' },
+        'Redis client initialization failed'
+      )
+      throw new Error('Redis client initialization failed')
     }
   }
 
@@ -31,9 +35,12 @@ export function getAssessmentRedis() {
         port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6381),
         tls: process.env.REDIS_ASSESSMENT_TLS ? {} : undefined,
       })
-    } catch (e) {
-      console.error('Redis connection error', e)
-      throw e
+    } catch {
+      logger.error(
+        { event: 'dependency.unavailable', dependency: 'redis-assessment' },
+        'Assessment Redis client initialization failed'
+      )
+      throw new Error('Assessment Redis client initialization failed')
     }
   }
 

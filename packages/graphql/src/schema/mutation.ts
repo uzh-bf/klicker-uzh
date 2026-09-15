@@ -7,19 +7,23 @@ import * as ActivitiesService from '../services/activities.js'
 import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
-import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseDeletionService from '../services/courseDeletion.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
+import * as ElementGenerationService from '../services/elementGeneration.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
+import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as SupportService from '../services/support.js'
@@ -46,12 +50,37 @@ import {
 } from './element.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import {
+  ElementGenerationBuildInputRef,
+  ElementGenerationBuildRef,
+  ElementGenerationSaveResultRef,
+  GeneratableElementType,
+  GeneratedElementDraftInputRef,
+  GeneratedElementDraftRef,
+  PublishIncompleteElementGenerationInputRef,
+  ReviewElementGenerationInputRef,
+  SetGeneratedElementDecisionInputRef,
+  StartElementGenerationInputRef,
+  UpdateGeneratedElementDraftInputRef,
+} from './elementGeneration.js'
+import {
   GroupActivity,
   GroupActivityClueInput,
   GroupActivityDetails,
   GroupActivityGradingInput,
   GroupActivityInstance,
 } from './groupActivity.js'
+import {
+  KBGraphQualityTier,
+  KBKnowledgeGraphConfigType,
+} from './kbKnowledgeGraph.js'
+import {
+  KB,
+  KBChatbotBinding,
+  KBFileUpload,
+  KBIngestAllResult,
+  KBResource,
+  KBResourceMaterialType,
+} from './knowledge.js'
 import {
   ConfusionTimestep,
   Feedback,
@@ -64,6 +93,7 @@ import {
   AvatarSettingsInput,
   GroupMessage,
   LeaveCourseParticipation,
+  LtiChatbotLogin,
   Participant,
   ParticipantGroup,
   ParticipantLearningData,
@@ -90,9 +120,9 @@ import {
   AnswerCollectionEntry,
   ChatAccountUsageOverviewRef,
   Chatbot,
-  ChatbotReasoningConfigInput,
-  ChatbotStandardModeConfigInput,
+  ChatbotRevisionSaveInputRef,
 } from './resource.js'
+import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -339,6 +369,28 @@ export const Mutation = builder.mutationType({
         },
       }),
 
+      loginParticipantForLtiChatbot: t.field({
+        type: LtiChatbotLogin,
+        args: {
+          signedLtiData: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
+          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+          participantToken: t.arg.string(),
+        },
+        resolve: (_, args, ctx) =>
+          AccountService.loginParticipantForLtiChatbot(args, ctx),
+      }),
+
+      loginParticipantForElearningChatbot: t.field({
+        type: LtiChatbotLogin,
+        args: {
+          grant: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
+          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+        },
+        resolve: (_, args, ctx) =>
+          AccountService.loginParticipantForElearningChatbot(args, ctx),
+      }),
       loginParticipantWithLti: t.field({
         nullable: true,
         type: ParticipantTokenData,
@@ -661,7 +713,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.cancelLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CANCEL' }
         ),
       }),
 
@@ -741,7 +794,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.endLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_COMPLETE' }
         ),
       }),
 
@@ -754,7 +808,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.startLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_START' }
         ),
       }),
 
@@ -770,7 +825,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.scheduleLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_SCHEDULE' }
         ),
       }),
 
@@ -783,7 +839,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.unpublishLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_UNPUBLISH' }
         ),
       }),
 
@@ -799,7 +856,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.deleteFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_DELETE' }
         ),
       }),
 
@@ -815,7 +873,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.deleteFeedbackResponse(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESPONSE_DELETE' }
         ),
       }),
 
@@ -832,7 +891,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.pinFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_PIN' }
         ),
       }),
 
@@ -849,7 +909,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.publishFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_PUBLISH' }
         ),
       }),
 
@@ -866,7 +927,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.resolveFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESOLVE' }
         ),
       }),
 
@@ -883,7 +945,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await FeedbackService.respondToFeedback(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_FEEDBACK_RESPOND' }
         ),
       }),
 
@@ -905,7 +968,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.deactivateLiveQuizBlock(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_BLOCK_CLOSE' }
         ),
       }),
 
@@ -923,7 +987,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.changeLiveQuizSettings(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
         ),
       }),
 
@@ -939,7 +1004,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.EXECUTE,
           async (_, args, ctx) => {
             return await LiveQuizService.activateLiveQuizBlock(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_BLOCK_ACTIVATE' }
         ),
       }),
 
@@ -996,7 +1062,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
             return await LiveQuizService.manipulateLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
         ),
       }),
 
@@ -1044,7 +1111,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.CONTENT },
             ctx
           )
@@ -1081,7 +1148,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.FLASHCARD },
             ctx
           )
@@ -1122,7 +1189,10 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(args, ctx)
+          return await ElementService.manipulateElementWithAssessmentAudit(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -1159,7 +1229,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.NUMERICAL },
             ctx
           )
@@ -1199,7 +1269,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.FREE_TEXT },
             ctx
           )
@@ -1239,7 +1309,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.SELECTION },
             ctx
           )
@@ -1279,7 +1349,7 @@ export const Mutation = builder.mutationType({
             }
           }
 
-          return await ElementService.manipulateElement(
+          return await ElementService.manipulateElementWithAssessmentAudit(
             { ...args, type: DB.ElementType.CASE_STUDY },
             ctx
           )
@@ -1354,11 +1424,9 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.updateElementInstances(
+            return await ElementService.updateElementInstancesWithAssessmentAudit(
               args,
-              ctx.prisma,
-              ctx.emitter,
-              ctx.user.sub
+              ctx
             )
           }
         ),
@@ -1371,10 +1439,9 @@ export const Mutation = builder.mutationType({
           (args) => ({ elementId: args.elementId }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
-            return await ElementService.flagOutdatedElementInstances(
+            return await ElementService.flagOutdatedElementInstancesWithAssessmentAudit(
               args,
-              ctx.prisma,
-              ctx.emitter
+              ctx
             )
           }
         ),
@@ -1468,56 +1535,90 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      updateChatbotModelSettings: t.withAuth(asChatbotAuthor).field({
+      saveChatbotRevision: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
         args: {
           chatbotId: t.arg.string({ required: true }),
-          modelSelection: t.arg.boolean({ required: true }),
-          allowedModelIds: t.arg.stringList({ required: true }),
-          allowedReasoningEffortsByModel: t.arg({
-            type: [ChatbotReasoningConfigInput],
-            required: false,
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
           }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbotModelSettings(args, ctx)
-        },
-      }),
-
-      updateChatbotModelPolicy: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          chatbotId: t.arg.string({ required: true }),
-          modelSelection: t.arg.boolean({ required: true }),
-          allowedModelIds: t.arg.stringList({ required: true }),
-          allowedReasoningEffortsByModel: t.arg({
-            type: [ChatbotReasoningConfigInput],
-            required: false,
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbotModelPolicy(args, ctx)
-        },
-      }),
-
-      updateChatbotStandardModeConfig: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          chatbotId: t.arg.string({ required: true }),
-          config: t.arg({
-            type: ChatbotStandardModeConfigInput,
+          input: t.arg({
+            type: ChatbotRevisionSaveInputRef,
             required: true,
           }),
         },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbotStandardModeConfig(
-            args,
-            ctx
-          )
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.saveChatbotRevision(args, ctx),
+      }),
+
+      submitChatbotRevision: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 2000 },
+          }),
+          expectedStudentCount: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
         },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.submitChatbotRevision(args, ctx),
+      }),
+
+      withdrawChatbotRevision: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.withdrawChatbotRevision(args, ctx),
+      }),
+
+      approveChatbotRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.approveChatbotRevision(args, ctx),
+      }),
+
+      rejectChatbotRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          comment: t.arg.string({
+            required: true,
+            validate: { minLength: 1, regex: /\S/ },
+          }),
+        },
+        resolve: async (_, args, ctx) =>
+          ChatbotsService.rejectChatbotRevision(args, ctx),
       }),
 
       setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
@@ -1552,83 +1653,44 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      updateChatbot: t.withAuth(asChatbotAuthor).field({
+      approveResponseExample: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          name: t.arg.string({
-            required: false,
-            validate: { minLength: 1 },
-          }),
-          description: t.arg.string({ required: false }),
-          avatar: t.arg.string({ required: false }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.updateChatbot(args, ctx)
-        },
-      }),
-
-      saveChatbotDisclaimer: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          chatbotId: t.arg.string({ required: true }),
-          expectedDisclaimerId: t.arg.string({ required: false }),
-          title: t.arg.string({ required: true }),
-          introText: t.arg.string({ required: true }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.saveChatbotDisclaimer(args, ctx)
-        },
-      }),
-
-      requestChatbotPublication: t.withAuth(asChatbotAuthor).field({
-        nullable: true,
-        type: Chatbot,
-        args: {
-          id: t.arg.string({ required: true }),
-          useCase: t.arg.string({
-            required: true,
-            validate: { minLength: 1, maxLength: 2000 },
-          }),
-          expectedStudentCount: t.arg.int({
-            required: true,
-            validate: { min: 1 },
-          }),
-          proposedCredits: t.arg.int({
-            required: true,
-            validate: { min: 1 },
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await ChatbotsService.requestChatbotPublication(args, ctx)
-        },
-      }),
-
-      approveChatbotPublication: t.withAuth(asAdmin).field({
-        nullable: true,
-        type: Chatbot,
+        type: ResponseExampleSet,
         args: {
           id: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await ChatbotsService.approveChatbotPublication(args, ctx)
+          return await ResponseExamplesService.approveResponseExample(args, ctx)
         },
       }),
 
-      rejectChatbotPublication: t.withAuth(asAdmin).field({
+      editAndApproveResponseExample: t.withAuth(asUserFullAccess).field({
         nullable: true,
-        type: Chatbot,
+        type: ResponseExampleSet,
         args: {
           id: t.arg.string({ required: true }),
-          comment: t.arg.string({
-            required: true,
-            validate: { minLength: 1, regex: /\S/ },
-          }),
+          chatMode: t.arg.string({ required: true }),
+          studentMessage: t.arg.string({ required: true }),
+          referenceAnswer: t.arg.string({ required: true }),
+          responseStyle: t.arg({ type: ResponseExampleStyle, required: true }),
+          expectedUpdatedAt: t.arg({ type: 'Date', required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await ChatbotsService.rejectChatbotPublication(args, ctx)
+          return await ResponseExamplesService.editAndApproveResponseExample(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      rejectResponseExample: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ResponseExampleSet,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ResponseExamplesService.rejectResponseExample(args, ctx)
         },
       }),
 
@@ -1684,7 +1746,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await LiveQuizService.deleteLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_DELETE' }
         ),
       }),
 
@@ -1697,7 +1760,8 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await LiveQuizService.resetAssessmentLiveQuiz(args, ctx)
-          }
+          },
+          { actionType: 'ASSESSMENT_RESET' }
         ),
       }),
 
@@ -1726,7 +1790,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_CREATE' }
           ),
         }),
 
@@ -1747,7 +1812,8 @@ export const Mutation = builder.mutationType({
                 args,
                 ctx
               )
-            }
+            },
+            { actionType: 'ASSESSMENT_PARTICIPANT_INVITATION_DELETE' }
           ),
         }),
 
@@ -1805,20 +1871,13 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           if (args.type === ActivityTypeEnum.LIVE_QUIZ) {
-            const validAccess = await checkAccess(
-              [
-                {
-                  liveQuizId: args.id,
-                  minimumPermissionLevel: DB.PermissionLevel.WRITE,
-                },
-              ],
-              ctx
-            )
-            if (!validAccess) {
-              return null
-            }
-
-            return await LiveQuizService.changeLiveQuizName(args, ctx)
+            return await withPermission<unknown, typeof args, boolean>(
+              (selectorArgs) => ({ liveQuizId: selectorArgs.id }),
+              DB.PermissionLevel.WRITE,
+              async (_, resolverArgs, resolverCtx) =>
+                LiveQuizService.changeLiveQuizName(resolverArgs, resolverCtx),
+              { actionType: 'ASSESSMENT_CONFIGURATION_CHANGE' }
+            )(_, args, ctx)
           } else if (args.type === ActivityTypeEnum.PRACTICE_QUIZ) {
             const validAccess = await checkAccess(
               [
@@ -1926,6 +1985,409 @@ export const Mutation = builder.mutationType({
         args: { email: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.grantPrivatePreviewAccess(args, ctx)
+        },
+      }),
+
+      createKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          name: t.arg.string({ required: true }),
+          description: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.createKb(args, ctx)
+        },
+      }),
+
+      deleteKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKb(args, ctx)
+        },
+      }),
+
+      attachKbToChatbot: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBChatbotBinding,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          chatbotId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.attachKbToChatbot(args, ctx)
+        },
+      }),
+
+      detachKbFromChatbot: t.withAuth(asUserFullAccess).boolean({
+        nullable: false,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          chatbotId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.detachKbFromChatbot(args, ctx)
+        },
+      }),
+
+      requestKbFileUpload: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBFileUpload,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.requestKbFileUpload(args, ctx)
+        },
+      }),
+
+      confirmKbFileUpload: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          blobName: t.arg.string({ required: true }),
+          title: t.arg.string({ required: true }),
+          originalFilename: t.arg.string({ required: true }),
+          mimeType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.confirmKbFileUpload(args, ctx)
+        },
+      }),
+
+      requestKbFileReplacement: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBFileUpload,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          fileName: t.arg.string({ required: true }),
+          contentType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.requestKbFileReplacement(args, ctx)
+        },
+      }),
+
+      confirmKbFileReplacement: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          resourceId: t.arg.id({ required: true }),
+          blobName: t.arg.string({ required: true }),
+          originalFilename: t.arg.string({ required: true }),
+          mimeType: t.arg.string({ required: true }),
+          sizeBytes: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.confirmKbFileReplacement(args, ctx)
+        },
+      }),
+
+      createKbUrlResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          url: t.arg.string({ required: true }),
+          title: t.arg.string({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.createKbUrlResource(args, ctx)
+        },
+      }),
+
+      deleteKbResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKbResource(args, ctx)
+        },
+      }),
+
+      deleteKbResources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: [KBResource],
+        args: {
+          kbId: t.arg.id({ required: true }),
+          ids: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.deleteKbResources(args, ctx)
+        },
+      }),
+
+      ingestKbResource: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.ingestKbResource(args, ctx)
+        },
+      }),
+
+      ingestAllKbResources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBIngestAllResult,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.ingestAllKbResources(args, ctx)
+        },
+      }),
+
+      updateKbResourceMaterialType: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBResource,
+        args: {
+          id: t.arg.id({ required: true }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKbResourceMaterialType(args, ctx)
+        },
+      }),
+
+      rebuildKbKnowledgeGraph: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          qualityTier: t.arg({ type: KBGraphQualityTier, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.rebuildKbKnowledgeGraph(args, ctx)
+        },
+      }),
+
+      setKbKnowledgeGraphEnabled: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          enabled: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.setKbKnowledgeGraphEnabled(args, ctx)
+        },
+      }),
+
+      startElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: StartElementGenerationInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.startElementGeneration(input, ctx)
+          )
+        },
+      }),
+
+      reviewElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: ReviewElementGenerationInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.reviewElementGeneration(
+              input.gate,
+              input,
+              ctx
+            )
+          )
+        },
+      }),
+
+      updateGeneratedElementDraft: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          input: t.arg({
+            type: UpdateGeneratedElementDraftInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.updateGeneratedElementDraft(input, ctx)
+          )
+        },
+      }),
+
+      duplicateGeneratedElementDraft: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          input: t.arg({
+            type: GeneratedElementDraftInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.duplicateGeneratedElementDraft(
+              input.draftId,
+              ctx
+            )
+          )
+        },
+      }),
+
+      setGeneratedElementDecision: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          input: t.arg({
+            type: SetGeneratedElementDecisionInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.setGeneratedElementDecision(
+              input.draftId,
+              input.decision,
+              ctx
+            )
+          )
+        },
+      }),
+
+      keepGeneratedElementDraft: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          draftId: t.arg.id({ required: true, validate: { uuid: true } }),
+          expectedRevision: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          status: t.arg({ type: ElementStatus, required: true }),
+          type: t.arg({ type: GeneratableElementType, required: true }),
+          name: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 500 },
+          }),
+          content: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 20_000 },
+          }),
+          explanation: t.arg.string({
+            required: false,
+            validate: { maxLength: 20_000 },
+          }),
+          basePoints: t.arg.boolean({ required: true }),
+          pointsMultiplier: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
+          tags: t.arg.stringList({
+            required: false,
+            validate: { maxLength: 20 },
+          }),
+          choiceIds: t.arg.idList({
+            required: false,
+            validate: { maxLength: 10 },
+          }),
+          options: t.arg({ type: OptionsChoicesInput, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.keepGeneratedElementDraft(args, ctx)
+          )
+        },
+      }),
+
+      saveGeneratedElements: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationSaveResultRef,
+        args: {
+          input: t.arg({
+            type: ElementGenerationBuildInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.saveGeneratedElements(input.buildId, ctx)
+          )
+        },
+      }),
+
+      retryElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: ElementGenerationBuildInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.retryElementGeneration(input.buildId, ctx)
+          )
+        },
+      }),
+
+      publishIncompleteElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: PublishIncompleteElementGenerationInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.publishIncompleteElementGeneration(
+              input.buildId,
+              input.warningsAcknowledged,
+              ctx
+            )
+          )
+        },
+      }),
+
+      setAiFeatures: t.withAuth(asAdmin).int({
+        nullable: true,
+        args: {
+          email: t.arg.string({ required: true }),
+          enabled: t.arg.boolean({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await AccountService.setAiFeatures(args, ctx)
         },
       }),
 

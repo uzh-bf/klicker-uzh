@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/backend-docker",
-  "version": "3.4.0-alpha.75",
+  "version": "3.4.0-alpha.76",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,6 +20,7 @@
     "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/hatchet": "workspace:*",
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
@@ -39,7 +40,7 @@
     "graphql-yoga": "3.9.1",
     "ioredis": "5.4.1",
     "next-auth": "4.24.15",
-    "ws": "8.18.0"
+    "ws": "8.21.0"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "~1.0.2",
@@ -51,7 +52,7 @@
     "@types/ioredis-mock": "^8.2.7",
     "@types/node": "^24.10.1",
     "@types/ws": "^8.5.12",
-    "axios": "~1.16.1",
+    "axios": "~1.18.0",
     "cross-env": "~7.0.3",
     "dotenv": "~16.4.7",
     "eslint": "~9.30.1",
@@ -62,7 +63,8 @@
     "rollup": "~4.34.9",
     "source-map-support": "~0.5.21",
     "tsx": "~4.19.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production run-s --npm-path pnpm build:ts",
@@ -83,7 +85,9 @@
     "script:prod": "../../util/_run_with_infisical.sh --env prd tsx",
     "start": "node -r dotenv/config dist/index.js",
     "start:test": "nyc --silent node -r dotenv/config --import ./scripts/playwright-feature-flags.mjs dist/index.js",
-    "test:run": "tsx --test \"src/**/*.test.ts\""
+    "test": "pnpm run test:run",
+    "test:run": "tsx --test \"src/**/*.test.ts\" test/kbHttpRoutes.test.ts test/localFeatureFlags.test.ts && vitest run --dir test --exclude '**/kbHttpRoutes.test.ts' --exclude '**/localFeatureFlags.test.ts'",
+    "test:watch": "vitest --dir test --exclude '**/kbHttpRoutes.test.ts' --exclude '**/localFeatureFlags.test.ts'"
   },
   "engines": {
     "node": "=24"

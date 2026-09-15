@@ -23,9 +23,14 @@ interface Deferred<T> {
 }
 
 function createDeferred<T>(): Deferred<T> {
+  let settled = false
   let resolve!: (value: T) => void
   const promise = new Promise<T>((res) => {
-    resolve = res
+    resolve = (value: T) => {
+      if (settled) return
+      settled = true
+      res(value)
+    }
   })
   return { promise, resolve }
 }
@@ -41,8 +46,9 @@ function createHarness() {
   let submittedAt: number | null = null
   let confetti = false
 
-  // controllable externals
-  let networkDeferred = createDeferred<boolean>()
+  // controllable externals: each request carries its own deferred so tests
+  // can resolve completions independently
+  const requestDeferreds: Deferred<boolean>[] = []
   // persistence is instant unless a test defers it
   let storageDeferred = createDeferred<void>()
   storageDeferred.resolve()
@@ -65,12 +71,15 @@ function createHarness() {
   }
 
   // mirrors the component's answerQuestion (free-text branch via
-  // submitAndRecord): the network send is deferred-controllable, persistence
-  // is instant, and the submitted-at write is execution-guarded
+  // submitAndRecord): each request carries its own deferred result, the
+  // network send is deferred-controllable, persistence is instant, and the
+  // submitted-at write is execution-guarded
   async function answerQuestion(): Promise<boolean> {
     const answerScope = createSubmissionScope(currentIdentity, gate)
     networkSendsByExecution.push(currentIdentity)
-    const recorded = await networkDeferred.promise
+    const ownDeferred = createDeferred<boolean>()
+    requestDeferreds.push(ownDeferred)
+    const recorded = await ownDeferred.promise
     await Promise.resolve() // persistence microtask
     if (recorded) {
       if (answerScope.canCommitUi(currentIdentity)) {
@@ -163,8 +172,14 @@ function createHarness() {
       return networkSendsByExecution
     },
     resolveNetwork(value: boolean) {
-      networkDeferred.resolve(value)
-      networkDeferred = createDeferred<boolean>()
+      // resolve every still-pending request (idempotent deferreds make this
+      // safe when tests only need "everything completes")
+      for (const request of requestDeferreds) {
+        request.resolve(value)
+      }
+    },
+    resolveRequest(index: number, value: boolean) {
+      requestDeferreds[index]?.resolve(value)
     },
     deferStorage() {
       storageDeferred = createDeferred<void>()
@@ -297,13 +312,22 @@ describe('question submission/expiry flow', () => {
       'quiz-1:execution-1',
     ])
 
-    // resolving A must not release B's busy indication
-    harness.resolveNetwork(true)
-    await Promise.resolve()
+    // resolving A alone must not release B's busy indication: A and B carry
+    // independent deferreds, so A's completion leaves B still pending
+    harness.resolveRequest(0, true)
+    await oldSubmission
     await new Promise((resolve) => setTimeout(resolve, 0))
-    await Promise.all([oldSubmission, newSubmission])
+    assert.equal(
+      harness.state.canSubmit,
+      false,
+      'B must stay busy while its own request is pending'
+    )
+    assert.deepEqual(harness.state.remainingQuestions, [0, 1])
 
-    // B advances its stack and releases the control
+    // resolving B lets it advance and release the control
+    harness.resolveRequest(1, true)
+    await newSubmission
+    await new Promise((resolve) => setTimeout(resolve, 0))
     assert.deepEqual(harness.state.remainingQuestions, [1])
     assert.equal(harness.state.submittedAt, 1000)
     assert.equal(harness.state.submitting, false)
