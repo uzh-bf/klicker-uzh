@@ -6,6 +6,7 @@
     "@auth/prisma-adapter": "2.11.2",
     "@hatchet-dev/typescript-sdk": "1.9.4",
     "@klicker-uzh/i18n": "workspace:*",
+    "@klicker-uzh/logging": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",

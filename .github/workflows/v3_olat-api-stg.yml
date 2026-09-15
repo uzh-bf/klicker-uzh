@@ -19,6 +19,7 @@ on:
       - 'packages/prisma/**'
       - 'packages/types/**'
       - 'packages/util/**'
+      - 'packages/logging/**'
       # Root dependency and build inputs: the image build runs turbo prune
       # against these files, so a root dependency change can alter any image.
       - 'package.json'
