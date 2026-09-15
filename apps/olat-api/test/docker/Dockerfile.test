@@ -1,4 +1,4 @@
-FROM node:24.16.0
+FROM node:24.21.0
 
 # Install dependencies
 RUN npm install -g pnpm
