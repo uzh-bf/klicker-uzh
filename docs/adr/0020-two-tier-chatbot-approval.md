@@ -6,6 +6,10 @@ Accepted. The budget-control and pilot-cutover portions are superseded by
 [ADR 0041](./0041-chatbot-trusted-pilot-boundary.md); account authorization,
 publication approval, and usage-class semantics remain in force.
 
+Lecturer setup editing after publication is superseded by
+[ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
+revision and approval contract leaves unrelated runtime dependencies unchanged.
+
 ## Context
 
 The tutoring chatbot is billable, so uncontrolled go-live is not acceptable; at

@@ -97,7 +97,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-general
 spec:
-  minAvailable: 1
+  minAvailable: {{ .Values.hatchet.workers.general.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
@@ -112,7 +112,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-response-processor
 spec:
-  minAvailable: 2
+  minAvailable: {{ .Values.hatchet.workers.responseProcessor.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}

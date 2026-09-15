@@ -1,12 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
+  getElearningChatHandoffSecret,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
   normalizeEmail,
   processElementData,
   recomputeDerivedPermissions,
   signJWT,
+  verifyElearningChatGrant,
   verifyJWT,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
@@ -507,6 +509,68 @@ export async function grantPrivatePreviewAccess(
   return 0
 }
 
+export async function getUsersAiFeatures(ctx: ContextWithUser) {
+  // verify that the user has ADMIN permissions
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+
+  if (!user || user.role !== DB.UserRole.ADMIN) {
+    return []
+  }
+
+  const users = await ctx.prisma.user.findMany({
+    where: { aiFeaturesEnabled: true },
+    select: { shortname: true, email: true },
+  })
+
+  return users.map((user) => ({
+    shortname: user.shortname,
+    email: user.email,
+  }))
+}
+
+// Unlike the private preview grant above, this one can also be withdrawn: it
+// records that an account has a cost center to bill AI usage to, and that
+// arrangement can end. Returns 0 when the setting changed, 1 when no account
+// carries the address, and 2 when it already had the requested value.
+export async function setAiFeatures(
+  { email, enabled }: { email: string; enabled: boolean },
+  ctx: ContextWithUser
+) {
+  // verify that the user has ADMIN permissions (can change AI access)
+  const user = await ctx.prisma.user.findUnique({
+    where: { id: ctx.user.sub },
+  })
+  if (!user || user.role !== DB.UserRole.ADMIN) {
+    return null
+  }
+
+  const targetUser = await ctx.prisma.user.findUnique({
+    where: { email },
+  })
+  if (!targetUser) {
+    return 1
+  }
+
+  if (targetUser.aiFeaturesEnabled === enabled) {
+    return 2
+  }
+
+  await ctx.prisma.user.update({
+    where: { id: targetUser.id },
+    data: { aiFeaturesEnabled: enabled },
+  })
+  await sendTeamsNotification({
+    scope: 'graphql/setAiFeatures',
+    text: `User ${targetUser.shortname} (${targetUser.email}) ${
+      enabled ? 'enabled' : 'disabled'
+    } for AI features`,
+  })
+
+  return 0
+}
+
 export async function changeParticipantLocale(
   { locale }: { locale: DB.Locale },
   ctx: Context
@@ -583,7 +647,11 @@ type ResolveOrCreateParticipantForLtiResult =
     }
 
 interface ResolveOrCreateParticipantForLtiArgs {
-  signedLtiData: string
+  signedLtiData?: string
+  // Already-verified launch identity from a trusted wrapper (e.g. the
+  // eLearning chat grant resolver). Downstream account resolution is
+  // identical to the signedLtiData path.
+  preVerifiedLti?: { sub: string; email?: string }
   allowCreate: boolean
   username?: string
   password?: string
@@ -594,6 +662,7 @@ interface ResolveOrCreateParticipantForLtiArgs {
 async function resolveOrCreateParticipantForLti(
   {
     signedLtiData,
+    preVerifiedLti,
     allowCreate,
     username,
     password,
@@ -602,14 +671,16 @@ async function resolveOrCreateParticipantForLti(
   }: ResolveOrCreateParticipantForLtiArgs,
   ctx: Context
 ): Promise<ResolveOrCreateParticipantForLtiResult> {
-  const ltiData = (await verifyJWT(
-    signedLtiData,
-    process.env.APP_SECRET as string
-  )) as {
-    email?: string
-    sub: string
-    scope: string
-  }
+  const ltiData = preVerifiedLti
+    ? { sub: preVerifiedLti.sub, email: preVerifiedLti.email, scope: 'LTI1.3' }
+    : ((await verifyJWT(
+        signedLtiData as string,
+        process.env.APP_SECRET as string
+      )) as {
+        email?: string
+        sub: string
+        scope: string
+      })
 
   // LTI 1.1 is retired: its launches were never signature-verified, so any
   // caller could mint a token for an arbitrary subject or email. Only accept
@@ -672,7 +743,7 @@ async function resolveOrCreateParticipantForLti(
 
       if (matchedParticipants.length > 1) {
         console.warn(
-          `event=lti_conflict_duplicate_email normalizedEmail=${normalizedEmail} matches=${matchedParticipants.length}`
+          `event=lti_conflict_duplicate_email matches=${matchedParticipants.length}`
         )
         return { type: 'conflict_duplicate_email' }
       }
@@ -1676,5 +1747,213 @@ async function seedDemoQuestions(ctx: PrismaTransactionContextWithUser) {
   await recomputeDerivedPermissions(
     { liveQuizId: liveQuiz.id, userId: ctx.user.sub },
     ctx.prisma
+  )
+}
+
+/** Result of resolving a verified chat launch into an identity. */
+type LtiChatIdentityResult = {
+  status: 'ACCOUNT' | 'GUEST' | 'DENIED'
+  participantId?: string
+  participantToken?: string
+}
+
+/**
+ * Shared core for verified chat launches: resolve an existing account for
+ * the verified subject, or return GUEST for the caller's guest persona
+ * flow. Callers must have verified their own launch token before this.
+ */
+async function establishLtiChatIdentity(
+  {
+    ltiSub,
+    ltiEmail,
+    courseId,
+    chatbotId,
+    participantToken,
+    secret,
+    accountIssuer,
+  }: {
+    ltiSub: string
+    ltiEmail?: string
+    courseId: string
+    chatbotId: string
+    participantToken?: string | null
+    secret: string
+    accountIssuer: string
+  },
+  ctx: Context
+): Promise<LtiChatIdentityResult> {
+  const denied = { status: 'DENIED' as const }
+
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: {
+      id: chatbotId,
+      courseId,
+      status: DB.ChatbotStatus.PUBLISHED,
+      course: { isAssessmentEnabled: false, deletionRequestedAt: null },
+    },
+    select: { id: true },
+  })
+  if (!chatbot) return denied
+
+  let participant: DB.Participant | null = null
+  if (participantToken) {
+    let session: Awaited<ReturnType<typeof verifyJWT>> | undefined
+    try {
+      session = await verifyJWT(participantToken, secret, {
+        issuer: accountIssuer,
+      })
+    } catch {
+      // An expired browser session does not invalidate the verified launch.
+    }
+    if (
+      session?.role === DB.UserRole.PARTICIPANT &&
+      session.sub &&
+      typeof session.exp === 'number'
+    ) {
+      participant = await ctx.prisma.participant.findFirst({
+        where: {
+          id: session.sub,
+          isActive: true,
+          accounts: { none: { type: 'lti_guest' } },
+        },
+      })
+    }
+  }
+  if (!participant) {
+    const resolved = await resolveOrCreateParticipantForLti(
+      {
+        allowCreate: false,
+        preVerifiedLti: {
+          sub: ltiSub,
+          ...(ltiEmail ? { email: ltiEmail } : {}),
+        },
+      },
+      ctx
+    )
+    if (resolved.type === 'not_found' || resolved.type === 'missing_email')
+      return { status: 'GUEST' }
+    if (
+      resolved.type !== 'resolved' ||
+      !resolved.account.participant.isActive ||
+      resolved.account.type === 'lti_guest'
+    )
+      return denied
+    participant = resolved.account.participant
+  }
+  await ctx.prisma.participation.upsert({
+    where: {
+      courseId_participantId: { courseId, participantId: participant.id },
+    },
+    create: { courseId, participantId: participant.id, isActive: false },
+    update: {},
+  })
+  const token = await doParticipantLogin(
+    { participantId: participant.id, participantLocale: participant.locale },
+    ctx
+  )
+  return {
+    status: 'ACCOUNT',
+    participantId: participant.id,
+    participantToken: token,
+  }
+}
+
+/** Resolve a verified LTI chatbot launch without registering a normal account. */
+export async function loginParticipantForLtiChatbot(
+  {
+    signedLtiData,
+    courseId,
+    chatbotId,
+    participantToken,
+  }: {
+    signedLtiData: string
+    courseId: string
+    chatbotId: string
+    participantToken?: string | null
+  },
+  ctx: Context
+): Promise<LtiChatIdentityResult> {
+  const denied = { status: 'DENIED' as const }
+  const issuer = process.env.APP_ORIGIN_LTI
+  const secret = process.env.APP_SECRET
+  const accountIssuer = process.env.APP_ORIGIN_API
+  if (!issuer || !secret || !accountIssuer) return denied
+  let launch: Awaited<ReturnType<typeof verifyJWT>>
+  try {
+    launch = await verifyJWT(signedLtiData, secret, { issuer })
+  } catch {
+    return denied
+  }
+  const binding = launch.chatbotLaunch as
+    | { courseId?: unknown; chatbotId?: unknown }
+    | undefined
+  if (
+    launch.scope !== 'LTI1.3' ||
+    !launch.sub ||
+    typeof launch.exp !== 'number' ||
+    binding?.courseId !== courseId ||
+    binding?.chatbotId !== chatbotId
+  )
+    return denied
+
+  return establishLtiChatIdentity(
+    {
+      ltiSub: launch.sub,
+      ltiEmail: launch.email,
+      courseId,
+      chatbotId,
+      participantToken,
+      secret,
+      accountIssuer,
+    },
+    ctx
+  )
+}
+
+/**
+ * Resolve a verified eLearning chat handoff grant. The eLearning server
+ * signs the grant; account resolution reuses the LTI chat identity core so
+ * account, participation and guest semantics stay identical.
+ */
+export async function loginParticipantForElearningChatbot(
+  {
+    grant,
+    courseId,
+    chatbotId,
+  }: {
+    grant: string
+    courseId: string
+    chatbotId: string
+  },
+  ctx: Context
+): Promise<LtiChatIdentityResult> {
+  let verified: Awaited<ReturnType<typeof verifyElearningChatGrant>>
+  try {
+    verified = await verifyElearningChatGrant(
+      grant,
+      getElearningChatHandoffSecret()
+    )
+  } catch {
+    return { status: 'DENIED' as const }
+  }
+  if (verified.klickerCourseId !== courseId || verified.chatbotId !== chatbotId)
+    return { status: 'DENIED' as const }
+
+  const accountIssuer = process.env.APP_ORIGIN_API
+  const secret = process.env.APP_SECRET
+  if (!accountIssuer || !secret) return { status: 'DENIED' as const }
+
+  return establishLtiChatIdentity(
+    {
+      ltiSub: verified.learnerId,
+      ltiEmail: verified.email,
+      courseId,
+      chatbotId,
+      // A browser cookie may belong to a different learner in a shared browser.
+      // Resolve eLearning launches from their verified LTI subject instead.
+      secret,
+      accountIssuer,
+    },
+    ctx
   )
 }

@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "public"."AuditLogType" ADD VALUE 'ASSISTANT_PROPOSAL_CONFIRMED';

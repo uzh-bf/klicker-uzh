@@ -15,10 +15,12 @@ on:
       # workspace dependency closure reaches the image, so a change outside
       # it cannot alter this build and must not trigger it.
       - 'apps/backend-docker/**'
+      - 'packages/doc-query-client/**'
       - 'packages/feature-flags/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
       - 'packages/hatchet/**'
+      - 'packages/knowledge-graph/**'
       - 'packages/prisma/**'
       - 'packages/types/**'
       - 'packages/util/**'
@@ -58,9 +60,10 @@ jobs:
       contents: read
       packages: write
     outputs:
-      # Digest of the image this job pushed. The scan job scans this digest
-      # rather than the tag, because a tag can move between build and scan.
-      digest: ${{ steps.build.outputs.digest }}
+      # Digest of the image this job published or reused. The scan job scans
+      # this digest rather than the tag, because a tag can move between build
+      # and scan.
+      digest: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -81,9 +84,23 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-arm
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
 
       - name: Build and push Docker image
         id: build
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -126,6 +143,10 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-amd
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
@@ -145,9 +166,10 @@ jobs:
       contents: read
       packages: write
     outputs:
-      # Digest of the image this job pushed. The scan job scans this digest
-      # rather than the tag, because a tag can move between build and scan.
-      digest: ${{ steps.build.outputs.digest }}
+      # Digest of the image this job published or reused. The scan job scans
+      # this digest rather than the tag, because a tag can move between build
+      # and scan.
+      digest: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -168,9 +190,23 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-arm
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-arm
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
 
       - name: Build and push Docker image
         id: build
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -211,6 +247,10 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.MIGRATOR_IMAGE_NAME }}-amd
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v3

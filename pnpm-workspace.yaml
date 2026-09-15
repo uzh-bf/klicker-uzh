@@ -61,9 +61,32 @@ overrides:
   'axios@<=0.31.1': 0.32.0
   'fast-xml-parser@>=5.0.0 <5.7.0': 5.7.0
   'glob@>=10.2.0 <10.5.0': 10.5.0
-  'mysql2@<3.9.8': 3.9.8
-  'next@>=15.0.0 <15.5.16': 15.5.18
+  'mysql2@<3.22.0': 3.22.0
+  'next@>=15.0.0 <15.5.24': 15.5.24
   'systeminformation@>=4.17.0 <=5.31.5': 5.31.6
+  # Image-scan remediation (2026-09-14): the backend and migrator images carried
+  # fixable HIGH/CRITICAL advisories in transitive dependencies. Each entry lifts
+  # only versions below their published fix and stays inside one major line,
+  # unless the advisory has no fix in the older line.
+  'axios@>=1.0.0 <1.18.0': 1.18.0
+  'browserslist@>=4.0.0 <4.28.7': 4.28.7
+  'fast-uri@>=3.0.0 <3.1.6': 3.1.6
+  'form-data@>=4.0.0 <4.0.6': 4.0.6
+  'nanoid@>=3.0.0 <3.3.18': 3.3.18
+  'path-to-regexp@>=0.1.0 <0.1.13': 0.1.13
+  'postcss@>=8.0.0 <8.5.18': 8.5.18
+  'protobufjs@>=7.0.0 <7.6.1': 7.6.1
+  'sharp@>=0.34.0 <0.35.4': 0.35.4
+  'validator@>=13.0.0 <13.15.22': 13.15.22
+  'ws@>=8.18.0 <8.21.0': 8.21.0
+  '@grpc/grpc-js@>=1.13.0 <1.14.4': 1.14.4
+  # These advisories have no fix inside the older major line, so the pin has to
+  # cross it: deepmerge-ts is consumed by Prisma config loading, nodemailer by
+  # the transactional email transport, and propagator-jaeger only by the
+  # OpenTelemetry tracing setup of the Hatchet SDK.
+  'deepmerge-ts@>=7.0.0 <8.0.0': 8.0.0
+  'nodemailer@>=6.0.0 <9.1.0': 9.1.0
+  '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
@@ -80,6 +103,9 @@ ignoredBuiltDependencies:
   # profile planning has no Docker or SSH path and must not build them in CI.
   - cpu-features
   - keytar
+  # Transitive of fastmcp -> mcp-proxy -> pipenet. Its install script refreshes a
+  # public-suffix list we never consult; neither MCP service uses pipenet.
+  - tldjs
   - ssh2
 
 onlyBuiltDependencies:
@@ -116,4 +142,5 @@ allowBuilds:
   protobufjs: true
   sharp: true
   ssh2: false
+  tldjs: false
   unrs-resolver: true

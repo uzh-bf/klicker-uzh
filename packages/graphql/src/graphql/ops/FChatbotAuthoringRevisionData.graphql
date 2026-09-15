@@ -1,0 +1,34 @@
+fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
+  version
+  status
+  reviewComment
+  name
+  description
+  avatar
+  standardModeConfig {
+    tutorEnabled
+    explainerEnabled
+    quizzerEnabled
+    writingCoachEnabled
+    courseName
+    subjectDomain
+    languageOfInstruction
+    scopeNote
+  }
+  modelSelection
+  allowedModelIds
+  allowedReasoningEffortsByModel {
+    modelId
+    efforts
+  }
+  creditInitialCredits
+  creditResetPeriod
+  creditResetAmount
+  creditMaxCredits
+  disclaimerTitle
+  disclaimerIntroText
+  publicationUseCase
+  expectedStudentCount
+  knowledgeGraphVisible
+  knowledgeGraphRetrievalEnabled
+}

@@ -7,8 +7,12 @@ export interface ChatSource {
   index: number
   type: ChatSourceType
   title: string
+  // `page` stays the navigation anchor (the lowest retrieved physical page),
+  // `pageEnd` the highest one when retrieval spans more than a single page.
   page?: number
+  pageEnd?: number
   labeledPage?: string
+  labeledPageEnd?: string
   startSec?: number
   endSec?: number
   url?: string

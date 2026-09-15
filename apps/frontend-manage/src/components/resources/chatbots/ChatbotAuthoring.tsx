@@ -1,12 +1,9 @@
 import { useMutation } from '@apollo/client'
 import {
-  type Chatbot,
   ChatbotStatus,
   type LocaleType,
-  MUpdateChatbotStandardModeConfigDocument,
-  QGetChatbotsInfoWithStandardModesDocument,
-  SaveChatbotDisclaimerDocument,
-  UpdateChatbotDocument,
+  MSaveChatbotRevisionDocument,
+  QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
 import { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
@@ -28,14 +25,32 @@ import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
+import ChatbotCreditPolicy, {
+  ChatbotCreditPolicySummary,
+} from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
 import ChatbotPublicationRequest from './ChatbotPublicationRequest'
-import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
+import {
+  getChatbotMutationErrorKey,
+  isChatbotRevisionConflict,
+} from './chatbotErrorMessages'
+import {
+  ChatbotRevisionConflictNotice,
+  ChatbotRevisionStatusNotice,
+  FormikInitialValuesSynchronizer,
+  getChatbotAuthoringRevision,
+  getChatbotRevisionValues,
+  getChatbotRevisionVersion,
+  isChatbotRevisionEditable,
+  isChatbotRevisionPending,
+  type RevisionChatbot,
+  useChatbotRevisionReload,
+} from './chatbotRevision'
 import type {
   ChatbotNavigationState,
   ChatbotSetupStep,
 } from './chatbotWorkspace'
-import { hasCompleteDisclaimer, setupSteps } from './chatbotWorkspace'
+import { setupSteps } from './chatbotWorkspace'
 
 const metadataEditableStatuses = [
   ChatbotStatus.Draft,
@@ -43,7 +58,11 @@ const metadataEditableStatuses = [
   ChatbotStatus.Published,
 ]
 
-const disclaimerEditableStatuses = [ChatbotStatus.Draft, ChatbotStatus.Rejected]
+const disclaimerEditableStatuses = [
+  ChatbotStatus.Draft,
+  ChatbotStatus.Rejected,
+  ChatbotStatus.Published,
+]
 
 type StandardMode = 'tutor' | 'explainer' | 'quizzer' | 'writing-coach'
 
@@ -58,8 +77,10 @@ type StandardModeFormValues = {
   scopeNote: string
 }
 
-function getStandardModeFormValues(chatbot: Chatbot): StandardModeFormValues {
-  const config = chatbot.standardModeConfig
+function getStandardModeFormValues(
+  chatbot: RevisionChatbot
+): StandardModeFormValues {
+  const config = getChatbotRevisionValues(chatbot).standardModeConfig
 
   return {
     tutorEnabled: config?.tutorEnabled ?? true,
@@ -307,30 +328,32 @@ function SetupStepFooter({
 function ChatbotAuthoring({
   chatbot,
   step,
+  sections,
   publishingAuthorized,
   publishingAuthorizationLoading,
   publishingAuthorizationError,
+  onNavigateSection,
   onNavigationStateChange,
 }: {
-  chatbot: Chatbot
+  chatbot: RevisionChatbot
   step: ChatbotSetupStep
+  sections?: readonly ChatbotSetupStep[]
   publishingAuthorized: boolean
   publishingAuthorizationLoading: boolean
   publishingAuthorizationError: boolean
+  onNavigateSection?: (section: ChatbotSetupStep) => void
   onNavigationStateChange: (state: ChatbotNavigationState) => void
 }) {
   const t = useTranslations()
-  const [updateChatbot] = useMutation(UpdateChatbotDocument)
-  const [updateStandardModeConfig] = useMutation(
-    MUpdateChatbotStandardModeConfigDocument
-  )
-  const [saveDisclaimer] = useMutation(SaveChatbotDisclaimerDocument)
+  const [saveRevision] = useMutation(MSaveChatbotRevisionDocument)
   const [metadataError, setMetadataError] = useState<string | null>(null)
   const [metadataSuccess, setMetadataSuccess] = useState(false)
   const [modeError, setModeError] = useState<string | null>(null)
   const [modeSuccess, setModeSuccess] = useState(false)
   const [disclaimerError, setDisclaimerError] = useState<string | null>(null)
-  const [advanceToReview, setAdvanceToReview] = useState(false)
+  const [revisionConflict, setRevisionConflict] = useState(false)
+  const { loading: revisionReloading, reload: reloadRevision } =
+    useChatbotRevisionReload()
   const [openSections, setOpenSections] = useState<ChatbotSetupStep[]>([step])
   const [metadataNavigationState, setMetadataNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
@@ -338,17 +361,36 @@ function ChatbotAuthoring({
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [disclaimerNavigationState, setDisclaimerNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const [creditNavigationState, setCreditNavigationState] =
+    useState<ChatbotNavigationState>({ dirty: false, pending: false })
   const [publicationNavigationState, setPublicationNavigationState] =
     useState<ChatbotNavigationState>({ dirty: false, pending: false })
+  const visibleSections = sections ?? setupSteps
   const clearMetadataSuccess = useCallback(() => setMetadataSuccess(false), [])
   const clearModeSuccess = useCallback(() => setModeSuccess(false), [])
 
-  const metadataEditable = metadataEditableStatuses.includes(chatbot.status)
+  const revisionValues = getChatbotRevisionValues(chatbot)
+  const revisionVersion = getChatbotRevisionVersion(chatbot)
+  const revisionPending = isChatbotRevisionPending(chatbot)
+  const metadataEditable = isChatbotRevisionEditable(chatbot)
   const modeEditable = metadataEditable
-  const disclaimerEditable = disclaimerEditableStatuses.includes(chatbot.status)
+  const disclaimerEditable = metadataEditable
+  const creditEditable = metadataEditable
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
   const writingCoachUnavailableReason = chatbot.writingCoachUnavailableReason
+  const disclaimerInitialValues = {
+    title:
+      revisionValues.disclaimerTitle ??
+      (disclaimer?.id
+        ? ''
+        : t('manage.resources.chatbotDisclaimerSuggestedTitle')),
+    introText:
+      revisionValues.disclaimerIntroText ??
+      (disclaimer?.id
+        ? ''
+        : t('manage.resources.chatbotDisclaimerSuggestedIntro')),
+  }
   const modeReviewItems = [
     {
       mode: 'tutor' as const,
@@ -371,23 +413,32 @@ function ChatbotAuthoring({
       enabled: standardModeConfig.writingCoachEnabled,
     },
   ]
-  const editorKey = `${chatbot.id}:${disclaimer?.id ?? 'new'}`
   const published = chatbot.status === ChatbotStatus.Published
   const setupDirty =
     metadataNavigationState.dirty ||
     modeNavigationState.dirty ||
-    disclaimerNavigationState.dirty
+    disclaimerNavigationState.dirty ||
+    creditNavigationState.dirty
   const setupPending =
     metadataNavigationState.pending ||
     modeNavigationState.pending ||
-    disclaimerNavigationState.pending
+    disclaimerNavigationState.pending ||
+    creditNavigationState.pending
   const publicationPending = publicationNavigationState.pending
 
-  const openSection = useCallback((section: ChatbotSetupStep) => {
-    setOpenSections((current) =>
-      current.includes(section) ? current : [...current, section]
-    )
-  }, [])
+  const openSection = useCallback(
+    (section: ChatbotSetupStep) => {
+      if (!visibleSections.includes(section)) {
+        onNavigateSection?.(section)
+        return
+      }
+
+      setOpenSections((current) =>
+        current.includes(section) ? current : [...current, section]
+      )
+    },
+    [onNavigateSection, visibleSections]
+  )
 
   useEffect(() => {
     openSection(step)
@@ -399,15 +450,18 @@ function ChatbotAuthoring({
         metadataNavigationState.dirty ||
         modeNavigationState.dirty ||
         disclaimerNavigationState.dirty ||
+        creditNavigationState.dirty ||
         publicationNavigationState.dirty,
       pending:
         metadataNavigationState.pending ||
         modeNavigationState.pending ||
         disclaimerNavigationState.pending ||
+        creditNavigationState.pending ||
         publicationNavigationState.pending,
     })
   }, [
     disclaimerNavigationState,
+    creditNavigationState,
     metadataNavigationState,
     modeNavigationState,
     onNavigationStateChange,
@@ -424,20 +478,34 @@ function ChatbotAuthoring({
     if (!disclaimerEditable) {
       setDisclaimerNavigationState({ dirty: false, pending: false })
     }
-  }, [disclaimerEditable, metadataEditable, modeEditable])
+    if (!creditEditable) {
+      setCreditNavigationState({ dirty: false, pending: false })
+    }
+  }, [creditEditable, disclaimerEditable, metadataEditable, modeEditable])
 
-  useEffect(() => {
-    if (!advanceToReview || !hasCompleteDisclaimer(chatbot)) return
-    setAdvanceToReview(false)
-    openSection('review')
-  }, [advanceToReview, chatbot, openSection])
+  const reloadAfterConflict = useCallback(async () => {
+    await reloadRevision()
+    setRevisionConflict(false)
+  }, [reloadRevision])
 
   return (
     <div className="space-y-6" data-cy="chatbot-authoring">
       <div data-cy="chatbot-setup">
-        <H4>{t('manage.resources.chatbotSetupTitle')}</H4>
+        <H4>
+          {visibleSections.length === 1 && visibleSections[0] === 'modes'
+            ? t('manage.resources.chatbotWorkspaceBehavior')
+            : visibleSections.length === 1 &&
+                visibleSections[0] === 'disclaimer'
+              ? t('manage.resources.chatbotWorkspaceDisclaimer')
+              : t('manage.resources.chatbotWorkspaceOverview')}
+        </H4>
         <p className="mt-1 text-sm text-gray-600">
-          {t('manage.resources.chatbotSetupDescription')}
+          {visibleSections.length === 1 && visibleSections[0] === 'modes'
+            ? t('manage.resources.chatbotWorkspaceBehaviorDescription')
+            : visibleSections.length === 1 &&
+                visibleSections[0] === 'disclaimer'
+              ? t('manage.resources.chatbotWorkspaceDisclaimerDescription')
+              : t('manage.resources.chatbotWorkspaceOverviewDescription')}
         </p>
       </div>
 
@@ -447,881 +515,1131 @@ function ChatbotAuthoring({
         onValueChange={(values) =>
           setOpenSections(
             values.filter((value): value is ChatbotSetupStep =>
-              setupSteps.includes(value as ChatbotSetupStep)
+              visibleSections.includes(value as ChatbotSetupStep)
             )
           )
         }
         className="space-y-3"
         data-cy="chatbot-setup-accordion"
       >
-        <AccordionItem
-          value="basics"
-          className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
-          data-cy="chatbot-setup-item-basics"
-        >
-          <AccordionTrigger
-            className="py-3 hover:no-underline"
-            data-cy="chatbot-setup-trigger-basics"
+        {visibleSections.includes('basics') ? (
+          <AccordionItem
+            value="basics"
+            className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+            data-cy="chatbot-setup-item-basics"
           >
-            <span className="flex flex-col gap-1">
-              <span>{t('manage.resources.chatbotSetupBasics')}</span>
-              <span className="text-sm font-normal text-gray-600">
-                {t('manage.resources.chatbotSetupBasicsDescription')}
-              </span>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent forceMount>
-            <section
-              hidden={!openSections.includes('basics')}
-              className="space-y-4"
-              data-cy="chatbot-setup-basics"
+            <AccordionTrigger
+              className="py-3 hover:no-underline"
+              data-cy="chatbot-setup-trigger-basics"
             >
-              <div>
-                <H4>{t('manage.resources.chatbotSetupBasicsTitle')}</H4>
-                <p className="mt-1 text-sm text-gray-600">
-                  {t('manage.resources.chatbotSetupBasicsDescriptionLong')}
-                </p>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-700">
-                  {t('manage.resources.chatbotCourse')}
-                </div>
-                <div
-                  className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
-                  data-cy="chatbot-course-readonly"
-                >
-                  {(chatbot.courses ?? [])
-                    .map((course) => course.name)
-                    .join(', ')}
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  {t('manage.resources.chatbotCourseReadonly')}
-                </p>
-              </div>
-              {metadataEditable ? (
-                <Formik
-                  enableReinitialize
-                  validateOnMount
-                  initialValues={{
-                    name: chatbot.name,
-                    description: chatbot.description ?? '',
-                  }}
-                  validationSchema={Yup.object({
-                    name: Yup.string()
-                      .trim()
-                      .required(t('manage.resources.chatbotNameRequired')),
-                  })}
-                  onSubmit={async (values, { resetForm }) => {
-                    setMetadataError(null)
-                    setMetadataSuccess(false)
-                    const normalizedValues = {
-                      name: values.name.trim(),
-                      description: values.description.trim(),
-                    }
-                    try {
-                      await updateChatbot({
-                        variables: {
-                          id: chatbot.id,
-                          name: normalizedValues.name,
-                          description: normalizedValues.description || null,
-                        },
-                        refetchQueries: [
-                          { query: QGetChatbotsInfoWithStandardModesDocument },
-                        ],
-                        awaitRefetchQueries: true,
-                      })
-                      resetForm({ values: normalizedValues })
-                      setMetadataSuccess(true)
-                      if (!published) openSection('disclaimer')
-                    } catch (error) {
-                      setMetadataError(
-                        t(getChatbotMutationErrorKey(error, 'metadata'))
-                      )
-                    }
-                  }}
-                >
-                  {({ dirty, isSubmitting }) => (
-                    <Form className="space-y-4">
-                      <FormikInteractionEffects
-                        onDirty={clearMetadataSuccess}
-                      />
-                      <NavigationStateReporter
-                        dirty={dirty}
-                        pending={isSubmitting}
-                        onChange={setMetadataNavigationState}
-                      />
-                      <RequiredFormikTextField
-                        disabled={isSubmitting || publicationPending}
-                        name="name"
-                        label={t('manage.resources.chatbotName')}
-                        testId="chatbot-name"
-                      />
-                      <FormikTextareaField
-                        disabled={isSubmitting || publicationPending}
-                        name="description"
-                        label={t('manage.resources.chatbotDescription')}
-                        data={{ cy: 'chatbot-description' }}
-                      />
-                      {metadataError ? (
-                        <div role="alert">
-                          <UserNotification type="error">
-                            {metadataError}
-                          </UserNotification>
-                        </div>
-                      ) : null}
-                      <SetupStepFooter
-                        action={
-                          published
-                            ? t('manage.resources.saveChatbotMetadata')
-                            : t('manage.resources.chatbotSetupSave')
-                        }
-                        disabled={isSubmitting || publicationPending}
-                        loading={isSubmitting}
-                        savingLabel={t('manage.resources.chatbotSetupSaving')}
-                        success={published && metadataSuccess}
-                        successMessage={t(
-                          'manage.resources.chatbotMetadataSaveSuccess'
-                        )}
-                        testId="save-chatbot-metadata"
-                      />
-                    </Form>
-                  )}
-                </Formik>
-              ) : (
-                <UserNotification>
-                  {t('manage.resources.chatbotMetadataReadonly')}
-                </UserNotification>
-              )}
-            </section>
-          </AccordionContent>
-        </AccordionItem>
-
-        <AccordionItem
-          value="modes"
-          className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
-          data-cy="chatbot-setup-item-modes"
-        >
-          <AccordionTrigger
-            className="py-3 hover:no-underline"
-            data-cy="chatbot-setup-trigger-modes"
-          >
-            <span className="flex flex-col gap-1">
-              <span>{t('manage.resources.chatbotSetupModes')}</span>
-              <span className="text-sm font-normal text-gray-600">
-                {t('manage.resources.chatbotSetupModesDescription')}
+              <span className="flex flex-col gap-1">
+                <span>{t('manage.resources.chatbotSetupBasics')}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {t('manage.resources.chatbotSetupBasicsDescription')}
+                </span>
               </span>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent forceMount>
-            <section
-              hidden={!openSections.includes('modes')}
-              className="space-y-4"
-              data-cy="chatbot-setup-modes"
-            >
-              <div>
-                <H4>{t('manage.resources.chatbotSetupModesTitle')}</H4>
-                <p className="mt-1 text-sm text-gray-600">
-                  {t('manage.resources.chatbotSetupModesDescriptionLong')}
-                </p>
-              </div>
-              {modeEditable ? (
-                <Formik<StandardModeFormValues>
-                  enableReinitialize
-                  validateOnMount
-                  initialValues={standardModeConfig}
-                  validate={(values) => {
-                    if (
-                      values.scopeNote !== standardModeConfig.scopeNote &&
-                      values.scopeNote.length >
-                        CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
-                    ) {
-                      return {
-                        scopeNote: t('manage.resources.chatbotFramingTooLong', {
-                          count: CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
-                        }),
+            </AccordionTrigger>
+            <AccordionContent forceMount>
+              <section
+                hidden={!openSections.includes('basics')}
+                className="space-y-4"
+                data-cy="chatbot-setup-basics"
+              >
+                <div>
+                  <H4>{t('manage.resources.chatbotSetupBasicsTitle')}</H4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {t('manage.resources.chatbotSetupBasicsDescriptionLong')}
+                  </p>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-700">
+                    {t('manage.resources.chatbotCourse')}
+                  </div>
+                  <div
+                    className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700"
+                    data-cy="chatbot-course-readonly"
+                  >
+                    {(chatbot.courses ?? [])
+                      .map((course) => course.name)
+                      .join(', ')}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {t('manage.resources.chatbotCourseReadonly')}
+                  </p>
+                </div>
+                {metadataEditable ? (
+                  <Formik
+                    validateOnMount
+                    initialValues={{
+                      name: revisionValues.name,
+                      description: revisionValues.description ?? '',
+                    }}
+                    validationSchema={Yup.object({
+                      name: Yup.string()
+                        .trim()
+                        .required(t('manage.resources.chatbotNameRequired')),
+                    })}
+                    onSubmit={async (values, { resetForm }) => {
+                      setMetadataError(null)
+                      setMetadataSuccess(false)
+                      setRevisionConflict(false)
+                      const normalizedValues = {
+                        name: values.name.trim(),
+                        description: values.description.trim(),
                       }
-                    }
-
-                    return {}
-                  }}
-                  onSubmit={async (values, { resetForm }) => {
-                    setModeError(null)
-                    setModeSuccess(false)
-                    try {
-                      await updateStandardModeConfig({
-                        variables: {
-                          chatbotId: chatbot.id,
-                          config: values,
-                        },
-                        refetchQueries: [
-                          { query: QGetChatbotsInfoWithStandardModesDocument },
-                        ],
-                        awaitRefetchQueries: true,
-                      })
-                      resetForm({ values })
-                      setModeSuccess(true)
-                    } catch (error) {
-                      setModeError(
-                        t(getChatbotMutationErrorKey(error, 'standardMode'))
-                      )
-                    }
-                  }}
-                >
-                  {({
-                    dirty,
-                    isSubmitting,
-                    isValid,
-                    values,
-                    setFieldValue,
-                  }) => {
-                    const controlsDisabled = isSubmitting || publicationPending
-                    // Writing Coach is removed from the participant-facing mode
-                    // set while a required tool binding belongs to another mode,
-                    // so in that state it cannot satisfy the "keep one
-                    // conversational mode enabled" invariant on its own.
-                    const writingCoachCannotHoldInvariant =
-                      writingCoachUnavailableReason === 'REQUIRED_TOOL_BINDING'
-
-                    return (
+                      try {
+                        await saveRevision({
+                          variables: {
+                            chatbotId: chatbot.id,
+                            expectedRevisionVersion: revisionVersion,
+                            input: {
+                              metadata: {
+                                name: normalizedValues.name,
+                                description:
+                                  normalizedValues.description || null,
+                                avatar: revisionValues.avatar,
+                              },
+                            },
+                          },
+                          refetchQueries: [
+                            {
+                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                            },
+                          ],
+                          awaitRefetchQueries: true,
+                        })
+                        resetForm({ values: normalizedValues })
+                        setMetadataSuccess(true)
+                        if (
+                          !published &&
+                          visibleSections.includes('disclaimer')
+                        ) {
+                          openSection('disclaimer')
+                        }
+                      } catch (error) {
+                        if (isChatbotRevisionConflict(error)) {
+                          setRevisionConflict(true)
+                        }
+                        setMetadataError(
+                          t(getChatbotMutationErrorKey(error, 'metadata'))
+                        )
+                      }
+                    }}
+                  >
+                    {({ dirty, isSubmitting }) => (
                       <Form className="space-y-4">
-                        <FormikInteractionEffects onDirty={clearModeSuccess} />
+                        <FormikInitialValuesSynchronizer
+                          initialValues={{
+                            name: revisionValues.name,
+                            description: revisionValues.description ?? '',
+                          }}
+                        />
+                        <FormikInteractionEffects
+                          onDirty={clearMetadataSuccess}
+                        />
                         <NavigationStateReporter
                           dirty={dirty}
                           pending={isSubmitting}
-                          onChange={setModeNavigationState}
+                          onChange={setMetadataNavigationState}
                         />
-                        <div className="space-y-1">
-                          <FormikTextareaField
-                            disabled={controlsDisabled}
-                            name="scopeNote"
-                            label={t('manage.resources.chatbotFraming')}
-                            placeholder={t(
-                              'manage.resources.chatbotFramingPlaceholder'
+                        <RequiredFormikTextField
+                          disabled={
+                            isSubmitting ||
+                            publicationPending ||
+                            revisionPending
+                          }
+                          name="name"
+                          label={t('manage.resources.chatbotName')}
+                          testId="chatbot-name"
+                        />
+                        <FormikTextareaField
+                          disabled={
+                            isSubmitting ||
+                            publicationPending ||
+                            revisionPending
+                          }
+                          name="description"
+                          label={t('manage.resources.chatbotDescription')}
+                          data={{ cy: 'chatbot-description' }}
+                        />
+                        {revisionConflict ? (
+                          <ChatbotRevisionConflictNotice
+                            message={t(
+                              'manage.resources.chatbotRevisionConflict'
                             )}
-                            maxLength={
-                              CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
-                            }
-                            maxLengthUnit={t('shared.generic.characters')}
-                            data={{ cy: 'chatbot-framing' }}
+                            onReload={() => void reloadAfterConflict()}
+                            reloading={revisionReloading}
+                            testId="chatbot-revision-reload-metadata"
                           />
-                          <p className="text-xs text-gray-500">
-                            {t('manage.resources.chatbotFramingDescription')}
-                          </p>
-                          <details
-                            className="text-sm text-gray-600"
-                            data-cy="chatbot-framing-examples"
-                          >
-                            <summary className="cursor-pointer py-2 font-medium">
-                              {t('manage.resources.chatbotFramingExamples')}
-                            </summary>
-                            <div className="space-y-3 pt-1">
-                              <p>
-                                <strong>
-                                  {t(
-                                    'manage.resources.chatbotFramingScientific'
-                                  )}
-                                </strong>
-                                <br />
-                                {t(
-                                  'manage.resources.chatbotFramingScientificExample'
-                                )}
-                              </p>
-                              <p>
-                                <strong>
-                                  {t('manage.resources.chatbotFramingInformal')}
-                                </strong>
-                                <br />
-                                {t(
-                                  'manage.resources.chatbotFramingInformalExample'
-                                )}
-                              </p>
-                            </div>
-                          </details>
-                        </div>
-                        <div className="space-y-3">
-                          <StandardModeCard
-                            description={t(
-                              'manage.resources.chatbotModeTutorDescription'
-                            )}
-                            disabled={
-                              controlsDisabled ||
-                              (values.tutorEnabled &&
-                                !values.explainerEnabled &&
-                                (!values.writingCoachEnabled ||
-                                  writingCoachCannotHoldInvariant))
-                            }
-                            enabled={values.tutorEnabled}
-                            mode="tutor"
-                            onChange={(enabled) => {
-                              setModeError(null)
-                              void setFieldValue('tutorEnabled', enabled)
-                            }}
-                            statusLabel={t(
-                              values.tutorEnabled
-                                ? 'manage.resources.chatbotModeEnabled'
-                                : 'manage.resources.chatbotModeDisabled'
-                            )}
-                            title={t('manage.resources.chatbotModeTutor')}
-                          />
-                          <StandardModeCard
-                            description={t(
-                              'manage.resources.chatbotModeExplainerDescription'
-                            )}
-                            disabled={
-                              controlsDisabled ||
-                              (values.explainerEnabled &&
-                                !values.tutorEnabled &&
-                                (!values.writingCoachEnabled ||
-                                  writingCoachCannotHoldInvariant))
-                            }
-                            enabled={values.explainerEnabled}
-                            mode="explainer"
-                            onChange={(enabled) => {
-                              setModeError(null)
-                              void setFieldValue('explainerEnabled', enabled)
-                            }}
-                            statusLabel={t(
-                              values.explainerEnabled
-                                ? 'manage.resources.chatbotModeEnabled'
-                                : 'manage.resources.chatbotModeDisabled'
-                            )}
-                            title={t('manage.resources.chatbotModeExplainer')}
-                          />
-                          <StandardModeCard
-                            description={t(
-                              'manage.resources.chatbotModeQuizzerDescription'
-                            )}
-                            disabled={controlsDisabled}
-                            enabled={values.quizzerEnabled}
-                            mode="quizzer"
-                            onChange={(enabled) => {
-                              setModeError(null)
-                              void setFieldValue('quizzerEnabled', enabled)
-                            }}
-                            statusLabel={t(
-                              values.quizzerEnabled
-                                ? 'manage.resources.chatbotModeEnabled'
-                                : 'manage.resources.chatbotModeDisabled'
-                            )}
-                            title={t('manage.resources.chatbotModeQuizzer')}
-                          />
-                          <StandardModeCard
-                            description={t(
-                              'manage.resources.chatbotModeWritingCoachDescription'
-                            )}
-                            disabled={
-                              controlsDisabled ||
-                              (!values.tutorEnabled &&
-                                !values.explainerEnabled &&
-                                (values.writingCoachEnabled ||
-                                  writingCoachCannotHoldInvariant))
-                            }
-                            enabled={values.writingCoachEnabled}
-                            mode="writing-coach"
-                            onChange={(enabled) => {
-                              setModeError(null)
-                              void setFieldValue('writingCoachEnabled', enabled)
-                            }}
-                            statusLabel={t(
-                              values.writingCoachEnabled
-                                ? 'manage.resources.chatbotModeEnabled'
-                                : 'manage.resources.chatbotModeDisabled'
-                            )}
-                            title={t(
-                              'manage.resources.chatbotModeWritingCoach'
-                            )}
-                          />
-                          {writingCoachUnavailableReason && (
-                            <p
-                              className="text-sm text-amber-800"
-                              data-cy="chatbot-writing-coach-unavailable"
-                            >
-                              {t(
-                                'manage.resources.chatbotWritingCoachRequiredTool'
-                              )}
-                            </p>
-                          )}
-                        </div>
-                        <p
-                          className="text-sm text-gray-600"
-                          data-cy="chatbot-mode-invariant"
-                        >
-                          {t('manage.resources.chatbotModeInvariant')}
-                        </p>
-                        <p
-                          className="text-sm text-gray-600"
-                          data-cy="chatbot-mode-capability-note"
-                        >
-                          {t(
-                            'manage.resources.chatbotModeQuizzerCapabilityNote'
-                          )}
-                        </p>
-                        {modeError ? (
+                        ) : null}
+                        {metadataError ? (
                           <div role="alert">
                             <UserNotification type="error">
-                              {modeError}
+                              {metadataError}
                             </UserNotification>
                           </div>
                         ) : null}
                         <SetupStepFooter
-                          action={t('manage.resources.chatbotModesSave')}
-                          disabled={controlsDisabled || !isValid}
+                          action={
+                            published
+                              ? t('manage.resources.saveChatbotMetadata')
+                              : t('manage.resources.chatbotSetupSave')
+                          }
+                          disabled={
+                            isSubmitting ||
+                            publicationPending ||
+                            revisionPending
+                          }
                           loading={isSubmitting}
-                          savingLabel={t('manage.resources.chatbotModesSaving')}
-                          success={modeSuccess}
+                          savingLabel={t('manage.resources.chatbotSetupSaving')}
+                          success={published && metadataSuccess}
                           successMessage={t(
-                            'manage.resources.chatbotModesSaveSuccess'
+                            'manage.resources.chatbotMetadataSaveSuccess'
                           )}
-                          testId="save-chatbot-modes"
+                          testId="save-chatbot-metadata"
                         />
                       </Form>
-                    )
-                  }}
-                </Formik>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    <StandardModeCard
-                      description={t(
-                        'manage.resources.chatbotModeTutorDescription'
-                      )}
-                      disabled
-                      enabled={standardModeConfig.tutorEnabled}
-                      mode="tutor"
-                      onChange={() => undefined}
-                      statusLabel={t(
-                        standardModeConfig.tutorEnabled
-                          ? 'manage.resources.chatbotModeEnabled'
-                          : 'manage.resources.chatbotModeDisabled'
-                      )}
-                      title={t('manage.resources.chatbotModeTutor')}
-                    />
-                    <StandardModeCard
-                      description={t(
-                        'manage.resources.chatbotModeExplainerDescription'
-                      )}
-                      disabled
-                      enabled={standardModeConfig.explainerEnabled}
-                      mode="explainer"
-                      onChange={() => undefined}
-                      statusLabel={t(
-                        standardModeConfig.explainerEnabled
-                          ? 'manage.resources.chatbotModeEnabled'
-                          : 'manage.resources.chatbotModeDisabled'
-                      )}
-                      title={t('manage.resources.chatbotModeExplainer')}
-                    />
-                    <StandardModeCard
-                      description={t(
-                        'manage.resources.chatbotModeQuizzerDescription'
-                      )}
-                      disabled
-                      enabled={standardModeConfig.quizzerEnabled}
-                      mode="quizzer"
-                      onChange={() => undefined}
-                      statusLabel={t(
-                        standardModeConfig.quizzerEnabled
-                          ? 'manage.resources.chatbotModeEnabled'
-                          : 'manage.resources.chatbotModeDisabled'
-                      )}
-                      title={t('manage.resources.chatbotModeQuizzer')}
-                    />
-                    <StandardModeCard
-                      description={t(
-                        'manage.resources.chatbotModeWritingCoachDescription'
-                      )}
-                      disabled
-                      enabled={standardModeConfig.writingCoachEnabled}
-                      mode="writing-coach"
-                      onChange={() => undefined}
-                      statusLabel={t(
-                        standardModeConfig.writingCoachEnabled
-                          ? 'manage.resources.chatbotModeEnabled'
-                          : 'manage.resources.chatbotModeDisabled'
-                      )}
-                      title={t('manage.resources.chatbotModeWritingCoach')}
-                    />
-                    {writingCoachUnavailableReason && (
-                      <p
-                        className="text-sm text-amber-800"
-                        data-cy="chatbot-writing-coach-unavailable"
-                      >
-                        {t('manage.resources.chatbotWritingCoachRequiredTool')}
-                      </p>
                     )}
-                  </div>
-                  <p
-                    className="text-sm text-gray-600"
-                    data-cy="chatbot-mode-capability-note"
-                  >
-                    {t('manage.resources.chatbotModeQuizzerCapabilityNote')}
-                  </p>
+                  </Formik>
+                ) : (
                   <UserNotification>
-                    {t('manage.resources.chatbotModesReadonly')}
+                    {t('manage.resources.chatbotMetadataReadonly')}
                   </UserNotification>
-                </>
-              )}
-            </section>
-          </AccordionContent>
-        </AccordionItem>
+                )}
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        ) : null}
 
-        <AccordionItem
-          value="disclaimer"
-          className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
-          data-cy="chatbot-setup-item-disclaimer"
-        >
-          <AccordionTrigger
-            className="py-3 hover:no-underline"
-            data-cy="chatbot-setup-trigger-disclaimer"
+        {visibleSections.includes('modes') ? (
+          <AccordionItem
+            value="modes"
+            className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+            data-cy="chatbot-setup-item-modes"
           >
-            <span className="flex flex-col gap-1">
-              <span>{t('manage.resources.chatbotSetupDisclaimer')}</span>
-              <span className="text-sm font-normal text-gray-600">
-                {t('manage.resources.chatbotSetupDisclaimerDescription')}
-              </span>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent forceMount>
-            <section
-              hidden={!openSections.includes('disclaimer')}
-              className="space-y-4"
-              data-cy="chatbot-setup-disclaimer"
+            <AccordionTrigger
+              className="py-3 hover:no-underline"
+              data-cy="chatbot-setup-trigger-modes"
             >
-              <div>
-                <H4>{t('manage.resources.chatbotSetupDisclaimerTitle')}</H4>
-                <p className="mt-1 text-sm text-gray-600">
-                  {t('manage.resources.chatbotSetupDisclaimerDescriptionLong')}
-                </p>
-              </div>
-              {disclaimerEditable ? (
-                <Formik
-                  key={editorKey}
-                  enableReinitialize
-                  validateOnMount
-                  initialValues={{
-                    title: disclaimer?.title ?? '',
-                    introText: disclaimer?.introText ?? '',
-                  }}
-                  validationSchema={Yup.object({
-                    title: Yup.string()
-                      .trim()
-                      .max(
-                        160,
-                        t('manage.resources.chatbotDisclaimerTitleTooLong')
-                      )
-                      .required(
-                        t('manage.resources.chatbotDisclaimerTitleRequired')
-                      ),
-                    introText: Yup.string()
-                      .trim()
-                      .max(
-                        10_000,
-                        t('manage.resources.chatbotDisclaimerIntroTooLong')
-                      )
-                      .test({
-                        message: t(
-                          'manage.resources.chatbotDisclaimerIntroRequired'
-                        ),
-                        test: (value) => {
-                          const normalizedValue = value?.trim()
-                          return Boolean(
-                            normalizedValue &&
-                              !/^<br>\s*$/i.test(normalizedValue)
-                          )
-                        },
-                      }),
-                  })}
-                  onSubmit={async (values, { resetForm }) => {
-                    setDisclaimerError(null)
-                    const normalizedValues = {
-                      title: values.title.trim(),
-                      introText: values.introText.trim(),
-                    }
-                    try {
-                      await saveDisclaimer({
-                        variables: {
-                          chatbotId: chatbot.id,
-                          expectedDisclaimerId: disclaimer?.id ?? null,
-                          title: normalizedValues.title,
-                          introText: normalizedValues.introText,
-                        },
-                        refetchQueries: [
-                          { query: QGetChatbotsInfoWithStandardModesDocument },
-                        ],
-                        awaitRefetchQueries: true,
-                      })
-                      resetForm({ values: normalizedValues })
-                      setAdvanceToReview(true)
-                    } catch (error) {
-                      setDisclaimerError(
-                        t(getChatbotMutationErrorKey(error, 'disclaimer'))
-                      )
-                    }
-                  }}
-                >
-                  {({ dirty, isSubmitting, values }) => (
-                    <Form className="space-y-4">
-                      <FormikInteractionEffects />
-                      <NavigationStateReporter
-                        dirty={dirty}
-                        pending={isSubmitting}
-                        onChange={setDisclaimerNavigationState}
-                      />
-                      <RequiredFormikTextField
-                        disabled={isSubmitting || publicationPending}
-                        name="title"
-                        label={t('manage.resources.chatbotDisclaimerTitle')}
-                        testId="chatbot-disclaimer-title"
-                      />
-                      <DisclaimerIntroField
-                        disabled={isSubmitting || publicationPending}
-                        editorId={`chatbot-disclaimer-intro-${chatbot.id}`}
-                        errorId={`chatbot-disclaimer-intro-error-${chatbot.id}`}
-                        labelId={`chatbot-disclaimer-intro-label-${chatbot.id}`}
-                      />
-                      {disclaimerError ? (
-                        <div role="alert">
-                          <UserNotification
-                            id="chatbot-disclaimer-save-error"
-                            type="error"
+              <span className="flex flex-col gap-1">
+                <span>{t('manage.resources.chatbotSetupModes')}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {t('manage.resources.chatbotSetupModesDescription')}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent forceMount>
+              <section
+                hidden={!openSections.includes('modes')}
+                className="space-y-4"
+                data-cy="chatbot-setup-modes"
+              >
+                <div>
+                  <H4>{t('manage.resources.chatbotSetupModesTitle')}</H4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {t('manage.resources.chatbotSetupModesDescriptionLong')}
+                  </p>
+                </div>
+                {modeEditable ? (
+                  <Formik<StandardModeFormValues>
+                    validateOnMount
+                    initialValues={standardModeConfig}
+                    validate={(values) => {
+                      if (
+                        values.scopeNote !== standardModeConfig.scopeNote &&
+                        values.scopeNote.length >
+                          CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
+                      ) {
+                        return {
+                          scopeNote: t(
+                            'manage.resources.chatbotFramingTooLong',
+                            {
+                              count:
+                                CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+                            }
+                          ),
+                        }
+                      }
+
+                      return {}
+                    }}
+                    onSubmit={async (values, { resetForm }) => {
+                      setModeError(null)
+                      setModeSuccess(false)
+                      try {
+                        await saveRevision({
+                          variables: {
+                            chatbotId: chatbot.id,
+                            expectedRevisionVersion: revisionVersion,
+                            input: { standardModeConfig: values },
+                          },
+                          refetchQueries: [
+                            {
+                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                            },
+                          ],
+                          awaitRefetchQueries: true,
+                        })
+                        resetForm({ values })
+                        setModeSuccess(true)
+                      } catch (error) {
+                        if (isChatbotRevisionConflict(error)) {
+                          setRevisionConflict(true)
+                        }
+                        setModeError(
+                          t(getChatbotMutationErrorKey(error, 'standardMode'))
+                        )
+                      }
+                    }}
+                  >
+                    {({
+                      dirty,
+                      isSubmitting,
+                      isValid,
+                      values,
+                      setFieldValue,
+                    }) => {
+                      const controlsDisabled =
+                        isSubmitting || publicationPending || revisionPending
+                      // Writing Coach is removed from the participant-facing
+                      // mode set while a required tool binding belongs to
+                      // another mode, so in that state it cannot satisfy the
+                      // "keep one conversational mode enabled" invariant on its
+                      // own.
+                      const writingCoachCannotHoldInvariant =
+                        writingCoachUnavailableReason ===
+                        'REQUIRED_TOOL_BINDING'
+
+                      return (
+                        <Form className="space-y-4">
+                          <FormikInitialValuesSynchronizer
+                            initialValues={standardModeConfig}
+                          />
+                          <FormikInteractionEffects
+                            onDirty={clearModeSuccess}
+                          />
+                          <NavigationStateReporter
+                            dirty={dirty}
+                            pending={isSubmitting}
+                            onChange={setModeNavigationState}
+                          />
+                          <div className="space-y-1">
+                            <FormikTextareaField
+                              disabled={controlsDisabled || revisionPending}
+                              name="scopeNote"
+                              label={t('manage.resources.chatbotFraming')}
+                              placeholder={t(
+                                'manage.resources.chatbotFramingPlaceholder'
+                              )}
+                              maxLength={
+                                CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
+                              }
+                              maxLengthUnit={t('shared.generic.characters')}
+                              data={{ cy: 'chatbot-framing' }}
+                            />
+                            <p className="text-xs text-gray-500">
+                              {t('manage.resources.chatbotFramingDescription')}
+                            </p>
+                            <details
+                              className="text-sm text-gray-600"
+                              data-cy="chatbot-framing-examples"
+                            >
+                              <summary className="cursor-pointer py-2 font-medium">
+                                {t('manage.resources.chatbotFramingExamples')}
+                              </summary>
+                              <div className="space-y-3 pt-1">
+                                <p>
+                                  <strong>
+                                    {t(
+                                      'manage.resources.chatbotFramingScientific'
+                                    )}
+                                  </strong>
+                                  <br />
+                                  {t(
+                                    'manage.resources.chatbotFramingScientificExample'
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>
+                                    {t(
+                                      'manage.resources.chatbotFramingInformal'
+                                    )}
+                                  </strong>
+                                  <br />
+                                  {t(
+                                    'manage.resources.chatbotFramingInformalExample'
+                                  )}
+                                </p>
+                              </div>
+                            </details>
+                          </div>
+                          <div className="space-y-3">
+                            <StandardModeCard
+                              description={t(
+                                'manage.resources.chatbotModeTutorDescription'
+                              )}
+                              disabled={
+                                controlsDisabled ||
+                                revisionPending ||
+                                (values.tutorEnabled &&
+                                  !values.explainerEnabled &&
+                                  (!values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
+                              }
+                              enabled={values.tutorEnabled}
+                              mode="tutor"
+                              onChange={(enabled) => {
+                                setModeError(null)
+                                void setFieldValue('tutorEnabled', enabled)
+                              }}
+                              statusLabel={t(
+                                values.tutorEnabled
+                                  ? 'manage.resources.chatbotModeEnabled'
+                                  : 'manage.resources.chatbotModeDisabled'
+                              )}
+                              title={t('manage.resources.chatbotModeTutor')}
+                            />
+                            <StandardModeCard
+                              description={t(
+                                'manage.resources.chatbotModeExplainerDescription'
+                              )}
+                              disabled={
+                                controlsDisabled ||
+                                revisionPending ||
+                                (values.explainerEnabled &&
+                                  !values.tutorEnabled &&
+                                  (!values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
+                              }
+                              enabled={values.explainerEnabled}
+                              mode="explainer"
+                              onChange={(enabled) => {
+                                setModeError(null)
+                                void setFieldValue('explainerEnabled', enabled)
+                              }}
+                              statusLabel={t(
+                                values.explainerEnabled
+                                  ? 'manage.resources.chatbotModeEnabled'
+                                  : 'manage.resources.chatbotModeDisabled'
+                              )}
+                              title={t('manage.resources.chatbotModeExplainer')}
+                            />
+                            <StandardModeCard
+                              description={t(
+                                'manage.resources.chatbotModeQuizzerDescription'
+                              )}
+                              disabled={controlsDisabled || revisionPending}
+                              enabled={values.quizzerEnabled}
+                              mode="quizzer"
+                              onChange={(enabled) => {
+                                setModeError(null)
+                                void setFieldValue('quizzerEnabled', enabled)
+                              }}
+                              statusLabel={t(
+                                values.quizzerEnabled
+                                  ? 'manage.resources.chatbotModeEnabled'
+                                  : 'manage.resources.chatbotModeDisabled'
+                              )}
+                              title={t('manage.resources.chatbotModeQuizzer')}
+                            />
+                            <StandardModeCard
+                              description={t(
+                                'manage.resources.chatbotModeWritingCoachDescription'
+                              )}
+                              disabled={
+                                controlsDisabled ||
+                                revisionPending ||
+                                (!values.tutorEnabled &&
+                                  !values.explainerEnabled &&
+                                  (values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
+                              }
+                              enabled={values.writingCoachEnabled}
+                              mode="writing-coach"
+                              onChange={(enabled) => {
+                                setModeError(null)
+                                void setFieldValue(
+                                  'writingCoachEnabled',
+                                  enabled
+                                )
+                              }}
+                              statusLabel={t(
+                                values.writingCoachEnabled
+                                  ? 'manage.resources.chatbotModeEnabled'
+                                  : 'manage.resources.chatbotModeDisabled'
+                              )}
+                              title={t(
+                                'manage.resources.chatbotModeWritingCoach'
+                              )}
+                            />
+                            {writingCoachUnavailableReason ? (
+                              <p
+                                className="text-sm text-amber-800"
+                                data-cy="chatbot-writing-coach-unavailable"
+                              >
+                                {t(
+                                  'manage.resources.chatbotWritingCoachRequiredTool'
+                                )}
+                              </p>
+                            ) : null}
+                          </div>
+                          <p
+                            className="text-sm text-gray-600"
+                            data-cy="chatbot-mode-invariant"
                           >
-                            {disclaimerError}
-                          </UserNotification>
-                        </div>
-                      ) : null}
-                      <div className="border-t border-gray-200 pt-4">
-                        <H4>
-                          {t('manage.resources.chatbotDisclaimerPreview')}
-                        </H4>
-                        <p className="mb-3 text-sm text-gray-600">
+                            {t('manage.resources.chatbotModeInvariant')}
+                          </p>
+                          <p
+                            className="text-sm text-gray-600"
+                            data-cy="chatbot-mode-capability-note"
+                          >
+                            {t(
+                              'manage.resources.chatbotModeQuizzerCapabilityNote'
+                            )}
+                          </p>
+                          {revisionConflict ? (
+                            <ChatbotRevisionConflictNotice
+                              message={t(
+                                'manage.resources.chatbotRevisionConflict'
+                              )}
+                              onReload={() => void reloadAfterConflict()}
+                              reloading={revisionReloading}
+                              testId="chatbot-revision-reload-modes"
+                            />
+                          ) : null}
+                          {modeError ? (
+                            <div role="alert">
+                              <UserNotification type="error">
+                                {modeError}
+                              </UserNotification>
+                            </div>
+                          ) : null}
+                          <SetupStepFooter
+                            action={t('manage.resources.chatbotModesSave')}
+                            disabled={controlsDisabled || !isValid}
+                            loading={isSubmitting}
+                            savingLabel={t(
+                              'manage.resources.chatbotModesSaving'
+                            )}
+                            success={modeSuccess}
+                            successMessage={t(
+                              'manage.resources.chatbotModesSaveSuccess'
+                            )}
+                            testId="save-chatbot-modes"
+                          />
+                        </Form>
+                      )
+                    }}
+                  </Formik>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      <StandardModeCard
+                        description={t(
+                          'manage.resources.chatbotModeTutorDescription'
+                        )}
+                        disabled
+                        enabled={standardModeConfig.tutorEnabled}
+                        mode="tutor"
+                        onChange={() => undefined}
+                        statusLabel={t(
+                          standardModeConfig.tutorEnabled
+                            ? 'manage.resources.chatbotModeEnabled'
+                            : 'manage.resources.chatbotModeDisabled'
+                        )}
+                        title={t('manage.resources.chatbotModeTutor')}
+                      />
+                      <StandardModeCard
+                        description={t(
+                          'manage.resources.chatbotModeExplainerDescription'
+                        )}
+                        disabled
+                        enabled={standardModeConfig.explainerEnabled}
+                        mode="explainer"
+                        onChange={() => undefined}
+                        statusLabel={t(
+                          standardModeConfig.explainerEnabled
+                            ? 'manage.resources.chatbotModeEnabled'
+                            : 'manage.resources.chatbotModeDisabled'
+                        )}
+                        title={t('manage.resources.chatbotModeExplainer')}
+                      />
+                      <StandardModeCard
+                        description={t(
+                          'manage.resources.chatbotModeQuizzerDescription'
+                        )}
+                        disabled
+                        enabled={standardModeConfig.quizzerEnabled}
+                        mode="quizzer"
+                        onChange={() => undefined}
+                        statusLabel={t(
+                          standardModeConfig.quizzerEnabled
+                            ? 'manage.resources.chatbotModeEnabled'
+                            : 'manage.resources.chatbotModeDisabled'
+                        )}
+                        title={t('manage.resources.chatbotModeQuizzer')}
+                      />
+                      <StandardModeCard
+                        description={t(
+                          'manage.resources.chatbotModeWritingCoachDescription'
+                        )}
+                        disabled
+                        enabled={standardModeConfig.writingCoachEnabled}
+                        mode="writing-coach"
+                        onChange={() => undefined}
+                        statusLabel={t(
+                          standardModeConfig.writingCoachEnabled
+                            ? 'manage.resources.chatbotModeEnabled'
+                            : 'manage.resources.chatbotModeDisabled'
+                        )}
+                        title={t('manage.resources.chatbotModeWritingCoach')}
+                      />
+                      {writingCoachUnavailableReason ? (
+                        <p
+                          className="text-sm text-amber-800"
+                          data-cy="chatbot-writing-coach-unavailable"
+                        >
                           {t(
-                            'manage.resources.chatbotDisclaimerPreviewDescription'
+                            'manage.resources.chatbotWritingCoachRequiredTool'
                           )}
                         </p>
-                        <ChatbotDisclaimerPreview
-                          title={values.title}
-                          introText={values.introText}
-                        />
-                      </div>
-                      <SetupStepFooter
-                        action={t('manage.resources.chatbotSetupSave')}
-                        disabled={isSubmitting || publicationPending}
-                        loading={isSubmitting}
-                        savingLabel={t('manage.resources.chatbotSetupSaving')}
-                        testId="save-chatbot-disclaimer"
-                      />
-                    </Form>
-                  )}
-                </Formik>
-              ) : (
-                <>
-                  <UserNotification>
-                    {t('manage.resources.chatbotDisclaimerReadonly')}
-                  </UserNotification>
-                  <ChatbotDisclaimerPreview
-                    title={disclaimer?.title ?? ''}
-                    introText={disclaimer?.introText ?? ''}
-                  />
-                </>
-              )}
-            </section>
-          </AccordionContent>
-        </AccordionItem>
+                      ) : null}
+                    </div>
+                    <p
+                      className="text-sm text-gray-600"
+                      data-cy="chatbot-mode-capability-note"
+                    >
+                      {t('manage.resources.chatbotModeQuizzerCapabilityNote')}
+                    </p>
+                    <UserNotification>
+                      {t('manage.resources.chatbotModesReadonly')}
+                    </UserNotification>
+                  </>
+                )}
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        ) : null}
 
-        <AccordionItem
-          value="review"
-          className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
-          data-cy="chatbot-setup-item-review"
-        >
-          <AccordionTrigger
-            className="py-3 hover:no-underline"
-            data-cy="chatbot-setup-trigger-review"
+        {visibleSections.includes('disclaimer') ? (
+          <AccordionItem
+            value="disclaimer"
+            className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+            data-cy="chatbot-setup-item-disclaimer"
           >
-            <span className="flex flex-col gap-1">
-              <span>{t('manage.resources.chatbotSetupReview')}</span>
-              <span className="text-sm font-normal text-gray-600">
-                {t('manage.resources.chatbotSetupReviewDescription')}
-              </span>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent forceMount>
-            <section
-              hidden={!openSections.includes('review')}
-              className="space-y-5"
-              data-cy="chatbot-setup-review"
+            <AccordionTrigger
+              className="py-3 hover:no-underline"
+              data-cy="chatbot-setup-trigger-disclaimer"
             >
-              <div>
-                <H4>{t('manage.resources.chatbotSetupReviewTitle')}</H4>
-                <p className="mt-1 text-sm text-gray-600">
-                  {t('manage.resources.chatbotSetupReviewDescriptionLong')}
-                </p>
-              </div>
-
-              <div
-                className="rounded-md border border-gray-200 bg-gray-50 p-4"
-                data-cy="chatbot-review-modes"
+              <span className="flex flex-col gap-1">
+                <span>{t('manage.resources.chatbotSetupDisclaimer')}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {t('manage.resources.chatbotSetupDisclaimerDescription')}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent forceMount>
+              <section
+                hidden={!openSections.includes('disclaimer')}
+                className="space-y-4"
+                data-cy="chatbot-setup-disclaimer"
               >
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h5 className="font-semibold text-gray-900">
-                    {t('manage.resources.chatbotSetupModesTitle')}
-                  </h5>
-                  <Button
-                    type="button"
-                    onClick={() => openSection('modes')}
-                    data={{ cy: 'chatbot-setup-edit-modes' }}
-                  >
-                    <Button.Label>
-                      {t('manage.resources.chatbotSetupEdit')}
-                    </Button.Label>
-                  </Button>
+                <div>
+                  <H4>{t('manage.resources.chatbotSetupDisclaimerTitle')}</H4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {t(
+                      'manage.resources.chatbotSetupDisclaimerDescriptionLong'
+                    )}
+                  </p>
                 </div>
-                <dl className="grid gap-3 text-sm sm:grid-cols-3">
-                  {modeReviewItems.map(({ mode, title, enabled }) => (
-                    <div key={mode}>
-                      <dt className="font-medium text-gray-600">{title}</dt>
+                {disclaimerEditable ? (
+                  <Formik
+                    validateOnMount
+                    initialValues={disclaimerInitialValues}
+                    validationSchema={Yup.object({
+                      title: Yup.string()
+                        .trim()
+                        .max(
+                          160,
+                          t('manage.resources.chatbotDisclaimerTitleTooLong')
+                        )
+                        .required(
+                          t('manage.resources.chatbotDisclaimerTitleRequired')
+                        ),
+                      introText: Yup.string()
+                        .trim()
+                        .max(
+                          10_000,
+                          t('manage.resources.chatbotDisclaimerIntroTooLong')
+                        )
+                        .test({
+                          message: t(
+                            'manage.resources.chatbotDisclaimerIntroRequired'
+                          ),
+                          test: (value) => {
+                            const normalizedValue = value?.trim()
+                            return Boolean(
+                              normalizedValue &&
+                                !/^<br>\s*$/i.test(normalizedValue)
+                            )
+                          },
+                        }),
+                    })}
+                    onSubmit={async (values, { resetForm }) => {
+                      setDisclaimerError(null)
+                      const normalizedValues = {
+                        title: values.title.trim(),
+                        introText: values.introText.trim(),
+                      }
+                      try {
+                        await saveRevision({
+                          variables: {
+                            chatbotId: chatbot.id,
+                            expectedRevisionVersion: revisionVersion,
+                            input: {
+                              disclaimer: {
+                                title: normalizedValues.title,
+                                introText: normalizedValues.introText,
+                              },
+                            },
+                          },
+                          refetchQueries: [
+                            {
+                              query: QGetChatbotsInfoWithKnowledgeBasesDocument,
+                            },
+                          ],
+                          awaitRefetchQueries: true,
+                        })
+                        resetForm({ values: normalizedValues })
+                      } catch (error) {
+                        if (isChatbotRevisionConflict(error)) {
+                          setRevisionConflict(true)
+                        }
+                        setDisclaimerError(
+                          t(getChatbotMutationErrorKey(error, 'disclaimer'))
+                        )
+                      }
+                    }}
+                  >
+                    {({ dirty, isSubmitting, values, setFieldValue }) => {
+                      const emptyIntro =
+                        !values.introText.trim() ||
+                        /^<br>\s*$/i.test(values.introText.trim())
+
+                      return (
+                        <Form className="space-y-4">
+                          <FormikInitialValuesSynchronizer
+                            initialValues={disclaimerInitialValues}
+                          />
+                          <FormikInteractionEffects />
+                          <NavigationStateReporter
+                            dirty={
+                              dirty ||
+                              (!disclaimer?.id &&
+                                !getChatbotAuthoringRevision(chatbot))
+                            }
+                            pending={isSubmitting}
+                            onChange={setDisclaimerNavigationState}
+                          />
+                          <RequiredFormikTextField
+                            disabled={
+                              isSubmitting ||
+                              publicationPending ||
+                              revisionPending
+                            }
+                            name="title"
+                            label={t('manage.resources.chatbotDisclaimerTitle')}
+                            testId="chatbot-disclaimer-title"
+                          />
+                          <DisclaimerIntroField
+                            disabled={
+                              isSubmitting ||
+                              publicationPending ||
+                              revisionPending
+                            }
+                            editorId={`chatbot-disclaimer-intro-${chatbot.id}`}
+                            errorId={`chatbot-disclaimer-intro-error-${chatbot.id}`}
+                            labelId={`chatbot-disclaimer-intro-label-${chatbot.id}`}
+                          />
+                          {disclaimer?.id &&
+                          (!values.title.trim() || emptyIntro) ? (
+                            <div className="flex flex-wrap items-center gap-3 rounded-md border border-blue-100 bg-blue-50 p-3">
+                              <p className="text-sm text-blue-900">
+                                {t(
+                                  'manage.resources.chatbotDisclaimerSuggestedDescription'
+                                )}
+                              </p>
+                              <Button
+                                type="button"
+                                disabled={
+                                  isSubmitting ||
+                                  publicationPending ||
+                                  revisionPending
+                                }
+                                onClick={() => {
+                                  if (!values.title.trim()) {
+                                    void setFieldValue(
+                                      'title',
+                                      t(
+                                        'manage.resources.chatbotDisclaimerSuggestedTitle'
+                                      )
+                                    )
+                                  }
+                                  if (emptyIntro) {
+                                    void setFieldValue(
+                                      'introText',
+                                      t(
+                                        'manage.resources.chatbotDisclaimerSuggestedIntro'
+                                      )
+                                    )
+                                  }
+                                }}
+                                data={{
+                                  cy: 'chatbot-disclaimer-use-suggested-text',
+                                }}
+                              >
+                                <Button.Label>
+                                  {t(
+                                    'manage.resources.chatbotDisclaimerUseSuggestedText'
+                                  )}
+                                </Button.Label>
+                              </Button>
+                            </div>
+                          ) : null}
+                          {disclaimerError ? (
+                            <div role="alert">
+                              <UserNotification
+                                id="chatbot-disclaimer-save-error"
+                                type="error"
+                              >
+                                {disclaimerError}
+                              </UserNotification>
+                            </div>
+                          ) : null}
+                          <div className="border-t border-gray-200 pt-4">
+                            <H4>
+                              {t('manage.resources.chatbotDisclaimerPreview')}
+                            </H4>
+                            <p className="mb-3 text-sm text-gray-600">
+                              {t(
+                                'manage.resources.chatbotDisclaimerPreviewDescription'
+                              )}
+                            </p>
+                            {!disclaimer?.id &&
+                            !getChatbotAuthoringRevision(chatbot) ? (
+                              <UserNotification
+                                data={{
+                                  cy: 'chatbot-disclaimer-suggested-unsaved',
+                                }}
+                              >
+                                {t(
+                                  'manage.resources.chatbotDisclaimerSuggestedUnsaved'
+                                )}
+                              </UserNotification>
+                            ) : null}
+                            <ChatbotDisclaimerPreview
+                              title={values.title}
+                              introText={values.introText}
+                            />
+                          </div>
+                          <SetupStepFooter
+                            action={t('manage.resources.chatbotSetupSave')}
+                            disabled={
+                              isSubmitting ||
+                              publicationPending ||
+                              revisionPending
+                            }
+                            loading={isSubmitting}
+                            savingLabel={t(
+                              'manage.resources.chatbotSetupSaving'
+                            )}
+                            testId="save-chatbot-disclaimer"
+                          />
+                        </Form>
+                      )
+                    }}
+                  </Formik>
+                ) : (
+                  <>
+                    <UserNotification>
+                      {t('manage.resources.chatbotDisclaimerReadonly')}
+                    </UserNotification>
+                    <ChatbotDisclaimerPreview
+                      title={revisionValues.disclaimerTitle ?? ''}
+                      introText={revisionValues.disclaimerIntroText ?? ''}
+                    />
+                  </>
+                )}
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        ) : null}
+
+        {visibleSections.includes('credits') ? (
+          <AccordionItem
+            value="credits"
+            className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+            data-cy="chatbot-setup-item-credits"
+          >
+            <AccordionTrigger
+              className="py-3 hover:no-underline"
+              data-cy="chatbot-setup-trigger-credits"
+            >
+              <span className="flex flex-col gap-1">
+                <span>{t('manage.resources.chatbotSetupCredits')}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {t('manage.resources.chatbotSetupCreditsDescription')}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent forceMount>
+              <section
+                hidden={!openSections.includes('credits')}
+                className="space-y-4"
+                data-cy="chatbot-setup-credits"
+              >
+                <div>
+                  <H4>{t('manage.resources.chatbotSetupCreditsTitle')}</H4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {t('manage.resources.chatbotSetupCreditsDescriptionLong')}
+                  </p>
+                </div>
+                <ChatbotCreditPolicy
+                  chatbot={chatbot}
+                  publicationPending={publicationPending}
+                  onNavigationStateChange={setCreditNavigationState}
+                  onRevisionConflict={() => setRevisionConflict(true)}
+                  onSaved={() => openSection('review')}
+                />
+                {revisionConflict ? (
+                  <ChatbotRevisionConflictNotice
+                    message={t('manage.resources.chatbotRevisionConflict')}
+                    onReload={() => void reloadAfterConflict()}
+                    reloading={revisionReloading}
+                    testId="chatbot-revision-reload-credits"
+                  />
+                ) : null}
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        ) : null}
+
+        {visibleSections.includes('review') ? (
+          <AccordionItem
+            value="review"
+            className="rounded-lg border border-gray-200 bg-white px-4 shadow-sm"
+            data-cy="chatbot-setup-item-review"
+          >
+            <AccordionTrigger
+              className="py-3 hover:no-underline"
+              data-cy="chatbot-setup-trigger-review"
+            >
+              <span className="flex flex-col gap-1">
+                <span>{t('manage.resources.chatbotSetupReview')}</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {t('manage.resources.chatbotSetupReviewDescription')}
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent forceMount>
+              <section
+                hidden={!openSections.includes('review')}
+                className="space-y-5"
+                data-cy="chatbot-setup-review"
+              >
+                <div>
+                  <H4>{t('manage.resources.chatbotSetupReviewTitle')}</H4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {t('manage.resources.chatbotSetupReviewDescriptionLong')}
+                  </p>
+                </div>
+
+                <div
+                  className="rounded-md border border-gray-200 bg-gray-50 p-4"
+                  data-cy="chatbot-review-modes"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h5 className="font-semibold text-gray-900">
+                      {t('manage.resources.chatbotSetupModesTitle')}
+                    </h5>
+                    <Button
+                      type="button"
+                      onClick={() => openSection('modes')}
+                      data={{ cy: 'chatbot-setup-edit-modes' }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotSetupEdit')}
+                      </Button.Label>
+                    </Button>
+                  </div>
+                  <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                    {modeReviewItems.map(({ mode, title, enabled }) => (
+                      <div key={mode}>
+                        <dt className="font-medium text-gray-600">{title}</dt>
+                        <dd
+                          className="mt-1 text-gray-900"
+                          data-cy={`chatbot-review-mode-${mode}`}
+                        >
+                          {enabled
+                            ? t('manage.resources.chatbotModeEnabled')
+                            : t('manage.resources.chatbotModeDisabled')}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h5 className="font-semibold text-gray-900">
+                      {t('manage.resources.chatbotFraming')}
+                    </h5>
+                    <Button
+                      type="button"
+                      onClick={() => openSection('modes')}
+                      data={{ cy: 'chatbot-setup-edit-framing' }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotSetupEdit')}
+                      </Button.Label>
+                    </Button>
+                  </div>
+                  <p
+                    className="whitespace-pre-wrap text-sm text-gray-900"
+                    data-cy="chatbot-review-framing"
+                  >
+                    {standardModeConfig.scopeNote ||
+                      t('shared.generic.unknown')}
+                  </p>
+                </div>
+
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h5 className="font-semibold text-gray-900">
+                      {t('manage.resources.chatbotSetupBasicsTitle')}
+                    </h5>
+                    <Button
+                      type="button"
+                      onClick={() => openSection('basics')}
+                      data={{ cy: 'chatbot-setup-edit-basics' }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotSetupEdit')}
+                      </Button.Label>
+                    </Button>
+                  </div>
+                  <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <dt className="font-medium text-gray-600">
+                        {t('manage.resources.chatbotName')}
+                      </dt>
                       <dd
                         className="mt-1 text-gray-900"
-                        data-cy={`chatbot-review-mode-${mode}`}
+                        data-cy="chatbot-review-name"
                       >
-                        {enabled
-                          ? t('manage.resources.chatbotModeEnabled')
-                          : t('manage.resources.chatbotModeDisabled')}
+                        {revisionValues.name}
                       </dd>
                     </div>
-                  ))}
-                </dl>
-              </div>
-
-              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h5 className="font-semibold text-gray-900">
-                    {t('manage.resources.chatbotFraming')}
-                  </h5>
-                  <Button
-                    type="button"
-                    onClick={() => openSection('modes')}
-                    data={{ cy: 'chatbot-setup-edit-framing' }}
-                  >
-                    <Button.Label>
-                      {t('manage.resources.chatbotSetupEdit')}
-                    </Button.Label>
-                  </Button>
+                    <div>
+                      <dt className="font-medium text-gray-600">
+                        {t('manage.resources.chatbotCourse')}
+                      </dt>
+                      <dd
+                        className="mt-1 text-gray-900"
+                        data-cy="chatbot-review-course"
+                      >
+                        {(chatbot.courses ?? [])
+                          .map((course) => course.name)
+                          .join(', ')}
+                      </dd>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <dt className="font-medium text-gray-600">
+                        {t('manage.resources.chatbotDescription')}
+                      </dt>
+                      <dd className="mt-1 whitespace-pre-wrap text-gray-900">
+                        {revisionValues.description?.trim() ||
+                          t('shared.generic.unknown')}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
-                <p
-                  className="whitespace-pre-wrap text-sm text-gray-900"
-                  data-cy="chatbot-review-framing"
-                >
-                  {standardModeConfig.scopeNote || t('shared.generic.unknown')}
-                </p>
-              </div>
 
-              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h5 className="font-semibold text-gray-900">
-                    {t('manage.resources.chatbotSetupBasicsTitle')}
-                  </h5>
-                  <Button
-                    type="button"
-                    onClick={() => openSection('basics')}
-                    data={{ cy: 'chatbot-setup-edit-basics' }}
-                  >
-                    <Button.Label>
-                      {t('manage.resources.chatbotSetupEdit')}
-                    </Button.Label>
-                  </Button>
-                </div>
-                <dl className="grid gap-3 text-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="font-medium text-gray-600">
-                      {t('manage.resources.chatbotName')}
-                    </dt>
-                    <dd
-                      className="mt-1 text-gray-900"
-                      data-cy="chatbot-review-name"
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h5 className="font-semibold text-gray-900">
+                      {t('manage.resources.chatbotSetupDisclaimerTitle')}
+                    </h5>
+                    <Button
+                      type="button"
+                      onClick={() => openSection('disclaimer')}
+                      data={{ cy: 'chatbot-setup-edit-disclaimer' }}
                     >
-                      {chatbot.name}
-                    </dd>
+                      <Button.Label>
+                        {t('manage.resources.chatbotSetupEdit')}
+                      </Button.Label>
+                    </Button>
                   </div>
-                  <div>
-                    <dt className="font-medium text-gray-600">
-                      {t('manage.resources.chatbotCourse')}
-                    </dt>
-                    <dd
-                      className="mt-1 text-gray-900"
-                      data-cy="chatbot-review-course"
-                    >
-                      {(chatbot.courses ?? [])
-                        .map((course) => course.name)
-                        .join(', ')}
-                    </dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="font-medium text-gray-600">
-                      {t('manage.resources.chatbotDescription')}
-                    </dt>
-                    <dd className="mt-1 whitespace-pre-wrap text-gray-900">
-                      {chatbot.description?.trim() ||
-                        t('shared.generic.unknown')}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-
-              <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h5 className="font-semibold text-gray-900">
-                    {t('manage.resources.chatbotSetupDisclaimerTitle')}
-                  </h5>
-                  <Button
-                    type="button"
-                    onClick={() => openSection('disclaimer')}
-                    data={{ cy: 'chatbot-setup-edit-disclaimer' }}
+                  <h6 className="font-medium text-gray-900">
+                    {revisionValues.disclaimerTitle ||
+                      t('manage.resources.chatbotDisclaimerTitlePlaceholder')}
+                  </h6>
+                  <div
+                    className="mt-2 text-sm text-gray-700"
+                    data-cy="chatbot-review-disclaimer"
                   >
-                    <Button.Label>
-                      {t('manage.resources.chatbotSetupEdit')}
-                    </Button.Label>
-                  </Button>
+                    {revisionValues.disclaimerIntroText ? (
+                      <Markdown
+                        content={revisionValues.disclaimerIntroText}
+                        withProse
+                        className={{ root: 'prose prose-sm max-w-none' }}
+                      />
+                    ) : (
+                      t('manage.resources.chatbotDisclaimerIntroPlaceholder')
+                    )}
+                  </div>
                 </div>
-                <h6 className="font-medium text-gray-900">
-                  {disclaimer?.title ||
-                    t('manage.resources.chatbotDisclaimerTitlePlaceholder')}
-                </h6>
-                <div
-                  className="mt-2 text-sm text-gray-700"
-                  data-cy="chatbot-review-disclaimer"
-                >
-                  {disclaimer?.introText ? (
-                    <Markdown
-                      content={disclaimer.introText}
-                      withProse
-                      className={{ root: 'prose prose-sm max-w-none' }}
-                    />
-                  ) : (
-                    t('manage.resources.chatbotDisclaimerIntroPlaceholder')
-                  )}
+
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h5 className="font-semibold text-gray-900">
+                      {t('manage.resources.chatbotSetupCreditsTitle')}
+                    </h5>
+                    <Button
+                      type="button"
+                      onClick={() => openSection('credits')}
+                      data={{ cy: 'chatbot-setup-edit-credits' }}
+                    >
+                      <Button.Label>
+                        {t('manage.resources.chatbotSetupEdit')}
+                      </Button.Label>
+                    </Button>
+                  </div>
+                  <ChatbotCreditPolicySummary chatbot={chatbot} />
                 </div>
-              </div>
 
-              <UserNotification>
-                {t('manage.resources.chatbotSetupPublicationNote')}
-              </UserNotification>
+                <UserNotification>
+                  {t('manage.resources.chatbotSetupPublicationNote')}
+                </UserNotification>
 
-              <div className="border-t border-gray-200 pt-4">
-                <ChatbotPublicationRequest
-                  chatbot={chatbot}
-                  publishingAuthorized={publishingAuthorized}
-                  publishingAuthorizationLoading={
-                    publishingAuthorizationLoading
-                  }
-                  publishingAuthorizationError={publishingAuthorizationError}
-                  setupDirty={setupDirty}
-                  setupPending={setupPending}
-                  onNavigationStateChange={setPublicationNavigationState}
-                />
-              </div>
-            </section>
-          </AccordionContent>
-        </AccordionItem>
+                <div className="border-t border-gray-200 pt-4">
+                  <ChatbotPublicationRequest
+                    chatbot={chatbot}
+                    publishingAuthorized={publishingAuthorized}
+                    publishingAuthorizationLoading={
+                      publishingAuthorizationLoading
+                    }
+                    publishingAuthorizationError={publishingAuthorizationError}
+                    setupDirty={setupDirty}
+                    setupPending={setupPending}
+                    onNavigationStateChange={setPublicationNavigationState}
+                    onRevisionConflict={() => setRevisionConflict(true)}
+                  />
+                </div>
+              </section>
+            </AccordionContent>
+          </AccordionItem>
+        ) : null}
       </Accordion>
     </div>
   )

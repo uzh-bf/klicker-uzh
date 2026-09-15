@@ -11,15 +11,16 @@ podSecurityContext: {}
 securityContext: {}
 
 # Database migration hook (prisma migrate deploy), run as an ArgoCD PreSync hook.
-# The image tag is NOT pinned here: it defaults to backendGraphql.image.tag (falling
-# back to the chart appVersion), so the migrator always follows the app release. Each
-# env therefore pins only the repository. A tag with no matching migrator image makes
-# the hook fail and blocks the whole sync — see docs/data-and-migrations.md.
+# The image tag defaults to the app-specific tag below, unless global.imageTag is set
+# by the deployment controller. Each env therefore pins only the repositories. A tag
+# with no matching migrator image makes the hook fail and blocks the whole sync — see
+# docs/data-and-migrations.md.
 # The hook-delete-policy uses only BeforeHookCreation: successful Jobs persist
 # until the next sync so ArgoCD can settle their finalizers without racing the
 # running sync (upstream argo-cd#24187 / #27507).
 migrator:
   enabled: true
+  databaseUrlOnly: false
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator
     pullPolicy: Always
@@ -68,6 +69,8 @@ vapid:
 
 global:
   deploymentEnvironment: development
+  # Optional release-wide tag; unset keeps the per-image tag fallbacks below.
+  imageTag: ''
   appOrigins:
     # Canonical origins per app (scheme + host[:port])
     api: ''
@@ -86,6 +89,11 @@ hatchet:
     apiUrl: ""
     tenantId: ""
     hostPort: ""
+  kbIngestion:
+    apiUrl: ""
+    projectId: "klicker-course-materials"
+    sourceGatewayUrl: ""
+    workerDisabled: false
   kbGraph:
     disabled: false
     hostPort: ""
@@ -100,7 +108,15 @@ hatchet:
   workers:
     general:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-general
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8001
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
@@ -110,19 +126,21 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
 
     responseProcessor:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8002
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
@@ -132,19 +150,21 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
 
     responseProcessorAssessment:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor-assessment
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8003
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
@@ -154,12 +174,6 @@ hatchet:
           memory: 64Mi
         limits:
           memory: 256Mi
-      autoscaling:
-        enabled: false
-        minReplicas: 1
-        maxReplicas: 3
-        targetCPUUtilizationPercentage: 80
-        targetMemoryUtilizationPercentage: 80
       nodeSelector: {}
       tolerations: []
       affinity: {}
@@ -190,12 +204,6 @@ auth:
     limits:
       memory: 400Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -224,6 +232,11 @@ chat:
   mcp:
     key: ''
 
+  docQueryScope:
+    issuer: ''
+    audience: ''
+    keyId: ''
+
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
     pullPolicy: Always
@@ -245,10 +258,54 @@ chat:
     limits:
       memory: 400Mi
 
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+mcpStudent:
+  enabled: true
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  path: /mcp
+  questionRefTtlSeconds: 1200
+
+  secret:
+    name: ''
+    appSecretKey: APP_SECRET
+    # Key of the dedicated MCP token signing secret inside the same secret.
+    # Empty means the service falls back to APP_SECRET, which is today the only
+    # working setting: the practice tools forward the caller's own MCP token to
+    # the backend GraphQL API, and the backend verifies incoming bearer tokens
+    # with APP_SECRET alone. Pointing this at a genuinely different value
+    # therefore breaks practice lookup, retrieval, and submission until that
+    # forwarded call mints its own backend token instead.
+    jwtSecretKey: ''
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    scheme: http
+    port: 7080
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
   autoscaling:
     enabled: false
-    minReplicas: 3
-    maxReplicas: 10
+    minReplicas: 1
+    maxReplicas: 3
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 80
 
@@ -257,6 +314,63 @@ chat:
   tolerations: []
 
   affinity: {}
+
+  podSecurityContext: {}
+
+  securityContext: {}
+
+mcpLecturer:
+  enabled: true
+  priorityClassName: production-workload
+
+  replicaCount: 1
+
+  path: /mcp
+
+  secret:
+    appSecretName: ''
+    appSecretKey: APP_SECRET
+    # Key of the dedicated MCP token signing secret inside the app secret.
+    # Empty means the service falls back to APP_SECRET; set it only once the
+    # cluster secret actually carries the key. This service reads the database
+    # directly and forwards no token onward, so the value may differ from
+    # APP_SECRET without breaking anything downstream.
+    jwtSecretKey: ''
+    databaseName: ''
+    databaseUrlKey: DATABASE_URL
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    scheme: http
+    port: 7081
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+  podSecurityContext: {}
+
+  securityContext: {}
 
 frontendPWA:
   priorityClassName: production-workload
@@ -289,7 +403,6 @@ frontendPWA:
     minReplicas: 3
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -325,10 +438,9 @@ frontendManage:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -362,13 +474,6 @@ frontendControl:
     limits:
       memory: 1000Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
-
   nodeSelector: {}
 
   tolerations: []
@@ -377,6 +482,9 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+
+  kbIngestionDisabled: false
+  kbGraphDisabled: false
 
   knowledgeGraph:
     host: ''
@@ -399,6 +507,7 @@ backendGraphql:
   # Non-secret coordinates for the unified Klicker-element generation adapter.
   # The dedicated Hatchet token and Azure connection string must be supplied by
   # the externally managed backend-graphql Secret before enabling this block.
+  # The chart projects only the storage credential into the maintenance worker.
   elementGeneration:
     enabled: false
     hatchetHostPort: ''
@@ -439,10 +548,9 @@ backendGraphql:
 
   autoscaling:
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -501,12 +609,6 @@ lti:
     limits:
       memory: 500Mi
 
-  autoscaling:
-    enabled: true
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -541,12 +643,6 @@ olatApi:
     limits:
       memory: 1000Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -582,12 +678,6 @@ responseApi:
     limits:
       memory: 256Mi
 
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 4
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
   nodeSelector: {}
 
@@ -625,12 +715,6 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 3
-      maxReplicas: 10
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
@@ -664,12 +748,6 @@ assessment:
       limits:
         memory: 1000Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 
@@ -705,12 +783,6 @@ assessment:
       limits:
         memory: 256Mi
 
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 4
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
 
     nodeSelector: {}
 

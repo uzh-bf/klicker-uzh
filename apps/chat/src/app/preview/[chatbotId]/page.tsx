@@ -1,0 +1,142 @@
+import { prisma } from '@klicker-uzh/prisma'
+import { ChatbotStatus } from '@klicker-uzh/prisma/client'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
+import { z } from 'zod'
+import { OwnerPreviewAssistant } from '@/src/components/owner-preview-assistant'
+import {
+  getDefaultReasoningEffort,
+  toOwnerPreviewModelOption,
+} from '@/src/lib/ownerPreviewPolicy'
+import {
+  getAutomaticModelId,
+  getModelsForChatbot,
+} from '@/src/lib/server/chatModelRegistry'
+import { resolveEffectiveChatModeOptions } from '@/src/lib/server/effectiveChatModes'
+import { getOwnerPreviewAccess } from '@/src/lib/server/ownerPreviewAuth'
+
+type OwnerPreviewPageProps = {
+  params: Promise<{ chatbotId: string }>
+}
+
+export default async function OwnerPreviewPage({
+  params,
+}: OwnerPreviewPageProps) {
+  const { chatbotId } = await params
+  if (!z.string().uuid().safeParse(chatbotId).success) notFound()
+
+  const access = await getOwnerPreviewAccess(chatbotId)
+  if ('error' in access) {
+    if (access.error === 'UNAUTHORIZED') {
+      return <PreviewLoginRequired chatbotId={chatbotId} />
+    }
+    if (access.error === 'INTERNAL_ERROR') {
+      throw new Error('Owner preview authorization unavailable')
+    }
+    notFound()
+  }
+
+  const chatbot = await prisma.chatbot.findUnique({
+    where: { id: chatbotId, ownerId: access.userId },
+    select: {
+      avatar: true,
+      id: true,
+      name: true,
+      status: true,
+      systemPrompts: true,
+      standardModeConfig: true,
+      modelSelection: true,
+      allowedModelIds: true,
+      allowedReasoningEffortsByModel: true,
+      mcpConfigurations: {
+        select: {
+          allowedTools: true,
+          chatMode: true,
+          isEnabled: true,
+          parameters: true,
+          priority: true,
+          mcpServer: { select: { id: true } },
+        },
+      },
+    },
+  })
+  if (!chatbot || chatbot.status === ChatbotStatus.PAUSED) notFound()
+
+  const initialModeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations,
+    chatbot.standardModeConfig
+  )
+  const availableModels = getModelsForChatbot(chatbot)
+  const automaticModelId = getAutomaticModelId(chatbot.allowedModelIds)
+  const fixedModel = availableModels.find(
+    (model) => model.id === automaticModelId
+  )
+  const modelOptions = (
+    chatbot.modelSelection ? availableModels : fixedModel ? [fixedModel] : []
+  ).map(toOwnerPreviewModelOption)
+  const selectedModelId = chatbot.modelSelection
+    ? (modelOptions.find((model) => model.id === automaticModelId)?.id ??
+      modelOptions[0]?.id ??
+      null)
+    : (fixedModel?.id ?? automaticModelId)
+  const selectedModelOption = modelOptions.find(
+    (model) => model.id === selectedModelId
+  )
+  const selectedReasoningEffort = selectedModelOption?.supportsReasoning
+    ? getDefaultReasoningEffort(selectedModelOption.allowedReasoningEfforts)
+    : null
+  const manageBaseUrl = (
+    process.env.NEXT_PUBLIC_MANAGE_URL ?? 'https://manage.klicker.uzh.ch'
+  ).replace(/\/$/, '')
+
+  return (
+    <OwnerPreviewAssistant
+      chatbot={{
+        avatar: chatbot.avatar ?? undefined,
+        id: chatbot.id,
+        name: chatbot.name,
+      }}
+      initialModeOptions={initialModeOptions}
+      modelSelection={chatbot.modelSelection}
+      modelOptions={modelOptions}
+      selectedModelId={selectedModelId}
+      selectedReasoningEffort={selectedReasoningEffort}
+      manageUrl={`${manageBaseUrl}/resources/chatbots?chatbotId=${encodeURIComponent(chatbot.id)}&view=overview`}
+    />
+  )
+}
+
+async function PreviewLoginRequired({ chatbotId }: { chatbotId: string }) {
+  const t = await getTranslations('chat.ownerPreview')
+  const manageBaseUrl = (
+    process.env.NEXT_PUBLIC_MANAGE_URL ?? 'https://manage.klicker.uzh.ch'
+  ).replace(/\/$/, '')
+  const chatbotSettingsUrl = `${manageBaseUrl}/resources/chatbots?chatbotId=${encodeURIComponent(chatbotId)}&view=overview`
+  const loginUrl = `${manageBaseUrl}/login?redirect_to=${encodeURIComponent(chatbotSettingsUrl)}`
+
+  return (
+    <main
+      id="main-content"
+      className="bg-muted flex min-h-dvh items-center justify-center px-4"
+    >
+      <div className="bg-card w-full max-w-lg rounded-lg border p-8 text-center shadow-sm">
+        <h1 className="text-foreground text-2xl font-semibold">
+          {t('loginTitle')}
+        </h1>
+        <p className="text-muted-foreground mt-4">{t('loginMessage')}</p>
+        <Link
+          href={loginUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring mt-8 inline-flex min-h-11 w-full items-center justify-center rounded-md px-4 py-2 font-semibold transition focus-visible:outline-none focus-visible:ring-2"
+          prefetch={false}
+        >
+          <span>{t('loginButton')}</span>
+          <span className="sr-only"> {t('opensInNewTab')}</span>
+        </Link>
+      </div>
+    </main>
+  )
+}

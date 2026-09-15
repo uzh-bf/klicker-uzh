@@ -2,6 +2,13 @@
   "version": 1,
   "groups": [
     {
+      "profile": "manage",
+      "specs": [
+        "Y-ai-beta-availability.spec.ts",
+        "Y-question-generation-review.spec.ts"
+      ]
+    },
+    {
       "profile": "manage,pwa",
       "specs": [
         "0-baseline-ops.spec.ts",
@@ -35,8 +42,17 @@
       "specs": [
         "A-login.spec.ts",
         "T-chatbot-authoring.spec.ts",
-        "Y-chat.spec.ts"
+        "Y-ai-beta-management-gate.spec.ts",
+        "Y-chat.spec.ts",
+        "Y-chat-knowledge-graph.spec.ts",
+        "Y-kb-management-ux.spec.ts",
+        "Y-manage-assistant.spec.ts",
+        "Y-response-examples.spec.ts"
       ]
+    },
+    {
+      "profile": "pwa,chat",
+      "specs": ["Y-chat-lti-access.spec.ts", "Y-course-chat-drawer.spec.ts"]
     },
     {
       "profile": "manage,live-quiz",

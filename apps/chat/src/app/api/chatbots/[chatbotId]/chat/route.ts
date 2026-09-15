@@ -1,8 +1,10 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { createOpenAI } from '@ai-sdk/openai'
+import type {
+  ELearningSnapshotContent,
+  KlickerChatContext,
+} from '@klicker-uzh/types'
+import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
-import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -13,19 +15,21 @@ import {
   generateText,
   isStepCount,
   type ModelMessage,
-  type StepResult,
   streamText,
   type ToolSet,
+  tool,
 } from 'ai'
 import { after, type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
+  getModelsForChatbot,
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
@@ -41,12 +45,12 @@ import {
   getLangfuseAiSdkIntegration,
   isAiTelemetryEnabled,
   LANGFUSE_CHAT_TRACE_NAME,
+  registerLangfuseTelemetry,
 } from '@/src/lib/server/langfuseTracing'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import {
   buildAbortedAssistantContent,
@@ -54,7 +58,17 @@ import {
 } from '@/src/lib/server/persistedAssistantContent'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import { renderPromptTemplate } from '@/src/lib/server/promptTemplates'
+import {
+  createResponseExampleSearchTool,
+  loadResponseExampleRuntimeSkill,
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME,
+} from '@/src/lib/server/responseExampleRuntime'
 import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import {
+  collectStepToolDiagnostics,
+  hashSnippet,
+  summarizeToolDiagnostics,
+} from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
@@ -66,13 +80,35 @@ import {
   isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
+import {
+  formatKlickerChatContextForPrompt,
+  sanitizeKlickerChatContextV2,
+} from '@/src/services/chatContext'
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
+  type MCPToolsHandle,
 } from '@/src/services/mcpClients'
-import { resolveMcpScope } from '@/src/services/mcpScope'
+import {
+  resolveMcpScope,
+  resolveMcpScopeSessionId,
+} from '@/src/services/mcpScope'
+import {
+  formatPracticeCandidatesForPrompt,
+  getPracticeStackForQuiz,
+  lookupRelevantPracticeStacks,
+  STUDENT_PRACTICE_QUIZ_TOOL_NAME,
+  toPracticeCandidateId,
+} from '@/src/services/studentPracticeMcp'
+import {
+  formatElearningGroundingPolicy,
+  normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
+  verifyAndNormalizeElearningChatContext,
+  matchesPersistedLearningHistory,
+} from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -132,89 +168,6 @@ if (!process.env.OPENAI_API_KEY) {
 const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
-const HASH_DIGEST_LENGTH = 12
-
-type ModelRouting = {
-  source: 'custom' | 'default'
-  hasCustomKey: boolean
-  baseUrl: string | undefined
-}
-
-function getOpenAIModel(
-  provider: ReturnType<typeof createOpenAI>,
-  modelConfig: ChatModelConfig
-) {
-  return modelConfig.usesResponsesApi
-    ? provider.responses(modelConfig.deploymentId)
-    : provider.chat(modelConfig.deploymentId)
-}
-
-function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
-  // Use per-chatbot configuration if available
-  const hasCustomKey =
-    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
-  const hasCustomBaseUrl =
-    typeof chatbot.openaiBaseUrl === 'string' &&
-    chatbot.openaiBaseUrl.length > 0
-  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
-
-  if (hasCustomConfig) {
-    let apiKey: string | undefined
-    if (hasCustomKey) {
-      try {
-        apiKey = safeDecrypt(chatbot.openaiApiKey!)
-      } catch (error) {
-        console.error('Failed to decrypt API key for chatbot:', {
-          chatbotId: chatbot.id,
-          error,
-        })
-        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
-      }
-    } else {
-      apiKey = process.env.OPENAI_API_KEY
-    }
-    const baseUrl = hasCustomBaseUrl
-      ? chatbot.openaiBaseUrl!
-      : process.env.OPENAI_BASE_URL
-
-    const routing: ModelRouting = {
-      source: 'custom',
-      hasCustomKey,
-      baseUrl,
-    }
-
-    return {
-      model: getOpenAIModel(
-        createOpenAI({
-          baseURL: baseUrl,
-          apiKey: apiKey || 'no-key',
-          fetch: createOpenAIFetch('custom'),
-        }),
-        modelConfig
-      ),
-      routing,
-    }
-  }
-
-  // Default: route through OpenAI-compatible endpoint
-  const routing: ModelRouting = {
-    source: 'default',
-    hasCustomKey: false,
-    baseUrl: process.env.OPENAI_BASE_URL,
-  }
-
-  return {
-    model: getOpenAIModel(
-      createOpenAI({
-        baseURL: process.env.OPENAI_BASE_URL,
-        apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: createOpenAIFetch('default'),
-      }),
-      modelConfig
-    ),
-    routing,
-  }
-}
 
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
@@ -227,27 +180,6 @@ function truncateString(
 ): string {
   if (value.length <= maxLength) return value
   return `${value.slice(0, maxLength - 3)}...`
-}
-
-function hashSnippet(value: string): string {
-  return createHash('sha256')
-    .update(value)
-    .digest('hex')
-    .slice(0, HASH_DIGEST_LENGTH)
-}
-
-function safeSerialize(value: unknown): string | null {
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return null
-  }
-}
-
-function safeSize(value: unknown): number | null {
-  const serialized = safeSerialize(value)
-  if (serialized === null) return null
-  return Buffer.byteLength(serialized, 'utf8')
 }
 
 function toTokenCount(value: unknown): number | null {
@@ -315,60 +247,6 @@ function logChatDev(
   } else {
     console.info(message, context)
   }
-}
-
-type ToolDiagnostic = {
-  toolName: string
-  inputBytes: number | null
-  outputBytes: number | null
-  inputHash: string | null
-  outputHash: string | null
-}
-
-function collectStepToolDiagnostics(
-  step: Pick<StepResult<any>, 'content'>
-): ToolDiagnostic[] {
-  const diagnostics: ToolDiagnostic[] = []
-
-  for (const part of step.content ?? []) {
-    if (!part || typeof part !== 'object') continue
-    if (!('type' in part)) continue
-
-    const typedPart = part as {
-      type?: unknown
-      toolName?: unknown
-      input?: unknown
-      output?: unknown
-      result?: unknown
-      args?: unknown
-    }
-
-    if (
-      typedPart.type !== 'tool-call' &&
-      typedPart.type !== 'tool-result' &&
-      typedPart.type !== 'tool-error'
-    ) {
-      continue
-    }
-
-    const toolName =
-      typeof typedPart.toolName === 'string' ? typedPart.toolName : 'unknown'
-    const inputValue = typedPart.input ?? typedPart.args ?? null
-    const outputValue = typedPart.output ?? typedPart.result ?? null
-
-    const inputSerialized = safeSerialize(inputValue)
-    const outputSerialized = safeSerialize(outputValue)
-
-    diagnostics.push({
-      toolName,
-      inputBytes: safeSize(inputValue),
-      outputBytes: safeSize(outputValue),
-      inputHash: inputSerialized ? hashSnippet(inputSerialized) : null,
-      outputHash: outputSerialized ? hashSnippet(outputSerialized) : null,
-    })
-  }
-
-  return diagnostics
 }
 
 function extractSafeHeaders(headers: unknown): Record<string, unknown> | null {
@@ -613,11 +491,17 @@ export async function POST(
   const { chatbotId } = await params
   const requestId = randomUUID()
   const requestStartedAtMs = Date.now()
+  await registerLangfuseTelemetry()
   const authResult = await withChatbotAuth(req, chatbotId)
   if ('response' in authResult) {
     return authResult.response
   }
-  const { participantId } = authResult
+  const {
+    participantId,
+    authMode,
+    learnerBinding,
+    chatbot: authChatbot,
+  } = authResult
 
   // check disclaimer acceptance
   try {
@@ -662,7 +546,12 @@ export async function POST(
     selectedModel: z.string().min(1),
     selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
+    chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
+    // Set only when the client branches an existing question (edit): the new
+    // message inherits the question's stored learning context instead of the
+    // page context that happens to be live now.
+    sourceMessageId: z.string().min(1).optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
     images: z
@@ -692,10 +581,75 @@ export async function POST(
     selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
     parentId,
+    sourceMessageId,
     assistantMessageId,
     allowRegeneration,
     images,
+    chatContext: rawChatContext,
   } = parsed
+
+  const sanitizedChatContext = sanitizeKlickerChatContextV2(rawChatContext)
+  if (rawChatContext != null && !sanitizedChatContext) {
+    return NextResponse.json(
+      { error: 'Invalid chat context', code: 'INVALID_CHAT_CONTEXT' },
+      { status: 400 }
+    )
+  }
+  // The signed session fixes the context trust boundary. A caller cannot
+  // substitute the unsigned PWA protocol for an eLearning envelope.
+  if (learnerBinding && sanitizedChatContext?.source === 'pwa') {
+    return NextResponse.json(
+      {
+        error: 'Signed learning context required',
+        code: 'INVALID_CHAT_CONTEXT',
+      },
+      { status: 400 }
+    )
+  }
+  let chatContext: KlickerChatContext | null = null
+  let verifiedElearningContext: { snapshot: ELearningSnapshotContent } | null =
+    null
+  if (sanitizedChatContext?.source === 'elearning') {
+    // The envelope is the only evidence carrier; client labels are
+    // display-only.
+    verifiedElearningContext = await verifyAndNormalizeElearningChatContext(
+      sanitizedChatContext.envelope,
+      {
+        chatbotId,
+        klickerCourseId: authChatbot.courseId,
+        learnerBinding,
+      }
+    )
+    if (!verifiedElearningContext) {
+      return NextResponse.json(
+        { error: 'Invalid learning context', code: 'INVALID_CHAT_CONTEXT' },
+        { status: 400 }
+      )
+    }
+  } else if (
+    sanitizedChatContext &&
+    authChatbot &&
+    sanitizedChatContext.courseId === authChatbot.courseId
+  ) {
+    chatContext = sanitizedChatContext
+  }
+
+  if (
+    sanitizedChatContext &&
+    authChatbot &&
+    !chatContext &&
+    !verifiedElearningContext
+  ) {
+    console.warn('Ignoring chat context for unrelated course', {
+      requestId,
+      chatbotId,
+      contextCourseId:
+        sanitizedChatContext.source === 'pwa'
+          ? sanitizedChatContext.courseId
+          : null,
+      chatbotCourseId: authChatbot.courseId,
+    })
+  }
 
   const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
     typeof image === 'string'
@@ -720,6 +674,7 @@ export async function POST(
     selectedModel: parsed.selectedModel,
     selectedMode: requestedMode,
     messageCount: messages.length,
+    hasChatContext: Boolean(chatContext),
   })
 
   let selectedModel = parsed.selectedModel
@@ -846,6 +801,23 @@ export async function POST(
     return true
   }
 
+  // Anonymous LTI guests stay on the chatbot's allowed fallback model. Apply
+  // this after automatic and explicit selection so later credit handling
+  // cannot restore an advanced model for a guest with remaining credits.
+  if (authMode === 'anonymous' && !selectedModelConfig.fallback) {
+    const guestFallback = getModelsForChatbot(chatbot).find(
+      (modelConfig) => modelConfig.fallback
+    )
+    if (!guestFallback) {
+      return NextResponse.json(
+        { error: 'No fallback model available for guest access' },
+        { status: 503 }
+      )
+    }
+    selectedModel = guestFallback.id
+    selectedModelConfig = guestFallback
+  }
+
   if (!selectedModelConfig.fallback) {
     const creditPreview = await CreditsService.previewUserCredits(
       participantId,
@@ -957,7 +929,12 @@ export async function POST(
         const newThread = await ThreadService.createThread(
           participantId,
           chatbotId,
-          null
+          null,
+          undefined,
+          resolveElearningThreadOrigin({
+            learnerBinding,
+            hasVerifiedContext: Boolean(verifiedElearningContext),
+          })
         )
         currentThreadId = newThread.id
         createdThreadId = newThread.id
@@ -997,7 +974,7 @@ export async function POST(
     }
   }
 
-  let owningThread: { id: string } | null
+  let owningThread: { id: string; origin: string | null } | null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -1005,7 +982,7 @@ export async function POST(
         participantId,
         chatbotId,
       },
-      select: { id: true },
+      select: { id: true, origin: true },
     })
   } catch (error) {
     await discardCreatedThread('thread.ownership.error')
@@ -1019,9 +996,127 @@ export async function POST(
     )
   }
 
+  // The origin records where the conversation began. A later eLearning
+  // session must not retag an existing ordinary Klicker conversation.
+  const isElearningThread = owningThread.origin === 'elearning'
+  // Standalone history uses an ordinary account session, so the persisted
+  // origin must enforce the same boundary even without a handoff binding.
+  if (isElearningThread && chatContext) {
+    await discardCreatedThread('context.source')
+    return NextResponse.json(
+      {
+        error: 'Signed learning context required',
+        code: 'INVALID_CHAT_CONTEXT',
+      },
+      { status: 400 }
+    )
+  }
+
+  if (isElearningThread || learnerBinding) {
+    if (
+      messages.length > 500 ||
+      messages.some((message) => message.id.length > 128)
+    ) {
+      await discardCreatedThread('history.limit')
+      return NextResponse.json(
+        {
+          error: 'Conversation history exceeds the limit',
+          code: 'INVALID_CHAT_HISTORY',
+        },
+        { status: 400 }
+      )
+    }
+    try {
+      const persistedHistory = await prisma.chatMessage.findMany({
+        where: {
+          id: { in: messages.map((message) => message.id) },
+          threadId: owningThread.id,
+          lifecycleStatus: 'COMPLETED',
+        },
+        select: { id: true, role: true, content: true },
+      })
+      if (!matchesPersistedLearningHistory(messages, persistedHistory)) {
+        await discardCreatedThread('history.invalid')
+        return NextResponse.json(
+          {
+            error: 'Invalid conversation history',
+            code: 'INVALID_CHAT_HISTORY',
+          },
+          { status: 400 }
+        )
+      }
+    } catch {
+      await discardCreatedThread('history.unavailable')
+      return NextResponse.json(
+        { error: 'Unable to verify conversation history' },
+        { status: 503 }
+      )
+    }
+  }
+
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
   if (lastMessage?.role === 'user') {
     userMessageId = lastMessage.id
+  }
+
+  // eLearning-origin threads derive their answer context from the snapshot
+  // saved with the target user message; a verified live envelope is used only
+  // for a genuinely new turn (persisted below). A stored null is a real value
+  // — the question was answered without page evidence — and must not be
+  // replaced by whatever page happens to be open now.
+  const findPersistedLearningContext = async (
+    messageId: string
+  ): Promise<
+    | { present: false }
+    | { present: true; snapshot: ELearningSnapshotContent | null }
+  > => {
+    const row = await prisma.chatMessage.findFirst({
+      where: { id: messageId, threadId: owningThread.id, role: 'user' },
+      select: { learningContext: true },
+    })
+    return row
+      ? {
+          present: true,
+          snapshot: normalizePersistedLearningContext(row.learningContext),
+        }
+      : { present: false }
+  }
+
+  let elearningSnapshot: ELearningSnapshotContent | null = null
+  let persistElearningContext: ELearningSnapshotContent | null = null
+  if (isElearningThread) {
+    // An edited question branches from an existing message and keeps that
+    // message's stored snapshot, including a stored null that recorded the
+    // original question had no page evidence. A branch source outside this
+    // thread is refused rather than silently re-anchored to the live page.
+    let inherited:
+      | { present: false }
+      | { present: true; snapshot: ELearningSnapshotContent | null }
+      | null = null
+    if (sourceMessageId && sourceMessageId !== userMessageId) {
+      inherited = await findPersistedLearningContext(sourceMessageId)
+      if (!inherited.present) {
+        await discardCreatedThread('branch.source')
+        return NextResponse.json(
+          { error: 'Source message not found' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const saved = userMessageId
+      ? await findPersistedLearningContext(userMessageId)
+      : ({ present: false } as const)
+
+    if (inherited?.present) {
+      elearningSnapshot = inherited.snapshot
+      persistElearningContext = inherited.snapshot
+    } else if (saved.present) {
+      elearningSnapshot = saved.snapshot
+    } else if (verifiedElearningContext) {
+      elearningSnapshot = verifiedElearningContext.snapshot
+      persistElearningContext = verifiedElearningContext.snapshot
+    }
   }
 
   let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
@@ -1077,6 +1172,13 @@ export async function POST(
   }
 
   let providerStreamStarted = false
+  let mcpToolsHandle: MCPToolsHandle | undefined
+  const closeMcpTools = async () => {
+    const activeHandle = mcpToolsHandle
+    mcpToolsHandle = undefined
+    await activeHandle?.close()
+  }
+
   let langfuseTrace: LangfuseSpan | null = null
   let langfuseTraceEnded = false
 
@@ -1115,16 +1217,33 @@ export async function POST(
 
   try {
     // Discover MCP tools only after read-only participant authorization.
-    let mcpTools: ToolSet
+    const mcpScopeSessionId = resolveMcpScopeSessionId({
+      requestedThreadId: currentThreadId,
+      owningThreadId: owningThread.id,
+      fallbackId: requestId,
+    })
+    if (mcpScopeSessionId === null) {
+      await failOrDiscardUnstartedClaim('mcp.scope')
+      return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+    }
+
+    let mcpTools: ToolSet = {}
     try {
-      mcpTools = scopedKbIds
-        ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
-            kbIds: scopedKbIds,
-            sessionId: owningThread.id,
-          })
-        : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
+        chatbotId,
+        participantId,
+        authMode,
+        kbIds: scopedKbIds,
+        sessionId: mcpScopeSessionId,
+        knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
+        courseId: chatbot.courseId,
+      })
+      mcpTools = mcpToolsHandle.tools
     } catch (error) {
-      if (error instanceof RequiredMCPUnavailableError) {
+      if (!(error instanceof RequiredMCPUnavailableError)) throw error
+      // Only plain unavailability may be softened for an eLearning-origin
+      // question; a scope or isolation violation stays fail-closed here.
+      if (!isElearningThread || error.reason !== 'unavailable') {
         await failOrDiscardUnstartedClaim('mcp.discovery')
         return NextResponse.json(
           {
@@ -1134,22 +1253,155 @@ export async function POST(
           { status: 503 }
         )
       }
-      throw error
+      // An eLearning-origin question can stand on the supplied page text, so an
+      // unavailable retrieval tool degrades to page-only grounding with the
+      // limitation disclosed by the policy instead of withholding the answer.
+      await closeMcpTools()
+      console.warn(
+        'eLearning thread answering without required retrieval tools',
+        { requestId, chatbotId, selectedMode }
+      )
     }
 
-    const toolNames = Object.keys(mcpTools || {})
+    let responseExampleSummary = ''
+    let responseExampleSetDigest: string | null = null
+    let responseExampleProjectionDigest: string | null = null
+    const responseExampleTools: Record<string, any> = {}
+    try {
+      const responseExampleSkill = await loadResponseExampleRuntimeSkill({
+        prisma,
+        chatbotId,
+        chatMode: selectedMode,
+        role: 'included',
+      })
+      if (Object.hasOwn(mcpTools, RESPONSE_EXAMPLE_SEARCH_TOOL_NAME)) {
+        console.warn(
+          'Response-example skill name conflicts with an existing tool; continuing without response examples',
+          { requestId, chatbotId }
+        )
+      } else {
+        const responseExampleTool =
+          createResponseExampleSearchTool(responseExampleSkill)
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME] =
+          responseExampleTool
+        responseExampleSummary = responseExampleSkill.summary
+        responseExampleSetDigest = responseExampleSkill.setDigest
+        responseExampleProjectionDigest = responseExampleSkill.projectionDigest
+      }
+    } catch (error) {
+      console.warn(
+        'Response-example skill loading failed; continuing without response examples',
+        { requestId, chatbotId, error }
+      )
+    }
+
+    let practiceCandidatePrompt = ''
+    let practiceCandidateCount = 0
+    const practiceCandidateRefs = new Map<string, string>()
+
+    if (selectedMode === 'tutor') {
+      try {
+        const lookupResult = await lookupRelevantPracticeStacks({
+          authMode,
+          chatbotId,
+          courseId: authChatbot.courseId,
+          messages,
+          participantId,
+        })
+        const candidates = lookupResult?.candidates ?? []
+        practiceCandidateCount = candidates.length
+        candidates.forEach((candidate, index) => {
+          practiceCandidateRefs.set(
+            toPracticeCandidateId(index),
+            candidate.questionRef
+          )
+        })
+        practiceCandidatePrompt = formatPracticeCandidatesForPrompt(candidates)
+
+        logChatDev('studentPractice.lookup', {
+          requestId,
+          chatbotId,
+          participantId,
+          candidateCount: practiceCandidateCount,
+        })
+      } catch (error) {
+        console.warn(
+          'Student practice lookup failed; continuing without quiz candidates',
+          {
+            requestId,
+            chatbotId,
+            error,
+          }
+        )
+      }
+    }
+
+    const studentPracticeTools: Record<string, any> = {}
+    if (practiceCandidatePrompt) {
+      studentPracticeTools[STUDENT_PRACTICE_QUIZ_TOOL_NAME] = tool({
+        description:
+          'Show a selected answer-safe practice quiz question to the student. Use only candidateId values from the current relevant practice candidate context.',
+        inputSchema: z.object({
+          candidateId: z
+            .string()
+            .min(1)
+            .describe(
+              'Candidate id from the current practice candidate context'
+            ),
+        }),
+        execute: async ({ candidateId }) => {
+          const questionRef = practiceCandidateRefs.get(candidateId)
+          if (!questionRef) {
+            throw new Error('Unknown practice candidate id')
+          }
+
+          const payload = await getPracticeStackForQuiz({
+            authMode,
+            chatbotId,
+            participantId,
+            questionRef,
+          })
+          if (!payload) {
+            throw new Error('Student practice MCP is not configured')
+          }
+
+          return {
+            kind: 'student-practice-quiz',
+            ...payload,
+          }
+        },
+        toModelOutput: () => ({
+          type: 'text' as const,
+          value:
+            'A practice quiz was shown to the student. Wait for the student answer or submission result before giving feedback.',
+        }),
+      })
+    }
+
+    const chatTools: Record<string, any> = {
+      ...(mcpTools || {}),
+      ...responseExampleTools,
+      ...studentPracticeTools,
+    }
+    const toolNames = Object.keys(chatTools)
     const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
       selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
-      await failOrDiscardUnstartedClaim('mcp.quizzer')
-      return NextResponse.json(
-        {
-          error: 'Required MCP tool unavailable',
-          code: REQUIRED_MCP_UNAVAILABLE_CODE,
-        },
-        { status: 503 }
+      if (!isElearningThread) {
+        await failOrDiscardUnstartedClaim('mcp.quizzer')
+        return NextResponse.json(
+          {
+            error: 'Required MCP tool unavailable',
+            code: REQUIRED_MCP_UNAVAILABLE_CODE,
+          },
+          { status: 503 }
+        )
+      }
+      console.warn(
+        'eLearning thread answering without a quizzer retrieval tool',
+        { requestId, chatbotId }
       )
     }
 
@@ -1167,6 +1419,25 @@ export async function POST(
         standardModeConfig: chatbot.standardModeConfig,
       }
     )
+    const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
+    // The materials-only policy is bound to the conversation origin, so a turn
+    // that lost or never carried a verified snapshot still answers under it.
+    const elearningContextPrompt = isElearningThread
+      ? formatElearningGroundingPolicy(elearningSnapshot)
+      : ''
+    const contextSections = [chatContextPrompt, elearningContextPrompt].filter(
+      Boolean
+    )
+    const contextAwareSystemPrompt =
+      contextSections.length > 0
+        ? `${systemPrompt}\n\n${contextSections.join('\n\n')}`
+        : systemPrompt
+    const practiceAwareSystemPrompt = practiceCandidatePrompt
+      ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
+      : contextAwareSystemPrompt
+    const effectiveSystemPrompt = responseExampleSummary
+      ? `${practiceAwareSystemPrompt}\n\n${responseExampleSummary}`
+      : practiceAwareSystemPrompt
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1199,7 +1470,7 @@ export async function POST(
         ? appliedReasoningEffort
         : undefined
 
-    const { model, routing } = getModel(chatbot, selectedModelConfig)
+    const { model, routing } = getChatModel(chatbot, selectedModelConfig)
     const promptCacheRequest =
       routing.source === 'default'
         ? await buildPromptCacheRequest({
@@ -1207,8 +1478,8 @@ export async function POST(
             transport: selectedModelConfig.usesResponsesApi
               ? 'responses'
               : 'chat',
-            instructions: systemPrompt,
-            tools: mcpTools,
+            instructions: effectiveSystemPrompt,
+            tools: chatTools,
           })
         : null
 
@@ -1320,8 +1591,17 @@ export async function POST(
       maxOutputTokens: maxOutputTokens ?? null,
       toolCount: toolNames.length,
       toolNames,
-      systemPromptLength: systemPrompt.length,
-      systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
+      practiceCandidateCount,
+      hasResponseExampleSkill: Boolean(
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+      ),
+      responseExampleSetDigest,
+      responseExampleProjectionDigest,
+      hasChatContext: Boolean(chatContextPrompt || elearningContextPrompt),
+      systemPromptLength: effectiveSystemPrompt.length,
+      systemPromptHash: effectiveSystemPrompt
+        ? hashSnippet(effectiveSystemPrompt)
+        : null,
       userPromptLengthTotal: userPrompt.length,
       userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
       imageAttachmentCount: images.length,
@@ -1452,6 +1732,11 @@ export async function POST(
                 role: lastMessage.role,
                 content: [{ type: 'text', text: lastMessage.content }],
                 ...metadata,
+                // New eLearning turns persist their verified snapshot with the
+                // question; retries and regeneration keep the original.
+                ...(persistElearningContext
+                  ? { learningContext: persistElearningContext }
+                  : {}),
               },
             })
 
@@ -1472,6 +1757,23 @@ export async function POST(
           phase: 'persist.userMessage',
           error,
         })
+        if (isElearningThread) {
+          // Contextual generation requires durable question persistence; a
+          // failed save returns a recoverable error without an answer. The
+          // client retry reuses the original question identity, so the claim
+          // and any open MCP handle are released first — the same cleanup the
+          // outer request failure path performs — or the retry cannot reclaim
+          // the turn.
+          await closeMcpTools()
+          await failOrDiscardUnstartedClaim('persist.userMessage')
+          return NextResponse.json(
+            {
+              error: 'Unable to persist the question context',
+              code: 'ELEARNING_CONTEXT_PERSIST_FAILED',
+            },
+            { status: 503 }
+          )
+        }
       }
     } else if (currentThreadId && !owningThread && userMessageId) {
       console.warn('Skipping user message save: thread ownership mismatch', {
@@ -1619,6 +1921,15 @@ export async function POST(
       return streamText({
         model,
         maxOutputTokens,
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: Boolean(
+            responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME]
+          ),
+          responseExampleSetDigest: responseExampleSetDigest ?? 'unavailable',
+          responseExampleProjectionDigest:
+            responseExampleProjectionDigest ?? 'unavailable',
+        },
         telemetry: {
           isEnabled: langfuseTelemetryEnabled,
           recordInputs: false,
@@ -1627,6 +1938,12 @@ export async function POST(
           ...(langfuseAiSdkIntegration
             ? { integrations: [langfuseAiSdkIntegration] }
             : {}),
+          includeRuntimeContext: {
+            responseExampleRole: true,
+            responseExampleSkillAvailable: true,
+            responseExampleSetDigest: false,
+            responseExampleProjectionDigest: false,
+          },
         },
         providerOptions: {
           openai: {
@@ -1643,7 +1960,7 @@ export async function POST(
           },
         },
         messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? mcpTools,
+        tools: promptCacheRequest?.tools ?? chatTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
         prepareStep: docQueryToolName
@@ -1663,7 +1980,7 @@ export async function POST(
                   }
           : undefined,
         stopWhen: isStepCount(5),
-        instructions: systemPrompt,
+        instructions: effectiveSystemPrompt,
 
         abortSignal: req.signal,
 
@@ -1700,6 +2017,7 @@ export async function POST(
         },
 
         onEnd: async (result) => {
+          await closeMcpTools()
           sawFinish = true
           // ai@7 still flushes onEnd after an abort once at least one step
           // completed. onAbort already persisted the partial answer and charged
@@ -1795,6 +2113,7 @@ export async function POST(
         },
 
         onAbort: async (steps) => {
+          await closeMcpTools()
           sawAbort = true
           let rawCreditsUsed: number | null = null
           if (steps && Array.isArray(steps.steps)) {
@@ -1862,10 +2181,8 @@ export async function POST(
         onStepEnd: async (step) => {
           currentStepContent = []
           const diagnostics = collectStepToolDiagnostics(step)
-          const toolCallNames = Array.from(
-            new Set(diagnostics.map((diagnostic) => diagnostic.toolName))
-          )
-          const toolCallsCount = diagnostics.length
+          const { toolCallsCount, toolCallNames } =
+            summarizeToolDiagnostics(diagnostics)
           const providerReasoningTokens = extractReasoningTokens(
             asObject(step)?.providerMetadata
           )
@@ -1893,6 +2210,7 @@ export async function POST(
         },
 
         onError: async (error) => {
+          await closeMcpTools()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError
           const classification = classifyStreamError(serializedError)
@@ -1987,6 +2305,7 @@ export async function POST(
       sendReasoning: true,
       consumeSseStream: consumeStream,
       onError: (error) => {
+        void closeMcpTools()
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
 
@@ -2032,6 +2351,7 @@ export async function POST(
       },
     })
   } catch (error) {
+    await closeMcpTools()
     finishLangfuseTrace('error', { stage: 'request' })
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
