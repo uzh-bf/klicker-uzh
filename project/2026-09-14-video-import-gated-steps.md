@@ -1,7 +1,8 @@
 # Course video import lane: gated deployment and database steps
 
 Parent plan `project/2026-09-14-course-chatbot-video-import-plan.md`, slices S1 and S2. Drafted 2026-09-14 on
-branch `rs/course-video-import-plan`; nothing here has been executed.
+branch `rs/course-video-import-plan`. Status 2026-09-15: S1 executed on STG only (MR !581, merge `8c0c01e266`,
+`app-up` changed the `backend-graphql` ExternalSecret alone); PRD and S2 onward are not started.
 
 ## Correction: the `KB` row uses `authType = 'bearer'`
 
