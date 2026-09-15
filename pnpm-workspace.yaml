@@ -96,6 +96,10 @@ overrides:
   'ip-address@>=10.0.0 <10.3.1': 10.3.1
   'lodash@>=4.17.0 <4.18.1': 4.18.1
   'tmp@>=0.2.0 <0.2.7': 0.2.7
+  # The next-intl peer-context hash includes @babel/core; a 7.28.3/7.28.6 split
+  # gave packages/shared-components and the frontends different translation
+  # contexts. Consolidate the patch line so every importer resolves one copy.
+  '@babel/core@>=7.28.0 <7.29.0': 7.28.6
 
 packageExtensions:
   # The published stylesheet imports this plugin, but 4.1.8 lists it only as a devDependency.
