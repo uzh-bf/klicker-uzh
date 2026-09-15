@@ -7,9 +7,6 @@ function validateNumericalOptions(options?: ElementOptionsInput | null) {
     typeof options.hasSampleSolution !== 'boolean' ||
     options.hasSampleSolution === null
   ) {
-    console.error(
-      'Options and sample solution flag are required for numerical questions'
-    )
     return false
   }
 
@@ -17,9 +14,6 @@ function validateNumericalOptions(options?: ElementOptionsInput | null) {
   if (options.hasSampleSolution) {
     // either solution ranges or exact solutions need to be defined
     if (!options.solutionRanges && !options.exactSolutions) {
-      console.error(
-        'At least one of solution ranges or exact solutions needs to be defined'
-      )
       return false
     }
 
@@ -40,9 +34,6 @@ function validateNumericalOptions(options?: ElementOptionsInput | null) {
         typeof options.exactSolutions[0] === 'undefined')
 
     if (invalidSolutionRange || invalidExactSolutions) {
-      console.error(
-        'At least one of solution ranges or exact solutions needs to be defined and valid'
-      )
       return false
     }
   }

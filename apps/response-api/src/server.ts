@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import type {
   AssessmentResponseCommand,
   AssessmentResponseReceipt,
+  HatchetLoggingContext,
 } from '@klicker-uzh/types'
 import type { JWTPayload } from '@klicker-uzh/util'
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
+import { beginNodeRequest, type NodeRequestLog } from './requestLogging.js'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -34,6 +37,7 @@ export interface ResponseServerDependencies {
   authOrigin?: string
   pushEvent: PushEvent
   verifyToken: VerifyToken
+  logger: NodeRequestLog['log']
   now?: () => Date
 }
 
@@ -153,12 +157,17 @@ function parseCookies(header: string | undefined): Record<string, string> {
 async function handleAddResponse(
   req: IncomingMessage,
   res: ServerResponse,
-  dependencies: ResponseServerDependencies
+  dependencies: ResponseServerDependencies,
+  requestLog: NodeRequestLog
 ) {
   let payload: unknown
   try {
     payload = await readBody(req)
   } catch (error) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_json' },
+      'Response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -168,6 +177,10 @@ async function handleAddResponse(
   }
 
   if (!isObject(payload)) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_body' },
+      'Response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -183,6 +196,10 @@ async function handleAddResponse(
     !liveQuizId ||
     instanceId === undefined
   ) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'missing_fields' },
+      'Response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -212,19 +229,36 @@ async function handleAddResponse(
     response,
     cookie,
     responseTimestamp,
+    loggingContext: {
+      requestId: requestLog.context.requestId,
+      correlationId: requestLog.context.correlationId,
+    } satisfies HatchetLoggingContext,
   }
   const eventName =
     cookie === undefined
       ? 'response-received:anonymous'
       : 'response-received:authenticated'
 
-  console.info('Forwarding live-quiz response', {
-    eventName,
-    messageId: message.messageId,
-    liveQuizId: message.sessionId,
-    instanceId: message.instanceId,
-  })
-  await dependencies.pushEvent(eventName, message)
+  try {
+    await dependencies.pushEvent(eventName, message)
+  } catch {
+    requestLog.log.error(
+      {
+        event: 'response.publish.failed',
+        err: toSafeError('Hatchet response publish failed'),
+      },
+      'Hatchet response publish failed'
+    )
+    throw new Error('Hatchet response publish failed')
+  }
+  requestLog.log.info(
+    {
+      event: 'response.accepted',
+      liveQuizId: message.sessionId,
+      instanceId: message.instanceId,
+    },
+    'Response accepted'
+  )
   return sendJson(req, res, dependencies.allowedOrigins, 200, {
     status: 'ok',
     responseTimestamp,
@@ -234,13 +268,18 @@ async function handleAddResponse(
 async function handleAddAssessmentResponse(
   req: IncomingMessage,
   res: ServerResponse,
-  dependencies: ResponseServerDependencies
+  dependencies: ResponseServerDependencies,
+  requestLog: NodeRequestLog
 ) {
   const receivedAt = dependencies.now?.() ?? new Date()
   let payload: unknown
   try {
     payload = await readBody(req)
   } catch (error) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_json' },
+      'Assessment response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -250,6 +289,10 @@ async function handleAddAssessmentResponse(
   }
 
   if (!isObject(payload)) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_body' },
+      'Assessment response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -272,9 +315,17 @@ async function handleAddAssessmentResponse(
     correlationKey === '' ||
     typeof submissionId !== 'string'
   ) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'missing_response' },
+      'Assessment response rejected'
+    )
     return badRequest(req, res, dependencies.allowedOrigins, 'missing_response')
   }
   if (!UUID_PATTERN.test(submissionId)) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_submission_id' },
+      'Assessment response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -291,6 +342,10 @@ async function handleAddAssessmentResponse(
       { issuer: dependencies.assessmentApiOrigin }
     )
   } catch {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_submission' },
+      'Assessment response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -306,6 +361,10 @@ async function handleAddAssessmentResponse(
     !Number.isSafeInteger(correlationData.execution) ||
     correlationData.execution < 0
   ) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_submission' },
+      'Assessment response rejected'
+    )
     return badRequest(
       req,
       res,
@@ -328,6 +387,10 @@ async function handleAddAssessmentResponse(
         )
       : null
   } catch {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_assessment_cookie' },
+      'Assessment response rejected'
+    )
     return sendJson(req, res, dependencies.allowedOrigins, 401, {
       error: 'invalid_assessment_cookie',
     })
@@ -339,6 +402,13 @@ async function handleAddAssessmentResponse(
     participant.scope !== UserLoginScope.EDUID ||
     !UUID_PATTERN.test(participant.sub)
   ) {
+    requestLog.log.info(
+      {
+        event: 'response.rejected',
+        reason: 'missing_invalid_assessment_cookie',
+      },
+      'Assessment response rejected'
+    )
     return sendJson(req, res, dependencies.allowedOrigins, 401, {
       error: 'missing_invalid_assessment_cookie',
     })
@@ -356,6 +426,10 @@ async function handleAddAssessmentResponse(
     responseTimestamp: receivedAt.getTime(),
     receivedAt: receivedAt.toISOString(),
     transportAttemptedAt: transportAttemptedAt.toISOString(),
+    loggingContext: {
+      requestId: requestLog.context.requestId,
+      correlationId: requestLog.context.correlationId,
+    },
   }
 
   try {
@@ -372,13 +446,23 @@ async function handleAddAssessmentResponse(
       responseTimestamp: receivedAt.getTime(),
       hatchetEventId: receipt.eventId,
     }
+    requestLog.log.info(
+      {
+        event: 'response.accepted',
+        liveQuizId,
+        instanceId: String(instanceId),
+      },
+      'Assessment response accepted'
+    )
     return sendJson(req, res, dependencies.allowedOrigins, 200, responseBody)
   } catch {
-    console.error('Assessment submission transport failed', {
-      submissionId,
-      liveQuizId,
-      instanceId: String(instanceId),
-    })
+    requestLog.log.error(
+      {
+        event: 'response.publish.failed',
+        err: toSafeError('Assessment submission transport failed'),
+      },
+      'Assessment submission transport failed'
+    )
     return sendJson(req, res, dependencies.allowedOrigins, 503, {
       error: 'submission_transport_unavailable',
       submissionId,
@@ -386,8 +470,24 @@ async function handleAddAssessmentResponse(
   }
 }
 
+const REQUEST_LOG_ROUTES = [
+  '/AddResponse',
+  '/AddAssessmentResponse',
+  '/healthz',
+  '/',
+] as const
+
+function resolveRequestLogRoute(
+  pathname: string
+): '/AddResponse' | '/AddAssessmentResponse' | '/healthz' | '/' | '/unmatched' {
+  return (REQUEST_LOG_ROUTES as readonly string[]).includes(pathname)
+    ? (pathname as '/AddResponse' | '/AddAssessmentResponse' | '/healthz' | '/')
+    : '/unmatched'
+}
+
 export function createResponseServer(dependencies: ResponseServerDependencies) {
   return createServer(async (req, res) => {
+    let requestLog: NodeRequestLog | undefined
     try {
       if (req.method === 'OPTIONS') {
         setCorsHeaders(req, res, dependencies.allowedOrigins)
@@ -395,6 +495,14 @@ export function createResponseServer(dependencies: ResponseServerDependencies) {
         return res.end()
       }
 
+      requestLog = beginNodeRequest(
+        req,
+        res,
+        dependencies.logger,
+        resolveRequestLogRoute(
+          new URL(req.url || '/', 'http://localhost').pathname
+        )
+      )
       const url = new URL(req.url || '/', 'http://localhost')
       if (
         req.method === 'GET' &&
@@ -406,14 +514,20 @@ export function createResponseServer(dependencies: ResponseServerDependencies) {
       }
       if (url.pathname === '/AddResponse' && req.method === 'POST') {
         return dependencies.assessmentMode
-          ? handleAddAssessmentResponse(req, res, dependencies)
-          : handleAddResponse(req, res, dependencies)
+          ? handleAddAssessmentResponse(req, res, dependencies, requestLog)
+          : handleAddResponse(req, res, dependencies, requestLog)
       }
       return sendJson(req, res, dependencies.allowedOrigins, 404, {
         error: 'Not found',
       })
     } catch {
-      console.error('Unhandled response API request failure')
+      requestLog?.log.error(
+        {
+          event: 'http.request.failed',
+          err: toSafeError('Unhandled response API request failure'),
+        },
+        'Unhandled response API request failure'
+      )
       return sendJson(req, res, dependencies.allowedOrigins, 500, {
         error: 'Internal server error',
       })

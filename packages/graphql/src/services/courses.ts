@@ -234,11 +234,10 @@ export async function ensureParticipation(
 
     return participation !== null
   } catch (error) {
-    console.error('ensureParticipation failed', {
-      courseId,
-      participantId: ctx.user.sub,
-      error,
-    })
+    ctx.log.error(
+      { event: 'course.participation.lookup.failed' },
+      'Course participation lookup failed'
+    )
     return false
   }
 }
@@ -3563,7 +3562,7 @@ export async function deleteCourse(
     // pending one on the course and its safety conditions still hold
     request?: CourseDeletionRequestToken | null
   },
-  ctx: Pick<Context, 'prisma' | 'hatchet' | 'emitter'>
+  ctx: Pick<Context, 'prisma' | 'hatchet' | 'emitter' | 'log'>
 ) {
   const deletionRequestedAt = request?.deletionRequestedAt
 
@@ -3736,8 +3735,12 @@ export async function deleteCourse(
       try {
         await ctx.hatchet.scheduled.delete(pq.scheduledPublicationTaskId)
       } catch (e) {
-        console.log(
-          `Failed to delete scheduled publication hatchet job for practice quiz ${pq.id}`
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'practice-quiz-publish',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }
@@ -3747,8 +3750,12 @@ export async function deleteCourse(
       try {
         await ctx.hatchet.scheduled.delete(ml.scheduledPublicationTaskId)
       } catch (e) {
-        console.log(
-          `Failed to delete scheduled publication hatchet job for micro learning ${ml.id}`
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'microlearning-publish',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }
@@ -3756,8 +3763,12 @@ export async function deleteCourse(
       try {
         await ctx.hatchet.scheduled.delete(ml.scheduledCompletionTaskId)
       } catch (e) {
-        console.log(
-          `Failed to delete scheduled completion hatchet job for micro learning ${ml.id}`
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'microlearning-end',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }
@@ -3767,8 +3778,12 @@ export async function deleteCourse(
       try {
         await ctx.hatchet.scheduled.delete(ga.scheduledPublicationTaskId)
       } catch (e) {
-        console.log(
-          `Failed to delete scheduled publication hatchet job for group activity ${ga.id}`
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'group-activity-publish',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }
@@ -3776,8 +3791,12 @@ export async function deleteCourse(
       try {
         await ctx.hatchet.scheduled.delete(ga.scheduledCompletionTaskId)
       } catch (e) {
-        console.log(
-          `Failed to delete scheduled completion hatchet job for group activity ${ga.id}`
+        ctx.log.warn(
+          {
+            event: 'hatchet.schedule.delete_failed',
+            task: 'group-activity-end',
+          },
+          'Hatchet scheduled task deletion failed'
         )
       }
     }

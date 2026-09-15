@@ -1044,10 +1044,14 @@ export async function startLiveQuiz(
 
           await pipeline.exec()
         } catch (error) {
-          console.error('Failed to update live quiz Redis metadata', {
-            liveQuizId: quiz.id,
-            errorType: error instanceof Error ? error.name : 'unknown',
-          })
+          ctx.log.warn(
+            {
+              event: 'live-quiz.cache.cleanup.failed',
+              liveQuizId: quiz.id,
+              errorType: error instanceof Error ? error.name : 'unknown',
+            },
+            'Live quiz cache cleanup failed'
+          )
         }
 
         // remove the scheduled hatchet publication task, if it exists
@@ -1055,10 +1059,15 @@ export async function startLiveQuiz(
           try {
             await ctx.hatchet.scheduled.delete(quiz.scheduledPublicationTaskId)
           } catch (error) {
-            console.error('Failed to delete scheduled live quiz task', {
-              liveQuizId: id,
-              errorType: error instanceof Error ? error.name : 'unknown',
-            })
+            ctx.log.warn(
+              {
+                event: 'hatchet.schedule.delete_failed',
+                task: 'live-quiz-publish',
+                liveQuizId: id,
+                errorType: error instanceof Error ? error.name : 'unknown',
+              },
+              'Hatchet scheduled task deletion failed'
+            )
           }
         }
 
@@ -1161,7 +1170,11 @@ export async function scheduleLiveQuiz(
       // schedule the task to publish the live quiz
       const scheduledTask = await ctx.tasks.publishScheduledLiveQuiz.schedule(
         availableFrom,
-        { liveQuizId: id, initiatedByUserId: ctx.user.sub }
+        {
+          liveQuizId: id,
+          initiatedByUserId: ctx.user.sub,
+          loggingContext: ctx.requestContext,
+        }
       )
       const taskId = scheduledTask.metadata.id
 
@@ -1226,10 +1239,15 @@ export async function scheduleLiveQuiz(
       ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
       return updatedQuiz
     } catch (error) {
-      console.error('Error scheduling live quiz publication', {
-        liveQuizId: id,
-        errorType: error instanceof Error ? error.name : 'unknown',
-      })
+      ctx.log.error(
+        {
+          event: 'hatchet.schedule.failed',
+          task: 'live-quiz-publish',
+          liveQuizId: id,
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Hatchet task scheduling failed'
+      )
       return null
     }
   } else {
@@ -1267,10 +1285,15 @@ export async function unpublishLiveQuiz(
     try {
       await ctx.hatchet.scheduled.delete(liveQuiz.scheduledPublicationTaskId)
     } catch (error) {
-      console.error('Failed to delete scheduled task for live quiz', {
-        liveQuizId: id,
-        errorType: error instanceof Error ? error.name : 'unknown',
-      })
+      ctx.log.warn(
+        {
+          event: 'hatchet.schedule.delete_failed',
+          task: 'live-quiz-publish',
+          liveQuizId: id,
+          errorType: error instanceof Error ? error.name : 'unknown',
+        },
+        'Hatchet scheduled task deletion failed'
+      )
     }
   }
 
@@ -1989,20 +2012,33 @@ export async function deactivateLiveQuizBlock(
     if (isAssessmentEnabled) {
       await ctx.tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
         dayjs().add(5, 'minute').toDate(),
-        { liveQuizId: quizId, blockId }
+        {
+          liveQuizId: quizId,
+          blockId,
+          loggingContext: ctx.requestContext,
+        }
       )
     } else {
       await ctx.tasks.aggregateLiveQuizBlockResultsStandard.schedule(
         dayjs().add(5, 'minute').toDate(),
-        { liveQuizId: quizId, blockId }
+        {
+          liveQuizId: quizId,
+          blockId,
+          loggingContext: ctx.requestContext,
+        }
       )
     }
   } catch (error) {
-    console.error('Failed to schedule aggregation task for closed block', {
-      liveQuizId: quizId,
-      blockId,
-      errorType: error instanceof Error ? error.name : 'unknown',
-    })
+    ctx.log.warn(
+      {
+        event: 'hatchet.schedule.failed',
+        task: 'live-quiz-aggregate',
+        liveQuizId: quizId,
+        blockId,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
+      'Hatchet task scheduling failed'
+    )
   }
 
   return true
@@ -2802,10 +2838,14 @@ export async function changeLiveQuizName(
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
     return true
   } catch (error) {
-    console.error('Error changing live quiz name', {
-      liveQuizId: id,
-      errorType: error instanceof Error ? error.name : 'unknown',
-    })
+    ctx.log.error(
+      {
+        event: 'live-quiz.rename.failed',
+        liveQuizId: id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
+      'Live quiz rename failed'
+    )
     return false
   }
 }
@@ -3481,10 +3521,15 @@ export async function deleteLiveQuiz(
                   quiz.scheduledPublicationTaskId
                 )
               } catch (error) {
-                console.error('Failed to delete scheduled task for live quiz', {
-                  liveQuizId: id,
-                  errorType: error instanceof Error ? error.name : 'unknown',
-                })
+                ctx.log.warn(
+                  {
+                    event: 'hatchet.schedule.delete_failed',
+                    task: 'live-quiz-publish',
+                    liveQuizId: id,
+                    errorType: error instanceof Error ? error.name : 'unknown',
+                  },
+                  'Hatchet scheduled task deletion failed'
+                )
               }
             }
             await emitCoveredAssessmentAuditEvents({
@@ -3543,10 +3588,15 @@ export async function deleteLiveQuiz(
                   quiz.scheduledPublicationTaskId
                 )
               } catch (error) {
-                console.error('Failed to delete scheduled task for live quiz', {
-                  liveQuizId: id,
-                  errorType: error instanceof Error ? error.name : 'unknown',
-                })
+                ctx.log.warn(
+                  {
+                    event: 'hatchet.schedule.delete_failed',
+                    task: 'live-quiz-publish',
+                    liveQuizId: id,
+                    errorType: error instanceof Error ? error.name : 'unknown',
+                  },
+                  'Hatchet scheduled task deletion failed'
+                )
               }
             }
 
@@ -3842,8 +3892,15 @@ export async function resetAssessmentLiveQuiz(
       sharingType,
       updatedAt: updatedQuiz.updatedAt,
     }
-  } catch {
-    console.error('Assessment live quiz reset failed', { liveQuizId: id })
+  } catch (error) {
+    ctx.log.error(
+      {
+        event: 'live-quiz.reset.failed',
+        liveQuizId: id,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
+      'Assessment live quiz reset failed'
+    )
     return null
   }
 }
@@ -4594,9 +4651,13 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
           redis: globalCtx.redisAssessmentExec,
         })
       } catch (error) {
-        executionCtx.logger.error(
-          `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
-        )
+        executionCtx.logger.error('Live quiz block cache removal failed', {
+          extra: {
+            event: 'live_quiz.cache_removal.failed',
+            blockId,
+            liveQuizId,
+          },
+        })
       }
 
       return true
@@ -4655,9 +4716,13 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         },
       })
     } catch (error) {
-      executionCtx.logger.error(
-        `Error updating instance results for block with ID ${blockId} in quiz with ID ${liveQuizId} based on live quiz responses: ${error}`
-      )
+      executionCtx.logger.error('Live quiz instance results update failed', {
+        extra: {
+          event: 'live_quiz.results_update.failed',
+          blockId,
+          liveQuizId,
+        },
+      })
     }
 
     try {
@@ -4670,9 +4735,9 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         redis: globalCtx.redisAssessmentExec,
       })
     } catch (error) {
-      executionCtx.logger.error(
-        `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
-      )
+      executionCtx.logger.error('Live quiz block cache removal failed', {
+        extra: { event: 'live_quiz.cache_removal.failed', blockId, liveQuizId },
+      })
     }
 
     executionCtx.logger.info(
