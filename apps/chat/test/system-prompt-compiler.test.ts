@@ -40,12 +40,14 @@ function compilePrompt(
   systemPrompts: unknown,
   selectedMode: string,
   toolNames: readonly string[] = [],
-  standardModeConfig?: unknown
+  standardModeConfig?: unknown,
+  customModeConfig?: unknown
 ): string {
   return compileSystemPrompt(systemPrompts, selectedMode, {
     courseDisplayName: COURSE_DISPLAY_NAME,
     toolNames,
     standardModeConfig,
+    customModeConfig,
   })
 }
 
@@ -353,6 +355,89 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(COURSE_POLICY_MARK)
     expect(result).toContain(OUTPUT_FORMAT_MARK)
     expect(result).toContain(LANGUAGE_MARK)
+  })
+
+  test('compiles the approved custom-mode persona with the platform sections last', () => {
+    const approved = {
+      modes: [
+        {
+          key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+          name: 'Ethik-Rollenspiel',
+          description: 'Practises ethical reasoning in a role play.',
+          personaText: 'APPROVED-CUSTOM-PERSONA',
+        },
+      ],
+    }
+    const result = compilePrompt(
+      null,
+      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+      [DOC_TOOL],
+      null,
+      approved
+    )
+
+    expect(result.startsWith(COURSE_DATA_MARK)).toBe(true)
+    expect(result).toContain(CUSTOM_PERSONA_MARK)
+    expect(result).toContain('APPROVED-CUSTOM-PERSONA')
+    expect(result).not.toContain(PLATFORM_MODE_MARK)
+    expect(result.indexOf('APPROVED-CUSTOM-PERSONA')).toBeLessThan(
+      result.indexOf(INPUT_CONTEXT_MARK)
+    )
+    expect(result.indexOf(INPUT_CONTEXT_MARK)).toBeLessThan(
+      result.indexOf(COURSE_POLICY_MARK)
+    )
+    expect(result.indexOf(COURSE_POLICY_MARK)).toBeLessThan(
+      result.indexOf(GROUNDING_MARK)
+    )
+    expect(result.indexOf(GROUNDING_MARK)).toBeLessThan(
+      result.indexOf(OUTPUT_FORMAT_MARK)
+    )
+    expect(result.indexOf(OUTPUT_FORMAT_MARK)).toBeLessThan(
+      result.indexOf(CITATION_MARK)
+    )
+    expect(result.indexOf(CITATION_MARK)).toBeLessThan(
+      result.indexOf(LANGUAGE_MARK)
+    )
+  })
+
+  test('uses the approved custom-mode persona over a legacy stored prompt', () => {
+    const result = compilePrompt(
+      { cm_0d1f2c3b: { prompt: 'LEGACY-STORED-PROMPT' } },
+      'cm_0d1f2c3b',
+      [],
+      null,
+      {
+        modes: [
+          {
+            key: 'cm_0d1f2c3b',
+            name: 'Ethik-Rollenspiel',
+            description: null,
+            personaText: 'APPROVED-CUSTOM-PERSONA',
+          },
+        ],
+      }
+    )
+
+    expect(result).toContain('APPROVED-CUSTOM-PERSONA')
+    expect(result).not.toContain('LEGACY-STORED-PROMPT')
+    expect(result).toContain(CUSTOM_PERSONA_MARK)
+  })
+
+  test('leaves a standard mode unchanged when the custom modes reuse its key', () => {
+    const withCustomConfig = compilePrompt(null, 'tutor', [], null, {
+      modes: [
+        {
+          key: 'tutor',
+          name: 'Tutor replacement',
+          description: 'Replacement persona',
+          personaText: 'REPLACEMENT-PERSONA',
+        },
+      ],
+    })
+
+    expect(withCustomConfig).toContain(DEFAULT_TUTOR_MARK)
+    expect(withCustomConfig).not.toContain('REPLACEMENT-PERSONA')
+    expect(withCustomConfig).not.toContain(CUSTOM_PERSONA_MARK)
   })
 
   test('yields fixed platform contracts for an unknown mode without a persona', () => {

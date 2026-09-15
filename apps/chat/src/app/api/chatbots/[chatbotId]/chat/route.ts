@@ -729,7 +729,8 @@ export async function POST(
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    { customModeConfig: chatbot.customModeConfig }
   )
   const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
@@ -1416,6 +1417,7 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        customModeConfig: chatbot.customModeConfig,
       }
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)

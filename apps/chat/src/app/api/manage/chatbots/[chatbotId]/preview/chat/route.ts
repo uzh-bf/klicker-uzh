@@ -167,7 +167,11 @@ export async function POST(
   const modeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    {
+      allowUnapprovedModes: true,
+      customModeConfig: chatbot.customModeConfig,
+    }
   )
   const selectedMode = resolveRequestedChatMode(
     modeOptions,
@@ -339,6 +343,7 @@ export async function POST(
         courseDisplayName: chatbot.course.displayName,
         toolNames,
         standardModeConfig: chatbot.standardModeConfig,
+        customModeConfig: chatbot.customModeConfig,
       }
     )
 

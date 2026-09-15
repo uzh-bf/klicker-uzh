@@ -47,6 +47,7 @@ export default async function ChatLayout({
     avatar: true,
     systemPrompts: true,
     standardModeConfig: true,
+    customModeConfig: true,
     knowledgeGraphVisible: true,
     mcpConfigurations: {
       select: {
@@ -65,7 +66,8 @@ export default async function ChatLayout({
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
-    chatbot.standardModeConfig
+    chatbot.standardModeConfig,
+    { customModeConfig: chatbot.customModeConfig }
   )
 
   return (
