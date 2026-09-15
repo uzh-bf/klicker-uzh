@@ -7,6 +7,7 @@ const MAX_KEYWORDS = 64
 const MAX_TITLE_LENGTH = 200
 const MAX_KEYWORD_LENGTH = 200
 const MAX_CONTENT_LENGTH = 100_000
+const MAX_CONTINUATION_LENGTH = 100_000
 const MAX_REFERENCE_LENGTH = 2_048
 const MAX_PAGE = 100_000
 
@@ -86,11 +87,30 @@ function validateDocument(value, index) {
     throw new Error(`Invalid local MCP document keywords at index ${index}`)
   }
 
+  // Optional second page for the same document. The local citation-range
+  // fixture uses it so one retrieved document spans two consecutive pages and
+  // the derived page range is exercised end to end.
+  let continuation
+  if (value.continuation !== undefined) {
+    try {
+      continuation = requiredString(
+        value.continuation,
+        'continuation',
+        MAX_CONTINUATION_LENGTH
+      )
+    } catch {
+      throw new Error(
+        `Invalid local MCP document continuation at index ${index}`
+      )
+    }
+  }
+
   return {
     title,
     page: value.page,
     keywords: value.keywords,
     content,
+    ...(continuation ? { continuation } : {}),
     reference,
     reference_type: referenceType,
   }
@@ -150,16 +170,33 @@ export function findLocalMcpDocuments(documents, query) {
 }
 
 export function toLocalMcpDocumentSource(document) {
+  const firstChunk = {
+    content: document.content,
+    page_number: document.page,
+  }
+
+  // A document with continuation text spans the next page. The extra chunk is
+  // what lets the source card and tooltip show a real page range instead of a
+  // single page, while `page_number` on the first chunk stays the physical
+  // page used for the `#page` navigation anchor.
+  const spansNextPage =
+    typeof document.continuation === 'string' && document.continuation
+  const chunks = spansNextPage
+    ? [
+        { ...firstChunk, labeled_page_number: String(document.page) },
+        {
+          content: document.continuation,
+          page_number: document.page + 1,
+          labeled_page_number: String(document.page + 1),
+        },
+      ]
+    : [firstChunk]
+
   return {
     reference: document.reference ?? DEFAULT_REFERENCE,
     reference_type: document.reference_type ?? DEFAULT_REFERENCE_TYPE,
     source_type: 'document',
     title: document.title,
-    chunks: [
-      {
-        content: document.content,
-        page_number: document.page,
-      },
-    ],
+    chunks,
   }
 }

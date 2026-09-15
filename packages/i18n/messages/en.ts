@@ -2862,6 +2862,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         actionError: 'The element could not be updated. Please try again.',
         saveElementsError:
           'The accepted elements could not be saved. Please try again.',
+        tagSelection: {
+          missingHint:
+            'A selected tag is no longer available. Remove it or choose another tag before saving.',
+          removeMissing: 'Remove unavailable tag {id}',
+          title: 'Tags',
+          existingLabel: 'Matching tags',
+          existingHint:
+            'Typing a name that already exists selects the existing tag instead of creating a new one.',
+          newLabel: 'Suggested new tags',
+          newHint: 'New tags are created only when you keep the element.',
+          manualLabel: 'All tags',
+          placeholder: 'Select or type tags',
+          saveDraft: 'Save draft',
+          unsaved: 'Unsaved changes',
+          saved: 'Draft saved.',
+          saveError: 'The draft could not be saved. Please try again.',
+          conflict:
+            'This draft changed elsewhere. Reload before saving your edits.',
+        },
       },
       decisions: {
         OPEN: 'Open',
