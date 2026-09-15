@@ -80,9 +80,9 @@ export default {
       // mhchem JS, CSS and fonts must come from one katex build across all
       // render surfaces; a split version silently breaks chemistry rendering.
       // Docs keeps its policy-required tilde dev range, so only the exact
-      // production surfaces are compared here.
-      label:
-        'katex must be aligned across markdown, chat, docs and frontend apps',
+      // production surfaces are compared here; the label names only what this
+      // rule actually enforces.
+      label: 'katex must be aligned across markdown, chat and frontend apps',
       dependencies: ['katex'],
       packages: [
         '@klicker-uzh/markdown',

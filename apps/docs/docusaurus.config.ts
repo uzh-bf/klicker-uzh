@@ -31,7 +31,9 @@ const config: Config = {
       {
         docs: {
           remarkPlugins: [remarkMath],
-          rehypePlugins: [rehypeKatex],
+          // Match the shared Markdown and Chat hardening: pass trust explicitly
+          // instead of relying on the library default.
+          rehypePlugins: [[rehypeKatex, { trust: false }]],
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
           sidebarPath: './sidebars.js',
