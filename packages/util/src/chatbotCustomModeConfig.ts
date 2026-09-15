@@ -5,10 +5,14 @@ import type {
   ChatbotCustomModeConfigInput,
 } from '@klicker-uzh/types'
 
-export const CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH = 60
-export const CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH = 160
-export const CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH = 1000
-export const CHATBOT_CUSTOM_MODE_MAX_COUNT = 5
+import {
+  CHATBOT_CUSTOM_MODE_DESCRIPTION_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_MAX_COUNT,
+  CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
+  CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
+} from './chatbotCustomModeLimits.js'
+
+export * from './chatbotCustomModeLimits.js'
 
 // Custom mode names must stay distinguishable from the built-in modes, so the
 // reserved names are the standard mode identifiers the runtime already offers.

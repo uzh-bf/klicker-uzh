@@ -12,7 +12,7 @@ import {
   CHATBOT_CUSTOM_MODE_MAX_COUNT,
   CHATBOT_CUSTOM_MODE_NAME_MAX_LENGTH,
   CHATBOT_CUSTOM_MODE_PERSONA_MAX_LENGTH,
-} from '@klicker-uzh/util'
+} from '@klicker-uzh/util/chatbot-custom-mode-limits'
 import {
   Accordion,
   AccordionContent,
