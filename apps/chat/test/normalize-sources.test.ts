@@ -796,3 +796,121 @@ describe('normalizeSourcesFromParts', () => {
     expect(result[0]?.url).toBe('https://example.com/lecture-01.pdf')
   })
 })
+
+// The retrieval payload carries no relevance score or rank, so the card has to
+// summarize what came back with the page envelope of the returned chunks.
+describe('retrieved page envelope', () => {
+  function documentSource(chunks: Array<Record<string, unknown>>) {
+    return normalizeSourcesFromParts([
+      toolCallPart('KB_doc_query', {
+        mode: 'documents',
+        sources: [
+          {
+            reference: 'https://example.org/vorlesung-05.pdf',
+            title: 'Vorlesung 5 – Risk Measures',
+            chunks: chunks.map((chunk) => ({ content: 'Synthetic', ...chunk })),
+          },
+        ],
+      }),
+    ])
+  }
+
+  test('derives the envelope from every chunk, not only the first', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: '12' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 89,
+      labeledPage: '6',
+      labeledPageEnd: '89',
+    })
+  })
+
+  test('keeps the lowest retrieved page as the navigation anchor', () => {
+    const result = documentSource([
+      { page_number: 12, labeled_page_number: '12' },
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 89,
+      labeledPage: '6',
+      labeledPageEnd: '89',
+    })
+  })
+
+  test('keeps a single-page source single', () => {
+    const result = documentSource([
+      { page_number: 7, labeled_page_number: '7' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 7, labeledPage: '7' })
+    expect(result[0]?.pageEnd).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('collapses an envelope whose extremes tie', () => {
+    const result = documentSource([
+      { page_number: 4, labeled_page_number: '4' },
+      { page_number: 4, labeled_page_number: '4' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 4, labeledPage: '4' })
+    expect(result[0]?.pageEnd).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps a non-numeric label single', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: 'Kapitel IV' },
+      { page_number: 12, labeled_page_number: 'Kapitel VII' },
+    ])
+
+    expect(result[0]).toMatchObject({
+      page: 6,
+      pageEnd: 12,
+      labeledPage: 'Kapitel IV',
+    })
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps labels single when only some of them are numeric', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: 'Anhang' },
+    ])
+
+    expect(result[0]?.labeledPage).toBe('6')
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('ignores an N/A chunk label and keeps the physical envelope', () => {
+    const result = documentSource([
+      { page_number: 6, labeled_page_number: 'N/A' },
+      { page_number: 12, labeled_page_number: 'N/A' },
+    ])
+
+    expect(result[0]).toMatchObject({ page: 6, pageEnd: 12 })
+    expect(result[0]?.labeledPage).toBeUndefined()
+    expect(result[0]?.labeledPageEnd).toBeUndefined()
+  })
+
+  test('keeps the dedupe identity tied to the start page', () => {
+    const first = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 89, labeled_page_number: '89' },
+    ])
+    const second = documentSource([
+      { page_number: 6, labeled_page_number: '6' },
+      { page_number: 12, labeled_page_number: '12' },
+    ])
+
+    expect(first[0]?.id).toBe(second[0]?.id)
+  })
+})
