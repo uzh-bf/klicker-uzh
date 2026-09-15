@@ -88,15 +88,16 @@ produced 11 prepared chunks carrying the SP `kb_id`, `course_id`, `semester` and
 with `resource_active=false` until activation. The legacy `video_document_mapper.py` path, which
 stamps only `chatbot_id`, is not used by this lane.
 
-What is missing is the serving side. `doc_query_sources` (the Klicker client's `KB_SOURCES_TOOL_NAME`)
-is generated only for a tool config that declares `token_scope`, and that code exists only on the
-mcp-doc-query branch `rs/kb-source-inventory` — `d8be6cf` plus a merge of `origin/main`, two commits
-ahead of it, draft MR !84 with a green pipeline and no review notes. Both environments already run
+The serving side is released and live on STG. `doc_query_sources` (the Klicker client's
+`KB_SOURCES_TOOL_NAME`) is registered for any tool config that declares `token_scope`; the code
+merged as mcp-doc-query MR !84 (merge `1d9816ed` on `main`) and shipped as tag `v0.13.0`
+(`92b45f63`), whose `release_tag_verify` and arm build are green. Both environments already run
 the standalone lineage and already carry the Klicker tenant `doc_query` config with
-`token_scope.claim = filter_field = kb_id` and `required: true`; the pins
-(`pipelines/{stg,prd}-doc-query/doc-query/deployment.yaml`, stable and Spot) are at
-`sha-a44d0bebc4d89f71e69862179087e60d0712d858-arm@sha256:81516c4c…`, which is `origin/main` on
-2026-09-14 and predates the companion tool.
+`token_scope.claim = filter_field = kb_id` and `required: true`; the STG pins now carry the release
+`sha-92b45f63b9dbb077cdfe90273a6e837f54f6b0b0-arm@sha256:84522e991ad76cf8225bfa9fe74ab174c4d42d20f5f6d113432bc67dbfdc570d`:
+`pipelines/stg-doc-query/doc-query/deployment.yaml` and `deployment-spot.yaml`,
+`pipelines/stg-klicker/doc-query/kustomization.yaml`, and the `.gitlab-ci.yml` tool-config
+loader. The PRD pins stay on the older build until the STG proof is accepted.
 
 Acceptance: a test source written with the new stamp appears in the STG inventory through Manage;
 existing retrieval corpus proofs still pass (scope-filter regression); zero-row corpora explain
@@ -226,6 +227,23 @@ answerable only from the imported lecture cites it by name and timestamp;
 manifest (job, source counts, prepare, activation count, inventory row, citation).
 
 ## Progress
+
+- 2026-09-15 (S3 STG delivered): the serving side is live on STG with per-stage receipts.
+  `ingestion_stg_manifest_validate` had been red on `main` since `fe68f4a9`
+  doubled the STG durable-control slots to 16 without updating either
+  `EXPECTED_LITERAL_ENV` entry, and the broad `.gitlab-ci.yml` anchor meant every pins MR
+  inherited it; `deployment` MR !878 reconciled both entries, after a pristine `origin/main`
+  extract reproduced the failure. The pins MR !877 was rebased and its pipeline 665304 ran all 16 jobs
+  green, then merged; `main` is `661c716e6cc4b46cc7532935c99f631bea42a0d2`. ArgoCD
+  `app-doc-query-stg` and `app-klicker-pipelines-stg` (both automated, selfHeal and prune)
+  synced to that revision and `mcp-doc-query` in `stg-doc-query` rolled to the v0.13.0 arm
+  digest, ready 1/1/1. Runtime readback through a port-forward: `tools/list` on `/mcp/klicker`
+  returns 39 tools including `doc_query_sources`; a scope-token `tools/call` for the SP
+  knowledge base (`558b9906-eebb-4333-89dd-82c249e5e3e7`) returns `isError: false`,
+  `source_count: 0`, `scanned_chunks: 0`, `unidentified_chunks: 0`, so the SP corpus on STG is empty
+  and the zero is reported by counter rather than silence. The scope header takes a `Bearer ` prefix:
+  `_verify_scope_token` reads the configured header, not `authorization`. PRD pins and PRD scope keys
+  are untouched.
 
 - 2026-09-14: plan drafted; skill video-lane section pushed to PR #6022. No slice started.
 - 2026-09-14 (S4 tooling): the one-command lane exists in data-ingestion branch `rs/video-lecture-import` — `ingestion-cli video-import lecture`, the operator client for the service contract, seven committed bindings under `course_targets/`, and a local rehearsal against a stand-in service plus Azurite: 13 source units, 11 candidate units, 11 prepared documents, identical digests on rerun. Producer side: klicker-uzh-video-ai PR #123 pins the job id as the run identity and publishes the source; the deployed revision predates it.
