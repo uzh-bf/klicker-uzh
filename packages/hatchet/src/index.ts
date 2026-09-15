@@ -29,16 +29,18 @@ import {
   retainFailedKBDeletionDispatch,
 } from './kbIngestion.js'
 import { maintainKBResources } from './kbMaintenance.js'
+import { type LoggableHatchetInput, withHatchetTaskLogging } from './logging.js'
 
 export type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
+export type { AuditLogInput, AuditLogMessage } from './auditLogging.js'
 export * from './client.js'
 export * from './kbGraphIngestion.js'
 export * from './kbGraphIngestionApi.js'
 export * from './kbIngestion.js'
 export * from './kbIngestionApi.js'
 export * from './kbMaintenance.js'
+export * from './logging.js'
 export * from './worker-runtime.js'
-
 export function prepareHatchetTasks({
   hatchet,
   pubSub,
@@ -70,6 +72,19 @@ export function prepareHatchetTasks({
   }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
 }) {
   let preparedTasks: PreparedHatchetTasks | undefined
+
+  function withTaskLogging<TInput extends LoggableHatchetInput, TOutput>(
+    taskName: string,
+    handler: (
+      input: TInput,
+      context: Context<TInput>
+    ) => Promise<TOutput> | TOutput
+  ) {
+    return withHatchetTaskLogging<TInput, TOutput, Context<TInput>>({
+      taskName,
+      handler,
+    })
+  }
   const globalContext = {
     hatchet,
     pubSub,
@@ -213,68 +228,83 @@ export function prepareHatchetTasks({
   const publishScheduledMicroLearning = hatchet.task({
     name: 'publish-scheduled-microlearning',
     retries: 3,
-    fn: async (
-      { microLearningId }: { microLearningId: string },
-      executionContext
-    ) => {
-      const success = await handlers.handlePublishScheduledMicroLearning(
-        { microLearningId },
-        globalContext,
+    fn: withTaskLogging(
+      'publish-scheduled-microlearning',
+      async (
+        { microLearningId }: { microLearningId: string } & LoggableHatchetInput,
         executionContext
-      )
-      return { success }
-    },
+      ) => {
+        const success = await handlers.handlePublishScheduledMicroLearning(
+          { microLearningId },
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const publishScheduledGroupActivity = hatchet.task({
     name: 'publish-scheduled-group-activity',
     retries: 3,
-    fn: async (
-      { groupActivityId }: { groupActivityId: string },
-      executionContext
-    ) => {
-      const success = await handlers.handlePublishScheduledGroupActivity(
-        { groupActivityId },
-        globalContext,
+    fn: withTaskLogging(
+      'publish-scheduled-group-activity',
+      async (
+        { groupActivityId }: { groupActivityId: string } & LoggableHatchetInput,
         executionContext
-      )
-      return { success }
-    },
+      ) => {
+        const success = await handlers.handlePublishScheduledGroupActivity(
+          { groupActivityId },
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const publishScheduledPracticeQuiz = hatchet.task({
     name: 'publish-scheduled-practice-quiz',
     retries: 3,
-    fn: async (
-      { practiceQuizId }: { practiceQuizId: string },
-      executionContext
-    ) => {
-      const success = await handlers.handlePublishScheduledPracticeQuiz(
-        { practiceQuizId },
-        globalContext,
+    fn: withTaskLogging(
+      'publish-scheduled-practice-quiz',
+      async (
+        { practiceQuizId }: { practiceQuizId: string } & LoggableHatchetInput,
         executionContext
-      )
-      return { success }
-    },
+      ) => {
+        const success = await handlers.handlePublishScheduledPracticeQuiz(
+          { practiceQuizId },
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const publishScheduledLiveQuiz = hatchet.task({
     name: 'publish-scheduled-live-quiz',
     retries: 3,
-    fn: async (
-      {
-        liveQuizId,
-        initiatedByUserId,
-      }: { liveQuizId: string; initiatedByUserId?: string },
-      executionContext
-    ) => {
-      const success = await handlers.handlePublishScheduledLiveQuiz(
-        { liveQuizId, initiatedByUserId },
-        globalContext,
+    fn: withTaskLogging(
+      'publish-scheduled-live-quiz',
+      async (
+        {
+          liveQuizId,
+          initiatedByUserId,
+        }: {
+          liveQuizId: string
+          initiatedByUserId?: string
+        } & LoggableHatchetInput,
         executionContext
-      )
-      return { success }
-    },
+      ) => {
+        const success = await handlers.handlePublishScheduledLiveQuiz(
+          { liveQuizId, initiatedByUserId },
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
   // #endregion
 
@@ -283,33 +313,39 @@ export function prepareHatchetTasks({
   const endExpiredMicroLearning = hatchet.task({
     name: 'end-expired-micro-learnings',
     retries: 3,
-    fn: async (
-      { microLearningId }: { microLearningId: string },
-      executionContext
-    ) => {
-      const success = await handlers.handleEndExpiredMicroLearning(
-        { microLearningId },
-        globalContext,
+    fn: withTaskLogging(
+      'end-expired-micro-learnings',
+      async (
+        { microLearningId }: { microLearningId: string } & LoggableHatchetInput,
         executionContext
-      )
-      return { success }
-    },
+      ) => {
+        const success = await handlers.handleEndExpiredMicroLearning(
+          { microLearningId },
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const endExpiredGroupActivity = hatchet.task({
     name: 'end-expired-group-activities',
     retries: 3,
-    fn: async (
-      { groupActivityId }: { groupActivityId: string },
-      executionContext
-    ) => {
-      const success = await handlers.handleEndExpiredGroupActivity(
-        { groupActivityId },
-        globalContext,
+    fn: withTaskLogging(
+      'end-expired-group-activities',
+      async (
+        { groupActivityId }: { groupActivityId: string } & LoggableHatchetInput,
         executionContext
-      )
-      return { success }
-    },
+      ) => {
+        const success = await handlers.handleEndExpiredGroupActivity(
+          { groupActivityId },
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
   // #endregion
 
@@ -319,48 +355,54 @@ export function prepareHatchetTasks({
     name: 'aggregate-block-closure-standard',
     retries: 3,
     defaultPriority: Priority.MEDIUM,
-    fn: async (
-      {
-        liveQuizId,
-        blockId,
-      }: {
-        liveQuizId: string
-        blockId: number
-      },
-      executionContext
-    ) => {
-      const success =
-        await handlers.handleStandardLiveQuizBlockClosureAggregation(
-          { liveQuizId, blockId },
-          globalContext,
-          executionContext
-        )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'aggregate-block-closure-standard',
+      async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        } & LoggableHatchetInput,
+        executionContext
+      ) => {
+        const success =
+          await handlers.handleStandardLiveQuizBlockClosureAggregation(
+            { liveQuizId, blockId },
+            globalContext,
+            executionContext
+          )
+        return { success }
+      }
+    ),
   })
 
   const aggregateLiveQuizBlockResultsAssessment = hatchet.task({
     name: 'aggregate-block-closure-assessment',
     retries: 3,
     defaultPriority: Priority.MEDIUM,
-    fn: async (
-      {
-        liveQuizId,
-        blockId,
-      }: {
-        liveQuizId: string
-        blockId: number
-      },
-      executionContext
-    ) => {
-      const success =
-        await handlers.handleAssessmentLiveQuizBlockClosureAggregation(
-          { liveQuizId, blockId },
-          globalContext,
-          executionContext
-        )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'aggregate-block-closure-assessment',
+      async (
+        {
+          liveQuizId,
+          blockId,
+        }: {
+          liveQuizId: string
+          blockId: number
+        } & LoggableHatchetInput,
+        executionContext
+      ) => {
+        const success =
+          await handlers.handleAssessmentLiveQuizBlockClosureAggregation(
+            { liveQuizId, blockId },
+            globalContext,
+            executionContext
+          )
+        return { success }
+      }
+    ),
   })
   // #endregion
 
@@ -372,14 +414,17 @@ export function prepareHatchetTasks({
     onCrons: [
       '0 0 * * *', // running daily at midnight (UTC)
     ],
-    fn: async (_, executionContext) => {
-      const success = await handlers.handleUpdateGroupAverageScores(
-        {},
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'update-group-average-scores',
+      async (_input: LoggableHatchetInput, executionContext) => {
+        const success = await handlers.handleUpdateGroupAverageScores(
+          {},
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const runningRandomGroupAssignments = hatchet.task({
@@ -388,14 +433,17 @@ export function prepareHatchetTasks({
     onCrons: [
       '0 0 * * *', // running daily at midnight (UTC)
     ],
-    fn: async (_, executionContext) => {
-      const success = await handlers.handleRunningRandomGroupAssignments(
-        {},
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'running-random-group-assignments',
+      async (_input: LoggableHatchetInput, executionContext) => {
+        const success = await handlers.handleRunningRandomGroupAssignments(
+          {},
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const finalRandomGroupAssignments = hatchet.task({
@@ -404,14 +452,17 @@ export function prepareHatchetTasks({
     onCrons: [
       '0 0 * * *', // running daily at midnight (UTC)
     ],
-    fn: async (_, executionContext) => {
-      const success = await handlers.handleFinalRandomGroupAssignments(
-        {},
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'final-random-group-assignments',
+      async (_input: LoggableHatchetInput, executionContext) => {
+        const success = await handlers.handleFinalRandomGroupAssignments(
+          {},
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const updateWeeklyTimelineEntries = hatchet.task({
@@ -420,14 +471,17 @@ export function prepareHatchetTasks({
     onCrons: [
       '0 0 * * *', // running daily at midnight (UTC)
     ],
-    fn: async (_, executionContext) => {
-      const success = await handlers.handleUpdateWeeklyTimelineEntries(
-        {},
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'update-weekly-timeline-entries',
+      async (_input: LoggableHatchetInput, executionContext) => {
+        const success = await handlers.handleUpdateWeeklyTimelineEntries(
+          {},
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const monitorKBIngestions = hatchet.task({
@@ -486,12 +540,15 @@ export function prepareHatchetTasks({
     name: 'send-push-notifications',
     // retries: 3,
     // onCrons: ['*/5 * * * *'], // runs every 5 minutes
-    fn: async (_, _executionContext) => {
-      // TODO: clean implementation
-      return { success: true }
-      // const success = await handlers.handleSendPushNotifications({}, globalContext, executionContext)
-      // return { success }
-    },
+    fn: withTaskLogging(
+      'send-push-notifications',
+      async (_input: LoggableHatchetInput, _executionContext) => {
+        // TODO: clean implementation
+        return { success: true }
+        // const success = await handlers.handleSendPushNotifications({}, globalContext, executionContext)
+        // return { success }
+      }
+    ),
   })
   // #endregion
 
@@ -508,14 +565,20 @@ export function prepareHatchetTasks({
       limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     },
     onEvents: ['process-course-duplication'],
-    fn: async ({ jobId }: { jobId: string }, executionContext) => {
-      const success = await handlers.handleProcessCourseDuplication(
-        { jobId },
-        globalContext,
+    fn: withTaskLogging(
+      'process-course-duplication',
+      async (
+        { jobId, loggingContext }: { jobId: string } & LoggableHatchetInput,
         executionContext
-      )
-      return { success }
-    },
+      ) => {
+        const success = await handlers.handleProcessCourseDuplication(
+          { jobId, loggingContext },
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const sweepStaleCourseDuplications = hatchet.task({
@@ -524,14 +587,17 @@ export function prepareHatchetTasks({
     onCrons: [
       '*/5 * * * *', // every 5 minutes (UTC)
     ],
-    fn: async (_, executionContext) => {
-      const success = await handlers.handleSweepStaleCourseDuplications(
-        {},
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'sweep-stale-course-duplications',
+      async (_input: LoggableHatchetInput, executionContext) => {
+        const success = await handlers.handleSweepStaleCourseDuplications(
+          {},
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const processCourseDeletion = hatchet.task({
@@ -547,14 +613,17 @@ export function prepareHatchetTasks({
       limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     },
     onEvents: ['process-course-deletion'],
-    fn: async (input: CourseDeletionEvent, executionContext) => {
-      const success = await handlers.handleProcessCourseDeletion(
-        input,
-        globalContext,
-        executionContext
-      )
-      return { success }
-    },
+    fn: withTaskLogging(
+      'process-course-deletion',
+      async (input: CourseDeletionEvent, executionContext) => {
+        const success = await handlers.handleProcessCourseDeletion(
+          input,
+          globalContext,
+          executionContext
+        )
+        return { success }
+      }
+    ),
   })
 
   const tasks = {
