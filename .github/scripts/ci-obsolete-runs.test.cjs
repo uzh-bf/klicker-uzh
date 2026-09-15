@@ -72,9 +72,6 @@ test('closed PR permits exact validation cleanup without replacement', async () 
 })
 
 for (const [name, mutate] of Object.entries({
-  push: (s) => {
-    s.run.event = 'push'
-  },
   manual: (s) => {
     s.run.event = 'workflow_dispatch'
   },
@@ -186,7 +183,206 @@ test('inconclusive cancellation does not force by default', async () => {
   assert.equal(state.writes.length, 1)
 })
 
+function pushFixture() {
+  const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+  const oldSha = 'a'.repeat(40)
+  const tipSha = 'b'.repeat(40)
+  const run = {
+    id: 20,
+    workflow_id: 2,
+    run_attempt: 1,
+    path: '.github/workflows/test-unit.yml',
+    event: 'push',
+    status: 'queued',
+    head_sha: oldSha,
+    head_branch: 'v3',
+    repository: repo,
+    head_repository: repo,
+    pull_requests: [],
+  }
+  const replacement = { ...run, id: 21, head_sha: tipSha }
+  const state = { run, replacement, oldSha, tip: tipSha, writes: [] }
+  const api = async (endpoint, method = 'GET') => {
+    if (method === 'POST') {
+      state.writes.push(endpoint)
+      state.run.status = 'completed'
+      state.run.conclusion = 'cancelled'
+      return { data: null }
+    }
+    if (endpoint.endsWith('/runs/20'))
+      return { data: structuredClone(state.run) }
+    if (endpoint.endsWith('/runs/21')) return { data: state.replacement }
+    if (endpoint.includes('/commits/')) return { data: { sha: state.tip } }
+    if (endpoint.includes('/workflows/2/runs?'))
+      return { data: { total_count: 1, workflow_runs: [state.replacement] } }
+    throw new Error(`Unexpected endpoint ${endpoint}`)
+  }
+  return { state, api }
+}
+
+test('reclaims a queued push run superseded by the branch tip', async () => {
+  const { state, api } = pushFixture()
+  const result = await inspectRun(api, 20)
+  assert.equal(result.reason, 'superseded-branch-tip')
+  assert.equal(result.replacement, 21)
+  assert.deepEqual(state.writes, [])
+})
+
+test('preserves a push run already at the branch tip', async () => {
+  const { state, api } = pushFixture()
+  state.tip = state.oldSha
+  assert.equal((await inspectRun(api, 20)).reason, 'current-head')
+})
+
+test('preserves a push run bound to a pull request', async () => {
+  const { api } = pushFixture()
+  const bound = async (endpoint, method) => {
+    if (endpoint.endsWith('/runs/20')) {
+      const { data } = await api(endpoint, method)
+      data.pull_requests = [{ number: 3 }]
+      return { data }
+    }
+    return api(endpoint, method)
+  }
+  assert.equal((await inspectRun(bound, 20)).reason, 'outside-policy')
+})
+
+test('applies push cancellation and verifies terminal result', async () => {
+  const { state, api } = pushFixture()
+  const result = await cancelRun(api, 20, { wait: async () => {} })
+  assert.equal(result.result, 'cancelled')
+  assert.ok(state.writes[0].endsWith('/runs/20/cancel'))
+})
+
 test('input policy requires explicit IDs for every mutation', () => {
+  test('a queued run that rejects cancellation is deferred, not failed', async () => {
+    const { state, api } = fixture()
+    const queued = async (endpoint, method) => {
+      if (method === 'POST' && endpoint.endsWith('/cancel')) {
+        throw new Error(
+          'gh: Cannot cancel a workflow run that is not in progress. (HTTP 409)'
+        )
+      }
+      return api(endpoint, method)
+    }
+    const result = await cancelRun(queued, 10, { wait: async () => {} })
+    assert.equal(result.result, 'cancellation-not-yet-accepted')
+    assert.deepEqual(state.writes, [])
+  })
+
+  test('a force rejection on a queued run is deferred too', async () => {
+    const { state, api } = fixture()
+    const stalled = async (endpoint, method) => {
+      if (method === 'POST' && endpoint.endsWith('/force-cancel')) {
+        throw new Error('gh: Run has not been queued yet (HTTP 422)')
+      }
+      if (method === 'POST') {
+        state.writes.push(endpoint)
+        return { data: null }
+      }
+      return api(endpoint, method)
+    }
+    const result = await cancelRun(stalled, 10, {
+      force: true,
+      wait: async () => {},
+    })
+    assert.equal(result.result, 'force-cancellation-not-yet-accepted')
+    assert.equal(state.writes.length, 1)
+  })
+
+  test('a non-queue cancellation error still stops the batch', async () => {
+    const { api } = fixture()
+    const denied = async (endpoint, method) => {
+      if (method === 'POST')
+        throw new Error('gh: Resource not accessible (HTTP 403)')
+      return api(endpoint, method)
+    }
+    await assert.rejects(cancelRun(denied, 10), /HTTP 403/)
+  })
+  function detachedFixture() {
+    const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+    const run = {
+      id: 30,
+      workflow_id: 2,
+      run_attempt: 1,
+      path: '.github/workflows/test-unit.yml',
+      event: 'pull_request',
+      status: 'queued',
+      head_sha: 'a'.repeat(40),
+      head_branch: 'rs/merged-branch',
+      repository: repo,
+      head_repository: repo,
+      pull_requests: [],
+    }
+    const state = { run, writes: [], branchMissing: true, openPR: false }
+    const api = async (endpoint, method = 'GET') => {
+      if (method === 'POST') {
+        state.writes.push(endpoint)
+        state.run.status = 'completed'
+        state.run.conclusion = 'cancelled'
+        return { data: null }
+      }
+      if (endpoint.endsWith('/runs/30'))
+        return { data: structuredClone(state.run) }
+      if (endpoint.includes('/branches/')) {
+        if (state.branchMissing)
+          throw new Error('gh: Branch not found (HTTP 404)')
+        return { data: { name: 'rs/merged-branch' } }
+      }
+      if (endpoint.includes('/pulls'))
+        return {
+          data: state.openPR
+            ? [{ number: 3, state: 'open', head: { ref: 'rs/merged-branch' } }]
+            : [
+                {
+                  number: 3,
+                  state: 'closed',
+                  head: { ref: 'rs/merged-branch' },
+                },
+              ],
+        }
+      throw new Error(`Unexpected endpoint ${endpoint}`)
+    }
+    return { state, api }
+  }
+
+  test('reclaims a queued PR run whose branch was deleted', async () => {
+    const { state, api } = detachedFixture()
+    const result = await inspectRun(api, 30)
+    assert.equal(result.reason, 'merged-or-closed-PR')
+    assert.deepEqual(state.writes, [])
+  })
+
+  test('preserves a PR run whose branch still exists', async () => {
+    const { state, api } = detachedFixture()
+    state.branchMissing = false
+    assert.equal((await inspectRun(api, 30)).reason, 'branch-still-exists')
+  })
+
+  test('preserves a PR run with an open PR for the same branch', async () => {
+    const { state, api } = detachedFixture()
+    state.openPR = true
+    assert.equal((await inspectRun(api, 30)).reason, 'PR-still-open')
+  })
+
+  test('fails closed when the branch state cannot be resolved', async () => {
+    const { api } = detachedFixture()
+    const failing = async (endpoint, method) => {
+      if (endpoint.includes('/branches/')) throw new Error('rate limited')
+      return api(endpoint, method)
+    }
+    assert.equal(
+      (await inspectRun(failing, 30)).reason,
+      'branch-state-unavailable'
+    )
+  })
+
+  test('applies detached cancellation and verifies terminal result', async () => {
+    const { state, api } = detachedFixture()
+    const result = await cancelRun(api, 30, { wait: async () => {} })
+    assert.equal(result.result, 'cancelled')
+    assert.ok(state.writes[0].endsWith('/runs/30/cancel'))
+  })
   assert.deepEqual(parseArgs([]), { apply: false, force: false, ids: [] })
   for (const args of [
     ['--apply'],
