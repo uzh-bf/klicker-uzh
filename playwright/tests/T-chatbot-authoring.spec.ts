@@ -918,6 +918,16 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   test('authors a custom mode that survives save and review', async ({
     page,
   }) => {
+    let customModeConfigVariables: Record<string, unknown> | undefined
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      if (request.postDataJSON()?.operationName === 'MSaveChatbotRevision') {
+        customModeConfigVariables =
+          request.postDataJSON()?.variables?.input?.customModeConfig
+      }
+      await route.continue()
+    })
+
     const chatbotId = await createChatbot(page, `${CHATBOT_PREFIX} Custom Mode`)
     await navigateToSetupStep(page, 'modes')
     await expect(page.getByTestId('chatbot-custom-modes-form')).toBeVisible()
