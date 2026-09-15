@@ -592,9 +592,6 @@ frontendControl:
     pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.77
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -745,9 +742,6 @@ olatApi:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.77
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
