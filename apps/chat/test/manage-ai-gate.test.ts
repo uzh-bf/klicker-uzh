@@ -70,8 +70,6 @@ describe('isManageAiEnabled', () => {
     await expect(isEnabled(lecturer)).resolves.toBe(false)
   })
 
-  // The expensive half of the gate: an account inside the beta that has not
-  // supplied a cost center must not be able to spend model budget.
   test('stays closed inside the beta without the account entitlement', async () => {
     mocks.findUniqueUser.mockResolvedValue({
       aiFeaturesEnabled: false,
@@ -80,6 +78,20 @@ describe('isManageAiEnabled', () => {
     const isEnabled = await loadGate('ai-beta')
 
     await expect(isEnabled(lecturer)).resolves.toBe(false)
+  })
+
+  // The Manage assistant, knowledge-graph generation, and element generation
+  // are platform-funded and keep their own quota, so a chatbot billing address
+  // must never become a condition of this shared lecturer gate.
+  test('stays open for an entitled account without a chatbot cost center', async () => {
+    mocks.findUniqueUser.mockResolvedValue({
+      aiFeaturesEnabled: true,
+      betaEnabled: true,
+      aiChatbotCostCenter: null,
+    })
+    const isEnabled = await loadGate('ai-beta')
+
+    await expect(isEnabled(lecturer)).resolves.toBe(true)
   })
 
   test('stays closed when the account no longer exists', async () => {

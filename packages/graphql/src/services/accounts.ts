@@ -1,9 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
+  DEFAULT_BASE_CHAT_BUDGET_CREDITS,
   getElearningChatHandoffSecret,
   getInitialInstanceResults,
   getInitialInstanceStatistics,
+  getZurichMonthStart,
   normalizeEmail,
   processElementData,
   recomputeDerivedPermissions,
@@ -533,9 +535,21 @@ export async function getUsersAiFeatures(ctx: ContextWithUser) {
 // Unlike the private preview grant above, this one can also be withdrawn: it
 // records that an account has a cost center to bill AI usage to, and that
 // arrangement can end. Returns 0 when the setting changed, 1 when no account
-// carries the address, and 2 when it already had the requested value.
+// carries the address, and 2 when it already had the requested value. The
+// optional tier and cost center carry the separate entitlement for
+// cost-carrying model classes; omitting either leaves it untouched.
 export async function setAiFeatures(
-  { email, enabled }: { email: string; enabled: boolean },
+  {
+    email,
+    enabled,
+    tier,
+    costCenter,
+  }: {
+    email: string
+    enabled: boolean
+    tier?: DB.AiSubscriptionTier | null
+    costCenter?: string | null
+  },
   ctx: ContextWithUser
 ) {
   // verify that the user has ADMIN permissions (can change AI access)
@@ -553,13 +567,37 @@ export async function setAiFeatures(
     return 1
   }
 
-  if (targetUser.aiFeaturesEnabled === enabled) {
+  // An empty cost center is the explicit withdrawal of the billing address.
+  // The tier column is never null, so an explicit null is treated as omitted.
+  const requestedTier = tier ?? undefined
+  const requestedCostCenter =
+    costCenter === undefined ? undefined : costCenter?.trim() || null
+  const tierUnchanged =
+    requestedTier === undefined ||
+    targetUser.aiSubscriptionTier === requestedTier
+  const costCenterUnchanged =
+    requestedCostCenter === undefined ||
+    (targetUser.aiChatbotCostCenter ?? null) === requestedCostCenter
+
+  if (
+    targetUser.aiFeaturesEnabled === enabled &&
+    tierUnchanged &&
+    costCenterUnchanged
+  ) {
     return 2
   }
 
   await ctx.prisma.user.update({
     where: { id: targetUser.id },
-    data: { aiFeaturesEnabled: enabled },
+    data: {
+      aiFeaturesEnabled: enabled,
+      ...(requestedTier === undefined
+        ? {}
+        : { aiSubscriptionTier: requestedTier }),
+      ...(requestedCostCenter === undefined
+        ? {}
+        : { aiChatbotCostCenter: requestedCostCenter }),
+    },
   })
   await sendTeamsNotification({
     scope: 'graphql/setAiFeatures',

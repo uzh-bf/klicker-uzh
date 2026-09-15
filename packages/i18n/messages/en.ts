@@ -2493,6 +2493,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
         'Chatbot usage is not authorized for this account.',
+      chatAccountUsageSubscriptionLabel: 'Plan',
+      chatAccountUsageTierBase: 'Base models',
+      chatAccountUsageTierAdvanced: 'Base and advanced models',
+      chatAccountUsageClassUnavailable:
+        'This usage class is not enabled for your account.',
+      chatAccountUsageAdvancedCostCenter:
+        'Advanced models require a cost center that AI usage can be billed to.',
       chatAccountUsageRefreshing: 'Refreshing usage…',
       chatAccountUsageStale:
         'The latest usage could not be loaded. The values below may be out of date.',

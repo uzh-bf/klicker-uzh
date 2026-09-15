@@ -2527,6 +2527,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
         'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
+      chatAccountUsageSubscriptionLabel: 'Tarif',
+      chatAccountUsageTierBase: 'Basismodelle',
+      chatAccountUsageTierAdvanced: 'Basis- und fortgeschrittene Modelle',
+      chatAccountUsageClassUnavailable:
+        'Diese Nutzungsklasse ist für Ihr Konto nicht freigeschaltet.',
+      chatAccountUsageAdvancedCostCenter:
+        'Fortgeschrittene Modelle erfordern eine Kostenstelle, auf die die AI-Nutzung verrechnet werden kann.',
       chatAccountUsageRefreshing: 'Nutzung wird aktualisiert ...',
       chatAccountUsageStale:
         'Die aktuelle Nutzung konnte nicht geladen werden. Die unten angezeigten Werte sind möglicherweise veraltet.',

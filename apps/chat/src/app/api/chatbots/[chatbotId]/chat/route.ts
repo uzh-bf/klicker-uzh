@@ -71,6 +71,8 @@ import {
 } from '@/src/lib/server/toolDiagnostics'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
+  CHAT_MODEL_UNAVAILABLE_ADVANCED,
+  CHAT_MODEL_UNAVAILABLE_BASE,
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
@@ -126,9 +128,6 @@ type ChatRouteModelMessage = {
     | string
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
 }
-
-export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
-export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
 
 function chatModelUnavailableResponse(
   usageClass: ChatModelConfig['usageClass']

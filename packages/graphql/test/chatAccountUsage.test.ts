@@ -237,8 +237,10 @@ describe('ChatAccountUsage service and GraphQL API', () => {
   it('projects fixed zero lanes for missing rows and exact live values', async () => {
     await expect(getChatAccountUsage({ now: NOW }, ownerCtx)).resolves.toEqual({
       authorized: true,
+      subscriptionTier: 'BASE',
       baseModelUsage: {
         usageClass: 'BASE',
+        entitled: true,
         budgetCredits: 0,
         usedCredits: 0,
         remainingCredits: 0,
@@ -246,6 +248,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       },
       advancedModelUsage: {
         usageClass: 'ADVANCED',
+        entitled: false,
         budgetCredits: 0,
         usedCredits: 0,
         remainingCredits: 0,
@@ -262,16 +265,69 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       authorized: true,
       baseModelUsage: {
         usageClass: 'BASE',
+        entitled: true,
         budgetCredits: 10,
         usedCredits: 4.5,
         remainingCredits: 5.5,
       },
       advancedModelUsage: {
         usageClass: 'ADVANCED',
+        entitled: false,
         budgetCredits: 1,
         usedCredits: 2,
         remainingCredits: 0,
       },
+    })
+  })
+
+  it('opens the advanced class only for an account with a cost center', async () => {
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: {
+        aiChatbotCostCenter: 'KST-1234',
+        aiSubscriptionTier: 'ADVANCED',
+      },
+    })
+
+    const overview = await getChatAccountUsage({ now: NOW }, ownerCtx)
+    expect(overview).toMatchObject({
+      authorized: true,
+      subscriptionTier: 'ADVANCED',
+      baseModelUsage: { entitled: true },
+      advancedModelUsage: { entitled: true },
+    })
+
+    // A recorded tier alone never admits a cost-carrying class: without an
+    // address to bill, the advanced lane stays closed.
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: { aiChatbotCostCenter: null },
+    })
+    const withoutCostCenter = await getChatAccountUsage({ now: NOW }, ownerCtx)
+    expect(withoutCostCenter).toMatchObject({
+      subscriptionTier: 'ADVANCED',
+      baseModelUsage: { entitled: true },
+      advancedModelUsage: { entitled: false },
+    })
+
+    // A withdrawn account is closed for both classes, whatever it records.
+    await prisma.user.update({
+      where: { id: otherOwnerId },
+      data: {
+        aiFeaturesEnabled: false,
+        aiChatbotCostCenter: 'KST-5678',
+      },
+    })
+    const otherCtx = contextFor(
+      otherOwnerId,
+      UserRole.USER,
+      UserLoginScope.ACCOUNT_OWNER
+    )
+    const withdrawn = await getChatAccountUsage({ now: NOW }, otherCtx)
+    expect(withdrawn).toMatchObject({
+      authorized: false,
+      baseModelUsage: { entitled: false },
+      advancedModelUsage: { entitled: false },
     })
   })
 
@@ -620,8 +676,9 @@ describe('ChatAccountUsage service and GraphQL API', () => {
             advancedBudgetCredits: $advanced
           ) {
             authorized
-            baseModelUsage { usageClass budgetCredits usedCredits remainingCredits resetAt }
-            advancedModelUsage { usageClass budgetCredits usedCredits remainingCredits resetAt }
+            subscriptionTier
+            baseModelUsage { usageClass entitled budgetCredits usedCredits remainingCredits resetAt }
+            advancedModelUsage { usageClass entitled budgetCredits usedCredits remainingCredits resetAt }
           }
         }
       `,
@@ -632,8 +689,13 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     expect(mutation.data).toMatchObject({
       setChatAccountUsageBudgets: {
         authorized: true,
+        subscriptionTier: 'BASE',
         baseModelUsage: { usageClass: 'BASE', budgetCredits: 4.5 },
-        advancedModelUsage: { usageClass: 'ADVANCED', budgetCredits: 6.25 },
+        advancedModelUsage: {
+          usageClass: 'ADVANCED',
+          entitled: false,
+          budgetCredits: 6.25,
+        },
       },
     })
 
@@ -642,8 +704,9 @@ describe('ChatAccountUsage service and GraphQL API', () => {
         query {
           getChatAccountUsage {
             authorized
-            baseModelUsage { usageClass budgetCredits usedCredits remainingCredits resetAt }
-            advancedModelUsage { usageClass budgetCredits usedCredits remainingCredits resetAt }
+            subscriptionTier
+            baseModelUsage { usageClass entitled budgetCredits usedCredits remainingCredits resetAt }
+            advancedModelUsage { usageClass entitled budgetCredits usedCredits remainingCredits resetAt }
           }
         }
       `,
