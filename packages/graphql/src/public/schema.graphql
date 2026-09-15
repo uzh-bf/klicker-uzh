@@ -3060,6 +3060,7 @@ type StudentCourse {
   description: String
   displayName: String!
   id: ID!
+  isAssessmentEnabled: Boolean!
   owner: User!
   pinCode: Int
 }
