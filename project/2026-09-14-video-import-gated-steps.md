@@ -111,9 +111,70 @@ UPDATE "ChatbotMCPServer" SET "isActive" = false, "updatedAt" = now() WHERE name
 DELETE FROM "ChatbotMCPServer" WHERE name = 'KB';
 ```
 
+## STEP S3 - the scope-guarded inventory tool on STG and PRD
+
+Both environments already run the standalone mcp-doc-query lineage, pinned at
+`sha-a44d0bebc4d89f71e69862179087e60d0712d858-arm@sha256:81516c4c837755330d93b944adeb97d30916adb8c3a449fcc2475596594fc41c`
+(= `origin/main` on 2026-09-14). That revision predates the scope-guarded companion tool, so the
+service does not expose `doc_query_sources` and `getKbImportedSources` stays degraded even once S1
+and S2 are done. The tool is generated only for a config with `token_scope`; the deployed Klicker
+tenant configs (`pipelines/{stg,prd}-doc-query/doc-query/tenants/klicker/doc_query.yaml`) already
+declare it with `claim: kb_id`, `filter_field: kb_id`, `required: true` and a per-environment ES256
+key, so no configuration change is needed - only a newer image.
+
+Gated actions, in order:
+
+1. Merge mcp-doc-query MR !84 (`rs/kb-source-inventory` = `f54e10f`, `d8be6cf` plus a merge of
+   `origin/main`; pipeline green, no review notes) into `main`.
+2. Cut a release. The pin lint enforces tag shape and within-group equality only; that a pin sits
+   on a release commit is a review-time fact, so record the release in the deployment MR.
+3. Bump the pins and let ArgoCD sync:
+   - `pipelines/prd-doc-query/doc-query/deployment.yaml` and `deployment-spot.yaml`
+   - `pipelines/stg-doc-query/doc-query/deployment.yaml` and `deployment-spot.yaml`
+   - `pipelines/stg-klicker/doc-query/kustomization.yaml` (last bumped to the v0.7.2-era
+     `sha-4fc395d…`; the lint keeps this group separate from the shared STG overlay)
+   - `.gitlab-ci.yml` (the tool-config loader pin; the lint treats it as its own group, but it is
+     meant to be the STG candidate image)
+   Run `python3 pipelines/lint/doc_query_image_pin_lint.py` before pushing; it also scans for pins
+   outside the registered list.
+4. Values-free readback: the deployed server lists `doc_query_sources`, and after S1 + S2
+   `getKbImportedSources` returns non-degraded for a scope-matched KB.
+
+## STEP S4 - producer revision with the ingestion-source policy, then the pilot import
+
+The deployed `video-processing` revision predates the publication change and carries no policy
+path (`VIDEO_PROCESSING_INGESTION_SOURCE_POLICY`), so a job finalizes and publishes nothing, and
+the import fails closed with `published_source_missing` after an already-paid processing run.
+The configuration for it is prepared but not released: klicker-uzh-video-ai draft PR #123
+(`rs/video-ingestion-source-contract`, head `0bd22bf`) pins the submitted job id as the run
+identity, publishes `artifacts/<job_id>/learning_units/ingestion_source.json` after the result
+finalizes, copies the tracked descriptors to `/opt/ingestion-policies`, and names
+`informatik_und_wirtschaft_hs26_eligibility_v1.json` in `deploy/base/worker-configmap.yaml`.
+
+Gated actions, in order:
+
+1. Merge PR #123. Publication is best-effort by contract: a missing or non-canonical descriptor
+   leaves the video job successful and skips only the source, so the merge alone changes no
+   processing behavior.
+2. Bump the STG digest pins in `deploy/stg/kustomization.yaml` to the CI-built images for that
+   merge (the repository's `deploy(...)` promotion pattern) and let ArgoCD sync. Prove it on STG
+   with one recording: the job completes and the source object exists under
+   `artifacts/<job_id>/learning_units/ingestion_source.json`.
+3. Only after that STG proof, promote the same revision to PRD (`deploy/prd/kustomization.yaml`
+   digests).
+4. Run the pilot import from the data-ingestion checkout with the PRD environment from the plan's
+   S4 runbook: `ingestion-cli video-import lecture --video <recording> --course structured-products`.
+   Check the receipts (job status and reuse, source counts against the binding's policy digest,
+   inventory counts, `prepared_count == eligible_unit_count`, stable `target_fingerprint`, and
+   `quarantine_decisions` when units were held back).
+5. Re-run the same command with `--activate`: the exact-count corpus write, the first write this
+   lane makes to PRD.
+
 ## Authority
 
 S1 (STG, then PRD) is a deployment and secret-delivery change; S2 (STG, then PRD) is a live database write.
+S3 is a merge, a release and the doc-query pins. S4 is a producer merge, two promotions and a paid
+video-processing run, followed by the PRD corpus write in the activation.
 Each needs separate explicit approval per environment; neither is implied by the other. Values are read
 through the restricted operator path only and must never be committed, printed, logged, or pasted into a
 receipt. This drafting task executed none of it.

@@ -48,7 +48,7 @@ cluster access establishment, paid VLM processing runs, marking ready, merge.
 | --- | --- | --- |
 | G1 GraphQL workload cannot mint scope tokens | S1 scope keys on backend-graphql | klicker-uzh / main |
 | G2 no `KB` MCP server row in STG/PRD | S2 live registration | klicker-uzh / main |
-| G3 producer stamps `chatbot_id`, inventory scopes by KB identity | S3 identity reconciliation + doc-query deploy | data-ingestion + mcp-doc-query / executor |
+| G3 serving lineage lacks the scope-guarded inventory tool; df-side dual-stamp already merged | S3 doc-query tool delivery | mcp-doc-query + deployment / executor |
 | G4 no PRD-bound import operations for course videos | S4 pilot import runbook + first recording | data-ingestion / main + executor |
 | G5 review path for flagged units undefined | S5 quarantine review loop | video-ai + main |
 | G6 no end-to-end acceptance for a course bot citing video | S6 retrieval + acceptance proof | klicker-uzh / main |
@@ -79,18 +79,31 @@ call). Acceptance: Manage's imported-sources section renders non-degraded for a 
 
 Authority: live database write to STG, then PRD.
 
-### S3 — identity reconciliation and doc-query deployment
+### S3 — the inventory tool on the serving lineage
 
-The importer maps `kb_id` and `chatbot_id` into chunk metadata
-(`modules/ingestion/src/ingestion/steps/writing/video_document_mapper.py`); the live producer
-still stamps only `chatbot_id`. Decide and implement the transition on the df side: preferred
-dual-stamp (`kb_id` authoritative, `chatbot_id` retained for compatibility) so retrieval and
-inventory agree during rollout; fallback is a doc-query-side alias filter. Deploy mcp-doc-query
-main (with `doc_query_sources`) to STG then PRD. Acceptance: a test source written with the
-new stamp appears in the STG inventory through Manage; existing retrieval corpus proofs still
-pass (scope-filter regression); zero-row corpora explain themselves by stamp, not by silence.
+The df side of this slice is already done. The candidate path stamps both scopes on every unit —
+`kb_id` authoritative, `chatbot_id` retained (`modules/ingestion/src/ingestion/video_candidate_import.py::_map_unit`,
+added by `a284fdc` on data-ingestion main) — and a rehearsal run of `video-import lecture` for SP
+produced 11 prepared chunks carrying the SP `kb_id`, `course_id`, `semester` and `corpus_version`,
+with `resource_active=false` until activation. The legacy `video_document_mapper.py` path, which
+stamps only `chatbot_id`, is not used by this lane.
 
-Authority: df-side deployment + STG corpus test write; PRD corpus write only within S4.
+What is missing is the serving side. `doc_query_sources` (the Klicker client's `KB_SOURCES_TOOL_NAME`)
+is generated only for a tool config that declares `token_scope`, and that code exists only on the
+mcp-doc-query branch `rs/kb-source-inventory` — `d8be6cf` plus a merge of `origin/main`, two commits
+ahead of it, draft MR !84 with a green pipeline and no review notes. Both environments already run
+the standalone lineage and already carry the Klicker tenant `doc_query` config with
+`token_scope.claim = filter_field = kb_id` and `required: true`; the pins
+(`pipelines/{stg,prd}-doc-query/doc-query/deployment.yaml`, stable and Spot) are at
+`sha-a44d0bebc4d89f71e69862179087e60d0712d858-arm@sha256:81516c4c…`, which is `origin/main` on
+2026-09-14 and predates the companion tool.
+
+Acceptance: a test source written with the new stamp appears in the STG inventory through Manage;
+existing retrieval corpus proofs still pass (scope-filter regression); zero-row corpora explain
+themselves by stamp, not by silence.
+
+Authority: one merge, one release and the deployment pins (STG then PRD); STG corpus test write.
+Exact steps: `2026-09-14-video-import-gated-steps.md`, STEP S3.
 
 ### S4 — pilot import: runbook plus first recording
 
@@ -109,12 +122,13 @@ pilot recording.
 ### S5 — quarantine review loop
 
 Units with `quality.needs_review=true` are excluded from activation and routed to review. The
-video-ai repo already emits review artifacts (`review/full_review.html`,
-`quality_review.html`, reviewer ZIP). Define the operator loop: who reviews (course team vs
-us), where the decision is recorded (per-import quarantine manifest with reviewer, decision,
-timestamp), and how an approved unit re-enters a later candidate package. Acceptance: one
-documented loop decision plus the quarantine manifest schema folded into the S4 runbook; no
-flagged unit reaches activation without a recorded decision.
+one-command lane generates the record: `quarantine-decisions.json` in the run tree, one
+undecided row per held-back unit, create-only, path named in the receipt (data-ingestion MR
+!172). The video-ai repo additionally emits review artifacts (`review/full_review.html`,
+`quality_review.html`, reviewer ZIP). What remains is the loop itself: who reviews (course
+team vs us) and how an approved unit re-enters a later candidate package. Acceptance: one
+documented loop decision, with the scaffold and the re-entry rules folded into the S4 runbook;
+no flagged unit reaches activation without a recorded decision.
 
 Authority: none beyond S4's once folded in; the loop definition itself is docs-only.
 
@@ -142,7 +156,10 @@ submitted job id as the run identity and publishes
 `artifacts/<job_id>/learning_units/ingestion_source.json` (klicker-uzh-video-ai PR #123), with
 `VIDEO_PROCESSING_INGESTION_SOURCE_POLICY` naming the tracked eligibility descriptor. Without
 the policy path the service finalizes jobs and publishes nothing, and the consumer fails closed
-with `published_source_missing`.
+with `published_source_missing`. That PR already carries the configuration as well: the
+descriptors are copied to `/opt/ingestion-policies` by the shared `app-base` stage and the worker
+config names the file, so the remaining producer work is the merge, the STG digest promotion and
+then the PRD promotion (gated steps, STEP S4).
 
 Operator side, per recording:
 
@@ -154,9 +171,13 @@ Operator side, per recording:
    policy digest, inventory source/eligible/excluded/quarantined counts, prepare
    `prepared_count == eligible_unit_count`, and a `target_fingerprint` that stays stable for the
    environment.
-3. Activate with the same command plus `--activate`; this is the exact-count corpus write and the
+3. If the receipt names `quarantine_decisions`, the run held back flagged units and wrote one
+   undecided row per unit. Route them to the course team and fill in `decision` in that file;
+   a unit the team wants in needs a producer-side `clear_review` and a re-import with a bumped
+   `--resource-version`.
+4. Activate with the same command plus `--activate`; this is the exact-count corpus write and the
    only step that touches the vector store.
-4. Verify from Klicker: the lecture appears in Manage's imported-sources list for the KB, and one
+5. Verify from Klicker: the lecture appears in Manage's imported-sources list for the KB, and one
    owner-preview question answers only from that lecture and cites it with a timestamp.
 
 Committed bindings live at `modules/ingestion-cli/src/ingestion_cli/course_targets/<slug>.yaml`
@@ -171,7 +192,7 @@ in data-ingestion (seven courses). Environment for a PRD run (host shell, via
 | --- | --- | --- | --- | --- |
 | Finance I (`finance-i`) | assessment@df.uzh.ch | 0df37ea4-1baf-4fc6-984a-7e2db9652c59 | 03e94e5c-ac17-4ede-a2e6-f9e1db0a613b | 15ff49a3-44b0-4328-b3c1-ac5ff65ab9a0 |
 | AMI (`ami`) | investments@df.uzh.ch | 0cf4d012-b5ab-4edd-bdcb-3945c84baf47 | afa62d41-a7e9-48b7-832f-610311a98108 | 609273f9-8708-496f-a315-bc0144b9a6bf |
-| Corporate Finance (`corporate-finance`) | cf1@bf.uzh.ch | e4d87977-d414-4468-8060-a4b972b68e71 | 4c24b414-48ce-42c2-a516-959426ca59e1 | bbbb23744-0a68-4f98-a752-ddb3f9c9519e |
+| Corporate Finance (`corporate-finance`) | cf1@bf.uzh.ch | e4d87977-d414-4468-8060-a4b972b68e71 | 4c24b414-48ce-42c2-a516-959426ca59e1 | bbb23744-0a68-4f98-a752-ddb3f9c9519e |
 | Fixed Income Markets (`fixed-income-markets`) | fim@df.uzh.ch | b16995b9-6320-442f-a2af-e0b77b9b745a | 057f1b63-3ee4-4fcf-8c8f-bbe4de7e78b3 | 751da790-a225-4703-9a34-020ecb5e1a79 |
 | Structured Products (`structured-products`) | klicker-teaching@df.uzh.ch | 28ae2716-19df-4fc4-924f-2ed6a35f83db | 09ff73fc-eda5-468a-a890-af29d96d5965 | 558b9906-eebb-4333-89dd-82c249e5e3e7 |
 | Banking and Insurance (`banking-and-insurance`) | banking@bf.uzh.ch | 8917b17e-fe87-4893-9d1e-5730785e0e7c | e230dff4-f7d5-46d2-9dc6-ab936ab68901 | 3698bbd4-40b9-4700-9afb-a9bfd86a2b85 |
@@ -186,10 +207,12 @@ Quarantined and excluded units never reach a candidate package, so activation ca
 them; the loop decides what happens to the content they carry.
 
 - Who decides: the course team owns content eligibility; the platform executes.
-- What is recorded: per import, `quarantine-decisions.json` next to the run's control file with
-  one entry per unit — `unit_id`, `disposition` (`quarantine` | `excluded`), `reason_code`,
-  `decision` (`accept` | `reprocess` | `leave_out`), `reviewer`, `team`, `decided_at`, `note`.
-  The pilot decision is also recorded in this plan's progress table.
+- What is recorded: the run itself writes `quarantine-decisions.json` next to the run's control
+  file and names it in the receipt whenever the source holds held-back units. It lists one
+  undecided row per unit — `unit_id`, `disposition` (`quarantine` | `excluded`), `reason_code`,
+  with `decision` (`accept` | `reprocess` | `leave_out`), `reviewer`, `team`, `decided_at` and
+  `note` left for the reviewer. The file is create-only, so re-running the import never discards
+  a decision already made. The pilot decision is also recorded in this plan's progress table.
 - How content re-enters: only through a new producer source. A unit the team wants in becomes an
   eligibility change at the producer (`clear_review` for a review-flagged unit), after which the
   recording is re-imported with a bumped `--resource-version`; the abandoned candidate stays
@@ -207,3 +230,8 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 - 2026-09-14: plan drafted; skill video-lane section pushed to PR #6022. No slice started.
 - 2026-09-14 (S4 tooling): the one-command lane exists in data-ingestion branch `rs/video-lecture-import` — `ingestion-cli video-import lecture`, the operator client for the service contract, seven committed bindings under `course_targets/`, and a local rehearsal against a stand-in service plus Azurite: 13 source units, 11 candidate units, 11 prepared documents, identical digests on rerun. Producer side: klicker-uzh-video-ai PR #123 pins the job id as the run identity and publishes the source; the deployed revision predates it.
 - 2026-09-14 (S1/S2 drafting): `2026-09-14-video-import-gated-steps.md` records the exact deployment and DB steps, including the `authType = bearer` correction for the `KB` MCP row. Nothing executed.
+- 2026-09-14 (S3 verification): the candidate lane already stamps `kb_id` and `chatbot_id` (data-ingestion main, `a284fdc`); the SP rehearsal chunks carry the SP `kb_id` with `resource_active=false`. PRD and STG already run the standalone doc-query lineage and already carry the `kb_id` token scope; only the image predates the companion tool (mcp-doc-query draft MR !84, two commits ahead of `origin/main`). Gated steps recorded as STEP S3.
+- 2026-09-14 (S1 verification): the four `DOC_QUERY_SCOPE_*` names are projected into the chat secret but not into `backendGraphqlSecretNames` (`df-cloud-image-pins` `src/apps/klicker/functions.ts`), confirming STEP S1 needs that one list change and nothing else.
+- 2026-09-14 (S5 scaffold): `video-import lecture` now writes the reviewer scaffold itself — `quarantine-decisions.json` in the run tree, one undecided row per held-back unit, create-only, path in the receipt (`quarantine_decisions`), proven by a CLI test with one eligible and one quarantined unit (data-ingestion MR !172, `76e3c16`). What is left for S5 is the loop decision, not the record.
+- 2026-09-14 (S4 preparation): producer PR #123 also bakes the tracked descriptors at `/opt/ingestion-policies` and names the eligibility descriptor in `deploy/base/worker-configmap.yaml`, so the S4 promotion is the merge plus digest bumps; the deploy render suite asserts the wiring in base, stg and prd (head `0bd22bf`, render suite 103 passed, Ruff and Pyrefly clean).
+- 2026-09-14 (id check): the course table was re-checked against the seven committed bindings; the Corporate Finance knowledge base id carried a transcription typo and now carries the binding value.
