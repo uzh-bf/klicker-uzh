@@ -20,6 +20,14 @@ query QGetChatbotsInfoWithKnowledgeBases {
       languageOfInstruction
       scopeNote
     }
+    customModeConfig {
+      modes {
+        key
+        name
+        description
+        personaText
+      }
+    }
     authoringRevision {
       ...ChatbotAuthoringRevisionData
     }
