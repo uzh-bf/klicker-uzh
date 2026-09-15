@@ -1071,10 +1071,14 @@ export async function getKbImportedSourcesConnection(
       unidentifiedChunks: inventory.unidentifiedChunks,
     }
   } catch (error) {
-    console.error('Failed to load imported KB sources', {
-      kbId,
-      error,
-    })
+    ctx.log.error(
+      {
+        event: 'knowledge.imported_sources.load_failed',
+        kbId,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      },
+      'Failed to load imported KB sources'
+    )
     throw new GraphQLError('Imported sources could not be loaded')
   }
 }

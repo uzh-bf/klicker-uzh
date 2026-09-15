@@ -57,7 +57,7 @@ async function handleNewResponse({
   type: ElementType
   answer: any
   correlationKey?: string | null
-  submissionId: string
+  submissionId?: string
 }): // statusCode: 0 = client-side invalid input / general error; otherwise HTTP status codes 200, 208, 400, 401, 404, 500
 Promise<{
   statusCode: number

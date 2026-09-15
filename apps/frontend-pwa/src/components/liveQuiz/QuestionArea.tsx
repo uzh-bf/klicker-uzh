@@ -18,6 +18,14 @@ import { useTranslations } from 'next-intl'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
+import {
+  type BlockExpiryGate,
+  type BlockSubmissionScope,
+  createBlockExpiryGate,
+  createSubmissionScope,
+  resetExpiryGate,
+} from '~/lib/blockExpiryGate'
+import { getClientSubmissionId } from '~/lib/clientSubmissionId'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
@@ -44,12 +52,7 @@ interface QuestionAreaProps {
     answer: any
     correlationKey?: string | null
     submissionId: string
-  }) => Promise<{
-    statusCode: number
-    responseTimestamp?: number
-    submissionId?: string
-    hatchetEventId?: string
-  }>
+  }) => Promise<{ statusCode: number; responseTimestamp?: number }>
   quizId: string
   execution: number
   timeLimit?: number
@@ -77,6 +80,45 @@ function QuestionArea({
   const [submittedAt, setSubmittedAt] = useState<number | null>(null)
   const [activeInstance, setActiveInstance] = useState<number>(0)
   const currentInstance = instances[activeInstance]
+  // the in-flight submission promise is shared between submit and expiry so
+  // expiry can await a running manual submission instead of racing it
+  // the pending submission is execution-owned: admission, expiry reuse, and
+  // cleanup consider only an operation belonging to the current execution
+  const submissionInFlightRef = useRef<{
+    identity: string
+    promise: Promise<boolean>
+  } | null>(null)
+  // expiry is a terminal state for the current block execution. The gate and
+  // the current-identity ref are bound to the semantic (quiz, execution)
+  // identity, so a rerender that allocates a new instances array for the same
+  // execution cannot reset them, while a genuinely new execution gets a fresh
+  // gate. Asynchronous work captures a submission scope (identity + gate); a
+  // late completion may only commit UI state while its identity is still
+  // current and its gate has not expired — an unexpired gate from a
+  // superseded execution is stale exactly like an expired one.
+  const currentIdentityRef = useRef(`${quizId}:${execution}`)
+  const expiryGateRef = useRef<BlockExpiryGate>(
+    createBlockExpiryGate(`${quizId}:${execution}`)
+  )
+
+  useEffect(() => {
+    const identity = `${quizId}:${execution}`
+    currentIdentityRef.current = identity
+    expiryGateRef.current = resetExpiryGate(expiryGateRef.current, identity)
+
+    // a pending submission from a superseded execution must not own the
+    // current execution's controls: detach it and release the busy
+    // indication so the submit button is available here. The old request
+    // itself is not cancelled — its persistence is execution-keyed and its
+    // completion cleanup is ownership-guarded.
+    if (
+      submissionInFlightRef.current &&
+      submissionInFlightRef.current.identity !== identity
+    ) {
+      submissionInFlightRef.current = null
+      setSubmitting(false)
+    }
+  }, [quizId, execution])
 
   // initialize student response with default state (FT question) - is overwritten on instance change
   const [studentResponse, setStudentResponse] =
@@ -168,48 +210,94 @@ function QuestionArea({
   })
 
   const onSubmit = async (): Promise<void> => {
+    // one submission at a time within an execution, and never after the
+    // block has expired; a pending submission from a superseded execution
+    // does not block the current one from answering
+    const pending = submissionInFlightRef.current
+    if (
+      (pending && pending.identity === currentIdentityRef.current) ||
+      expiryGateRef.current.isExpired()
+    )
+      return
+    // state updates on completion belong to this block execution only; an
+    // unexpired scope from a superseded execution is stale as well
+    const submissionScope: BlockSubmissionScope = createSubmissionScope(
+      currentIdentityRef.current,
+      expiryGateRef.current
+    )
+
     // lock the submission button temporarily to avoid double submissions
     setSubmitting(true)
 
-    const {
-      id: instanceId,
-      elementType,
-      correlationKey,
-    } = instances[activeInstance]
+    const runSubmission = async (): Promise<boolean> => {
+      const {
+        id: instanceId,
+        elementType,
+        correlationKey,
+      } = instances[activeInstance]
 
-    // if the question has been answered, add a response
-    const success = await answerQuestion({
-      instanceId,
-      type: elementType,
-      input: studentResponse,
-      correlationKey,
-    })
+      // if the question has been answered, add a response
+      const success = await answerQuestion({
+        instanceId,
+        type: elementType,
+        input: studentResponse,
+        correlationKey,
+      })
 
-    // relese the submission lock on the submission button
-    setSubmitting(false)
+      // if the submission was not successful, do not block another submission attempt
+      if (!success) return false
 
-    // if the submission was not successful, do not block another submission attempt
-    if (!success) return
+      // update the stored responses
+      await updateStoredResponses(instanceId, quizId, execution)
 
-    // update the stored responses
-    await updateStoredResponses(instanceId, quizId, execution)
+      // expiry is terminal and superseded executions are stale: a manual
+      // submission completing after either must not touch the stack state
+      if (!submissionScope.canCommitUi(currentIdentityRef.current)) return true
 
-    // calculate the new indices of remaining questions
-    const newRemaining = (remainingQuestions ?? []).filter(
-      (question) => !isDeepEqual(activeInstance, question)
-    )
+      // calculate the new indices of remaining questions
+      const newRemaining = (remainingQuestions ?? []).filter(
+        (question) => !isDeepEqual(activeInstance, question)
+      )
 
-    // update the active instance and the remaining questions
-    setActiveInstance(newRemaining[0] ?? instances.length - 1)
-    setRemainingQuestions(newRemaining)
+      // update the active instance and the remaining questions
+      setActiveInstance(newRemaining[0] ?? instances.length - 1)
+      setRemainingQuestions(newRemaining)
 
-    // if this was the last question of the block and gamification is enabled, show confetti
-    if (newRemaining.length === 0 && gamificationEnabled) {
-      setShowConfetti(true)
+      // if this was the last question of the block and gamification is enabled, show confetti
+      if (newRemaining.length === 0 && gamificationEnabled) {
+        setShowConfetti(true)
+      }
+
+      return true
     }
+
+    const submission = runSubmission().finally(() => {
+      // release the submission lock and the busy indication, but only if
+      // this submission still owns the slot (a later execution's submission
+      // may have replaced both) — a superseded completion must not clear the
+      // newer request's busy state
+      if (submissionInFlightRef.current?.promise === submission) {
+        submissionInFlightRef.current = null
+        setSubmitting(false)
+      }
+    })
+    submissionInFlightRef.current = {
+      identity: currentIdentityRef.current,
+      promise: submission,
+    }
+
+    await submission
   }
 
   const onExpire = async (): Promise<void> => {
+    // expiry is a terminal state for this block execution; the cleanup below
+    // may only write state while this execution is still current
+    const expiryScope: BlockSubmissionScope = createSubmissionScope(
+      currentIdentityRef.current,
+      expiryGateRef.current
+    )
+    expiryGateRef.current.markExpired()
+
     const {
       id: instanceId,
       elementType,
@@ -218,18 +306,68 @@ function QuestionArea({
 
     // save the response, if one was given before the time expired
     if (studentResponse.valid) {
-      answerQuestion({
-        instanceId,
-        type: elementType,
-        input: studentResponse,
-        correlationKey,
-      })
+      // only a pending submission belonging to this execution may stand in
+      // for the answer; a superseded execution's pending operation neither
+      // blocks nor substitutes for this execution's own submission
+      const inFlight =
+        submissionInFlightRef.current?.identity === expiryScope.identity
+          ? submissionInFlightRef.current
+          : null
+      try {
+        if (inFlight) {
+          // a manual submission is already carrying this answer; let it
+          // finish (its stack-state updates are suppressed above) instead
+          // of sending a second request
+          const submitted = await inFlight.promise
+          if (!submitted) {
+            toast({
+              message: t('pwa.assessment.submissionGeneralError'),
+              type: 'error',
+            })
+          }
+        } else {
+          const submitted = await answerQuestion({
+            instanceId,
+            type: elementType,
+            input: studentResponse,
+            correlationKey,
+          })
+
+          // distinguish a failed auto-submission from a successful or
+          // skipped one: the stack completes either way, but a failure
+          // should be visible to the participant
+          if (!submitted) {
+            toast({
+              message: t('pwa.assessment.submissionGeneralError'),
+              type: 'error',
+            })
+          }
+        }
+      } catch {
+        // a rejected submission or local persistence write must not bypass
+        // the terminal expiry cleanup below
+        toast({
+          message: t('pwa.assessment.submissionGeneralError'),
+          type: 'error',
+        })
+      }
     }
+
+    // a superseded execution's expiry cleanup must not complete the newly
+    // displayed execution; only the still-current one commits (the cleanup
+    // legitimately runs on an expired gate, so currency — not expiry — is
+    // the guard here)
+    if (!expiryScope.isCurrent(currentIdentityRef.current)) return
 
     const remainingQuestionIds = (remainingQuestions ?? []).map(
       (index: number) => instances[index].id
     )
     await updateStoredResponses(remainingQuestionIds, quizId, execution)
+
+    // currency must be rechecked after the storage await: an execution
+    // change during the pending storage operations would otherwise let the
+    // stale cleanup empty the newly displayed execution's stack
+    if (!expiryScope.isCurrent(currentIdentityRef.current)) return
 
     // automatically skip all possibly remaining questions
     setRemainingQuestions([])
@@ -279,10 +417,18 @@ function QuestionArea({
         type: 'error',
       })
     }
-    // status code 500/503 -> server or durable transport unavailable
-    else if (statusCode === 500 || statusCode === 503) {
+    // status code 500 (regular responses) -> server error
+    else if (statusCode === 500) {
       toast({
         message: t('pwa.assessment.submissionServerError'),
+        type: 'error',
+      })
+    }
+    // status codes 0 and 1 (client-side invalid input and network or request
+    // failures) and any unrecognized code -> visible general error
+    else {
+      toast({
+        message: t('pwa.assessment.submissionGeneralError'),
         type: 'error',
       })
     }
@@ -290,6 +436,42 @@ function QuestionArea({
 
   // use the handleNewResponse function to add a response to the question instance
   // return value is status code: 0 = success, 1 = invalid input, 2 = submission failed, 3 = unsupported type
+  // shared submission tail: send the request, surface the outcome, persist
+  // the submitted answer for a successful request, and report whether the
+  // response was recorded. The submitted-at UI state is execution-guarded so
+  // a superseded execution cannot stamp the newly displayed one.
+  async function submitAndRecord({
+    storageKey,
+    input,
+    request,
+    scope,
+  }: {
+    storageKey: string
+    input: InstanceStackStudentResponseType
+    request: Parameters<typeof handleNewResponse>[0]
+    scope: BlockSubmissionScope
+  }): Promise<boolean> {
+    const result = await handleNewResponse(request)
+
+    // --> show toast based on status code
+    showStatusCodeToast(result.statusCode)
+
+    // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
+    if (result.statusCode >= 200 && result.statusCode < 300) {
+      const timestamp = result.responseTimestamp ?? Date.now()
+      await localforage.setItem(storageKey, {
+        response: input.response,
+        responseTimestamp: timestamp,
+      } as any)
+      if (scope.canCommitUi(currentIdentityRef.current)) {
+        setSubmittedAt(timestamp)
+      }
+      await localforage.removeItem(`${storageKey}-temp`)
+      return true
+    }
+    return false
+  }
+
   async function answerQuestion({
     instanceId,
     type,
@@ -302,7 +484,13 @@ function QuestionArea({
     correlationKey?: string | null
   }): Promise<boolean> {
     const storageKey = `lq-${quizId}-ex-${execution}-i-${instanceId}`
-    const submissionId = crypto.randomUUID()
+    const submissionId = getClientSubmissionId(storageKey)
+    // the request and its persistence are keyed to this execution; only the
+    // submitted-at UI state needs the execution guard
+    const answerScope = createSubmissionScope(
+      currentIdentityRef.current,
+      expiryGateRef.current
+    )
 
     if (!input.valid) {
       toast({
@@ -317,177 +505,115 @@ function QuestionArea({
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of objects with answer ix and selected boolean
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: Object.entries(input.response).map(([key, value]) => ({
-          ix: parseInt(key),
-          selected: typeof value === 'boolean' ? value : false,
-        })),
-        correlationKey,
-        submissionId,
+      return submitAndRecord({
+        storageKey,
+        input,
+        scope: answerScope,
+        request: {
+          liveQuizId: quizId,
+          instanceId,
+          type,
+          answer: Object.entries(input.response).map(([key, value]) => ({
+            ix: parseInt(key),
+            selected: typeof value === 'boolean' ? value : false,
+          })),
+          correlationKey,
+          submissionId,
+        },
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      // if request was successful, store the submitted answer locally to be shown and remove any temporary saved response
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        // store the submitted answer locally to be shown and remove any temporary saved response
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
     } else if (
       ElementType.FreeText === type &&
       input.type === ElementType.FreeText &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a string
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: input.response,
-        correlationKey,
-        submissionId,
+      return submitAndRecord({
+        storageKey,
+        input,
+        scope: answerScope,
+        request: {
+          liveQuizId: quizId,
+          instanceId,
+          type,
+          answer: input.response,
+          correlationKey,
+          submissionId,
+        },
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
     } else if (
       ElementType.Numerical === type &&
       input.type === ElementType.Numerical &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as a number (float)
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: String(parseFloat(input.response)),
-        correlationKey,
-        submissionId,
+      return submitAndRecord({
+        storageKey,
+        input,
+        scope: answerScope,
+        request: {
+          liveQuizId: quizId,
+          instanceId,
+          type,
+          answer: String(parseFloat(input.response)),
+          correlationKey,
+          submissionId,
+        },
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
     } else if (
       ElementType.Selection === type &&
       input.type === ElementType.Selection &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an array of answer ids that were selected
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: Object.values(input.response).map((entry) =>
-          typeof entry === 'undefined' || entry === null ? -1 : entry
-        ),
-        correlationKey,
-        submissionId,
+      return submitAndRecord({
+        storageKey,
+        input,
+        scope: answerScope,
+        request: {
+          liveQuizId: quizId,
+          instanceId,
+          type,
+          answer: Object.values(input.response).map((entry) =>
+            typeof entry === 'undefined' || entry === null ? -1 : entry
+          ),
+          correlationKey,
+          submissionId,
+        },
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
     } else if (
       ElementType.CaseStudy === type &&
       input.type === ElementType.CaseStudy &&
       typeof input.response !== 'undefined'
     ) {
       // submit responses as an object with case, item and criterion ids as nested keys
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: input.response,
-        correlationKey,
-        submissionId,
+      return submitAndRecord({
+        storageKey,
+        input,
+        scope: answerScope,
+        request: {
+          liveQuizId: quizId,
+          instanceId,
+          type,
+          answer: input.response,
+          correlationKey,
+          submissionId,
+        },
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
     } else if (type === ElementType.Content) {
       // for content elements, only the number of reads / next clicks are counted
-      const result = await handleNewResponse({
-        liveQuizId: quizId,
-        instanceId,
-        type,
-        answer: true,
-        correlationKey,
-        submissionId,
+      return submitAndRecord({
+        storageKey,
+        input,
+        scope: answerScope,
+        request: {
+          liveQuizId: quizId,
+          instanceId,
+          type,
+          answer: true,
+          correlationKey,
+          submissionId,
+        },
       })
-
-      // --> show toast based on status code
-      showStatusCodeToast(result.statusCode)
-
-      if (result.statusCode >= 200 && result.statusCode < 300) {
-        await localforage.setItem(storageKey, {
-          response: input.response,
-          responseTimestamp: result.responseTimestamp ?? Date.now(),
-        } as any)
-        setSubmittedAt(result.responseTimestamp ?? Date.now())
-        await localforage.removeItem(`${storageKey}-temp`)
-        return true
-      } else {
-        return false
-      }
     } else {
       console.log('Submission for unsupported element type', type)
       toast({

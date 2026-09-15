@@ -46,7 +46,7 @@
     "dev:watch": "run-p --npm-path pnpm dev:build dev:run",
     "start:test": "node --env-file .env dist/index.js",
     "test": "vitest run",
-    "test:run": "tsx --test test/mode.test.ts"
+    "test:run": "tsx --test \"test/mode.test.ts\" \"src/processors/*.test.ts\""
   },
   "engines": {
     "node": "=24"

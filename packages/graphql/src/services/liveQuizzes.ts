@@ -1556,64 +1556,6 @@ export async function activateLiveQuizBlock(
       )
     : await updateBlock(ctx.prisma)
 
-  if (updatedQuiz.activeBlock?.expiresAt) {
-    scheduledJobs[blockId] = schedule.scheduleJob(
-      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
-      async () => {
-        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
-        ctx.emitter.emit('invalidate', {
-          typename: 'LiveQuiz',
-          id: updatedQuiz.id,
-        })
-      }
-    )
-  }
-
-  // update the quiz with an updated version through the corresponding subscription
-  ctx.pubSub.publish('runningLiveQuizUpdated', {
-    id: updatedQuiz.id,
-    beforeFirstBlock: false,
-    activeBlock: {
-      ...updatedQuiz.activeBlock,
-      elements: updatedQuiz.activeBlock!.elements
-        ? await Promise.all(
-            removeSolutionFromInstances({
-              instances: updatedQuiz.activeBlock!.elements,
-            }).map(async (instance) => {
-              if (!quiz.isAssessmentEnabled) {
-                return instance
-              }
-
-              // for assessment quizzes, add a correlation key to verify a student's submission
-              const correlationKey = await signJWT(
-                {
-                  instanceId: instance.id,
-                  execution: updatedQuiz.activeBlock!.execution,
-                  liveQuizId: quiz.id,
-                  sub: '', // dummy sub, since this value is required
-                },
-                process.env.APP_SECRET as string,
-                {
-                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
-                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
-                }
-              )
-
-              return { ...instance, correlationKey }
-            })
-          )
-        : [],
-    },
-    // for future blocks, do not return the elements
-    blocks: updatedQuiz.blocks.map((block) => ({
-      ...block,
-      elements:
-        block.status === DB.ElementBlockStatus.EXECUTED
-          ? removeSolutionFromInstances({ instances: block.elements })
-          : [],
-    })),
-  })
-
   // initialize the cache for the new active block
   const redisMulti = updatedQuiz.isAssessmentEnabled
     ? ctx.redisAssessmentExec.pipeline()
@@ -1754,7 +1696,201 @@ export async function activateLiveQuizBlock(
     }
   })
 
-  redisMulti.exec()
+  // the participant announcement happens only after the cache is fully
+  // initialized, so a fast first response cannot race the seeding and be
+  // rejected as missing instance metadata
+  let seedingFailed = false
+  try {
+    const seedingResults = await redisMulti.exec()
+    if (!Array.isArray(seedingResults)) {
+      // a null result is not evidence of success
+      throw new Error('cache initialization returned no command results')
+    }
+    const seedingErrors = seedingResults
+      .map(([error]) => error)
+      .filter((error) => error !== null)
+    if (seedingErrors.length > 0) {
+      const firstError =
+        seedingErrors[0] instanceof Error
+          ? seedingErrors[0].message
+          : String(seedingErrors[0])
+      ctx.log.warn({
+        event: 'response_cache.seeding.failed',
+        liveQuizId: quizId,
+        blockId,
+        errorMessage: firstError,
+      })
+      throw new Error('Failed to initialize response cache for block')
+    }
+  } catch (e) {
+    seedingFailed = true
+    throw e
+  } finally {
+    if (seedingFailed) {
+      // The database has already marked the block ACTIVE; revert this exact
+      // activation attempt so a retried activation repairs the cache instead
+      // of returning early on the active-block guard. Publication never
+      // happened, so no responses can have arrived and the retry's reseeding
+      // cannot overwrite live counters.
+      const activatedAtIso = activatedAt.toISOString()
+      const revertBlock = async (prisma: PrismaTransactionClient) => {
+        // concurrency guard: only compensate while the database still
+        // represents this exact activation attempt; a newer concurrent state
+        // must never be overwritten by this revert
+        const current = await prisma.liveQuiz.findUnique({
+          where: { id: quizId },
+          include: { blocks: { where: { id: blockId } } },
+        })
+        const currentBlock = current?.blocks.find(
+          (block) => block.id === blockId
+        )
+        if (
+          !current ||
+          current.activeBlockId !== blockId ||
+          !currentBlock ||
+          currentBlock.status !== DB.ElementBlockStatus.ACTIVE ||
+          currentBlock.startedAt?.toISOString() !== activatedAtIso
+        ) {
+          return false
+        }
+        await prisma.liveQuiz.update({
+          where: { id: quizId },
+          data: {
+            activeBlock: quiz.activeBlockId
+              ? { connect: { id: quiz.activeBlockId } }
+              : { disconnect: true },
+            blocks: {
+              update: {
+                where: { id: blockId },
+                data: {
+                  status: newBlock.status,
+                  startedAt: newBlock.startedAt,
+                  expiresAt: newBlock.expiresAt,
+                },
+              },
+            },
+          },
+        })
+        return true
+      }
+
+      try {
+        if (quiz.isAssessmentEnabled) {
+          // covered assessment: the compensating revert runs through the
+          // same audit transaction machinery as the activation, so the
+          // record explains both the failed activation and its correction
+          await runInAuditTransaction(
+            ctx.prisma,
+            async (tx, auditTx) => {
+              const before = await loadAssessmentAuditSnapshot(tx, quizId)
+              if (before === null) return
+              const reverted = await revertBlock(tx)
+              if (!reverted) return
+              const after = await loadAssessmentAuditSnapshot(tx, quizId)
+              if (after === null) return
+              const mutationDrafts = buildAssessmentMutationAuditDrafts({
+                before,
+                after,
+                producerOperationId: `assessment:${quizId}:block:${blockId}:activate-revert:${activatedAtIso}`,
+              })
+              await emitCoveredAssessmentAuditEvents({
+                tx,
+                auditTx,
+                liveQuizId: quizId,
+                courseId: quiz.courseId,
+                operation: assessmentAuditUserOperation({
+                  userId: ctx.user.sub,
+                  requiredPermission: 'EXECUTE',
+                  occurredAt: activatedAt,
+                }),
+                drafts: mutationDrafts,
+              })
+            },
+            { timeout: 60000 }
+          )
+        } else {
+          await revertBlock(ctx.prisma)
+        }
+      } catch (compensationError) {
+        // keep the original seeding failure visible; a stuck-active state
+        // requires manual repair and is diagnosable from this record
+        ctx.log.error({
+          event: 'assessment.block_activation.compensation_failed',
+          liveQuizId: quizId,
+          blockId,
+        })
+        if (quiz.isAssessmentEnabled) {
+          await recordRejectedAssessmentAction(ctx, {
+            liveQuizId: quizId,
+            actionType: 'ASSESSMENT_BLOCK_ACTIVATE',
+            reasonCode: 'ACTIVATION_COMPENSATION_FAILED',
+            requiredPermission: 'EXECUTE',
+            targetType: 'BLOCK',
+            targetId: String(blockId),
+          })
+        }
+      }
+    }
+  }
+
+  if (updatedQuiz.activeBlock?.expiresAt) {
+    scheduledJobs[blockId] = schedule.scheduleJob(
+      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
+      async () => {
+        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+        ctx.emitter.emit('invalidate', {
+          typename: 'LiveQuiz',
+          id: updatedQuiz.id,
+        })
+      }
+    )
+  }
+
+  // update the quiz with an updated version through the corresponding subscription
+  ctx.pubSub.publish('runningLiveQuizUpdated', {
+    id: updatedQuiz.id,
+    beforeFirstBlock: false,
+    activeBlock: {
+      ...updatedQuiz.activeBlock,
+      elements: updatedQuiz.activeBlock!.elements
+        ? await Promise.all(
+            removeSolutionFromInstances({
+              instances: updatedQuiz.activeBlock!.elements,
+            }).map(async (instance) => {
+              if (!quiz.isAssessmentEnabled) {
+                return instance
+              }
+
+              // for assessment quizzes, add a correlation key to verify a student's submission
+              const correlationKey = await signJWT(
+                {
+                  instanceId: instance.id,
+                  execution: updatedQuiz.activeBlock!.execution,
+                  liveQuizId: quiz.id,
+                  sub: '', // dummy sub, since this value is required
+                },
+                process.env.APP_SECRET as string,
+                {
+                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+                }
+              )
+
+              return { ...instance, correlationKey }
+            })
+          )
+        : [],
+    },
+    // for future blocks, do not return the elements
+    blocks: updatedQuiz.blocks.map((block) => ({
+      ...block,
+      elements:
+        block.status === DB.ElementBlockStatus.EXECUTED
+          ? removeSolutionFromInstances({ instances: block.elements })
+          : [],
+    })),
+  })
+
   return updatedQuiz
 }
 

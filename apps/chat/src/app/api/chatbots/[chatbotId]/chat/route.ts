@@ -1,11 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Prisma } from '@klicker-uzh/prisma/client'
 import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
-import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
-import type { Prisma } from '@klicker-uzh/prisma/client'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -93,6 +93,13 @@ import {
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
+  formatElearningGroundingPolicy,
+  matchesPersistedLearningHistory,
+  normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
+  verifyAndNormalizeElearningChatContext,
+} from '@/src/services/elearningContext'
+import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
   type MCPToolsHandle,
@@ -108,13 +115,6 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
-import {
-  formatElearningGroundingPolicy,
-  normalizePersistedLearningContext,
-  resolveElearningThreadOrigin,
-  verifyAndNormalizeElearningChatContext,
-  matchesPersistedLearningHistory,
-} from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -1285,9 +1285,14 @@ async function handlePOST(
       // unavailable retrieval tool degrades to page-only grounding with the
       // limitation disclosed by the policy instead of withholding the answer.
       await closeMcpTools()
-      console.warn(
-        'eLearning thread answering without required retrieval tools',
-        { requestId, chatbotId, selectedMode }
+      logger.warn(
+        {
+          event: 'chat.elearning.missing_required_tools',
+          requestId,
+          chatbotId,
+          selectedMode,
+        },
+        'eLearning thread answering without required retrieval tools'
       )
     }
 
@@ -1429,9 +1434,13 @@ async function handlePOST(
           { status: 503 }
         )
       }
-      console.warn(
-        'eLearning thread answering without a quizzer retrieval tool',
-        { requestId, chatbotId }
+      logger.warn(
+        {
+          event: 'chat.elearning.missing_quizzer_tool',
+          requestId,
+          chatbotId,
+        },
+        'eLearning thread answering without a quizzer retrieval tool'
       )
     }
 
