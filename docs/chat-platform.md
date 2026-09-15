@@ -362,6 +362,13 @@ on, the same request fails closed with `403` and the class-specific
 `CHAT_MODEL_UNAVAILABLE_*` code. `deploy/env-uzh-stg/values.yaml` carries the
 activation values and `deploy/env-uzh-prd/values.yaml` keeps both switches inert.
 
+Enforcement does not control class admission. Whether or not the switch is on,
+the participant and preview routes admit a candidate only when its usage class
+is entitled: the account-level AI approval opens the cost-free base class, and a
+cost-carrying advanced class additionally needs a non-blank cost center. An
+account without a cost center therefore cannot reach an advanced model, such as
+the automatic default, even while enforcement is off.
+
 An account with no configured base budget receives the default
 `DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
 current Zurich month. The grant happens in two places: enabling the account's AI
@@ -404,7 +411,8 @@ pnpm --filter @klicker-uzh/prisma-data run script:prod src/scripts/2026-09-14_ba
 Rollback is `chat.accountUsageEnforcementEnabled: false` plus a promotion. The
 route then skips the rejection while retaining lifecycle claims and
 post-completion accounting, and no data repair is needed, because enforcement
-never writes usage.
+never writes usage. Class admission is unaffected by the rollback, because it
+does not depend on this switch.
 
 One partial-failure state has no automatic recovery. With enforcement on,
 `finalizeChatTurn` throws when the owner has no configured usage row for the

@@ -5,6 +5,7 @@ import type {
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
+import { isChatUsageClassEntitled } from '@klicker-uzh/util'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -691,7 +692,9 @@ export async function POST(
     chatbot = await prisma.chatbot.findUnique({
       where: { id: chatbotId },
       include: {
-        owner: { select: { aiFeaturesEnabled: true } },
+        owner: {
+          select: { aiFeaturesEnabled: true, aiChatbotCostCenter: true },
+        },
         course: {
           select: { displayName: true },
         },
@@ -842,6 +845,22 @@ export async function POST(
     }
   }
 
+  // Class admission does not depend on the usage-enforcement switch. The
+  // account-level approval opens the cost-free class; a cost-carrying class
+  // also needs an address to bill, so the turn stays closed without a cost
+  // center even while enforcement is off. The budget check below is the part
+  // that the switch controls.
+  const classAdmittedForSelectedModel = () =>
+    isChatUsageClassEntitled({
+      usageClass: selectedModelConfig.usageClass,
+      aiFeaturesEnabled: chatbot.owner.aiFeaturesEnabled,
+      aiChatbotCostCenter: chatbot.owner.aiChatbotCostCenter,
+    })
+
+  if (!classAdmittedForSelectedModel()) {
+    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+  }
+
   if (isChatAccountUsageEnforcementEnabled()) {
     if (!(await accountUsageAvailableForSelectedModel())) {
       return chatModelUnavailableResponse(selectedModelConfig.usageClass)
@@ -856,6 +875,9 @@ export async function POST(
     if (userCredits.current <= 0) {
       if (!selectParticipantFallback()) {
         return chatModelUnavailableResponse('BASE')
+      }
+      if (!classAdmittedForSelectedModel()) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
       }
       if (
         isChatAccountUsageEnforcementEnabled() &&
