@@ -207,6 +207,16 @@ chat:
     enabled: true
     environment: 'staging'
 
+  # Account usage has two independent switches: lifecycle writes record attempt
+  # markers and credit counters, and enforcement rejects a participant request
+  # before the provider call when the selected class has no available budget.
+  # STG carries the cutover values, so the base-budget backfill must have run in
+  # this environment before the release that first carries them is promoted.
+  # Order, rollback, and partial-failure recovery: docs/chat-platform.md,
+  # "Account usage activation".
+  lifecycleWritersEnabled: true
+  accountUsageEnforcementEnabled: true
+
   automaticModels:
     primaryId: auto
     fallbackId: gpt-5.6-luna
