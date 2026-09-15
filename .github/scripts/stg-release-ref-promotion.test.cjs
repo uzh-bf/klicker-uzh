@@ -6,6 +6,7 @@ const path = require('node:path')
 const test = require('node:test')
 const { parse } = require('yaml')
 const { REQUIRED_CI_WORKFLOWS } = require('./stg-release-promoter.js')
+const { SCAN_ADMISSION_INVENTORY } = require('./image-scan-admission.cjs')
 
 const ROOT = path.join(__dirname, '../..')
 const WORKFLOW_DIR = path.join(ROOT, '.github/workflows')
@@ -218,6 +219,7 @@ test('selected-source workflows retain all tags and guard every active image', (
   )
   assert.deepEqual(promoter.on.workflow_run.types, ['completed'])
 
+  let scanReceiptJobs = 0
   let metadataBuildPairs = 0
   let activeBuilds = 0
   let disabledBuilds = 0
@@ -228,6 +230,15 @@ test('selected-source workflows retain all tags and guard every active image', (
     assert.equal(definition.on.push.paths, undefined)
 
     for (const [jobName, job] of Object.entries(definition.jobs)) {
+      // Scan-admission jobs publish no image: they consume the digest of the
+      // build job they guard, so the publisher contract below does not apply.
+      const scanJobIds = SCAN_ADMISSION_INVENTORY.filter(
+        (entry) => entry.workflowPath === workflowPath
+      ).map((entry) => entry.scanJob)
+      if (scanJobIds.includes(jobName)) {
+        scanReceiptJobs += 1
+        continue
+      }
       const metadataSteps = job.steps.filter((step) =>
         /^docker\/metadata-action@/u.test(step.uses ?? '')
       )
@@ -295,6 +306,7 @@ test('selected-source workflows retain all tags and guard every active image', (
     }
   }
 
+  assert.equal(scanReceiptJobs, 2)
   assert.equal(metadataBuildPairs, 32)
   assert.equal(activeBuilds, 18)
   assert.equal(disabledBuilds, 14)
@@ -309,6 +321,8 @@ test('selected-source workflows retain all tags and guard every active image', (
     'build-amd',
     'build-migrator-arm',
     'build-migrator-amd',
+    'scan-arm',
+    'scan-migrator-arm',
   ])
   assert.equal(backend.jobs['build-arm'].needs, 'build-migrator-arm')
   assert.equal(backend.jobs['build-amd'].needs, 'build-migrator-amd')
