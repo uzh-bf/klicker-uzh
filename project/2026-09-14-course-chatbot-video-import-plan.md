@@ -239,6 +239,42 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 
 ## Progress
 
+- 2026-09-15 (blob data-plane access granted and proven): the operator identity
+  `roland.schlaefli@df.uzh.ch` (object id `40206a71-60af-4867-bfe4-a5ba62b0b45d`) now holds a
+  container-scoped `Storage Blob Data Reader` on `prdvideoprocessingpq8ul/video-processing`
+  (assignment `c88672d3-7717-4f91-9cf5-8764451d40a6`) and on
+  `stgvideoprocessingv5rtr/video-processing` (assignment `b0350c16-830b-4fef-b851-596d6f624005`).
+  Both were proven with the exact read path the import uses: `az storage blob download
+  --auth-mode login` fetched each published `ingestion_source.json` and the local SHA-256 equals
+  the pod-side readback (`b7b69f89…` STG, `61c1fc74…` PRD). The import is no longer blocked on
+  storage access; the remaining pilot prerequisite is the recording itself. The lane's own client was
+  then exercised directly — `AzureBlobArtifactStore(account_url=…)` plus `fetch_published_source`
+  against both existing proof jobs, so no new paid run occurred — and it returned the same objects:
+  PRD 35 597 B / `61c1fc74…` / 10 units (7 eligible, 3 quarantined, 0 excluded) and STG 36 207 B /
+  `b7b69f89…` / 10 units (6 eligible, 3 quarantined, 1 excluded), both with
+  `policy_sha256:08863ea7…`. That is the function that previously failed closed.
+- 2026-09-15 (STG secret repaired): the STG ExternalSecret drift is confirmed
+  at the value level, not just the event text. Through the restricted operator, the STG profile
+  resolves `VIDEO_PROCESSING_POSTGRES_DSN` but returns HTTP 404 for `VIDEO_PROCESSING_API_KEY`
+  (presence probes, exit status only), while the PRD profile resolves the same name. The STG
+  `video-processing` Infisical project therefore lacks the unsuffixed key that both the df-cloud
+  mapping (`convertExternalSecret('api-key', 'VIDEO_PROCESSING_API_KEY')`) and the operator
+  profile request. The materialized Secret still holds its 2026-08-20 value, the `SecretStore` is
+  healthy, and no reloader annotation is on the `video-processing` Deployments, so nothing is
+  broken today and any new value needs an explicit pod restart to take effect. The repair created
+  `VIDEO_PROCESSING_API_KEY` in the STG project with a generated value (`set-random --bytes 32`;
+  the value was never read, printed or persisted). A fresh value was chosen over restoring the old
+  one deliberately: the old value cannot be read without handling a credential, and the key is
+  service-internal, so both of its readers — the API pod (via the materialized Secret) and the
+  importer (via the same Infisical project) — follow the new value together. The write path was
+  `allow-write VIDEO_PROCESSING_API_KEY` on `video-processing-stg` (its write allowlist was
+  empty), then the key write, an ExternalSecret force-sync, and a restart of the STG API pod. Result:
+  the ExternalSecret is `Ready=True` / `SecretSynced`, the materialized Secret holds all five key
+  names with non-empty values, the new API pod is 1/1 Running, and the repaired key authenticates
+  against the live STG service — a port-forward probe returned `health=200`, no-key `401`,
+  wrong-key `401`, and the operator-supplied key `200`. The finding rests on names, status codes
+  and timestamps only.
+
 - 2026-09-15 (S4 PRD promoted, real-video proof passed on both environments): PR #123's
   revision is live on PRD. The digests promoted in PR #125 (merge
   `bfdccd7a4690724ac932706cf8b1a544b50db71b`) are the API
