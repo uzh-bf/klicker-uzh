@@ -32,6 +32,7 @@ describe('chatbot bootstrap route', () => {
           },
         },
         standardModeConfig: null,
+        customModeConfig: null,
         mcpConfigurations: [],
       },
     })
@@ -51,7 +52,53 @@ describe('chatbot bootstrap route', () => {
     expect(JSON.stringify(payload)).not.toContain('private prompt')
     expect(mocks.getChatbotOr404.mock.calls[0]?.[1]).toMatchObject({
       standardModeConfig: true,
+      customModeConfig: true,
     })
+  })
+
+  test('offers approved custom modes without leaking unapproved stored keys', async () => {
+    mocks.getChatbotOr404.mockResolvedValueOnce({
+      chatbot: {
+        modelSelection: true,
+        systemPrompts: {
+          tutor: {
+            prompt: 'private prompt',
+            description: 'Tutor description',
+          },
+          'Draft-Mode': {
+            prompt: 'drafted prompt',
+            description: 'Draft mode description',
+          },
+        },
+        standardModeConfig: null,
+        customModeConfig: {
+          modes: [
+            {
+              key: 'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b',
+              name: 'Ethik-Rollenspiel',
+              description: 'Practises ethical reasoning in a role play.',
+              personaText: 'Act as the role-play counterpart.',
+            },
+          ],
+        },
+        mcpConfigurations: [],
+      },
+    })
+
+    const response = await GET(
+      new NextRequest(`http://localhost/api/chatbots/${CHATBOT_ID}`),
+      { params: Promise.resolve({ chatbotId: CHATBOT_ID }) }
+    )
+
+    const payload = await response.json()
+    expect(payload.modeOptions).toEqual({
+      explainer: expect.any(String),
+      tutor: expect.any(String),
+      'cm_0d1f2c3b-4a59-4e6f-8b7a-9c8d7e6f5a4b':
+        'Practises ethical reasoning in a role play.',
+    })
+    expect(payload.modeOptions['Draft-Mode']).toBeUndefined()
+    expect(JSON.stringify(payload)).not.toContain('drafted prompt')
   })
 
   test('honours typed mode availability in the participant bootstrap', async () => {

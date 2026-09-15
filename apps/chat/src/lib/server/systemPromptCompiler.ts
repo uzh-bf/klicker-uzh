@@ -1,4 +1,7 @@
-import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
+import {
+  normalizeChatbotCustomModeConfig,
+  normalizeChatbotStandardModeConfig,
+} from '@klicker-uzh/util'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
 import { courseDataSection } from '@/src/lib/server/courseContextInstructions'
@@ -12,6 +15,11 @@ export type SystemPromptCompilationContext = {
   courseDisplayName: string
   toolNames: readonly string[]
   standardModeConfig?: unknown
+  /**
+   * The chatbot's live custom modes. Callers pass the live column, never the
+   * revision snapshot, which prefers a pending draft over the approved value.
+   */
+  customModeConfig?: unknown
 }
 
 function promptSection(heading: string, body: string): string {
@@ -43,16 +51,38 @@ function storedModePrompt(
   return typeof prompt === 'string' && prompt.length > 0 ? prompt : null
 }
 
+/**
+ * The persona of an approved custom mode, which is stored outside
+ * `systemPrompts`. Standard-mode keys stay platform-owned, so an entry that
+ * reuses one never changes how a standard mode compiles.
+ */
+function customModePersonaText(
+  customModeConfig: unknown,
+  selectedMode: string
+): string | null {
+  if (isStandardModeKey(selectedMode)) return null
+
+  const modes = normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? []
+  const mode = modes.find((candidate) => candidate.key === selectedMode)
+  return mode?.personaText ?? null
+}
+
+function isStandardModeKey(mode: string): boolean {
+  return Object.hasOwn(DEFAULT_PROMPT, mode)
+}
+
 function modeSections(
   systemPrompts: unknown,
   selectedMode: string,
-  standardModeConfig: unknown
+  context: SystemPromptCompilationContext
 ): string[] {
   const platformMode = DEFAULT_PROMPT[selectedMode]?.prompt
-  const lecturerPrompt = storedModePrompt(systemPrompts, selectedMode)
+  const lecturerPrompt =
+    customModePersonaText(context.customModeConfig, selectedMode) ??
+    storedModePrompt(systemPrompts, selectedMode)
   const typedContext = standardModeContextSection(
     systemPrompts,
-    standardModeConfig,
+    context.standardModeConfig,
     selectedMode
   )
 
@@ -137,7 +167,7 @@ export function compileSystemPrompt(
 ): string {
   const base = [
     courseDataSection(context.courseDisplayName),
-    ...modeSections(systemPrompts, selectedMode, context.standardModeConfig),
+    ...modeSections(systemPrompts, selectedMode, context),
   ].join('\n\n')
   const inputContext = withInputContextContract(base)
   const coursePolicy = withCoursePolicyContract(inputContext, context.toolNames)

@@ -1,6 +1,24 @@
-import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
+import type { ChatbotCustomMode } from '@klicker-uzh/types'
+import {
+  normalizeChatbotCustomModeConfig,
+  normalizeChatbotStandardModeConfig,
+} from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
+
+export interface EffectiveChatModeOptions {
+  /**
+   * The chatbot's live custom modes. Callers pass the live column, never the
+   * revision snapshot, which prefers a pending draft over the approved value.
+   */
+  customModeConfig?: unknown
+  /**
+   * Owner preview keeps offering legacy stored `systemPrompts` keys so an owner
+   * can try an unpublished mode. Participant paths accept only the modes the
+   * chatbot carries as approved configuration.
+   */
+  allowUnapprovedModes?: boolean
+}
 
 export interface ChatModeMCPConfiguration {
   allowedTools?: unknown
@@ -210,15 +228,45 @@ function getModeDescription(systemPrompts: unknown, mode: string): string {
     : ''
 }
 
+function getApprovedCustomModesByKey(
+  customModeConfig: unknown
+): Map<string, ChatbotCustomMode> {
+  const modes = normalizeChatbotCustomModeConfig(customModeConfig)?.modes ?? []
+  const modesByKey = new Map<string, ChatbotCustomMode>()
+
+  for (const mode of modes) {
+    // Standard-mode keys stay platform-owned, so a stored entry that reuses one
+    // can never replace the platform label or the platform mode contract.
+    if (isTypedStandardMode(mode.key) || modesByKey.has(mode.key)) continue
+    modesByKey.set(mode.key, mode)
+  }
+
+  return modesByKey
+}
+
+function getCustomModeDescription(mode: ChatbotCustomMode): string {
+  // The switcher and the welcome card fall back to this string for a mode
+  // without an i18n entry, so a mode without a description still needs label
+  // text a participant can read.
+  return mode.description ?? mode.name
+}
+
 export function resolveEffectiveChatModeOptions(
   systemPrompts: unknown,
   mcpConfigurations: readonly ChatModeMCPConfiguration[],
-  standardModeConfig: unknown = null
+  standardModeConfig: unknown = null,
+  options: EffectiveChatModeOptions = {}
 ): Record<string, string> {
   const storedPrompts = asRecord(systemPrompts)
   const standardModes = Object.keys(DEFAULT_PROMPT)
-  const storedModes = storedPrompts ? Object.keys(storedPrompts) : []
-  const candidates = Array.from(new Set([...standardModes, ...storedModes]))
+  const customModesByKey = getApprovedCustomModesByKey(options.customModeConfig)
+  const storedModes =
+    options.allowUnapprovedModes && storedPrompts
+      ? Object.keys(storedPrompts)
+      : []
+  const candidates = Array.from(
+    new Set([...standardModes, ...customModesByKey.keys(), ...storedModes])
+  )
   const hasRequiredMCP = mcpConfigurations.some(
     (config) => isEnabled(config) && isRequired(config)
   )
@@ -230,6 +278,7 @@ export function resolveEffectiveChatModeOptions(
       continue
     }
 
+    const customMode = customModesByKey.get(mode)
     const effectiveConfigurations = resolveEffectiveMCPConfigurations(
       mcpConfigurations,
       mode
@@ -244,7 +293,9 @@ export function resolveEffectiveChatModeOptions(
       continue
     }
 
-    modeOptions[mode] = getModeDescription(systemPrompts, mode)
+    modeOptions[mode] = customMode
+      ? getCustomModeDescription(customMode)
+      : getModeDescription(systemPrompts, mode)
   }
 
   return modeOptions
