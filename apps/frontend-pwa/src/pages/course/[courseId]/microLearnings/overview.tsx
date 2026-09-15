@@ -165,6 +165,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         destination: `${ctx.locale ? `/${ctx.locale}` : ''}/course/${course.id}/microLearnings/${result.data.getCoursePublishedMicroLearnings[0].id}`,
         participantToken,
         cookiesAvailable,
+        tokenSource,
         locale: ctx.locale,
       })
     }

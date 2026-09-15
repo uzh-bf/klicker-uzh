@@ -156,6 +156,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
         participantToken,
         cookiesAvailable,
+        tokenSource,
         locale: ctx.locale,
       })
     }

@@ -2,7 +2,7 @@
   "version": 1,
   "groups": [
     {
-      "profile": "pwa,email",
+      "profile": "pwa",
       "specs": ["Z-course-lti-enrollment.spec.ts"]
     },
     {

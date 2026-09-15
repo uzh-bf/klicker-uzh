@@ -5,10 +5,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, toast } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 
 function MagicLogin() {
@@ -27,6 +27,7 @@ function MagicLogin() {
     rawRedirectTo &&
     rawRedirectTo.startsWith('/') &&
     !rawRedirectTo.startsWith('//') &&
+    !rawRedirectTo.includes('\\') &&
     !rawRedirectTo.includes('://')
       ? rawRedirectTo
       : '/'

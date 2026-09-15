@@ -234,6 +234,7 @@ export async function sendMagicLink(
     redirectTo &&
     redirectTo.startsWith('/') &&
     !redirectTo.startsWith('//') &&
+    !redirectTo.includes('\\') &&
     !redirectTo.includes('://')
   ) {
     safeRedirectSuffix = `&redirect_to=${encodeURIComponent(redirectTo)}`
@@ -559,7 +560,7 @@ export async function deleteParticipantAccount(ctx: ContextWithUser) {
   })
 
   // if a participant group is empty after the participant leaves it, delete the group as well
-  let deletionPromises: any[] = []
+  const deletionPromises: any[] = []
   for (const group of participant.participantGroups) {
     if (group.participants.length === 1) {
       deletionPromises.push(
@@ -642,10 +643,10 @@ async function resolveOrCreateParticipantForLti(
         // though their rows still resolve until deletion completes.
         const course = await prisma.course.findUnique({
           where: { id: courseId },
-          select: { deletionRequestedAt: true },
+          select: { isAssessmentEnabled: true, deletionRequestedAt: true },
         })
 
-        if (!course || course.deletionRequestedAt) {
+        if (!isCourseJoinable(course)) {
           console.warn(
             `event=lti_participation_skipped_ineligible_course courseId=${courseId}`
           )
@@ -862,7 +863,7 @@ export async function createParticipantAccount(
       where: { id: courseId },
     })
 
-    if (!course || course.isAssessmentEnabled || course.deletionRequestedAt) {
+    if (!isCourseJoinable(course)) {
       return null
     }
   }
@@ -997,6 +998,18 @@ interface LoginParticipantWithLtiArgs {
   courseId?: string | null
 }
 
+function isCourseJoinable(
+  course: {
+    isAssessmentEnabled: boolean
+    deletionRequestedAt: Date | null
+  } | null
+): course is {
+  isAssessmentEnabled: boolean
+  deletionRequestedAt: null
+} & Record<string, unknown> {
+  return !!course && !course.isAssessmentEnabled && !course.deletionRequestedAt
+}
+
 export async function loginParticipantWithLti(
   { signedLtiData, courseId }: LoginParticipantWithLtiArgs,
   ctx: Context
@@ -1008,7 +1021,7 @@ export async function loginParticipantWithLti(
       where: { id: courseId },
     })
 
-    if (!course || course.isAssessmentEnabled || course.deletionRequestedAt) {
+    if (!isCourseJoinable(course)) {
       return null
     }
   }
