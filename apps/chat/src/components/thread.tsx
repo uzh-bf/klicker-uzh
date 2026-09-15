@@ -655,7 +655,7 @@ const ThreadWelcome: FC<{
               )}
               iconClassName={embedded ? 'size-6' : 'size-7'}
             />
-            {welcomeMessage ? (
+            {welcomeMessage && (
               <div
                 className={twMerge(
                   'animate-in fade-in slide-in-from-bottom-2 font-semibold duration-300 motion-reduce:animate-none',
@@ -664,7 +664,8 @@ const ThreadWelcome: FC<{
               >
                 {welcomeMessage}
               </div>
-            ) : embedded ? null : (
+            )}
+            {!welcomeMessage && !embedded && (
               <>
                 <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
                   {t('chat.thread.welcomeTitle')}
