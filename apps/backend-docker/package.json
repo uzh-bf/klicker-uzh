@@ -40,7 +40,7 @@
     "graphql-yoga": "3.9.1",
     "ioredis": "5.4.1",
     "next-auth": "4.24.15",
-    "ws": "8.18.0"
+    "ws": "8.21.0"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "~1.0.2",
@@ -52,7 +52,7 @@
     "@types/ioredis-mock": "^8.2.7",
     "@types/node": "^24.10.1",
     "@types/ws": "^8.5.12",
-    "axios": "~1.16.1",
+    "axios": "~1.18.0",
     "cross-env": "~7.0.3",
     "dotenv": "~16.4.7",
     "eslint": "~9.30.1",
