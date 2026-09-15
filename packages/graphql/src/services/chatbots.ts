@@ -3,13 +3,16 @@ import { Prisma, type PrismaClient } from '@klicker-uzh/prisma/client'
 import type {
   ChatbotAuthoringRevision,
   ChatbotAuthoringRevisionProjection,
+  ChatbotCustomModeConfigInput,
   ChatbotStandardModeConfigInput,
 } from '@klicker-uzh/types'
 import {
   CHAT_BASE_MODEL_ID,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  normalizeChatbotCustomModeConfig,
   normalizeChatbotStandardModeConfig,
+  parseChatbotCustomModeConfigInput,
   parseChatbotStandardModeConfigInput,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
@@ -415,6 +418,7 @@ const chatbotOwnerSelect = {
   avatar: true,
   systemPrompts: true,
   standardModeConfig: true,
+  customModeConfig: true,
   draftConfig: true,
   modelSelection: true,
   allowedModelIds: true,
@@ -446,6 +450,7 @@ type ChatbotWithOwnerCourse = {
   avatar: string | null
   systemPrompts: unknown
   standardModeConfig: unknown
+  customModeConfig: unknown
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
@@ -533,6 +538,9 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
+    ),
+    customModeConfig: normalizeChatbotCustomModeConfig(
+      chatbot.customModeConfig
     ),
     allowedModelIds: normalizeAllowedModelIds(
       chatbot.allowedModelIds,
@@ -729,6 +737,9 @@ function parseStoredRevision(
         : (cloneJson(
             value.standardModeConfig
           ) as ChatbotAuthoringRevision['standardModeConfig']),
+    // Read-tolerant: a malformed stored value normalizes to no custom modes
+    // instead of invalidating the whole revision.
+    customModeConfig: normalizeChatbotCustomModeConfig(value.customModeConfig),
     modelSelection: value.modelSelection,
     allowedModelIds: [...value.allowedModelIds] as string[],
     allowedReasoningEffortsByModel,
@@ -770,6 +781,9 @@ function buildRevisionFromLive(
     standardModeConfig: cloneJson(
       chatbot.standardModeConfig
     ) as ChatbotAuthoringRevision['standardModeConfig'],
+    customModeConfig: normalizeChatbotCustomModeConfig(
+      chatbot.customModeConfig
+    ),
     modelSelection: chatbot.modelSelection,
     allowedModelIds: [...chatbot.allowedModelIds],
     allowedReasoningEffortsByModel: cloneJson(
@@ -806,6 +820,9 @@ function revisionProjection(
     standardModeConfig: normalizeChatbotStandardModeConfig(
       revision.standardModeConfig,
       chatbot.systemPrompts
+    ),
+    customModeConfig: normalizeChatbotCustomModeConfig(
+      revision.customModeConfig
     ),
     allowedReasoningEffortsByModel:
       reasoningEntries.length > 0
@@ -942,6 +959,10 @@ function revisionLiveData(
       revision.standardModeConfig === null
         ? Prisma.JsonNull
         : (revision.standardModeConfig as PrismaJson.PrismaChatbotStandardModeConfig),
+    customModeConfig:
+      revision.customModeConfig === null
+        ? Prisma.JsonNull
+        : (revision.customModeConfig as PrismaJson.PrismaChatbotCustomModeConfig),
     modelSelection: revision.modelSelection,
     allowedModelIds: revision.allowedModelIds,
     allowedReasoningEffortsByModel:
@@ -1066,6 +1087,24 @@ function validateCompleteRevision(
     }
   }
 
+  if (revision.customModeConfig !== null) {
+    try {
+      // The stored keys are the identity the runtime matches; passing the
+      // config as its own existing set preserves them through validation.
+      parseChatbotCustomModeConfigInput(
+        revision.customModeConfig,
+        revision.customModeConfig
+      )
+    } catch (error) {
+      throw chatbotError(
+        error instanceof Error
+          ? error.message
+          : 'Invalid custom mode configuration',
+        'BAD_USER_INPUT'
+      )
+    }
+  }
+
   validateRevisionModelConfig(revision)
   const normalizedPolicy = normalizeAndValidateCreditPolicy({
     creditInitialCredits: revision.creditInitialCredits,
@@ -1162,6 +1201,7 @@ export type ChatbotRevisionSaveInput = {
   } | null
   modelPolicy?: RevisionModelPolicyInput | null
   standardModeConfig?: ChatbotStandardModeConfigInput | null
+  customModeConfig?: ChatbotCustomModeConfigInput | null
   creditPolicy?: ChatbotCreditPolicy | null
   disclaimer?: RevisionDisclaimerInput | null
   knowledgeGraphPolicy?: RevisionKnowledgeGraphPolicyInput | null
@@ -1220,6 +1260,7 @@ export async function saveChatbotRevision(
     'metadata',
     'modelPolicy',
     'standardModeConfig',
+    'customModeConfig',
     'creditPolicy',
     'disclaimer',
     'knowledgeGraphPolicy',
@@ -1280,6 +1321,17 @@ export async function saveChatbotRevision(
 
     const current = getRevisionSnapshot(chatbot)
     let next = { ...current, ...patch }
+    // Custom-mode keys are minted here so a stale version throws before any key
+    // is generated, and an existing mode keeps the key stored on messages.
+    if (input.customModeConfig) {
+      next = {
+        ...next,
+        customModeConfig: parseRevisionCustomModeConfig(
+          input.customModeConfig,
+          current.customModeConfig
+        ),
+      }
+    }
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1477,6 +1529,22 @@ function parseRevisionStandardModeConfig(
       error instanceof Error
         ? error.message
         : 'Invalid standard mode configuration',
+      'BAD_USER_INPUT'
+    )
+  }
+}
+
+function parseRevisionCustomModeConfig(
+  input: ChatbotCustomModeConfigInput,
+  existing: ChatbotAuthoringRevision['customModeConfig']
+) {
+  try {
+    return parseChatbotCustomModeConfigInput(input, existing)
+  } catch (error) {
+    throw chatbotError(
+      error instanceof Error
+        ? error.message
+        : 'Invalid custom mode configuration',
       'BAD_USER_INPUT'
     )
   }
