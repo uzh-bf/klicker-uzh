@@ -199,6 +199,7 @@ model Chatbot {
   mcpConfigurations ChatbotMCPConfig[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  partnerGrants     PartnerChatbotGrant[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -277,4 +278,28 @@ model ChatbotDisclaimer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PartnerChatbotGrant {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Stable partner service slug (e.g. "askuzh"). The partner authenticates
+  // out of band with a server-side key; this grant is the owner-approved
+  // authorization for that partner to obtain Doc Query scope assertions for
+  // exactly this chatbot. It never grants participant chat access.
+  partnerId String
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  grantedBy  String    @db.Uuid
+  grantedAt  DateTime  @default(now())
+  revokedAt  DateTime?
+  revokedBy  String?   @db.Uuid
+  lastUsedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, chatbotId])
+  @@index([chatbotId])
 }
