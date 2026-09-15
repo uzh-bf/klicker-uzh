@@ -4189,6 +4189,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     )
     await confirmResponseDeletionIfAvailable(page)
     await page.getByTestId(`confirm-deletion-qa-feedbacks`).click()
+    await page.getByTestId('confirm-deletion-leaderboard-entries').click()
     await expectByAssertion(
       page.getByTestId(`confirm-deletion-confusion-feedbacks`),
       'not.exist'
@@ -4208,6 +4209,7 @@ test.describe.serial('Core live-quiz workflows', () => {
     )
     await confirmResponseDeletionIfAvailable(page)
     await page.getByTestId(`confirm-deletion-qa-feedbacks`).click()
+    await page.getByTestId('confirm-deletion-leaderboard-entries').click()
     await page.getByTestId(`confirmation-modal-confirm`).click()
     await expectByAssertion(
       page.getByText(data.course2.quiz.name).first(),

@@ -888,9 +888,7 @@ export default {
       joinLeaderboardNotice: `
 🎊 Herzlich willkommen, {username}, zum Kurs "{courseName}" 🎊
 
-Du nimmst derzeit **nicht** an der Kursrangliste teil. Das bedeutet, dass Du an allen Aktivitäten teilnehmen kannst, aber keine Punkte sammeln, nicht in der Rangliste aufgeführt werden und nicht für Erfolge und Auszeichnungen in Frage kommst. Wenn Du an den spielerischen Aktivitäten in diesem Kurs teilnehmen möchtest, **klicke auf die Schaltfläche** unten, um teilzunehmen. Du kannst die Kursrangliste jederzeit verlassen, wobei alle gesammelten Punkte **gelöscht** werden.
-
-Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einschließlich Deines Pseudonyms und der Gesamtpunktzahl/Erfolge in den Ranglisten. Du kannst Dein Profil vor anderen Teilnehmern verbergen, aber trotzdem an der Rangliste teilnehmen, wenn Du dies wünschst (siehe [hier](/editProfile)).
+Die Teilnahme an der Rangliste ist freiwillig. Auch ohne Rangliste kannst du alle Kursaktivitäten nutzen, Punkte sammeln und deine persönlichen Statistiken ansehen. Wenn du beitrittst, sehen andere Teilnehmende deinen Benutzernamen, deine Platzierung, Punkte und Erfolge. Du kannst jederzeit austreten und wieder beitreten; deine Punkte und persönlichen Statistiken bleiben erhalten.
 `,
       activityPreview:
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
@@ -933,6 +931,66 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
         'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
+      signup: {
+        accountTitle: 'Dein Konto',
+        emailLabel: 'E-Mail',
+        usernameHint:
+          'Dein Benutzername wird angezeigt, wenn Du einer Kursrangliste beitrittst.',
+        assessmentTitle: 'Zugang zum Assessment freischalten',
+        assessmentSubmit: 'Zugang freischalten',
+        assessmentDataCollectionNotice:
+          'Wir speichern deine Kontodaten und die von Switch edu-ID übermittelten Identitätsangaben sowie Daten aus Kursen und Aktivitäten: etwa Antworten und Eingaben in Aktivitäten, Bewertungen, Punkte und Rückmeldungen.\n\nIm Assessment kommen Identitätsangaben wie deine Matrikelnummer sowie detaillierte Protokolle deiner Antwortversuche und Interaktionen (Audit Logs) hinzu.',
+        assessmentDataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt ihnen nur zusammengefasste Gruppenwerte.\n\nIm Assessment erhalten berechtigte Dozierende und Assessment-Mitarbeitende zusätzlich deine Identität, Antwortdetails und Ergebnisse zur Bewertung und Nachbearbeitung. Andere Teilnehmende sehen diese Assessment-Daten nicht.',
+        assessmentDataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Im Assessment dienen sie zusätzlich der Bewertung und Nachvollziehbarkeit. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen. Sie hat keinen Einfluss auf Punkte, Noten oder den Zugang zum Assessment.',
+        assessmentDataStorageNotice:
+          'Kontodaten und Antworten werden während der Lebensdauer deines Kontos gespeichert. Dein Assessment-Konto und die zugehörigen Daten kannst du nicht selbst löschen: Sie bleiben für die Nachvollziehbarkeit und während der geltenden Einsprache- und Aufbewahrungsfristen erhalten. Danach werden sie gelöscht oder anonymisiert. [Details in den Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz)',
+        assessmentAcknowledgement:
+          'Ich habe die [KlickerUZH Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Die zusätzlichen Hinweise zu Assessment-Daten, Einsicht und Aufbewahrung habe ich zur Kenntnis genommen.',
+        accessTitle: 'Dein Zugang',
+        accessNoPassword:
+          'Du brauchst kein Passwort und keine weiteren Eingaben.',
+        dataUseTitle: 'Datennutzung und Einstellungen',
+        dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
+        dataCollectionNotice:
+          'Wir speichern deine Kontodaten sowie Daten aus deinen Kursen und Aktivitäten, etwa Antworten und Eingaben in Aktivitäten, deren Bewertung, Punkte und Rückmeldungen.',
+        dataSharingTitle: 'Wer sieht meine Daten?',
+        dataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+        dataUsageTitle: 'Wofür werden meine Daten genutzt?',
+        dataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen.',
+        dataStorageTitle: 'Wie lange werden meine Daten gespeichert?',
+        dataStorageNotice:
+          'Deine Kontodaten und Antworten werden gespeichert, solange dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden sie gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung deines Kontos und deiner Daten beantragen.',
+        acknowledgement:
+          'Ich habe die KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Forschung und Learning Analytics sind freiwillig.',
+        researchConsentTitle: 'Daten für Forschung',
+        researchConsentDescription:
+          'Deine Nutzungs- und Lerndaten dürfen ohne personenbezogene Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentDescriptionAssessment:
+          'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentBadgeAllowed: 'Zugelassen',
+        researchConsentBadgeRefused: 'Widersprochen',
+        researchConsentBadgeUnanswered: 'Nicht beantwortet',
+        researchConsentYes: 'Zulassen',
+        researchConsentNo: 'Widersprechen',
+        researchConsentControlLabel: 'Nutzung für Forschung:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Erhalte persönliche Einblicke in dein Lernen. Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar.\n\nLA erfasst Daten nur, wenn es für dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden LA-Daten automatisch gelöscht. [Mehr zu Learning Analytics](https://www.klicker.uzh.ch/datenschutz)',
+        learningAnalyticsDecisionRequired: 'Entscheidung erforderlich',
+        learningAnalyticsConsentYes: 'Ja, teilnehmen',
+        learningAnalyticsConsentYesDescription:
+          'Private Einblicke und geschützte Gruppenberichte.',
+        learningAnalyticsConsentNo: 'Nein, nicht teilnehmen',
+        learningAnalyticsConsentNoDescription:
+          'Kurse, Punkte und Chat funktionieren wie gewohnt.',
+        submit: 'Konto erstellen',
+        acknowledgementRequired: 'Bitte bestätige Deine Auswahl.',
+        dataUseChoiceRequired: 'Bitte wähle Ja oder Nein.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -978,7 +1036,7 @@ Während der Beantwortung können eingeloggte Teilnehmende persönliche Lesezeic
 
 Einige Kurse setzen Gruppenaktivitäten ein, die nur kollaborativ gelöst werden können. Dozierende können eine zufällige Gruppenzuteilung aktivieren und eine bevorzugte Gruppengrösse vorgeben. Sobald die Gruppen gebildet und eine Gruppenaktivität publiziert ist, werden Hinweise auf die Gruppenmitglieder verteilt. Die Gruppe kann die Aktivität innerhalb eines begrenzten Zeitfensters gemeinsam lösen (eine Abgabe pro Gruppe). Gruppenbildung und Gruppenaktivitäten stehen nur Teilnehmenden mit KlickerUZH‑Account zur Verfügung.
 
-Innerhalb einer Gruppe können Sie Ihre Punkte mit Ihren Mitstudierenden vergleichen; als Gruppe können Sie sich zudem mit anderen Gruppen messen. Die Gesamtpunktzahl Ihrer Gruppe setzt sich zusammen aus Punkten aus Gruppenaktivitäten und den aggregierten Punkten aller Gruppenmitglieder.
+Innerhalb einer Gruppe können Sie veröffentlichte Punkte mit Ihren Mitstudierenden vergleichen; als Gruppe können Sie sich zudem mit anderen Gruppen messen. Die Gesamtpunktzahl Ihrer Gruppe setzt sich zusammen aus Punkten aus Gruppenaktivitäten und den durchschnittlichen persönlichen Punkten der Gruppenmitglieder. Der Durchschnitt umfasst alle Gruppenmitglieder, unabhängig von ihrer Teilnahme am Kurs-Leaderboard.
 
 #### Kurse, Leaderboards und Errungenschaften
 
@@ -1106,11 +1164,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben bisher keine Fragen gebookmarked. Klicken Sie hierfür einfach auf das Lesezeichen-Symbol auf einer Frage.',
       awards: 'Auszeichnungen',
       open: 'offen',
+      joinLeaderboardTitle: 'Der Rangliste für {name} beitreten',
+      joinLeaderboardDescription:
+        'Die Teilnahme ist freiwillig. Auch ohne Rangliste kannst du alle Kursaktivitäten nutzen, Punkte sammeln und deine persönlichen Statistiken ansehen. Wenn du beitrittst, sehen andere Teilnehmende deinen Benutzernamen {username}, deine Platzierung, Punkte und Erfolge in der Rangliste. Du kannst jederzeit austreten und wieder beitreten. Deine bisherigen Punkte zählen sofort; rangabhängige Auszeichnungen werden nicht rückwirkend vergeben. Deine Auswahl für Forschung und Learning Analytics bleibt davon unberührt.',
+      joinLeaderboardConfirm: 'Der Rangliste beitreten',
+      joinLeaderboardError:
+        'Der Beitritt zur Rangliste ist fehlgeschlagen. Bitte versuche es erneut.',
+      leaveLeaderboardError:
+        'Der Austritt aus der Rangliste ist fehlgeschlagen. Bitte versuche es erneut.',
       leaveLeaderboardTitle: 'Leaderboard verlassen',
-      leaveLeaderboardConfirmation:
-        'Möchten Sie das Leaderboard wirklich verlassen?',
+      leaveLeaderboardConfirmation: 'Möchtest du die Kursrangliste verlassen?',
       leaveLeaderboardInformation:
-        'Wenn Sie das Kurs-Leaderboard verlassen, werden Interaktionen mit Kursaktivitäten und Ihre gesammelten Punkte gelöscht. Sie können dem Leaderboard jederzeit wieder beitreten, beginnen dann aber von Neuem.',
+        'Nach dem Austritt erscheinst du nicht mehr in der Kursrangliste. Deine Punkte und persönlichen Statistiken bleiben erhalten und du kannst weiterhin Punkte sammeln. Du kannst jederzeit wieder beitreten; deine bisherigen Punkte zählen sofort.',
       noGamificationOrDescription:
         'Willkommen im Kurs {courseName}! Für diesen KlickerUZH-Kurs wurde die Gamifizierung deaktiviert und es wird kein Leaderboard angezeigt. KlickerUZH listet dennoch alle kursbezogenen Aktivitäten in den entsprechenden Abschnitten der App für einen direkten Zugriff.',
       groupActivityEndedToast:
@@ -1272,6 +1337,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createProfileFailed:
         'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
+      dataUseTitle: 'Forschung und Learning Analytics',
+      dataUseDescription:
+        'Diese Einstellungen gelten für Dein gesamtes KlickerUZH-Konto. Du kannst sie jederzeit ändern.',
+      dataUseLoadFailed:
+        'Deine Einstellungen zur Datennutzung konnten nicht geladen werden. Bitte versuche es erneut.',
+      researchConsentTitle: 'Forschung',
+      researchConsentDescription:
+        'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen.',
+      researchConsentSaved: 'Deine Forschungseinstellung wurde gespeichert.',
+      researchConsentFailed:
+        'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      dataUseConflict:
+        'Diese Seite ist nicht mehr aktuell. Lade sie neu, bevor Du es erneut versuchst.',
+      learningAnalyticsConsentTitle: 'Learning Analytics',
+      learningAnalyticsConsentDescription:
+        'Erhalte persönliche Einblicke in Dein Lernen. Nur Du siehst Deine persönlichen Einblicke; Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar; Kurszugang und Punkte bleiben unverändert. Learning Analytics erfasst Daten nur, wenn es für Dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden Learning-Analytics-Daten automatisch gelöscht.',
+      learningAnalyticsGuide: 'Mehr erfahren',
+      learningAnalyticsConsentSaved:
+        'Deine Learning-Analytics-Einstellung wurde gespeichert.',
+      learningAnalyticsConsentFailed:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      learningAnalyticsWithdrawalTitle:
+        'Teilnahme an Learning Analytics beenden?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Learning Analytics ausschalten? Deine persönlichen LA-Daten und Einblicke werden automatisch gelöscht. Deine Antworten und Punkte für den Kursbetrieb bleiben erhalten.',
+      learningAnalyticsWithdrawalUnavailable:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden, weil der Widerruf derzeit nicht verfügbar ist. Deine gespeicherte Einstellung bleibt unverändert.',
+      dataUseCanonicalDataNotice:
+        'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
+      dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
       createProfile: 'Profil erstellen',
@@ -1404,7 +1499,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       alreadySubmittedAt:
         'Deine Gruppe hat ihre Lösungen bereits eingereicht (am {date}).<br></br> Die Bewertung wird später veröffentlicht und separat kommuniziert.',
       joinLeaderboard:
-        'Damit im Rahmen der Gruppenaktivität Punkte gesammelt werden können, müssen Sie dem Kurs-Leaderboard beitreten. Wechseln Sie hierfür auf das andere Tab und bestätigen Sie die Teilnahme.',
+        'Dein individueller Eintrag ist ausgeblendet, solange du nicht am Kurs-Leaderboard teilnimmst. Deine Punkte zählen weiterhin zum Gruppendurchschnitt. Deine Gruppenmitgliedschaft und gemeinsam in Gruppenaktivitäten gesammelte Punkte bleiben unverändert.',
       singleParticipantAutomaticAssignment:
         'Sie sind der einzige Teilnehmer in Ihrer Gruppe. Sobald die Frist für die Gruppenbildung abgelaufen ist am {groupFormationDeadline} oder der Dozent die Gruppenbildung manuell gestoppt hat, werden Sie automatisch einer zufälligen Gruppe zugewiesen.',
       maxNumberOfGroupMembers:
@@ -3098,6 +3193,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für dieses Live-Quiz wurden noch keine Quiz-Leaderboard-Einträge erstellt.',
       deleteLeaderboardEntries:
         'Alle Quiz-Leaderboard-Einträge werden gelöscht und alle Teilnehmenden verlieren ihre gesammelten Punkte.',
+      removeLeaderboardAccess:
+        '{number} Quiz-Ranglisteneinträge sind danach nicht mehr verfügbar. Gesammelte Punkte bleiben erhalten.',
       evaluationLinksEmbedding: 'Links für die Einbettung der Evaluation',
       noLiveQuizzes: 'Keine Live Quizzes gefunden',
       creationExplanation:
@@ -3789,6 +3886,97 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       practiceQuizSchedulingHint:
         'Bei der geplanten Veröffentlichung des Übungs-Quizzes "{title}" wird dieses automatisch zum von Ihnen festgelegten Zeitpunkt für alle Studierenden im Kurs sichtbar. Bevor das geplante Veröffentlichungsdatum erreicht ist, kann die Aktivität noch unveröffentlicht und bearbeitet werden. Bei der Eingabe eines Startdatums in der Vergangenheit wird das Übungs-Quiz sofort veröffentlicht.',
       confirmScheduling: 'Geplante Veröffentlichung bestätigen',
+    },
+    assessmentExport: {
+      open: 'Assessment-Ergebnisse exportieren',
+      title: 'Assessment-Ergebnisse exportieren',
+      classification: 'Direkt identifizierbare Personendaten',
+      assessmentLabel: 'Assessment',
+      scopeLabel: 'Umfang',
+      courseScope: 'Gesamter Kurs',
+      liveQuizScope: 'Live Quiz',
+      lead: 'Diese Datei enthält direkt identifizierbare Personendaten und Assessment-Ergebnisse. Sie ist ausschliesslich für die Durchführung, Bewertung und notwendige Nachbearbeitung dieses Assessments bestimmt.',
+      attestationsHeading: 'Mit dem Download bestätige ich:',
+      attestations: {
+        purposeLabel: 'Zweckbindung.',
+        purposeText:
+          'Ich verwende die Datei nur für dieses Assessment und nicht für Forschung.',
+        accessLabel: 'Beschränkter Zugriff.',
+        accessText:
+          'Zugriff erhalten nur Personen, die diese Daten für die Durchführung, Bewertung oder notwendige Nachbearbeitung des Assessments benötigen.',
+        storageLabel: 'Sichere Ablage.',
+        storageText:
+          'Ich speichere und bearbeite die Datei nur auf dafür freigegebenen Geräten und Ablagen der UZH und schütze sie vor unberechtigtem Zugriff.',
+        retentionLabel: 'Aufbewahrung und Löschung.',
+        retentionText:
+          'Ich bewahre die Datei nur so lange auf, wie sie für den genannten Zweck oder aufgrund einer Aufbewahrungspflicht benötigt wird, und lösche sie anschliessend sicher.',
+      },
+      logging:
+        'Deine Exportanfrage und diese Bestätigung werden mit deinem Konto, Zeitpunkt und Datenumfang protokolliert.',
+      acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+      acknowledgementRequired:
+        'Bestätige die vier Punkte, bevor du fortfährst.',
+      requestFailed:
+        'Der Assessment-Export konnte nicht erstellt werden. Bitte versuche es erneut.',
+      cancel: 'Abbrechen',
+      submit: 'Herunterladen',
+    },
+    researchExport: {
+      menuLabel: 'Forschungsdaten exportieren',
+      title: 'Forschungsdaten exportieren',
+      scopeLabel: 'Datenumfang',
+      classificationLabel: 'Klassifikation',
+      classification: 'Personendaten ohne direkte Identifikatoren',
+      classificationNote:
+        'Diese Datei enthält Personendaten ohne direkte Identifikatoren. Einzelne Personen können dennoch erkennbar sein. Die Daten dürfen nur für das angegebene Forschungs- oder Lehrprojekt der Universität Zürich und nur durch dessen Mitarbeitende verwendet werden.',
+      projectDetailsTitle: 'Angaben zum Forschungsprojekt',
+      projectDetailsDescription:
+        'Diese Angaben werden mit jedem Export gespeichert. Es gibt kein Genehmigungsverfahren in KlickerUZH; du bist für die Zulässigkeit deines Projekts verantwortlich.',
+      projectTitle: 'Projekttitel',
+      projectTitlePlaceholder: 'Titel deines Forschungsprojekts',
+      responsiblePerson: 'Verantwortliche Person',
+      contactEmail: 'Kontaktadresse',
+      purpose: 'Zweck',
+      purposeHint: 'Erforderlich, 1–2 Sätze.',
+      deletionDate: 'Geplantes Löschdatum',
+      reference: 'Referenz',
+      referencePlaceholder: 'z. B. Ethikkommission 2026-xx',
+      referenceHint: 'Optional: Ethik-, Bewilligungs- oder DMP-Nummer.',
+      dataClassesTitle: 'Benötigte Datenklassen (mindestens eine auswählen)',
+      liveQuizResponses: 'Live-Quiz-Antworten',
+      asynchronousResponses:
+        'Asynchrone Antworten (Lernelemente, Microlearning)',
+      learningAnalytics: 'Learning-Analytics-Daten (Einzel- und Gruppenwerte)',
+      chatTranscripts: 'Chat-Transkripte und Freitext',
+      unavailableHint:
+        'Derzeit nicht verfügbar; der Kern unterstützt diese Datenklasse noch nicht.',
+      classDataNote:
+        'Gesprächsfreitext kann persönliche Angaben enthalten, auch wenn Kontokennungen entfernt sind. Beschränke die Auswahl auf die für dein Projekt erforderlichen Daten.',
+      attestationTitle: 'Mit dem Download bestätige ich:',
+      attestationPurpose:
+        'Zweckbindung. Ich verwende die Daten nur für das oben angegebene Forschungs- oder Lehrprojekt der Universität Zürich und nur für den angegebenen Zweck.',
+      attestationReidentification:
+        'Keine Reidentifizierung oder unzulässige Verknüpfung. Ich versuche nicht, Personen zu identifizieren, und verknüpfe die Datei nicht mit anderen Daten, die eine Identifizierung ermöglichen könnten.',
+      attestationAccess:
+        'Beschränkter Zugriff und keine Weitergabe. Ich mache die Datei nur den Mitarbeitenden des angegebenen Projekts zugänglich und gebe sie nicht ausserhalb des Projekts weiter.',
+      attestationSecurity:
+        'Sicherheit, Entfernung des Personenbezugs und Löschung. Ich bearbeite die Datei nur in einer dafür geeigneten, geschützten Umgebung, entferne den Personenbezug so früh wie möglich und lösche sie spätestens zum angegebenen Datum, soweit keine Aufbewahrungspflicht entgegensteht. Veröffentlicht werden nur Ergebnisse, die keine Rückschlüsse auf einzelne Personen zulassen.',
+      auditNote:
+        'Deine Exportanfrage und diese Bestätigung werden mit deinen Projektangaben, Konto, Zeitpunkt und angefragtem Datenumfang protokolliert. Bei der Bereitstellung gilt die aktuelle Forschungswahl der Teilnehmenden.',
+      acknowledgement: 'Ich bestätige diese vier Punkte für diesen Export.',
+      required: 'Dieses Feld ist erforderlich.',
+      maxLength: 'Bitte kürze diesen Wert.',
+      invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+      deletionDateInvalid: 'Bitte gib ein gültiges Datum ein.',
+      deletionDatePast:
+        'Das Löschdatum darf nicht in der Vergangenheit liegen.',
+      classesRequired: 'Wähle mindestens eine verfügbare Datenklasse aus.',
+      acknowledgementRequired: 'Bestätige alle vier Punkte vor dem Export.',
+      requestFailed:
+        'Der Forschungsexport konnte nicht erstellt werden. Bitte versuche es erneut.',
+      downloadStarted: 'Der Download wurde gestartet.',
+      cancel: 'Abbrechen',
+      submit: 'Herunterladen',
     },
     pointCorrections: {
       stepIndicator: 'Schritt {current} von {total}',

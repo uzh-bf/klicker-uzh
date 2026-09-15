@@ -8,6 +8,12 @@ import isoWeek from 'dayjs/plugin/isoWeek.js'
 import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  type ParticipantDataUseFields,
+  participantDataUseSelect,
+} from '../lib/learningAnalytics.js'
+
+import { updateParticipantDataUseChoice } from './participantAccountDataUse.js'
 
 dayjs.extend(isoWeek)
 
@@ -251,6 +257,39 @@ export async function getParticipation(
   })
 
   return participation
+}
+
+type ParticipantConsentArgs = {
+  consent: boolean
+  expectedRevision?: number | null
+  disclosureVersion?: string | null
+}
+
+export async function getParticipantDataUse(
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
+  return ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    select: participantDataUseSelect,
+  })
+}
+
+export async function setResearchConsent(
+  input: ParticipantConsentArgs,
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+  return updateParticipantDataUseChoice('research', input, ctx)
+}
+
+export async function setLearningAnalyticsConsent(
+  input: ParticipantConsentArgs,
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+  return updateParticipantDataUseChoice('analytics', input, ctx)
 }
 
 // interface RegisterParticipantFromLTIArgs {
@@ -905,7 +944,7 @@ export async function upsertDailyTimelineEntry({
     create: {
       type: DB.TimelineEntryType.DAILY,
       timestamp: new Date(),
-      collectedPoints: participation.isActive ? pointsAwarded : 0,
+      collectedPoints: pointsAwarded,
       collectedXp: xpAwarded,
       computedAt: new Date(),
       course: {
@@ -1128,9 +1167,7 @@ async function updateWeeklyTimelineEntriesFromDailys({
       }
     }
 
-    acc[participationId]!.collectedPoints += entry.participation?.isActive
-      ? entry.collectedPoints
-      : 0
+    acc[participationId]!.collectedPoints += entry.collectedPoints
     acc[participationId]!.collectedXp += entry.collectedXp
 
     return acc

@@ -1,31 +1,37 @@
-import * as DB from '@klicker-uzh/prisma/client'
-import {
-  type AvatarSettingsInput as AvatarSettingsInputType,
-  type AvatarSettings as AvatarSettingsType,
-  type SubscriptionKeysInput as SubscriptionKeysInputType,
-  type SubscriptionObjectInput as SubscriptionObjectInputType,
+import type * as DB from '@klicker-uzh/prisma/client'
+import type {
+  AvatarSettingsInput as AvatarSettingsInputType,
+  AvatarSettings as AvatarSettingsType,
+  SubscriptionKeysInput as SubscriptionKeysInputType,
+  SubscriptionObjectInput as SubscriptionObjectInputType,
 } from '@klicker-uzh/types'
-import { levelFromXp } from '@klicker-uzh/util'
-import builder from '../builder.js'
 import {
+  isParticipantDataUseComplete,
+  levelFromXp,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  type ParticipantDataUseFields,
+} from '@klicker-uzh/util'
+import builder from '../builder.js'
+import type { ParticipantAccountDataUseFields } from '../services/participantAccountDataUse.js'
+import {
+  AchievementRef,
   type IAchievement,
   type IParticipantAchievementInstance,
-  AchievementRef,
   ParticipantAchievementInstanceRef,
 } from './achievement.js'
 import {
+  CourseRef,
+  GroupLeaderboardEntry,
   type ICourse,
   type IGroupLeaderboardEntry,
   type ILeaderboardEntry,
   type ILeaderboardStatistics,
-  CourseRef,
-  GroupLeaderboardEntry,
   LeaderboardEntryRef,
   LeaderboardStatistics,
 } from './course.js'
 import {
-  type IGroupActivityInstance,
   GroupActivityInstanceRef,
+  type IGroupActivityInstance,
 } from './groupActivity.js'
 import { LocaleType, UserRole } from './user.js'
 
@@ -102,8 +108,90 @@ export const AvatarSettings = AvatarSettingsRef.implement({
   }),
 })
 
+export const ParticipantDataUseRef =
+  builder.objectRef<ParticipantDataUseFields>('ParticipantDataUse')
+export const ParticipantDataUse = ParticipantDataUseRef.implement({
+  fields: (t) => ({
+    researchConsent: t.exposeBoolean('researchConsent'),
+    researchConsentChoiceAt: t.expose('researchConsentChoiceAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    researchConsentDisclosureVersion: t.exposeString(
+      'researchConsentDisclosureVersion',
+      { nullable: true }
+    ),
+    learningAnalyticsConsent: t.exposeBoolean('learningAnalyticsConsent'),
+    learningAnalyticsChoiceAt: t.expose('learningAnalyticsChoiceAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    learningAnalyticsDisclosureVersion: t.exposeString(
+      'learningAnalyticsDisclosureVersion',
+      { nullable: true }
+    ),
+  }),
+})
+
+export const ParticipantAccountDataUse = builder
+  .objectRef<ParticipantAccountDataUseFields>('ParticipantAccountDataUse')
+  .implement({
+    fields: (t) => ({
+      researchConsent: t.exposeBoolean('researchConsent'),
+      learningAnalyticsConsent: t.exposeBoolean('learningAnalyticsConsent'),
+      dataUseRevision: t.exposeInt('dataUseRevision'),
+      dataUseAcknowledgedAt: t.expose('dataUseAcknowledgedAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+      dataUseAcknowledgedVersion: t.exposeString('dataUseAcknowledgedVersion', {
+        nullable: true,
+      }),
+      currentDisclosureVersion: t.string({
+        resolve: () => PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      }),
+      isComplete: t.boolean({ resolve: isParticipantDataUseComplete }),
+      researchChoiceRecorded: t.boolean({
+        resolve: (state) =>
+          state.researchConsentChoiceAt !== null &&
+          state.researchConsentDisclosureVersion !== null,
+      }),
+      learningAnalyticsChoiceRecorded: t.boolean({
+        resolve: (state) =>
+          state.learningAnalyticsChoiceAt !== null &&
+          state.learningAnalyticsDisclosureVersion !== null,
+      }),
+    }),
+  })
+
+export const ParticipantInitialDataUseInput = builder.inputType(
+  'ParticipantInitialDataUseInput',
+  {
+    fields: (t) => ({
+      disclosureVersion: t.string({ required: true }),
+      researchConsent: t.boolean({ required: true }),
+      learningAnalyticsConsent: t.boolean({ required: true }),
+      acknowledged: t.boolean({ required: true }),
+    }),
+  }
+)
+
 export interface IParticipant
-  extends Omit<DB.Participant, 'password' | 'xp' | 'locale'> {
+  extends Omit<
+    DB.Participant,
+    | 'password'
+    | 'xp'
+    | 'locale'
+    | 'researchConsent'
+    | 'researchConsentChoiceAt'
+    | 'researchConsentDisclosureVersion'
+    | 'learningAnalyticsConsent'
+    | 'learningAnalyticsChoiceAt'
+    | 'learningAnalyticsDisclosureVersion'
+    | 'dataUseAcknowledgedAt'
+    | 'dataUseAcknowledgedVersion'
+    | 'dataUseRevision'
+  > {
   role?: DB.UserRole
   scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants
   isCourseParticipant?: boolean | null // if a live quiz id is provided, flag if the user is participant of the course

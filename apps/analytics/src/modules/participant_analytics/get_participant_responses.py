@@ -1,10 +1,23 @@
 import pandas as pd
 from datetime import date
 
+from ..analytics_eligibility import (
+    AnalyticsEligibilityContext,
+    ensure_analytics_eligibility,
+    filter_records_by_eligibility,
+)
+
 
 def map_details(detail, participantId):
-    courseId = detail["practiceQuiz"]["courseId"] if detail["practiceQuiz"] else detail["microLearning"]["courseId"]
-    return {**detail, "participantId": participantId, "courseId": courseId}
+    activity = detail["practiceQuiz"] or detail["microLearning"]
+    course = activity["course"] if activity is not None else None
+    courseId = activity["courseId"] if activity is not None else None
+    return {
+        **detail,
+        "participantId": participantId,
+        "courseId": courseId,
+        "courseLearningAnalyticsEnabled": bool(course is not None and course.get("isLearningAnalyticsEnabled", False)),
+    }
 
 
 def map_participants(participant):
@@ -39,8 +52,19 @@ def set_course_dates(detail):
     return detail
 
 
-def get_participant_responses(db, start_date, end_date, verbose=False):
+def get_participant_responses(
+    db,
+    start_date,
+    end_date,
+    verbose=False,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
+    if not eligibility.participant_ids:
+        return pd.DataFrame()
+
     participant_response_details = db.participant.find_many(
+        where={"id": {"in": list(eligibility.participant_ids)}},
         include={
             "detailQuestionResponses": {
                 "where": {"createdAt": {"gte": start_date, "lte": end_date}},
@@ -49,7 +73,7 @@ def get_participant_responses(db, start_date, end_date, verbose=False):
                     "microLearning": {"include": {"course": True}},
                 },
             },
-        }
+        },
     )
 
     if verbose:
@@ -59,10 +83,16 @@ def get_participant_responses(db, start_date, end_date, verbose=False):
                 len(participant_response_details), start_date, end_date
             )
         )
-        print(participant_response_details[0])
+        if participant_response_details:
+            print(participant_response_details[0])
 
-    # Convert the question response details to a pandas dataframe
-    df_details = convert_to_df(participant_response_details)
+    details = [detail for participant in participant_response_details for detail in map_participants(participant)]
+    details = [
+        detail
+        for detail in filter_records_by_eligibility(details, eligibility)
+        if detail["courseLearningAnalyticsEnabled"]
+    ]
+    df_details = pd.DataFrame(details)
 
     # Filter out the question response details that are not within the course dates and do not consider them for the analysis
     if verbose:
@@ -70,6 +100,9 @@ def get_participant_responses(db, start_date, end_date, verbose=False):
             "Number of question response details before course date filtering:",
             len(df_details),
         )
+
+    if df_details.empty:
+        return df_details
 
     df_details = df_details.apply(set_course_dates, axis=1)
 
