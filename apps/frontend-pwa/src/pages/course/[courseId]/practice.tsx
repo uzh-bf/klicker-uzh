@@ -23,7 +23,12 @@ interface Props {
   tokenSource?: ParticipantTokenSource
 }
 
-function PracticePool({ courseId, participantToken, cookiesAvailable, tokenSource }: Props) {
+function PracticePool({
+  courseId,
+  participantToken,
+  cookiesAvailable,
+  tokenSource,
+}: Props) {
   const t = useTranslations()
 
   const [currentIx, setCurrentIx] = useState(-1)
