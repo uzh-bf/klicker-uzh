@@ -78,7 +78,6 @@ jobs:
         env:
           BRANCH: ${{ github.ref_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: node .github/scripts/sonar-new-code-boundary.cjs
 
       # Coverage is imported only from test runs bound to this exact revision,
