@@ -800,3 +800,48 @@ its dependent action. Read back effective settings and retain sanitized receipts
   well. `image-scan-receipt.cjs check` passes for both reports. The
   receipt-level proof still comes from the first `v3` or `v3-*` push after this
   package merges, because the scan jobs are gated to non-pull-request events.
+
+### New-code boundary diagnosis — 2026-09-15
+
+- The `v3` and `v3-audit` `SonarCloud` checks went red immediately after the
+  project-version change in #5924 (merged 2026-09-14T10:09:47Z, `51b0ed152c`).
+  The last green `v3` analysis was 04:56Z that day; the first red was 10:11Z.
+  `v3` reports `new_reliability_rating` 5, `new_security_rating` 5,
+  `new_duplicated_lines_density` 4.0 and `new_security_hotspots_reviewed`
+  0.0, all failing. PR analyses are healthy at the same time: PR 6051
+  measures 126 new lines with ratings A/C.
+- Root cause: new code on a long-lived branch is the entire repository. On
+  `v3`, `new_lines` is 328,241 of 328,585, `new_bugs` 106 of 106,
+  `new_vulnerabilities` 98 of 98, and `new_security_hotspots` 46 of 46; on
+  `v3-audit`, `new_lines` is 427,087 of 427,431. The project inherits the
+  instance default `sonar.leak.period.type=previous_version`, and #5924 made
+  the scanner report the root `package.json` version as the project version,
+  so every patch release begins a new baseline and the whole repository
+  re-enters new code.
+- Platform constraint, verified: SonarCloud does not support
+  `sonar.newCode.referenceBranch` or `sonar.branch.target` for long-lived
+  branches (SonarQube Server only), and the new-code definition for every
+  long-lived branch is the project-level one. `/api/new_code_periods/*`
+  returns 404 on SonarCloud, so the change is a SonarCloud UI action and the
+  analysis token cannot write it.
+- Measured churn for the window choice, added plus deleted over
+  `apps packages deploy util .github/scripts`: 3d 7,291; 10d 40,442; 14d
+  75,224. `Number of days` (14) is the recommendation: it is calendar-based,
+  so a version bump no longer re-baselines it, and it matches the release
+  cadence.
+- Shipped: `.github/scripts/sonar-new-code-boundary.cjs` plus its `node
+  --test` suite, wired as one diagnostic step at the end of
+  `v3_sonarcloud.yml` and registered in the `check` CI-policy test list. It
+  runs after the scan so the branch analysis is published even while the
+  definition is broken, and it fails a
+  branch whose new code exceeds half of its analyzed lines with a named
+  cause, the measured values and the settings page, and stays non-fatal when
+  the measures API is unavailable or the branch has no measures. It does not
+  soften the awaited quality gate.
+- Operator step required: set the project-level New Code definition to
+  `Number of days` = 14 at
+  https://sonarcloud.io/project/new_code?id=uzh-bf_klicker-uzh. Until then the
+  `SonarCloud` check on `v3` and `v3-audit` stays red and the staging
+  promoter's required `v3_sonarcloud.yml` / `SonarCloud` gate stays unmet.
+- Preserved boundary: `SonarCloud` is not one of the eight required `v3-ai`
+  check contexts, so the red branch gate does not block PR #6051.
