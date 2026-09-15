@@ -2,23 +2,26 @@ import { useQuery } from '@apollo/client'
 import { SelfDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { toast } from '@uzh-bf/design-system'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
+import Layout from '../components/Layout'
 
 function EditProfile({
   participantToken,
   cookiesAvailable,
+  tokenSource,
 }: {
   participantToken?: string
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
 }) {
   const t = useTranslations()
   const { data, loading, refetch } = useQuery(SelfDocument)
@@ -39,6 +42,7 @@ function EditProfile({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
     callback: () => refetch(),
   })
 
@@ -86,10 +90,11 @@ function EditProfile({
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
   try {
     const apolloClient = initializeApollo()
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        ctx,
+      })
 
     if (!participantToken) {
       return {
@@ -105,6 +110,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         props: {
           participantToken,
           cookiesAvailable,
+          tokenSource,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },

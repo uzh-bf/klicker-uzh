@@ -103,6 +103,7 @@
         "U-catalog.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
+        "Z-course-lti-enrollment.spec.ts",
         "Z-credential-verification.spec.ts"
       ]
     },
