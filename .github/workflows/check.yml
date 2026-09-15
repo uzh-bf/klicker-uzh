@@ -88,6 +88,9 @@ jobs:
             .github/scripts/sonar-coverage-transport.test.cjs \
             .github/scripts/image-scan-receipt.test.cjs
 
+      - name: Validate deployment candidate controls
+        run: node --test .github/scripts/stg-release-promoter.test.js .github/scripts/validate-prd-candidate.test.cjs
+
       - name: Check Playwright CI contracts
         run: |
           pnpm run check:playwright-ci
