@@ -830,8 +830,10 @@ its dependent action. Read back effective settings and retain sanitized receipts
   so a version bump no longer re-baselines it, and it matches the release
   cadence.
 - Shipped: `.github/scripts/sonar-new-code-boundary.cjs` plus its `node
-  --test` suite, wired as one diagnostic step in `v3_sonarcloud.yml` before
-  the scan and registered in the `check` CI-policy test list. It fails a
+  --test` suite, wired as one diagnostic step at the end of
+  `v3_sonarcloud.yml` and registered in the `check` CI-policy test list. It
+  runs after the scan so the branch analysis is published even while the
+  definition is broken, and it fails a
   branch whose new code exceeds half of its analyzed lines with a named
   cause, the measured values and the settings page, and stays non-fatal when
   the measures API is unavailable or the branch has no measures. It does not
