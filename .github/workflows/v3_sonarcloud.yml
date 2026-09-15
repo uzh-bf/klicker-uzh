@@ -66,6 +66,21 @@ jobs:
           version="$(node -p "require('./package.json').version")"
           echo "value=${version}" >> "$GITHUB_OUTPUT"
 
+      # SonarCloud applies one project-level New Code definition to every
+      # long-lived branch, and the project inherits the instance default
+      # "previous version". Because the scanner reports the root package.json
+      # version, each release starts a new baseline and the whole repository
+      # re-enters new code, so the awaited gate below fails on historical
+      # findings while the pull-request analysis of the same code is healthy.
+      # This diagnostic names that cause before the analysis spends its
+      # coverage window and its scan. It does not replace the gate.
+      - name: Check the new-code boundary
+        env:
+          BRANCH: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: node .github/scripts/sonar-new-code-boundary.cjs
+
       # Coverage is imported only from test runs bound to this exact revision,
       # and only when the producing run recorded the tested source tree. Every
       # producer is reported in the step summary, so a missing report is visible
