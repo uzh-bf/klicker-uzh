@@ -2010,6 +2010,7 @@ type GeneratedElementDraft {
   savedAt: Date
   savedElementId: Int
   sourceElementId: ID!
+  suggestedTags: [String!]!
   targetDifficulty: Int
   updatedAt: Date!
 }
@@ -2025,6 +2026,7 @@ type GeneratedElementEditable {
   explanation: String
   name: String!
   prompt: String!
+  tagSelection: GeneratedElementTagSelection
   tags: [String!]!
 }
 
@@ -2035,7 +2037,18 @@ input GeneratedElementEditableInput {
   explanation: String
   name: String!
   prompt: String!
+  tagSelection: GeneratedElementTagSelectionInput
   tags: [String!]
+}
+
+type GeneratedElementTagSelection {
+  existingTagIds: [Int!]!
+  newTagNames: [String!]!
+}
+
+input GeneratedElementTagSelectionInput {
+  existingTagIds: [Int!]
+  newTagNames: [String!]
 }
 
 type GroupAchievementInstance {
@@ -2755,7 +2768,7 @@ type Mutation {
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
   joinRandomCourseGroupPool(courseId: String!): Boolean!
-  keepGeneratedElementDraft(basePoints: Boolean!, choiceIds: [ID!], content: String!, draftId: ID!, expectedRevision: Int!, explanation: String, name: String!, options: OptionsChoicesInput, pointsMultiplier: Int!, status: ElementStatus!, tags: [String!], type: GeneratableElementType!): GeneratedElementDraft!
+  keepGeneratedElementDraft(basePoints: Boolean!, choiceIds: [ID!], content: String!, draftId: ID!, expectedRevision: Int!, explanation: String, name: String!, options: OptionsChoicesInput, pointsMultiplier: Int!, status: ElementStatus!, tagSelection: GeneratedElementTagSelectionInput, tags: [String!], type: GeneratableElementType!): GeneratedElementDraft!
   leaveCourseLeaderboard(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   leaveRandomCourseGroupPool(courseId: String!): Boolean!

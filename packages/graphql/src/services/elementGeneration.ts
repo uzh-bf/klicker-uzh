@@ -4,6 +4,7 @@ import type {
   ElementManipulationInput,
   GeneratedFlashcardEditable,
   GeneratedQuestionEditable,
+  GeneratedQuestionTagSelectionInput,
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -22,6 +23,11 @@ import {
   setGeneratedFlashcardDecision,
   updateGeneratedFlashcardDraft,
 } from './flashcardGenerationDrafts.js'
+import {
+  questionTagSelectionWrite,
+  resolveQuestionTagSelection,
+  withQuestionTagConflictRetry,
+} from './generatedQuestionTags.js'
 import {
   getQuestionGenerationBuild,
   reviewQuestionGenerationDesign,
@@ -88,6 +94,7 @@ export type GeneratedElementEditableInput = {
   }> | null
   cardType?: 'definition' | 'formula' | 'calculation' | null
   tags?: string[] | null
+  tagSelection?: GeneratedQuestionTagSelectionInput | null
 }
 
 export type KeepGeneratedElementDraftInput = {
@@ -101,6 +108,7 @@ export type KeepGeneratedElementDraftInput = {
   basePoints: boolean
   pointsMultiplier: number
   tags?: string[] | null
+  tagSelection?: GeneratedQuestionTagSelectionInput | null
   choiceIds?: string[] | null
   options?: ElementManipulationInput['options']
 }
@@ -260,6 +268,12 @@ function normalizedKeepPayload(
         'Generated element type cannot be changed'
       )
     }
+    if (input.tagSelection != null) {
+      throw questionGenerationServiceError(
+        'DRAFT_INVALID',
+        'Flashcard generation does not use tag selections'
+      )
+    }
     const storedCurrent = draft.current as GeneratedFlashcardEditable
     const current = normalizeGeneratedFlashcardEditable({
       name: input.name,
@@ -279,7 +293,7 @@ function normalizedKeepPayload(
       pointsMultiplier: 1,
       tags: current.tags,
     }
-    return { current, elementInput }
+    return { current, elementInput, tagWrite: { mode: 'none' } as const }
   }
 
   if (!isQuestionElementType(input.type) || draft.elementType !== input.type) {
@@ -317,6 +331,12 @@ function normalizedKeepPayload(
       feedback: choice.feedback ?? null,
     }))
   const questionType = input.type
+  const storedCurrent = draft.current as GeneratedQuestionEditable
+  const tagWrite = questionTagSelectionWrite(
+    { tagSelection: input.tagSelection, tags: input.tags },
+    storedCurrent.tagSelection
+  )
+  const tagSelection = tagWrite.mode === 'none' ? undefined : tagWrite.selection
   const current: GeneratedQuestionEditable = {
     itemType: questionType,
     name: input.name,
@@ -325,6 +345,7 @@ function normalizedKeepPayload(
     explanation: input.explanation ?? null,
     tags: input.tags ?? [],
     choices,
+    ...(tagSelection ? { tagSelection } : {}),
   }
   const elementInput: ElementManipulationInput = {
     status: input.status,
@@ -346,9 +367,11 @@ function normalizedKeepPayload(
     },
     basePoints: input.basePoints,
     pointsMultiplier: input.pointsMultiplier,
-    tags: current.tags,
+    // Structured selections are applied by id after manipulation; only the
+    // legacy name input still travels as element tag names.
+    tags: tagWrite.mode === 'legacy' ? tagWrite.selection.newTagNames : [],
   }
-  return { current, elementInput }
+  return { current, elementInput, tagWrite }
 }
 
 type SavedElementForRetry = {
@@ -362,17 +385,22 @@ type SavedElementForRetry = {
   pointsMultiplier: number
   difficultyLevel: number | null
   options: unknown
-  tags: Array<{ name: string }>
+  tags: Array<{ id: number; name: string }>
 }
 
 function normalizedTagNames(tags: string[] | null | undefined) {
   return [...new Set(tags ?? [])].sort((a, b) => a.localeCompare(b))
 }
 
+type KeepTagExpectation =
+  | { kind: 'names' }
+  | { kind: 'ids'; tagIds: number[] | null }
+
 function savedElementMatchesKeepRequest(
   savedElement: SavedElementForRetry,
   elementInput: ElementManipulationInput,
-  ownerId: string
+  ownerId: string,
+  tagExpectation: KeepTagExpectation = { kind: 'names' }
 ) {
   // manipulateElement persists this validator result for every Element type;
   // optionless types therefore intentionally compare against an empty object.
@@ -394,12 +422,30 @@ function savedElementMatchesKeepRequest(
     savedElement.pointsMultiplier === elementInput.pointsMultiplier &&
     savedElement.difficultyLevel === (elementInput.difficultyLevel ?? null) &&
     isDeepStrictEqual(savedElement.options, persistedOptions) &&
-    isDeepStrictEqual(
+    savedElementTagsMatch(savedElement, elementInput, tagExpectation)
+  )
+}
+
+function savedElementTagsMatch(
+  savedElement: SavedElementForRetry,
+  elementInput: ElementManipulationInput,
+  tagExpectation: KeepTagExpectation
+) {
+  if (tagExpectation.kind === 'names') {
+    return isDeepStrictEqual(
       savedElement.tags
         .map((tag) => tag.name)
         .sort((a, b) => a.localeCompare(b)),
       normalizedTagNames(elementInput.tags)
     )
+  }
+  // A `resolve-only` miss means the request cannot reproduce the saved element,
+  // so a proposal that was never created does not count as an exact retry.
+  if (tagExpectation.tagIds === null) return false
+
+  return isDeepStrictEqual(
+    [...new Set(tagExpectation.tagIds)].sort((a, b) => a - b),
+    savedElement.tags.map((tag) => tag.id).sort((a, b) => a - b)
   )
 }
 
@@ -415,7 +461,7 @@ export async function keepGeneratedElementDraft(
     )
   }
 
-  return ctx.prisma.$transaction(async (transaction) => {
+  const run = async (transaction: DB.Prisma.TransactionClient) => {
     const owned = await transaction.generatedElementDraft.findFirst({
       where: {
         id: input.draftId,
@@ -454,7 +500,7 @@ export async function keepGeneratedElementDraft(
             pointsMultiplier: true,
             difficultyLevel: true,
             options: true,
-            tags: { select: { name: true } },
+            tags: { select: { id: true, name: true } },
           },
         },
       },
@@ -476,8 +522,23 @@ export async function keepGeneratedElementDraft(
       )
     }
 
-    const { current, elementInput } = normalizedKeepPayload(draft, input)
+    const { current, elementInput, tagWrite } = normalizedKeepPayload(
+      draft,
+      input
+    )
     if (draft.savedElementId !== null) {
+      const tagExpectation: KeepTagExpectation =
+        tagWrite.mode === 'selection'
+          ? {
+              kind: 'ids',
+              tagIds: await resolveQuestionTagSelection(
+                transaction,
+                ctx.user.sub,
+                tagWrite.selection,
+                'resolve-only'
+              ),
+            }
+          : { kind: 'names' }
       if (
         draft.decision === DB.GeneratedElementDecision.ACCEPTED &&
         draft.revision === input.expectedRevision + 1 &&
@@ -485,7 +546,8 @@ export async function keepGeneratedElementDraft(
         savedElementMatchesKeepRequest(
           draft.savedElement,
           elementInput,
-          ctx.user.sub
+          ctx.user.sub,
+          tagExpectation
         )
       ) {
         return draft
@@ -517,6 +579,15 @@ export async function keepGeneratedElementDraft(
       )
     }
 
+    const resolvedTagIds =
+      tagWrite.mode === 'selection'
+        ? await resolveQuestionTagSelection(
+            transaction,
+            ctx.user.sub,
+            tagWrite.selection,
+            'resolve-or-create'
+          )
+        : null
     const element = await manipulateElement(elementInput, {
       ...ctx,
       prisma: transaction,
@@ -526,6 +597,18 @@ export async function keepGeneratedElementDraft(
         'SAVE_VALIDATION_FAILED',
         'Generated element is not a valid element'
       )
+    }
+    if (tagWrite.mode === 'selection') {
+      // Connect by validated owner tag id instead of re-creating a tag by name,
+      // so a renamed tag keeps its identity and a deleted one is never revived.
+      await transaction.element.update({
+        where: { id: element.id },
+        data: {
+          tags: {
+            set: [...new Set(resolvedTagIds ?? [])].map((id) => ({ id })),
+          },
+        },
+      })
     }
     const savedAt = new Date()
     const linked = await transaction.generatedElementDraft.updateMany({
@@ -552,7 +635,9 @@ export async function keepGeneratedElementDraft(
     return transaction.generatedElementDraft.findUniqueOrThrow({
       where: { id: draft.id },
     })
-  })
+  }
+
+  return withQuestionTagConflictRetry(() => ctx.prisma.$transaction(run))
 }
 
 export async function updateGeneratedElementDraft(
@@ -569,6 +654,7 @@ export async function updateGeneratedElementDraft(
       !input.current.explanation ||
       !input.current.cardType ||
       input.current.context != null ||
+      input.current.tagSelection != null ||
       (input.current.choices?.length ?? 0) > 0
     ) {
       throw questionGenerationServiceError(
@@ -602,6 +688,13 @@ export async function updateGeneratedElementDraft(
       'An assessment element requires answer choices'
     )
   }
+  const tagWrite = questionTagSelectionWrite(
+    {
+      tagSelection: input.current.tagSelection,
+      tags: input.current.tags,
+    },
+    undefined
+  )
   const current: GeneratedQuestionEditable = {
     itemType: elementType,
     name: input.current.name,
@@ -619,6 +712,7 @@ export async function updateGeneratedElementDraft(
       draftId: input.draftId,
       expectedRevision: input.expectedRevision,
       current,
+      ...(tagWrite.mode === 'none' ? {} : { tagSelection: tagWrite.selection }),
     },
     ctx
   )

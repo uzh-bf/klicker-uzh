@@ -774,6 +774,149 @@ test('explicit resume requires stop evidence, serializes operations and retains 
   await assert.rejects(resume(), /incomplete/)
 })
 
+test('resume reconciles the inconsistent provider before starting it', async () => {
+  const { config, checkout, read } = await installationFixture()
+  await prepareLocalConfiguration(config, revision)
+  await installManagedConfiguration(config, revision, read)
+  const identity = {
+    kind: 'linked',
+    repoPath: checkout,
+    workspace: 'synthetic-runtime',
+    profile: 'local-kb-setup',
+  }
+  await installProviderRouting(config, revision, identity)
+  await setupReceipts(config)
+  await completePreparation(config, revision)
+  const lifecycle = []
+  let docPhase = 'stopped'
+  let ingestionRunning = false
+  let failReconcile = false
+  const provider = async (command) => {
+    const name = Object.keys(config.providers).find(
+      (key) => config.providers[key].sourcePath === command.cwd
+    )
+    const providerRevision = config.providers[name].revision
+    if (!command.args.includes('status')) {
+      const verb = command.args.includes('stop') ? 'stop' : 'start'
+      lifecycle.push(`${name}:${verb}`)
+      if (name === 'docProcessing') {
+        if (verb === 'stop' && failReconcile)
+          throw new Error('synthetic reconcile failure')
+        docPhase = verb === 'stop' ? 'stopped' : 'running'
+      }
+      if (name === 'ingestion') ingestionRunning = verb === 'start'
+      return '{}'
+    }
+    if (name === 'ingestion')
+      return JSON.stringify({
+        instance: { name: config.project.identity },
+        source: { revision: providerRevision },
+        preparation: {
+          configuration: 'prepared',
+          credentials: 'prepared',
+          schema: 'prepared',
+        },
+        process: {
+          infrastructure: [
+            {
+              service: 'pgvector-pg',
+              state: ingestionRunning ? 'running' : 'exited',
+              health: ingestionRunning ? 'healthy' : '',
+            },
+          ],
+          workloads: [
+            {
+              service: 'ingestion-api',
+              state: ingestionRunning ? 'running' : 'exited',
+              // The provider reports no health for this workload, so a fully
+              // running API still reads as not-ready.
+              health: '',
+            },
+          ],
+        },
+      })
+    if (name === 'docProcessing')
+      return JSON.stringify({
+        instance_id: config.project.identity,
+        source_revision: providerRevision,
+        ownership: 'verified',
+        setup: 'ready',
+        phase: docPhase,
+        ready: docPhase === 'running',
+        api:
+          docPhase === 'running'
+            ? 'running'
+            : docPhase === 'partial'
+              ? 'starting'
+              : 'stopped',
+        workers:
+          docPhase === 'running'
+            ? { callback: 'running', 'hatchet-cpu': 'running' }
+            : docPhase === 'partial'
+              ? { callback: 'exited', 'hatchet-cpu': 'starting' }
+              : { callback: 'stopped', 'hatchet-cpu': 'stopped' },
+      })
+    if (name === 'scraping')
+      return JSON.stringify({
+        instance: config.project.identity,
+        source_revision: providerRevision,
+        owned: true,
+        setup: { prepared: true },
+        readiness: { api: false },
+        runtime: { api: { running: false }, services: [] },
+      })
+    return JSON.stringify({
+      instance: config.project.identity,
+      source_revision: providerRevision,
+      prepared: true,
+      ready: false,
+      runtime: 'stopped',
+    })
+  }
+  const docker = async (args) => {
+    if (args[0] === 'context') return 'unix:///synthetic/docker.sock'
+    if (args.includes('ls')) return ''
+    return ''
+  }
+  const managed = async (args) =>
+    args[0] === 'stop'
+      ? JSON.stringify({ ...identity, stopped: true })
+      : JSON.stringify({ ...identity, profile: LOCAL_KB_MANAGED_PROFILE })
+  await stopInfrastructure(config, revision, managed, docker, provider)
+  await startInfrastructure(config, revision, managed, docker, provider)
+  await stopInfrastructure(config, revision, managed, docker, provider)
+  // The recorded state an interrupted start leaves behind: doc processing still
+  // claims activity while one of its recorded processes died, and the ingestion
+  // provider stayed up under its sibling Compose project.
+  docPhase = 'partial'
+  ingestionRunning = true
+  lifecycle.length = 0
+  assert.equal(
+    (await resumeInfrastructure(config, revision, managed, docker, provider))
+      .providerWorkerActivationRequested,
+    true
+  )
+  // Only the inconsistent provider is stopped, and only before its own start.
+  // The unreported-health provider that is still running is left alone.
+  assert.deepEqual(lifecycle, [
+    'docProcessing:stop',
+    'scraping:start',
+    'docProcessing:start',
+    'ingestion:start',
+    'retrieval:start',
+  ])
+  await stopInfrastructure(config, revision, managed, docker, provider)
+  docPhase = 'partial'
+  failReconcile = true
+  lifecycle.length = 0
+  await assert.rejects(
+    resumeInfrastructure(config, revision, managed, docker, provider),
+    /provider docProcessing reconciliation/
+  )
+  // A refused reconciliation never reaches the provider's start verb.
+  assert.deepEqual(lifecycle, ['docProcessing:stop'])
+})
+
 test('interrupted stop evidence permits shutdown but not resume', async () => {
   const { config, checkout, read } = await installationFixture()
   await prepareLocalConfiguration(config, revision)
