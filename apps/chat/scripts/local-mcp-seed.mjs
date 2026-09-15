@@ -2,6 +2,7 @@ import { requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { encrypt, getZurichMonthStart } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import {
+  assertLocalFixtureConfiguration,
   assertLocalSeedOwnership,
   LOCAL_CHATBOT_ID,
   LOCAL_COURSE_ID,
@@ -13,6 +14,7 @@ import {
   LOCAL_SERVER_ID,
   LOCAL_SERVER_NAME,
   LOCAL_SERVER_URL,
+  localFixtureScope,
 } from './local-mcp-auth.mjs'
 
 /**
@@ -29,6 +31,8 @@ const LOCAL_USAGE_BUDGET = 100
 const LOCAL_CREDIT_BALANCE = 100
 const LOCAL_START_DATE = new Date('2020-01-01T00:00:00.000Z')
 const LOCAL_END_DATE = new Date('2055-01-01T00:00:00.000Z')
+const LOCAL_FIXTURE_CHATBOT_NAME = 'Local MCP fixture chatbot'
+const LOCAL_FIXTURE_KB_NAME = 'Local MCP fixture knowledge base'
 
 function buildServer(token) {
   return {
@@ -69,6 +73,39 @@ function buildConfigurations() {
   ]
 }
 
+/**
+ * The optional additional identity stays a draft.  Participants must never
+ * reach a locally configured corpus, so this binding only exists for signed
+ * scope-token checks against the local MCP server.
+ */
+function buildFixtureChatbot(fixture) {
+  return {
+    id: fixture.chatbotId,
+    ownerId: LOCAL_OWNER_ID,
+    courseId: LOCAL_COURSE_ID,
+    name: LOCAL_FIXTURE_CHATBOT_NAME,
+    description: 'Synthetic additional identity for the local MCP fixture.',
+    systemPrompts: {
+      [fixture.chatMode]: {
+        prompt: 'Answer from the locally configured retrieval corpus.',
+        description: 'Synthetic additional-mode prompt.',
+      },
+    },
+    status: 'DRAFT',
+  }
+}
+
+function buildFixtureKnowledgeBase(fixture) {
+  return {
+    id: fixture.kbId,
+    ownerId: LOCAL_OWNER_ID,
+    name: LOCAL_FIXTURE_KB_NAME,
+    description: 'Synthetic knowledge base for the local MCP fixture.',
+    knowledgeGraphEnabled: false,
+    deletedAt: null,
+  }
+}
+
 function isSeededLecturer(user) {
   return (
     user?.id === LOCAL_OWNER_ID &&
@@ -90,6 +127,62 @@ function isDedicatedParent(chatbot, course) {
   )
 }
 
+function isFixtureChatbot(chatbot, fixture) {
+  return (
+    chatbot?.id === fixture.chatbotId &&
+    chatbot.ownerId === LOCAL_OWNER_ID &&
+    chatbot.courseId === LOCAL_COURSE_ID &&
+    chatbot.status === 'DRAFT' &&
+    Object.hasOwn(chatbot.systemPrompts ?? {}, fixture.chatMode)
+  )
+}
+
+function isFixtureKnowledgeBase(kb, fixture) {
+  return (
+    kb?.id === fixture.kbId &&
+    kb.ownerId === LOCAL_OWNER_ID &&
+    kb.deletedAt === null
+  )
+}
+
+function isFixtureKnowledgeBaseBinding(binding, fixture) {
+  return (
+    binding?.kbId === fixture.kbId &&
+    binding.chatbotId === fixture.chatbotId &&
+    binding.isEnabled === true
+  )
+}
+
+function hasFixtureRows(state, fixture) {
+  try {
+    assertLocalFixtureConfiguration(
+      state.configurations.find(
+        (configuration) => configuration.chatbotId === fixture.chatbotId
+      ),
+      fixture
+    )
+  } catch {
+    return false
+  }
+
+  return (
+    exactSingleRow(
+      state.chatbots.filter((chatbot) => chatbot.id === fixture.chatbotId),
+      (chatbot) => isFixtureChatbot(chatbot, fixture)
+    ) &&
+    exactSingleRow(
+      state.kbs.filter((kb) => kb.id !== LOCAL_KB_ID),
+      (kb) => isFixtureKnowledgeBase(kb, fixture)
+    ) &&
+    exactSingleRow(
+      state.kbChatbots.filter(
+        (binding) => binding.chatbotId === fixture.chatbotId
+      ),
+      (binding) => isFixtureKnowledgeBaseBinding(binding, fixture)
+    )
+  )
+}
+
 function assertNotInterrupted(interrupted) {
   if (interrupted()) throw new Error('Local MCP startup interrupted')
 }
@@ -102,11 +195,13 @@ function exactSingleRow(rows, predicate) {
   return rows.length === 1 && predicate(rows[0])
 }
 
-function isCompleteDomain(state) {
-  const configurations = state.configurations
-  const chatbot = state.chatbots[0]
-  const course = state.courses[0]
-  const owner = state.users[0]
+function hasDedicatedRows(state) {
+  const dedicatedChatbot = state.chatbots.find(
+    (chatbot) => chatbot.id === LOCAL_CHATBOT_ID
+  )
+  const dedicatedCourse = state.courses.find(
+    (course) => course.id === LOCAL_COURSE_ID
+  )
   const server = state.servers[0]
 
   if (
@@ -139,22 +234,21 @@ function isCompleteDomain(state) {
         participation.courseId === LOCAL_COURSE_ID &&
         participation.participantId === LOCAL_PARTICIPANT_ID
     ) ||
-    !exactSingleRow(state.chatbots, (candidate) =>
-      isDedicatedParent(candidate, course)
+    !exactSingleRow(
+      state.chatbots.filter((chatbot) => chatbot.id === LOCAL_CHATBOT_ID),
+      (candidate) => isDedicatedParent(candidate, dedicatedCourse)
     ) ||
     !exactSingleRow(
-      state.kbs,
-      (kb) =>
-        kb.id === LOCAL_KB_ID &&
-        kb.ownerId === LOCAL_OWNER_ID &&
-        kb.deletedAt === null
+      state.kbs.filter((kb) => kb.id === LOCAL_KB_ID),
+      (kb) => kb.ownerId === LOCAL_OWNER_ID && kb.deletedAt === null
     ) ||
     !exactSingleRow(
-      state.kbChatbots,
+      state.kbChatbots.filter(
+        (binding) => binding.chatbotId === LOCAL_CHATBOT_ID
+      ),
       (binding) =>
         binding.id === LOCAL_KB_CHATBOT_ID &&
         binding.kbId === LOCAL_KB_ID &&
-        binding.chatbotId === LOCAL_CHATBOT_ID &&
         binding.isEnabled === true
     ) ||
     !exactSingleRow(
@@ -170,19 +264,44 @@ function isCompleteDomain(state) {
         !['BASE', 'ADVANCED'].includes(usage.usageClass)
     ) ||
     state.servers.length !== 1 ||
-    state.configurations.length !== 2 ||
-    owner === undefined ||
     server === undefined
   ) {
     return false
   }
 
   try {
-    assertLocalSeedOwnership(server, configurations, chatbot)
+    assertLocalSeedOwnership(
+      server,
+      state.configurations.filter(
+        (configuration) => configuration.chatbotId === LOCAL_CHATBOT_ID
+      ),
+      dedicatedChatbot
+    )
     return true
   } catch {
     return false
   }
+}
+
+/**
+ * The disposable database belongs to this seed, so it holds the dedicated
+ * domain plus, at most, the identities named by the optional fixture file.
+ * Any other row is a conflict rather than permission to overwrite it.
+ */
+function isCompleteDomain(state, fixture) {
+  if (!hasDedicatedRows(state)) return false
+
+  const identities = 1 + (fixture === null ? 0 : 1)
+  if (
+    state.chatbots.length !== identities ||
+    state.kbs.length !== identities ||
+    state.kbChatbots.length !== identities ||
+    state.configurations.length !== identities + 1
+  ) {
+    return false
+  }
+
+  return fixture === null || hasFixtureRows(state, fixture)
 }
 
 async function readDomainState(tx) {
@@ -226,7 +345,13 @@ async function readDomainState(tx) {
       },
     }),
     tx.chatbot.findMany({
-      select: { id: true, ownerId: true, courseId: true, status: true },
+      select: {
+        id: true,
+        ownerId: true,
+        courseId: true,
+        status: true,
+        systemPrompts: true,
+      },
     }),
     tx.kB.findMany({
       select: { id: true, ownerId: true, deletedAt: true },
@@ -423,6 +548,32 @@ async function createMcpFixture(tx, token) {
   }
 }
 
+async function createFixtureIdentity(tx, fixture, interrupted) {
+  const configuration = {
+    mcpServerId: LOCAL_SERVER_ID,
+    chatbotId: fixture.chatbotId,
+    chatMode: fixture.chatMode,
+    isEnabled: true,
+    priority: 0,
+    allowedTools: ['doc_query'],
+    parameters: localFixtureScope(fixture.kbId),
+  }
+  assertLocalFixtureConfiguration(configuration, fixture)
+
+  await tx.chatbot.create({ data: buildFixtureChatbot(fixture) })
+  await tx.kB.create({ data: buildFixtureKnowledgeBase(fixture) })
+  await tx.kBChatbot.create({
+    data: {
+      kbId: fixture.kbId,
+      chatbotId: fixture.chatbotId,
+      isEnabled: true,
+    },
+  })
+  assertNotInterrupted(interrupted)
+  await tx.chatbotMCPConfig.create({ data: configuration })
+  assertNotInterrupted(interrupted)
+}
+
 async function createBudgetsAndCredits(tx) {
   const monthStart = getZurichMonthStart(new Date())
 
@@ -458,7 +609,7 @@ async function createBudgetsAndCredits(tx) {
   })
 }
 
-async function createLocalDomain(tx, token, interrupted, passwords) {
+async function createLocalDomain(tx, token, interrupted, passwords, fixture) {
   assertNotInterrupted(interrupted)
   await createOwner(tx, passwords.owner)
   assertNotInterrupted(interrupted)
@@ -469,6 +620,9 @@ async function createLocalDomain(tx, token, interrupted, passwords) {
   await createKnowledgeBase(tx)
   assertNotInterrupted(interrupted)
   await createMcpFixture(tx, token)
+  if (fixture !== null) {
+    await createFixtureIdentity(tx, fixture, interrupted)
+  }
   await createBudgetsAndCredits(tx)
   assertNotInterrupted(interrupted)
 }
@@ -482,11 +636,16 @@ async function rotateServerSecret(tx, token, interrupted) {
   assertNotInterrupted(interrupted)
 }
 
-// The caller owns the local-runtime boundary and the guarded Prisma client.
+/**
+ * The caller owns the local-runtime boundary and the guarded Prisma client.
+ * `fixture` is the optional additional identity from the ignored fixture file;
+ * without it this creates the dedicated synthetic domain exactly as before.
+ */
 export async function repairLocalMcpSeed(
   db,
   token,
-  isInterrupted = () => false
+  isInterrupted = () => false,
+  fixture = null
 ) {
   const interrupted =
     typeof isInterrupted === 'function' ? isInterrupted : () => false
@@ -507,12 +666,19 @@ export async function repairLocalMcpSeed(
         const state = await readDomainState(tx)
 
         if (isEmptyDomain(state)) {
-          await createLocalDomain(tx, token, interrupted, passwords)
+          await createLocalDomain(tx, token, interrupted, passwords, fixture)
           return
         }
 
-        if (!isCompleteDomain(state)) {
+        // The additional identity is seed-owned and synthetic, so adding it to
+        // an otherwise exact dedicated domain is completion, not a conflict.
+        const missingFixture = fixture !== null && isCompleteDomain(state, null)
+        if (!missingFixture && !isCompleteDomain(state, fixture)) {
           throw new Error('Local MCP seed ownership conflict')
+        }
+
+        if (missingFixture) {
+          await createFixtureIdentity(tx, fixture, interrupted)
         }
 
         await rotateServerSecret(tx, token, interrupted)
