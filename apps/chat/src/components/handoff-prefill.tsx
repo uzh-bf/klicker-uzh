@@ -26,6 +26,7 @@ export function HandoffPrefill() {
   const [topic, setTopic] = useState<string>()
   const [attempt, setAttempt] = useState(0)
   const consumed = useRef(false)
+  const applied = useRef(false)
 
   useEffect(() => {
     if (consumed.current) {
@@ -46,7 +47,12 @@ export function HandoffPrefill() {
   }, [pathname, router, searchParams])
 
   useEffect(() => {
-    if (!topic || value === topic) {
+    if (!topic || applied.current) {
+      return
+    }
+    // The fill landed; stop retrying so a later deliberate clear stays cleared.
+    if (value === topic) {
+      applied.current = true
       return
     }
     // Anything else in the composer is the student's own writing or a
