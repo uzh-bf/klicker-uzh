@@ -11,10 +11,12 @@ query QGetChatbotsInfoWithKnowledgeBases {
     expectedStudentCount
     reviewComment
     publishedAt
+    writingCoachUnavailableReason
     standardModeConfig {
       tutorEnabled
       explainerEnabled
       quizzerEnabled
+      writingCoachEnabled
       courseName
       subjectDomain
       languageOfInstruction

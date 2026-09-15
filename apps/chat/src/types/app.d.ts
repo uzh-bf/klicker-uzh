@@ -1,9 +1,9 @@
 import { routing } from '@klicker-uzh/i18n'
-import type { ChatbotStandardModeConfig } from '@klicker-uzh/types'
+import type { StoredChatbotStandardModeConfig } from '@klicker-uzh/types'
 
 declare global {
   namespace PrismaJson {
-    type PrismaChatbotStandardModeConfig = ChatbotStandardModeConfig
+    type PrismaChatbotStandardModeConfig = StoredChatbotStandardModeConfig
   }
 }
 
