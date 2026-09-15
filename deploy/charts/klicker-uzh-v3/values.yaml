@@ -67,6 +67,11 @@ vapid:
   publicKey: ''
   privateKey: ''
 
+logging:
+  # Pino threshold for all server apps: debug | info | warn | error.
+  # Empty keeps the application default (info).
+  logLevel: ''
+
 global:
   deploymentEnvironment: development
   # Optional release-wide tag; unset keeps the per-image tag fallbacks below.

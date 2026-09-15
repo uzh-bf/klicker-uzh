@@ -6,6 +6,7 @@ import {
 import {
   createHatchetClient,
   createHatchetWorkerRuntime,
+  drainTaskLogWrites,
   resolveWorkerRuntimeConfig,
   withHatchetTaskLogging,
 } from '@klicker-uzh/hatchet'
@@ -130,6 +131,9 @@ async function main() {
     { event: 'hatchet.worker.stopped', mode },
     'Response processor worker stopped'
   )
+  // Flush pending background task log writes before exiting; the explicit
+  // exit below would otherwise drop them.
+  await drainTaskLogWrites()
   // The drain is complete here, but the Redis and Prisma clients opened above
   // keep the event loop alive and node runs as PID 1, so exit explicitly
   // instead of waiting for the kubelet's SIGKILL at the end of the grace period.

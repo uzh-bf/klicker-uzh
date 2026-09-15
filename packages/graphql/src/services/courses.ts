@@ -1238,10 +1238,13 @@ async function recordRejectedAssessmentPointCorrection(input: {
       requiredPermission: 'ADMIN',
     })
   } catch (error) {
-    console.error('Failed to record rejected assessment point correction', {
-      liveQuizId: input.liveQuizId,
-      errorType: error instanceof Error ? error.name : 'unknown',
-    })
+    input.ctx.log.error(
+      {
+        liveQuizId: input.liveQuizId,
+        errorType: error instanceof Error ? error.name : 'unknown',
+      },
+      'Failed to record rejected assessment point correction'
+    )
   }
 }
 
