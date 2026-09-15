@@ -12,7 +12,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.25.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY . .
 
@@ -25,7 +25,7 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
-RUN npm i -g --ignore-scripts pnpm@11.25.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
@@ -44,11 +44,15 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-RUN npm i -g --ignore-scripts pnpm@11.25.0 turbo@2.10.11
+RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.10.11
 
 COPY --from=deps /app/out/json/ .
 COPY --from=deps /app/out/pnpm* .
-RUN pnpm i --frozen-lockfile --prod --ignore-scripts
+# See apps/backend-docker/Dockerfile: the install, the toolchain teardown and
+# the cache removal share one RUN so no build state lands in a committed layer.
+RUN pnpm i --frozen-lockfile --prod --ignore-scripts \
+ && npm rm -g --ignore-scripts pnpm turbo \
+ && rm -rf /root/.cache/pnpm /root/.local/share/pnpm /root/.npm
 
 COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ ./packages/util/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/types/dist/ ./packages/types/dist/

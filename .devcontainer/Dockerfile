@@ -22,7 +22,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.12 /uv /uvx /bin/
 
 # Install pnpm with npm (not corepack — signature verification can fail on a
 # pinned Node). Mirror the repo's packageManager pin. (GOTCHAS #8)
-RUN npm install -g pnpm@11.25.0
+RUN npm install -g pnpm@11.5.0
 
 # Use a stable path for the machine-local store mounted by Compose. (GOTCHAS #9)
 RUN pnpm config set store-dir "$PNPM_HOME/.pnpm-store"

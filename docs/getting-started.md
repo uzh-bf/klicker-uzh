@@ -14,7 +14,7 @@ tags:
 
 ## Toolchain (verified 2026-09-14)
 
-Aligned to Node `24.21.0` and pnpm `11.25.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.21.0`, `volta.pnpm = 11.25.0`, `packageManager = pnpm@11.25.0`. CI and the production Dockerfiles pin the same pnpm release, because the pnpm 11.5.0 line and the Node 24.16.0 base image carried fixable HIGH/CRITICAL advisories in their vendored tooling.
+Aligned to Node `24.21.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.21.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`. The pnpm pin stays on the 11.5.0 line because the shared Playwright composite actions declare their own pnpm version, so `pnpm/action-setup` rejects a pull request that moves the pin; the production Dockerfiles drop `pnpm` and `turbo` after installing production dependencies instead, which keeps their vendored advisories out of the scanned runtime images.
 
 The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
@@ -134,7 +134,7 @@ managed startup, not the separately reviewed retained-recovery callback.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
-The image does include the repository's development toolchain: pnpm `11.25.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
+The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
 
 Before Compose starts, `.devcontainer/initialize.sh` creates the external
 Docker volume `klicker-uzh-pnpm-store-v1`. Every worktree mounts that volume at

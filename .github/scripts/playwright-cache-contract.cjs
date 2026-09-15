@@ -6,7 +6,7 @@ const { execFileSync } = require('node:child_process')
 const CACHE_SCHEMA = '3'
 const BUILD_ENVIRONMENT_SCHEMA = '1'
 const NODE_VERSION = '24'
-const PNPM_VERSION = '11.25.0'
+const PNPM_VERSION = '11.5.0'
 const BUILD_IMAGE_DIGEST =
   'sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d'
 

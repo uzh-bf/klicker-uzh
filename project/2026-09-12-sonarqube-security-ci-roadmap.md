@@ -765,14 +765,31 @@ its dependent action. Read back effective settings and retain sanitized receipts
   among others.
 - Remediation shipped as one package: base tag `node:24.21.0-alpine`;
   `apk upgrade --no-cache` plus `npm@11.19.1` in every Dockerfile build stage;
-  the toolchain pin moved to pnpm `11.25.0` in `package.json`, the CI
-  workflows and actions, the devcontainer and all Dockerfiles; range-scoped
-  `overrides` in `pnpm-workspace.yaml` for every remaining below-fix transitive
-  dependency; and npm overrides for `mysql2`/`deepmerge-ts` in the migrator's
-  standalone Prisma install, which no Prisma release fixes yet. Three pins cross
-  a major because the advisory has no fix inside the older line (`nodemailer`,
+  the build-only `pnpm`/`turbo` install removed from every server runtime stage
+  once production dependencies are installed; range-scoped `overrides` in
+  `pnpm-workspace.yaml` for every remaining below-fix transitive dependency;
+  and npm overrides for `mysql2`/`deepmerge-ts` in the migrator's standalone
+  Prisma install, which no Prisma release fixes yet. Three pins cross a major
+  because the advisory has no fix inside the older line (`nodemailer`,
   `deepmerge-ts`, `@opentelemetry/propagator-jaeger`); each is commented as
   such in `pnpm-workspace.yaml`.
+- The pnpm pin stays on `11.5.0`, and that is a sequencing constraint rather
+  than a preference. The first attempt moved it to `11.25.0` and failed
+  `test-playwright-execution`: the public Playwright workflow and its composite
+  actions are called at the fixed `@v3` ref, so they contribute `version:
+  11.5.0` from `.github/actions/playwright-build/action.yml` while
+  `package.json` comes from the pull-request head, and `pnpm/action-setup`
+  aborts with "Multiple versions of pnpm specified". A pin move therefore cannot
+  pass a pull request at all; it would have to land on `v3` outside the normal
+  path. The 12 pnpm-sourced findings are removed with the tooling instead: all
+  three PkgPaths (`pnpm@11.5.0`, its vendored `tar@7.5.15` and `undici@6.26.0`)
+  sit under `usr/local/lib/node_modules/pnpm` in the scanned runtime image.
+- `util/check-prisma-sync.sh` reads the Prisma pin from a line matching
+  `^RUN npm install prisma@<version>` in `packages/prisma/Dockerfile`. The
+  migrator keeps that pin on a dedicated `RUN` line and writes its
+  npm-`overrides` `package.json` with a separate `RUN printf`; chaining the two
+  commands onto one line fails `check` silently, because the guard then finds no
+  pin to compare with `packages/prisma` (observed on run 34948151180).
 - Consequence to expect in review: adding overrides invalidates the resolved
   graph, so pnpm regenerated `pnpm-lock.yaml` wholesale (~2.8k changed lines)
   instead of only the overridden entries. The unrelated patch-level moves in that

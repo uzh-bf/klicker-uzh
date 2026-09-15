@@ -29,11 +29,16 @@ WORKDIR /app
 #
 # Prisma 7.8.0 depends on mysql2 3.15.3 and @prisma/config on deepmerge-ts 7.1.5,
 # both below their published advisory fixes, and no Prisma release carries the
-# fixed versions yet. npm overrides pin them for this standalone install.
+# fixed versions yet. npm overrides pin them for this standalone install, so the
+# overrides file is written before the install runs.
 RUN printf '%s\n' \
       '{"private":true,"overrides":{"mysql2":"3.22.0","deepmerge-ts":"8.0.0"}}' \
-      > package.json \
- && npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund
+      > package.json
+
+# The pin stays on its own `RUN npm install prisma@` line because
+# util/check-prisma-sync.sh reads it from there and fails when it drifts from the
+# packages/prisma devDependency.
+RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund
 
 # Prisma 7 keeps the datasource URL out of the schema: prisma.config.ts supplies it
 # from DATABASE_URL and points at the schema/migrations paths (relative to /app).
