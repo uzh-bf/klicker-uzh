@@ -471,8 +471,8 @@ const resultSchema = z
 const finalQuestionSchema = z
   .object({
     id: canonicalIdentifier(200),
-    title: boundedText(500).optional(),
-    suggested_tags: z.array(boundedText(200)).max(50).optional(),
+    title: z.unknown().optional(),
+    suggested_tags: z.unknown().optional(),
     stem: boundedText(10_000),
     context_inline: z.string().trim().max(20_000).nullable().optional(),
     explanation: z.string().trim().max(20_000).nullable().optional(),
@@ -602,9 +602,29 @@ function normalizedPlainText(value: string): string {
     .trim()
 }
 
-function normalizeSuggestedTags(value: string[] | undefined): string[] {
+export function normalizeGeneratedTagSuggestions(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const suggestions = new Set<string>()
+  const segmenter = new Intl.Segmenter('und', { granularity: 'grapheme' })
+  for (const candidate of value) {
+    if (typeof candidate !== 'string') continue
+    const label = normalizedPlainText(candidate)
+    if (label && Array.from(segmenter.segment(label)).length <= 60) {
+      suggestions.add(label)
+    }
+    if (suggestions.size === 5) break
+  }
+  return [...suggestions]
+}
+
+// The element tags keep the plain string-name semantics of a legacy suggestion
+// list, so this reader bounds the count but not the length of a label. The
+// advisory review channel has its own grapheme-bounded reader above.
+function normalizeSuggestedTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
   const tags: string[] = []
-  for (const candidate of value ?? []) {
+  for (const candidate of value) {
+    if (typeof candidate !== 'string') continue
     const tag = normalizedPlainText(candidate)
     if (!tag || tags.includes(tag)) continue
     tags.push(tag)
@@ -614,10 +634,12 @@ function normalizeSuggestedTags(value: string[] | undefined): string[] {
 }
 
 export function deriveGeneratedQuestionName(
-  title: string | undefined,
+  title: unknown,
   stem: string
 ): string {
-  const value = normalizedPlainText(title?.trim() || stem)
+  const value =
+    normalizedPlainText(typeof title === 'string' ? title : '') ||
+    normalizedPlainText(stem)
   if (!value) return artifactError('Generated question has no usable name')
 
   const segments = new Intl.Segmenter('und', {
@@ -1448,6 +1470,13 @@ function normalizeFinalQuestion(
     itemType,
     sourceQuestionId: question.id,
     name: deriveGeneratedQuestionName(question.title, question.stem),
+    ...(question.suggested_tags === undefined
+      ? {}
+      : {
+          suggestedTags: normalizeGeneratedTagSuggestions(
+            question.suggested_tags
+          ),
+        }),
     stem: question.stem.trim(),
     context: optionalText(question.context_inline),
     explanation: optionalText(question.explanation),
