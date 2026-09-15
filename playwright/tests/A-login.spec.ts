@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
@@ -23,6 +24,12 @@ import {
 
 function getStudentLoginUrl() {
   return process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
+}
+
+function getGraphQLOperationName(postData: string | null) {
+  return postData
+    ? (JSON.parse(postData) as { operationName?: string }).operationName
+    : undefined
 }
 
 async function signInStudentFromReturnTarget(page: Page, target: string) {
@@ -115,6 +122,70 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
     })
   })
 
+  // -------------------------------------------------------------------------
+  // Student: normal signup records both optional refusals; saving stays
+  // disabled until the explicit learning-analytics choice and acknowledgement
+  // -------------------------------------------------------------------------
+  test('Signup requires learning analytics choice and acknowledgement', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const username = `su${Date.now().toString(36).slice(-8)}`
+
+    try {
+      await page.context().clearCookies()
+      await page.goto('/createAccount')
+
+      await page.getByTestId('email-field').fill(`${username}@test.uzh.ch`)
+      await page.getByTestId('username-field-account-creation').fill(username)
+      await page.getByTestId('password-field').fill('signupPassword123!')
+      await page
+        .getByTestId('password-repetition-field')
+        .fill('signupPassword123!')
+
+      const submit = page.getByTestId('create-profile-button')
+      // The learning-analytics choice starts unanswered and the acknowledgement
+      // is unchecked, so saving is blocked until both are provided.
+      await expect(submit).toBeDisabled()
+
+      await expect(page.getByTestId('research-consent-no')).toBeHidden()
+      await page.getByTestId('research-consent-toggle').click()
+      await page.getByTestId('research-consent-no').click()
+      await expect(submit).toBeDisabled()
+
+      await page.getByTestId('learning-analytics-consent-no').click()
+      await expect(submit).toBeDisabled()
+
+      await page.getByTestId('tos-checkbox').click()
+      await expect(submit).toBeEnabled()
+      await submit.click()
+
+      await expect(page).toHaveURL(/newAccount=true/)
+
+      const participant = await prisma.participant.findUniqueOrThrow({
+        where: { username },
+        select: {
+          researchConsent: true,
+          learningAnalyticsConsent: true,
+          researchConsentChoiceAt: true,
+          learningAnalyticsChoiceAt: true,
+          dataUseAcknowledgedAt: true,
+          dataUseAcknowledgedVersion: true,
+        },
+      })
+      expect(participant.researchConsent).toBe(false)
+      expect(participant.learningAnalyticsConsent).toBe(false)
+      expect(participant.researchConsentChoiceAt).toBeInstanceOf(Date)
+      expect(participant.learningAnalyticsChoiceAt).toBeInstanceOf(Date)
+      expect(participant.dataUseAcknowledgedAt).toBeInstanceOf(Date)
+      expect(participant.dataUseAcknowledgedVersion).toBe(
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+      )
+    } finally {
+      await prisma.participant.deleteMany({ where: { username } })
+    }
+  })
+
   test('Reject external return target after student sign in', async ({
     page,
   }) => {
@@ -177,6 +248,121 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       password: STUDENT_PASSWORD,
       editProfile: true,
     })
+  })
+
+  test('Participant data-use choices are independent and persist', async ({
+    page,
+    loginStudent,
+  }) => {
+    await loginStudent()
+    await expect(page.getByTestId('homepage')).toBeVisible()
+    await page.getByTestId('header-avatar').click()
+    await page.getByTestId('participant-profile-login').click()
+    await page.getByTestId('edit-profile').click()
+
+    const researchConsent = page.getByTestId('participant-research-consent')
+    const learningAnalyticsConsent = page.getByTestId(
+      'participant-learning-analytics-consent'
+    )
+
+    await expect(researchConsent).toBeVisible()
+    await expect(learningAnalyticsConsent).toBeVisible()
+
+    try {
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+
+      let failedResearchSaves = 0
+      await page.route('**/api/graphql', async (route) => {
+        const request = route.request()
+        const operationName = getGraphQLOperationName(request.postData())
+
+        if (
+          request.method() === 'POST' &&
+          operationName === 'SetResearchConsent'
+        ) {
+          failedResearchSaves += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { setResearchConsent: null },
+              errors: [{ message: 'Synthetic save failure' }],
+            }),
+          })
+          return
+        }
+
+        await route.continue()
+      })
+
+      await researchConsent.click()
+      await expect.poll(() => failedResearchSaves).toBe(1)
+      await expect(researchConsent).toBeEnabled()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+      await page.unroute('**/api/graphql')
+
+      await researchConsent.click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+      await page.reload()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+
+      await researchConsent.click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toBeEnabled()
+      await learningAnalyticsConsent.click()
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+
+      await page.reload()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+
+      await page.getByTestId('header-avatar').click()
+      await page.getByTestId('participant-profile-login').click()
+      await page.getByTestId('edit-profile').click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+    } finally {
+      await page.unroute('**/api/graphql')
+      await page.reload()
+
+      // Leave the shared test account at the fail-closed baseline.
+      for (const consentSwitch of [researchConsent, learningAnalyticsConsent]) {
+        if ((await consentSwitch.getAttribute('aria-checked')) === 'true') {
+          await consentSwitch.click()
+          if (consentSwitch === learningAnalyticsConsent) {
+            await page
+              .getByTestId('confirm-learning-analytics-withdrawal')
+              .click()
+          }
+          await expect(consentSwitch).toHaveAttribute('aria-checked', 'false')
+        }
+      }
+    }
   })
 
   // -------------------------------------------------------------------------
