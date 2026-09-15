@@ -497,6 +497,49 @@ describe('ingestion source preparation', () => {
     })
   })
 
+  it('identifies the pinned source fetch with a descriptive User-Agent', async () => {
+    const content = Object.assign(Readable.from([Buffer.from('notes')]), {
+      statusCode: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'content-length': '5',
+      },
+    }) as IncomingMessage
+    let requestHeaders: Record<string, string> | undefined
+    httpsRequest.mockImplementation(
+      (
+        _url: URL,
+        options: { headers?: Record<string, string> },
+        callback: (response: IncomingMessage) => void
+      ) => {
+        requestHeaders = options.headers
+        callback(content)
+        return {
+          on: vi.fn().mockReturnThis(),
+          end: vi.fn(),
+        }
+      }
+    )
+
+    await prepareKBIngestionSource(
+      {
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        title: 'Course page',
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        type: 'URL',
+        sourceUrl: 'https://en.wikipedia.org/wiki/Diversification',
+      },
+      env,
+      { resolvePublicIPv4: vi.fn().mockResolvedValue('93.184.216.34') }
+    )
+
+    expect(requestHeaders?.['User-Agent']).toMatch(/^KlickerUZH-KB-Ingestion\//)
+    expect(requestHeaders?.['User-Agent']).toContain('klicker.uzh.ch')
+    expect(requestHeaders?.Accept).toContain('text/html')
+  })
+
   it('rejects persisted source identity with a non-canonical digest', () => {
     expect(() =>
       buildKBIngestionSource(

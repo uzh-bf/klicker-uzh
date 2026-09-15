@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   GeneratedQuestionEditable,
+  GeneratedQuestionTagSelection,
   QuestionGenerationItemType,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -20,11 +21,13 @@ export type UpdateGeneratedQuestionDraftInput = {
   draftId: string
   expectedRevision: number
   current: GeneratedQuestionEditableInputValue
+  // Omitted preserves the stored selection; an explicit selection replaces it.
+  tagSelection?: GeneratedQuestionTagSelection
 }
 
 export type GeneratedQuestionEditableInputValue = Omit<
   GeneratedQuestionEditable,
-  'itemType' | 'context' | 'explanation' | 'choices' | 'tags'
+  'itemType' | 'context' | 'explanation' | 'choices' | 'tags' | 'tagSelection'
 > & {
   itemType?: QuestionGenerationItemType | null
   context?: string | null
@@ -232,6 +235,10 @@ export async function updateGeneratedQuestionDraft(
       input.current,
       storedCurrent.itemType ?? 'SC'
     )
+    const tagSelection = input.tagSelection ?? storedCurrent.tagSelection
+    const nextCurrent: GeneratedQuestionEditable = tagSelection
+      ? { ...current, tagSelection }
+      : current
 
     const updated = await transaction.generatedElementDraft.updateMany({
       where: {
@@ -239,7 +246,7 @@ export async function updateGeneratedQuestionDraft(
         revision: input.expectedRevision,
         savedElementId: null,
       },
-      data: { current, revision: { increment: 1 } },
+      data: { current: nextCurrent, revision: { increment: 1 } },
     })
     if (updated.count !== 1) {
       throw questionGenerationServiceError(
