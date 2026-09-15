@@ -45,4 +45,10 @@ describe('package subpath exports', () => {
       'function'
     )
   })
+
+  it('loads the custom-mode limits through the public package path', async () => {
+    const limits = await import('@klicker-uzh/util/chatbot-custom-mode-limits')
+
+    expect(limits.CHATBOT_CUSTOM_MODE_MAX_COUNT).toBeTypeOf('number')
+  })
 })
