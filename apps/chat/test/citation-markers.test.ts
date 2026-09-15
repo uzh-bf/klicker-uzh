@@ -109,6 +109,69 @@ describe('splitCitationMarkers', () => {
     ])
   })
 
+  // Models that were told to always include page numbers append the page
+  // inside the marker. The chip must still render the number alone; the page
+  // belongs to the source card. See the staging Financial Economics chatbot.
+  test.each([
+    ['[1, p. 6–7]', 1],
+    ['[1, p. 6-7]', 1],
+    ['[1, pp. 10–12]', 1],
+    ['[1, S. 8—18]', 1],
+    ['[1, s. 8]', 1],
+    ['[1, S 8]', 1],
+    ['[1, s 8-9]', 1],
+    ['[1, Seite 8]', 1],
+    ['[1, pages 4-6]', 1],
+    ['[1, Kapitel 7]', 1],
+    ['[3 , p. 2]', 3],
+    ['[2–4, S. 10–12]', 2],
+  ])('renders a marker with a labelled page detail (%s)', (input, index) => {
+    const nodes = splitCitationMarkers(input)
+    expect(nodes[0]).toEqual(citationLinkNode(index))
+    expect(nodes.every((node) => node.type === 'link')).toBe(true)
+  })
+
+  test('expands a range that carries a page detail into its sources', () => {
+    expect(splitCitationMarkers('[2–4, S. 10–12]')).toEqual([
+      citationLinkNode(2),
+      citationLinkNode(3),
+      citationLinkNode(4),
+    ])
+  })
+
+  // The staging corpus is dominated by math coordinates in this shape
+  // (`[0, 1]` alone appears over a thousand times), so an unlabelled detail
+  // must never become a citation. These cases are the regression guard.
+  test.each([
+    '[0, 1]',
+    '[1, 2]',
+    '[2, 3]',
+    '[1, 2, 3]',
+    '[8, 12]',
+    '[0, 60]',
+    '[0, \\pi]',
+    '[10, 20, 30, 40, 50]',
+    '[1, 6–7]',
+    '[1, Kapitel IV]',
+    // A page detail needs its label: a bare comma must not swallow the comma
+    // and turn a trailing marker into a chip.
+    '[1,]',
+    '[1, ]',
+    '[2, ]',
+  ])('leaves an unlabelled or non-numeric bracket list literal (%s)', (input) => {
+    expect(splitCitationMarkers(input)).toEqual([textNode(input)])
+  })
+
+  test('a marker with a page detail still resolves to its source index', () => {
+    const nodes = splitCitationMarkers('Wie in [1, p. 6–7] beschrieben.')
+    expect(nodes).toEqual([
+      textNode('Wie in'),
+      citationLinkNode(1),
+      textNode(' beschrieben.'),
+    ])
+    expect(resolveCitationSource(1, [SOURCE_A])).toEqual(SOURCE_A)
+  })
+
   test('adjacent markers [1][2] produce no spurious empty text node between them', () => {
     expect(splitCitationMarkers('Facts [1][2].')).toEqual([
       textNode('Facts'),
