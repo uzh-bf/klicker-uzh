@@ -803,45 +803,64 @@ its dependent action. Read back effective settings and retain sanitized receipts
 
 ### New-code boundary diagnosis — 2026-09-15
 
-- The `v3` and `v3-audit` `SonarCloud` checks went red immediately after the
-  project-version change in #5924 (merged 2026-09-14T10:09:47Z, `51b0ed152c`).
-  The last green `v3` analysis was 04:56Z that day; the first red was 10:11Z.
-  `v3` reports `new_reliability_rating` 5, `new_security_rating` 5,
+- The `v3` and `v3-audit` `SonarCloud` checks are red. `v3` reports
+  `new_reliability_rating` 5, `new_security_rating` 5,
   `new_duplicated_lines_density` 4.0 and `new_security_hotspots_reviewed`
   0.0, all failing. PR analyses are healthy at the same time: PR 6051
   measures 126 new lines with ratings A/C.
-- Root cause: new code on a long-lived branch is the entire repository. On
-  `v3`, `new_lines` is 328,241 of 328,585, `new_bugs` 106 of 106,
-  `new_vulnerabilities` 98 of 98, and `new_security_hotspots` 46 of 46; on
-  `v3-audit`, `new_lines` is 427,087 of 427,431. The project inherits the
-  instance default `sonar.leak.period.type=previous_version`, and #5924 made
-  the scanner report the root `package.json` version as the project version,
-  so every patch release begins a new baseline and the whole repository
-  re-enters new code.
-- Platform constraint, verified: SonarCloud does not support
-  `sonar.newCode.referenceBranch` or `sonar.branch.target` for long-lived
-  branches (SonarQube Server only), and the new-code definition for every
-  long-lived branch is the project-level one. `/api/new_code_periods/*`
-  returns 404 on SonarCloud, so the change is a SonarCloud UI action and the
-  analysis token cannot write it.
-- Measured churn for the window choice, added plus deleted over
-  `apps packages deploy util .github/scripts`: 3d 7,291; 10d 40,442; 14d
-  75,224. `Number of days` (14) is the recommendation: it is calendar-based,
-  so a version bump no longer re-baselines it, and it matches the release
-  cadence.
+- Root cause: `v3` is a **short-lived** branch on SonarCloud, so its new code
+  is its whole diff against the branch it merges into, and that branch is
+  stale. `api/project_branches/list` records `v3` as `type: SHORT`,
+  `isMain: false`, `mergeBranch: dev`; `dev` is the `LONG` main branch and was
+  last analysed on 2022-08-20. On `v3`, `new_lines` is 328,591 of 328,935,
+  `new_bugs` 106 of 106, `new_vulnerabilities` 98 of 98, and
+  `new_security_hotspots` 46 of 46; `v3-audit` measures 427,410 of 427,754.
+  The branch name does not match the organization's long-lived pattern
+  (`sonar.branch.longLivedBranches.regex`, inherited from the instance default
+  `(branch|release)-.*`), and the project's main branch stayed `dev` after the
+  repository's default branch moved to `v3`.
+- The decisive evidence is the type, not the definition: SonarCloud rejects
+  `api/project_analyses/search?branch=v3` with `Branch 'v3' is not of type
+  LONG`, and `api/qualitygates/project_status?branch=v3` returns an empty
+  `periods` array, while `?branch=dev` returns a `previous_version` period
+  dated 2021-10-30. The project has no New Code setting of its own: the only
+  branch-related project setting is `sonar.branch.longLivedBranches.regex`,
+  inherited from the instance.
+- Corrected earlier reading: the red status is not caused by the
+  project-version argument added in #5924 (`51b0ed152c`). The pre-#5924
+  workflow ran the scanner with no `-Dsonar.projectVersion` and no
+  `-Dsonar.qualitygate.wait`, so the quality gate never failed that job. #5924
+  is the change that began surfacing a gate which was already red; a version
+  argument cannot inflate a short-lived branch, whose baseline is a branch diff
+  rather than a version. The earlier `previous version` explanation in this
+  entry, and the "Number of days (14)" recommendation derived from it, were
+  wrong for that reason and are withdrawn.
+- Platform constraint, verified: a branch's type is assigned at its first
+  analysis and cannot be changed afterwards. Sonar's own setting description
+  for `sonar.branch.longLivedBranches.regex` states this, and the project-level
+  documentation page ("Long-lived branch pattern") says the same. The pattern
+  is the project-level lever here: the organization-level page restricts that
+  setting to Enterprise plan organizations, and this project records only the
+  inherited instance pattern. `/api/new_code_periods/*` returns 404 on
+  SonarCloud, and the analysis token cannot write any of this, so the steps are
+  platform actions.
 - Shipped: `.github/scripts/sonar-new-code-boundary.cjs` plus its `node
   --test` suite, wired as one diagnostic step at the end of
-  `v3_sonarcloud.yml` and registered in the `check` CI-policy test list. It
-  runs after the scan so the branch analysis is published even while the
-  definition is broken, and it fails a
-  branch whose new code exceeds half of its analyzed lines with a named
-  cause, the measured values and the settings page, and stays non-fatal when
-  the measures API is unavailable or the branch has no measures. It does not
-  soften the awaited quality gate.
-- Operator step required: set the project-level New Code definition to
-  `Number of days` = 14 at
-  https://sonarcloud.io/project/new_code?id=uzh-bf_klicker-uzh. Until then the
-  `SonarCloud` check on `v3` and `v3-audit` stays red and the staging
-  promoter's required `v3_sonarcloud.yml` / `SonarCloud` gate stays unmet.
+  `v3_sonarcloud.yml` and registered in the `check` CI-policy test list. It now
+  reads the branch's recorded type and merge target alongside the measured
+  `lines` and `new_lines`, fails a branch whose new code exceeds half of its
+  analyzed lines with the named type instead of a guessed definition, and stays
+  non-fatal when either API is unavailable or the branch has no measures. The
+  step carries `if: always()`, because the awaited gate fails the job before it
+  otherwise and a diagnostic that only runs when the gate passes cannot explain
+  a red one.
+- Operator step required: extend the long-lived branch pattern on the project's
+  Branches page to cover the `v3` and `v3-*` names, delete the existing branch
+  analyses through `api/project_branches/delete`, then re-analyse so each
+  branch is created with the new type; set the project New Code definition
+  afterwards. Recreating the project with `v3` as its main branch is the
+  alternative. Until then the `SonarCloud` check on `v3` and `v3-audit` stays
+  red and the staging promoter's required `v3_sonarcloud.yml` / `SonarCloud`
+  gate stays unmet.
 - Preserved boundary: `SonarCloud` is not one of the eight required `v3-ai`
   check contexts, so the red branch gate does not block PR #6051.
