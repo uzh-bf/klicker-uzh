@@ -983,6 +983,23 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-review-custom-mode-0')
     ).toContainText('Challenge the participant with counter-arguments.')
 
+    // Approval only applies to a revision that was submitted for review, so the
+    // draft has to pass the publication gate before it can be approved.
+    await setPublishingAuthorization(true)
+    await page.reload()
+    await navigateToSetupStep(page, 'disclaimer')
+    await page.getByTestId('save-chatbot-disclaimer').click()
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toBeDisabled()
+    await navigateToSetupStep(page, 'review')
+    await fillPublicationRequest(
+      page,
+      'Support students with a synthetic study aid.'
+    )
+    await page.getByTestId('request-chatbot-publication').click()
+    await expect(
+      page.getByTestId('chatbot-details').getByTestId('chatbot-status')
+    ).toHaveText('Pending approval')
+
     const prisma = await getPrisma()
     const revision = await prisma.chatbot.findUniqueOrThrow({
       where: { id: chatbotId },
