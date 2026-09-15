@@ -240,6 +240,88 @@ test('retrieval observation treats a never-started instance as stopped without e
   assert.equal(observed.prepared, true)
 })
 
+test('doc processing reports an inconsistent recorded process set for reconciliation', async () => {
+  const { config } = resolveFixture('a')
+  const docProcessing = (overrides) => ({
+    ...providerStatus(config, 'docProcessing'),
+    ...overrides,
+  })
+  const cases = [
+    {
+      // The provider already recorded its own inconsistency after a start
+      // attempt found a recorded process dead.
+      status: docProcessing({
+        ready: false,
+        phase: 'partial',
+        api: 'starting',
+        workers: { callback: 'exited', 'hatchet-cpu': 'starting' },
+      }),
+      inconsistent: true,
+    },
+    {
+      // A recorded process died while the phase still claims activity. The
+      // provider rewrites this to partial and refuses to restart it.
+      status: docProcessing({
+        ready: false,
+        phase: 'running',
+        api: 'running',
+        workers: { callback: 'exited', 'hatchet-cpu': 'running' },
+      }),
+      inconsistent: true,
+    },
+    {
+      status: docProcessing({
+        phase: 'running',
+        api: 'running',
+        workers: { callback: 'running', 'hatchet-cpu': 'running' },
+      }),
+      inconsistent: false,
+    },
+    {
+      status: docProcessing({
+        ready: false,
+        phase: 'starting',
+        api: 'starting',
+        workers: { callback: 'starting' },
+      }),
+      inconsistent: false,
+    },
+    {
+      status: docProcessing({
+        ready: false,
+        phase: 'stopped',
+        api: 'stopped',
+        workers: { callback: 'stopped' },
+      }),
+      inconsistent: false,
+    },
+    {
+      status: docProcessing({
+        ready: false,
+        phase: 'prepared',
+        api: 'not_started',
+      }),
+      inconsistent: false,
+    },
+  ]
+  for (const { status, inconsistent } of cases) {
+    const observed = await observeProviderLauncher(
+      config,
+      'docProcessing',
+      async () => JSON.stringify(status)
+    )
+    assert.equal(observed.inconsistent, inconsistent || undefined)
+  }
+  // Only doc processing records a process set its own start refuses to heal;
+  // the other facades restart idempotently and never ask to be reconciled.
+  for (const name of ['ingestion', 'scraping', 'retrieval']) {
+    const observed = await observeProviderLauncher(config, name, async () =>
+      JSON.stringify(providerStatus(config, name))
+    )
+    assert.equal(Object.hasOwn(observed, 'inconsistent'), false)
+  }
+})
+
 test('rejects unknown provider names before dispatch', async () => {
   const { config } = resolveFixture('a')
   for (const name of ['unknown', 'constructor']) {
