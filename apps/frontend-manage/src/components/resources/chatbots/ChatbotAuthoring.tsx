@@ -1325,7 +1325,9 @@ function ChatbotAuthoring({
                 )}
                 <CustomModesEditor
                   chatbot={chatbot}
-                  disabled={!modeEditable || revisionPending}
+                  disabled={
+                    !modeEditable || revisionPending || publicationPending
+                  }
                   initialValues={customModeConfig}
                   onNavigationStateChange={setCustomModeNavigationState}
                   onRevisionConflict={() => setRevisionConflict(true)}
