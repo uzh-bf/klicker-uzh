@@ -350,6 +350,24 @@ stack; it never becomes an unstacked change.
 | Date | Scope | State | Next action |
 | --- | --- | --- | --- |
 | 2026-09-14 | Plan drafted | `review_deadlock` — three planner rounds, no APPROVED verdict | Present to the user with the reviewer's round-3 assessment disclosed |
+| 2026-09-15 | User approved the plan; S3 committed, S1/S2/S4 implemented and verified locally | In progress | Commit S1, then S4, then S2; continue with L2 |
+
+### Slice progress
+
+| Slice | State | Evidence |
+| --- | --- | --- |
+| S1 subscription tier and class gate | Committed | Tier column plus one generated migration and the analytics sync; class gate applied per selected model in both chat routes; `entitled` and `subscriptionTier` projected through the read; Manage settings show the plan and closed classes; focused GraphQL, chat, and util tests pass |
+| S2 base budget on entitlement and backfill | Committed | `setAiFeatures` grants the monthly base default in the same transaction only when no base row exists at or before the current month; backfill script and its disposable-DB test pass; dry run and apply proven on synthetic STG-shaped rows |
+| S3 Manage assistant pins the base class | Committed | `21d0af6764`; runtime test proves the resolved entry satisfies the registry base policy for both deployed orderings |
+| S4 enforcement and telemetry cutover | Committed | `deploy/env-uzh-stg/values.yaml` and `deploy/env-uzh-prd/values.yaml` carry the two switches with PRD explicit-off; `docs/chat-platform.md` records the ordered cutover, rollback, and the partial-failure recovery |
+
+Backfill evidence on synthetic STG-shaped rows (`bf-*` accounts created for this
+check only, in the local disposable database): the dry run reported 2 entitled
+accounts, 1 already configured, 1 without a base budget, and 0 rows written. The
+`--apply` run reported 1 row created. Read-back shows `bf-entitled-new` at
+`2026-09-01` with budget 1 and used 0, and `bf-entitled-configured` still at
+`2026-08-01` with budget 7 and used 2, so the administrator's earlier value and
+its usage survived. The `bf-unentitled` account received no row.
 
 ### Planner round 1 disposition
 

@@ -7,9 +7,14 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { getZurichMonthReset, getZurichMonthStart } from '@klicker-uzh/util'
+import {
+  DEFAULT_BASE_CHAT_BUDGET_CREDITS,
+  getZurichMonthReset,
+  getZurichMonthStart,
+} from '@klicker-uzh/util'
 import { createYoga } from 'graphql-yoga'
 import type { ContextWithUser, FeatureFlagEvaluator } from '@/lib/context.js'
+import { setAiFeatures } from '@/services/accounts.js'
 import {
   getChatAccountUsage,
   setChatAccountUsageBudgets,
@@ -845,6 +850,59 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     expect(disabledResult.data).toEqual({
       getChatbotPublishingCapability: false,
     })
+  })
+
+  it('grants the monthly base budget when an admin enables an account', async () => {
+    const targetId = randomUUID()
+    await prisma.user.create({
+      data: syntheticUser(targetId, 'grant-target', false),
+    })
+    const target = await prisma.user.findUniqueOrThrow({
+      where: { id: targetId },
+    })
+    const monthStart = getZurichMonthStart(new Date())
+
+    try {
+      await expect(
+        setAiFeatures({ email: target.email, enabled: true }, adminCtx)
+      ).resolves.toBe(0)
+
+      const granted = await prisma.chatAccountUsage.findMany({
+        where: { ownerId: targetId, usageClass: 'BASE', monthStart },
+      })
+      expect(granted).toHaveLength(1)
+      expect(granted[0]?.budgetCredits.toNumber()).toBe(
+        DEFAULT_BASE_CHAT_BUDGET_CREDITS
+      )
+
+      await prisma.chatAccountUsage.update({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: targetId,
+            usageClass: 'BASE',
+            monthStart,
+          },
+        },
+        data: { budgetCredits: 9, usedCredits: 3 },
+      })
+
+      await setAiFeatures({ email: target.email, enabled: false }, adminCtx)
+      await setAiFeatures({ email: target.email, enabled: true }, adminCtx)
+
+      const preserved = await prisma.chatAccountUsage.findUniqueOrThrow({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: targetId,
+            usageClass: 'BASE',
+            monthStart,
+          },
+        },
+      })
+      expect(preserved.budgetCredits.toNumber()).toBe(9)
+      expect(preserved.usedCredits.toNumber()).toBe(3)
+    } finally {
+      await prisma.user.deleteMany({ where: { id: targetId } })
+    }
   })
 })
 
