@@ -162,6 +162,12 @@ assessmentAudit:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
       pullPolicy: Always
       tag: v3-audit
+    resources:
+      requests:
+        cpu: 50m
+        memory: 320Mi
+      limits:
+        memory: 512Mi
   mediaPolicyWorker:
     serviceAccountName: stg-audit-media-policy
     priorityClassName: staging-workload
@@ -169,6 +175,14 @@ assessmentAudit:
       repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
       pullPolicy: Always
       tag: v3-audit
+    # The default 256Mi limit OOMKills under VPA target 362.7Mi (11 restarts
+    # observed 2026-09-15); size both audit workers from the staging VPAs.
+    resources:
+      requests:
+        cpu: 25m
+        memory: 384Mi
+      limits:
+        memory: 512Mi
   monitoring:
     enabled: false
     deliveredUnsealedCapacityBytes: 0
