@@ -1113,3 +1113,56 @@ required from the user.
   this documentation-only change, and it is not a required context for this
   roadmap package. No settings change was made.
 
+
+- 2026-09-16 package: Playwright install resilience (PR #6103, branch
+  `rs/ci-playwright-install-resilience`, draft). This is the re-ranked first
+  fruit after the Y-chat correction above. Implementation is the bound
+  retry the roadmap specified; the lockfile half was measured and
+  deliberately deferred.
+
+  Root cause, confirmed from the registry and the lockfile rather than
+  inferred: `@docusaurus/lqip-loader@3.8.1` declares `sharp: ^0.32.3` as a
+  hard dependency, resolving to `sharp@0.32.6`. That release's manifest
+  runs `node install/libvips` during its install script, fetching the
+  libvips archive from GitHub Releases. `sharp@0.35.4` declares no install
+  script and instead ships 25 `@img/sharp-*`/`@img/sharp-libvips-*`
+  platform packages as optional dependencies, which is why the newer line
+  has no runtime download. The cold hosted shard had restored 0/3608
+  packages, so the failing install was the one that had to build sharp from
+  scratch and had no retry.
+
+  Delivered: `.github/scripts/pnpm-install-retry.sh` wraps the install with
+  three bounded attempts and exponential backoff (15s then 30s), forwards
+  arguments, and preserves the original pnpm exit status when the failure
+  persists so a genuine install break still fails loudly. Wired into all
+  three install sites that matter for this failure mode: the
+  `playwright-build` composite action, the `playwright-shard` composite
+  action, and the `playwright-cache-seed` workflow that produces the store
+  every PR shard restores. Covered by
+  `.github/scripts/pnpm-install-retry.test.cjs` (retry, argument
+  forwarding, bounded budget, preserved fatal exit status, and proof that
+  all three call sites install only through the wrapper), wired into the
+  `check` workflow.
+
+  Verification: 72/72 then 65/65 across the Playwright CI suites after the
+  seeder addition, Prettier clean, Biome clean, `bash -n` clean. No trust
+  boundary moved; the wrapper runs from the trusted control checkout and
+  the ARM64 pool policy is unchanged. Draft PR only.
+
+  Lockfile half measured and deferred on evidence. Widening the override to
+  `sharp@>=0.32.0 <0.35.4` does work — `pnpm install --lockfile-only`
+  resolves and `sharp@0.32.6` plus its 16 exclusive build-chain packages
+  (`prebuild-install`, `tar-fs`, `bare-*`, `color`, `node-addon-api`,
+  and others) disappear entirely, with no package versions added. It was
+  still kept out of this package for three reasons. (1) A null-hypothesis
+  run proved the churn is caused by this change and not by regenerating at
+  all: reverting only the override reproduces a byte-identical lockfile.
+  The change costs roughly 1567 insertions / 2082 deletions across
+  unrelated packages. (2) The repo's override policy states each entry
+  "stays inside one major line, unless the advisory has no fix in the older
+  line"; this lift crosses 0.32 to 0.35, and the entry carries an
+  image-scan remediation comment. (3) The only consumer is `apps/docs`,
+  which has no CI coverage. The correct path is most likely a Docusaurus
+  upgrade rather than an override widening, and it belongs in its own
+  reviewed package.
+
