@@ -58,7 +58,7 @@ cluster access establishment, paid VLM processing runs, marking ready, merge.
 | G5 review path for flagged units undefined | S5 quarantine review loop — **resolved 2026-09-16**, folded into the S4 runbook below | video-ai + main |
 | G6 no end-to-end acceptance for a course bot citing video | S6 retrieval + acceptance proof | klicker-uzh / main |
 | G7 prepare/activate run on the operator laptop, which has no embedding credential | S7 in-cluster lane | data-ingestion / main |
-| G8 the deployed eligibility descriptor is named for IuW but applied to all courses | S7.3 rename - deferred (digest binds `policy_id`; a rename is a corpus-wide cutover) | video-ai + data-ingestion / main |
+| G8 the deployed eligibility descriptor is named for IuW but applied to all courses | S7.3 rename — **delivered 2026-09-17**; the digest binds `policy_id`, so the rename is paired with consumer acceptance of the exact frozen predecessor identity | video-ai #126 + data-ingestion !172 |
 | G9 the operator laptop cannot write any PRD hand-off store (private-endpoint-only or reader-only) | S7.4 hand-off role grant or in-cluster relay | deployment / executor |
 
 Dependencies: S1 ∥ S3; S2 after S1; S4 after S2+S3; S5 before S4 activation; S6 last.
@@ -277,8 +277,11 @@ Work items:
    `sha256:d5838eeb...`), and the producer stamps `policy_id` + `policy_sha256` into every
    published source. The digest is checked fail-closed in three places (CLI
    `_require_video_identity`, `validate_video_source`, `build_inventory`). The pilot may
-   proceed under the IuW-named descriptor exactly as **already** published; a rename is a
-   corpus-wide cutover, not a cosmetic edit, and is deferred rather than attempted here.
+   proceed under the IuW-named descriptor exactly as **already** published. **Delivered
+   2026-09-17:** the descriptor is renamed to the course-generic id and all eight bindings
+   follow, while the consumer accepts each source's exact frozen predecessor identity so no
+   already-published source is invalidated; a bare rename without that pairing would have
+   been a corpus-wide cutover.
 4. Runbook: replace the laptop-side prepare/activate steps with the dispatch flow; keep
    the receipt checks identical.
 
@@ -323,18 +326,19 @@ secret `prd-ingestion.HATCHET_CLIENT_TOKEN` via the Infisical profile once the n
 read-allowlisted). CLI polls the artifact-store receipts path (blob listing) rather than
 `/jobs`, giving the WAF-resilient completion signal; print the receipts JSON as today.
 
-Slice 7.3 - policy descriptors (klicker-uzh-video-ai + binding): **deferred, premise
-corrected 2026-09-16.** The policies directory is on video-ai `main`
-(`src/video_ai/ingestion_policies/informatik_und_wirtschaft_hs26_eligibility_v1.json`, baked
+Slice 7.3 - policy descriptors (klicker-uzh-video-ai + binding): **delivered 2026-09-17,
+premise corrected 2026-09-16.** The policies directory is on video-ai `main`
+(`src/video_ai/ingestion_policies/klicker_course_generic_hs26_eligibility_v1.json`, baked
 to `/opt/ingestion-policies/` by the Dockerfile and named by
 `VIDEO_PROCESSING_INGESTION_SOURCE_POLICY` in `deploy/base/worker-configmap.yaml`). The
 rename is not bytes-identical because `descriptor_bytes()` hashes `policy_id` along with the
 rules; see the correction under work item 3. Because every binding and every already
-published source is keyed on the current id+digest, a rename is a coordinated producer
-cutover (new descriptor, re-published or backfilled sources, all eight bindings updated, and
-re-import of any lecture whose source must keep matching). It buys naming clarity only, so it
-is recorded as G8 and deliberately not bundled with this lane. The pilot proceeds under the
-as-published descriptor.
+published source is keyed on the current id+digest, the rename is paired with a consumer
+change: every binding now names the generic id+digest, and the data-ingestion consumer accepts
+each published source's exact frozen predecessor identity (SUPERSEDED_POLICY_IDENTITIES in
+ingestion_shared.video_ingestion_source, applied in validate_video_source, build_inventory and
+the CLI identity guard). A source already written under the old name keeps its bytes and stays
+importable, so the rename needs no reprocessing or re-import.
 
 Slice 7.4 - enable PRD embedding worker + runbook (df-cloud / deployment): the embedding
 worker already carries the shared artifact store on deployment `main`
@@ -366,6 +370,8 @@ answerable only from the imported lecture cites it by name and timestamp;
 manifest (job, source counts, prepare, activation count, inventory row, citation).
 
 ## Progress
+
+- 2026-09-17 (S7.3 delivered: descriptor renamed for the corpus, published sources kept immutable): the producer descriptor is renamed from `informatik-und-wirtschaft-hs26-eligibility.v1` to `klicker-course-generic-hs26-eligibility.v1`, tracked as `src/video_ai/ingestion_policies/klicker_course_generic_hs26_eligibility_v1.json`, named by `VIDEO_PROCESSING_INGESTION_SOURCE_POLICY` in `deploy/base/worker-configmap.yaml`, on video-ai `rs/course-generic-eligibility` (`ab73d09`, draft PR #126). Because `descriptor_bytes()` hashes `policy_id` along with the rules, the digest moves from `sha256:08863ea7…` to `sha256:d5838eeb…`, so a rename alone would invalidate every already-published source. The paired data-ingestion change (`be96ff6` on `rs/video-lecture-import`, MR !172) makes the consumer accept a source's exact frozen identity alongside the expected one when it is the listed predecessor: `SUPERSEDED_POLICY_IDENTITIES` plus `policy_identity_matches` in `ingestion_shared.video_ingestion_source`, applied in `validate_video_source`, `build_inventory` and the CLI `_require_video_identity` guard; any other identity still fails closed. All eight bindings now name the generic id+digest. Verified: data-ingestion 2195 passed / 77 skipped across the three modules (the pre-existing `test_local_runner_acceptance` failure excluded), 12 CLI video-import tests including two new supersession cases, ruff and pyrefly clean against the recorded baseline, worker-isolation green; video-ai 127 passed across the source, backfill, Dockerfile-contract and deploy-manifest suites, ruff clean. A new worker image and the paired consumer release remain separately gated; no source needs reprocessing or re-import.
 
 - 2026-09-16 (S7.1 + S7.2 implemented and verified; S7.3 premise corrected, S7.4 bounded by
   a reachability gate): the in-cluster lane is committed on data-ingestion
