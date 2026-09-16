@@ -1,7 +1,9 @@
 # Course chatbot video import lane — end-to-end plan
 
 Status: active; S1-S3 delivered on both environments, S4 producer and access prerequisites
-proven, pilot import awaiting a new recording. Complements
+proven, S7 implemented on task branches (data-ingestion !172, deployment !903) and awaiting
+merge plus a worker image build before the in-cluster dispatch proof; the Finance I pilot
+recording is processed and staged. Complements
 [2026-09-12-doc-query-source-inventory-plan.md](2026-09-12-doc-query-source-inventory-plan.md)
 (merged as #5922): the inventory half is delivered; this plan closes the production path for
 getting lecture-recording content into course KBs and cited through the chatbots. The
@@ -387,6 +389,22 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
   private-endpoint-only; the one reachable PRD account grants reader only), so a
   container-scoped role grant or an in-cluster relay is a prerequisite for the end-to-end
   dispatch proof (G9).
+
+  The worker side of S7.4 is committed on deployment `rs/video-handoff-worker`
+  (`ca741529`, `fa354cca`; draft MR !903) and pushed: the PRD and STG embedding workers now
+  carry `INGESTION_VIDEO_HANDOFF_*`, reusing the identical account and container they already
+  mount for batch documents (`prdingestartifactsfehm6/catalog-ingestion-handoff` on PRD,
+  `stgaiinfraingestionceebc/catalog-ingestion-handoff` on STG) so no new container or workload
+  identity is introduced. Verified with `kubectl kustomize` renders plus the environment
+  render-contract validators that pin every worker's literal env (PRD 44 documents, STG 37
+  documents) and the ingestion contract tests (36 passed). The skill's video lane now
+  documents the dispatch path and its reachability gate (klicker-uzh
+  `rs/course-chatbot-skill-video-lane`, `3239dc18cc`, draft PR #6034). Live state checked
+  2026-09-16: both target contexts are reachable, the PRD embedding worker is 0/0 on image
+  `1eee63d6` (data-ingestion `main` `a9f3ccd`), which does **not** contain the new workflow, so
+  the end-to-end proof now needs, in order: merge !172 and !903, deploy a worker image built
+  from the merged `main`, grant the operator a write role on the hand-off store (or stand up
+  the relay), then run the Finance I `--dispatch` import. Each of those is separately gated.
 
 - 2026-09-16 (Finance I pilot: PRD job completed and staged; local prepare blocked, target
   flow redefined): the first Finance I recording (`01_Finance1_VL.mp4`, 569 420 632 B,
