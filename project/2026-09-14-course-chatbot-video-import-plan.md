@@ -55,6 +55,9 @@ cluster access establishment, paid VLM processing runs, marking ready, merge.
 | G4 no PRD-bound import operations for course videos | S4 pilot import runbook + first recording | data-ingestion / main + executor |
 | G5 review path for flagged units undefined | S5 quarantine review loop — **resolved 2026-09-16**, folded into the S4 runbook below | video-ai + main |
 | G6 no end-to-end acceptance for a course bot citing video | S6 retrieval + acceptance proof | klicker-uzh / main |
+| G7 prepare/activate run on the operator laptop, which has no embedding credential | S7 in-cluster lane | data-ingestion / main |
+| G8 the deployed eligibility descriptor is named for IuW but applied to all courses | S7.3 rename - deferred (digest binds `policy_id`; a rename is a corpus-wide cutover) | video-ai + data-ingestion / main |
+| G9 the operator laptop cannot write any PRD hand-off store (private-endpoint-only or reader-only) | S7.4 hand-off role grant or in-cluster relay | deployment / executor |
 
 Dependencies: S1 ∥ S3; S2 after S1; S4 after S2+S3; S5 before S4 activation; S6 last.
 
@@ -263,11 +266,17 @@ Work items:
 2. video-processing: publish the completion signal in a way the lane can read without the
    public edge (the blob artifact listing is already authoritative; make the CLI treat
    published-artifact presence as terminal-state evidence instead of polling `/jobs`).
-3. Policy naming: add a Finance I (or course-generic) eligibility descriptor, deploy it
-   via `VIDEO_PROCESSING_INGESTION_SOURCE_POLICY`, and update the Finance I binding.
-   Decide whether the pilot activation may proceed under the IuW-named descriptor
-   (identical bytes) or waits for the renamed policy; the already-published lecture needs
-   no reprocessing either way.
+3. Policy naming: add a Finance I (or course-generic) eligibility descriptor and deploy it
+   via `VIDEO_PROCESSING_INGESTION_SOURCE_POLICY`. **Corrected 2026-09-16:** the descriptor
+   digest is not a function of the decision rules alone - `descriptor_bytes()` canonicalizes
+   the whole descriptor including `policy_id`, so the id is inside the hashed bytes. A rename
+   therefore changes the digest (`informatik-und-wirtschaft-hs26-eligibility.v1` =
+   `sha256:08863ea7...`; `klicker-course-generic-hs26-eligibility.v1` =
+   `sha256:d5838eeb...`), and the producer stamps `policy_id` + `policy_sha256` into every
+   published source. The digest is checked fail-closed in three places (CLI
+   `_require_video_identity`, `validate_video_source`, `build_inventory`). The pilot may
+   proceed under the IuW-named descriptor exactly as **already** published; a rename is a
+   corpus-wide cutover, not a cosmetic edit, and is deferred rather than attempted here.
 4. Runbook: replace the laptop-side prepare/activate steps with the dispatch flow; keep
    the receipt checks identical.
 
@@ -312,19 +321,32 @@ secret `prd-ingestion.HATCHET_CLIENT_TOKEN` via the Infisical profile once the n
 read-allowlisted). CLI polls the artifact-store receipts path (blob listing) rather than
 `/jobs`, giving the WAF-resilient completion signal; print the receipts JSON as today.
 
-Slice 7.3 - policy descriptors (klicker-uzh-video-ai + binding): add
-`src/video_ai/ingestion_policies/` JSON descriptors for `finance-i-hs26-eligibility.v1`
-(and optionally a `klicker-course-generic-hs26.v1` for the remaining six courses), change
-`VIDEO_PROCESSING_INGESTION_SOURCE_POLICY` in the video-processing worker config to point at
-the generic descriptor, update `course_targets/finance-i.yaml` policy block to the new
-id+sha256, and record in this plan whether the pilot activation happens under the IuW-named
-descriptor (bytes-identical) or waits for the redeploy. Ship the descriptor as part of the
-same video-ai PR that merges the ingestion-source contract.
+Slice 7.3 - policy descriptors (klicker-uzh-video-ai + binding): **deferred, premise
+corrected 2026-09-16.** The policies directory is on video-ai `main`
+(`src/video_ai/ingestion_policies/informatik_und_wirtschaft_hs26_eligibility_v1.json`, baked
+to `/opt/ingestion-policies/` by the Dockerfile and named by
+`VIDEO_PROCESSING_INGESTION_SOURCE_POLICY` in `deploy/base/worker-configmap.yaml`). The
+rename is not bytes-identical because `descriptor_bytes()` hashes `policy_id` along with the
+rules; see the correction under work item 3. Because every binding and every already
+published source is keyed on the current id+digest, a rename is a coordinated producer
+cutover (new descriptor, re-published or backfilled sources, all eight bindings updated, and
+re-import of any lecture whose source must keep matching). It buys naming clarity only, so it
+is recorded as G8 and deliberately not bundled with this lane. The pilot proceeds under the
+as-published descriptor.
 
-Slice 7.4 - enable PRD embedding worker + runbook (df-cloud / deployment): remove the
-scale-to-zero state only if the dispatch flow is expected to run unattended (the same KEDA
-metrics-api trigger already resumes on activity, so no change may be needed; verify once)
-and replace the runbook's laptop-side prepare/activate steps with the dispatch flow.
+Slice 7.4 - enable PRD embedding worker + runbook (df-cloud / deployment): the embedding
+worker already carries the shared artifact store on deployment `main`
+(`e7bea3c6 fix(deploy): give the remaining PRD ingestion workers the shared artifact store`),
+so the only deployment work is the hand-off contract below. **Reachability finding
+2026-09-16:** the PRD ingestion artifact account `prdingestartifactsfehm6` has public network
+access disabled (private endpoint only) and `defaultAction: Deny`, and the account is not
+writable by the operator identity; the STG account `stgaiinfraingestionceebc` is `Deny` with
+an allowlist, not reachable from this laptop either. The one PRD account the laptop can read
+is `prdvideoprocessingpq8ul` (public access allowed), but the operator holds only
+`Storage Blob Data Reader` on its `video-processing` container, so a laptop-side hand-off
+write there needs a new container-scoped role. The hand-off store therefore needs either that
+role grant (separate approval) or a small in-cluster relay; until then the dispatch path is
+implemented and unit-tested but cannot be driven end to end from this laptop.
 
 Acceptance for S7: `ingestion-cli video-import lecture --video <file> --course finance-i
 --dispatch` from the laptop ends with a receipt JSON in the artifact store and no embedding
@@ -342,6 +364,29 @@ answerable only from the imported lecture cites it by name and timestamp;
 manifest (job, source counts, prepare, activation count, inventory row, citation).
 
 ## Progress
+
+- 2026-09-16 (S7.1 + S7.2 implemented and verified; S7.3 premise corrected, S7.4 bounded by
+  a reachability gate): the in-cluster lane is committed on data-ingestion
+  `rs/video-lecture-import` (`ae9db69 feat(ingestion): carry a lecture import to the
+  workers`, draft MR !172) and the branch is pushed. It adds the `video-candidate-import`
+  Hatchet workflow (one `prepare-and-activate` task pinned to the embedding worker, one
+  rate-limited slot) that downloads an uploaded run tree, runs the same
+  inventory/package/prepare(/activate) lane the CLI runs locally, uploads its outputs and
+  publishes a create-only receipt; the operator-side `video-import lecture --dispatch`
+  uploads the run tree and polls that receipt instead of the WAF-blocked service edge. A
+  package-boundary conflict was resolved by splitting the lane: target-neutral stages stay in
+  `ingestion-shared/video_results.py`, the target-bound prepare/activate/rollback moved to
+  `ingestion/video_results_target.py` (workers import `ingestion`), and the CLI resolves the
+  target stages lazily so it still runs without the `[local]` extra. Verified: 2183 passed /
+  72 skipped across the three modules (the one pre-existing `test_local_runner_acceptance`
+  failure is unrelated and reproduces on the baseline), ruff and pyrefly clean against the
+  recorded baseline, worker isolation check green. Two material corrections to this plan,
+  both recorded above: the eligibility descriptor digest binds `policy_id`, so the S7.3
+  rename is a corpus-wide cutover rather than a bytes-identical edit (G8, deferred), and the
+  operator laptop cannot write any PRD hand-off store today (`prdingestartifactsfehm6` is
+  private-endpoint-only; the one reachable PRD account grants reader only), so a
+  container-scoped role grant or an in-cluster relay is a prerequisite for the end-to-end
+  dispatch proof (G9).
 
 - 2026-09-16 (Finance I pilot: PRD job completed and staged; local prepare blocked, target
   flow redefined): the first Finance I recording (`01_Finance1_VL.mp4`, 569 420 632 B,
