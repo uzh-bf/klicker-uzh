@@ -174,8 +174,9 @@ function JoinCourse({
                 if (pin) {
                   joinSearch.set('pin', pin)
                 }
+                const joinQuery = joinSearch.toString()
                 const joinTarget = `/course/${courseId}/join${
-                  joinSearch.size > 0 ? `?${joinSearch.toString()}` : ''
+                  joinQuery ? `?${joinQuery}` : ''
                 }`
                 await router.push({
                   pathname: '/login',

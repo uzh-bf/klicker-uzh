@@ -41,6 +41,7 @@ function CreateAccount({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
     redirectTo: '/editProfile',
   })
 

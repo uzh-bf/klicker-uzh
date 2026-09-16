@@ -26,7 +26,7 @@ function MicroLearningsOverview({
 }: {
   isInactive: boolean
   courseId: string
-  participantToken?: string
+  participantToken?: string | null
   cookiesAvailable?: boolean
   tokenSource?: ParticipantTokenSource
   redirectTo?: string
