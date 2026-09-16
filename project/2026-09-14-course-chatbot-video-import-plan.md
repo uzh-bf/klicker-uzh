@@ -53,7 +53,7 @@ cluster access establishment, paid VLM processing runs, marking ready, merge.
 | G2 no `KB` MCP server row in STG/PRD | S2 live registration | klicker-uzh / main |
 | G3 serving lineage lacks the scope-guarded inventory tool; df-side dual-stamp already merged | S3 doc-query tool delivery | mcp-doc-query + deployment / executor |
 | G4 no PRD-bound import operations for course videos | S4 pilot import runbook + first recording | data-ingestion / main + executor |
-| G5 review path for flagged units undefined | S5 quarantine review loop | video-ai + main |
+| G5 review path for flagged units undefined | S5 quarantine review loop — **resolved 2026-09-16**, folded into the S4 runbook below | video-ai + main |
 | G6 no end-to-end acceptance for a course bot citing video | S6 retrieval + acceptance proof | klicker-uzh / main |
 
 Dependencies: S1 ∥ S3; S2 after S1; S4 after S2+S3; S5 before S4 activation; S6 last.
@@ -175,9 +175,13 @@ Operator side, per recording:
    `prepared_count == eligible_unit_count`, and a `target_fingerprint` that stays stable for the
    environment.
 3. If the receipt names `quarantine_decisions`, the run held back flagged units and wrote one
-   undecided row per unit. Route them to the course team and fill in `decision` in that file;
-   a unit the team wants in needs a producer-side `clear_review` and a re-import with a bumped
-   `--resource-version`.
+   undecided row per unit. Route them to the course team and fill in `decision`
+   (`accept` | `reprocess` | `leave_out`), `reviewer`, `team`, `decided_at` and `note`
+   in that file; the file is create-only, so re-running the import never discards a decision
+   already made. The course team owns content eligibility; the platform executes. A unit the
+   team wants in re-enters only through a new producer source: a producer-side `clear_review`
+   for the review-flagged unit, then a re-import with a bumped `--resource-version`. The
+   abandoned candidate stays inactive and no vector write happens for the quarantined set.
 4. Activate with the same command plus `--activate`; this is the exact-count corpus write and the
    only step that touches the vector store.
 5. Verify from Klicker: the lecture appears in Manage's imported-sources list for the KB, and one
