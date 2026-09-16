@@ -406,6 +406,19 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
   from the merged `main`, grant the operator a write role on the hand-off store (or stand up
   the relay), then run the Finance I `--dispatch` import. Each of those is separately gated.
 
+  Dispatch-trigger credential, narrowed 2026-09-16: the PRD ingestion `prd-ingestion` Secret
+  sources its Hatchet credential from Infisical `ai-generic/prd` under the name
+  `INGESTION_HATCHET_CLIENT_TOKEN` (ExternalSecret
+  `df-infra-k8s-es-inf-prd-apps-prd-ingestion`, SecretStore project `ai-generic`, env `prd`).
+  The operator profile `ai-generic-prd` exists and authenticates, but its read allowlist
+  carries `HATCHET_CLIENT_TOKEN`, **not** `INGESTION_HATCHET_CLIENT_TOKEN`; the two are
+  different tenants behind the same Hatchet server (server/issuer/audience claims match, the
+  `sub` tenant id does not), so the allowlisted name cannot drive the ingestion workers. The
+  fix is one operator action — `allow-read INGESTION_HATCHET_CLIENT_TOKEN` on
+  `ai-generic-prd` — which is a secret-config change and therefore left to the user rather
+  than self-approved. With it, and the hand-off write role, `--dispatch` becomes drivable
+  once the merged worker image is deployed.
+
 - 2026-09-16 (Finance I pilot: PRD job completed and staged; local prepare blocked, target
   flow redefined): the first Finance I recording (`01_Finance1_VL.mp4`, 569 420 632 B,
   `sha256:5447065188...`) was uploaded to the PRD video-processing service as job
