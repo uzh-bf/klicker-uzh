@@ -6,6 +6,7 @@ import type {
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
+import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -550,6 +551,7 @@ async function handlePOST(
     sourceMessageId: z.string().min(1).optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
+    handoffSource: z.enum(HANDOFF_SOURCES).optional(),
     images: z
       .array(
         z.union([
@@ -583,6 +585,7 @@ async function handlePOST(
     sourceMessageId,
     assistantMessageId,
     allowRegeneration,
+    handoffSource,
     images,
     chatContext: rawChatContext,
   } = parsed
@@ -2315,6 +2318,7 @@ async function handlePOST(
               reasoningEffort: appliedReasoningEffort ?? 'none',
               toolCount: String(toolNames.length),
               imageAttachmentCount: String(images.length),
+              handoffSource: handoffSource ?? 'direct',
             },
           },
           () =>
