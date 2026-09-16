@@ -364,7 +364,12 @@ test('the changed-file step diffs the event head against the event merge base', 
     GIT_COMMITTER_NAME: 'Fixture',
   })
   // Signing and hooks stay off so the fixture never depends on the host Git
-  // configuration or a hook inside the temporary repositories.
+  // configuration or a hook inside the temporary repositories. Automatic
+  // maintenance stays off as well: committing and merging schedule a detached
+  // `gc --auto`, which writes and then removes lock and pack files inside the
+  // fixture's object database. The bare clone below copies that database, so a
+  // concurrent run makes it read a file that has just been removed and fail
+  // with ENOENT. Disabling the scheduler removes the race instead of retrying.
   const git = (...args) =>
     childProcess
       .execFileSync(
@@ -374,6 +379,10 @@ test('the changed-file step diffs the event head against the event merge base', 
           'commit.gpgsign=false',
           '-c',
           'core.hooksPath=/dev/null',
+          '-c',
+          'gc.auto=0',
+          '-c',
+          'maintenance.auto=false',
           ...args,
         ],
         {
