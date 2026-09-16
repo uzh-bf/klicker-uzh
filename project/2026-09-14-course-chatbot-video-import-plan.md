@@ -244,7 +244,35 @@ them; the loop decides what happens to the content they carry.
   recording is re-imported with a bumped `--resource-version`; the abandoned candidate stays
   inactive and no vector write happens for the quarantined set.
 
+### S7 - in-cluster prepare/activate and course-specific policies
+
+Target flow: the operator's local step ends at the video-processing submission. The
+published `ingestion_source.json` becomes the hand-off to the data-ingestion workers: a
+dispatch path triggers the existing `resource_candidate_batch` workflow on the
+environment's ingestion cluster (embedding worker + in-cluster LiteLLM credential), which
+runs inventory, package, prepare and the exact-count activation against Milvus with its
+own credentials. The CLI keeps its local prepare/activate only as the fallback rehearsal
+lane.
+
+Work items:
+
+1. data-ingestion: extend the video lane so prepare/activate can dispatch to the deployed
+   workers (the staged run tree already produces the package artifacts; the missing piece
+   is the remote dispatch + completion readback), and make the PRD ingestion embedding
+   worker (currently 0/0) the execution point with its LiteLLM key.
+2. video-processing: publish the completion signal in a way the lane can read without the
+   public edge (the blob artifact listing is already authoritative; make the CLI treat
+   published-artifact presence as terminal-state evidence instead of polling `/jobs`).
+3. Policy naming: add a Finance I (or course-generic) eligibility descriptor, deploy it
+   via `VIDEO_PROCESSING_INGESTION_SOURCE_POLICY`, and update the Finance I binding.
+   Decide whether the pilot activation may proceed under the IuW-named descriptor
+   (identical bytes) or waits for the renamed policy; the already-published lecture needs
+   no reprocessing either way.
+4. Runbook: replace the laptop-side prepare/activate steps with the dispatch flow; keep
+   the receipt checks identical.
+
 ## S6 acceptance checklist
+
 
 Per pilot course: inventory lists the lecture with chunk counts; an owner-preview tutor question
 answerable only from the imported lecture cites it by name and timestamp;
@@ -252,6 +280,29 @@ answerable only from the imported lecture cites it by name and timestamp;
 manifest (job, source counts, prepare, activation count, inventory row, citation).
 
 ## Progress
+
+- 2026-09-16 (Finance I pilot: PRD job completed and staged; local prepare blocked, target
+  flow redefined): the first Finance I recording (`01_Finance1_VL.mp4`, 569 420 632 B,
+  `sha256:5447065188...`) was uploaded to the PRD video-processing service as job
+  `15ff49a3-44b0-4328-b3c1-ac5ff65ab9a0--01` and completed with all artifacts published
+  (`ingestion_source.json` 476 812 B at 16:02 UTC, plus result/transcript/pipeline
+  artifacts). The service assigned it 73 units: 67 eligible, 3 excluded, 3 quarantined,
+  under the deployed eligibility descriptor `informatik-und-wirtschaft-hs26-eligibility.v1`
+  (`sha256:08863ea7...`). The PRD worker config names that one descriptor globally, so the
+  policy semantics (slide-type review rules) are course-agnostic but the id is IuW-named;
+  the Finance I binding was written against the same digest, so the run is consistent and
+  the naming fix is recorded as G8. The operator lane staged the source, and inventory (67
+  eligible) and package (67 candidate units, digests receipted) passed locally. The local
+  prepare failed closed: the embedding step needs `OPENAI_API_KEY`/`OPENAI_BASE_URL`, no
+  operator Infisical profile exposes a readable OpenAI-compatible credential, the
+  `klicker-dev` Azure OpenAI resource is VNet-restricted (403), and the deployed ingestion
+  workers embed through the in-cluster LiteLLM with keys that live only in cluster secrets.
+  Separately, the public `video.ai.prd.df-app.ch` edge began blocking the operator IP with
+  an administrative-rules 403 after the long upload+poll session (GET /healthz without auth
+  also 403s), so service-side status polling needs a WAF-resilient completion signal (blob
+  listing works and is authoritative). Direction confirmed with the course owner: the local
+  step should end at the video-processing submission; prepare and activation belong to the
+  data-ingestion workers reading the published outputs (G7/S7 below), not to the laptop.
 
 - 2026-09-16 (S1/S2/S3 functional acceptance readback closed on PRD; persisted-query
   registry format lesson): the `getKbImportedSources` GraphQL readback now passes on PRD
