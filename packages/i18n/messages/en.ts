@@ -2765,6 +2765,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         elementNumber: 'Element {number}',
         objectives: 'Learning objectives',
         noObjectives: 'No explicit learning objectives.',
+        generatedDefaultObjective: 'Generated default',
         difficulty: 'Difficulty {difficulty}',
         warnings: '{count, plural, one {# warning} other {# warnings}}',
         acknowledgeWarnings: 'I reviewed and acknowledge these warnings.',

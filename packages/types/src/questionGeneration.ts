@@ -232,6 +232,10 @@ export type QuestionGenerationDesignSlotSummary = {
   objectiveId: string | null
   bloomLevel: QuestionGenerationBloomLevel | null
   targetDifficulty: number
+  // Entity ids extracted from the worker's resolved_slots[].graph_resolution
+  // evidence candidates. Only these ids leave the parser; the surrounding
+  // resolution remains server-internal. Empty when the artifact carries none.
+  evidenceEntityIds: string[]
 }
 
 export type QuestionGenerationDesignSummary = {

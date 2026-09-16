@@ -358,6 +358,14 @@ type ElementGenerationDesignSummaryView = {
     elementCount: number
   }>
   sources: ElementGenerationReviewSourceView[]
+  slots: Array<{
+    sourceElementId: string
+    moduleId: string
+    objectiveId: string | null
+    bloomLevel: ElementGenerationBloomLevelValue | null
+    targetDifficulty: number | null
+    evidenceEntityIds: string[]
+  }>
   warnings: ElementGenerationWarningView[]
 }
 const ElementGenerationDesignModuleRef = builder.objectRef<
@@ -374,6 +382,22 @@ const ElementGenerationDesignSummaryRef =
   builder.objectRef<ElementGenerationDesignSummaryView>(
     'ElementGenerationDesignSummary'
   )
+const ElementGenerationDesignSlotRef = builder.objectRef<
+  ElementGenerationDesignSummaryView['slots'][number]
+>('ElementGenerationDesignSlot')
+ElementGenerationDesignSlotRef.implement({
+  fields: (t) => ({
+    sourceElementId: t.exposeID('sourceElementId'),
+    moduleId: t.exposeID('moduleId'),
+    objectiveId: t.exposeID('objectiveId', { nullable: true }),
+    bloomLevel: t.expose('bloomLevel', {
+      type: ElementGenerationBloomLevel,
+      nullable: true,
+    }),
+    targetDifficulty: t.exposeInt('targetDifficulty', { nullable: true }),
+    evidenceEntityIds: t.exposeStringList('evidenceEntityIds'),
+  }),
+})
 ElementGenerationDesignSummaryRef.implement({
   fields: (t) => ({
     title: t.exposeString('title'),
@@ -385,6 +409,7 @@ ElementGenerationDesignSummaryRef.implement({
     sources: t.expose('sources', {
       type: [ElementGenerationReviewSourceRef],
     }),
+    slots: t.expose('slots', { type: [ElementGenerationDesignSlotRef] }),
     warnings: t.expose('warnings', { type: [ElementGenerationWarningRef] }),
   }),
 })
@@ -405,6 +430,14 @@ function designSummaryView(
       elementCount: questionCount,
     })),
     sources: summary.sources,
+    slots: summary.slots.map((slot) => ({
+      sourceElementId: slot.sourceQuestionId,
+      moduleId: slot.moduleId,
+      objectiveId: slot.objectiveId,
+      bloomLevel: slot.bloomLevel,
+      targetDifficulty: slot.targetDifficulty,
+      evidenceEntityIds: slot.evidenceEntityIds,
+    })),
     warnings: summary.warnings,
   }
 }

@@ -5,6 +5,7 @@ import {
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { designReviewObjectives } from './designReviewSummary'
 import type { ElementGenerationBuildData } from './elementGenerationTypes'
 
 interface ElementGenerationReviewGateProps {
@@ -32,6 +33,9 @@ export default function ElementGenerationReviewGate({
 
   const warnings = summary.warnings
   const canApprove = warnings.length === 0 || warningsAcknowledged
+  const designObjectives = build.designSummary
+    ? designReviewObjectives(build.designSummary.objectives)
+    : []
 
   return (
     <section
@@ -87,9 +91,17 @@ export default function ElementGenerationReviewGate({
             </h3>
             {build.designSummary.objectives.length > 0 ? (
               <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-700">
-                {build.designSummary.objectives.map((objective) => (
+                {designObjectives.map((objective) => (
                   <li key={objective.id}>
                     {objective.text}
+                    {objective.isGeneratedDefault ? (
+                      <span
+                        className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+                        data-cy="element-generation-generated-default-objective"
+                      >
+                        {t('gate.generatedDefaultObjective')}
+                      </span>
+                    ) : null}
                     {objective.bloomLevel ? (
                       <span className="ml-2 text-xs text-slate-500">
                         {t(`bloom.${objective.bloomLevel}`)}

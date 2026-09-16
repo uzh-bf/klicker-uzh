@@ -238,6 +238,9 @@ export type ElementGenerationDesignSummary = {
     objectiveId: string | null
     bloomLevel: ElementGenerationBloomLevel | null
     targetDifficulty: number | null
+    // Evidence entity ids the worker resolved for this slot; empty when the
+    // artifact predates the evidence surface or carries none.
+    evidenceEntityIds: string[]
   }>
   warnings: ElementGenerationWarning[]
 }
