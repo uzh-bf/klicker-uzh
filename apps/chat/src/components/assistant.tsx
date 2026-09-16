@@ -36,6 +36,7 @@ import {
   ChatKnowledgeGraphPanel,
   useChatGraphPanel,
 } from './knowledge-graph/ChatKnowledgeGraphPanel'
+import { HandoffPrefill } from './handoff-prefill'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -148,6 +149,7 @@ export function Assistant({
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
         >
+          <HandoffPrefill />
           <AssistantLayout
             chatbot={chatbot}
             initialModeOptions={initialModeOptions}
