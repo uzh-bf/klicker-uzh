@@ -1,5 +1,10 @@
 export default {
   chat: {
+    courseImages: {
+      source: '{title} · Seite {page}',
+      unavailable: 'Dieses Kursbild ist derzeit nicht verfügbar.',
+      retry: 'Bild erneut laden',
+    },
     graphPanel: {
       missingEndpoint: 'Unbekannter Begriff',
       title: 'Wissensgraph',
