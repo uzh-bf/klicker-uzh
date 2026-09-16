@@ -249,6 +249,22 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 
 ## Progress
 
+- 2026-09-16 (S1/S2/S3 functional acceptance readback closed on PRD; persisted-query
+  registry format lesson): the `getKbImportedSources` GraphQL readback now passes on PRD
+  against the IuW KB (`102dcdc9`), returning real video sources (first 10 of the 82-video
+  scan) with per-source chunk counts and `urn:video-ingestion:sha256:...#t=start,end`
+  source URLs. Two acceptance-relevant lessons are now confirmed live. First, the deployed
+  persisted-operations registry registers each operation under the hash of its
+  `__typename`-annotated form (every selection level gets a `__typename` field), so a
+  client must send `extensions.persistedQuery {version: 1, sha256Hash}` computed over that
+  registry text; hashing the raw op file yields `PersistedQueryNotFound`. The Yoga plugin
+  (v1.9.1) reads only `extensions.persistedQuery.sha256Hash`; an `operationId` body is
+  invisible to it. Second, the middleware accepts `Authorization: Bearer <session JWT>`
+  alongside the session cookie, which is the practical route for scripts. STG returns the
+  correct domain error `AI_BETA_ACCESS_REQUIRED` for the same query (the owner lacks AI
+  beta access on STG), confirming the authorization path there. The readback script lives at
+  `/private/tmp/iuw_sources_pq3.py` (ephemeral); this entry is the durable evidence record.
+
 - 2026-09-16 (S1/S2/S3 verified live on both environments; IuW KB serving proof; Milvus
   database correction): a live readback found all three serving prerequisites delivered on
   STG and PRD, ahead of the progress notes below. The `backend-graphql` ExternalSecret on both
