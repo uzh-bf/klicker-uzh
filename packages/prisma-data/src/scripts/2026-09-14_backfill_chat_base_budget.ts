@@ -1,3 +1,5 @@
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { prisma } from '@klicker-uzh/prisma'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import {
@@ -96,7 +98,10 @@ async function run() {
   )
 }
 
-if (process.argv[1]?.endsWith('2026-09-14_backfill_chat_base_budget.ts')) {
+// Compare the resolved entry path so the guard survives a compiled or renamed
+// artefact; a filename suffix check would silently exit without applying.
+const entryPath = process.argv[1]
+if (entryPath && import.meta.url === pathToFileURL(resolve(entryPath)).href) {
   try {
     await run()
   } finally {
