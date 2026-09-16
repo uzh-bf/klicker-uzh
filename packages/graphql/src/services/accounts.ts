@@ -21,6 +21,7 @@ import type {
 } from '../lib/context.js'
 import * as EmailService from '../services/email.js'
 import { seedDemoSelectionAndCaseStudyElements } from './demoQuestions.js'
+import { claimGuestChatThreads } from './guestThreadClaim.js'
 import { sendTeamsNotification } from './notifications.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
@@ -1847,6 +1848,27 @@ async function establishLtiChatIdentity(
     create: { courseId, participantId: participant.id, isActive: false },
     update: {},
   })
+  // A learner who chatted as a course-scoped guest and now has an account
+  // should find those conversations in their history. The claim is keyed to
+  // the verified launch subject, runs in its own transaction and never blocks
+  // the launch: a transfer failure is logged and the account still logs in.
+  // History the persona creates after this claim is picked up by the next
+  // verified launch.
+  try {
+    const claimed = await claimGuestChatThreads(
+      { ltiSub, participantId: participant.id },
+      ctx
+    )
+    if (claimed.personas > 0) {
+      console.info(
+        `event=guest_thread_claim personas=${claimed.personas} threads=${claimed.threads} courseId=${courseId}`
+      )
+    }
+  } catch (error) {
+    console.warn(
+      `event=guest_thread_claim_failed courseId=${courseId} error=${error instanceof Error ? error.name : 'unknown'}`
+    )
+  }
   const token = await doParticipantLogin(
     { participantId: participant.id, participantLocale: participant.locale },
     ctx
