@@ -1,6 +1,7 @@
 # Course chatbot video import lane — end-to-end plan
 
-Status: draft, awaiting slice approval. Complements
+Status: active; S1-S3 delivered on both environments, S4 producer and access prerequisites
+proven, pilot import awaiting a new recording. Complements
 [2026-09-12-doc-query-source-inventory-plan.md](2026-09-12-doc-query-source-inventory-plan.md)
 (merged as #5922): the inventory half is delivered; this plan closes the production path for
 getting lecture-recording content into course KBs and cited through the chatbots. The
@@ -27,20 +28,22 @@ cluster access establishment, paid VLM processing runs, marking ready, merge.
    target-bound prepare (embeds, receipts, zero vector writes) → inactive candidate →
    exact-count activation with replay/rollback. Locally e2e-proven (82 videos / 872 candidates,
    plan `project/2026-08-13-video-ingestion-local-e2e-plan.md`).
-3. Inventory tool: `doc_query_sources` scope-guarded companion implemented at mcp-doc-query
-   `d8be6cf` (S1 of the inventory plan). STG/PRD deployment and registration: not done.
+3. Inventory tool: `doc_query_sources` scope-guarded companion is live on both environments
+   (S3): mcp-doc-query runs `3cc2771b` (2026-09-15, above the v0.13.0 release `92b45f63`),
+   which registers the companion tool for any tool config declaring `token_scope`.
 4. Klicker inventory consumer: `getKbImportedSources` merged to `v3-ai` (#5922 →
-   `7f777565f0`). Degrades outside local because (a) the ES256 minting keys
-   (`DOC_QUERY_SCOPE_*`) exist only on the chat workload, (b) no `ChatbotMCPServer` row named
-   `KB` exists in STG/PRD, (c) the live producer stamps `chatbot_id` while the scope token
-   carries the KB identity (`kb_id` rename pending).
+   `7f777565f0`). Its three original degradation causes are resolved: the ES256 minting keys
+   (`DOC_QUERY_SCOPE_*`) are projected into the backend-graphql Secret on STG and PRD (S1),
+   the `ChatbotMCPServer` row named `KB` exists and is active on both (S2), and the serving
+   lineage exposes the scope-guarded inventory tool (S3).
 5. PRD doc-query runtime: in-cluster endpoint
    `http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker`, tenant collection
    `klicker_course_materials_v1`, proven by `apps/chat/scripts/prd-doc-query-proof.mjs`
    (15 KB / 22 chatbot corpus proofs on `v3-ai`).
-6. Course fleet: seven published course chatbots with KBs (Finance I, AMI, FIM, SP, CF, BI,
-   CHE170) provisioned 2026-09-13/14; first lecture recordings expected from Tue 2026-09-15
-   (SP).
+6. Course fleet: eight published course chatbots with KBs (Finance I, AMI, FIM, SP, CF, BI,
+   CHE170, IuW) provisioned 2026-09-13/16. IuW is the first whose KB holds a video corpus in
+   production (872 chunks / 82 videos, copied from the legacy test scope by the IuW chatbot
+   thread), and it serves correctly through the clean path (2026-09-16 verification below).
 
 ## Gaps and slices
 
@@ -68,16 +71,15 @@ workload's own doc-query path is unchanged (regression via existing corpus proof
 
 Authority: chart/secret deployment (STG then PRD), separately approved per environment.
 
-### S2 — register the `KB` MCP server row
+### S2 — register the `KB` MCP server row (done)
 
-`getKbMcpServerOrThrow` resolves one global `ChatbotMCPServer` row by `name = 'KB'`
-(`packages/graphql/src/services/knowledge.ts:566`). Register on STG then PRD via a guarded,
-receipted DB insert (idempotent upsert by name): `url` = environment doc-query MCP endpoint,
-`authType = 'scope_token'`, `isActive = true`, no stored secret (scope token is minted per
-call). Acceptance: Manage's imported-sources section renders non-degraded for a course KB, and
-`Knowledge base retrieval is not configured` no longer occurs for inventory reads.
-
-Authority: live database write to STG, then PRD.
+Delivered on both environments: `getKbMcpServerOrThrow` resolves one global
+`ChatbotMCPServer` row by `name = 'KB'`
+(`packages/graphql/src/services/knowledge.ts:566`). Readback 2026-09-16 shows the row on STG
+and PRD with the environment in-cluster doc-query URL, `authType = 'bearer'` (see the gated
+steps' authType correction), `isActive = true` and a non-null encrypted `authSecret`. No
+further action; the functional Manage readback through a real owner session remains part of S6
+acceptance.
 
 ### S3 — the inventory tool on the serving lineage
 
@@ -182,7 +184,8 @@ Operator side, per recording:
    owner-preview question answers only from that lecture and cites it with a timestamp.
 
 Committed bindings live at `modules/ingestion-cli/src/ingestion_cli/course_targets/<slug>.yaml`
-in data-ingestion (seven courses). Environment for a PRD run (host shell, via
+in data-ingestion (eight courses; the IuW binding is commit `f168e24c` on
+`rs/video-lecture-import`, head of draft MR !172). Environment for a PRD run (host shell, via
 `rs-infisical-operator`):
 `VIDEO_PROCESSING_SERVICE_URL=https://video.ai.prd.df-app.ch`, `VIDEO_PROCESSING_API_KEY`,
 `VIDEO_PROCESSING_STORAGE_ACCOUNT_URL=https://prdvideoprocessingpq8ul.blob.core.windows.net`,
@@ -209,9 +212,16 @@ data-plane access.
 | Structured Products (`structured-products`) | klicker-teaching@df.uzh.ch | 28ae2716-19df-4fc4-924f-2ed6a35f83db | 09ff73fc-eda5-468a-a890-af29d96d5965 | 558b9906-eebb-4333-89dd-82c249e5e3e7 |
 | Banking and Insurance (`banking-and-insurance`) | banking@bf.uzh.ch | 8917b17e-fe87-4893-9d1e-5730785e0e7c | e230dff4-f7d5-46d2-9dc6-ab936ab68901 | 3698bbd4-40b9-4700-9afb-a9bfd86a2b85 |
 | CHE170 (`che170`) | silke.johannsen@chem.uzh.ch | accb5947-a06a-465c-8629-9f801c34da94 | 64850878-8120-4366-8192-3ed348c89c12 | cb418afc-9c3b-4cfc-aac0-45d6208363f1 |
+| Informatik und Wirtschaft (`informatik-und-wirtschaft`) | abraham.bernstein@uzh.ch | 6cb4aeac-8326-4ee3-aec2-0aa067715868 | 87113428-b6f2-4326-ad46-36a1aa9a6635 | 102dcdc9-587f-4514-a3ae-09158bc5c9ce |
 
 Ids were read from the PRD database on 2026-09-14; the two `@bf.uzh.ch` accounts follow the
 skill's ownership rule (the account that owns the current-semester course).
+
+The IuW KB differs from the other seven in one way that matters for the pilot: it already
+holds a production video corpus (872 chunks / 82 videos) copied from the legacy test scope by
+the IuW chatbot thread, and the chatbot serves it correctly through the clean path. Those 82
+recordings must not be re-imported through the lane; the one-command path applies to new
+HS26 recordings only, starting with the first lecture not already in the corpus.
 
 ### Quarantine loop
 
@@ -238,6 +248,42 @@ answerable only from the imported lecture cites it by name and timestamp;
 manifest (job, source counts, prepare, activation count, inventory row, citation).
 
 ## Progress
+
+- 2026-09-16 (S1/S2/S3 verified live on both environments; IuW KB serving proof; Milvus
+  database correction): a live readback found all three serving prerequisites delivered on
+  STG and PRD, ahead of the progress notes below. The `backend-graphql` ExternalSecret on both
+  clusters carries the four `DOC_QUERY_SCOPE_*` names (S1 STG was already recorded; S1 PRD was
+  not); the `KB` `ChatbotMCPServer` row exists on both with the environment in-cluster URL,
+  `authType = 'bearer'`, `isActive = true` and a non-null encrypted secret (S2, previously
+  listed as not started); and doc-query runs `3cc2771b` on both, a 2026-09-15 revision above
+  the v0.13.0 release that contains the `doc_query_sources` companion tool (S3, beyond the
+  STG-only pin recorded below). PRD backend-graphql is healthy at 6/6 ready replicas; one
+  rollout-leftover pod in Error state has a healthy replacement.
+
+- 2026-09-16 (IuW KB serves correctly; prior near-empty-collection reading was a
+  measurement error): the productive Informatik und Wirtschaft chatbot
+  (`87113428-b6f2-4326-ad46-36a1aa9a6635`, published, owner Abraham Bernstein) is bound via an
+  enabled `KBChatbot` row to KB `102dcdc9-587f-4514-a3ae-09158bc5c9ce`, and its tutor and
+  explainer MCP configs both point at the global `KB` server with tool `doc_query` — the
+  clean multi-tenant path. The KB scope holds 872 active chunks across 82 distinct
+  `video_source_id` values, each carrying a human-readable `video_name` and a
+  `urn:video-ingestion:sha256:…` source URL, with `chatbot_id` rewritten to the new chatbot.
+  An earlier reading that called the serving collection near-empty was wrong: it was taken
+  against Milvus's default database. The Klicker tenant serves from the database named by
+  `DOC_QUERY_TENANT_KLICKER_MILVUS_DATABASE_NAME`, where `klicker_course_materials_v1` holds
+  18 922 rows across all KBs. The legacy path is inert: the
+  `klicker_ai_informatik_und_wirtschaft` collection (872 slug-scoped rows) still exists, and
+  its `Informatik und Wirtschaft Video Doc Query` server row is `isActive=false` with both
+  chatbot configs disabled. Deployment receipts from the IuW thread
+  (`/private/tmp/iuw-hs26/receipts/`) show owner-preview turns answering with video citations
+  and timestamps through `doc_query`, and the copy receipt (872 scanned / 872 inserted,
+  postcheck verified, zero id overlap). One transient incident (second chat turn failing
+  around 07:00Z on 2026-09-16) was root-caused to a Milvus rollout restart; doc-query
+  readiness recovered and a fresh preview turn cited correctly. Consequences: do not re-import
+  the 82 existing recordings (double corpus for paid VLM cost); the imported-sources listing
+  will group them into 82 named video entries (the deployed inventory builder groups by
+  `video_source_id` with `video_name` as the first title fallback); and the S6 acceptance
+  already has a live citation proof to build on.
 
 - 2026-09-15 (blob data-plane access granted and proven): the operator identity
   `roland.schlaefli@df.uzh.ch` (object id `40206a71-60af-4867-bfe4-a5ba62b0b45d`) now holds a

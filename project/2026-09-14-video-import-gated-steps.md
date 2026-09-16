@@ -14,6 +14,15 @@ one-recording proof passed on PRD as well (job `prd-ingestion-source-proof-20260
 `--activate` write are blocked on blob data-plane read access for the operator identity, recorded
 in the parent plan's progress. Item 5 is the only PRD corpus write this lane makes.
 
+Update 2026-09-16: S1, S2 and S3 are all delivered on both environments, verified by live readback
+(values-free). The `backend-graphql` ExternalSecret carries the four `DOC_QUERY_SCOPE_*` names on STG and
+PRD; the `KB` `ChatbotMCPServer` row exists on both with the environment in-cluster doc-query URL,
+`authType = 'bearer'`, `isActive = true` and a non-null encrypted secret; and doc-query runs `3cc2771b` on
+both, a revision above v0.13.0 that contains the `doc_query_sources` companion tool. The steps below are
+retained as the exact procedures and rollback contracts for each slice; no step remains to execute for
+S1-S3. The blob data-plane blocker named above was also cleared on 2026-09-15 (see the parent plan), so
+S4's remaining prerequisite is a new recording for a bound course.
+
 ## Correction: the `KB` row uses `authType = 'bearer'`
 
 The parent plan's `authType = 'scope_token'` is wrong for the deployed runtime. In
