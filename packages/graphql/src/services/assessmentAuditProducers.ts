@@ -712,6 +712,51 @@ function instanceMap(snapshot: AssessmentBaselineSnapshot) {
   )
 }
 
+/**
+ * Typed evidence for reverting a failed block activation: the compensated
+ * block must appear ACTIVE in the before snapshot and SCHEDULED in the after
+ * snapshot. A business-state change without a representable compensation
+ * draft is an invariant failure, never a silently unaudited operation.
+ */
+export function assessmentBlockActivationRevertedDraft(input: {
+  before: AssessmentBaselineSnapshot | null
+  after: AssessmentBaselineSnapshot | null
+  blockId: number
+  producerOperationId: string
+  reasonCode: string
+}): AuditEventDraft<'ASSESSMENT_BLOCK_ACTIVATION_REVERTED'> {
+  const beforeBlock = input.before?.blocks.find(
+    (block) => block.id === input.blockId
+  )
+  const afterBlock = input.after?.blocks.find(
+    (block) => block.id === input.blockId
+  )
+  if (
+    !beforeBlock ||
+    !afterBlock ||
+    beforeBlock.status !== 'ACTIVE' ||
+    afterBlock.status !== 'SCHEDULED'
+  ) {
+    // business state changed without a representable compensation draft —
+    // a failed invariant, never a silently unaudited operation
+    throw new Error(
+      'Compensation snapshots do not represent an ACTIVE to SCHEDULED revert'
+    )
+  }
+  return {
+    eventType: 'ASSESSMENT_BLOCK_ACTIVATION_REVERTED',
+    producerOperationId: `${input.producerOperationId}:block:${input.blockId}:activation-reverted`,
+    scope: { blockId: input.blockId },
+    payload: {
+      entityType: 'BLOCK',
+      entityId: String(input.blockId),
+      before: assessmentBlockState(beforeBlock),
+      after: assessmentBlockState(afterBlock),
+      reasonCode: input.reasonCode,
+    },
+  }
+}
+
 const CONFIGURATION_LIFECYCLE_FIELDS = new Set(['activeBlockId'])
 
 export function buildAssessmentMutationAuditDrafts(input: {
@@ -820,6 +865,23 @@ export function buildAssessmentMutationAuditDrafts(input: {
           before: previous,
           after: block,
           reasonCode: 'LECTURER_BLOCK_ACTIVATION',
+        },
+      })
+    } else if (
+      fields.includes('status') &&
+      previous.status === 'ACTIVE' &&
+      block.status === 'SCHEDULED'
+    ) {
+      drafts.push({
+        eventType: 'ASSESSMENT_BLOCK_ACTIVATION_REVERTED',
+        producerOperationId: `${producerOperationId}:block:${blockId}:activation-reverted`,
+        scope: { blockId },
+        payload: {
+          entityType: 'BLOCK',
+          entityId: String(blockId),
+          before: previous,
+          after: block,
+          reasonCode: 'BLOCK_DEACTIVATED',
         },
       })
     } else if (fields.includes('status') && block.status === 'EXECUTED') {

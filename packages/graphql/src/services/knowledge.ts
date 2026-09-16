@@ -27,6 +27,7 @@ import {
   MAX_KB_TOTAL_SIZE_BYTES,
   resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
@@ -1075,7 +1076,7 @@ export async function getKbImportedSourcesConnection(
       {
         event: 'knowledge.imported_sources.load_failed',
         kbId,
-        errorMessage: error instanceof Error ? error.message : String(error),
+        err: toSafeError('KB source inventory could not be loaded'),
       },
       'Failed to load imported KB sources'
     )

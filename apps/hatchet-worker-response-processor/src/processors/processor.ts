@@ -342,8 +342,8 @@ export async function processResponseMessage(
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
       }
-    } catch (e) {
-      throw new Error('Error parsing solutions: ' + String(e))
+    } catch {
+      throw new Error('Error parsing stored solutions for question instance')
     }
 
     // validate the incoming response
@@ -359,10 +359,8 @@ export async function processResponseMessage(
             : restrictions
           : undefined
       }
-    } catch (e) {
-      throw new Error(
-        `Error ${String(e)} occurred when parsing restrictions: ${restrictions}`
-      )
+    } catch {
+      throw new Error('Error parsing stored restrictions for question instance')
     }
 
     if (participantData) {
@@ -877,7 +875,7 @@ export async function processResponseMessage(
       'Error processing response'
     )
     redisMulti.discard()
-    throw new Error(`Error processing response: ${String(e)}`)
+    throw new Error('Error processing response')
   }
 
   try {
@@ -970,12 +968,12 @@ export async function processResponseMessage(
           await taskWarn(
             ctx,
             {
-              event: 'leaderboard.timing_correction.applied',
+              event: 'leaderboard.timing_correction.attempted',
               messageId: message.messageId,
               sessionId: message.sessionId,
               instanceId: message.instanceId,
             },
-            'Correcting timing bonus after lost first-response race'
+            'Attempting timing-bonus correction after lost first-response race'
           )
           const correctionPipeline = redisExec.pipeline()
           updateLeaderboards({
@@ -1009,6 +1007,17 @@ export async function processResponseMessage(
               },
               'Timing-bonus correction failed to apply fully'
             )
+          } else {
+            await taskInfo(
+              ctx,
+              {
+                event: 'leaderboard.timing_correction.applied',
+                messageId: message.messageId,
+                sessionId: message.sessionId,
+                instanceId: message.instanceId,
+              },
+              'Timing-bonus correction applied'
+            )
           }
         }
       }
@@ -1037,6 +1046,6 @@ export async function processResponseMessage(
       'Redis transaction failed'
     )
     redisMulti.discard()
-    throw new Error(`Redis transaction failed: ${String(e)}`)
+    throw new Error('Redis transaction failed')
   }
 }

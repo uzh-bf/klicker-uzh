@@ -52,6 +52,7 @@ import {
   anchorCoveredAssessmentAuditScope,
   assessmentAuditSystemOperation,
   assessmentAuditUserOperation,
+  assessmentBlockActivationRevertedDraft,
   assessmentLifecycleDraft,
   assessmentParticipantResetDrafts,
   assessmentResponseSnapshot,
@@ -1710,16 +1711,15 @@ export async function activateLiveQuizBlock(
       .map(([error]) => error)
       .filter((error) => error !== null)
     if (seedingErrors.length > 0) {
-      const firstError =
-        seedingErrors[0] instanceof Error
-          ? seedingErrors[0].message
-          : String(seedingErrors[0])
-      ctx.log.warn({
-        event: 'response_cache.seeding.failed',
-        liveQuizId: quizId,
-        blockId,
-        errorMessage: firstError,
-      })
+      ctx.log.warn(
+        {
+          event: 'response_cache.seeding.failed',
+          liveQuizId: quizId,
+          blockId,
+          failedCommandCount: seedingErrors.length,
+        },
+        'Response cache seeding failed'
+      )
       throw new Error('Failed to initialize response cache for block')
     }
   } catch (e) {
@@ -1733,65 +1733,65 @@ export async function activateLiveQuizBlock(
       // happened, so no responses can have arrived and the retry's reseeding
       // cannot overwrite live counters.
       const activatedAtIso = activatedAt.toISOString()
-      const revertBlock = async (prisma: PrismaTransactionClient) => {
-        // concurrency guard: only compensate while the database still
-        // represents this exact activation attempt; a newer concurrent state
-        // must never be overwritten by this revert
-        const current = await prisma.liveQuiz.findUnique({
-          where: { id: quizId },
-          include: { blocks: { where: { id: blockId } } },
-        })
-        const currentBlock = current?.blocks.find(
-          (block) => block.id === blockId
-        )
-        if (
-          !current ||
-          current.activeBlockId !== blockId ||
-          !currentBlock ||
-          currentBlock.status !== DB.ElementBlockStatus.ACTIVE ||
-          currentBlock.startedAt?.toISOString() !== activatedAtIso
-        ) {
-          return false
-        }
-        await prisma.liveQuiz.update({
-          where: { id: quizId },
+
+      // compare-and-set compensation: ownership of the exact activation
+      // attempt is part of every write's WHERE clause, so a newer lifecycle
+      // state committed between the read and the write cannot be overwritten
+      // (the conditional update matches zero rows and the compensation
+      // aborts, rolling the transaction back)
+      const revertWithCas = async (
+        prisma: PrismaTransactionClient
+      ): Promise<boolean> => {
+        const blockRevert = await prisma.elementBlock.updateMany({
+          where: {
+            id: blockId,
+            status: DB.ElementBlockStatus.ACTIVE,
+            startedAt: activatedAt,
+          },
           data: {
-            activeBlock: quiz.activeBlockId
-              ? { connect: { id: quiz.activeBlockId } }
-              : { disconnect: true },
-            blocks: {
-              update: {
-                where: { id: blockId },
-                data: {
-                  status: newBlock.status,
-                  startedAt: newBlock.startedAt,
-                  expiresAt: newBlock.expiresAt,
-                },
-              },
-            },
+            status: newBlock.status,
+            startedAt: newBlock.startedAt,
+            expiresAt: newBlock.expiresAt,
           },
         })
+        if (blockRevert.count === 0) {
+          // this attempt is obsolete; do not compensate it
+          return false
+        }
+
+        const quizRevert = await prisma.liveQuiz.updateMany({
+          where: { id: quizId, activeBlockId: blockId },
+          data: { activeBlockId: quiz.activeBlockId },
+        })
+        if (quizRevert.count === 0) {
+          // the quiz no longer points at this attempt; roll the whole
+          // compensation back instead of leaving a half-applied revert
+          throw new Error('activation attempt no longer current')
+        }
         return true
       }
 
       try {
         if (quiz.isAssessmentEnabled) {
           // covered assessment: the compensating revert runs through the
-          // same audit transaction machinery as the activation, so the
-          // record explains both the failed activation and its correction
+          // same audit transaction machinery as the activation, and its
+          // evidence is the typed revert event identifying the exact
+          // activation attempt
           await runInAuditTransaction(
             ctx.prisma,
             async (tx, auditTx) => {
               const before = await loadAssessmentAuditSnapshot(tx, quizId)
-              if (before === null) return
-              const reverted = await revertBlock(tx)
-              if (!reverted) return
+              const reverted = await revertWithCas(tx)
+              if (!reverted) {
+                throw new Error('activation attempt no longer current')
+              }
               const after = await loadAssessmentAuditSnapshot(tx, quizId)
-              if (after === null) return
-              const mutationDrafts = buildAssessmentMutationAuditDrafts({
+              const revertDraft = assessmentBlockActivationRevertedDraft({
                 before,
                 after,
+                blockId,
                 producerOperationId: `assessment:${quizId}:block:${blockId}:activate-revert:${activatedAtIso}`,
+                reasonCode: 'ACTIVATION_CACHE_INITIALIZATION_FAILED',
               })
               await emitCoveredAssessmentAuditEvents({
                 tx,
@@ -1801,24 +1801,32 @@ export async function activateLiveQuizBlock(
                 operation: assessmentAuditUserOperation({
                   userId: ctx.user.sub,
                   requiredPermission: 'EXECUTE',
-                  occurredAt: activatedAt,
+                  occurredAt: new Date(),
                 }),
-                drafts: mutationDrafts,
+                drafts: [revertDraft],
               })
             },
             { timeout: 60000 }
           )
         } else {
-          await revertBlock(ctx.prisma)
+          await ctx.prisma.$transaction(async (tx) => {
+            const reverted = await revertWithCas(tx)
+            if (!reverted) {
+              throw new Error('activation attempt no longer current')
+            }
+          })
         }
       } catch (compensationError) {
         // keep the original seeding failure visible; a stuck-active state
         // requires manual repair and is diagnosable from this record
-        ctx.log.error({
-          event: 'assessment.block_activation.compensation_failed',
-          liveQuizId: quizId,
-          blockId,
-        })
+        ctx.log.error(
+          {
+            event: 'assessment.block_activation.compensation_failed',
+            liveQuizId: quizId,
+            blockId,
+          },
+          'Failed to revert block activation after cache initialization failure'
+        )
         if (quiz.isAssessmentEnabled) {
           await recordRejectedAssessmentAction(ctx, {
             liveQuizId: quizId,
