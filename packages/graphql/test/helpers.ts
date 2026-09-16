@@ -187,10 +187,6 @@ export async function testInitialization(
       name: 'monitor-assessment-audit-test',
       fn: async () => ({ success: true }),
     }),
-    renewAssessmentAuditMediaPolicies: hatchet.task({
-      name: 'renew-assessment-audit-media-policies-test',
-      fn: async () => ({ success: true }),
-    }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
       fn: async (
