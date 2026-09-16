@@ -16,47 +16,41 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Apply the long-lived branch pattern and reset the branch analyses
+      - name: Make every v3 branch long-lived and reset its analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           set -euo pipefail
           KEY=uzh-bf_klicker-uzh
           API=https://sonarcloud.io/api
+          AUTH="Authorization: Bearer $SONAR_TOKEN"
 
           echo '== pattern before =='
-          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
-            "$API/settings/values?component=$KEY&keys=sonar.branch.longLivedBranches.regex"
+          curl -s -H "$AUTH" "$API/settings/values?component=$KEY&keys=sonar.branch.longLivedBranches.regex"
           echo
 
           echo '== set the pattern =='
-          setcode=$(curl -s -o /tmp/set.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SONAR_TOKEN" \
-            --data-urlencode "component=$KEY" \
-            --data-urlencode "key=sonar.branch.longLivedBranches.regex" \
-            --data-urlencode "value=(branch|release)-.*|v3(-(ai|audit))?" \
-            "$API/settings/set")
+          setcode=$(curl -s -o /tmp/set.json -w '%{http_code}' -X POST -H "$AUTH" --data-urlencode "component=$KEY" --data-urlencode "key=sonar.branch.longLivedBranches.regex" --data-urlencode 'value=(branch|release)-.*|v3(-.*)?' "$API/settings/set")
           echo "set http=$setcode"
-          head -c 300 /tmp/set.json || true
-          echo
 
           echo '== pattern after =='
-          after=$(curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
-            "$API/settings/values?component=$KEY&keys=sonar.branch.longLivedBranches.regex")
-          echo "$after"
-          case "$after" in
-            *'v3(-(ai|audit))?'*) echo 'RESULT: the pattern is set on the project.' ;;
-            *) echo 'RESULT: the pattern did not change; the analysis token cannot administer'
-               echo 'the project, so change 1 stays an operator action.'
-               exit 0 ;;
+          post=$(curl -s -H "$AUTH" "$API/settings/values?component=$KEY&keys=sonar.branch.longLivedBranches.regex")
+          echo "$post"
+          case "$post" in
+            *'v3(-.*)?'*) echo 'RESULT: the pattern now covers every v3 branch.' ;;
+            *) echo 'RESULT: the pattern did not change; the token cannot administer the project.'; exit 0 ;;
           esac
 
-          echo '== delete the branch analyses so the type is reassigned =='
-          for B in v3 v3-ai v3-audit; do
-            d=$(curl -s -o /tmp/d.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SONAR_TOKEN" \
-              --data-urlencode "project=$KEY" --data-urlencode "branch=$B" \
-              "$API/project_branches/delete")
-            echo "delete $B -> http=$d"
-          done
+          echo '== delete every v3 branch analysis still recorded as SHORT =='
+          curl -s -H "$AUTH" "$API/project_branches/list?project=$KEY" -o /tmp/b.json
+          python3 -c 'import json,re;d=json.load(open("/tmp/b.json"));print("\n".join(b["name"] for b in d["branches"] if re.match(r"^v3(-|$)",b["name"]) and b["type"]=="SHORT"))' > /tmp/short.txt
+          cat /tmp/short.txt
+          while read -r B; do
+            [ -n "$B" ] || continue
+            code=$(curl -s -o /tmp/d.json -w '%{http_code}' -X POST -H "$AUTH" --data-urlencode "project=$KEY" --data-urlencode "branch=$B" "$API/project_branches/delete")
+            echo "delete $B -> http=$code"
+          done < /tmp/short.txt
 
-          echo '== branch types recorded after the reset =='
-          curl -s "$API/project_branches/list?project=$KEY" | grep -o '"name":"[^"]*"' | head -20
+          echo '== branch types after the reset =='
+          curl -s "$API/project_branches/list?project=$KEY" -o /tmp/b2.json
+          python3 -c 'import json;d=json.load(open("/tmp/b2.json"));[print(b["name"],b["type"]) for b in sorted(d["branches"],key=lambda x:x["name"])]'
