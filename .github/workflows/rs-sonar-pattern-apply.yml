@@ -29,24 +29,26 @@ jobs:
             "$API/settings/values?component=$KEY&keys=sonar.branch.longLivedBranches.regex"
           echo
 
-          echo '== project admin probe =='
-          code=$(curl -s -o /tmp/p.json -w '%{http_code}' -H "Authorization: Bearer $SONAR_TOKEN" \
-            "$API/permissions/users?projectKey=$KEY&permission=admin&ps=1")
-          echo "http=$code"
-          head -c 300 /tmp/p.json || true
-          echo
-          if [ "$code" != "200" ]; then
-            echo 'RESULT: the analysis token cannot administer the project.'
-            exit 0
-          fi
-
           echo '== set the pattern =='
-          curl -s -X POST -H "Authorization: Bearer $SONAR_TOKEN" \
+          setcode=$(curl -s -o /tmp/set.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SONAR_TOKEN" \
             --data-urlencode "component=$KEY" \
             --data-urlencode "key=sonar.branch.longLivedBranches.regex" \
             --data-urlencode "value=(branch|release)-.*|v3(-(ai|audit))?" \
-            "$API/settings/set"
+            "$API/settings/set")
+          echo "set http=$setcode"
+          head -c 300 /tmp/set.json || true
           echo
+
+          echo '== pattern after =='
+          after=$(curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
+            "$API/settings/values?component=$KEY&keys=sonar.branch.longLivedBranches.regex")
+          echo "$after"
+          case "$after" in
+            *'v3(-(ai|audit))?'*) echo 'RESULT: the pattern is set on the project.' ;;
+            *) echo 'RESULT: the pattern did not change; the analysis token cannot administer'
+               echo 'the project, so change 1 stays an operator action.'
+               exit 0 ;;
+          esac
 
           echo '== delete the branch analyses so the type is reassigned =='
           for B in v3 v3-ai v3-audit; do
@@ -56,7 +58,5 @@ jobs:
             echo "delete $B -> http=$d"
           done
 
-          echo '== pattern after =='
-          curl -s -H "Authorization: Bearer $SONAR_TOKEN" \
-            "$API/settings/values?component=$KEY&keys=sonar.branch.longLivedBranches.regex"
-          echo
+          echo '== branch types recorded after the reset =='
+          curl -s "$API/project_branches/list?project=$KEY" | grep -o '"name":"[^"]*"' | head -20
