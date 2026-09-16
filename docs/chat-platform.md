@@ -42,7 +42,10 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
   parser and opt-in `[n]` marker transformer used by response-example checks
   and rendering. The student chat renderer keeps its app-local plugin.
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
-  `[n–m]` markers into citation links.
+  `[n–m]` markers into citation links. A marker may also carry a _labelled_ page detail the model
+  added, such as `[1, p. 6–7]` or `[1, S. 8–18]`; the chip shows the number alone and the page belongs
+  to the source card. A bare `[1, 2]` is deliberately not a citation: in real course answers that
+  shape is far more often a math coordinate such as `[0, 1]`.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
@@ -1189,13 +1192,22 @@ mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents display only the publisher's labeled page (`p. 12` / `S. 12`)
-and fall back to a cleaned display URL when no label is supplied; web links always lead with the
+documents display the publisher's labeled page (`p. 12` / `S. 12`) or labelled range (`p. 6–89`),
+then the retrieved physical page envelope, then a cleaned display URL; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
 lead with a `12:34`-style position; images keep their type and any publisher page label.
-Physical PDF pages are used only for outbound navigation: validated public URLs with
+Physical PDF pages are used for outbound navigation: validated public URLs with
 a `.pdf` pathname receive a positive integer `#page=` position on cards and passage
-links. Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
+links, anchored at the lowest retrieved page. A single physical page is never shown as a label — it
+is a navigation position, not the number printed on the page — but the physical envelope of the
+retrieved chunks does stand in for a missing publisher label, because those payloads carry no other
+page information. `getPageEnvelope` (`src/lib/sources/normalizeSources.ts`) derives that envelope
+from every chunk of a source, not only the first: the payload has no relevance score or rank, so the
+lowest and highest retrieved page are a lossless summary of the retrieval. `labeledPageEnd` is only
+derived when every chunk label is a plain integer; any other label set keeps the first label alone.
+Source identity deliberately stays keyed on the start page, so two `doc_query` calls returning
+overlapping chunks for one resource cannot split it into duplicate cards.
+Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
 structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
 `labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
 and prefers the structured start for the card and citation preview. Legacy results remain
@@ -1335,6 +1347,12 @@ Auto Mode selected and require the tool result, answer, and source to remain
 after reloading the thread. Use direct GPT-5.6 Luna only to isolate the router
 from the model/tool path. The fixture is synthetic wiring evidence only; it
 does not validate retrieval quality or a deployed MCP server.
+
+The optional `LOCAL_MCP_FIXTURE_FILE` (default
+`project/_local/local-mcp-fixture.json`, gitignored) adds a second draft
+identity with its own document corpus. The isolated bootstrap creates and
+validates that identity in the same seed transaction; an unconfigured or
+drifted identity fails closed instead of widening the fixture.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 

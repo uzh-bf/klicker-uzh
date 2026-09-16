@@ -113,7 +113,72 @@ export function assertLocalSeedOwnership(server, configurations, chatbot) {
   return true
 }
 
-export async function createLocalAuthenticator(env) {
+/**
+ * The scope stored on the optional additional identity's binding.  Every
+ * configuration this seed owns uses the multi-knowledge-base form; the
+ * scope-token boundary keeps carrying the single `kb_id` claim.
+ *
+ * @param {string} kbId
+ * @returns {{required: true, toolAlias: string, kb_ids: string[]}}
+ */
+export function localFixtureScope(kbId) {
+  return { required: true, toolAlias: 'doc_query', kb_ids: [kbId] }
+}
+
+/**
+ * Assert that one persisted configuration is exactly the binding described by
+ * the local fixture file.  The dedicated identity is validated separately by
+ * assertLocalSeedOwnership, and an absent fixture never permits a binding.
+ *
+ * @param {unknown} configuration
+ * @param {{chatbotId?: unknown, kbId?: unknown, chatMode?: unknown}|null} fixture
+ * @returns {true}
+ */
+export function assertLocalFixtureConfiguration(configuration, fixture) {
+  if (
+    fixture === null ||
+    !isPlainObject(fixture) ||
+    !isPlainObject(configuration) ||
+    configuration.mcpServerId !== LOCAL_SERVER_ID ||
+    configuration.chatbotId !== fixture.chatbotId ||
+    configuration.chatMode !== fixture.chatMode ||
+    configuration.isEnabled !== true ||
+    configuration.priority !== 0 ||
+    !isDeepStrictEqual(configuration.allowedTools, ['doc_query']) ||
+    !isDeepStrictEqual(
+      configuration.parameters,
+      localFixtureScope(fixture.kbId)
+    )
+  ) {
+    throw new Error('Local MCP fixture configuration conflict')
+  }
+
+  return true
+}
+
+/**
+ * The optional additional identity from the local fixture file is a second
+ * accepted chatbot/knowledge-base pair, so the returned authenticator resolves
+ * the caller's identity instead of a boolean when asked to.
+ *
+ * @overload
+ * @param {Record<string, string>} env
+ * @param {{chatbotId?: unknown, kbId?: unknown}|null} [fixture]
+ * @param {{returnIdentity?: false}} [options]
+ * @returns {Promise<(headers: Record<string, string>) => Promise<boolean>>}
+ */
+/**
+ * @overload
+ * @param {Record<string, string>} env
+ * @param {{chatbotId?: unknown, kbId?: unknown}|null} fixture
+ * @param {{returnIdentity: true}} options
+ * @returns {Promise<(headers: Record<string, string>) => Promise<string | false>>}
+ */
+export async function createLocalAuthenticator(
+  env,
+  fixture = null,
+  { returnIdentity = false } = {}
+) {
   for (const name of [
     'LOCAL_MCP_TRANSPORT_TOKEN',
     'LOCAL_MCP_PUBLIC_KEY',
@@ -161,17 +226,20 @@ export async function createLocalAuthenticator(env) {
         typeof value === 'string' &&
         value.trim().length > 0 &&
         value.length <= 256
-      return (
+      const valid =
         protectedHeader.kid === env.DOC_QUERY_SCOPE_KID &&
-        payload.chatbot_id === LOCAL_CHATBOT_ID &&
-        payload.kb_id === LOCAL_KB_ID &&
+        ((payload.chatbot_id === LOCAL_CHATBOT_ID &&
+          payload.kb_id === LOCAL_KB_ID) ||
+          (isPlainObject(fixture) &&
+            payload.chatbot_id === fixture.chatbotId &&
+            payload.kb_id === fixture.kbId)) &&
         Number.isInteger(payload.iat) &&
         Number.isInteger(payload.exp) &&
         payload.exp > payload.iat &&
         payload.exp - payload.iat <= 300 &&
         boundedIdentifier(payload.sub) &&
         boundedIdentifier(payload.jti)
-      )
+      return valid && (returnIdentity ? payload.chatbot_id : true)
     } catch {
       return false
     }

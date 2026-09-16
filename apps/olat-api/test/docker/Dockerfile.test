@@ -1,4 +1,4 @@
-FROM node:24.16.0
+FROM node:24.21.0
 
 # Enable the repo-pinned package manager
 RUN corepack enable && corepack prepare pnpm@11.5.0 --activate

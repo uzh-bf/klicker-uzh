@@ -16,6 +16,12 @@ permissions:
 
 jobs:
   ocr-review:
+    # The CLI spawns a detached `npm i -g` self-update on its first invocation
+    # unless this is set. That global reinstall removes and re-extracts the
+    # package while the review is starting, so the job dies on a
+    # module-resolution error instead of reviewing the pull request.
+    env:
+      OCR_NO_UPDATE: '1'
     if: >-
       github.event.pull_request.user.login != 'dependabot[bot]' &&
       github.event.pull_request.draft == true

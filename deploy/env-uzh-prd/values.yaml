@@ -45,7 +45,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.75-ai.1
+        tag: v3.4.0-alpha.77
       resources:
         requests:
           cpu: 50m
@@ -86,7 +86,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.75-ai.1
+        tag: v3.4.0-alpha.77
       resources:
         requests:
           cpu: 50m
@@ -127,7 +127,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.75-ai.1
+        tag: v3.4.0-alpha.77
       resources:
         requests:
           cpu: 50m
@@ -194,7 +194,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   ingress:
     annotations:
@@ -344,7 +344,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   ingress:
     annotations:
@@ -369,7 +369,7 @@ chat:
   resources:
     requests:
       cpu: 50m
-      memory: 250Mi
+      memory: 384Mi
     limits:
       cpu: 200m
       memory: 1Gi
@@ -499,7 +499,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   ingress:
     className: haproxy
@@ -524,7 +524,7 @@ frontendPWA:
   resources:
     requests:
       cpu: 100m
-      memory: 200Mi
+      memory: 320Mi
     limits:
       memory: 1Gi
 
@@ -552,7 +552,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   ingress:
     className: haproxy
@@ -590,7 +590,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   affinity:
     podAntiAffinity:
@@ -651,6 +651,21 @@ backendGraphql:
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
 
+  elementGeneration:
+    enabled: true
+    hatchetHostPort: 'hatchet-grpc.prd-hatchet-svc.svc.cluster.local:7070'
+    hatchetServerUrl: 'http://app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080'
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: '1'
+      flashcardMinorUnits: '1'
+      flashcardRetryMinorUnits: '1'
+      pricingVersion: 'prd-elements-v1'
+
   replicaCount: 6
 
   autoscaling:
@@ -672,7 +687,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -714,7 +729,7 @@ backendGraphql:
   resources:
     requests:
       cpu: 100m
-      memory: 384Mi
+      memory: 448Mi
     limits:
       memory: 1Gi
 
@@ -726,7 +741,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   affinity:
     podAntiAffinity:
@@ -796,7 +811,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
 
   ingress:
     className: haproxy
@@ -828,7 +843,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.75-ai.1
+    tag: v3.4.0-alpha.77
     pullPolicy: IfNotPresent
 
   affinity:
@@ -918,7 +933,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.75-ai.1
+      tag: v3.4.0-alpha.77
 
     ingress:
       className: haproxy
@@ -993,7 +1008,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.75-ai.1
+      tag: v3.4.0-alpha.77
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1029,7 +1044,7 @@ assessment:
     resources:
       requests:
         cpu: 100m
-        memory: 200Mi
+        memory: 384Mi
       limits:
         memory: 1Gi
 
@@ -1069,7 +1084,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.75-ai.1
+      tag: v3.4.0-alpha.77
 
     ingress:
       className: haproxy
