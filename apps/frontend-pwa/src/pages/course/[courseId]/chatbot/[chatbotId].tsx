@@ -76,11 +76,11 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const localePrefix = ctx.locale ? `/${ctx.locale}` : ''
     const coursePath = `${localePrefix}/course/${courseId}`
-    if (!participantToken || typeof participantToken !== 'string') {
-      const handoffQuery = handoffParameters.toString()
-      const currentPath = `${coursePath}/chatbot/${chatbotId}${handoffQuery ? `?${handoffQuery}` : ''}`
-      const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
+    const handoffQuery = handoffParameters.toString()
+    const currentPath = `${coursePath}/chatbot/${chatbotId}${handoffQuery ? `?${handoffQuery}` : ''}`
+    const loginUrl = `${localePrefix}/login?redirect_to=${encodeURIComponent(currentPath)}`
 
+    if (!participantToken || typeof participantToken !== 'string') {
       return {
         redirect: {
           destination: loginUrl,
