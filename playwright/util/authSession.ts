@@ -65,3 +65,18 @@ export async function disableAnimations(page: Page) {
     `,
   })
 }
+
+// Next.js mounts its route announcer from a client-only effect, so this element
+// appears only once the page bundle has hydrated; the server-rendered HTML
+// never contains it. The pages router renders it as a `p` and the app router as
+// a `div`, so match on the id alone. Waiting for it proves the client is
+// interactive, which these login helpers need because they reach the login page
+// with `waitUntil: 'commit'`: the form is already in the SSR HTML long before
+// the bundle runs, and values typed in that window are discarded when React
+// takes over. See docs/solutions/test-failure/playwright-login-pre-hydration-race.md.
+export async function waitForClientHydration(page: Page) {
+  await page.waitForSelector('#__next-route-announcer__', {
+    state: 'attached',
+    timeout: 30_000,
+  })
+}
