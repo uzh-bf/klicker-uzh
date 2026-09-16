@@ -355,12 +355,15 @@ describe('command line boundary', () => {
     })
   }
 
-  it('fails an inflated branch and prints the required setting', async () => {
+  it('reports an inflated branch and prints the required setting', async () => {
     status = 200
     payload = INFLATED_PAYLOAD
     branchesPayload = { branches: BRANCHES }
     const result = await run({ BRANCH: 'v3', PR_NUMBER: '' })
-    assert.equal(result.code, 1)
+    // The branch type is fixed at the first analysis, so the correction is an
+    // operator action. Failing here would block the promotion controller
+    // without changing the condition, so the finding is reported, not armed.
+    assert.equal(result.code, 0)
     assert.match(result.stderr, /::error::/)
     assert.match(result.stderr, /short-lived branch measured against dev/)
     assert.match(result.stderr, /project\/branches_list\?id=uzh-bf_klicker-uzh/)
