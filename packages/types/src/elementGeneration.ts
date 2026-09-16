@@ -98,6 +98,7 @@ export type ElementGenerationObjective = {
   id: string
   text: string
   bloomLevel: ElementGenerationBloomLevel | null
+  objectiveSource?: 'provided' | 'neutral'
 }
 
 export type AssessmentElementGenerationConfiguration = {

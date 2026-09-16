@@ -27,6 +27,7 @@ type ElementGenerationBloomLevelValue =
   | 'apply'
   | 'analyze'
   | 'evaluate'
+type ElementGenerationObjectiveSourceValue = 'provided' | 'neutral'
 type ElementGenerationDifficultyPresetValue =
   | 'D1'
   | 'D2'
@@ -205,6 +206,7 @@ type ElementGenerationObjectiveView = {
   id: string
   text: string
   bloomLevel: ElementGenerationBloomLevelValue | null
+  objectiveSource?: ElementGenerationObjectiveSourceValue | null
 }
 const ElementGenerationObjectiveRef =
   builder.objectRef<ElementGenerationObjectiveView>(
@@ -218,6 +220,7 @@ ElementGenerationObjectiveRef.implement({
       type: ElementGenerationBloomLevel,
       nullable: true,
     }),
+    objectiveSource: t.exposeString('objectiveSource', { nullable: true }),
   }),
 })
 

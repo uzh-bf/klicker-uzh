@@ -16,6 +16,7 @@ export type KBGraphSourceSnapshotItem = {
 export type KBGraphSourceSnapshot = KBGraphSourceSnapshotItem[]
 
 export type QuestionGenerationLanguage = 'de' | 'en'
+export type QuestionGenerationObjectiveSource = 'provided' | 'neutral'
 export type QuestionGenerationItemType = 'SC' | 'MC' | 'KPRIM'
 export type QuestionGenerationBloomLevel =
   | 'remember'
@@ -110,6 +111,7 @@ export type QuestionGenerationConfiguration = {
     id: string
     text: string
     bloomLevel: QuestionGenerationBloomLevel | null
+    objectiveSource?: QuestionGenerationObjectiveSource
   }>
   bloomLevels: QuestionGenerationBloomLevel[]
 }
@@ -239,6 +241,7 @@ export type QuestionGenerationDesignSummary = {
     id: string
     text: string
     bloomLevel: QuestionGenerationBloomLevel | null
+    objectiveSource?: QuestionGenerationObjectiveSource
   }>
   modules: QuestionGenerationDesignModuleSummary[]
   sources: QuestionGenerationReviewSourceSummary[]

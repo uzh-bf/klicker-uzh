@@ -146,6 +146,7 @@ function normalizeObjectives(
       id: `OBJ-${String(index + 1).padStart(2, '0')}`,
       text: neutralObjective(language, bloomLevel),
       bloomLevel,
+      objectiveSource: 'neutral' as const,
     }))
   }
 
@@ -168,6 +169,7 @@ function normalizeObjectives(
       id: `OBJ-${String(index + 1).padStart(2, '0')}`,
       text,
       bloomLevel,
+      objectiveSource: 'provided' as const,
     }
   })
 }

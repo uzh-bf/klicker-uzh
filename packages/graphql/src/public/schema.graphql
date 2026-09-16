@@ -1537,6 +1537,7 @@ enum ElementGenerationLanguage {
 type ElementGenerationObjective {
   bloomLevel: ElementGenerationBloomLevel
   id: ID!
+  objectiveSource: String
   text: String!
 }
 
