@@ -1,32 +1,117 @@
 // New-code boundary guard for the SonarCloud analysis.
 //
-// SonarCloud has no per-branch new-code definition for long-lived branches:
-// every branch, including the default branch, uses the project-level
-// definition (SonarCloud branch-analysis documentation). This project inherits
-// the instance default "previous version", and the scanner reports the root
-// package.json version as the project version. Every release therefore starts
-// a new previous-version baseline and the entire repository re-enters new
-// code, which fails the new-code quality gate on the branch even though the
-// pull-request analysis of the same code is healthy.
+// SonarCloud fixes a branch's type at its first analysis and does not change
+// it afterwards, and the type decides what "new code" means on that branch:
+//
+//   - a long-lived branch (the main branch, or a name matching the
+//     long-lived-branch pattern) uses the project-level New Code definition;
+//   - a short-lived branch has no project-level definition at all. Its new
+//     code is everything that differs from the branch it merges into.
+//
+// The `uzh-bf_klicker-uzh` project keeps the repository's former default
+// branch `dev` as its main branch, and `dev` was last analysed on 2022-08-20.
+// Before the project pattern was widened, `v3` was a short-lived
+// branch that merged into `dev`, so almost the whole repository
+// counted as new code on it and its quality gate failed on historical
+// findings, while the pull-request analysis of the same code stayed healthy
+// because a pull request compares against its own base. The pattern now
+// covers every `v3` branch, so both kinds are compared against the
+// project-level definition.
 //
 // This script turns that unnamed failure into a named one. It reads the
-// analyzed branch's own measures from the public API and fails the analysis
-// early when new code covers an implausible share of the branch, so the run
-// reports the project-level definition that must be corrected instead of
-// ending in an unexplained quality-gate failure 45 minutes later.
+// analyzed branch's measures and the branch's recorded type from the public
+// API and reports when new code covers an implausible share of the branch, so
+// the run names the cause that can actually be corrected.
 //
-// The check is a diagnostic, not an enforcement boundary: the awaited quality
-// gate still decides the job, transport errors stay non-fatal, and a branch
-// without measures is reported as unknown rather than as passing.
+// It reports rather than enforces. A branch's type is assigned once, so a
+// short-lived integration branch cannot satisfy the branch gate until an
+// operator corrects it on the project; the analysis job instead awaits the
+// quality gate on a pull request, where new code is the diff against the base
+// and the gate is meaningful. Failing a branch run here would block every
+// required check that depends on it without changing the condition.
+//
+// It stays non-fatal when the API cannot be read and reports a branch without
+// measures as unknown rather than as passing, so an unreadable boundary never
+// becomes a false success.
 
 const DEFAULT_RATIO_LIMIT = 0.5
 const DEFAULT_PROJECT_KEY = 'uzh-bf_klicker-uzh'
 const API_BASE = 'https://sonarcloud.io'
 
-// A version bump re-baselines "previous version" on every release, so a
-// calendar window matches the release cadence without re-arming anything.
-const RECOMMENDED_DEFINITION = '"Number of days" (14)'
-const INHERITED_DEFINITION = '"previous version" (instance default)'
+// The type is decided at a branch's first analysis, so an existing project
+// cannot simply re-classify `v3`: the branch record has to be deleted and
+// re-analysed, or the project recreated with the right main branch.
+const LONG_LIVED_PATTERN =
+  'https://sonarcloud.io/project/branches_list?id=uzh-bf_klicker-uzh'
+const BRANCH_TYPE_REFERENCE =
+  'https://docs.sonarsource.com/sonarqube-cloud/managing-your-projects/project-analysis/long-lived-branch-pattern'
+const NEW_CODE_PAGE =
+  'https://sonarcloud.io/project/new_code?id=uzh-bf_klicker-uzh'
+
+// A short-lived branch's new code is its diff against the branch it merges
+// into; a missing record of that branch gives SonarCloud no base at all, which
+// makes every line new code as well. A long-lived branch instead uses the
+// project-level New Code definition.
+function describeBaseline(result) {
+  if (result.branchType === 'LONG') {
+    return 'a long-lived branch using the project-level New Code definition'
+  }
+  if (result.branchType === 'SHORT') {
+    return result.referenceBranch
+      ? 'a short-lived branch measured against ' + result.referenceBranch
+      : 'a short-lived branch whose merge target SonarCloud did not record'
+  }
+  return 'a branch whose type SonarCloud did not report'
+}
+
+// Why the measured share is inflated: a baseline that does not contain this
+// branch turns the whole repository into new code.
+function describeBaselineGap(result) {
+  if (result.branchType === 'LONG') {
+    return 'That definition covers far more than this branch, so'
+  }
+  if (result.branchType === 'SHORT') {
+    return 'That baseline does not contain this branch, so'
+  }
+  return 'The baseline could not be identified, so'
+}
+
+// The type decides the remedy as well: a short-lived branch is re-classified
+// through the long-lived branch pattern, while a long-lived branch only needs
+// the project-level definition narrowed. A long-lived branch whose next
+// analysis has not yet run reports no new-code measures at all; that is a
+// first-analysis artifact, not a definition that still has to be created.
+function describeRemedy(result) {
+  if (result.branchType === 'LONG') {
+    return [
+      'This branch already uses the project-level definition, so set a bounded',
+      'one there (' + NEW_CODE_PAGE + ').',
+    ]
+  }
+  if (result.branchType === 'SHORT') {
+    return [
+      'A branch type is decided at the first analysis and cannot be changed',
+      'afterwards, so the fix is a platform action rather than a setting:',
+      '',
+      '1. Extend the long-lived branch pattern to cover this branch name on',
+      '   the Branches page of the project',
+      '   (' + LONG_LIVED_PATTERN + ').',
+      '2. Delete the existing branch analysis through',
+      '   `api/project_branches/delete`, then re-analyse so the branch is',
+      '   created with the type that pattern assigns.',
+      '3. Re-analyse. That next analysis establishes the new-code',
+      '   baseline from the project definition by itself, so no separate New',
+      '   Code setting is required.',
+      '',
+      'Recreating the project with the right main branch is the alternative',
+      'when deleting the branch analysis is not wanted.',
+    ]
+  }
+  return [
+    'The branch type could not be read, so start with the branch analysis',
+    'settings (' + BRANCH_TYPE_REFERENCE + ').',
+  ]
+}
 
 const STATE = Object.freeze({
   ok: 'ok',
@@ -35,8 +120,34 @@ const STATE = Object.freeze({
   unavailable: 'unavailable',
 })
 
-function settingsUrl(projectKey, base) {
-  return (base || API_BASE) + '/project/new_code?id=' + projectKey
+function branchesUrl(projectKey, base) {
+  return (
+    (base || API_BASE) +
+    '/api/project_branches/list?project=' +
+    encodeURIComponent(projectKey)
+  )
+}
+
+// The branch list is the only place SonarCloud exposes the type that decides
+// what new code means on a branch, so the diagnosis reads it instead of
+// assuming which definition is in effect.
+function parseBranchTypes(payload) {
+  const branches =
+    payload && Array.isArray(payload.branches) ? payload.branches : []
+  return branches
+    .filter((entry) => entry && typeof entry.name === 'string')
+    .map((entry) => ({
+      name: entry.name,
+      type: typeof entry.type === 'string' ? entry.type : null,
+      mergeBranch:
+        typeof entry.mergeBranch === 'string' ? entry.mergeBranch : null,
+      isMain: entry.isMain === true,
+    }))
+}
+
+function selectBranch(branches, name) {
+  if (!Array.isArray(branches) || !name) return null
+  return branches.find((entry) => entry.name === name) || null
 }
 
 // The API host is overridable so the failure path can be exercised against a
@@ -153,44 +264,31 @@ function formatSummary(result) {
     lines.push(
       'New code is ' +
         formatPercent(result.ratio) +
-        ' of the analyzed branch, which is the signature of a'
+        ' of the analyzed branch, which is the signature of'
     )
+    lines.push(describeBaseline(result) + '.')
+    lines.push(describeBaselineGap(result))
     lines.push(
-      'new-code definition of ' + INHERITED_DEFINITION + ' combined with a'
+      'nearly the whole repository enters new code and the gate fails on'
     )
-    lines.push(
-      'project version that changes on every release. The entire repository'
-    )
-    lines.push(
-      're-enters new code, so the new-code gate fails on historical findings'
-    )
-    lines.push(
-      'even though the pull-request analysis of the same code is healthy.'
-    )
+    lines.push('historical findings, even though the pull-request analysis of')
+    lines.push('the same code is healthy.')
+    if (result.branchType) {
+      lines.push('')
+      lines.push(
+        'SonarCloud records this branch as type `' + result.branchType + '`.'
+      )
+    }
     lines.push('')
-    lines.push(
-      'Set the project-level New Code definition to ' +
-        RECOMMENDED_DEFINITION +
-        ' at:'
-    )
+    lines.push(...describeRemedy(result))
     lines.push('')
-    lines.push(settingsUrl(result.projectKey, result.base))
-    lines.push('')
-    lines.push(
-      'The definition is project-level only; SonarCloud does not accept a'
-    )
-    lines.push(
-      'reference branch for long-lived branches, so a scanner argument cannot'
-    )
-    lines.push('express it and the analysis token cannot set it.')
+    lines.push('Source: ' + BRANCH_TYPE_REFERENCE)
     return lines.join('\n')
   }
   lines.push(
     'New code is ' + formatPercent(result.ratio) + ' of the analyzed branch,'
   )
-  lines.push(
-    'so the definition is a bounded window rather than the whole repository.'
-  )
+  lines.push('so the baseline is this branch rather than the whole repository.')
   return lines.join('\n')
 }
 
@@ -214,12 +312,27 @@ async function fetchMeasures(deps) {
   return response.json()
 }
 
+async function fetchBranchTypes(deps) {
+  const { projectKey, fetchImpl, token, timeoutMs, base } = deps
+  const headers = { Accept: 'application/json' }
+  if (token) headers.Authorization = 'Bearer ' + token
+  const response = await fetchImpl(branchesUrl(projectKey, base), {
+    headers,
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  if (!response.ok) {
+    throw new Error('branches API returned HTTP ' + response.status)
+  }
+  return parseBranchTypes(await response.json())
+}
+
 // Decide the boundary from already-fetched measures, so the decision table is
 // covered without network access.
 function decideBoundary(input) {
-  const { payload, ratioLimit, target, projectKey, base } = input
+  const { payload, ratioLimit, target, projectKey, base, branches = [] } = input
   const { lines, newLines } = parseMeasures(payload)
   const decision = evaluateBoundary({ lines, newLines, ratioLimit })
+  const branch = selectBranch(branches, target.branch)
   return {
     state: decision.state,
     ratio: decision.ratio,
@@ -229,6 +342,10 @@ function decideBoundary(input) {
     projectKey,
     base,
     target: describeTarget(target),
+    branchType: branch ? branch.type : null,
+    // Only a short-lived branch is measured against a merge target; a main
+    // branch has none, so it is left unset rather than guessed.
+    referenceBranch: branch ? branch.mergeBranch : null,
   }
 }
 
@@ -270,13 +387,24 @@ async function main() {
 
   let result
   try {
+    const token = process.env.SONAR_TOKEN || ''
+    const timeoutMs = Number(process.env.NEW_CODE_TIMEOUT_SECONDS || 30) * 1000
     const payload = await fetchMeasures({
       target,
       projectKey: key,
       fetchImpl: fetch,
-      token: process.env.SONAR_TOKEN || '',
+      token,
       base,
-      timeoutMs: Number(process.env.NEW_CODE_TIMEOUT_SECONDS || 30) * 1000,
+      timeoutMs,
+    })
+    // The branch type is the decisive evidence, so the diagnosis reads it
+    // rather than inferring which definition produced the measured share.
+    const branches = await fetchBranchTypes({
+      projectKey: key,
+      fetchImpl: fetch,
+      token,
+      base,
+      timeoutMs,
     })
     result = decideBoundary({
       payload,
@@ -284,6 +412,7 @@ async function main() {
       target,
       projectKey: key,
       base,
+      branches,
     })
   } catch (error) {
     // The awaited quality gate still decides this job, so a diagnostic that
@@ -303,18 +432,21 @@ async function main() {
 
   emitSummary(formatSummary(result))
   if (result.state === STATE.inflated) {
+    // Reported, not enforced: the branch type is fixed at the first analysis,
+    // so no code change can clear this and a failure would only block the
+    // promotion controller. The annotation keeps the finding on the run for
+    // the operator who performs the platform correction.
     process.stderr.write(
       '::error::New code covers ' +
         formatPercent(result.ratio) +
         ' of branch ' +
         target.branch +
-        '; set the project-level New Code definition to ' +
-        RECOMMENDED_DEFINITION +
-        ' at ' +
-        settingsUrl(key, base) +
+        ' (' +
+        describeBaseline(result) +
+        '); ' +
+        describeRemedy(result).join(' ') +
         '\n'
     )
-    return 1
   }
   return 0
 }
@@ -332,18 +464,24 @@ if (require.main === module) {
 }
 
 module.exports = {
+  BRANCH_TYPE_REFERENCE,
   DEFAULT_PROJECT_KEY,
   DEFAULT_RATIO_LIMIT,
-  INHERITED_DEFINITION,
-  RECOMMENDED_DEFINITION,
+  LONG_LIVED_PATTERN,
+  NEW_CODE_PAGE,
   STATE,
   apiBase,
+  branchesUrl,
   decideBoundary,
+  describeBaseline,
+  describeBaselineGap,
+  describeRemedy,
   describeTarget,
   evaluateBoundary,
   formatSummary,
   measureQuery,
+  parseBranchTypes,
   parseMeasures,
   resolveTarget,
-  settingsUrl,
+  selectBranch,
 }

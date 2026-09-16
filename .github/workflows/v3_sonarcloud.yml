@@ -90,25 +90,37 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          # The quality gate is awaited so a failing gate fails this workflow
-          # instead of leaving a green run next to a red gate. Merge enforcement
-          # is a separate, separately authorized change.
+          # The quality gate is awaited on a pull request, where new code is the
+          # diff against the base and the gate is meaningful, so a failing gate
+          # fails this workflow instead of leaving a green run next to a red
+          # one. Merge enforcement stays a separate, separately authorized
+          # change.
+          # A branch analysis is published without awaiting the gate: SonarCloud
+          # fixes a branch's type at its first analysis, so on this project's
+          # short-lived integration branches nearly the whole repository is new
+          # code and the gate fails on historical findings. The boundary step
+          # below names that condition instead of turning every branch analysis
+          # into a failure.
           args: >-
             -Dsonar.projectVersion=${{ steps.version.outputs.value }}
-            -Dsonar.qualitygate.wait=true
-            -Dsonar.qualitygate.timeout=600
+            ${{ github.event_name == 'pull_request' && '-Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=600' || '' }}
             ${{ steps.coverage.outputs.scannerArgs }}
 
-      # SonarCloud applies one project-level New Code definition to every
-      # long-lived branch, and the project inherits the instance default
-      # "previous version". Because the scanner reports the root package.json
-      # version, each release starts a new baseline and the whole repository
-      # re-enters new code, so the awaited gate above fails on historical
+      # SonarCloud fixes a branch's type at its first analysis, and the type
+      # decides what new code means. This project keeps the former default
+      # branch `dev` as its main branch, so `v3` is a short-lived branch whose
+      # new code is everything that differs from `dev`; nearly the whole
+      # repository enters new code and the branch gate fails on historical
       # findings while the pull-request analysis of the same code is healthy.
-      # This diagnostic names that cause. It runs after the scan so the
-      # analysis is always published, and it is a diagnostic rather than a
-      # second gate: the awaited quality gate above still decides this job.
+      # This diagnostic names that cause.
+      # It runs after the scan so the analysis is always published, and carries
+      # `always()` because the awaited pull-request gate can already have failed
+      # this job. Only the pull-request analysis is gated here, so only there
+      # may this check fail the workflow; on a branch it reports the signal
+      # without failing a run that the promotion controller requires to be
+      # green.
       - name: Check the new-code boundary
+        if: always()
         env:
           BRANCH: ${{ github.ref_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}

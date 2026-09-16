@@ -4,6 +4,7 @@ import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
 import { authedFetch } from '../lib/client/authedFetch'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import { useChatContextStore } from '../stores/chatContextStore'
@@ -209,6 +210,7 @@ export function useChatResponse(
             : chatContext
 
         // send request to API with streaming enabled
+        const handoffSource = readHandoffSource()
         const response = await authedFetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -241,6 +243,7 @@ export function useChatResponse(
               resolvedTriggerMessage?.attachmentSourceMessageId || undefined,
             assistantMessageId,
             ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
+            ...(handoffSource ? { handoffSource } : {}),
             images: (resolvedTriggerMessage?.imageAttachments ?? [])
               .filter(
                 (
