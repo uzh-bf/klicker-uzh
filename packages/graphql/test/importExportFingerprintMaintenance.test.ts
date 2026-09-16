@@ -1,5 +1,5 @@
-import { ElementType } from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
+import { ElementType } from '@klicker-uzh/prisma/client'
 import {
   IMPORT_EXPORT_DIDACTIC_FINGERPRINT_VERSION as IMPORT_EXPORT_FINGERPRINT_VERSION,
   IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
@@ -23,8 +23,8 @@ import {
 } from '../src/services/importExportFingerprints.js'
 import {
   createFingerprintFindMany,
-  markFingerprintCurrent,
   type FakeFingerprintResource,
+  markFingerprintCurrent,
 } from './importExportFingerprintTestSupport.js'
 
 const mocks = vi.hoisted(() => ({
@@ -293,6 +293,45 @@ describe('import/export fingerprint maintenance batches', () => {
       } else {
         process.env.BLOB_STORAGE_ACCOUNT_NAME = previousAccount
       }
+    }
+  })
+
+  it('preserves accepted public URLs on edits but rejects newly introduced missing media', async () => {
+    const previousAccount = process.env.BLOB_STORAGE_ACCOUNT_NAME
+    process.env.BLOB_STORAGE_ACCOUNT_NAME = 'testaccount'
+    const href =
+      'https://testaccount.blob.core.windows.net/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222.png'
+    const input = {
+      type: ElementType.CONTENT,
+      content: `![image](<${href}>)`,
+      options: {},
+      requireVerifiedMedia: true,
+    }
+    const prisma = { $queryRaw: vi.fn().mockResolvedValue([]) } as never
+    try {
+      await expect(
+        lockElementFingerprintDependencies(input, prisma)
+      ).rejects.toThrow('not been finalized')
+      await expect(
+        lockElementFingerprintDependencies(
+          { ...input, existingMediaSource: input },
+          prisma
+        )
+      ).resolves.toBeUndefined()
+      await expect(
+        lockElementFingerprintDependencies(
+          {
+            ...input,
+            content: input.content.replace('.png', '-new.png'),
+            existingMediaSource: input,
+          },
+          prisma
+        )
+      ).rejects.toThrow('not been finalized')
+    } finally {
+      if (previousAccount === undefined)
+        delete process.env.BLOB_STORAGE_ACCOUNT_NAME
+      else process.env.BLOB_STORAGE_ACCOUNT_NAME = previousAccount
     }
   })
 

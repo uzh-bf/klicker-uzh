@@ -538,6 +538,7 @@ export async function manipulateElementInTransaction(
       content: canonicalDomain.content,
       explanation: canonicalDomain.explanation,
       options: processedOptions,
+      existingMediaSource: elementPrev ?? undefined,
       requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
     },
     ctx.prisma
@@ -838,6 +839,7 @@ export async function applyElementBatchOperations(
       await lockElementFingerprintDependencies(
         {
           ...element,
+          existingMediaSource: element,
           requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
         },
         tx
@@ -902,6 +904,7 @@ export async function changeElementStatus(
     await lockElementFingerprintDependencies(
       {
         ...previousElement,
+        existingMediaSource: previousElement,
         requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
       },
       tx
