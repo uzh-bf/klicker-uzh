@@ -59,9 +59,11 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
     ['test-olat-api.yml', 'test-olat-api-status'],
     ['test-intl-production.yml', 'test-intl-production-status'],
     ['v3_build-fallback.yml', 'build-images-status'],
-    // The SonarCloud job awaits the quality gate on a pull request and reports
-    // a branch-classification finding on a push, so a candidate cannot be
-    // promoted on a green workflow that hid a failed pull-request gate.
+    // Admission reads push runs. There the SonarCloud job publishes a branch
+    // analysis and names the branch-classification finding without awaiting a
+    // gate that a short-lived branch cannot satisfy, so a failed scan still
+    // fails this candidate rather than passing silently. The awaited gate is
+    // on the pull request, where new code is the diff against the base.
     ['v3_sonarcloud.yml', 'SonarCloud'],
   ].map(([file, id]) => ({
     path: `.github/workflows/${file}`,
