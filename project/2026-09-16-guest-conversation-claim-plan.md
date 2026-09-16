@@ -315,3 +315,61 @@ own-transaction placement (contract 1), byte-identical derivation invariant
 race (contract 4). Provenance is native-self-review, not an independent child;
 an implementation-time planner-child pass remains possible as a fresh round.
 Next action: user approval of this plan; implementation remains withheld.
+
+### S1 implemented 2026-09-16 (commit b67b17c8e8)
+
+The user approved the plan and directed "proceed according to plan with a goal".
+S1 delivered the shared derivation helper, the claim service, the resolver
+wiring and the integration suite.
+
+- `packages/util/src/chatGuestIdentity.ts` holds the guest persona identity
+  contract (`GUEST_SSO_PREFIX`, `GUEST_ACCOUNT_TYPE`, `getChatGuestSeed`,
+  `deriveGuestSsoId`) and is re-exported from `packages/util/src/index.ts`.
+  The derivation is byte-identical to the previous chat-local one; the golden
+  vectors with seed `test-chat-guest-seed` were independently recomputed with
+  plain `node:crypto` and match the recorded values.
+- `apps/chat/src/lib/server/ltiGuest.ts` now re-exports the shared helper; its
+  derivation assertions in `apps/chat/test/lti-guest.test.ts` are unchanged and
+  pass, which is the contract-10 guard.
+- `packages/graphql/src/services/guestThreadClaim.ts` implements the claim:
+  a subject-to-participant match check (contract 2), enumeration of the
+  account's participations, one persona lookup per `(ltiSub, courseId)`, and an
+  `updateMany` reassignment of all of the persona's threads regardless of
+  chatbot lifecycle status (contracts 3-4).
+- `packages/graphql/src/services/accounts.ts` calls the claim on the ACCOUNT
+  path only, after the participation upsert and before token issuance, in its
+  own try/catch; the failure branch logs `event=guest_thread_claim_failed`
+  without PII and the launch still returns a token (contracts 1 and 5).
+- `packages/graphql/test/guestConversationClaim.test.ts` covers the S1
+  portfolio rows: basic claim, cookie-wins skip, cross-course scope, paused-bot
+  coverage, idempotent repeat, coexistence with account history, claim-failure
+  non-blocking, eLearning learnerId, and the GUEST-path no-op.
+
+Verification run in the worktree container (`default-rs-90dfb`): the new suite
+(9 passed), `accountLtiLinking.test.ts` (20 passed), the chat `lti-guest` suite
+(10 passed), the full chat vitest suite (1374 passed, 33 skipped), the full util
+suite (139 passed), and the full graphql suite (1380 passed, 1 unrelated failure
+that was residue from an interrupted run and passes on a clean database).
+`packages/graphql` `check:ts` and `apps/chat` `tsc --noEmit` both pass; the 48
+`TS2883` errors from a bare `tsc --noEmit` in `packages/graphql` are
+pre-existing pothos portability noise in untouched schema files, and none are in
+the touched files.
+
+### S2 docs and browser proof 2026-09-16
+
+`docs/auth-model.md` now records the reversed contract (guest history is
+transferred), the claim's identity binding, failure semantics and retention, and
+the `CHAT_GUEST_SEED` rotation coupling from contract 8.
+`playwright/tests/Y-chat-lti-access.spec.ts` extends the LTI launch spec with a
+guest → account transition: an anonymous launch creates the persona, the persona
+owns a seeded conversation, the same LMS subject relaunches with a real account,
+and the spec asserts the account session, the moved thread, and the conversation
+visible in the account's sidebar. Ran on the host via `pnpm playwright:host`:
+all 9 tests in the spec pass.
+
+Open deployment gate (not a code blocker): the claim runs in the backend GraphQL
+package, so production enablement needs `CHAT_GUEST_SEED` present in that
+deployment's environment. The chart's backend-graphql container currently reads
+only `secret-backend-graphql` plus GrowthBook; Chat receives the seed through
+the out-of-band `…-secret-chat`. Adding it to the backend secret is an
+infrastructure change and is withheld here.
