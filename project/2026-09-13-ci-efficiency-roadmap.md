@@ -937,3 +937,81 @@ required from the user.
   unexpected `skipped` failure or let a later metadata edit overwrite an earlier
   failed build. A sound version needs an explicit signal in the evidence
   artifact or a run-age comparison, which is why it is scoped separately.
+- 2026-09-16 full-portfolio review (branch `rs/ci-roadmap-review`, this
+  revision): re-measured the whole roadmap after the #5924 sonar/canary,
+  #5936 merge-base selection, #5948 reuse, #5971 image-cache, #5977
+  metadata-skip, #5987 build-cache-scope and #6087 flake-fix deliveries.
+  Queue: ~300 queued runs on 2026-09-14 fell to 14 queued / 1 running at
+  review time (Actions API `status=queued` / `in_progress`), against 299
+  queued at the 09-13 observation. Open Dependabot PRs: 0 (grouping config
+  live on `v3`). Current v3 head `8cf526e6ce` ran the complete
+  public-ARM64 Playwright wave green: prepare, build 2m56s and 8/8 shards
+  SUCCESS (run `35117591566`). AMD stays disabled everywhere (re-verified:
+  every `build-amd` leg is `if: false`; only `v3-audit`'s `mcp-*`
+  workflows still carry active legs, now part of the B3 integration gate).
+  Build Fallback: 30 runs on 09-16, mean 5min / max 23min; the 2103s
+  polling baseline is gone behind the single required context. Playwright
+  wall-minutes on 09-16 across five executions: about 65. The one real
+  Playwright failure (`35130087179`, `v3-ai` push, 25min) was not a test
+  or product defect: pnpm restored 0/3608 packages on the hosted shard (no
+  compatible seed) and `sharp@0.32.6`'s libvips fetch hit a transient
+  GitHub Releases HTTP 500; no retry hardened the install step, so the
+  failure cost a full 8-shard wave. Promotion-controller waste
+  re-measured: 100 records on 09-16, 94 skipped, 1 success, same
+  wake-per-producer shape as the 44-runs-for-one-commit finding.
+- 2026-09-16 low-hanging-fruit re-ranking (same revision), measured against
+  the live fleet. Ranked by wall-time saved per unit of risk, with the
+  contract boundary that a merge-ready PR keeps full-coverage proof:
+
+  1. **Playwright install resilience (new, highest value).** The only
+     Playwright failure since #6087 was a cold-install flake: hosted shard
+     restored 0/3608 packages, then `sharp@0.32.6`'s libvips fetch hit
+     GitHub Releases HTTP 500 and one shard failed the whole 8-shard wave
+     (run `35130087179`, 25min wasted, non-retried). Minimal fix: retry
+     the pnpm install step (bounded, e.g. two retries with backoff) and
+     prefer a prebuilt `sharp` platform package in the lockfile so the
+     runtime binary download disappears from the install path. Rescues a
+     full wave per occurrence at near-zero risk. No trust boundary moves.
+
+  2. **Promotion-controller wakeup consolidation (already specified in B3).**
+     100 records / 94 skipped / 1 success on 09-16. The fix is already
+     designed in the B3 spec (needs-based aggregation or a single
+     post-qualification wakeup). Nothing new to design; it lands with the
+     B3 integration package after `v3` merges into `v3-audit`. Until
+     then it is pure queued-record noise, not runner-minutes, because each
+     skipped controller run occupies a hosted slot only briefly.
+
+  3. **Docs-only and metadata-only PR routing.** A prose-only PR still runs
+     `check` (full typecheck, today's suite: 100 records, 707
+     wall-minutes, avg 7min / max 29min) and the full Playwright wave. The
+     blocker named on 09-14 is real but narrow: the required
+     `build-images-status` reporter binds the newest same-head run, so the
+     slice needs the explicit evidence-artifact signal (or run-age
+     comparison) first. First slice: extend the existing evidence artifact
+     with a run-action field and make the reporter accept a validated
+     metadata-only skip. Then a docs-path filter on `check.yml` and
+     selected-coverage Playwright on prose-only PRs becomes safe. This is
+     the largest remaining runner-minute class after resilience.
+
+  4. **Hosted pnpm seed coverage for `v3` pushes and `v3-*` integration
+     branches.** The failed wave's shard restored 0 packages; today's
+     successful waves still show per-shard installs. The seed workflow
+     exists but its fingerprints rarely match PR shards. First slice:
+     publish the seed from trusted required builds on `v3` (inputs already
+     match by construction) and let PRs consume read-only. Roadmap contract
+     3 already authorizes this shape; no new trust surface.
+
+  5. **check.yml path scoping for non-build docs.** Companion to item 3;
+     once the evidence-artifact signal exists, prose-only PRs can skip the
+     7-29min typecheck with the same validated no-change selection the four
+     path-filtered suites already use. Keep gitleaks unconditional.
+
+  Not re-ranked, confirmed done or idle: C1 image path filters (live), B2
+  ARM BuildKit cache (live; warm-hit timing proof still unmeasured),
+  single image status context (live), reuse/lifecycle guards (live,
+  positive-case proof still thin), AMD (inert everywhere on `v3`),
+  Dependabot fan-out (0 open), ARM64 pool rollout (green on current
+  head). Profile-aware packing and runner placement stay mid-roadmap
+  pending measurement; the 16:08 snapshot of 9 queued `Promote to stg`
+  wakeups was stale-superseded records from 09-13, not new queue
+  pressure.
