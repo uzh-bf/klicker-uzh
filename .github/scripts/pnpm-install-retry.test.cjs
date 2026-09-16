@@ -96,4 +96,21 @@ test('every Playwright install step uses the bounded retry wrapper', () => {
       `${action} must not call pnpm install directly`
     )
   }
+
+  // The seeder produces the store that every PR shard restores, so a flake
+  // there removes the seed for the whole fleet rather than one wave.
+  const seed = fs.readFileSync(
+    path.join(root, '.github/workflows/playwright-cache-seed.yml'),
+    'utf8'
+  )
+  assert.ok(
+    seed.includes(
+      'run: bash .github/scripts/pnpm-install-retry.sh --frozen-lockfile'
+    ),
+    'the cache seeder must install through the retry wrapper'
+  )
+  assert.ok(
+    !seed.includes('run: pnpm install --frozen-lockfile'),
+    'the cache seeder must not call pnpm install directly'
+  )
 })
