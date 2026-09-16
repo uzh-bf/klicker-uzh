@@ -2,6 +2,8 @@
 // the component's rendering branches and the concentration check can be tested
 // without a GraphQL client runtime.
 
+import type { ElementGenerationBloomLevel } from '@klicker-uzh/types'
+
 // A synthesized Bloom-level objective carries objectiveSource 'neutral';
 // builds persisted before that marker have no value and stay treated as
 // lecturer guidance, so only an explicit 'neutral' shows the generated-default
@@ -9,7 +11,7 @@
 export type ElementGenerationDesignObjectiveView = {
   id: string
   text: string
-  bloomLevel: string | null
+  bloomLevel: ElementGenerationBloomLevel | null
   isGeneratedDefault: boolean
 }
 
@@ -17,14 +19,14 @@ export function designReviewObjectives(
   objectives: ReadonlyArray<{
     id: string
     text: string
-    bloomLevel: string | null
+    bloomLevel?: ElementGenerationBloomLevel | null
     objectiveSource?: string | null
   }>
 ): ElementGenerationDesignObjectiveView[] {
   return objectives.map((objective) => ({
     id: objective.id,
     text: objective.text,
-    bloomLevel: objective.bloomLevel,
+    bloomLevel: objective.bloomLevel ?? null,
     isGeneratedDefault: objective.objectiveSource === 'neutral',
   }))
 }
