@@ -2,14 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
+import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import type {
   ELearningSnapshotContent,
   KlickerChatContext,
 } from '@klicker-uzh/types'
-import { randomUUID } from 'node:crypto'
-import { prisma } from '@klicker-uzh/prisma'
-import type { Prisma } from '@klicker-uzh/prisma/client'
-import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import {
   type LangfuseSpan,
   propagateAttributes,
