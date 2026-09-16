@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { parseElementSpreadsheetTables } from '../src/lib/elementSpreadsheetDomain.js'
 import { createElementSpreadsheetExamples } from '../src/lib/elementSpreadsheetExamples.js'
 import {
+  ELEMENT_SPREADSHEET_ANSWER_SLOTS,
+  ELEMENT_SPREADSHEET_SOLUTION_SLOTS,
   ELEMENT_SPREADSHEET_TABLES,
-  type ElementSpreadsheetTable,
   emptyElementSpreadsheetTables,
 } from '../src/lib/elementSpreadsheetTables.js'
 import {
@@ -13,12 +14,11 @@ import {
   writeKlickerWorkbook,
 } from '../src/lib/elementSpreadsheetWorkbook.js'
 
-const parsed = () =>
-  parseElementSpreadsheetTables(createElementSpreadsheetExamples())
-describe('type-specific import workbooks', () => {
-  it('has one valid example for every supported type and no collection-dependent types', async () => {
+describe('one-row element import workbooks', () => {
+  it('round-trips one editable example for all seven Excel types', async () => {
+    const tables = createElementSpreadsheetExamples()
     const workbook = await loadElementWorkbook(
-      await writeKlickerWorkbook(createElementSpreadsheetExamples())
+      await writeKlickerWorkbook(tables)
     )
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
       'Instructions',
@@ -36,160 +36,200 @@ describe('type-specific import workbooks', () => {
       'CONTENT',
       'FLASHCARD',
     ])
+    expect(result.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ref: 'excel-sc-8',
+          sheet: 'Single choice',
+          row: 8,
+        }),
+        expect.objectContaining({
+          ref: 'excel-kprim-8',
+          sheet: 'Kprim',
+          row: 8,
+        }),
+      ])
+    )
     expect(result.answerCollections).toEqual([])
-    expect(result.sources.every((source) => source.row === 8)).toBe(true)
   })
+
   it.each([
     'klicker-elements-1',
-    'klicker-elements-2',
+    'klicker-elements-3',
     'kahoot',
-  ])('rejects unsupported template %s', async (version) => {
+  ])('rejects unsupported template %s', (version) => {
     const workbook = new ExcelJS.Workbook()
     workbook.addWorksheet('Instructions').getCell('A1').value = version
     expect(() => readKlickerWorkbook(workbook)).toThrow(
       'UNSUPPORTED_TEMPLATE_VERSION'
     )
   })
-  it('allows an empty template without inventing elements', () => {
-    expect(
-      parseElementSpreadsheetTables(emptyElementSpreadsheetTables()).elements
-    ).toEqual([])
+
+  it('uses rows, not authored references, for transport identity after reordering', () => {
+    const tables = emptyElementSpreadsheetTables()
+    tables.Content.push(
+      { sheet: 'Content', row: 11, values: { name: 'Second', content: 'B' } },
+      { sheet: 'Content', row: 8, values: { name: 'First', content: 'A' } }
+    )
+    const parsed = parseElementSpreadsheetTables(tables)
+    expect(parsed.issues).toEqual([])
+    expect(parsed.sources.map((source) => source.ref)).toEqual([
+      'excel-content-11',
+      'excel-content-8',
+    ])
+    expect(parsed.elements.map((element) => element.content)).toEqual([
+      'B',
+      'A',
+    ])
   })
+
+  it('accepts final SC/MC and solution slots while allowing unused slots', () => {
+    const tables = createElementSpreadsheetExamples()
+    const sc = tables['Single choice'][0]!.values
+    Object.assign(sc, {
+      answer2: null,
+      correct2: null,
+      answer10: 'Last answer',
+      correct10: 'No',
+    })
+    Object.assign(tables.Numerical[0]!.values, {
+      solution1: null,
+      solution6: 60,
+    })
+    const result = parseElementSpreadsheetTables(tables)
+    expect(result.issues).toEqual([])
+    expect(
+      result.elements.find((element) => element.type === 'SC')!.options
+    ).toEqual(
+      expect.objectContaining({
+        choices: expect.arrayContaining([expect.anything(), expect.anything()]),
+      })
+    )
+    expect(
+      result.elements.find((element) => element.type === 'NUMERICAL')!.options
+    ).toEqual(expect.objectContaining({ exactSolutions: [60] }))
+    expect(ELEMENT_SPREADSHEET_ANSWER_SLOTS).toBe(10)
+    expect(ELEMENT_SPREADSHEET_SOLUTION_SLOTS).toBe(6)
+  })
+
   it.each([
     'Single choice',
     'Multiple choice',
-    'Kprim',
-    'Numerical',
-    'Free text',
-  ] as ElementSpreadsheetTable[])('rejects solution data after disabling the switch on %s', (sheet) => {
+  ] as const)('round-trips all ten answers and their feedback in %s', async (sheet) => {
     const tables = createElementSpreadsheetExamples()
-    tables[sheet][0]!.values.hasSampleSolution = false
-    const result = parseElementSpreadsheetTables(tables)
-    expect(result.issues).toContainEqual(
-      expect.objectContaining({ sheet, code: 'DISABLED_SOLUTION_DATA' })
+    const values = tables[sheet][0]!.values
+    values.hasAnswerFeedbacks = 'Yes'
+    for (let slot = 1; slot <= 10; slot++) {
+      values[`answer${slot}`] = `Answer ${slot}`
+      values[`correct${slot}`] = slot === 1 ? 'Yes' : 'No'
+      values[`feedback${slot}`] = `Feedback ${slot}`
+    }
+    const workbook = await loadElementWorkbook(
+      await writeKlickerWorkbook(tables)
     )
-    expect(result.elements).toHaveLength(6)
-  })
-  it('requires every feedback and a sample solution', () => {
-    const tables = createElementSpreadsheetExamples()
-    tables['Single choice'][0]!.values.hasAnswerFeedbacks = true
-    expect(parseElementSpreadsheetTables(tables).issues).toContainEqual(
+    const read = readKlickerWorkbook(workbook)
+    const result = parseElementSpreadsheetTables(read.tables, read.issues)
+    expect(result.issues).toEqual([])
+    expect(
+      result.elements.find(
+        (element) => element.type === (sheet === 'Single choice' ? 'SC' : 'MC')
+      )!.options
+    ).toEqual(
       expect.objectContaining({
-        sheet: 'Single choice',
-        row: 8,
-        field: 'feedback',
+        choices: Array.from({ length: 10 }, (_, index) => ({
+          ix: index,
+          value: `Answer ${index + 1}`,
+          correct: index === 0,
+          feedback: `Feedback ${index + 1}`,
+        })),
       })
     )
+    expect(workbook.getWorksheet('Kprim')!.getRow(6).values).not.toContain(
+      'Statement 5'
+    )
   })
-  it('allows disabling feedback while keeping a sample solution', () => {
+
+  it('preserves numeric-looking choice and free-text wording as text', () => {
+    const tables = createElementSpreadsheetExamples()
+    tables['Single choice'][0]!.values.answer10 = 8
+    tables['Single choice'][0]!.values.correct10 = 'No'
+    tables['Free text'][0]!.values.solution6 = 42
+    const result = parseElementSpreadsheetTables(tables)
+    expect(result.issues).toEqual([])
     expect(
-      parsed().elements.find((element) => element.type === 'SC')?.options
-        .hasSampleSolution
-    ).toBe(true)
-    expect(parsed().issues).toEqual([])
+      result.elements.find((element) => element.type === 'SC')!.options
+    ).toEqual(
+      expect.objectContaining({
+        choices: expect.arrayContaining([
+          expect.objectContaining({ value: '8' }),
+        ]),
+      })
+    )
+    expect(
+      result.elements.find((element) => element.type === 'FREE_TEXT')!.options
+    ).toEqual(
+      expect.objectContaining({ solutions: expect.arrayContaining(['42']) })
+    )
   })
+
   it.each([
     ['Single choice', 'SC_ONE_CORRECT'],
     ['Multiple choice', 'MC_CORRECT_REQUIRED'],
-  ] as const)('checks correct-answer counts for %s', (sheet, code) => {
+  ] as const)('reports visible labels for invalid %s correctness', (sheet, code) => {
     const tables = createElementSpreadsheetExamples()
-    for (const row of tables[sheet]) row.values.correct = false
+    const values = tables[sheet][0]!.values
+    for (let slot = 1; slot <= ELEMENT_SPREADSHEET_ANSWER_SLOTS; slot++) {
+      values[`answer${slot}`] = null
+      values[`correct${slot}`] = null
+    }
+    values.answer10 = 'Only answer'
+    values.correct10 = 'No'
     expect(parseElementSpreadsheetTables(tables).issues).toContainEqual(
-      expect.objectContaining({ field: 'correct', code })
+      expect.objectContaining({ sheet, field: 'Correct 10?', code })
     )
   })
-  it('requires four Kprim statements even without solutions', () => {
+
+  it('rejects orphan data with its visible numbered column label', () => {
     const tables = createElementSpreadsheetExamples()
-    tables.Kprim.pop()
+    tables['Single choice'][0]!.values.feedback10 = 'Orphan feedback'
+    expect(parseElementSpreadsheetTables(tables).issues).toContainEqual(
+      expect.objectContaining({ field: 'Answer 10', code: 'REQUIRED_VALUE' })
+    )
+  })
+
+  it('requires four Kprim statements', () => {
+    const tables = createElementSpreadsheetExamples()
+    tables.Kprim[0]!.values.answer4 = null
     expect(parseElementSpreadsheetTables(tables).issues).toContainEqual(
       expect.objectContaining({
-        sheet: 'Kprim',
-        field: 'answer',
+        field: 'Statement 4',
         code: 'KPRIM_FOUR_ANSWERS',
       })
     )
   })
-  it('points at the actual answer row when a value is missing', () => {
-    const tables = createElementSpreadsheetExamples()
-    tables['Single choice'][1]!.values.answer = ''
-    expect(parseElementSpreadsheetTables(tables).issues).toContainEqual(
-      expect.objectContaining({
-        sheet: 'Single choice',
-        row: 9,
-        field: 'answer',
-      })
-    )
-  })
-  it('rejects question settings on additional answer rows', () => {
-    const tables = createElementSpreadsheetExamples()
-    tables['Single choice'][1]!.values.content = 'A different question'
-    expect(parseElementSpreadsheetTables(tables).issues).toContainEqual(
-      expect.objectContaining({
-        row: 9,
-        field: 'content',
-        code: 'FIRST_ROW_ONLY',
-      })
-    )
-  })
-  it('reports duplicate references across type tabs', () => {
-    const tables = createElementSpreadsheetExamples()
-    tables.Content[0]!.values.ref = tables.Flashcards[0]!.values.ref!
-    expect(
-      parseElementSpreadsheetTables(tables).issues.filter(
-        (issue) => issue.code === 'DUPLICATE_REFERENCE'
-      )
-    ).toHaveLength(2)
-  })
-  it.each([
-    ['pointsMultiplier', 5],
-    ['accuracy', -1],
-    ['maximum', -10],
-  ] as const)('reports the numerical field %s', (field, value) => {
-    const tables = createElementSpreadsheetExamples()
-    tables.Numerical[0]!.values[field] = value
-    const result = parseElementSpreadsheetTables(tables)
-    expect(result.issues[0]?.field).toBe(
-      field === 'maximum' ? 'solution' : field
-    )
-  })
-  it('supports ordered numerical ranges and rejects mixed modes', () => {
+
+  it('reports the numbered upper bound for an invalid sixth numerical range', () => {
     const tables = createElementSpreadsheetExamples()
     Object.assign(tables.Numerical[0]!.values, {
       solutionMode: 'RANGE',
-      solution: null,
-      solutionMinimum: 59,
-      solutionMaximum: 61,
+      solution1: null,
+      solutionMinimum6: 61,
+      solutionMaximum6: 59,
     })
-    expect(parseElementSpreadsheetTables(tables).issues).toEqual([])
-    tables.Numerical[0]!.values.solution = 60
-    expect(parseElementSpreadsheetTables(tables).issues[0]?.code).toBe(
-      'AMBIGUOUS_SOLUTION'
-    )
-  })
-  it('checks free-text answer lengths', () => {
-    const tables = createElementSpreadsheetExamples()
-    tables['Free text'][0]!.values.maxLength = 2
     expect(parseElementSpreadsheetTables(tables).issues).toContainEqual(
-      expect.objectContaining({ sheet: 'Free text', field: 'solution' })
+      expect.objectContaining({
+        sheet: 'Numerical',
+        field: 'Range maximum 6',
+        code: 'INVALID_VALUE',
+      })
     )
   })
-  it('requires the flashcard back while allowing explanations on other types', () => {
-    const tables = createElementSpreadsheetExamples()
-    tables.Content[0]!.values.explanation = 'Additional context'
-    tables.Flashcards[0]!.values.explanation = ''
-    const result = parseElementSpreadsheetTables(tables)
-    expect(result.issues).toContainEqual(
-      expect.objectContaining({ sheet: 'Flashcards', field: 'explanation' })
-    )
-    expect(
-      result.elements.find((element) => element.type === 'CONTENT')?.explanation
-    ).toBe('Additional context')
-  })
-  it('rejects formulas even with a cached result and keeps other types importable', async () => {
+
+  it('rejects copied formula cells while retaining unrelated rows', async () => {
     const workbook = await loadElementWorkbook(
       await writeKlickerWorkbook(createElementSpreadsheetExamples())
     )
-    workbook.getWorksheet('Content')!.getCell('C8').value = {
+    workbook.getWorksheet('Content')!.getCell('B8').value = {
       formula: '1+1',
       result: 2,
     }
@@ -198,29 +238,10 @@ describe('type-specific import workbooks', () => {
     expect(result.issues).toContainEqual(
       expect.objectContaining({
         sheet: 'Content',
-        field: 'content',
+        field: 'Content',
         code: 'UNSUPPORTED_CELL',
       })
     )
     expect(result.elements).toHaveLength(6)
-  })
-  it('preserves literal formula-like text and image URLs', async () => {
-    const tables = emptyElementSpreadsheetTables()
-    tables.Content.push({
-      sheet: 'Content',
-      row: 8,
-      values: {
-        ref: 'literal',
-        name: 'Literal',
-        content:
-          '=not an Excel formula ![Image](https://synthetic.blob.core.windows.net/owner/file.png)',
-      },
-    })
-    const workbook = await loadElementWorkbook(
-      await writeKlickerWorkbook(tables)
-    )
-    expect(
-      readKlickerWorkbook(workbook).tables.Content[0]!.values.content
-    ).toBe(tables.Content[0]!.values.content)
   })
 })

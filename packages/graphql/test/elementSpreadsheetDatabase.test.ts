@@ -53,7 +53,6 @@ describe('spreadsheet import transactions', () => {
       sheet: 'Content',
       row: 2,
       values: {
-        ref: 'first',
         name,
         content,
       },
@@ -64,7 +63,6 @@ describe('spreadsheet import transactions', () => {
         row: 3,
         values: {
           ...tables.Content[0]!.values,
-          ref: 'second',
           name: 'Different title',
         },
       })
@@ -88,7 +86,7 @@ describe('spreadsheet import transactions', () => {
     const first = await importElementSpreadsheet(selection, ctx)
     expect(first).toEqual({
       importedElements: 1,
-      skippedElementRefs: ['second'],
+      skippedElementRefs: ['excel-content-9'],
     })
     await ctx.prisma.element.deleteMany({ where: { ownerId: ctx.user.sub } })
     expect(await importElementSpreadsheet(selection, ctx)).toEqual(first)
@@ -102,7 +100,7 @@ describe('spreadsheet import transactions', () => {
     const result = await importElementSpreadsheet(selection, ctx)
     expect(result).toEqual({
       importedElements: 0,
-      skippedElementRefs: ['first'],
+      skippedElementRefs: ['excel-content-8'],
     })
     expect(await importElementSpreadsheet(selection, ctx)).toEqual(result)
   })
@@ -150,7 +148,6 @@ describe('spreadsheet import transactions', () => {
       sheet: 'Content',
       row: 8,
       values: {
-        ref: content.ref,
         name: content.name,
         content: content.content,
         explanation: content.explanation ?? null,

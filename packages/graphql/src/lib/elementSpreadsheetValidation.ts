@@ -5,16 +5,16 @@ import {
   ELEMENT_SPREADSHEET_EDIT_ROWS,
   ELEMENT_SPREADSHEET_TABLES,
   type ElementSpreadsheetTable,
-  SPREADSHEET_DETAIL_FIELDS,
+  spreadsheetColumnLabel,
 } from './elementSpreadsheetTables.js'
 
 export function addSpreadsheetValidationLists(workbook: ExcelJS.Workbook) {
   const sheet = workbook.getWorksheet('Instructions')!
   for (const [column, name, values] of [
-    ['E', 'KlickerBooleans', ['TRUE', 'FALSE']],
+    ['E', 'KlickerBooleans', ['Yes', 'No']],
     ['F', 'KlickerDisplayModes', ['LIST', 'GRID']],
     ['G', 'KlickerUnused', [null]],
-    ['H', 'KlickerFalse', ['FALSE']],
+    ['H', 'KlickerFalse', ['No']],
     ['I', 'KlickerSolutionModes', ['EXACT', 'RANGE']],
   ] as const) {
     values.forEach((value, index) => {
@@ -27,14 +27,10 @@ export function addSpreadsheetValidationLists(workbook: ExcelJS.Workbook) {
     )
   }
 }
-function and(...conditions: string[]) {
-  return `AND(${conditions.join(',')})`
-}
-function or(...conditions: string[]) {
-  return `OR(${conditions.join(',')})`
-}
+const and = (...conditions: string[]) => `AND(${conditions.join(',')})`
+const or = (...conditions: string[]) => `OR(${conditions.join(',')})`
 
-/** Rules share the type-tab contract. No formulas are stored in authored cells. */
+/** All checks are local to one element row; there are no reference lookups. */
 export function addSpreadsheetValidation(
   sheet: ExcelJS.Worksheet,
   name: ElementSpreadsheetTable
@@ -44,75 +40,95 @@ export function addSpreadsheetValidation(
   const last = first + ELEMENT_SPREADSHEET_EDIT_ROWS - 1
   const letter = (field: string) =>
     sheet.getColumn(headers.indexOf(field) + 1).letter
-  const range = (field: string) =>
-    `$${letter(field)}$${first}:$${letter(field)}$${last}`
+  const cellFor = (field: string) => `$${letter(field)}${first}`
+  const yes = (field: string) =>
+    headers.includes(field)
+      ? or(
+          `${cellFor(field)}="Yes"`,
+          `${cellFor(field)}=TRUE`,
+          `${cellFor(field)}="TRUE"`
+        )
+      : 'FALSE'
+  const present = (field: string) => `${cellFor(field)}<>""`
+  const answerFields = headers.filter((field) => /^answer\d+$/.test(field))
+  const solutionFields = headers.filter((field) => /^solution\d+$/.test(field))
+  const rangeFields = headers.filter((field) =>
+    /^solution(Minimum|Maximum)\d+$/.test(field)
+  )
+  const any = (fields: readonly string[]) =>
+    fields.length ? or(...fields.map(present)) : 'FALSE'
+  const correctCount =
+    headers
+      .filter((field) => /^correct\d+$/.test(field))
+      .map(
+        (field) =>
+          `IF(${and(present(field.replace('correct', 'answer')), yes(field))},1,0)`
+      )
+      .join('+') || '0'
+  const hasSolution = yes('hasSampleSolution')
+  const hasFeedback = and(hasSolution, yes('hasAnswerFeedbacks'))
+  const active = `COUNTA($A${first}:$${sheet.getColumn(headers.length).letter}${first})>0`
   for (const field of headers) {
     const column = letter(field)
-    const row = first
-    const cell = `${column}${row}`
-    const ref = `$A${row}`
-    const refRange = range('ref')
-    const isFirst = `MATCH(${ref},${refRange},0)=ROW()-${first - 1}`
-    const head = (key: string) =>
-      `INDEX(${range(key)},MATCH(${ref},${refRange},0))`
-    const present = (key: string) =>
-      `COUNTIFS(${refRange},${ref},${range(key)},"<>")>0`
-    const yes = (key: string) =>
-      headers.includes(key)
-        ? or(`${head(key)}=TRUE`, `${head(key)}="TRUE"`)
-        : 'FALSE'
-    const hasSolution = yes('hasSampleSolution')
-    const hasFeedback = and(hasSolution, yes('hasAnswerFeedbacks'))
-    const isDetail = SPREADSHEET_DETAIL_FIELDS.has(field)
-    let enabled = field === 'ref' || isDetail ? 'TRUE' : isFirst
+    const cell = cellFor(field)
+    const numbered =
+      /^(answer|correct|feedback|solutionMinimum|solutionMaximum|solution)(\d+)$/.exec(
+        field
+      )
+    const kind = numbered?.[1]
+    const slot = numbered?.[2]
+    let enabled = 'TRUE'
     let required =
-      ['ref', 'name', 'content', 'answer'].includes(field) ||
+      ['name', 'content'].includes(field) ||
       (name === 'Flashcards' && field === 'explanation')
     let list: string | undefined
-    let valid = `ISTEXT(${cell})`
+    let valid = and(
+      or(`ISTEXT(${cell})`, `ISNUMBER(${cell})`),
+      `LEN(TRIM(${cell}&""))>0`
+    )
     const numeric = and(
       `ISNUMBER(${cell})`,
       `ABS(${cell})<=${ELEMENT_DOMAIN_LIMITS.numericalMax}`
     )
     const integer = and(`ISNUMBER(${cell})`, `MOD(${cell},1)=0`)
-    if (field === 'correct') {
-      enabled = hasSolution
+    const boolean = or(
+      `${cell}="Yes"`,
+      `${cell}="No"`,
+      `${cell}=TRUE`,
+      `${cell}=FALSE`,
+      `${cell}="TRUE"`,
+      `${cell}="FALSE"`
+    )
+    if (kind === 'correct') {
+      enabled = and(hasSolution, present(`answer${slot}`))
       required = true
-      list = 'KlickerBooleans'
-      valid = or(
-        `${cell}=TRUE`,
-        `${cell}=FALSE`,
-        `${cell}="TRUE"`,
-        `${cell}="FALSE"`
-      )
-    } else if (field === 'feedback') {
-      enabled = hasFeedback
+      list = '"KlickerBooleans"'
+      valid = boolean
+    } else if (kind === 'feedback') {
+      enabled = and(hasFeedback, present(`answer${slot}`))
       required = true
+    } else if (kind === 'answer') {
+      required = name === 'Kprim'
     } else if (
       ['basePoints', 'hasSampleSolution', 'hasAnswerFeedbacks'].includes(field)
     ) {
       list =
         field === 'hasAnswerFeedbacks'
-          ? `IF(${hasSolution},KlickerBooleans,KlickerFalse)`
-          : 'KlickerBooleans'
+          ? `IF(${hasSolution},"KlickerBooleans","KlickerFalse")`
+          : '"KlickerBooleans"'
       valid = and(
-        or(
-          `${cell}=TRUE`,
-          `${cell}=FALSE`,
-          `${cell}="TRUE"`,
-          `${cell}="FALSE"`
-        ),
+        boolean,
         field === 'hasAnswerFeedbacks'
-          ? or(hasSolution, `${cell}=FALSE`, `${cell}="FALSE"`)
+          ? or(hasSolution, `NOT(${yes(field)})`)
           : 'TRUE'
       )
     } else if (field === 'displayMode') {
-      list = 'KlickerDisplayModes'
+      list = '"KlickerDisplayModes"'
       valid = or(`${cell}="LIST"`, `${cell}="GRID"`)
     } else if (field === 'solutionMode') {
-      enabled = and(isFirst, hasSolution)
+      enabled = hasSolution
       required = true
-      list = 'KlickerSolutionModes'
+      list = '"KlickerSolutionModes"'
       valid = or(`${cell}="EXACT"`, `${cell}="RANGE"`)
     } else if (field === 'pointsMultiplier') {
       valid = and(integer, `${cell}>=1`, `${cell}<=4`)
@@ -130,48 +146,45 @@ export function addSpreadsheetValidation(
         numeric,
         or(
           `NOT(${present(other)})`,
-          `${cell}${field === 'minimum' ? '<=' : '>='}${head(other)}`
+          `${cell}${field === 'minimum' ? '<=' : '>='}${cellFor(other)}`
         )
       )
-    } else if (field === 'solution' && name === 'Free text') {
+    } else if (kind === 'solution' && name === 'Free text') {
       enabled = hasSolution
-      required = true
       valid = and(
-        `ISTEXT(${cell})`,
+        valid,
         or(
           `NOT(${present('maxLength')})`,
-          `LEN(TRIM(${cell}))<=${head('maxLength')}`
+          `LEN(TRIM(${cell}))<=${cellFor('maxLength')}`
         )
       )
     } else if (
-      field === 'solution' ||
-      field === 'solutionMinimum' ||
-      field === 'solutionMaximum'
+      kind === 'solution' ||
+      kind === 'solutionMinimum' ||
+      kind === 'solutionMaximum'
     ) {
       enabled = and(
         hasSolution,
-        `${head('solutionMode')}="${field === 'solution' ? 'EXACT' : 'RANGE'}"`
+        `${cellFor('solutionMode')}="${kind === 'solution' ? 'EXACT' : 'RANGE'}"`
       )
-      required = field === 'solution'
       const bounds = [
         numeric,
-        or(`NOT(${present('minimum')})`, `${cell}>=${head('minimum')}`),
-        or(`NOT(${present('maximum')})`, `${cell}<=${head('maximum')}`),
+        or(`NOT(${present('minimum')})`, `${cell}>=${cellFor('minimum')}`),
+        or(`NOT(${present('maximum')})`, `${cell}<=${cellFor('maximum')}`),
       ]
-      if (field !== 'solution') {
-        const other = `${letter(field === 'solutionMinimum' ? 'solutionMaximum' : 'solutionMinimum')}${row}`
+      if (kind !== 'solution') {
+        const other = `${kind === 'solutionMinimum' ? 'solutionMaximum' : 'solutionMinimum'}${slot}`
         bounds.push(
           or(
-            `${other}=""`,
-            `${cell}${field === 'solutionMinimum' ? '<=' : '>='}${other}`
+            `NOT(${present(other)})`,
+            `${cell}${kind === 'solutionMinimum' ? '<=' : '>='}${cellFor(other)}`
           )
         )
       }
       valid = and(...bounds)
     }
-    const nonempty = required ? `LEN(TRIM(${cell}&""))>0` : 'TRUE'
-    const allowed = `IFERROR(IF(${enabled},OR(${cell}="",AND(${valid},${nonempty})),${cell}=""),FALSE)`
-    // ExcelJS exposes this range API at runtime, but omits it from Worksheet's types.
+    const allowed = `IFERROR(IF(${enabled},OR(${cell}="",${valid}),${cell}=""),FALSE)`
+    // ExcelJS's range API keeps the XLSX compact; its Worksheet types omit it.
     const validations = (
       sheet as ExcelJS.Worksheet & {
         dataValidations: {
@@ -186,68 +199,64 @@ export function addSpreadsheetValidation(
       errorStyle: 'stop',
       errorTitle: 'Check this field',
       error:
-        'Follow the field instructions in row 7. Leave grey cells blank; clear orange cells. Klicker checks all rows on upload.',
+        'Follow the field instructions in row 7. Leave grey cells blank; correct orange cells. Klicker checks every row on upload.',
       showInputMessage: true,
-      promptTitle: field,
+      promptTitle: spreadsheetColumnLabel(field, name).slice(0, 32),
       prompt: String(sheet.getRow(7).getCell(column).value ?? '').slice(0, 250),
+      // Excel needs a range reference here; IFERROR over a range returns an
+      // array and rejects valid dropdown entries in native Excel.
       formulae: [
         list
-          ? `IFERROR(IF(${enabled},${list},KlickerUnused),KlickerUnused)`
+          ? `INDIRECT(IFERROR(IF(${enabled},${list},"KlickerUnused"),"KlickerUnused"))`
           : allowed,
       ],
     })
+    const extra: string[] = []
+    if (kind === 'answer' && field === 'answer1')
+      extra.push(`NOT(${any(answerFields)})`)
+    if (kind === 'correct' && name !== 'Kprim')
+      extra.push(
+        and(
+          enabled,
+          `(${correctCount})${name === 'Single choice' ? '<>1' : '<1'}`
+        )
+      )
+    if (field === 'solution1')
+      extra.push(and(enabled, `NOT(${any(solutionFields)})`))
+    if (field === 'solutionMinimum1')
+      extra.push(and(enabled, `NOT(${any(rangeFields)})`))
     const invalid = or(
       and(`${cell}<>""`, `NOT(${allowed})`),
       ...(required ? [and(enabled, `${cell}=""`)] : []),
-      ...(field === 'correct' && name === 'Single choice'
-        ? [
-            and(
-              hasSolution,
-              `COUNTIFS(${refRange},${ref},${range('correct')},TRUE)<>1`
-            ),
-          ]
-        : []),
-      ...(field === 'correct' && name === 'Multiple choice'
-        ? [
-            and(
-              hasSolution,
-              `COUNTIFS(${refRange},${ref},${range('correct')},TRUE)<1`
-            ),
-          ]
-        : []),
-      ...(field === 'answer' && name === 'Kprim'
-        ? [`COUNTIF(${refRange},${ref})<>4`]
-        : []),
-      ...(field === 'solutionMinimum'
-        ? [and(enabled, `${cell}=""`, `${letter('solutionMaximum')}${row}=""`)]
-        : [])
+      ...extra
     )
-    const formatting = (formula: string, color: string, priority: number) => ({
-      type: 'expression' as const,
-      priority,
-      formulae: [formula],
-      style: {
-        fill: {
-          type: 'pattern' as const,
-          pattern: 'solid' as const,
-          fgColor: { argb: color },
-          bgColor: { argb: color },
-        },
-      },
-    })
     sheet.addConditionalFormatting({
       ref: `${column}${first}:${column}${last}`,
       rules: [
-        formatting(
-          `IFERROR(IF(${field === 'ref' ? `COUNTA($A${row}:$${letter(headers[headers.length - 1]!)}${row})>0` : `${ref}<>""`},${invalid},FALSE),TRUE)`,
-          'FFFFDBCC',
-          1
-        ),
-        formatting(
-          `IFERROR(AND(${ref}<>"",NOT(${enabled})),FALSE)`,
-          'FFE9E9E9',
-          2
-        ),
+        {
+          type: 'expression',
+          priority: 1,
+          formulae: [`IFERROR(IF(${active},${invalid},FALSE),TRUE)`],
+          style: {
+            fill: {
+              type: 'pattern',
+              pattern: 'solid',
+              bgColor: { argb: 'FFFFDBCC' },
+            },
+          },
+        },
+        {
+          type: 'expression',
+          priority: 2,
+          formulae: [`IFERROR(NOT(${enabled}),FALSE)`],
+          style: {
+            fill: {
+              type: 'pattern',
+              pattern: 'solid',
+              bgColor: { argb: 'FFE9E9E9' },
+            },
+          },
+        },
       ],
     })
   }

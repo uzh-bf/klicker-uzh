@@ -19,8 +19,8 @@ permissions and activity data are never imported.
 
 ## Authored workbook contract
 
-`Instructions!A1` contains `klicker-elements-3`. Earlier unreleased workbook
-layouts are rejected. Keep worksheet names, guidance rows and English headers
+`Instructions!A1` contains `klicker-elements-4`. Earlier workbook layouts are
+rejected. Keep worksheet names, guidance rows and English headers
 unchanged regardless of UI language. The seven data tabs are `Single choice`,
 `Multiple choice`, `Kprim`, `Numerical`, `Free text`, `Content` and `Flashcards`.
 Selection and case study are supported through JSON only. Kahoot and Mentimeter
@@ -31,29 +31,39 @@ field help in row 7 and one complete editable example beginning at row 8.
 A short Instructions tab explains the workflow. UZH colours and Aptos fonts
 separate guidance, fields and examples.
 
-The first row for a `ref` contains the question's settings. Additional answers
-or solutions use another row on that same tab: repeat only the ref and fill the
-answer/solution fields. References identify questions within this workbook;
-they are not database IDs and cannot be reused across type tabs. Content and
-flashcards each occupy one row. Delete unwanted example rows before uploading.
+Each data row is one complete element. There is no `ref` column and authors
+never maintain identifiers. The importer creates an internal reference from the
+element type and worksheet row solely for preview, receipt reporting and
+transport. Reordering rows changes that transport reference but not the
+authored element or duplicate matching. Content and flashcards also each occupy
+one row. Delete unwanted example rows before uploading.
 
 ## Editing rules and upload validation
 
-All seven tabs carry rules for the first 1,000 data rows. Dropdowns cover Boolean
-settings, choice display mode and numerical solution mode. Grey cells do not
-apply and must remain empty; orange cells flag missing, incompatible or invalid
-values. Field selection displays the corresponding help text.
+All seven tabs carry rules for the first 1,000 data rows. Headers and help are
+always English. Conditional dropdowns select named-range references through
+`INDIRECT`; returning ranges through `IFERROR` alone rejects valid values in
+native Excel. Boolean dropdowns display `Yes` and `No`; choice display mode
+and numerical solution mode use their readable canonical values. Grey cells do
+not apply and must remain empty; orange cells flag missing, incompatible or
+invalid values. Field selection displays the corresponding help text.
 
-- Sample solutions enable correct-answer/solution fields. Answer feedback requires
-  a sample solution and feedback for every choice.
+- Sample solutions enable numbered correct-answer or solution fields. Answer
+  feedback requires a sample solution and feedback for every used choice.
 - Single choice requires exactly one correct answer; multiple choice requires at
-  least one. Kprim always requires four statements.
-- Numerical questions choose exact solutions or ranges, never both. Bounds must
-  be ordered and solutions must fit the question's bounds.
+  least one. Kprim always requires four numbered statements.
+- Single choice and multiple choice provide ten answer slots. Numerical and free
+  text provide six solution slots. These are Excel-template capacities, not
+  Klicker-wide answer limits. Unused slots may remain blank, but a correctness
+  value or feedback without its answer is rejected.
+- Numerical questions choose numbered exact solutions or ranges, never both.
+  Bounds must be ordered and solutions must fit the question's bounds.
 - Point multipliers, accuracy and maximum text length have numeric/integer checks.
 - Flashcards require a back in `explanation`. Other types may also have explanations.
   Content and flashcards have no sample-solution or point-setting columns.
-- Question settings belong only on the first row of each ref.
+- Each copied row is parsed independently; exact copies are skipped as duplicates.
+  Pasted formulas, even when Excel stores a cached value, are rejected; Excel editing rules are aids and server parsing
+  remains authoritative.
 
 The server checks these rules again using the canonical element domain. Excel
 checks are editing aids: paste operations can bypass them. Errors identify the

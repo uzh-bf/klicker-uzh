@@ -18,7 +18,6 @@ describe('spreadsheet image reference policy', () => {
       sheet: 'Content',
       row: index + 2,
       values: {
-        ref: `image-${index}`,
         name: `Image ${index}`,
         content: `![Image](${href})`,
       },
@@ -30,7 +29,7 @@ describe('spreadsheet image reference policy', () => {
     expect(result.elements[0]!.content).toContain(hrefs[0])
     expect(result.issues).toContainEqual(
       expect.objectContaining({
-        ref: 'image-0',
+        ref: 'excel-content-8',
         code: 'SOURCE_IMAGE_DEPENDENCY',
       })
     )

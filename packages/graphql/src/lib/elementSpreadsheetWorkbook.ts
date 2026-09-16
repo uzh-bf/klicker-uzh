@@ -14,6 +14,7 @@ import {
   emptyElementSpreadsheetTables,
   type SpreadsheetIssue,
   type SpreadsheetValue,
+  spreadsheetColumnLabel,
 } from './elementSpreadsheetTables.js'
 import {
   addSpreadsheetValidation,
@@ -23,6 +24,9 @@ import { createZip, parseZip } from './zip.js'
 
 const MAX_WORKBOOK_BYTES = 5 * 1024 * 1024
 const MAX_EXPANDED_BYTES = 20 * 1024 * 1024
+const MAX_COLUMNS = Math.max(
+  ...Object.values(ELEMENT_SPREADSHEET_TABLES).map((headers) => headers.length)
+)
 const MAX_ROWS = 10_000
 const MAX_CELLS = 100_000
 const MAX_CELL_LENGTH = 32_767
@@ -67,7 +71,7 @@ export async function loadElementWorkbook(buffer: Buffer) {
   }
   let cells = 0
   for (const sheet of workbook.worksheets) {
-    if (sheet.rowCount > MAX_ROWS || sheet.columnCount > 30) {
+    if (sheet.rowCount > MAX_ROWS || sheet.columnCount > MAX_COLUMNS) {
       throw new InvalidElementWorkbookError('WORKBOOK_TOO_LARGE')
     }
     sheet.eachRow((row) =>
@@ -120,7 +124,8 @@ export function readKlickerWorkbook(workbook: ExcelJS.Workbook) {
     if (
       headers.some(
         (header, index) =>
-          sheet.getRow(headerRow).getCell(index + 1).value !== header
+          sheet.getRow(headerRow).getCell(index + 1).value !==
+          spreadsheetColumnLabel(header, name)
       )
     ) {
       throw new InvalidElementWorkbookError('INVALID_HEADERS')
@@ -189,20 +194,30 @@ export async function writeKlickerWorkbook(tables: ElementSpreadsheetTables) {
   addSpreadsheetValidationLists(workbook)
   for (const [name, headers] of Object.entries(ELEMENT_SPREADSHEET_TABLES)) {
     const sheet = workbook.addWorksheet(name, {
-      views: [{ state: 'frozen', xSplit: 1 }],
+      views: [{ state: 'frozen', xSplit: 2, ySplit: 7 }],
     })
     sheet.columns = headers.map((header) => ({
       key: header,
-      style: { font: { name: 'Aptos', size: 11 } },
-      width: [
-        'content',
-        'explanation',
-        'answer',
-        'feedback',
-        'solution',
-      ].includes(header)
-        ? 55
-        : 22,
+      style: {
+        font: { name: 'Aptos', size: 11 },
+        numFmt:
+          ['name', 'content', 'explanation', 'unit', 'placeholder'].includes(
+            header
+          ) ||
+          /^(answer|feedback)\d+$/.test(header) ||
+          (name === 'Free text' && /^solution\d+$/.test(header))
+            ? '@'
+            : 'General',
+      },
+      width: /^(correct)\d+$/.test(header)
+        ? 14
+        : /^(answer|feedback)\d+$/.test(header)
+          ? 32
+          : ['content', 'explanation'].includes(header)
+            ? 40
+            : ['hasSampleSolution', 'hasAnswerFeedbacks'].includes(header)
+              ? 20
+              : 22,
     }))
     addSpreadsheetTableGuide(sheet, name as ElementSpreadsheetTable)
     sheet.autoFilter = {

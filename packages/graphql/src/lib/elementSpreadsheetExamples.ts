@@ -17,10 +17,9 @@ export function createElementSpreadsheetExamples() {
       values,
     })
   }
-  for (const [sheet, ref, content, answers] of [
+  for (const [sheet, content, answers] of [
     [
       'Single choice',
-      'example-sc',
       'Which city is the federal capital of Switzerland?',
       [
         ['Bern', true],
@@ -29,7 +28,6 @@ export function createElementSpreadsheetExamples() {
     ],
     [
       'Multiple choice',
-      'example-mc',
       'Which numbers are even?',
       [
         ['2', true],
@@ -39,7 +37,6 @@ export function createElementSpreadsheetExamples() {
     ],
     [
       'Kprim',
-      'example-kprim',
       'Decide whether each statement is true or false.',
       [
         ['A triangle has three sides.', true],
@@ -49,55 +46,47 @@ export function createElementSpreadsheetExamples() {
       ],
     ],
   ] as const) {
+    const values: Record<string, SpreadsheetValue> = {
+      name: `Example — ${sheet}`,
+      content,
+      hasSampleSolution: 'Yes',
+      hasAnswerFeedbacks: 'No',
+      displayMode: 'LIST',
+      basePoints: 'Yes',
+      pointsMultiplier: 1,
+    }
     answers.forEach(
       ([answer, correct]: readonly [string, boolean], index: number) => {
-        add(sheet, {
-          ref,
-          ...(index === 0
-            ? {
-                name: `Example — ${sheet}`,
-                content,
-                hasSampleSolution: true,
-                hasAnswerFeedbacks: false,
-                displayMode: 'LIST',
-                basePoints: true,
-                pointsMultiplier: 1,
-              }
-            : {}),
-          answer,
-          correct,
-        })
+        values[`answer${index + 1}`] = answer
+        values[`correct${index + 1}`] = correct ? 'Yes' : 'No'
       }
     )
+    add(sheet, values)
   }
   add('Numerical', {
-    ref: 'example-number',
     name: 'Example — Numerical',
     content: 'How many minutes are in an hour?',
     unit: 'minutes',
     accuracy: 0,
-    hasSampleSolution: true,
+    hasSampleSolution: 'Yes',
     solutionMode: 'EXACT',
-    solution: 60,
-    basePoints: true,
+    solution1: 60,
+    basePoints: 'Yes',
     pointsMultiplier: 1,
   })
   add('Free text', {
-    ref: 'example-text',
     name: 'Example — Free text',
     content: 'What is the largest planet in our solar system?',
-    hasSampleSolution: true,
-    solution: 'Jupiter',
-    basePoints: true,
+    hasSampleSolution: 'Yes',
+    solution1: 'Jupiter',
+    basePoints: 'Yes',
     pointsMultiplier: 1,
   })
   add('Content', {
-    ref: 'example-content',
     name: 'Example — Content',
     content: 'Water can exist as a solid, a liquid or a gas.',
   })
   add('Flashcards', {
-    ref: 'example-card',
     name: 'Example — Flashcard',
     content: 'What is photosynthesis?',
     explanation:

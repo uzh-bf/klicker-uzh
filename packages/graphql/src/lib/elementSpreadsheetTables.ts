@@ -1,43 +1,100 @@
-// The workbook is an authoring template, not the portable export format.
-export const ELEMENT_SPREADSHEET_VERSION = 'klicker-elements-3'
+// Template capacities keep Excel manageable; SC/MC have no application-wide cap.
+export const ELEMENT_SPREADSHEET_VERSION = 'klicker-elements-4'
 export const ELEMENT_SPREADSHEET_HEADER_ROW = 6
 export const ELEMENT_SPREADSHEET_DATA_ROW = 8
 export const ELEMENT_SPREADSHEET_EDIT_ROWS = 1000
-const common = ['ref', 'name', 'content', 'explanation'] as const
-const question = [
+export const ELEMENT_SPREADSHEET_ANSWER_SLOTS = 10
+export const ELEMENT_SPREADSHEET_SOLUTION_SLOTS = 6
+export const spreadsheetSlots = (count: number) =>
+  Array.from({ length: count }, (_, index) => index + 1)
+const common = ['name', 'content']
+const settings = ['explanation', 'basePoints', 'pointsMultiplier']
+const choices = (count: number) => [
   ...common,
-  'basePoints',
-  'pointsMultiplier',
   'hasSampleSolution',
-] as const
-const choices = [
-  ...question,
+  ...spreadsheetSlots(count).flatMap((slot) => [
+    `answer${slot}`,
+    `correct${slot}`,
+  ]),
+  ...settings,
   'displayMode',
   'hasAnswerFeedbacks',
-  'answer',
-  'correct',
-  'feedback',
-] as const
+  ...spreadsheetSlots(count).map((slot) => `feedback${slot}`),
+]
 export const ELEMENT_SPREADSHEET_TABLES = {
-  'Single choice': choices,
-  'Multiple choice': choices,
-  Kprim: choices,
+  'Single choice': choices(ELEMENT_SPREADSHEET_ANSWER_SLOTS),
+  'Multiple choice': choices(ELEMENT_SPREADSHEET_ANSWER_SLOTS),
+  Kprim: choices(4),
   Numerical: [
-    ...question,
+    ...common,
+    'hasSampleSolution',
+    'solutionMode',
+    ...spreadsheetSlots(ELEMENT_SPREADSHEET_SOLUTION_SLOTS).flatMap((slot) => [
+      `solution${slot}`,
+      `solutionMinimum${slot}`,
+      `solutionMaximum${slot}`,
+    ]),
+    ...settings,
     'unit',
     'accuracy',
     'placeholder',
     'minimum',
     'maximum',
-    'solutionMode',
-    'solution',
-    'solutionMinimum',
-    'solutionMaximum',
   ],
-  'Free text': [...question, 'maxLength', 'solution'],
-  Content: common,
-  Flashcards: common,
+  'Free text': [
+    ...common,
+    'hasSampleSolution',
+    ...spreadsheetSlots(ELEMENT_SPREADSHEET_SOLUTION_SLOTS).map(
+      (slot) => `solution${slot}`
+    ),
+    ...settings,
+    'maxLength',
+  ],
+  Content: [...common, 'explanation'],
+  Flashcards: [...common, 'explanation'],
 } as const
+export function spreadsheetColumnLabel(field: string, sheet?: string): string {
+  const numbered =
+    /^(answer|correct|feedback|solutionMinimum|solutionMaximum|solution)(\d+)$/.exec(
+      field
+    )
+  if (numbered) {
+    const label: Record<string, string> = {
+      answer: sheet === 'Kprim' ? 'Statement' : 'Answer',
+      correct: sheet === 'Kprim' ? 'Statement true?' : 'Correct?',
+      feedback: 'Feedback',
+      solution: 'Accepted answer',
+      solutionMinimum: 'Range minimum',
+      solutionMaximum: 'Range maximum',
+    }
+    return numbered[1] === 'correct'
+      ? `${sheet === 'Kprim' ? 'Statement' : 'Correct'} ${numbered[2]}${sheet === 'Kprim' ? ' true' : ''}?`
+      : `${label[numbered[1]!]} ${numbered[2]}`
+  }
+  const labels: Record<string, string> = {
+    name: 'Name',
+    content:
+      sheet === 'Flashcards'
+        ? 'Front'
+        : sheet === 'Content'
+          ? 'Content'
+          : 'Question',
+    explanation: sheet === 'Flashcards' ? 'Back' : 'Explanation',
+    basePoints: 'Participation points',
+    pointsMultiplier: 'Points multiplier',
+    hasSampleSolution: 'Sample solution?',
+    hasAnswerFeedbacks: 'Answer feedback?',
+    displayMode: 'Answer layout',
+    unit: 'Unit',
+    accuracy: 'Decimal places',
+    placeholder: 'Input hint',
+    minimum: 'Minimum allowed',
+    maximum: 'Maximum allowed',
+    solutionMode: 'Solution type',
+    maxLength: 'Maximum answer length',
+  }
+  return labels[field] ?? field
+}
 export const ELEMENT_SPREADSHEET_TYPES = {
   'Single choice': 'SC',
   'Multiple choice': 'MC',
@@ -86,6 +143,7 @@ export function textCell(
 ) {
   const value = row.values[field]
   if ((value == null || value === '') && fallback !== undefined) return fallback
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
   if (typeof value !== 'string')
     throw new SpreadsheetCellError(field, 'INVALID_VALUE', row)
   return value
@@ -109,18 +167,10 @@ export function booleanCell(
   const value = row.values[field]
   if (value == null || value === '') return fallback
   if (typeof value === 'boolean') return value
-  if (value === 'TRUE') return true
-  if (value === 'FALSE') return false
+  if (value === 'TRUE' || value === 'Yes') return true
+  if (value === 'FALSE' || value === 'No') return false
   throw new SpreadsheetCellError(field, 'INVALID_VALUE', row)
 }
 export function hasSpreadsheetValue(value: SpreadsheetValue | undefined) {
   return value !== undefined && value !== null && value !== ''
 }
-export const SPREADSHEET_DETAIL_FIELDS = new Set([
-  'answer',
-  'correct',
-  'feedback',
-  'solution',
-  'solutionMinimum',
-  'solutionMaximum',
-])

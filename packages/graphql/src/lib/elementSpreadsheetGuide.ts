@@ -1,8 +1,11 @@
 import type ExcelJS from 'exceljs'
 import {
+  ELEMENT_SPREADSHEET_ANSWER_SLOTS,
+  ELEMENT_SPREADSHEET_SOLUTION_SLOTS,
   ELEMENT_SPREADSHEET_TABLES,
   ELEMENT_SPREADSHEET_VERSION,
   type ElementSpreadsheetTable,
+  spreadsheetColumnLabel,
 } from './elementSpreadsheetTables.js'
 
 const BLUE = 'FF0028A5'
@@ -11,75 +14,71 @@ const WHITE = 'FFFFFFFF'
 const LIGHT_BLUE = 'FFF5F5FB'
 const GUIDES: Record<ElementSpreadsheetTable, [string, string]> = {
   'Single choice': [
-    'One row per answer option. Repeat the question ref for additional answers.',
-    'With a sample solution, mark exactly one answer TRUE and all others FALSE. Feedback needs a sample solution and text for every answer.',
+    `One row = one question. Enter up to ${ELEMENT_SPREADSHEET_ANSWER_SLOTS} answers across the row; leave unused slots empty.`,
+    'With a sample solution, exactly one answer must be correct. Mark used answers Yes or No. Optional settings and feedback follow the answers.',
   ],
   'Multiple choice': [
-    'One row per answer option. Repeat the question ref for additional answers.',
-    'With a sample solution, mark at least one answer TRUE and all others FALSE. Feedback needs a sample solution and text for every answer.',
+    `One row = one question. Enter up to ${ELEMENT_SPREADSHEET_ANSWER_SLOTS} answers across the row; leave unused slots empty.`,
+    'With a sample solution, at least one answer must be correct. Mark used answers Yes or No. Optional settings and feedback follow the answers.',
   ],
   Kprim: [
-    'Exactly four answer rows per question. Repeat the same ref on all four rows.',
-    'With a sample solution, mark each statement TRUE or FALSE. Without one, leave correct and feedback blank.',
+    'One row = one question with exactly four statements, as in Klicker.',
+    'With a sample solution, mark each statement Yes (true) or No (false). Without a solution, leave these cells blank.',
   ],
   Numerical: [
-    'One row per accepted number or range. Repeat the question ref for additional solutions.',
-    'Choose EXACT or RANGE when sample solutions are enabled. Do not mix modes. Solutions must fit the question’s minimum/maximum; each range must be ordered.',
+    `One row = one question. Provide up to ${ELEMENT_SPREADSHEET_SOLUTION_SLOTS} accepted numbers OR ranges. Leave unused slots blank.`,
+    'With a sample solution, choose EXACT for numbers or RANGE for intervals. Fill only the enabled columns. Optional units, bounds and settings follow the solutions.',
   ],
   'Free text': [
-    'One row per accepted answer. Repeat the question ref for alternative answers.',
-    'Enter solutions only when sample solutions are enabled. If maxLength is set, every accepted answer must fit. Without a solution, use one row per question.',
+    `One row = one question. Provide up to ${ELEMENT_SPREADSHEET_SOLUTION_SLOTS} accepted wordings in the numbered answer columns.`,
+    'Accepted answers need a sample solution. Leave unused slots blank. Optional explanation, points and answer-length settings follow the answers.',
   ],
   Content: [
-    'One row per learning item. No answers, sample-solution switch or scoring fields are needed.',
-    'Give every item a unique ref, a name and content. An explanation is optional.',
+    'One row = one learning item. Enter its name and content.',
+    'An explanation is optional. No answers, scoring settings or identifiers are needed.',
   ],
   Flashcards: [
-    'One row per flashcard. content is the front; explanation is the back.',
-    'Give every card a unique ref and name. Both the front and back must contain text. No sample-solution switch or scoring fields are needed.',
+    'One row = one flashcard. Enter a name, the front and the back.',
+    'Both sides need text. No answer fields, scoring settings or identifiers are needed.',
   ],
 }
 const HELP: Record<string, string> = {
-  ref: 'Required on every row. A short question label you choose, e.g. question-1. Repeat it for additional answers on this tab; use a new label for a new question.',
-  name: 'Required on the first row for this ref. A short name for your library. Leave blank on additional answer rows.',
+  name: 'Required. A short name for your library. Names do not need to be unique.',
   content:
-    'Required on the first row. The question or learning text; for flashcards, the front. Plain text or Klicker Markdown.',
+    'Required. The question or learning text; for flashcards, the front. Plain text or Klicker Markdown.',
   explanation:
-    'First row only. Optional explanation for any type. Required for flashcards: the back of the card.',
+    'Optional explanation for any type. Required for flashcards: the back of the card.',
   basePoints:
-    'First row only. TRUE enables participation points; FALSE disables them. Blank defaults to TRUE.',
+    'Optional. Yes enables participation points; No disables them. Blank means Yes.',
   pointsMultiplier:
-    'First row only. Whole number from 1 to 4. Blank defaults to 1.',
+    'Optional. Whole number from 1 to 4, as in Klicker. Blank means 1.',
   hasSampleSolution:
-    'First row only. TRUE enables correct answers / accepted solutions. FALSE or blank means no sample solution; clear solution fields.',
-  displayMode: 'First row only. LIST or GRID. Blank defaults to LIST.',
+    'Yes: add a solution. No or blank: leave solution fields empty.',
+  displayMode: 'Optional answer layout: LIST or GRID. Blank means LIST.',
   hasAnswerFeedbacks:
-    'First row only. TRUE requires a sample solution and feedback for every answer. Otherwise FALSE or blank.',
+    'Optional. Yes requires a sample solution and feedback for every used answer. Otherwise No or blank.',
   answer:
-    'Required on every choice row. One answer option or Kprim statement per row. The row order is the answer order.',
-  correct:
-    'When sample solutions are enabled: TRUE for correct, FALSE for incorrect. Otherwise leave blank. SC needs exactly one TRUE; MC needs at least one.',
+    'One answer. Leave unused answer, correctness and feedback cells blank.',
+  correct: 'Yes = correct. No = incorrect. Leave blank without a solution.',
   feedback:
-    'Required on every answer row when answer feedback is enabled. Otherwise leave blank.',
-  unit: 'First row only. Optional unit displayed with the number, e.g. minutes or kg.',
+    'Optional feature: required for each used answer only when Answer feedback? is Yes. Otherwise leave blank.',
+  unit: 'Optional unit displayed with the number, e.g. minutes or kg.',
   accuracy:
-    'First row only. Decimal places for numerical answers: whole number from 0 to 100.',
-  placeholder:
-    'First row only. Optional hint in the empty numerical answer field.',
-  minimum:
-    'First row only. Optional lowest allowed numerical answer. Must not exceed maximum.',
+    'Optional decimal places: whole number from 0 to 100, as in Klicker.',
+  placeholder: 'Optional hint in the empty numerical answer field.',
+  minimum: 'Optional lowest allowed answer. Must not exceed Maximum allowed.',
   maximum:
-    'First row only. Optional highest allowed numerical answer. Must not be below minimum.',
+    'Optional highest allowed answer. Must not be below Minimum allowed.',
   solutionMode:
-    'First row only. With a sample solution choose EXACT for numbers or RANGE for accepted intervals. Otherwise leave blank.',
+    'With a sample solution: EXACT for numbers or RANGE for intervals. Otherwise leave blank.',
   solution:
-    'An accepted answer. Numerical: a number in EXACT mode. Free text: accepted wording. Leave blank when sample solutions are disabled.',
+    'One accepted answer. Numerical: a number in EXACT mode. Free text: accepted wording. Leave unused slots blank.',
   solutionMinimum:
-    'RANGE mode only: lower accepted bound. At least one bound is required. Must fit the question bounds and not exceed solutionMaximum.',
+    'RANGE only: lower accepted bound. Fill at least one bound per used range. Leave unused ranges blank.',
   solutionMaximum:
-    'RANGE mode only: upper accepted bound. At least one bound is required. Must fit the question bounds and not be below solutionMinimum.',
+    'RANGE only: upper accepted bound. Must not be below the matching minimum. Leave unused ranges blank.',
   maxLength:
-    'First row only. Optional positive whole number limiting answer length. Accepted solutions must fit.',
+    'Optional positive whole number limiting answer length. Every accepted wording must fit.',
 }
 export function addSpreadsheetInstructions(workbook: ExcelJS.Workbook) {
   const sheet = workbook.addWorksheet('Instructions', {
@@ -99,11 +98,11 @@ export function addSpreadsheetInstructions(workbook: ExcelJS.Workbook) {
     ],
     [
       '2  Enter your questions',
-      'Keep tab names and rows 1–7 unchanged. Data starts in row 8. On question tabs, repeat a ref to add answers; fill question settings only on its first row.',
+      'One row is one complete question or learning item. Enter answers across the row. No identifiers or repeated rows are needed. Keep tab names and rows 1–7 unchanged; start in row 8.',
     ],
     [
       '3  Follow the field rules',
-      'Dropdowns guide entry. Grey cells should stay blank. Orange cells need attention. Pasting can bypass Excel checks; Klicker checks every uploaded row.',
+      'Use Yes/No dropdowns. Leave unused answer slots and grey cells blank. Orange cells need attention. Klicker also checks pasted data on upload.',
     ],
     [
       '4  Save and import',
@@ -111,7 +110,7 @@ export function addSpreadsheetInstructions(workbook: ExcelJS.Workbook) {
     ],
     [
       'Limits and images',
-      'Up to 100 elements and 5 MiB per file. Editing checks cover 1,000 data rows per tab. Use public Klicker image URLs in Markdown; no pasted images, macros or Excel formulas. Images depend on their source remaining available.',
+      `Up to 100 elements and 5 MiB per file. ${ELEMENT_SPREADSHEET_ANSWER_SLOTS} SC/MC answer slots are an Excel-template limit; Klicker itself has no cap. Kprim requires four statements. Use JSON for more answers. Use public Klicker image links in Markdown; no pasted images or formulas.`,
     ],
   ]
   for (const [index, values] of lines.entries()) {
@@ -150,7 +149,7 @@ export function addSpreadsheetTableGuide(
     name,
     GUIDES[name][0],
     GUIDES[name][1],
-    'EDITABLE EXAMPLE BELOW • Replace it with your content, or deselect it in the import preview. Fill question settings only on the first row of each ref.',
+    'EDITABLE EXAMPLE BELOW • Replace it with your content, or delete the example row. Add each new question on a new row.',
   ]
   for (const [index, value] of lines.entries()) {
     const row = sheet.getRow(index + 1)
@@ -174,15 +173,21 @@ export function addSpreadsheetTableGuide(
   }
   sheet.getRow(5).height = 12
   sheet.getRow(6).height = 34
-  sheet.getRow(7).height = 145
+  sheet.getRow(7).height = 105
   for (const [index, header] of headers.entries()) {
     const cell = sheet.getRow(6).getCell(index + 1)
-    cell.value = header
+    cell.value = spreadsheetColumnLabel(header, name)
     cell.font = { name: 'Aptos', size: 11, bold: true, color: { argb: WHITE } }
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BLUE } }
     cell.alignment = { vertical: 'middle', wrapText: true }
     const help = sheet.getRow(7).getCell(index + 1)
-    help.value = HELP[header]!
+    const field = header.replace(/\d+$/, '')
+    help.value =
+      name === 'Kprim' && field === 'correct'
+        ? 'Yes = true. No = false. Leave blank without a solution.'
+        : name === 'Kprim' && field === 'answer'
+          ? 'Required. Enter one statement; all four are needed.'
+          : HELP[field]!
     help.font = { name: 'Aptos', size: 10, color: { argb: INK } }
     help.fill = {
       type: 'pattern',
@@ -193,6 +198,7 @@ export function addSpreadsheetTableGuide(
   }
 }
 export function styleSpreadsheetDataRow(row: ExcelJS.Row) {
+  row.height = 60
   row.font = { name: 'Aptos', size: 11, color: { argb: INK } }
   row.alignment = { vertical: 'top', wrapText: true }
   row.eachCell({ includeEmpty: true }, (cell) => {

@@ -2,15 +2,18 @@ import { ZodError } from 'zod'
 import { ElementDomainValidationError } from './elementDomain/core.js'
 import {
   booleanCell as boolean,
+  ELEMENT_SPREADSHEET_ANSWER_SLOTS,
+  ELEMENT_SPREADSHEET_SOLUTION_SLOTS,
   ELEMENT_SPREADSHEET_TABLES,
   ELEMENT_SPREADSHEET_TYPES,
   type ElementSpreadsheetTables,
   hasSpreadsheetValue as filled,
   numberCell as number,
-  SPREADSHEET_DETAIL_FIELDS,
   SpreadsheetCellError,
   type SpreadsheetIssue,
   type SpreadsheetRow,
+  spreadsheetColumnLabel,
+  spreadsheetSlots,
   textCell as text,
 } from './elementSpreadsheetTables.js'
 import { InvalidElementWorkbookError } from './elementSpreadsheetWorkbook.js'
@@ -28,176 +31,195 @@ export type ParsedElementSpreadsheet = {
 }
 function rejectFilled(
   row: SpreadsheetRow,
-  fields: readonly string[],
+  fields: string[],
   code = 'DISABLED_SOLUTION_DATA'
 ) {
   for (const field of fields)
-    if (filled(row.values[field]))
-      throw new SpreadsheetCellError(field, code, row)
+    if (filled(row.values[field])) throw new SpreadsheetCellError(field, code)
 }
-function optionsForRows(rows: SpreadsheetRow[]) {
-  const first = rows[0]!
-  const type = ELEMENT_SPREADSHEET_TYPES[first.sheet]
-  const hasSampleSolution = boolean(first, 'hasSampleSolution')
-  if (type === 'CONTENT' || type === 'FLASHCARD') {
-    if (rows.length !== 1)
-      throw new SpreadsheetCellError('ref', 'DUPLICATE_REFERENCE', rows[1])
-    return {}
-  }
-  if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
-    const hasAnswerFeedbacks = boolean(first, 'hasAnswerFeedbacks')
-    if (!hasSampleSolution && hasAnswerFeedbacks)
-      throw new SpreadsheetCellError(
-        'hasAnswerFeedbacks',
-        'DISABLED_SOLUTION_DATA',
-        first
-      )
-    if (type === 'KPRIM' && rows.length !== 4)
-      throw new SpreadsheetCellError('answer', 'KPRIM_FOUR_ANSWERS', first)
-    const choices = rows.map((row, ix) => {
-      if (!hasSampleSolution) rejectFilled(row, ['correct'])
-      if (!hasAnswerFeedbacks) rejectFilled(row, ['feedback'])
-      if (hasSampleSolution && !filled(row.values.correct))
-        throw new SpreadsheetCellError('correct', 'REQUIRED_VALUE', row)
-      const value = text(row, 'answer')
-      if (!value.trim())
-        throw new SpreadsheetCellError('answer', 'REQUIRED_VALUE', row)
-      const feedback = hasAnswerFeedbacks ? text(row, 'feedback') : undefined
-      if (hasAnswerFeedbacks && !feedback?.trim())
-        throw new SpreadsheetCellError('feedback', 'REQUIRED_VALUE', row)
-      return {
-        ix,
-        value,
-        correct: hasSampleSolution ? boolean(row, 'correct') : undefined,
-        feedback,
-      }
-    })
-    const count = choices.filter((choice) => choice.correct).length
-    if (
-      hasSampleSolution &&
-      ((type === 'SC' && count !== 1) || (type === 'MC' && count === 0))
+function requiredText(row: SpreadsheetRow, field: string) {
+  const value = text(row, field, '')
+  if (!value.trim()) throw new SpreadsheetCellError(field, 'REQUIRED_VALUE')
+  return value
+}
+function choiceOptions(row: SpreadsheetRow) {
+  const type = ELEMENT_SPREADSHEET_TYPES[row.sheet]
+  const hasSampleSolution = boolean(row, 'hasSampleSolution')
+  const hasAnswerFeedbacks = boolean(row, 'hasAnswerFeedbacks')
+  if (!hasSampleSolution && hasAnswerFeedbacks)
+    throw new SpreadsheetCellError(
+      'hasAnswerFeedbacks',
+      'DISABLED_SOLUTION_DATA'
     )
-      throw new SpreadsheetCellError(
-        'correct',
-        type === 'SC' ? 'SC_ONE_CORRECT' : 'MC_CORRECT_REQUIRED',
-        first
-      )
-    return {
-      hasSampleSolution,
-      hasAnswerFeedbacks,
-      displayMode: text(first, 'displayMode', 'LIST'),
-      choices,
+  const choices: Array<{
+    ix: number
+    value: string
+    correct: boolean | undefined
+    feedback: string | undefined
+  }> = []
+  for (const slot of spreadsheetSlots(
+    type === 'KPRIM' ? 4 : ELEMENT_SPREADSHEET_ANSWER_SLOTS
+  )) {
+    const answer = `answer${slot}`
+    const correct = `correct${slot}`
+    const feedback = `feedback${slot}`
+    if (!filled(row.values[answer])) {
+      if (type === 'KPRIM')
+        throw new SpreadsheetCellError(answer, 'KPRIM_FOUR_ANSWERS')
+      if (filled(row.values[correct]) || filled(row.values[feedback]))
+        throw new SpreadsheetCellError(answer, 'REQUIRED_VALUE')
+      continue
     }
+    if (!hasSampleSolution) rejectFilled(row, [correct])
+    if (!hasAnswerFeedbacks) rejectFilled(row, [feedback])
+    if (hasSampleSolution && !filled(row.values[correct]))
+      throw new SpreadsheetCellError(correct, 'REQUIRED_VALUE')
+    choices.push({
+      ix: choices.length,
+      value: requiredText(row, answer),
+      correct: hasSampleSolution ? boolean(row, correct) : undefined,
+      feedback: hasAnswerFeedbacks ? requiredText(row, feedback) : undefined,
+    })
   }
-  if (type === 'FREE_TEXT') {
-    const maxLength = number(first, 'maxLength')
-    if (!hasSampleSolution)
-      for (const row of rows) rejectFilled(row, ['solution'])
-    const solutions = hasSampleSolution
-      ? rows.map((row) => {
-          const value = text(row, 'solution')
-          if (!value.trim())
-            throw new SpreadsheetCellError('solution', 'REQUIRED_VALUE', row)
-          if (maxLength !== undefined && value.trim().length > maxLength)
-            throw new SpreadsheetCellError('solution', 'INVALID_VALUE', row)
-          return value
-        })
-      : undefined
-    return { hasSampleSolution, restrictions: { maxLength }, solutions }
+  if (!choices.length)
+    throw new SpreadsheetCellError('answer1', 'REQUIRED_VALUE')
+  const count = choices.filter((choice) => choice.correct).length
+  if (
+    hasSampleSolution &&
+    ((type === 'SC' && count !== 1) || (type === 'MC' && count === 0))
+  )
+    throw new SpreadsheetCellError(
+      `correct${spreadsheetSlots(ELEMENT_SPREADSHEET_ANSWER_SLOTS).find((slot) => filled(row.values[`answer${slot}`]))}`,
+      type === 'SC' ? 'SC_ONE_CORRECT' : 'MC_CORRECT_REQUIRED'
+    )
+  return {
+    hasSampleSolution,
+    hasAnswerFeedbacks,
+    displayMode: text(row, 'displayMode', 'LIST'),
+    choices,
   }
-  const mode = text(first, 'solutionMode', '')
-  if (!hasSampleSolution) {
-    rejectFilled(first, ['solutionMode'])
-    for (const row of rows)
-      rejectFilled(row, ['solution', 'solutionMinimum', 'solutionMaximum'])
-  } else if (mode !== 'EXACT' && mode !== 'RANGE')
-    throw new SpreadsheetCellError('solutionMode', 'INVALID_VALUE', first)
+}
+function freeTextOptions(row: SpreadsheetRow) {
+  const hasSampleSolution = boolean(row, 'hasSampleSolution')
+  const maxLength = number(row, 'maxLength')
+  const fields = spreadsheetSlots(ELEMENT_SPREADSHEET_SOLUTION_SLOTS).map(
+    (slot) => `solution${slot}`
+  )
+  if (!hasSampleSolution) rejectFilled(row, fields)
+  const solutions = fields
+    .filter((field) => filled(row.values[field]))
+    .map((field) => {
+      const value = requiredText(row, field)
+      if (maxLength !== undefined && value.trim().length > maxLength)
+        throw new SpreadsheetCellError(field, 'INVALID_VALUE')
+      return value
+    })
+  if (hasSampleSolution && !solutions.length)
+    throw new SpreadsheetCellError('solution1', 'REQUIRED_VALUE')
+  return {
+    hasSampleSolution,
+    restrictions: { maxLength },
+    solutions: hasSampleSolution ? solutions : undefined,
+  }
+}
+function numericalOptions(row: SpreadsheetRow) {
+  const hasSampleSolution = boolean(row, 'hasSampleSolution')
+  const mode = text(row, 'solutionMode', '')
+  const slots = spreadsheetSlots(ELEMENT_SPREADSHEET_SOLUTION_SLOTS)
+  const exactFields = slots.map((slot) => `solution${slot}`)
+  const rangeFields = slots.flatMap((slot) => [
+    `solutionMinimum${slot}`,
+    `solutionMaximum${slot}`,
+  ])
+  if (!hasSampleSolution)
+    rejectFilled(row, ['solutionMode', ...exactFields, ...rangeFields])
+  else if (mode !== 'EXACT' && mode !== 'RANGE')
+    throw new SpreadsheetCellError('solutionMode', 'INVALID_VALUE')
+  if (mode === 'EXACT') rejectFilled(row, rangeFields, 'AMBIGUOUS_SOLUTION')
+  if (mode === 'RANGE') rejectFilled(row, exactFields, 'AMBIGUOUS_SOLUTION')
   const restrictions = {
-    min: number(first, 'minimum'),
-    max: number(first, 'maximum'),
+    min: number(row, 'minimum'),
+    max: number(row, 'maximum'),
   }
   if (
     restrictions.min !== undefined &&
     restrictions.max !== undefined &&
     restrictions.min > restrictions.max
   )
-    throw new SpreadsheetCellError('maximum', 'INVALID_VALUE', first)
-  const bounds = (
-    value: number | undefined,
-    row: SpreadsheetRow,
-    field: string
-  ) => {
+    throw new SpreadsheetCellError('maximum', 'INVALID_VALUE')
+  const bounded = (field: string) => {
+    const value = number(row, field)
     if (
       value !== undefined &&
       ((restrictions.min !== undefined && value < restrictions.min) ||
         (restrictions.max !== undefined && value > restrictions.max))
     )
-      throw new SpreadsheetCellError(field, 'INVALID_VALUE', row)
+      throw new SpreadsheetCellError(field, 'INVALID_VALUE')
     return value
   }
   const exactSolutions =
-    hasSampleSolution && mode === 'EXACT'
-      ? rows.map((row) => {
-          rejectFilled(
-            row,
-            ['solutionMinimum', 'solutionMaximum'],
-            'AMBIGUOUS_SOLUTION'
-          )
-          const value = number(row, 'solution')
-          if (value === undefined)
-            throw new SpreadsheetCellError('solution', 'REQUIRED_VALUE', row)
-          return bounds(value, row, 'solution')!
-        })
+    mode === 'EXACT'
+      ? exactFields
+          .filter((field) => filled(row.values[field]))
+          .map((field) => bounded(field)!)
       : undefined
   const solutionRanges =
-    hasSampleSolution && mode === 'RANGE'
-      ? rows.map((row) => {
-          rejectFilled(row, ['solution'], 'AMBIGUOUS_SOLUTION')
-          const min = bounds(
-            number(row, 'solutionMinimum'),
-            row,
-            'solutionMinimum'
+    mode === 'RANGE'
+      ? slots
+          .filter(
+            (slot) =>
+              filled(row.values[`solutionMinimum${slot}`]) ||
+              filled(row.values[`solutionMaximum${slot}`])
           )
-          const max = bounds(
-            number(row, 'solutionMaximum'),
-            row,
-            'solutionMaximum'
-          )
-          if (min === undefined && max === undefined)
-            throw new SpreadsheetCellError(
-              'solutionMinimum',
-              'REQUIRED_VALUE',
-              row
-            )
-          if (min !== undefined && max !== undefined && min > max)
-            throw new SpreadsheetCellError(
-              'solutionMaximum',
-              'INVALID_VALUE',
-              row
-            )
-          return { min, max }
-        })
+          .map((slot) => {
+            const min = bounded(`solutionMinimum${slot}`)
+            const max = bounded(`solutionMaximum${slot}`)
+            if (min !== undefined && max !== undefined && min > max)
+              throw new SpreadsheetCellError(
+                `solutionMaximum${slot}`,
+                'INVALID_VALUE'
+              )
+            return { min, max }
+          })
       : undefined
+  if (hasSampleSolution && !exactSolutions?.length && !solutionRanges?.length)
+    throw new SpreadsheetCellError(
+      mode === 'EXACT' ? 'solution1' : 'solutionMinimum1',
+      'REQUIRED_VALUE'
+    )
   return {
     hasSampleSolution,
-    unit: text(first, 'unit', ''),
-    accuracy: number(first, 'accuracy'),
-    placeholder: text(first, 'placeholder', ''),
+    unit: text(row, 'unit', ''),
+    accuracy: number(row, 'accuracy'),
+    placeholder: text(row, 'placeholder', ''),
     restrictions,
     exactSolutions,
     solutionRanges,
   }
 }
+function optionsForRow(row: SpreadsheetRow) {
+  switch (ELEMENT_SPREADSHEET_TYPES[row.sheet]) {
+    case 'CONTENT':
+    case 'FLASHCARD':
+      return {}
+    case 'SC':
+    case 'MC':
+    case 'KPRIM':
+      return choiceOptions(row)
+    case 'FREE_TEXT':
+      return freeTextOptions(row)
+    case 'NUMERICAL':
+      return numericalOptions(row)
+  }
+}
 function diagnostic(
   error: unknown,
-  first: SpreadsheetRow,
-  rows: SpreadsheetRow[]
+  row: SpreadsheetRow,
+  ref: string
 ): SpreadsheetIssue {
-  let source = first
   let field = 'content'
   let code = 'INVALID_ELEMENT'
   if (error instanceof SpreadsheetCellError) {
-    source = error.source ?? first
     field = error.field
     code = error.code
   } else {
@@ -209,33 +231,57 @@ function diagnostic(
           : undefined
     const keys =
       path?.filter((key): key is string => typeof key === 'string') ?? []
-    const index = path?.find((key) => typeof key === 'number')
-    if (typeof index === 'number') source = rows[index] ?? first
-    const aliases: Record<string, string> = {
-      choices: 'answer',
-      value: 'answer',
-      exactSolutions: 'solution',
-      solutions: 'solution',
-      solutionRanges: 'solutionMinimum',
-      maxLength: 'maxLength',
-      min: 'minimum',
-      max: 'maximum',
+    const index = path?.find((key): key is number => typeof key === 'number')
+    const collection = keys.find((key) =>
+      ['choices', 'solutions', 'exactSolutions', 'solutionRanges'].includes(key)
+    )
+    const slots = spreadsheetSlots(
+      collection === 'choices'
+        ? row.sheet === 'Kprim'
+          ? 4
+          : ELEMENT_SPREADSHEET_ANSWER_SLOTS
+        : ELEMENT_SPREADSHEET_SOLUTION_SLOTS
+    )
+    const populated = slots.filter((slot) =>
+      collection === 'choices'
+        ? filled(row.values[`answer${slot}`])
+        : collection === 'solutionRanges'
+          ? filled(row.values[`solutionMinimum${slot}`]) ||
+            filled(row.values[`solutionMaximum${slot}`])
+          : filled(row.values[`solution${slot}`])
+    )
+    if (collection && index !== undefined) {
+      const slot = populated[index] ?? 1
+      const leaf = keys.at(-1)
+      field =
+        collection === 'choices'
+          ? `${leaf === 'correct' || leaf === 'feedback' ? leaf : 'answer'}${slot}`
+          : collection === 'solutionRanges'
+            ? `solution${leaf === 'max' ? 'Maximum' : 'Minimum'}${slot}`
+            : `solution${slot}`
+    } else {
+      const aliases: Record<string, string> = {
+        min: 'minimum',
+        max: 'maximum',
+        choices: 'answer1',
+        value: 'answer1',
+        solutions: 'solution1',
+        exactSolutions: 'solution1',
+        solutionRanges: 'solutionMinimum1',
+      }
+      field =
+        keys
+          .reverse()
+          .map((key) => aliases[key] ?? key)
+          .find((key) => ELEMENT_SPREADSHEET_TABLES[row.sheet].includes(key)) ??
+        'content'
     }
-    field =
-      keys
-        .reverse()
-        .map((key) => aliases[key] ?? key)
-        .find((key) =>
-          (
-            ELEMENT_SPREADSHEET_TABLES[first.sheet] as readonly string[]
-          ).includes(key)
-        ) ?? 'content'
   }
   return {
-    sheet: source.sheet,
-    row: source.row,
-    ref: typeof first.values.ref === 'string' ? first.values.ref : null,
-    field,
+    sheet: row.sheet,
+    row: row.row,
+    ref,
+    field: spreadsheetColumnLabel(field, row.sheet),
     code,
   }
 }
@@ -247,76 +293,54 @@ export function parseElementSpreadsheetTables(
     elements: [],
     answerCollections: [],
     sources: [],
-    issues: [...cellIssues],
+    issues: cellIssues.map((issue) => ({
+      ...issue,
+      field: spreadsheetColumnLabel(issue.field, issue.sheet),
+    })),
   }
-  const groups = new Map<string, SpreadsheetRow[]>()
-  const refSheets = new Map<string, Set<string>>()
-  for (const [sheet, rows] of Object.entries(tables)) {
-    for (const row of rows) {
-      try {
-        const ref = text(row, 'ref')
-        if (!ref.trim())
-          throw new SpreadsheetCellError('ref', 'REQUIRED_VALUE', row)
-        const key = `${sheet}\0${ref}`
-        const group = groups.get(key) ?? []
-        group.push(row)
-        groups.set(key, group)
-        const sheets = refSheets.get(ref) ?? new Set<string>()
-        sheets.add(sheet)
-        refSheets.set(ref, sheets)
-      } catch (error) {
-        result.issues.push(diagnostic(error, row, [row]))
-      }
-    }
-  }
-  if (groups.size > 100)
+  const rows = Object.values(tables).flat()
+  if (rows.length > 100)
     throw new InvalidElementWorkbookError('WORKBOOK_TOO_LARGE')
-  for (const rows of groups.values()) {
-    const first = rows[0]!
-    const ref = text(first, 'ref')
+  for (const row of rows) {
+    const type = ELEMENT_SPREADSHEET_TYPES[row.sheet]
+    // Internal transport identity only. Users never enter or maintain references.
+    const ref = `excel-${type.toLowerCase()}-${row.row}`
     result.sources.push({
       ref,
-      sheet: first.sheet,
-      row: first.row,
-      name: typeof first.values.name === 'string' ? first.values.name : ref,
+      sheet: row.sheet,
+      row: row.row,
+      name: typeof row.values.name === 'string' ? row.values.name : '',
     })
     if (
-      rows.some((row) =>
-        cellIssues.some(
-          (issue) => issue.sheet === row.sheet && issue.row === row.row
-        )
+      cellIssues.some(
+        (issue) => issue.sheet === row.sheet && issue.row === row.row
       )
     )
       continue
     try {
-      if (refSheets.get(ref)!.size > 1)
-        throw new SpreadsheetCellError('ref', 'DUPLICATE_REFERENCE', first)
-      const settings = ELEMENT_SPREADSHEET_TABLES[first.sheet].filter(
-        (field) => field !== 'ref' && !SPREADSHEET_DETAIL_FIELDS.has(field)
-      )
-      for (const row of rows.slice(1))
-        rejectFilled(row, settings, 'FIRST_ROW_ONLY')
-      const type = ELEMENT_SPREADSHEET_TYPES[first.sheet]
       result.elements.push(
         elementSchema.parse({
           ref,
           type,
-          name: text(first, 'name'),
-          content: text(first, 'content'),
-          explanation: text(first, 'explanation', '') || null,
+          name: requiredText(row, 'name'),
+          content: requiredText(row, 'content'),
+          explanation:
+            type === 'FLASHCARD'
+              ? requiredText(row, 'explanation')
+              : text(row, 'explanation', '') || null,
           basePoints:
             type === 'CONTENT' || type === 'FLASHCARD'
               ? false
-              : boolean(first, 'basePoints', true),
+              : boolean(row, 'basePoints', true),
           pointsMultiplier:
             type === 'CONTENT' || type === 'FLASHCARD'
               ? 1
-              : number(first, 'pointsMultiplier', 1),
-          options: optionsForRows(rows),
+              : number(row, 'pointsMultiplier', 1),
+          options: optionsForRow(row),
         })
       )
     } catch (error) {
-      result.issues.push(diagnostic(error, first, rows))
+      result.issues.push(diagnostic(error, row, ref))
     }
   }
   return result
