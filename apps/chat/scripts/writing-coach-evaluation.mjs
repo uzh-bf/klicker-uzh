@@ -25,13 +25,13 @@ import {
 import { CHAT_MODE_KEYS } from './chat-mode-keys.mjs'
 import {
   LOCAL_CHATBOT_ID,
+  LOCAL_COURSE_ID,
   LOCAL_FIXTURE_MARKER,
   LOCAL_SCOPE,
 } from './local-mcp-auth.mjs'
 
 export const EXPECTED_CWD = '/workspaces/klicker-uzh'
 export const SYNTHETIC_OWNER_ID = '76047345-3801-4628-ae7b-adbebcfe8821'
-export const SYNTHETIC_COURSE_ID = '7c12e44e-d083-4acf-845e-4c34aaff6b49'
 export const SYNTHETIC_PARTICIPANT_USERNAME = 'testuser1'
 export const MAX_ATTEMPTED_SUBMISSIONS = 72
 const CASE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/
@@ -568,7 +568,7 @@ async function inspectFixture(client, selected) {
   if (
     !chatbot ||
     chatbot.ownerId !== SYNTHETIC_OWNER_ID ||
-    chatbot.courseId !== SYNTHETIC_COURSE_ID ||
+    chatbot.courseId !== LOCAL_COURSE_ID ||
     chatbot.status !== 'PUBLISHED'
   ) {
     fail('chatbot_ownership_or_status_invalid')
@@ -612,7 +612,7 @@ async function inspectFixture(client, selected) {
     server.name !== 'KB' ||
     server.url !== 'http://localhost:1417/mcp' ||
     !server.isActive ||
-    !server.passChatbotId ||
+    server.passChatbotId !== false ||
     server.chatbotIdHeader !== null ||
     mcpConfigs.length !== 2 ||
     new Set(mcpConfigs.map((config) => config.chatMode)).size !== 2
