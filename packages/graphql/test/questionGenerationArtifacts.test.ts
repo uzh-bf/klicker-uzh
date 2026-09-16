@@ -4,6 +4,7 @@ import type {
   KBGraphSourceSnapshot,
   QuestionGenerationConfiguration,
 } from '@klicker-uzh/types'
+import { designSummaryView } from '../src/schema/elementGeneration.js'
 import {
   deriveGeneratedQuestionName,
   normalizeGeneratedTagSuggestions,
@@ -736,6 +737,27 @@ describe('question-generation artifact normalization', () => {
     })
     expect(JSON.stringify(summary)).not.toContain('raw_model_trace')
     expect(JSON.stringify(summary)).not.toContain('private/worker')
+  })
+
+  it('resolves a design summary persisted before the slot evidence field', () => {
+    const summary = parseQuestionGenerationDesign(bytes(design()), {
+      buildId: BUILD_ID,
+      configuration,
+      sourceSnapshot,
+    })
+    // A summary written by a server that predates the evidence surface has no
+    // slots list. The GraphQL slot field is non-null, so the resolver must
+    // default it or a build still in design review across a deploy fails the
+    // whole query.
+    const legacy = { ...summary }
+    delete legacy.slots
+
+    const view = designSummaryView({
+      designSummary: legacy,
+      elementType: 'SC',
+    } as unknown as Parameters<typeof designSummaryView>[0])
+
+    expect(view?.slots).toEqual([])
   })
 
   it('surfaces only the primary evidence entity ids of each slot', () => {

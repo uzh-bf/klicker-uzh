@@ -414,7 +414,7 @@ ElementGenerationDesignSummaryRef.implement({
   }),
 })
 
-function designSummaryView(
+export function designSummaryView(
   build: DB.ElementGenerationBuild
 ): ElementGenerationDesignSummaryView | null {
   if (!build.designSummary || build.elementType === DB.ElementType.FLASHCARD) {
@@ -430,13 +430,17 @@ function designSummaryView(
       elementCount: questionCount,
     })),
     sources: summary.sources,
-    slots: summary.slots.map((slot) => ({
+    // A summary written by a server that predates this field has no slots
+    // list. It is read with an empty default so a build still sitting in
+    // design review across a deploy keeps resolving instead of failing the
+    // whole query on the non-null field.
+    slots: (summary.slots ?? []).map((slot) => ({
       sourceElementId: slot.sourceQuestionId,
       moduleId: slot.moduleId,
       objectiveId: slot.objectiveId,
       bloomLevel: slot.bloomLevel,
       targetDifficulty: slot.targetDifficulty,
-      evidenceEntityIds: slot.evidenceEntityIds,
+      evidenceEntityIds: slot.evidenceEntityIds ?? [],
     })),
     warnings: summary.warnings,
   }
