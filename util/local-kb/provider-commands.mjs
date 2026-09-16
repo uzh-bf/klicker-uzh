@@ -7,6 +7,9 @@ const promisifiedExecFile = promisify(execFile)
 
 // Only project identity and bounded readiness fields leave provider observation.
 // A healthy endpoint does not prove workflow registration or model execution.
+// `inconsistent` is reported only by a provider whose own status shows a
+// recorded process set its start verb refuses to heal; every other facade
+// either restarts idempotently or tolerates the recorded set.
 export async function observeProviderLaunchers(
   config,
   run = runProviderCommand,
@@ -72,6 +75,7 @@ export async function observeProviderLauncher(
     let endpointReady = false
     let stopped = false
     let neverStarted = false
+    let inconsistent = false
     if (name === 'ingestion') {
       const preparationStates = ['configuration', 'credentials', 'schema']
       prepared = preparationStates.every(
@@ -117,6 +121,16 @@ export async function observeProviderLauncher(
         Object.values(status.workers ?? {}).every(
           (state) => state === 'stopped'
         )
+      // The provider refuses to restart a recorded process set that contradicts
+      // its own phase: a phase its stop path already marked partial, or a phase
+      // that still claims activity while a recorded process died. Only its stop
+      // verb clears that state, so the consumer reconciles it before starting.
+      inconsistent =
+        !stopped &&
+        (status.phase === 'partial' ||
+          [status.api, ...Object.values(status.workers ?? {})].some(
+            (state) => state === 'exited' || state === 'failed'
+          ))
     } else if (name === 'scraping') {
       if (status.owned !== true || typeof status.readiness?.api !== 'boolean')
         throw new Error()
@@ -144,6 +158,7 @@ export async function observeProviderLauncher(
       prepared,
       ...(name === 'ingestion' ? { pending, effectsAbsent } : {}),
       ...(neverStarted ? { neverStarted } : {}),
+      ...(inconsistent ? { inconsistent } : {}),
       endpointReady,
       stopped,
       aiQualified: false,
@@ -190,16 +205,35 @@ function providerFailure(error) {
   else if (typeof error?.code === 'string' && error.code)
     details.push(error.code)
   if (error?.signal) details.push(`signal ${error.signal}`)
-  const stderr = typeof error?.stderr === 'string' ? error.stderr : ''
-  const stable = stderr.match(
-    /\{\s*"error"\s*:\s*"([A-Za-z0-9_.-]{1,64})"\s*\}/
+  const stable = stableProviderCode(
+    typeof error?.stderr === 'string' ? error.stderr : ''
   )
-  if (stable) details.push(`provider code ${stable[1]}`)
+  if (stable) details.push(`provider code ${stable}`)
   return details.length ? ` (${details.join(', ')})` : ''
 }
 
+// Provider facades report their stable code in three shapes: retrieval writes a
+// JSON object, doc processing writes a bracketed code, and data ingestion
+// writes a labelled token. Free-text diagnostics are deliberately not matched,
+// and only a short identifier is ever accepted, so provider output cannot leak
+// connection settings across the lifecycle boundary.
+const PROVIDER_CODE_PATTERNS = [
+  /\{\s*"error"\s*:\s*"([A-Za-z0-9_.-]{1,64})"\s*\}/,
+  /^Error \[([A-Za-z0-9_.-]{1,64})\]/m,
+  /^local launcher failed: ([A-Za-z0-9_.-]{1,64})$/m,
+]
+
+function stableProviderCode(stderr) {
+  for (const pattern of PROVIDER_CODE_PATTERNS) {
+    const match = stderr.match(pattern)
+    if (match) return match[1]
+  }
+  return undefined
+}
+
 // Setup alone initializes schemas and credentials. Retained start and stop
-// invoke the provider's prepared lifecycle, never setup or data deletion.
+// invoke the provider's prepared lifecycle, never setup or data deletion. Stop
+// doubles as reconciliation when a provider reports an inconsistent process set.
 export function providerCommands(config) {
   if (!config.project || !config.bindings) {
     throw new Error(

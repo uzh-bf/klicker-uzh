@@ -240,6 +240,88 @@ test('retrieval observation treats a never-started instance as stopped without e
   assert.equal(observed.prepared, true)
 })
 
+test('doc processing reports an inconsistent recorded process set for reconciliation', async () => {
+  const { config } = resolveFixture('a')
+  const docProcessing = (overrides) => ({
+    ...providerStatus(config, 'docProcessing'),
+    ...overrides,
+  })
+  const cases = [
+    {
+      // The provider already recorded its own inconsistency after a start
+      // attempt found a recorded process dead.
+      status: docProcessing({
+        ready: false,
+        phase: 'partial',
+        api: 'starting',
+        workers: { callback: 'exited', 'hatchet-cpu': 'starting' },
+      }),
+      inconsistent: true,
+    },
+    {
+      // A recorded process died while the phase still claims activity. The
+      // provider rewrites this to partial and refuses to restart it.
+      status: docProcessing({
+        ready: false,
+        phase: 'running',
+        api: 'running',
+        workers: { callback: 'exited', 'hatchet-cpu': 'running' },
+      }),
+      inconsistent: true,
+    },
+    {
+      status: docProcessing({
+        phase: 'running',
+        api: 'running',
+        workers: { callback: 'running', 'hatchet-cpu': 'running' },
+      }),
+      inconsistent: false,
+    },
+    {
+      status: docProcessing({
+        ready: false,
+        phase: 'starting',
+        api: 'starting',
+        workers: { callback: 'starting' },
+      }),
+      inconsistent: false,
+    },
+    {
+      status: docProcessing({
+        ready: false,
+        phase: 'stopped',
+        api: 'stopped',
+        workers: { callback: 'stopped' },
+      }),
+      inconsistent: false,
+    },
+    {
+      status: docProcessing({
+        ready: false,
+        phase: 'prepared',
+        api: 'not_started',
+      }),
+      inconsistent: false,
+    },
+  ]
+  for (const { status, inconsistent } of cases) {
+    const observed = await observeProviderLauncher(
+      config,
+      'docProcessing',
+      async () => JSON.stringify(status)
+    )
+    assert.equal(observed.inconsistent, inconsistent || undefined)
+  }
+  // Only doc processing records a process set its own start refuses to heal;
+  // the other facades restart idempotently and never ask to be reconciled.
+  for (const name of ['ingestion', 'scraping', 'retrieval']) {
+    const observed = await observeProviderLauncher(config, name, async () =>
+      JSON.stringify(providerStatus(config, name))
+    )
+    assert.equal(Object.hasOwn(observed, 'inconsistent'), false)
+  }
+})
+
 test('rejects unknown provider names before dispatch', async () => {
   const { config } = resolveFixture('a')
   for (const name of ['unknown', 'constructor']) {
@@ -313,6 +395,62 @@ test('provider failures disclose only bounded values-free facts', async () => {
       error.message.includes('exit 3') &&
       error.message.includes('provider code state_not_found') &&
       !error.message.includes('synthetic-private-value')
+  )
+})
+
+// Each provider facade names its stable failure code in its own shape. The
+// consumer must surface that code, because operators otherwise see only a bare
+// exit status and cannot tell a recoverable partial start from a real fault.
+test('provider failures surface every provider code shape', async () => {
+  const shapes = [
+    ['state_not_found', '{"error": "state_not_found"}'],
+    ['start_partial', 'Error [start_partial]: a recorded provider process\n'],
+    ['strict_mode_required', 'local launcher failed: strict_mode_required\n'],
+  ]
+  for (const [code, stderr] of shapes) {
+    const failure = Object.assign(new Error('synthetic private diagnostic'), {
+      code: 1,
+      stderr: `${stderr}synthetic-private-value\n`,
+    })
+    await assert.rejects(
+      runProviderCommand(
+        {
+          executable: 'synthetic',
+          args: ['start'],
+          cwd: '/synthetic',
+          env: {},
+        },
+        {},
+        async () => {
+          throw failure
+        }
+      ),
+      (error) =>
+        error.message.includes(`provider code ${code}`) &&
+        !error.message.includes('synthetic-private-value')
+    )
+  }
+})
+
+test('provider failures do not disclose unmatched stderr', async () => {
+  const failure = Object.assign(new Error('synthetic private diagnostic'), {
+    code: 1,
+    stderr:
+      'Traceback\nDOC_PROCESSING_DATABASE_URL=postgresql://hatchet:hatchet@127.0.0.1:29751\n',
+  })
+  await assert.rejects(
+    runProviderCommand(
+      { executable: 'synthetic', args: ['start'], cwd: '/synthetic', env: {} },
+      {},
+      async () => {
+        throw failure
+      }
+    ),
+    (error) =>
+      error.message.includes('exit 1') &&
+      !error.message.includes('provider code') &&
+      !error.message.includes('hatchet') &&
+      !error.message.includes('29751')
   )
 })
 

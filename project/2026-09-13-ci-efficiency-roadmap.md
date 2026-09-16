@@ -819,3 +819,121 @@ required from the user.
   re-selects, synchronize and reopened still select, empty push diff still
   fails open). Scope note: image-workflow `edited` re-runs are governed by the
   B3 consolidation package and remain blocked on #5924.
+- 2026-09-14 build-cache scope slice (branch `rs/playwright-build-cache-scope`):
+  draft PR #5987 at head `b9a906ae73` fixes the (e) cache-compatibility
+  defect where the build fingerprint mixed build inputs with orchestration
+  and telemetry files. The four telemetry/scheduling files
+  (`playwright-telemetry.cjs`, `turbo-telemetry.cjs`,
+  `public-pr-playwright-shards.yml`, `test-playwright.yml`) previously
+  invalidated every cached build artifact on both routes when edited, even
+  though build outputs were identical. The fingerprint now hashes only
+  build-relevant files; `CACHE_SCHEMA` bumps 2 → 3 so artifacts reseed
+  under the corrected contract, and trusted run-reuse still binds the
+  orchestration files through the control revision. Shard jobs consume only
+  `dependency-fingerprint` and build artifacts, so their key scope is
+  unchanged. Evidence: 5/5 cache-contract tests including a new invariance
+  case (telemetry edits preserve, build-relevant edits invalidate), 124/124
+  across the six check.yml gate suites, Biome clean. Activation evidence
+  (warm artifact reuse on a post-merge PR) is a later live proof.
+- 2026-09-14 (d) BuildKit registry cache activated: the first pull_request
+  builds from a cache-enabled head wrote the first `-arm:buildcache` tags.
+  PR #5986 (non-draft v3-ai reconciliation, head `da9fd928`) carried the
+  cache triple and its `chat` build completed 00:41:56Z; GHCR records
+  `chat-arm:buildcache` written 01:20:50Z, `auth-arm:buildcache` at
+  01:11:50Z, `frontend-manage-arm:buildcache` at 01:04:36Z, and
+  `backend-docker-arm:buildcache` at 00:10:53Z. The contract is no longer
+  inert: subsequent same-repository PR builds now import these layers.
+  Warm-consumer timing proof (a PR build measurably faster on cache hit)
+  remains the follow-up observation for the next image-touching PR wave.
+  2026-09-14 exact-head CI on draft PR #5987 at head `7f0af1c522`:
+  `check` passed in 3m56s (run 34795721832, job 103828312555), including
+  the updated cache-contract suite; `build-images-status` passed; the
+  full hosted Playwright route passed prepare, build (4m43s) and all
+  eight shards (9m40s–14m34s). Remaining pending items are the four
+  path-filtered status reporters and the hosted reporter queued behind
+  the organization concurrency cap; `ocr-review` failed as the known
+  external-agent flake and carries no required weight for this change.
+
+- 2026-09-14 queue anatomy and Dependabot fan-out slice (branch
+  `rs/ci-dependabot-fanout`): the merged work did not hold, and the queue was
+  full again at 10:40Z. Live counts: 286–300 runs queued and 7 in progress;
+  **208 of those queued runs (about 70%) belong to `dependabot/*` branches**,
+  against 78 open non-Dependabot pull requests. The wave opened 22 update pull
+  requests in twenty minutes (`#6002`–`#6021`): nine separate
+  `docker/apps/<dir>/library/node-26.8-alpine` pull requests for one shared
+  base-image bump, six `uv` analytics bumps, and four `github-actions` bumps.
+  Each of those pull requests fires roughly thirteen workflows and then
+  consumes the most expensive route in the repository: `playwright-route.cjs`
+  deliberately routes bot-authored pull requests to hosted with
+  `selectorPrState: 'ready'` (`playwright-route.test.cjs` line 117), so every
+  Dependabot pull request runs the full eight-shard suite on hosted runners and
+  cannot use the self-hosted ARM64 pool. `check-ocr-review.yml` already exempts
+  Dependabot, which is why only the final review appears in the queued set.
+  Slice contents: `.github/dependabot.yml` now groups the `uv` and
+  `github-actions` ecosystems, replaces the twelve per-directory `docker`
+  entries with one `directories: ['/apps/*']` entry, and sets
+  `open-pull-requests-limit` plus `groups.<name>.group-by: dependency-name`,
+  which is the documented option for producing one pull request per updated
+  image across directories. The next wave should therefore open about four
+  pull requests instead of twenty-two, removing roughly 200 queued runs of the
+  current backlog. Verification limit: the option set is documented in the
+  Dependabot reference (`directories` supports globbing, `group-by:
+  dependency-name` collapses multi-directory updates), but the file is only
+  validated by GitHub after it reaches the default branch, so the reduction is
+  an expectation until the next scheduled run.
+- 2026-09-14 open routing decision from the same data: with base-image pull
+  requests routed to the full hosted suite, the cost per Dependabot pull
+  request is eight hosted shards plus the shared check, SonarCloud and CodeQL.
+  Deciding whether a base-image tag bump needs full Playwright coverage is a
+  routing/product decision, not a configuration repair, so it is proposed here
+  rather than changed.
+- 2026-09-14 B3 pre-flight blocks the roadmap's original execution spec: the
+  trusted controller is read from the default branch (`actions/checkout` with
+  `ref: github.workflow_sha`) while the candidate tree is
+  `vars.STG_SOURCE_BRANCH`. That variable is **not** `v3`. The promotion receipt
+  from controller run 34813630732 (artifact
+  `stg-release-promotion-receipt-cb1599d9a596860c6fc988d84fae4d44f7650309`)
+  records `"source_branch":"v3-audit"`, `"schema_version":"stg-release-promotion/v2"`,
+  `"controller_sha":"cbc6ba43a1"`, decision `{"action":"fast-forward","mode":"apply"}`
+  and a verified push of candidate `cb1599d9a5` onto `refs/heads/stg-release`
+  (previous release `dda3cd04a8`), so automatic promotion is live and currently
+  tracks `v3-audit`. Beware the misleading field: the promote run's own
+  `head_branch` reads `v3` because the workflow file comes from the default
+  branch, while `github.event.workflow_run.head_branch` — the value the branch
+  gate compares — is `v3-audit`; every v3-branch event is skipped by that gate.
+  The candidate therefore carries **fifteen** staging image
+  workflows, including `v3_mcp-lecturer-stg.yml` and `v3_mcp-student-stg.yml`,
+  which do not exist on `v3` at all; `STAGING_WORKFLOWS` and the `Build Fallback`
+  `workflow_run` list name them precisely so the trusted inventory matches that
+  branch, and the same receipt lists `mcp-lecturer-arm` and `mcp-student-arm`
+  among the fifteen promoted images. Consequences the original spec must absorb
+  before the matrix
+  consolidation ships: (1) collapsing `v3`'s thirteen files alone changes the
+  candidate set on `v3-audit` and fails the controller closed until `v3` is
+  merged into `v3-audit`; (2) the two `mcp-*` entries keep **active** `build-amd`
+  legs (`nonRuntimeJobs`), unlike the thirteen `v3` files whose `build-amd` jobs
+  are already inert `if: ${{ false }}`, so a consolidated matrix that omits them
+  would drop MCP staging images from the promotion contract; (3) the MCP
+  workflows live on the integration branches, so the landing plan has to either
+  keep them as legacy files in the inventory or add their legs to the
+  consolidated workflow on `v3-audit`, and they are not clones of the thirteen:
+  each also wraps publication in a `publish_guard` step that the `v3` files do
+  not have. B3 also now has a measured wakeup target:
+  the current 21-name `workflow_run` list produced **44 controller runs for the
+  single `v3` commit `0c2a7a6a33`**, almost all of them skipped. The controller
+  itself was healthy when checked, as the receipt above shows, and
+  `build-images-status` is the required context from
+  rulesets `v3 quality and merge protection` and `v3 integration baseline CI`
+  (a job name, not a workflow name), so a workflow rename keeps the context.
+- 2026-09-14 second selection finding, not yet sliced: metadata-only pull
+  requests are still costly outside the four path-filtered suites. Neither
+  `test-playwright.yml` nor `check.yml` carries a path filter, so a pull request
+  that changes only prose still runs the full typecheck and the complete
+  Playwright suite; branch `docs/writing-coach-proposal` held **18 queued runs**
+  in the same snapshot. The #5977 metadata rule cannot simply be extended here,
+  because the required `build-images-status` reporter binds the *newest* run for
+  the same head, event and branch rather than the newest non-metadata run: the
+  run list carries no event action, so a skip would either be read as an
+  unexpected `skipped` failure or let a later metadata edit overwrite an earlier
+  failed build. A sound version needs an explicit signal in the evidence
+  artifact or a run-age comparison, which is why it is scoped separately.

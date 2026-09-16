@@ -56,6 +56,7 @@ import {
   GeneratableElementType,
   GeneratedElementDraftInputRef,
   GeneratedElementDraftRef,
+  GeneratedElementTagSelectionInputRef,
   PublishIncompleteElementGenerationInputRef,
   ReviewElementGenerationInputRef,
   SetGeneratedElementDecisionInputRef,
@@ -2303,6 +2304,10 @@ export const Mutation = builder.mutationType({
           tags: t.arg.stringList({
             required: false,
             validate: { maxLength: 20 },
+          }),
+          tagSelection: t.arg({
+            type: GeneratedElementTagSelectionInputRef,
+            required: false,
           }),
           choiceIds: t.arg.idList({
             required: false,
