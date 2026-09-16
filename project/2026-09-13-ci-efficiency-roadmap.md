@@ -1015,3 +1015,58 @@ required from the user.
   pending measurement; the 16:08 snapshot of 9 queued `Promote to stg`
   wakeups was stale-superseded records from 09-13, not new queue
   pressure.
+- 2026-09-16 independent review correction (same branch, follow-up
+  commit): the self-review audited every number in the two entries above
+  against the live API and found one wrong figure plus two classifications
+  that needed sharpening before the roadmap PR merges.
+
+  Corrected figures. (1) The "build 2m56s" line belonged to the PR-head
+  run `35101325026`; the merged-v3 wave in run `35117591566` built in
+  2m21s (job 104916253330). (2) Build Fallback on 09-16: 75 non-cancelled
+  records, success mean 7.1min / max 27min (n=73), failures 2 at mean
+  4min; including 25 cancelled records the mean was 5.9min. The entry
+  above's "mean 5min / max 23min" mixed windows; use the corrected
+  numbers. (3) check.yml on 09-16: 100 completed records, 720
+  wall-minutes, mean 7.2 / max 29min — not 707. (4) The "~65min across
+  five Playwright executions" figure was wrong in scope: the five
+  executions were only one conclusion class. Full-day totals: 95
+  completed records, 1956 wall-minutes (success 55 records / 1547min /
+  mean 28.1 / max 67; failure 5 / 175min; cancelled 32 / 234min / mean
+  7.3). Success p50 29min, p90 55min. (5) Promotion controller on 09-16:
+  100 records, 94 skipped, 6 cancelled, 0 success in the first-100 API
+  window; one success (`35117043318`, 15:41:33Z) sits just outside it —
+  201 records in the gh view, 170 skipped / 23 cancelled / 6 failure / 1
+  success. The "94 skipped" figure stands; the "1 success" belonged to
+  the wider window. (6) The 9 queued `Promote to stg` wakeups at 16:08
+  were 09-13 stale records, as recorded above; live promotion wakeups
+  from 09-16 complete in seconds (skipped records, mean under a minute).
+
+  Failure-cause classification, which changes the fruit ranking. Four of
+  the five failed Playwright waves were real spec failures that failed
+  twice (base attempt plus retry), not flakes: `Y-chat.spec.ts:3460`
+  "Citations and source cards render on a live streamed answer" failed in
+  two waves on two branches with the same assertion shape — the
+  viewport-scroll growth predicate saw the score climb to 533 while
+  expecting <= 1 (test at lines 3576-3581 of the spec), i.e. the
+  streaming autoscroll fix is not holding on the hosted route yet;
+  `U-catalog.spec.ts:1656` (toBeHidden), `O1-live-quiz-core.spec.ts:4695`
+  (toContainText) and `T-resources.spec.ts:3249` each failed one wave.
+  Only `35130087179` (v3-ai push) was the cold-install sharp/libvips
+  HTTP 500 flake. The install-resilience fruit therefore remains valid
+  but drops to one occurrence today; the top actionable item from this
+  review is the recurring `Y-chat.spec.ts:3460` scroll-predicate failure
+  (two waves, two branches, same-day, deterministic shape) — either the
+  test's growth predicate races the newly-fixed autoscroll hook or the
+  hosted environment behaves differently from the ARM64 pool where the
+  same test passed 8/8.
+
+  AMD guard re-verification. The two 09-13-era entries claim "every
+  build-amd job is gated if: false". Re-verified on this branch against
+  current `origin/v3`: all 28 `v3_*.yml` workflow files that declare
+  `build-amd:` guard it with `if: ${{ false }}` (spot-checked six files
+  via API plus a full-worktree grep; the worktree is diff-clean against
+  `origin/v3` at `8cf526e6ce`). The claim stands.
+
+  Queue at re-verification: 16-18 queued / 5-6 running, consistent with
+  the 14/1 snapshot inside normal wave churn; the ~300x improvement
+  claim is not sensitive to this drift.
