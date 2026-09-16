@@ -39,6 +39,6 @@ describe('spreadsheet image reference policy', () => {
       result.issues
         .filter((issue) => issue.code === 'INVALID_IMAGE_URL')
         .map((issue) => issue.row)
-    ).toEqual([3, 4])
+    ).toEqual([9, 10])
   })
 })

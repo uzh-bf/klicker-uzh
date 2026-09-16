@@ -1,8 +1,13 @@
 import ExcelJS from 'exceljs'
 import { describe, expect, it } from 'vitest'
 import { parseElementSpreadsheetTables } from '../src/lib/elementSpreadsheetDomain.js'
+import { createElementSpreadsheetExamples } from '../src/lib/elementSpreadsheetExamples.js'
 import { elementSpreadsheetTablesFromElements } from '../src/lib/elementSpreadsheetExport.js'
 import { computeSpreadsheetElementIdentity } from '../src/lib/elementSpreadsheetIdentity.js'
+import {
+  ELEMENT_SPREADSHEET_TABLES,
+  emptyElementSpreadsheetTables,
+} from '../src/lib/elementSpreadsheetTables.js'
 import {
   loadElementWorkbook,
   readKlickerWorkbook,
@@ -24,6 +29,53 @@ function fixtureTables() {
 }
 
 describe('fixed element workbooks', () => {
+  it('keeps guidance and examples out of imported template data', async () => {
+    const workbook = await loadElementWorkbook(
+      await writeKlickerWorkbook(emptyElementSpreadsheetTables())
+    )
+    const read = readKlickerWorkbook(workbook)
+    expect(read.issues).toEqual([])
+    expect(Object.values(read.tables).flat()).toEqual([])
+    expect(workbook.getWorksheet('Choices')!.getCell('A2').value).toContain(
+      'Answer options for single choice, multiple choice and Kprim.'
+    )
+  })
+
+  it('provides nine complete editable examples with valid linked answers', async () => {
+    const workbook = await loadElementWorkbook(
+      await writeKlickerWorkbook(createElementSpreadsheetExamples(), true)
+    )
+    const read = readKlickerWorkbook(workbook)
+    const parsed = parseElementSpreadsheetTables(read.tables, read.issues)
+    expect(parsed.issues).toEqual([])
+    expect(parsed.elements).toHaveLength(9)
+    expect(new Set(parsed.elements.map((element) => element.type)).size).toBe(9)
+    expect(
+      parsed.elements.every((element) => element.name.startsWith('Example —'))
+    ).toBe(true)
+    expect(read.tables.Elements[0]!.row).toBe(8)
+  })
+
+  it('still reads the original row-one-header template', async () => {
+    const { source, tables } = fixtureTables()
+    const workbook = new ExcelJS.Workbook()
+    workbook.addWorksheet('Instructions').getCell('A1').value =
+      'klicker-elements-1'
+    for (const [name, headers] of Object.entries(ELEMENT_SPREADSHEET_TABLES)) {
+      const sheet = workbook.addWorksheet(name)
+      sheet.addRow([...headers])
+      for (const row of tables[name as keyof typeof tables])
+        sheet.addRow(headers.map((header) => row.values[header] ?? null))
+    }
+    const read = readKlickerWorkbook(
+      await loadElementWorkbook(Buffer.from(await workbook.xlsx.writeBuffer()))
+    )
+    const parsed = parseElementSpreadsheetTables(read.tables, read.issues)
+    expect(parsed.issues).toEqual([])
+    expect(parsed.elements).toEqual(source.elements)
+    expect(read.tables.Elements[0]!.row).toBe(2)
+  })
+
   it.each([
     'SC',
     'MC',
@@ -109,7 +161,7 @@ describe('fixed element workbooks', () => {
     const workbook = await loadElementWorkbook(
       await writeKlickerWorkbook(tables)
     )
-    workbook.getWorksheet('Elements')!.getCell('D2').value = {
+    workbook.getWorksheet('Elements')!.getCell('D8').value = {
       formula: '1+1',
       result: 'cached question',
     }
@@ -119,7 +171,7 @@ describe('fixed element workbooks', () => {
     expect(result.issues).toContainEqual(
       expect.objectContaining({
         sheet: 'Elements',
-        row: 2,
+        row: 8,
         field: 'content',
         code: 'UNSUPPORTED_CELL',
       })

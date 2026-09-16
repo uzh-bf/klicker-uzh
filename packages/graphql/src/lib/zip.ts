@@ -17,6 +17,8 @@ const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50
 const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50
 const STORE = 0
 const DEFLATE = 8
+// PKWARE APPNOTE 4.4.4: bits 1/2 are DEFLATE level hints (Excel sets both).
+const DEFLATE_LEVEL_FLAGS = 0x0006
 const DATA_DESCRIPTOR_FLAG = 0x0008
 const UTF8_FILENAME_FLAG = 0x0800
 const SUPPORTED_GENERAL_PURPOSE_FLAGS = UTF8_FILENAME_FLAG
@@ -279,6 +281,7 @@ export function parseZip(
 
     const supportedFlags =
       SUPPORTED_GENERAL_PURPOSE_FLAGS |
+      (compressionMethod === DEFLATE ? DEFLATE_LEVEL_FLAGS : 0) |
       (allowDataDescriptors ? DATA_DESCRIPTOR_FLAG : 0)
     if ((generalPurposeBitFlag & ~supportedFlags) !== 0) {
       throw new InvalidZipError('Unsupported ZIP entry flags.')

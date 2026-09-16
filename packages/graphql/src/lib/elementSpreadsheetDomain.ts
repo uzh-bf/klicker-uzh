@@ -1,6 +1,7 @@
 import { canonicalizeElementDomain } from './elementDomain.js'
 import {
   booleanCell as boolean,
+  ELEMENT_SPREADSHEET_TYPE_FIELDS,
   type ElementSpreadsheetTable,
   type ElementSpreadsheetTables,
   numberCell as number,
@@ -318,31 +319,9 @@ export function parseElementSpreadsheetTables(
         'basePoints',
         'pointsMultiplier',
       ]
-      const typeFields: Record<string, string[]> = {
-        SC: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
-        MC: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
-        KPRIM: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
-        NUMERICAL: [
-          'hasSampleSolution',
-          'unit',
-          'accuracy',
-          'placeholder',
-          'minimum',
-          'maximum',
-        ],
-        FREE_TEXT: ['hasSampleSolution', 'maxLength'],
-        SELECTION: [
-          'hasSampleSolution',
-          'numberOfInputs',
-          'answerCollectionRef',
-        ],
-        CASE_STUDY: ['hasSampleSolution', 'answerCollectionRef'],
-        CONTENT: [],
-        FLASHCARD: [],
-      }
       const allowedFields = new Set([
         ...commonFields,
-        ...(typeFields[type] ?? []),
+        ...(ELEMENT_SPREADSHEET_TYPE_FIELDS[type] ?? []),
       ])
       for (const [field, value] of Object.entries(row.values)) {
         if (value != null && value !== '' && !allowedFields.has(field))

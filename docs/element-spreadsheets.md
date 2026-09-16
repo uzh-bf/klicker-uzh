@@ -18,12 +18,29 @@ private copies in REVIEW, without source tags, permissions or activity data.
 
 ## Authored workbook contract
 
-`Instructions!A1` contains `klicker-elements-1`. Worksheet names and English
+`Instructions!A1` contains `klicker-elements-2`; the reader also accepts the original
+`klicker-elements-1` layout. Version 2 puts visible tab guidance in rows 1–4,
+headers in row 6, column help in row 7, and data from row 8. Version 1 retains
+row-1 headers and row-2 data. Import diagnostics use actual worksheet row numbers. Worksheet names and English
 headers are fixed regardless of UI language. `Elements` covers all nine types;
 `Choices`, `Solutions`, `Collections`, `Entries`, `SelectedItems`, `Criteria`,
 `Cases` and `CaseSolutions` express repeated data and relationships. References
 are workbook-local, never database IDs. Numeric ordering starts at zero.
 The downloadable instructions explain how to populate each dependent table.
+Templates and exports share a short quick-start page and visible explanations on
+every data tab. The template contains nine editable, clearly named examples with
+complete linked answers; uploading it unchanged previews those examples for
+import. Exports contain only the selected user content. UZH colors distinguish
+tab groups and headers. The first seven rows of each v2 data tab are guidance,
+not imported content; keep them and the worksheet names unchanged.
+
+Excel editing checks provide dropdowns, basic numeric bounds, and grey cells for
+fields that do not apply to the selected element type. Orange cells mark values
+that must be cleared after a type or sample-solution change. Checks cover supported
+dropdown and numeric fields for 100 element rows and 1,000 rows on other checked
+tabs, extending to all populated export rows. These are editing aids, not protection: pasted values
+can bypass Excel validation, and upload validation remains authoritative. No
+macros or worksheet locks are required.
 
 Validation uses the existing canonical element domain. Invalid rows carry their
 worksheet, row and field. An invalid required dependency excludes its consumer;

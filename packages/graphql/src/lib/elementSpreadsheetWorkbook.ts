@@ -1,5 +1,12 @@
 import ExcelJS from 'exceljs'
 import {
+  addSpreadsheetInstructions,
+  addSpreadsheetTableGuide,
+  styleSpreadsheetDataRow,
+} from './elementSpreadsheetGuide.js'
+import {
+  ELEMENT_SPREADSHEET_DATA_ROW,
+  ELEMENT_SPREADSHEET_HEADER_ROW,
   ELEMENT_SPREADSHEET_TABLES,
   ELEMENT_SPREADSHEET_VERSION,
   type ElementSpreadsheetTable,
@@ -8,6 +15,10 @@ import {
   type SpreadsheetIssue,
   type SpreadsheetValue,
 } from './elementSpreadsheetTables.js'
+import {
+  addSpreadsheetValidation,
+  addSpreadsheetValidationLists,
+} from './elementSpreadsheetValidation.js'
 import { createZip, parseZip } from './zip.js'
 
 const MAX_WORKBOOK_BYTES = 5 * 1024 * 1024
@@ -85,12 +96,17 @@ export function readSpreadsheetCell(cell: ExcelJS.Cell): SpreadsheetValue {
 }
 
 export function readKlickerWorkbook(workbook: ExcelJS.Workbook) {
+  const version = workbook.getWorksheet('Instructions')?.getCell('A1').value
   if (
-    workbook.getWorksheet('Instructions')?.getCell('A1').value !==
-    ELEMENT_SPREADSHEET_VERSION
+    version !== ELEMENT_SPREADSHEET_VERSION &&
+    version !== 'klicker-elements-1'
   ) {
     throw new InvalidElementWorkbookError('UNSUPPORTED_TEMPLATE_VERSION')
   }
+  const headerRow =
+    version === 'klicker-elements-1' ? 1 : ELEMENT_SPREADSHEET_HEADER_ROW
+  const dataRow =
+    version === 'klicker-elements-1' ? 2 : ELEMENT_SPREADSHEET_DATA_ROW
   const tables = emptyElementSpreadsheetTables()
   const issues: SpreadsheetIssue[] = []
   for (const sheet of workbook.worksheets) {
@@ -108,13 +124,14 @@ export function readKlickerWorkbook(workbook: ExcelJS.Workbook) {
     if (!sheet) throw new InvalidElementWorkbookError('MISSING_WORKSHEET')
     if (
       headers.some(
-        (header, index) => sheet.getRow(1).getCell(index + 1).value !== header
+        (header, index) =>
+          sheet.getRow(headerRow).getCell(index + 1).value !== header
       )
     ) {
       throw new InvalidElementWorkbookError('INVALID_HEADERS')
     }
     sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return
+      if (rowNumber < dataRow) return
       const values: Record<string, SpreadsheetValue> = {}
       for (const [index, field] of headers.entries()) {
         try {
@@ -155,17 +172,22 @@ export function readKlickerWorkbook(workbook: ExcelJS.Workbook) {
   return { tables, issues }
 }
 
-export async function writeKlickerWorkbook(tables: ElementSpreadsheetTables) {
+export async function writeKlickerWorkbook(
+  tables: ElementSpreadsheetTables,
+  examples = false
+) {
   const allRows = Object.values(tables)
   if (
     tables.Elements.length > 100 ||
     tables.Collections.length > 50 ||
     tables.Entries.length > 5000 ||
-    allRows.some((rows) => rows.length + 1 > MAX_ROWS) ||
+    allRows.some(
+      (rows) => rows.length + ELEMENT_SPREADSHEET_DATA_ROW - 1 > MAX_ROWS
+    ) ||
     Object.entries(tables).reduce(
       (total, [name, rows]) =>
         total +
-        (rows.length + 1) *
+        (rows.length + ELEMENT_SPREADSHEET_DATA_ROW - 1) *
           ELEMENT_SPREADSHEET_TABLES[name as ElementSpreadsheetTable].length,
       0
     ) > MAX_CELLS
@@ -174,41 +196,22 @@ export async function writeKlickerWorkbook(tables: ElementSpreadsheetTables) {
   }
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'KlickerUZH'
-  const instructions = workbook.addWorksheet('Instructions')
-  instructions.getColumn(1).width = 110
-  for (const value of [
-    ELEMENT_SPREADSHEET_VERSION,
-    'Enter one element per row in Elements. Keep worksheet names and headers unchanged.',
-    'Types: SC, MC, KPRIM, NUMERICAL, FREE_TEXT, SELECTION, CASE_STUDY, CONTENT, FLASHCARD.',
-    'Use unique refs such as question-1 and pool-1. Related tables refer to these refs.',
-    'Order starts at 0. Boolean values are TRUE/FALSE. Enter numbers as numeric cells.',
-    'Content, explanation, choices and case descriptions use Klicker Markdown. Flashcard back: explanation.',
-    'Choices: one answer per row for SC/MC/KPRIM. Solutions: one free-text or numerical solution per row.',
-    'Set hasSampleSolution to TRUE when supplying correct answers or solutions. For choice feedback, also set hasAnswerFeedbacks to TRUE.',
-    'Numerical Solutions use either value or minimum/maximum, never both. Do not mix exact values and ranges.',
-    'Selection/case study: fill Collections and Entries, then SelectedItems for the correct/selected entries.',
-    'Case studies also need Criteria and Cases. With sample solutions, fill every case/entry/criterion combination.',
-    'Image links retain their original public Klicker URL. Images depend on the original blob remaining available.',
-    'Embedded images and formula cells are unsupported. Text starting with = remains literal text on export.',
-    'Limit: 100 elements, 5 MiB workbook, 32767 characters per cell. Use ZIP for longer content.',
-    'Imports create private REVIEW elements. Exact duplicates are skipped; names, tags and status do not affect equality.',
-  ])
-    instructions.addRow([value])
+  addSpreadsheetInstructions(workbook, examples)
+  addSpreadsheetValidationLists(workbook)
   for (const [name, headers] of Object.entries(ELEMENT_SPREADSHEET_TABLES)) {
     const sheet = workbook.addWorksheet(name, {
-      views: [{ state: 'frozen', ySplit: 1 }],
+      views: [{ state: 'frozen', xSplit: 1 }],
     })
     sheet.columns = headers.map((header) => ({
-      header,
       key: header,
       width: ['content', 'explanation', 'value', 'description'].includes(header)
         ? 55
         : 22,
     }))
-    sheet.getRow(1).font = { bold: true }
+    addSpreadsheetTableGuide(sheet, name as ElementSpreadsheetTable, examples)
     sheet.autoFilter = {
-      from: { row: 1, column: 1 },
-      to: { row: 1, column: headers.length },
+      from: { row: ELEMENT_SPREADSHEET_HEADER_ROW, column: 1 },
+      to: { row: ELEMENT_SPREADSHEET_HEADER_ROW, column: headers.length },
     }
     for (const row of tables[name as ElementSpreadsheetTable]) {
       const values = headers.map((header) => row.values[header] ?? null)
@@ -219,8 +222,9 @@ export async function writeKlickerWorkbook(tables: ElementSpreadsheetTables) {
       ) {
         throw new InvalidElementWorkbookError('CELL_TOO_LONG')
       }
-      sheet.addRow(values).alignment = { vertical: 'top', wrapText: true }
+      styleSpreadsheetDataRow(sheet.addRow(values))
     }
+    addSpreadsheetValidation(sheet, name as ElementSpreadsheetTable)
   }
   const buffer = Buffer.from(await workbook.xlsx.writeBuffer())
   if (buffer.length > MAX_WORKBOOK_BYTES)

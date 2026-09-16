@@ -1,6 +1,8 @@
-// These headers are the version-1 interchange contract. Keep them independent
+// These headers are the interchange contract. Keep them independent
 // of UI translations so workbooks remain portable between lecturer locales.
-export const ELEMENT_SPREADSHEET_VERSION = 'klicker-elements-1'
+export const ELEMENT_SPREADSHEET_VERSION = 'klicker-elements-2'
+export const ELEMENT_SPREADSHEET_HEADER_ROW = 6
+export const ELEMENT_SPREADSHEET_DATA_ROW = 8
 export const ELEMENT_SPREADSHEET_TABLES = {
   Elements: [
     'ref',
@@ -125,4 +127,23 @@ export function booleanCell(
   if (value === 'TRUE') return true
   if (value === 'FALSE') return false
   throw new SpreadsheetCellError(field, 'INVALID_VALUE', row)
+}
+
+export const ELEMENT_SPREADSHEET_TYPE_FIELDS: Record<string, string[]> = {
+  SC: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
+  MC: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
+  KPRIM: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
+  NUMERICAL: [
+    'hasSampleSolution',
+    'unit',
+    'accuracy',
+    'placeholder',
+    'minimum',
+    'maximum',
+  ],
+  FREE_TEXT: ['hasSampleSolution', 'maxLength'],
+  SELECTION: ['hasSampleSolution', 'numberOfInputs', 'answerCollectionRef'],
+  CASE_STUDY: ['hasSampleSolution', 'answerCollectionRef'],
+  CONTENT: [],
+  FLASHCARD: [],
 }

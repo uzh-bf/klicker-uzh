@@ -5,8 +5,8 @@ import {
   parseElementImportTokenForOwner,
 } from '../lib/elementImportToken.js'
 import { parseElementSpreadsheetTables } from '../lib/elementSpreadsheetDomain.js'
+import { createElementSpreadsheetExamples } from '../lib/elementSpreadsheetExamples.js'
 import { elementSpreadsheetTablesFromElements } from '../lib/elementSpreadsheetExport.js'
-import { emptyElementSpreadsheetTables } from '../lib/elementSpreadsheetTables.js'
 import {
   loadElementWorkbook,
   readKlickerWorkbook,
@@ -334,7 +334,10 @@ export async function getElementSpreadsheet(
           return {
             filename: 'klicker-elements-template.xlsx',
             base64: (
-              await writeKlickerWorkbook(emptyElementSpreadsheetTables())
+              await writeKlickerWorkbook(
+                createElementSpreadsheetExamples(),
+                true
+              )
             ).toString('base64'),
           }
         const snapshot = await loadElementExportSnapshot(args.elementIds, ctx)

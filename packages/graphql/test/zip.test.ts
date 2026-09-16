@@ -188,6 +188,41 @@ function createDeterministicBytes(seed: number, length: number) {
 }
 
 describe('strict ZIP archive parser', () => {
+  it.each([
+    0, 2, 4, 6,
+  ])('accepts DEFLATE level flags %i used by Excel', (flags) => {
+    const data = Buffer.from('<sheet>Excel round trip</sheet>')
+    const archive = createDeflatedZip('sheet.xml', data)
+    const { centralDirectoryOffset } = getSingleEntryLayout(archive)
+    archive.writeUInt16LE(flags, 6)
+    archive.writeUInt16LE(flags, centralDirectoryOffset + 8)
+    expect(parseZip(archive)[0]!.data).toEqual(data)
+    expect(() => parseZip(archive, { maxUncompressedBytes: 1 })).toThrow()
+
+    const encrypted = Buffer.from(archive)
+    encrypted.writeUInt16LE(flags | 1, 6)
+    encrypted.writeUInt16LE(flags | 1, centralDirectoryOffset + 8)
+    expectInvalidZip(encrypted, 'encryption with compression-level flags')
+
+    const mismatch = Buffer.from(archive)
+    mismatch.writeUInt16LE(flags ^ 2, 6)
+    expectInvalidZip(mismatch, 'local and central compression flags differ')
+
+    archive.writeUInt32LE(123, 14)
+    archive.writeUInt32LE(123, centralDirectoryOffset + 16)
+    expectInvalidZip(archive, 'checksum remains mandatory with level flags')
+  })
+
+  it.each([
+    2, 4, 6,
+  ])('rejects DEFLATE level flags %i on stored entries', (flags) => {
+    const archive = createZip([{ path: 'sheet.xml', data: '<sheet />' }])
+    const { centralDirectoryOffset } = getSingleEntryLayout(archive)
+    archive.writeUInt16LE(flags, 6)
+    archive.writeUInt16LE(flags, centralDirectoryOffset + 8)
+    expectInvalidZip(archive, 'compression-level flags require DEFLATE')
+  })
+
   it('round-trips canonical stored and deflated entries', () => {
     const stored = createZip([
       { path: 'manifest.json', data: '{"version":3}' },
