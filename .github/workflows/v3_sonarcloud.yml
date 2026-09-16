@@ -98,3 +98,21 @@ jobs:
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=600
             ${{ steps.coverage.outputs.scannerArgs }}
+
+      # SonarCloud fixes a branch's type at its first analysis, and the type
+      # decides what new code means. This project keeps the former default
+      # branch `dev` as its main branch, so `v3` is a short-lived branch whose
+      # new code is everything that differs from `dev`; the whole repository
+      # enters new code and the awaited gate above fails on historical findings
+      # while the pull-request analysis of the same code is healthy. This
+      # diagnostic names that cause.
+      # It runs after the scan so the analysis is always published, and always
+      # runs even then: the awaited quality gate above fails this job first, so
+      # a step without `always()` would be skipped in exactly the failure it
+      # exists to explain. It stays a diagnostic rather than a second gate.
+      - name: Check the new-code boundary
+        if: always()
+        env:
+          BRANCH: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/sonar-new-code-boundary.cjs
