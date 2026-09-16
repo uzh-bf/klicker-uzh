@@ -1166,3 +1166,46 @@ required from the user.
   upgrade rather than an override widening, and it belongs in its own
   reviewed package.
 
+
+- 2026-09-16 package: hosted pnpm seed coverage (PR #6104, branch
+  `rs/ci-seed-coverage`, draft). Ranked fruit 4, and the upstream half of
+  the same failure mode as the install-resilience package above.
+
+  Root cause, established from shard telemetry rather than inference. The
+  Playwright actions restored the pnpm store with an exact-key-only lookup,
+  and the cache key embeds the full dependency fingerprint
+  (`playwright-<os>-<arch>-pnpm-<fingerprint>`). The seed workflow
+  publishes only on `v3` pushes, so any branch whose dependency manifests
+  differ can never match exactly. The failing shard's telemetry records
+  `pnpmCacheHit: false` with `pnpmCacheMatchedKey: null` — no fallback was
+  attempted at all — while a green shard from the same day records an exact
+  match. `compare/v3...v3-ai` shows `apps/auth`, `apps/backend-docker`,
+  `apps/chat` and `apps/docs` manifests diverging, so `v3-ai`
+  fingerprints cannot equal the `v3` seed by construction. This is the
+  cold-install condition that made the `sharp` libvips fetch fatal.
+
+  Separately measured and recorded, not fixed here: 19 of the last 40
+  seeder runs are `cancelled` (21 success), consistent with its
+  `cancel-in-progress` concurrency group superseding runs during rapid
+  `v3` pushes. Because cancelled seeds still often leave a prior
+  exact-fingerprint entry in place, this is a coverage-timing risk rather
+  than a proven cause, and it is not what produced the observed mismatch.
+
+  Delivered: both public Playwright actions and the seeder now declare a
+  same-platform `restore-keys` prefix, so a near-match store is reused
+  instead of installing from empty. The fallback keeps `runner.os` and
+  `runner.arch` in the prefix, so no ARM64 store can feed an x64 job.
+  Public readers still cannot write the cache — the validator continues to
+  reject `actions/cache/save@v4` in both actions — so the seed cannot be
+  poisoned. Because a partial restore reports `cache-hit=false`, the
+  seeder's existing save condition still republishes the complete
+  exact-fingerprint store; the new test pins that condition so the fallback
+  cannot quietly degrade the seed.
+
+  Verification: 66/66 across the Playwright CI suite including the existing
+  workflow boundary validator and cache-contract tests; new
+  `.github/scripts/playwright-pnpm-seed-fallback.test.cjs` covers the
+  fallback prefix, the absence of any public write path, and the preserved
+  seeder save condition. Prettier clean, Biome clean. Draft PR only; no
+  runner-group, host, or settings change.
+
