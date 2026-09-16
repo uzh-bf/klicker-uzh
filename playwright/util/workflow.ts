@@ -394,21 +394,17 @@ export async function acceptGamifiedLiveQuizAccountPrompt(
   })
   const submitAnswer = page.getByTestId('student-submit-answer')
 
-  // The participant client renders the answer form only once the active block
-  // has been delivered, which can lag the lecturer's block activation. Wait for
-  // the form before handling the prompt, otherwise the loop below can conclude
-  // that no prompt applies while the question is still arriving and return
-  // before the form exists.
-  await submitAnswer
-    .waitFor({ state: 'visible', timeout: 30_000 })
-    .catch(() => undefined)
-
   for (let attempt = 0; attempt < 3; attempt++) {
     const promptAppeared = await dialog
       .waitFor({ state: 'visible', timeout: 5_000 })
       .then(() => true)
       .catch(() => false)
 
+    // Break rather than return: the block activation propagates to the
+    // participant client asynchronously, so the answer form can still be
+    // arriving when the prompt no longer appears. Returning here skipped the
+    // visibility wait below and left the caller asserting against a locator
+    // that did not exist yet.
     if (!promptAppeared) break
 
     await page.getByTestId('participate-anonymously').click()
