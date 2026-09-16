@@ -20,27 +20,13 @@ import {
 describe('Secure element import/export packages', () => {
   useImportExportTestEnvironment()
 
-  it('fences a preview when lease ownership is lost during media metadata loading', async () => {
+  it('previews public first-party URLs without loading media metadata', async () => {
     const firstPartyHref =
       'https://testaccount.blob.core.windows.net/source-owner/imported/deferred.png'
     const element = createMediaExportElement(firstPartyHref)
-    type DeferredMediaMetadata = Map<
-      string,
-      {
-        bytes: number
-        contentType: string
-        filename: string
-        originalId: string
-        sha256: string
-      }
-    >
-    let resolveMetadata!: (metadata: DeferredMediaMetadata) => void
-    const metadataPromise = new Promise<DeferredMediaMetadata>((resolve) => {
-      resolveMetadata = resolve
+    const getKlickerMediaFilesExportMetadata = vi.fn(async () => {
+      throw new Error('media metadata must not be loaded')
     })
-    const getKlickerMediaFilesExportMetadata = vi.fn(
-      async () => await metadataPromise
-    )
     const evalRedis = vi.fn(
       async (script: string): Promise<number | number[]> => {
         if (script.includes('return {1, count + 1}')) return [1, 1]
@@ -55,13 +41,20 @@ describe('Secure element import/export packages', () => {
       prisma: {},
     }
 
-    vi.useFakeTimers()
     vi.resetModules()
     mockElementExportSnapshot([element])
     vi.doMock('../src/services/mediaStorage.js', () => ({
       downloadKlickerMediaFile: vi.fn(),
       getKlickerMediaFilesExportMetadata,
       parseKlickerMediaUrl: vi.fn((href: string) =>
+        href === firstPartyHref
+          ? {
+              containerName: 'source-owner',
+              blobName: 'imported/deferred.png',
+            }
+          : null
+      ),
+      resolveKlickerMediaHref: vi.fn((href: string) =>
         href === firstPartyHref
           ? {
               containerName: 'source-owner',
@@ -86,39 +79,12 @@ describe('Secure element import/export packages', () => {
             { elementIds: [element.id] },
             ctx as any
           )
-          await vi.advanceTimersByTimeAsync(0)
-          expect(getKlickerMediaFilesExportMetadata).toHaveBeenCalledOnce()
-
-          await vi.advanceTimersByTimeAsync(1_001)
-          expect(redisExec.eval).toHaveBeenCalledWith(
-            expect.stringContaining('ZSCORE'),
-            2,
-            'concurrency:{import-export-package}:preview:user:owner-id',
-            'concurrency:{import-export-package}:preview:global',
-            expect.any(String),
-            expect.any(Number),
-            3_000
-          )
-
-          resolveMetadata(
-            new Map([
-              [
-                firstPartyHref,
-                {
-                  bytes: 1,
-                  contentType: 'image/png',
-                  filename: 'deferred.png',
-                  originalId: 'media-original-id',
-                  sha256: 'a'.repeat(64),
-                },
-              ],
-            ])
-          )
-          const publicError = await expectPublicImportExportError(
-            preview,
-            ImportExportErrorCode.RATE_LIMIT_UNAVAILABLE
-          )
-          expect((publicError as Error).name).toBe('GraphQLError')
+          expect(getKlickerMediaFilesExportMetadata).not.toHaveBeenCalled()
+          await expect(preview).resolves.toMatchObject({
+            elements: [{ id: element.id }],
+            warnings: [],
+            errors: [],
+          })
           expect(redisExec.eval).toHaveBeenCalledWith(
             expect.stringContaining("redis.call('ZREM'"),
             2,
@@ -129,14 +95,13 @@ describe('Secure element import/export packages', () => {
         }
       )
     } finally {
-      vi.useRealTimers()
       vi.doUnmock('../src/services/mediaStorage.js')
       vi.doUnmock('../src/services/elementExportSnapshot.js')
       vi.resetModules()
     }
   })
 
-  it('does not downgrade unexpected media metadata errors in export previews', async () => {
+  it('does not call failing media metadata adapters in export previews', async () => {
     const firstPartyHref =
       'https://testaccount.blob.core.windows.net/source-owner/imported/metadata.png'
     const sensitiveText =
@@ -175,6 +140,14 @@ describe('Secure element import/export packages', () => {
             }
           : null
       ),
+      resolveKlickerMediaHref: vi.fn((href: string) =>
+        href === firstPartyHref
+          ? {
+              containerName: 'source-owner',
+              blobName: 'imported/metadata.png',
+            }
+          : null
+      ),
       stageImportedMediaFile: vi.fn(),
     }))
 
@@ -188,16 +161,51 @@ describe('Secure element import/export packages', () => {
           IMPORT_EXPORT_PRIVATE_PREVIEW_ONLY: 'false',
         },
         async () => {
-          const publicError = await expectPublicImportExportError(
-            getPreviewWithMockedMedia({ elementIds: [element.id] }, ctx as any),
-            ImportExportErrorCode.INFRASTRUCTURE_FAILURE,
-            sensitiveText
-          )
-          expect((publicError as Error).name).toBe('GraphQLError')
+          await expect(
+            getPreviewWithMockedMedia({ elementIds: [element.id] }, ctx as any)
+          ).resolves.toMatchObject({
+            elements: [{ id: element.id }],
+            warnings: [],
+            errors: [],
+          })
         }
       )
-      expect(getKlickerMediaFilesExportMetadata).toHaveBeenCalledOnce()
+      expect(getKlickerMediaFilesExportMetadata).not.toHaveBeenCalled()
       expect(getKlickerMediaFileExportMetadata).not.toHaveBeenCalled()
+    } finally {
+      vi.doUnmock('../src/services/mediaStorage.js')
+      vi.doUnmock('../src/services/elementExportSnapshot.js')
+      vi.resetModules()
+    }
+  })
+
+  it('reports external auto-loading media as non-portable in the preview', async () => {
+    const element = createMediaExportElement(
+      'https://tracker.example.test/pixel.png'
+    )
+
+    vi.resetModules()
+    mockElementExportSnapshot([element])
+    vi.doMock('../src/services/mediaStorage.js', () => ({
+      downloadKlickerMediaFile: vi.fn(),
+      getKlickerMediaFilesExportMetadata: vi.fn(),
+      parseKlickerMediaUrl: vi.fn(() => null),
+      resolveKlickerMediaHref: vi.fn(() => null),
+    }))
+    try {
+      const { getElementExportPackagePreview } = await import(
+        '../src/services/elementExportPackage.js'
+      )
+      await expect(
+        getElementExportPackagePreview({ elementIds: [element.id] }, {
+          user: importExportTestUser('owner-id'),
+          redisExec: createAvailableImportExportRedis(),
+          prisma: {},
+        } as any)
+      ).resolves.toMatchObject({
+        elements: [{ id: element.id }],
+        errors: [ImportExportErrorCode.ELEMENT_NOT_PORTABLE],
+      })
     } finally {
       vi.doUnmock('../src/services/mediaStorage.js')
       vi.doUnmock('../src/services/elementExportSnapshot.js')

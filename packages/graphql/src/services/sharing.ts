@@ -5292,6 +5292,7 @@ export async function copyElementToAccount(
     await lockElementFingerprintDependencies(
       {
         ...element,
+        existingMediaSource: element,
         requireVerifiedMedia: getImportExportRuntimeConfig().enabled,
       },
       prisma
