@@ -1070,3 +1070,46 @@ required from the user.
   Queue at re-verification: 16-18 queued / 5-6 running, consistent with
   the 14/1 snapshot inside normal wave churn; the ~300x improvement
   claim is not sensitive to this drift.
+
+- 2026-09-16 Y-chat scroll-predicate correction (same branch, follow-up
+  commit). The entry above ranked the recurring `Y-chat.spec.ts:3460`
+  failure as this review's top actionable item. A direct API re-check shows
+  that classification is wrong: the failure is already fixed, and all four
+  failing waves were stale branch trees.
+
+  Evidence. Every 2026-09-16 Playwright failure list from the workflow API:
+  `35089499369` (v3, head `7102b5c062`, 11:17Z), `35097666640` (v3-ai,
+  `96450029fc`, 12:45Z), `35108292375` (codex/course-images/contracts,
+  `18a02b26ae`, 14:24Z), `35108301912` (codex/course-images/display,
+  `114c7dd68c`, 14:24Z), and the cold-install flake `35130087179` (v3-ai,
+  `b3fde174f3`, 17:44Z). All four spec-failure heads ran before the
+  autoscroll fix squash-merged at 15:11:21Z (`901ce575711c`), and
+  `compare/901ce575711c...<head>` reports `behind_by=3` for each of them.
+  On the old head `7102b5c062` line 304 of
+  `apps/chat/src/components/thread.tsx` still carries the buggy
+  `scroll-smooth` class; current v3 head `8cf526e6ce` does not, and
+  line 303 carries the explanatory comment.
+
+  Post-fix recurrence check: no `Y-chat.spec.ts:3460` failure occurred in
+  any Playwright run created after 15:11:21Z. The post-fix green wave
+  `35117591566` (v3, `8cf526e6ce`, 15:46Z) ran 8/8 shards SUCCESS,
+  including this spec. Later post-fix runs are green or deliberately
+  cancelled.
+
+  Consequence for the fruit ranking: this item is closed as fixed, not
+  actionable, and the roadmap's "top actionable item" claim above should be
+  read as superseded. The re-ranked first fruit is now the Playwright
+  install resilience package (the `35130087179` cold-install
+  `sharp@0.32.6` libvips fetch failure against GitHub Releases), which
+  today has a single observed occurrence.
+
+  Unrelated observation from the same window, recorded for triage rather
+  than action: on this PR's own head, the `CodeQL - Code Quality` check
+  passed at 18:38 (`35135651773`, all three languages success) and then
+  failed at 18:59 (`35137841317`) with
+  `Code quality is not enabled for this repository ... enable code quality
+  in the repository settings` on javascript-typescript, java-kotlin and
+  python alike. That is a repository-setting flap rather than a property of
+  this documentation-only change, and it is not a required context for this
+  roadmap package. No settings change was made.
+
