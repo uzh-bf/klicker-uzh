@@ -92,6 +92,7 @@ jobs:
       - name: Check Playwright CI contracts
         run: |
           pnpm run check:playwright-ci
+          node --test .github/scripts/playwright-pnpm-seed-fallback.test.cjs
           node --test .github/scripts/playwright-resource-sampler.test.cjs
 
       - name: Check Playwright host launcher

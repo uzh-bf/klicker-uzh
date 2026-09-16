@@ -87,6 +87,12 @@ runs:
       with:
         path: ${{ env.STORE_PATH }}
         key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
+        # See playwright-build: an exact-key-only restore leaves any branch
+        # with different manifests (v3-ai does) installing from an empty
+        # store. A content-addressed near-match reuses compatible packages
+        # and is read-only for public readers, so the seed cannot be poisoned.
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-
 
     - name: Install dependencies
       shell: bash
