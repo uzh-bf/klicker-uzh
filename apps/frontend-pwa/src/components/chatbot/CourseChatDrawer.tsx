@@ -67,11 +67,14 @@ export function CourseChatDrawer({
 
   const { data, loading } = useQuery(GetCourseChatbotsDocument, {
     variables: { courseId },
-    skip: !enabled,
+    skip: !enabled || embedded,
   })
 
   const chatbots = useMemo(() => data?.courseChatbots ?? [], [data])
-  const available = enabled && !loading && chatbots.length > 0
+  // Embedding hosts (for example the eLearning practice-quiz block) render
+  // their own chatbot next to the framed page, so a launcher inside the frame
+  // would duplicate it. The drawer stays a standalone-PWA surface.
+  const available = enabled && !embedded && !loading && chatbots.length > 0
   const selectedChatbot =
     chatbots.find((chatbot) => chatbot.id === selectedChatbotId) ?? chatbots[0]
   const chatOrigin = useMemo(() => getChatOrigin(), [])
@@ -257,26 +260,16 @@ export function CourseChatDrawer({
             ackedMessageIdRef.current = 0
             setOpen(true)
           }}
-          className={twMerge(
-            'bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed z-30 inline-flex items-center justify-center gap-3 rounded-full text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-            embedded
-              ? 'bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 h-12 min-w-12 px-1.5'
-              : 'bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 h-14 min-w-14 px-3 md:bottom-6 md:px-4'
-          )}
+          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 fixed z-30 inline-flex h-14 min-w-14 items-center justify-center gap-3 rounded-full px-3 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:px-4"
           data-cy="course-chatbot-open"
         >
           <ChatbotAvatar
             chatbot={selectedChatbot}
-            className={twMerge(
-              'text-uzh-blue border border-white/40 bg-white',
-              embedded ? 'size-9' : 'size-10'
-            )}
+            className="text-uzh-blue size-10 border border-white/40 bg-white"
           />
-          {!embedded && (
-            <span className="hidden pr-1 text-sm font-semibold sm:inline">
-              {t('pwa.chatbot.openCourseChat')}
-            </span>
-          )}
+          <span className="hidden pr-1 text-sm font-semibold sm:inline">
+            {t('pwa.chatbot.openCourseChat')}
+          </span>
         </button>
       )}
 
@@ -292,13 +285,9 @@ export function CourseChatDrawer({
             tabIndex={-1}
             className={twMerge(
               'fixed z-[60] flex flex-col overflow-hidden border-gray-200 bg-white shadow-2xl focus:outline-none',
-              embedded
-                ? 'inset-x-0 bottom-0 h-[min(82dvh,34rem)] max-h-[100dvh] rounded-t-md border-t sm:inset-x-2 sm:bottom-2 sm:max-h-[calc(100dvh-1rem)] sm:rounded-md sm:border'
-                : 'inset-x-0 bottom-0 h-[min(85dvh,44rem)] min-h-[28rem] border-t md:inset-x-auto md:bottom-6 md:right-4 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[27rem] md:rounded-md md:border',
+              'inset-x-0 bottom-0 h-[min(85dvh,44rem)] min-h-[28rem] border-t md:inset-x-auto md:bottom-6 md:right-4 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[27rem] md:rounded-md md:border',
               panelSize &&
-                (embedded
-                  ? 'sm:left-auto sm:w-[min(var(--course-chat-width),calc(100vw-1rem))] sm:h-[min(var(--course-chat-height),calc(100dvh-1rem))]'
-                  : 'md:min-h-0 md:w-[min(var(--course-chat-width),calc(100vw-3rem))] md:h-[min(var(--course-chat-height),calc(100dvh-3rem))]')
+                'md:min-h-0 md:w-[min(var(--course-chat-width),calc(100vw-3rem))] md:h-[min(var(--course-chat-height),calc(100dvh-3rem))]'
             )}
             style={
               panelSize
@@ -316,22 +305,14 @@ export function CourseChatDrawer({
               label={t('manage.assistant.resize')}
               minWidth={320}
               minHeight={448}
-              margin={embedded ? 16 : 48}
-              breakpoint={embedded ? 640 : 768}
+              margin={48}
+              breakpoint={768}
               onResize={setPanelSize}
             />
-            <div
-              className={twMerge(
-                'flex shrink-0 items-start gap-3 border-b bg-white',
-                embedded ? 'px-2.5 py-2.5' : 'px-3 py-3'
-              )}
-            >
+            <div className="flex shrink-0 items-start gap-3 border-b bg-white px-3 py-3">
               <ChatbotAvatar
                 chatbot={selectedChatbot}
-                className={twMerge(
-                  'text-uzh-blue mt-0.5 border border-gray-200 bg-gray-50',
-                  embedded ? 'size-10' : 'size-11'
-                )}
+                className="text-uzh-blue mt-0.5 size-11 border border-gray-200 bg-gray-50"
               />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">
@@ -365,10 +346,7 @@ export function CourseChatDrawer({
                   href={newTabHref}
                   target="_blank"
                   rel="noreferrer"
-                  className={twMerge(
-                    'text-uzh-blue hover:text-uzh-blue-80 inline-flex shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-                    embedded ? 'size-10' : 'size-11'
-                  )}
+                  className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   aria-label={t('pwa.chatbot.openInNewTab')}
                   data-cy="course-chatbot-new-tab"
                 >
@@ -381,10 +359,7 @@ export function CourseChatDrawer({
               <button
                 type="button"
                 onClick={closeWidget}
-                className={twMerge(
-                  'inline-flex shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-                  embedded ? 'size-10' : 'size-11'
-                )}
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 aria-label={t('shared.generic.close')}
                 data-cy="course-chatbot-close"
               >
@@ -399,10 +374,7 @@ export function CourseChatDrawer({
                   ref={iframeRef}
                   src={iframeSrc}
                   title={t('pwa.chatbot.courseChat')}
-                  className={twMerge(
-                    'h-full w-full border-0',
-                    embedded ? 'min-h-0' : 'min-h-[24rem]'
-                  )}
+                  className="h-full min-h-[24rem] w-full border-0"
                   data-cy="course-chatbot-frame"
                   onLoad={() => {
                     setFrameLoaded(true)
