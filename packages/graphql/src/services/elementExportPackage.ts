@@ -1,11 +1,11 @@
-import * as DB from '@klicker-uzh/prisma/client'
 import { randomUUID } from 'node:crypto'
+import type * as DB from '@klicker-uzh/prisma/client'
 import type { ContextWithUser } from '../lib/context.js'
 import {
   getImportExportErrorCode as getTypedImportExportErrorCode,
   ImportExportDomainError,
   ImportExportErrorCode,
-  ImportExportWarningCode,
+  type ImportExportWarningCode,
 } from '../lib/importExportErrors.js'
 import { MAX_IMPORT_EXPORT_ELEMENTS } from '../lib/importExportPackageConfig.js'
 import { emitImportExportTelemetry } from '../lib/importExportTelemetry.js'
@@ -15,6 +15,7 @@ import {
   loadElementExportSnapshot,
 } from './elementExportSnapshot.js'
 import { toPublicExportError } from './elementImportPackageParser.js'
+import { renderElementJsonPackage } from './elementJsonFiles.js'
 import { assertCanUseElementImportExport } from './importExportAuthorization.js'
 import { withImportExportConcurrencyLease } from './importExportConcurrency.js'
 import { assertImportExportRateLimit } from './importExportRateLimit.js'
@@ -23,16 +24,8 @@ import {
   reserveElementExportPackageArtifact,
   uploadElementExportPackage,
 } from './packageStorage.js'
-import {
-  createStorageAwarePortableExportPlan,
-  hydratePortableExportMediaOutcomes,
-  loadPortableExportPreviewMediaOutcomes,
-} from './portableExportMediaHydration.js'
-import {
-  getPortableExportPlanWarnings,
-  renderPortableExportPackage,
-  type PortableExportPlan,
-} from './portableExportPlan.js'
+import { createStorageAwarePortableExportPlan } from './portableExportMediaHydration.js'
+import type { PortableExportPlan } from './portableExportPlan.js'
 
 const EXPORT_PREVIEW_ERROR_ELEMENT_PERMISSION =
   ImportExportErrorCode.ELEMENT_EXPORT_PERMISSION
@@ -75,23 +68,8 @@ export async function createElementExportPackage(
 ) {
   const snapshot = await loadElementExportSnapshot(elementIds, ctx)
   const plan = createStorageAwarePortableExportPlan(snapshot)
-  const mediaOutcomes = await hydratePortableExportMediaOutcomes(plan, ctx)
-  const rendered = renderPortableExportPackage({
-    plan,
-    mediaOutcomes,
-    createdAt: new Date().toISOString(),
-  })
-  if (rendered.exceedsPackageLimit) {
-    throw new ImportExportDomainError(
-      ImportExportErrorCode.EXPORT_PACKAGE_TOO_LARGE
-    )
-  }
-  const packageFiles = rendered.files.map(({ path, data }) => {
-    if (data === null) {
-      throw new Error('Hydrated export plan contains missing media bytes.')
-    }
-    return { path, data }
-  })
+  const rendered = renderElementJsonPackage(plan, new Date().toISOString())
+  const packageFiles = rendered.files.map(({ path, data }) => ({ path, data }))
   const buffer = createZip(packageFiles)
   if (buffer.length !== rendered.storedZipBytes) {
     throw new Error('Rendered export archive accounting is inconsistent.')
@@ -231,27 +209,13 @@ async function getElementExportPackagePreviewInternal(
     throw error
   }
 
-  let warnings: readonly ImportExportWarningCode[] =
-    getPortableExportPlanWarnings(plan)
+  let warnings: readonly ImportExportWarningCode[] = []
   let errors: ImportExportErrorCode[] = []
   try {
     assertLease()
-    const mediaOutcomes = await loadPortableExportPreviewMediaOutcomes(
-      plan,
-      ctx,
-      assertLease
-    )
-    assertLease()
-    const rendered = renderPortableExportPackage({
-      plan,
-      mediaOutcomes,
-      createdAt: new Date(0).toISOString(),
-    })
+    const rendered = renderElementJsonPackage(plan, new Date(0).toISOString())
     assertLease()
     warnings = rendered.warnings
-    if (rendered.exceedsPackageLimit) {
-      errors = [EXPORT_PREVIEW_ERROR_PACKAGE_TOO_LARGE]
-    }
   } catch (error) {
     assertLease()
     if (error instanceof ImportExportDomainError) {

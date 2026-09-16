@@ -1,10 +1,10 @@
-import * as DB from '@klicker-uzh/prisma/client'
 import { createHash } from 'node:crypto'
+import * as DB from '@klicker-uzh/prisma/client'
 import {
   computeAnswerCollectionDidacticFingerprint,
   computeElementDidacticFingerprint,
-  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
   type FingerprintMediaContext,
+  IMPORT_EXPORT_MEDIA_FINGERPRINT_VERSION,
   type VersionedDidacticFingerprint,
 } from '../lib/importExportFingerprintCanonicalization.js'
 import {
@@ -23,11 +23,11 @@ import { MediaExportOmissionError } from '../lib/mediaErrors.js'
 import {
   computeAnswerCollectionDidacticFingerprintFromDb,
   computeElementDidacticFingerprintFromDb,
+  type FingerprintBatchPrisma,
+  type FingerprintPrisma,
   refreshAnswerCollectionDidacticFingerprint,
   refreshElementDidacticFingerprint,
   refreshLinkedElementDidacticFingerprintPages,
-  type FingerprintBatchPrisma,
-  type FingerprintPrisma,
 } from './importExportFingerprintPersistence.js'
 import { downloadKlickerMediaFile } from './mediaStorageTargets.js'
 
@@ -53,6 +53,13 @@ export async function lockElementFingerprintDependencies(
     explanation?: string | null
     options: unknown
     requireVerifiedMedia?: boolean
+    // Server-loaded previous content: already accepted public URLs remain editable.
+    existingMediaSource?: {
+      type: DB.ElementType
+      content: string
+      explanation?: string | null
+      options: unknown
+    }
   },
   prisma: ElementFingerprintDependencyPrisma
 ) {
@@ -99,9 +106,21 @@ export async function lockElementFingerprintDependencies(
   const mediaFileByHref = new Map(
     mediaFiles.map((mediaFile) => [mediaFile.href, mediaFile])
   )
+  const existingHrefs = new Set(
+    input.existingMediaSource
+      ? collectElementMediaHrefs(
+          input.existingMediaSource,
+          MediaReferenceKind.AUTO_LOAD
+        ).map((href) => resolveKlickerMediaHref(href)?.canonicalHref)
+      : []
+  )
   const unresolved = resolvedMedia.some((resolved) => {
     const mediaFile = mediaFileByHref.get(resolved.canonicalHref)
-    if (!mediaFile) return input.requireVerifiedMedia !== false
+    if (!mediaFile)
+      return (
+        input.requireVerifiedMedia !== false &&
+        !existingHrefs.has(resolved.canonicalHref)
+      )
     if (hasDirectUploadLifecycleMarker(mediaFile.originalId)) return true
     if (input.requireVerifiedMedia === false) return false
     return (
