@@ -200,7 +200,7 @@ describe('formatSummary', () => {
     assert.match(summary, /short-lived branch measured against dev/)
     assert.match(summary, /type `SHORT`/)
     assert.match(summary, /project_branches\/delete/)
-    assert.match(summary, /project\/new_code\?id=uzh-bf_klicker-uzh/)
+    assert.match(summary, /no separate New\s+Code setting is required/)
   })
 
   it('does not claim a short-lived branch for an unknown type', () => {

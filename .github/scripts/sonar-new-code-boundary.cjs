@@ -10,10 +10,13 @@
 //
 // The `uzh-bf_klicker-uzh` project keeps the repository's former default
 // branch `dev` as its main branch, and `dev` was last analysed on 2022-08-20.
-// `v3` is therefore a short-lived branch that merges into `dev`, so almost the
-// whole repository counts as new code on it and its quality gate fails on
-// historical findings, while the pull-request analysis of the same code is
-// healthy because a pull request compares against its own base.
+// Before the project pattern was widened, `v3` was a short-lived
+// branch that merged into `dev`, so almost the whole repository
+// counted as new code on it and its quality gate failed on historical
+// findings, while the pull-request analysis of the same code stayed healthy
+// because a pull request compares against its own base. The pattern now
+// covers every `v3` branch, so both kinds are compared against the
+// project-level definition.
 //
 // This script turns that unnamed failure into a named one. It reads the
 // analyzed branch's measures and the branch's recorded type from the public
@@ -75,7 +78,9 @@ function describeBaselineGap(result) {
 
 // The type decides the remedy as well: a short-lived branch is re-classified
 // through the long-lived branch pattern, while a long-lived branch only needs
-// the project-level definition changed.
+// the project-level definition narrowed. A long-lived branch whose next
+// analysis has not yet run reports no new-code measures at all; that is a
+// first-analysis artifact, not a definition that still has to be created.
 function describeRemedy(result) {
   if (result.branchType === 'LONG') {
     return [
@@ -94,7 +99,9 @@ function describeRemedy(result) {
       '2. Delete the existing branch analysis through',
       '   `api/project_branches/delete`, then re-analyse so the branch is',
       '   created with the type that pattern assigns.',
-      '3. Set the project New Code definition (' + NEW_CODE_PAGE + ').',
+      '3. Re-analyse. That next analysis establishes the new-code',
+      '   baseline from the project definition by itself, so no separate New',
+      '   Code setting is required.',
       '',
       'Recreating the project with the right main branch is the alternative',
       'when deleting the branch analysis is not wanted.',
