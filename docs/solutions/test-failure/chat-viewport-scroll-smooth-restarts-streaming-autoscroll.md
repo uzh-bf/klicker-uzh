@@ -62,10 +62,10 @@ A reduced Chromium probe that mirrors the library's exact auto-scroll path
 behavior, and `handleScroll` maintains `isAtBottom`) separates the two
 variables:
 
-| viewport CSS | max bottom gap during growth | settled gap |
-| --- | --- | --- |
-| `scroll-behavior: smooth` | 3823px | 345px |
-| `scroll-behavior: auto` | 84px | **0px** |
+| viewport CSS              | max bottom gap during growth | settled gap |
+| ------------------------- | ---------------------------- | ----------- |
+| `scroll-behavior: smooth` | 3823px                       | 345px       |
+| `scroll-behavior: auto`   | 84px                         | **0px**     |
 
 The same probe shows `behavior: "instant"` is immune even with
 `scroll-smooth` set, because `"instant"` bypasses `scroll-behavior`.
