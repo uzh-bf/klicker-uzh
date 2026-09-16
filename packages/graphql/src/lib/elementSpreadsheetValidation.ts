@@ -2,12 +2,12 @@ import type ExcelJS from 'exceljs'
 import { ELEMENT_DOMAIN_LIMITS } from './elementDomain/core.js'
 import {
   ELEMENT_SPREADSHEET_DATA_ROW,
+  ELEMENT_SPREADSHEET_EDIT_ROWS,
   ELEMENT_SPREADSHEET_TABLES,
-  ELEMENT_SPREADSHEET_TYPE_FIELDS,
   type ElementSpreadsheetTable,
+  SPREADSHEET_DETAIL_FIELDS,
 } from './elementSpreadsheetTables.js'
 
-/** Named ranges keep dependent lists compatible with Excel without macros. */
 export function addSpreadsheetValidationLists(workbook: ExcelJS.Workbook) {
   const sheet = workbook.getWorksheet('Instructions')!
   for (const [column, name, values] of [
@@ -15,6 +15,7 @@ export function addSpreadsheetValidationLists(workbook: ExcelJS.Workbook) {
     ['F', 'KlickerDisplayModes', ['LIST', 'GRID']],
     ['G', 'KlickerUnused', [null]],
     ['H', 'KlickerFalse', ['FALSE']],
+    ['I', 'KlickerSolutionModes', ['EXACT', 'RANGE']],
   ] as const) {
     values.forEach((value, index) => {
       sheet.getCell(`${column}${index + 1}`).value = value
@@ -26,171 +27,228 @@ export function addSpreadsheetValidationLists(workbook: ExcelJS.Workbook) {
     )
   }
 }
-
-function applicable(field: string, row: number) {
-  const types = Object.entries(ELEMENT_SPREADSHEET_TYPE_FIELDS)
-    .filter(([, fields]) => fields.includes(field))
-    .map(([type]) => type)
-  if (!types.length) return undefined
-  const typeCondition = `OR(${types.map((type) => `$B${row}="${type}"`).join(',')})`
-  return typeCondition
+function and(...conditions: string[]) {
+  return `AND(${conditions.join(',')})`
+}
+function or(...conditions: string[]) {
+  return `OR(${conditions.join(',')})`
 }
 
-function numberRule(field: string, cell: string) {
-  const numeric = `ISNUMBER(${cell})`
-  const integer = `AND(${numeric},MOD(${cell},1)=0)`
-  switch (field) {
-    case 'order':
-      return `AND(${integer},${cell}>=0)`
-    case 'numberOfInputs':
-    case 'maxLength':
-      return `AND(${integer},${cell}>0)`
-    case 'accuracy':
-      return `AND(${integer},${cell}>=0,${cell}<=${ELEMENT_DOMAIN_LIMITS.numericalAccuracyMax})`
-    case 'pointsMultiplier':
-      return `AND(${integer},${cell}>=${ELEMENT_DOMAIN_LIMITS.pointsMultiplierMin},${cell}<=${ELEMENT_DOMAIN_LIMITS.pointsMultiplierMax})`
-    case 'step':
-      return `AND(${numeric},${cell}>0)`
-    case 'minimum':
-    case 'maximum':
-      return `AND(${numeric},ABS(${cell})<=${ELEMENT_DOMAIN_LIMITS.numericalMax})`
-    default:
-      return undefined
-  }
-}
-
-/** Excel checks assist editing; server validation still checks every uploaded row. */
+/** Rules share the type-tab contract. No formulas are stored in authored cells. */
 export function addSpreadsheetValidation(
   sheet: ExcelJS.Worksheet,
   name: ElementSpreadsheetTable
 ) {
+  const headers: readonly string[] = ELEMENT_SPREADSHEET_TABLES[name]
   const first = ELEMENT_SPREADSHEET_DATA_ROW
-  const capacity = name === 'Elements' ? 100 : name === 'Entries' ? 5000 : 1000
-  const last = Math.max(sheet.rowCount, first + capacity - 1)
-  for (const [index, field] of ELEMENT_SPREADSHEET_TABLES[name].entries()) {
-    const column = sheet.getColumn(index + 1).letter
-    const firstCell = `${column}${first}`
-    const firstApplicable =
-      name === 'Elements' ? applicable(field, first) : undefined
-    if (firstApplicable) {
-      sheet.addConditionalFormatting({
-        ref: `${firstCell}:${column}${last}`,
-        rules: [
-          {
-            type: 'expression',
-            priority: 1,
-            formulae: [
-              `AND($B${first}<>"",NOT(${firstApplicable}),${firstCell}<>"")`,
-            ],
-            style: {
-              fill: {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFFFDBCC' },
-                bgColor: { argb: 'FFFFDBCC' },
-              },
-            },
-          },
-          {
-            type: 'expression',
-            priority: 2,
-            formulae: [`AND($B${first}<>"",NOT(${firstApplicable}))`],
-            style: {
-              fill: {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFE9E9E9' },
-                bgColor: { argb: 'FFE9E9E9' },
-              },
-              font: { color: { argb: 'FF666666' } },
-            },
-          },
-        ],
-      })
-    }
-    if (name === 'Elements' && field === 'hasAnswerFeedbacks') {
-      sheet.addConditionalFormatting({
-        ref: `${firstCell}:${column}${last}`,
-        rules: [
-          {
-            type: 'expression',
-            priority: 1,
-            formulae: [
-              `AND(${firstApplicable},NOT(OR($H${first}=TRUE,$H${first}="TRUE")),${firstCell}<>"",NOT(OR(${firstCell}=FALSE,${firstCell}="FALSE")))`,
-            ],
-            style: {
-              fill: {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFFFDBCC' },
-                bgColor: { argb: 'FFFFDBCC' },
-              },
-            },
-          },
-        ],
-      })
-    }
-    for (let row = first; row <= last; row++) {
-      const cell = `${column}${row}`
-      const enabled = name === 'Elements' ? applicable(field, row) : undefined
-      const numeric = numberRule(field, cell)
-      const hasSolution = `OR($H${row}=TRUE,$H${row}="TRUE")`
-      const list =
-        field === 'type'
-          ? `"${Object.keys(ELEMENT_SPREADSHEET_TYPE_FIELDS).join(',')}"`
-          : field === 'displayMode'
-            ? 'KlickerDisplayModes'
-            : [
-                  'basePoints',
-                  'hasSampleSolution',
-                  'hasAnswerFeedbacks',
-                  'correct',
-                ].includes(field)
-              ? field === 'hasAnswerFeedbacks'
-                ? `IF(${hasSolution},KlickerBooleans,KlickerFalse)`
-                : 'KlickerBooleans'
-              : undefined
-      if (!enabled && !numeric && !list) continue
-      const valueHint = list
-        ? field === 'hasAnswerFeedbacks'
-          ? 'Enable sample solutions before choosing TRUE.'
-          : 'Choose a value from the dropdown.'
-        : field === 'pointsMultiplier'
-          ? 'Enter a whole number from 1 to 4.'
-          : field === 'accuracy'
-            ? 'Enter a whole number from 0 to 100.'
-            : ['numberOfInputs', 'maxLength'].includes(field)
-              ? 'Enter a positive whole number.'
-              : field === 'order'
-                ? 'Enter a whole number starting at 0.'
-                : field === 'step'
-                  ? 'Enter a number greater than 0.'
-                  : numeric
-                    ? 'Enter a number; Klicker also checks ranges on upload.'
-                    : 'Enter text or leave blank.'
-      const message = enabled
-        ? `${valueHint} Choose the type first. Leave grey cells blank; clear orange cells. ${field === 'hasSampleSolution' ? 'Content and Flashcard must leave this blank.' : ''}`
-        : `${valueHint} Optional fields may be left blank.`
-      sheet.getCell(cell).dataValidation = {
-        type: list ? 'list' : 'custom',
-        // Ignore-blank must be off for a dependent list pointing to an empty
-        // range, otherwise Excel can accept arbitrary text in a disabled field.
-        allowBlank: !enabled,
-        formulae: [
-          list
-            ? enabled
-              ? `IF(${enabled},${list},KlickerUnused)`
-              : list
-            : `OR(${cell}="",AND(${enabled ?? 'TRUE'},${numeric ?? 'TRUE'}))`,
-        ],
-        showErrorMessage: true,
-        errorStyle: 'stop',
-        errorTitle: 'Check this value',
-        error: message,
-        showInputMessage: true,
-        promptTitle: field,
-        prompt: message,
+  const last = first + ELEMENT_SPREADSHEET_EDIT_ROWS - 1
+  const letter = (field: string) =>
+    sheet.getColumn(headers.indexOf(field) + 1).letter
+  const range = (field: string) =>
+    `$${letter(field)}$${first}:$${letter(field)}$${last}`
+  for (const field of headers) {
+    const column = letter(field)
+    const row = first
+    const cell = `${column}${row}`
+    const ref = `$A${row}`
+    const refRange = range('ref')
+    const isFirst = `MATCH(${ref},${refRange},0)=ROW()-${first - 1}`
+    const head = (key: string) =>
+      `INDEX(${range(key)},MATCH(${ref},${refRange},0))`
+    const present = (key: string) =>
+      `COUNTIFS(${refRange},${ref},${range(key)},"<>")>0`
+    const yes = (key: string) =>
+      headers.includes(key)
+        ? or(`${head(key)}=TRUE`, `${head(key)}="TRUE"`)
+        : 'FALSE'
+    const hasSolution = yes('hasSampleSolution')
+    const hasFeedback = and(hasSolution, yes('hasAnswerFeedbacks'))
+    const isDetail = SPREADSHEET_DETAIL_FIELDS.has(field)
+    let enabled = field === 'ref' || isDetail ? 'TRUE' : isFirst
+    let required =
+      ['ref', 'name', 'content', 'answer'].includes(field) ||
+      (name === 'Flashcards' && field === 'explanation')
+    let list: string | undefined
+    let valid = `ISTEXT(${cell})`
+    const numeric = and(
+      `ISNUMBER(${cell})`,
+      `ABS(${cell})<=${ELEMENT_DOMAIN_LIMITS.numericalMax}`
+    )
+    const integer = and(`ISNUMBER(${cell})`, `MOD(${cell},1)=0`)
+    if (field === 'correct') {
+      enabled = hasSolution
+      required = true
+      list = 'KlickerBooleans'
+      valid = or(
+        `${cell}=TRUE`,
+        `${cell}=FALSE`,
+        `${cell}="TRUE"`,
+        `${cell}="FALSE"`
+      )
+    } else if (field === 'feedback') {
+      enabled = hasFeedback
+      required = true
+    } else if (
+      ['basePoints', 'hasSampleSolution', 'hasAnswerFeedbacks'].includes(field)
+    ) {
+      list =
+        field === 'hasAnswerFeedbacks'
+          ? `IF(${hasSolution},KlickerBooleans,KlickerFalse)`
+          : 'KlickerBooleans'
+      valid = and(
+        or(
+          `${cell}=TRUE`,
+          `${cell}=FALSE`,
+          `${cell}="TRUE"`,
+          `${cell}="FALSE"`
+        ),
+        field === 'hasAnswerFeedbacks'
+          ? or(hasSolution, `${cell}=FALSE`, `${cell}="FALSE"`)
+          : 'TRUE'
+      )
+    } else if (field === 'displayMode') {
+      list = 'KlickerDisplayModes'
+      valid = or(`${cell}="LIST"`, `${cell}="GRID"`)
+    } else if (field === 'solutionMode') {
+      enabled = and(isFirst, hasSolution)
+      required = true
+      list = 'KlickerSolutionModes'
+      valid = or(`${cell}="EXACT"`, `${cell}="RANGE"`)
+    } else if (field === 'pointsMultiplier') {
+      valid = and(integer, `${cell}>=1`, `${cell}<=4`)
+    } else if (field === 'accuracy') {
+      valid = and(
+        integer,
+        `${cell}>=0`,
+        `${cell}<=${ELEMENT_DOMAIN_LIMITS.numericalAccuracyMax}`
+      )
+    } else if (field === 'maxLength') {
+      valid = and(integer, `${cell}>0`)
+    } else if (field === 'minimum' || field === 'maximum') {
+      const other = field === 'minimum' ? 'maximum' : 'minimum'
+      valid = and(
+        numeric,
+        or(
+          `NOT(${present(other)})`,
+          `${cell}${field === 'minimum' ? '<=' : '>='}${head(other)}`
+        )
+      )
+    } else if (field === 'solution' && name === 'Free text') {
+      enabled = hasSolution
+      required = true
+      valid = and(
+        `ISTEXT(${cell})`,
+        or(
+          `NOT(${present('maxLength')})`,
+          `LEN(TRIM(${cell}))<=${head('maxLength')}`
+        )
+      )
+    } else if (
+      field === 'solution' ||
+      field === 'solutionMinimum' ||
+      field === 'solutionMaximum'
+    ) {
+      enabled = and(
+        hasSolution,
+        `${head('solutionMode')}="${field === 'solution' ? 'EXACT' : 'RANGE'}"`
+      )
+      required = field === 'solution'
+      const bounds = [
+        numeric,
+        or(`NOT(${present('minimum')})`, `${cell}>=${head('minimum')}`),
+        or(`NOT(${present('maximum')})`, `${cell}<=${head('maximum')}`),
+      ]
+      if (field !== 'solution') {
+        const other = `${letter(field === 'solutionMinimum' ? 'solutionMaximum' : 'solutionMinimum')}${row}`
+        bounds.push(
+          or(
+            `${other}=""`,
+            `${cell}${field === 'solutionMinimum' ? '<=' : '>='}${other}`
+          )
+        )
       }
+      valid = and(...bounds)
     }
+    const nonempty = required ? `LEN(TRIM(${cell}&""))>0` : 'TRUE'
+    const allowed = `IFERROR(IF(${enabled},OR(${cell}="",AND(${valid},${nonempty})),${cell}=""),FALSE)`
+    // ExcelJS exposes this range API at runtime, but omits it from Worksheet's types.
+    const validations = (
+      sheet as ExcelJS.Worksheet & {
+        dataValidations: {
+          add: (range: string, rule: ExcelJS.DataValidation) => void
+        }
+      }
+    ).dataValidations
+    validations.add(`${column}${first}:${column}${last}`, {
+      type: list ? 'list' : 'custom',
+      allowBlank: !list,
+      showErrorMessage: true,
+      errorStyle: 'stop',
+      errorTitle: 'Check this field',
+      error:
+        'Follow the field instructions in row 7. Leave grey cells blank; clear orange cells. Klicker checks all rows on upload.',
+      showInputMessage: true,
+      promptTitle: field,
+      prompt: String(sheet.getRow(7).getCell(column).value ?? '').slice(0, 250),
+      formulae: [
+        list
+          ? `IFERROR(IF(${enabled},${list},KlickerUnused),KlickerUnused)`
+          : allowed,
+      ],
+    })
+    const invalid = or(
+      and(`${cell}<>""`, `NOT(${allowed})`),
+      ...(required ? [and(enabled, `${cell}=""`)] : []),
+      ...(field === 'correct' && name === 'Single choice'
+        ? [
+            and(
+              hasSolution,
+              `COUNTIFS(${refRange},${ref},${range('correct')},TRUE)<>1`
+            ),
+          ]
+        : []),
+      ...(field === 'correct' && name === 'Multiple choice'
+        ? [
+            and(
+              hasSolution,
+              `COUNTIFS(${refRange},${ref},${range('correct')},TRUE)<1`
+            ),
+          ]
+        : []),
+      ...(field === 'answer' && name === 'Kprim'
+        ? [`COUNTIF(${refRange},${ref})<>4`]
+        : []),
+      ...(field === 'solutionMinimum'
+        ? [and(enabled, `${cell}=""`, `${letter('solutionMaximum')}${row}=""`)]
+        : [])
+    )
+    const formatting = (formula: string, color: string, priority: number) => ({
+      type: 'expression' as const,
+      priority,
+      formulae: [formula],
+      style: {
+        fill: {
+          type: 'pattern' as const,
+          pattern: 'solid' as const,
+          fgColor: { argb: color },
+          bgColor: { argb: color },
+        },
+      },
+    })
+    sheet.addConditionalFormatting({
+      ref: `${column}${first}:${column}${last}`,
+      rules: [
+        formatting(
+          `IFERROR(IF(${field === 'ref' ? `COUNTA($A${row}:$${letter(headers[headers.length - 1]!)}${row})>0` : `${ref}<>""`},${invalid},FALSE),TRUE)`,
+          'FFFFDBCC',
+          1
+        ),
+        formatting(
+          `IFERROR(AND(${ref}<>"",NOT(${enabled})),FALSE)`,
+          'FFE9E9E9',
+          2
+        ),
+      ],
+    })
   }
 }

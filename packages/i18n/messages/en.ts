@@ -2452,24 +2452,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       optionsImportDescription: 'Options',
       importElements: 'Import elements',
       exportElements: 'Export elements',
-      spreadsheetTitle: 'Excel',
+      spreadsheetTitle: 'Import elements',
       spreadsheetInfo:
-        'Import the fixed Klicker Excel template. Klicker supports all nine element types. Valid elements can be imported even when other rows need correction.',
+        'Download the fixed Klicker Excel template or import Klicker JSON files and ZIP exports. Excel supports seven element types, excluding selection and case-study elements; JSON supports all nine. Valid elements can be imported even when other rows need correction.',
       spreadsheetTemplate: 'Download Klicker template',
-      spreadsheetExport: 'Export selected elements to Excel',
-      spreadsheetUpload: 'Upload an Excel workbook',
-      spreadsheetWorking: 'Processing workbook…',
+      spreadsheetUpload: 'Import Excel, JSON, or ZIP files',
+      spreadsheetWorking: 'Processing import…',
       spreadsheetFailure:
-        'The workbook operation failed. Check the template and try again. If an import was interrupted, retrying is safe.',
+        'The import failed. Check the selected files and try again. If an import was interrupted, retrying is safe.',
       spreadsheetFileRequirements:
-        'Choose a non-empty .xlsx workbook of at most 5 MiB.',
+        'Choose one non-empty .xlsx workbook up to 5 MiB, one ZIP export up to 10 MiB, or 1–151 .json files up to 2 MiB each and 10 MiB together. Do not mix file types.',
       spreadsheetDuplicatePolicy:
         'Exact duplicates are skipped automatically. Names, tags and status do not affect duplicate matching. Existing elements are never overwritten.',
       spreadsheetDuplicateSummary:
         '{count, plural, one {# selected element matches content in this workbook or your library.} other {# selected elements match content in this workbook or your library.}} Matches are checked again and skipped at import.',
       spreadsheetCollections:
         'Required answer collections are copied only for elements that are actually imported.',
-      spreadsheetIssues: 'Rows and conversion notes',
+      spreadsheetIssues: 'Sources and conversion notes',
       spreadsheetRow: 'row {row}',
       spreadsheetImageDependency:
         'The original public image link is retained. The image depends on the source blob remaining available.',
@@ -2489,6 +2488,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Use a valid public Klicker image URL or remove this image reference.',
       spreadsheetUnsupportedCell:
         'Use a plain text, number or TRUE/FALSE cell. Formula and hyperlink cells are unsupported.',
+      spreadsheetFirstRowOnly:
+        'This value is allowed only in the first row of this element.',
+      spreadsheetScOneCorrect:
+        'A single-choice question needs exactly one correct answer.',
+      spreadsheetMcCorrectRequired:
+        'A multiple-choice question needs at least one correct answer.',
+      spreadsheetKprimFourAnswers:
+        'A KPRIM question needs exactly four answers.',
+      spreadsheetRequiredValue: 'Enter a value for this required field.',
       spreadsheetImported: 'Imported elements: {count}',
       spreadsheetSkipped: 'Not imported because they are exact duplicates:',
       spreadsheetNoValidElements: 'No valid elements are available to import.',
@@ -2509,7 +2517,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       exportElementsInfo:
         'Exports contain reusable element content only. Tags, owner, permissions, activity results, and private metadata are not included.',
       exportElementsPackageInfo:
-        'Linked answer collections are included automatically if you are an administrator or owner of them.',
+        'The ZIP contains JSON element and linked answer-collection files. Public Klicker image URLs are retained; images are not copied and depend on their source remaining available.',
       packageAnswerCollections: 'Answer collections',
       packageAnswerCollectionsExportDescription:
         '{numCollections, plural, =0 {No linked answer collections will be included in the ZIP package.} one {# linked answer collection will be included in the ZIP package.} other {# linked answer collections will be included in the ZIP package.}}',
@@ -2535,7 +2543,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       packageTooManyElementsError:
         'Export blocked because an element package can contain at most 100 elements.',
       packageExportTooLargeError:
-        'Export blocked because the package would be too large. Split the selection or remove large media files.',
+        'Export blocked because the JSON package would be too large. Split the selection or shorten large content.',
       packageElementNotPortableError:
         'At least one selected element or linked answer collection violates portable-package constraints. Review and correct or shorten the affected content, then try again.',
       packageAggregateLimitError:
@@ -2619,11 +2627,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       elementExportStatusNormalizedWarning:
         'Element statuses are not included in the ZIP package. Imported copies will be created in review status.',
       elementExportExternalMediaWarning:
-        'Auto-loading external images are not copied into the ZIP package. When imported, they are replaced by a visible placeholder; ordinary links remain unchanged.',
+        'Public image URLs are retained in the JSON ZIP and are not copied. Imported content depends on the source URLs remaining available.',
       elementExportMediaMissingWarning:
-        'Some referenced KlickerUZH images could not be included in the ZIP package. When imported, they are replaced by a visible placeholder.',
+        'Referenced public Klicker image URLs are retained but are not copied into the JSON ZIP.',
       elementExportUnusedMediaWarning:
-        'Media not referenced by the selected elements is omitted from the ZIP package.',
+        'The ZIP contains JSON files only; media files are not included.',
       elementExportCleanupPendingWarning:
         'The export package was prepared, but cleanup of temporary export data is still pending.',
       elementExportGenericWarning:

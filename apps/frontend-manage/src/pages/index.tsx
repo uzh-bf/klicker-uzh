@@ -1,31 +1,31 @@
 import { useQuery } from '@apollo/client'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import {
   faDownload,
   faListCheck,
   faUpload,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  ActivityType,
-  Element,
+  type ActivityType,
+  type Element,
   GetUserElementsDocument,
   SharingType,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, UserNotification, toast } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
+import { computeResultRange } from '@lib/resultRange'
+import { Button, toast, UserNotification } from '@uzh-bf/design-system'
+import type { GetStaticPropsContext } from 'next'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import Pagination, {
-  isPaginationPageSize,
-  type PaginationPageSize,
-} from '@components/common/Pagination'
-import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
-import { computeResultRange } from '@lib/resultRange'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
@@ -44,10 +44,6 @@ import useSortingAndFiltering, {
 
 const DownloadModal = dynamic(
   () => import('~/components/elements/manipulation/DownloadModal'),
-  { ssr: false }
-)
-const UploadModal = dynamic(
-  () => import('~/components/elements/manipulation/UploadModal'),
   { ssr: false }
 )
 const SpreadsheetModal = dynamic(
@@ -93,22 +89,12 @@ function Index() {
   })
 
   // export elements
-  const [uploadElements, setUploadElements] = useState(false)
   const [spreadsheetOpen, setSpreadsheetOpen] = useState(false)
   const [downloadElements, setDownloadElements] = useState<Element[] | null>(
     null
   )
   const [modificationModalOpen, setModificationModalOpen] = useState(false)
   const [batchOperationsOpen, setBatchOperationsOpen] = useState(false)
-
-  const closeImportModal = useCallback(() => {
-    setUploadElements(false)
-    window.requestAnimationFrame(() => {
-      document
-        .querySelector<HTMLElement>('[data-cy="elements-upload"]')
-        ?.focus()
-    })
-  }, [])
 
   const closeExportModal = useCallback(() => {
     setDownloadElements(null)
@@ -223,7 +209,6 @@ function Index() {
   useEffect(() => {
     if (canUseElementImportExport) return
 
-    setUploadElements(false)
     setDownloadElements(null)
     setSpreadsheetOpen(false)
   }, [canUseElementImportExport])
@@ -319,7 +304,7 @@ function Index() {
   // once the activity wizard is opened, deselect all invalid elements
   useEffect(() => {
     setSelectedElements((selection) => {
-      if (!!creationMode) {
+      if (creationMode) {
         return Object.fromEntries(
           Object.entries(selection).filter(
             ([, question]) => question?.isManager ?? false
@@ -507,15 +492,6 @@ function Index() {
                 {canUseElementImportExport ? (
                   <>
                     <Button
-                      onClick={() => setSpreadsheetOpen(true)}
-                      data={{ cy: 'elements-spreadsheet' }}
-                      className={{ root: 'h-9' }}
-                    >
-                      <Button.Label>
-                        {t('manage.elements.spreadsheetTitle')}
-                      </Button.Label>
-                    </Button>
-                    <Button
                       className={{
                         root: 'h-9',
                       }}
@@ -546,7 +522,7 @@ function Index() {
                       className={{
                         root: 'h-9',
                       }}
-                      onClick={() => setUploadElements(true)}
+                      onClick={() => setSpreadsheetOpen(true)}
                       data={{ cy: 'elements-upload' }}
                     >
                       <Button.Icon icon={faUpload} />
@@ -689,23 +665,14 @@ function Index() {
           onClose={closeExportModal}
         />
       )}
-      {canUseElementImportExport && uploadElements && (
-        <UploadModal
-          onClose={closeImportModal}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
-        />
-      )}
       {canUseElementImportExport && spreadsheetOpen && (
         <SpreadsheetModal
-          selectedElementIds={Object.keys(selectedElements).map(Number)}
           refetchElements={refetchElementsForChildren}
           onClose={() => {
             setSpreadsheetOpen(false)
             window.requestAnimationFrame(() =>
               document
-                .querySelector<HTMLElement>('[data-cy="elements-spreadsheet"]')
+                .querySelector<HTMLElement>('[data-cy="elements-upload"]')
                 ?.focus()
             )
           }}

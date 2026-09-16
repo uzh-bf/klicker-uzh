@@ -1,5 +1,4 @@
 import type { ContextWithUser } from '../src/lib/context.js'
-import { elementSpreadsheetTablesFromElements } from '../src/lib/elementSpreadsheetExport.js'
 import { emptyElementSpreadsheetTables } from '../src/lib/elementSpreadsheetTables.js'
 import { writeKlickerWorkbook } from '../src/lib/elementSpreadsheetWorkbook.js'
 import { importElementPackageBuffer } from '../src/services/elementImportPackage.js'
@@ -50,24 +49,21 @@ describe('spreadsheet import transactions', () => {
     owner = ctx
   ) {
     const tables = emptyElementSpreadsheetTables()
-    tables.Elements.push({
-      sheet: 'Elements',
+    tables.Content.push({
+      sheet: 'Content',
       row: 2,
       values: {
         ref: 'first',
-        type: 'CONTENT',
         name,
         content,
-        basePoints: true,
-        pointsMultiplier: 1,
       },
     })
     if (repeat)
-      tables.Elements.push({
-        sheet: 'Elements',
+      tables.Content.push({
+        sheet: 'Content',
         row: 3,
         values: {
-          ...tables.Elements[0]!.values,
+          ...tables.Content[0]!.values,
           ref: 'second',
           name: 'Different title',
         },
@@ -139,20 +135,29 @@ describe('spreadsheet import transactions', () => {
     expect(result).toEqual({ importedElements: 1, skippedElementRefs: [] })
   })
 
-  it('compares against existing ZIP-imported content for all nine types', async () => {
+  it('compares spreadsheet content against an existing JSON-package import', async () => {
     const fixture = createNineTypeImportPackage()
     const source = parseElementImportPackage(fixture.buffer)
     await importElementPackageBuffer(
       { buffer: fixture.buffer, selectedElementRefs: fixture.elementRefs },
       ctx
     )
+    const content = source.elements.find(
+      (element) => element.type === 'CONTENT'
+    )!
+    const tables = emptyElementSpreadsheetTables()
+    tables.Content.push({
+      sheet: 'Content',
+      row: 8,
+      values: {
+        ref: content.ref,
+        name: content.name,
+        content: content.content,
+        explanation: content.explanation ?? null,
+      },
+    })
     const artifact = await uploadPreparedImportPackage(
-      await writeKlickerWorkbook(
-        elementSpreadsheetTablesFromElements(
-          source.elements,
-          source.answerCollections
-        )
-      ),
+      await writeKlickerWorkbook(tables),
       ctx
     )
     const preview = await validateElementSpreadsheet(
@@ -167,7 +172,7 @@ describe('spreadsheet import transactions', () => {
       ctx
     )
     expect(result.importedElements).toBe(0)
-    expect(result.skippedElementRefs).toHaveLength(9)
+    expect(result.skippedElementRefs).toHaveLength(1)
   })
 
   it('keeps duplicate matching scoped to the importing owner', async () => {

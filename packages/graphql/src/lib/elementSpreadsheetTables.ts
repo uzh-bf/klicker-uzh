@@ -1,58 +1,52 @@
-// These headers are the interchange contract. Keep them independent
-// of UI translations so workbooks remain portable between lecturer locales.
-export const ELEMENT_SPREADSHEET_VERSION = 'klicker-elements-2'
+// The workbook is an authoring template, not the portable export format.
+export const ELEMENT_SPREADSHEET_VERSION = 'klicker-elements-3'
 export const ELEMENT_SPREADSHEET_HEADER_ROW = 6
 export const ELEMENT_SPREADSHEET_DATA_ROW = 8
+export const ELEMENT_SPREADSHEET_EDIT_ROWS = 1000
+const common = ['ref', 'name', 'content', 'explanation'] as const
+const question = [
+  ...common,
+  'basePoints',
+  'pointsMultiplier',
+  'hasSampleSolution',
+] as const
+const choices = [
+  ...question,
+  'displayMode',
+  'hasAnswerFeedbacks',
+  'answer',
+  'correct',
+  'feedback',
+] as const
 export const ELEMENT_SPREADSHEET_TABLES = {
-  Elements: [
-    'ref',
-    'type',
-    'name',
-    'content',
-    'explanation',
-    'basePoints',
-    'pointsMultiplier',
-    'hasSampleSolution',
-    'displayMode',
-    'hasAnswerFeedbacks',
+  'Single choice': choices,
+  'Multiple choice': choices,
+  Kprim: choices,
+  Numerical: [
+    ...question,
     'unit',
     'accuracy',
     'placeholder',
     'minimum',
     'maximum',
-    'maxLength',
-    'numberOfInputs',
-    'answerCollectionRef',
+    'solutionMode',
+    'solution',
+    'solutionMinimum',
+    'solutionMaximum',
   ],
-  Choices: ['elementRef', 'order', 'value', 'correct', 'feedback'],
-  Solutions: ['elementRef', 'order', 'value', 'minimum', 'maximum'],
-  Collections: ['ref', 'name', 'description'],
-  Entries: ['collectionRef', 'ref', 'value'],
-  SelectedItems: ['elementRef', 'entryRef'],
-  Criteria: [
-    'elementRef',
-    'ref',
-    'order',
-    'name',
-    'minimum',
-    'maximum',
-    'step',
-    'unit',
-    'labelMin',
-    'labelMid',
-    'labelMax',
-  ],
-  Cases: ['elementRef', 'ref', 'order', 'title', 'description'],
-  CaseSolutions: [
-    'elementRef',
-    'caseRef',
-    'entryRef',
-    'criterionRef',
-    'minimum',
-    'maximum',
-  ],
+  'Free text': [...question, 'maxLength', 'solution'],
+  Content: common,
+  Flashcards: common,
 } as const
-
+export const ELEMENT_SPREADSHEET_TYPES = {
+  'Single choice': 'SC',
+  'Multiple choice': 'MC',
+  Kprim: 'KPRIM',
+  Numerical: 'NUMERICAL',
+  'Free text': 'FREE_TEXT',
+  Content: 'CONTENT',
+  Flashcards: 'FLASHCARD',
+} as const
 export type ElementSpreadsheetTable = keyof typeof ELEMENT_SPREADSHEET_TABLES
 export type SpreadsheetValue = string | number | boolean | null
 export type SpreadsheetRow = {
@@ -71,16 +65,11 @@ export type ElementSpreadsheetTables = Record<
   ElementSpreadsheetTable,
   SpreadsheetRow[]
 >
-
 export function emptyElementSpreadsheetTables(): ElementSpreadsheetTables {
   return Object.fromEntries(
-    Object.keys(ELEMENT_SPREADSHEET_TABLES).map((name) => [
-      name,
-      [] as SpreadsheetRow[],
-    ])
-  ) as ElementSpreadsheetTables
+    Object.keys(ELEMENT_SPREADSHEET_TABLES).map((name) => [name, []])
+  ) as unknown as ElementSpreadsheetTables
 }
-
 export class SpreadsheetCellError extends Error {
   constructor(
     readonly field: string,
@@ -90,7 +79,6 @@ export class SpreadsheetCellError extends Error {
     super(code)
   }
 }
-
 export function textCell(
   row: SpreadsheetRow,
   field: string,
@@ -102,7 +90,6 @@ export function textCell(
     throw new SpreadsheetCellError(field, 'INVALID_VALUE', row)
   return value
 }
-
 export function numberCell(
   row: SpreadsheetRow,
   field: string,
@@ -110,12 +97,10 @@ export function numberCell(
 ) {
   const value = row.values[field]
   if (value == null || value === '') return fallback
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (typeof value !== 'number' || !Number.isFinite(value))
     throw new SpreadsheetCellError(field, 'INVALID_VALUE', row)
-  }
   return value
 }
-
 export function booleanCell(
   row: SpreadsheetRow,
   field: string,
@@ -128,22 +113,14 @@ export function booleanCell(
   if (value === 'FALSE') return false
   throw new SpreadsheetCellError(field, 'INVALID_VALUE', row)
 }
-
-export const ELEMENT_SPREADSHEET_TYPE_FIELDS: Record<string, string[]> = {
-  SC: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
-  MC: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
-  KPRIM: ['hasSampleSolution', 'displayMode', 'hasAnswerFeedbacks'],
-  NUMERICAL: [
-    'hasSampleSolution',
-    'unit',
-    'accuracy',
-    'placeholder',
-    'minimum',
-    'maximum',
-  ],
-  FREE_TEXT: ['hasSampleSolution', 'maxLength'],
-  SELECTION: ['hasSampleSolution', 'numberOfInputs', 'answerCollectionRef'],
-  CASE_STUDY: ['hasSampleSolution', 'answerCollectionRef'],
-  CONTENT: [],
-  FLASHCARD: [],
+export function hasSpreadsheetValue(value: SpreadsheetValue | undefined) {
+  return value !== undefined && value !== null && value !== ''
 }
+export const SPREADSHEET_DETAIL_FIELDS = new Set([
+  'answer',
+  'correct',
+  'feedback',
+  'solution',
+  'solutionMinimum',
+  'solutionMaximum',
+])

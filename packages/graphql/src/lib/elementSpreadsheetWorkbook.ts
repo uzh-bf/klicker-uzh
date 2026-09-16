@@ -97,16 +97,11 @@ export function readSpreadsheetCell(cell: ExcelJS.Cell): SpreadsheetValue {
 
 export function readKlickerWorkbook(workbook: ExcelJS.Workbook) {
   const version = workbook.getWorksheet('Instructions')?.getCell('A1').value
-  if (
-    version !== ELEMENT_SPREADSHEET_VERSION &&
-    version !== 'klicker-elements-1'
-  ) {
+  if (version !== ELEMENT_SPREADSHEET_VERSION) {
     throw new InvalidElementWorkbookError('UNSUPPORTED_TEMPLATE_VERSION')
   }
-  const headerRow =
-    version === 'klicker-elements-1' ? 1 : ELEMENT_SPREADSHEET_HEADER_ROW
-  const dataRow =
-    version === 'klicker-elements-1' ? 2 : ELEMENT_SPREADSHEET_DATA_ROW
+  const headerRow = ELEMENT_SPREADSHEET_HEADER_ROW
+  const dataRow = ELEMENT_SPREADSHEET_DATA_ROW
   const tables = emptyElementSpreadsheetTables()
   const issues: SpreadsheetIssue[] = []
   for (const sheet of workbook.worksheets) {
@@ -172,15 +167,9 @@ export function readKlickerWorkbook(workbook: ExcelJS.Workbook) {
   return { tables, issues }
 }
 
-export async function writeKlickerWorkbook(
-  tables: ElementSpreadsheetTables,
-  examples = false
-) {
+export async function writeKlickerWorkbook(tables: ElementSpreadsheetTables) {
   const allRows = Object.values(tables)
   if (
-    tables.Elements.length > 100 ||
-    tables.Collections.length > 50 ||
-    tables.Entries.length > 5000 ||
     allRows.some(
       (rows) => rows.length + ELEMENT_SPREADSHEET_DATA_ROW - 1 > MAX_ROWS
     ) ||
@@ -196,7 +185,7 @@ export async function writeKlickerWorkbook(
   }
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'KlickerUZH'
-  addSpreadsheetInstructions(workbook, examples)
+  addSpreadsheetInstructions(workbook)
   addSpreadsheetValidationLists(workbook)
   for (const [name, headers] of Object.entries(ELEMENT_SPREADSHEET_TABLES)) {
     const sheet = workbook.addWorksheet(name, {
@@ -204,11 +193,18 @@ export async function writeKlickerWorkbook(
     })
     sheet.columns = headers.map((header) => ({
       key: header,
-      width: ['content', 'explanation', 'value', 'description'].includes(header)
+      style: { font: { name: 'Aptos', size: 11 } },
+      width: [
+        'content',
+        'explanation',
+        'answer',
+        'feedback',
+        'solution',
+      ].includes(header)
         ? 55
         : 22,
     }))
-    addSpreadsheetTableGuide(sheet, name as ElementSpreadsheetTable, examples)
+    addSpreadsheetTableGuide(sheet, name as ElementSpreadsheetTable)
     sheet.autoFilter = {
       from: { row: ELEMENT_SPREADSHEET_HEADER_ROW, column: 1 },
       to: { row: ELEMENT_SPREADSHEET_HEADER_ROW, column: headers.length },

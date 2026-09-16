@@ -4,27 +4,14 @@ import {
   createElementImportToken,
   parseElementImportTokenForOwner,
 } from '../lib/elementImportToken.js'
-import { parseElementSpreadsheetTables } from '../lib/elementSpreadsheetDomain.js'
 import { createElementSpreadsheetExamples } from '../lib/elementSpreadsheetExamples.js'
-import { elementSpreadsheetTablesFromElements } from '../lib/elementSpreadsheetExport.js'
-import {
-  loadElementWorkbook,
-  readKlickerWorkbook,
-  writeKlickerWorkbook,
-} from '../lib/elementSpreadsheetWorkbook.js'
+import { writeKlickerWorkbook } from '../lib/elementSpreadsheetWorkbook.js'
 import {
   ImportExportDomainError,
   ImportExportErrorCode,
   toImportExportGraphQLError,
 } from '../lib/importExportErrors.js'
-import {
-  collectElementMediaReferences,
-  MediaReferenceKind,
-} from '../lib/importExportMediaReferences.js'
-import {
-  assertElementExportSnapshotPublishable,
-  loadElementExportSnapshot,
-} from './elementExportSnapshot.js'
+import { parseElementImportFile } from './elementFileImportParser.js'
 import { executeElementImportExecutionPlan } from './elementImportExecution.js'
 import {
   bindStagedImportMedia,
@@ -47,12 +34,10 @@ import {
   findElementImportReceiptByJti,
 } from './importExportPersistence.js'
 import { assertImportExportRateLimit } from './importExportRateLimit.js'
-import { resolveKlickerMediaHref } from './mediaStorage.js'
 import {
   downloadPreparedElementImportPackage,
   prepareElementImportPackageUpload,
 } from './packageStorage.js'
-import { createStorageAwarePortableExportPlan } from './portableExportMediaHydration.js'
 
 const hash = (buffer: Buffer) =>
   createHash('sha256').update(buffer).digest('hex')
@@ -60,38 +45,8 @@ const fail = (code: ImportExportErrorCode) => {
   throw new ImportExportDomainError(code)
 }
 
-export async function parseElementSpreadsheet(buffer: Buffer) {
-  const workbook = await loadElementWorkbook(buffer)
-  const read = readKlickerWorkbook(workbook)
-  const parsed = parseElementSpreadsheetTables(read.tables, read.issues)
-  const invalid = new Set<string>()
-  for (const element of parsed.elements) {
-    const source = parsed.sources.find((source) => source.ref === element.ref)!
-    for (const reference of collectElementMediaReferences(element)) {
-      if (reference.kind !== MediaReferenceKind.AUTO_LOAD) continue
-      // Classification is local and never fetches a user-controlled URL. Keep
-      // public first-party references even if their source blob was deleted.
-      if (!resolveKlickerMediaHref(reference.href)) {
-        invalid.add(element.ref)
-        parsed.issues.push({
-          ...source,
-          field: 'image',
-          code: 'INVALID_IMAGE_URL',
-        })
-      } else {
-        parsed.issues.push({
-          ...source,
-          field: 'image',
-          code: 'SOURCE_IMAGE_DEPENDENCY',
-        })
-      }
-    }
-  }
-  return {
-    ...parsed,
-    elements: parsed.elements.filter((element) => !invalid.has(element.ref)),
-  }
-}
+// Retained for source callers of the original workbook adapter.
+export const parseElementSpreadsheet = parseElementImportFile
 
 export async function prepareElementSpreadsheetUpload(
   args: { filename: string; bytes: number },
@@ -99,16 +54,16 @@ export async function prepareElementSpreadsheetUpload(
 ) {
   try {
     await assertCanUseElementImportExport(ctx)
-    if (!args.filename.toLowerCase().endsWith('.xlsx'))
+    const extension = args.filename.toLowerCase().split('.').pop()
+    if (!['xlsx', 'json', 'zip'].includes(extension ?? ''))
       fail(ImportExportErrorCode.UNSUPPORTED_FILE_TYPE)
     if (
       !Number.isSafeInteger(args.bytes) ||
       args.bytes <= 0 ||
-      args.bytes > 5 * 1024 * 1024
+      args.bytes > (extension === 'xlsx' ? 5 : 10) * 1024 * 1024
     )
       fail(ImportExportErrorCode.UPLOAD_TOO_LARGE)
-    // Artifact transport is ZIP bytes; XLSX parsing is exclusively below the
-    // spreadsheet mutation boundary. Existing ZIP upload contracts stay intact.
+    // Uploads remain one immutable artifact even when the client groups loose JSON files.
     return await prepareElementImportPackageUpload({ bytes: args.bytes }, ctx)
   } catch (error) {
     throw toImportExportGraphQLError(error)
@@ -130,7 +85,7 @@ export async function validateElementSpreadsheet(
         assertLease()
         if (hash(artifact.buffer) !== artifact.sha256)
           fail(ImportExportErrorCode.PACKAGE_CHANGED)
-        const parsed = await parseElementSpreadsheet(artifact.buffer)
+        const parsed = await parseElementImportFile(artifact.buffer)
         const duplicates = await findSpreadsheetDuplicates({
           ...parsed,
           ownerId: ctx.user.sub,
@@ -224,7 +179,7 @@ export async function importElementSpreadsheet(
               artifact.sha256 !== token.packageHash
             )
               fail(ImportExportErrorCode.PACKAGE_CHANGED)
-            const parsed = await parseElementSpreadsheet(artifact.buffer)
+            const parsed = await parseElementImportFile(artifact.buffer)
             const selected = parsed.elements.filter((element) =>
               selection.selectedElementRefs.includes(element.ref)
             )
@@ -319,44 +274,25 @@ export async function importElementSpreadsheet(
   }
 }
 
+/** Excel is an import-only authoring template; selected elements export as JSON ZIP. */
 export async function getElementSpreadsheet(
   args: { elementIds: number[] },
   ctx: ContextWithUser
 ) {
   try {
     await assertCanUseElementImportExport(ctx)
+    if (args.elementIds.length) fail(ImportExportErrorCode.INVALID_PACKAGE)
     await assertImportExportRateLimit(ctx, 'export')
     return await withImportExportConcurrencyLease(
       ctx,
       'export',
       async (assertLease) => {
-        if (!args.elementIds.length)
-          return {
-            filename: 'klicker-elements-template.xlsx',
-            base64: (
-              await writeKlickerWorkbook(
-                createElementSpreadsheetExamples(),
-                true
-              )
-            ).toString('base64'),
-          }
-        const snapshot = await loadElementExportSnapshot(args.elementIds, ctx)
-        const plan = createStorageAwarePortableExportPlan(snapshot)
         const buffer = await writeKlickerWorkbook(
-          elementSpreadsheetTablesFromElements(
-            plan.elements.map((element) => element.content),
-            plan.answerCollections.map((collection) => collection.content)
-          )
+          createElementSpreadsheetExamples()
         )
         assertLease()
-        await ctx.prisma.$transaction(async (prisma) => {
-          await assertElementExportSnapshotPublishable(snapshot.revision, {
-            ...ctx,
-            prisma,
-          })
-        })
         return {
-          filename: 'klicker-elements.xlsx',
+          filename: 'klicker-elements-template.xlsx',
           base64: buffer.toString('base64'),
         }
       }

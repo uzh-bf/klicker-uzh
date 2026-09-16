@@ -1,8 +1,8 @@
 ---
 type: Feature
 title: Fixed Element Spreadsheets
-description: Editable Klicker workbooks, with partial validation and authoritative duplicate skipping.
-timestamp: '2026-09-05'
+description: Type-specific Excel authoring templates and the shared JSON/Excel import path.
+timestamp: '2026-09-16'
 tags:
   - elements
   - graphql
@@ -10,79 +10,87 @@ tags:
 
 # Fixed Element Spreadsheets
 
-The element library's Excel dialog downloads a fixed Klicker template, exports
-selected elements to that format, and imports Klicker workbooks.
-It uses the same full-access, private-preview and assessment gates as
-[element ZIP packages](./import-export-packages.md). Imported elements are
-private copies in REVIEW, without source tags, permissions or activity data.
+The element library has one import dialog for the fixed Klicker Excel template,
+JSON-only ZIP exports, or individual element and answer-collection JSON files.
+Excel is an authoring template only: exports always use [JSON ZIP packages](./import-export-packages.md).
+All formats use the same full-access/private-preview gates, private REVIEW
+copies, duplicate skipping, durable artifacts and import receipts. Source tags,
+permissions and activity data are never imported.
 
 ## Authored workbook contract
 
-`Instructions!A1` contains `klicker-elements-2`; the reader also accepts the original
-`klicker-elements-1` layout. Version 2 puts visible tab guidance in rows 1–4,
-headers in row 6, column help in row 7, and data from row 8. Version 1 retains
-row-1 headers and row-2 data. Import diagnostics use actual worksheet row numbers. Worksheet names and English
-headers are fixed regardless of UI language. `Elements` covers all nine types;
-`Choices`, `Solutions`, `Collections`, `Entries`, `SelectedItems`, `Criteria`,
-`Cases` and `CaseSolutions` express repeated data and relationships. References
-are workbook-local, never database IDs. Numeric ordering starts at zero.
-The downloadable instructions explain how to populate each dependent table.
-Templates and exports share a short quick-start page and visible explanations on
-every data tab. The template contains nine editable, clearly named examples with
-complete linked answers; uploading it unchanged previews those examples for
-import. Exports contain only the selected user content. UZH colors distinguish
-tab groups and headers. The first seven rows of each v2 data tab are guidance,
-not imported content; keep them and the worksheet names unchanged.
+`Instructions!A1` contains `klicker-elements-3`. Earlier unreleased workbook
+layouts are rejected. Keep worksheet names, guidance rows and English headers
+unchanged regardless of UI language. The seven data tabs are `Single choice`,
+`Multiple choice`, `Kprim`, `Numerical`, `Free text`, `Content` and `Flashcards`.
+Selection and case study are supported through JSON only. Kahoot and Mentimeter
+files are not supported.
 
-Excel editing checks provide dropdowns, basic numeric bounds, and grey cells for
-fields that do not apply to the selected element type. Orange cells mark values
-that must be cleared after a type or sample-solution change. Checks cover supported
-dropdown and numeric fields for 100 element rows and 1,000 rows on other checked
-tabs, extending to all populated export rows. These are editing aids, not protection: pasted values
-can bypass Excel validation, and upload validation remains authoritative. No
-macros or worksheet locks are required.
+Each tab contains plain-language instructions in rows 1–4, headers in row 6,
+field help in row 7 and one complete editable example beginning at row 8.
+A short Instructions tab explains the workflow. UZH colours and Aptos fonts
+separate guidance, fields and examples.
 
-Validation uses the existing canonical element domain. Invalid rows carry their
-worksheet, row and field. An invalid required dependency excludes its consumer;
-unrelated valid elements remain selectable. Formula caches, macros, embedded
-Klicker images, external workbook links and unsupported cell values are rejected.
-The compressed workbook limit is 5 MiB, with bounded decompression before
-ExcelJS parsing, 100 elements and Excel's 32,767-character cell limit. ZIP is
-available for content that exceeds spreadsheet cell limits.
+The first row for a `ref` contains the question's settings. Additional answers
+or solutions use another row on that same tab: repeat only the ref and fill the
+answer/solution fields. References identify questions within this workbook;
+they are not database IDs and cannot be reused across type tabs. Content and
+flashcards each occupy one row. Delete unwanted example rows before uploading.
 
-Only the fixed Klicker workbook is supported. Kahoot quiz import templates and
-result exports are not accepted. Mentimeter imports are also outside this scope.
+## Editing rules and upload validation
 
-## Public media references
+All seven tabs carry rules for the first 1,000 data rows. Dropdowns cover Boolean
+settings, choice display mode and numerical solution mode. Grey cells do not
+apply and must remain empty; orange cells flag missing, incompatible or invalid
+values. Field selection displays the corresponding help text.
 
-Klicker spreadsheets preserve original public first-party image URLs, including
-when another lecturer imports the workbook. Import never fetches or copies
-these images, and creates no media ownership relation. Every retained reference
-has a source-dependency warning: deleting the original blob can break it later.
-Malformed or disallowed auto-loading URLs invalidate the element. An unavailable
-but well-formed first-party URL remains intact; availability is not guessed from
-a timeout. ZIP remains the independently copied media format.
+- Sample solutions enable correct-answer/solution fields. Answer feedback requires
+  a sample solution and feedback for every choice.
+- Single choice requires exactly one correct answer; multiple choice requires at
+  least one. Kprim always requires four statements.
+- Numerical questions choose exact solutions or ranges, never both. Bounds must
+  be ordered and solutions must fit the question's bounds.
+- Point multipliers, accuracy and maximum text length have numeric/integer checks.
+- Flashcards require a back in `explanation`. Other types may also have explanations.
+  Content and flashcards have no sample-solution or point-setting columns.
+- Question settings belong only on the first row of each ref.
+
+The server checks these rules again using the canonical element domain. Excel
+checks are editing aids: paste operations can bypass them. Errors identify the
+actual tab, row and field; an invalid question is excluded while unrelated valid
+questions remain available to import. Macros, formula cells (even with cached
+results), embedded images, external workbook links and unsupported values are
+rejected. Limits are 5 MiB compressed, 20 MiB expanded, 100 questions and Excel's
+32,767-character cell length. JSON is available for larger text fields.
+
+## JSON inputs and public image references
+
+A JSON-only ZIP contains a manifest, one JSON file per element and separate JSON
+files for required answer collections. Users may instead select extracted JSON
+files together; collection-dependent elements require their collection file.
+The browser packages the selection into one bounded artifact so the receipt
+binds every selected file. JSON limits are 2 MiB per file and 10 MiB per artifact.
+
+All current import formats retain public first-party image URLs without fetching,
+copying or creating media ownership. Retained references carry a source-dependency
+warning: deleting the original blob can break the image later. Invalid or
+non-first-party auto-loading URLs exclude the affected element. A well-formed
+but unavailable first-party URL remains intact. New exports contain no media
+binaries. Already accepted links remain editable even without a MediaFile row;
+pending/cleanup lifecycle records remain forbidden.
 
 ## Duplicate and replay semantics
 
-Spreadsheet imports automatically skip exact canonical matches in the importing
-owner's non-deleted library and repeated content within the selected rows.
-Equality includes authored content, answers, grading and image references;
-name, tags and status do not matter. URL identity is separate from ZIP's
-media-content fingerprint, which can omit unresolved media. A public URL is
-never stored as if it were a verified content hash.
+The common import path skips exact canonical matches in the importing owner's
+non-deleted library and repeated content within the selected input. Equality
+includes content, answers, grading and image references; name, tags and status do
+not matter. Empty and absent explanations are equivalent. URL identity remains
+separate from a verified media-content fingerprint.
 
-Preview hints are advisory; commit recomputes identities from current database
-content under a per-owner transaction lock shared by spreadsheet imports. This
-does not impose a uniqueness constraint on ordinary editing or ZIP imports.
-No existing element is overwritten. ZIP retains its deliberate-copy behavior.
-
-The existing signed artifact/token and leased receipt pipeline owns execution.
-`ElementImportReceipt.skippedElementRefs` records the authoritative duplicate
-decision alongside created IDs, including an all-duplicate success. The immutable
-completed receipt permits retries to return the original result after elements
-are changed or deleted. The schema migration updates the state constraint,
-immutable trigger and database readiness contract together.
-
-The browser reports created counts and each skipped element's name and source
-row. It retains committed results even if refreshing the library fails.
+Preview hints are advisory; commit recomputes identity from current database
+content under a per-owner transaction lock. No existing element is overwritten.
+`ElementImportReceipt.skippedElementRefs` stores the authoritative report, even
+when every selected element is a duplicate. Completed receipt replay returns
+the original outcome after content changes or artifact expiry. The browser
+reports each skipped element by name and source row or JSON filename and retains
+success when a subsequent library refresh fails.

@@ -34,6 +34,7 @@ export function computeSpreadsheetElementIdentity(
   return (
     computeElementDidacticFingerprint({
       ...input,
+      explanation: input.explanation || null,
       media: { verifiedByHref: referenceTokens },
     })?.fingerprint ?? null
   )

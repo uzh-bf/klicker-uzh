@@ -17,6 +17,67 @@ type Preview = NonNullable<
   ValidateElementSpreadsheetMutation['validateElementSpreadsheet']
 >
 
+const MAX_XLSX_BYTES = 5 * 1024 * 1024
+const MAX_IMPORT_BYTES = 10 * 1024 * 1024
+const MAX_JSON_FILE_BYTES = 2 * 1024 * 1024
+const MAX_JSON_FILES = 151
+
+function extension(filename: string) {
+  return filename.toLowerCase().split('.').pop()
+}
+
+async function normalizeUpload(files: File[]) {
+  if (files.length === 1 && extension(files[0]!.name) === 'xlsx') {
+    const file = files[0]!
+    if (file.size > 0 && file.size <= MAX_XLSX_BYTES) {
+      return file
+    }
+  }
+
+  if (files.length === 1 && extension(files[0]!.name) === 'zip') {
+    const file = files[0]!
+    if (file.size > 0 && file.size <= MAX_IMPORT_BYTES) {
+      return file
+    }
+  }
+
+  if (
+    files.length >= 1 &&
+    files.length <= MAX_JSON_FILES &&
+    files.every(
+      (file) =>
+        extension(file.name) === 'json' &&
+        file.size > 0 &&
+        file.size <= MAX_JSON_FILE_BYTES
+    ) &&
+    files.reduce((total, file) => total + file.size, 0) <= MAX_IMPORT_BYTES
+  ) {
+    const content = await Promise.all(
+      files.map(async (file) =>
+        new TextDecoder('utf-8', { fatal: true }).decode(
+          await file.arrayBuffer()
+        )
+      )
+    )
+    const transport = JSON.stringify({
+      type: 'klicker-json-files',
+      version: 1,
+      files: files.map((file, index) => ({
+        name: file.name,
+        content: content[index],
+      })),
+    })
+    const file = new File([transport], 'klicker-json-files.json', {
+      type: 'application/json',
+    })
+    if (file.size > 0 && file.size <= MAX_IMPORT_BYTES) {
+      return file
+    }
+  }
+
+  return null
+}
+
 const issueMessages = {
   SOURCE_IMAGE_DEPENDENCY: 'spreadsheetImageDependency',
   INVALID_ORDER: 'spreadsheetInvalidOrder',
@@ -26,14 +87,17 @@ const issueMessages = {
   AMBIGUOUS_SOLUTION: 'spreadsheetAmbiguousSolution',
   INVALID_IMAGE_URL: 'spreadsheetInvalidImage',
   UNSUPPORTED_CELL: 'spreadsheetUnsupportedCell',
+  FIRST_ROW_ONLY: 'spreadsheetFirstRowOnly',
+  SC_ONE_CORRECT: 'spreadsheetScOneCorrect',
+  MC_CORRECT_REQUIRED: 'spreadsheetMcCorrectRequired',
+  KPRIM_FOUR_ANSWERS: 'spreadsheetKprimFourAnswers',
+  REQUIRED_VALUE: 'spreadsheetRequiredValue',
 } as const
 
 function SpreadsheetModal({
-  selectedElementIds,
   onClose,
   refetchElements,
 }: {
-  selectedElementIds: number[]
   onClose: () => void
   refetchElements: () => Promise<void>
 }) {
@@ -117,11 +181,11 @@ function SpreadsheetModal({
       if (mounted.current) setBusy(false)
     }
   }
-  const download = (ids: number[]) =>
+  const download = () =>
     run(async () => {
       const response = await client.query({
         query: GetElementSpreadsheetDocument,
-        variables: { elementIds: ids },
+        variables: { elementIds: [] },
         fetchPolicy: 'no-cache',
       })
       const file = response.data.getElementSpreadsheet
@@ -143,37 +207,40 @@ function SpreadsheetModal({
         window.setTimeout(() => URL.revokeObjectURL(href), 1000)
       }
     })
-  const upload = (file: File) =>
+  const upload = (files: File[]) =>
     run(async () => {
       setResult(null)
       setPreview(null)
-      if (
-        !file.name.toLowerCase().endsWith('.xlsx') ||
-        file.size === 0 ||
-        file.size > 5 * 1024 * 1024
-      ) {
+      const uploadFile = await normalizeUpload(files)
+      if (!uploadFile) {
         setError(t('spreadsheetFileRequirements'))
         return
       }
       const controller = new AbortController()
       abort.current = controller
       const context = { fetchOptions: { signal: controller.signal } }
-      const prepared = await client.mutate({
-        mutation: PrepareElementSpreadsheetUploadDocument,
-        variables: { filename: file.name, bytes: file.size },
-        context,
-      })
-      const target = prepared.data?.prepareElementSpreadsheetUpload
+      const target = (
+        await client.mutate({
+          mutation: PrepareElementSpreadsheetUploadDocument,
+          variables: {
+            filename: uploadFile.name,
+            bytes: uploadFile.size,
+          },
+          context,
+        })
+      ).data?.prepareElementSpreadsheetUpload
       if (!target) throw new Error('UPLOAD_FAILED')
       const response = await fetch(target.uploadURL, {
         method: 'PUT',
         credentials: 'include',
         signal: controller.signal,
         headers: {
+          // The existing artifact endpoint uses a fixed transport content type.
+          // The server identifies and validates the actual file from its bytes.
           'Content-Type': 'application/zip',
           'x-klicker-import-upload-capability': target.uploadCapability,
         },
-        body: file,
+        body: uploadFile,
       })
       if (!response.ok) throw new Error('UPLOAD_FAILED')
       const validated = await client.mutate({
@@ -195,9 +262,9 @@ function SpreadsheetModal({
           selectedElementRefs: refs,
         },
       })
-      if (!response.data?.importElementSpreadsheet)
-        throw new Error('IMPORT_FAILED')
-      if (mounted.current) setResult(response.data.importElementSpreadsheet)
+      const imported = response.data?.importElementSpreadsheet
+      if (!imported) throw new Error('IMPORT_FAILED')
+      if (mounted.current) setResult(imported)
       try {
         await refetchElements()
       } catch {
@@ -224,30 +291,24 @@ function SpreadsheetModal({
         <div className="flex flex-wrap gap-2">
           <Button
             disabled={busy}
-            onClick={() => void download([])}
+            onClick={() => void download()}
             data={{ cy: 'spreadsheet-template' }}
           >
             <Button.Label>{t('spreadsheetTemplate')}</Button.Label>
-          </Button>
-          <Button
-            disabled={busy || selectedElementIds.length === 0}
-            onClick={() => void download(selectedElementIds)}
-            data={{ cy: 'spreadsheet-export' }}
-          >
-            <Button.Label>{t('spreadsheetExport')}</Button.Label>
           </Button>
         </div>
         <label className="flex flex-col gap-2">
           {t('spreadsheetUpload')}
           <input
             type="file"
-            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            accept=".xlsx,.zip,.json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/json"
+            multiple
             disabled={busy}
             data-cy="spreadsheet-upload"
             onChange={(event) => {
-              const file = event.target.files?.[0]
+              const files = Array.from(event.target.files ?? [])
               event.target.value = ''
-              if (file) void upload(file)
+              if (files.length > 0) void upload(files)
             }}
           />
         </label>
@@ -261,7 +322,7 @@ function SpreadsheetModal({
               type="info"
               message={t('spreadsheetDuplicatePolicy')}
             />
-            {preview.issues.length > 0 && (
+            {(preview?.issues.length ?? 0) > 0 && (
               <div
                 className="max-h-48 overflow-auto"
                 data-cy="spreadsheet-issues"
@@ -270,7 +331,9 @@ function SpreadsheetModal({
                 <ul className="list-disc pl-6">
                   {issues.map(([key, issue]) => (
                     <li key={key}>
-                      {issue.sheet}, {t('spreadsheetRow', { row: issue.row })}
+                      {issue.row === 0
+                        ? issue.sheet
+                        : `${issue.sheet}, ${t('spreadsheetRow', { row: issue.row })}`}
                       {issue.field ? ` (${issue.field})` : ''}:{' '}
                       {t(
                         issueMessages[
@@ -296,7 +359,9 @@ function SpreadsheetModal({
                         return (
                           <li key={ref}>
                             {source
-                              ? `${source.name} — ${source.sheet}, ${t('spreadsheetRow', { row: source.row })}`
+                              ? source.row === 0
+                                ? `${source.name} — ${source.sheet}`
+                                : `${source.name} — ${source.sheet}, ${t('spreadsheetRow', { row: source.row })}`
                               : ref}
                           </li>
                         )

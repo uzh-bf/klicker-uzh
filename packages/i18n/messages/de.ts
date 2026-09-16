@@ -2475,24 +2475,23 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       optionsImportDescription: 'Optionen',
       importElements: 'Elemente importieren',
       exportElements: 'Elemente exportieren',
-      spreadsheetTitle: 'Excel',
+      spreadsheetTitle: 'Elemente importieren',
       spreadsheetInfo:
-        'Importieren Sie die feste Excel-Vorlage von Klicker. Klicker unterstützt alle neun Elementtypen. Gültige Elemente können importiert werden, auch wenn andere Zeilen korrigiert werden müssen.',
+        'Laden Sie die feste Excel-Vorlage herunter oder importieren Sie Klicker-JSON-Dateien und ZIP-Exporte. Excel unterstützt sieben Elementtypen, ausser Auswahl- und Fallstudien-Elemente; JSON alle neun. Gültige Elemente können importiert werden, auch wenn andere Zeilen korrigiert werden müssen.',
       spreadsheetTemplate: 'Klicker-Vorlage herunterladen',
-      spreadsheetExport: 'Ausgewählte Elemente als Excel exportieren',
-      spreadsheetUpload: 'Excel-Arbeitsmappe hochladen',
-      spreadsheetWorking: 'Arbeitsmappe wird verarbeitet…',
+      spreadsheetUpload: 'Excel-, JSON- oder ZIP-Dateien importieren',
+      spreadsheetWorking: 'Import wird verarbeitet…',
       spreadsheetFailure:
-        'Die Verarbeitung ist fehlgeschlagen. Prüfen Sie die Vorlage und versuchen Sie es erneut. Ein unterbrochener Import kann sicher wiederholt werden.',
+        'Der Import ist fehlgeschlagen. Prüfen Sie die ausgewählten Dateien und versuchen Sie es erneut. Ein unterbrochener Import kann sicher wiederholt werden.',
       spreadsheetFileRequirements:
-        'Wählen Sie eine nicht leere .xlsx-Arbeitsmappe mit höchstens 5 MiB.',
+        'Wählen Sie eine nicht leere .xlsx-Arbeitsmappe bis 5 MiB, einen ZIP-Export bis 10 MiB oder 1–151 .json-Dateien bis je 2 MiB und zusammen 10 MiB. Dateitypen dürfen nicht gemischt werden.',
       spreadsheetDuplicatePolicy:
         'Exakte Duplikate werden automatisch übersprungen. Namen, Tags und Status beeinflussen den Vergleich nicht. Bestehende Elemente werden nie überschrieben.',
       spreadsheetDuplicateSummary:
         '{count, plural, one {# ausgewähltes Element stimmt mit Inhalten in dieser Datei oder Ihrer Bibliothek überein.} other {# ausgewählte Elemente stimmen mit Inhalten in dieser Datei oder Ihrer Bibliothek überein.}} Übereinstimmungen werden beim Import erneut geprüft und übersprungen.',
       spreadsheetCollections:
         'Benötigte Antwortsammlungen werden nur für tatsächlich importierte Elemente kopiert.',
-      spreadsheetIssues: 'Zeilen und Konvertierungshinweise',
+      spreadsheetIssues: 'Quellen und Konvertierungshinweise',
       spreadsheetRow: 'Zeile {row}',
       spreadsheetImageDependency:
         'Der ursprüngliche öffentliche Bildlink bleibt erhalten. Das Bild ist davon abhängig, dass der ursprüngliche Blob verfügbar bleibt.',
@@ -2513,6 +2512,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Verwenden Sie eine gültige öffentliche Klicker-Bild-URL oder entfernen Sie diese Bildreferenz.',
       spreadsheetUnsupportedCell:
         'Verwenden Sie Text, Zahlen oder TRUE/FALSE. Formel- und Hyperlink-Zellen werden nicht unterstützt.',
+      spreadsheetFirstRowOnly:
+        'Dieser Wert ist nur in der ersten Zeile dieses Elements erlaubt.',
+      spreadsheetScOneCorrect:
+        'Eine Single-Choice-Frage benötigt genau eine richtige Antwort.',
+      spreadsheetMcCorrectRequired:
+        'Eine Multiple-Choice-Frage benötigt mindestens eine richtige Antwort.',
+      spreadsheetKprimFourAnswers:
+        'Eine KPRIM-Frage benötigt genau vier Antworten.',
+      spreadsheetRequiredValue:
+        'Geben Sie für dieses Pflichtfeld einen Wert ein.',
       spreadsheetSkipped:
         'Nicht importiert, da es sich um exakte Duplikate handelt:',
       spreadsheetNoValidElements:
@@ -2534,7 +2543,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       exportElementsInfo:
         'Exporte enthalten nur wiederverwendbare Elementinhalte. Tags, Besitzer, Berechtigungen, Aktivitätsresultate und private Metadaten werden nicht exportiert.',
       exportElementsPackageInfo:
-        'Verknüpfte Antwortsammlungen werden automatisch eingeschlossen, wenn Sie Administrator oder Besitzer davon sind.',
+        'Das ZIP enthält JSON-Dateien für Elemente und verknüpfte Antwortsammlungen. Öffentliche Klicker-Bild-URLs bleiben erhalten; Bilder werden nicht kopiert und benötigen weiterhin die Quelldatei.',
       packageAnswerCollections: 'Antwortsammlungen',
       packageAnswerCollectionsExportDescription:
         '{numCollections, plural, =0 {Keine verknüpften Antwortsammlungen werden in das ZIP-Paket aufgenommen.} one {# verknüpfte Antwortsammlung wird in das ZIP-Paket aufgenommen.} other {# verknüpfte Antwortsammlungen werden in das ZIP-Paket aufgenommen.}}',
@@ -2560,7 +2569,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       packageTooManyElementsError:
         'Der Export wurde blockiert, weil ein Elementpaket höchstens 100 Elemente enthalten kann.',
       packageExportTooLargeError:
-        'Der Export wurde blockiert, weil das Paket zu gross wäre. Teilen Sie die Auswahl auf oder entfernen Sie grosse Mediendateien.',
+        'Der Export wurde blockiert, weil das JSON-Paket zu gross wäre. Teilen Sie die Auswahl auf oder kürzen Sie grosse Inhalte.',
       packageElementNotPortableError:
         'Mindestens ein ausgewähltes Element oder eine verknüpfte Antwort-Sammlung verletzt die Anforderungen für portable Pakete. Prüfen und korrigieren oder kürzen Sie die betroffenen Inhalte und versuchen Sie es erneut.',
       packageAggregateLimitError:
@@ -2644,11 +2653,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementExportStatusNormalizedWarning:
         'Elementstatus werden nicht in das ZIP-Paket aufgenommen. Importierte Kopien werden mit dem Status «Prüfung» erstellt.',
       elementExportExternalMediaWarning:
-        'Automatisch geladene externe Bilder werden nicht in das ZIP-Paket kopiert. Beim Import werden sie durch einen sichtbaren Platzhalter ersetzt; normale Links bleiben unverändert.',
+        'Öffentliche Bild-URLs bleiben im JSON-ZIP erhalten und werden nicht kopiert. Importierte Inhalte benötigen weiterhin verfügbare Quell-URLs.',
       elementExportMediaMissingWarning:
-        'Einige referenzierte KlickerUZH-Bilder konnten nicht in das ZIP-Paket aufgenommen werden. Beim Import werden sie durch einen sichtbaren Platzhalter ersetzt.',
+        'Referenzierte öffentliche Klicker-Bild-URLs bleiben erhalten, werden aber nicht in das JSON-ZIP kopiert.',
       elementExportUnusedMediaWarning:
-        'Medien, auf die von den ausgewählten Elementen nicht verwiesen wird, werden nicht in das ZIP-Paket aufgenommen.',
+        'Das ZIP enthält nur JSON-Dateien; Mediendateien sind nicht enthalten.',
       elementExportCleanupPendingWarning:
         'Das Exportpaket wurde erstellt, die Bereinigung temporärer Exportdaten steht jedoch noch aus.',
       elementExportGenericWarning:

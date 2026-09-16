@@ -11,7 +11,7 @@ import { parseZip } from '../src/lib/zip.js'
 describe('Excel editing checks', () => {
   it('preserves dependent lists and numeric checks without changing imported data', async () => {
     const tables = createElementSpreadsheetExamples()
-    const bytes = await writeKlickerWorkbook(tables, true)
+    const bytes = await writeKlickerWorkbook(tables)
     const workbook = await loadElementWorkbook(bytes)
     const read = readKlickerWorkbook(workbook)
     expect(read.issues).toEqual([])
@@ -28,29 +28,42 @@ describe('Excel editing checks', () => {
       )
     }
 
-    const elements = workbook.getWorksheet('Elements')!
-    for (const address of ['H13', 'H14']) {
+    const elements = workbook.getWorksheet('Single choice')!
+    for (const address of ['G8', 'G9']) {
       const rule = elements.getCell(address).dataValidation
       expect(rule.type).toBe('list')
-      // Excel's ignore-blank option would bypass a blank dependent source.
       expect(rule.allowBlank).not.toBe(true)
       expect(rule.errorStyle).toBe('stop')
       expect(rule.formulae![0]).toContain('KlickerUnused')
-      expect(rule.formulae![0]).not.toMatch(/CONTENT|FLASHCARD/)
     }
-    const feedback = elements.getCell('J8').dataValidation.formulae![0]
-    expect(feedback).toContain('OR($H8=TRUE,$H8="TRUE")')
-    expect(feedback).toContain('KlickerBooleans,KlickerFalse')
-    expect(elements.getCell('G8').dataValidation.formulae![0]).toContain(
-      'G8<=4'
+    expect(elements.getCell('I8').dataValidation.formulae![0]).toContain(
+      'KlickerFalse'
     )
-    expect(elements.getCell('L8').dataValidation.formulae![0]).toContain(
-      'L8<=100'
+    expect(elements.getCell('F8').dataValidation.formulae![0]).toContain(
+      'F8<=4'
     )
-    expect(elements.getCell('Q107').dataValidation.formulae![0]).toContain(
-      'Q107>0'
+    const numerical = workbook.getWorksheet('Numerical')!
+    expect(numerical.getCell('I8').dataValidation.formulae![0]).toContain(
+      'I8<=100'
     )
-    expect(elements.getCell('B107').dataValidation.type).toBe('list')
+    expect(
+      workbook.getWorksheet('Free text')!.getCell('H1007').dataValidation
+        .formulae![0]
+    ).toContain('H8>0')
+    expect(workbook.getWorksheet('Content')!.getRow(6).values).toEqual([
+      ,
+      'ref',
+      'name',
+      'content',
+      'explanation',
+    ])
+    expect(workbook.getWorksheet('Flashcards')!.getRow(6).values).toEqual([
+      ,
+      'ref',
+      'name',
+      'content',
+      'explanation',
+    ])
     // Native Excel uses the differential fill's background color.
     const styles = parseZip(bytes, {
       maxEntries: 250,

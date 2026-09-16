@@ -14,12 +14,11 @@ describe('spreadsheet image reference policy', () => {
       'https://unrelated.invalid/picture.png',
       'http://127.0.0.1/private.png',
     ]
-    tables.Elements = hrefs.map((href, index) => ({
-      sheet: 'Elements',
+    tables.Content = hrefs.map((href, index) => ({
+      sheet: 'Content',
       row: index + 2,
       values: {
         ref: `image-${index}`,
-        type: 'CONTENT',
         name: `Image ${index}`,
         content: `![Image](${href})`,
       },

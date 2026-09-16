@@ -37,6 +37,13 @@ export async function findSpreadsheetDuplicates({
   answerCollections: readonly PackageAnswerCollection[]
   prisma: Prisma.TransactionClient
 }) {
+  const requestedIdentities = new Set(
+    elements.map((element) => {
+      const identity = spreadsheetIdentity(element, answerCollections)
+      if (!identity) throw new Error('Invalid import comparison domain')
+      return identity
+    })
+  )
   const identities = new Map<string, { id: number | null; name: string }>()
   if (elements.length) {
     let cursor: number | undefined
@@ -45,10 +52,7 @@ export async function findSpreadsheetDuplicates({
         where: {
           ownerId,
           isDeleted: false,
-          OR: elements.map((element) => ({
-            type: element.type,
-            content: element.content,
-          })),
+          type: { in: [...new Set(elements.map((element) => element.type))] },
         },
         select: {
           id: true,
@@ -81,10 +85,18 @@ export async function findSpreadsheetDuplicates({
             entries.map((entry) => [entry.id, entry.value])
           ),
         })
-        if (identity && !identities.has(identity))
+        if (
+          identity &&
+          requestedIdentities.has(identity) &&
+          !identities.has(identity)
+        )
           identities.set(identity, { id: candidate.id, name: candidate.name })
       }
-      if (candidates.length < 100) break
+      if (
+        candidates.length < 100 ||
+        identities.size === requestedIdentities.size
+      )
+        break
       cursor = candidates[candidates.length - 1]!.id
     } while (cursor !== undefined)
   }
