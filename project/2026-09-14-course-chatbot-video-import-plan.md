@@ -271,7 +271,69 @@ Work items:
 4. Runbook: replace the laptop-side prepare/activate steps with the dispatch flow; keep
    the receipt checks identical.
 
+### S7 implementation plan - in-cluster prepare/activate (GLM 5.3 planning pass, 2026-09-16)
+
+Verified contract facts this plan builds on: the CLI results lane runs inventory/package/
+prepare/activate as pure functions of the staged run tree (`video_results.py`); the deployed
+workers execute `resource-upsert` and `resource_candidate_batch` Hatchet workflows keyed by
+`ResourceMutationEvent`; the PRD embedding worker (`prd-ingestion`, image `1eee63d6…`,
+replicas 0, KEDA min 0/max 1, no pause annotations) gets `KLICKER_MILVUS_URI`/`_TOKEN` from
+secret `prd-ingestion-klicker-milvus`, `OPENAI_API_KEY` + `HATCHET_CLIENT_TOKEN` from secret
+`prd-ingestion`, and artifact storage (`prdingestartifactsfehm6/catalog-ingestion-handoff`)
+from the ingestion ConfigMap; its `OPENAI_BASE_URL` is the in-cluster
+`http://litellm.prd-litellm.svc.cluster.local:4000` with model `aibuddy/azure/
+text-embedding-3-small`; `INGESTION_ALLOWED_MILVUS_TARGETS` already includes
+`klicker_prd:klicker_course_materials_v1`; the deployed project-config set does not yet
+include `klicker-course-materials.yaml`; the deployed worker image `1eee63d6…` is newer than
+the STG one (`e781292e…`) and contains the video lane (per producer contract commit
+`a6511ef0…` recorded in the staged candidate manifest).
+
+Slice 7.1 - remote video-candidate workflow (data-ingestion, new branch on
+`rs/video-lecture-import`): add `video_candidate_workflow.py` next to the existing
+workflows: `hatchet.workflow(name="video-candidate-import"...)` with a single task
+(`prepare-and-activate`) pinned via `worker_type_label("embedding")`, input model carrying
+{control file reference (repo path or artifact-store key), `activate: bool`}. The task body
+reuses `run_inventory/run_package/run_prepare/run_activate` from the CLI lane verbatim
+(import from `ingestion_cli.video_results` or move that module into `ingestion/` so workers
+can import it - prefer moving to keep the CLI thin). Receipts go to the artifact store under
+`video-import/<job_id>/receipts.json` (create-only, same pattern as the service).
+Registration: add the workflow to the worker registration list so the embedding worker picks
+it up. Ship a new worker image (GitLab CI on the data-ingestion repo builds on the default
+branch; cut a lane branch first so the workflow can merge in one PR).
+
+Slice 7.2 - dispatch + completion readback (CLI): extend `video_import.py` with a
+`--dispatch` flag on `video-import lecture`: after `_run_lane` is skipped, upload the staged
+control.yaml + package inputs to the artifact store, then trigger the workflow via the
+Hatchet Python client (`hatchet.admin.run_workflow("video-candidate-import", payload)`),
+which needs `INGESTION_HATCHET_CLIENT_TOKEN`/`_HOST_PORT`/`_API_BASE`/`_TLS_STRATEGY` - on
+PRD these resolve to `app-hatchet-svc-grpc-internal-lb.prd-hatchet-svc.svc:7070` (in-cluster)
+or the LoadBalancer external IP `10.200.4.14:7070` for operator-side dispatch, token from
+secret `prd-ingestion.HATCHET_CLIENT_TOKEN` via the Infisical profile once the name is
+read-allowlisted). CLI polls the artifact-store receipts path (blob listing) rather than
+`/jobs`, giving the WAF-resilient completion signal; print the receipts JSON as today.
+
+Slice 7.3 - policy descriptors (klicker-uzh-video-ai + binding): add
+`src/video_ai/ingestion_policies/` JSON descriptors for `finance-i-hs26-eligibility.v1`
+(and optionally a `klicker-course-generic-hs26.v1` for the remaining six courses), change
+`VIDEO_PROCESSING_INGESTION_SOURCE_POLICY` in the video-processing worker config to point at
+the generic descriptor, update `course_targets/finance-i.yaml` policy block to the new
+id+sha256, and record in this plan whether the pilot activation happens under the IuW-named
+descriptor (bytes-identical) or waits for the redeploy. Ship the descriptor as part of the
+same video-ai PR that merges the ingestion-source contract.
+
+Slice 7.4 - enable PRD embedding worker + runbook (df-cloud / deployment): remove the
+scale-to-zero state only if the dispatch flow is expected to run unattended (the same KEDA
+metrics-api trigger already resumes on activity, so no change may be needed; verify once)
+and replace the runbook's laptop-side prepare/activate steps with the dispatch flow.
+
+Acceptance for S7: `ingestion-cli video-import lecture --video <file> --course finance-i
+--dispatch` from the laptop ends with a receipt JSON in the artifact store and no embedding
+call on the laptop; the worker logs show the embedding call hitting the in-cluster LiteLLM;
+the vector write happens only when `--activate` is passed; and the receipts land in the run
+tree for the S6 acceptance checklist.
+
 ## S6 acceptance checklist
+
 
 
 Per pilot course: inventory lists the lecture with chunk counts; an owner-preview tutor question
