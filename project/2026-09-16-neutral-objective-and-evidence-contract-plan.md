@@ -100,5 +100,11 @@ K4 — Verification and delivery:
 - Status: draft awaiting approval.
 - Active slice: none.
 - Next action: user approval of both plans; then K1 and the content-gen S1.
+## Progress (updated)
+
+ - Status: K1 committed and green; K2 and K3 in flight.
+ - Active slice: K2/K3 (blueprint marker + design-review evidence surface).
+ - Completed: K1 (1e8e48020a) marks synthesized objectives neutral and lecturer objectives provided, exposes objectiveSource on the ElementGenerationObjective GraphQL view, adds the optional field to the configuration, design-summary, and UI objective types, regenerates schema.graphql, and replaces the prose-pinning test with behavior coverage. Focused questionGenerationConfiguration and questionGenerationArtifacts suites pass (99 tests); the graphql typecheck shows no new errors (659 baseline, 659 after); Biome is clean on the changed files.
+ - Next action: K2/K3, then K4 whole-branch verification and the draft PR update.
 - Planner pass: the read-only planner child was unavailable (account usage limit until 2026-09-20). The planning-stage challenge was completed in the main session instead; its corrections (retain-and-mark rather than removal, worker-first rollout gate, blueprint-builder file, i18n files, `graph_resolution` evidence path) are incorporated above.
 - Independent review: one read-only GLM 5.3 review pass returned APPROVE_WITH_CORRECTIONS. Its verified findings folded in above: `packages/types/src/questionGeneration.ts` type surfaces, the design-summary slots exposure surface, the `undefined`-legacy rendering rule, and the configuration-hash note. Its worker-side findings (stems metadata/checkpoint field list, `blueprint_to_assessment_design` propagation, `load_plan` neutral acceptance, focus-text handling) are folded into the companion content-gen plan.
