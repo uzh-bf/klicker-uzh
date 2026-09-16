@@ -17,15 +17,19 @@
 //
 // This script turns that unnamed failure into a named one. It reads the
 // analyzed branch's measures and the branch's recorded type from the public
-// API and fails the analysis early when new code covers an implausible share
-// of the branch, so the run reports the cause that can actually be corrected
-// instead of ending in an unexplained quality-gate failure 45 minutes later.
+// API and reports when new code covers an implausible share of the branch, so
+// the run names the cause that can actually be corrected.
+//
+// It reports rather than enforces. A branch's type is assigned once, so a
+// short-lived integration branch cannot satisfy the branch gate until an
+// operator corrects it on the project; the analysis job instead awaits the
+// quality gate on a pull request, where new code is the diff against the base
+// and the gate is meaningful. Failing a branch run here would block every
+// required check that depends on it without changing the condition.
 //
 // It stays non-fatal when the API cannot be read and reports a branch without
 // measures as unknown rather than as passing, so an unreadable boundary never
-// becomes a false success. It is not a second gate: the awaited quality gate
-// above still decides the job, and a named boundary failure is reported in
-// place of an opaque one.
+// becomes a false success.
 
 const DEFAULT_RATIO_LIMIT = 0.5
 const DEFAULT_PROJECT_KEY = 'uzh-bf_klicker-uzh'
@@ -421,6 +425,10 @@ async function main() {
 
   emitSummary(formatSummary(result))
   if (result.state === STATE.inflated) {
+    // Reported, not enforced: the branch type is fixed at the first analysis,
+    // so no code change can clear this and a failure would only block the
+    // promotion controller. The annotation keeps the finding on the run for
+    // the operator who performs the platform correction.
     process.stderr.write(
       '::error::New code covers ' +
         formatPercent(result.ratio) +
@@ -432,7 +440,6 @@ async function main() {
         describeRemedy(result).join(' ') +
         '\n'
     )
-    return 1
   }
   return 0
 }
