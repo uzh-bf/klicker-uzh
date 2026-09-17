@@ -371,6 +371,25 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 
 ## Progress
 
+- 2026-09-17 (S7 closed: the wake-owner fix is merged, promoted to PRD, and proven at
+  runtime): the user approved merging the fix and promoting it. data-ingestion MR !186 merged
+  as `73f914543554bcf2cd6e055fcb59ed089baf5000`, the merged-head pipeline 666866 went green,
+  and its `update_deploy_stg` job auto-promoted STG (`6e106360`). One flake surfaced and was
+  retried rather than re-scoped: the first `main` run failed `e2e` in
+  `test_catalog_blob_handoff_e2e.py::test_partial_failure_persists_successes_and_failures`
+  with `join_deadline_exceeded` on the bounded-join path that landed with `278b4d3`, while
+  the identical tree had passed `e2e` on MR pipeline 666853 minutes earlier. Deployment MR
+  !911 carried the PRD bump (`ingestion/prd-generic/kustomization.yaml` and the matching
+  `prd_contract.py` constants; worker `@sha256:eb593307…`, api `@sha256:28813519…`), with 44
+  rendered PRD documents validated and 36 contract tests passed. Argo
+  `app-ai-generic-ingestion-prd` reached Synced/Healthy/Succeeded at `eeb3834e`, and the live
+  Deployments now run the new digests. Runtime proof of the fix, read from inside the cluster:
+  with `ingestion-embedding-worker` still at `0` replicas under KEDA, Hatchet lists 11
+  workflows including `video-candidate-import`, so the always-on durable-control worker
+  publishes it and the post-deploy phantom-run deadlock no longer reproduces. The plan record
+  itself merged as PR #6109 (`819df9bc74`). Still open and separately gated: the
+  `--activate` corpus write, and a follow-up look at the bounded-join e2e flake.
+
 - 2026-09-17 (S7 live proof on PRD, prepare-only; one real cold-start defect found and
   fixed): after the user merged the three delivery heads (video-ai PR #128 `4c67c6f3`,
   deployment MR !905 `361e7129`, klicker-uzh PR #6109 pending its final-ai-review), the
