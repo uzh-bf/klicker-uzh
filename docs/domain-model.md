@@ -44,8 +44,19 @@ canonical data for that participant; `false` excludes all of it. Returning to
 `learningAnalyticsConsent = true` allows eligible individual learning analytics
 to include all stored activity history after a course has been recomputed
 strictly after the current choice; `false` excludes individual learning
-analytics. The separate `Course.isLearningAnalyticsEnabled` course control also
-defaults to `false`.
+analytics. The privacy policy also makes Learning Analytics voluntary at course
+level, but no course-level activation setting exists in this schema yet;
+`Course.areAnalyticsValid` records only whether previously computed data are
+still valid and must not be reused as that setting. The course-level choice is
+owned by a later layer.
+
+An analytics withdrawal request is created only on a true-to-false transition.
+The migration initializes existing accounts with
+`learningAnalyticsConsent = false` and records no choice, so legacy analytics
+data for an account whose first recorded choice is false is not represented by
+any withdrawal request. Consuming the queue is therefore not, by itself, a
+legacy-data cleanup strategy; that reconciliation belongs to the later
+analytics layer.
 
 `Participation` remains the course-membership row and keeps its existing
 leaderboard meaning. It carries no research or learning-analytics choice or

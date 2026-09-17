@@ -22,7 +22,10 @@ import Router from 'next/router'
 import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'
 import util from 'util'
-import { participantDataUseReturn } from './participantDataUseReturn'
+import {
+  participantDataUseReturn,
+  storeDataUseReturnTarget,
+} from './participantDataUseReturn'
 
 interface PageProps {
   __APOLLO_STATE__: NormalizedCacheObject
@@ -98,8 +101,7 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
           extensions?.code === 'PARTICIPANT_DATA_USE_COMPLETION_REQUIRED' &&
           Router.pathname !== '/account/data-use'
         ) {
-          sessionStorage.setItem(
-            'participant_data_use_return',
+          storeDataUseReturnTarget(
             participantDataUseReturn(
               window.location.href,
               window.location.origin

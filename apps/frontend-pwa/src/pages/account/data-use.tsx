@@ -11,7 +11,11 @@ import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/Dynam
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util/dist/participantAccountDataUse'
 import { isDataUseConflict } from '@lib/participantDataUseConflicts'
-import { participantDataUseReturn } from '@lib/participantDataUseReturn'
+import {
+  clearDataUseReturnTarget,
+  participantDataUseReturn,
+  readDataUseReturnTarget,
+} from '@lib/participantDataUseReturn'
 import {
   Button,
   Checkbox,
@@ -84,11 +88,6 @@ function AccountDataUse() {
       })
       if (!result.data?.completeParticipantDataUse.isComplete)
         throw new Error('Completion failed')
-      const saved = sessionStorage.getItem('participant_data_use_return')
-      sessionStorage.removeItem('participant_data_use_return')
-      await router.replace(
-        participantDataUseReturn(saved ?? '/', window.location.origin)
-      )
     } catch (error) {
       if (isDataUseConflict(error)) {
         // The persisted state changed elsewhere; reset to the reloaded
@@ -100,8 +99,30 @@ function AccountDataUse() {
         await refetch()
         return
       }
+      // The write outcome is unknown. Reload the persisted choices and drop
+      // the local intent and acknowledgement, so the next attempt submits the
+      // reloaded choices against their own revision and the participant must
+      // acknowledge them again. A retry can then no longer pair old form
+      // intent with a newer revision produced by another tab.
       setFailed(true)
+      setAcknowledged(false)
+      setResearch(undefined)
+      setAnalytics(undefined)
       await refetch()
+      return
+    }
+
+    // The choices are persisted now. Reading or clearing the optional return
+    // target and navigating must never be reported as a failed save, so this
+    // runs outside the mutation's error handling.
+    const saved = readDataUseReturnTarget()
+    clearDataUseReturnTarget()
+    try {
+      await router.replace(
+        participantDataUseReturn(saved ?? '/', window.location.origin)
+      )
+    } catch {
+      // A navigation failure must not read as a persistence failure.
     }
   }
 
