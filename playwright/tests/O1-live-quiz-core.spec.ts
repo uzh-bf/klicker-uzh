@@ -3311,8 +3311,11 @@ test.describe.serial('Core live-quiz workflows', () => {
 
     await expect.poll(() => attempts).toBe(2)
     expect(submissionIds).toHaveLength(2)
+    // the standard route's identity is the stable execution-scoped
+    // composite (`<clientUuid>:lq-<quizId>-ex-<n>-i-<n>`), anchored to a
+    // client UUID v4 and stable across the retry
     expect(submissionIds[0]).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:lq-[0-9a-f-]+-ex-\d+-i-\d+$/i
     )
     expect(submissionIds[1]).toBe(submissionIds[0])
     await expectByAssertion(

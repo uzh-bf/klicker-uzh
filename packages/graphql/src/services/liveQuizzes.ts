@@ -52,6 +52,7 @@ import {
   anchorCoveredAssessmentAuditScope,
   assessmentAuditSystemOperation,
   assessmentAuditUserOperation,
+  assessmentBlockActivationRevertedDraft,
   assessmentLifecycleDraft,
   assessmentParticipantResetDrafts,
   assessmentResponseSnapshot,
@@ -1556,64 +1557,6 @@ export async function activateLiveQuizBlock(
       )
     : await updateBlock(ctx.prisma)
 
-  if (updatedQuiz.activeBlock?.expiresAt) {
-    scheduledJobs[blockId] = schedule.scheduleJob(
-      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
-      async () => {
-        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
-        ctx.emitter.emit('invalidate', {
-          typename: 'LiveQuiz',
-          id: updatedQuiz.id,
-        })
-      }
-    )
-  }
-
-  // update the quiz with an updated version through the corresponding subscription
-  ctx.pubSub.publish('runningLiveQuizUpdated', {
-    id: updatedQuiz.id,
-    beforeFirstBlock: false,
-    activeBlock: {
-      ...updatedQuiz.activeBlock,
-      elements: updatedQuiz.activeBlock!.elements
-        ? await Promise.all(
-            removeSolutionFromInstances({
-              instances: updatedQuiz.activeBlock!.elements,
-            }).map(async (instance) => {
-              if (!quiz.isAssessmentEnabled) {
-                return instance
-              }
-
-              // for assessment quizzes, add a correlation key to verify a student's submission
-              const correlationKey = await signJWT(
-                {
-                  instanceId: instance.id,
-                  execution: updatedQuiz.activeBlock!.execution,
-                  liveQuizId: quiz.id,
-                  sub: '', // dummy sub, since this value is required
-                },
-                process.env.APP_SECRET as string,
-                {
-                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
-                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
-                }
-              )
-
-              return { ...instance, correlationKey }
-            })
-          )
-        : [],
-    },
-    // for future blocks, do not return the elements
-    blocks: updatedQuiz.blocks.map((block) => ({
-      ...block,
-      elements:
-        block.status === DB.ElementBlockStatus.EXECUTED
-          ? removeSolutionFromInstances({ instances: block.elements })
-          : [],
-    })),
-  })
-
   // initialize the cache for the new active block
   const redisMulti = updatedQuiz.isAssessmentEnabled
     ? ctx.redisAssessmentExec.pipeline()
@@ -1754,7 +1697,219 @@ export async function activateLiveQuizBlock(
     }
   })
 
-  redisMulti.exec()
+  // the participant announcement happens only after the cache is fully
+  // initialized, so a fast first response cannot race the seeding and be
+  // rejected as missing instance metadata
+  let seedingFailed = false
+  try {
+    const seedingResults = await redisMulti.exec()
+    if (!Array.isArray(seedingResults)) {
+      // a null result is not evidence of success
+      throw new Error('cache initialization returned no command results')
+    }
+    const seedingErrors = seedingResults
+      .map(([error]) => error)
+      .filter((error) => error !== null)
+    if (seedingErrors.length > 0) {
+      ctx.log.warn(
+        {
+          event: 'response_cache.seeding.failed',
+          liveQuizId: quizId,
+          blockId,
+          failedCommandCount: seedingErrors.length,
+        },
+        'Response cache seeding failed'
+      )
+      throw new Error('Failed to initialize response cache for block')
+    }
+  } catch (e) {
+    seedingFailed = true
+    throw e
+  } finally {
+    if (seedingFailed) {
+      // The database has already marked the block ACTIVE; revert this exact
+      // activation attempt so a retried activation repairs the cache instead
+      // of returning early on the active-block guard. Publication never
+      // happened, so no responses can have arrived and the retry's reseeding
+      // cannot overwrite live counters.
+      const activatedAtIso = activatedAt.toISOString()
+
+      // compare-and-set compensation: ownership of the exact activation
+      // attempt is part of every write's WHERE clause, so a newer lifecycle
+      // state committed between the read and the write cannot be overwritten
+      // (the conditional update matches zero rows and the compensation
+      // aborts, rolling the transaction back)
+      const revertWithCas = async (
+        prisma: PrismaTransactionClient
+      ): Promise<boolean> => {
+        const blockRevert = await prisma.elementBlock.updateMany({
+          where: {
+            id: blockId,
+            status: DB.ElementBlockStatus.ACTIVE,
+            startedAt: activatedAt,
+          },
+          data: {
+            status: newBlock.status,
+            startedAt: newBlock.startedAt,
+            expiresAt: newBlock.expiresAt,
+          },
+        })
+        if (blockRevert.count === 0) {
+          // this attempt is obsolete; do not compensate it
+          return false
+        }
+
+        const quizRevert = await prisma.liveQuiz.updateMany({
+          where: { id: quizId, activeBlockId: blockId },
+          data: { activeBlockId: quiz.activeBlockId },
+        })
+        if (quizRevert.count === 0) {
+          // the quiz no longer points at this attempt; roll the whole
+          // compensation back instead of leaving a half-applied revert
+          throw new Error('activation attempt no longer current')
+        }
+        return true
+      }
+
+      try {
+        if (quiz.isAssessmentEnabled) {
+          // covered assessment: the compensating revert requires the covered
+          // audit scope; without it the revert would commit business state
+          // with no possibility of evidence, which is a failed invariant
+          const coveredScope = await ctx.prisma.assessmentAuditScope.findFirst({
+            where: {
+              liveQuizId: quizId,
+              coverageState: DB.AssessmentAuditCoverageState.COVERED,
+            },
+            orderBy: { lifecycleEpoch: 'desc' },
+          })
+          if (coveredScope === null) {
+            throw new Error(
+              'Covered assessment activation cannot be compensated without audit coverage'
+            )
+          }
+          await runInAuditTransaction(
+            ctx.prisma,
+            async (tx, auditTx) => {
+              const before = await loadAssessmentAuditSnapshot(tx, quizId)
+              const reverted = await revertWithCas(tx)
+              if (!reverted) {
+                throw new Error('activation attempt no longer current')
+              }
+              const after = await loadAssessmentAuditSnapshot(tx, quizId)
+              const revertDraft = assessmentBlockActivationRevertedDraft({
+                before,
+                after,
+                blockId,
+                producerOperationId: `assessment:${quizId}:block:${blockId}:activate-revert:${activatedAtIso}`,
+                reasonCode: 'ACTIVATION_CACHE_INITIALIZATION_FAILED',
+              })
+              await emitCoveredAssessmentAuditEvents({
+                tx,
+                auditTx,
+                liveQuizId: quizId,
+                courseId: quiz.courseId,
+                operation: assessmentAuditUserOperation({
+                  userId: ctx.user.sub,
+                  requiredPermission: 'EXECUTE',
+                  occurredAt: new Date(),
+                }),
+                drafts: [revertDraft],
+              })
+            },
+            { timeout: 60000 }
+          )
+        } else {
+          await ctx.prisma.$transaction(async (tx) => {
+            const reverted = await revertWithCas(tx)
+            if (!reverted) {
+              throw new Error('activation attempt no longer current')
+            }
+          })
+        }
+      } catch (compensationError) {
+        // keep the original seeding failure visible; a stuck-active state
+        // requires manual repair and is diagnosable from this record
+        ctx.log.error(
+          {
+            event: 'assessment.block_activation.compensation_failed',
+            liveQuizId: quizId,
+            blockId,
+          },
+          'Failed to revert block activation after cache initialization failure'
+        )
+        if (quiz.isAssessmentEnabled) {
+          await recordRejectedAssessmentAction(ctx, {
+            liveQuizId: quizId,
+            actionType: 'ASSESSMENT_BLOCK_ACTIVATE',
+            reasonCode: 'ACTIVATION_COMPENSATION_FAILED',
+            requiredPermission: 'EXECUTE',
+            targetType: 'BLOCK',
+            targetId: String(blockId),
+          })
+        }
+      }
+    }
+  }
+
+  if (updatedQuiz.activeBlock?.expiresAt) {
+    scheduledJobs[blockId] = schedule.scheduleJob(
+      dayjs(updatedQuiz.activeBlock.expiresAt).add(10, 'second').toDate(),
+      async () => {
+        await deactivateLiveQuizBlock({ quizId, blockId }, ctx, true)
+        ctx.emitter.emit('invalidate', {
+          typename: 'LiveQuiz',
+          id: updatedQuiz.id,
+        })
+      }
+    )
+  }
+
+  // update the quiz with an updated version through the corresponding subscription
+  ctx.pubSub.publish('runningLiveQuizUpdated', {
+    id: updatedQuiz.id,
+    beforeFirstBlock: false,
+    activeBlock: {
+      ...updatedQuiz.activeBlock,
+      elements: updatedQuiz.activeBlock!.elements
+        ? await Promise.all(
+            removeSolutionFromInstances({
+              instances: updatedQuiz.activeBlock!.elements,
+            }).map(async (instance) => {
+              if (!quiz.isAssessmentEnabled) {
+                return instance
+              }
+
+              // for assessment quizzes, add a correlation key to verify a student's submission
+              const correlationKey = await signJWT(
+                {
+                  instanceId: instance.id,
+                  execution: updatedQuiz.activeBlock!.execution,
+                  liveQuizId: quiz.id,
+                  sub: '', // dummy sub, since this value is required
+                },
+                process.env.APP_SECRET as string,
+                {
+                  issuer: process.env.APP_ORIGIN_ASSESSMENT_API,
+                  issuedAt: updatedQuiz.activeBlock?.startedAt ?? new Date(0),
+                }
+              )
+
+              return { ...instance, correlationKey }
+            })
+          )
+        : [],
+    },
+    // for future blocks, do not return the elements
+    blocks: updatedQuiz.blocks.map((block) => ({
+      ...block,
+      elements:
+        block.status === DB.ElementBlockStatus.EXECUTED
+          ? removeSolutionFromInstances({ instances: block.elements })
+          : [],
+    })),
+  })
+
   return updatedQuiz
 }
 

@@ -6,7 +6,7 @@ import type {
   AssessmentResponseReceipt,
   HatchetLoggingContext,
 } from '@klicker-uzh/types'
-import type { JWTPayload } from '@klicker-uzh/util'
+import { isValidSubmissionId, type JWTPayload } from '@klicker-uzh/util'
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { beginNodeRequest, type NodeRequestLog } from './requestLogging.js'
 
@@ -208,6 +208,24 @@ async function handleAddResponse(
     )
   }
 
+  // a supplied submission id must be a bounded opaque identifier; reject it
+  // explicitly instead of silently treating it as absent. Old clients that
+  // omit the id remain compatible — the worker falls back to a redelivery
+  // marker derived from the message id.
+  const submissionId = payload.submissionId
+  if (submissionId !== undefined && !isValidSubmissionId(submissionId)) {
+    requestLog.log.info(
+      { event: 'response.rejected', reason: 'invalid_submission_id' },
+      'Response rejected'
+    )
+    return badRequest(
+      req,
+      res,
+      dependencies.allowedOrigins,
+      'invalid_submission_id'
+    )
+  }
+
   const parsedCookies = parseCookies(
     typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined
   )
@@ -229,6 +247,7 @@ async function handleAddResponse(
     response,
     cookie,
     responseTimestamp,
+    submissionId,
     loggingContext: {
       requestId: requestLog.context.requestId,
       correlationId: requestLog.context.correlationId,

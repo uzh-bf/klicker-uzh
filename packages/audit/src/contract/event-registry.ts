@@ -141,6 +141,7 @@ const EVENT_FAMILIES = [
       'ASSESSMENT_BLOCK_UPDATED',
       'ASSESSMENT_BLOCK_REORDERED',
       'ASSESSMENT_BLOCK_ACTIVATED',
+      'ASSESSMENT_BLOCK_ACTIVATION_REVERTED',
       'ASSESSMENT_BLOCK_CLOSED',
       'ASSESSMENT_BLOCK_DELETED',
       'ASSESSMENT_ELEMENT_INSTANCE_ADDED',
@@ -387,6 +388,7 @@ type ConfigurationEvent =
   | 'ASSESSMENT_BLOCK_UPDATED'
   | 'ASSESSMENT_BLOCK_REORDERED'
   | 'ASSESSMENT_BLOCK_ACTIVATED'
+  | 'ASSESSMENT_BLOCK_ACTIVATION_REVERTED'
   | 'ASSESSMENT_BLOCK_CLOSED'
   | 'ASSESSMENT_BLOCK_DELETED'
   | 'ASSESSMENT_ELEMENT_INSTANCE_ADDED'
@@ -512,6 +514,24 @@ const blockActivatedPayloadSchema = configurationChangePayloadSchema(
   { message: 'block activation requires ACTIVE after-state' }
 )
 
+const blockActivationRevertedPayloadSchema = configurationChangePayloadSchema(
+  'BLOCK',
+  'UPDATED',
+  ['status', 'startedAt', 'expiresAt']
+).refine(
+  (value) => {
+    const before = blockStateSchema.safeParse(value.before)
+    const after = blockStateSchema.safeParse(value.after)
+    return (
+      before.success &&
+      after.success &&
+      before.data.status === 'ACTIVE' &&
+      after.data.status === 'SCHEDULED'
+    )
+  },
+  { message: 'block activation revert requires ACTIVE before SCHEDULED' }
+)
+
 const blockClosedPayloadSchema = configurationChangePayloadSchema(
   'BLOCK',
   'UPDATED',
@@ -565,6 +585,7 @@ const EVENT_PAYLOAD_SCHEMAS: Record<EventType, z.ZodTypeAny> = {
     ['order']
   ),
   ASSESSMENT_BLOCK_ACTIVATED: blockActivatedPayloadSchema,
+  ASSESSMENT_BLOCK_ACTIVATION_REVERTED: blockActivationRevertedPayloadSchema,
   ASSESSMENT_BLOCK_CLOSED: blockClosedPayloadSchema,
   ASSESSMENT_BLOCK_DELETED: configurationChangePayloadSchema(
     'BLOCK',

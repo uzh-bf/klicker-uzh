@@ -265,3 +265,70 @@ describe('assessment response receipt', () => {
     expect(deps.pushEvent).not.toHaveBeenCalled()
   })
 })
+
+describe('standard response route submission ids', () => {
+  const standardBody = {
+    liveQuizId: LIVE_QUIZ_ID,
+    instanceId: 13,
+    response: { value: 'synthetic-standard-answer' },
+  }
+
+  async function postStandard(
+    baseUrl: string,
+    body: Record<string, unknown>
+  ): Promise<{ status: number; json: Record<string, unknown> }> {
+    const response = await fetch(`${baseUrl}/AddResponse`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const json = (await response.json()) as Record<string, unknown>
+    return { status: response.status, json }
+  }
+
+  it('forwards a valid submission id to the worker event', async () => {
+    const deps = dependencies({ assessmentMode: false })
+    const baseUrl = await startServer(deps)
+    const { status } = await postStandard(baseUrl, {
+      ...standardBody,
+      submissionId: 'client-1:lq-quiz-1-ex-0-i-13',
+    })
+    expect(status).toBe(200)
+
+    const pushEvent = deps.pushEvent as ReturnType<typeof vi.fn>
+    expect(pushEvent).toHaveBeenCalledTimes(1)
+    const [, payload] = pushEvent.mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+    ]
+    expect(payload.submissionId).toBe('client-1:lq-quiz-1-ex-0-i-13')
+  })
+
+  it('keeps the id absent for old clients that omit it', async () => {
+    const deps = dependencies({ assessmentMode: false })
+    const baseUrl = await startServer(deps)
+    const { status } = await postStandard(baseUrl, { ...standardBody })
+    expect(status).toBe(200)
+
+    const pushEvent = deps.pushEvent as ReturnType<typeof vi.fn>
+    const [, payload] = pushEvent.mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+    ]
+    expect(payload.submissionId).toBeUndefined()
+  })
+
+  it('rejects malformed submission ids instead of dropping them', async () => {
+    const deps = dependencies({ assessmentMode: false })
+    const baseUrl = await startServer(deps)
+    const { status, json } = await postStandard(baseUrl, {
+      ...standardBody,
+      submissionId: 'bad id with spaces',
+    })
+    expect(status).toBe(400)
+    expect(json.error).toBe('invalid_submission_id')
+
+    const pushEvent = deps.pushEvent as ReturnType<typeof vi.fn>
+    expect(pushEvent).not.toHaveBeenCalled()
+  })
+})

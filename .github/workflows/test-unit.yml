@@ -28,8 +28,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/frontend-pwa/|apps/chat/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
-
+          pattern: '^(apps/frontend-pwa/|apps/hatchet-worker-response-processor/|apps/response-api/|packages/feature-flags/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
   test-unit:
     needs: filter
     if: >-
@@ -37,6 +36,15 @@ jobs:
       needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
       postgres:
         image: postgres:15
         env:
@@ -166,6 +174,14 @@ jobs:
             packages/*/coverage/lcov.info
           if-no-files-found: error
           retention-days: 7
+
+      - name: Test response processor (Redis-backed, fail closed)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/hatchet-worker-response-processor test:run
+        env:
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+          RESPONSE_SCRIPT_TESTS_REQUIRE_REDIS: '1'
 
   # Always reports a status even when the path filter selects nothing, so this
   # job is the required check. It runs unconditionally: GitHub can treat a
