@@ -197,6 +197,50 @@ describe('live quiz block activation recovery', () => {
     expect(eventTypes.has('ASSESSMENT_BLOCK_ACTIVATED')).toBe(true)
   })
 
+  it('missing audit coverage aborts compensation without unaudited revert', async () => {
+    await createAssessmentQuizWithBlock({ isAssessmentEnabled: true })
+    await prepareCoverage()
+
+    // evidence becomes unwritable after staging (the covered scope record
+    // is removed): the compensation must abort instead of committing an
+    // unaudited business-state rollback
+    await prisma.assessmentAuditScope.deleteMany({ where: { liveQuizId } })
+
+    await activateWithFailingSeeding()
+
+    // the block must not have been reverted to SCHEDULED without evidence
+    const block = await blockState()
+    expect(block?.status).toBe('ACTIVE')
+    expect(block?.startedAt).not.toBeNull()
+
+    const eventTypes = await outboxEventTypes()
+    expect(eventTypes.has('ASSESSMENT_BLOCK_ACTIVATION_REVERTED')).toBe(false)
+  })
+
+  it('quiz-pointer CAS failure rolls back the block revert', async () => {
+    await createAssessmentQuizWithBlock({ isAssessmentEnabled: false })
+
+    // during seeding, a newer lifecycle operation disconnects the quiz
+    // pointer only: the block CAS still matches, but the quiz CAS must fail
+    // and roll the block revert back with it
+    await activateWithFailingSeeding(async () => {
+      await prisma.liveQuiz.update({
+        where: { id: liveQuizId },
+        data: { activeBlock: { disconnect: true } },
+      })
+    })
+
+    // the whole compensation rolled back: the block is still ACTIVE from
+    // the failed activation attempt (not silently reverted), and the quiz
+    // pointer reflects the newer state
+    const block = await blockState()
+    expect(block?.status).toBe('ACTIVE')
+    expect(block?.startedAt).not.toBeNull()
+
+    const quiz = await prisma.liveQuiz.findUnique({ where: { id: liveQuizId } })
+    expect(quiz?.activeBlockId).toBeNull()
+  })
+
   it('a newer lifecycle state committed before compensation survives', async () => {
     await createAssessmentQuizWithBlock({ isAssessmentEnabled: false })
 

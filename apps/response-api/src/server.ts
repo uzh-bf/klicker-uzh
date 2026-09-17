@@ -218,7 +218,12 @@ async function handleAddResponse(
       { event: 'response.rejected', reason: 'invalid_submission_id' },
       'Response rejected'
     )
-    return badRequest(req, res, dependencies.allowedOrigins, 'invalid_submission_id')
+    return badRequest(
+      req,
+      res,
+      dependencies.allowedOrigins,
+      'invalid_submission_id'
+    )
   }
 
   const parsedCookies = parseCookies(

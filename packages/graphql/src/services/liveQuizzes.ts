@@ -1773,10 +1773,21 @@ export async function activateLiveQuizBlock(
 
       try {
         if (quiz.isAssessmentEnabled) {
-          // covered assessment: the compensating revert runs through the
-          // same audit transaction machinery as the activation, and its
-          // evidence is the typed revert event identifying the exact
-          // activation attempt
+          // covered assessment: the compensating revert requires the covered
+          // audit scope; without it the revert would commit business state
+          // with no possibility of evidence, which is a failed invariant
+          const coveredScope = await ctx.prisma.assessmentAuditScope.findFirst({
+            where: {
+              liveQuizId: quizId,
+              coverageState: DB.AssessmentAuditCoverageState.COVERED,
+            },
+            orderBy: { lifecycleEpoch: 'desc' },
+          })
+          if (coveredScope === null) {
+            throw new Error(
+              'Covered assessment activation cannot be compensated without audit coverage'
+            )
+          }
           await runInAuditTransaction(
             ctx.prisma,
             async (tx, auditTx) => {
