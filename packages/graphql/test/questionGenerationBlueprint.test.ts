@@ -59,7 +59,7 @@ function parseBlueprint(bytes: Buffer): unknown {
 }
 
 describe('question generation blueprint', () => {
-  it('withholds the objective_source marker while the worker release is gated', async () => {
+  it('withholds the objective_source marker when emission is explicitly disabled', async () => {
     const bytes = await createQuestionGenerationBlueprint(
       {
         ...configuration,
@@ -72,10 +72,11 @@ describe('question generation blueprint', () => {
           },
         ],
       },
-      sourceSnapshot
+      sourceSnapshot,
+      { emitObjectiveSource: false }
     )
 
-    expect(BLUEPRINT_OBJECTIVE_SOURCE_ENABLED).toBe(false)
+    expect(BLUEPRINT_OBJECTIVE_SOURCE_ENABLED).toBe(true)
     const payload = parseBlueprint(bytes) as {
       objectives: Array<Record<string, unknown>>
     }
@@ -87,7 +88,7 @@ describe('question generation blueprint', () => {
     })
   })
 
-  it('emits the objective_source marker once the worker release is enabled', async () => {
+  it('emits the objective_source marker by default once the worker release is live', async () => {
     const bytes = await createQuestionGenerationBlueprint(
       {
         ...configuration,
@@ -106,8 +107,7 @@ describe('question generation blueprint', () => {
           },
         ],
       },
-      sourceSnapshot,
-      { emitObjectiveSource: true }
+      sourceSnapshot
     )
 
     const payload = parseBlueprint(bytes) as {

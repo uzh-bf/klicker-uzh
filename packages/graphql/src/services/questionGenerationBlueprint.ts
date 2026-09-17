@@ -8,11 +8,11 @@ const MODULE_ID = 'M1'
 
 // Rollout gate for the neutral-objective marker. The deployed content-generation
 // worker rejects unknown fields on blueprint objective rows (its
-// exam_blueprint.py validates against a closed allowlist), so emitting
-// objective_source before the companion worker release is live in PRD would
-// fail every generation. Flip this to true only once that release is deployed
-// to PRD; the plan records the enabling step.
-export const BLUEPRINT_OBJECTIVE_SOURCE_ENABLED = false
+// exam_blueprint.py validates against a closed allowlist), so objective_source
+// must only be emitted while a worker release that accepts the field is live.
+// Enabled after the evidence-anchoring worker build was deployed; lower this
+// constant again if the worker is rolled back to a build without the field.
+export const BLUEPRINT_OBJECTIVE_SOURCE_ENABLED = true
 
 function sourceBasename(sourceFile: string): string {
   return basename(sourceFile.replaceAll('\\', '/'))
