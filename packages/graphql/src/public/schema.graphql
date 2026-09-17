@@ -1547,13 +1547,18 @@ enum ElementGenerationLanguage {
 type ElementGenerationObjective {
   bloomLevel: ElementGenerationBloomLevel
   id: ID!
-  objectiveSource: String
+  objectiveSource: ElementGenerationObjectiveSource
   text: String!
 }
 
 input ElementGenerationObjectiveInput {
   bloomLevel: ElementGenerationBloomLevel
   text: String!
+}
+
+enum ElementGenerationObjectiveSource {
+  neutral
+  provided
 }
 
 type ElementGenerationPlanElement {

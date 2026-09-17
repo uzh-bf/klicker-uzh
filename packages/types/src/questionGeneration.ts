@@ -17,6 +17,8 @@ export type KBGraphSourceSnapshot = KBGraphSourceSnapshotItem[]
 
 export type QuestionGenerationLanguage = 'de' | 'en'
 export type QuestionGenerationObjectiveSource = 'provided' | 'neutral'
+export const NEUTRAL_OBJECTIVE_SOURCE: QuestionGenerationObjectiveSource =
+  'neutral'
 export type QuestionGenerationItemType = 'SC' | 'MC' | 'KPRIM'
 export type QuestionGenerationBloomLevel =
   | 'remember'

@@ -27,7 +27,6 @@ type ElementGenerationBloomLevelValue =
   | 'apply'
   | 'analyze'
   | 'evaluate'
-type ElementGenerationObjectiveSourceValue = 'provided' | 'neutral'
 type ElementGenerationDifficultyPresetValue =
   | 'D1'
   | 'D2'
@@ -52,6 +51,10 @@ export const ElementGenerationBloomLevel = builder.enumType(
   {
     values: ['remember', 'understand', 'apply', 'analyze', 'evaluate'] as const,
   }
+)
+export const ElementGenerationObjectiveSource = builder.enumType(
+  'ElementGenerationObjectiveSource',
+  { values: ['provided', 'neutral'] as const }
 )
 export const ElementGenerationDifficultyPreset = builder.enumType(
   'ElementGenerationDifficultyPreset',
@@ -206,7 +209,7 @@ type ElementGenerationObjectiveView = {
   id: string
   text: string
   bloomLevel: ElementGenerationBloomLevelValue | null
-  objectiveSource?: ElementGenerationObjectiveSourceValue | null
+  objectiveSource?: 'provided' | 'neutral' | null
 }
 const ElementGenerationObjectiveRef =
   builder.objectRef<ElementGenerationObjectiveView>(
@@ -220,7 +223,10 @@ ElementGenerationObjectiveRef.implement({
       type: ElementGenerationBloomLevel,
       nullable: true,
     }),
-    objectiveSource: t.exposeString('objectiveSource', { nullable: true }),
+    objectiveSource: t.expose('objectiveSource', {
+      type: ElementGenerationObjectiveSource,
+      nullable: true,
+    }),
   }),
 })
 
