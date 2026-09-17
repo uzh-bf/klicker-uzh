@@ -1,4 +1,4 @@
-FROM docker.io/library/node:24.21.0-alpine AS base
+FROM docker.io/library/node:26.8-alpine AS base
 
 # The pinned Node tag ships Alpine packages and an npm whose vendored dependency
 # tree carry fixable HIGH/CRITICAL advisories (openssl 3.5.7, tar, undici,

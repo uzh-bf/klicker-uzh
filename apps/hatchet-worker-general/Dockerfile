@@ -1,4 +1,4 @@
-FROM docker.io/library/node:24.21.0-alpine AS base
+FROM docker.io/library/node:26.8-alpine AS base
 
 # See apps/backend-docker/Dockerfile: patched Alpine packages and npm for every
 # stage, including any scanned runtime image.
