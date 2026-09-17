@@ -43,8 +43,9 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
   and rendering. The student chat renderer keeps its app-local plugin.
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
   `[n–m]` markers into citation links. A marker may also carry a _labelled_ page detail the model
-  added, such as `[1, p. 6–7]` or `[1, S. 8–18]`; the chip shows the number alone and the page belongs
-  to the source card. A bare `[1, 2]` is deliberately not a citation: in real course answers that
+  added, such as `[1, p. 6–7]` or `[1, S. 8–18]`; the chip shows the number alone, and
+  `extractCitedPages` reads that detail so the source card can show the pages the answer actually
+  cites. A bare `[1, 2]` is deliberately not a citation: in real course answers that
   shape is far more often a math coordinate such as `[0, 1]`.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
@@ -1192,7 +1193,8 @@ mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents display the publisher's labeled page (`p. 12` / `S. 12`) or labelled range (`p. 6–89`),
+documents display the page range the answer actually cites (`S. 6–7`) when the answer carries one,
+then the publisher's labeled page (`p. 12` / `S. 12`) or labelled range (`p. 6–89`),
 then the retrieved physical page envelope, then a cleaned display URL; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
 lead with a `12:34`-style position; images keep their type and any publisher page label.
@@ -1205,6 +1207,15 @@ page information. `getPageEnvelope` (`src/lib/sources/normalizeSources.ts`) deri
 from every chunk of a source, not only the first: the payload has no relevance score or rank, so the
 lowest and highest retrieved page are a lossless summary of the retrieval. `labeledPageEnd` is only
 derived when every chunk label is a plain integer; any other label set keeps the first label alone.
+Cited pages are different from that envelope and win over it whenever the answer supplies them.
+`extractCitedPages` reads the labelled page detail of single-index markers, and `formatCitedPageRanges`
+renders only the smallest set of ranges covering exactly those pages: cited pages 2, 3 and 7 read
+`2–3, 7`, never the span `2–7`. A marker covering several sources carries no page detail and is
+ignored, and code fences and code spans are masked before the scan, so brackets inside code never
+count. `useMessageSources` (`src/hooks/useMessageSources.ts`) scans the answer's text parts and shares
+the result as `citedPageRanges` with the card and the hover preview. A source the answer cites without
+a page detail keeps the retrieved envelope above: only the answer knows which passages it drew on, so
+a card narrows when the answer says so and otherwise stays what retrieval returned.
 Source identity deliberately stays keyed on the start page, so two `doc_query` calls returning
 overlapping chunks for one resource cannot split it into duplicate cards.
 Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
