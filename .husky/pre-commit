@@ -8,5 +8,5 @@ else
 fi
 
 bash util/check-git-identity.sh current
-pnpm run check:all
+node util/run-git-hook.mjs check
 bash util/check-git-identity.sh current

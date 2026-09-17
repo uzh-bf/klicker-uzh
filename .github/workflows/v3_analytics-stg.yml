@@ -7,9 +7,17 @@ on:
       - 'v3*'
   pull_request:
     # branches: [ "v3" ]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # "edited" re-evaluates the path filter when a pull request is retargeted,
+    # so newly applicable images are built instead of keeping the old result.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
     paths:
       - 'apps/analytics/**'
+      # The build syncs the Prisma schema and the Dockerfile copies it, so a
+      # schema or sync-script change reaches this image. Analytics has no node
+      # workspace dependency, so the root manifests stay out.
+      - 'packages/prisma/src/prisma/schema/*.prisma'
+      - 'util/sync-schema.sh'
+      - '.dockerignore'
       - '.github/workflows/v3_analytics**'
 
 concurrency:
@@ -22,8 +30,10 @@ env:
 
 jobs:
   build-arm:
-    if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04-arm
+    # draft pull requests defer their image builds; marking the
+    # pull request ready re-runs this build on the unchanged head
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     permissions:
       contents: read
       packages: write
@@ -33,9 +43,6 @@ jobs:
 
       - name: Run util/sync-schema.sh
         run: util/sync-schema.sh
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -75,7 +82,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: true
+          no-cache: ${{ github.event_name == 'push' }}
+          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache', env.REGISTRY, env.IMAGE_NAME) || '' }}
+          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref={0}/{1}-arm:buildcache,mode=max', env.REGISTRY, env.IMAGE_NAME) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
   build-amd:
     if: ${{ false }}

@@ -4,6 +4,7 @@ import {
   getPublicSourceUrl,
 } from '../src/lib/sources/docQueryResult'
 import { normalizeSourcesFromParts } from '../src/lib/sources/normalizeSources'
+import { getSourceNavigationUrl } from '../src/lib/sources/sourceUrl'
 import { sanitizeDocQueryResult } from '../src/services/docQueryResult'
 
 test.each([
@@ -81,7 +82,9 @@ describe('retrieval display independent of citation eligibility', () => {
       sources: [{ ...unnamed, source_url }],
     })
     expect(result.groups[0].url).toBe(source_url)
-    expect(result.groups[0].chunks[1].url).toBe(source_url)
+    expect(result.groups[0].chunks[1].url).toBe(
+      'https://example.org/lecture.pdf?edition=2#page=8'
+    )
     expect(result.groups[0].citationId).toBeUndefined()
   })
 
@@ -152,5 +155,68 @@ describe('retrieval display independent of citation eligibility', () => {
     expect(result(`${origin}#section`).groups[0].chunks[0].url).toBe(
       `${origin}#section`
     )
+  })
+})
+
+describe('physical PDF navigation', () => {
+  test('preserves opaque fragment bytes', () => {
+    expect(
+      getSourceNavigationUrl(
+        'https://example.org/file.pdf#chapter#part&zoom=100',
+        13
+      )
+    ).toBe('https://example.org/file.pdf#chapter#part&zoom=100&page=13')
+  })
+  test.each([
+    [
+      'https://example.org/file.pdf',
+      13,
+      'https://example.org/file.pdf#page=13',
+    ],
+    [
+      'https://example.org/FILE.PDF?edition=2#page=1&zoom=100',
+      13,
+      'https://example.org/FILE.PDF?edition=2#zoom=100&page=13',
+    ],
+    [
+      'https://example.org/file.pdf#chapter%202',
+      13,
+      'https://example.org/file.pdf#chapter%202&page=13',
+    ],
+    [
+      'https://example.org/file.html#chapter',
+      13,
+      'https://example.org/file.html#chapter',
+    ],
+    ['https://example.org/file.pdf', 0, 'https://example.org/file.pdf'],
+    ['https://example.org/file.pdf', 1.5, 'https://example.org/file.pdf'],
+    ['https://example.org/file.pdf', undefined, 'https://example.org/file.pdf'],
+    ['http://127.0.0.1/file.pdf', 13, undefined],
+    [undefined, 13, undefined],
+  ])('builds only a safe PDF target', (url, page, expected) => {
+    expect(getSourceNavigationUrl(url, page)).toBe(expected)
+  })
+  test('retains labels and identity while navigating each physical chunk', () => {
+    const url = 'https://example.org/file.pdf'
+    const result = getDocQueryResult({
+      mode: 'documents',
+      sources: [
+        {
+          title: 'Synthetic',
+          reference: url,
+          chunks: [
+            { content: 'A', page_number: 13, labeled_page_number: '9' },
+            { content: 'B', page_number: 4, labeled_page_number: 'IV' },
+          ],
+        },
+      ],
+    })
+    expect(result.groups[0].url).toBe(url)
+    expect(
+      result.groups[0].chunks.map(({ labeledPage, url }) => [labeledPage, url])
+    ).toEqual([
+      ['9', `${url}#page=13`],
+      ['IV', `${url}#page=4`],
+    ])
   })
 })
