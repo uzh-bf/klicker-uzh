@@ -1320,3 +1320,33 @@ required from the user.
   belongs to a different head, and asserts `should_run=true` every time. It is
   not reproduced on the live repository because that would require deliberately
   publishing a failing suite.
+
+- 2026-09-17 package: readiness self-check wall-time (PR #6125, branch
+  `rs/ci-dev-runtime-readiness`). Step-level timings from the successful
+  `check` job of run `35258127963` identified the largest step of the job
+  precisely, instead of ranking by impression: `Check Next.js development
+  configuration and readiness` took 117s of the 6m 0s job, ahead of `Build
+  packages for typecheck (turbo)` (58s), `Install dependencies` (36s),
+  `Checkout repository` (22s) and `Set up Node.js with pnpm cache` (22s).
+  Local measurement isolated the cost to the middle command of that step:
+  `node --test util/dev-runtime-readiness.test.mjs` spent 108.2s of wall time
+  against 0.5s of user CPU, because the enforced-deadline test had to exhaust
+  the real 90-second production deadline to observe the stop. The deadline is
+  now read from `KLICKER_DEV_RUNTIME_READY_SECONDS` (default unchanged at 90,
+  validated as a positive integer) and the self-check drives it with 32s,
+  which still outlasts two capped 15s probes plus the periodic observation
+  interval, so the curl-code, re-observed-observation and enforced-deadline
+  assertions keep their exact meaning and the production probe cap stays as
+  shipped. Verified: readiness self-check 108.2s -> 49.9s with 5/5 passing
+  (shortened test 32.1s), `util/test-dev-runtime.sh` passing,
+  `util/test-recover-bootstrap.sh` passing after refreshing both
+  `util/dev-runtime.sh` pins in `.devcontainer/recover-runtime.sh` as the pin
+  comment requires, and Biome clean on the test file. Effect: roughly 58s of
+  pure waiting removed per `check` run, taking the step to about 59s and the
+  job to about 5m, which is about 1.6 hosted runner-hours per day at the
+  measured ~100 `check` runs per day. This is a new class of finding for the
+  roadmap: the remaining `check` cost is dominated by *fixed step overhead*
+  rather than by the typecheck that the earlier draft-deferral discussion
+  focused on, so the next step-level targets are the turbo build (58s), the
+  dependency install (36s) and the full-history checkout (22s, needed for the
+  merge-base ancestry used by the commit-identity guard).
