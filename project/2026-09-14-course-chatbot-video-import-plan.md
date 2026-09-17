@@ -371,6 +371,69 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 
 ## Progress
 
+- 2026-09-17 (S7 live proof on PRD, prepare-only; one real cold-start defect found and
+  fixed): after the user merged the three delivery heads (video-ai PR #128 `4c67c6f3`,
+  deployment MR !905 `361e7129`, klicker-uzh PR #6109 pending its final-ai-review), the
+  Finance I import was dispatched in-cluster against the one-off pod in `prd-ingestion`.
+  Live readback: `app-video-processing` Synced/Healthy at `4c67c6f3` on both PRD and STG;
+  `app-ai-generic-ingestion-prd` Synced/Healthy at `361e7129`; `ingestion-embedding-worker`
+  now `58329be5…@sha256:fec2c85f`; both descriptor files present in the API and worker pods.
+  The lane then ran end to end on the in-cluster embedding worker: inventory 73 units ->
+  67 eligible / 3 excluded / 3 quarantined, package 67 candidates, prepare 67 documents in
+  ~4.9 s, with the embedding call hitting the in-cluster LiteLLM (`POST /embeddings 200`
+  from the worker pod) and no laptop embedding. The create-only receipt
+  `video-import/15ff49a3-…--01/receipts.json` (`video_import_handoff_receipt.v1`) carries
+  `inventory`/`package`/`prepare`/`outputs` and deliberately no `activate` section, since
+  `--activate` stays a separate gate.
+
+  Finding (now fixed): the first dispatch resolved to a phantom run. `read_run_status`
+  returned `not_found`, `workflows.list()` did not include `video-candidate-import`, and the
+  KEDA demand metric read `{queued: 0, running: 0}`. Root cause: the workflow was registered
+  **only** by the embedding worker, which KEDA holds at `minReplicaCount: 0`, so after a
+  deploy no worker had published it and the trigger created a run nothing could route. It is
+  the only workflow without an always-on registrant (`resource-upsert` is published by the
+  cpu/db/llm/durable-control pools while its `fetch-or-reuse` task stays pinned to the
+  scale-to-zero `resource-fetch` worker). Warming the embedding worker once registered the
+  workflow and the lane completed; a controlled probe then showed the mechanism is sound
+  once registration exists: a trigger at `replicas: 0` produced `queued.total=1` and KEDA
+  woke the worker to `running.total=1`. Fix: register `video_candidate_import_wf` on the
+  always-on durable-control worker (the task stays pinned to the embedding worker) and
+  republish produced hand-off outputs instead of writing them create-only, because two
+  in-cluster runs of the same input differed in 39 of 67 embedding vectors and the create-only
+  byte compare made every retry fail permanently. Branch `rs/video-import-wake-owner`
+  (`aee120d` + `e7ba6db`), draft MR !186; local gates 1797/253/156 passed, `poe check` clean.
+  Deployment pin bump and merge of !186 remain separately gated, and the dispatch pod was
+  removed with `ingestion-embedding-worker` returned to `0` under KEDA.
+
+- 2026-09-17 (S7 all five deliverable heads merged; two deploy gaps found and one fix in
+  flight): the user merged every lane head, so the S7 code is on the integration branches:
+  data-ingestion `main` `58329be57c` (MR !172), deployment `main` `6035d4288a` (MR !903),
+  video-ai `main` `0bb9b2d522` (PR #126), klicker-uzh `v3-ai` `c4adc40241` (PR #6026) and
+  `v3` `9a08f48910` (PR #6034). data-ingestion pipeline 666556 built the lane worker image
+  (`58329be5…@sha256:fec2c85f`) and auto-promoted STG (deployment `d565e95b`); STG ingestion
+  now runs the lane image (gen 1937) and the video-ai configmap carries the renamed
+  descriptor on both PRD and STG. Two real gaps remain. Gap 1: PRD ingestion still pins the
+  pre-lane worker image `1eee63d6…@sha256:a739f7be` without the `video-candidate-import`
+  workflow (the `INGESTION_VIDEO_HANDOFF_*` env landed with `6035d428` on PRD gen 149, so
+  only the image lags). Fix in flight: branch `rs/prd-video-import-pin` `6289533f`, draft MR
+  !905 (worker/api digest bump plus the matching `prd_contract.py` constants; render
+  validated 44 PRD documents, contract suite 36 passed, pipeline 666576 green). Merge is
+  user-gated, then Argo syncs. Gap 2: the #126 rename changed the descriptor filename the
+  configmap names, but the pinned PRD/STG video-processing images were built before the
+  rename and ship only the old filename, so a new video upload would silently skip
+  `ingestion_source.json` (best-effort) and the import would fail `published_source_missing`.
+  Live PRD pods confirm it: `video-processing-api` has `FILE_MISSING` on the new name while
+  the worker still points at the old name. Fix pushed as branch
+  `rs/video-descriptor-image-pin` `c748220`, draft PR #128 (both overlays plus the
+  `test_deploy_manifests` digest constants; 103 passed across the deploy-manifest and
+  dockerfile-contract suites, ruff clean, pyrefly 0 errors), pinning to the video-ai
+  `main` `0bb9b2d522` indexes `86673ebc…` (api) and `8d8be6a8…` (worker), both verified
+  multi-arch. Merge is user-gated. This
+  gap does not block the Finance I proof, whose source is already published under the
+  predecessor identity and accepted via `SUPERSEDED_POLICY_IDENTITIES`. Dispatch path is
+  unchanged: in-cluster one-off job/pod in `prd-ingestion` on
+  `managed-identity-prd-ingestion` (option a, no new RBAC), because the laptop can reach
+  neither hand-off store nor PRD Hatchet (re-verified: PRD VP edge still 403s this IP).
 - 2026-09-17 (S7 deliverable heads merged into the klicker-uzh PRs; dispatch-trigger
   credential unblocked): the plan branch merged `origin/v3-ai` (`fa1c468296`) into
   `rs/course-video-import-plan` (`d6e41746ee`, draft PR #6026), and the skill branch
