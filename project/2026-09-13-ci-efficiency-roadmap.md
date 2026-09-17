@@ -558,6 +558,31 @@ required from the user.
 
 ## Progress
 
+- 2026-09-13 slice C1 (affected-image path filters): each `v3_*-stg.yml`
+  pull-request filter now lists that image's transitive workspace dependency
+  closure (`turbo prune --scope=<package> --docker`) instead of the blanket
+  `packages/**`. Measured on today's traffic: PR-side image builds executed
+  980.7 hosted minutes across 152 `build-arm` jobs, and every node image
+  matched nearly every `packages/**` change. On nine representative changed
+  files the selection drops from 86 to 40 image builds, including
+  `packages/transactional`/`packages/prisma-data` (12 -> 1, chat only),
+  `packages/word-cloud` (12 -> 6, Next images only) and `packages/export`
+  (12 -> 0). Root manifests and `.dockerignore` still select every node image,
+  analytics keeps its dependency-free filters, and pushes to `v3`/`v3*` still
+  build all images because push triggers have no path filter. The evaluator's
+  `IMAGE_WORKFLOWS` inventory and the twelve workflow filters were rewritten
+  together; three new tests derive each closure from the workspace manifests
+  and fail if a filter omits a real dependency or wakes an unrelated image.
+  Verification: 24/24 required-build-status tests, 9/9 event gates, 57/57
+  across the three CI suites, Prettier clean, stable across three runs.
+  Delivered on branch `rs/ci-image-edit-reuse`.
+- Remaining known avoidable work, unchanged by C1: the image workflows still
+  rebuild on `edited` and `ready_for_review` for an unchanged head (measured
+  97 extra unchanged-head runs across the repository in two days), and the five
+  `Build Fallback` pollers occupy hosted runners for up to 2103s per event.
+  Both need the B3 consolidation or a same-head reuse contract and stay
+  sequenced behind PR #5924.
+
 - Planning and local takeover artifacts completed on 2026-09-13; implementation
   has not started.
 - Repository audit and fresh overlapping-PR checks complete; all implementation
@@ -734,3 +759,292 @@ required from the user.
   Actions cache service, so the ~10 GiB quota does not apply and the
   `mode=max` export is visible as a distinct tag in the repository's version
   list once it happens.
+- 2026-09-13 Playwright reuse defect found and fixed (branch
+  `rs/ci-metadata-edit-guard`): the merged equivalent-run contract could never
+  fire. `findEquivalentPullRequestRun` selected its candidate as the newest
+  `pull_request` run for the head, filtered only by pull-request number. The
+  event validating reuse is itself a run of the same workflow on the same
+  head, so it was always the newest entry, and a still-executing run is never
+  both `completed` and `successful`. Every lifecycle event therefore fell
+  through to full validation. Fix: exclude `context.runId` from the
+  pull-request candidate set, the same established pattern
+  `required-build-status.cjs` already uses. Two regression tests pin the
+  contract — a completed run is reused while its own event run is in flight,
+  and the current run can never qualify itself as reusable evidence. A probe
+  confirmed fail-closed behaviour is intact: a cancelled or failed earlier run
+  is still rejected and a newer completed run still wins. Evidence: 144/144
+  tests pass across the six `check.yml` gate files. Live corroboration: PR
+  #5922 fired a third full wave at 21:21:57Z on unchanged head `ab5164bc`
+  from a body edit, with the same merge tree as its 16:58 predecessor that had
+  already succeeded on the same route; that pair also differed in control
+  revision, which reuse legitimately rejects, so the live case corroborates
+  rather than demonstrates the bug. Fleet measurement across the 40 newest
+  pull requests, one commit each: 430 image suites collapse to 284
+  `(path, head)` groups, with 146 extra runs, 107 of them non-skipped.
+  Expectation-setting: reuse now requires the same control revision, base,
+  head and merge tree, so it fires in quiet windows rather than on every
+  lifecycle event; qualify it with a real unchanged-head transition after
+  merge instead of promising an immediate win.
+- 2026-09-13 required-gate false-failure attribution: the 35-minute
+  `build-images-status` failures were not a live defect. Run `34770188746`
+  (PR #5922, `action: edited`) failed with
+  `v3_analytics-stg.yml (no run for this event, branch and commit)` plus a
+  queued sibling; its downloaded evidence artifact reports
+  `changed files: two-endpoint comparison (conservative)`, an old
+  conservative fallback that exists only in base `f00e272a`. Both
+  `origin/v3` and `origin/v3-ai` now carry the merge-base version from
+  #5936 (`dfadccd1db`, an ancestor of `origin/v3`), so that cause is already
+  fixed. The remaining genuine cause is plain hosted-queue saturation: run
+  `34773533734` (PR #5924) failed on a single queued sibling after 60 polls x
+  30s. That is roadmap item B3 and stays blocked until #5924 merges.
+- 2026-09-13 metadata-only edited slice (branch `rs/ci-metadata-edit-skip`):
+  PR #5977 merged as `6bcd91e4c9`; the reuse fix is live on `v3` at
+  `ci-equivalent-run.cjs` lines 235/253. This slice removes the sibling waste
+  class: 21 workflows list `edited`, and a title or body edit previously
+  re-launched every one of them on an unchanged head even though the path
+  diff is byte-identical to the event before it. The `changed-paths`
+  composite now returns `should_run=false` for a pull*request `edited` event
+  without `changes.base.from` (title/body only) and still computes the real
+  diff when `changes.base.from` is present (base retarget). The four
+  path-filtered suites (`test-unit`, `test-graphql`, `test-olat-api`,
+  `test-intl-production`) already treat `should_run=false` as a validated
+  `no-change` selection, so their required status stays green without
+  executing. `check-gitleaks` keeps its unconditional run; `check`,
+  `public-pr-playwright-shards`, and the `v3*\*-stg.yml`image workflows are
+not changed here because their edited-event behaviour is contractual
+(required context, reusable-run lifecycle, and draft-deferral/retarget
+recompute respectively) and belong to their own packages. Evidence: 5 new
+behavioural tests run the composite's exact script against temp repositories
+with a local origin remote (metadata-only edit skips, base retarget
+re-selects, synchronize and reopened still select, empty push diff still
+fails open). Scope note: image-workflow`edited` re-runs are governed by the
+  B3 consolidation package and remain blocked on #5924.
+- 2026-09-14 build-cache scope slice (branch `rs/playwright-build-cache-scope`):
+  draft PR #5987 at head `b9a906ae73` fixes the (e) cache-compatibility
+  defect where the build fingerprint mixed build inputs with orchestration
+  and telemetry files. The four telemetry/scheduling files
+  (`playwright-telemetry.cjs`, `turbo-telemetry.cjs`,
+  `public-pr-playwright-shards.yml`, `test-playwright.yml`) previously
+  invalidated every cached build artifact on both routes when edited, even
+  though build outputs were identical. The fingerprint now hashes only
+  build-relevant files; `CACHE_SCHEMA` bumps 2 → 3 so artifacts reseed
+  under the corrected contract, and trusted run-reuse still binds the
+  orchestration files through the control revision. Shard jobs consume only
+  `dependency-fingerprint` and build artifacts, so their key scope is
+  unchanged. Evidence: 5/5 cache-contract tests including a new invariance
+  case (telemetry edits preserve, build-relevant edits invalidate), 124/124
+  across the six check.yml gate suites, Biome clean. Activation evidence
+  (warm artifact reuse on a post-merge PR) is a later live proof.
+- 2026-09-14 (d) BuildKit registry cache activated: the first pull_request
+  builds from a cache-enabled head wrote the first `-arm:buildcache` tags.
+  PR #5986 (non-draft v3-ai reconciliation, head `da9fd928`) carried the
+  cache triple and its `chat` build completed 00:41:56Z; GHCR records
+  `chat-arm:buildcache` written 01:20:50Z, `auth-arm:buildcache` at
+  01:11:50Z, `frontend-manage-arm:buildcache` at 01:04:36Z, and
+  `backend-docker-arm:buildcache` at 00:10:53Z. The contract is no longer
+  inert: subsequent same-repository PR builds now import these layers.
+  Warm-consumer timing proof (a PR build measurably faster on cache hit)
+  remains the follow-up observation for the next image-touching PR wave.
+  2026-09-14 exact-head CI on draft PR #5987 at head `7f0af1c522`:
+  `check` passed in 3m56s (run 34795721832, job 103828312555), including
+  the updated cache-contract suite; `build-images-status` passed; the
+  full hosted Playwright route passed prepare, build (4m43s) and all
+  eight shards (9m40s–14m34s). Remaining pending items are the four
+  path-filtered status reporters and the hosted reporter queued behind
+  the organization concurrency cap; `ocr-review` failed as the known
+  external-agent flake and carries no required weight for this change.
+
+- 2026-09-14 queue anatomy and Dependabot fan-out slice (branch
+  `rs/ci-dependabot-fanout`): the merged work did not hold, and the queue was
+  full again at 10:40Z. Live counts: 286–300 runs queued and 7 in progress;
+  **208 of those queued runs (about 70%) belong to `dependabot/*` branches**,
+  against 78 open non-Dependabot pull requests. The wave opened 22 update pull
+  requests in twenty minutes (`#6002`–`#6021`): nine separate
+  `docker/apps/<dir>/library/node-26.8-alpine` pull requests for one shared
+  base-image bump, six `uv` analytics bumps, and four `github-actions` bumps.
+  Each of those pull requests fires roughly thirteen workflows and then
+  consumes the most expensive route in the repository: `playwright-route.cjs`
+  deliberately routes bot-authored pull requests to hosted with
+  `selectorPrState: 'ready'` (`playwright-route.test.cjs` line 117), so every
+  Dependabot pull request runs the full eight-shard suite on hosted runners and
+  cannot use the self-hosted ARM64 pool. `check-ocr-review.yml` already exempts
+  Dependabot, which is why only the final review appears in the queued set.
+  Slice contents: `.github/dependabot.yml` now groups the `uv` and
+  `github-actions` ecosystems, replaces the twelve per-directory `docker`
+  entries with one `directories: ['/apps/*']` entry, and sets
+  `open-pull-requests-limit` plus `groups.<name>.group-by: dependency-name`,
+  which is the documented option for producing one pull request per updated
+  image across directories. The next wave should therefore open about four
+  pull requests instead of twenty-two, removing roughly 200 queued runs of the
+  current backlog. Verification limit: the option set is documented in the
+  Dependabot reference (`directories` supports globbing, `group-by:
+dependency-name` collapses multi-directory updates), but the file is only
+  validated by GitHub after it reaches the default branch, so the reduction is
+  an expectation until the next scheduled run.
+- 2026-09-14 open routing decision from the same data: with base-image pull
+  requests routed to the full hosted suite, the cost per Dependabot pull
+  request is eight hosted shards plus the shared check, SonarCloud and CodeQL.
+  Deciding whether a base-image tag bump needs full Playwright coverage is a
+  routing/product decision, not a configuration repair, so it is proposed here
+  rather than changed.
+- 2026-09-14 B3 pre-flight blocks the roadmap's original execution spec: the
+  trusted controller is read from the default branch (`actions/checkout` with
+  `ref: github.workflow_sha`) while the candidate tree is
+  `vars.STG_SOURCE_BRANCH`. That variable is **not** `v3`. The promotion receipt
+  from controller run 34813630732 (artifact
+  `stg-release-promotion-receipt-cb1599d9a596860c6fc988d84fae4d44f7650309`)
+  records `"source_branch":"v3-audit"`, `"schema_version":"stg-release-promotion/v2"`,
+  `"controller_sha":"cbc6ba43a1"`, decision `{"action":"fast-forward","mode":"apply"}`
+  and a verified push of candidate `cb1599d9a5` onto `refs/heads/stg-release`
+  (previous release `dda3cd04a8`), so automatic promotion is live and currently
+  tracks `v3-audit`. Beware the misleading field: the promote run's own
+  `head_branch` reads `v3` because the workflow file comes from the default
+  branch, while `github.event.workflow_run.head_branch` — the value the branch
+  gate compares — is `v3-audit`; every v3-branch event is skipped by that gate.
+  The candidate therefore carries **fifteen** staging image
+  workflows, including `v3_mcp-lecturer-stg.yml` and `v3_mcp-student-stg.yml`,
+  which do not exist on `v3` at all; `STAGING_WORKFLOWS` and the `Build Fallback`
+  `workflow_run` list name them precisely so the trusted inventory matches that
+  branch, and the same receipt lists `mcp-lecturer-arm` and `mcp-student-arm`
+  among the fifteen promoted images. Consequences the original spec must absorb
+  before the matrix
+  consolidation ships: (1) collapsing `v3`'s thirteen files alone changes the
+  candidate set on `v3-audit` and fails the controller closed until `v3` is
+  merged into `v3-audit`; (2) the two `mcp-*` entries keep **active** `build-amd`
+  legs (`nonRuntimeJobs`), unlike the thirteen `v3` files whose `build-amd` jobs
+  are already inert `if: ${{ false }}`, so a consolidated matrix that omits them
+  would drop MCP staging images from the promotion contract; (3) the MCP
+  workflows live on the integration branches, so the landing plan has to either
+  keep them as legacy files in the inventory or add their legs to the
+  consolidated workflow on `v3-audit`, and they are not clones of the thirteen:
+  each also wraps publication in a `publish_guard` step that the `v3` files do
+  not have. B3 also now has a measured wakeup target:
+  the current 21-name `workflow_run` list produced **44 controller runs for the
+  single `v3` commit `0c2a7a6a33`**, almost all of them skipped. The controller
+  itself was healthy when checked, as the receipt above shows, and
+  `build-images-status` is the required context from
+  rulesets `v3 quality and merge protection` and `v3 integration baseline CI`
+  (a job name, not a workflow name), so a workflow rename keeps the context.
+- 2026-09-14 second selection finding, not yet sliced: metadata-only pull
+  requests are still costly outside the four path-filtered suites. Neither
+  `test-playwright.yml` nor `check.yml` carries a path filter, so a pull request
+  that changes only prose still runs the full typecheck and the complete
+  Playwright suite; branch `docs/writing-coach-proposal` held **18 queued runs**
+  in the same snapshot. The #5977 metadata rule cannot simply be extended here,
+  because the required `build-images-status` reporter binds the _newest_ run for
+  the same head, event and branch rather than the newest non-metadata run: the
+  run list carries no event action, so a skip would either be read as an
+  unexpected `skipped` failure or let a later metadata edit overwrite an earlier
+  failed build. A sound version needs an explicit signal in the evidence
+  artifact or a run-age comparison, which is why it is scoped separately.
+
+- 2026-09-17 package: metadata-only edit re-validation (branch
+  `rs/ci-metadata-edit-validation`, draft [PR #6108](https://github.com/uzh-bf/klicker-uzh/pull/6108)). Closes the selection-integrity
+  half of the #5977 metadata rule and the first half of the second selection
+  finding above.
+
+  Defect found in shipped CI, not introduced by this package. The merged
+  `edited` shortcut in `.github/actions/changed-paths` returned
+  `should_run=false` for _any_ metadata-only edit, and
+  `decideResult`'s `no-change` state passes when the suite job is
+  `skipped` or `success`. Nothing re-read the prior outcome, so on a head
+  whose `test-unit`, `test-graphql`, `test-olat-api` or
+  `test-intl-production` suite had **failed**, editing the PR title turned
+  `test-unit-status` and siblings green. All four are required contexts on
+  `v3` and `v3-*` (rulesets 23042571 and 23042613), so the title edit was
+  a merge gate bypass, not just a saved run. Only `test-playwright` was
+  safe, because #5977's reuse gate binds the prior run identity.
+
+  Delivered: the skip now consults the head's `filter=latest` check-run for
+  the workflow's own always-reporting terminal context and skips only on a
+  completed `success`. A `failure`, `in_progress`, missing check, non-40-hex
+  head/base, or any API error runs the suite. A base retarget still bypasses
+  the whole path. The selector queries the `-status` context rather than the
+  suite job on purpose: the matrix-expanded translation job is really named
+  `intl-production-smoke (${{ matrix.app }})`, so the previously wired
+  `intl-production-smoke` input could never match and its lookup would always
+  have failed closed. All four workflows now also declare `checks: read`;
+  without it the check-run endpoint is forbidden and the lookup is inert.
+
+  Verification: 11/11 `.github/scripts/changed-paths.test.cjs` cases against
+  the composite's verbatim step script with a local check-run mock: prior
+  success skips, prior failure/pending/missing/500/foreign-head all re-run, an
+  unset name performs no request at all, retarget re-selects, synchronize and a
+  non-edited event never consult the check, and an empty push diff fails open.
+  Prettier clean. `gh api` semantics confirmed against a real head:
+  `check_name` filters by exact name, verified live: querying `test-unit`
+  returns only the suite job and not `test-unit-status`, so the lookup cannot
+  accidentally read the suite job it is meant to gate.
+  Draft PR only; no runner-group, host, or settings change.
+
+  Verification on the delivered head: 34 checks pass, 13 skip, and the only
+  non-terminal context is the manual final-ai-review. check (which runs
+  changed-paths.test.cjs 11/11 in CI), check-gitleaks, build-images-status,
+  all four path-filter jobs and all eight hosted Playwright shards pass on
+  exact head d590c5cd8c. The four filter jobs exercise the new lookup, and
+  the metadata-only live proof below ran on the identical-content predecessor
+  head 0fc7242923.
+
+  Deliberately left alone, still open in the second selection finding below:
+  `check.yml` and `test-playwright.yml` have no path filter, and the
+  `build-images-status` reporter binds the newest run for the head, so a
+  metadata skip there needs an explicit evidence signal.
+
+- 2026-09-17 slice B2 activation evidence (PR #5971, merged `136a867280`). The
+  2026-09-13 entry recorded the registry cache as "deployed and inert" because
+  GHCR listed no `-arm:buildcache` tag and every post-merge image run was a
+  draft deferral or a saturated-queue push. Re-checked live and it is now
+  active: `ghcr.io/uzh-bf/klicker-uzh/<image>-arm:buildcache` exists for
+  `auth-arm` (2026-09-16T14:11:03Z), `backend-docker-arm`
+  (14:13:44Z), `frontend-manage-arm` (14:14:49Z), `chat-arm`
+  (18:41:17Z), `response-api-arm` (09-16T12:12:03Z) and `frontend-pwa-arm`
+  (09-17T10:31:02Z). Only a same-repository pull-request build can write that
+  tag, so its presence is direct evidence the cache path executed.
+
+  Confirmed in the build log rather than inferred from the tag.
+  Run `35209304702` (`Build Docker image for frontend-assessment (stg)`,
+  PR `rs/v3-audit-sync-20260917`, head `16c54e785aac`, success) logs
+  `#8 importing cache manifest from ghcr.io/.../frontend-assessment-arm:buildcache`,
+  then `#9`-`#12 CACHED` and `#29 exporting cache to registry`. The sibling
+  `frontend-pwa` build `35209304457` on the same head ran the same contract.
+
+  Sizing caveat recorded rather than claimed as a win: the two cached PR
+  builds took 303s and 302s wall (10:26:05->10:31:08Z and
+  10:29:07->10:34:09Z). Both are cold on the heavy Next compile because the
+  cache was written only minutes earlier on the same branch; a first-ever write
+  cannot pay itself back. A meaningful warm-vs-cold duration comparison needs a
+  second PR build on the same image whose inputs are unchanged, which is the
+  next measurement, not this one. The cache is proven to work; its payoff is
+  not yet measured.
+
+- 2026-09-17 slice B2 registry scope note: only the six named repositories
+  carried a `buildcache` tag; `analytics-arm` had none (its Dockerfile has no
+  pnpm store stage, so there is little to reuse) and `rabbitmq-arm` is not a
+  package under the `klicker-uzh` namespace. The Go-backend migrator and the
+  MCP images were not probed by name here and remain unverified for cache tags.
+
+- 2026-09-17 live activation proof for the metadata-only guard (PR #6108,
+  head `0fc7242923`). The roadmap requires an exact-head transition rather
+  than a repository claim, so the proof was produced on GitHub itself.
+
+  Positive case: a metadata-only title edit on the unchanged head
+  `0fc7242923` fired the four suites' `edited` runs at 12:10:25Z
+  (`35219622608`, `35219622614`, `35219622594`, `35219622755`). Each filter
+  job logged
+  `Metadata-only edited event; prior completed success validates this unchanged tree.`
+  and emitted `should_run=false`. All four suites report `skipped` and all
+  four required contexts report `success`: `test-unit`/`test-unit-status`,
+  `test-graphql`/`test-graphql-status`,
+  `test-olat-api`/`test-olat-api-status`, and
+  `intl-production-smoke (${{ matrix.app }})`/`test-intl-production-status`.
+  The four runs completed in roughly 25 seconds each instead of re-running the
+  suites, and their `Build Fallback` sibling `35219622677` passed in 29s.
+
+  This is the state that previously could not be produced honestly, because
+  the old shortcut skipped unconditionally instead of reading the prior result.
+  The discriminating negative case is covered where it can be checked
+  deterministically: `changed-paths.test.cjs` drives the same step script with
+  a mock whose prior result is `failure`, `in_progress`, absent, HTTP 500, or
+  belongs to a different head, and asserts `should_run=true` every time. It is
+  not reproduced on the live repository because that would require deliberately
+  publishing a failing suite.

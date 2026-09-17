@@ -76,15 +76,23 @@ jobs:
         run: |
           node --test \
             .github/scripts/ci-equivalent-run.test.cjs \
+            .github/scripts/changed-paths.test.cjs \
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
             .github/scripts/required-ci-status.test.cjs \
+            .github/scripts/ocr-self-update-guard.test.cjs \
             .github/scripts/stg-release-promoter.test.js \
-            .github/scripts/required-build-status.test.cjs
+            .github/scripts/required-build-status.test.cjs \
+            .github/scripts/sonar-coverage-inputs.test.cjs \
+            .github/scripts/sonar-new-code-boundary.test.cjs \
+            .github/scripts/image-scan-admission.test.cjs \
+            .github/scripts/sonar-coverage-transport.test.cjs \
+            .github/scripts/image-scan-receipt.test.cjs
 
       - name: Check Playwright CI contracts
         run: |
           pnpm run check:playwright-ci
+          node --test .github/scripts/pnpm-install-retry.test.cjs
           node --test .github/scripts/playwright-resource-sampler.test.cjs
 
       - name: Check Playwright host launcher
