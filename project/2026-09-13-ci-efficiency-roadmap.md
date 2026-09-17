@@ -1209,3 +1209,114 @@ required from the user.
   seeder save condition. Prettier clean, Biome clean. Draft PR only; no
   runner-group, host, or settings change.
 
+
+- 2026-09-17 package: metadata-only edit re-validation (branch
+  `rs/ci-metadata-edit-validation`, draft [PR #6108](https://github.com/uzh-bf/klicker-uzh/pull/6108)). Closes the selection-integrity
+  half of the #5977 metadata rule and the first half of the second selection
+  finding above.
+
+  Defect found in shipped CI, not introduced by this package. The merged
+  `edited` shortcut in `.github/actions/changed-paths` returned
+  `should_run=false` for _any_ metadata-only edit, and
+  `decideResult`'s `no-change` state passes when the suite job is
+  `skipped` or `success`. Nothing re-read the prior outcome, so on a head
+  whose `test-unit`, `test-graphql`, `test-olat-api` or
+  `test-intl-production` suite had **failed**, editing the PR title turned
+  `test-unit-status` and siblings green. All four are required contexts on
+  `v3` and `v3-*` (rulesets 23042571 and 23042613), so the title edit was
+  a merge gate bypass, not just a saved run. Only `test-playwright` was
+  safe, because #5977's reuse gate binds the prior run identity.
+
+  Delivered: the skip now consults the head's `filter=latest` check-run for
+  the workflow's own always-reporting terminal context and skips only on a
+  completed `success`. A `failure`, `in_progress`, missing check, non-40-hex
+  head/base, or any API error runs the suite. A base retarget still bypasses
+  the whole path. The selector queries the `-status` context rather than the
+  suite job on purpose: the matrix-expanded translation job is really named
+  `intl-production-smoke (${{ matrix.app }})`, so the previously wired
+  `intl-production-smoke` input could never match and its lookup would always
+  have failed closed. All four workflows now also declare `checks: read`;
+  without it the check-run endpoint is forbidden and the lookup is inert.
+
+  Verification: 11/11 `.github/scripts/changed-paths.test.cjs` cases against
+  the composite's verbatim step script with a local check-run mock: prior
+  success skips, prior failure/pending/missing/500/foreign-head all re-run, an
+  unset name performs no request at all, retarget re-selects, synchronize and a
+  non-edited event never consult the check, and an empty push diff fails open.
+  Prettier clean. `gh api` semantics confirmed against a real head:
+  `check_name` filters by exact name, verified live: querying `test-unit`
+  returns only the suite job and not `test-unit-status`, so the lookup cannot
+  accidentally read the suite job it is meant to gate.
+  Draft PR only; no runner-group, host, or settings change.
+
+  Verification on the delivered head: 34 checks pass, 13 skip, and the only
+  non-terminal context is the manual final-ai-review. check (which runs
+  changed-paths.test.cjs 11/11 in CI), check-gitleaks, build-images-status,
+  all four path-filter jobs and all eight hosted Playwright shards pass on
+  exact head d590c5cd8c. The four filter jobs exercise the new lookup, and
+  the metadata-only live proof below ran on the identical-content predecessor
+  head 0fc7242923.
+
+  Deliberately left alone, still open in the second selection finding below:
+  `check.yml` and `test-playwright.yml` have no path filter, and the
+  `build-images-status` reporter binds the newest run for the head, so a
+  metadata skip there needs an explicit evidence signal.
+
+- 2026-09-17 slice B2 activation evidence (PR #5971, merged `136a867280`). The
+  2026-09-13 entry recorded the registry cache as "deployed and inert" because
+  GHCR listed no `-arm:buildcache` tag and every post-merge image run was a
+  draft deferral or a saturated-queue push. Re-checked live and it is now
+  active: `ghcr.io/uzh-bf/klicker-uzh/<image>-arm:buildcache` exists for
+  `auth-arm` (2026-09-16T14:11:03Z), `backend-docker-arm`
+  (14:13:44Z), `frontend-manage-arm` (14:14:49Z), `chat-arm`
+  (18:41:17Z), `response-api-arm` (09-16T12:12:03Z) and `frontend-pwa-arm`
+  (09-17T10:31:02Z). Only a same-repository pull-request build can write that
+  tag, so its presence is direct evidence the cache path executed.
+
+  Confirmed in the build log rather than inferred from the tag.
+  Run `35209304702` (`Build Docker image for frontend-assessment (stg)`,
+  PR `rs/v3-audit-sync-20260917`, head `16c54e785aac`, success) logs
+  `#8 importing cache manifest from ghcr.io/.../frontend-assessment-arm:buildcache`,
+  then `#9`-`#12 CACHED` and `#29 exporting cache to registry`. The sibling
+  `frontend-pwa` build `35209304457` on the same head ran the same contract.
+
+  Sizing caveat recorded rather than claimed as a win: the two cached PR
+  builds took 303s and 302s wall (10:26:05->10:31:08Z and
+  10:29:07->10:34:09Z). Both are cold on the heavy Next compile because the
+  cache was written only minutes earlier on the same branch; a first-ever write
+  cannot pay itself back. A meaningful warm-vs-cold duration comparison needs a
+  second PR build on the same image whose inputs are unchanged, which is the
+  next measurement, not this one. The cache is proven to work; its payoff is
+  not yet measured.
+
+- 2026-09-17 slice B2 registry scope note: only the six named repositories
+  carried a `buildcache` tag; `analytics-arm` had none (its Dockerfile has no
+  pnpm store stage, so there is little to reuse) and `rabbitmq-arm` is not a
+  package under the `klicker-uzh` namespace. The Go-backend migrator and the
+  MCP images were not probed by name here and remain unverified for cache tags.
+
+- 2026-09-17 live activation proof for the metadata-only guard (PR #6108,
+  head `0fc7242923`). The roadmap requires an exact-head transition rather
+  than a repository claim, so the proof was produced on GitHub itself.
+
+  Positive case: a metadata-only title edit on the unchanged head
+  `0fc7242923` fired the four suites' `edited` runs at 12:10:25Z
+  (`35219622608`, `35219622614`, `35219622594`, `35219622755`). Each filter
+  job logged
+  `Metadata-only edited event; prior completed success validates this unchanged tree.`
+  and emitted `should_run=false`. All four suites report `skipped` and all
+  four required contexts report `success`: `test-unit`/`test-unit-status`,
+  `test-graphql`/`test-graphql-status`,
+  `test-olat-api`/`test-olat-api-status`, and
+  `intl-production-smoke (${{ matrix.app }})`/`test-intl-production-status`.
+  The four runs completed in roughly 25 seconds each instead of re-running the
+  suites, and their `Build Fallback` sibling `35219622677` passed in 29s.
+
+  This is the state that previously could not be produced honestly, because
+  the old shortcut skipped unconditionally instead of reading the prior result.
+  The discriminating negative case is covered where it can be checked
+  deterministically: `changed-paths.test.cjs` drives the same step script with
+  a mock whose prior result is `failure`, `in_progress`, absent, HTTP 500, or
+  belongs to a different head, and asserts `should_run=true` every time. It is
+  not reproduced on the live repository because that would require deliberately
+  publishing a failing suite.
