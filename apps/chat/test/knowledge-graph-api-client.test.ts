@@ -1,12 +1,16 @@
 import {
+  KnowledgeGraphBuildChangedError,
+  KnowledgeGraphUnavailableError,
+} from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
   ChatKnowledgeGraphRequestError,
+  ChatKnowledgeGraphSelectionRequiredError,
   createChatKnowledgeGraphDataSource,
 } from '@/src/components/knowledge-graph/ChatKnowledgeGraphWorkspace'
 import { CHAT_GUEST_SESSION_STORAGE_KEY } from '@/src/hooks/useChatGuestTokenBootstrap'
 import { useChatStore } from '@/src/stores/chatStore'
-import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const chatbotId = '11111111-1111-4111-8111-111111111111'
 const graphResponse: KnowledgeGraphResponse = {
@@ -75,15 +79,75 @@ describe('chat knowledge graph API client', () => {
     )
   })
 
+  it('keeps the selected KB on every graph operation', async () => {
+    const fetcher = vi
+      .fn()
+      .mockImplementation(() => jsonResponse(graphResponse))
+    const source = createChatKnowledgeGraphDataSource(
+      chatbotId,
+      fetcher,
+      graphResponse.kbId
+    )
+    await source.overview()
+    await source.search('synthetic')
+    await source.neighbors('12', {
+      kbId: graphResponse.kbId,
+      buildId: graphResponse.buildId,
+    })
+    for (const [url] of fetcher.mock.calls) {
+      expect(new URL(url, 'http://localhost').searchParams.get('kbId')).toBe(
+        graphResponse.kbId
+      )
+    }
+  })
+
+  it('distinguishes graph selection from unavailable publication', async () => {
+    const choices = [{ id: graphResponse.kbId, name: 'Synthetic graph' }]
+    const source = createChatKnowledgeGraphDataSource(
+      chatbotId,
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse(
+            { code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED', choices },
+            409
+          )
+        )
+    )
+    await expect(source.overview()).rejects.toBeInstanceOf(
+      ChatKnowledgeGraphSelectionRequiredError
+    )
+  })
+
   it('passes decimal FalkorDB node IDs through the neighbors operation', async () => {
     const fetcher = vi.fn().mockResolvedValue(jsonResponse(graphResponse))
     const dataSource = createChatKnowledgeGraphDataSource(chatbotId, fetcher)
 
-    await dataSource.neighbors('12004')
+    await dataSource.neighbors('12004', {
+      kbId: graphResponse.kbId,
+      buildId: graphResponse.buildId,
+    })
 
     expect(fetcher).toHaveBeenCalledWith(
-      `/api/chatbots/${chatbotId}/knowledge-graph?operation=neighbors&nodeId=12004`
+      `/api/chatbots/${chatbotId}/knowledge-graph?operation=neighbors&kbId=${graphResponse.kbId}&buildId=${graphResponse.buildId}&nodeId=12004`
     )
+  })
+
+  it('distinguishes a changed build so the viewer can reload its overview', async () => {
+    const source = createChatKnowledgeGraphDataSource(
+      chatbotId,
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ code: 'KNOWLEDGE_GRAPH_BUILD_CHANGED' }, 409)
+        )
+    )
+    await expect(
+      source.neighbors('12', {
+        kbId: graphResponse.kbId,
+        buildId: graphResponse.buildId,
+      })
+    ).rejects.toBeInstanceOf(KnowledgeGraphBuildChangedError)
   })
 
   it('maps unpublished responses to an unavailable graph error with status', async () => {
@@ -153,6 +217,26 @@ describe('chat knowledge graph API client', () => {
       participationMessage: null,
     })
     expect(JSON.stringify(useChatStore.getState())).not.toContain('secret')
+  })
+
+  it('does not open the participation gate when the map is disabled', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          code: 'KNOWLEDGE_GRAPH_DISABLED',
+          error: 'Knowledge graph is disabled for this chatbot',
+        },
+        403
+      )
+    )
+    const dataSource = createChatKnowledgeGraphDataSource(chatbotId, fetcher)
+
+    await expect(dataSource.overview()).rejects.toMatchObject({
+      message: 'Knowledge graph request failed',
+      retryable: false,
+      status: 403,
+    })
+    expect(useChatStore.getState().participationRequired).toBe(false)
   })
 
   it('uses authedFetch so the guest bearer token reaches the API', async () => {

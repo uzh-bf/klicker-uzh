@@ -2,12 +2,24 @@ import { createServer } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
-import { createLocalAuthenticator } from './local-mcp-auth.mjs'
+import {
+  createLocalAuthenticator,
+  LOCAL_CHATBOT_ID,
+} from './local-mcp-auth.mjs'
+import {
+  findLocalMcpDocuments,
+  loadLocalMcpDocuments,
+  toLocalMcpDocumentSource,
+} from './local-mcp-documents.mjs'
+import { loadLocalMcpFixture } from './local-mcp-fixture.mjs'
 
 const HOST = '127.0.0.1'
 const PORT = 1417
 const MAX_BODY_BYTES = 1024 * 1024
-const authenticate = await createLocalAuthenticator(process.env)
+const fixture = loadLocalMcpFixture(process.env)
+const authenticate = await createLocalAuthenticator(process.env, fixture, {
+  returnIdentity: true,
+})
 
 const SYNTHETIC_DOCUMENTS = [
   {
@@ -26,6 +38,8 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       'Portfolio diversification spreads investments across assets, sectors, or regions. It can reduce idiosyncratic risk because a loss in one holding may be offset by gains in another. Diversification does not remove systematic market risk, and its benefit depends on the correlations between the holdings.',
+    continuation:
+      'Read diversification from the correlations, not from the number of holdings: two positions that move together add little risk reduction however many of them a portfolio holds.',
   },
   {
     title: 'Time value of money',
@@ -43,6 +57,8 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       'The time value of money means that a monetary amount available today is generally worth more than the same nominal amount available later. Present value discounts a future cash flow using an appropriate rate, while future value compounds a present amount over time.',
+    continuation:
+      'Discounting a stream of future cash flows is the same operation applied term by term; the present value of the stream is the sum of the individually discounted amounts.',
   },
   {
     title: 'Bond pricing',
@@ -60,6 +76,8 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       'A coupon bond is valued as the present value of its promised coupon payments and repayment of principal at maturity. Holding other factors constant, a rise in market yields lowers the price of an existing fixed-coupon bond, while a fall in yields raises its price.',
+    continuation:
+      'The same valuation logic covers unequal coupons, and the yield to maturity is the single rate that makes the discounted promised cash flows equal the observed price.',
   },
   {
     title: 'CAPM and required return',
@@ -77,17 +95,20 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       "The CAPM links an asset's required return to the risk-free rate plus beta multiplied by the market risk premium. Beta measures the asset's sensitivity to systematic market movements; diversifiable, idiosyncratic risk is not rewarded by the model.",
+    continuation:
+      'Because only systematic risk is priced, an asset with high idiosyncratic volatility but a low beta can leave the required return almost unchanged.',
   },
 ]
 
-function findDocuments(query) {
-  const normalizedQuery = query.toLowerCase()
-  return SYNTHETIC_DOCUMENTS.filter((document) =>
-    document.keywords.some((keyword) => normalizedQuery.includes(keyword))
-  )
-}
+const DOCUMENTS = loadLocalMcpDocuments(process.env, SYNTHETIC_DOCUMENTS)
+const additionalDocuments = fixture
+  ? loadLocalMcpDocuments(
+      { LOCAL_MCP_DOCUMENTS_FILE: fixture.documentsFile },
+      []
+    )
+  : null
 
-function createMcpServer() {
+function createMcpServer(documentsForIdentity) {
   const server = new McpServer({
     name: 'klicker-local-test-mcp',
     version: '1.0.0',
@@ -114,7 +135,7 @@ function createMcpServer() {
       },
     },
     async ({ query }) => {
-      const documents = findDocuments(query)
+      const documents = findLocalMcpDocuments(documentsForIdentity, query)
       const payload = {
         answer:
           `KLICKER_LOCAL_MCP_OK: the local MCP server received "${query}". ` +
@@ -122,18 +143,7 @@ function createMcpServer() {
         mode: 'documents',
         summary: { count: documents.length },
         sources_used: documents.length,
-        sources: documents.map((document) => ({
-          reference: 'synthetic-course-material.pdf',
-          reference_type: 'pdf',
-          source_type: 'document',
-          title: document.title,
-          chunks: [
-            {
-              content: document.content,
-              page_number: document.page,
-            },
-          ],
-        })),
+        sources: documents.map(toLocalMcpDocumentSource),
       }
 
       return {
@@ -186,12 +196,15 @@ const httpServer = createServer(async (request, response) => {
     return
   }
 
-  if (!(await authenticate(request.headers))) {
+  const identity = await authenticate(request.headers)
+  if (!identity) {
     sendJson(response, 401, { error: 'Unauthorized' })
     return
   }
 
-  const mcpServer = createMcpServer()
+  const mcpServer = createMcpServer(
+    identity === LOCAL_CHATBOT_ID ? DOCUMENTS : additionalDocuments
+  )
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

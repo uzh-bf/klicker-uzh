@@ -6,6 +6,13 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
+const {
+  SCAN_ADMISSION_INVENTORY,
+  evaluateScanAdmission,
+  evaluateScanJobStatus,
+  receiptFileName,
+} = require('./image-scan-admission.cjs')
+
 const PROMOTION_REF = 'refs/heads/stg-release'
 const PROMOTION_REF_NAME = 'stg-release'
 const PROMOTION_REF_API = `heads/${PROMOTION_REF_NAME}`
@@ -20,6 +27,10 @@ const WORKFLOW_PATH_PATTERN = /^\.github\/workflows\/v3_.*-stg\.yml$/
 const APPROVED_PUSH_BRANCHES = Object.freeze(['v3', 'v3*'])
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
 const SHA_PATTERN = /^[0-9a-f]{40}$/
+// One scanned image uploads its findings report, SBOM, and receipt together, so
+// the archive budget has to cover a full vulnerability report rather than a
+// receipt alone.
+const SCAN_ARCHIVE_LIMIT = 67108864
 const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.oci.image.index.v1+json',
   'application/vnd.docker.distribution.manifest.list.v2+json',
@@ -27,6 +38,47 @@ const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.docker.distribution.manifest.v2+json',
 ])
 const REGISTRY_ACCEPT = REGISTRY_CONTENT_TYPES.join(', ')
+
+const CI_SUITE_JOBS = Object.freeze({
+  'test-graphql.yml': ['test-graphql'],
+  'test-unit.yml': ['test-unit'],
+  'test-olat-api.yml': ['test-olat-api'],
+  'test-intl-production.yml': [
+    'intl-production-smoke (frontend-pwa)',
+    'intl-production-smoke (frontend-manage)',
+  ],
+})
+
+const REQUIRED_CI_WORKFLOWS = Object.freeze(
+  [
+    ['check.yml', 'check'],
+    ['check-gitleaks.yml', 'check-gitleaks'],
+    ['test-graphql.yml', 'test-graphql-status'],
+    ['test-playwright.yml', 'test-playwright-status'],
+    ['test-unit.yml', 'test-unit-status'],
+    ['test-olat-api.yml', 'test-olat-api-status'],
+    ['test-intl-production.yml', 'test-intl-production-status'],
+    ['v3_build-fallback.yml', 'build-images-status'],
+    // Admission reads push runs. There the SonarCloud job publishes a branch
+    // analysis without awaiting the quality gate, and the boundary step names
+    // an inflated branch classification in an annotation rather than failing
+    // the job. A hard scan failure still fails this candidate, which is what
+    // admission checks. The awaited gate is on the pull request, where new
+    // code is the diff against the base.
+    ['v3_sonarcloud.yml', 'SonarCloud'],
+  ].map(([file, id]) => ({
+    path: `.github/workflows/${file}`,
+    jobs:
+      id === 'test-playwright-status'
+        ? [
+            { id },
+            ...Array.from({ length: 8 }, (_, i) => ({
+              id: `test-playwright-execution / test-playwright-hosted (${i + 1}, 8)`,
+            })),
+          ]
+        : [{ id }, ...(CI_SUITE_JOBS[file] ?? []).map((id) => ({ id }))],
+  }))
+)
 
 // Keep this inventory synchronized with the workflow_run names below. A
 // candidate cannot rename, add, remove, or retarget a runtime publisher without
@@ -385,6 +437,7 @@ function validateStagingWorkflow({
   expectedWorkflow,
   repository,
   sourceBranch,
+  scanInventory = SCAN_ADMISSION_INVENTORY,
 }) {
   if (!WORKFLOW_PATH_PATTERN.test(workflowPath)) {
     throw new Error(`${workflowPath} is not an approved staging workflow path`)
@@ -419,10 +472,59 @@ function validateStagingWorkflow({
   const activeArmJobs = jobs.filter(
     (job) => job.id.endsWith('-arm') && !isDisabledJob(job)
   )
-  const expectedJobIds = expectedWorkflow.jobs.map((job) => job.id).sort()
+  // The admission inventory decides which job scans which image, and those
+  // scan jobs are active ARM jobs in the same workflow. They publish no image,
+  // so they are expected here and excluded from the publisher checks below.
+  const scanJobIds = scanInventory
+    .filter((entry) => entry.workflowPath === workflowPath)
+    .map((entry) => entry.scanJob)
+    .sort()
+  const expectedPublisherJobIds = expectedWorkflow.jobs
+    .map((job) => job.id)
+    .sort()
+  const expectedJobIds = [...expectedPublisherJobIds, ...scanJobIds].sort()
   const actualJobIds = activeArmJobs.map((job) => job.id).sort()
   if (canonicalJson(actualJobIds) !== canonicalJson(expectedJobIds)) {
     throw new Error(`${workflowPath} active ARM job inventory changed`)
+  }
+
+  const activePublisherArmJobs = activeArmJobs.filter(
+    (job) => !scanJobIds.includes(job.id)
+  )
+
+  // Admission reads candidate-authored receipts, so each scan job must still
+  // contain the steps the policy depends on: one trivy action revision pinned
+  // to a full SHA and the receipt check that enforces the fixable finding
+  // gate. A refactored scan job then fails validation instead of inheriting
+  // trust from its own receipt metadata.
+  for (const scanJobId of scanJobIds) {
+    const scanJob = activeArmJobs.find((job) => job.id === scanJobId)
+    const trivyRefs = [
+      ...new Set(
+        extractActionSteps(scanJob, workflowPath)
+          .map(
+            (step) =>
+              step.match(
+                /^(?:      - uses|        uses):\s*aquasecurity\/trivy-action@([^\s#]+)/m
+              )?.[1]
+          )
+          .filter(Boolean)
+      ),
+    ]
+    if (trivyRefs.length !== 1 || !/^[0-9a-f]{40}$/.test(trivyRefs[0])) {
+      throw new Error(
+        `${workflowPath}/${scanJobId} does not pin one trivy action revision`
+      )
+    }
+    if (
+      !/^\s*node\s+\.github\/scripts\/image-scan-receipt\.cjs\s+check(?:\s|$)/m.test(
+        scanJob.content
+      )
+    ) {
+      throw new Error(
+        `${workflowPath}/${scanJobId} does not enforce the scan policy`
+      )
+    }
   }
 
   const activeNonRuntimeJobs = jobs.filter(
@@ -438,7 +540,7 @@ function validateStagingWorkflow({
     throw new Error(`${workflowPath} active non-runtime job inventory changed`)
   }
 
-  const publisherJobs = [...activeArmJobs, ...activeNonRuntimeJobs]
+  const publisherJobs = [...activePublisherArmJobs, ...activeNonRuntimeJobs]
   const images = publisherJobs.map((job) => {
     if (
       job.id.endsWith('-arm') &&
@@ -510,7 +612,7 @@ function validateStagingWorkflow({
     throw new Error(`${workflowPath} has an unexpected active image publisher`)
   }
 
-  const hasMigratorJob = expectedJobIds.includes('build-migrator-arm')
+  const hasMigratorJob = expectedPublisherJobIds.includes('build-migrator-arm')
   if (
     hasMigratorJob &&
     !/^    needs:\s*build-migrator-arm\s*$/m.test(
@@ -536,7 +638,7 @@ function validateStagingWorkflow({
     throw new Error(`${workflowPath} runtime image inventory changed`)
   }
 
-  const runtimeJobIds = new Set(expectedJobIds)
+  const runtimeJobIds = new Set(expectedPublisherJobIds)
   return {
     name: workflowName,
     path: workflowPath,
@@ -549,6 +651,7 @@ function validateStagingWorkflows({
   repository,
   sourceBranch,
   expectedWorkflows = STAGING_WORKFLOWS,
+  scanInventory = SCAN_ADMISSION_INVENTORY,
 }) {
   assertSafeSourceBranch(sourceBranch)
   const paths = definitions.map((definition) => definition.path).sort()
@@ -568,6 +671,7 @@ function validateStagingWorkflows({
         expectedWorkflow,
         repository,
         sourceBranch,
+        scanInventory,
       })
     })
     .sort((left, right) => left.path.localeCompare(right.path))
@@ -688,12 +792,21 @@ async function paginate(github, endpoint, params) {
   return result
 }
 
-function latestRun(runs, workflowPath, candidateSha) {
+function latestRun(runs, workflowPath, candidateSha, sourceBranch, repository) {
   const exact = runs
     .filter(
-      (run) => run?.path === workflowPath && run?.head_sha === candidateSha
+      (run) =>
+        run?.path === workflowPath &&
+        run?.head_sha === candidateSha &&
+        run.event === 'push' &&
+        run.head_branch === sourceBranch &&
+        run.repository?.full_name === repository
     )
-    .sort((left, right) => Number(right.id ?? 0) - Number(left.id ?? 0))
+    .sort(
+      (left, right) =>
+        Number(right.id ?? 0) - Number(left.id ?? 0) ||
+        Number(right.run_attempt ?? 0) - Number(left.run_attempt ?? 0)
+    )
   return {
     exact: exact[0],
     candidateRuns: runs.filter((run) => run?.head_sha === candidateSha),
@@ -743,7 +856,13 @@ async function collectWorkflowEvidence({
     head_sha: candidateSha,
     per_page: 100,
   })
-  const { exact, candidateRuns } = latestRun(runs, workflow.path, candidateSha)
+  const { exact, candidateRuns } = latestRun(
+    runs,
+    workflow.path,
+    candidateSha,
+    sourceBranch,
+    repository
+  )
   if (!exact) {
     return {
       path: workflow.path,
@@ -763,7 +882,7 @@ async function collectWorkflowEvidence({
       status: state,
     }
   }
-  if (typeof github.rest.actions.listJobsForWorkflowRun !== 'function') {
+  if (typeof github.rest.actions.listJobsForWorkflowRunAttempt !== 'function') {
     return {
       path: workflow.path,
       reason: 'workflow jobs are unavailable',
@@ -771,19 +890,37 @@ async function collectWorkflowEvidence({
       status: 'wrong_evidence',
     }
   }
+  if (!Number.isSafeInteger(exact.run_attempt) || exact.run_attempt < 1) {
+    return {
+      path: workflow.path,
+      reason: 'run attempt is unavailable',
+      run: exact,
+      status: 'wrong_evidence',
+    }
+  }
   const jobs = await paginate(
     github,
-    github.rest.actions.listJobsForWorkflowRun,
+    github.rest.actions.listJobsForWorkflowRunAttempt,
     {
       owner: context.repo.owner,
       repo: context.repo.repo,
       run_id: exact.id,
+      attempt_number: exact.run_attempt,
       per_page: 100,
     }
   )
   const verifiedJobs = []
   for (const required of workflow.jobs) {
-    const matching = jobs.find((job) => job?.name === required.id)
+    const matches = jobs.filter((job) => job?.name === required.id)
+    if (matches.length > 1) {
+      return {
+        path: workflow.path,
+        reason: `${required.id} is ambiguous`,
+        run: exact,
+        status: 'wrong_evidence',
+      }
+    }
+    const matching = matches[0]
     const stateForJob = jobState(matching, required.id, candidateSha)
     if (stateForJob !== 'success') {
       return {
@@ -805,19 +942,295 @@ async function collectWorkflowEvidence({
       id: matching.id,
       name: matching.name,
       url: matching.html_url ?? '',
+      conclusion: matching.conclusion,
     })
   }
   return {
     jobs: verifiedJobs,
+    observedJobs: jobs.map(({ id, name, status, conclusion }) => ({
+      id,
+      name,
+      status,
+      conclusion,
+    })),
     path: workflow.path,
     run: {
       branch: exact.head_branch,
       id: exact.id,
+      attempt: exact.run_attempt,
+      event: exact.event,
       sha: exact.head_sha,
       url: exact.html_url ?? '',
     },
     status: 'success',
   }
+}
+
+async function readCiEvidence({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    {
+      ...context.repo,
+      run_id: run.id,
+      per_page: 100,
+    }
+  )
+  const matches = artifacts.filter(
+    (a) => a.name === 'required-ci-evidence' && !a.expired
+  )
+  if (matches.length !== 1 || matches[0].size_in_bytes > 1048576) {
+    throw new Error('missing or ambiguous CI selection artifact')
+  }
+  const response = await github.rest.actions.downloadArtifact({
+    ...context.repo,
+    artifact_id: matches[0].id,
+    archive_format: 'zip',
+  })
+  if (response.data.byteLength > 1048576)
+    throw new Error('CI selection archive too large')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-ci-'))
+  try {
+    const archive = path.join(directory, 'evidence.zip')
+    fs.writeFileSync(archive, Buffer.from(response.data))
+    return JSON.parse(
+      execFileSync('unzip', ['-p', archive, 'required-ci-evidence.json'], {
+        encoding: 'utf8',
+        maxBuffer: 1048576,
+        timeout: 10000,
+      })
+    )
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+// Scan receipts travel as one artifact per scanned image, next to the findings
+// JSON and SBOM they describe. The findings report can be large, so the
+// archive is bounded before it is read.
+async function readScanReceipts({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    { ...context.repo, run_id: run.id, per_page: 100 }
+  )
+  const scanned = artifacts.filter(
+    (artifact) =>
+      typeof artifact.name === 'string' &&
+      artifact.name.startsWith('image-scan-') &&
+      !artifact.expired
+  )
+  const receipts = []
+  for (const artifact of scanned) {
+    if (artifact.size_in_bytes > SCAN_ARCHIVE_LIMIT) {
+      throw new Error(`${artifact.name} exceeds the scan receipt read budget`)
+    }
+    const response = await github.rest.actions.downloadArtifact({
+      ...context.repo,
+      artifact_id: artifact.id,
+      archive_format: 'zip',
+    })
+    if (response.data.byteLength > SCAN_ARCHIVE_LIMIT)
+      throw new Error(`${artifact.name} archive too large`)
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-scan-'))
+    try {
+      const archive = path.join(directory, 'receipt.zip')
+      fs.writeFileSync(archive, Buffer.from(response.data))
+      receipts.push(
+        JSON.parse(
+          execFileSync(
+            'unzip',
+            ['-p', archive, receiptFileName(artifact.name)],
+            { encoding: 'utf8', maxBuffer: 1048576, timeout: 10000 }
+          )
+        )
+      )
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
+  }
+  return receipts
+}
+
+// The scans run after the images they judge, so a candidate can legitimately
+// finish its builds while a scan is still running. Only that state is retried.
+// A failed or missing scan job, and a receipt that does not describe the
+// promoted digest, block the candidate instead of being retried.
+async function collectScanAdmission({
+  github,
+  context,
+  workflows,
+  images,
+  candidateSha,
+  sourceBranch,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+  sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
+  getReceipts = readScanReceipts,
+  inventory = SCAN_ADMISSION_INVENTORY,
+}) {
+  const repository = repositoryName(context)
+  const paths = [...new Set(inventory.map((entry) => entry.workflowPath))]
+  const attempts = []
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const collected = await Promise.all(
+      paths.map(async (workflowPath) => {
+        const workflow = workflows.find((entry) => entry.path === workflowPath)
+        if (!workflow) {
+          return { path: workflowPath, status: 'wrong_evidence' }
+        }
+        const result = await collectWorkflowEvidence({
+          github,
+          context,
+          workflow,
+          candidateSha,
+          sourceBranch,
+          repository,
+        })
+        if (result.status !== 'success') return { ...result, workflowPath }
+        const jobs = inventory
+          .filter((entry) => entry.workflowPath === workflowPath)
+          .map((entry) => ({
+            ...evaluateScanJobStatus(result.observedJobs, entry.scanJob),
+            scanJob: entry.scanJob,
+          }))
+        const failed = jobs.find((job) => job.status !== 'success')
+        if (failed) {
+          return {
+            ...failed,
+            path: workflowPath,
+            reason: `${failed.scanJob} is ${failed.status.replace('_', ' ')}`,
+            workflowPath,
+          }
+        }
+        return { path: workflowPath, run: result.run, status: 'success' }
+      })
+    )
+    const failures = collected.filter((result) => result.status !== 'success')
+    attempts.push({
+      attempt,
+      failures: failures.map(({ path, reason, status }) => ({
+        path,
+        reason,
+        status,
+      })),
+    })
+    if (failures.length > 0) {
+      const retryable = failures.every((failure) =>
+        isRetryableEvidenceStatus(failure.status)
+      )
+      if (!retryable || attempt === maxAttempts) {
+        return {
+          attempts,
+          entries: [],
+          reason: failures
+            .map(({ path, reason }) => `${path} (${reason})`)
+            .join(', '),
+          valid: false,
+        }
+      }
+      await sleep(retryDelayMs)
+      continue
+    }
+    const runs = Object.fromEntries(
+      collected.map((result) => [result.path, result.run])
+    )
+    const receipts = Object.fromEntries(
+      await Promise.all(
+        collected.map(async (result) => [
+          result.path,
+          await getReceipts({ github, context, run: result.run }),
+        ])
+      )
+    )
+    const decision = evaluateScanAdmission({
+      images,
+      inventory,
+      receipts,
+      runs,
+    })
+    if (decision.valid) {
+      return { attempts, entries: decision.entries, valid: true }
+    }
+    return {
+      attempts,
+      entries: decision.entries,
+      reason: decision.entries
+        .filter((entry) => !entry.ok)
+        .map((entry) => `${entry.scanJob} (${entry.reason})`)
+        .join(', '),
+      valid: false,
+    }
+  }
+  throw new Error('bounded scan admission did not reach a terminal state')
+}
+
+function validateCiSelection(
+  evidence,
+  workflow,
+  repository,
+  candidateSha,
+  sourceBranch
+) {
+  if (
+    evidence?.schemaVersion !== 1 ||
+    evidence.repository !== repository ||
+    evidence.workflow?.path !== workflow.path ||
+    evidence.workflow?.terminalJob !== workflow.jobs[0].name ||
+    evidence.event?.name !== 'push' ||
+    evidence.event.branch !== sourceBranch ||
+    evidence.event.sha !== candidateSha ||
+    evidence.run?.id !== workflow.run.id ||
+    evidence.run.attempt !== workflow.run.attempt ||
+    evidence.decision?.outcome !== 'pass' ||
+    evidence.reuse != null ||
+    evidence.selection?.state !== 'run' ||
+    !Array.isArray(evidence.jobs) ||
+    evidence.jobs.length === 0
+  ) {
+    throw new Error('invalid CI selection evidence')
+  }
+  const expectedSuites = CI_SUITE_JOBS[path.basename(workflow.path)]
+  if (!expectedSuites) throw new Error('unknown CI suite')
+  const names = new Set()
+  for (const job of evidence.jobs) {
+    if (
+      typeof job.name !== 'string' ||
+      !job.name ||
+      names.has(job.name) ||
+      !['success', 'skipped'].includes(job.result)
+    )
+      throw new Error('invalid selected job evidence')
+    const observed = workflow.observedJobs?.filter(
+      (actual) => actual.name === job.name
+    )
+    if (
+      observed?.length !== 1 ||
+      observed[0].status !== 'completed' ||
+      observed[0].conclusion !== job.result
+    ) {
+      throw new Error('CI selection does not match actual jobs')
+    }
+    names.add(job.name)
+  }
+  const suite = evidence.jobs.filter((job) => job.role === 'suite')
+  const selector = evidence.jobs.filter((job) => job.role === 'selection')
+  if (
+    evidence.jobs.length !== expectedSuites.length + 1 ||
+    suite.length !== expectedSuites.length ||
+    expectedSuites.some(
+      (name) =>
+        !suite.some((job) => job.name === name && job.result === 'success')
+    ) ||
+    selector.length !== 1 ||
+    selector[0].name !== 'filter' ||
+    selector[0].result !== 'success'
+  ) {
+    throw new Error(
+      'selected CI suite did not succeed or selection is unproven'
+    )
+  }
+  return evidence
 }
 
 function isRetryableEvidenceStatus(status) {
@@ -1412,7 +1825,19 @@ async function resolveInputs({
         `manual writes require confirm_ref_update=${MANUAL_CONFIRMATION}`
       )
     }
+    if (
+      !dryRun &&
+      ((inputs.expected_release_sha !== 'absent' &&
+        !validSha(inputs.expected_release_sha)) ||
+        !validSha(inputs.expected_controller_sha))
+    ) {
+      throw new Error(
+        'manual writes require expected_release_sha and expected_controller_sha'
+      )
+    }
     return {
+      expectedReleaseSha: inputs.expected_release_sha,
+      expectedControllerSha: inputs.expected_controller_sha,
       allowWrite: !dryRun,
       candidateSha: selectedCandidateSha,
       confirmation,
@@ -1431,8 +1856,11 @@ async function runPromotion({
   sourceBranch,
   candidateSha,
   promotionEnabled,
+  controllerSha = process.env.TRUSTED_WORKFLOW_SHA,
   expectedWorkflows = STAGING_WORKFLOWS,
   getRegistryDigest = fetchRegistryDigest,
+  getCiEvidence = readCiEvidence,
+  getScanAdmission = collectScanAdmission,
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
@@ -1471,6 +1899,14 @@ async function runPromotion({
     return { ...inputs, decision: 'disabled', skipped: true }
   }
 
+  if (!validSha(controllerSha))
+    throw new Error('trusted controller SHA is unavailable')
+  if (
+    inputs.expectedControllerSha &&
+    inputs.expectedControllerSha !== controllerSha
+  ) {
+    throw new Error('trusted controller SHA changed since dry run')
+  }
   const repository = repositoryName(context)
   const definitions = await getCandidateDefinitions({
     github,
@@ -1504,14 +1940,71 @@ async function runPromotion({
   if (!evidence.valid) {
     throw new Error(`staging build evidence is incomplete: ${evidence.reason}`)
   }
+  const ciEvidence = await collectBuildEvidence({
+    github,
+    context,
+    workflows: REQUIRED_CI_WORKFLOWS,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+    maxAttempts,
+    retryDelayMs,
+    sleep,
+  })
+  if (!ciEvidence.valid) {
+    throw new Error(`staging CI evidence is incomplete: ${ciEvidence.reason}`)
+  }
+  for (const workflow of ciEvidence.workflows) {
+    if (
+      [
+        'test-graphql.yml',
+        'test-unit.yml',
+        'test-olat-api.yml',
+        'test-intl-production.yml',
+      ].some((file) => workflow.path === `.github/workflows/${file}`)
+    ) {
+      workflow.selection = validateCiSelection(
+        await getCiEvidence({ github, context, run: workflow.run }),
+        workflow,
+        repository,
+        inputs.candidateSha,
+        inputs.sourceBranch
+      )
+    }
+  }
   const images = await resolveStableRegistryDigests({
     candidateSha: inputs.candidateSha,
     evidence,
     workflows,
     getRegistryDigest,
   })
+  // A promoted digest must be the digest the scan policy judged, so the scan
+  // evidence is bound to the resolved references rather than to an image name.
+  const scanEvidence = await getScanAdmission({
+    github,
+    context,
+    workflows,
+    images,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+    maxAttempts,
+    retryDelayMs,
+    sleep,
+  })
+  if (!scanEvidence.valid) {
+    throw new Error(
+      `staging image scan evidence is incomplete: ${scanEvidence.reason}`
+    )
+  }
 
   const currentSha = await getReleaseRef({ github, context })
+  if (
+    inputs.expectedReleaseSha &&
+    (inputs.expectedReleaseSha === 'absent'
+      ? currentSha !== null
+      : inputs.expectedReleaseSha !== currentSha)
+  ) {
+    throw new Error('stg-release changed since dry run')
+  }
   const decision = await planReleaseRef({
     github,
     context,
@@ -1546,7 +2039,9 @@ async function runPromotion({
     updateResult.verification === 'verified' ? inputs.candidateSha : null
 
   const receipt = {
-    schema_version: 'stg-release-promotion/v1',
+    schema_version: 'stg-release-promotion/v2',
+    controller_sha: controllerSha,
+    ci: ciEvidence,
     controller_run_id: context.runId,
     repository,
     source_branch: inputs.sourceBranch,
@@ -1569,6 +2064,10 @@ async function runPromotion({
       jobs: workflow.jobs,
     })),
     images,
+    scan: {
+      attempts: scanEvidence.attempts,
+      images: scanEvidence.entries,
+    },
   }
   const checksum = checksumReceipt(receipt)
   const artifacts = writeReceiptArtifacts({
@@ -1597,6 +2096,10 @@ async function runPromotion({
 }
 
 module.exports = {
+  readCiEvidence,
+  resolveInputs,
+  validateCiSelection,
+  REQUIRED_CI_WORKFLOWS,
   APPROVED_PUSH_BRANCHES,
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_POST_PUSH_READBACK_ATTEMPTS,
@@ -1614,6 +2117,7 @@ module.exports = {
   canonicalJson,
   checksumReceipt,
   collectBuildEvidence,
+  collectScanAdmission,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
   getCandidateDefinitions,
@@ -1623,6 +2127,7 @@ module.exports = {
   matchesApprovedBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
+  readScanReceipts,
   resolveStableRegistryDigests,
   runPromotion,
   validateCandidateAncestry,

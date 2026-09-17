@@ -3,7 +3,10 @@ description: >-
   Determine whether any changed file matches a path pattern. Uses a plain
   two-endpoint diff so it works on the default shallow checkout (a
   merge-base/three-dot diff would fail there). Fails open: if the diff cannot
-  be computed, should_run is true.
+  be computed, should_run is true. A pull_request edited event that only
+  changed PR metadata (title or body) selects no suite: the head tree is
+  identical to the tree the same head already validated. A base change on the
+  same event still computes the real diff against the new base.
 
 inputs:
   pattern:
@@ -22,9 +25,22 @@ runs:
       shell: bash
       env:
         PATTERN: ${{ inputs.pattern }}
-        BASE_REF: ${{ github.base_ref }}
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
+        BEFORE_SHA: ${{ github.event.before }}
+        ACTION: ${{ github.event.action }}
+        EDITED_BASE_FROM: ${{ github.event.changes.base.from }}
       run: |
         if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+          # A title/body edit fires on an unchanged head and base, so the tree
+          # equals the one this event's earlier runs already selected against;
+          # re-running the diff would return the same selection. A base change
+          # carries changes.base.from and must re-evaluate, because the new
+          # base can add, remove, or change the merge diff.
+          if [ "$ACTION" = "edited" ] && [ -z "$EDITED_BASE_FROM" ]; then
+            echo "Metadata-only edited event (title/body); no code change to select."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           # Only shallow-fetch when the clone is already shallow. A full clone
           # (fetch-depth: 0) must retain its history for later merge-base
           # lookups. A --depth=1 fetch writes a shallow graft at the base ref;
@@ -36,11 +52,16 @@ runs:
           else
             git fetch origin "$BASE_REF"
           fi
-          diff=$(git diff --name-only "origin/$BASE_REF" HEAD) || diff=""
+          diff=$(git diff --name-only "$BASE_REF" HEAD) || diff=""
         else
-          # Deepen the shallow clone so the previous commit is available
-          git fetch --deepen=1 origin || true
-          diff=$(git diff --name-only HEAD^ HEAD) || diff=""
+          # Compare the complete push, including earlier commits in a batch.
+          # Missing/deleted initial refs fall back to running the suite below.
+          if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            git fetch --depth=1 origin "$BEFORE_SHA" || true
+            diff=$(git diff --name-only "$BEFORE_SHA" HEAD) || diff=""
+          else
+            diff=""
+          fi
         fi
 
         if [ -z "$diff" ]; then

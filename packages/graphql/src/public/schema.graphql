@@ -754,9 +754,12 @@ type Chatbot {
   creditResetPeriod: CreditResetPeriod!
   description: String
   disclaimerSummary: ChatbotDisclaimerSummary
-  enabledKnowledgeBase: ChatbotKnowledgeBaseSummary
+  enabledKnowledgeBase: ChatbotKnowledgeBaseSummary @deprecated(reason: "Use enabledKnowledgeBases for all attached knowledge bases.")
+  enabledKnowledgeBases: [ChatbotKnowledgeBaseSummary!]!
   expectedStudentCount: Int
   id: ID!
+  knowledgeGraphRetrievalEnabled: Boolean!
+  knowledgeGraphVisible: Boolean!
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]!
   modelSelection: Boolean!
   name: String!
@@ -783,6 +786,8 @@ type ChatbotAuthoringRevision {
   disclaimerIntroText: String
   disclaimerTitle: String
   expectedStudentCount: Int
+  knowledgeGraphRetrievalEnabled: Boolean!
+  knowledgeGraphVisible: Boolean!
   modelSelection: Boolean!
   name: String!
   publicationUseCase: String
@@ -848,6 +853,11 @@ input ChatbotRevisionDisclaimerInput {
   title: String!
 }
 
+input ChatbotRevisionKnowledgeGraphPolicyInput {
+  retrievalEnabled: Boolean!
+  visible: Boolean!
+}
+
 input ChatbotRevisionMetadataInput {
   avatar: String
   description: String
@@ -863,6 +873,7 @@ input ChatbotRevisionModelPolicyInput {
 input ChatbotRevisionSaveInput {
   creditPolicy: ChatbotCreditPolicyInput
   disclaimer: ChatbotRevisionDisclaimerInput
+  knowledgeGraphPolicy: ChatbotRevisionKnowledgeGraphPolicyInput
   metadata: ChatbotRevisionMetadataInput
   modelPolicy: ChatbotRevisionModelPolicyInput
   standardModeConfig: ChatbotStandardModeConfigInput
@@ -1999,6 +2010,7 @@ type GeneratedElementDraft {
   savedAt: Date
   savedElementId: Int
   sourceElementId: ID!
+  suggestedTags: [String!]!
   targetDifficulty: Int
   updatedAt: Date!
 }
@@ -2014,6 +2026,7 @@ type GeneratedElementEditable {
   explanation: String
   name: String!
   prompt: String!
+  tagSelection: GeneratedElementTagSelection
   tags: [String!]!
 }
 
@@ -2024,7 +2037,18 @@ input GeneratedElementEditableInput {
   explanation: String
   name: String!
   prompt: String!
+  tagSelection: GeneratedElementTagSelectionInput
   tags: [String!]
+}
+
+type GeneratedElementTagSelection {
+  existingTagIds: [Int!]!
+  newTagNames: [String!]!
+}
+
+input GeneratedElementTagSelectionInput {
+  existingTagIds: [Int!]
+  newTagNames: [String!]
 }
 
 type GroupAchievementInstance {
@@ -2247,8 +2271,9 @@ type KB {
 type KBChatbotBinding {
   chatbotId: ID!
   chatbotName: String!
-  enabledKbId: ID
-  enabledKbName: String
+  enabledKbId: ID @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
+  enabledKbName: String @deprecated(reason: "Use enabledKbs for all attached knowledge bases.")
+  enabledKbs: [ChatbotKnowledgeBaseSummary!]!
 }
 
 type KBConnection {
@@ -2281,6 +2306,24 @@ enum KBGraphCostStatus {
 enum KBGraphQualityTier {
   HIGH
   STANDARD
+}
+
+type KBImportedSource {
+  chunkCount: Int!
+  id: ID!
+  ingestedAt: Date
+  observedAt: Date
+  sourceType: String
+  sourceUrl: String
+  title: String!
+}
+
+type KBImportedSourceConnection {
+  incomplete: Boolean!
+  items: [KBImportedSource!]!
+  pageInfo: KBPageInfo!
+  totalSourcesInScan: Int!
+  unidentifiedChunks: Int!
 }
 
 type KBIngestAllResult {
@@ -2385,16 +2428,16 @@ type KBKnowledgeGraphDomainOption {
 type KBMetrics {
   linkedConsumerCount: Int!
   pendingCleanupCount: Int!
-  pendingCleanupSizeBytes: Int!
+  pendingCleanupSizeBytes: Float!
   quotaResourceCount: Int!
-  quotaSizeBytes: Int!
+  quotaSizeBytes: Float!
   reservedResourceCount: Int!
-  reservedSizeBytes: Int!
+  reservedSizeBytes: Float!
   resourceLimit: Int!
-  storageLimitBytes: Int!
+  storageLimitBytes: Float!
   unknownSizeResourceCount: Int!
   visibleResourceCount: Int!
-  visibleSizeBytes: Int!
+  visibleSizeBytes: Float!
 }
 
 type KBPageInfo {
@@ -2757,12 +2800,13 @@ type Mutation {
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
   joinRandomCourseGroupPool(courseId: String!): Boolean!
-  keepGeneratedElementDraft(basePoints: Boolean!, choiceIds: [ID!], content: String!, draftId: ID!, expectedRevision: Int!, explanation: String, name: String!, options: OptionsChoicesInput, pointsMultiplier: Int!, status: ElementStatus!, tags: [String!], type: GeneratableElementType!): GeneratedElementDraft!
+  keepGeneratedElementDraft(basePoints: Boolean!, choiceIds: [ID!], content: String!, draftId: ID!, expectedRevision: Int!, explanation: String, name: String!, options: OptionsChoicesInput, pointsMultiplier: Int!, status: ElementStatus!, tagSelection: GeneratedElementTagSelectionInput, tags: [String!], type: GeneratableElementType!): GeneratedElementDraft!
   leaveCourseLeaderboard(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   leaveRandomCourseGroupPool(courseId: String!): Boolean!
   leaveUserGroup(groupId: Int!): Boolean!
   loginParticipant(password: String!, usernameOrEmail: String!): ID
+  loginParticipantForElearningChatbot(chatbotId: String!, courseId: String!, grant: String!): LtiChatbotLogin!
   loginParticipantForLtiChatbot(chatbotId: String!, courseId: String!, participantToken: String, signedLtiData: String!): LtiChatbotLogin!
   loginParticipantMagicLink(token: String!): ID
   loginParticipantWithLti(courseId: String, signedLtiData: String!): ParticipantTokenData
@@ -3361,6 +3405,7 @@ type Query {
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
   getKb(id: ID!): KB!
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
+  getKbImportedSources(after: String, first: Int, kbId: ID!): KBImportedSourceConnection!
   getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
   getKbKnowledgeGraphDomainConfig(kbId: ID!): KBKnowledgeGraphDomainConfig!
   getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!

@@ -12,6 +12,23 @@ tags:
 
 **There is no component-test layer.** Coverage is pure-function vitest at the bottom and full-stack e2e at the top — nothing in between (no @testing-library/react). Don't look for one, and don't assume a React component is covered unless an e2e spec exercises it.
 
+Coverage is published, not enforced. `test-unit.yml` and `test-graphql.yml` run their
+existing Vitest suites with the v8 provider and upload LCOV as the `coverage-lcov`
+artifact. The upload collects only reports directly inside `apps/*` and `packages/*`,
+because a workspace-wide glob would also gather the pnpm-linked copy of every report
+from `node_modules`. The SonarCloud analysis imports a report only when the producing
+run belongs to the analyzed revision and recorded the same tested source tree, so a
+report from another tree or base cannot become a metric. Imported reports are rewritten
+so their `SF:` entries are repository-relative: the analysis resolves the package that
+produced a report from the report path and the sources it records, and refuses to
+import a report that matches no package or more than one. A source that only exists in
+the producing checkout, such as a generated and ignored codegen output, stays in the
+report and reads as absent coverage instead of failing the import. An upload that finds no
+report fails its job, and a missing, pending, or unverified report leaves coverage "not
+computed" in SonarCloud; no coverage threshold is armed yet. Suites that do not use
+Vitest (the frontend PWA uses the Node test runner) publish no LCOV and are covered by
+their own job results instead.
+
 ## Which level for which change
 
 ### Disposable database boundary
@@ -183,16 +200,24 @@ global cleanup and seed only for a local host-launcher run. An explicit request
 in CI or without the launcher marker fails before setup instead of resetting
 the database. Individual specs still own their fixture writes and cleanup. Use this only
 when the required baseline already exists, and never against real course data.
-Without these options, runtime selection and database setup remain unchanged.
+Explicit spec paths infer the smallest runtime union from `playwright/profiles.json`.
+Broad or unresolved filters use the maximal `playwright` profile. An explicit
+`--runtime-profile` takes precedence. Applying a profile reconciles the runtime
+downward and stops services outside it, so pass `--runtime-profile` explicitly
+when optional services such as LiteLLM or MailHog must stay up. Normal database
+cleanup and seeding remain
+the acceptance default. Keep one worker for a shared runtime because per-spec
+cleanup resets shared fixed identities; parallel shards need separate complete
+worktree runtimes, including Redis and Hatchet.
 
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
-|               | Playwright (`playwright/`)                                 |
-| ------------- | ---------------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                           |
-| Infisical env | `dev-playwright`                                           |
-| Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
-| CI            | official Playwright container, 8-way shard, all PRs        |
+|               | Playwright (`playwright/`)                            |
+| ------------- | ----------------------------------------------------- |
+| Local command | `pnpm playwright:host -- <args>`                      |
+| Infisical env | `dev-playwright`                                      |
+| Seed          | own `seedDatabase()` in `global-setup.ts`             |
+| CI            | official Playwright container, 8-way shard, ready PRs |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
@@ -233,7 +258,7 @@ provider-level acceptance check.
   response-processor worker descendants before reporting ready. Without those
   processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
   accept answers that never reach cockpit/evaluation.
-- The PWA course-chat drawer is covered in `playwright/tests/Y-course-chat-drawer.spec.ts`: modal relationships and focus containment, root isolation and restoration, multiple-chatbot selection, new-tab and iframe targets, desktop and embedded-mobile close controls, and both missing-participation and no-chatbot entry fallbacks.
+- The PWA course-chat drawer is covered in `playwright/tests/Y-course-chat-drawer.spec.ts`: modal relationships and focus containment, root isolation and restoration, multiple-chatbot selection, new-tab and iframe targets, the launcher being omitted inside an embed but kept in the standalone app, and both missing-participation and no-chatbot entry fallbacks.
 - The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. The suite covers the non-modal page interaction contract, compact modal isolation and focus restoration, cross-origin Escape and focus restoration, persistent context and change announcements, short mobile viewports, desktop-only size persistence, viewport-clamped size presets, breakpoint transitions that preserve the conversation, readiness loading state, retained resizing, in-session reset without iframe reload, trusted proposal revisions, complete correctness/feedback review, localized draft confirmation and parent-owned editor navigation, and proposal clearance above the composer. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
 - GrowthBook-backed AI availability is covered in `playwright/tests/Y-ai-beta-availability.spec.ts`. The suite injects the authenticated capability query, verifies that an enabled-to-temporarily-unavailable transition keeps the AI entry visible but disabled with recovery guidance, confirms the direct Generate route remains a stable retryable state, and proves recovery without a full reload. Its explicit-denial case verifies that the AI entry remains hidden and the direct route stays unavailable. This is presentation evidence; backend authorization remains covered by the GraphQL and Chat contract tests.
 - Ordinary Playwright runs and CI shards stay Chromium-only. Set `PLAYWRIGHT_RELEASE_MATRIX=true` to make the named `firefox` and `webkit` projects available for targeted release checks. Those projects must pass against production builds before release; a development-server result or browser-startup failure is environment evidence, not product compatibility evidence.
@@ -292,9 +317,11 @@ Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
 `public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
-across the two-host public pool; pushes, fork PRs, drafts, bots, private
-repositories, and
-disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+across the two-host public pool; pushes, fork PRs, bots, private
+repositories, and disabled rollouts keep all eight shards on GitHub-hosted
+runners. Draft PRs never enter either route: the caller skips the reusable
+execution workflow and `test-playwright-status` reports an explicit successful
+skip, so no Playwright worker is allocated until the PR is marked ready. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
 public-PR routes to be selected. The workflow tars the five `.next` trees before
@@ -331,7 +358,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-CI installs `@devrouter/cli` version `0.0.55` through
+CI installs `@devrouter/cli` version `0.0.72` through
 `.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
 scripts disabled. The shard action uses the trusted control checkout's installer
 and passes its absolute executable path to the runtime adapter, including for
@@ -369,9 +396,13 @@ introduce cross-file ordering assumptions.
 `check:all` + identity guard, pre-push = outgoing-commit identity guard +
 `build`). `util/check-git-identity.sh` rejects the exact selector fixture
 identity in repository configuration, effective author/committer state, or
-outgoing commit authors, committers, or co-author trailers. The pull-request
+outgoing commit authors, committers, or co-author trailers. Outgoing means not
+yet reachable from a remote-tracking ref: commits that already reached any
+remote (typically through a v3 sync merge) were scanned when they were first
+pushed and are skipped on later pushes. The pull-request
 check repeats the commit-range guard on GitHub, where local hooks cannot be
-assumed. The second pre-commit check catches any test that mutates Git
+assumed, and bounds the range at the PR merge base so merged upstream history
+is not re-scanned. The second pre-commit check catches any test that mutates Git
 configuration while `check:all` runs. The Prisma package check regenerates the
 raw Prisma 7 client before typechecking; no generated-source patch remains.
 Clean CI jobs therefore do not depend on generated files left by an earlier
@@ -409,9 +440,12 @@ initializes a database. The existing runtime CI step runs this command.
 The MCP parent-repair acceptance suite is a separate manual integration check:
 inside the provisioned self-contained container at `/workspaces/klicker-uzh`,
 run `LOCAL_MCP_SEED_TEST=1 node apps/chat/scripts/test-local-mcp-seed.mjs`
-after building its util dependency. It requires the local PostgreSQL connection in the process
-environment and builds temporary mirror tables on that connection. It verifies
-restoration and rollback using synthetic fixtures, not production tables.
+after building its util dependency. Set `DATABASE_URL` to the isolated
+`mcp_postgres:5432` disposable fixture database, retaining its restricted
+`klicker_test` identity. The harness rejects the ordinary database destination.
+It operates on the real Prisma schema using synthetic fixture rows and verifies
+ownership, credential rotation and rollback. Existing transport credentials are
+restored afterward; run it only while the synthetic fixture is not being used.
 It is not currently scheduled in CI; a passing shell recovery check does not
 claim MCP transaction coverage. Do not print connection strings or supply
 remote/production database credentials to this command.

@@ -35,6 +35,10 @@ type KnowledgeGraphModule = {
     context: PublishedKnowledgeGraph,
     nodeId: string
   ) => Promise<KnowledgeGraphResponse>
+  readKnowledgeGraphSearchHints: (
+    context: PublishedKnowledgeGraph,
+    query: string
+  ) => Promise<string[]>
 }
 
 const nodeRequire = createRequire(import.meta.url)
@@ -68,24 +72,45 @@ export async function getPublishedKnowledgeGraph(
 
 export async function getPublishedKnowledgeGraphForChatbot(
   client: PrismaClient,
-  chatbotId: string
+  chatbotId: string,
+  kbId?: string
 ): Promise<PublishedKnowledgeGraph> {
-  const binding = await client.kBChatbot.findFirst({
+  const bindings = await client.kBChatbot.findMany({
     where: {
       chatbotId,
       isEnabled: true,
       kb: { deletedAt: null, knowledgeGraphEnabled: true },
     },
-    select: { kbId: true },
-    orderBy: { updatedAt: 'desc' },
+    select: { kbId: true, kb: { select: { name: true } } },
+    orderBy: { kbId: 'asc' },
   })
 
+  const choices = bindings.map((binding) => ({
+    id: binding.kbId,
+    name: binding.kb.name,
+  }))
+  if (
+    (kbId !== undefined &&
+      !bindings.some((binding) => binding.kbId === kbId)) ||
+    (kbId === undefined && bindings.length > 1)
+  ) {
+    throw new KnowledgeGraphSelectionRequiredError(choices)
+  }
+
   const knowledgeGraphModule = await loadKnowledgeGraph()
-  if (binding === null) {
+  const selectedKbId = kbId ?? bindings[0]?.kbId
+  if (selectedKbId === undefined) {
     throw new knowledgeGraphModule.KnowledgeGraphNotPublishedError('EMPTY')
   }
 
-  return knowledgeGraphModule.getPublishedKnowledgeGraph(client, binding.kbId)
+  return knowledgeGraphModule.getPublishedKnowledgeGraph(client, selectedKbId)
+}
+
+export class KnowledgeGraphSelectionRequiredError extends Error {
+  constructor(readonly choices: { id: string; name: string }[]) {
+    super('Select an attached knowledge graph')
+    this.name = 'KnowledgeGraphSelectionRequiredError'
+  }
 }
 
 export async function readKnowledgeGraphOverview(
@@ -108,6 +133,16 @@ export async function readKnowledgeGraphNeighbors(
   return (await loadKnowledgeGraph()).readKnowledgeGraphNeighbors(
     context,
     nodeId
+  )
+}
+
+export async function readKnowledgeGraphSearchHints(
+  context: PublishedKnowledgeGraph,
+  query: string
+): Promise<string[]> {
+  return (await loadKnowledgeGraph()).readKnowledgeGraphSearchHints(
+    context,
+    query
   )
 }
 

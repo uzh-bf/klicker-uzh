@@ -94,7 +94,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       // initial state
-      selectedModel: 'gpt-5.5',
+      selectedModel: 'auto',
       selectedMode: 'tutor',
       selectedReasoningEffort: 'none',
       credits: {
@@ -256,7 +256,7 @@ export const useSettingsStore = create<SettingsState>()(
               )
               if (!isSelectedModelAvailable) {
                 selectedModel =
-                  availableModels[0]?.id ?? automaticModelId ?? selectedModel
+                  automaticModelId ?? availableModels[0]?.id ?? selectedModel
               }
             }
 

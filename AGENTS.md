@@ -10,6 +10,7 @@
 ## Stacked PRs
 
 - To bring `v3` back into `v3-ai` or a similar feature branch, use a normal merge commit on the receiving branch and a normal, non-force push to that branch. Do not open an integration PR or substitute selective cherry-picks for this branch synchronization. This convention applies to integrating `v3` into feature branches, not promoting feature work into `v3`; retain the applicable verification and merge/deployment authorization gates.
+- **Branch promotion chain**: `v3` -> `v3-ai` -> `v3-audit`. Never merge `v3` into `v3-audit` directly, and do not cherry-pick around a hop. `v3-audit` is the branch staging builds from, so every `v3-ai` commit it is meant to release has to arrive through a `v3-ai` -> `v3-audit` merge.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
 - `v3-ai` is a long-lived consolidation branch that combines AI feature work for deployment to environments such as staging. Treat PRs targeting `v3-ai` as ordinary PRs into that branch. Never stack them with the separate eventual promotion PR from `v3-ai` into `v3`; that promotion can remain open or draft for an extended period.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
@@ -175,7 +176,7 @@ devrouter ensure .
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `full` profile runs every routed app plus the two Hatchet workers (no worker route); `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `standard` profile runs ordinary apps and workers without the deterministic MCP fixture; explicit `full` selects every capability. `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
 
 #### OpenRouter-backed local chat
 
@@ -224,8 +225,10 @@ usage class. Chat can select allow-listed Luna for a BASE selection before
 calling LiteLLM; current ADVANCED selections such as Auto are denied while no
 ADVANCED fallback is allow-listed.
 
-The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
-and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
+The explicit `mcp` profile creates a dedicated synthetic chatbot in an isolated
+temporary database, with a deterministic `doc_query` tool in Tutor and Explainer
+modes; see `.devcontainer/README.md` for its identity and lifecycle.
+`post-start.sh` runs the tool at `http://localhost:1417/mcp`;
 its source is `apps/chat/scripts/local-mcp-server.mjs` and its log is
 `/tmp/local-mcp.log`. Keep `Auto Mode` selected, then test the complete path in
 Chat with: “Use the local MCP tool to test the integration.
@@ -236,7 +239,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.72 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA

@@ -1,5 +1,17 @@
 export default {
   chat: {
+    graphPanel: {
+      missingEndpoint: 'Unknown concept',
+      title: 'Knowledge graph',
+      open: 'Open knowledge graph',
+      close: 'Close knowledge graph',
+      fullscreen: 'Expand graph to fullscreen',
+      restore: 'Return graph to sidebar',
+      ask: 'Ask about this',
+      nodePrompt: 'Help me understand the concept “{topic}”.',
+      edgePrompt:
+        'Explain the relationship “{relationship}” between “{source}” and “{target}”.',
+    },
     common: {
       opensInNewTab: '(opens in new tab)',
     },
@@ -292,6 +304,7 @@ export default {
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
+      elearningTag: 'eLearning',
     },
     thread: {
       viewportLabel: 'Conversation transcript',
@@ -306,6 +319,28 @@ export default {
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
       welcomeMode: 'Selected mode: {mode}',
+      learningContext: {
+        refreshUnavailable:
+          'Page context could not be refreshed for this question. Answers can use retrieved course materials.',
+        summary: 'Learning context used',
+        location: 'Location',
+        observed: 'Observed at',
+        evidence: 'Evidence',
+        completionLabel: 'Progress',
+        truncated: 'truncated',
+        completion: {
+          confirmed_complete: 'completed',
+          pending: 'pending',
+          incomplete: 'incomplete',
+          unavailable: 'unavailable',
+        },
+        availability: {
+          'full-text': 'Page text available',
+          metadata: 'metadata only',
+          unavailable: 'Content not inspectable',
+          unknown: 'Availability unknown',
+        },
+      },
     },
     suggestions: {
       sectionLabel: 'Conversation starters',
@@ -1016,6 +1051,8 @@ Other participants will only see your public **participant profile**, including 
         'You are seeing an activity preview for the {activity} "{name}" (display name "{displayName}"). Please note that this preview is meant for the lecturer to test the activity from a student perspective. While most interaction functionalities are supported, no submitted responses are stored or will appear in the evaluation view.',
     },
     chatbot: {
+      graphChoiceLabel: 'Knowledge graph',
+      graphChoicePlaceholder: 'Select a knowledge graph',
       loginRequiredMessage:
         'You need a KlickerUZH account to access this chatbot. Please log in or create an account first.',
       goToLogin: 'Go to login',
@@ -1785,6 +1822,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
+    importedSourcesTitle: 'Imported sources',
+    importedSourceColumn: 'Source',
+    importedSourcesNotice:
+      'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
+    importedSourcesIncomplete:
+      'The list covers the most recently scanned sources. Older sources may not be listed yet.',
+    importedSourcesEmpty:
+      'No imported sources have been found for this knowledge base yet.',
+    importedSourcesLoadError: 'The imported sources could not be loaded.',
+    loadMoreImportedSources: 'Load more imported sources',
+    importedSourcesLoadMoreError:
+      'The additional imported sources could not be loaded. Try again.',
+    importedObservedAt: 'Observed {date}',
+    importedIngestedColumn: 'Ingested',
+    importedObservedColumn: 'Observed',
+    importedIngestionUnknown: 'Ingestion time not recorded',
+    importedSourceGeneric: 'Source',
+    importedVideoNoFileHint:
+      'Video content is indexed without storing the original file.',
     noResources: 'No resources have been added yet.',
     emptyResourceHint: 'Use Add resource above to add a website or document.',
     updatedAtLabel: 'Updated',
@@ -1853,9 +1909,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     runStatusSuperseded: 'Superseded',
     ingestionStartError: 'The ingestion operation could not be started.',
     storageLimitError:
-      'This resource exceeds the 500 MiB knowledge base storage limit.',
+      'This resource exceeds the knowledge base storage limit.',
     resourceLimitError:
-      'This knowledge base has reached its limit of 100 resources.',
+      'This knowledge base has reached its limit of 1,000 resources.',
     uploadMismatchError:
       'The uploaded file no longer matches its upload reservation. Please upload it again.',
     ingestionFailed: 'The ingestion operation failed.',
@@ -1931,6 +1987,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphLoadError: 'The graph status could not be loaded.',
     graphRetry: 'Retry',
     graphBuildError: 'The graph build could not be started.',
+    graphNoCourseContent:
+      'No resources are categorized as “Course content”. Tag your course materials before building the graph — administrative resources are excluded.',
     graphQuotaInsufficient:
       'The selected build is estimated at {estimate}, but only {remaining} remains in your semester quota. Choose a lower-cost quality level if available, or wait for the quota to reset.',
     graphPreviewTitle: 'Published graph',
@@ -2545,8 +2603,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       elementProgress:
         '{generated} of {requested, plural, one {# element} other {# elements}} generated',
       succeeded: '{label} is ready.',
+      incomplete: '{label} finished with fewer elements than requested.',
+      reviewRequired: '{label} is waiting for your decision.',
       failed: 'Background generation failed.',
       open: 'Open result',
+      review: 'Review result',
     },
     elementGeneration: {
       eyebrow: 'AI-assisted creation',
@@ -2703,7 +2764,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         generatedCount: '{generated} of {requested} generated',
         generated: 'Generated',
         unresolved: 'Unresolved',
-        warnings: 'Warnings',
+        warnings: 'Workflow warnings',
+        warningsHelp:
+          'Raised by the generation workflow, separate from the quality notes on individual elements.',
         retries: 'Retries',
         processing: 'The elements are being prepared',
         processingHelp:
@@ -2762,6 +2825,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         bloomLevel: 'Bloom: {level}',
         difficultyLevel: 'Difficulty: {level}',
         qualityAttention: 'Quality review recommended',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'The predicted difficulty should be reviewed before use.',
+          difficultyValidationFailed:
+            'The difficulty check did not pass for this element.',
+          manualReviewRequired: 'This element was flagged for manual review.',
+          other: 'Additional quality checks flagged this element.',
+          acceptedUnsaved: 'Accepted, but not yet saved to your library.',
+        },
         notApplicable: 'Not applicable',
         sourceUnavailable: 'Source unavailable',
         sourcesTitle: 'Sources',
@@ -2818,6 +2890,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         actionError: 'The element could not be updated. Please try again.',
         saveElementsError:
           'The accepted elements could not be saved. Please try again.',
+        tagSelection: {
+          missingHint:
+            'A selected tag is no longer available. Remove it or choose another tag before saving.',
+          removeMissing: 'Remove unavailable tag {id}',
+          title: 'Tags',
+          existingLabel: 'Matching tags',
+          existingHint:
+            'Typing a name that already exists selects the existing tag instead of creating a new one.',
+          newLabel: 'Suggested new tags',
+          newHint: 'New tags are created only when you keep the element.',
+          manualLabel: 'All tags',
+          placeholder: 'Select or type tags',
+          saveDraft: 'Save draft',
+          unsaved: 'Unsaved changes',
+          saved: 'Draft saved.',
+          saveError: 'The draft could not be saved. Please try again.',
+          conflict:
+            'This draft changed elsewhere. Reload before saving your edits.',
+        },
       },
       decisions: {
         OPEN: 'Open',
@@ -4941,6 +5032,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       disclaimerPending: 'Pending',
       mcpConfigurations: 'MCP Configurations',
       knowledgeBase: 'Knowledge base',
+      knowledgeGraphPolicy: 'Knowledge graph',
+      knowledgeGraphPolicyDescription:
+        'Control the participant concept map and graph-assisted document search independently. Both are staged in the chatbot revision and apply after approval.',
+      knowledgeGraphVisible: 'Show the participant concept map',
+      knowledgeGraphVisibleEnabledDescription:
+        'On: participants can open the concept map for this chatbot.',
+      knowledgeGraphVisibleDisabledDescription:
+        'Off: the concept map stays hidden from participants.',
+      knowledgeGraphRetrieval: 'Use graph connections for document search',
+      knowledgeGraphRetrievalDescription:
+        'On: document search may use related concepts from the published graph as additional search hints. Answers still cite document passages only.',
+      knowledgeGraphSave: 'Save knowledge graph settings',
+      knowledgeGraphSaveSuccess: 'Knowledge graph settings saved.',
       noEnabledKnowledgeBase:
         'No knowledge base is connected. This chatbot cannot search course material.',
       noMcpConfigurations: 'No MCP configurations.',

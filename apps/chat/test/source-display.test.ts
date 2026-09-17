@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   formatTimestamp,
   getDisplayUrl,
+  getSourcePageRange,
   getSourceSecondaryLine,
   getSourceTimestamp,
   parseTimestampSeconds,
@@ -155,31 +156,77 @@ describe('getDisplayUrl', () => {
 })
 
 describe('getSourceSecondaryLine', () => {
-  test.each(['36', ' 36 '])('omits an identical page label (%s)', (label) => {
+  test.each(['36', ' 36 '])('uses the publisher label (%s)', (label) => {
     expect(
       getSourceSecondaryLine(source({ page: 36, labeledPage: label }), t)
-    ).toBe(getSourceSecondaryLine(source({ page: 36 }), t))
+    ).toBe('p. 36')
   })
 
   test('documents lead with the page', () => {
     expect(
       getSourceSecondaryLine(
-        source({ page: 12, url: 'https://example.com/lecture-01.pdf' }),
+        source({
+          page: 13,
+          labeledPage: '12',
+          url: 'https://example.com/lecture-01.pdf',
+        }),
         t
       )
     ).toBe('p. 12')
   })
 
-  test('documents pair the page with a labeled page', () => {
+  test('documents show only the Roman publisher label', () => {
     expect(
       getSourceSecondaryLine(source({ page: 4, labeledPage: 'IV' }), t)
-    ).toBe('p. 4 · IV')
+    ).toBe('p. IV')
   })
 
   test('documents keep a bare numeric publisher label', () => {
     expect(
       getSourceSecondaryLine(source({ page: 4, labeledPage: '12' }), t)
-    ).toBe('p. 4 · 12')
+    ).toBe('p. 12')
+  })
+
+  test('documents show a publisher-labelled page range', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 6,
+          pageEnd: 89,
+          labeledPage: '6',
+          labeledPageEnd: '89',
+        }),
+        t
+      )
+    ).toBe('p. 6–89')
+  })
+
+  test('documents fall back to the physical range without any label', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 6,
+          pageEnd: 89,
+          url: 'https://example.com/lecture-01.pdf',
+        }),
+        t
+      )
+    ).toBe('p. 6–89')
+  })
+
+  test('images can carry a page range as well', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          type: 'image',
+          page: 6,
+          pageEnd: 8,
+          labeledPage: '6',
+          labeledPageEnd: '8',
+        }),
+        t
+      )
+    ).toBe('Image · p. 6–8')
   })
 
   test('documents without a page fall back to the url', () => {
@@ -218,12 +265,55 @@ describe('getSourceSecondaryLine', () => {
   })
 
   test('images show the type label and page', () => {
-    expect(getSourceSecondaryLine(source({ type: 'image', page: 7 }), t)).toBe(
-      'Image · p. 7'
-    )
+    expect(
+      getSourceSecondaryLine(
+        source({ type: 'image', page: 13, labeledPage: '7' }),
+        t
+      )
+    ).toBe('Image · p. 7')
   })
 
   test('is null when nothing is known', () => {
     expect(getSourceSecondaryLine(source(), t)).toBeNull()
   })
+})
+
+describe('getSourcePageRange', () => {
+  test('prefers the labelled range over the physical envelope', () => {
+    expect(
+      getSourcePageRange(
+        source({ page: 6, pageEnd: 89, labeledPage: '8', labeledPageEnd: '18' })
+      )
+    ).toBe('8–18')
+  })
+
+  test('uses the physical envelope when no label exists', () => {
+    expect(getSourcePageRange(source({ page: 6, pageEnd: 89 }))).toBe('6–89')
+  })
+
+  test('keeps a single label single', () => {
+    expect(getSourcePageRange(source({ page: 4, labeledPage: '12' }))).toBe(
+      '12'
+    )
+  })
+
+  test.each([
+    ['a single physical page', { page: 13 }],
+    ['an envelope whose extremes tie', { page: 13, pageEnd: 13 }],
+    ['no page information at all', {}],
+  ])('is undefined for %s', (_label, overrides) => {
+    expect(getSourcePageRange(source(overrides))).toBeUndefined()
+  })
+})
+
+test.each([
+  'document',
+  'image',
+  'video',
+] as const)('never substitutes physical pages for missing %s labels', (type) => {
+  for (const labeledPage of [undefined, '', '   ']) {
+    expect(
+      getSourceSecondaryLine(source({ type, page: 13, labeledPage }), t)
+    ).toBe(getSourceSecondaryLine(source({ type }), t))
+  }
 })

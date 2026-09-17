@@ -5,6 +5,8 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const { parse } = require('yaml')
+const { REQUIRED_CI_WORKFLOWS } = require('./stg-release-promoter.js')
+const { SCAN_ADMISSION_INVENTORY } = require('./image-scan-admission.cjs')
 
 const ROOT = path.join(__dirname, '../..')
 const WORKFLOW_DIR = path.join(ROOT, '.github/workflows')
@@ -208,22 +210,36 @@ test('selected-source workflows retain all tags and guard every active image', (
   assert.equal(new Set(workflowNames).size, 15)
 
   const promoter = readYaml('.github/workflows/deploy-stg-promote.yml')
+  const validationNames = REQUIRED_CI_WORKFLOWS.map(
+    ({ path: workflowPath }) => readYaml(workflowPath).name
+  )
   assert.deepEqual(
     [...promoter.on.workflow_run.workflows].sort(),
-    [...workflowNames].sort()
+    [...workflowNames, ...validationNames].sort()
   )
   assert.deepEqual(promoter.on.workflow_run.types, ['completed'])
 
   let metadataBuildPairs = 0
   let activeBuilds = 0
   let disabledBuilds = 0
+  let scanJobs = 0
   const runtimeImageJobMap = {}
 
   for (const { definition, workflowPath } of workflows) {
     assert.deepEqual(definition.on.push.branches, ['v3', 'v3*'])
     assert.equal(definition.on.push.paths, undefined)
+    const scanJobIds = SCAN_ADMISSION_INVENTORY.filter(
+      (entry) => entry.workflowPath === workflowPath
+    ).map((entry) => entry.scanJob)
 
     for (const [jobName, job] of Object.entries(definition.jobs)) {
+      // Scan jobs publish no image. The promoter's own workflow validation
+      // checks their pinned scanner and receipt gate, so they declare no
+      // image metadata and no build pair here.
+      if (scanJobIds.includes(jobName)) {
+        scanJobs += 1
+        continue
+      }
       const metadataSteps = job.steps.filter((step) =>
         /^docker\/metadata-action@/u.test(step.uses ?? '')
       )
@@ -270,6 +286,18 @@ test('selected-source workflows retain all tags and guard every active image', (
         build.if,
         "github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'"
       )
+      if (
+        SCAN_ADMISSION_INVENTORY.some(
+          (entry) =>
+            entry.workflowPath === workflowPath && entry.buildJob === jobName
+        )
+      ) {
+        assert.equal(
+          job.outputs.digest,
+          '${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}',
+          `${workflowPath}#${jobName} must expose the digest the guard reused`
+        )
+      }
 
       const loginIndex = job.steps.findIndex((step) =>
         /^docker\/login-action@/u.test(step.uses ?? '')
@@ -294,6 +322,7 @@ test('selected-source workflows retain all tags and guard every active image', (
   assert.equal(metadataBuildPairs, 32)
   assert.equal(activeBuilds, 18)
   assert.equal(disabledBuilds, 14)
+  assert.equal(scanJobs, SCAN_ADMISSION_INVENTORY.length)
   assert.deepEqual(runtimeImageJobMap, EXPECTED_RUNTIME_IMAGE_JOB_MAP)
 
   const backend = workflows.find(
@@ -305,6 +334,10 @@ test('selected-source workflows retain all tags and guard every active image', (
     'build-amd',
     'build-migrator-arm',
     'build-migrator-amd',
+    ...SCAN_ADMISSION_INVENTORY.filter(
+      (entry) =>
+        entry.workflowPath === '.github/workflows/v3_backend-docker-stg.yml'
+    ).map((entry) => entry.scanJob),
   ])
   assert.equal(backend.jobs['build-arm'].needs, 'build-migrator-arm')
   assert.equal(backend.jobs['build-amd'].needs, 'build-migrator-amd')
