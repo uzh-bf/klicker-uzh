@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import bcrypt from 'bcryptjs'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
@@ -366,8 +367,148 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   // -------------------------------------------------------------------------
-  // Student: password change and revert
+  // Student: two-tab completion retry must not overwrite a newer decision
   // -------------------------------------------------------------------------
+  test('Two-tab completion retry cannot overwrite a newer decision', async ({
+    page,
+    browser,
+    loginStudentPassword,
+  }) => {
+    const prisma = await getPrisma()
+    const username = 'dpo' + Date.now().toString(36).slice(-8)
+    const password = process.env.STUDENT_PASSWORD ?? STUDENT_PASSWORD
+    const graphqlRoute = '**/api/graphql'
+    const completionOperation = 'CompleteParticipantDataUse'
+    const dataUseQueryOperation = 'GetParticipantAccountDataUse'
+
+    // A dedicated participant without acknowledgement or recorded choices,
+    // so the account-completion gate routes the first request to the form.
+    await prisma.participant.create({
+      data: {
+        username,
+        email: `${username}@test.uzh.ch`,
+        password: await bcrypt.hash(password, 12),
+      },
+    })
+
+    const secondContext = await browser.newContext({
+      ignoreHTTPSErrors: true,
+    })
+    const secondPage = await secondContext.newPage()
+    const dataCy = (id: string) => `[data-cy="${id}"]`
+
+    // Hold tab A's post-failure refetch until tab B has committed, so the
+    // ordering is deterministic instead of racy.
+    let releaseRefetch: () => void = () => {}
+    const refetchGate = new Promise<void>((resolve) => {
+      releaseRefetch = resolve
+    })
+
+    try {
+      await loginStudentPassword(username)
+      await expect(page).toHaveURL(/\/account\/data-use$/)
+
+      let failedCompletions = 0
+      await page.route(graphqlRoute, async (route) => {
+        const operationName = getGraphQLOperationName(
+          route.request().postData()
+        )
+
+        // The completion request fails with a generic (non-conflict) error,
+        // which previously left the local intent and acknowledgement intact.
+        if (operationName === completionOperation) {
+          failedCompletions += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { completeParticipantDataUse: null },
+              errors: [{ message: 'Synthetic network failure' }],
+            }),
+          })
+          return
+        }
+
+        // The failure path refetches the persisted state. Delay that read
+        // until tab B has advanced the revision.
+        if (operationName === dataUseQueryOperation && failedCompletions > 0) {
+          await refetchGate
+        }
+
+        await route.continue()
+      })
+
+      // Tab A selects Learning Analytics = yes and submits.
+      await page.getByTestId('account-data-use-analytics-yes').click()
+      await page.getByTestId('account-data-use-acknowledged').click()
+      await expect(page.getByTestId('account-data-use-submit')).toBeEnabled()
+      await page.getByTestId('account-data-use-submit').click()
+      await expect.poll(() => failedCompletions).toBe(1)
+
+      // Tab B completes with both refusals and advances the revision.
+      await secondPage.goto(process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN)
+      await secondPage.locator(dataCy('username-field')).fill(username)
+      await secondPage.locator(dataCy('password-field')).fill(password)
+      await secondPage.locator(dataCy('submit-login')).click()
+      await expect(secondPage).toHaveURL(/\/account\/data-use$/)
+
+      await secondPage
+        .locator(dataCy('account-data-use-research-toggle'))
+        .click()
+      await secondPage
+        .locator(dataCy('account-data-use-research-false'))
+        .click()
+      await secondPage.locator(dataCy('account-data-use-analytics-no')).click()
+      await secondPage.locator(dataCy('account-data-use-acknowledged')).click()
+      await secondPage.locator(dataCy('account-data-use-submit')).click()
+      await expect(secondPage).not.toHaveURL(/\/account\/data-use$/)
+
+      const afterSecondTab = await prisma.participant.findUniqueOrThrow({
+        where: { username },
+        select: {
+          researchConsent: true,
+          learningAnalyticsConsent: true,
+          dataUseRevision: true,
+        },
+      })
+      expect(afterSecondTab.researchConsent).toBe(false)
+      expect(afterSecondTab.learningAnalyticsConsent).toBe(false)
+      expect(afterSecondTab.dataUseRevision).toBeGreaterThan(0)
+
+      // Let tab A's refetch resolve. It reloads tab B's newer decision and
+      // drops the local intent and acknowledgement, so a retry cannot show the
+      // stale choice or silently overwrite tab B.
+      releaseRefetch()
+      await expect(
+        page.getByTestId('account-data-use-analytics-no')
+      ).toHaveAttribute('aria-checked', 'true')
+      await expect(page.getByTestId('account-data-use-submit')).toBeDisabled()
+      await expect(
+        page.getByTestId('account-data-use-acknowledged')
+      ).toHaveAttribute('aria-checked', 'false')
+
+      // A deliberate re-acknowledgement then commits the reloaded choices.
+      await page.getByTestId('account-data-use-acknowledged').click()
+      await expect(page.getByTestId('account-data-use-submit')).toBeEnabled()
+      await page.getByTestId('account-data-use-submit').click()
+      await expect(page).not.toHaveURL(/\/account\/data-use$/)
+
+      const finalState = await prisma.participant.findUniqueOrThrow({
+        where: { username },
+        select: { researchConsent: true, learningAnalyticsConsent: true },
+      })
+      expect(finalState.researchConsent).toBe(false)
+      expect(finalState.learningAnalyticsConsent).toBe(false)
+    } finally {
+      releaseRefetch()
+      await page.unroute(graphqlRoute)
+      await secondContext.close()
+      await prisma.participant.deleteMany({ where: { username } })
+    }
+  })
+
+  // -------------------------------------------------------------------------
+  // Student: password change and revert
   test('Sign in into student account and modifies the password', async ({
     page,
     useStudentContext,
