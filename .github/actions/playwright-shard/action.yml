@@ -96,7 +96,9 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: pnpm install
+      # Runs from the trusted control checkout so a cached-store miss or a
+      # transient native-binary download failure cannot fail the whole wave.
+      run: bash .ci-control/.github/scripts/pnpm-install-retry.sh
 
     - name: Install Devrouter profile planner
       shell: bash

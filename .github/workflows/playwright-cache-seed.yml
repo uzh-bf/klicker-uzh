@@ -109,7 +109,9 @@ jobs:
             playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # This job produces the store every PR shard restores, so a transient
+        # native-binary download failure here leaves the fleet without a seed.
+        run: bash .github/scripts/pnpm-install-retry.sh --frozen-lockfile
 
       - name: Build all packages and apps
         id: build
