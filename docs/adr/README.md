@@ -34,6 +34,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0037](./0037-standard-activity-formats.md) — Practice quizzes, microlearnings, and group activities are standard capabilities
 - [0041](./0041-chatbot-trusted-pilot-boundary.md) — Stage chatbot usage enforcement and keep the trusted pilot operations-assisted
 - [0042](./0042-version-chatbot-disclaimers-by-replacement.md) — Version lecturer-edited chatbot disclaimers by transactional replacement
+- [0043](./0043-sonar-analysis-credential-and-coverage-input-boundary.md) — Sonar analysis credentials stay out of contributor-controlled execution
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

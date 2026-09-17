@@ -143,19 +143,6 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     cost: { input: 0.2, output: 1.2 },
   },
   {
-    id: 'gpt-5.5',
-    deploymentId: 'gpt-5.5',
-    name: 'GPT-5.5',
-    description: 'OpenAI frontier reasoning model',
-    fallback: false,
-    supportsReasoning: true,
-    usesResponsesApi: true,
-    supportedReasoningEfforts: ['none', 'low', 'medium', 'high', 'xhigh'],
-    maxOutputTokens: 4096,
-    apiVersion: 'preview',
-    cost: { input: 5.0, output: 30.0 },
-  },
-  {
     id: 'gpt-5.4',
     deploymentId: 'gpt-5.4',
     name: 'GPT-5.4',
@@ -432,6 +419,8 @@ const chatbotOwnerSelect = {
   modelSelection: true,
   allowedModelIds: true,
   allowedReasoningEffortsByModel: true,
+  knowledgeGraphVisible: true,
+  knowledgeGraphRetrievalEnabled: true,
   creditInitialCredits: true,
   creditResetPeriod: true,
   creditResetAmount: true,
@@ -460,6 +449,8 @@ type ChatbotWithOwnerCourse = {
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
+  knowledgeGraphVisible: boolean
+  knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
@@ -611,7 +602,16 @@ function cloneJson(value: unknown): unknown {
   )
 }
 
-function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
+type ChatbotKnowledgeGraphPolicy = Pick<
+  DB.Chatbot,
+  'knowledgeGraphVisible' | 'knowledgeGraphRetrievalEnabled'
+>
+
+// Live columns are the fallback for revisions saved before these fields existed.
+function parseStoredRevision(
+  value: unknown,
+  live: ChatbotKnowledgeGraphPolicy
+): ChatbotAuthoringRevision | null {
   if (!isRecord(value)) return null
 
   if (typeof value.name !== 'string') return null
@@ -704,6 +704,20 @@ function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
     return null
   }
 
+  // A missing flag inherits the live value; a non-boolean is rejected.
+  if (
+    value.knowledgeGraphVisible !== undefined &&
+    typeof value.knowledgeGraphVisible !== 'boolean'
+  ) {
+    return null
+  }
+  if (
+    value.knowledgeGraphRetrievalEnabled !== undefined &&
+    typeof value.knowledgeGraphRetrievalEnabled !== 'boolean'
+  ) {
+    return null
+  }
+
   return {
     name: value.name,
     description: value.description,
@@ -733,6 +747,14 @@ function parseStoredRevision(value: unknown): ChatbotAuthoringRevision | null {
       value.disclaimerId === undefined
         ? null
         : (value.disclaimerId as string | null),
+    knowledgeGraphVisible:
+      value.knowledgeGraphVisible === undefined
+        ? live.knowledgeGraphVisible
+        : value.knowledgeGraphVisible,
+    knowledgeGraphRetrievalEnabled:
+      value.knowledgeGraphRetrievalEnabled === undefined
+        ? live.knowledgeGraphRetrievalEnabled
+        : value.knowledgeGraphRetrievalEnabled,
   }
 }
 
@@ -762,6 +784,8 @@ function buildRevisionFromLive(
     publicationUseCase: chatbot.publicationUseCase,
     expectedStudentCount: chatbot.expectedStudentCount,
     disclaimerId: chatbot.disclaimer?.id ?? chatbot.disclaimerId,
+    knowledgeGraphVisible: chatbot.knowledgeGraphVisible,
+    knowledgeGraphRetrievalEnabled: chatbot.knowledgeGraphRetrievalEnabled,
   }
 }
 
@@ -802,7 +826,7 @@ function projectAuthoringRevision(
   if (chatbot.draftConfig === null || chatbot.draftConfig === undefined) {
     return null
   }
-  const revision = parseStoredRevision(chatbot.draftConfig)
+  const revision = parseStoredRevision(chatbot.draftConfig, chatbot)
   if (!revision) return null
 
   return revisionProjection(
@@ -887,7 +911,7 @@ function getRevisionSnapshot(chatbot: ChatbotRevisionRecord) {
   const snapshot =
     chatbot.draftConfig === null || chatbot.draftConfig === undefined
       ? buildRevisionFromLive(chatbot)
-      : parseStoredRevision(chatbot.draftConfig)
+      : parseStoredRevision(chatbot.draftConfig, chatbot)
   if (!snapshot) {
     throw chatbotError(
       'Saved chatbot revision is invalid and must be edited again',
@@ -924,6 +948,8 @@ function revisionLiveData(
       revision.allowedReasoningEffortsByModel === null
         ? Prisma.JsonNull
         : (revision.allowedReasoningEffortsByModel as Prisma.InputJsonValue),
+    knowledgeGraphVisible: revision.knowledgeGraphVisible,
+    knowledgeGraphRetrievalEnabled: revision.knowledgeGraphRetrievalEnabled,
     creditInitialCredits: revision.creditInitialCredits,
     creditResetPeriod: revision.creditResetPeriod,
     creditResetAmount: revision.creditResetAmount,
@@ -1121,6 +1147,11 @@ type RevisionDisclaimerInput = {
   introText: string
 }
 
+type RevisionKnowledgeGraphPolicyInput = {
+  visible: boolean
+  retrievalEnabled: boolean
+}
+
 // Omitted sections retain the saved revision. Metadata patches individual fields;
 // other supplied sections use their existing complete-section normalization.
 export type ChatbotRevisionSaveInput = {
@@ -1133,6 +1164,41 @@ export type ChatbotRevisionSaveInput = {
   standardModeConfig?: ChatbotStandardModeConfigInput | null
   creditPolicy?: ChatbotCreditPolicy | null
   disclaimer?: RevisionDisclaimerInput | null
+  knowledgeGraphPolicy?: RevisionKnowledgeGraphPolicyInput | null
+}
+
+async function assertGraphRetrievalTransition(
+  ctx: ContextWithUser,
+  ownerId: string,
+  wasEnabled: boolean,
+  enabled: boolean
+): Promise<void> {
+  if (!enabled || wasEnabled) return
+  const owner = await ctx.prisma.user.findUnique({
+    where: { id: ownerId },
+    select: {
+      role: true,
+      catalystInstitutional: true,
+      catalystIndividual: true,
+      betaEnabled: true,
+    },
+  })
+  let allowed = false
+  try {
+    allowed =
+      owner !== null &&
+      ctx.featureFlags?.isEnabled('chatbot-graphrag', {
+        id: ownerId,
+        actorType: 'user',
+        role: owner.role,
+        catalyst: owner.catalystInstitutional || owner.catalystIndividual,
+        betaEnabled: owner.betaEnabled,
+      }) === true
+  } catch {
+    /* Missing or unavailable rollout policy denies activation. */
+  }
+  if (!allowed)
+    throw chatbotError('Graph retrieval is not available', 'FORBIDDEN')
 }
 
 export async function saveChatbotRevision(
@@ -1156,6 +1222,7 @@ export async function saveChatbotRevision(
     'standardModeConfig',
     'creditPolicy',
     'disclaimer',
+    'knowledgeGraphPolicy',
   ] as const
   if (
     !input ||
@@ -1194,6 +1261,9 @@ export async function saveChatbotRevision(
     ...(input.creditPolicy
       ? normalizeAndValidateCreditPolicy(input.creditPolicy)
       : {}),
+    ...(input.knowledgeGraphPolicy
+      ? normalizeRevisionKnowledgeGraphPolicy(input.knowledgeGraphPolicy)
+      : {}),
   }
   const disclaimer = input.disclaimer
   await requireFeatureFlagAccess(ctx, 'ai-beta')
@@ -1210,6 +1280,12 @@ export async function saveChatbotRevision(
 
     const current = getRevisionSnapshot(chatbot)
     let next = { ...current, ...patch }
+    await assertGraphRetrievalTransition(
+      ctx,
+      chatbot.ownerId,
+      current.knowledgeGraphRetrievalEnabled,
+      next.knowledgeGraphRetrievalEnabled
+    )
     if (disclaimer) {
       const title = normalizeDisclaimerText(disclaimer.title)
       const introText = normalizeDisclaimerText(disclaimer.introText)
@@ -1318,6 +1394,26 @@ function normalizeRevisionMetadata(
   }
 }
 
+function normalizeRevisionKnowledgeGraphPolicy(
+  args: RevisionKnowledgeGraphPolicyInput
+) {
+  // GraphQL enforces required booleans; reject non-booleans at this seam too.
+  if (
+    typeof args.visible !== 'boolean' ||
+    typeof args.retrievalEnabled !== 'boolean'
+  ) {
+    throw chatbotError(
+      'Knowledge-graph policy values must be booleans',
+      'BAD_USER_INPUT'
+    )
+  }
+
+  return {
+    knowledgeGraphVisible: args.visible,
+    knowledgeGraphRetrievalEnabled: args.retrievalEnabled,
+  }
+}
+
 function normalizeRevisionModelPolicy(args: RevisionModelPolicyInput) {
   const modelRegistry = getChatModelRegistry()
   const modelById = new Map(modelRegistry.map((model) => [model.id, model]))
@@ -1421,6 +1517,12 @@ export async function submitChatbotRevision(
     revision.publicationUseCase = args.useCase
     revision.expectedStudentCount = args.expectedStudentCount
     const completeRevision = validateCompleteRevision(revision, true)
+    await assertGraphRetrievalTransition(
+      ctx,
+      chatbot.ownerId,
+      chatbot.knowledgeGraphRetrievalEnabled,
+      completeRevision.knowledgeGraphRetrievalEnabled
+    )
     const currentStatus = chatbot.status
     if (
       currentStatus !== DB.ChatbotStatus.DRAFT &&
@@ -1578,6 +1680,12 @@ export async function approveChatbotRevision(
 
     const revision = getRevisionSnapshot(chatbot)
     const completeRevision = validateCompleteRevision(revision, true)
+    await assertGraphRetrievalTransition(
+      ctx,
+      chatbot.ownerId,
+      chatbot.knowledgeGraphRetrievalEnabled,
+      completeRevision.knowledgeGraphRetrievalEnabled
+    )
     const periodChanged =
       completeRevision.creditResetPeriod !== chatbot.creditResetPeriod
     const updateData: Prisma.ChatbotUncheckedUpdateInput = {
@@ -1637,11 +1745,10 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         },
       },
       knowledgeBases: {
-        where: { isEnabled: true },
+        where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
           kb: { select: { id: true, name: true } },
         },
-        take: 1,
       },
     },
     orderBy: { updatedAt: 'desc' },
@@ -1775,7 +1882,11 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       usageSummary,
       disclaimerSummary,
       mcpConfigurations,
-      enabledKnowledgeBase: chatbot.knowledgeBases[0]?.kb ?? null,
+      enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
+      enabledKnowledgeBase:
+        chatbot.knowledgeBases.length === 1
+          ? (chatbot.knowledgeBases[0]?.kb ?? null)
+          : null,
     }
   })
 }
@@ -1902,6 +2013,9 @@ export async function createChatbot(
       modelSelection: false,
       allowedModelIds: [auto.id],
       allowedReasoningEffortsByModel: Prisma.DbNull,
+      // New chatbots start with the participant map off (lecturer opts in).
+      knowledgeGraphVisible: false,
+      knowledgeGraphRetrievalEnabled: false,
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
       // systemPrompts intentionally left unset (null): the chat runtime

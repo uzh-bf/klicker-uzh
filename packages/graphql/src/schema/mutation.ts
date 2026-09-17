@@ -56,6 +56,7 @@ import {
   GeneratableElementType,
   GeneratedElementDraftInputRef,
   GeneratedElementDraftRef,
+  GeneratedElementTagSelectionInputRef,
   PublishIncompleteElementGenerationInputRef,
   ReviewElementGenerationInputRef,
   SetGeneratedElementDecisionInputRef,
@@ -381,6 +382,16 @@ export const Mutation = builder.mutationType({
           AccountService.loginParticipantForLtiChatbot(args, ctx),
       }),
 
+      loginParticipantForElearningChatbot: t.field({
+        type: LtiChatbotLogin,
+        args: {
+          grant: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true, validate: { uuid: true } }),
+          chatbotId: t.arg.string({ required: true, validate: { uuid: true } }),
+        },
+        resolve: (_, args, ctx) =>
+          AccountService.loginParticipantForElearningChatbot(args, ctx),
+      }),
       loginParticipantWithLti: t.field({
         nullable: true,
         type: ParticipantTokenData,
@@ -2310,6 +2321,10 @@ export const Mutation = builder.mutationType({
           tags: t.arg.stringList({
             required: false,
             validate: { maxLength: 20 },
+          }),
+          tagSelection: t.arg({
+            type: GeneratedElementTagSelectionInputRef,
+            required: false,
           }),
           choiceIds: t.arg.idList({
             required: false,

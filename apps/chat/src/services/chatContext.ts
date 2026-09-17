@@ -1,7 +1,15 @@
-import type { KlickerChatContext } from '@klicker-uzh/types'
+import type {
+  ELearningChatContext,
+  KlickerChatContext,
+  KlickerChatContextV2,
+} from '@klicker-uzh/types'
 import { z } from 'zod'
 
 const MAX_PREVIEW_LENGTH = 500
+
+// Bound for the opaque envelope transport inside an eLearning chat context.
+// ~6000-char excerpts plus JWT overhead stay far below this cap.
+const MAX_ELEARNING_ENVELOPE_LENGTH = 24000
 
 const chatContextSchema = z.object({
   version: z.literal(1),
@@ -33,6 +41,16 @@ const chatContextSchema = z.object({
     .optional(),
 })
 
+// Client-side shape validation only. The `envelope` is opaque here; the chat
+// API verifies signature, expiry and bindings server-side before use.
+const eLearningChatContextSchema = z.object({
+  version: z.literal(1),
+  source: z.literal('elearning'),
+  locale: z.string().min(2).max(16),
+  envelope: z.string().min(20).max(MAX_ELEARNING_ENVELOPE_LENGTH),
+  displayTitle: z.string().min(1).max(200).optional(),
+})
+
 export function sanitizeKlickerChatContext(
   value: unknown
 ): KlickerChatContext | null {
@@ -41,7 +59,31 @@ export function sanitizeKlickerChatContext(
   return parsed.data
 }
 
+export function sanitizeElearningChatContext(
+  value: unknown
+): ELearningChatContext | null {
+  const parsed = eLearningChatContextSchema.safeParse(value)
+  if (!parsed.success) return null
+  return parsed.data
+}
+
+export function sanitizeKlickerChatContextV2(
+  value: unknown
+): KlickerChatContextV2 | null {
+  if (!value || typeof value !== 'object') return null
+  const source = (value as { source?: unknown }).source
+  if (source === 'elearning') return sanitizeElearningChatContext(value)
+  return sanitizeKlickerChatContext(value)
+}
+
 export function formatKlickerChatContextForPrompt(value: unknown): string {
+  // eLearning contexts never contribute prompt text here; their answer
+  // grounding comes only from the server-verified envelope.
+  if (value && typeof value === 'object') {
+    const source = (value as { source?: unknown }).source
+    if (source === 'elearning') return ''
+  }
+
   const context = sanitizeKlickerChatContext(value)
   if (!context) return ''
 
@@ -75,9 +117,13 @@ export function formatKlickerChatContextForPrompt(value: unknown): string {
 }
 
 export function getKlickerChatContextLabel(
-  context: KlickerChatContext | null
+  context: KlickerChatContextV2 | null
 ): string | null {
   if (!context) return null
+
+  if (context.source === 'elearning') {
+    return context.displayTitle ?? 'eLearning'
+  }
 
   const surfaceLabel =
     context.surface === 'practice-quiz'

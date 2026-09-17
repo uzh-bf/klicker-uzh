@@ -20,6 +20,8 @@ const pwaEmbedSessionPayloadSchema = z.object({
   scope: z.literal(PWA_CHAT_EMBED_SESSION_SCOPE),
   chatbotId: z.string().uuid(),
   courseId: z.string().uuid(),
+  // Opaque eLearning learner pseudonym; set only for eLearning handoffs.
+  learnerBinding: z.string().min(1).max(128).optional(),
 })
 
 export type PwaEmbedExchangePayload = z.infer<typeof pwaEmbedPayloadSchema>
@@ -44,10 +46,12 @@ export async function signPwaEmbedSessionToken({
   chatbotId,
   courseId,
   participantId,
+  learnerBinding,
 }: {
   chatbotId: string
   courseId: string
   participantId: string
+  learnerBinding?: string
 }): Promise<string> {
   return signJWT(
     {
@@ -55,6 +59,7 @@ export async function signPwaEmbedSessionToken({
       scope: PWA_CHAT_EMBED_SESSION_SCOPE,
       chatbotId,
       courseId,
+      ...(learnerBinding ? { learnerBinding } : {}),
     },
     getPwaEmbedSecret(),
     {

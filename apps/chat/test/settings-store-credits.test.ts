@@ -140,4 +140,31 @@ describe('settingsStore credits loading', () => {
     expect(useSettingsStore.getState().selectedModel).toBe('gpt-4.1')
     expect(useSettingsStore.getState().modelOptions).toHaveLength(2)
   })
+
+  test.each([
+    ['gpt-5.5', 'auto'],
+    ['gpt-5.6-luna', 'gpt-5.6-luna'],
+  ])('reconciles saved selection %s to %s', async (saved, expected) => {
+    useSettingsStore.setState({
+      modelSelectionEnabled: true,
+      selectedModel: saved,
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(
+        creditsResponse(20, {
+          automaticModelId: 'auto',
+          availableModels: ['gpt-5.6-luna', 'auto'].map((id) => ({
+            id,
+            supportsReasoning: false,
+            allowedReasoningEfforts: [],
+          })),
+        })
+      )
+    )
+
+    await useSettingsStore.getState().loadCredits('chatbot-model-selection')
+
+    expect(useSettingsStore.getState().selectedModel).toBe(expected)
+  })
 })

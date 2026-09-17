@@ -1,4 +1,9 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:24.21.0-alpine AS base
+
+# See apps/backend-docker/Dockerfile: patched Alpine packages and npm for every
+# stage, including any scanned runtime image.
+RUN apk upgrade --no-cache \
+ && npm i -g --ignore-scripts npm@11.19.1
 
 ARG NODE_ENV production
 ENV NODE_ENV $NODE_ENV
@@ -33,9 +38,11 @@ ARG NODE_ENV="production"
 ARG NEXT_PUBLIC_ENV=production
 ARG NEXT_PUBLIC_GROWTHBOOK_API_HOST
 ARG NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY
+ARG NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS
 ENV NEXT_PUBLIC_ENV=${NEXT_PUBLIC_ENV}
 ENV NEXT_PUBLIC_GROWTHBOOK_API_HOST=${NEXT_PUBLIC_GROWTHBOOK_API_HOST}
 ENV NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY}
+ENV NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS}
 
 COPY --from=builder /app/out/full/ .
 

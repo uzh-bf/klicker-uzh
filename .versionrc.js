@@ -17,6 +17,7 @@ module.exports = {
     'apps/hatchet-worker-general/',
     'apps/hatchet-worker-response-processor/',
     'packages/grading/',
+    'packages/doc-query-client/',
     'packages/graphql/',
     'apps/lti/',
     'packages/prisma/',

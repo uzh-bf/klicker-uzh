@@ -6,6 +6,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   deriveGeneratedQuestionName,
+  normalizeGeneratedTagSuggestions,
   parseQuestionGenerationDesign,
   parseQuestionGenerationFinalBank,
   parseQuestionGenerationGraphManifest,
@@ -1218,6 +1219,16 @@ describe('question-generation artifact normalization', () => {
     }
     const currentBank = finalBank({
       provenance: completeQuestionProvenance(),
+      title: 'Malolaktische Gärung',
+      suggested_tags: [
+        ' Gärung ',
+        'Gärung',
+        'Weinchemie',
+        '<b>Biologie</b>',
+        'extra',
+        '**Detailwissen**',
+        'ignoriert',
+      ],
     })
     currentBank.metadata.format = 'SC'
     currentBank.metadata.item_format = 'sc'
@@ -1230,6 +1241,13 @@ describe('question-generation artifact normalization', () => {
       provenanceAuthority: provenanceAuthority(),
     })
 
+    expect(questions[0]?.tags).toEqual([
+      'Gärung',
+      'Weinchemie',
+      'Biologie',
+      'extra',
+      'Detailwissen',
+    ])
     expect(questions[0]?.provenance).toMatchObject({
       lineageStatus: 'complete',
       graphVersionId: 'graph-version-1',
@@ -1768,6 +1786,7 @@ describe('question-generation artifact normalization', () => {
         sourceQuestionId: 'q01',
         name: 'Welche Umwandlung findet bei der malolaktischen Gärung statt?',
         stem: 'Welche Umwandlung findet bei der malolaktischen Gärung statt?',
+        tags: [],
         context: 'Eine Weinprobe wird nach der Gärung untersucht.',
         explanation: null,
         choices: [
@@ -2196,6 +2215,39 @@ describe('question-generation artifact normalization', () => {
         new Intl.Segmenter('und', { granularity: 'grapheme' }).segment(name)
       )
     ).toHaveLength(120)
+  })
+
+  it('treats malformed advisory metadata as optional', () => {
+    const fallback = 'synthetic fallback'
+    for (const title of [undefined, null, 123, {}, '<p></p>']) {
+      expect(deriveGeneratedQuestionName(title, fallback)).toBe(fallback)
+    }
+    expect(normalizeGeneratedTagSuggestions({})).toEqual([])
+    expect(
+      normalizeGeneratedTagSuggestions([
+        null,
+        'topic',
+        'topic',
+        'x'.repeat(61),
+        '👨‍👩‍👧‍👦',
+        'a',
+        'b',
+        'c',
+        'd',
+      ])
+    ).toEqual(['topic', '👨‍👩‍👧‍👦', 'a', 'b', 'c'])
+    const result = parseQuestionGenerationResult(bytes(completedResult()), {
+      buildId: BUILD_ID,
+      questionCount: 1,
+    })
+    const questions = parseQuestionGenerationFinalBank(
+      bytes(finalBank({ title: { invalid: true }, suggested_tags: ['topic'] })),
+      { questionCount: 1, sourceSnapshot, expectedQuestionIds: ['q01'], result }
+    )
+    expect(questions[0]?.suggestedTags).toEqual(['topic'])
+    expect(questions[0]?.name).toBe(
+      deriveGeneratedQuestionName(undefined, questions[0]!.stem)
+    )
   })
 
   it.each([
