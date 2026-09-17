@@ -15,6 +15,7 @@ import {
   getAutomaticModelId,
   getModelsForChatbot,
 } from '@/src/lib/server/chatModelRegistry'
+import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -288,10 +289,9 @@ export async function POST(
 
   try {
     const toolNames = Object.keys(tools)
+    const docQueryToolName = toolNames.find(isDocQueryToolName)
     const quizzerDocQueryToolName =
-      selectedMode === 'quizzer'
-        ? toolNames.find(isDocQueryToolName)
-        : undefined
+      selectedMode === 'quizzer' ? docQueryToolName : undefined
 
     if (selectedMode === 'quizzer' && !quizzerDocQueryToolName) {
       await closeMcpTools()
@@ -354,16 +354,26 @@ export async function POST(
       },
       stopWhen: isStepCount(5),
       toolChoice: 'auto',
-      prepareStep: quizzerDocQueryToolName
-        ? ({ stepNumber }) =>
+      // Step continuations carry the canonical citation indices, the same
+      // contract the participant chat applies. Without them the model has no
+      // index to cite and falls back to prose citations without chips.
+      prepareStep: docQueryToolName
+        ? ({ stepNumber, steps, initialMessages, responseMessages }) =>
             stepNumber === 0
-              ? {
-                  toolChoice: {
-                    type: 'tool' as const,
-                    toolName: quizzerDocQueryToolName,
-                  },
+              ? quizzerDocQueryToolName
+                ? {
+                    toolChoice: {
+                      type: 'tool' as const,
+                      toolName: quizzerDocQueryToolName,
+                    },
+                  }
+                : {}
+              : {
+                  messages: [
+                    ...initialMessages,
+                    ...withModelCitationIndices(responseMessages, steps),
+                  ],
                 }
-              : {}
         : undefined,
       tools: promptCacheRequest?.tools ?? tools,
       toolOrder: promptCacheRequest?.toolOrder,
