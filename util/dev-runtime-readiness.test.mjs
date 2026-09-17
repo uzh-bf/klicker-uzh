@@ -156,8 +156,17 @@ test('the manifest and shell share one request budget', async (t) => {
   assert.ok(performance.now() - started < 17_000)
 })
 
+// The enforced-deadline contract is what this self-check protects: a hanging
+// response must surface curl's timeout code during unchanged observations and
+// the wait must end at the deadline instead of extending it. The deadline is a
+// fixed production value, so the check drives it with a short override instead
+// of spending the full 90-second wait. The shortened wait still has to outlast
+// two capped probes, because re-printing an unchanged timeout observation is
+// what that assertion covers and the probe cap stays at its production value.
+const READINESS_SECONDS = 32
+
 test('a hanging HTTP response cannot extend the readiness deadline', {
-  timeout: 100_000,
+  timeout: 60_000,
 }, async (t) => {
   const { root } = fixture(t)
   let requests = 0
@@ -174,9 +183,10 @@ test('a hanging HTTP response cannot extend the readiness deadline', {
       ...process.env,
       KLICKER_DEV_RUNTIME_ROOT: root,
       DEV_TURBO_TASK: 'dev',
+      KLICKER_DEV_RUNTIME_READY_SECONDS: String(READINESS_SECONDS),
     },
     stdio: ['ignore', 'pipe', 'pipe'],
-    timeout: 95_000,
+    timeout: 50_000,
   })
   let stdout = ''
   child.stdout.on('data', (chunk) => {
@@ -191,7 +201,8 @@ test('a hanging HTTP response cannot extend the readiness deadline', {
     assert.equal(result.signal, null)
     assert.equal(result.code, 1)
     const elapsed = performance.now() - started
-    assert.ok(elapsed >= 88_000 && elapsed < 94_000)
+    assert.ok(elapsed >= (READINESS_SECONDS - 2) * 1000)
+    assert.ok(elapsed < (READINESS_SECONDS + 6) * 1000)
     assert.ok(requests >= 2)
     // Curl's timeout code must remain visible during unchanged observations.
     assert.ok((stdout.match(/curl 28/g) ?? []).length >= 2)
