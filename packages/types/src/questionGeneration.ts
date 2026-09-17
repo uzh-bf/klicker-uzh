@@ -249,9 +249,7 @@ export type QuestionGenerationDesignSummary = {
   }>
   modules: QuestionGenerationDesignModuleSummary[]
   sources: QuestionGenerationReviewSourceSummary[]
-  // Absent on a summary persisted by a server that predates the evidence
-  // surface, so readers default it rather than assuming it exists.
-  slots?: QuestionGenerationDesignSlotSummary[]
+  slots: QuestionGenerationDesignSlotSummary[]
   warnings: QuestionGenerationWarning[]
 }
 

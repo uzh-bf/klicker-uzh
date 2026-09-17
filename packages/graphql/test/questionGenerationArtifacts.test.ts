@@ -748,9 +748,9 @@ describe('question-generation artifact normalization', () => {
     // A summary written by a server that predates the evidence surface has no
     // slots list. The GraphQL slot field is non-null, so the resolver must
     // default it or a build still in design review across a deploy fails the
-    // whole query.
-    const legacy = { ...summary }
-    delete legacy.slots
+    // whole query. The stored column is schema-less JSON, so the legacy shape
+    // is what the resolver actually receives.
+    const { slots: _slots, ...legacy } = summary
 
     const view = designSummaryView({
       designSummary: legacy,

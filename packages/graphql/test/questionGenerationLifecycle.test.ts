@@ -279,6 +279,7 @@ describe('question-generation synchronization lifecycle', () => {
           objectiveId: null,
           bloomLevel: 'remember',
           targetDifficulty: 1,
+          evidenceEntityIds: [],
         },
       ],
       warnings: [],

@@ -421,6 +421,15 @@ export function designSummaryView(
     return null
   }
   const summary = build.designSummary as QuestionGenerationDesignSummary
+  // designSummary is a schema-less Json column written by whichever server
+  // version was live at parse time, and the design-review transition does not
+  // re-parse it. A build still in design review across a deploy therefore
+  // serves a summary from before the slot evidence surface existed, so the
+  // persisted shape is read with the field absent rather than trusting the
+  // always-populated type the current parser produces.
+  const persisted = summary as {
+    slots?: QuestionGenerationDesignSummary['slots']
+  }
   return {
     title: summary.title,
     elementCount: summary.questionCount,
@@ -430,11 +439,7 @@ export function designSummaryView(
       elementCount: questionCount,
     })),
     sources: summary.sources,
-    // A summary written by a server that predates this field has no slots
-    // list. It is read with an empty default so a build still sitting in
-    // design review across a deploy keeps resolving instead of failing the
-    // whole query on the non-null field.
-    slots: (summary.slots ?? []).map((slot) => ({
+    slots: (persisted.slots ?? []).map((slot) => ({
       sourceElementId: slot.sourceQuestionId,
       moduleId: slot.moduleId,
       objectiveId: slot.objectiveId,
