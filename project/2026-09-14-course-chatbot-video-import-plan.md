@@ -371,6 +371,40 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 
 ## Progress
 
+- 2026-09-17 (S7 live proof on PRD, prepare-only; one real cold-start defect found and
+  fixed): after the user merged the three delivery heads (video-ai PR #128 `4c67c6f3`,
+  deployment MR !905 `361e7129`, klicker-uzh PR #6109 pending its final-ai-review), the
+  Finance I import was dispatched in-cluster against the one-off pod in `prd-ingestion`.
+  Live readback: `app-video-processing` Synced/Healthy at `4c67c6f3` on both PRD and STG;
+  `app-ai-generic-ingestion-prd` Synced/Healthy at `361e7129`; `ingestion-embedding-worker`
+  now `58329be5…@sha256:fec2c85f`; both descriptor files present in the API and worker pods.
+  The lane then ran end to end on the in-cluster embedding worker: inventory 73 units ->
+  67 eligible / 3 excluded / 3 quarantined, package 67 candidates, prepare 67 documents in
+  ~4.9 s, with the embedding call hitting the in-cluster LiteLLM (`POST /embeddings 200`
+  from the worker pod) and no laptop embedding. The create-only receipt
+  `video-import/15ff49a3-…--01/receipts.json` (`video_import_handoff_receipt.v1`) carries
+  `inventory`/`package`/`prepare`/`outputs` and deliberately no `activate` section, since
+  `--activate` stays a separate gate.
+
+  Finding (now fixed): the first dispatch resolved to a phantom run. `read_run_status`
+  returned `not_found`, `workflows.list()` did not include `video-candidate-import`, and the
+  KEDA demand metric read `{queued: 0, running: 0}`. Root cause: the workflow was registered
+  **only** by the embedding worker, which KEDA holds at `minReplicaCount: 0`, so after a
+  deploy no worker had published it and the trigger created a run nothing could route. It is
+  the only workflow without an always-on registrant (`resource-upsert` is published by the
+  cpu/db/llm/durable-control pools while its `fetch-or-reuse` task stays pinned to the
+  scale-to-zero `resource-fetch` worker). Warming the embedding worker once registered the
+  workflow and the lane completed; a controlled probe then showed the mechanism is sound
+  once registration exists: a trigger at `replicas: 0` produced `queued.total=1` and KEDA
+  woke the worker to `running.total=1`. Fix: register `video_candidate_import_wf` on the
+  always-on durable-control worker (the task stays pinned to the embedding worker) and
+  republish produced hand-off outputs instead of writing them create-only, because two
+  in-cluster runs of the same input differed in 39 of 67 embedding vectors and the create-only
+  byte compare made every retry fail permanently. Branch `rs/video-import-wake-owner`
+  (`aee120d` + `e7ba6db`), draft MR !186; local gates 1797/253/156 passed, `poe check` clean.
+  Deployment pin bump and merge of !186 remain separately gated, and the dispatch pod was
+  removed with `ingestion-embedding-worker` returned to `0` under KEDA.
+
 - 2026-09-17 (S7 all five deliverable heads merged; two deploy gaps found and one fix in
   flight): the user merged every lane head, so the S7 code is on the integration branches:
   data-ingestion `main` `58329be57c` (MR !172), deployment `main` `6035d4288a` (MR !903),
