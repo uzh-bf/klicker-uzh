@@ -42,9 +42,10 @@ absent rather than being simulated: the consumer's runner records what its local
 run does and does not prove, instead of relaxing a provider policy to make a
 test pass.
 
-Transitional note (2026-09-10). The consumer has not yet retired its Compose
-assembly. Klicker's isolated plan records each provider launcher invocation as
-a projection with `executable: false`, while the consumer-owned Compose path
-remains the lifecycle that actually runs. The launcher projection becomes
-authoritative only when that assembly is removed; until then both paths must be
-kept in step, and the plan may not claim to have replaced the assembly.
+Implementation note (2026-09-12). Klicker's isolated lifecycle invokes the
+provider launchers for setup, start, status and retained stop. Its Compose
+assembly now contains only Klicker's own backing services. Providers receive
+explicit port allocations and accepted private configuration inputs, and own
+their backing configuration and state. The read-only plan still reports
+`executable: false`: a plan does not verify installed dependencies or qualify
+ingestion, retrieval, model access or restart behavior.

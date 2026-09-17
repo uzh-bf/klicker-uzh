@@ -265,6 +265,17 @@ export const ChatbotRevisionDisclaimerInput =
     }),
   })
 
+export const ChatbotRevisionKnowledgeGraphPolicyInputRef = builder.inputRef<
+  NonNullable<ChatbotRevisionSaveInputShape['knowledgeGraphPolicy']>
+>('ChatbotRevisionKnowledgeGraphPolicyInput')
+export const ChatbotRevisionKnowledgeGraphPolicyInput =
+  ChatbotRevisionKnowledgeGraphPolicyInputRef.implement({
+    fields: (t) => ({
+      visible: t.boolean({ required: true }),
+      retrievalEnabled: t.boolean({ required: true }),
+    }),
+  })
+
 export const ChatbotRevisionSaveInputRef =
   builder.inputRef<ChatbotRevisionSaveInputShape>('ChatbotRevisionSaveInput')
 export const ChatbotRevisionSaveInput = ChatbotRevisionSaveInputRef.implement({
@@ -287,6 +298,10 @@ export const ChatbotRevisionSaveInput = ChatbotRevisionSaveInputRef.implement({
     }),
     disclaimer: t.field({
       type: ChatbotRevisionDisclaimerInputRef,
+      required: false,
+    }),
+    knowledgeGraphPolicy: t.field({
+      type: ChatbotRevisionKnowledgeGraphPolicyInputRef,
       required: false,
     }),
   }),
@@ -334,6 +349,10 @@ export const ChatbotAuthoringRevision = ChatbotAuthoringRevisionRef.implement({
     expectedStudentCount: t.exposeInt('expectedStudentCount', {
       nullable: true,
     }),
+    knowledgeGraphVisible: t.exposeBoolean('knowledgeGraphVisible'),
+    knowledgeGraphRetrievalEnabled: t.exposeBoolean(
+      'knowledgeGraphRetrievalEnabled'
+    ),
   }),
 })
 
@@ -369,6 +388,8 @@ export interface IChatbot {
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel?: IChatbotReasoningConfig[]
+  knowledgeGraphVisible: boolean
+  knowledgeGraphRetrievalEnabled: boolean
   creditInitialCredits: number
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
@@ -385,6 +406,7 @@ export interface IChatbot {
   disclaimerSummary?: IChatbotDisclaimerSummary | null
   mcpConfigurations?: IChatbotMcpConfigurationSummary[]
   enabledKnowledgeBase?: IChatbotKnowledgeBaseSummary | null
+  enabledKnowledgeBases?: IChatbotKnowledgeBaseSummary[]
   authoringRevision?: ChatbotAuthoringRevisionProjection | null
   revisionStatus?: DB.ChatbotStatus | null
   revisionVersion?: number
@@ -525,6 +547,10 @@ export const Chatbot = ChatbotRef.implement({
       type: [ChatbotReasoningConfigRef],
       resolve: (chatbot) => chatbot.allowedReasoningEffortsByModel ?? [],
     }),
+    knowledgeGraphVisible: t.exposeBoolean('knowledgeGraphVisible'),
+    knowledgeGraphRetrievalEnabled: t.exposeBoolean(
+      'knowledgeGraphRetrievalEnabled'
+    ),
     creditInitialCredits: t.exposeInt('creditInitialCredits'),
     creditResetPeriod: t.expose('creditResetPeriod', {
       type: CreditResetPeriod,
@@ -561,7 +587,13 @@ export const Chatbot = ChatbotRef.implement({
     enabledKnowledgeBase: t.field({
       type: ChatbotKnowledgeBaseSummaryRef,
       nullable: true,
+      deprecationReason:
+        'Use enabledKnowledgeBases for all attached knowledge bases.',
       resolve: (chatbot) => chatbot.enabledKnowledgeBase ?? null,
+    }),
+    enabledKnowledgeBases: t.field({
+      type: [ChatbotKnowledgeBaseSummaryRef],
+      resolve: (chatbot) => chatbot.enabledKnowledgeBases ?? [],
     }),
     authoringRevision: t.field({
       type: ChatbotAuthoringRevisionRef,

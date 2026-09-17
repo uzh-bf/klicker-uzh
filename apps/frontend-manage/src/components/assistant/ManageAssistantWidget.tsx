@@ -3,11 +3,11 @@ import {
   faArrowUpRightFromSquare,
   faRotateRight,
   faSpinner,
-  faUpRightAndDownLeftFromCenter,
   faWandMagicSparkles,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import FloatingPanelResizeHandles from '@klicker-uzh/shared-components/src/FloatingPanelResizeHandles'
 import { GetUserElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   MANAGE_CLOSE_REQUEST_MESSAGE_TYPE,
@@ -20,8 +20,6 @@ import { useTranslations } from 'next-intl'
 import {
   type ChangeEvent as ReactChangeEvent,
   type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -51,12 +49,10 @@ import {
 import {
   clampManageAssistantPanelSize,
   DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE,
-  getManageAssistantKeyboardResizeDelta,
   getManageAssistantPanelPresetSize,
   type ManageAssistantPanelPreset,
   type ManageAssistantPanelSize,
   parseManageAssistantPanelSize,
-  resizeManageAssistantPanelFromTopLeft,
 } from './manageAssistantPanelSize'
 import {
   isManageElementCreatedMessage,
@@ -141,12 +137,6 @@ export function ManageAssistantWidget() {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
   const pointerDownInsidePanelRef = useRef(false)
-  const resizeSessionRef = useRef<{
-    pointerId: number
-    startSize: ManageAssistantPanelSize
-    startX: number
-    startY: number
-  } | null>(null)
   const [open, setOpen] = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
@@ -498,70 +488,6 @@ export function ManageAssistantWidget() {
     return () => window.removeEventListener('resize', handleResize)
   }, [isDesktop])
 
-  const handleResizePointerDown = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (event.button !== 0 || !isDesktop) return
-      event.preventDefault()
-      event.currentTarget.setPointerCapture(event.pointerId)
-      resizeSessionRef.current = {
-        pointerId: event.pointerId,
-        startSize: panelSize,
-        startX: event.clientX,
-        startY: event.clientY,
-      }
-    },
-    [isDesktop, panelSize]
-  )
-
-  const handleResizePointerMove = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>) => {
-      const session = resizeSessionRef.current
-      if (!isDesktop || !session || session.pointerId !== event.pointerId) {
-        return
-      }
-
-      setPanelSize(
-        resizeManageAssistantPanelFromTopLeft({
-          deltaX: event.clientX - session.startX,
-          deltaY: event.clientY - session.startY,
-          size: session.startSize,
-          viewport: { height: window.innerHeight, width: window.innerWidth },
-        })
-      )
-      setPanelPreset('custom')
-    },
-    [isDesktop]
-  )
-
-  const handleResizePointerEnd = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (resizeSessionRef.current?.pointerId !== event.pointerId) return
-      resizeSessionRef.current = null
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId)
-      }
-    },
-    []
-  )
-
-  const handleResizeKeyDown = useCallback(
-    (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-      const delta = getManageAssistantKeyboardResizeDelta(event.key)
-      if (!delta) return
-      if (!isDesktop) return
-      event.preventDefault()
-      setPanelSize((currentSize) =>
-        resizeManageAssistantPanelFromTopLeft({
-          ...delta,
-          size: currentSize,
-          viewport: { height: window.innerHeight, width: window.innerWidth },
-        })
-      )
-      setPanelPreset('custom')
-    },
-    [isDesktop]
-  )
-
   const handlePanelPresetChange = useCallback(
     (event: ReactChangeEvent<HTMLSelectElement>) => {
       if (!isDesktop) return
@@ -726,28 +652,19 @@ export function ManageAssistantWidget() {
             )}
             data-cy="manage-assistant-drawer"
           >
-            <div className="relative flex shrink-0 items-start gap-3 border-b bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:pl-12 md:pt-3">
-              <button
-                type="button"
-                className="focus-visible:outline-uzh-blue-40 absolute left-0 top-0 hidden size-11 touch-none cursor-nwse-resize items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 md:inline-flex"
-                aria-label={t('manage.assistant.resize')}
-                aria-describedby="manage-assistant-resize-hint"
-                data-cy="manage-assistant-resize"
-                onPointerDown={handleResizePointerDown}
-                onPointerMove={handleResizePointerMove}
-                onPointerUp={handleResizePointerEnd}
-                onPointerCancel={handleResizePointerEnd}
-                onKeyDown={handleResizeKeyDown}
-              >
-                <FontAwesomeIcon
-                  icon={faUpRightAndDownLeftFromCenter}
-                  aria-hidden
-                  className="size-3"
-                />
-              </button>
-              <span id="manage-assistant-resize-hint" className="sr-only">
-                {t('manage.assistant.resizeHint')}
-              </span>
+            <FloatingPanelResizeHandles
+              panelRef={panelRef}
+              active={open && isDesktop}
+              label={t('manage.assistant.resize')}
+              minWidth={360}
+              minHeight={448}
+              margin={48}
+              onResize={(size) => {
+                setPanelSize(size)
+                setPanelPreset('custom')
+              }}
+            />
+            <div className="relative flex shrink-0 items-start gap-3 border-b bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:pt-3">
               <AssistantAvatar className="text-uzh-blue mt-0.5 size-11 border border-gray-200 bg-gray-50" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">

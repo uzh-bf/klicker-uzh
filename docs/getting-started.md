@@ -12,9 +12,9 @@ tags:
 
 **The one thing to get right first: use pnpm 11.** A stale pnpm major (e.g. a Volta shim serving 9.x because `VOLTA_FEATURE_PNPM` is unset) will install successfully but **silently rewrite `pnpm-lock.yaml`** (~380-line churn). Run `pnpm --version` and confirm `11.x` before installing; if the lockfile got churned, `git checkout pnpm-lock.yaml` and reinstall with pnpm 11.
 
-## Toolchain (verified 2026-07-07)
+## Toolchain (verified 2026-09-14)
 
-Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
+Aligned to Node `24.21.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.21.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`. The pnpm pin stays on the 11.5.0 line because the shared Playwright composite actions declare their own pnpm version, so `pnpm/action-setup` rejects a pull request that moves the pin; the production Dockerfiles drop `pnpm` and `turbo` after installing production dependencies instead, which keeps their vendored advisories out of the scanned runtime images.
 
 The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
@@ -187,6 +187,33 @@ pnpm run check        # typecheck — only passes AFTER build (generated artifac
 ```
 
 Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `pnpm run build` has produced the Prisma client, GraphQL codegen output, and package dists. The root build script forces `NODE_ENV=production`, even when the devcontainer exports `NODE_ENV=development` for live apps. Direct checks for the five Next apps are self-contained with respect to Next-generated route types: each app runs `next typegen` before `tsc --noEmit`, so those ignored types do not require a prior app build. Workspace dependency builds are still required; CI builds changed packages before checking them. Git hooks depend on the same broader workspace state: pre-commit runs `check:all`, pre-push runs `build` — both fail hard without `node_modules` and the required workspace-generated artifacts.
+
+### Git hooks with isolated container dependencies
+
+Git hooks use `util/run-git-hook.mjs` to run dependency-backed checks where
+dependencies are installed. By default, the dispatcher uses `devrouter exec` for the exact
+checkout; start that runtime explicitly before committing or pushing. Hooks
+never start services or disable pnpm dependency validation.
+
+Host contract tests also need the root tooling dependencies in this checkout;
+an ancestor checkout's installation does not count. Install them explicitly:
+`pnpm --filter @klicker-uzh/monorepo install --frozen-lockfile --ignore-scripts`.
+This partial host install does not change the default container routing.
+`KLICKER_GIT_HOOK_RUNTIME=container` explicitly retains that routing.
+`KLICKER_GIT_HOOK_RUNTIME=host` explicitly selects a complete native installation.
+Hooks never install dependencies automatically.
+
+Secret scanning, identity checks, staged-file discovery and host contract tests
+stay on the host. Container formatting reuses the staged-format rules with
+literal filenames and refuses partially staged files; fully stage or unstage
+those files first. It does not stash, rewrite files or modify the index.
+Independent checks do not inherit Git's hook environment, preventing temporary
+Git fixtures from operating on the committing repository.
+
+Manage, PWA and Control production builds opt into their existing strict
+`tsconfig.check.json`, excluding development-generated route validators.
+Development retains `tsconfig.json`; no type errors are ignored. This allows
+the pre-push build to run after local development without deleting `.next`.
 
 ## Failure signatures (fresh clone / wrong state)
 

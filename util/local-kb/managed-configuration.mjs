@@ -1,5 +1,8 @@
 import { join } from 'node:path'
-import { validateIsolatedConfig } from './isolated-config.mjs'
+import {
+  LOCAL_KB_MANAGED_PROFILE,
+  validateIsolatedConfig,
+} from './isolated-config.mjs'
 
 const redisServices = ['redis_exec', 'redis_assessment', 'redis_cache']
 const applicationRoutes = ['api', 'auth', 'manage', 'pwa', 'chat', 'blob']
@@ -36,11 +39,21 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
     delete services[name].ports
   }
   const app = services.app
-  // This credential-free renderer must not inherit a host's paid AI capability.
-  // A later explicitly authorized AI overlay supplies the real upstream.
+  app.ports = [`127.0.0.1:${config.bindings.ports.klicker.backend}:3000`]
+  services.litellm.ports = [
+    `127.0.0.1:${config.bindings.ports.klicker.model}:4000`,
+  ]
+  // Only an explicit AI mode may inherit the host's upstream capability.
+  // Name-only references keep credentials out of generated configuration.
   services.litellm.environment = {
     LITELLM_LOG: 'INFO',
     LITELLM_REASONING_AUTO_SUMMARY: 'true',
+    ...(config.aiUpstream === 'openrouter'
+      ? {
+          UPSTREAM_OPENAI_API_KEY: null,
+          UPSTREAM_OPENAI_BASE_URL: null,
+        }
+      : {}),
   }
   if (
     !Array.isArray(app.volumes) ||
@@ -102,11 +115,22 @@ export function renderManagedConfiguration(config, source, ...unexpected) {
     profiles[name] = devrouter.profiles[name]
     delete profiles[name].default
   }
+  // The isolated runtime starts the ingestion workers, so the generated
+  // configuration exposes the matching capability alongside applications.
+  const workerProfile = LOCAL_KB_MANAGED_PROFILE.split(',').at(-1)
+  if (!devrouter.profiles?.[workerProfile]) {
+    throw new Error(`Missing managed worker profile: ${workerProfile}`)
+  }
+  if (
+    !Array.isArray(devrouter.profiles[workerProfile].apps) ||
+    devrouter.profiles[workerProfile].apps.length !== 0
+  ) {
+    throw new Error('The managed worker profile must define no routes.')
+  }
+  profiles[workerProfile] = devrouter.profiles[workerProfile]
   profiles.manage.default = true
   profiles['local-kb-setup'] = {
-    apps: [],
-    devcontainerServices: [],
-    processes: [],
+    devcontainerServices: ['redis_exec'],
   }
   return {
     devcontainer: {

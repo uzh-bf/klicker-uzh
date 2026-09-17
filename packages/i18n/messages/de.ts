@@ -1,5 +1,17 @@
 export default {
   chat: {
+    graphPanel: {
+      missingEndpoint: 'Unbekannter Begriff',
+      title: 'Wissensgraph',
+      open: 'Wissensgraph öffnen',
+      close: 'Wissensgraph schliessen',
+      fullscreen: 'Graph im Vollbild anzeigen',
+      restore: 'Graph in der Seitenleiste anzeigen',
+      ask: 'Dazu eine Frage stellen',
+      nodePrompt: 'Hilf mir, den Begriff «{topic}» zu verstehen.',
+      edgePrompt:
+        'Erkläre die Beziehung «{relationship}» zwischen «{source}» und «{target}».',
+    },
     common: {
       opensInNewTab: '(öffnet in neuem Tab)',
     },
@@ -299,6 +311,7 @@ export default {
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
+      elearningTag: 'eLearning',
     },
     thread: {
       viewportLabel: 'Gesprächsverlauf',
@@ -313,6 +326,28 @@ export default {
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
       welcomeMode: 'Ausgewählter Modus: {mode}',
+      learningContext: {
+        refreshUnavailable:
+          'Der Seitenkontext konnte für diese Frage nicht aktualisiert werden. Antworten können abgerufene Kursmaterialien verwenden.',
+        summary: 'Verwendeter Lernkontext',
+        location: 'Ort',
+        observed: 'Erhoben am',
+        evidence: 'Beleglage',
+        completionLabel: 'Fortschritt',
+        truncated: 'gekürzt',
+        completion: {
+          confirmed_complete: 'abgeschlossen',
+          pending: 'ausstehend',
+          incomplete: 'unvollständig',
+          unavailable: 'nicht verfügbar',
+        },
+        availability: {
+          'full-text': 'Seitentext verfügbar',
+          metadata: 'nur Beschreibung',
+          unavailable: 'Inhalt nicht einsehbar',
+          unknown: 'Verfügbarkeit unbekannt',
+        },
+      },
     },
     suggestions: {
       sectionLabel: 'Gesprächseinstiege',
@@ -1028,6 +1063,8 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
         'Sie sehen eine Vorschau der Aktivität {activity} "{name}" (Anzeigename "{displayName}"). Bitte beachten Sie, dass diese Vorschau als Test-Ansicht für Dozierende konzipiert wurde. Während die meisten Interaktionsfunktionalitäten unterstützt werden, werden keine eingereichten Antworten gespeichert oder in der Auswertungsansicht angezeigt.',
     },
     chatbot: {
+      graphChoiceLabel: 'Wissensgraph',
+      graphChoicePlaceholder: 'Wissensgraph auswählen',
       loginRequiredMessage:
         'Für diesen Chatbot benötigen Sie ein KlickerUZH-Konto. Bitte melden Sie sich an oder erstellen Sie zuerst ein Konto.',
       goToLogin: 'Zum Login',
@@ -1802,6 +1839,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
+    importedSourcesTitle: 'Importierte Quellen',
+    importedSourceColumn: 'Quelle',
+    importedSourcesNotice:
+      'Importierte Metadaten für Inhalte, die bereits in dieser Wissensdatenbank indexiert sind. Importierte Quellen werden nicht für Wissensgraphen verwendet und zählen nicht zu den Ressourcen- und Speicherlimits.',
+    importedSourcesIncomplete:
+      'Die Liste umfasst die zuletzt durchsuchten Quellen. Ältere Quellen sind möglicherweise noch nicht erfasst.',
+    importedSourcesEmpty:
+      'Für diese Wissensdatenbank wurden noch keine importierten Quellen gefunden.',
+    importedSourcesLoadError:
+      'Die importierten Quellen konnten nicht geladen werden.',
+    loadMoreImportedSources: 'Weitere importierte Quellen laden',
+    importedSourcesLoadMoreError:
+      'Die weiteren importierten Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
+    importedObservedAt: 'Beobachtet am {date}',
+    importedIngestedColumn: 'Verarbeitet',
+    importedObservedColumn: 'Beobachtet',
+    importedIngestionUnknown: 'Verarbeitungszeit nicht erfasst',
+    importedSourceGeneric: 'Quelle',
+    importedVideoNoFileHint:
+      'Videoinhalte werden ohne Speicherung der Originaldatei indexiert.',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
     emptyResourceHint:
       'Verwenden Sie oben «Ressource hinzufügen», um eine Website oder ein Dokument hinzuzufügen.',
@@ -1875,9 +1932,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestionStartError:
       'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
     storageLimitError:
-      'Diese Ressource überschreitet das Speicherlimit von 500 MiB für die Wissensdatenbank.',
+      'Diese Ressource überschreitet das Speicherlimit der Wissensdatenbank.',
     resourceLimitError:
-      'Diese Wissensdatenbank hat ihr Limit von 100 Ressourcen erreicht.',
+      'Diese Wissensdatenbank hat ihr Limit von 1000 Ressourcen erreicht.',
     uploadMismatchError:
       'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
     ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
@@ -1956,6 +2013,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphLoadError: 'Der Graphstatus konnte nicht geladen werden.',
     graphRetry: 'Erneut versuchen',
     graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
+    graphNoCourseContent:
+      'Keine Ressourcen sind als „Kursinhalt“ kategorisiert. Markieren Sie Ihre Kursmaterialien, bevor Sie den Graphen erstellen – Verwaltungsressourcen werden ausgeschlossen.',
     graphQuotaInsufficient:
       'Der ausgewählte Aufbau kostet schätzungsweise {estimate}, im Semesterkontingent sind jedoch nur noch {remaining} verfügbar. Wählen Sie wenn möglich eine günstigere Qualitätsstufe oder warten Sie auf die Zurücksetzung des Kontingents.',
     graphPreviewTitle: 'Veröffentlichter Graph',
@@ -2551,8 +2610,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       elementProgress:
         '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
       succeeded: '{label} ist bereit.',
+      incomplete:
+        '{label} wurde mit weniger Elementen als angefordert abgeschlossen.',
+      reviewRequired: '{label} wartet auf Ihre Entscheidung.',
       failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
       open: 'Ergebnis öffnen',
+      review: 'Ergebnis prüfen',
     },
     elementGeneration: {
       eyebrow: 'KI-unterstützte Erstellung',
@@ -2714,7 +2777,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         generatedCount: '{generated} von {requested} generiert',
         generated: 'Generiert',
         unresolved: 'Ungelöst',
-        warnings: 'Warnungen',
+        warnings: 'Ablaufwarnungen',
+        warningsHelp:
+          'Vom Generierungsablauf gemeldet, unabhängig von den Qualitätshinweisen einzelner Elemente.',
         retries: 'Wiederholungen',
         processing: 'Die Elemente werden vorbereitet',
         processingHelp:
@@ -2773,6 +2838,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         bloomLevel: 'Bloom: {level}',
         difficultyLevel: 'Schwierigkeit: {level}',
         qualityAttention: 'Qualitätsprüfung empfohlen',
+        qualityReasons: {
+          difficultyReviewRequired:
+            'Die geschätzte Schwierigkeit sollte vor der Verwendung geprüft werden.',
+          difficultyValidationFailed:
+            'Die Schwierigkeitsprüfung war für dieses Element nicht erfolgreich.',
+          manualReviewRequired:
+            'Dieses Element wurde zur manuellen Prüfung markiert.',
+          other: 'Weitere Qualitätsprüfungen haben dieses Element markiert.',
+          acceptedUnsaved:
+            'Angenommen, aber noch nicht in Ihrer Bibliothek gespeichert.',
+        },
         notApplicable: 'Nicht anwendbar',
         sourceUnavailable: 'Quelle nicht verfügbar',
         sourcesTitle: 'Quellen',
@@ -2831,6 +2907,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Das Element konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
         saveElementsError:
           'Die angenommenen Elemente konnten nicht gespeichert werden. Versuchen Sie es erneut.',
+        tagSelection: {
+          missingHint:
+            'Ein ausgewählter Tag ist nicht mehr verfügbar. Entferne ihn oder wähle vor dem Speichern einen anderen Tag.',
+          removeMissing: 'Nicht verfügbaren Tag {id} entfernen',
+          title: 'Tags',
+          existingLabel: 'Passende Tags',
+          existingHint:
+            'Ein bereits vorhandener Name wählt den bestehenden Tag aus, statt einen neuen zu erstellen.',
+          newLabel: 'Vorgeschlagene neue Tags',
+          newHint: 'Neue Tags werden erst beim Behalten des Elements erstellt.',
+          manualLabel: 'Alle Tags',
+          placeholder: 'Tags auswählen oder eingeben',
+          saveDraft: 'Entwurf speichern',
+          unsaved: 'Ungespeicherte Änderungen',
+          saved: 'Entwurf gespeichert.',
+          saveError:
+            'Der Entwurf konnte nicht gespeichert werden. Versuchen Sie es erneut.',
+          conflict:
+            'Dieser Entwurf wurde anderswo geändert. Laden Sie neu, bevor Sie speichern.',
+        },
       },
       decisions: {
         OPEN: 'Offen',
@@ -5023,6 +5119,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerPending: 'Ausstehend',
       mcpConfigurations: 'MCP-Konfigurationen',
       knowledgeBase: 'Wissensdatenbank',
+      knowledgeGraphPolicy: 'Wissensgraph',
+      knowledgeGraphPolicyDescription:
+        'Steuern Sie die Konzeptkarte für Teilnehmende und die graphgestützte Dokumentsuche unabhängig voneinander. Beide Einstellungen werden in der Chatbot-Revision gespeichert und nach der Freigabe wirksam.',
+      knowledgeGraphVisible: 'Konzeptkarte für Teilnehmende anzeigen',
+      knowledgeGraphVisibleEnabledDescription:
+        'Ein: Teilnehmende können die Konzeptkarte für diesen Chatbot öffnen.',
+      knowledgeGraphVisibleDisabledDescription:
+        'Aus: Die Konzeptkarte bleibt für Teilnehmende verborgen.',
+      knowledgeGraphRetrieval:
+        'Graphverbindungen für die Dokumentsuche verwenden',
+      knowledgeGraphRetrievalDescription:
+        'Ein: Die Dokumentsuche kann verwandte Konzepte aus dem veröffentlichten Graphen als zusätzliche Suchhinweise verwenden. Antworten belegen weiterhin ausschliesslich Dokumentstellen.',
+      knowledgeGraphSave: 'Wissensgraph-Einstellungen speichern',
+      knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:
         'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
       noMcpConfigurations: 'Keine MCP-Konfigurationen.',

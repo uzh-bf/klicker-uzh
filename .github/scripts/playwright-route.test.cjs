@@ -47,7 +47,7 @@ test('ready same-repository public PRs fall back to hosted when rollout is off',
   })
 })
 
-test('smart draft canary enables selection without changing the full default', () => {
+test('drafts always use the ready-state hosted plan, whatever the controls say', () => {
   const disabled = choosePlaywrightRoute(
     pullRequest({ prDraft: 'true', publicRolloutEnabled: 'true' })
   )
@@ -58,15 +58,31 @@ test('smart draft canary enables selection without changing the full default', (
     reasonCodes: ['hosted-fallback', 'smart-draft-disabled'],
   })
 
-  const enabled = choosePlaywrightRoute(
-    pullRequest({ prDraft: 'true', smartDraftCanaryPr: '1234' })
+  // The enabled and canary controls are recorded for diagnostics but cannot
+  // narrow a draft plan: the route stays hosted and the selector stays ready.
+  for (const overrides of [
+    { smartDraftEnabled: 'true' },
+    { smartDraftCanaryPr: '1234' },
+  ]) {
+    const enabled = choosePlaywrightRoute(
+      pullRequest({ prDraft: 'true', ...overrides })
+    )
+    assert.equal(enabled.route, 'hosted')
+    assert.equal(enabled.selectorPrState, 'ready')
+    assert.ok(enabled.reasonCodes.includes('smart-draft-enabled'))
+    assert.ok(enabled.reasonCodes.includes('hosted-fallback'))
+  }
+
+  // With public rollout enabled, a draft must not switch to the public route
+  // either: both routes must run the ready-state full plan.
+  const publicDraft = choosePlaywrightRoute(
+    pullRequest({ prDraft: 'true', smartDraftEnabled: 'true' })
   )
-  assert.equal(enabled.route, 'public-pr')
-  assert.equal(enabled.selectorPrState, 'draft')
-  assert.ok(enabled.reasonCodes.includes('smart-draft-enabled'))
+  assert.equal(publicDraft.route, 'hosted')
+  assert.equal(publicDraft.selectorPrState, 'ready')
 })
 
-test('smart drafts fall back to hosted selection when public rollout is disabled', () => {
+test('a smart-draft control keeps drafts hosted and ready-state when rollout is off', () => {
   const route = choosePlaywrightRoute(
     pullRequest({
       prDraft: 'true',
@@ -75,7 +91,8 @@ test('smart drafts fall back to hosted selection when public rollout is disabled
     })
   )
   assert.equal(route.route, 'hosted')
-  assert.equal(route.selectorPrState, 'draft')
+  assert.equal(route.selectorPrState, 'ready')
+  assert.ok(route.reasonCodes.includes('smart-draft-enabled'))
   assert.ok(route.reasonCodes.includes('hosted-fallback'))
 })
 
@@ -151,7 +168,7 @@ test('a non-matching force-hosted canary does not override public execution', ()
   assert.ok(!route.reasonCodes.includes('force-hosted-canary'))
 })
 
-test('the force-hosted canary rolls a selected draft back to hosted execution', () => {
+test('the force-hosted canary keeps a draft hosted and ready-state', () => {
   const route = choosePlaywrightRoute(
     pullRequest({
       prDraft: 'true',
@@ -159,10 +176,16 @@ test('the force-hosted canary rolls a selected draft back to hosted execution', 
       forceHostedCanaryPr: '1234',
     })
   )
-  assert.equal(route.route, 'hosted')
-  assert.equal(route.selectorPrState, 'draft')
-  assert.ok(route.reasonCodes.includes('force-hosted-canary'))
-  assert.ok(route.reasonCodes.includes('hosted-fallback'))
+  assert.deepEqual(route, {
+    schemaVersion: 1,
+    route: 'hosted',
+    selectorPrState: 'ready',
+    reasonCodes: [
+      'force-hosted-canary',
+      'smart-draft-enabled',
+      'hosted-fallback',
+    ].sort(),
+  })
 })
 
 test('inconsistent caller route hints are rejected', () => {

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import { encrypt } from '@klicker-uzh/util'
 import { CHATBOT_ID_TEST } from './seedChatbots.js'
 
@@ -174,14 +174,67 @@ function validateServerConfig(serverConfig: MCPServerSeed): boolean {
 }
 
 /**
+ * Resolves the KB MCP URL for the isolated local runtime, which reaches the
+ * retrieval service through the Docker host bridge instead of the localhost
+ * default used by ordinary seeds.
+ */
+function resolveIsolatedKBRetrievalUrl(): string {
+  const raw = process.env.KLICKER_LOCAL_KB_RETRIEVAL_URL?.trim()
+
+  let parsed: URL | undefined
+  try {
+    parsed = raw ? new URL(raw) : undefined
+  } catch {
+    parsed = undefined
+  }
+
+  const port = Number(parsed?.port)
+  const isolated =
+    !!parsed &&
+    parsed.protocol === 'http:' &&
+    parsed.hostname === 'host.docker.internal' &&
+    parsed.pathname === '/mcp' &&
+    !parsed.username &&
+    !parsed.password &&
+    !parsed.search &&
+    !parsed.hash &&
+    Number.isInteger(port) &&
+    port >= 1024 &&
+    port <= 65535
+
+  if (!raw || !isolated) {
+    throw new Error(
+      'KLICKER_LOCAL_KB_RETRIEVAL_URL must be an http://host.docker.internal:<port>/mcp URL with a port between 1024 and 65535'
+    )
+  }
+
+  return raw
+}
+
+/**
  * Seeds MCP server configurations
  */
 export async function seedMCPServers(prisma: PrismaClient) {
   console.log('Seeding MCP servers...')
 
+  // The isolated local runtime reaches the KB retrieval service through the
+  // Docker host bridge, so its KB MCP URL comes from the runtime environment.
+  // Resolving it before the loop keeps a misconfigured runtime from writing
+  // rows that point at the unreachable localhost default.
+  const isolatedKBUrl =
+    process.env.KLICKER_LOCAL_KB_RUNTIME_ONLY === '1'
+      ? resolveIsolatedKBRetrievalUrl()
+      : undefined
+
+  const serverSeeds: MCPServerSeed[] = MCP_SERVERS.map((serverConfig) =>
+    isolatedKBUrl && serverConfig.name === MCP_SERVER_NAMES.KB
+      ? { ...serverConfig, url: isolatedKBUrl }
+      : serverConfig
+  )
+
   const createdServers = []
 
-  for (const serverConfig of MCP_SERVERS) {
+  for (const serverConfig of serverSeeds) {
     try {
       // Validate server configuration first
       if (!validateServerConfig(serverConfig)) {
@@ -269,6 +322,34 @@ export async function seedMCPServers(prisma: PrismaClient) {
  */
 type SeededMCPServers = Awaited<ReturnType<typeof seedMCPServers>>
 
+function isJsonObject(value: unknown): value is Prisma.InputJsonObject {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+type MutableJsonObject = {
+  -readonly [Key in keyof Prisma.InputJsonObject]: Prisma.InputJsonObject[Key]
+}
+
+function reconcileKbParameters(
+  parameters: unknown,
+  kbIds: readonly string[]
+): Prisma.InputJsonObject {
+  const reconciledParameters: MutableJsonObject = isJsonObject(parameters)
+    ? { ...parameters }
+    : {}
+
+  delete reconciledParameters.kb_id
+  delete reconciledParameters.kb_ids
+
+  if (kbIds.length > 0) {
+    reconciledParameters.required = true
+    reconciledParameters.toolAlias = 'doc_query'
+    reconciledParameters.kb_ids = [...kbIds]
+  }
+
+  return reconciledParameters
+}
+
 export async function seedChatbotMCPConfigurations(
   prisma: PrismaClient,
   servers: SeededMCPServers
@@ -290,13 +371,23 @@ export async function seedChatbotMCPConfigurations(
         continue
       }
 
-      const enabledBinding =
+      const enabledKbIds =
         config.mcpServerName === MCP_SERVER_NAMES.KB
-          ? await prisma.kBChatbot.findFirst({
-              where: { chatbotId: config.chatbotId, isEnabled: true },
-              select: { id: true },
-            })
-          : null
+          ? Array.from(
+              new Set(
+                (
+                  await prisma.kBChatbot.findMany({
+                    where: {
+                      chatbotId: config.chatbotId,
+                      isEnabled: true,
+                      kb: { deletedAt: null },
+                    },
+                    select: { kbId: true },
+                  })
+                ).map(({ kbId }) => kbId)
+              )
+            ).sort((left, right) => left.localeCompare(right))
+          : []
 
       const existingConfig = await prisma.chatbotMCPConfig.findUnique({
         where: {
@@ -315,7 +406,11 @@ export async function seedChatbotMCPConfigurations(
             data: {
               allowedTools: ['doc_query'],
               priority: 0,
-              isEnabled: Boolean(enabledBinding),
+              isEnabled: enabledKbIds.length > 0,
+              parameters: reconcileKbParameters(
+                existingConfig.parameters,
+                enabledKbIds
+              ),
             },
           })
           console.log(
@@ -339,9 +434,12 @@ export async function seedChatbotMCPConfigurations(
           priority: config.priority,
           isEnabled:
             config.mcpServerName === MCP_SERVER_NAMES.KB
-              ? Boolean(enabledBinding)
+              ? enabledKbIds.length > 0
               : config.isEnabled,
-          parameters: config.parameters || {},
+          parameters:
+            config.mcpServerName === MCP_SERVER_NAMES.KB
+              ? reconcileKbParameters(config.parameters, enabledKbIds)
+              : config.parameters || {},
         },
       })
 

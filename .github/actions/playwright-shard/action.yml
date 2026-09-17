@@ -17,6 +17,10 @@ inputs:
   cache-enabled:
     description: Whether restore-only Actions caches are enabled
     required: true
+  workers:
+    description: Playwright worker processes running spec files in parallel
+    required: false
+    default: '1'
 
 runs:
   using: composite
@@ -224,7 +228,7 @@ runs:
           exit 1
         fi
         echo "Running tests for shard ${SHARD_INDEX}/${SHARD_TOTAL} with profile $PROFILE: ${TEST_FILES[*]}"
-        .github/scripts/wait-for-services.sh -- \
+        node .ci-control/.github/scripts/playwright-resource-sampler.cjs "playwright-resources-shard-${SHARD_INDEX}.jsonl" .github/scripts/wait-for-services.sh -- \
           env NODE_ENV=test \
           pnpm --filter @klicker-uzh/playwright exec playwright test \
             --project=chromium \
@@ -232,6 +236,7 @@ runs:
       env:
         SHARD_INDEX: ${{ inputs.shard-index }}
         SHARD_TOTAL: ${{ inputs.shard-total }}
+        PLAYWRIGHT_WORKERS: ${{ inputs.workers }}
         APP_SECRET: abcd
         DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
         NODE_ENV: production
@@ -321,6 +326,8 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-telemetry-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
-        path: playwright-telemetry-${{ inputs.shard-index }}.json
+        path: |
+          playwright-telemetry-${{ inputs.shard-index }}.json
+          playwright-resources-shard-${{ inputs.shard-index }}.jsonl
         if-no-files-found: ignore
         retention-days: 7

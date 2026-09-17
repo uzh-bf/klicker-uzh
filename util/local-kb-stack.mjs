@@ -3,20 +3,14 @@ import { readFileSync, realpathSync, statSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { renderBackingCompose } from './local-kb/backing-compose.mjs'
-import { renderProviderCompose } from './local-kb/compose.mjs'
-import {
-  docProcessingImageRevision,
-  renderDocProcessingCompose,
-} from './local-kb/doc-processing-compose.mjs'
-import {
-  ingestionImageRevision,
-  renderIngestionCompose,
-} from './local-kb/ingestion-compose.mjs'
+import { requireLocalAiEnvironment } from './local-kb/docker-preflight.mjs'
 import { resolveIsolatedConfig } from './local-kb/isolated-config.mjs'
 import {
   claimPreparation,
   completePreparation,
+  continuePreparation,
   initializeManagedApplication,
+  initializeProviderLaunchers,
   initializeProviderStorage,
   inspectPreparedInfrastructure,
   installManagedConfiguration,
@@ -26,15 +20,6 @@ import {
   stopPreparedInfrastructure,
 } from './local-kb/preparation.mjs'
 import { providerCommands } from './local-kb/provider-commands.mjs'
-import {
-  renderRetrievalCompose,
-  retrievalImageRevision,
-} from './local-kb/retrieval-compose.mjs'
-import { renderRetrievalStoreCompose } from './local-kb/retrieval-store-compose.mjs'
-import {
-  renderScrapingCompose,
-  scrapingImageRevision,
-} from './local-kb/scraping-compose.mjs'
 
 const providers = [
   ['ingestion', 'DATA_INGESTION_REPO', 'scripts/start_ingestion_workers.sh'],
@@ -112,14 +97,23 @@ export function inspectIsolatedProviderSources(config) {
         ).trim()
       const root = git(['rev-parse', '--show-toplevel'])
       const head = git(['rev-parse', 'HEAD'])
-      const clean =
-        git([
-          'status',
-          '--porcelain',
-          '--untracked-files=all',
-          '--ignored=matching',
-          '--ignore-submodules=none',
-        ]).length === 0
+      const environments = new Set([
+        '!! .venv/',
+        ...(name === 'ingestion'
+          ? ['!! modules/ingestion-api/.venv/', '!! modules/ingestion/.venv/']
+          : []),
+      ])
+      const clean = git([
+        'status',
+        '--porcelain',
+        '-z',
+        '--untracked-files=all',
+        '--ignored=matching',
+        '--ignore-submodules=none',
+      ])
+        .split('\0')
+        .filter(Boolean)
+        .every((entry) => environments.has(entry))
       return {
         name,
         sourceAvailable: true,
@@ -174,10 +168,10 @@ export async function inspectLocalKbStack(
 
 const configPlanBlockers = [
   {
-    id: 'rendered-local-deployment',
+    id: 'provider-runtime-qualification',
     status: 'required',
     description:
-      'The validation model must be rendered into concrete local deployment services before execution.',
+      'Provider launcher bindings require runtime qualification; a configuration plan does not prove installed dependencies, images or connectivity.',
   },
   {
     id: 'provider-preparation',
@@ -204,7 +198,7 @@ const configPlanLimitations = [
     id: 'provider-launcher-projection',
     status: 'unverified',
     description:
-      'providerCommands projects each launcher invocation from the contract recorded in util/local-kb/provider-launcher-contract.mjs; config plan does not probe a provider checkout, and the consumer-owned Compose assembly remains the executable lifecycle until it is retired.',
+      'providerCommands contains the supported launcher invocations used by setup and retained lifecycle operations; config plan does not execute or qualify them.',
   },
 ]
 
@@ -218,40 +212,49 @@ function readConfigPlanInput(path) {
 }
 
 function configPlan(config) {
-  const imagesMatch =
-    config.providers.ingestion.revision === ingestionImageRevision &&
-    config.providers.scraping.revision === scrapingImageRevision &&
-    config.providers.docProcessing.revision === docProcessingImageRevision &&
-    config.providers.retrieval.revision === retrievalImageRevision
+  const commands = providerCommands(config)
+  const setupArgs = commands.providers.ingestion.lifecycle.setup.args
+  setupArgs[setupArgs.indexOf('--state-dsn') + 1] = '<provider-owned-state-dsn>'
   return {
     ...config,
-    providerCommands: providerCommands(config),
-    providerCompose: imagesMatch ? renderProviderCompose(config) : null,
+    providerCommands: commands,
     backingCompose: renderBackingCompose(config),
-    docProcessingCompose:
-      config.providers.docProcessing.revision === docProcessingImageRevision
-        ? renderDocProcessingCompose(config)
-        : null,
-    scrapingCompose:
-      config.providers.scraping.revision === scrapingImageRevision
-        ? renderScrapingCompose(config)
-        : null,
-    retrievalStoreCompose: renderRetrievalStoreCompose(config),
-    retrievalCompose:
-      config.providers.retrieval.revision === retrievalImageRevision
-        ? renderRetrievalCompose(config)
-        : null,
-    ingestionCompose:
-      config.providers.ingestion.revision === ingestionImageRevision
-        ? renderIngestionCompose(config)
-        : null,
     executable: false,
     blockers: configPlanBlockers,
     limitations: configPlanLimitations,
   }
 }
 
+// Each recovery mode resumes one retained attempt and excludes the other.
+const recoveryOptions = {
+  '--resume-executor': 'resumeExecutor',
+  '--resume-ingestion-executor': 'resumeIngestionExecutor',
+}
+
 function parseArguments(args) {
+  const recoveryOption = Object.hasOwn(recoveryOptions, args[7])
+    ? recoveryOptions[args[7]]
+    : undefined
+  if (
+    (args.length === 7 ||
+      (args.length === 9 &&
+        recoveryOption !== undefined &&
+        /^[a-f0-9]{40}$/.test(args[8]))) &&
+    args[0] === 'continue-setup' &&
+    args[1] === '--config' &&
+    args[3] === '--candidate' &&
+    args[5] === '--executor' &&
+    /^[a-f0-9]{40}$/.test(args[4]) &&
+    /^[a-f0-9]{40}$/.test(args[6])
+  ) {
+    return {
+      command: args[0],
+      configPath: args[2],
+      candidateRevision: args[4],
+      executorRevision: args[6],
+      ...(args.length === 9 ? { [recoveryOption]: args[8] } : {}),
+    }
+  }
   if (
     args.length === 5 &&
     ['setup', 'start', 'resume', 'stop', 'status'].includes(args[0]) &&
@@ -272,27 +275,48 @@ function parseArguments(args) {
     return { command: args[0], configPath: args[2] }
   }
   throw new Error(
-    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], or <setup|start|resume|stop|status> --config <path> --candidate <commit>'
+    'Usage: node util/local-kb-stack.mjs <status|plan> [--config <absolute JSON input path>], <setup|start|resume|stop|status> --config <path> --candidate <commit>, or continue-setup --config <path> --candidate <commit> --executor <commit> [--resume-executor <commit> | --resume-ingestion-executor <commit>]'
   )
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    const { command, configPath, candidateRevision } = parseArguments(
-      process.argv.slice(2)
-    )
+    const {
+      command,
+      configPath,
+      candidateRevision,
+      executorRevision,
+      resumeExecutor,
+      resumeIngestionExecutor,
+    } = parseArguments(process.argv.slice(2))
     if (configPath !== undefined) {
       const config = readConfigPlanInput(configPath)
-      if (command === 'setup') {
+      if (command === 'continue-setup') {
+        requireLocalAiEnvironment(config)
+        requireProviderSources(config)
+        console.log(
+          JSON.stringify(
+            await continuePreparation(
+              config,
+              candidateRevision,
+              executorRevision,
+              { resumeExecutor, resumeIngestionExecutor }
+            )
+          )
+        )
+      } else if (command === 'setup') {
+        requireLocalAiEnvironment(config)
         // Resolve pins and fresh source state before the exclusive claim or
         // any generated files, Docker operation, or managed lifecycle call.
-        renderProviderCompose(config)
+        providerCommands(config)
         requireProviderSources(config)
         await claimPreparation(config, candidateRevision)
         await prepareLocalConfiguration(config, candidateRevision)
         await installManagedConfiguration(config, candidateRevision)
         requireProviderSources(config)
         await initializeProviderStorage(config, candidateRevision)
+        requireProviderSources(config)
+        await initializeProviderLaunchers(config, candidateRevision)
         requireProviderSources(config)
         await initializeManagedApplication(config, candidateRevision)
         await completePreparation(config, candidateRevision)

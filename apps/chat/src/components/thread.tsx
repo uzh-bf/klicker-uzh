@@ -41,6 +41,7 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import LearningContextCard from '@/src/components/learning-context-card'
 import { useMessageSources } from '@/src/hooks/useMessageSources'
 import {
   getImageAttachmentKey,
@@ -353,9 +354,18 @@ export const Thread: FC<ThreadProps> = ({
         // when the run becomes terminal; disabling resize-driven bottom
         // scrolling for that insertion prevents a large source grid from
         // jumping past the final answer.
+        //
+        // The viewport must not set scroll-smooth. The thread viewport
+        // auto-scroll hook re-issues scrollTo({ behavior: 'auto' }) on every
+        // content growth during a run, and CSS scroll-behavior makes that
+        // "auto" resolve to an animated scroll. Each streamed chunk therefore
+        // restarts the animation from the current position, so the viewport
+        // falls progressively further behind the growing answer instead of
+        // tracking it. Explicit smooth scrolling (citation jumps, history-rail
+        // navigation) is requested per call and is unaffected by this.
         autoScroll={isRunning}
         className={twMerge(
-          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:scroll-auto',
+          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset',
           embedded
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-4 pt-2'
             : twMerge(
@@ -418,10 +428,7 @@ export const Thread: FC<ThreadProps> = ({
             {t('chat.composer.modeUnavailable')}
           </p>
         )}
-        {/* S6: standalone-only, same as ThreadScrollToBottom above — an
-            embedded widget has little vertical room and the embedding page
-            already carries the disclaimer context. */}
-        {!embedded && hasAvailableMode && <ComposerHint />}
+        {hasAvailableMode && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>
   )
@@ -657,16 +664,17 @@ const ThreadWelcome: FC<{
               )}
               iconClassName={embedded ? 'size-6' : 'size-7'}
             />
-            {welcomeMessage || embedded ? (
+            {welcomeMessage && (
               <div
                 className={twMerge(
                   'animate-in fade-in slide-in-from-bottom-2 font-semibold duration-300 motion-reduce:animate-none',
                   embedded ? 'text-base' : 'text-3xl sm:text-4xl'
                 )}
               >
-                {welcomeMessage ?? `Ask ${chatbotName}`}
+                {welcomeMessage}
               </div>
-            ) : (
+            )}
+            {!welcomeMessage && !embedded && (
               <>
                 <h2 className="animate-in fade-in slide-in-from-bottom-2 text-3xl font-semibold text-pretty duration-300 motion-reduce:animate-none sm:text-4xl">
                   {t('chat.thread.welcomeTitle')}
@@ -914,7 +922,7 @@ const Composer: FC<{ maxImageAttachments: number }> = ({
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
-              embedded ? 'max-h-20 py-2' : 'max-h-40 py-4'
+              embedded ? 'max-h-20 py-2 text-sm leading-6' : 'max-h-40 py-4'
             )}
           />
           <ComposerAction />
@@ -1439,7 +1447,9 @@ const UserMessage: FC = () => {
         data-cy="chat-user-message-content"
         className={twMerge(
           'bg-muted text-foreground break-words rounded-2xl px-5 py-2.5',
-          embedded ? 'max-w-[80%]' : 'max-w-[calc(var(--thread-max-width)*0.8)]'
+          embedded
+            ? 'max-w-[80%] text-sm leading-6'
+            : 'max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
         {attachments.length > 0 && (
@@ -1452,6 +1462,8 @@ const UserMessage: FC = () => {
         )}
         <MessagePrimitive.Content />
       </div>
+
+      <LearningContextCard message={message} />
 
       <div className="flex min-h-6 items-center">
         <UserActionBar />
