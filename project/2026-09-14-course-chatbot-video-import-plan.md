@@ -371,6 +371,35 @@ manifest (job, source counts, prepare, activation count, inventory row, citation
 
 ## Progress
 
+- 2026-09-17 (S7 all five deliverable heads merged; two deploy gaps found and one fix in
+  flight): the user merged every lane head, so the S7 code is on the integration branches:
+  data-ingestion `main` `58329be57c` (MR !172), deployment `main` `6035d4288a` (MR !903),
+  video-ai `main` `0bb9b2d522` (PR #126), klicker-uzh `v3-ai` `c4adc40241` (PR #6026) and
+  `v3` `9a08f48910` (PR #6034). data-ingestion pipeline 666556 built the lane worker image
+  (`58329be5…@sha256:fec2c85f`) and auto-promoted STG (deployment `d565e95b`); STG ingestion
+  now runs the lane image (gen 1937) and the video-ai configmap carries the renamed
+  descriptor on both PRD and STG. Two real gaps remain. Gap 1: PRD ingestion still pins the
+  pre-lane worker image `1eee63d6…@sha256:a739f7be` without the `video-candidate-import`
+  workflow (the `INGESTION_VIDEO_HANDOFF_*` env landed with `6035d428` on PRD gen 149, so
+  only the image lags). Fix in flight: branch `rs/prd-video-import-pin` `6289533f`, draft MR
+  !905 (worker/api digest bump plus the matching `prd_contract.py` constants; render
+  validated 44 PRD documents, contract suite 36 passed, pipeline 666576 green). Merge is
+  user-gated, then Argo syncs. Gap 2: the #126 rename changed the descriptor filename the
+  configmap names, but the pinned PRD/STG video-processing images were built before the
+  rename and ship only the old filename, so a new video upload would silently skip
+  `ingestion_source.json` (best-effort) and the import would fail `published_source_missing`.
+  Live PRD pods confirm it: `video-processing-api` has `FILE_MISSING` on the new name while
+  the worker still points at the old name. Fix pushed as branch
+  `rs/video-descriptor-image-pin` `c748220`, draft PR #128 (both overlays plus the
+  `test_deploy_manifests` digest constants; 103 passed across the deploy-manifest and
+  dockerfile-contract suites, ruff clean, pyrefly 0 errors), pinning to the video-ai
+  `main` `0bb9b2d522` indexes `86673ebc…` (api) and `8d8be6a8…` (worker), both verified
+  multi-arch. Merge is user-gated. This
+  gap does not block the Finance I proof, whose source is already published under the
+  predecessor identity and accepted via `SUPERSEDED_POLICY_IDENTITIES`. Dispatch path is
+  unchanged: in-cluster one-off job/pod in `prd-ingestion` on
+  `managed-identity-prd-ingestion` (option a, no new RBAC), because the laptop can reach
+  neither hand-off store nor PRD Hatchet (re-verified: PRD VP edge still 403s this IP).
 - 2026-09-17 (S7 deliverable heads merged into the klicker-uzh PRs; dispatch-trigger
   credential unblocked): the plan branch merged `origin/v3-ai` (`fa1c468296`) into
   `rs/course-video-import-plan` (`d6e41746ee`, draft PR #6026), and the skill branch
