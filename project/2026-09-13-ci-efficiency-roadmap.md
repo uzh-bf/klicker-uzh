@@ -1525,6 +1525,31 @@ required from the user.
   evaluation. `--admin` bypasses the requirement rather than satisfying it and
   stays out of bounds.
 
+- 2026-09-18 first applied reap on the merged `v3` reaper. Read-only inventory
+  at 12:5xZ over 25 active allowlisted runs found 6 `merged-or-closed-PR`
+  entries, all residue from the deleted `rs/v3-audit-sync-20260918b` and
+  `rs/audit-ci-fixtures` branches; the earlier queued duplicates had already
+  drained. `--apply` cancelled three to terminal `completed/cancelled`
+  (`35336300690`, `35336300770`, `35336300579`). Three accepted the
+  cancellation but had not reached terminal state at readback
+  (`35336300710`, `34749125387`), and `35336008675` had already left the
+  allowlist by the time it was processed (`outside-policy`).
+
+  Two behaviours worth keeping. First, the fail-closed readback works as
+  designed: an unconfirmed cancellation stops the batch and sets exit code 1, so
+  the remaining IDs need separate invocations rather than a retry loop. Second,
+  `34749125387` again returned `409 has not been queued yet`, confirming that
+  this run holds no runner slot and that its reap caps rather than frees
+  capacity.
+
+  Queue depth moved from 134 queued / 15 in progress at 09:00Z to 45 queued /
+  8 in progress by ~13:0xZ. Most of that is normal draining, not the six reaps;
+  the reaps removed dead entries that could never run. The measured structural
+  conclusion is unchanged: the queue is dominated by real work fanned out across
+  many workflows, which keeps B3 staging consolidation and the promotion-wakeup
+  consolidation as the highest-value remaining slices.
+
+
   Live reaper evidence at merge time, read-only over 59 active allowlisted
   runs: 8 `redundant-queued-duplicate` (PRs #6124, #6133, #5970), 1
   `merged-or-closed-PR` (run 34749125387, the run that answers 409 to both
