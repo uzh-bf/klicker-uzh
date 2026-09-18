@@ -6,7 +6,10 @@ import type {
   GeneratedQuestionEditable,
   GeneratedQuestionTagSelectionInput,
 } from '@klicker-uzh/types'
-import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
+import {
+  ELEMENT_GENERATION_CAPABILITIES,
+  KB_GRAPH_POLICY_LANGUAGES,
+} from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
@@ -795,7 +798,7 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
-    languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],
+    languages: [...KB_GRAPH_POLICY_LANGUAGES],
     bloomLevels: [...ELEMENT_GENERATION_CAPABILITIES.bloomLevels],
     difficultyLevels: [...ELEMENT_GENERATION_CAPABILITIES.difficultyLevels],
     typeCapabilities: ELEMENT_GENERATION_CAPABILITIES.elementTypes.map(

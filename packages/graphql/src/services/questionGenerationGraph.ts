@@ -7,7 +7,10 @@ import type {
   KBGraphSourceSnapshot,
   QuestionGenerationArtifactRef,
 } from '@klicker-uzh/types'
-import { QUESTION_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
+import {
+  KB_GRAPH_POLICY_LANGUAGE,
+  QUESTION_GENERATION_CAPABILITIES,
+} from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
@@ -37,6 +40,10 @@ export type QuestionGenerationGraph = {
   graphManifest: QuestionGenerationArtifactRef
   graphSha256: string
   manifestSchemaVersion: number
+  // The language the graph's domain policy and generation recipe actually
+  // carry. The external payload sends no language, so every published graph
+  // resolves to the German policy until Klicker owns a stored language.
+  language: string
   sourceSnapshot: KBGraphSourceSnapshot
   storageName: string
   indexedAt: Date
@@ -147,6 +154,7 @@ function asGenerationGraph(
     graphManifest: build.graphManifestArtifact,
     graphSha256: build.graphSha256,
     manifestSchemaVersion: build.graphManifestSchemaVersion,
+    language: KB_GRAPH_POLICY_LANGUAGE,
     sourceSnapshot: questionGenerationSourceSnapshot(build.sources),
     storageName: build.graphBundleStorageName,
     indexedAt: build.finishedAt ?? build.createdAt,
