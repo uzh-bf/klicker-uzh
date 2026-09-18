@@ -1427,3 +1427,28 @@ required from the user.
   highest-value remaining structural slice. The promotion controller's 49
   records remain the largest avoidable class and are the confirmed
   wake-per-producer symptom, not runner-minutes.
+
+- 2026-09-18 AMD ruling correction: the guard does not hold on `v3-audit`.
+  The goal carried "all build-amd jobs already if:false everywhere including prd
+  tags", and the 09-16 re-verification confirmed it for `origin/v3`: all 26
+  workflow files on that branch that declare `build-amd:` guard it with an
+  always-false condition. That claim is branch-local and was never checked
+  against `v3-audit`, where the assistant and MCP workflows live.
+
+  **Four MCP workflows on `v3-audit` still run AMD.** `v3_mcp-lecturer-stg.yml`,
+  `v3_mcp-student-stg.yml`, `v3_mcp-lecturer-prd.yml` and
+  `v3_mcp-student-prd.yml` declare `build-amd` with no always-false guard; the
+  two staging ones carry the ordinary draft deferral instead. This is not
+  theoretical: push run `35318844446` on `v3-audit` (07:19Z, success) ran
+  `build-amd` on `ubuntu-latest` from 07:24:50Z to 07:26:21Z, 91 seconds of
+  hosted runner time, and `v3_mcp-lecturer-stg.yml` is still picking up
+  pull-request runs behind the current queue (run `35323224032`, queued).
+
+  **The paired guard also expects it.** `required-build-status.cjs` on
+  `v3-audit` lists `jobs: ['build-arm', 'build-amd']` for both
+  `v3_mcp-lecturer-stg.yml` and `v3_mcp-student-stg.yml`, unlike every other
+  entry, which lists only `build-arm`. Disabling the job alone would therefore
+  break the required `build-images-status` context, so the workflow guard and
+  the required-job inventory must move together. Correcting it reclaims hosted
+  capacity and restores the invariant the deployment ruling depends on; the
+  re-enable path stays limited to prd-tag release artifacts.
