@@ -2,7 +2,10 @@ import type {
   KBGraphSourceSnapshot,
   QuestionGenerationConfiguration,
 } from '@klicker-uzh/types'
-import { createQuestionGenerationBlueprint } from '../src/services/questionGenerationBlueprint.js'
+import {
+  BLUEPRINT_OBJECTIVE_SOURCE_ENABLED,
+  createQuestionGenerationBlueprint,
+} from '../src/services/questionGenerationBlueprint.js'
 
 const sourceSnapshot: KBGraphSourceSnapshot = [
   {
@@ -56,6 +59,78 @@ function parseBlueprint(bytes: Buffer): unknown {
 }
 
 describe('question generation blueprint', () => {
+  it('withholds the objective_source marker when emission is explicitly disabled', async () => {
+    const bytes = await createQuestionGenerationBlueprint(
+      {
+        ...configuration,
+        objectives: [
+          {
+            id: 'OBJ-01',
+            text: 'Assess the selected material.',
+            bloomLevel: 'understand',
+            objectiveSource: 'neutral',
+          },
+        ],
+      },
+      sourceSnapshot,
+      { emitObjectiveSource: false }
+    )
+
+    expect(BLUEPRINT_OBJECTIVE_SOURCE_ENABLED).toBe(true)
+    const payload = parseBlueprint(bytes) as {
+      objectives: Array<Record<string, unknown>>
+    }
+    expect(payload.objectives[0]).toEqual({
+      module_id: 'M1',
+      objective_id: 'OBJ-01',
+      objective_text: 'Assess the selected material.',
+      bloom_level: 'understand',
+    })
+  })
+
+  it('emits the objective_source marker by default once the worker release is live', async () => {
+    const bytes = await createQuestionGenerationBlueprint(
+      {
+        ...configuration,
+        objectives: [
+          {
+            id: 'OBJ-01',
+            text: 'Explain malolactic fermentation.',
+            bloomLevel: 'understand',
+            objectiveSource: 'provided',
+          },
+          {
+            id: 'OBJ-02',
+            text: 'Assess the selected material.',
+            bloomLevel: 'evaluate',
+            objectiveSource: 'neutral',
+          },
+        ],
+      },
+      sourceSnapshot
+    )
+
+    const payload = parseBlueprint(bytes) as {
+      objectives: Array<Record<string, unknown>>
+    }
+    expect(payload.objectives).toEqual([
+      {
+        module_id: 'M1',
+        objective_id: 'OBJ-01',
+        objective_text: 'Explain malolactic fermentation.',
+        bloom_level: 'understand',
+        objective_source: 'provided',
+      },
+      {
+        module_id: 'M1',
+        objective_id: 'OBJ-02',
+        objective_text: 'Assess the selected material.',
+        bloom_level: 'evaluate',
+        objective_source: 'neutral',
+      },
+    ])
+  })
+
   it('emits canonical JSON v2 input for a bounded module scope', async () => {
     const bytes = await createQuestionGenerationBlueprint(
       configuration,

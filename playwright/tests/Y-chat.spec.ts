@@ -3719,8 +3719,9 @@ test.describe('Chatbot Source Citations', () => {
 
     const viewport = page.getByTestId('chat-thread-viewport')
 
-    // Scroll instantly (bypassing the viewport's scroll-smooth behavior) so
-    // the measurement reads the settled position, not mid-animation.
+    // Scroll instantly (rather than relying on any scroll-behavior the
+    // viewport may set) so the measurement reads the settled position, not
+    // mid-animation.
     await viewport.evaluate((element) => {
       element.style.scrollBehavior = 'auto'
       element.scrollTop = element.scrollHeight

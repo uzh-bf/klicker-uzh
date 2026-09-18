@@ -5,6 +5,11 @@ import {
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import {
+  designReviewConcentration,
+  designReviewObjectives,
+  designReviewSlotEvidence,
+} from './designReviewSummary'
 import type { ElementGenerationBuildData } from './elementGenerationTypes'
 
 interface ElementGenerationReviewGateProps {
@@ -32,6 +37,13 @@ export default function ElementGenerationReviewGate({
 
   const warnings = summary.warnings
   const canApprove = warnings.length === 0 || warningsAcknowledged
+  const designObjectives = build.designSummary
+    ? designReviewObjectives(build.designSummary.objectives)
+    : []
+  const designSlotEvidence = build.designSummary
+    ? designReviewSlotEvidence(build.designSummary.slots ?? [])
+    : []
+  const designConcentration = designReviewConcentration(designSlotEvidence)
 
   return (
     <section
@@ -87,9 +99,17 @@ export default function ElementGenerationReviewGate({
             </h3>
             {build.designSummary.objectives.length > 0 ? (
               <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-700">
-                {build.designSummary.objectives.map((objective) => (
+                {designObjectives.map((objective) => (
                   <li key={objective.id}>
                     {objective.text}
+                    {objective.isGeneratedDefault ? (
+                      <span
+                        className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+                        data-cy="element-generation-generated-default-objective"
+                      >
+                        {t('gate.generatedDefaultObjective')}
+                      </span>
+                    ) : null}
                     {objective.bloomLevel ? (
                       <span className="ml-2 text-xs text-slate-500">
                         {t(`bloom.${objective.bloomLevel}`)}
@@ -104,6 +124,55 @@ export default function ElementGenerationReviewGate({
               </p>
             )}
           </div>
+          {designSlotEvidence.some((slot) => slot.entityIds.length > 0) ? (
+            <div
+              className="rounded-lg border border-slate-200 p-4 lg:col-span-2"
+              data-cy="element-generation-design-evidence"
+            >
+              <h3 className="font-semibold text-slate-900">
+                {t('gate.slotEvidence')}
+              </h3>
+              <ul className="mt-3 space-y-2 text-sm">
+                {designSlotEvidence.map((slot) => (
+                  <li
+                    key={slot.sourceElementId}
+                    className="flex flex-wrap items-baseline justify-between gap-2"
+                    data-cy="element-generation-design-slot-evidence"
+                  >
+                    <span className="font-mono text-xs text-slate-500">
+                      {slot.sourceElementId}
+                    </span>
+                    {slot.entityIds.length > 0 ? (
+                      <span className="text-slate-700">
+                        {slot.entityIds.join(', ')}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">
+                        {t('gate.noSlotEvidence')}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {designConcentration.map((concentration) => (
+                <div
+                  key={concentration.moduleId}
+                  className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+                  data-cy="element-generation-design-concentration"
+                >
+                  <p className="font-semibold">
+                    {t('gate.concentrationTitle')}
+                  </p>
+                  <p className="mt-1">
+                    {t('gate.concentrationNotice', {
+                      count: concentration.slotCount,
+                      entities: concentration.entityIds.join(', '),
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

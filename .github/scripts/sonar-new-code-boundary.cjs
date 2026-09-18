@@ -10,22 +10,29 @@
 //
 // The `uzh-bf_klicker-uzh` project keeps the repository's former default
 // branch `dev` as its main branch, and `dev` was last analysed on 2022-08-20.
-// `v3` is therefore a short-lived branch that merges into `dev`, so almost the
-// whole repository counts as new code on it and its quality gate fails on
-// historical findings, while the pull-request analysis of the same code is
-// healthy because a pull request compares against its own base.
+// Before the project pattern was widened, `v3` was a short-lived
+// branch that merged into `dev`, so almost the whole repository
+// counted as new code on it and its quality gate failed on historical
+// findings, while the pull-request analysis of the same code stayed healthy
+// because a pull request compares against its own base. The pattern now
+// covers every `v3` branch, so both kinds are compared against the
+// project-level definition.
 //
 // This script turns that unnamed failure into a named one. It reads the
 // analyzed branch's measures and the branch's recorded type from the public
-// API and fails the analysis early when new code covers an implausible share
-// of the branch, so the run reports the cause that can actually be corrected
-// instead of ending in an unexplained quality-gate failure 45 minutes later.
+// API and reports when new code covers an implausible share of the branch, so
+// the run names the cause that can actually be corrected.
+//
+// It reports rather than enforces. A branch's type is assigned once, so a
+// short-lived integration branch cannot satisfy the branch gate until an
+// operator corrects it on the project; the analysis job instead awaits the
+// quality gate on a pull request, where new code is the diff against the base
+// and the gate is meaningful. Failing a branch run here would block every
+// required check that depends on it without changing the condition.
 //
 // It stays non-fatal when the API cannot be read and reports a branch without
 // measures as unknown rather than as passing, so an unreadable boundary never
-// becomes a false success. It is not a second gate: the awaited quality gate
-// above still decides the job, and a named boundary failure is reported in
-// place of an opaque one.
+// becomes a false success.
 
 const DEFAULT_RATIO_LIMIT = 0.5
 const DEFAULT_PROJECT_KEY = 'uzh-bf_klicker-uzh'
@@ -71,7 +78,9 @@ function describeBaselineGap(result) {
 
 // The type decides the remedy as well: a short-lived branch is re-classified
 // through the long-lived branch pattern, while a long-lived branch only needs
-// the project-level definition changed.
+// the project-level definition narrowed. A long-lived branch whose next
+// analysis has not yet run reports no new-code measures at all; that is a
+// first-analysis artifact, not a definition that still has to be created.
 function describeRemedy(result) {
   if (result.branchType === 'LONG') {
     return [
@@ -90,7 +99,9 @@ function describeRemedy(result) {
       '2. Delete the existing branch analysis through',
       '   `api/project_branches/delete`, then re-analyse so the branch is',
       '   created with the type that pattern assigns.',
-      '3. Set the project New Code definition (' + NEW_CODE_PAGE + ').',
+      '3. Re-analyse. That next analysis establishes the new-code',
+      '   baseline from the project definition by itself, so no separate New',
+      '   Code setting is required.',
       '',
       'Recreating the project with the right main branch is the alternative',
       'when deleting the branch analysis is not wanted.',
@@ -421,6 +432,10 @@ async function main() {
 
   emitSummary(formatSummary(result))
   if (result.state === STATE.inflated) {
+    // Reported, not enforced: the branch type is fixed at the first analysis,
+    // so no code change can clear this and a failure would only block the
+    // promotion controller. The annotation keeps the finding on the run for
+    // the operator who performs the platform correction.
     process.stderr.write(
       '::error::New code covers ' +
         formatPercent(result.ratio) +
@@ -432,7 +447,6 @@ async function main() {
         describeRemedy(result).join(' ') +
         '\n'
     )
-    return 1
   }
   return 0
 }
