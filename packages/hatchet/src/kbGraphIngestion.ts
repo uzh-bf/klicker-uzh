@@ -76,6 +76,7 @@ type KBGraphDispatchRecord = {
   domainPolicyId: string | null
   domainPolicyVersion: number | null
   domainPolicyLanguage: string | null
+  focusTopic: string | null
   createdAt: Date
   kb: {
     ownerId: string
@@ -433,19 +434,38 @@ function kbGraphDomainRejectionMessage(
 }
 
 /**
- * Re-resolves the selection frozen at rebuild time against the catalog and
+ * Re-resolves the provider inputs frozen at rebuild time against the catalog and
  * capability gate this worker is running with. Dispatch happens in a separate
  * process from the lecturer request, so a rollout that narrowed the catalog or
  * disabled the gate must fail the build here, before the provider call spends
- * reservation money on a policy it cannot honor.
+ * reservation money on a policy it cannot honor or silently drops a recorded
+ * focus.
  */
-function getDomainSelectionGateFailure(
+function getProviderContractGateFailure(
   build: Pick<
     KBGraphDispatchRecord,
-    'domainPolicyId' | 'domainPolicyVersion' | 'domainPolicyLanguage'
+    | 'domainPolicyId'
+    | 'domainPolicyVersion'
+    | 'domainPolicyLanguage'
+    | 'focusTopic'
   >,
   env: NodeJS.ProcessEnv
 ): { statusMessage: string; errorCode: string } | null {
+  const catalog = getDefaultKBGraphDomainCatalog()
+  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
+    catalog.revision,
+    env
+  )
+  // A focus travels on the same provider contract the capability gate
+  // advertises, so a rollout that closed the gate must fail the build here
+  // rather than record a focus the provider never applied.
+  if (build.focusTopic != null && !capabilityEnabled) {
+    return {
+      statusMessage:
+        'This deployment does not support the focus topic frozen on the KB graph build.',
+      errorCode: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED,
+    }
+  }
   if (
     build.domainPolicyId == null &&
     build.domainPolicyVersion == null &&
@@ -453,7 +473,6 @@ function getDomainSelectionGateFailure(
   ) {
     return null
   }
-  const catalog = getDefaultKBGraphDomainCatalog()
   const resolution: KBGraphDomainSelectionResolution =
     resolveKBGraphDomainSelection(
       {
@@ -463,10 +482,7 @@ function getDomainSelectionGateFailure(
       },
       {
         catalog,
-        capabilityEnabled: isKBGraphDomainCapabilityEnabled(
-          catalog.revision,
-          env
-        ),
+        capabilityEnabled,
       }
     )
   if (resolution.ok) {
@@ -610,6 +626,11 @@ export function buildExternalKBGraphPayload(
       template_version: build.domainPolicyVersion,
     }
     payload.language = build.domainPolicyLanguage
+  }
+  // A focus is prompt guidance the provider applies on top of the policy, so it
+  // is dispatched independently of an explicit domain selection.
+  if (build.focusTopic != null) {
+    payload.focus_topic = build.focusTopic
   }
   return payload
 }
@@ -784,6 +805,7 @@ export async function dispatchKBGraphBuild(
       domainPolicyId: true,
       domainPolicyVersion: true,
       domainPolicyLanguage: true,
+      focusTopic: true,
       status: true,
       externalOperationId: true,
       dispatchClaimedAt: true,
@@ -858,7 +880,7 @@ export async function dispatchKBGraphBuild(
   if (isUnstartedActiveBuild(build)) {
     const gateFailure =
       getDispatchGateFailure(build, env) ??
-      getDomainSelectionGateFailure(build, env)
+      getProviderContractGateFailure(build, env)
     if (gateFailure) {
       await failKBGraphBuildBeforeDispatch(
         dependencies.prisma,
@@ -884,6 +906,7 @@ export async function dispatchKBGraphBuild(
     domainPolicyId: build.domainPolicyId,
     domainPolicyVersion: build.domainPolicyVersion,
     domainPolicyLanguage: build.domainPolicyLanguage,
+    focusTopic: build.focusTopic,
     createdAt: build.createdAt,
     kb: {
       ownerId: build.kb.ownerId,
@@ -949,6 +972,7 @@ export async function dispatchKBGraphBuild(
           domainPolicyId: true,
           domainPolicyVersion: true,
           domainPolicyLanguage: true,
+          focusTopic: true,
           quota: {
             select: {
               id: true,
@@ -970,10 +994,10 @@ export async function dispatchKBGraphBuild(
         },
       })
       // The provider effect is immediately below this point, so the frozen
-      // domain selection is validated here for the last time.
+      // provider inputs are validated here for the last time.
       const gateFailure = current
         ? (getDispatchGateFailure(current, env) ??
-          getDomainSelectionGateFailure(current, env))
+          getProviderContractGateFailure(current, env))
         : null
       if (!current || !isUnstartedActiveBuild(current) || gateFailure) {
         if (current && isUnstartedActiveBuild(current) && gateFailure) {

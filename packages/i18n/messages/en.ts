@@ -2004,6 +2004,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Build and publish a graph before opening the lecturer viewer.',
     graphDomainLabel: 'Domain',
     graphDomainSelectPlaceholder: 'Select a domain',
+    graphFocusTopicLabel: 'Focus topic (optional)',
+    graphFocusTopicPlaceholder: 'e.g. Capital budgeting',
+    graphFocusTopicNote:
+      'Steers which material the extraction emphasizes. The focus is not a source: it cannot add facts, and the rest of the material keeps its coverage.',
     graphDomainFinance: 'Finance',
     graphDomainEconomics: 'Economics',
     graphDomainBusiness: 'Business Administration',
