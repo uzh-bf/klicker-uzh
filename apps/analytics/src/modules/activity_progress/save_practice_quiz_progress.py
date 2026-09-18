@@ -1,3 +1,6 @@
+from ..analytics_eligibility import AnalyticsEligibilityContext, publish_analytics
+
+
 def save_practice_quiz_progress(
     db,
     course_participants,
@@ -6,6 +9,7 @@ def save_practice_quiz_progress(
     repeated_count,
     course_id,
     quiz_id,
+    eligibility: AnalyticsEligibilityContext | None = None,
 ):
     values = {
         "totalCourseParticipants": course_participants,
@@ -17,7 +21,10 @@ def save_practice_quiz_progress(
     creation_values["course"] = {"connect": {"id": course_id}}
     creation_values["practiceQuiz"] = {"connect": {"id": quiz_id}}
 
-    db.activityprogress.upsert(
-        where={"practiceQuizId": quiz_id},
-        data={"create": creation_values, "update": values},
-    )
+    def write(transaction):
+        transaction.activityprogress.upsert(
+            where={"practiceQuizId": quiz_id},
+            data={"create": creation_values, "update": values},
+        )
+
+    publish_analytics(db, eligibility, (course_id,), write)

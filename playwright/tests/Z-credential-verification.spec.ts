@@ -62,6 +62,15 @@ async function exportAssessmentReport(page: Page) {
     `${assessmentStudentUrl}/course/${COURSE_ID_ASSESSMENT_REPORT}`
   )
   const exportButton = page.getByTestId('export-report-button')
+  const completion = page.getByTestId('account-data-use-submit')
+  await expect(exportButton.or(completion).first()).toBeVisible()
+  if (await completion.isVisible()) {
+    await page.getByTestId('account-data-use-research-toggle').click()
+    await page.getByTestId('account-data-use-research-false').click()
+    await page.getByTestId('account-data-use-analytics-false').click()
+    await page.getByTestId('account-data-use-acknowledged').click()
+    await completion.click()
+  }
   await expect(exportButton).toBeVisible()
   await exportButton.click()
 

@@ -19,12 +19,14 @@ import useParticipantToken from '@lib/useParticipantToken'
 import {
   Button,
   H3,
+  Modal,
   RadioGroup,
   RadioGroupItem,
   ShadcnLabel,
   TabContent,
   Tabs,
   UserNotification,
+  toast,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
@@ -60,6 +62,10 @@ function CourseOverview({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false)
   const [participantId, setParticipantId] = useState<string | undefined>()
   const [
+    isJoinCourseLeaderboardModalOpen,
+    setIsJoinCourseLeaderboardModalOpen,
+  ] = useState(false)
+  const [
     isLeaveCourseLeaderboardModalOpen,
     setIsLeaveCourseLeaderboardModalOpen,
   ] = useState(false)
@@ -88,21 +94,27 @@ function CourseOverview({
       variables: { courseId },
     })
 
-  const [joinCourseLeaderboard] = useMutation(JoinCourseLeaderboardDocument, {
-    variables: { courseId },
-    // refetching the leaderboard here makes sense to ensure that the participant
-    // is placed correctly in the leaderboard
-    refetchQueries: [
-      {
-        query: GetStudentCourseLeaderboardDocument,
-        variables: { courseId, mode: leaderboardType },
-      },
-    ],
-  })
+  const [joinCourseLeaderboard, { loading: joiningLeaderboard }] = useMutation(
+    JoinCourseLeaderboardDocument,
+    {
+      variables: { courseId },
+      // refetching the leaderboard here makes sense to ensure that the participant
+      // is placed correctly in the leaderboard
+      refetchQueries: [
+        {
+          query: GetStudentCourseLeaderboardDocument,
+          variables: { courseId, mode: leaderboardType },
+        },
+      ],
+    }
+  )
 
-  const [leaveCourseLeaderboard] = useMutation(LeaveCourseLeaderboardDocument, {
-    variables: { courseId },
-  })
+  const [leaveCourseLeaderboard, { loading: leavingLeaderboard }] = useMutation(
+    LeaveCourseLeaderboardDocument,
+    {
+      variables: { courseId },
+    }
+  )
 
   useEffect(() => {
     const participation = data?.getCourseOverviewData?.participation
@@ -378,7 +390,9 @@ function CourseOverview({
                                   dataLeaderboard?.getStudentCourseLeaderboard
                                     ?.leaderboard ?? []
                                 }
-                                onJoin={() => joinCourseLeaderboard()}
+                                onJoin={() =>
+                                  setIsJoinCourseLeaderboardModalOpen(true)
+                                }
                                 onLeave={() =>
                                   setIsLeaveCourseLeaderboardModalOpen(true)
                                 }
@@ -410,7 +424,9 @@ function CourseOverview({
                                   <Button
                                     fluid
                                     primary
-                                    onClick={() => joinCourseLeaderboard()}
+                                    onClick={() =>
+                                      setIsJoinCourseLeaderboardModalOpen(true)
+                                    }
                                     className={{ root: 'mt-3 h-max py-1' }}
                                     data={{
                                       cy: 'student-course-join-leaderboard',
@@ -630,12 +646,74 @@ function CourseOverview({
               />
             ) : null}
           </div>
+          {isJoinCourseLeaderboardModalOpen && participant && (
+            <Modal
+              open
+              hideCloseButton
+              escapeDisabled={joiningLeaderboard}
+              title={t('pwa.courses.joinLeaderboardTitle', {
+                name: course.displayName,
+              })}
+              primaryLabel={t('pwa.courses.joinLeaderboardConfirm')}
+              primaryLoading={joiningLeaderboard}
+              onPrimaryAction={async () => {
+                if (joiningLeaderboard) return
+                try {
+                  const result = await joinCourseLeaderboard()
+                  if (
+                    result.data?.joinCourseLeaderboard &&
+                    !result.errors?.length
+                  ) {
+                    setIsJoinCourseLeaderboardModalOpen(false)
+                    return
+                  }
+                } catch {}
+                toast({
+                  type: 'error',
+                  message: t('pwa.courses.joinLeaderboardError'),
+                })
+              }}
+              dataPrimaryAction={{ cy: 'confirm-join-course-leaderboard' }}
+              secondaryLabel={t('shared.generic.cancel')}
+              onSecondaryAction={() => {
+                if (!joiningLeaderboard)
+                  setIsJoinCourseLeaderboardModalOpen(false)
+              }}
+              dataSecondaryAction={{ cy: 'cancel-join-course-leaderboard' }}
+              onClose={() => {
+                if (!joiningLeaderboard)
+                  setIsJoinCourseLeaderboardModalOpen(false)
+              }}
+              className={{ content: 'max-w-xl', title: 'self-start' }}
+            >
+              <div>
+                {t('pwa.courses.joinLeaderboardDescription', {
+                  username: participant.username,
+                })}
+              </div>
+            </Modal>
+          )}
           {isLeaveCourseLeaderboardModalOpen && (
             <LeaveLeaderboardModal
-              onClose={() => setIsLeaveCourseLeaderboardModalOpen(false)}
-              onConfirm={() => {
-                leaveCourseLeaderboard()
+              loading={leavingLeaderboard}
+              onClose={() => {
                 setIsLeaveCourseLeaderboardModalOpen(false)
+              }}
+              onConfirm={async () => {
+                try {
+                  const result = await leaveCourseLeaderboard()
+                  if (
+                    result.data?.leaveCourseLeaderboard &&
+                    !result.errors?.length
+                  ) {
+                    setIsLeaveCourseLeaderboardModalOpen(false)
+                    return
+                  }
+                } catch {}
+                toast({
+                  type: 'error',
+                  message: t('pwa.courses.leaveLeaderboardError'),
+                })
               }}
             />
           )}

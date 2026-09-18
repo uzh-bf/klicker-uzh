@@ -1,9 +1,12 @@
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 export { default as enhanceContext } from './lib/context.js'
+export { downloadAssessmentExport } from './services/assessmentExports.js'
 export { getChatModelRegistry } from './services/chatbots.js'
+export { downloadResearchExport } from './services/dataExports.js'
 
 import builder from './builder.js'
+import { applyParticipantAccountGate } from './lib/participantAccountGate.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
@@ -65,6 +68,7 @@ import {
   handleSendPushNotifications,
   handleSendTeamsNotification,
 } from './services/notifications.js'
+import { handleParticipantAnalyticsWithdrawals } from './services/participantAnalyticsWithdrawal.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
 
@@ -74,7 +78,10 @@ export const schema = builder.toSchema({
   },
 })
 
+applyParticipantAccountGate(schema)
+
 export const handlers: HatchetHandlers = {
+  handleParticipantAnalyticsWithdrawals,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,
