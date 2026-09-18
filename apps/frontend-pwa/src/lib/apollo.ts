@@ -60,7 +60,16 @@ function createIsomorphLink(ctx?: GetServerSidePropsContext) {
 
   const authLink = setContext((_, { headers }) => {
     if (isBrowser) {
-      const token = sessionStorage.getItem('participant_token')
+      // A partitioned or privacy-restricted browser context denies session
+      // storage, and reading it throws. The cookie-authenticated participant
+      // path has to keep working, so the bearer header is skipped instead of
+      // failing the request before it reaches the API.
+      let token: string | null = null
+      try {
+        token = sessionStorage.getItem('participant_token')
+      } catch {
+        token = null
+      }
 
       return {
         headers: {
