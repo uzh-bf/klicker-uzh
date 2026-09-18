@@ -461,7 +461,8 @@ function getProviderContractGateFailure(
   // rather than record a focus the provider never applied.
   if (build.focusTopic != null && !capabilityEnabled) {
     return {
-      statusMessage: kbGraphDomainRejectionMessage('CAPABILITY_DISABLED'),
+      statusMessage:
+        'This deployment does not support the focus topic frozen on the KB graph build.',
       errorCode: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED,
     }
   }

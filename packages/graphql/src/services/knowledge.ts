@@ -2798,7 +2798,7 @@ function resolveRequestedKBGraphFocusTopic(
   const catalog = getDefaultKBGraphDomainCatalog()
   if (!isKBGraphDomainCapabilityEnabled(catalog.revision, env)) {
     throw new GraphQLError(
-      kbGraphDomainRejectionMessage('CAPABILITY_DISABLED'),
+      'This deployment does not support a graph build focus.',
       { extensions: { code: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED } }
     )
   }
