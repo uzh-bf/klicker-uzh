@@ -357,13 +357,38 @@ ineligible because this plan covers private repositories and internal staging ev
   terminal artifact — its failure manifests are strict and reject extra fields — so
   surfacing reasons needs a worker-side schema change in the private
   `kg-content-generation` repository. It stays a separate follow-up package.
-- Next action: none in the source; cluster and GitOps items (baseline fetch replica,
-  dispatcher metrics resilience, enabling reclaim) sit behind their own approval, and V1
-  needs a running STG fetch worker.
+- V1 executed 2026-09-18 (live STG pass, in-app browser session as the logged-in lecturer).
+  KB `355f529c-1ddc-48f4-982c-26fcb40b5fab`: re-ingested all sources. The fetch worker
+  scaled 0 to 1 on demand (`Active=True`, ready in ~60 s), so a worker can run a fetch when
+  demand is reported. `www.df.uzh.ch`, the 2026-09-17 `digest_mismatch` symptom, now
+  reaches `Succeeded Version 2` and is `Available to AI`. The User-Agent-gated Wikipedia
+  URL still fails with `SnapshotFetchError: source_fetch_failed` in the worker log and then
+  reads `Processing` with no terminal state, exactly the pre-A1/A3 behaviour, because
+  `ingestion-worker:main` on STG is still `219a075` and reclaim is disabled. Question
+  generation completed 6 of 6 (`completed_with_review`, 0 unresolved, 0 warnings, 72.6 s)
+  on the Understand-only configuration; elements carry semantic titles and suggested tags.
+  The chatbot owner preview answered a KB-grounded question and cited
+  `FinanceI_Skript_HS26.pdf` (pp. 152, 172), so retrieval works. All STG services are
+  healthy and the OLAT/LTI routes respond (401/403, expected auth).
+- V1 re-attribution: the previously stuck STG operations now display a terminal `Failed`
+  state, so the "in progress forever" symptom the plan diagnosed has already cleared on STG
+  independently of this work. The remaining live defect is the Wikipedia fetch failure plus
+  the missing terminal transition, both fixed in MR !191 and awaiting deployment.
+- Confirmed missing on STG (deploy gate, not source): the form still pre-selects Understand
+  and Apply, still offers English next to a German policy, and still shows the old help text,
+  because STG runs `v3-audit` (`a0dd1decbb`) while the fixes sit on
+  `rs/kb-generation-ingestion-reliability` and are not yet in `v3-ai`.
+- Ready to review: PR #6143 (5 commits, ordinary feedback settled, no failing checks) and MR
+  !191 (pipeline #667370 green). MR !191 is not draft but carries `need_rebase` (2 commits
+  behind `main`); rebasing is a history rewrite and needs explicit authority.
+- Next action: merge PR #6143 into `v3-ai` and MR !191 into `main`, deploy through the
+  `v3-audit` STG line, then re-run the Wikipedia and English-language acceptance checks.
+  Cluster and GitOps items (baseline fetch replica, dispatcher metrics resilience, enabling
+  reclaim) sit behind their own approval.
 - Test delta: `test_source_snapshot.py` +2; `test_resource_reclaim_postgres.py` +2;
   `questionGenerationConfiguration.test.ts` +1.
-- Blocker: the local data-hygiene commit hook rejects the two `packages/i18n` help-text
-  edits as a false positive. The hook's credential-assignment rule matches a pre-existing
-  login label in those translation files, so any edit to them is flagged. The B2 commit
-  therefore carries the form change only; the help-text edit needs the user's explicit
-  approval to bypass the gate.
+- Resolved blocker: the local data-hygiene commit hook flagged the two `packages/i18n`
+  help-text edits. The finding was reproduced and attributed to the pre-existing
+  `password: 'Password'` login label (`en.ts:653`, `de.ts:664`), a false positive of the
+  hook's credential-assignment rule, not the edited help text. Committed as `c3322782bb`
+  with the approved one-commit bypass; Biome and Prettier clean.
