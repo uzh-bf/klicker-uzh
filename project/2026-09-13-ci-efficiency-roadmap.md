@@ -1403,3 +1403,47 @@ required from the user.
   `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` is set, or a single pull request is
   targeted through `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR`. That variable
   change is a repository settings change and stays behind named authority.
+
+- 2026-09-18 slice B3 merged and activated (PRs #6141 and #6147). The thirteen
+  `v3_*-stg.yml` workflows and `v3_build-fallback.yml` are gone; one
+  `v3_images-stg.yml` builds the affected-image matrix and a needs-based
+  `build-images-status` job owns the unchanged required context.
+  - **#6141** merged to `v3` as `0de1f3de1b`; **#6147** merged to `v3-audit`
+    as `c1cfd2f7c6`. Both landed minutes apart so no candidate ever carried the
+    per-image files while the other line rejected them.
+  - **Draft path proved before merge.** Draft runs `35361628890` (`v3`,
+    head `eb6abcd255`) and `35360584817` (`v3-audit`, head `2be208ee30`)
+    passed `plan` and `build-images-status` with all six `matrix.jobName`
+    legs skipped and no runner allocated. Queue depth fell from roughly 153 to
+    14 across that window.
+  - **Build and publish path proved after merge.** The `v3` push run
+    `35386896558` on the merge commit `0de1f3de1b` succeeded: 18 of 19 jobs
+    passed, including all fourteen `build-arm-*` legs, both
+    `scan-arm-backend-docker*` legs, and `build-images-status`; the only skip
+    is the `matrix.jobName` sentinel. The audit line's own push run
+    `35390209041` is building the same matrix on `c1cfd2f7c6`.
+  - **The fail-closed gate behaved as designed, twice, with no bad promotion.**
+    The merged promoter rejects any candidate still carrying a per-image
+    workflow. While `v3-audit` still had all fifteen, the current candidate
+    tree failed that predicate - verified directly against the committed
+    `LEGACY_STAGING_PATTERN` and predicate. Promotion run `35391131388`
+    failed closed with "staging build evidence is incomplete ..." rather than
+    promoting stale evidence. After #6147 merged, the same probe over
+    `origin/v3-audit` reports zero legacy files and the gate passes.
+  - **Slice B2's cache contract survived the consolidation.** All three
+    consolidated ARM build jobs keep the `no-cache: ${ github.event_name ==
+    'push' }}` / `cache-from` / `cache-to ... mode=max` triple for
+    same-repository pull requests, and AMD stays `if: false`. First live
+    evidence that the cache is no longer inert: `<image>-arm:buildcache`
+    versions now exist for `auth-arm`, `chat-arm`, `backend-docker-arm`,
+    `frontend-manage-arm`, `frontend-pwa-arm` and `analytics-arm`, where the
+    2026-09-13 audit had found the tag absent across 100 versions each.
+  - **Two format/version regressions fixed on the way.** The new plan and
+    status helpers carried Biome format errors that failed `check-suite` on
+    both PRs; and after merging `v3`, ten audit-only packages still floated
+    `vitest: ~3.2.4` against `v3`'s exact `3.2.4` pin from #6137, failing
+    `syncpack lint` on the audit line alone. Both are corrected; `check-suite`
+    is green on the merged audit head.
+  - **Still open.** The consolidated workflow's AMD legs are `optional: true`
+    and remain `if: false`. The live promotion that consumes the audit line
+    had not yet completed at the time of this record.
