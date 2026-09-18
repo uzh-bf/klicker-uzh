@@ -384,7 +384,9 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
     const prisma = await getPrisma()
     const username = 'dpo' + Date.now().toString(36).slice(-8)
     const password = process.env.STUDENT_PASSWORD ?? STUDENT_PASSWORD
-    const graphqlRoute = '**/api/graphql'
+    // The glob is anchored at the end, so it must allow the query string that
+    // carries the operation name of a persisted-query read.
+    const graphqlRoute = '**/api/graphql**'
     const completionOperation = 'CompleteParticipantDataUse'
     const dataUseQueryOperation = 'GetParticipantAccountDataUse'
 
