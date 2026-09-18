@@ -16,6 +16,9 @@ export type KBGraphSourceSnapshotItem = {
 export type KBGraphSourceSnapshot = KBGraphSourceSnapshotItem[]
 
 export type QuestionGenerationLanguage = 'de' | 'en'
+export type QuestionGenerationObjectiveSource = 'provided' | 'neutral'
+export const NEUTRAL_OBJECTIVE_SOURCE: QuestionGenerationObjectiveSource =
+  'neutral'
 export type QuestionGenerationItemType = 'SC' | 'MC' | 'KPRIM'
 export type QuestionGenerationBloomLevel =
   | 'remember'
@@ -110,6 +113,7 @@ export type QuestionGenerationConfiguration = {
     id: string
     text: string
     bloomLevel: QuestionGenerationBloomLevel | null
+    objectiveSource?: QuestionGenerationObjectiveSource
   }>
   bloomLevels: QuestionGenerationBloomLevel[]
 }
@@ -230,6 +234,10 @@ export type QuestionGenerationDesignSlotSummary = {
   objectiveId: string | null
   bloomLevel: QuestionGenerationBloomLevel | null
   targetDifficulty: number
+  // Entity ids extracted from the worker's resolved_slots[].graph_resolution
+  // evidence candidates. Only these ids leave the parser; the surrounding
+  // resolution remains server-internal. Empty when the artifact carries none.
+  evidenceEntityIds: string[]
 }
 
 export type QuestionGenerationDesignSummary = {
@@ -239,6 +247,7 @@ export type QuestionGenerationDesignSummary = {
     id: string
     text: string
     bloomLevel: QuestionGenerationBloomLevel | null
+    objectiveSource?: QuestionGenerationObjectiveSource
   }>
   modules: QuestionGenerationDesignModuleSummary[]
   sources: QuestionGenerationReviewSourceSummary[]

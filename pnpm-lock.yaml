@@ -696,6 +696,9 @@ importers:
       docusaurus-plugin-matomo:
         specifier: ~0.0.8
         version: 0.0.8(@docusaurus/core@3.8.1(@docusaurus/faster@3.8.1(@docusaurus/types@3.8.1(@swc/core@1.13.5(@swc/helpers@0.5.23))(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@swc/helpers@0.5.23))(@mdx-js/react@3.1.1(@types/react@19.2.18)(react@19.2.8))(@rspack/core@1.5.1(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@swc/helpers@0.5.23))(@swc/core@1.13.5(@swc/helpers@0.5.23))(lightningcss@1.32.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))
+      katex:
+        specifier: ~0.16.22
+        version: 0.16.22
       lucide-react:
         specifier: ~0.522.0
         version: 0.522.0(react@19.2.8)
@@ -816,6 +819,9 @@ importers:
       js-cookie:
         specifier: 3.0.7
         version: 3.0.7
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       localforage:
         specifier: 1.10.0
         version: 1.10.0
@@ -1015,6 +1021,9 @@ importers:
       js-search:
         specifier: 2.0.1
         version: 2.0.1
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       localforage:
         specifier: 1.10.0
         version: 1.10.0
@@ -1253,6 +1262,9 @@ importers:
       js-cookie:
         specifier: 3.0.7
         version: 3.0.7
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       localforage:
         specifier: 1.10.0
         version: 1.10.0
@@ -2430,6 +2442,9 @@ importers:
       '@uzh-bf/design-system':
         specifier: 4.1.8
         version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       next:
         specifier: ^16.3.4
         version: 16.3.4(@babel/core@7.28.6)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)

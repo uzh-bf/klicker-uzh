@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@klicker-uzh/frontend-manage",
-  "version": "3.4.0-alpha.76",
+  "version": "3.4.0-alpha.79",
   "license": "AGPL-3.0",
   "dependencies": {
     "@apollo/client": "3.13.8",
@@ -42,6 +42,7 @@
     "is-hotkey": "0.2.0",
     "js-cookie": "3.0.7",
     "js-search": "2.0.1",
+    "katex": "0.16.22",
     "localforage": "1.10.0",
     "lodash": "4.17.21",
     "nanoid": "5.0.8",

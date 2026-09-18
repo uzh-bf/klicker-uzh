@@ -164,11 +164,13 @@ describe('question generation configuration', () => {
           id: 'OBJ-01',
           text: 'Explain malolactic fermentation.',
           bloomLevel: 'apply',
+          objectiveSource: 'provided',
         },
         {
           id: 'OBJ-02',
           text: 'Compare acid profiles.',
           bloomLevel: null,
+          objectiveSource: 'provided',
         },
       ],
       bloomLevels: ['remember', 'evaluate'],
@@ -216,7 +218,7 @@ describe('question generation configuration', () => {
     expect(kprim.configurationHash).not.toBe(singleChoice.configurationHash)
   })
 
-  it('creates localized neutral objectives for global Bloom intent', () => {
+  it('marks synthesized Bloom objectives neutral and keeps every selected level', () => {
     const german = normalizeQuestionGenerationConfiguration(
       configurationInput({ bloomLevels: ['understand', 'apply'] }),
       graphVersion
@@ -227,22 +229,43 @@ describe('question generation configuration', () => {
     )
 
     expect(german.configuration.objectives).toEqual([
-      {
+      expect.objectContaining({
         id: 'OBJ-01',
-        text: 'Prüfe das ausgewählte Wissensbasismaterial auf der kognitiven Stufe Verstehen.',
         bloomLevel: 'understand',
-      },
-      {
+        objectiveSource: 'neutral',
+      }),
+      expect.objectContaining({
         id: 'OBJ-02',
-        text: 'Prüfe das ausgewählte Wissensbasismaterial auf der kognitiven Stufe Anwenden.',
         bloomLevel: 'apply',
-      },
+        objectiveSource: 'neutral',
+      }),
     ])
     expect(english.configuration.objectives).toEqual([
+      expect.objectContaining({
+        id: 'OBJ-01',
+        bloomLevel: 'analyze',
+        objectiveSource: 'neutral',
+      }),
+    ])
+  })
+
+  it('marks lecturer-authored objectives provided and keeps their text and level', () => {
+    const result = normalizeQuestionGenerationConfiguration(
+      configurationInput({
+        objectives: [
+          { text: 'Explain malolactic fermentation.', bloomLevel: 'apply' },
+        ],
+        bloomLevels: ['remember'],
+      }),
+      graphVersion
+    )
+
+    expect(result.configuration.objectives).toEqual([
       {
         id: 'OBJ-01',
-        text: 'Assess the selected knowledge-base material at the analyze cognitive level.',
-        bloomLevel: 'analyze',
+        text: 'Explain malolactic fermentation.',
+        bloomLevel: 'apply',
+        objectiveSource: 'provided',
       },
     ])
   })

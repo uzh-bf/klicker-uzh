@@ -41,13 +41,15 @@ const SOURCE_TYPE_ICONS: Record<
 function SourceCard({
   source,
   messageId,
+  citedPageRange,
 }: {
   source: ChatSource
   messageId: string
+  citedPageRange?: string
 }) {
   const t = useTranslations()
   const Icon = SOURCE_TYPE_ICONS[source.type]
-  const secondaryLine = getSourceSecondaryLine(source, t)
+  const secondaryLine = getSourceSecondaryLine(source, t, citedPageRange)
 
   const inner = (
     <>
@@ -148,8 +150,13 @@ export function SourcesSection() {
   // Computed once in `AssistantMessage` (see `useMessageSources`) and shared
   // via context with the inline citation chips, instead of re-parsing the
   // tool JSON here again.
-  const { citationCounts, citationsReady, messageId, sources } =
-    useMessageSourcesContext()
+  const {
+    citationCounts,
+    citationsReady,
+    citedPageRanges,
+    messageId,
+    sources,
+  } = useMessageSourcesContext()
   const threadViewportStore = useThreadViewportStore()
   const revealOnMountRef = useRef(threadViewportStore.getState().isAtBottom)
   const didRevealRef = useRef(false)
@@ -210,6 +217,7 @@ export function SourcesSection() {
               <SourceCard
                 key={source.id}
                 source={source}
+                citedPageRange={citedPageRanges.get(source.index)}
                 messageId={messageId}
               />
             ))}
@@ -235,6 +243,7 @@ export function SourcesSection() {
               <SourceCard
                 key={source.id}
                 source={source}
+                citedPageRange={citedPageRanges.get(source.index)}
                 messageId={messageId}
               />
             ))}

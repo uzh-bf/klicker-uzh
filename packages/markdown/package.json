@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/markdown",
-  "version": "3.4.0-alpha.76",
+  "version": "3.4.0-alpha.79",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,6 +9,7 @@
   ],
   "dependencies": {
     "@klicker-uzh/util": "workspace:*",
+    "katex": "0.16.22",
     "rehype-external-links": "3.0.0",
     "rehype-katex": "7.0.1",
     "rehype-prism-plus": "2.0.2",

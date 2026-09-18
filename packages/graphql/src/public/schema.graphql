@@ -1501,10 +1501,20 @@ type ElementGenerationDesignModule {
   moduleName: String!
 }
 
+type ElementGenerationDesignSlot {
+  bloomLevel: ElementGenerationBloomLevel
+  evidenceEntityIds: [String!]!
+  moduleId: ID!
+  objectiveId: ID
+  sourceElementId: ID!
+  targetDifficulty: Int
+}
+
 type ElementGenerationDesignSummary {
   elementCount: Int!
   modules: [ElementGenerationDesignModule!]!
   objectives: [ElementGenerationObjective!]!
+  slots: [ElementGenerationDesignSlot!]!
   sources: [ElementGenerationReviewSource!]!
   title: String!
   warnings: [ElementGenerationWarning!]!
@@ -1537,12 +1547,18 @@ enum ElementGenerationLanguage {
 type ElementGenerationObjective {
   bloomLevel: ElementGenerationBloomLevel
   id: ID!
+  objectiveSource: ElementGenerationObjectiveSource
   text: String!
 }
 
 input ElementGenerationObjectiveInput {
   bloomLevel: ElementGenerationBloomLevel
   text: String!
+}
+
+enum ElementGenerationObjectiveSource {
+  neutral
+  provided
 }
 
 type ElementGenerationPlanElement {

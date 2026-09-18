@@ -52,6 +52,10 @@ export const ElementGenerationBloomLevel = builder.enumType(
     values: ['remember', 'understand', 'apply', 'analyze', 'evaluate'] as const,
   }
 )
+export const ElementGenerationObjectiveSource = builder.enumType(
+  'ElementGenerationObjectiveSource',
+  { values: ['provided', 'neutral'] as const }
+)
 export const ElementGenerationDifficultyPreset = builder.enumType(
   'ElementGenerationDifficultyPreset',
   {
@@ -205,6 +209,7 @@ type ElementGenerationObjectiveView = {
   id: string
   text: string
   bloomLevel: ElementGenerationBloomLevelValue | null
+  objectiveSource?: 'provided' | 'neutral' | null
 }
 const ElementGenerationObjectiveRef =
   builder.objectRef<ElementGenerationObjectiveView>(
@@ -216,6 +221,10 @@ ElementGenerationObjectiveRef.implement({
     text: t.exposeString('text'),
     bloomLevel: t.expose('bloomLevel', {
       type: ElementGenerationBloomLevel,
+      nullable: true,
+    }),
+    objectiveSource: t.expose('objectiveSource', {
+      type: ElementGenerationObjectiveSource,
       nullable: true,
     }),
   }),
@@ -355,6 +364,14 @@ type ElementGenerationDesignSummaryView = {
     elementCount: number
   }>
   sources: ElementGenerationReviewSourceView[]
+  slots: Array<{
+    sourceElementId: string
+    moduleId: string
+    objectiveId: string | null
+    bloomLevel: ElementGenerationBloomLevelValue | null
+    targetDifficulty: number | null
+    evidenceEntityIds: string[]
+  }>
   warnings: ElementGenerationWarningView[]
 }
 const ElementGenerationDesignModuleRef = builder.objectRef<
@@ -371,6 +388,22 @@ const ElementGenerationDesignSummaryRef =
   builder.objectRef<ElementGenerationDesignSummaryView>(
     'ElementGenerationDesignSummary'
   )
+const ElementGenerationDesignSlotRef = builder.objectRef<
+  ElementGenerationDesignSummaryView['slots'][number]
+>('ElementGenerationDesignSlot')
+ElementGenerationDesignSlotRef.implement({
+  fields: (t) => ({
+    sourceElementId: t.exposeID('sourceElementId'),
+    moduleId: t.exposeID('moduleId'),
+    objectiveId: t.exposeID('objectiveId', { nullable: true }),
+    bloomLevel: t.expose('bloomLevel', {
+      type: ElementGenerationBloomLevel,
+      nullable: true,
+    }),
+    targetDifficulty: t.exposeInt('targetDifficulty', { nullable: true }),
+    evidenceEntityIds: t.exposeStringList('evidenceEntityIds'),
+  }),
+})
 ElementGenerationDesignSummaryRef.implement({
   fields: (t) => ({
     title: t.exposeString('title'),
@@ -382,17 +415,27 @@ ElementGenerationDesignSummaryRef.implement({
     sources: t.expose('sources', {
       type: [ElementGenerationReviewSourceRef],
     }),
+    slots: t.expose('slots', { type: [ElementGenerationDesignSlotRef] }),
     warnings: t.expose('warnings', { type: [ElementGenerationWarningRef] }),
   }),
 })
 
-function designSummaryView(
+export function designSummaryView(
   build: DB.ElementGenerationBuild
 ): ElementGenerationDesignSummaryView | null {
   if (!build.designSummary || build.elementType === DB.ElementType.FLASHCARD) {
     return null
   }
   const summary = build.designSummary as QuestionGenerationDesignSummary
+  // designSummary is a schema-less Json column written by whichever server
+  // version was live at parse time, and the design-review transition does not
+  // re-parse it. A build still in design review across a deploy therefore
+  // serves a summary from before the slot evidence surface existed, so the
+  // persisted shape is read with the field absent rather than trusting the
+  // always-populated type the current parser produces.
+  const persisted = summary as {
+    slots?: QuestionGenerationDesignSummary['slots']
+  }
   return {
     title: summary.title,
     elementCount: summary.questionCount,
@@ -402,6 +445,14 @@ function designSummaryView(
       elementCount: questionCount,
     })),
     sources: summary.sources,
+    slots: (persisted.slots ?? []).map((slot) => ({
+      sourceElementId: slot.sourceQuestionId,
+      moduleId: slot.moduleId,
+      objectiveId: slot.objectiveId,
+      bloomLevel: slot.bloomLevel,
+      targetDifficulty: slot.targetDifficulty,
+      evidenceEntityIds: slot.evidenceEntityIds ?? [],
+    })),
     warnings: summary.warnings,
   }
 }

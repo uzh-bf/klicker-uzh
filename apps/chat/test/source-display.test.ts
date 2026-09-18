@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
+import { extractCitedPages } from '../src/lib/markdown/remarkCitationMarkers'
 import {
+  formatCitedPageRanges,
   formatTimestamp,
   getDisplayUrl,
   getSourcePageRange,
@@ -275,6 +277,86 @@ describe('getSourceSecondaryLine', () => {
 
   test('is null when nothing is known', () => {
     expect(getSourceSecondaryLine(source(), t)).toBeNull()
+  })
+
+  // The answer knows which pages it used; retrieval only knows which chunks
+  // came back, so a cited range wins over the retrieved envelope.
+  test('a cited range wins over the retrieved envelope', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 2,
+          pageEnd: 95,
+          labeledPage: '2',
+          labeledPageEnd: '95',
+        }),
+        t,
+        '6–7'
+      )
+    ).toBe('p. 6–7')
+  })
+
+  test('renders the smallest set of cited ranges', () => {
+    expect(
+      getSourceSecondaryLine(source({ page: 2, pageEnd: 95 }), t, '6–7, 12')
+    ).toBe('p. 6–7, 12')
+  })
+
+  test('keeps the retrieved range when the answer cites no page', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 2,
+          pageEnd: 95,
+          labeledPage: '2',
+          labeledPageEnd: '95',
+        }),
+        t
+      )
+    ).toBe('p. 2–95')
+  })
+
+  test('a cited range also applies to media sources', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({ type: 'image', page: 2, pageEnd: 95 }),
+        t,
+        '6–7'
+      )
+    ).toBe('Image · p. 6–7')
+  })
+
+  // The seam a participant sees: the model's page detail in the answer decides
+  // the page line on the card, so a cited card never claims the span of every
+  // chunk retrieval happened to return.
+  test("the answer's page detail reaches the card line", () => {
+    const cited = extractCitedPages('Wie in [1, S. 6–7] beschrieben [2].')
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 2,
+          pageEnd: 95,
+          labeledPage: '2',
+          labeledPageEnd: '95',
+        }),
+        t,
+        formatCitedPageRanges(cited.get(1) ?? [])
+      )
+    ).toBe('p. 6–7')
+  })
+})
+
+describe('formatCitedPageRanges', () => {
+  test('merges only consecutive pages into ranges', () => {
+    expect(formatCitedPageRanges([2, 3, 7])).toBe('2–3, 7')
+    expect(formatCitedPageRanges([12])).toBe('12')
+    expect(formatCitedPageRanges([5, 4, 3])).toBe('3–5')
+    expect(formatCitedPageRanges([1, 3, 5])).toBe('1, 3, 5')
+  })
+
+  test('ignores duplicates, non-integers and empty input', () => {
+    expect(formatCitedPageRanges([7, 7, Number.NaN])).toBe('7')
+    expect(formatCitedPageRanges([])).toBeUndefined()
   })
 })
 

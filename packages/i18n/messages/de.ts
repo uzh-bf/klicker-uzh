@@ -2806,6 +2806,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         elementNumber: 'Element {number}',
         objectives: 'Lernziele',
         noObjectives: 'Keine expliziten Lernziele.',
+        generatedDefaultObjective: 'Generierter Standardwert',
+        slotEvidence: 'Evidenz pro Element',
+        noSlotEvidence: 'Keine Evidenz aufgelöst',
+        concentrationTitle: 'Konzentrierte Evidenz',
+        concentrationNotice:
+          '{count, plural, one {# Element} other {# Elemente}} in diesem Modul nutzen dieselben Evidenz-Entitäten: {entities}.',
         difficulty: 'Schwierigkeit {difficulty}',
         warnings: '{count, plural, one {# Warnung} other {# Warnungen}}',
         acknowledgeWarnings: 'Ich habe diese Warnungen geprüft und bestätigt.',
