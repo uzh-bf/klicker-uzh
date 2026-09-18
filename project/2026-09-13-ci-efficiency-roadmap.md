@@ -1491,29 +1491,39 @@ required from the user.
   already landed. Nothing was lost; the superseded-closure note records the
   comparison.
 
-  **A merge was blocked by stale cancelled check runs, not by failing policy.**
-  `gh pr merge 6132` reported "the base branch policy prohibits the merge", and
-  the REST rollup showed `FAILURE`. All eight required contexts nonetheless had
-  a newer SUCCESS run at the same head `5d27b67577`; the failures were
-  `test-playwright-status` check runs (ids `105543062758`, `105543064279`,
-  completed 09:37:16Z and 09:37:57Z) left behind by two *cancelled* Playwright
-  workflow runs, while the authoritative run `35327243832` reported SUCCESS at
-  09:41:48Z. GitHub's `filter=latest` view still returned the cancelled
-  failures as latest, and the `pull_request` ruleset's
-  `require_code_owner_review`/`require_extra_approval_for_unattributed_changes`
-  were not the cause: every commit is attributed to `rschlaefli`, the same
-  author as the successfully merged #6104.
+  **A stale mergeability evaluation reported a policy block that did not
+  exist.** `gh pr merge 6132 --squash` reported "the base branch policy
+  prohibits the merge" and suggested `--auto` or `--admin`, and
+  `mergeStateStatus` read `BLOCKED`. All eight required contexts had a
+  SUCCESS at the head `5d27b67577`, the head contained the current `v3` tip,
+  and the `pull_request` ruleset's `require_code_owner_review` and
+  `require_extra_approval_for_unattributed_changes` were satisfied: every
+  commit is attributed to `rschlaefli`, the same author as the successfully
+  merged #6104. The identical PUT to `/pulls/6132/merge` succeeded on the
+  first attempt and returned `c504f78776`, so the block was GitHub's
+  asynchronous mergeability cache, not an unmet requirement.
 
-  The identical PUT to `/pulls/6132/merge` succeeded on the first attempt and
-  returned `c504f78776`, so the CLI's policy message was not the real state.
-  Consequence for this roadmap: a required-status context can be pinned to a
-  cancelled run's failure even when a later success exists for the same head,
-  which is the same cancellation-artifact class as the earlier
-  `test-playwright-status` and `Promote to stg` findings. The practical
-  unblock is to re-run or re-report the affected required context, or to merge
-  through the API when every required context has a newer success; the
-  durable fix is the cancellation-hygiene work already carried by this
-  roadmap's reaper and the `cancel-closed-pr` path.
+  **Correction to the first reading of this entry.** I initially attributed the
+  block to two `test-playwright-status` FAILURE check runs (ids
+  `105543062758`, `105543064279`, completed 09:37:16Z and 09:37:57Z) left by
+  cancelled Playwright runs, because they appear in the check-run listing next
+  to a later SUCCESS. That attribution is not supported: `filter=latest`
+  subsequently resolved `test-playwright-status` to a non-failure, and the
+  other blocked PRs I checked did **not** share the signature. #6133
+  (`87ccc36b`) and #6095 (`114c7dd6`) both carry genuine `failure`
+  conclusions at their newest check-run ids, so stale-cancelled failures are
+  not a general explanation for `BLOCKED`. What remains proven is narrower and
+  still worth recording: cancelled workflow runs do leave `failure` check runs
+  on the head, the same cancellation-artifact class as the earlier
+  `test-playwright-status` and `Promote to stg` findings, and that residue
+  should be cleared by the reaper and the `cancel-closed-pr` path.
+
+  Practical rule for this repository: when `gh pr merge` reports a policy
+  block, first confirm every required context has a success at the exact head
+  and that the head contains the base tip. If both hold, retry through the
+  merge API rather than reaching for `--admin`; the state is usually a stale
+  evaluation. `--admin` bypasses the requirement rather than satisfying it and
+  stays out of bounds.
 
   Live reaper evidence at merge time, read-only over 59 active allowlisted
   runs: 8 `redundant-queued-duplicate` (PRs #6124, #6133, #5970), 1
