@@ -881,6 +881,175 @@ describe('terminal workflow artifact lifecycle', () => {
     expect(downloadVerified).toHaveBeenCalledWith(resultArtifact)
   })
 
+  it('serves the structured slot reasons when the provider reports a failed run', async () => {
+    // A run the provider itself reports as failed never reaches the
+    // FINALIZING synchronizer branch, so its failed result manifest would be
+    // invisible unless the run-level branch reads it. This is the live
+    // strict-mode symptom: the worker aborts the workflow and writes reasons
+    // only into result.json.
+    const build = {
+      ...preparingBuild(),
+      status: DB.ElementGenerationBuildStatus.FINALIZING,
+      providerEventId: 'question-event',
+      providerWorkflowRunId: 'question-run',
+      lastSynchronizedAt: new Date('2026-08-26T12:05:00.000Z'),
+    }
+    const resultArtifact = {
+      containerName: 'question-results',
+      blobName: `question-builds/${fixtures.buildId}/result.json`,
+      sha256: 'e'.repeat(64),
+    }
+    const failedResult = failedResultArtifact({
+      slot_failures: [groundingSlotFailure()],
+    })
+    // The reread build carries the manifest the run-level branch persisted but
+    // no summary copy, so the served reasons provably come from the artifact
+    // the branch pinned rather than from a persisted shape.
+    const failed = {
+      ...build,
+      resultManifestArtifact: resultArtifact,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'WORKFLOW_FAILED',
+    }
+    const updateMany = vi.fn(async () => ({ count: 1 }))
+    const downloadImmutable = vi.fn(async () => ({
+      ref: resultArtifact,
+      bytes: failedResult,
+    }))
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable,
+      downloadVerified: vi.fn(async () => failedResult),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(async () => ({
+        runId: 'question-run',
+        status: 'FAILED' as const,
+      })),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+    } satisfies QuestionGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(failed),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toMatchObject({
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      slotFailures: [
+        {
+          slotId: 'q02',
+          reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+          failureClass: 'user_input',
+        },
+      ],
+    })
+    expect(downloadImmutable).toHaveBeenCalledWith(
+      'question-results',
+      `question-builds/${fixtures.buildId}/result.json`
+    )
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DB.ElementGenerationBuildStatus.FAILED,
+          errorCode: 'WORKFLOW_FAILED',
+          resultManifestArtifact: resultArtifact,
+        }),
+      })
+    )
+  })
+
+  it('keeps the generic workflow message when a failed run wrote no result manifest', async () => {
+    const build = {
+      ...preparingBuild(),
+      status: DB.ElementGenerationBuildStatus.FINALIZING,
+      providerEventId: 'question-event',
+      providerWorkflowRunId: 'question-run',
+      lastSynchronizedAt: new Date('2026-08-26T12:05:00.000Z'),
+    }
+    const failed = {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'WORKFLOW_FAILED',
+    }
+    const updateMany = vi.fn(async () => ({ count: 1 }))
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(async () => {
+        throw questionGenerationServiceError(
+          'ARTIFACT_NOT_FOUND',
+          'result.json is not published'
+        )
+      }),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(async () => ({
+        runId: 'question-run',
+        status: 'FAILED' as const,
+      })),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+    } satisfies QuestionGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(failed),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toMatchObject({
+      status: DB.ElementGenerationBuildStatus.FAILED,
+    })
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DB.ElementGenerationBuildStatus.FAILED,
+          errorCode: 'WORKFLOW_FAILED',
+          errorMessage: 'Question-generation workflow did not complete',
+        }),
+      })
+    )
+    // No persistence call may pin a result manifest when none could be read,
+    // so the build keeps the legacy failure surface rather than a dangling
+    // artifact reference.
+    expect(JSON.stringify(updateMany.mock.calls)).not.toContain(
+      'resultManifestArtifact'
+    )
+  })
+
   it('serves an empty reason list for a legacy failed artifact', async () => {
     const build = failedBuild()
     const runtime = failedBuildRuntime(

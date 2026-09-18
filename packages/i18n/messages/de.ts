@@ -2775,13 +2775,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         user_input:
           'Dieses Element konnte nicht im ausgewählten Material verankert werden. Passen Sie den Quellenbereich oder das Lernziel an und generieren Sie erneut.',
         self_repairable:
-          'Der Workflow hat dieses Element intern korrigiert und aus Transparenzgründen gemeldet.',
+          'Der Workflow hat dieses Element mit alternativem Material erneut versucht, aber die nutzbare Evidenz ohne Verankerung ausgeschöpft.',
         system:
           'Der Generierungsdienst konnte dieses Element nicht verarbeiten; die Ursache liegt nicht bei Ihrer Eingabe. Starten Sie die Generierung erneut und wenden Sie sich bei anhaltenden Problemen an den Support.',
       },
       failureClassLabels: {
         user_input: 'Quellenmaterial',
-        self_repairable: 'Automatisch korrigiert',
+        self_repairable: 'Keine alternative Evidenz',
         system: 'Systemfehler',
       },
       reasons: {

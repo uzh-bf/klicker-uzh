@@ -2734,13 +2734,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         user_input:
           'This element could not be grounded in the selected material. Adjust the source scope or the learning objective and generate again.',
         self_repairable:
-          'The workflow corrected this element internally and reported it for transparency.',
+          'The workflow retried this element with alternative material but exhausted the usable evidence without grounding it.',
         system:
           'The generation service could not process this element, which is not caused by your input. Retry the generation; if the problem persists, contact support.',
       },
       failureClassLabels: {
         user_input: 'Source material',
-        self_repairable: 'Automatically corrected',
+        self_repairable: 'No alternative evidence',
         system: 'System error',
       },
       reasons: {

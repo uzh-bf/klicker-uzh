@@ -597,6 +597,15 @@ async function synchronizeLeasedBuild(
         })
       }
       if (run.status === 'FAILED' || run.status === 'CANCELLED') {
+        // A worker that aborted on unsupplied slots may still have written a
+        // failed result manifest carrying their structured reasons. Read it
+        // opportunistically so the reviewing client gets the per-slot cards
+        // instead of only the generic workflow message; a run with no usable
+        // manifest keeps that generic message.
+        const failedReasons = await readQuestionResultSlotFailures(
+          build,
+          artifactPath
+        )
         await ctx.prisma.elementGenerationBuild.updateMany({
           where: { id: build.id, syncLeaseOwner: leaseOwner },
           data: {
@@ -606,6 +615,20 @@ async function synchronizeLeasedBuild(
             errorMessage: 'Question-generation workflow did not complete',
             errorRetryable: false,
             completedAt: new Date(),
+            ...(failedReasons
+              ? {
+                  resultManifestArtifact: failedReasons.artifact,
+                  ...(failedReasons.slotFailures.length > 0
+                    ? {
+                        planSummary: {
+                          ...((build.planSummary ??
+                            {}) as QuestionGenerationPlanSummary),
+                          slotFailures: failedReasons.slotFailures,
+                        },
+                      }
+                    : {}),
+                }
+              : {}),
           },
         })
         return
@@ -917,6 +940,37 @@ async function synchronizeLeasedBuild(
         completedAt: new Date(),
       },
     })
+  }
+}
+
+// A run that the provider reports as failed or cancelled may still have
+// written a failed result manifest, and the worker that aborted on unsupplied
+// slots records their structured reasons there. Reading it opportunistically
+// turns the generic workflow failure into the same per-slot surface a
+// synchronizer-observed failure produces. Only a manifest that parses as a
+// failed result is accepted, so a partial or completed manifest written by an
+// unrelated run outcome cannot be reported as a failed build; a missing or
+// unreadable artifact yields the generic message.
+async function readQuestionResultSlotFailures(
+  build: Awaited<ReturnType<typeof findOwnedBuild>>,
+  artifactPath: (suffix: string) => Promise<{
+    ref: QuestionGenerationArtifactRef
+    bytes: Buffer
+  }>
+): Promise<{
+  artifact: QuestionGenerationArtifactRef
+  slotFailures: ElementGenerationSlotFailure[]
+} | null> {
+  try {
+    const artifact = await artifactPath('result.json')
+    const result = parseQuestionGenerationResult(artifact.bytes, {
+      buildId: build.id,
+      questionCount: build.requestedElementCount,
+    })
+    if (result.status !== 'failed') return null
+    return { artifact: artifact.ref, slotFailures: result.slotFailures }
+  } catch {
+    return null
   }
 }
 
