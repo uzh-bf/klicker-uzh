@@ -28,6 +28,10 @@ import {
   resolveInitiationAudience,
 } from '@/lib/dispatch'
 import {
+  authServiceBaseUrl,
+  installParticipantFailureRecovery,
+} from '@/lib/errorRecovery'
+import {
   createOrLinkParticipant,
   createUserAffiliations,
   type ExtendedProfile,
@@ -106,6 +110,47 @@ function participantFallbackUrl(): string {
     process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
     'https://assessment.klicker.uzh.ch'
   )
+}
+
+// The audience-specific callback-URL cookie is the only stored destination the
+// library consults on an OAuth callback (core/lib/callback-url.js). Without a
+// valid stored value it keeps the auth origin — the lecturer-facing homepage —
+// and never calls the application redirect callback, so the participant
+// fallback there cannot run. Supplying the verified destination as the request
+// parameter routes every successful participant callback through the
+// participant redirect callback and gives a missing or invalid stored value the
+// assessment root instead of the auth homepage. The value is always computed
+// here; client-supplied parameters are stripped before dispatch.
+function participantReturnTarget({
+  requestId,
+  secure,
+  storedTarget,
+}: {
+  requestId: string
+  secure: boolean
+  storedTarget: string | undefined
+}): string {
+  const validation = validateRedirectTarget(storedTarget, getStudentHosts(), {
+    secure,
+  })
+
+  if (validation.ok && validation.url) {
+    authEvent('auth.callback_destination', requestId, {
+      audience: 'participant',
+      outcome: 'stored',
+      destinationHost: hostFromUrl(validation.url),
+    })
+    return validation.url
+  }
+
+  const fallback = participantFallbackUrl()
+  authEvent('auth.callback_destination', requestId, {
+    audience: 'participant',
+    outcome: 'default',
+    destinationHost: hostFromUrl(fallback),
+    errorCategory: validation.reason,
+  })
+  return fallback
 }
 
 function getParticipantConfig({
@@ -273,12 +318,10 @@ function getParticipantConfig({
       },
 
       async redirect({ url, baseUrl }) {
-        if (isSameOriginRedirect(url, baseUrl)) {
-          return url
-        }
-
-        // Handle relative URLs
-        if (url.startsWith('/')) {
+        // Relative paths stay supported for internal hand-offs. The auth
+        // service's own homepage is deliberately excluded: it renders the
+        // lecturer login, so an assessment login must never return there.
+        if (url.startsWith('/') && url !== '/') {
           const out = `${baseUrl}${url}`
           return out
         }
@@ -606,6 +649,10 @@ function sendRestartRedirect(res: NextApiResponse, errorCode?: string) {
 //  - Initiation (signin/signout) from the explicit audience parameter.
 //  - Generic actions (session, csrf, providers, error) stay on the lecturer
 //    configuration; participants use /api/student-session instead.
+// A participant callback destination is resolved from verified stored state
+// with the assessment root as its default, and a failure inside the library is
+// returned to the participant restart page instead of the generic sign-in
+// journey (see lib/errorRecovery.ts and participantReturnTarget above).
 // Callback-supplied audience/target parameters are stripped before the
 // handler runs so a query can never replace verified transaction context.
 export default async function auth(req: NextApiRequest, res: NextApiResponse) {
@@ -685,6 +732,16 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
       outcome: 'resolved',
       elapsedMs: Date.now() - startedAt,
     })
+
+    if (resolution.audience === 'participant') {
+      req.query.callbackUrl = participantReturnTarget({
+        requestId,
+        secure,
+        storedTarget:
+          req.cookies[audienceCookieNames('participant', secure).callbackUrl],
+      })
+    }
+
     return runAudienceConfig(resolution.audience)
   }
 
@@ -716,6 +773,26 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
       audience === 'participant'
         ? getParticipantConfig({ requestId })
         : getLecturerConfig({ requestId })
+
+    if (audience === 'participant') {
+      // A failure inside the library returns a redirect to its generic
+      // endpoints instead of throwing, so participant recovery has to happen on
+      // the response rather than in a try/catch around the handler.
+      const authBase = authServiceBaseUrl(req.headers)
+      installParticipantFailureRecovery(res, {
+        authBase,
+        onRewrite: (from, to) => {
+          authEvent('auth.failure_recovery', requestId, {
+            audience: 'participant',
+            outcome: 'participant_restart',
+            path: to,
+            errorCategory:
+              new URL(from, authBase).searchParams.get('error') ?? undefined,
+          })
+        },
+      })
+    }
+
     const handler = NextAuth(authOptions)
     return handler(req, res)
   }

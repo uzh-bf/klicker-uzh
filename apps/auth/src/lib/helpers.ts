@@ -1,7 +1,7 @@
 import { prisma } from '@klicker-uzh/prisma'
 import type { UserRole } from '@klicker-uzh/prisma/client'
-import type { CollectedInvitationEmails } from '@klicker-uzh/util'
 import {
+  type CollectedInvitationEmails,
   collectInvitationEmails,
   extractProviderFromAffiliationId,
   generateRandomString,

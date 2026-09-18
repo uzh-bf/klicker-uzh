@@ -8,6 +8,29 @@ import { useRouter } from 'next/router'
 import { signIn } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import { useStudentSession } from '../hooks/useStudentSession'
+import { DEFAULT_STUDENT_HOSTS } from '../lib/constants'
+import { validateRedirectTarget } from '../lib/redirectTarget'
+
+// Return target of the assessment login. The proxy already rejects an invalid
+// `redirectTo` for this route; validating again keeps the client-side
+// navigation from depending on that single gate. Only an absolute URL on an
+// allowed assessment host is used, everything else returns to the assessment
+// root.
+function assessmentReturnTarget(
+  requested: string | string[] | undefined
+): string {
+  const fallback =
+    process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
+    'https://assessment.klicker.uzh.ch'
+
+  const validation = validateRedirectTarget(
+    typeof requested === 'string' ? requested : undefined,
+    DEFAULT_STUDENT_HOSTS,
+    { secure: process.env.NODE_ENV === 'production' }
+  )
+
+  return validation.url ?? fallback
+}
 
 // Signs out of the participant session only. The explicit ?participant=true
 // parameter routes the NextAuth signout through the participant
@@ -28,13 +51,32 @@ function StudentSignIn() {
   const router = useRouter()
   const { status, participant, refetch } = useStudentSession()
 
-  const redirectTo =
-    (router.query?.redirectTo as string) ||
-    process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
-    'https://assessment.klicker.uzh.ch'
+  const redirectTo = assessmentReturnTarget(router.query?.redirectTo)
 
   if (status === 'loading') {
     return null
+  }
+
+  // A failed session check is not proof of a missing session: the student may
+  // hold a valid one while the lookup itself is unavailable. Offer the retry
+  // instead of sending them through authentication again.
+  if (status === 'error') {
+    return (
+      <div className="flex flex-col gap-4">
+        <UserNotification type="warning">
+          {t('auth.sessionCheckFailed')}
+        </UserNotification>
+        <Button
+          primary
+          fluid
+          className={{ root: 'p-4' }}
+          data={{ cy: 'student-session-retry-button' }}
+          onClick={() => refetch()}
+        >
+          {t('auth.sessionCheckRetry')}
+        </Button>
+      </div>
+    )
   }
 
   if (status === 'authenticated') {
@@ -83,15 +125,9 @@ function StudentSignIn() {
         />
       </Head>
 
-      {status === 'error' ? (
-        <UserNotification type="warning">
-          {t('shared.generic.systemError')}
-        </UserNotification>
-      ) : (
-        <UserNotification type="warning">
-          {t('pwa.assessment.eduIdRequired')}
-        </UserNotification>
-      )}
+      <UserNotification type="warning">
+        {t('pwa.assessment.eduIdRequired')}
+      </UserNotification>
       <Button
         fluid
         className={{ root: 'p-4' }}

@@ -71,8 +71,10 @@ test('rejects URL credentials and non-http(s) schemes', () => {
 })
 
 test('rejects non-HTTPS targets in production', () => {
+  // A loopback host keeps this assertion on the scheme rule; whether the host
+  // is allow-listed is covered by the host tests below.
   assert.deepEqual(
-    validateRedirectTarget('http://assessment.klicker.uzh.ch/', STUDENT_HOSTS, {
+    validateRedirectTarget('http://localhost:3001/', STUDENT_HOSTS, {
       secure: true,
     }),
     { ok: false, reason: 'insecure' }

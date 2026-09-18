@@ -10,7 +10,7 @@ import {
 test('secure derivation follows the next-auth URL convention', () => {
   assert.equal(resolveSecureCookies('https://auth.klicker.uzh.ch'), true)
   assert.equal(resolveSecureCookies('http://localhost:3010'), false)
-  assert.equal(resolveSecureCookies(undefined), false)
+  assert.equal(resolveSecureCookies(), false)
   // Explicit override wins over the URL.
   assert.equal(
     resolveSecureCookies('https://auth.klicker.uzh.ch', 'false'),

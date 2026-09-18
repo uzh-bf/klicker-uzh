@@ -832,6 +832,9 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
     loginInfo:
       'Sie müssen sich nur hier einloggen, wenn Sie eigene Aktivitäten und Kurse erstellen möchten, nicht um an solchen teilzunehmen.',
+    sessionCheckFailed:
+      'Ihr Login konnte nicht überprüft werden, da der Dienst vorübergehend nicht verfügbar ist. Bitte versuchen Sie es in einem Moment erneut.',
+    sessionCheckRetry: 'Erneut versuchen',
     restart: {
       title: 'Login',
       info: 'Der Login-Vorgang konnte nicht fortgesetzt werden. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',

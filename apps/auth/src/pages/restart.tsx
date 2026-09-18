@@ -10,9 +10,15 @@ import { useTranslations } from 'next-intl'
 // could not be verified (unknown, expired, malformed or contradictory callback
 // context). It deliberately offers both audiences as explicit choices and
 // never continues a failed attempt automatically.
+//
+// Recovery from a failure inside NextAuth keeps the audience that was already
+// verified for the attempt (see lib/errorRecovery.ts). In that case only the
+// matching entry point is offered, so a retry cannot drift into the other
+// audience's account handling.
 export default function Restart() {
   const router = useRouter()
   const t = useTranslations()
+  const participantRestart = router.query.audience === 'participant'
 
   return (
     <div className="md:grow-0! m-auto flex w-full grow flex-col md:max-w-2xl md:rounded-lg md:border md:shadow">
@@ -60,14 +66,16 @@ export default function Restart() {
           >
             {t('auth.restart.studentLogin')}
           </Button>
-          <Button
-            fluid
-            className={{ root: 'p-4' }}
-            data={{ cy: 'restart-lecturer-login-button' }}
-            onClick={() => router.push('/')}
-          >
-            {t('auth.restart.lecturerLogin')}
-          </Button>
+          {!participantRestart && (
+            <Button
+              fluid
+              className={{ root: 'p-4' }}
+              data={{ cy: 'restart-lecturer-login-button' }}
+              onClick={() => router.push('/')}
+            >
+              {t('auth.restart.lecturerLogin')}
+            </Button>
+          )}
         </div>
       </div>
       <div className="w-full flex-none">
