@@ -65,6 +65,19 @@ model Participant {
   isProfilePublic Boolean @default(true)
   isSSOAccount    Boolean @default(false)
 
+  researchConsent                  Boolean   @default(false)
+  researchConsentChoiceAt          DateTime?
+  researchConsentDisclosureVersion String?
+
+  learningAnalyticsConsent           Boolean   @default(false)
+  learningAnalyticsChoiceAt          DateTime?
+  learningAnalyticsDisclosureVersion String?
+
+  dataUseAcknowledgedAt      DateTime?
+  dataUseAcknowledgedVersion String?
+  dataUseRevision            Int                       @default(0)
+  dataUseEvents              ParticipantDataUseEvent[]
+
   lastLoginAt DateTime?
 
   locale Locale @default(en)
@@ -100,6 +113,20 @@ model Participant {
   updatedAt DateTime @updatedAt
 
   @@unique([email, isSSOAccount])
+}
+
+model ParticipantDataUseEvent {
+  id                       String      @id @default(uuid()) @db.Uuid
+  participantId            String      @db.Uuid
+  participant              Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  revision                 Int
+  disclosureVersion        String
+  researchConsent          Boolean
+  learningAnalyticsConsent Boolean
+  acknowledged             Boolean
+  createdAt                DateTime    @default(now())
+
+  @@unique([participantId, revision])
 }
 
 model ParticipantGroup {
