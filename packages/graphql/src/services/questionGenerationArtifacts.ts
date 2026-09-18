@@ -2096,6 +2096,11 @@ export function parseQuestionGenerationResult(
         (result.schema_version !== 2 || questionProvenanceIndex === null)) ||
       (result.schema_version === 2 && questionProvenanceIndex === null) ||
       (result.schema_version === 1 && questionProvenanceIndex !== null) ||
+      // Per-slot reasons describe slots a result could not supply. A status
+      // that claims the complete requested bank cannot also report missing
+      // slots, or the reviewing client would surface attention cards for a
+      // build that has nothing missing.
+      slotFailures.length !== 0 ||
       result.rejected_at !== null ||
       result.reviewed_by !== null ||
       new Set(reviewRequiredQuestionIds).size !==

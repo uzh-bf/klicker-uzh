@@ -236,9 +236,16 @@ export function elementGenerationSlotFailures(
       reasonCode: failure.reasonCode,
       isKnownReasonCode: knownReasonCode !== null,
       detail: failure.detail ?? null,
-      suggestions: (failure.suggestions ?? []).filter(
-        (suggestion) => suggestion.trim().length > 0
-      ),
+      // The worker can name the same covered topic twice. The chips are keyed
+      // by their text, so duplicates would collide; they carry no extra
+      // meaning either way.
+      suggestions: [
+        ...new Set(
+          (failure.suggestions ?? []).filter(
+            (suggestion) => suggestion.trim().length > 0
+          )
+        ),
+      ],
       showsRetryGuidance: failureClass === 'system',
     }
   })

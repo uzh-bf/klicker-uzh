@@ -1767,6 +1767,22 @@ describe('question-generation artifact normalization', () => {
     ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
   })
 
+  it('rejects a completed result that also reports unsupplied slots', () => {
+    // A status claiming the complete requested bank cannot carry per-slot
+    // reasons, or the reviewing client would show attention cards for a build
+    // with nothing missing.
+    expect(() =>
+      parseQuestionGenerationResult(
+        bytes(
+          completedResult({
+            slot_failures: [slotFailure()],
+          })
+        ),
+        { buildId: BUILD_ID, questionCount: 1 }
+      )
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
   it('parses a failed result manifest without the slot reason field', () => {
     // Older workers report a failure without structured reasons. The failure
     // surface stays intact and the reasons parse to an empty list, which the
