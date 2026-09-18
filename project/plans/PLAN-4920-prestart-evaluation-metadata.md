@@ -114,6 +114,110 @@ notification.
 
 ## Progress
 
+- 2026-09-18 takeover verification: the synthetic pr4920-devsy-browser runtime
+  still refuses managed stop and ensure without a configuration or recreation
+  decision, so verification moved to the retained activity-info-on-eval
+  runtime. It came up ready under host devrouter 0.0.77 and serves manage and
+  pwa over its existing local CA. The activation fix is committed as
+  `39d33ccd48` after code generation, 5/5 evaluation and 22/22 aggregation
+  vitest suites, both run against a separately provisioned disposable Postgres
+  (throwaway container pr4920-pgtest, CI provisioning and guarded-reset paths),
+  so the retained manual fixtures in the container database stay untouched.
+  Root `check:all` reports 34/35 tasks and fails only on `graphql:check`, which
+  compares the committed SDL and therefore needs the commit above. Current-v3
+  integration, browser acceptance, publication and exact-head CI remain
+  outstanding. Original manual runtime untouched.
+
+- 2026-09-08 ownership recovery: user explicitly approved a narrow retained
+  runtime metadata repair preserving containers and data. Validated all eight
+  synthetic containers under default-rs-4cec0 and the primary's exact source
+  bind mount; recorded default-rs-5a4a0 had no containers. Backed up the exact
+  workspace record outside the repository and changed only composeProject.
+  Guarded managed stop then succeeded. Independent Devsy status is Stopped
+  with zero exact routes. Both normal ensure and ensure --repair now stop at
+  "Managed Compose configuration changed for service 'app'". Latest v3 also
+  changes PostgreSQL bootstrap to marked disposable databases. Do not alter
+  fingerprints to mask that configuration change. Fresh synthetic runtime/data
+  recreation requires explicit approval; source, worktrees and original manual
+  runtime remain untouched. No tests, commit or push in this recovery step.
+
+- 2026-09-08 latest-v3 continuation: user explicitly requested current target
+  integration. Merged origin/v3 at 1a270f33053e12d56df6e4536133753edcaae636
+  into the delivery branch as 5be417545d and independently into the synthetic
+  verification branch. Both checkouts now pin devrouter 0.0.59, matching the
+  installed host CLI. All local changes were restored without conflicts from
+  retained safety stashes 1c58cf439d4ebb75bf348f2336fb207256cbcd8b and
+  ad6aa89c54068886bb901d08cf260040d2e53cc6, respectively. Diff checks pass;
+  delivery is 50 ahead and zero behind origin/v3. Integration hooks were
+  disabled because toolchain checks belong in the container and remain pending.
+  Updated managed stop still refuses complete retained service-population proof;
+  ensure --repair returns "Lifecycle transition is blocked". No ownership
+  bypass, deletion, push, PR merge or manual-runtime operation occurred.
+  Runtime reconciliation remains the prerequisite for browser verification.
+
+- 2026-09-08 approved recreation checkpoint: exact deletion of the synthetic
+  trees/pr4920-devsy-browser runtime succeeded. Independent Devsy lookup then
+  reported not found and the exact-source route count was zero; Git was retained.
+  Mirrored the activation correction and inspected the executor's browser test.
+  Fresh startup passed MCP ownership validation and generated the new nullable
+  startedAt SDL field, copied byte-for-byte to the delivery worktree. No lockfile
+  drift appeared. Startup began with host devrouter 0.0.57; the host installation
+  changed to 0.0.59 during the run without this task modifying it. Startup ended
+  with "Lifecycle worker completion is unknown". Current doctor reports a
+  degraded process-start transition and foreign managed containers. Exact stop
+  refused with "Managed stop cannot prove the complete retained service
+  population". Independent Devsy status reports Running and zero exact routes;
+  runtime release is blocked, not verified. No ownership bypass, second deletion,
+  manual-runtime change, commit or push occurred. Browser and package checks
+  remain unrun. Restore supported devrouter ownership reconciliation before
+  resuming checks, same-reviewer correction and publication. Fresh target refs
+  place audit-pr4920-merge, tracking origin/v3, 49 ahead and 10 behind v3.
+
+- 2026-09-07 restart correction checkpoint: local source now exposes nullable
+  StackEvaluation.startedAt and selects it through the new
+  GetLiveQuizEvaluationWithActivation operation. Both active reveal storage
+  keys include that timestamp. The original query and shared fragment remain
+  unchanged for persisted-query compatibility. The existing service regression
+  asserts the activation timestamp. Code generation, package checks, browser
+  execution and reviewer correction remain pending; no commit or push occurred.
+  Canonical ensure of trees/pr4920-devsy-browser failed at the local MCP fixture
+  ownership-validation guard following prior test cleanup. No guard bypass or
+  data repair was attempted. Exact managed stop succeeded; independent Devsy
+  status is Stopped and the exact-source route count is zero. Original manual
+  runtime remains untouched. Renewed exact synthetic-runtime deletion and
+  recreation approval is needed before managed verification can continue.
+
+- 2026-09-07 activation-identity extension approved: the user approved the
+  narrow read-only evaluation API addition, regression tests, browser proof,
+  same-reviewer correction pass and ordinary task-branch push. This supersedes
+  the earlier no-new-schema restriction only for the block activation timestamp
+  and its newly named client query. No database migration or authorization
+  change is introduced. Keep the original persisted operation unchanged.
+  The final reviewer withdrew its closure-timestamp payload finding after
+  confirming that supported transitions cannot change closure time while
+  preserving execution and activation time. No extra closure change is needed.
+  Main owns API/UI integration and runtime verification; the executor owns the
+  existing O1 restart regression. Fresh refs leave the task 49 ahead and nine
+  behind origin/v3; reviewed upstream hunks remain disjoint.
+
+- 2026-09-07 integrated review checkpoint: committed head `96ebf221de` has
+  unchanged executable source from the passing browser run. The native final
+  reviewer found a confirmed restart bug: active reveal storage keys contain
+  activity, block and question, but no activation identity. The evaluation API
+  does not expose that identity. A reliable fix needs a narrow API-field addition
+  outside the approved no-new-schema constraint; user ruling is required.
+  The reviewer also proposed a closure timestamp in delayed payloads. Main is
+  checking that claim against the approved execution/start ownership contract;
+  no supported same-identity closure rewrite has been established. The same
+  reviewer `01a07d9f-a93f-7682-8288-597523157d73` is active on that clarification.
+  Its report is project/_local/reviews/2026-09-07-pr4920-integrated-final.md.
+  Upstream overlap review found disjoint hunks, not a new integration blocker.
+  No push or PR-body update occurred. Existing synthetic runtime remains stopped;
+  no runtime was touched in this continuation. Original manual runtime untouched.
+  Next: obtain the narrow API ruling, fix restart persistence, rerun affected
+  checks and browser regression, then the same reviewer's correction pass and
+  authorized publication. Keep the two MCP diagnostics outside delivery.
+
 - 2026-09-07 delivery continuation: the implementation head is
   `20087b66a04320caedb5870339dd95fd11636bdb`. Fresh origin refs place the task
   branch 48 commits ahead and nine behind its upstream and resolved target v3.
