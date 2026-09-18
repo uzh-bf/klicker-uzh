@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 import bcrypt from 'bcryptjs'
 import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
@@ -27,10 +27,17 @@ function getStudentLoginUrl() {
   return process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
 }
 
-function getGraphQLOperationName(postData: string | null) {
-  return postData
-    ? (JSON.parse(postData) as { operationName?: string }).operationName
-    : undefined
+// Apollo sends mutations as POST bodies and persisted-query reads as GET
+// requests carrying the operation name in the query string, so both have to
+// be read to identify an operation at the network layer.
+function getGraphQLOperationName(request: Request) {
+  if (request.method() === 'POST') {
+    const postData = request.postData()
+    return postData
+      ? (JSON.parse(postData) as { operationName?: string }).operationName
+      : undefined
+  }
+  return new URL(request.url()).searchParams.get('operationName') ?? undefined
 }
 
 async function signInStudentFromReturnTarget(page: Page, target: string) {
@@ -279,7 +286,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       let failedResearchSaves = 0
       await page.route('**/api/graphql', async (route) => {
         const request = route.request()
-        const operationName = getGraphQLOperationName(request.postData())
+        const operationName = getGraphQLOperationName(request)
 
         if (
           request.method() === 'POST' &&
@@ -410,9 +417,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
 
       let failedCompletions = 0
       await page.route(graphqlRoute, async (route) => {
-        const operationName = getGraphQLOperationName(
-          route.request().postData()
-        )
+        const operationName = getGraphQLOperationName(route.request())
 
         // The completion request fails with a generic (non-conflict) error,
         // which previously left the local intent and acknowledgement intact.
