@@ -22,6 +22,19 @@ selection may succeed without an irrelevant suite. Missing, cancelled, failed,
 or unexpectedly skipped evidence blocks the summary. Ready PRs require the
 full eight-shard Playwright run.
 
+Each image workflow declares its own pull-request path filter as the transitive
+workspace dependency closure of that image. Every Dockerfile runs
+`turbo prune --scope=<workspace package> --docker`, so only those directories
+can reach the build. A change to a package the image never bundles no longer
+triggers it: `packages/transactional` and `packages/prisma-data` select only
+chat, `packages/word-cloud` and the other frontend-only shared packages select
+the six Next images, and `packages/export` selects none. Root manifests,
+`turbo.json` and `.dockerignore` still select every node image, and a push to
+`v3`/`v3*` still builds all of them because push triggers carry no path filter.
+`required-build-status.test.cjs` derives each closure from the workspace
+manifests, so adding a workspace dependency to an image without widening its
+filter fails the suite rather than silently skipping a needed build.
+
 Repository administrators may bypass CI on stable `v3` and on integration
 branches only through a pull request; direct updates, force pushes, and deletion
 remain protected on both. Stable `v3` still requires code-owner review,
@@ -33,9 +46,12 @@ Older integration branches must receive the reporting workflows before they
 can satisfy this baseline.
 
 Biome and Knip advisory steps, AI reviews, CodeQL analysis, and the SonarCloud
-analysis upload remain outside this deterministic required baseline. The
-SonarCloud workflow uploads analysis without an explicit quality-gate wait.
-Those checks must not be described as enforced test results.
+analysis remain outside this deterministic required baseline. The SonarCloud
+workflow waits for the quality gate, so a failing gate fails that workflow
+instead of leaving a green run beside a red gate, and it fails closed with a
+named reason when an event cannot receive the analysis credential. Neither
+workflow is a required status check. Those checks must not be described as
+enforced test results.
 
 ## PR gates
 
@@ -67,7 +83,7 @@ workflow uses pnpm 11.5.0, pins Node 24 via the root Volta configuration
 standalone secret scan that installs the Gitleaks binary directly and needs
 neither Node nor pnpm.
 
-- **Path filtering**: A custom composite action `.github/actions/changed-paths` executes on PR events. Heavy multi-job test suites (e.g. `test-graphql` and `test-playwright`) run path-scoped filters to only build and spawn backing services (Postgres, Redis, Hatchet) when relevant files are changed. A pull_request `edited` event that only changed PR metadata (title or body) selects no suite, because the head tree is identical to the tree the same head already selected against; an `edited` event carrying `changes.base.from` is a base retarget and still computes the real diff, so the merge input always re-selects when it changes. The action fetches the base ref shallowly **only when the clone is already shallow**; on a full clone, adding a shallow graft can truncate a stacked PR's history and break later merge-base-dependent commands. The required `check` workflow stays unconditional and does not use this action.
+- **Path filtering**: A custom composite action `.github/actions/changed-paths` executes on PR events. Heavy multi-job test suites (e.g. `test-graphql` and `test-playwright`) run path-scoped filters to only build and spawn backing services (Postgres, Redis, Hatchet) when relevant files are changed. A pull_request `edited` event that only changed PR metadata (title or body) leaves the merge tree unchanged, so a suite may skip only when its own required-status context already completed successfully for this head; a failed, pending, or unavailable prior result re-runs the suite, so editing a PR title can never turn a failed suite green. Workflows that enable that lookup pass the stable terminal context name and declare `checks: read`. An `edited` event carrying `changes.base.from` is a base retarget and still computes the real diff, so the merge input always re-selects when it changes. The action fetches the base ref shallowly **only when the clone is already shallow**; on a full clone, adding a shallow graft can truncate a stacked PR's history and break later merge-base-dependent commands. The required `check` workflow uses the same action with an unrestricted pattern and reuses its suite only for a validated metadata-only edit; a job that always runs reports its required context, so an unexpected skip, a cancellation, or a failed suite still fails the check.
 - **Playwright build handoff**: Each Playwright build job (hosted and public-PR) uploads the built GraphQL package, and each shard restores its generated client map into the source path used by the course-sharing specs. This keeps cached Turbo builds and uncached builds equivalent without regenerating the package eight times.
 - **Playwright cache contract**: The pnpm store uses a stable dependency fingerprint containing Node/pnpm compatibility, the lockfile, workspace configuration, package manifests, `.npmrc`, `.pnpmfile.cjs`, and tracked patches. It does not create a duplicate store for each source commit or invalidate dependencies for a telemetry-only workflow edit. The separate `.turbo` fingerprint retains the conservative build configuration, synthetic environment schema, and immutable build-image contract, with source-specific snapshots. Both cache families include OS and architecture in their keys. The trusted `v3` cache-seed matrix builds on hosted ARM64 and x64 runners and is the only writer; public PR jobs remain restore-only readers. Restore stays disabled for PRs until a global or exact canary control enables it. Cache-service errors fall back to an ordinary install/build, while actual build failures remain failures. Compact build, shard, route, selector, and queue telemetry is retained for seven days; large build outputs and diagnostics keep their existing short retention. Seed telemetry artifacts include the architecture in their names. The hosted, checkout-free Playwright status job collects queue telemetry with only `actions: read` permission; telemetry errors do not alter the test result. Configuration and successful seeding are not performance proof: verify compatible matched keys, Turbo task hits, output equivalence, and a normalized comparison cohort before claiming a speedup.
 - **Profile-aware Playwright runtime**: `playwright/profiles.json` assigns every active spec exactly once and the timing-aware sharder emits the canonical profile union for each shard. Exact `@devrouter/cli` `0.0.72` resolves that union and validates it against the repository-owned `playwright/runtime-contract.yml` without runtime access. When the trusted planner assigns a candidate-only spec to `full`, the adapter resolves that trusted union through the explicit `playwright` Devrouter profile, which covers every CI-supported application without selecting local-only MCP, LiteLLM, or MailHog resources. Activity-lifecycle specs that publish, schedule, start, or end activities select `live-quiz` because it owns both Hatchet workers. Both hosted and public-PR workflows fail closed when planning is unavailable or unexpected, then start only the selected app processes without exposing the host Docker socket. A caller checkout created before profile runtimes existed may use the explicit legacy full-stack startup only when all three profile-runtime files are absent; partial migrations fail closed. The job-level Postgres, Redis, and Hatchet containers remain fixed. The corrected manifest selects 57 app and worker process instances across eight shards instead of the previous fixed 72, a configuration-derived 20.8% reduction; this is not yet measured end-to-end speedup evidence.
@@ -90,7 +106,8 @@ neither Node nor pnpm.
 - **Format + lint**: `check` runs blocking Biome + Prettier formatting and the blocking Turbo/ESLint safety net. Biome lint remains advisory. The same job also runs `check:prisma-sync`, `check:agents-md`, and `check:removed-doc-artifacts`.
 - **Unused code**: `check` runs Knip **advisory** (non-blocking); ratchet it to blocking only after the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
-- **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
+- **Security analysis**: `codeql-analysis.yml` analyzes JavaScript/TypeScript, the analytics Python sources, and the GitHub Actions workflows with SHA-pinned CodeQL v4 actions, and runs the `security-extended` suite as a pilot; the job is not a required check. `v3_sonarcloud.yml` pins the Sonar scanner, derives the project version from the root `package.json`, awaits the quality gate on a pull request, and imports LCOV coverage only from a test run that belongs to the analyzed head and recorded the same tested source tree, rewriting the imported report paths to repository-relative form (`.github/scripts/sonar-coverage-inputs.cjs`, `.github/scripts/sonar-coverage-transport.cjs`); a missing or unverified report leaves coverage "not computed" in SonarCloud instead of reporting a satisfied metric, and no coverage threshold is armed yet. The import spends one bounded wait window shared by every producer, so a queued test run cannot consume the analysis job before the scanner starts. Fork and Dependabot pull requests cannot receive `SONAR_TOKEN`, so their analysis fails closed with a named unavailable result rather than an authorization error. **New-code definition**: SonarCloud fixes a branch's type at its first analysis and never changes it, and the type decides what new code means. A long-lived branch — the main branch, or a name matching the organization's `sonar.branch.longLivedBranches.regex` pattern — uses the project New Code definition. A short-lived branch has no project definition: its new code is everything that differs from the branch it merges into. The `uzh-bf_klicker-uzh` project keeps the repository's former default branch `dev` as its main branch, last analysed 2022-08-20, and neither `v3` nor `v3-*` matches the inherited `(branch|release)-.*` pattern. Before the project pattern was widened, `v3` was therefore a short-lived branch measured against `dev`, so nearly the whole repository counted as new code there and the branch gate failed on historical findings while the pull-request analysis of the same code stayed healthy. The project pattern is now `(branch|release)-.*|v3(-.*)?`, so every `v3` branch is long-lived and uses the project definition; a branch re-analysed after that change reports the definition on its next analysis, so no separate New Code setting is required. Because the type is fixed at a branch’s first analysis, the branch analysis is published without awaiting the gate — a failure there would block the staging promotion controller without changing the condition — and only the pull request, where new code is the diff against the base, remains gated. The red `v3` check is not caused by the scanner's `-Dsonar.projectVersion`: a version cannot inflate a short-lived branch, and the pre-#5924 job never awaited the gate, so it surfaced only once the workflow began to. `.github/scripts/sonar-new-code-boundary.cjs` names the cause from the branch's recorded type and merge target plus the measured `lines` and `new_lines`; it runs after the scan so the branch analysis is always published, carries `if: always()` so it also runs when the awaited pull-request gate has already failed the job, and stays non-fatal when either API is unavailable or the branch has no measures yet; it reports the boundary and never gates a branch run. Because the type is assigned once, correcting it is a platform action: extend the long-lived branch pattern on the project's Branches page to cover the `v3` names, delete the branch analysis through `api/project_branches/delete`, then re-analyse so the branch is recreated with the type the pattern assigns — or recreate the project with `v3` as its main branch. The project pattern is the lever because the organization-level pattern is Enterprise-only. It was applied on 2026-09-16 with the repository's own `SONAR_TOKEN`, which does carry project administration, from a disposable push-triggered workflow rather than an operator console. `dependency-review.yml` reviews changed dependencies and fails on high severity. GitHub's dependency graph resolves the pinned pnpm 11.5 workspace: the `v3` SBOM records 4,487 npm packages with 10,757 dependency edges, and the 336 open alerts are attributed to the root `pnpm-lock.yaml` (250), workspace `package.json` files (83), and `apps/analytics/uv.lock` (3), with resolved npm versions matching the `pnpm-workspace.yaml` override targets. Detection and graph coverage are verified; PR-time blocking of a newly introduced vulnerable dependency, and triage of the existing backlog, are not. Trivy scanning is piloted on the staging backend-docker image and migrator by `v3_backend-docker-stg.yml`, and the trusted staging controller admits a candidate only when the receipt of each scanned image matches the digest it is about to promote. The pilot scope is still those two images, so the other staging images publish no receipt yet. Because the controller runs the workflow definition of its own revision, this admission applies to the controller once this source reaches the default branch.
+- **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JavaScript/TypeScript, Python, and Actions; weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
 - **Playwright timing feedback**: `update-playwright-timings.yml` listens for a successful direct `v3` run of `test-playwright`, validates all eight compact JUnit artifacts, and opens or updates one human-reviewed timing PR on `automation/playwright-timings`. It requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with repository contents and pull-request write permissions. The default `GITHUB_TOKEN` is deliberately insufficient because PRs it creates do not trigger their required checks; the timing workflow never auto-merges.
 
 Shard durations differ by architecture, so `playwright/timings.json` names the architecture its weights were measured on. The timing workflow maps the run's recorded route to `x64` for hosted runs and `arm64` for the public pool, passes it to the updater as `--architecture`, and the updater leaves the table untouched when it is calibrated for a different architecture, reporting why instead of writing. An untagged table is adopted by the producing architecture on its first tagged write. Replacing a calibration with another architecture's measurements is therefore a human decision rather than an automatic side effect of a successful run.
@@ -101,10 +118,14 @@ Shard durations differ by architecture, so `playwright/timings.json` names the a
 - **Publisher rejection diagnostics**: A failed validation or publisher step keeps its exact rejected JSON input as a one-day workflow artifact. The individual job retains its initial, resumed, or final result JSON as applicable. The stack job normally retains the combined code result and optional topology result. An incremental validation or resume failure may instead retain the exact affected range result JSONs, while a combine failure retains every range result passed to the failed combine step. The workflow never adds stderr, OpenRouter configuration, stack manifests, review-range directories as directories, unrelated wildcard inputs, or runner workspaces to these artifacts. Treat the payloads as public because this repository is public: use them only for offline parser diagnosis, never as authorization to replay or publish a review. The upload runs only after the corresponding validation or publisher step fails and does not change the failed job or final status. Live artifact proof remains a post-merge check because `pull_request_target` uses workflow code from the default branch. See [OpenCodeReview publisher rejection payloads](./solutions/integration/opencodereview-publisher-rejection-payloads.md) for the failure pattern and safe diagnostic boundary.
 - **Offline qualification**: Public-safe synthetic receipts and a dependency-free evaluator live under `.github/open-code-review/qualification/`. The evaluator's strict synthetic contract covers explicit blocker and false-blocker dispositions, prompt-injection text treated as untrusted data, valid and invalid stack topology, exact path ownership, incomplete coverage, and token-counter consistency. It is intentionally separate from the runtime OCR parser and does not claim to validate live provider receipts. Run `node --test .github/open-code-review/qualification/final-review-qualification.test.js` and `node .github/open-code-review/qualification/final-review-qualification.js`; this checks deterministic local contracts and reports offline-only metrics. OpenCodeReview 1.11.0 is also qualified before publication against a fake OpenAI-compatible endpoint with a synthetic one-file diff; that probe checks the released binary's model, high reasoning, tool request, 16,384-token completion cap, automatic provider routing, and one-round effort wiring. Neither offline path qualifies live model behavior, proves first-trigger success, or makes a merge-readiness decision. Real `/final-review` and `/final-review-stack` proof remains a post-merge gate because `pull_request_target` executes trusted default-branch workflow code.
 
-The individual and stack final-review jobs disable OCR's background updater
+The draft, individual and stack review jobs disable OCR's background updater
 with `OCR_NO_UPDATE=1`, including the installation version check. OCR 1.11.0
 otherwise starts a background global npm update even for `ocr version`, so a
-pinned installation alone does not keep the executable immutable. Each review
+pinned installation alone does not keep the executable immutable. That
+background reinstall deletes and re-extracts the package while the same job
+starts its review, so a job without the guard fails on module resolution
+instead of reviewing the diff. `ocr-self-update-guard.test.cjs` fails any
+workflow job that runs the action without the guard. Each review
 attempt verifies the pinned version before running. Process failures retain
 their exit code and write only a fixed stage, exit status and numeric output
 sizes to the job summary: stdout for that attempt and explicitly labelled
@@ -127,11 +148,23 @@ After reviewing exact IDs, apply normal cancellation:
 node .github/scripts/ci-obsolete-runs.cjs --apply --run-id <run-id>
 ```
 
-The utility only accepts allowlisted PR validation runs whose PR is closed or
-whose old head has a verified current replacement in the same workflow. It
-revalidates repository, PR, workflow, head and attempt before cancellation and
-checks the terminal result. It never cancels by age, and excludes pushes,
+The utility accepts allowlisted PR and push validation runs in five cases: the
+PR is closed; the run's old head has a verified current replacement in the same
+workflow; the run is still queued while a newer run of the same workflow already
+covers the same current head; the run is a push run behind the branch's current
+tip, and the tip's run of the same workflow is active or already successful; or
+the run is a PR run whose pull-request binding is gone because the head branch
+was deleted after merge, and that branch no longer exists with no open PR
+referencing it. The queued-duplicate case exists because a push and a
+pull-request event for one branch use different concurrency groups, so both can
+create a run for the same head; the older queued entry has consumed no runner
+time and the newer run carries the authoritative plan. Each case revalidates
+repository, workflow, PR, head, branch and attempt before cancellation and
+checks the terminal result. The utility never cancels by age, and excludes
 manual runs, image publication, deployments and final-review status writers.
+A run that has not yet reached a runner rejects cancellation with HTTP 409 or
+422; that run is reported as deferred and the batch continues with the next ID,
+while any other cancellation error still stops the operation.
 Incomplete API evidence stops the operation. If a verified obsolete run retains
 an `always()` tail, `--apply --force --run-id <run-id>` first attempts ordinary
 cancellation, then revalidates before force cancellation. Unconfirmed readback
@@ -292,8 +325,10 @@ ref update:
   triggers, active ARM jobs, runtime image repositories, and backend migrator
   ordering. Intentionally disabled AMD jobs are excluded.
 - The code check, secret scan, GraphQL, Playwright, unit, OLAT, translation,
-  and image-build summary jobs all have successful push runs for the exact
-  candidate SHA, repository, and selected branch. The newest matching run and
+  image-build summary, and SonarCloud analysis jobs all have successful push
+  runs for the exact candidate SHA, repository, and selected branch. The Sonar
+  job only succeeds once the awaited quality gate passes, so a green workflow
+  that hid a failed gate cannot qualify a candidate. The newest matching run and
   its current attempt are required; duplicate terminal jobs fail validation.
   Candidate pushes run GraphQL, unit, OLAT, both translation smoke jobs, and
   all eight Playwright shards. PR-only no-change selections cannot qualify a
@@ -306,6 +341,10 @@ ref update:
   validated `Docker-Content-Digest` header. The controller reads the registry
   inventory twice and fails if any digest is absent or changes during
   collection.
+- Every image that publishes a scan is covered by that run: the scan job
+  succeeded, and a receipt names the same source revision, run, attempt, image
+  repository, and digest the controller is about to promote. A rebuild after
+  the scan therefore cannot be promoted as the scanned artifact.
 
 The sorted evidence becomes a canonical JSON receipt with the controller run and source SHA,
 source and candidate revisions, workflow/run/job identities, registry tags and

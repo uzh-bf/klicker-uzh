@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
 import { safeDecrypt } from '@klicker-uzh/util'
 import {
   type LangfuseSpan,
@@ -665,6 +666,7 @@ export async function POST(
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
     allowRegeneration: z.boolean().optional().default(false),
+    handoffSource: z.enum(HANDOFF_SOURCES).optional(),
     images: z
       .array(
         z.union([
@@ -694,6 +696,7 @@ export async function POST(
     parentId,
     assistantMessageId,
     allowRegeneration,
+    handoffSource,
     images,
   } = parsed
 
@@ -1944,6 +1947,7 @@ export async function POST(
               reasoningEffort: appliedReasoningEffort ?? 'none',
               toolCount: String(toolNames.length),
               imageAttachmentCount: String(images.length),
+              handoffSource: handoffSource ?? 'direct',
             },
           },
           () =>

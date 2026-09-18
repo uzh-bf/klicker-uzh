@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "katex": "0.16.22",
     "rehype-external-links": "3.0.0",
     "rehype-katex": "7.0.1",
     "rehype-prism-plus": "2.0.2",
@@ -34,7 +35,7 @@
     "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
     "typescript": "~6.0.3",
-    "vitest": "~3.2.4"
+    "vitest": "3.2.4"
   },
   "peerDependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
