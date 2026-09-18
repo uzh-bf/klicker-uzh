@@ -306,7 +306,7 @@ authorized by this plan.
 
 ## Progress
 
-Status: planning. Plan drafted 2026-09-18 and revised the same day after one adversarial
+Status: delivery. Plan drafted 2026-09-18, revised the same day after one adversarial
 challenge round.
 
 Required planner gate: BLOCKED. The configured planner role is the Codex `planner` at
@@ -392,3 +392,32 @@ ineligible because this plan covers private repositories and internal staging ev
   `password: 'Password'` login label (`en.ts:653`, `de.ts:664`), a false positive of the
   hook's credential-assignment rule, not the edited help text. Committed as `c3322782bb`
   with the approved one-commit bypass; Biome and Prettier clean.
+- Shipped: PR #6143 merged into `v3-ai` at `8e5a92935f` (2026-09-18T14:40:58Z). MR !191
+  rebased onto refreshed `main` and merged at `9b57fdd` (ff); its pipeline #667639 was green.
+  Sync PR #6146 (`rs/v3-audit-sync-20260918d` -> `v3-audit`) merged at `8c1ec75b58`; the
+  eight required `v3-audit` contexts were green, and the advisory `ocr-review` failure was a
+  hosted provider error (0 tokens, 1 s), not a code defect.
+- STG promotion executed. STG deploys from `v3-audit` via `deploy-stg-promote.yml`
+  (`STG_SOURCE_BRANCH=v3-audit`, `STG_RELEASE_PROMOTION_ENABLED=true`). The `v3-audit` push
+  at `8c1ec75b58` ran the full stg check/build set (24 workflows); all succeeded. The
+  `build-images-status` gate (`Build Fallback`) failed once on a queue race (60 attempts
+  elapsed while `v3_backend-docker-stg.yml` was still queued), then passed on rerun. The
+  promoter advanced `stg-release` `e00f2719 -> 8c1ec75b58`; ArgoCD `app-klicker` auto-synced
+  and all 19 `stg-klicker` deployments rolled to `8c1ec75b58` (frontend-manage, backend-graphql,
+  chat, lti, olat-api, mcp-lecturer/-student).
+- V2 executed 2026-09-18 (live STG pass after the promotion, in-app browser as the logged-in
+  lecturer). B2 confirmed: the generation form pre-selects only Understand (Apply/Remember/
+  Analyze/Evaluate unselected) and renders the thin-material help text. C1 confirmed: the
+  Language control offers German only. Ingestion A1 confirmed end-to-end at the code level:
+  fetching `https://en.wikipedia.org/wiki/Diversification_(finance)` through the deployed
+  worker image (`cf25d9d6`, includes !191) returns 380 KB of HTML, and the deployed
+  `source_snapshot.py` sends the descriptive `User-Agent`. Chatbot owner preview answered a
+  KB-grounded question with two tool calls and cited `FinanceI_Skript_HS26.pdf` (pp. 78, 103,
+  159, 170-172). OLAT/LTI routes and STG services are healthy (`olat-api` `/health` 200, LTI 401).
+- Open STG defect (live, blocking one acceptance check): the Wikipedia resource is still
+  `Processing Version 2` and cannot be re-fetched. Ingestion state shows one stale
+  `ingestion_operation` row `op_d6e26e65...` left `running` since 2026-09-18T13:57:30Z by the
+  pre-fix worker, whose fencing blocks a new attempt ("1 already in progress"). A3's bounded
+  reclaim would terminalize it, but `INGESTION_RESOURCE_RECLAIM_ENABLED` is unset on STG
+  (defaults to false). Enabling reclaim is the plan's cluster/GitOps item and needs its own
+  approval; the code fix itself is deployed and verified.
