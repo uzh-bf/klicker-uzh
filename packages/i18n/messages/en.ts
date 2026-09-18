@@ -64,6 +64,7 @@ export default {
     },
     credits: {
       title: 'Available credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Every message uses credits — how many depends on the model and the length of the exchange.',
       resetAt: 'Refills on {date}.',
@@ -82,6 +83,9 @@ export default {
       logoAlt: 'Klicker Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
+    },
+    embedded: {
+      close: 'Close chat',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
