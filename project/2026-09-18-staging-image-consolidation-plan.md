@@ -346,8 +346,20 @@ Updated 2026-09-18.
   two MCP staging workflows are deleted, and `mcp-lecturer-arm` and
   `mcp-student-arm` build through the shared matrix. The audit-only
   `stg-release-ref-promotion.test.cjs` is rebound to the trusted inventory.
-- **S4 pending.** Both draft PRs are open (#6141 on `v3`, #6147 on
-  `v3-audit`); the canary run is queued behind the shared runner backlog.
+- **S4 done for the canary path.** Both draft PRs are open (#6141 on `v3`,
+  #6147 on `v3-audit`). The consolidated staging workflow ran to success on
+  both draft heads: run `35361628890` for `eb6abcd255` on `v3` (plan
+  success, `build-images-status` success, six `matrix.jobName` legs skipped
+  with no runner allocated) and run `35360584817` for `2be208ee30` on
+  `v3-audit` with the same shape. Queue depth fell from roughly 153 to 14.
+  This proves the draft-deferral contract and the required `build-images-status`
+  context; it does not yet exercise a real build or publish, which only a
+  ready-for-review or push run triggers.
+- **Format regression fixed.** The plan and status helpers created in earlier
+  sessions carried Biome format errors that failed `check-suite` on both PRs.
+  `biome format --write` and the Prettier check now pass on the full changed
+  file set; the fix is committed on both branches
+  (`17d6795d15` on `v3`, `d36ecf4c93` on `v3-audit`).
 
 Local verification on both trees: `node --test` over the CI contract list
 passes (293 tests on `v3`, 301 on `v3-audit`), Biome and Prettier are clean,
