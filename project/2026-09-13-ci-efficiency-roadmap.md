@@ -1378,3 +1378,52 @@ required from the user.
   because the turbo affected filter and the remote cache already collapse them.
   A docs-only fast path would save at most the 29s lint step, so rank 3 should
   drop below the review and deployment fan-out it was ranked above.
+
+- 2026-09-18 reaper hardening and reaper-PR collision (same branch). The
+  September 13 run cannot be cleared at all: cancelling a run GitHub never
+  enqueued answers `409 ... has not been queued yet` from the cancel and the
+  force-cancel endpoint alike, so that record holds no runner slot and the
+  reaped capacity is capped rather than freed. Two consequences for the tool.
+  First, that refusal used to end the sweep with "No further runs were changed",
+  so one inert record protected every later one; the reaper now reports
+  `not-queued` and continues. Second, the two new reasons were re-measured
+  against the live event types. The three same-head pairs on
+  `rs/v3-audit-sync-20260918`, `v3-ai` and `rs/v3-ai-sync-20260917b` each come
+  from one `push` run and one `pull_request` run, so the duplicate is
+  cross-event and the `redundant-queued-duplicate` rule, which is bound to
+  pull-request runs, does not reclaim it.
+
+  **Deliberately not applied.** The two gaps are real and still unreclaimed: an
+  older *queued* same-head pull-request run, and a pull-request run whose
+  binding never appeared. Both are mechanics only, and neither changes what a
+  tool is allowed to cancel, so they are left to the reaper PR that carries the
+  rest of the design rather than layered on top of it.
+
+  **Three competing reaper heads now exist and must be reconciled before any of
+  them merges.** PR #6075 (`rs/ci-push-run-sweep`, open, not draft, head
+  `6798c82fa2`, `BEHIND`, all checks green, no human review yet) extends the same
+  two files to reclaim push runs behind the branch tip, to treat a detached
+  binding as merged-or-closed after proving the head branch is gone, and to
+  survive the `409`/`422` not-cancellable answer instead of aborting. PR #6132
+  (`rs/ci-obsolete-run-hygiene`, draft, head `2abd85d0d8`) adds the queued
+  duplicate, the unbound run and the never-queued continue. Both edit
+  `.github/scripts/ci-obsolete-runs.cjs` and
+  `.github/scripts/ci-obsolete-runs.test.cjs` in the same functions, and #6075
+  is behind `v3`, so they conflict textually and overlap semantically.
+  Whichever lands first, the second must be rebased and rebuilt on top; they
+  are not disjoint and neither is a superset. #6075 is the better base where
+  they overlap, because it parameterises the detached branch instead of
+  hardcoding the unbound case, since the two are the same defect, and because
+  it already carries the not-cancellable continue that this branch re-derived
+  independently.
+
+  **Re-measured fan-out over 24h** (created at or after 2026-09-17 08:00Z,
+  first 600 runs): `Promote to stg` 49, `Final AI review` 34, Playwright 24,
+  `Check codebase` 23, unit/graphql/SonarCloud/gitleaks/Build-Fallback 22 each,
+  CodeQL 21, OLAT-API 20, translation context 20, then thirteen
+  `Build Docker image for * (stg)` workflows at 17 to 19 each, plus 14
+  OpenCodeReview. The thirteen staging workflows are the largest single
+  structural class at roughly 237 runs, which makes the B3 consolidation the
+  highest-value remaining structural slice. The promotion controller's 49
+  records remain the largest avoidable class and are the confirmed
+  wake-per-producer symptom, not runner-minutes.
