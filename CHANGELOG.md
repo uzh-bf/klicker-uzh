@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.78...v3.4.0-alpha.79) (2026-09-17)
+
+
+### Features
+
+* **question-generation:** gate blueprint objective source and surface slot evidence ([518ccc6](https://github.com/uzh-bf/klicker-uzh/commit/518ccc608d93ca2ebd76a1ce1c1647b4aaa261eb))
+* **question-generation:** mark synthesized objectives neutral ([1e8e480](https://github.com/uzh-bf/klicker-uzh/commit/1e8e48020a69eaa48fc07ff4a0d0ec25e3ef7ec8))
+* **question-generation:** surface per-slot evidence and concentration in design review ([4c654b7](https://github.com/uzh-bf/klicker-uzh/commit/4c654b7313c3bb872a775f115440a01112c0e664))
+
+
+### Bug Fixes
+
+* **kg:** scope the KB content digest to course content ([770e130](https://github.com/uzh-bf/klicker-uzh/commit/770e1304134d2ed6005c8150d8505a0ed72eccc9))
+* **question-generation:** default the design slot evidence on legacy summaries ([4ccf4bc](https://github.com/uzh-bf/klicker-uzh/commit/4ccf4bcba784a3d0d49478c8b333df36f16b875e))
+* **question-generation:** repair the fixtures the branch changes invalidated ([fe7d032](https://github.com/uzh-bf/klicker-uzh/commit/fe7d032ecc00ef8f09fb33e560597486bb4abf08))
+* **question-generation:** type the review-gate objective view model ([b25334e](https://github.com/uzh-bf/klicker-uzh/commit/b25334e0182eaf59fe51d3ad851b4728a7ff73cb))
+
+
+### Refactors
+
+* **question-generation:** type the objective-source marker ([d089967](https://github.com/uzh-bf/klicker-uzh/commit/d089967628e9278a9bd1193a858c21a253b1519c))
+
+
+### Documentation
+
+* **project:** add neutral objective and evidence contract implementation plan ([c4d8f98](https://github.com/uzh-bf/klicker-uzh/commit/c4d8f98619db10962482f611b16f6bf338d02351))
+* **project:** record K1 neutral-objective marking as complete ([80eeed6](https://github.com/uzh-bf/klicker-uzh/commit/80eeed64c1ca45063fdcb4139d26b159f3f465d6))
+* **project:** record K4 verification baseline and corrections ([9237932](https://github.com/uzh-bf/klicker-uzh/commit/923793235cd3684d458ddaeedab0ca62c6c13012))
+* **project:** record the exact-head review fix and its verification ([049e64a](https://github.com/uzh-bf/klicker-uzh/commit/049e64a0042d1bf542fdbe44e34b56699f233978))
+* **project:** record the final-review capability blocker and main-session pass ([6dd3ffd](https://github.com/uzh-bf/klicker-uzh/commit/6dd3ffdf03fdfb6263dea66c6e8d5eadcbd777fb))
+* **project:** record the K4 slice-review outcome and deploy-safety fix ([616acc5](https://github.com/uzh-bf/klicker-uzh/commit/616acc59ff00db2ceb2b41fb2fa9b75ba307fc2d))
+
+
+### Enhancements
+
+* **kg:** anchor per-slot evidence and scope the content digest to course content ([#6088](https://github.com/uzh-bf/klicker-uzh/issues/6088)) ([fee7379](https://github.com/uzh-bf/klicker-uzh/commit/fee7379c95d9a93cd0f6ad737854e2cee9b82628))
+* **kg:** enable blueprint objective-source emission ([#6120](https://github.com/uzh-bf/klicker-uzh/issues/6120)) ([3741bf3](https://github.com/uzh-bf/klicker-uzh/commit/3741bf3aa10291ba49041eb19f2c503f9cc96b3a))
+
 ## [3.4.0-alpha.78](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.77...v3.4.0-alpha.78) (2026-09-17)
 
 
