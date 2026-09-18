@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { useChatContextStore } from '../stores/chatContextStore'
 import { twMerge } from 'tailwind-merge'
 import { isKnownMode } from '../lib/config/modes'
 import { useEmbedded } from '../hooks/useEmbedded'
@@ -13,6 +14,35 @@ import { useChatUi } from './chat-ui-context'
 
 // Host contract for closing the embedded conversation from inside the chat.
 const EMBEDDED_CLOSE_MESSAGE_TYPE = 'klicker:chat-close'
+
+/**
+ * Target origin for messages the frame sends to its embedding page.
+ *
+ * The stored parent origin was proven by the host itself: it is the sender of
+ * an accepted context update, and the chat already addresses its
+ * acknowledgements there. A host that has not sent one yet is still named by
+ * the frame's referrer, which the embedding pages set on the loads they
+ * initiate (the eLearning frame requests it as strict-origin-when-cross-origin,
+ * so the origin arrives without a path). Addressing the concrete origin keeps a
+ * message from reaching every page that ever embedded the frame, and a request
+ * that finds no host is not sent at all.
+ */
+export function resolveHostTargetOrigin(
+  parentOrigin: string | null,
+  referrer: string
+): string | null {
+  if (parentOrigin) return parentOrigin
+  if (!referrer) return null
+  try {
+    const { origin, protocol } = new URL(referrer)
+    // An opaque origin serializes as "null", which is not a usable
+    // targetOrigin; only a real http(s) page can host the frame.
+    if (protocol !== 'http:' && protocol !== 'https:') return null
+    return origin
+  } catch {
+    return null
+  }
+}
 
 /**
  * Whether the embedded mode select has anything to offer. Shared by the bar
@@ -194,26 +224,33 @@ export function EmbeddedNewConversation({ className }: { className?: string }) {
 // Closes the embedded conversation by posting the close request to the host
 // window. The host decides what closing means (it hides the panel and returns
 // focus to its launcher); without a host there is nothing to close, so the
-// button does not render. Sending with '*': the frame is embedded by approved
-// hosts only and the message carries no data beyond its type, which the host
-// verifies against the frame's own origin before acting on it.
+// button does not render. The request is addressed at the host's own origin
+// (see resolveHostTargetOrigin) and carries no data beyond its type, which the
+// host verifies against the frame's own origin before acting on it.
 export function EmbeddedCloseButton({ className }: { className?: string }) {
   const t = useTranslations()
   const embedded = useEmbedded()
+  const parentOrigin = useChatContextStore((state) => state.parentOrigin)
   // The guard is decided on the client after mount so SSR renders nothing and
   // hydration does not flip a visible button into nothing (or the reverse).
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const inFrame =
     mounted && typeof window !== 'undefined' && window.parent !== window
-  if (!embedded || !inFrame) return null
+  const targetOrigin = inFrame
+    ? resolveHostTargetOrigin(parentOrigin, document.referrer)
+    : null
+  if (!embedded || !inFrame || !targetOrigin) return null
 
   return (
     <button
       type="button"
       data-cy="chat-embedded-close"
       onClick={() => {
-        window.parent.postMessage({ type: EMBEDDED_CLOSE_MESSAGE_TYPE }, '*')
+        window.parent.postMessage(
+          { type: EMBEDDED_CLOSE_MESSAGE_TYPE },
+          targetOrigin
+        )
       }}
       aria-label={t('chat.embedded.close')}
       title={t('chat.embedded.close')}
