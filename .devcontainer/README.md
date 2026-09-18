@@ -227,13 +227,26 @@ psql "host=db.klicker.<workspace>.localhost port=5432 user=klicker_test \
 
 ## Auth model in dev
 
-EduID is replaced by klicker's own **credentials login** (no OIDC mock needed).
-Seeded users (`packages/prisma-data`): `lecturer`/`abcd` (ADMIN), `free`/`abcd`,
-`pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd`. Cross-app sessions work because
-linked-worktree apps are served under the same `klicker.<workspace>.localhost`
-parent and the cookie domain resolves to that parent. `post-start.sh` rewrites
-the public origins and `AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because
-the hardcoded defaults only know `klicker.com`.
+Lecturer login uses klicker's own **credentials login** — `lecturer`/`abcd`
+(ADMIN), `free`/`abcd`, `pro1..3`/`abcd`, and `testuser1..50`/`abcdabcd` come
+from `packages/prisma-data`. Cross-app sessions work because linked-worktree apps
+are served under the same `klicker.<workspace>.localhost` parent and the cookie
+domain resolves to that parent. `post-start.sh` rewrites the public origins and
+`AUTH_*_ALLOWED_HOSTS` when `WORKSPACE` is set, because the hardcoded defaults
+only know `klicker.com`.
+
+**Edu-ID** is served by a local OIDC mock (`oidc` service, routed at
+`https://oidc.klicker[.<workspace>].localhost`). The real SWITCH client registers
+redirect URIs per client, so `uzh_klicker_auth_dev` only ever accepts
+`https://auth.klicker.com/api/auth/callback/...`; a linked worktree's
+`https://auth.klicker.<workspace>.localhost/...` callback is rejected by the
+provider and no local configuration can change that. The mock accepts any
+redirect URI, so Edu-ID login and the assessment flow are testable in every
+checkout. It signs in one fixed synthetic participant
+(`testuser2@test.uzh.ch`, `sub=local-eduid-dev`); `post-start.sh` exposes it only
+while `EDUID_CLIENT_SECRET` is unset, so real provider credentials always win.
+Link that mock identity to a seeded participant with
+`pnpm --filter @klicker-uzh/prisma-data run seed:local-eduid-link`.
 
 ## Hatchet token
 
