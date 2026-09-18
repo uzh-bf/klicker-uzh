@@ -145,12 +145,8 @@ function planOutputs(plan) {
   // Only a push publishes images, so a pull request has no scan or AMD64 legs
   // and the required status must not expect them.
   const publishing = running && plan.mode === 'push-all'
-  const scanTargets = publishing
-    ? selected.filter((target) => target.scan)
-    : []
-  const amdTargets = publishing
-    ? selected.filter((target) => target.amd)
-    : []
+  const scanTargets = publishing ? selected.filter((target) => target.scan) : []
+  const amdTargets = publishing ? selected.filter((target) => target.amd) : []
   // Each target belongs to exactly one build job. The migrator stage runs
   // first, the dependent app stage waits for it, and everything else is
   // independent.
@@ -169,8 +165,7 @@ function planOutputs(plan) {
     'amd-matrix': JSON.stringify(
       amdTargets.map((target) => matrixEntry(target, amdJobName(target)))
     ),
-    'after-migrator-build':
-      afterMigratorTargets.length > 0 ? 'true' : 'false',
+    'after-migrator-build': afterMigratorTargets.length > 0 ? 'true' : 'false',
     'after-migrator-matrix': JSON.stringify(
       afterMigratorTargets.map((target) =>
         matrixEntry(target, buildJobName(target))
