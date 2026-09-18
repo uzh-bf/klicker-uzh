@@ -327,3 +327,29 @@ worktrees; repository or runner settings.
 - Playwright shard routing and the hosted required test contexts.
 - The MCP AMD64 leg's platform or its publish guard, which stay as-is.
 - The optional follow-up that removes the two dead MCP names from the watch list.
+
+## Progress
+
+Updated 2026-09-18.
+
+- **S0 done.** Current `v3` is merged into `v3-audit`, so the audit branch
+  starts from a current base.
+- **S1 done on the `v3` branch.** `v3_images-stg.yml` and the shared plan,
+  status, target and workflow modules are in place; the thirteen per-image
+  workflows and `v3_build-fallback.yml` are deleted.
+- **S2 done on the `v3` branch.** The promoter, the derived scan-admission
+  inventory, the controller watch list, the closed-PR sweeper, the event-gate
+  tests, the `check.yml` contract list and `docs/ci-and-deployment.md` all read
+  the one workflow. The superseded `required-build-status` module and its
+  fifteen-file fixture suite are removed.
+- **S3 done on the `v3-audit` branch.** The consolidated tree is merged in, the
+  two MCP staging workflows are deleted, and `mcp-lecturer-arm` and
+  `mcp-student-arm` build through the shared matrix. The audit-only
+  `stg-release-ref-promotion.test.cjs` is rebound to the trusted inventory.
+- **S4 pending.** Both draft PRs are open (#6141 on `v3`, #6147 on
+  `v3-audit`); the canary run is queued behind the shared runner backlog.
+
+Local verification on both trees: `node --test` over the CI contract list
+passes (293 tests on `v3`, 301 on `v3-audit`), Biome and Prettier are clean,
+and a local promoter dry run resolves 14 targets on `v3` and 16 on
+`v3-audit` with no required CI workflow absent from either tree.
