@@ -454,7 +454,13 @@ wait_for_app() {
   local attempt observation status=0 last_observation=''
   local stale_count=0 unexpected_count=0
   local started=$SECONDS deadline remaining timeout last_report=$SECONDS
-  deadline=$((started + 90))
+  # The readiness deadline is a fixed production value; the readiness
+  # self-check shortens it so it can verify the enforced-deadline contract
+  # without spending the full wait.
+  local readiness_seconds="${KLICKER_DEV_RUNTIME_READY_SECONDS:-90}"
+  [[ "$readiness_seconds" =~ ^[1-9][0-9]*$ ]] ||
+    die "KLICKER_DEV_RUNTIME_READY_SECONDS must be a positive integer."
+  deadline=$((started + readiness_seconds))
 
   require_tool sleep
   echo "[dev-runtime] Waiting for the $app readiness contract..."
@@ -507,7 +513,7 @@ wait_for_app() {
     sleep 1
   done
 
-  echo "[dev-runtime] $app did not satisfy its readiness contract within 90 seconds." >&2
+  echo "[dev-runtime] $app did not satisfy its readiness contract within $readiness_seconds seconds." >&2
   return 1
 }
 
