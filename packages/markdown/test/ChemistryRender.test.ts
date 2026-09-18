@@ -45,6 +45,25 @@ describe('Markdown chemistry rendering', () => {
   })
 
   it.each([
+    ['unicode prime', '$$\\ce{5\u2032-ATCG-3\u2032}$$'],
+    ['prime command', String.raw`$$\ce{5^{\prime}-ATCG-3^{\prime}}$$`],
+  ])('renders a DNA strand with %s ends', (_, content) => {
+    const html = renderMarkdown(content)
+
+    expect(html).toContain('class="katex"')
+    expect(html).not.toContain('katex-error')
+  })
+
+  it('rejects a DNA strand written with a bare apostrophe prime', () => {
+    // mhchem's prime parser consumes the following brace, so the raw
+    // apostrophe form fails to parse; the supported forms are the unicode
+    // prime and the explicit command above.
+    const html = renderMarkdown(String.raw`$$\ce{5\'-ATCG-3\'}$$`)
+
+    expect(html).toContain('katex-error')
+  })
+
+  it.each([
     ['bare command', String.raw`\ce{H2O}`],
     ['single-dollar', String.raw`$\ce{H2O}$`],
     ['parenthesis', String.raw`\(\ce{H2O}\)`],
