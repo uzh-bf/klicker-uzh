@@ -903,7 +903,8 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                     {t('kb.graphFocusTopicNote')}
                   </p>
                 </div>
-              ) : config?.focusTopic != null ? (
+              ) : null}
+              {!domainCapabilityEnabled && config?.focusTopic != null ? (
                 <div
                   className="mt-3 space-y-1"
                   data-cy="kb-knowledge-graph-focus-topic"
