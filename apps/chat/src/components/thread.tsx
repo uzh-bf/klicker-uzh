@@ -354,9 +354,18 @@ export const Thread: FC<ThreadProps> = ({
         // when the run becomes terminal; disabling resize-driven bottom
         // scrolling for that insertion prevents a large source grid from
         // jumping past the final answer.
+        //
+        // The viewport must not set scroll-smooth. The thread viewport
+        // auto-scroll hook re-issues scrollTo({ behavior: 'auto' }) on every
+        // content growth during a run, and CSS scroll-behavior makes that
+        // "auto" resolve to an animated scroll. Each streamed chunk therefore
+        // restarts the animation from the current position, so the viewport
+        // falls progressively further behind the growing answer instead of
+        // tracking it. Explicit smooth scrolling (citation jumps, history-rail
+        // navigation) is requested per call and is unaffected by this.
         autoScroll={isRunning}
         className={twMerge(
-          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:scroll-auto',
+          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset',
           embedded
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-4 pt-2'
             : twMerge(
