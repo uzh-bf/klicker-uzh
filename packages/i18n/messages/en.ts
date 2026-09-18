@@ -2730,6 +2730,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         FAILED: 'Failed',
         REJECTED: 'Rejected',
       },
+      failureClasses: {
+        user_input:
+          'This element could not be grounded in the selected material. Adjust the source scope or the learning objective and generate again.',
+        self_repairable:
+          'The workflow corrected this element internally and reported it for transparency.',
+        system:
+          'The generation service could not process this element, which is not caused by your input. Retry the generation; if the problem persists, contact support.',
+      },
+      failureClassLabels: {
+        user_input: 'Source material',
+        self_repairable: 'Automatically corrected',
+        system: 'System error',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'The selected sources contain no matching documents for this element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'The requested topic does not appear in the selected material.',
+        LEVEL_NOT_GROUNDABLE:
+          'The selected material does not support the requested cognitive level for this element.',
+        NO_DISTINCT_EVIDENCE:
+          'Several elements would rely on the same evidence, so this element was left out.',
+        GROUNDING_EXHAUSTED:
+          'The workflow used all usable evidence without producing a grounded element.',
+        SYSTEM_FAILURE:
+          'The generation service reported an internal failure for this element.',
+      },
       build: {
         title: '{type} generation',
         stage: 'Current stage: {stage}',
@@ -2752,6 +2779,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'I understand that the resulting set contains fewer elements than requested.',
         rejected: 'This generation was rejected during review.',
         noDrafts: 'The generation completed without reviewable elements.',
+        legacyFailure:
+          'This run failed before the workflow reported per-element reasons.',
+        failureReasonsTitle:
+          '{count, plural, one {# element is missing from this generation} other {# elements are missing from this generation}}',
+        failureReasonsHelp:
+          'The workflow reported why these elements could not be generated. The delivered elements are unaffected and stay in review.',
+        failureModule: 'Module',
+        failureObjective: 'Learning objective',
+        failureLevel: 'Bloom level',
+        failureEvidence: 'Required evidence',
+        failureSuggestions: 'Topics covered by your material',
+        failureRetryGuidance:
+          'This is a system-side problem. Retry the generation; if it persists, contact support.',
+        failureDiagnostics: 'Technical diagnostics',
       },
       gate: {
         eyebrow: 'Review gate',

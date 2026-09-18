@@ -14,6 +14,11 @@ import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { GENERATION_STARTED_EVENT } from '../../generation/GenerationStatusProvider'
+import {
+  type ElementGenerationSlotFailureView,
+  elementGenerationResultSurface,
+  elementGenerationSlotFailures,
+} from './designReviewSummary'
 import ElementGenerationReviewGatePanel from './ElementGenerationReviewGate'
 import {
   elementGenerationErrorCode,
@@ -102,6 +107,19 @@ export default function ElementGenerationBuild({
     reviewState.loading || retryState.loading || publishState.loading
   const currentBuildId = build.id
   const currentElementType = build.elementType
+  const slotFailures = elementGenerationSlotFailures(build.slotFailures)
+  const isDelivered =
+    build.status === ElementGenerationBuildStatus.Completed ||
+    build.status === ElementGenerationBuildStatus.Incomplete
+  // A failed run with structured reasons replaces the generic workflow error
+  // with per-slot reason cards; a partial run that delivered no element shows
+  // the same cards instead of the empty review state.
+  const resultSurface = elementGenerationResultSurface({
+    isFailed: build.status === ElementGenerationBuildStatus.Failed,
+    isDelivered,
+    draftCount: build.drafts.length,
+    failureCount: slotFailures.length,
+  })
 
   async function refresh() {
     await query.refetch()
@@ -283,9 +301,18 @@ export default function ElementGenerationBuild({
       {build.status === ElementGenerationBuildStatus.Failed ? (
         <section className="rounded-xl border border-red-200 bg-red-50 p-5">
           <h2 className="font-semibold text-red-950">{t('build.failed')}</h2>
-          <p className="mt-2 text-sm text-red-900">
-            {build.errorMessage ?? t('build.failedHelp')}
-          </p>
+          {resultSurface === 'slotFailures' ? (
+            <ElementGenerationSlotFailureList failures={slotFailures} />
+          ) : (
+            <div data-cy="element-generation-failed-legacy">
+              <p className="mt-2 text-sm text-red-900">
+                {build.errorMessage ?? t('build.failedHelp')}
+              </p>
+              <p className="mt-2 text-xs text-red-800">
+                {t('build.legacyFailure')}
+              </p>
+            </div>
+          )}
           {build.errorCode ? (
             <p className="mt-2 text-xs text-red-800">{build.errorCode}</p>
           ) : null}
@@ -396,9 +423,22 @@ export default function ElementGenerationBuild({
         <GeneratedElementReview build={build} onChanged={refresh} />
       ) : null}
 
-      {(build.status === ElementGenerationBuildStatus.Completed ||
-        build.status === ElementGenerationBuildStatus.Incomplete) &&
-      build.drafts.length === 0 ? (
+      {isDelivered && resultSurface === 'slotFailures' ? (
+        <section
+          className="rounded-xl border border-amber-200 bg-amber-50 p-5"
+          data-cy="element-generation-partial-attention"
+        >
+          <h2 className="font-semibold text-amber-950">
+            {t('build.failureReasonsTitle', { count: slotFailures.length })}
+          </h2>
+          <p className="mt-2 text-sm text-amber-900">
+            {t('build.failureReasonsHelp')}
+          </p>
+          <ElementGenerationSlotFailureList failures={slotFailures} />
+        </section>
+      ) : null}
+
+      {isDelivered && resultSurface === 'noDrafts' ? (
         <UserNotification
           type="warning"
           message={t('build.noDrafts')}
@@ -414,5 +454,128 @@ export default function ElementGenerationBuild({
         />
       ) : null}
     </div>
+  )
+}
+
+// One card per slot the workflow could not supply. The card is keyed by the
+// stable reason code, while the message comes from the reason-code mapping
+// or, for a code this client does not know, from its failure class, so no
+// untranslated identifier reaches the lecturer.
+function ElementGenerationSlotFailureList({
+  failures,
+}: {
+  failures: ElementGenerationSlotFailureView[]
+}) {
+  const t = useTranslations('manage.elementGeneration')
+
+  return (
+    <ul className="mt-4 space-y-3" data-cy="element-generation-slot-failures">
+      {failures.map((failure) => (
+        <li
+          key={`${failure.slotId}-${failure.reasonCode}`}
+          className="rounded-lg border border-slate-200 bg-white p-4"
+          data-cy="element-generation-slot-failure"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span
+              className="font-mono text-xs text-slate-500"
+              data-cy="element-generation-slot-failure-id"
+            >
+              {failure.slotId}
+            </span>
+            <span
+              className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700"
+              data-cy={`element-generation-slot-failure-class-${failure.failureClass}`}
+            >
+              {t(failure.failureClassLabelKey)}
+            </span>
+          </div>
+          <p
+            className="mt-2 text-sm font-medium text-slate-900"
+            data-cy="element-generation-slot-failure-reason"
+          >
+            {t(failure.reasonKey)}
+          </p>
+          <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+            {failure.moduleId ? (
+              <div>
+                <dt className="text-slate-500">{t('build.failureModule')}</dt>
+                <dd className="text-slate-800">{failure.moduleId}</dd>
+              </div>
+            ) : null}
+            {failure.objective ? (
+              <div>
+                <dt className="text-slate-500">
+                  {t('build.failureObjective')}
+                </dt>
+                <dd className="text-slate-800">
+                  {failure.objective}
+                  {failure.isGeneratedDefaultObjective ? (
+                    <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">
+                      {t('gate.generatedDefaultObjective')}
+                    </span>
+                  ) : null}
+                </dd>
+              </div>
+            ) : null}
+            {failure.requestedLevel ? (
+              <div>
+                <dt className="text-slate-500">{t('build.failureLevel')}</dt>
+                <dd className="text-slate-800">
+                  {t(`bloom.${failure.requestedLevel}`)}
+                </dd>
+              </div>
+            ) : null}
+            {failure.evidenceTarget ? (
+              <div>
+                <dt className="text-slate-500">{t('build.failureEvidence')}</dt>
+                <dd className="text-slate-800">{failure.evidenceTarget}</dd>
+              </div>
+            ) : null}
+          </dl>
+          {failure.suggestions.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-xs font-semibold text-slate-500">
+                {t('build.failureSuggestions')}
+              </p>
+              <ul
+                className="mt-1 flex flex-wrap gap-2"
+                data-cy="element-generation-slot-failure-suggestions"
+              >
+                {failure.suggestions.map((suggestion) => (
+                  <li
+                    key={suggestion}
+                    className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs text-cyan-900"
+                  >
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {failure.showsRetryGuidance ? (
+            <p
+              className="mt-3 text-xs text-amber-900"
+              data-cy="element-generation-slot-failure-retry"
+            >
+              {t('build.failureRetryGuidance')}
+            </p>
+          ) : null}
+          {failure.detail ? (
+            <details
+              className="mt-3"
+              data-cy="element-generation-slot-failure-detail"
+            >
+              <summary className="cursor-pointer text-xs text-slate-500">
+                {t('build.failureDiagnostics')}
+              </summary>
+              <p className="mt-1 text-xs whitespace-pre-wrap text-slate-600">
+                {failure.detail}
+              </p>
+            </details>
+          ) : null}
+        </li>
+      ))}
+    </ul>
   )
 }
