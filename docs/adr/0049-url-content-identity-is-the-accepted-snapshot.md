@@ -59,4 +59,3 @@ The current milestone does not change the fetch contract: static pages keep
 working, and dynamic pages keep failing with `digest_mismatch` until the
 single-fetch path lands. That path is a separate ingestion-platform package, and
 until it ships the supported URL class is static pages only.
-
