@@ -168,3 +168,11 @@ collections that never stored it.
   Fixed separately in PR #6151 (against `v3-ai`), merged in here, and re-verified:
   syncpack clean, `graphql check` and `kb-management check` clean, focused suite
   17 passed.
+- Integrated `origin/main` into the doc-query branch after upstream advanced with a
+  complementary inventory change (reference fallback plus `source_path` projection)
+  in the same function. Merge resolved by keeping both field additions; the merged
+  suite is green at 919 passed and `poe check` is clean.
+- Exact-head CI on PR #6149 is green apart from the repository-wide `ocr-review`
+  infrastructure failure (HTTP 403 from the configured review provider, failing on
+  unrelated branches too). The `final-ai-review` status stays pending because the
+  review workflow only authorizes a non-draft PR; marking ready is withheld.
