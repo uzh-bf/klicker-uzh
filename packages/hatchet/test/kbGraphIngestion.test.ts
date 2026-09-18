@@ -1,4 +1,7 @@
-import { hashKBContentDigestEntries } from '@klicker-uzh/knowledge-graph'
+import {
+  getDefaultKBGraphDomainCatalog,
+  hashKBContentDigestEntries,
+} from '@klicker-uzh/knowledge-graph'
 import {
   KBGraphBuildStatus,
   KBGraphCostStatus,
@@ -13,12 +16,12 @@ import {
   monitorActiveKBGraphBuilds,
 } from '../src/kbGraphIngestion.js'
 import {
+  type ExternalKBGraphClient,
   getKBGraphSourceUrl,
   getKBGraphTerminalResult,
   KB_GRAPH_BUILD_METADATA_KEY,
   KB_GRAPH_KB_METADATA_KEY,
   validateKBGraphWorkerConfig,
-  type ExternalKBGraphClient,
 } from '../src/kbGraphIngestionApi.js'
 
 const NOW = new Date('2026-08-01T12:00:00.000Z')
@@ -38,6 +41,9 @@ const SOURCE_DIGEST = hashKBContentDigestEntries([
   { resourceId: RESOURCE_ID, contentSha256: CONTENT_SHA256 },
 ])
 const SOURCE_URL = 'https://content.example.org/public-paper.pdf?version=1'
+// The capability gate only opens while the environment carries the revision of
+// the catalog shipped with the deployment, so tests derive it from that export.
+const DOMAIN_CATALOG_REVISION = getDefaultKBGraphDomainCatalog().revision
 
 const externalEnv = {
   KB_GRAPH_HATCHET_CLIENT_TOKEN: 'external-token',
@@ -65,6 +71,9 @@ function createBuild(overrides: Record<string, unknown> = {}) {
     graphName: `klickeruzh:kb:${KB_ID}:${BUILD_ID}`,
     graphmlBlobName: `knowledge-graphs/${BUILD_ID}.graphml`,
     qualityTier: KBGraphQualityTier.STANDARD,
+    domainPolicyId: null,
+    domainPolicyVersion: null,
+    domainPolicyLanguage: null,
     createdAt: CREATED_AT,
     status: KBGraphBuildStatus.QUEUED,
     externalOperationId: null,
@@ -492,6 +501,144 @@ describe('KB graph external dispatch', () => {
         KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS: 'false',
       }).upload_graph_artifacts
     ).toBe(false)
+  })
+
+  it('adds the frozen domain policy only for an explicit build', () => {
+    const legacyPayload = buildExternalKBGraphPayload(
+      createBuild(),
+      [SOURCE_URL],
+      externalEnv
+    )
+    expect(legacyPayload).not.toHaveProperty('domain_policy')
+    expect(legacyPayload).not.toHaveProperty('language')
+    expect(legacyPayload).not.toHaveProperty('allowed_entity_types')
+
+    const explicitPayload = buildExternalKBGraphPayload(
+      createBuild({
+        domainPolicyId: 'finance',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      }),
+      [SOURCE_URL],
+      {
+        ...externalEnv,
+        KB_GRAPH_DOMAIN_CATALOG_REVISION: DOMAIN_CATALOG_REVISION,
+      }
+    )
+    expect(explicitPayload).toMatchObject({
+      domain_policy: { template_id: 'finance', template_version: 1 },
+      language: 'German',
+    })
+    expect(explicitPayload).not.toHaveProperty('allowed_entity_types')
+  })
+
+  it('rejects an explicit build before the provider call when the capability gate is closed', async () => {
+    const build = createBuild({
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+    })
+    const prisma = createDispatchPrisma({ build })
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          // The deployment no longer advertises explicit options.
+          env: { ...externalEnv, KB_GRAPH_DOMAIN_CATALOG_REVISION: '' },
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorCode: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED',
+        }),
+      })
+    )
+    // Ordinary gate compensation still releases the reservation and slot.
+    expect(prisma.kBGraphQuota.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { reservedMinorUnits: { decrement: 100 } },
+      })
+    )
+  })
+
+  it('rejects a frozen policy that the current catalog dropped', async () => {
+    const build = createBuild({
+      domainPolicyId: 'retired-policy',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+    })
+    const prisma = createDispatchPrisma({ build })
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: {
+            ...externalEnv,
+            KB_GRAPH_DOMAIN_CATALOG_REVISION: DOMAIN_CATALOG_REVISION,
+          },
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBeUndefined()
+
+    expect(client.runNoWait).not.toHaveBeenCalled()
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          errorCode: 'KB_GRAPH_DOMAIN_UNKNOWN_POLICY',
+        }),
+      })
+    )
+  })
+
+  it('dispatches the frozen domain selection once the capability gate matches', async () => {
+    const build = createBuild({
+      domainPolicyId: 'economics',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'English',
+    })
+    const prisma = createDispatchPrisma({ build })
+    const client = createClient()
+
+    await expect(
+      dispatchKBGraphBuild(
+        { buildId: BUILD_ID },
+        {
+          prisma: prisma as never,
+          client,
+          env: {
+            ...externalEnv,
+            KB_GRAPH_DOMAIN_CATALOG_REVISION: DOMAIN_CATALOG_REVISION,
+          },
+          now: () => NOW,
+          getSourceUrl: () => SOURCE_URL,
+        }
+      )
+    ).resolves.toBe('external-run-id')
+
+    expect(vi.mocked(client.runNoWait)).toHaveBeenCalledWith(
+      'course-kg-ingestion',
+      expect.objectContaining({
+        domain_policy: { template_id: 'economics', template_version: 1 },
+        language: 'English',
+      }),
+      expect.anything()
+    )
   })
 
   it('creates an exact-blob, read-only, HTTPS-only SAS for a private source', () => {

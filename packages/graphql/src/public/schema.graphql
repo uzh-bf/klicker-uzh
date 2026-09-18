@@ -2385,6 +2385,10 @@ type KBKnowledgeGraphConfig {
   costCurrency: String
   costStatus: KBGraphCostStatus
   createdAt: Date
+  domainCategories: [KBKnowledgeGraphDomainCategory!]
+  domainPolicyId: String
+  domainPolicyLanguage: String
+  domainPolicyVersion: Int
   elementGenerationReady: Boolean!
   estimatedCostMinorUnits: Int
   finishedAt: Date
@@ -2394,6 +2398,9 @@ type KBKnowledgeGraphConfig {
   kbId: ID!
   maxCostMinorUnits: Int
   publishedBuildId: ID
+  publishedDomainPolicyId: String
+  publishedDomainPolicyLanguage: String
+  publishedDomainPolicyVersion: Int
   qualityTier: KBGraphQualityTier
   quotaCurrency: String
   remainingSemesterQuotaMinorUnits: Int
@@ -2408,6 +2415,30 @@ type KBKnowledgeGraphConfig {
   statusMessage: String
   updatedAt: Date
   worstCaseRemainingMinorUnits: Int
+}
+
+type KBKnowledgeGraphDomainCategory {
+  definition: String!
+  name: String!
+}
+
+type KBKnowledgeGraphDomainConfig {
+  capabilityEnabled: Boolean!
+  catalogDigest: String
+  catalogRevision: String
+  options: [KBKnowledgeGraphDomainOption!]!
+}
+
+type KBKnowledgeGraphDomainLanguage {
+  categories: [KBKnowledgeGraphDomainCategory!]!
+  language: String!
+}
+
+type KBKnowledgeGraphDomainOption {
+  id: ID!
+  labelKey: String!
+  languages: [KBKnowledgeGraphDomainLanguage!]!
+  version: Int!
 }
 
 type KBMetrics {
@@ -2824,6 +2855,7 @@ type Mutation {
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   rebuildKbKnowledgeGraph(kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
+  rebuildKbKnowledgeGraphWithDomain(domainPolicyId: ID, domainPolicyLanguage: String, domainPolicyVersion: Int, kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
   rejectChatbotRevision(comment: String!, expectedRevisionVersion: Int!, id: String!): Chatbot
   rejectResponseExample(id: String!): ResponseExampleSet
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
@@ -3396,6 +3428,7 @@ type Query {
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
   getKbImportedSources(after: String, first: Int, kbId: ID!): KBImportedSourceConnection!
   getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
+  getKbKnowledgeGraphDomainConfig(kbId: ID!): KBKnowledgeGraphDomainConfig!
   getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
   getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!
   getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!

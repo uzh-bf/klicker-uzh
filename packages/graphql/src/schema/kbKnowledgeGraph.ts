@@ -1,3 +1,4 @@
+import type { KBGraphDomainCategory } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   KnowledgeGraphEdge,
@@ -6,7 +7,12 @@ import type {
   KnowledgeGraphSourceReference,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import type { KBKnowledgeGraphConfig } from '../services/knowledge.js'
+import type {
+  KBKnowledgeGraphConfig,
+  KbGraphDomainConfig,
+  KbGraphDomainConfigLanguage,
+  KbGraphDomainConfigOption,
+} from '../services/knowledge.js'
 
 export const KBGraphBuildStatus = builder.enumType('KBGraphBuildStatus', {
   values: Object.values(DB.KBGraphBuildStatus),
@@ -22,6 +28,57 @@ export const KBGraphCostStatus = builder.enumType('KBGraphCostStatus', {
 
 export const KBKnowledgeGraphConfigRef =
   builder.objectRef<KBKnowledgeGraphConfig>('KBKnowledgeGraphConfig')
+export const KBKnowledgeGraphDomainCategoryRef =
+  builder.objectRef<KBGraphDomainCategory>('KBKnowledgeGraphDomainCategory')
+export const KBKnowledgeGraphDomainCategoryType =
+  KBKnowledgeGraphDomainCategoryRef.implement({
+    fields: (t) => ({
+      name: t.exposeString('name'),
+      definition: t.exposeString('definition'),
+    }),
+  })
+
+export const KBKnowledgeGraphDomainLanguageRef =
+  builder.objectRef<KbGraphDomainConfigLanguage>(
+    'KBKnowledgeGraphDomainLanguage'
+  )
+export const KBKnowledgeGraphDomainLanguageType =
+  KBKnowledgeGraphDomainLanguageRef.implement({
+    fields: (t) => ({
+      language: t.exposeString('language'),
+      categories: t.expose('categories', {
+        type: [KBKnowledgeGraphDomainCategoryRef],
+      }),
+    }),
+  })
+
+export const KBKnowledgeGraphDomainOptionRef =
+  builder.objectRef<KbGraphDomainConfigOption>('KBKnowledgeGraphDomainOption')
+export const KBKnowledgeGraphDomainOptionType =
+  KBKnowledgeGraphDomainOptionRef.implement({
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      version: t.exposeInt('version'),
+      labelKey: t.exposeString('labelKey'),
+      languages: t.expose('languages', {
+        type: [KBKnowledgeGraphDomainLanguageRef],
+      }),
+    }),
+  })
+
+export const KBKnowledgeGraphDomainConfigRef =
+  builder.objectRef<KbGraphDomainConfig>('KBKnowledgeGraphDomainConfig')
+export const KBKnowledgeGraphDomainConfigType =
+  KBKnowledgeGraphDomainConfigRef.implement({
+    fields: (t) => ({
+      capabilityEnabled: t.exposeBoolean('capabilityEnabled'),
+      catalogRevision: t.exposeString('catalogRevision', { nullable: true }),
+      catalogDigest: t.exposeString('catalogDigest', { nullable: true }),
+      options: t.expose('options', {
+        type: [KBKnowledgeGraphDomainOptionRef],
+      }),
+    }),
+  })
 export const KBKnowledgeGraphConfigType = KBKnowledgeGraphConfigRef.implement({
   fields: (t) => ({
     kbId: t.exposeID('kbId'),
@@ -88,6 +145,27 @@ export const KBKnowledgeGraphConfigType = KBKnowledgeGraphConfigRef.implement({
       { nullable: true }
     ),
     worstCaseRemainingMinorUnits: t.exposeInt('worstCaseRemainingMinorUnits', {
+      nullable: true,
+    }),
+    // Frozen domain selection of the reported build, plus the published build's
+    // own selection. Nulls mean the legacy provider default policy applies.
+    domainPolicyId: t.exposeString('domainPolicyId', { nullable: true }),
+    domainPolicyVersion: t.exposeInt('domainPolicyVersion', { nullable: true }),
+    domainPolicyLanguage: t.exposeString('domainPolicyLanguage', {
+      nullable: true,
+    }),
+    publishedDomainPolicyId: t.exposeString('publishedDomainPolicyId', {
+      nullable: true,
+    }),
+    publishedDomainPolicyVersion: t.exposeInt('publishedDomainPolicyVersion', {
+      nullable: true,
+    }),
+    publishedDomainPolicyLanguage: t.exposeString(
+      'publishedDomainPolicyLanguage',
+      { nullable: true }
+    ),
+    domainCategories: t.expose('domainCategories', {
+      type: [KBKnowledgeGraphDomainCategoryRef],
       nullable: true,
     }),
   }),
