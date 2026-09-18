@@ -868,7 +868,10 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   ]
   await Promise.all(
     PARTICIPANT_GROUP_IDS_SINGLE.map(async (id, ix) => {
-      const code = 100000 + Math.floor(Math.random() * 900000)
+      // A group code is unique per course, so it is derived from the group's
+      // position instead of being drawn at random: two draws could collide and
+      // fail the seed on the [courseId, code] constraint.
+      const code = 900100 + ix
 
       return prisma.participantGroup.upsert({
         where: {
@@ -964,7 +967,9 @@ async function seedTest(prisma: Prisma.PrismaClient) {
   // create participant groups
   await Promise.all(
     PARTICIPANT_GROUP_IDS.map(async (id, ix) => {
-      const code = 100000 + Math.floor(Math.random() * 900000)
+      // Same collision-free derivation as the single groups above, in its own
+      // range so the two blocks can never hand out the same code.
+      const code = 900200 + ix
 
       return prisma.participantGroup.upsert({
         where: {
