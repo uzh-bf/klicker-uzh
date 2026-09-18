@@ -1480,3 +1480,103 @@ required from the user.
   guarded, so it is not a queue-relief target; the ruling stands as written
   for the images it was about, with the MCP exception now recorded so the next
   audit does not re-derive it or mistake it for a defect.
+
+- 2026-09-18 reaper merge and the false-policy blocker. Both authorized reapers
+  landed: #6132 merged as `c504f78776f44437c02d866464c0619770590729` at
+  10:34:47Z with the queued-duplicate rule layered onto #6075's push-sweep and
+  detached-run proof, and #6075 closed as superseded rather than merged: its
+  three touched files are byte-identical between `v3` and #6132's verified
+  head (`ci-obsolete-runs.cjs`, `ci-obsolete-runs.test.cjs`,
+  `docs/ci-and-deployment.md`), so it conflicted only because its content had
+  already landed. Nothing was lost; the superseded-closure note records the
+  comparison.
+
+  **A stale mergeability evaluation reported a policy block that did not
+  exist.** `gh pr merge 6132 --squash` reported "the base branch policy
+  prohibits the merge" and suggested `--auto` or `--admin`, and
+  `mergeStateStatus` read `BLOCKED`. All eight required contexts had a
+  SUCCESS at the head `5d27b67577`, the head contained the current `v3` tip,
+  and the `pull_request` ruleset's `require_code_owner_review` and
+  `require_extra_approval_for_unattributed_changes` were satisfied: every
+  commit is attributed to `rschlaefli`, the same author as the successfully
+  merged #6104. The identical PUT to `/pulls/6132/merge` succeeded on the
+  first attempt and returned `c504f78776`, so the block was GitHub's
+  asynchronous mergeability cache, not an unmet requirement.
+
+  **Correction to the first reading of this entry.** I initially attributed the
+  block to two `test-playwright-status` FAILURE check runs (ids
+  `105543062758`, `105543064279`, completed 09:37:16Z and 09:37:57Z) left by
+  cancelled Playwright runs, because they appear in the check-run listing next
+  to a later SUCCESS. That attribution is not supported: `filter=latest`
+  subsequently resolved `test-playwright-status` to a non-failure, and the
+  other blocked PRs I checked did **not** share the signature. #6133
+  (`87ccc36b`) and #6095 (`114c7dd6`) both carry genuine `failure`
+  conclusions at their newest check-run ids, so stale-cancelled failures are
+  not a general explanation for `BLOCKED`. What remains proven is narrower and
+  still worth recording: cancelled workflow runs do leave `failure` check runs
+  on the head, the same cancellation-artifact class as the earlier
+  `test-playwright-status` and `Promote to stg` findings, and that residue
+  should be cleared by the reaper and the `cancel-closed-pr` path.
+
+  Practical rule for this repository: when `gh pr merge` reports a policy
+  block, first confirm every required context has a success at the exact head
+  and that the head contains the base tip. If both hold, retry through the
+  merge API rather than reaching for `--admin`; the state is usually a stale
+  evaluation. `--admin` bypasses the requirement rather than satisfying it and
+  stays out of bounds.
+
+- 2026-09-18 first applied reap on the merged `v3` reaper. Read-only inventory
+  at 12:5xZ over 25 active allowlisted runs found 6 `merged-or-closed-PR`
+  entries, all residue from the deleted `rs/v3-audit-sync-20260918b` and
+  `rs/audit-ci-fixtures` branches; the earlier queued duplicates had already
+  drained. `--apply` cancelled three to terminal `completed/cancelled`
+  (`35336300690`, `35336300770`, `35336300579`). Three accepted the
+  cancellation but had not reached terminal state at readback
+  (`35336300710`, `34749125387`), and `35336008675` had already left the
+  allowlist by the time it was processed (`outside-policy`).
+
+  Two behaviours worth keeping. First, the fail-closed readback works as
+  designed: an unconfirmed cancellation stops the batch and sets exit code 1, so
+  the remaining IDs need separate invocations rather than a retry loop. Second,
+  `34749125387` again returned `409 has not been queued yet`, confirming that
+  this run holds no runner slot and that its reap caps rather than frees
+  capacity.
+
+  Queue depth moved from 134 queued / 15 in progress at 09:00Z to 45 queued /
+  8 in progress by ~13:0xZ. Most of that is normal draining, not the six reaps;
+  the reaps removed dead entries that could never run. The measured structural
+  conclusion is unchanged: the queue is dominated by real work fanned out across
+  many workflows, which keeps B3 staging consolidation and the promotion-wakeup
+  consolidation as the highest-value remaining slices.
+
+
+  Live reaper evidence at merge time, read-only over 59 active allowlisted
+  runs: 8 `redundant-queued-duplicate` (PRs #6124, #6133, #5970), 1
+  `merged-or-closed-PR` (run 34749125387, the run that answers 409 to both
+  `/cancel` and `/force-cancel` and therefore holds no runner slot), and 50
+  correctly kept `current-head`. Repo-wide queue at 09:00Z was 134 queued
+  against 15 in progress, and the ARM pool was saturated by five concurrent
+  Playwright runs, which is why #6075's eight shards waited rather than failed.
+
+- 2026-09-18 codebase-check reuse for metadata-only edits. The path selector
+  already reuses a validated prior success for the four path-filtered suites,
+  but the required check workflow stayed unconditional and did not use the
+  action, so a title or body edit repeated the full validation on an unchanged
+  tree. Measured before the fix: Check codebase ran 5 times for the single head
+  87ccc36b on PR #6133 and 4 times for c4b7ba95 on #5970, at 7 to 29
+  wall-minutes each. The workflow now selects through changed-paths with an
+  unrestricted pattern, runs the suite as a separate job, and reports the
+  required context from a terminal job that always runs, so only a validated
+  metadata-only edit reuses the suite while an unexpected skip, a cancellation,
+  or a failed suite still fails the context. ready_for_review and base
+  retargets keep running the suite, and pushes still force a run, so promotion
+  candidate evidence is unaffected.
+
+  The same window also explains the persistent queue reading: 24 queued and 11
+  in progress at 13:3xZ, of which 9 were five-day-old Promote to stg records
+  with zero jobs (created 2026-09-13 for the same candidate 927f2336, never
+  scheduled, no check runs). They hold no runner slot, and the reaper correctly
+  refuses them: the documented contract excludes deployments, final-review
+  writers, and cancellation by age. The queue metric therefore overstates real
+  pending work by those inert records, which matters because capacity decisions
+  were being made against it.
