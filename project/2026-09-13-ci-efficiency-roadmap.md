@@ -937,3 +937,386 @@ required from the user.
   unexpected `skipped` failure or let a later metadata edit overwrite an earlier
   failed build. A sound version needs an explicit signal in the evidence
   artifact or a run-age comparison, which is why it is scoped separately.
+- 2026-09-16 full-portfolio review (branch `rs/ci-roadmap-review`, this
+  revision): re-measured the whole roadmap after the #5924 sonar/canary,
+  #5936 merge-base selection, #5948 reuse, #5971 image-cache, #5977
+  metadata-skip, #5987 build-cache-scope and #6087 flake-fix deliveries.
+  Queue: ~300 queued runs on 2026-09-14 fell to 14 queued / 1 running at
+  review time (Actions API `status=queued` / `in_progress`), against 299
+  queued at the 09-13 observation. Open Dependabot PRs: 0 (grouping config
+  live on `v3`). Current v3 head `8cf526e6ce` ran the complete
+  public-ARM64 Playwright wave green: prepare, build 2m56s and 8/8 shards
+  SUCCESS (run `35117591566`). AMD stays disabled everywhere (re-verified:
+  every `build-amd` leg is `if: false`; only `v3-audit`'s `mcp-*`
+  workflows still carry active legs, now part of the B3 integration gate).
+  Build Fallback: 30 runs on 09-16, mean 5min / max 23min; the 2103s
+  polling baseline is gone behind the single required context. Playwright
+  wall-minutes on 09-16 across five executions: about 65. The one real
+  Playwright failure (`35130087179`, `v3-ai` push, 25min) was not a test
+  or product defect: pnpm restored 0/3608 packages on the hosted shard (no
+  compatible seed) and `sharp@0.32.6`'s libvips fetch hit a transient
+  GitHub Releases HTTP 500; no retry hardened the install step, so the
+  failure cost a full 8-shard wave. Promotion-controller waste
+  re-measured: 100 records on 09-16, 94 skipped, 1 success, same
+  wake-per-producer shape as the 44-runs-for-one-commit finding.
+- 2026-09-16 low-hanging-fruit re-ranking (same revision), measured against
+  the live fleet. Ranked by wall-time saved per unit of risk, with the
+  contract boundary that a merge-ready PR keeps full-coverage proof:
+
+  1. **Playwright install resilience (new, highest value).** The only
+     Playwright failure since #6087 was a cold-install flake: hosted shard
+     restored 0/3608 packages, then `sharp@0.32.6`'s libvips fetch hit
+     GitHub Releases HTTP 500 and one shard failed the whole 8-shard wave
+     (run `35130087179`, 25min wasted, non-retried). Minimal fix: retry
+     the pnpm install step (bounded, e.g. two retries with backoff) and
+     prefer a prebuilt `sharp` platform package in the lockfile so the
+     runtime binary download disappears from the install path. Rescues a
+     full wave per occurrence at near-zero risk. No trust boundary moves.
+
+  2. **Promotion-controller wakeup consolidation (already specified in B3).**
+     100 records / 94 skipped / 1 success on 09-16. The fix is already
+     designed in the B3 spec (needs-based aggregation or a single
+     post-qualification wakeup). Nothing new to design; it lands with the
+     B3 integration package after `v3` merges into `v3-audit`. Until
+     then it is pure queued-record noise, not runner-minutes, because each
+     skipped controller run occupies a hosted slot only briefly.
+
+  3. **Docs-only and metadata-only PR routing.** A prose-only PR still runs
+     `check` (full typecheck, today's suite: 100 records, 707
+     wall-minutes, avg 7min / max 29min) and the full Playwright wave. The
+     blocker named on 09-14 is real but narrow: the required
+     `build-images-status` reporter binds the newest same-head run, so the
+     slice needs the explicit evidence-artifact signal (or run-age
+     comparison) first. First slice: extend the existing evidence artifact
+     with a run-action field and make the reporter accept a validated
+     metadata-only skip. Then a docs-path filter on `check.yml` and
+     selected-coverage Playwright on prose-only PRs becomes safe. This is
+     the largest remaining runner-minute class after resilience.
+
+  4. **Hosted pnpm seed coverage for `v3` pushes and `v3-*` integration
+     branches.** The failed wave's shard restored 0 packages; today's
+     successful waves still show per-shard installs. The seed workflow
+     exists but its fingerprints rarely match PR shards. First slice:
+     publish the seed from trusted required builds on `v3` (inputs already
+     match by construction) and let PRs consume read-only. Roadmap contract
+     3 already authorizes this shape; no new trust surface.
+
+  5. **check.yml path scoping for non-build docs.** Companion to item 3;
+     once the evidence-artifact signal exists, prose-only PRs can skip the
+     7-29min typecheck with the same validated no-change selection the four
+     path-filtered suites already use. Keep gitleaks unconditional.
+
+  Not re-ranked, confirmed done or idle: C1 image path filters (live), B2
+  ARM BuildKit cache (live; warm-hit timing proof still unmeasured),
+  single image status context (live), reuse/lifecycle guards (live,
+  positive-case proof still thin), AMD (inert everywhere on `v3`),
+  Dependabot fan-out (0 open), ARM64 pool rollout (green on current
+  head). Profile-aware packing and runner placement stay mid-roadmap
+  pending measurement; the 16:08 snapshot of 9 queued `Promote to stg`
+  wakeups was stale-superseded records from 09-13, not new queue
+  pressure.
+- 2026-09-16 independent review correction (same branch, follow-up
+  commit): the self-review audited every number in the two entries above
+  against the live API and found one wrong figure plus two classifications
+  that needed sharpening before the roadmap PR merges.
+
+  Corrected figures. (1) The "build 2m56s" line belonged to the PR-head
+  run `35101325026`; the merged-v3 wave in run `35117591566` built in
+  2m21s (job 104916253330). (2) Build Fallback on 09-16: 75 non-cancelled
+  records, success mean 7.1min / max 27min (n=73), failures 2 at mean
+  4min; including 25 cancelled records the mean was 5.9min. The entry
+  above's "mean 5min / max 23min" mixed windows; use the corrected
+  numbers. (3) check.yml on 09-16: 100 completed records, 720
+  wall-minutes, mean 7.2 / max 29min — not 707. (4) The "~65min across
+  five Playwright executions" figure was wrong in scope: the five
+  executions were only one conclusion class. Full-day totals: 95
+  completed records, 1956 wall-minutes (success 55 records / 1547min /
+  mean 28.1 / max 67; failure 5 / 175min; cancelled 32 / 234min / mean
+  7.3). Success p50 29min, p90 55min. (5) Promotion controller on 09-16:
+  100 records, 94 skipped, 6 cancelled, 0 success in the first-100 API
+  window; one success (`35117043318`, 15:41:33Z) sits just outside it —
+  201 records in the gh view, 170 skipped / 23 cancelled / 6 failure / 1
+  success. The "94 skipped" figure stands; the "1 success" belonged to
+  the wider window. (6) The 9 queued `Promote to stg` wakeups at 16:08
+  were 09-13 stale records, as recorded above; live promotion wakeups
+  from 09-16 complete in seconds (skipped records, mean under a minute).
+
+  Failure-cause classification, which changes the fruit ranking. Four of
+  the five failed Playwright waves were real spec failures that failed
+  twice (base attempt plus retry), not flakes: `Y-chat.spec.ts:3460`
+  "Citations and source cards render on a live streamed answer" failed in
+  two waves on two branches with the same assertion shape — the
+  viewport-scroll growth predicate saw the score climb to 533 while
+  expecting <= 1 (test at lines 3576-3581 of the spec), i.e. the
+  streaming autoscroll fix is not holding on the hosted route yet;
+  `U-catalog.spec.ts:1656` (toBeHidden), `O1-live-quiz-core.spec.ts:4695`
+  (toContainText) and `T-resources.spec.ts:3249` each failed one wave.
+  Only `35130087179` (v3-ai push) was the cold-install sharp/libvips
+  HTTP 500 flake. The install-resilience fruit therefore remains valid
+  but drops to one occurrence today; the top actionable item from this
+  review is the recurring `Y-chat.spec.ts:3460` scroll-predicate failure
+  (two waves, two branches, same-day, deterministic shape) — either the
+  test's growth predicate races the newly-fixed autoscroll hook or the
+  hosted environment behaves differently from the ARM64 pool where the
+  same test passed 8/8.
+
+  AMD guard re-verification. The two 09-13-era entries claim "every
+  build-amd job is gated if: false". Re-verified on this branch against
+  current `origin/v3`: all 28 `v3_*.yml` workflow files that declare
+  `build-amd:` guard it with `if: ${{ false }}` (spot-checked six files
+  via API plus a full-worktree grep; the worktree is diff-clean against
+  `origin/v3` at `8cf526e6ce`). The claim stands.
+
+  Queue at re-verification: 16-18 queued / 5-6 running, consistent with
+  the 14/1 snapshot inside normal wave churn; the ~300x improvement
+  claim is not sensitive to this drift.
+
+- 2026-09-16 Y-chat scroll-predicate correction (same branch, follow-up
+  commit). The entry above ranked the recurring `Y-chat.spec.ts:3460`
+  failure as this review's top actionable item. A direct API re-check shows
+  that classification is wrong: the failure is already fixed, and all four
+  failing waves were stale branch trees.
+
+  Evidence. Every 2026-09-16 Playwright failure list from the workflow API:
+  `35089499369` (v3, head `7102b5c062`, 11:17Z), `35097666640` (v3-ai,
+  `96450029fc`, 12:45Z), `35108292375` (codex/course-images/contracts,
+  `18a02b26ae`, 14:24Z), `35108301912` (codex/course-images/display,
+  `114c7dd68c`, 14:24Z), and the cold-install flake `35130087179` (v3-ai,
+  `b3fde174f3`, 17:44Z). All four spec-failure heads ran before the
+  autoscroll fix squash-merged at 15:11:21Z (`901ce575711c`), and
+  `compare/901ce575711c...<head>` reports `behind_by=3` for each of them.
+  On the old head `7102b5c062` line 304 of
+  `apps/chat/src/components/thread.tsx` still carries the buggy
+  `scroll-smooth` class; current v3 head `8cf526e6ce` does not, and
+  line 303 carries the explanatory comment.
+
+  Post-fix recurrence check: no `Y-chat.spec.ts:3460` failure occurred in
+  any Playwright run created after 15:11:21Z. The post-fix green wave
+  `35117591566` (v3, `8cf526e6ce`, 15:46Z) ran 8/8 shards SUCCESS,
+  including this spec. Later post-fix runs are green or deliberately
+  cancelled.
+
+  Consequence for the fruit ranking: this item is closed as fixed, not
+  actionable, and the roadmap's "top actionable item" claim above should be
+  read as superseded. The re-ranked first fruit is now the Playwright
+  install resilience package (the `35130087179` cold-install
+  `sharp@0.32.6` libvips fetch failure against GitHub Releases), which
+  today has a single observed occurrence.
+
+  Unrelated observation from the same window, recorded for triage rather
+  than action: on this PR's own head, the `CodeQL - Code Quality` check
+  passed at 18:38 (`35135651773`, all three languages success) and then
+  failed at 18:59 (`35137841317`) with
+  `Code quality is not enabled for this repository ... enable code quality
+  in the repository settings` on javascript-typescript, java-kotlin and
+  python alike. That is a repository-setting flap rather than a property of
+  this documentation-only change, and it is not a required context for this
+  roadmap package. No settings change was made.
+
+
+- 2026-09-16 package: Playwright install resilience (PR #6103, branch
+  `rs/ci-playwright-install-resilience`, draft). This is the re-ranked first
+  fruit after the Y-chat correction above. Implementation is the bound
+  retry the roadmap specified; the lockfile half was measured and
+  deliberately deferred.
+
+  Root cause, confirmed from the registry and the lockfile rather than
+  inferred: `@docusaurus/lqip-loader@3.8.1` declares `sharp: ^0.32.3` as a
+  hard dependency, resolving to `sharp@0.32.6`. That release's manifest
+  runs `node install/libvips` during its install script, fetching the
+  libvips archive from GitHub Releases. `sharp@0.35.4` declares no install
+  script and instead ships 25 `@img/sharp-*`/`@img/sharp-libvips-*`
+  platform packages as optional dependencies, which is why the newer line
+  has no runtime download. The cold hosted shard had restored 0/3608
+  packages, so the failing install was the one that had to build sharp from
+  scratch and had no retry.
+
+  Delivered: `.github/scripts/pnpm-install-retry.sh` wraps the install with
+  three bounded attempts and exponential backoff (15s then 30s), forwards
+  arguments, and preserves the original pnpm exit status when the failure
+  persists so a genuine install break still fails loudly. Wired into all
+  three install sites that matter for this failure mode: the
+  `playwright-build` composite action, the `playwright-shard` composite
+  action, and the `playwright-cache-seed` workflow that produces the store
+  every PR shard restores. Covered by
+  `.github/scripts/pnpm-install-retry.test.cjs` (retry, argument
+  forwarding, bounded budget, preserved fatal exit status, and proof that
+  all three call sites install only through the wrapper), wired into the
+  `check` workflow.
+
+  Verification: 72/72 then 65/65 across the Playwright CI suites after the
+  seeder addition, Prettier clean, Biome clean, `bash -n` clean. No trust
+  boundary moved; the wrapper runs from the trusted control checkout and
+  the ARM64 pool policy is unchanged. Draft PR only.
+
+  Lockfile half measured and deferred on evidence. Widening the override to
+  `sharp@>=0.32.0 <0.35.4` does work — `pnpm install --lockfile-only`
+  resolves and `sharp@0.32.6` plus its 16 exclusive build-chain packages
+  (`prebuild-install`, `tar-fs`, `bare-*`, `color`, `node-addon-api`,
+  and others) disappear entirely, with no package versions added. It was
+  still kept out of this package for three reasons. (1) A null-hypothesis
+  run proved the churn is caused by this change and not by regenerating at
+  all: reverting only the override reproduces a byte-identical lockfile.
+  The change costs roughly 1567 insertions / 2082 deletions across
+  unrelated packages. (2) The repo's override policy states each entry
+  "stays inside one major line, unless the advisory has no fix in the older
+  line"; this lift crosses 0.32 to 0.35, and the entry carries an
+  image-scan remediation comment. (3) The only consumer is `apps/docs`,
+  which has no CI coverage. The correct path is most likely a Docusaurus
+  upgrade rather than an override widening, and it belongs in its own
+  reviewed package.
+
+
+- 2026-09-16 package: hosted pnpm seed coverage (PR #6104, branch
+  `rs/ci-seed-coverage`, draft). Ranked fruit 4, and the upstream half of
+  the same failure mode as the install-resilience package above.
+
+  Root cause, established from shard telemetry rather than inference. The
+  Playwright actions restored the pnpm store with an exact-key-only lookup,
+  and the cache key embeds the full dependency fingerprint
+  (`playwright-<os>-<arch>-pnpm-<fingerprint>`). The seed workflow
+  publishes only on `v3` pushes, so any branch whose dependency manifests
+  differ can never match exactly. The failing shard's telemetry records
+  `pnpmCacheHit: false` with `pnpmCacheMatchedKey: null` — no fallback was
+  attempted at all — while a green shard from the same day records an exact
+  match. `compare/v3...v3-ai` shows `apps/auth`, `apps/backend-docker`,
+  `apps/chat` and `apps/docs` manifests diverging, so `v3-ai`
+  fingerprints cannot equal the `v3` seed by construction. This is the
+  cold-install condition that made the `sharp` libvips fetch fatal.
+
+  Separately measured and recorded, not fixed here: 19 of the last 40
+  seeder runs are `cancelled` (21 success), consistent with its
+  `cancel-in-progress` concurrency group superseding runs during rapid
+  `v3` pushes. Because cancelled seeds still often leave a prior
+  exact-fingerprint entry in place, this is a coverage-timing risk rather
+  than a proven cause, and it is not what produced the observed mismatch.
+
+  Delivered: both public Playwright actions and the seeder now declare a
+  same-platform `restore-keys` prefix, so a near-match store is reused
+  instead of installing from empty. The fallback keeps `runner.os` and
+  `runner.arch` in the prefix, so no ARM64 store can feed an x64 job.
+  Public readers still cannot write the cache — the validator continues to
+  reject `actions/cache/save@v4` in both actions — so the seed cannot be
+  poisoned. Because a partial restore reports `cache-hit=false`, the
+  seeder's existing save condition still republishes the complete
+  exact-fingerprint store; the new test pins that condition so the fallback
+  cannot quietly degrade the seed.
+
+  Verification: 66/66 across the Playwright CI suite including the existing
+  workflow boundary validator and cache-contract tests; new
+  `.github/scripts/playwright-pnpm-seed-fallback.test.cjs` covers the
+  fallback prefix, the absence of any public write path, and the preserved
+  seeder save condition. Prettier clean, Biome clean. Draft PR only; no
+  runner-group, host, or settings change.
+
+
+- 2026-09-17 package: metadata-only edit re-validation (branch
+  `rs/ci-metadata-edit-validation`, draft [PR #6108](https://github.com/uzh-bf/klicker-uzh/pull/6108)). Closes the selection-integrity
+  half of the #5977 metadata rule and the first half of the second selection
+  finding above.
+
+  Defect found in shipped CI, not introduced by this package. The merged
+  `edited` shortcut in `.github/actions/changed-paths` returned
+  `should_run=false` for _any_ metadata-only edit, and
+  `decideResult`'s `no-change` state passes when the suite job is
+  `skipped` or `success`. Nothing re-read the prior outcome, so on a head
+  whose `test-unit`, `test-graphql`, `test-olat-api` or
+  `test-intl-production` suite had **failed**, editing the PR title turned
+  `test-unit-status` and siblings green. All four are required contexts on
+  `v3` and `v3-*` (rulesets 23042571 and 23042613), so the title edit was
+  a merge gate bypass, not just a saved run. Only `test-playwright` was
+  safe, because #5977's reuse gate binds the prior run identity.
+
+  Delivered: the skip now consults the head's `filter=latest` check-run for
+  the workflow's own always-reporting terminal context and skips only on a
+  completed `success`. A `failure`, `in_progress`, missing check, non-40-hex
+  head/base, or any API error runs the suite. A base retarget still bypasses
+  the whole path. The selector queries the `-status` context rather than the
+  suite job on purpose: the matrix-expanded translation job is really named
+  `intl-production-smoke (${{ matrix.app }})`, so the previously wired
+  `intl-production-smoke` input could never match and its lookup would always
+  have failed closed. All four workflows now also declare `checks: read`;
+  without it the check-run endpoint is forbidden and the lookup is inert.
+
+  Verification: 11/11 `.github/scripts/changed-paths.test.cjs` cases against
+  the composite's verbatim step script with a local check-run mock: prior
+  success skips, prior failure/pending/missing/500/foreign-head all re-run, an
+  unset name performs no request at all, retarget re-selects, synchronize and a
+  non-edited event never consult the check, and an empty push diff fails open.
+  Prettier clean. `gh api` semantics confirmed against a real head:
+  `check_name` filters by exact name, verified live: querying `test-unit`
+  returns only the suite job and not `test-unit-status`, so the lookup cannot
+  accidentally read the suite job it is meant to gate.
+  Draft PR only; no runner-group, host, or settings change.
+
+  Verification on the delivered head: 34 checks pass, 13 skip, and the only
+  non-terminal context is the manual final-ai-review. check (which runs
+  changed-paths.test.cjs 11/11 in CI), check-gitleaks, build-images-status,
+  all four path-filter jobs and all eight hosted Playwright shards pass on
+  exact head d590c5cd8c. The four filter jobs exercise the new lookup, and
+  the metadata-only live proof below ran on the identical-content predecessor
+  head 0fc7242923.
+
+  Deliberately left alone, still open in the second selection finding below:
+  `check.yml` and `test-playwright.yml` have no path filter, and the
+  `build-images-status` reporter binds the newest run for the head, so a
+  metadata skip there needs an explicit evidence signal.
+
+- 2026-09-17 slice B2 activation evidence (PR #5971, merged `136a867280`). The
+  2026-09-13 entry recorded the registry cache as "deployed and inert" because
+  GHCR listed no `-arm:buildcache` tag and every post-merge image run was a
+  draft deferral or a saturated-queue push. Re-checked live and it is now
+  active: `ghcr.io/uzh-bf/klicker-uzh/<image>-arm:buildcache` exists for
+  `auth-arm` (2026-09-16T14:11:03Z), `backend-docker-arm`
+  (14:13:44Z), `frontend-manage-arm` (14:14:49Z), `chat-arm`
+  (18:41:17Z), `response-api-arm` (09-16T12:12:03Z) and `frontend-pwa-arm`
+  (09-17T10:31:02Z). Only a same-repository pull-request build can write that
+  tag, so its presence is direct evidence the cache path executed.
+
+  Confirmed in the build log rather than inferred from the tag.
+  Run `35209304702` (`Build Docker image for frontend-assessment (stg)`,
+  PR `rs/v3-audit-sync-20260917`, head `16c54e785aac`, success) logs
+  `#8 importing cache manifest from ghcr.io/.../frontend-assessment-arm:buildcache`,
+  then `#9`-`#12 CACHED` and `#29 exporting cache to registry`. The sibling
+  `frontend-pwa` build `35209304457` on the same head ran the same contract.
+
+  Sizing caveat recorded rather than claimed as a win: the two cached PR
+  builds took 303s and 302s wall (10:26:05->10:31:08Z and
+  10:29:07->10:34:09Z). Both are cold on the heavy Next compile because the
+  cache was written only minutes earlier on the same branch; a first-ever write
+  cannot pay itself back. A meaningful warm-vs-cold duration comparison needs a
+  second PR build on the same image whose inputs are unchanged, which is the
+  next measurement, not this one. The cache is proven to work; its payoff is
+  not yet measured.
+
+- 2026-09-17 slice B2 registry scope note: only the six named repositories
+  carried a `buildcache` tag; `analytics-arm` had none (its Dockerfile has no
+  pnpm store stage, so there is little to reuse) and `rabbitmq-arm` is not a
+  package under the `klicker-uzh` namespace. The Go-backend migrator and the
+  MCP images were not probed by name here and remain unverified for cache tags.
+
+- 2026-09-17 live activation proof for the metadata-only guard (PR #6108,
+  head `0fc7242923`). The roadmap requires an exact-head transition rather
+  than a repository claim, so the proof was produced on GitHub itself.
+
+  Positive case: a metadata-only title edit on the unchanged head
+  `0fc7242923` fired the four suites' `edited` runs at 12:10:25Z
+  (`35219622608`, `35219622614`, `35219622594`, `35219622755`). Each filter
+  job logged
+  `Metadata-only edited event; prior completed success validates this unchanged tree.`
+  and emitted `should_run=false`. All four suites report `skipped` and all
+  four required contexts report `success`: `test-unit`/`test-unit-status`,
+  `test-graphql`/`test-graphql-status`,
+  `test-olat-api`/`test-olat-api-status`, and
+  `intl-production-smoke (${{ matrix.app }})`/`test-intl-production-status`.
+  The four runs completed in roughly 25 seconds each instead of re-running the
+  suites, and their `Build Fallback` sibling `35219622677` passed in 29s.
+
+  This is the state that previously could not be produced honestly, because
+  the old shortcut skipped unconditionally instead of reading the prior result.
+  The discriminating negative case is covered where it can be checked
+  deterministically: `changed-paths.test.cjs` drives the same step script with
+  a mock whose prior result is `failure`, `in_progress`, absent, HTTP 500, or
+  belongs to a different head, and asserts `should_run=true` every time. It is
+  not reproduced on the live repository because that would require deliberately
+  publishing a failing suite.
