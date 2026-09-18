@@ -18,6 +18,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
 import fs from 'node:fs'
+import { preserveLocalDatabase } from '../util/playwright-host-policy.mjs'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -574,11 +575,20 @@ export async function seedActivities() {
 // Default export consumed by playwright.config.ts globalSetup
 // ---------------------------------------------------------------------------
 export default async function globalSetup() {
+  if (preserveLocalDatabase()) {
+    console.log('[global-setup] Preserving the existing local test database.')
+    return
+  }
+
   console.log('[global-setup] Ensuring database views...')
   await ensureDatabaseViews()
+  const seedStartedAt = Date.now()
   console.log('[global-setup] Cleaning up database...')
   await cleanupDatabase()
   console.log('[global-setup] Seeding database...')
   await seedDatabase()
+  console.log(
+    `[global-setup] Cleanup and seed completed in ${Date.now() - seedStartedAt}ms.`
+  )
   console.log('[global-setup] Done.')
 }

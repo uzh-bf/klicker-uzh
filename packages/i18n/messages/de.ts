@@ -250,6 +250,14 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
       docQueryQueryLabel: 'Suchanfrage',
+      unnamedSource: 'Unbenannte Quelle',
+      originUnavailable: 'Original-URL der Quelle nicht verfügbar',
+      chunkUnavailable: 'Inhalt des Abschnitts nicht verfügbar',
+      resultUnavailable: 'Suchdetails nicht verfügbar',
+      openSource: 'Quelle öffnen',
+      showFullChunk: 'Vollständigen Abschnitt anzeigen',
+      moreChunks: 'Weitere Abschnitte anzeigen ({count} verbleibend)',
+      moreSources: 'Weitere Quellen anzeigen ({count} verbleibend)',
       docQuerySourcesHint:
         'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
@@ -262,6 +270,8 @@ export default {
     },
     sources: {
       title: 'Quellen',
+      cited: 'In dieser Antwort zitiert',
+      otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',
       image: 'Bild',
@@ -3570,10 +3580,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
       viewActivities: 'Aktivitäten einsehen',
+      openLibrary: 'Bibliothek öffnen',
+      noNotificationEmail: 'Nicht angegeben',
       executeActivities: 'Aktivitäten ausführen',
       modifyCourseSettings: 'Kurseinstellungen ändern',
       modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
       manageParticipantGroups: 'Teilnehmergruppen verwalten',
+      leaderboardSummary:
+        'Vergleichen Sie die Punkte der Teilnehmenden im gewählten Zeitraum.',
+      leaderboardInclusionHelp: 'Wer erscheint in der Rangliste?',
+      leaderboardInclusion:
+        'Teilnehmende ohne Punkte werden in der Rangliste für den gesamten Kurs und in rollierenden Ranglisten aufgeführt.',
+      leaderboardExportHelp: 'Hinweise zum CSV-Export',
+      leaderboardExportDescription:
+        'Der CSV-Export enthält zusätzlich zu den Benutzernamen die E-Mail-Adressen der Teilnehmenden.',
       deleteCourse: 'Kurs löschen',
       removeCourse: 'Kurs entfernen',
       confirmCourseRemoval:

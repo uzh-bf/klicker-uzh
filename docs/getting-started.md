@@ -12,9 +12,9 @@ tags:
 
 **The one thing to get right first: use pnpm 11.** A stale pnpm major (e.g. a Volta shim serving 9.x because `VOLTA_FEATURE_PNPM` is unset) will install successfully but **silently rewrite `pnpm-lock.yaml`** (~380-line churn). Run `pnpm --version` and confirm `11.x` before installing; if the lockfile got churned, `git checkout pnpm-lock.yaml` and reinstall with pnpm 11.
 
-## Toolchain (verified 2026-07-07)
+## Toolchain (verified 2026-09-14)
 
-Aligned to Node `24.16.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.16.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`.
+Aligned to Node `24.21.0` and pnpm `11.5.0` across the entire workspace, including the self-contained devcontainer. Pinned in root `package.json`: `volta.node = 24.21.0`, `volta.pnpm = 11.5.0`, `packageManager = pnpm@11.5.0`. The pnpm pin stays on the 11.5.0 line because the shared Playwright composite actions declare their own pnpm version, so `pnpm/action-setup` rejects a pull request that moves the pin; the production Dockerfiles drop `pnpm` and `turbo` after installing production dependencies instead, which keeps their vendored advisories out of the scanned runtime images.
 
 The workspace TypeScript baseline is `~6.0.3` across all packages, including `apps/office-addin`. The Office Add-in uses the browser/bundler contract (`target: ES2022`, `module: ESNext`, `moduleResolution: Bundler`, `noEmit`) and explicitly loads the `office-js` global types required by TypeScript 6. No syncpack exception is needed.
 
@@ -113,7 +113,7 @@ Post-create publishes a fixed container-local completion marker only after the
 destructive bootstrap and generated runtime inputs succeed; post-start checks
 that marker before it reads those inputs or starts a process. If the marker is
 missing or malformed, treat the workspace as incompletely bootstrapped and use
-the canonical stop/recovery path. A warm profile switch never manufactures the
+the [guarded recovery procedure](../.devcontainer/README.md#guarded-retained-runtime-recovery). A warm profile switch never manufactures the
 marker or reruns database bootstrap. The `ROOT` contract in
 [post-create](../.devcontainer/post-create.sh) and
 [post-start](../.devcontainer/post-start.sh) canonicalizes
@@ -129,7 +129,8 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.55`.
+The consumer version is pinned in `.devrouter.yml`; this pin covers normal
+managed startup, not the separately reviewed retained-recovery callback.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
@@ -150,8 +151,9 @@ fingerprints the dependency graph, checked-out commit, Next.js route structure,
 and app configuration. A true managed start preserves each worktree's
 `.next/dev` output, while a changed dependency fingerprint refreshes the
 persistent `node_modules` volume with a frozen, local-first install.
-Unauthenticated Chat must answer `401 application/json` on a
-nested API route; the shell pages of auth, PWA, manage, and control must answer
+Auth must answer `200 application/json` at `/api/auth/providers` so its
+catch-all sign-in route is checked, not only its homepage. Unauthenticated Chat
+must answer `401 application/json` on a nested API route; the shell pages of PWA, manage, and control must answer
 `2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
 and `live-quiz` requires live general and response-processor worker descendants
 of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing

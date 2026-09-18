@@ -4,50 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: ['v3', 'v3*']
-    paths:
-      - 'apps/frontend-pwa/**'
-      - 'apps/chat/**'
-      - 'packages/grading/**'
-      - 'packages/graphql/**'
-      - 'packages/i18n/**'
-      - 'packages/markdown/**'
-      - 'packages/next-config/**'
-      - 'packages/prisma/**'
-      - 'packages/shared-components/**'
-      - 'packages/types/**'
-      - 'packages/util/**'
-      - '.devcontainer/disposable-test-init.sql'
-      - '.github/scripts/provision-disposable-postgres.sh'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'turbo.json'
-      - 'tsconfig.json'
-      - '.github/workflows/test-unit.yml'
-      - '.github/actions/setup-node-pnpm/**'
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - 'apps/frontend-pwa/**'
-      - 'apps/chat/**'
-      - 'packages/grading/**'
-      - 'packages/graphql/**'
-      - 'packages/i18n/**'
-      - 'packages/markdown/**'
-      - 'packages/next-config/**'
-      - 'packages/prisma/**'
-      - 'packages/shared-components/**'
-      - 'packages/types/**'
-      - 'packages/util/**'
-      - '.devcontainer/disposable-test-init.sql'
-      - '.github/scripts/provision-disposable-postgres.sh'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'turbo.json'
-      - 'tsconfig.json'
-      - '.github/workflows/test-unit.yml'
-      - '.github/actions/setup-node-pnpm/**'
+    # "edited" re-evaluates the internal selector on a base retarget; the path
+    # filter is a job below so a required status always reports.
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
@@ -55,10 +15,30 @@ concurrency:
 
 permissions:
   contents: read
+  # The selector reads this workflow's prior required-status result for the head
+  # to decide whether a metadata-only edit may skip the suite.
+  checks: read
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/frontend-pwa/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          prior-check-name: test-unit-status
+
   test-unit:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: filter
+    if: >-
+      !cancelled() &&
+      needs.filter.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -77,6 +57,39 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Record tested source tree
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CONTROL_SHA: ${{ github.workflow_sha }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const { execFileSync } = require('node:child_process')
+          fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
+            schemaVersion: 1,
+            event: process.env.GITHUB_EVENT_NAME,
+            runId: Number(process.env.GITHUB_RUN_ID),
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            headSha: process.env.SOURCE_HEAD_SHA,
+            baseSha: process.env.SOURCE_BASE_SHA,
+            controlSha: process.env.CONTROL_SHA,
+            treeSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+          }))
+          NODE
+
+      - name: Upload tested source receipt
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-validation-receipt
+          path: ci-validation-receipt.json
+          retention-days: 7
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -112,7 +125,7 @@ jobs:
 
       - name: Test chat app
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.setup_chat_db.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/chat test:run
+        run: pnpm --filter @klicker-uzh/chat test:run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
         env:
           CHAT_ACCOUNT_USAGE_INTEGRATION: '1'
           CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'false'
@@ -125,12 +138,82 @@ jobs:
 
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/grading test
+        run: pnpm --filter @klicker-uzh/grading test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
 
       - name: Test markdown package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/markdown test
+        run: pnpm --filter @klicker-uzh/markdown test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
 
       - name: Test util package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/util test
+        run: pnpm --filter @klicker-uzh/util test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+
+      - name: Upload LCOV coverage
+        # Upload on every outcome so coverage from suites that did run is still
+        # available to the Sonar analysis job even when a sibling suite failed.
+        # The pattern stays one level inside the workspace groups: a glob that
+        # also reaches node_modules would collect the pnpm-linked copy of every
+        # report, and the analysis maps a report through the package directory
+        # that produced it.
+        # The job itself is gated by the path filter, so a missing lcov file
+        # means a suite stopped producing coverage; fail instead of reporting a
+        # green test job without coverage.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          # A re-run replaces the prior attempt's artifact; upload-artifact v4
+          # rejects a duplicate name and would fail an otherwise green retry.
+          overwrite: true
+          path: |
+            apps/*/coverage/lcov.info
+            packages/*/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
+
+  # Always reports a status even when the path filter selects nothing, so this
+  # job is the required check. It runs unconditionally: GitHub can treat a
+  # skipped required check as acceptable, so an unexpected skip, a cancellation,
+  # a failed suite or a missing selection must fail inside it.
+  test-unit-status:
+    needs: [filter, test-unit]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Report required status
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+          FILTER_RESULT: ${{ needs.filter.result }}
+          SHOULD_RUN: ${{ needs.filter.outputs.should_run }}
+          TEST_RESULT: ${{ needs.test-unit.result }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_PATH: .github/workflows/test-unit.yml
+          TERMINAL_JOB: test-unit-status
+          EVIDENCE_PATH: required-ci-evidence.json
+          SELECTION_JOB: filter
+          SELECTION_JOB_RESULT: ${{ needs.filter.result }}
+          SUITE_JOB: test-unit
+          SUITE_JOB_RESULT: ${{ needs.test-unit.result }}
+        run: node .github/scripts/required-ci-status.cjs report
+      - name: Upload required CI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-ci-evidence
+          path: required-ci-evidence.json
+          if-no-files-found: error
+          retention-days: 7

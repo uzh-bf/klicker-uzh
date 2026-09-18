@@ -17,6 +17,10 @@ inputs:
   cache-enabled:
     description: Whether restore-only Actions caches are enabled
     required: true
+  workers:
+    description: Playwright worker processes running spec files in parallel
+    required: false
+    default: '1'
 
 runs:
   using: composite
@@ -83,10 +87,18 @@ runs:
       with:
         path: ${{ env.STORE_PATH }}
         key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
+        # See playwright-build: an exact-key-only restore leaves any branch
+        # with different manifests (v3-ai does) installing from an empty
+        # store. A content-addressed near-match reuses compatible packages
+        # and is read-only for public readers, so the seed cannot be poisoned.
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-
 
     - name: Install dependencies
       shell: bash
-      run: pnpm install
+      # Runs from the trusted control checkout so a cached-store miss or a
+      # transient native-binary download failure cannot fail the whole wave.
+      run: bash .ci-control/.github/scripts/pnpm-install-retry.sh
 
     - name: Install Devrouter profile planner
       shell: bash
@@ -224,7 +236,7 @@ runs:
           exit 1
         fi
         echo "Running tests for shard ${SHARD_INDEX}/${SHARD_TOTAL} with profile $PROFILE: ${TEST_FILES[*]}"
-        .github/scripts/wait-for-services.sh -- \
+        node .ci-control/.github/scripts/playwright-resource-sampler.cjs "playwright-resources-shard-${SHARD_INDEX}.jsonl" .github/scripts/wait-for-services.sh -- \
           env NODE_ENV=test \
           pnpm --filter @klicker-uzh/playwright exec playwright test \
             --project=chromium \
@@ -232,6 +244,7 @@ runs:
       env:
         SHARD_INDEX: ${{ inputs.shard-index }}
         SHARD_TOTAL: ${{ inputs.shard-total }}
+        PLAYWRIGHT_WORKERS: ${{ inputs.workers }}
         APP_SECRET: abcd
         DATABASE_URL: postgres://klicker_test:klicker@postgres:5432/klicker_test
         NODE_ENV: production
@@ -321,6 +334,8 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: playwright-telemetry-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
-        path: playwright-telemetry-${{ inputs.shard-index }}.json
+        path: |
+          playwright-telemetry-${{ inputs.shard-index }}.json
+          playwright-resources-shard-${{ inputs.shard-index }}.jsonl
         if-no-files-found: ignore
         retention-days: 7

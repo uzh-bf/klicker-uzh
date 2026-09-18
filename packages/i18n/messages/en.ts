@@ -248,6 +248,14 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
       docQueryQueryLabel: 'Search query',
+      unnamedSource: 'Unnamed source',
+      originUnavailable: 'Original source URL unavailable',
+      chunkUnavailable: 'Chunk content unavailable',
+      resultUnavailable: 'Search details unavailable',
+      openSource: 'Open source',
+      showFullChunk: 'Show full passage',
+      moreChunks: 'Show more passages ({count} remaining)',
+      moreSources: 'Show more sources ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {
@@ -259,6 +267,8 @@ export default {
     },
     sources: {
       title: 'Sources',
+      cited: 'Cited in this answer',
+      otherRetrieved: 'Other retrieved material ({count})',
       page: 'p. {page}',
       video: 'Video',
       image: 'Image',
@@ -3507,10 +3517,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       joinCourse: 'Join course',
       viewCourse: 'View Course',
       viewActivities: 'View Activities',
+      openLibrary: 'Open library',
+      noNotificationEmail: 'Not set',
       executeActivities: 'Execute Activities',
       modifyCourseSettings: 'Modify Course Settings',
       modifyContainedActivities: 'Modify Activities in Course',
       manageParticipantGroups: 'Manage Participant Groups',
+      leaderboardSummary: 'Compare participant points for the selected period.',
+      leaderboardInclusionHelp: 'Who appears in the leaderboard?',
+      leaderboardInclusion:
+        'Participants without points are included in the entire-course and rolling leaderboards.',
+      leaderboardExportHelp: 'About CSV export',
+      leaderboardExportDescription:
+        'The CSV export includes participant email addresses in addition to usernames.',
       deleteCourse: 'Delete Course',
       removeCourse: 'Remove Course',
       confirmCourseRemoval:

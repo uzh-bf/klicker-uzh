@@ -2,6 +2,24 @@ import { existsSync } from 'node:fs'
 
 export const HOST_RUNNER_ENV = 'KLICKER_PLAYWRIGHT_HOST_RUNNER'
 
+export function preserveLocalDatabase(env = process.env) {
+  if (env.KLICKER_PLAYWRIGHT_PRESERVE_DATABASE !== '1') return false
+
+  if (env[HOST_RUNNER_ENV] !== '1') {
+    throw new Error(
+      'Explicit database preservation requires the Playwright host launcher marker.'
+    )
+  }
+
+  if (env.CI || env.GITHUB_ACTIONS) {
+    throw new Error(
+      'Explicit database preservation is incompatible with CI or GitHub Actions.'
+    )
+  }
+
+  return true
+}
+
 export function isContainerRuntime({
   cwd = process.cwd(),
   env = process.env,

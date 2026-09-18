@@ -43,7 +43,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.55 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.72 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -93,7 +93,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.0.55. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.72. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -106,6 +106,8 @@ keeps detached-state recovery fail-closed while prior containers still exist.
 Version 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime,
 and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct
 retained-runtime configuration and mount comparison.
+Version 0.0.58 runs the host dependency-mount generator before Compose inspection.
+It does not apply changed mounts to retained containers.
 
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
@@ -149,6 +151,39 @@ this exact checkout, uses its namespaced HTTPS routes, and discovers the
 workspace Postgres container's random loopback port for test cleanup and
 seeding. The Playwright process, Node dependencies, and browser binaries stay
 on the host; applications and services stay in this devcontainer.
+
+The default starts the full profile. For focused activity tests, request the
+required profile union explicitly before the Playwright arguments:
+
+```bash
+pnpm playwright:host -- --runtime-profile manage,live-quiz --project=chromium tests/MA-elements-operations.spec.ts
+```
+
+The caller must include every profile the selected tests need; the launcher
+does not infer them from spec names or reuse a previous narrow selection.
+Place `--runtime-profile` and `--print-env` before other arguments, or use `--`
+to end the launcher-option prefix. `--print-env` still reconciles the runtime
+and can start services. `--show-report` does not accept a runtime profile.
+
+The repository sets pnpm's `verifyDepsBeforeRun` policy to `error`, so pnpm
+reports stale dependency links instead of installing before the host launcher
+can control the lifecycle. On a cold host run, when the Playwright CLI is
+missing, the launcher stops this exact checkout, performs the filtered frozen
+install, builds the host Prisma and shared-types test dependencies, prepares
+the required browser, and only then reconciles the devcontainer. A warm run
+does not stop the checkout or install packages. `--print-env` still reconciles
+the checkout and resolves its environment without dependency preparation.
+`--show-report` never reconciles the devcontainer; if it needs a cold install,
+that exact checkout may remain stopped after preparation.
+
+When the Playwright CLI is missing, invoke the launcher directly with the
+pinned host Node (`volta run node ./util/run-playwright-host.mjs ...`) so it
+can stop the exact checkout before installing. If the CLI exists but dependency
+links are stale, stop that exact checkout first and run the existing filtered
+frozen install explicitly; the launcher does not repair a warm dependency tree.
+The outer `pnpm playwright:host` entrypoint is still the normal warm-run
+command, but pnpm's fail-closed policy intentionally stops it before the
+launcher when its own dependency validation detects a stale workspace.
 
 Direct local Playwright commands fail before global setup, and this container
 sets its Playwright browser path to a non-directory target. Do not run Playwright
@@ -248,7 +283,8 @@ custom `KLICKER_DEV_RUNTIME_STATE_DIR`, place it in that directory instead.
 
 Before `post-start` reports success, it probes every selected runtime app's
 readiness contract. Unauthenticated Chat must answer `401 application/json` on
-a nested API route, the committed shell pages of auth, PWA, manage, and control
+a nested API route. Auth must answer `200 application/json` at
+`/api/auth/providers`; the committed shell pages of PWA, manage, and control
 must answer `2xx` HTML or a redirect, and Response API must answer `200`
 JSON at `/healthz`. Profiles that include live-quiz workers also require one
 live runtime process for each worker below the exact managed Turbo root. Five
@@ -269,10 +305,29 @@ analytics image and lint CI so the root quality gate runs inside the container.
 ## Notes
 
 - The root `node_modules` is a named volume because pnpm hoists native packages
-  into `node_modules/.pnpm`. Playwright, Prisma, and shared types also have
-  package-level volumes. Those prevent the Linux install from overwriting the
-  host Playwright runner's Darwin dependency links. The dependency stamp
-  prevents reuse after lockfile or workspace-manifest changes.
+  into `node_modules/.pnpm`. Every workspace package listed by
+  `pnpm-workspace.yaml` also has its own project-scoped `node_modules` volume;
+  the existing Playwright, Prisma, and shared-types volume names remain stable.
+  These mounts keep host and container dependency links separate, including
+  the host Playwright runner's Darwin dependencies. The
+  dependency stamp prevents reuse after lockfile or workspace-manifest
+  changes.
+- Dependency mounts are generated into ignored
+  `.devcontainer/docker-compose.dependencies.yml`. The host needs the pinned
+  Node and pnpm toolchain, but no installed project dependencies. The generator
+  uses `pnpm list --recursive --depth -1 --json`, so workspace additions,
+  removals and exclusions do not require another handwritten mount list.
+  Devrouter invokes it through `managedRuntime.devcontainer.prepareCommand`;
+  native Dev Container initialization invokes the same script before Compose.
+  For read-only Compose inspection before first startup, explicitly run
+  `node util/generate-dependency-mounts.mjs` first. Diagnostics do not generate it.
+  Generation failures abort startup and retain the previous output; unchanged
+  output is not rewritten.
+- Generating updated configuration does not change mounts in an existing
+  container. Devrouter 0.0.72 does not support warm mount reconciliation.
+  Do not recreate or reset a retained workspace to apply a package addition or
+  removal. Keep its data intact and resolve the supported lifecycle procedure
+  separately. Unchanged package inventories retain the same volume names.
 - `/pnpm/.pnpm-store` is the only machine-shared cache. The external Docker
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
@@ -301,3 +356,50 @@ analytics image and lint CI so the root quality gate runs inside the container.
   seeded or synthetic content and expect the extra calls to add latency/cost.
 - Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
   fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.
+
+## Guarded retained-runtime recovery
+
+Use `devrouter ensure <checkout>` for normal startup. Use
+`devrouter ensure <checkout> --repair` only for a persisted degraded runtime.
+A healthy stopped runtime needs normal `ensure`, not repair. If an ordinary
+restart is appropriate, stop the exact checkout with `devrouter stop <checkout>`
+and confirm its provider is stopped and its routes are gone before restarting.
+
+The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
+the separately reviewed devrouter retained-recovery implementation. It is not
+an ordinary startup hook or a command to invoke manually. The repository-pinned
+0.0.72 release does not provide this recovery contract. The recovery performed
+for this branch used devrouter source revision
+`aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
+`recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact
+container identities and digest-bound journal. This is source-version evidence,
+not a claim that the contract is available in a published release. Confirm a
+release provides that contract before changing the repository version pin.
+
+The callback requires the provider to inject exact 64-character application
+and PostgreSQL container IDs. It assumes the canonical container mount
+`/workspaces/klicker-uzh`. Both restricted disposable databases must already be
+provisioned and marked; the callback explicitly initializes their schema and
+synthetic seeds after verifying their identities. This path therefore requires
+approval for that initialization. It never marks an existing retained database
+as disposable. The provisioning helper defaults to bootstrap login `klicker`
+for CI; the retained local environment explicitly selects the allow-listed
+`klicker-prod` login. Neither is the restricted `klicker_test` application login.
+
+The four hashes in `recover-runtime.sh` bind the reviewed consumer source.
+When one of those files changes, review the semantic change and refresh its pin
+in the same commit. Run `pnpm run test:dev-runtime` to catch pin drift before
+publication. A pin failure must never be bypassed by deleting the guard.
+
+| Failure                                                               | Next action                                                                                                                                        |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Recovery source changed` or a mounted-source mismatch                | Compare the exact reviewed host and mounted files; update a pin only after reviewing the changed procedure.                                        |
+| `Repair requires a persisted degraded managed runtime`                | Use normal `ensure` for a stopped healthy runtime.                                                                                                 |
+| `Lifecycle worker completion is unknown` or an operation-request lock | Preserve the existing operation and inspect its owner/journal through devrouter; do not clear locks or start competing operations.                 |
+| `Managed stop Compose file identity changed`                          | Compare recorded and current source configuration through the provider's recovery preview; do not bypass identity checks with raw Docker commands. |
+| Disposable identity or schema refusal                                 | Stop initialization and verify configuration and marked identities without exposing connection strings; do not reset or reseed blindly.            |
+
+A partial recovery journal records work already performed. Resume only through
+the owning recovery command and its reviewed preview; repeating replacement
+can lose writable-layer data. If the installed tool lacks the required command,
+stop at that capability boundary instead of substituting raw Docker mutations.
