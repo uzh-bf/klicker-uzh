@@ -123,14 +123,16 @@ K5 - Verification, gallery, and delivery:
 
 ## Progress
 
-- Status: draft awaiting approval.
-- Active slice: none.
-- Completed: none.
-- Latest verified head: base 5b4f5949d6462db660e5ec99b8c74e8f261f4a61, origin/v3-ai head.
-- Unresolved required gates: user approval; then the package review gates and the screenshot gallery during execution.
+- Status: approved and in execution.
+- Active slice: K3 and K4 delegated to an executor after K2; main session holds integration.
+- Completed: K1 reason parsing and GraphQL surface (c27d8c1c56); K2 gated partial-mode emission and hash compatibility (20d075e2c6).
+- Latest verified head: 20d075e2c6 on question-generation-failure-visibility.
+- Unresolved required gates: the package review gates and the screenshot gallery during K5.
 - Required delivery layer: source draft PR against v3-ai.
-- Achieved delivery layer: planning evidence only.
-- Blockers: none for planning. The planner/simplifier/final-reviewer routes were blocked by the account usage limit until 2026-09-20 10:36 during the companion packages; the same constraint may apply here.
+- Achieved delivery layer: local slice commits only; no push yet.
+- Blockers: none. The planner/simplifier/final-reviewer routes were blocked by the account usage limit until 2026-09-20 10:36 during the companion packages; the same constraint may apply here.
+- K1 evidence: 105 focused tests pass across questionGenerationArtifacts, questionGenerationLifecycle and elementGenerationSchema; tsc clean; Biome clean; schema regeneration byte-stable. Parser invariants for completed_partial require final_questions present, slot_failures non-empty, no review or rejection metadata, and a unique review-id list.
+- K2 evidence: new questionWorkflowStartPayload and questionWorkflowStartManifestSha256 exports build both the dispatch payload and the GENERATING_ITEMS provenance-recompute payload through one shared builder; QUESTION_PARTIAL_RESULTS_ENABLED defaults to false and the allow_partial_results key is absent while the gate is closed, keeping legacy start-manifest hashes byte-identical. 121 tests pass across questionGenerationArtifacts, questionGenerationLifecycle, elementGenerationSchema, questionGenerationBlueprint and the new questionGenerationPartialGate suite; tsc clean; Biome clean.
 - Planning-stage challenge: the read-only planner route was unavailable (account usage limit until 2026-09-20 10:36). The challenge was completed in the main session against the planning checklist: the generic-error replacement was split from partial delivery so failure visibility lands even if partial mode stays gated; the legacy-artifact and persisted-summary regression shapes were made explicit portfolio rows because that failure class already occurred once; the partial flow was constrained to the existing incomplete-publication transition and existing review states; and the emission gate was made code-enforced with hash stability for legacy builds. An independent read-only GLM 5.3 review pass then returned APPROVE_WITH_CORRECTIONS; its corrections are folded into this draft and recorded below.
 - Plan review corrections folded in: the explicit serial execution order (K1, then K2, K3, K4 on one branch); the emission-gate mechanism clarified as an in-code constant rather than a configuration variable; unknown reason codes must parse and render through failure class and structured fields with a defined fallback; and the zero-passing partial case renders the failure-reason surface instead of an empty review state.
 - Next action: user approval, then K1 and the companion worker W1.
