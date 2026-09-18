@@ -611,4 +611,3 @@ jobs:
           if-no-files-found: error
           name: required-ci-evidence
           path: ${{ runner.temp }}/required-ci-evidence.json
-

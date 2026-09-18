@@ -61,8 +61,7 @@ function mappingEntries(content, key, indentationWidth) {
   const lines = String(content).split(/\r?\n/)
   const start = lines.findIndex(
     (line) =>
-      indentation(line) === indentationWidth &&
-      line.trim() === key + ':',
+      indentation(line) === indentationWidth && line.trim() === key + ':'
   )
   if (start < 0) return null
   const entries = []
@@ -90,9 +89,7 @@ function jobBlocks(content, path) {
   const entries = mappingEntries(content, 'jobs', 0)
   if (!entries) throw new Error(path + ' has no jobs block')
   if (entries.length === 0) throw new Error(path + ' declares no jobs')
-  return new Map(
-    entries.map((entry) => [entry.id, entry.body.join('\n')]),
-  )
+  return new Map(entries.map((entry) => [entry.id, entry.body.join('\n')]))
 }
 
 // The quoted scalar items under a key path, for example
@@ -108,7 +105,7 @@ function yamlList(content, keyPath) {
       (line, index) =>
         index >= searchFrom &&
         indentation(line) === depth * 2 &&
-        line.trim() === wanted + ':',
+        line.trim() === wanted + ':'
     )
     if (found < 0) return null
     searchFrom = found + 1
@@ -127,15 +124,31 @@ function yamlList(content, keyPath) {
   return values
 }
 
+// The same list as a YAML flow sequence on the key's own line, for example
+// 'types: [opened, synchronize]'. Returns null when the key is absent.
+function yamlFlowList(content, key, indentationWidth) {
+  const lines = String(content).split(/\r?\n/)
+  const line = lines.find(
+    (candidate) =>
+      indentation(candidate) === indentationWidth &&
+      candidate.trim().startsWith(key + ':')
+  )
+  if (line === undefined) return null
+  const match = /\[(.*)\]/.exec(line)
+  if (!match) return []
+  return match[1]
+    .split(',')
+    .map((value) => value.trim().replace(/^['"]|['"]$/g, ''))
+    .filter((value) => value.length > 0)
+}
+
 function workflowName(content) {
   const match = /^name:[ ]*(.+?)[ ]*$/m.exec(String(content))
   return match ? match[1].replace(/^['"]|['"]$/g, '') : null
 }
 
 function fail(path, jobId, message) {
-  throw new Error(
-    path + (jobId ? '/' + jobId : '') + ' ' + message,
-  )
+  throw new Error(path + (jobId ? '/' + jobId : '') + ' ' + message)
 }
 
 function requireJob(jobs, path, jobId) {
@@ -164,19 +177,23 @@ function validateArmBuildJob(block, path, jobId) {
   // otherwise bind to a condition instead of to the matrix.
   const includeLine = /^[ ]{8}include:[ ]*(.+?)[ ]*$/m.exec(block)
   if (!includeLine) fail(path, jobId, 'has no matrix include')
-  const output = /needs[.]plan[.]outputs[.]([A-Za-z0-9_-]+)/.exec(includeLine[1])
+  const output = /needs[.]plan[.]outputs[.]([A-Za-z0-9_-]+)/.exec(
+    includeLine[1]
+  )
   if (!output) fail(path, jobId, 'does not read the plan outputs')
   if (
     !new RegExp(
       'include:[ ]*[$][{][{][ ]*fromJSON[(]needs[.]plan[.]outputs[.]' +
         output[1] +
         '[)][ ]*[}][}]',
-      'm',
+      'm'
     ).test(block)
   ) {
     fail(path, jobId, 'does not build the plan matrix')
   }
-  if (!new RegExp('^[ ]{4}runs-on:[ ]*' + ARM_RUNNER + '[ ]*$', 'm').test(block)) {
+  if (
+    !new RegExp('^[ ]{4}runs-on:[ ]*' + ARM_RUNNER + '[ ]*$', 'm').test(block)
+  ) {
     fail(path, jobId, 'is not pinned to the ARM runner')
   }
   // Draft pull requests must still defer their builds.
@@ -189,21 +206,26 @@ function validateArmBuildJob(block, path, jobId) {
       'name:[ ]*' +
         STAGING_DIGEST_ARTIFACT_PREFIX +
         '[$][{][{][ ]*matrix[.]id[ ]*[}][}]',
-      'm',
+      'm'
     ).test(block)
   ) {
     fail(path, jobId, 'publishes no per-target digest artifact')
   }
   // Action inputs sit at ten spaces under a step's `with:` block.
-  if (!/^[ ]{10}push:[ ]*[$][{][{][ ]*github[.]event_name[ ]*!=[ ]*'pull_request'[ ]*[}][}][ ]*$/m.test(block)) {
+  if (
+    !/^[ ]{10}push:[ ]*[$][{][{][ ]*github[.]event_name[ ]*!=[ ]*'pull_request'[ ]*[}][}][ ]*$/m.test(
+      block
+    )
+  ) {
     fail(path, jobId, 'has an unsafe push condition')
   }
   // The guard is trusted controller content; the candidate must invoke it and
   // gate publication on its result.
   if (
-    !new RegExp('run:[ ]*' + escapeRegExp(PUBLISH_GUARD_SCRIPT) + '[ ]*$', 'm').test(
-      block,
-    )
+    !new RegExp(
+      'run:[ ]*' + escapeRegExp(PUBLISH_GUARD_SCRIPT) + '[ ]*$',
+      'm'
+    ).test(block)
   ) {
     fail(path, jobId, 'does not check the full-SHA tag before publishing')
   }
@@ -224,7 +246,7 @@ function validateArmBuildJob(block, path, jobId) {
     "images:[ ]*[$][{][{][ ]*format[(]'[{]0[}]" +
       '/[{]1[}]/[{]2[}]-arm' +
       "',[ ]*'ghcr[.]io',[ ]*github[.]repository,[ ]*matrix[.]image[ ]*[)][ ]*[}][}]",
-    'm',
+    'm'
   )
   if (!matrixImage.test(block)) {
     fail(path, jobId, 'does not derive the image from the matrix')
@@ -232,7 +254,7 @@ function validateArmBuildJob(block, path, jobId) {
   // A full-SHA tag is what makes the promoted reference immutable.
   if (
     !/type[ ]*=[ ]*raw[^\n#]*value[ ]*=[ ]*[$][{][{][ ]*github[.]sha[ ]*[}][}]/.test(
-      block,
+      block
     )
   ) {
     fail(path, jobId, 'does not publish a full source SHA tag')
@@ -261,9 +283,14 @@ function validateScanJob(block, path, jobId) {
   }
   const refs = [
     ...new Set(
-      [...String(block).matchAll(
-        new RegExp('uses:[ ]*' + escapeRegExp(TRIVY_ACTION) + '@([^ \\n#]+)', 'g'),
-      )].map((match) => match[1]),
+      [
+        ...String(block).matchAll(
+          new RegExp(
+            'uses:[ ]*' + escapeRegExp(TRIVY_ACTION) + '@([^ \\n#]+)',
+            'g'
+          )
+        ),
+      ].map((match) => match[1])
     ),
   ]
   if (refs.length !== 1 || !/^[0-9a-f]{40}$/.test(refs[0])) {
@@ -272,7 +299,7 @@ function validateScanJob(block, path, jobId) {
   if (
     !new RegExp(
       'node[ ]+' + escapeRegExp(SCAN_POLICY_SCRIPT) + '[ ]+check',
-      'm',
+      'm'
     ).test(block)
   ) {
     fail(path, jobId, 'does not enforce the scan policy')
@@ -309,7 +336,7 @@ function validateStagingWorkflow({
   const name = workflowName(content)
   if (name !== expectedName) {
     throw new Error(
-      workflowPath + ' does not use the trusted workflow name: ' + String(name),
+      workflowPath + ' does not use the trusted workflow name: ' + String(name)
     )
   }
   // 'on' parses as the boolean true in a naive scanner, so the trigger keys are
@@ -318,12 +345,35 @@ function validateStagingWorkflow({
   if (branches === null) {
     throw new Error(workflowPath + ' has no push branch trigger')
   }
-  if (!branches.includes('v3')) {
-    throw new Error(workflowPath + ' does not trigger on the release branch')
+  // The exact branch list matters: a narrower or reordered set would stop
+  // publishing on the candidate branches the controller promotes from, and the
+  // 'v3*' entry is what covers v3-audit and v3-ai.
+  const pushBranches = [...APPROVED_PUSH_BRANCHES].sort()
+  if (branches.slice().sort().join(',') !== pushBranches.join(',')) {
+    throw new Error(workflowPath + ' does not use the approved push triggers')
   }
   if (sourceBranch !== undefined && !matchesApproved(sourceBranch)) {
     throw new Error(
-      sourceBranch + ' is not covered by the approved push triggers',
+      sourceBranch + ' is not covered by the approved push triggers'
+    )
+  }
+  // A workflow-level pull-request path filter would suppress the required
+  // context on some changes, so the selection has to stay inside the run.
+  if (yamlList(content, ['on', 'pull_request', 'paths']) !== null) {
+    throw new Error(
+      workflowPath + ' must not filter pull-request paths at the workflow level'
+    )
+  }
+  const prTypes = yamlFlowList(content, 'types', 4)
+  if (prTypes === null) {
+    throw new Error(workflowPath + ' has no pull-request trigger types')
+  }
+  // 'edited' re-evaluates the selection after a retarget; ready_for_review is
+  // where a draft pull request's deferred builds are restored.
+  const approvedTypes = [...APPROVED_PULL_REQUEST_TYPES].sort()
+  if (prTypes.slice().sort().join(',') !== approvedTypes.join(',')) {
+    throw new Error(
+      workflowPath + ' does not use the approved pull-request triggers'
     )
   }
   const jobs = jobBlocks(content, workflowPath)
@@ -334,11 +384,15 @@ function validateStagingWorkflow({
     validateArmBuildJob(jobs.get(jobId), workflowPath, jobId)
   }
   validateAmdJob(jobs.get(STAGING_AMD_JOB_ID), workflowPath, STAGING_AMD_JOB_ID)
-  validateScanJob(jobs.get(STAGING_SCAN_JOB_ID), workflowPath, STAGING_SCAN_JOB_ID)
+  validateScanJob(
+    jobs.get(STAGING_SCAN_JOB_ID),
+    workflowPath,
+    STAGING_SCAN_JOB_ID
+  )
   validateStatusJob(
     jobs.get(STAGING_STATUS_JOB_ID),
     workflowPath,
-    STAGING_STATUS_JOB_ID,
+    STAGING_STATUS_JOB_ID
   )
   return { name, path: workflowPath }
 }
@@ -394,4 +448,5 @@ module.exports = {
   validateStagingWorkflow,
   workflowName,
   yamlList,
+  yamlFlowList,
 }
