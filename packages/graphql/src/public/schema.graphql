@@ -2985,6 +2985,7 @@ type StackEvaluation {
   stackId: Int!
   stackName: String
   stackOrder: Int!
+  startedAt: Date
   status: ElementBlockStatus
   timeLimit: Int
 }

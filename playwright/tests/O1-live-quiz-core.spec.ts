@@ -3227,6 +3227,90 @@ test.describe.serial('Core live-quiz workflows', () => {
     await page.waitForTimeout(500)
   })
 
+  test('Keep active evaluation reveals scoped to a live quiz activation', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await openActivitiesListForQuiz(page, data.course2.quiz.name)
+    await page
+      .getByTestId(`live-quiz-cockpit-${data.course2.quiz.name}`)
+      .click()
+    await page.waitForTimeout(1000)
+    await page.getByTestId('embed-evaluation-cockpit').click()
+    await page.getByTestId('embedding-show-solution-switch').click()
+    await page.getByTestId('embedding-show-explanation-switch').click()
+
+    const activeQuestionLink = await readEmbeddingLink(
+      page,
+      'open-embedding-link-question-0'
+    )
+    const neighbouringQuestionLink = await readEmbeddingLink(
+      page,
+      'open-embedding-link-question-1'
+    )
+    const activeQuestionUrl = new URL(activeQuestionLink)
+    expect(activeQuestionUrl.searchParams.get('showSolution')).toBe('true')
+    expect(activeQuestionUrl.searchParams.get('showExplanation')).toBe('true')
+
+    const solutionToggle = page.getByTestId('evaluation-footer-show-solution')
+    const explanationToggle = page.getByTestId(
+      'evaluation-footer-show-explanation'
+    )
+    await gotoEmbeddingLink(page, activeQuestionLink)
+    await expect(solutionToggle).toBeVisible()
+    await expect(explanationToggle).toBeVisible()
+    await expect(solutionToggle).not.toBeChecked()
+    await expect(explanationToggle).not.toBeChecked()
+
+    await solutionToggle.click()
+    await explanationToggle.click()
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+
+    await gotoEmbeddingLink(page, neighbouringQuestionLink)
+    await expect(
+      page.getByTestId('evaluation-footer-show-solution')
+    ).not.toBeChecked()
+    await expect(
+      page.getByTestId('evaluation-footer-show-explanation')
+    ).not.toBeChecked()
+    await gotoEmbeddingLink(page, activeQuestionLink)
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(solutionToggle).toBeChecked()
+    await expect(explanationToggle).toBeChecked()
+
+    await openActivitiesListForQuiz(page, data.course2.quiz.name)
+    await page
+      .getByTestId(`live-quiz-cockpit-${data.course2.quiz.name}`)
+      .click()
+    await expect(page.getByTestId('abort-live-quiz-cockpit')).toBeVisible()
+    await page.getByTestId('abort-live-quiz-cockpit').click()
+    await expect(page.getByTestId('confirm-cancel-live-quiz')).toBeEnabled()
+    await page.getByTestId('confirm-cancel-live-quiz').click()
+
+    await expect(
+      page.getByTestId(`start-live-quiz-${data.course2.quiz.name}`)
+    ).toBeVisible()
+    await page
+      .getByTestId(`start-live-quiz-${data.course2.quiz.name}`)
+      .click()
+    await expect(page.getByTestId('abort-live-quiz-cockpit')).toBeVisible()
+    await page.getByTestId('next-block-timeline').click()
+    await page.waitForTimeout(500)
+
+    await gotoEmbeddingLink(page, activeQuestionLink)
+    await expect(solutionToggle).toBeVisible()
+    await expect(explanationToggle).toBeVisible()
+    await expect(solutionToggle).not.toBeChecked()
+    await expect(explanationToggle).not.toBeChecked()
+  })
+
   test('Respond to the first block of the running live quiz from the student view', async ({
     page: testPage,
   }, testInfo) => {

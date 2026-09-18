@@ -407,6 +407,11 @@ describe('Unit tests for live quiz evaluation service', () => {
     const activeBlock = liveQuiz.blocks[0]!
     const scheduledBlock = liveQuiz.blocks[1]!
     const activeInstance = activeBlock.elements[0]!
+    const startedAt = new Date('2026-09-07T10:00:00.000Z')
+    await prisma.elementBlock.update({
+      where: { id: activeBlock.id },
+      data: { startedAt },
+    })
 
     await prisma.liveQuiz.update({
       where: { id: liveQuiz.id },
@@ -438,6 +443,7 @@ describe('Unit tests for live quiz evaluation service', () => {
 
     // First block should be marked active: true
     expect(results[0]!.stackActive).toBe(true)
+    expect(results[0]!.startedAt).toEqual(startedAt)
     expect(results[0]!.instances).toHaveLength(1)
     expect(results[0]!.instances[0]).toMatchObject({
       id: activeInstance.id,

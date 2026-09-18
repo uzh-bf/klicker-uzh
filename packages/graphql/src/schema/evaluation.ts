@@ -49,6 +49,7 @@ export interface IStackEvaluation {
   instances: IElementInstanceEvaluation[]
   status?: DB.ElementBlockStatus | null
   expiresAt?: Date | null
+  startedAt?: Date | null
   closedAt?: Date | null
   timeLimit?: number | null
 }
@@ -295,6 +296,10 @@ export const StackEvaluation = StackEvaluationRef.implement({
       nullable: true,
     }),
     expiresAt: t.expose('expiresAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    startedAt: t.expose('startedAt', {
       type: 'Date',
       nullable: true,
     }),

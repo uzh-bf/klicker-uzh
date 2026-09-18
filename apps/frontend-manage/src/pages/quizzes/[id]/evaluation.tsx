@@ -1,7 +1,7 @@
 import { NetworkStatus, useQuery } from '@apollo/client'
 import {
   ActivityType,
-  GetLiveQuizEvaluationDocument,
+  GetLiveQuizEvaluationWithActivationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
@@ -19,7 +19,7 @@ function LiveQuizEvaluation() {
 
   // fetch evaluation data
   const { data, loading, networkStatus } = useQuery(
-    GetLiveQuizEvaluationDocument,
+    GetLiveQuizEvaluationWithActivationDocument,
     {
       variables: {
         id: router.query.id as string,

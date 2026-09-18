@@ -107,11 +107,11 @@ function ActivityEvaluation({
   // Active-block reveals are separate from the closed-block settings so that
   // opening a block never exposes a saved result or URL-selected solution.
   const [activeShowSolution, setActiveShowSolution] = useSessionStorage(
-    `active-show-solution-${activityId}-${currentStack?.stackId ?? activeStack}-${currentInstance?.id ?? activeInstance}`,
+    `active-show-solution-${activityId}-${currentStack?.stackId ?? activeStack}-${currentStack?.startedAt ?? 'not-started'}-${currentInstance?.id ?? activeInstance}`,
     false
   )
   const [activeShowExplanation, setActiveShowExplanation] = useSessionStorage(
-    `active-show-explanation-${activityId}-${currentStack?.stackId ?? activeStack}-${currentInstance?.id ?? activeInstance}`,
+    `active-show-explanation-${activityId}-${currentStack?.stackId ?? activeStack}-${currentStack?.startedAt ?? 'not-started'}-${currentInstance?.id ?? activeInstance}`,
     false
   )
 

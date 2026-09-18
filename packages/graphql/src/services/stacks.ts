@@ -3846,6 +3846,7 @@ export function computeStackEvaluation(stacks: EvaluationStack[]) {
     instanceCount: stack.evaluationInstanceCount ?? stack.elements.length,
     status: 'status' in stack ? stack.status : null,
     expiresAt: 'expiresAt' in stack ? stack.expiresAt : null,
+    startedAt: 'startedAt' in stack ? stack.startedAt : null,
     closedAt: 'closedAt' in stack ? stack.closedAt : null,
     timeLimit: 'timeLimit' in stack ? stack.timeLimit : null,
     instances: stack.elements
