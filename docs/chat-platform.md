@@ -42,7 +42,10 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
   parser and opt-in `[n]` marker transformer used by response-example checks
   and rendering. The student chat renderer keeps its app-local plugin.
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
-  `[n–m]` markers into citation links.
+  `[n–m]` markers into citation links. A marker may also carry a _labelled_ page detail the model
+  added, such as `[1, p. 6–7]` or `[1, S. 8–18]`; the chip shows the number alone and the page belongs
+  to the source card. A bare `[1, 2]` is deliberately not a citation: in real course answers that
+  shape is far more often a math coordinate such as `[0, 1]`.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
@@ -514,7 +517,12 @@ participant credits, the route switches from any effective model to GPT-5.6
 Luna and clamps its effective usage class to `BASE` before enforcement; Luna is
 therefore charged only through its `BASE` account lane and the participant
 allowance. This fallback intentionally does not require the chatbot allow-list
-to contain Luna. Automatic selection otherwise retains Auto and is attributed
+to contain Luna. New browser sessions start with Auto Mode. Saved unavailable selections use
+the server-provided automatic model; an explicitly selected available Luna is
+preserved. Local seeded chatbots offer Auto and GPT-5.6 Luna. GPT-5.5 is retired
+from the built-in and deployment registries.
+
+Automatic selection otherwise retains Auto and is attributed
 to `ADVANCED`; the credits response keeps allow-listed model capabilities
 visible independently of the participant balance. Strict reservations,
 immutable ledgers, automated refunds, invoices, per-chatbot allocation, and
@@ -863,15 +871,140 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. The Chat/Knowledge graph workspace switch appears once in that
-header's right-hand control cluster in standalone and embedded layouts; the
-sidebar and content area do not repeat it
-(`src/components/assistant.tsx:SidebarMain`,
-`src/components/assistant.tsx:AssistantLayout`). Embedded mode shows the
+header grid. A single graph icon in the header toggles a graph dock without
+navigation or replacing the mounted conversation. Desktop shows it on the right;
+compact viewports stack graph above chat. Fullscreen expands the same graph over
+the chatbot, makes background controls inert and contains keyboard focus. Escape
+restores the dock; closing unmounts the graph and returns focus to its toggle.
+Legacy `/graph` links open the dock on entry. Reopening starts an overview.
+`ChatKnowledgeGraphPanel.tsx` owns this presentation in both standalone and
+embedded layouts. Node and relationship details can append a localized, editable
+question to the current composer, preserving its draft and attachments. The
+callback carries only bounded display labels (200 characters each), never raw
+properties or graph identifiers. Asking never sends or creates a thread; mobile
+asking closes the panel to leave room for the keyboard. Lecturer details retain
+the existing layout and have no chat action. Embedded mode shows the
 loading state and compact credit/model information through the shared settings
 components. Direct thread URL
 activation resynchronizes the thread's stored chat mode once per activation,
 without overriding a mode manually chosen afterward.
+
+The lecturer controls the student map with `Chatbot.knowledgeGraphVisible` and
+graph-assisted document search independently with
+`Chatbot.knowledgeGraphRetrievalEnabled`. Both follow the authoring-revision
+approval lifecycle. The first opt-in rollout resets existing live and draft map policies to off;
+new chatbots also start with both options off. The forward migration preserves
+other draft settings and advances changed rows' revision versions to reject stale
+editors. Retrieval additionally requires the default-off `chatbot-graphrag`
+GrowthBook flag. Manage hides its retrieval switch while the flag is off; the
+server evaluates the chatbot owner's current cohort before enabling or publishing
+retrieval, and at runtime tool checkpoints. Flag-off permits disabling and
+unrelated edits to an already-enabled policy. Map visibility remains independent.
+The shared flag client refreshes every 30 seconds and rejects payloads older than
+120 seconds; disabling a hosted flag is therefore not an instantaneous global
+kill switch. Missing or unusable configuration denies retrieval. A disabled map hides the graph toggle and its API
+returns `403 KNOWLEDGE_GRAPH_DISABLED`. Student maps start with a bounded overview. Typing at least two characters
+requests up to 20 suggestions after 300ms; selecting a suggestion opens a focused
+view. Explicit search also supports one character. Return to overview clears the
+exploration. The lecturer viewer retains its existing overview and explicit-search controls.
+
+Overview reads return at most 250 concepts and 500 relationships. They sample
+candidates before projecting degree, rather than ranking the entire graph.
+The viewer retains at most 500 concepts and 1,000 relationships across expansions;
+partial-server-results and local-canvas limits have separate notices. Student
+neighbor requests bind numeric IDs to the originating KB/build. A changed
+publication rejects the read and refreshes the overview, preventing ID reuse
+from selecting a different concept. Student reads reject stale builds and
+revalidate publication after reading. Withdrawn content is suppressed on subsequent
+requests; content already rendered in a browser cannot be recalled. Lecturer
+inspection can still show a stale graph.
+
+Student graph admission is per process: eight active reads, two per participant,
+60 requests per participant per minute, and 2,000 tracked identities maximum.
+Excess traffic receives 429 with Retry-After and no server queue. Slots remain
+occupied until the underlying read settles. Each native browsing query has a
+hard execution budget of at most 1,000ms; overview and neighbors use two queries.
+These are database execution budgets, not end-to-end latency guarantees.
+Bounded samples follow database scan order; truncated results do not promise a
+stable global ranking or exhaustive membership. Sorting all candidates before
+limiting would increase work on large graphs. Substring search still scans in
+the worst case. Limits multiply across replicas;
+large deployments may need indexed search and distributed admission control.
+
+Graph-assisted document search uses the native FalkorDB reader in
+`packages/knowledge-graph/src/retrieval.ts` through the shared MCP tool adapter.
+It applies only to the student chat's configured KB document tool. A current,
+single published graph supplies at most six neighboring concept names from
+fixed, parameterized, one-hop queries. The original document query remains
+intact; at most one additional document query runs per tool instance. The
+adapter combines compatible `mode: documents` passages within 12 passages and
+16,000 content characters, retaining provider source groups and locators. It
+protects the first three admitted baseline passages, then uses equal-weight
+reciprocal rank fusion with constant 60 for the remaining candidates. Contiguous
+source groups preserve the chosen passage order.
+
+Retrieval seeds require complete normalized display-label phrases in the query;
+substring matches and inferred aliases are excluded. Up to four longest matching
+concepts are selected from at most 10,000 nodes. An overflow probe declines graph
+hints instead of searching a partial graph. The one-hop query similarly declines
+when more than 1,000 incident rows occur across the selected seeds. Both native
+queries retain 500ms execution budgets. These limits bound graph work but do not
+make this an indexed search. Queries over 100 tokens decline expansion; six-token
+phrases include internal stop words and late-query acronyms. Exact matching can
+miss inflections, aliases and translations, so these cases use ordinary RAG.
+Graph descriptions and LightRAG extraction references never become citations.
+Stale graphs and optional graph/expansion failures retain document-only results.
+Changed course access or KB bindings suppress both results because the original
+MCP transport scope cannot be narrowed after issuance. This basic query-expansion
+path adds no retrieval framework or semantic index and makes no measured answer
+quality claim. Owner previews continue using ordinary document retrieval.
+
+The opt-in `packages/knowledge-graph/test/retrieval.integration.test.ts` requires
+`GRAPH_RETRIEVAL_TEST_PORT` on a disposable local FalkorDB, optionally
+`GRAPH_RETRIEVAL_TEST_HOST=host.docker.internal` for a container test runner.
+It uses a unique synthetic graph and removes only that graph. Without the
+explicit test port, it skips and does not prove native retrieval. The chat-level
+`apps/chat/test/graph-assisted-doc-query.integration.test.ts` uses the same
+connection guard to verify native traversal, additional passage retrieval,
+citation normalization and failure fallback with a synthetic document provider.
+It makes no model calls. Run both checks inside the task container against a
+disposable loopback-published FalkorDB:
+
+```bash
+devrouter exec <checkout> -- env \
+  GRAPH_RETRIEVAL_TEST_HOST=host.docker.internal \
+  GRAPH_RETRIEVAL_TEST_PORT=<disposable-port> \
+  pnpm --filter @klicker-uzh/chat test:run \
+  test/graph-assisted-doc-query.integration.test.ts
+```
+
+The browser fixture must also publish a synthetic build through the KB ledger
+and connect the app with `KB_FALKORDB_HOST`, `KB_FALKORDB_PORT` and
+`KB_FALKORDB_TLS`. Keep fixture setup in the test harness; do not add mock
+branches to the application. Lecturer saves stage revisions; live student
+policy changes only when that revision is approved.
+
+For repeatable browser verification, start the seeded `chat,manage,mcp` profile
+with the app pointed at that disposable FalkorDB. Publish the test-owned graph,
+then preserve the seeded database while running the host browser:
+
+```bash
+devrouter exec <checkout> -- env DRY_RUN=false \
+  GRAPH_RETRIEVAL_TEST_HOST=host.docker.internal \
+  GRAPH_RETRIEVAL_TEST_PORT=<disposable-port> \
+  node apps/chat/scripts/seed-graph-e2e.mjs
+GRAPH_RETRIEVAL_TEST_PORT=<disposable-port> pnpm playwright:host -- \
+  --runtime-profile chat,manage,mcp --preserve-database --project=chromium \
+  tests/Y-chat-knowledge-graph.spec.ts
+```
+
+The fixture requires the disposable database guard and the seeded Benibot with
+exactly one enabled KB. It defaults to dry run. The browser test uses real graph
+API responses, expands a neighboring concept with the keyboard, checks desktop
+and mobile containment, and restores the lecturer's visibility setting after
+verifying the disabled API and hidden map. It skips without the explicit port;
+a skipped run is not native E2E evidence. The separate native retrieval test
+proves document augmentation; neither check calls a paid model.
 
 Switching mode mid-thread affects **only the turns sent afterwards**, and the choice is not
 persisted until the next send: a thread's stored mode is `lastChatMode`, derived from its most
@@ -1024,7 +1157,12 @@ non-KB MCP servers retain their existing behavior.
   source's number rather than keep counting, or a multi-search answer emits `[4]` when only three
   unique sources exist. That contract is appended to the system prompt only when a doc_query-style
   tool is actually available for the request.
-- **Model compliance with the citation contract is unverified.** Prompt assembly is unit-tested;
+- Before each tool continuation, `withModelCitationIndices` projects explicit
+  `citation_index` values onto model-facing source groups using the same message
+  normalizer as the UI. It follows call order, preserves repeated indices and
+  assigns null to ineligible or overflow sources. Stored and streamed tool results
+  stay unchanged; historical messages are excluded from the projection.
+- **Model compliance with the citation contract is unverified.** Request projection is unit-tested;
   whether a given model honours it needs a live model key, which the devcontainer does not carry.
 
 On the render side, `remarkCitationMarkers` rewrites `[n]` and contiguous `[n–m]` markers in
@@ -1054,10 +1192,22 @@ mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
 `src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
-and fall back to a cleaned display URL when they carry no page; web links always lead with the
+documents display the publisher's labeled page (`p. 12` / `S. 12`) or labelled range (`p. 6–89`),
+then the retrieved physical page envelope, then a cleaned display URL; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+lead with a `12:34`-style position; images keep their type and any publisher page label.
+Physical PDF pages are used for outbound navigation: validated public URLs with
+a `.pdf` pathname receive a positive integer `#page=` position on cards and passage
+links, anchored at the lowest retrieved page. A single physical page is never shown as a label — it
+is a navigation position, not the number printed on the page — but the physical envelope of the
+retrieved chunks does stand in for a missing publisher label, because those payloads carry no other
+page information. `getPageEnvelope` (`src/lib/sources/normalizeSources.ts`) derives that envelope
+from every chunk of a source, not only the first: the payload has no relevance score or rank, so the
+lowest and highest retrieved page are a lossless summary of the retrieval. `labeledPageEnd` is only
+derived when every chunk label is a plain integer; any other label set keeps the first label alone.
+Source identity deliberately stays keyed on the start page, so two `doc_query` calls returning
+overlapping chunks for one resource cannot split it into duplicate cards.
+Original URLs remain unchanged for source identity and group origins. doc_query video results now carry
 structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
 `labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
 and prefers the structured start for the card and citation preview. Legacy results remain
@@ -1126,7 +1276,7 @@ the UI locale or by a lecturer's stored persona prompt.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — both expose `gpt-5.6-luna`, while deployments additionally offer GPT-5.1, GPT-5.4, GPT-5.5, and effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` read "None" for the same reason). The local seeded chatbot offers only Auto and Luna, while the built-in and deployment registries retain additional models and effort ids (`none`, `minimal`). Check both registry capabilities and chatbot allow-lists before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse
@@ -1198,11 +1348,17 @@ after reloading the thread. Use direct GPT-5.6 Luna only to isolate the router
 from the model/tool path. The fixture is synthetic wiring evidence only; it
 does not validate retrieval quality or a deployed MCP server.
 
+The optional `LOCAL_MCP_FIXTURE_FILE` (default
+`project/_local/local-mcp-fixture.json`, gitignored) adds a second draft
+identity with its own document corpus. The isolated bootstrap creates and
+validates that identity in the same seed transaction; an unconfigured or
+drifted identity fails closed instead of widening the fixture.
+
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 
 `history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
-The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
+The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint in both standalone and embedded mode, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,

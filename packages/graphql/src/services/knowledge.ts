@@ -33,6 +33,7 @@ import {
   MAX_KB_RESOURCE_COUNT,
   MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
+  resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
@@ -41,6 +42,10 @@ import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
+import {
+  fetchKbSourceInventory,
+  type KbSourceInventoryDeps,
+} from './docQuerySources.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
 import {
@@ -121,6 +126,24 @@ export interface KBResourceConnection {
   needsIngestionCount: number
   failedIngestionCount: number
   inProgressCount: number
+}
+
+export interface KBImportedSource {
+  id: string
+  title: string
+  sourceType: string | null
+  sourceUrl: string | null
+  ingestedAt: Date | null
+  observedAt: Date | null
+  chunkCount: number
+}
+
+export interface KBImportedSourceConnection {
+  items: KBImportedSource[]
+  pageInfo: KBPageInfo
+  totalSourcesInScan: number
+  incomplete: boolean
+  unidentifiedChunks: number
 }
 
 export interface KBIngestAllResult {
@@ -396,13 +419,22 @@ async function assertKbQuotaAvailable(
     sizeBytes?: number
   }
 ) {
-  const usage = await getKbQuotaUsage(prisma, kbId)
+  const [usage, kb] = await Promise.all([
+    getKbQuotaUsage(prisma, kbId),
+    prisma.kB.findUniqueOrThrow({
+      where: { id: kbId },
+      select: { storageLimitMiB: true },
+    }),
+  ])
   if (usage.resourceCount + resourceCount > MAX_KB_RESOURCE_COUNT) {
     throw new GraphQLError('KB resource limit reached', {
       extensions: { code: 'KB_RESOURCE_LIMIT_REACHED' },
     })
   }
-  if (usage.sizeBytes + sizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
+  if (
+    usage.sizeBytes + sizeBytes >
+    resolveKBStorageLimitBytes(kb.storageLimitMiB)
+  ) {
     throw new GraphQLError('KB storage limit reached', {
       extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
     })
@@ -546,7 +578,13 @@ async function lockOwnedChatbotOrThrow(
 async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
   const mcpServer = await prisma.chatbotMCPServer.findUnique({
     where: { name: KB_MCP_SERVER_NAME },
-    select: { id: true, isActive: true },
+    select: {
+      id: true,
+      isActive: true,
+      url: true,
+      authType: true,
+      authSecret: true,
+    },
   })
   if (!mcpServer || !mcpServer.isActive) {
     throw new GraphQLError('Knowledge base retrieval is not configured')
@@ -555,6 +593,7 @@ async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
 }
 
 function createKbMetrics({
+  storageLimitBytes = MAX_KB_TOTAL_SIZE_BYTES,
   visibleResourceCount = 0,
   visibleSizeBytes = 0,
   visibleUnknownSizeCount = 0,
@@ -565,6 +604,7 @@ function createKbMetrics({
   reservedSizeBytes = 0,
   linkedConsumerCount = 0,
 }: Partial<{
+  storageLimitBytes: number
   visibleResourceCount: number
   visibleSizeBytes: number
   visibleUnknownSizeCount: number
@@ -587,7 +627,7 @@ function createKbMetrics({
     quotaResourceCount: retainedResourceCount + reservedResourceCount,
     quotaSizeBytes: quotaRetainedSizeBytes + reservedSizeBytes,
     resourceLimit: MAX_KB_RESOURCE_COUNT,
-    storageLimitBytes: MAX_KB_TOTAL_SIZE_BYTES,
+    storageLimitBytes,
     pendingCleanupCount: retainedResourceCount - visibleResourceCount,
     pendingCleanupSizeBytes: quotaRetainedSizeBytes - quotaVisibleSizeBytes,
     reservedResourceCount,
@@ -610,6 +650,7 @@ async function getKbMetricsMap(
     uploadTickets,
     createUploadTickets,
     linkedConsumers,
+    knowledgeBases,
   ] = await Promise.all([
     prisma.kBResource.groupBy({
       by: ['kbId'],
@@ -651,8 +692,18 @@ async function getKbMetricsMap(
       where: { kbId: { in: kbIds }, isEnabled: true },
       _count: { _all: true },
     }),
+    prisma.kB.findMany({
+      where: { id: { in: kbIds } },
+      select: { id: true, storageLimitMiB: true },
+    }),
   ])
 
+  const storageLimitsByKb = new Map(
+    knowledgeBases.map((kb) => [
+      kb.id,
+      resolveKBStorageLimitBytes(kb.storageLimitMiB),
+    ])
+  )
   const visibleByKb = new Map(visibleResources.map((row) => [row.kbId, row]))
   const visibleUnknownByKb = new Map(
     visibleUnknownSizes.map((row) => [row.kbId, row._count._all])
@@ -677,6 +728,7 @@ async function getKbMetricsMap(
       return [
         kbId,
         createKbMetrics({
+          storageLimitBytes: storageLimitsByKb.get(kbId),
           visibleResourceCount: visible?._count._all,
           visibleSizeBytes: visible?._sum.sizeBytes ?? 0,
           visibleUnknownSizeCount: visibleUnknownByKb.get(kbId),
@@ -992,6 +1044,53 @@ export async function getKbResourcesConnection(
   }
 }
 
+export async function getKbImportedSourcesConnection(
+  {
+    kbId,
+    first,
+    after,
+  }: {
+    kbId: string
+    first?: number | null
+    after?: string | null
+  },
+  ctx: ContextWithUser,
+  deps: KbSourceInventoryDeps = {}
+): Promise<KBImportedSourceConnection> {
+  await assertManageAiEnabled(ctx)
+  await getOwnedKbOrThrow(ctx, kbId)
+  const pageSize = normalizePageSize(first)
+  const mcpServer = await getKbMcpServerOrThrow(ctx.prisma)
+
+  try {
+    const inventory = await fetchKbSourceInventory(
+      {
+        server: mcpServer,
+        kbId,
+        limit: pageSize,
+        after,
+      },
+      deps
+    )
+    return {
+      items: inventory.items,
+      pageInfo: {
+        hasNextPage: inventory.nextCursor !== null,
+        endCursor: inventory.nextCursor,
+      },
+      totalSourcesInScan: inventory.totalSourcesInScan,
+      incomplete: inventory.incomplete,
+      unidentifiedChunks: inventory.unidentifiedChunks,
+    }
+  } catch (error) {
+    console.error('Failed to load imported KB sources', {
+      kbId,
+      error,
+    })
+    throw new GraphQLError('Imported sources could not be loaded')
+  }
+}
+
 export async function getKbChatbotBindings(
   { kbId }: { kbId: string },
   ctx: ContextWithUser
@@ -1005,11 +1104,10 @@ export async function getKbChatbotBindings(
       id: true,
       name: true,
       knowledgeBases: {
-        where: { isEnabled: true },
+        where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
           kb: { select: { id: true, name: true } },
         },
-        take: 1,
       },
     },
     orderBy: { name: 'asc' },
@@ -1018,8 +1116,15 @@ export async function getKbChatbotBindings(
   return chatbots.map((chatbot) => ({
     chatbotId: chatbot.id,
     chatbotName: chatbot.name,
-    enabledKbId: chatbot.knowledgeBases[0]?.kb.id ?? null,
-    enabledKbName: chatbot.knowledgeBases[0]?.kb.name ?? null,
+    enabledKbs: chatbot.knowledgeBases.map(({ kb }) => kb),
+    enabledKbId:
+      chatbot.knowledgeBases.length === 1
+        ? (chatbot.knowledgeBases[0]?.kb.id ?? null)
+        : null,
+    enabledKbName:
+      chatbot.knowledgeBases.length === 1
+        ? (chatbot.knowledgeBases[0]?.kb.name ?? null)
+        : null,
   }))
 }
 
@@ -1089,6 +1194,7 @@ export async function attachKbToChatbot(
       chatbotName: chatbot.name,
       enabledKbId: kbId,
       enabledKbName: kb.name,
+      enabledKbs: [{ id: kbId, name: kb.name }],
     }
   })
 }
@@ -3068,6 +3174,10 @@ export async function rebuildKbKnowledgeGraph(
         kbId,
         deletedAt: null,
         activeContentSha256: { not: null },
+        // Graph builds intentionally cover only lecturer-curated course
+        // material: administrative uploads (tutorials, syllabi, rules) must
+        // not leak into graph nodes and generated questions.
+        materialType: DB.KBResourceMaterialType.COURSE_CONTENT,
       },
       select: {
         id: true,
@@ -3080,9 +3190,12 @@ export async function rebuildKbKnowledgeGraph(
       orderBy: { id: 'asc' },
     })
     if (resources.length === 0) {
-      throw new GraphQLError('KB has no active graph sources', {
-        extensions: { code: 'KB_GRAPH_EMPTY' },
-      })
+      throw new GraphQLError(
+        'KB has no course-content resources with served content',
+        {
+          extensions: { code: 'KB_GRAPH_NO_COURSE_CONTENT' },
+        }
+      )
     }
 
     const validatedResources = resources.map((resource) => ({

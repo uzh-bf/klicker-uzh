@@ -24,6 +24,7 @@ local_kb_restore_environment
 [ "$DATABASE_URL" = "$EXPECTED_DATABASE" ]
 [ "$DOC_QUERY_SCOPE_PRIVATE_KEY" = "$EXPECTED_KEY" ]
 [ "$KB_INGESTION_API_URL" = synthetic ]
+[ "$KLICKER_LOCAL_KB_RETRIEVAL_URL" = synthetic ]
 `,
       '--',
       helper,

@@ -1,11 +1,17 @@
 'use client'
 
+import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import {
+  KnowledgeGraphBuildChangedError,
+  KnowledgeGraphUnavailableError,
+} from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
+import type { KnowledgeGraphAskSelection } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphView'
+import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
+import { SelectField } from '@uzh-bf/design-system'
+import { useTranslations } from 'next-intl'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { authedFetch } from '@/src/lib/client/authedFetch'
 import { useChatStore } from '@/src/stores/chatStore'
-import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
-import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
-import { useMemo } from 'react'
 import { ChatKnowledgeGraphViewer } from './ChatKnowledgeGraphViewer'
 
 type KnowledgeGraphFetch = (
@@ -23,6 +29,14 @@ const PUBLICATION_STATUSES = new Set<PublicationStatus>([
 ])
 
 type UnknownRecord = Record<string, unknown>
+
+type GraphChoice = { id: string; name: string }
+
+export class ChatKnowledgeGraphSelectionRequiredError extends KnowledgeGraphUnavailableError {
+  constructor(readonly choices: GraphChoice[]) {
+    super('Select an attached knowledge graph')
+  }
+}
 
 export class ChatKnowledgeGraphUnavailableError extends KnowledgeGraphUnavailableError {
   readonly status = 409
@@ -54,26 +68,25 @@ export class ChatKnowledgeGraphRequestError extends Error {
 function knowledgeGraphUrl(
   chatbotId: string,
   operation: 'overview' | 'search' | 'neighbors',
-  input?: { key: 'q' | 'nodeId'; value: string }
+  input?: { key: 'q' | 'nodeId'; value: string },
+  kbId?: string,
+  buildId?: string
 ): string {
   const searchParams = new URLSearchParams({ operation })
+  if (kbId !== undefined) searchParams.set('kbId', kbId)
+  if (buildId !== undefined) searchParams.set('buildId', buildId)
   if (input !== undefined) {
     searchParams.set(input.key, input.value)
   }
   return `/api/chatbots/${encodeURIComponent(chatbotId)}/knowledge-graph?${searchParams.toString()}`
 }
 
-async function publicationStatus(
-  response: Response
-): Promise<PublicationStatus | undefined> {
+async function isKnowledgeGraphDisabled(response: Response): Promise<boolean> {
   try {
-    const body = (await response.json()) as { publicationStatus?: unknown }
-    return typeof body.publicationStatus === 'string' &&
-      PUBLICATION_STATUSES.has(body.publicationStatus as PublicationStatus)
-      ? (body.publicationStatus as PublicationStatus)
-      : undefined
+    const body = (await response.json()) as { code?: unknown }
+    return body.code === 'KNOWLEDGE_GRAPH_DISABLED'
   } catch {
-    return undefined
+    return false
   }
 }
 
@@ -83,18 +96,44 @@ async function readKnowledgeGraphResponse(
 ): Promise<KnowledgeGraphResponse> {
   const response = await fetcher(url)
   if (response.status === 409) {
+    const body: unknown = await response.json().catch(() => null)
+    if (isRecord(body) && body.code === 'KNOWLEDGE_GRAPH_BUILD_CHANGED') {
+      throw new KnowledgeGraphBuildChangedError()
+    }
+    if (
+      isRecord(body) &&
+      body.code === 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED' &&
+      Array.isArray(body.choices) &&
+      body.choices.every(
+        (choice) =>
+          isRecord(choice) &&
+          typeof choice.id === 'string' &&
+          typeof choice.name === 'string'
+      )
+    ) {
+      throw new ChatKnowledgeGraphSelectionRequiredError(
+        body.choices as GraphChoice[]
+      )
+    }
     throw new ChatKnowledgeGraphUnavailableError(
-      await publicationStatus(response)
+      isRecord(body) &&
+        typeof body.publicationStatus === 'string' &&
+        PUBLICATION_STATUSES.has(body.publicationStatus as PublicationStatus)
+        ? (body.publicationStatus as PublicationStatus)
+        : undefined
     )
   }
   if (response.status === 403) {
-    useChatStore.getState().setParticipationRequired(true)
+    // A disabled map is not a participation failure.
+    if (!(await isKnowledgeGraphDisabled(response))) {
+      useChatStore.getState().setParticipationRequired(true)
+    }
     throw new ChatKnowledgeGraphRequestError(403, false)
   }
   if (!response.ok) {
     throw new ChatKnowledgeGraphRequestError(
       response.status,
-      response.status === 503
+      response.status === 503 || response.status === 429
     )
   }
 
@@ -184,25 +223,37 @@ function isKnowledgeGraphResponse(
 
 export function createChatKnowledgeGraphDataSource(
   chatbotId: string,
-  fetcher: KnowledgeGraphFetch = authedFetch
+  fetcher: KnowledgeGraphFetch = authedFetch,
+  kbId?: string
 ): KnowledgeGraphDataSource {
   return {
     overview: () =>
       readKnowledgeGraphResponse(
-        knowledgeGraphUrl(chatbotId, 'overview'),
+        knowledgeGraphUrl(chatbotId, 'overview', undefined, kbId),
         fetcher
       ),
     search: (query) =>
       readKnowledgeGraphResponse(
-        knowledgeGraphUrl(chatbotId, 'search', { key: 'q', value: query }),
+        knowledgeGraphUrl(
+          chatbotId,
+          'search',
+          { key: 'q', value: query },
+          kbId
+        ),
         fetcher
       ),
-    neighbors: (nodeId) =>
+    neighbors: (nodeId, origin) =>
       readKnowledgeGraphResponse(
-        knowledgeGraphUrl(chatbotId, 'neighbors', {
-          key: 'nodeId',
-          value: nodeId,
-        }),
+        knowledgeGraphUrl(
+          chatbotId,
+          'neighbors',
+          {
+            key: 'nodeId',
+            value: nodeId,
+          },
+          origin.kbId,
+          origin.buildId
+        ),
         fetcher
       ),
   }
@@ -210,21 +261,82 @@ export function createChatKnowledgeGraphDataSource(
 
 export function ChatKnowledgeGraphWorkspace({
   chatbotId,
+  onAsk,
 }: {
   chatbotId: string
+  onAsk?: (selection: KnowledgeGraphAskSelection) => void
 }) {
-  const dataSource = useMemo(
-    () => createChatKnowledgeGraphDataSource(chatbotId),
-    [chatbotId]
-  )
+  const t = useTranslations('pwa.chatbot')
+  const [selection, setSelection] = useState<{
+    chatbotId: string
+    kbId?: string
+    choices: GraphChoice[]
+  }>({ chatbotId, choices: [] })
+  const kbId = selection.chatbotId === chatbotId ? selection.kbId : undefined
+  const choices = selection.chatbotId === chatbotId ? selection.choices : []
+  const activeSource = useRef<KnowledgeGraphDataSource | null>(null)
+  const dataSource = useMemo(() => {
+    const source = createChatKnowledgeGraphDataSource(
+      chatbotId,
+      authedFetch,
+      kbId
+    )
+    const observe = async (request: Promise<KnowledgeGraphResponse>) => {
+      try {
+        return await request
+      } catch (error) {
+        if (
+          activeSource.current === wrapped &&
+          error instanceof ChatKnowledgeGraphSelectionRequiredError
+        ) {
+          setSelection({ chatbotId, choices: error.choices })
+        }
+        throw error
+      }
+    }
+    const wrapped: KnowledgeGraphDataSource = {
+      overview: () => observe(source.overview()),
+      search: (query) => observe(source.search(query)),
+      neighbors: (nodeId, origin) => observe(source.neighbors(nodeId, origin)),
+    }
+    return wrapped
+  }, [chatbotId, kbId])
+
+  useLayoutEffect(() => {
+    activeSource.current = dataSource
+    return () => {
+      activeSource.current = null
+    }
+  }, [dataSource])
 
   return (
     <section
       aria-label="Knowledge graph workspace"
-      className="flex min-h-0 flex-1 bg-[#FAFAFA] p-2 sm:p-3 md:p-4"
+      className="flex min-h-0 flex-1 flex-col gap-2 bg-[#FAFAFA] p-2"
       data-cy="chat-knowledge-graph-workspace"
     >
-      <ChatKnowledgeGraphViewer dataSource={dataSource} />
+      {choices.length > 0 ? (
+        <SelectField
+          label={t('graphChoiceLabel')}
+          placeholder={t('graphChoicePlaceholder')}
+          data={{ cy: 'chat-knowledge-graph-choice' }}
+          items={choices.map((choice) => ({
+            value: choice.id,
+            label: choice.name,
+          }))}
+          value={kbId}
+          onChange={(value) =>
+            setSelection({ chatbotId, kbId: value, choices })
+          }
+        />
+      ) : null}
+      {choices.length === 0 || kbId !== undefined ? (
+        <ChatKnowledgeGraphViewer
+          key={`${chatbotId}:${kbId ?? ''}`}
+          dataSource={dataSource}
+          onAsk={onAsk}
+        />
+      ) : null}
     </section>
   )
 }

@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useChatResponse } from '../src/hooks/useChatResponse'
 
 const { mockUseChatContextStore, mockUseChatStore } = vi.hoisted(() => ({
-  mockUseChatContextStore: vi.fn(),
+  // The real store is a zustand store, so the stand-in carries the same
+  // subscribe/getState surface the context hook reads at import time.
+  mockUseChatContextStore: Object.assign(vi.fn(), {
+    subscribe: vi.fn(),
+    getState: vi.fn(() => ({ context: null, parentOrigin: null })),
+  }),
   mockUseChatStore: Object.assign(vi.fn(), {
     getState: vi.fn(),
     setState: vi.fn(),

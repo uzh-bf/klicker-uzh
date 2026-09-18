@@ -44,6 +44,7 @@
         "T-chatbot-authoring.spec.ts",
         "Y-ai-beta-management-gate.spec.ts",
         "Y-chat.spec.ts",
+        "Y-chat-knowledge-graph.spec.ts",
         "Y-kb-domain-selection.spec.ts",
         "Y-kb-management-ux.spec.ts",
         "Y-manage-assistant.spec.ts",
@@ -69,6 +70,21 @@
         "V-template.spec.ts",
         "W4-activity-wizard-safety.spec.ts"
       ]
+    },
+    {
+      "profile": "manage,pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-production.spec.ts"]
+    },
+    {
+      "profile": "email,pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-registration.spec.ts"]
+    },
+    {
+      "profile": "pwa",
+      "runtime": "production-webpack",
+      "specs": ["A-account-lti.spec.ts"]
     }
   ]
 }

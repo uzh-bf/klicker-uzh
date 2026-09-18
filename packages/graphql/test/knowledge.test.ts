@@ -13,6 +13,7 @@ import {
 } from '@klicker-uzh/prisma/client'
 import {
   MAX_KB_RESOURCE_COUNT,
+  MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
 } from '@klicker-uzh/types'
 import { randomUUID } from 'crypto'
@@ -22,6 +23,8 @@ import {
   buildSchema,
   GraphQLEnumType,
   GraphQLObjectType,
+  type GraphQLScalarType,
+  getNamedType,
   parse,
   validate,
 } from 'graphql'
@@ -170,6 +173,28 @@ function withKbBindingSnapshotPause(
 }
 
 describe('Knowledge base GraphQL contract', () => {
+  it('serializes aggregate byte metrics above the signed 32-bit range', () => {
+    const schema = buildSchema(
+      readFileSync(
+        new URL('../src/public/schema.graphql', import.meta.url),
+        'utf8'
+      )
+    )
+    const fields = (
+      schema.getType('KBMetrics') as GraphQLObjectType
+    ).getFields()
+    for (const name of [
+      'visibleSizeBytes',
+      'quotaSizeBytes',
+      'storageLimitBytes',
+      'pendingCleanupSizeBytes',
+      'reservedSizeBytes',
+    ]) {
+      const scalar = getNamedType(fields[name]!.type) as GraphQLScalarType
+      expect(scalar.serialize(4096 * 1024 * 1024)).toBe(4096 * 1024 * 1024)
+    }
+  })
+
   it('requires the resource id for ingestion', () => {
     const schema = buildSchema(
       readFileSync(
@@ -448,6 +473,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         type: KBResourceType.URL,
         title: 'Graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         sourceUrl: 'https://example.com/graph-source',
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
@@ -474,6 +500,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         type: KBResourceType.URL,
         title: 'Graph source',
         sourceUrl: 'https://example.com/ambiguous-graph-source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
         activeContentSha256: 'b'.repeat(64),
@@ -515,6 +542,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         type: KBResourceType.URL,
         title: 'Domain graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         sourceUrl: 'https://example.com/domain-graph-source',
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
@@ -622,6 +650,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         type: KBResourceType.URL,
         title: 'Focused graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         sourceUrl: 'https://example.com/focused-graph-source',
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
@@ -677,6 +706,7 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: focusedKb.id,
         type: KBResourceType.URL,
         title: 'Padded focus graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         sourceUrl: 'https://example.com/padded-focus-graph-source',
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
@@ -694,6 +724,71 @@ describe('Integration tests for knowledge base CRUD', () => {
         select: { focusTopic: true },
       })
     ).resolves.toEqual({ focusTopic: 'Capital budgeting' })
+  })
+
+  it('builds only from course-content resources and refuses builds without any', async () => {
+    const kb = await createKb({ name: 'Tagged graph sources' }, userOneCtx)
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Lecture script',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        sourceUrl: 'https://example.com/script',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'c'.repeat(64),
+      },
+    })
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Platform tutorial',
+        materialType: KBResourceMaterialType.ADMINISTRATIVE,
+        sourceUrl: 'https://example.com/tutorial',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'd'.repeat(64),
+      },
+    })
+
+    const config = await rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
+    const sources = await prisma.kBGraphBuildSource.findMany({
+      where: { buildId: config.buildId! },
+    })
+    expect(sources.map(({ title }) => title)).toEqual(['Lecture script'])
+
+    const untaggedKb = await createKb(
+      { name: 'Untagged graph sources' },
+      userOneCtx
+    )
+    await setKbKnowledgeGraphEnabled(
+      { kbId: untaggedKb.id, enabled: true },
+      userOneCtx
+    )
+    await prisma.kBResource.create({
+      data: {
+        kbId: untaggedKb.id,
+        type: KBResourceType.URL,
+        title: 'Syllabus',
+        materialType: KBResourceMaterialType.ADMINISTRATIVE,
+        sourceUrl: 'https://example.com/syllabus',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'e'.repeat(64),
+      },
+    })
+
+    await expect(
+      rebuildKbKnowledgeGraph({ kbId: untaggedKb.id }, userOneCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_NO_COURSE_CONTENT' },
+    })
+    await expect(
+      prisma.kBGraphBuild.count({ where: { kbId: untaggedKb.id } })
+    ).resolves.toBe(0)
   })
 
   it('creates and lists only the current users knowledge bases', async () => {
@@ -751,9 +846,10 @@ describe('Integration tests for knowledge base CRUD', () => {
     expect(bindings).toEqual([
       {
         chatbotId: chatbot.id,
-        chatbotName: 'Finance tutor',
+        chatbotName: chatbot.name,
         enabledKbId: kb.id,
-        enabledKbName: 'Finance notes',
+        enabledKbName: kb.name,
+        enabledKbs: [{ id: kb.id, name: kb.name }],
       },
     ])
   })
@@ -2888,6 +2984,74 @@ describe('Integration tests for knowledge base CRUD', () => {
     )
     expect(filtered.items.map(({ id }) => id)).toEqual([ids[0]])
     expect(filtered.totalCount).toBe(1)
+  })
+
+  it('keeps a storage override scoped to one KB and accounts for reservations above 2 GiB', async () => {
+    const enlarged = await createKb({ name: 'Capacity fixture' }, userOneCtx)
+    const ordinary = await createKb(
+      { name: 'Default capacity fixture' },
+      userOneCtx
+    )
+    await prisma.kB.update({
+      where: { id: enlarged.id },
+      data: { storageLimitMiB: 4096 },
+    })
+    await prisma.kBResource.createMany({
+      data: Array.from({ length: 90 }, (_, index) => ({
+        kbId: enlarged.id,
+        type: KBResourceType.URL,
+        title: `Synthetic source ${index}`,
+      })),
+    })
+    const metrics = (await getKb({ id: enlarged.id }, userOneCtx)).metrics
+    expect(metrics.storageLimitBytes).toBe(4096 * 1024 * 1024)
+    expect(metrics.quotaSizeBytes).toBe(90 * MAX_KB_SOURCE_SIZE_BYTES)
+    expect(
+      (await getKb({ id: ordinary.id }, userOneCtx)).metrics.storageLimitBytes
+    ).toBe(MAX_KB_TOTAL_SIZE_BYTES)
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: enlarged.id,
+          title: 'Synthetic URL',
+          url: 'https://example.com/capacity',
+        },
+        userOneCtx
+      )
+    ).resolves.toBeDefined()
+    await prisma.kBResource.updateMany({
+      where: { kbId: enlarged.id },
+      data: { sizeBytes: MAX_KB_SOURCE_SIZE_BYTES },
+    })
+    const measuredMetrics = (await getKb({ id: enlarged.id }, userOneCtx))
+      .metrics
+    expect(measuredMetrics.quotaSizeBytes).toBe(91 * MAX_KB_SOURCE_SIZE_BYTES)
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: enlarged.id,
+          title: 'Synthetic measured-capacity URL',
+          url: 'https://example.com/measured-capacity',
+        },
+        userOneCtx
+      )
+    ).resolves.toBeDefined()
+    await prisma.kB.update({
+      where: { id: enlarged.id },
+      data: { storageLimitMiB: null },
+    })
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: enlarged.id,
+          title: 'Synthetic URL',
+          url: 'https://example.com/over-capacity',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
+    })
   })
 
   it('returns exact visible, retained, reserved, cleanup, and limit metrics', async () => {

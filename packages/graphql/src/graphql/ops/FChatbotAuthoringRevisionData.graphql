@@ -28,4 +28,6 @@ fragment ChatbotAuthoringRevisionData on ChatbotAuthoringRevision {
   disclaimerIntroText
   publicationUseCase
   expectedStudentCount
+  knowledgeGraphVisible
+  knowledgeGraphRetrievalEnabled
 }

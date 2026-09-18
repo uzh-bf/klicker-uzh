@@ -10,6 +10,7 @@ mutation KeepGeneratedElementDraft(
   $basePoints: Boolean!
   $pointsMultiplier: Int!
   $tags: [String!]
+  $tagSelection: GeneratedElementTagSelectionInput
   $choiceIds: [ID!]
 ) {
   keepGeneratedElementDraft(
@@ -24,6 +25,7 @@ mutation KeepGeneratedElementDraft(
     basePoints: $basePoints
     pointsMultiplier: $pointsMultiplier
     tags: $tags
+    tagSelection: $tagSelection
     choiceIds: $choiceIds
   ) {
     id

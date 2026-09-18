@@ -9,13 +9,6 @@ import type {
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import {
-  canonicalElementGenerationJson,
-  elementGenerationArtifactPayload,
-  elementGenerationOutputBlobName,
-  loadReadyElementGenerationGraph,
-  normalizeElementGenerationIdempotencyKey,
-} from './elementGenerationProvider.js'
-import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
   releaseUnclaimedElementGenerationSpend,
@@ -27,11 +20,23 @@ import {
   releaseElementGenerationLease,
 } from './elementGenerationLease.js'
 import {
+  canonicalElementGenerationJson,
+  elementGenerationArtifactPayload,
+  elementGenerationOutputBlobName,
+  loadReadyElementGenerationGraph,
+  normalizeElementGenerationIdempotencyKey,
+} from './elementGenerationProvider.js'
+import {
   generatedKPRIMElementInput,
   generatedMCElementInput,
   generatedSCElementInput,
   manipulateElement,
 } from './elements.js'
+import {
+  normalizeQuestionTagSelection,
+  resolveQuestionTagSelection,
+  withQuestionTagConflictRetry,
+} from './generatedQuestionTags.js'
 import {
   parseQuestionGenerationDesign,
   parseQuestionGenerationFinalBank,
@@ -1191,7 +1196,7 @@ export async function saveGeneratedQuestions(
 }> {
   await assertQuestionGenerationPreviewAccess(ctx)
 
-  return ctx.prisma.$transaction(async (transaction) => {
+  const run = async (transaction: DB.Prisma.TransactionClient) => {
     await transaction.$queryRaw`
       SELECT "id"
       FROM "ElementGenerationBuild"
@@ -1238,8 +1243,8 @@ export async function saveGeneratedQuestions(
       if (draft.savedElementId !== null) continue
 
       let input: ElementManipulationInput
+      const current = draft.current as GeneratedQuestionEditable
       try {
-        const current = draft.current as GeneratedQuestionEditable
         if (draft.targetDifficulty === null) {
           return serviceError(
             'SAVE_VALIDATION_FAILED',
@@ -1268,6 +1273,14 @@ export async function saveGeneratedQuestions(
           'A generated question draft is not a valid question element'
         )
       }
+      const resolvedTagIds = current.tagSelection
+        ? await resolveQuestionTagSelection(
+            transaction,
+            ctx.user.sub,
+            normalizeQuestionTagSelection(current.tagSelection),
+            'resolve-or-create'
+          )
+        : null
       const element = await manipulateElement(input, {
         ...ctx,
         prisma: transaction,
@@ -1277,6 +1290,16 @@ export async function saveGeneratedQuestions(
           'SAVE_VALIDATION_FAILED',
           'A generated question draft is not a valid question element'
         )
+      }
+      if (current.tagSelection) {
+        await transaction.element.update({
+          where: { id: element.id },
+          data: {
+            tags: {
+              set: [...new Set(resolvedTagIds ?? [])].map((id) => ({ id })),
+            },
+          },
+        })
       }
       const linked = await transaction.generatedElementDraft.updateMany({
         where: {
@@ -1299,7 +1322,9 @@ export async function saveGeneratedQuestions(
     }
 
     return { createdElementIds, alreadySavedElementIds }
-  })
+  }
+
+  return withQuestionTagConflictRetry(() => ctx.prisma.$transaction(run))
 }
 
 export {

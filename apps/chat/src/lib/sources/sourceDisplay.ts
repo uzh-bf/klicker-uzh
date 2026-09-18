@@ -140,6 +140,39 @@ export function getDisplayUrl(url: string): string | undefined {
   return `${host}…${rest.slice(rest.length - keep)}`
 }
 
+/** Publisher page labels are independent of physical PDF navigation positions. */
+export function getSourcePageLabel(value?: string): string | undefined {
+  const label = value?.trim()
+  return label && parseLabeledTimestampSeconds(label) === undefined
+    ? label
+    : undefined
+}
+
+/**
+ * The page value to display: a publisher-labelled range when the chunks carry
+ * integer labels, otherwise the physical page envelope, otherwise a single
+ * publisher label. A single physical page is never displayed — it is a PDF
+ * navigation position, not the number printed on the page (see
+ * `getSourceNavigationUrl`), so only a real range is worth showing there.
+ */
+export function getSourcePageRange(source: ChatSource): string | undefined {
+  const label = getSourcePageLabel(source.labeledPage)
+  if (label) {
+    const end = getSourcePageLabel(source.labeledPageEnd)
+    return end && end !== label ? `${label}–${end}` : label
+  }
+
+  if (
+    source.page !== undefined &&
+    source.pageEnd !== undefined &&
+    source.pageEnd > source.page
+  ) {
+    return `${source.page}–${source.pageEnd}`
+  }
+
+  return undefined
+}
+
 /**
  * The locator line under a source's name, by what that kind of source is
  * actually addressed by: a page for documents, a position for videos, an
@@ -155,20 +188,21 @@ export function getSourceSecondaryLine(
   t: Translate
 ): string | null {
   const parts: string[] = []
+  const pageLabel = getSourcePageRange(source)
 
   if (source.type === 'video') {
     const timestamp = getSourceTimestamp(source)
     parts.push(timestamp ?? t('chat.sources.video'))
-    if (timestamp === undefined && typeof source.page === 'number') {
-      parts.push(t('chat.sources.page', { page: source.page }))
+    if (timestamp === undefined && pageLabel) {
+      parts.push(t('chat.sources.page', { page: pageLabel }))
     }
     return parts.join(' · ')
   }
 
   if (source.type === 'image') {
     parts.push(t('chat.sources.image'))
-    if (typeof source.page === 'number') {
-      parts.push(t('chat.sources.page', { page: source.page }))
+    if (pageLabel) {
+      parts.push(t('chat.sources.page', { page: pageLabel }))
     }
     return parts.join(' · ')
   }
@@ -183,22 +217,8 @@ export function getSourceSecondaryLine(
     return displayUrl
   }
 
-  if (typeof source.page === 'number') {
-    parts.push(t('chat.sources.page', { page: source.page }))
-  }
-  // A labeled page ("IV", "A-3") is the publisher's own numbering and only
-  // adds something next to the numeric page. A clock- or duration-shaped
-  // label ("12:34", "1h2m") is not publisher numbering at all: it is the
-  // timestamp channel `getSourceTimestamp` reads, so it is dropped here
-  // rather than printed as a page label. Documents and links never reach the
-  // video branch above, so this filter is what keeps the two apart.
-  if (
-    source.labeledPage &&
-    (typeof source.page !== 'number' ||
-      source.labeledPage.trim() !== String(source.page)) &&
-    parseLabeledTimestampSeconds(source.labeledPage) === undefined
-  ) {
-    parts.push(source.labeledPage)
+  if (pageLabel) {
+    parts.push(t('chat.sources.page', { page: pageLabel }))
   }
 
   if (parts.length === 0 && displayUrl) parts.push(displayUrl)

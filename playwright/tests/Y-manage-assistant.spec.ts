@@ -752,13 +752,12 @@ test.describe('Manage Assistant — Messaging', () => {
     await openManageAssistantWidget(page)
 
     const panel = page.getByTestId('manage-assistant-drawer')
-    const resize = page.getByTestId('manage-assistant-resize')
+    const resize = page.locator('[data-resize-axis="both"]')
     const initial = await panel.boundingBox()
     expect(initial).not.toBeNull()
 
-    await resize.focus()
-    await resize.press('ArrowLeft')
-    await resize.press('ArrowUp')
+    await panel.locator('[data-resize-axis="width"]').press('ArrowLeft')
+    await panel.locator('[data-resize-axis="height"]').press('ArrowUp')
 
     await expect(async () => {
       const keyboardResized = await panel.boundingBox()
@@ -846,7 +845,7 @@ test.describe('Manage Assistant — Messaging', () => {
     const panel = page.getByTestId('manage-assistant-drawer')
     await expect(panel).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Close' })).toBeVisible()
-    await expect(page.getByTestId('manage-assistant-resize')).toBeVisible()
+    await expect(page.locator('[data-resize-axis="both"]')).toBeVisible()
     expect(blockedStorageErrors).toEqual([])
   })
 
@@ -874,7 +873,7 @@ test.describe('Manage Assistant — Messaging', () => {
     expect(panelBox?.width).toBe(390)
     expect(panelBox?.height).toBeLessThanOrEqual(390)
     await expect(panel.getByRole('button', { name: 'Close' })).toBeVisible()
-    await expect(page.getByTestId('manage-assistant-resize')).toBeHidden()
+    await expect(page.locator('[data-resize-axis="both"]')).toBeHidden()
     await expect(panel).toHaveRole('dialog')
     await expect(panel).toHaveAttribute('aria-modal', 'true')
     const appContent = page.locator('#manage-assistant-app-content')
@@ -934,10 +933,10 @@ test.describe('Manage Assistant — Messaging', () => {
     await openManageAssistantWidget(page)
     const panel = page.getByTestId('manage-assistant-drawer')
     const preset = page.getByTestId('manage-assistant-panel-preset')
-    const resize = page.getByTestId('manage-assistant-resize')
+    const resize = page.locator('[data-resize-axis="both"]')
     await expect(preset).toHaveValue('custom')
-    await expect(resize).toHaveCSS('width', '44px')
-    await expect(resize).toHaveCSS('height', '44px')
+    await expect(resize).toBeVisible()
+    await expect(panel.locator('[role="separator"]')).toHaveCount(2)
 
     await preset.selectOption('wide')
     await expect(async () => {

@@ -55,6 +55,7 @@
     "HATCHET_TENANT_ID",
     "HATCHET_LOG_LEVEL",
     "KB_INGESTION_API_URL",
+    "KLICKER_LOCAL_KB_RETRIEVAL_URL",
     "KB_INGESTION_API_KEY",
     "KB_INGESTION_PROJECT_ID",
     "KB_INGESTION_DISABLED",
@@ -121,6 +122,7 @@
     "LTI_TOKEN_ENDPOINT",
     "LTI_KEYS_ENDPOINT",
     "LTI_CLIENT_ID",
+    "LTI_ADDITIONAL_PLATFORMS",
     "LTI_DB_CONNECTION_STRING",
     "LTI_ENCRYPTION_KEY",
     "LTI_PORT",
@@ -223,6 +225,10 @@
     "@klicker-uzh/prisma#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "src/prisma/client/**"]
+    },
+    "@klicker-uzh/prisma#check": {
+      "cache": false,
+      "dependsOn": ["build"]
     },
     "build": {
       "dependsOn": ["^build"],
