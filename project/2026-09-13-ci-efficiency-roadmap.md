@@ -1428,6 +1428,21 @@ required from the user.
   records remain the largest avoidable class and are the confirmed
   wake-per-producer symptom, not runner-minutes.
 
+  **Rejected fix, recorded so it is not attempted.** The three same-head
+  duplicate pairs exist because the group key is
+  `${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}`,
+  so a push and a pull request for one branch land in different groups and
+  neither cancels the other. Unifying them onto
+  `${{ github.workflow }}-${{ github.head_ref || github.ref_name }}` would make the
+  two events share a group and cancel one another, which removes the duplicate
+  wave at the source. It must not be done. For any `v3-*` branch, the push run
+  is the one the promotion controller validates as candidate evidence, and a
+  pull-request run cancelling it reproduces exactly the failure already recorded
+  on 2026-09-15, when `build-images-status` failed closed because the staging
+  build evidence for the candidate had been cancelled behind the backlog. The
+  duplicate is better left to the reaper, which reclaims a queued run only after
+  proving a newer validated replacement exists.
+
 - 2026-09-18 AMD ruling: the scope is branch-local, and the MCP shape is
   different, not broken. The goal carried "all build-amd jobs already if:false
   everywhere including prd tags", and the 09-16 re-verification confirmed it for
