@@ -161,3 +161,10 @@ collections that never stored it.
   desktop/compact captures are attached inline to the Klicker draft PR.
 - Delivery: doc-query MR !92 and Klicker PR #6149 are open as drafts. Merge,
   deployment and live tenant reconfiguration remain withheld.
+- Integrated the target branch after CI reported a base-branch syncpack breakage
+  unrelated to this change. PR #6137 added the exact-pin rule for `vitest` but
+  updated only 11 of 16 manifests and its own `check` gate was cancelled, so
+  `v3-ai` failed `check:syncpack` with five `SemverRangeMismatch` findings.
+  Fixed separately in PR #6151 (against `v3-ai`), merged in here, and re-verified:
+  syncpack clean, `graphql check` and `kb-management check` clean, focused suite
+  17 passed.
