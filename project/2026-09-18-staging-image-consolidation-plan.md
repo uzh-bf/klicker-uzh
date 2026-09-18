@@ -52,22 +52,54 @@ and one controller wakeup per producer event instead of per image.
 
 ## Verified topology (measured 2026-09-18)
 
-- `origin/v3` = `71f09eef0d` owns 13 `v3_*-stg.yml` and
-  `v3_build-fallback.yml`; every `build-amd` job there is `if: false`.
-- `origin/v3-audit` = `a0dd1decbb` carries the same 13 plus
-  `v3_mcp-lecturer-stg.yml` and `v3_mcp-student-stg.yml`, whose `build-amd`
-  legs are live native AMD64 guarded by `stg-image-publish-guard.sh`. It lags
-  `v3` by 2 commits and leads it by 432.
-- `deploy-stg-promote.yml` (trusted controller, read from `v3` via
-  `github.workflow_sha`) lists 24 watched workflow names: 9 non-image
-  producers and 15 image producers (13 + 2 MCP). Promotion tracks
-  `vars.STG_SOURCE_BRANCH` = `v3-audit`.
-- `vars.STG_SOURCE_BRANCH` is `v3-audit`, so the controller validates the
-  `v3-audit` candidate tree. That is why the consolidation cannot land on
-  `v3` alone.
-- `required-build-status.cjs` already holds the authoritative target
-  inventory with the per-image path globs; `stg-release-promoter.js` holds a
-  second inventory keyed by workflow path. Both become one module.
+The staging publication contract has **two different trees**, and the first
+draft of this plan conflated them. Measured facts, all re-verified:
+
+- `origin/v3` = `71f09eef0d` is the **default branch** and owns 13
+  `v3_*-stg.yml` plus `v3_build-fallback.yml`. Every `build-amd` job there
+  is `if: false`. Its image workflows carry **no** `tags:` block and no
+  full-SHA tag, and it has **no** `.github/scripts/stg-image-publish-guard.sh`.
+- `origin/v3-audit` = `a0dd1decbb` is the **promotion candidate**. It carries
+  the same 13 files plus `v3_mcp-lecturer-stg.yml` and
+  `v3_mcp-student-stg.yml`, and its image workflows are strictly **newer**:
+  a full-SHA `tags:` block, the `stg-image-publish-guard.sh` step, build
+  steps gated on `steps.publish_guard.outputs.publish`, and extended path
+  globs (`packages/audit/**`, `packages/doc-query-client/**`,
+  `packages/knowledge-graph/**`, `packages/logging/**`). It lags `v3` by
+  2 commits and leads it by 432.
+- The MCP apps and the four newer packages exist on `v3-ai` **and**
+  `v3-audit`; `v3` has neither.
+- `deploy-stg-promote.yml` is byte-identical on both branches and lists 24
+  watched workflow names: 9 non-image producers and 15 image producers
+  (13 + 2 MCP).
+- `vars.STG_SOURCE_BRANCH` is `v3-audit`, and the controller is evaluated
+  from the workflow-definition commit on the default branch. So the **trusted
+  controller is read from `v3`** while the **candidate tree it validates is
+  `v3-audit`**. This is why the consolidation needs both branches and why the
+  promoter rewrite must land on `v3` to take effect at all.
+- The guard script and the full-SHA tag are required of the *candidate*, which
+  is `v3-audit`; `v3`'s own legacy workflows never satisfied them.
+- `required-build-status.cjs` holds the target inventory with the per-image
+  path globs (13 on `v3`, 15 on `v3-audit`); `stg-release-promoter.js`
+  holds a second inventory keyed by workflow path (15 on both). Both become
+  one branch-shared module, which is the design `staging-image-targets.cjs`
+  already implements: a fixed sixteen-target list with availability resolved
+  from the tree at plan time.
+
+### Consequences the first draft missed
+
+1. **The consolidated workflow must also work on `v3`.** Its build legs run
+   `.github/scripts/stg-image-publish-guard.sh`, which does not exist on
+   `v3`. S1 therefore also ports that script to `v3`, otherwise every `v3`
+   push and pull-request build fails at the guard step. Porting it is safe and
+   consistent: it is the same file `v3-ai`/`v3-audit` already run.
+2. **The inventory is branch-shared, not branch-specific.** One sixteen-target
+   list with runtime availability is what lets the `v3` controller validate a
+   `v3-audit` candidate and vice versa. A branch-specific list would have
+   failed the promoter's exact-set comparison on one of the two trees.
+3. **`analytics-arm` does have a publish guard** on `v3-audit` (measured at
+   `v3_analytics-stg.yml` line 68). The first draft's claim that it does not
+   was wrong; the inventory is right.
 
 ## Target inventory
 
@@ -124,6 +156,61 @@ carries its image suffix, dockerfile, path globs, and the extra legs it needs.
 `SCAN_ADMISSION_INVENTORY` re-keys from `workflowPath` + `buildJob`/`scanJob`
 to target id + the deterministic matrix job names; digest resolution, receipt
 binding and the fail-closed reading are unchanged.
+
+### Why a runtime matrix, and not one static job per target
+
+The obvious alternative - one consolidated file with sixteen static build jobs -
+cannot work, and the reason is a hard constraint rather than a preference: the
+available target set **differs per branch**. The two MCP apps and the four newer
+packages exist on `v3-ai`/`v3-audit` but not on `v3`, so a static job list would
+have to differ between the two branches, and the same workflow text could not
+serve both. A matrix resolved at plan time from
+`availableTargets(rootDirectory)` (dockerfile presence in the checked-out tree)
+keeps **one identical workflow and one identical inventory** on every branch
+while still building exactly the targets that branch can build. It also keeps
+the property that matters for runner cost: an unselected or unavailable target
+allocates no runner at all, which per-job `if:` gating on sixteen static jobs
+could not achieve without starting sixteen jobs.
+
+### Trust model for the promotion controller
+
+The controller must not execute candidate code, so a runtime matrix cannot be
+validated the way the per-image job blocks were validated today. The guarantees
+are therefore re-established explicitly, and two of them already hold:
+
+1. **The trusted image list stays in controller code.** `STAGING_WORKFLOWS`
+   keeps the sixteen (job name -> image) pairs, derived from the trusted
+   inventory rather than from candidate YAML. A candidate cannot add, drop or
+   retarget a promoted image.
+2. **Digest resolution already enforces the promoted set.** The promoter
+   resolves every expected image digest at the candidate SHA from the registry.
+   A target that was not built has no full-SHA tag, so resolution fails and
+   nothing is promoted. This is independent of the workflow shape and is why a
+   skipped or missing leg fails closed.
+3. **Availability is read from the candidate tree, not from candidate output.**
+   The controller lists the candidate tree once and checks each target dockerfile,
+   so the expected job set is the trusted inventory intersected with the candidate
+   tree. The plan output is evidence, never authority.
+4. **Per-target build success is required by job name.** For every expected
+   target the controller requires exactly one completed, successful job named
+   `build-arm-<jobBase>` in the candidate push run, plus `scan-arm-<jobBase>` for
+   the two scanned targets and `build-amd-<jobBase>` for the two AMD64 targets.
+   The names are deterministic functions of the trusted inventory, so this is
+   checked against the GitHub job list rather than against candidate evidence.
+5. **The workflow shape is still validated structurally.** One file at the
+   trusted path with the trusted name, the approved push branches, the ARM
+   runner, the full-SHA tag, the publish guard, and - for the scan leg - one
+   full-SHA-pinned Trivy revision and the `image-scan-receipt.cjs check` policy
+   step, exactly as the per-image files were checked.
+
+What is genuinely weaker than today is the static per-target dockerfile and image
+comparison inside the candidate YAML, because the matrix is a runtime expression.
+That is compensated by (1) and (2): a candidate that mislabels a job still cannot
+promote an image outside the trusted list, and a candidate that omits a build
+fails digest resolution. The residual risk is a candidate that builds a different
+dockerfile under a trusted job name, which is a maintainer-level action on the
+integration branch and not a boundary this controller defends against today
+either.
 
 ## Slices
 
@@ -240,4 +327,3 @@ worktrees; repository or runner settings.
 - Playwright shard routing and the hosted required test contexts.
 - The MCP AMD64 leg's platform or its publish guard, which stay as-is.
 - The optional follow-up that removes the two dead MCP names from the watch list.
-
