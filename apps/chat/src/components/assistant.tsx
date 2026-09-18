@@ -26,12 +26,7 @@ import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
-import {
-  EmbeddedCreditsBar,
-  EmbeddedCloseButton,
-  EmbeddedNewConversation,
-  EmbeddedSettings,
-} from './embedded-settings'
+import { EmbeddedToolbar } from './embedded-settings'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
@@ -666,13 +661,8 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center gap-3 border-b px-3 py-2">
-        <EmbeddedCreditsBar />
-        <div className="flex shrink-0 items-center gap-1">
-          <EmbeddedSettings />
-          <EmbeddedNewConversation />
-          <EmbeddedCloseButton />
-        </div>
+      <div className="bg-muted/50 flex shrink-0 items-center border-b px-3 py-2">
+        <EmbeddedToolbar />
       </div>
       <main
         id="main-content"

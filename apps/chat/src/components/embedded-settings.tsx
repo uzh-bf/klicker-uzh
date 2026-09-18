@@ -26,16 +26,19 @@ export function hasEmbeddedModeSettings(
   return showMinimalSettings && Object.keys(modeOptions).length > 1
 }
 
-export function EmbeddedSettings() {
+/**
+ * The mode select itself, without any width constraint. Kept separate so the
+ * embedded toolbar can let it fill the row while the sidebar and
+ * owner-preview usages keep their own compact sizing.
+ */
+export function EmbeddedModeSelect({ className }: { className?: string }) {
   const t = useTranslations()
-  const { showMinimalSettings } = useChatUi()
   const { selectedMode, modeOptions, setSelectedMode } = useSettingsStore()
 
-  if (!hasEmbeddedModeSettings(showMinimalSettings, modeOptions)) return null
   const modeKeys = Object.keys(modeOptions)
 
   return (
-    <div className="relative ml-auto min-w-0 max-w-[10rem] shrink sm:max-w-[12rem]">
+    <div className={twMerge('relative min-w-0', className)}>
       <select
         value={selectedMode}
         onChange={(e) => setSelectedMode(e.target.value)}
@@ -68,6 +71,17 @@ export function EmbeddedSettings() {
   )
 }
 
+export function EmbeddedSettings() {
+  const { showMinimalSettings } = useChatUi()
+  const { modeOptions } = useSettingsStore()
+
+  if (!hasEmbeddedModeSettings(showMinimalSettings, modeOptions)) return null
+
+  return (
+    <EmbeddedModeSelect className="ml-auto max-w-[10rem] shrink sm:max-w-[12rem]" />
+  )
+}
+
 /**
  * Compact embedded credits readout for embedded mode. Reads the same
  * `useSettingsStore` state (and its existing fetch) that `CreditsFooter` uses
@@ -77,7 +91,7 @@ export function EmbeddedSettings() {
  * that model availability may change, so no separate
  * `settingsPanel.usingFallbackModel` text is needed.
  */
-export function EmbeddedCreditsBar() {
+export function EmbeddedCreditsBar({ className }: { className?: string }) {
   const t = useTranslations()
   const credits = useSettingsStore((state) => state.credits)
   const creditsLoaded = useSettingsStore((state) => state.creditsLoaded)
@@ -96,27 +110,34 @@ export function EmbeddedCreditsBar() {
       ? Math.max(0, Math.floor((credits.current / credits.total) * 100))
       : 0
 
+  // One line only: the bar has a single row of vertical room, so the exhausted
+  // explanation lives in the tooltip and accessible name rather than a second
+  // line that would push the mode select and actions around.
   return (
-    <div data-cy="chat-embedded-credits-bar" className="min-w-0 text-xs">
-      <div className="flex items-center gap-1">
-        <Zap className="text-muted-foreground size-3.5 shrink-0" />
-        <span className="text-muted-foreground whitespace-nowrap">
-          {t('chat.credits.embeddedLabel', { percent })}
-        </span>
-      </div>
-      {exhausted && (
-        <p
-          data-cy="chat-embedded-credits-empty-message"
-          className="text-muted-foreground mt-0.5"
-        >
-          {t('chat.credits.exhausted')}
-        </p>
+    <div
+      data-cy="chat-embedded-credits-bar"
+      className={twMerge(
+        'flex min-w-0 shrink-0 items-center gap-1 text-xs',
+        className
       )}
+      title={exhausted ? t('chat.credits.exhausted') : undefined}
+      aria-label={t('chat.credits.title')}
+    >
+      <Zap className="text-muted-foreground size-3.5 shrink-0" aria-hidden />
+      <span
+        data-cy={exhausted ? 'chat-embedded-credits-empty-message' : undefined}
+        className={twMerge(
+          'whitespace-nowrap tabular-nums',
+          exhausted ? 'text-destructive' : 'text-muted-foreground'
+        )}
+      >
+        {t('chat.credits.embeddedLabel', { percent })}
+      </span>
     </div>
   )
 }
 
-export function EmbeddedNewConversation() {
+export function EmbeddedNewConversation({ className }: { className?: string }) {
   const t = useTranslations()
   const locale = useLocale()
   const { chatbotId } = useParams<{ chatbotId: string }>()
@@ -160,7 +181,10 @@ export function EmbeddedNewConversation() {
       disabled={blocked || creating}
       aria-label={t('chat.sidebar.newChat')}
       title={t('chat.sidebar.newChat')}
-      className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50"
+      className={twMerge(
+        'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50',
+        className
+      )}
     >
       <Plus aria-hidden="true" className="size-4" />
     </button>
@@ -173,7 +197,7 @@ export function EmbeddedNewConversation() {
 // button does not render. Sending with '*': the frame is embedded by approved
 // hosts only and the message carries no data beyond its type, which the host
 // verifies against the frame's own origin before acting on it.
-export function EmbeddedCloseButton() {
+export function EmbeddedCloseButton({ className }: { className?: string }) {
   const t = useTranslations()
   const embedded = useEmbedded()
   // The guard is decided on the client after mount so SSR renders nothing and
@@ -193,9 +217,47 @@ export function EmbeddedCloseButton() {
       }}
       aria-label={t('chat.embedded.close')}
       title={t('chat.embedded.close')}
-      className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2"
+      className={twMerge(
+        'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2',
+        className
+      )}
     >
       <X aria-hidden="true" className="size-4" />
     </button>
+  )
+}
+
+/**
+ * Single row of embedded chat controls, spanning the full panel width.
+ *
+ * The order reads state, then choice, then actions: the credits readout is
+ * small and informational so it anchors the left edge, the mode select takes
+ * the flexible middle as the primary control, and the two icon actions sit at
+ * the end where they stay next to the panel edge. Letting the select grow
+ * keeps the row filled instead of leaving a gap between the select and the
+ * actions, while `min-w-0` and `truncate` still let the longest label
+ * ("Ausführliche Antwort") degrade instead of overflowing.
+ */
+export function EmbeddedToolbar() {
+  const { showMinimalSettings } = useChatUi()
+  const { modeOptions } = useSettingsStore()
+  const hasModeSelect = hasEmbeddedModeSettings(
+    showMinimalSettings,
+    modeOptions
+  )
+
+  return (
+    <div
+      data-cy="chat-embedded-toolbar"
+      className="flex w-full min-w-0 items-center gap-2"
+    >
+      <EmbeddedCreditsBar />
+      {/* The select takes the flexible middle so the row has no dead gap
+          between the controls; without one the credits and the actions are
+          the whole row and the actions still sit at the end. */}
+      {hasModeSelect ? <EmbeddedModeSelect className="flex-1" /> : null}
+      <EmbeddedNewConversation className="ml-auto" />
+      <EmbeddedCloseButton />
+    </div>
   )
 }
