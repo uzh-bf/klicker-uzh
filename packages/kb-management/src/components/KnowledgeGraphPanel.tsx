@@ -523,6 +523,28 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     publishedDomain.id != null
       ? (domainLabelForId(publishedDomain.id) ?? publishedDomain.id)
       : null
+  // The blocked-domain message names the stored selection and each branch
+  // carries only the fields the lecturer needs to replace it.
+  const domainBlockedMessage = () => {
+    const domain = domainLabelForId(domainSelection.id) ?? domainSelection.id
+    if (domainCapabilityEnabled) {
+      if (domainSelectedOption !== undefined) {
+        return t('kb.graphDomainLanguageUnavailable', {
+          domain,
+          language: translateDomainLanguage(domainSelection.language),
+        })
+      }
+      return t('kb.graphDomainCurrentUnavailable', {
+        domain,
+        version: formatDomainVersion(domainSelection.version),
+      })
+    }
+    return t('kb.graphDomainRebuildBlocked', {
+      domain,
+      version: formatDomainVersion(persistedDomainSelection?.version ?? null),
+      language: translateDomainLanguage(reportedDomain.language),
+    })
+  }
 
   useEffect(() => {
     if (config?.qualityTier != null && !isActive) {
@@ -908,35 +930,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                       role="status"
                       data-cy="kb-knowledge-graph-domain-unsupported"
                     >
-                      {domainCapabilityEnabled
-                        ? domainSelectedOption !== undefined
-                          ? t('kb.graphDomainLanguageUnavailable', {
-                              domain:
-                                domainLabelForId(domainSelection.id) ??
-                                domainSelection.id,
-                              language: translateDomainLanguage(
-                                domainSelection.language
-                              ),
-                            })
-                          : t('kb.graphDomainCurrentUnavailable', {
-                              domain:
-                                domainLabelForId(domainSelection.id) ??
-                                domainSelection.id,
-                              version: formatDomainVersion(
-                                domainSelection.version
-                              ),
-                            })
-                        : t('kb.graphDomainRebuildBlocked', {
-                            domain:
-                              domainLabelForId(domainSelection.id) ??
-                              domainSelection.id,
-                            version: formatDomainVersion(
-                              persistedDomainSelection?.version ?? null
-                            ),
-                            language: translateDomainLanguage(
-                              reportedDomain.language
-                            ),
-                          })}
+                      {domainBlockedMessage()}
                     </p>
                   ) : null}
                   {domainCategoryNames.length > 0 ? (
