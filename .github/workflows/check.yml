@@ -110,7 +110,8 @@ jobs:
             .github/scripts/required-ci-status.test.cjs \
             .github/scripts/ocr-self-update-guard.test.cjs \
             .github/scripts/stg-release-promoter.test.js \
-            .github/scripts/required-build-status.test.cjs \
+            .github/scripts/staging-image-plan.test.cjs \
+            .github/scripts/staging-image-status.test.cjs \
             .github/scripts/sonar-coverage-inputs.test.cjs \
             .github/scripts/sonar-new-code-boundary.test.cjs \
             .github/scripts/image-scan-admission.test.cjs \
