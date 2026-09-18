@@ -112,6 +112,7 @@ export type QuestionGenerationConfiguration = {
     bloomLevel: QuestionGenerationBloomLevel | null
   }>
   bloomLevels: QuestionGenerationBloomLevel[]
+  focusTopic: string | null
 }
 
 export type GeneratedQuestionCitation = {

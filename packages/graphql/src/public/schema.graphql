@@ -1616,6 +1616,7 @@ type ElementGenerationTypeCapability {
   reviewGates: [ElementGenerationReviewGate!]!
   supportsBloomLevels: Boolean!
   supportsDifficulty: Boolean!
+  supportsFocusTopic: Boolean!
   supportsIncompletePublication: Boolean!
   supportsRetry: Boolean!
   supportsSourceScopes: Boolean!
@@ -3826,6 +3827,7 @@ input StartElementGenerationInput {
   difficultyPreset: ElementGenerationDifficultyPreset
   elementCount: Int!
   elementType: GeneratableElementType!
+  focusTopic: String
   graphBuildId: ID!
   idempotencyKey: String!
   language: ElementGenerationLanguage!

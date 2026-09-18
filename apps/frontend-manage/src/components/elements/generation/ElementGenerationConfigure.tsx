@@ -111,6 +111,7 @@ export default function ElementGenerationConfigure({
   const [objectives, setObjectives] = useState<
     Array<{ id: string; text: string }>
   >([])
+  const [focusTopic, setFocusTopic] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [validationError, setValidationError] = useState<string>()
   const [submissionError, setSubmissionError] = useState<string>()
@@ -274,6 +275,9 @@ export default function ElementGenerationConfigure({
               pageTo: optionalPage(scope.pageToText),
             })),
           }
+        : {}),
+      ...(selectedCapability.supportsFocusTopic && focusTopic.trim()
+        ? { focusTopic: focusTopic.trim() }
         : {}),
       objectives: objectives
         .map(({ text }) => text.trim())
@@ -645,6 +649,23 @@ export default function ElementGenerationConfigure({
                     ))}
                   </div>
                 </fieldset>
+              ) : null}
+              {selectedCapability?.supportsFocusTopic ? (
+                <label className="text-sm font-semibold text-slate-700 md:col-span-2">
+                  {t('configure.focusTopic')}
+                  <input
+                    type="text"
+                    value={focusTopic}
+                    maxLength={300}
+                    placeholder={t('configure.focusTopicPlaceholder')}
+                    onChange={(event) => setFocusTopic(event.target.value)}
+                    className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
+                    data-cy="element-generation-focus-topic"
+                  />
+                  <span className="mt-1 block text-xs font-normal text-slate-500">
+                    {t('configure.focusTopicHelp')}
+                  </span>
+                </label>
               ) : null}
             </div>
 
