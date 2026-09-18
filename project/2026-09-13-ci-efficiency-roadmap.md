@@ -1387,11 +1387,17 @@ required from the user.
   First, that refusal used to end the sweep with "No further runs were changed",
   so one inert record protected every later one; the reaper now reports
   `not-queued` and continues. Second, the two new reasons were re-measured
-  against the live event types. The three same-head pairs on
-  `rs/v3-audit-sync-20260918`, `v3-ai` and `rs/v3-ai-sync-20260917b` each come
-  from one `push` run and one `pull_request` run, so the duplicate is
-  cross-event and the `redundant-queued-duplicate` rule, which is bound to
-  pull-request runs, does not reclaim it.
+  against the live event types, and the earlier description of the three pairs
+  was wrong. Two are not cross-event. `rs/v3-audit-sync-20260918`
+  (`35318160764` before `35318351559`) and `rs/v3-ai-sync-20260917b`
+  (`35317150179` before `35317775815`) are both `pull_request` runs on one
+  head, so the `redundant-queued-duplicate` rule does reach them. Only the
+  `v3-ai` pair is cross-event: `35317794684` is a `push` run and
+  `35317799687` is the `pull_request` run for the same `5b4f5949` head. The
+  duplicate mechanism is therefore a single-head race for two branches and a
+  push/pull-request split for one, and the two fixes are complementary rather
+  than overlapping: the queued-duplicate rule reclaims the pull-request members,
+  and #6075's branch-tip rule reclaims the push member.
 
   **Deliberately not applied.** The two gaps are real and still unreclaimed: an
   older *queued* same-head pull-request run, and a pull-request run whose
