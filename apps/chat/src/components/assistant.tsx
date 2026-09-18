@@ -28,6 +28,7 @@ import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import {
   EmbeddedCreditsBar,
+  EmbeddedCloseButton,
   EmbeddedNewConversation,
   EmbeddedSettings,
 } from './embedded-settings'
@@ -665,10 +666,13 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
+      <div className="bg-muted/50 flex shrink-0 items-center gap-3 border-b px-3 py-2">
         <EmbeddedCreditsBar />
-        <EmbeddedSettings />
-        <EmbeddedNewConversation />
+        <div className="flex shrink-0 items-center gap-1">
+          <EmbeddedSettings />
+          <EmbeddedNewConversation />
+          <EmbeddedCloseButton />
+        </div>
       </div>
       <main
         id="main-content"

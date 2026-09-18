@@ -1,14 +1,18 @@
 'use client'
 
-import { ChevronDown, Plus, Zap } from 'lucide-react'
+import { ChevronDown, Plus, X, Zap } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useChatStore } from '../stores/chatStore'
 import { twMerge } from 'tailwind-merge'
 import { isKnownMode } from '../lib/config/modes'
+import { useEmbedded } from '../hooks/useEmbedded'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatUi } from './chat-ui-context'
+
+// Host contract for closing the embedded conversation from inside the chat.
+const EMBEDDED_CLOSE_MESSAGE_TYPE = 'klicker:chat-close'
 
 /**
  * Whether the embedded mode select has anything to offer. Shared by the bar
@@ -31,7 +35,7 @@ export function EmbeddedSettings() {
   const modeKeys = Object.keys(modeOptions)
 
   return (
-    <div className="relative ml-auto min-w-0 max-w-[12rem] shrink sm:max-w-xs">
+    <div className="relative ml-auto min-w-0 max-w-[10rem] shrink sm:max-w-[12rem]">
       <select
         value={selectedMode}
         onChange={(e) => setSelectedMode(e.target.value)}
@@ -84,22 +88,20 @@ export function EmbeddedCreditsBar() {
   if (!creditsLoaded) return null
 
   const exhausted = credits.current === 0
+  // A percentage is the most compact honest shape for the tiny embedded bar:
+  // it avoids the "3 / 3" width while still degrading visibly as the student
+  // spends credits. Rounding down can never advertise more than is left.
+  const percent =
+    credits.total > 0
+      ? Math.max(0, Math.floor((credits.current / credits.total) * 100))
+      : 0
 
   return (
     <div data-cy="chat-embedded-credits-bar" className="min-w-0 text-xs">
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         <Zap className="text-muted-foreground size-3.5 shrink-0" />
-        <span className="text-muted-foreground truncate">
-          {t('chat.credits.title')}
-        </span>
-        <span
-          data-cy="chat-embedded-credits-display"
-          className={twMerge(
-            'ml-auto shrink-0 font-medium tabular-nums',
-            exhausted && 'text-destructive'
-          )}
-        >
-          {Math.round(credits.current)} / {credits.total}
+        <span className="text-muted-foreground whitespace-nowrap">
+          {t('chat.credits.embeddedLabel', { percent })}
         </span>
       </div>
       {exhausted && (
@@ -161,6 +163,39 @@ export function EmbeddedNewConversation() {
       className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50"
     >
       <Plus aria-hidden="true" className="size-4" />
+    </button>
+  )
+}
+
+// Closes the embedded conversation by posting the close request to the host
+// window. The host decides what closing means (it hides the panel and returns
+// focus to its launcher); without a host there is nothing to close, so the
+// button does not render. Sending with '*': the frame is embedded by approved
+// hosts only and the message carries no data beyond its type, which the host
+// verifies against the frame's own origin before acting on it.
+export function EmbeddedCloseButton() {
+  const t = useTranslations()
+  const embedded = useEmbedded()
+  // The guard is decided on the client after mount so SSR renders nothing and
+  // hydration does not flip a visible button into nothing (or the reverse).
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const inFrame =
+    mounted && typeof window !== 'undefined' && window.parent !== window
+  if (!embedded || !inFrame) return null
+
+  return (
+    <button
+      type="button"
+      data-cy="chat-embedded-close"
+      onClick={() => {
+        window.parent.postMessage({ type: EMBEDDED_CLOSE_MESSAGE_TYPE }, '*')
+      }}
+      aria-label={t('chat.embedded.close')}
+      title={t('chat.embedded.close')}
+      className="text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-8 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2"
+    >
+      <X aria-hidden="true" className="size-4" />
     </button>
   )
 }

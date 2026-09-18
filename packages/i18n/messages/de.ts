@@ -65,6 +65,7 @@ export default {
     },
     credits: {
       title: 'Verfügbare Credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Jede Nachricht verbraucht Credits — wie viele, hängt vom Modell und der Länge des Austauschs ab.',
       resetAt: 'Werden am {date} wieder aufgefüllt.',
@@ -83,6 +84,9 @@ export default {
       logoAlt: 'Klicker-Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. Alle Rechte vorbehalten.',
+    },
+    embedded: {
+      close: 'Chat schliessen',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
