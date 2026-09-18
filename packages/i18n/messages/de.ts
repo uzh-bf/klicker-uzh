@@ -4877,6 +4877,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Quizzer kann weiterhin ausgeblendet sein, wenn die Fähigkeit für Kursmaterialien nicht verfügbar ist.',
       chatbotModeEnabled: 'Aktiviert',
       chatbotModeDisabled: 'Deaktiviert',
+      chatbotCustomModesTitle: 'Eigene Modi',
+      chatbotCustomModesDescription:
+        'Fügen Sie bis zu {count} eigene Modi mit eigenem Namen, eigener Beschreibung und eigenem Persona-Text hinzu. Eigene Modi werden zusammen mit der Chatbot-Revision geprüft.',
+      chatbotCustomModesEmpty:
+        'Noch keine eigenen Modi. Fügen Sie einen hinzu, um Teilnehmenden einen zusätzlichen Modus anzubieten.',
+      chatbotCustomModesNone: 'Es sind keine eigenen Modi konfiguriert.',
+      chatbotCustomModesCount: '{count} von {max} eigenen Modi verwendet',
+      chatbotCustomMode: 'Eigener Modus {number}',
+      chatbotCustomModeName: 'Name des Modus',
+      chatbotCustomModeDescription: 'Kurzbeschreibung',
+      chatbotCustomModePersonaText: 'Persona und Anweisungen',
+      chatbotCustomModePersonaPlaceholder:
+        'Beschreiben Sie, wie dieser Modus auf Teilnehmende antworten soll.',
+      chatbotCustomModeAdd: 'Eigenen Modus hinzufügen',
+      chatbotCustomModeRemove: 'Entfernen',
+      chatbotCustomModesLimit:
+        'Es werden höchstens {count} eigene Modi unterstützt.',
+      chatbotCustomModesDuplicate:
+        'Jeder eigene Modus benötigt einen eindeutigen Namen.',
+      chatbotCustomModesReadonly:
+        'Eigene Modi können in diesem Chatbot-Status nicht bearbeitet werden.',
+      chatbotCustomModesSave: 'Eigene Modi speichern',
+      chatbotCustomModesSaving: 'Wird gespeichert…',
+      chatbotCustomModesSaveSuccess: 'Eigene Modi gespeichert.',
+      chatbotCustomModesSaveError:
+        'Die eigenen Modi konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
       chatbotFraming: 'Rahmung des Chatbots',
       chatbotFramingDescription:
         'Beschreiben Sie kurz den Kurs, die Zielgruppe oder den gewünschten Schwerpunkt. Dieser Kontext wird in den Standard-Lernmodi verwendet.',

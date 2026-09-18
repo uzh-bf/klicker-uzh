@@ -138,6 +138,7 @@ function createChatbot(overrides: Record<string, unknown> = {}) {
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     knowledgeBases: [],
     standardModeConfig: null,
+    customModeConfig: null,
     mcpConfigurations: [createMcpConfiguration()],
     ...overrides,
   }
@@ -413,6 +414,7 @@ describe('required MCP chat preflight', () => {
       'tutor',
       {
         courseDisplayName: displayName,
+        customModeConfig: null,
         toolNames: [],
         standardModeConfig: null,
       }
@@ -597,6 +599,16 @@ describe('required MCP chat preflight', () => {
   test('preserves the exact key for a mixed-case custom mode', async () => {
     mocks.findUnique.mockResolvedValueOnce(
       createChatbot({
+        customModeConfig: {
+          modes: [
+            {
+              key: 'QuickCheck',
+              name: 'QuickCheck',
+              description: 'Asks one brief diagnostic question.',
+              personaText: 'Ask one brief question.',
+            },
+          ],
+        },
         systemPrompts: {
           QuickCheck: { prompt: 'Ask one brief question.' },
         },
@@ -630,5 +642,34 @@ describe('required MCP chat preflight', () => {
         sessionId: 'thread-1',
       }
     )
+  })
+
+  test('rejects a stored mode key that the chatbot has not approved', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          QuickCheck: { prompt: 'Ask one brief question.' },
+        },
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['course_search'],
+            chatMode: 'QuickCheck',
+            parameters: { required: true, toolAlias: 'doc_query' },
+            mcpServer: createMcpServer({ name: 'Course' }),
+          }),
+        ],
+      })
+    )
+
+    const response = await POST(createRequest('QuickCheck'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unsupported chat mode: QuickCheck',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
   })
 })
