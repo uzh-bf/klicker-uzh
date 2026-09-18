@@ -23,9 +23,6 @@ student answer → apps/response-api (HTTP) → Hatchet event
 
 PostgreSQL audit outbox → dispatcher deployment / Table identity
                          → append-only Azure Table Storage
-
-active audit scopes → media-policy deployment / Blob identity
-                    → extend locked immutable-media versions
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
@@ -221,22 +218,15 @@ and an exact workflow selection:
 - `monitorAssessmentAudit` — every minute; emits a metadata-only health snapshot
   and fails the Hatchet run on critical thresholds.
 
-A second `assessment-audit-media-policy-worker` deployment uses the
-`media-policy` identity class and exact selection:
-
-- `renewAssessmentAuditMediaPolicies` — daily at 01:17 UTC; streams immutable
-  media references for active covered scopes and extends, but never shortens,
-  each locked version-level retention policy.
-
-The GraphQL backend separately uses a Blob-only workload identity to capture
-owned assessment media during baseline activation. Each deployment uses its own
-Pulumi-owned service account and Azure workload identity; the ordinary general
+Image URLs are retained within element content; there is no image-capture or
+media-policy renewal workflow. The backend needs no audit Blob workload identity.
+The dispatcher uses its Pulumi-owned Table-data identity; the ordinary general
 worker has no audit-storage permission. A privileged worker refuses task keys
 outside its identity class at startup. `/healthz` and `/metrics` are enabled only
 when `ASSESSMENT_AUDIT_METRICS_PORT` is set, and every audit metric carries
 `environment` and `role` labels. Chart resources stay disabled until staging
-endpoints, all three identities, the permission matrix, both `ServiceMonitor`
-targets, `PrometheusRule`, and owner-only alert routing are proven.
+endpoints, the dispatcher identity, the permission matrix, its `ServiceMonitor`
+target, `PrometheusRule`, and owner-only alert routing are proven.
 
 For course deletion, drain pending markers before rolling back. Old code ignores
 the marker and exposes the course again, while already-enqueued deletion events

@@ -180,17 +180,8 @@ assessmentAudit:
   pilotLiveQuizIds: ''
   tableEndpoint: ''
   blobEndpoint: ''
-  backendMedia:
-    serviceAccountName: ''
   worker:
     serviceAccountName: ''
-  mediaPolicyWorker:
-    serviceAccountName: ''
-    priorityClassName: production-workload
-    image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
-      pullPolicy: IfNotPresent
-      tag: ''
   monitoring:
     enabled: false
 

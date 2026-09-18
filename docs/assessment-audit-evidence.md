@@ -2,7 +2,7 @@
 type: Architecture
 title: Assessment Audit Evidence
 description: Assessment evidence contract, PostgreSQL outbox, append-only Azure delivery, verification, and operator export.
-timestamp: '2026-09-12'
+timestamp: '2026-09-16'
 tags:
   - audit
   - assessment
@@ -14,8 +14,9 @@ tags:
 
 The assessment audit system records durable evidence about assessment state
 changes and submission processing. Its binding product and operational decisions
-live in the [approved design](../project/2026-08-04-assessment-audit-logging-design.md),
-and the delivery order lives in the
+live in the [approved design](../project/2026-08-04-assessment-audit-logging-design.md).
+The link-only media policy below supersedes the image-capture requirements in
+that historical design. The delivery order lives in the
 [Stack 1 implementation plan](../project/2026-08-10-assessment-audit-stack-1-implementation-plan.md).
 
 ## Current implementation boundary
@@ -25,20 +26,21 @@ Staging audit configuration lives in `deploy/env-uzh-stg/values.yaml` under
 environment, and dedicated worker role/metrics settings into ConfigMaps; these
 settings do not require duplicate Infisical entries or ExternalSecret mappings.
 Existing worker Secrets still supply database, Redis, and Hatchet credentials.
-The staging service-account names match df-cloud's `stg-audit-backend-media`,
-`stg-audit-dispatcher`, and `stg-audit-media-policy` resources in `stg-klicker`.
+The dispatcher uses the `stg-audit-dispatcher` service account in `stg-klicker`.
+The backend no longer requires an audit Blob identity, and the media-policy
+deployment is removed. Previously provisioned Blob identities and retained
+blobs are not deleted by this application change.
 Staging uses `rollout: all` without a pilot allowlist: once audit is enabled,
 all assessment live quizzes are eligible for coverage activation.
 The endpoints select the provisioned `stgklickerevidenceaohwr` storage account.
 Staging sets `enabled: true` for assessment testing. Before syncing this revision,
 verify the application images and migrations; enabled configuration is not proof
 of successful evidence delivery. Monitoring remains a separate deployment gate.
-Both dedicated audit workers resolve their image tag like the other chart
-workloads: the release-wide `global.imageTag` override takes precedence, and
-the explicit `assessmentAudit.worker.image.tag` or
-`assessmentAudit.mediaPolicyWorker.image.tag` value is the fallback. A render
-fails when neither is set. Staging commits the mutable `v3-audit` tag with
-`pullPolicy: Always`, which the staging ArgoCD revision override replaces.
+The dedicated audit dispatcher resolves its image tag like the other chart
+workloads: the release-wide `global.imageTag` override takes precedence over
+`assessmentAudit.worker.image.tag`. A render fails when neither is set.
+Staging commits the mutable `v3-audit` tag with `pullPolicy: Always`, which
+the staging ArgoCD revision override replaces.
 Updating a mutable image tag does not itself restart an existing pod.
 
 The backend and both Hatchet worker images must copy `packages/audit/dist` into
@@ -55,11 +57,11 @@ staging evidence delivery before relying on audit coverage; the baseline layer a
 not a deployable complete assessment-audit feature.
 
 `@klicker-uzh/audit` now contains the Layer 1 contract, Layer 2 evidence-store
-path, Layer 3 baseline/media primitives, the Layer 4 lecturer/system producer
+path, Layer 3 baseline primitives, the Layer 4 lecturer/system producer
 boundary, and Layer 5 Hatchet submission materialization. It validates and
 canonicalizes envelopes, persists exact bytes in a transactional PostgreSQL outbox, dispatches
 leased rows through a provider-neutral append-sink, and implements Azure Table,
-immutable-media, owner-CLI, and media-policy adapters. GraphQL owns assessment
+owner-CLI and immutable-manifest adapters. GraphQL owns assessment
 snapshot mapping, two-phase activation, rollout accounting, automatic
 `all`-mode creation coverage, atomic reopening, start-time readiness, and typed
 lecturer/system producer orchestration. Assessment scheduling, scheduled
@@ -92,7 +94,7 @@ Hatchet command ── response processor transaction ─┤
                                                      ▼
                              Azure Table append-only evidence
 
-assessment snapshot → stream/lock owned media → verify snapshot again
+assessment snapshot (including public image URLs) → verify snapshot again
                                                 │
                                                 └─ scope + root/parts + outbox
                                                    in one Prisma transaction
@@ -199,9 +201,10 @@ The allowlists use Klicker's real assessment identifiers and values: blocks,
 ElementInstances, and LiveQuiz responses use integer IDs; assessment, course,
 participant, user, baseline, and submission identities use UUIDs. Effective
 element content and scoring are explicit per element type, including selection
-collections and case-study structure. Media evidence accepts only query-free
-HTTPS source references and content-addressed immutable blob names, and its
-stable MediaFile UUID must agree with the affected entity ID. Client events
+collections and case-study structure. Public image links remain in that content;
+no image bytes, MIME metadata, image fingerprints, or separate image history are
+recorded. Historical version-1 media payload schemas remain readable for retained
+evidence. Client events
 reserve both occurrence and seven-day replay-expiry timestamps, although their
 Stack 2 constructors remain disabled in this layer.
 
@@ -242,13 +245,12 @@ as its business write. Uncovered quizzes keep their prior behavior; once a
 scope is covered, invalid or conflicting evidence aborts the business
 transaction.
 
-Media introduced by an instance refresh is discovered and staged in immutable
-Blob storage before the database transaction. The transaction verifies that
-the staged canonical media-reference set still matches the effective
-after-state before it emits capture/replacement evidence. Klicker-owned capture
-failures abort the refresh;
-external media remains reference-only and marks the instance change with the
-stable `LECTURER_CONTENT_MUTATION_EXTERNAL_MEDIA_NOT_CAPTURED` limitation.
+Image links are retained verbatim in effective element content during activation
+and instance refresh, including links in explanations and answer options. Audit
+does not fetch the target, inspect MIME types, fingerprint bytes, copy images,
+or detect changes behind an unchanged URL. Link edits remain ordinary element
+content changes. Missing or modified images cannot block audit activation or
+refresh; no media-specific limitation or capture/replacement event is emitted.
 
 Assessment runtime-session events describe the execution session of a LiveQuiz,
 using its UUID as `sessionId`. They are not participant browser/focus sessions
@@ -301,26 +303,24 @@ valid outbox delivery-state shape.
 ## Assessment activation and rollout
 
 Audit coverage is sticky per `(liveQuizId, lifecycleEpoch)`. Activation first
-loads and canonicalizes an explicit assessment snapshot, discovers and streams
-its owned media into immutable content-addressed blobs, and then opens a second
-database transaction. That transaction reloads the snapshot, rejects any
+loads and canonicalizes an explicit assessment snapshot, including the public
+image URLs in its content, and then opens a second database transaction. That
+transaction reloads the snapshot, rejects any
 concurrent change, and atomically writes the scope, baseline root and parts,
 activation event, and rollout-inventory outcome. Exact retries are idempotent;
 different evidence for an already activated scope fails closed.
 
-Before media capture, activation reserves the lifecycle scope as `ACTIVATING`.
-Capture or baseline failures transition that reservation to `FAILED`; an
+Activation reserves the lifecycle scope as `ACTIVATING` before building its
+baseline. Baseline failures transition that reservation to `FAILED`; an
 interrupted process leaves a durable `ACTIVATING` marker for reconciliation.
 The marker is never treated as covered evidence, and monitoring evaluates only
 the latest lifecycle per quiz so a repaired retry clears the active failure
-signal. Content-addressed Blob versions remain immutable until their retention
-policy permits cleanup; the reservation prevents a staged version from being
-an untracked evidence object while the cleanup/reconciliation worker is
-fast-follow work.
+signal.
 
 The baseline includes effective quiz configuration, ordered blocks and element
 instances, effective element content and scoring, active participant UUIDs,
-effective permissions, immutable media references, and explicit limitations. It
+and effective permissions. Image links live in the content itself; new baselines
+have zero separate media-reference or external-media limitation parts. The baseline
 does not copy participant profiles, PINs, or other authentication material.
 Baseline parts are independently hashed, and the root commits to each part key
 and full canonical-part hash. Snapshot comparison uses that incremental root
@@ -339,7 +339,7 @@ but the failed gap is durably recorded for a later repair scan.
 
 Starting an assessment remains teaching-available and emits a stable warning if
 the latest lifecycle epoch is not covered. Reopening is stricter because it
-creates a new evidence lifecycle: owned media is staged first, then the business
+creates a new evidence lifecycle: the snapshot is prepared first, then the business
 reset, incremented lifecycle epoch, new baseline, and activation evidence commit
 in one transaction. If that preparation or commit fails, reopening is blocked
 without partially resetting the quiz.
@@ -396,45 +396,16 @@ keeps shared assessment context, excludes events scoped to other participants,
 and reports whether any target-participant evidence was found. Evidence without
 a baseline reports `BASELINE_MISSING`; it never claims covered status.
 
-Owned assessment media is copied through a bounded-memory stream path. Source
-URLs must be query-free HTTPS URLs on the configured Blob account, and every
-copy is hashed while streaming. The destination name is content addressed;
-conditional creation plus metadata verification makes identical retries safe
-and a differing replay a hard conflict. Capture locks the returned blob version
-with a version-level immutability policy and never exposes content update or
-delete operations.
+New audit evidence stores only the image links already embedded in element
+content. An unchanged URL does not establish that the served bytes stayed the
+same, and historical image rendering is not guaranteed. Exports verify audit
+envelopes and baseline hashes, never the image target.
 
-Audit Blob adapters write `sha256` and `bytelength` metadata with lowercase
-names. Azure property responses lowercased the former `byteLength` name, which
-caused valid media copies and manifest replays to fail integrity validation.
-Reads accept case-insensitive names for existing copies, require every matching
-value to agree, and reject missing or conflicting integrity metadata. Existing
-Blob metadata is never rewritten to repair casing.
-
-Audit capture tolerates `application/octet-stream` source metadata only for
-images whose file signature matches the database MIME type. Detection runs on
-the already-staged temporary file before immutable persistence; bytes are never
-re-encoded. The existing evidence `mimeType` is the matched image type. Exact
-metadata matches retain their existing behavior; concrete mismatches, unknown
-signatures and generic non-images fail. This is best-effort format detection,
-not full image decoding, malware scanning or proof that the file is valid.
-Generic SVG metadata is not supported by binary signature detection.
-The strict version-1 evidence schema is unchanged; separate reported-type and
-detection-method provenance would require a versioned follow-up. This path does not
-change element rendering, uploads, source Blob metadata or database records.
-
-`AuditRetentionIndex` contains an append-only reverse index from immutable media
-versions to the assessment scopes that reference them. This includes baseline
-media parts and media captured or replaced by a covered source-element change.
-The daily media-policy worker streams covered scope references from baseline-part
-outbox evidence in keyset pages (100 scopes, 250 events). It validates each
-content-address binding before yielding, without a global deduplication map.
-Repeated references are intentional: renewal counters count references, not
-unique blobs. This trades additional idempotent storage reads for memory bounded
-by the current pages. Each reference carries its scope's completion-based horizon;
-an unfinished scope uses the current semester horizon. The store never shortens
-an existing policy, so shared media retains the longest requested horizon
-regardless of processing order.
+Historical captured-media events, baseline parts, and retention-index rows remain
+readable under their original version-1 schemas. Their recorded hash/address
+consistency remains part of legacy envelope verification, without fetching any
+image. The capture adapters and scheduled retention renewal are removed;
+existing immutable blobs are not deleted or unlocked.
 
 For local database-backed audit tests, initialize a verified disposable database
 through the guarded migration reset, not schema push alone: the migration SQL
@@ -443,27 +414,24 @@ or mark an existing retained database to make the test guard pass.
 
 ## Operations
 
-Privileged audit work is split by capability. The dispatcher deployment runs
-the dispatcher and monitor once per minute with the Table-data identity. The
-media-policy deployment runs the daily renewal workflow with the Blob-data
-identity. The GraphQL backend has a separate Blob identity only for baseline
-media capture. The ordinary general worker excludes all privileged audit task
-keys and receives no audit-storage permission. Workflow selection is
-identity-class fail-closed: each privileged deployment accepts only its exact
-task set, and the ordinary worker cannot opt into either class. Configuration
-accepts account-root Table and Blob HTTPS endpoints only; storage keys, SAS
+The dispatcher deployment runs the dispatcher and monitor once per minute
+with the Table-data identity. The backend writes the PostgreSQL outbox without
+audit Blob access. The ordinary general worker excludes privileged audit tasks;
+the dispatcher accepts only its exact task set, and the retired `media-policy`
+role is rejected. Storage configuration still accepts account-root Table and
+Blob endpoints for evidence and manifest/export adapters; storage keys, SAS
 URLs, and connection strings are not options.
 
 The monitor logs a metadata-only snapshot and marks its Hatchet run failed for
 critical backlog, stale dispatcher heartbeat, quarantine, different-hash
-conflict, durable rollout activation/media failure, or a covered submission
+conflict, durable rollout activation failure, or a covered submission
 that has not reached a terminal outbox outcome within the threshold. `/metrics`
 exposes aggregate backlog, heartbeat, monitor status, quarantine, conflict,
-unsealed-byte, media-policy success, media-horizon, activation-failure, and
+unsealed-byte, activation-failure, and
 non-terminal-submission gauges, all labeled by environment and worker role.
-Separate `ServiceMonitor` targets and role-filtered alerts detect unavailable
-workers, stale heartbeats, monitor critical status, and a media policy horizon
-below 30 days. Owner-only alert routing remains an infrastructure exit gate.
+The dispatcher `ServiceMonitor` target and role-filtered alerts detect an
+unavailable worker, stale heartbeats, and monitor critical status. Owner-only
+alert routing remains an infrastructure exit gate.
 The monitor also forecasts the remaining weeks before the configured
 `DELIVERED_UNSEALED` byte budget is exhausted from the observed weekly growth
 rate; it raises a warning below eight weeks and a critical alert below four
@@ -506,8 +474,7 @@ The audit package has pure contract/storage/operator tests, PostgreSQL
 integration tests, and provider-conformance tests through the real Azure SDKs
 against pinned Azurite. The storage tests cover multi-entity chunk
 reconstruction, identical replay, partial-write recovery, different-content
-conflict detection, streamed media capture, locked-version verification, and
-retention extension that never shortens. Production Azure RBAC and service
+conflict detection and immutable manifest storage. Production Azure RBAC and service
 behavior remain staging exit gates because Azurite does not emulate managed
 identity or every Azure service constraint. The PostgreSQL integration suite
 refuses non-local database hosts and covers atomic commit and rollback,
@@ -518,11 +485,12 @@ exact retry versus changed snapshots, rollout resumption and gap accounting,
 automatic all-mode activation, and atomic reopening.
 Layer 4 adds registry metadata and producer-boundary coverage tests plus focused
 tests for exact configuration/block/instance snapshots, deterministic
-response/reset hashes, effective-permission filtering, media
-capture/replacement, and post-activation media retention indexes. The coverage
-test verifies that every launch event has an owner, emission path, durability
-point, and explicit delivery tier; it does not claim to statically prove every
-runtime call site.
+response/reset hashes, effective-permission filtering, public image-link
+preservation, and retained legacy media export compatibility. The coverage
+test verifies that every active launch producer has an owner, emission path,
+durability point, and explicit delivery tier; legacy media events are retained
+for read compatibility and excluded from active producer coverage. The test does
+not claim to statically prove every runtime call site.
 Layer 5 adds loopback Response API tests and real-PostgreSQL processor tests for
 all supported response families, stable receipts, duplicate and changed-answer
 commands, late and missing-participation rejection, persistence/evidence

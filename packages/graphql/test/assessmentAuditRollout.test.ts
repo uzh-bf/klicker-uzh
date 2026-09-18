@@ -3,27 +3,12 @@ import { parseCanonicalAuditEnvelope } from '@klicker-uzh/audit'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { PublicationStatus } from '@klicker-uzh/prisma/client'
 import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import type { AssessmentAuditMediaDependencies } from '../src/services/assessmentAuditActivation.js'
 import {
   activateNewAssessmentAuditIfSelected,
   beginOrResumeAssessmentAuditRollout,
   discoverAssessmentAuditRolloutCandidates,
   processAssessmentAuditRolloutItem,
 } from '../src/services/assessmentAuditRollout.js'
-
-const noMedia: AssessmentAuditMediaDependencies = {
-  allowedHosts: ['test.blob.core.windows.net'],
-  source: {
-    async open() {
-      throw new Error('Test assessment has no media to capture')
-    },
-  },
-  store: {
-    async createFromFile() {
-      throw new Error('Test assessment has no media to store')
-    },
-  },
-}
 
 describe('assessment audit rollout', () => {
   let userIds: string[]
@@ -120,7 +105,6 @@ describe('assessment audit rollout', () => {
         client: prisma,
         candidate: candidate!,
         inventory: item,
-        media: noMedia,
       })
     }
 
@@ -212,7 +196,6 @@ describe('assessment audit rollout', () => {
         client: prisma,
         candidate: candidate!,
         inventory: item!,
-        media: noMedia,
       })
     ).toBe('FAILED')
     const eventCount = await prisma.assessmentAuditOutboxEvent.count({
@@ -230,7 +213,6 @@ describe('assessment audit rollout', () => {
         client: prisma,
         candidate: candidate!,
         inventory: resumed[0]!,
-        media: noMedia,
       })
     ).toBe('FAILED')
 
@@ -267,7 +249,6 @@ describe('assessment audit rollout', () => {
         await activateNewAssessmentAuditIfSelected({
           client: prisma,
           liveQuizId,
-          media: noMedia,
         })
       ).toBe('ACTIVATED')
     } finally {

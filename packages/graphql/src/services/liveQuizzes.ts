@@ -41,7 +41,6 @@ import {
 } from './activities.js'
 import {
   assessmentIsSelectedForAuditActivation,
-  createAssessmentAuditMediaDependencies,
   loadAssessmentAuditSnapshot,
   type PreparedAssessmentAuditActivation,
   persistPreparedAssessmentAuditActivationInTransaction,
@@ -76,19 +75,6 @@ const scheduledJobs: Record<string, any> = {}
 const FIRST_ACHIEVEMENT_ID = 5
 const SECOND_ACHIEVEMENT_ID = 6
 const THIRD_ACHIEVEMENT_ID = 7
-
-async function scheduleAssessmentAuditMediaRenewal(ctx: ContextWithUser) {
-  try {
-    await ctx.tasks.renewAssessmentAuditMediaPolicies.schedule(new Date(), {})
-  } catch {
-    // The daily renewal cron remains the recovery path when Hatchet is
-    // unavailable at the end of a quiz.
-    ctx.log.warn(
-      { event: 'live_quiz.audit_media.renewal.failed' },
-      'Assessment audit media renewal could not be scheduled'
-    )
-  }
-}
 
 async function recordRejectedAssessmentAction(
   ctx: ContextWithUser,
@@ -2537,10 +2523,6 @@ export async function endLiveQuiz(
           },
         })
 
-    if (quiz.isAssessmentEnabled) {
-      await scheduleAssessmentAuditMediaRenewal(ctx)
-    }
-
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
       text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
@@ -3345,10 +3327,6 @@ export async function deleteLiveQuiz(
           { timeout: 60000 }
         )
 
-    if (liveQuiz.isAssessmentEnabled) {
-      await scheduleAssessmentAuditMediaRenewal(ctx)
-    }
-
     ctx.emitter.emit('invalidate', {
       typename: 'LiveQuiz',
       id,
@@ -3424,7 +3402,6 @@ export async function resetAssessmentLiveQuiz(
       preparedAuditReopening = await prepareReopeningAssessmentAuditActivation({
         client: ctx.prisma,
         liveQuizId: liveQuiz.id,
-        media: createAssessmentAuditMediaDependencies(),
       })
     } catch {
       await recordRejectedAssessmentAction(ctx, {
@@ -3450,7 +3427,7 @@ export async function resetAssessmentLiveQuiz(
       ctx.prisma,
       async (tx, auditTx) => {
         // Capture the exact deleted answers after serializing with response
-        // persistence, not from the snapshot taken before media staging.
+        // persistence, not from the snapshot taken before the reset.
         await tx.$queryRaw(
           DB.Prisma
             .sql`SELECT id FROM "LiveQuiz" WHERE id = ${id}::uuid FOR UPDATE`
@@ -3562,8 +3539,6 @@ export async function resetAssessmentLiveQuiz(
       },
       { timeout: 60000 }
     )
-
-    await scheduleAssessmentAuditMediaRenewal(ctx)
 
     ctx.emitter.emit('invalidate', { typename: 'LiveQuiz', id })
     const permission = updatedQuiz.permissions[0]!

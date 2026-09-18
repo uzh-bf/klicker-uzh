@@ -19,7 +19,7 @@ export type AuditMonitorCounts = {
   differentHashConflictCount: number
   deliveredUnsealedCount: number
   deliveredUnsealedBytes: number
-  requiredMediaCaptureFailureCount: number
+  activationFailureCount: number
   coveredSubmissionWithoutTerminalCount: number
   oldestCoveredSubmissionWithoutTerminalAt: Date | null
 }
@@ -115,9 +115,7 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
         `
       ),
     ])
-    const requiredMediaCaptureFailureCount = Number(
-      activationFailureRows[0]?.count ?? 0n
-    )
+    const activationFailureCount = Number(activationFailureRows[0]?.count ?? 0n)
     const submissionGaps = submissionGapRows[0]
     return {
       pendingCount: pending._count,
@@ -126,7 +124,7 @@ export class PrismaAuditMonitorRepository implements AuditMonitorRepository {
       differentHashConflictCount,
       deliveredUnsealedCount: unsealed._count,
       deliveredUnsealedBytes: unsealed._sum.canonicalByteLength ?? 0,
-      requiredMediaCaptureFailureCount,
+      activationFailureCount,
       coveredSubmissionWithoutTerminalCount: Number(
         submissionGaps?.count ?? 0n
       ),
@@ -142,7 +140,7 @@ export type AuditMonitorSignal = {
     | 'DISPATCHER_HEARTBEAT_SECONDS'
     | 'DIFFERENT_HASH_CONFLICT'
     | 'QUARANTINED_ROWS'
-    | 'REQUIRED_MEDIA_CAPTURE_FAILURES'
+    | 'ACTIVATION_FAILURES'
     | 'OLDEST_COVERED_SUBMISSION_WITHOUT_TERMINAL_SECONDS'
     | 'DELIVERED_UNSEALED_CAPACITY_WEEKS_REMAINING'
   severity: 'WARNING' | 'CRITICAL'
@@ -162,8 +160,6 @@ export type AuditMonitorSnapshot = AuditMonitorCounts & {
 
 let dispatcherLastSuccessAt: Date | undefined
 let monitorLastSuccessAt: Date | undefined
-let mediaPolicyLastSuccessAt: Date | undefined
-let mediaPolicyMinimumHorizonDays: number | undefined
 let latestSnapshot: AuditMonitorSnapshot | undefined
 const auditWorkerStartedAt = new Date()
 
@@ -177,14 +173,6 @@ export function recordAssessmentAuditMonitorSuccess(
 ): void {
   monitorLastSuccessAt = at
   latestSnapshot = snapshot
-}
-
-export function recordAssessmentAuditMediaPolicySuccess(
-  minimumHorizonDays: number | null,
-  at = new Date()
-): void {
-  mediaPolicyLastSuccessAt = at
-  mediaPolicyMinimumHorizonDays = minimumHorizonDays ?? Number.POSITIVE_INFINITY
 }
 
 function elapsedSeconds(now: Date, then: Date | null | undefined): number {
@@ -295,11 +283,11 @@ export async function collectAssessmentAuditMonitorSnapshot(input: {
       threshold: 1,
     })
   }
-  if (counts.requiredMediaCaptureFailureCount > 0) {
+  if (counts.activationFailureCount > 0) {
     signals.push({
-      signal: 'REQUIRED_MEDIA_CAPTURE_FAILURES',
+      signal: 'ACTIVATION_FAILURES',
       severity: 'CRITICAL',
-      value: counts.requiredMediaCaptureFailureCount,
+      value: counts.activationFailureCount,
       threshold: 1,
     })
   }
@@ -386,18 +374,6 @@ export function renderAssessmentAuditPrometheusMetrics(
       ),
     ],
     [
-      'assessment_audit_media_policy_last_success_timestamp_seconds',
-      prometheusNumber(
-        mediaPolicyLastSuccessAt === undefined
-          ? undefined
-          : mediaPolicyLastSuccessAt.getTime() / 1_000
-      ),
-    ],
-    [
-      'assessment_audit_media_policy_minimum_horizon_days',
-      prometheusNumber(mediaPolicyMinimumHorizonDays),
-    ],
-    [
       'assessment_audit_outbox_pending',
       prometheusNumber(latestSnapshot?.pendingCount),
     ],
@@ -436,8 +412,8 @@ export function renderAssessmentAuditPrometheusMetrics(
       ),
     ],
     [
-      'assessment_audit_required_media_capture_failures',
-      prometheusNumber(latestSnapshot?.requiredMediaCaptureFailureCount),
+      'assessment_audit_activation_failures',
+      prometheusNumber(latestSnapshot?.activationFailureCount),
     ],
     [
       'assessment_audit_covered_submissions_without_terminal',
