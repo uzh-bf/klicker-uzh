@@ -6,6 +6,7 @@ import {
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH } from '@klicker-uzh/types'
 import {
   Accordion,
   AccordionContent,
@@ -63,12 +64,13 @@ const disclaimerEditableStatuses = [
   ChatbotStatus.Published,
 ]
 
-type StandardMode = 'tutor' | 'explainer' | 'quizzer'
+type StandardMode = 'tutor' | 'explainer' | 'quizzer' | 'writing-coach'
 
 type StandardModeFormValues = {
   tutorEnabled: boolean
   explainerEnabled: boolean
   quizzerEnabled: boolean
+  writingCoachEnabled: boolean
   courseName: string | null
   subjectDomain: string | null
   languageOfInstruction: LocaleType | null
@@ -84,6 +86,7 @@ function getStandardModeFormValues(
     tutorEnabled: config?.tutorEnabled ?? true,
     explainerEnabled: config?.explainerEnabled ?? true,
     quizzerEnabled: config?.quizzerEnabled ?? true,
+    writingCoachEnabled: config?.writingCoachEnabled ?? false,
     courseName: config?.courseName ?? null,
     subjectDomain: config?.subjectDomain ?? null,
     languageOfInstruction: config?.languageOfInstruction ?? null,
@@ -375,6 +378,7 @@ function ChatbotAuthoring({
   const creditEditable = metadataEditable
   const disclaimer = chatbot.disclaimerSummary
   const standardModeConfig = getStandardModeFormValues(chatbot)
+  const writingCoachUnavailableReason = chatbot.writingCoachUnavailableReason
   const disclaimerInitialValues = {
     title:
       revisionValues.disclaimerTitle ??
@@ -402,6 +406,11 @@ function ChatbotAuthoring({
       mode: 'quizzer' as const,
       title: t('manage.resources.chatbotModeQuizzer'),
       enabled: standardModeConfig.quizzerEnabled,
+    },
+    {
+      mode: 'writing-coach' as const,
+      title: t('manage.resources.chatbotModeWritingCoach'),
+      enabled: standardModeConfig.writingCoachEnabled,
     },
   ]
   const published = chatbot.status === ChatbotStatus.Published
@@ -738,11 +747,16 @@ function ChatbotAuthoring({
                     validate={(values) => {
                       if (
                         values.scopeNote !== standardModeConfig.scopeNote &&
-                        values.scopeNote.length > 200
+                        values.scopeNote.length >
+                          CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
                       ) {
                         return {
                           scopeNote: t(
-                            'manage.resources.chatbotFramingTooLong'
+                            'manage.resources.chatbotFramingTooLong',
+                            {
+                              count:
+                                CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH,
+                            }
                           ),
                         }
                       }
@@ -787,6 +801,14 @@ function ChatbotAuthoring({
                     }) => {
                       const controlsDisabled =
                         isSubmitting || publicationPending || revisionPending
+                      // Writing Coach is removed from the participant-facing
+                      // mode set while a required tool binding belongs to
+                      // another mode, so in that state it cannot satisfy the
+                      // "keep one conversational mode enabled" invariant on its
+                      // own.
+                      const writingCoachCannotHoldInvariant =
+                        writingCoachUnavailableReason ===
+                        'REQUIRED_TOOL_BINDING'
 
                       return (
                         <Form className="space-y-4">
@@ -809,13 +831,47 @@ function ChatbotAuthoring({
                               placeholder={t(
                                 'manage.resources.chatbotFramingPlaceholder'
                               )}
-                              maxLength={200}
+                              maxLength={
+                                CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH
+                              }
                               maxLengthUnit={t('shared.generic.characters')}
                               data={{ cy: 'chatbot-framing' }}
                             />
                             <p className="text-xs text-gray-500">
                               {t('manage.resources.chatbotFramingDescription')}
                             </p>
+                            <details
+                              className="text-sm text-gray-600"
+                              data-cy="chatbot-framing-examples"
+                            >
+                              <summary className="cursor-pointer py-2 font-medium">
+                                {t('manage.resources.chatbotFramingExamples')}
+                              </summary>
+                              <div className="space-y-3 pt-1">
+                                <p>
+                                  <strong>
+                                    {t(
+                                      'manage.resources.chatbotFramingScientific'
+                                    )}
+                                  </strong>
+                                  <br />
+                                  {t(
+                                    'manage.resources.chatbotFramingScientificExample'
+                                  )}
+                                </p>
+                                <p>
+                                  <strong>
+                                    {t(
+                                      'manage.resources.chatbotFramingInformal'
+                                    )}
+                                  </strong>
+                                  <br />
+                                  {t(
+                                    'manage.resources.chatbotFramingInformalExample'
+                                  )}
+                                </p>
+                              </div>
+                            </details>
                           </div>
                           <div className="space-y-3">
                             <StandardModeCard
@@ -826,7 +882,9 @@ function ChatbotAuthoring({
                                 controlsDisabled ||
                                 revisionPending ||
                                 (values.tutorEnabled &&
-                                  !values.explainerEnabled)
+                                  !values.explainerEnabled &&
+                                  (!values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
                               }
                               enabled={values.tutorEnabled}
                               mode="tutor"
@@ -849,7 +907,9 @@ function ChatbotAuthoring({
                                 controlsDisabled ||
                                 revisionPending ||
                                 (values.explainerEnabled &&
-                                  !values.tutorEnabled)
+                                  !values.tutorEnabled &&
+                                  (!values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
                               }
                               enabled={values.explainerEnabled}
                               mode="explainer"
@@ -882,6 +942,46 @@ function ChatbotAuthoring({
                               )}
                               title={t('manage.resources.chatbotModeQuizzer')}
                             />
+                            <StandardModeCard
+                              description={t(
+                                'manage.resources.chatbotModeWritingCoachDescription'
+                              )}
+                              disabled={
+                                controlsDisabled ||
+                                revisionPending ||
+                                (!values.tutorEnabled &&
+                                  !values.explainerEnabled &&
+                                  (values.writingCoachEnabled ||
+                                    writingCoachCannotHoldInvariant))
+                              }
+                              enabled={values.writingCoachEnabled}
+                              mode="writing-coach"
+                              onChange={(enabled) => {
+                                setModeError(null)
+                                void setFieldValue(
+                                  'writingCoachEnabled',
+                                  enabled
+                                )
+                              }}
+                              statusLabel={t(
+                                values.writingCoachEnabled
+                                  ? 'manage.resources.chatbotModeEnabled'
+                                  : 'manage.resources.chatbotModeDisabled'
+                              )}
+                              title={t(
+                                'manage.resources.chatbotModeWritingCoach'
+                              )}
+                            />
+                            {writingCoachUnavailableReason ? (
+                              <p
+                                className="text-sm text-amber-800"
+                                data-cy="chatbot-writing-coach-unavailable"
+                              >
+                                {t(
+                                  'manage.resources.chatbotWritingCoachRequiredTool'
+                                )}
+                              </p>
+                            ) : null}
                           </div>
                           <p
                             className="text-sm text-gray-600"
@@ -979,6 +1079,31 @@ function ChatbotAuthoring({
                         )}
                         title={t('manage.resources.chatbotModeQuizzer')}
                       />
+                      <StandardModeCard
+                        description={t(
+                          'manage.resources.chatbotModeWritingCoachDescription'
+                        )}
+                        disabled
+                        enabled={standardModeConfig.writingCoachEnabled}
+                        mode="writing-coach"
+                        onChange={() => undefined}
+                        statusLabel={t(
+                          standardModeConfig.writingCoachEnabled
+                            ? 'manage.resources.chatbotModeEnabled'
+                            : 'manage.resources.chatbotModeDisabled'
+                        )}
+                        title={t('manage.resources.chatbotModeWritingCoach')}
+                      />
+                      {writingCoachUnavailableReason ? (
+                        <p
+                          className="text-sm text-amber-800"
+                          data-cy="chatbot-writing-coach-unavailable"
+                        >
+                          {t(
+                            'manage.resources.chatbotWritingCoachRequiredTool'
+                          )}
+                        </p>
+                      ) : null}
                     </div>
                     <p
                       className="text-sm text-gray-600"
