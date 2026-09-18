@@ -16,13 +16,13 @@ import {
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
 import generatePassword from 'generate-password'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import * as Yup from 'yup'
-import Layout from '../../../components/Layout'
 import CreateAccountForm from '../../../components/forms/CreateAccountForm'
+import Layout from '../../../components/Layout'
 
 function JoinCourse({
   courseId,
@@ -38,7 +38,11 @@ function JoinCourse({
   const t = useTranslations()
   const router = useRouter()
   const [showError, setError] = useState(false)
-  const [initialPin, setInitialPin] = useState<string>('')
+  // Read the PIN directly so the value is present when the form mounts;
+  // Formik does not re-apply initialValues updated after mounting.
+  const initialPin = Array.isArray(router.query.pin)
+    ? router.query.pin[0]
+    : (router.query.pin ?? '')
 
   const joinCourseWithPinSchema = Yup.object({
     pin: Yup.number()
@@ -50,11 +54,6 @@ function JoinCourse({
       )
       .required(t('pwa.joinCourse.coursePinRequired')),
   })
-
-  useEffect(() => {
-    const pin = router.query.pin ? String(router.query.pin) : undefined
-    setInitialPin(pin || '')
-  }, [router.query.pin])
 
   const { loading: loadingParticipant, data: dataParticipant } =
     useQuery(SelfDocument)
@@ -162,10 +161,28 @@ function JoinCourse({
                   },
                 })
 
+                // Account creation no longer enrolls, so the PIN join must
+                // survive the login detour: sending the join target through
+                // login brings the logged-in participant back to this page,
+                // where the prefilled form completes the enrollment. The
+                // course destination is kept even without a PIN so the
+                // participant can enter one manually after login.
+                const pin = Array.isArray(router.query.pin)
+                  ? router.query.pin[0]
+                  : router.query.pin
+                const joinSearch = new URLSearchParams()
+                if (pin) {
+                  joinSearch.set('pin', pin)
+                }
+                const joinQuery = joinSearch.toString()
+                const joinTarget = `/course/${courseId}/join${
+                  joinQuery ? `?${joinQuery}` : ''
+                }`
                 await router.push({
                   pathname: '/login',
                   query: {
                     newAccount: true,
+                    redirect_to: joinTarget,
                   },
                 })
               }}

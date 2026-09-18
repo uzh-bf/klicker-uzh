@@ -2149,7 +2149,7 @@ type Mutation {
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveChatbotDisclaimer(chatbotId: String!, expectedDisclaimerId: String, introText: String!, title: String!): Chatbot
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
-  sendMagicLink(usernameOrEmail: String!): Boolean
+  sendMagicLink(redirectTo: String, usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setBetaEnrollment(enabled: Boolean!): BetaEnrollmentCapability!
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview

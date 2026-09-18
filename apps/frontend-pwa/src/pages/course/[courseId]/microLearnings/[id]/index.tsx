@@ -10,30 +10,33 @@ import {
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
 import { Button, H3, Prose, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetServerSidePropsContext } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../../components/Layout'
 import PreviewMessage from '../../../../../components/common/PreviewMessage'
+import Layout from '../../../../../components/Layout'
 import MicroLearningSubscriber from '../../../../../components/microLearning/MicroLearningSubscriber'
 
 function MicrolearningIntroduction({
   id,
   participantToken,
   cookiesAvailable,
+  tokenSource,
 }: {
   id: string
   participantToken?: string
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -45,6 +48,7 @@ function MicrolearningIntroduction({
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
   })
 
   const { loading, error, data, subscribeToMore } = useQuery(
@@ -225,17 +229,19 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
     const apolloClient = initializeApollo()
 
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
+    const { participantToken, cookiesAvailable, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        courseId: ctx.params.courseId,
+        ctx,
+      })
 
     if (participantToken) {
       return {
         props: {
           participantToken,
           cookiesAvailable,
+          tokenSource,
           id: ctx.params.id,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
