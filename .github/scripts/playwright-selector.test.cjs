@@ -215,6 +215,52 @@ test('maps known feature paths, skips documentation, and fails unknown paths clo
   assert.ok(empty.reasonCodes.includes('empty-diff'))
 })
 
+test('a draft narrows CI-only changes to the bounded smoke selection', () => {
+  const manifest = fixtureManifest()
+  const base = {
+    candidateSpecs: [
+      'A-login.spec.ts',
+      'Y-chat.spec.ts',
+      '0-baseline-ops.spec.ts',
+    ],
+    manifest: { ...manifest, draftBoundedSpecs: ['0-baseline-ops.spec.ts'] },
+  }
+  const ciOnly = [change('M', '.github/workflows/test-playwright.yml')]
+
+  const draft = selectFromChanges({
+    ...base,
+    changes: ciOnly,
+    prState: 'draft',
+  })
+  assert.equal(draft.mode, 'selected')
+  assert.deepEqual(draft.selectedSpecs, ['0-baseline-ops.spec.ts'])
+  assert.ok(draft.reasonCodes.includes('draft-bounded-surface'))
+  assert.ok(!draft.reasonCodes.includes('global-surface'))
+
+  // The same change on a ready pull request keeps the full-surface policy.
+  const ready = selectFromChanges({
+    ...base,
+    changes: ciOnly,
+    prState: 'ready',
+  })
+  assert.equal(ready.mode, 'full')
+  assert.deepEqual(ready.selectedSpecs, base.candidateSpecs)
+  assert.ok(ready.reasonCodes.includes('ready-for-review'))
+
+  // Any full-surface path in the same change set still wins over the bound.
+  const mixed = selectFromChanges({
+    ...base,
+    changes: [
+      change('M', '.github/workflows/test-playwright.yml'),
+      change('M', 'pnpm-lock.yaml'),
+    ],
+    prState: 'draft',
+  })
+  assert.equal(mixed.mode, 'full')
+  assert.deepEqual(mixed.selectedSpecs, base.candidateSpecs)
+  assert.ok(mixed.reasonCodes.includes('global-surface'))
+})
+
 test('ready state overrides a documentation-only diff with the full candidate suite', () => {
   const plan = buildSelectionPlan({
     controlRoot: repositoryRoot,

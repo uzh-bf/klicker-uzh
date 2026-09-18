@@ -47,7 +47,7 @@ test('ready same-repository public PRs fall back to hosted when rollout is off',
   })
 })
 
-test('drafts always use the ready-state hosted plan, whatever the controls say', () => {
+test('drafts without a smart-draft control keep the ready-state hosted plan', () => {
   const disabled = choosePlaywrightRoute(
     pullRequest({ prDraft: 'true', publicRolloutEnabled: 'true' })
   )
@@ -58,45 +58,7 @@ test('drafts always use the ready-state hosted plan, whatever the controls say',
     reasonCodes: ['hosted-fallback', 'smart-draft-disabled'],
   })
 
-  // The enabled and canary controls are recorded for diagnostics but cannot
-  // narrow a draft plan: the route stays hosted and the selector stays ready.
-  for (const overrides of [
-    { smartDraftEnabled: 'true' },
-    { smartDraftCanaryPr: '1234' },
-  ]) {
-    const enabled = choosePlaywrightRoute(
-      pullRequest({ prDraft: 'true', ...overrides })
-    )
-    assert.equal(enabled.route, 'hosted')
-    assert.equal(enabled.selectorPrState, 'ready')
-    assert.ok(enabled.reasonCodes.includes('smart-draft-enabled'))
-    assert.ok(enabled.reasonCodes.includes('hosted-fallback'))
-  }
-
-  // With public rollout enabled, a draft must not switch to the public route
-  // either: both routes must run the ready-state full plan.
-  const publicDraft = choosePlaywrightRoute(
-    pullRequest({ prDraft: 'true', smartDraftEnabled: 'true' })
-  )
-  assert.equal(publicDraft.route, 'hosted')
-  assert.equal(publicDraft.selectorPrState, 'ready')
-})
-
-test('a smart-draft control keeps drafts hosted and ready-state when rollout is off', () => {
-  const route = choosePlaywrightRoute(
-    pullRequest({
-      prDraft: 'true',
-      publicRolloutEnabled: '',
-      smartDraftEnabled: 'true',
-    })
-  )
-  assert.equal(route.route, 'hosted')
-  assert.equal(route.selectorPrState, 'ready')
-  assert.ok(route.reasonCodes.includes('smart-draft-enabled'))
-  assert.ok(route.reasonCodes.includes('hosted-fallback'))
-})
-
-test('false, malformed, and non-matching controls keep drafts hosted and full', () => {
+  // Unset, malformed and non-matching controls all keep the full plan.
   for (const overrides of [
     { smartDraftEnabled: 'false' },
     { smartDraftEnabled: 'enabled' },
@@ -109,6 +71,44 @@ test('false, malformed, and non-matching controls keep drafts hosted and full', 
     assert.equal(route.selectorPrState, 'ready')
     assert.ok(route.reasonCodes.includes('smart-draft-disabled'))
   }
+})
+
+test('an enabled smart-draft control narrows an eligible draft on the hosted route', () => {
+  for (const overrides of [
+    { smartDraftEnabled: 'true' },
+    { smartDraftCanaryPr: '1234' },
+  ]) {
+    const route = choosePlaywrightRoute(
+      pullRequest({ prDraft: 'true', ...overrides })
+    )
+    assert.equal(route.route, 'hosted')
+    assert.equal(route.selectorPrState, 'draft')
+    assert.ok(route.reasonCodes.includes('smart-draft-enabled'))
+    assert.ok(route.reasonCodes.includes('hosted-fallback'))
+  }
+
+  // The public rollout control never moves a draft onto the public route, so a
+  // narrowed draft keeps its hosted slots and ready pull requests keep the
+  // public runner pool. The narrowing itself does not depend on that control.
+  const publicDraft = choosePlaywrightRoute(
+    pullRequest({ prDraft: 'true', smartDraftEnabled: 'true' })
+  )
+  assert.equal(publicDraft.route, 'hosted')
+  assert.equal(publicDraft.selectorPrState, 'draft')
+})
+
+test('a smart-draft control narrows a draft even when the public rollout is off', () => {
+  const route = choosePlaywrightRoute(
+    pullRequest({
+      prDraft: 'true',
+      publicRolloutEnabled: '',
+      smartDraftEnabled: 'true',
+    })
+  )
+  assert.equal(route.route, 'hosted')
+  assert.equal(route.selectorPrState, 'draft')
+  assert.ok(route.reasonCodes.includes('smart-draft-enabled'))
+  assert.ok(route.reasonCodes.includes('hosted-fallback'))
 })
 
 test('forks, bots, and private repositories remain hosted and full', () => {

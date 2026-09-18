@@ -262,12 +262,28 @@ function validateRelevanceManifest(
   for (const key of [
     'docsOnlyPathPrefixes',
     'docsOnlyExtensions',
+    'draftBoundedPathPrefixes',
+    'draftBoundedSpecs',
     'fullPathPrefixes',
     'fullPathEquals',
     'fullPathSuffixes',
   ]) {
     if (!Array.isArray(manifest[key])) {
       fail(`relevance manifest ${key} must be an array`)
+    }
+  }
+
+  if (
+    new Set(manifest.draftBoundedSpecs).size !==
+    manifest.draftBoundedSpecs.length
+  ) {
+    fail('relevance manifest draftBoundedSpecs contains duplicate specs')
+  }
+  for (const spec of manifest.draftBoundedSpecs) {
+    if (!trustedSpecSet.has(spec) || productionSpecs.has(spec)) {
+      fail(
+        `relevance manifest draftBoundedSpecs needs a trusted non-production spec, got ${spec}`
+      )
     }
   }
 }
@@ -354,7 +370,20 @@ function isPrefixMatch(value, prefix) {
   return value === normalizedPrefix || value.startsWith(`${normalizedPrefix}/`)
 }
 
-function classifyPath(changedPath, manifest) {
+function classifyPath(changedPath, manifest, prState) {
+  // A draft needs only the bounded smoke selection for changes that cannot
+  // alter application behaviour: the repository's own CI definitions and
+  // CI-owned scripts. A ready pull request never reaches this rule, because
+  // its plan is the full candidate suite whatever the change touches.
+  if (
+    prState === 'draft' &&
+    manifest.draftBoundedPathPrefixes.some((prefix) =>
+      isPrefixMatch(changedPath, prefix)
+    )
+  ) {
+    return { kind: 'bounded' }
+  }
+
   if (manifest.fullPathEquals.includes(changedPath)) return { kind: 'full' }
   if (
     manifest.fullPathSuffixes.some(
@@ -441,7 +470,7 @@ function selectFromChanges({
 
   const classifyNonSpecPaths = (paths) => {
     const classifications = paths.map((changedPath) =>
-      classifyPath(changedPath, manifest)
+      classifyPath(changedPath, manifest, prState)
     )
     if (classifications.some(({ kind }) => kind === 'full')) {
       full = true
@@ -456,6 +485,12 @@ function selectFromChanges({
     for (const classification of classifications) {
       if (classification.kind === 'groups') {
         for (const groupId of classification.groups) addGroup(groupId)
+      }
+      if (classification.kind === 'bounded') {
+        reasonCodes.add('draft-bounded-surface')
+        for (const spec of manifest.draftBoundedSpecs) {
+          if (candidateSet.has(spec)) selected.add(spec)
+        }
       }
     }
   }

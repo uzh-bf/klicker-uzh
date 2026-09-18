@@ -223,6 +223,7 @@ function runStatusReporter(t, overrides = {}) {
         SHOULD_RUN: 'true',
         SHARD_MATRIX: JSON.stringify(fullShardMatrix()),
         IS_PULL_REQUEST: 'true',
+        IS_DRAFT: 'false',
         ...overrides,
       },
       encoding: 'utf8',
@@ -251,12 +252,32 @@ function runStatusReporter(t, overrides = {}) {
   }
 }
 
-test('status reporter accepts one full plan for drafts and ready and rejects anything less', (t) => {
-  // A draft runs the same full plan as a ready pull request, so both pass.
+test('status reporter accepts the trusted plan for drafts and a full plan for ready', (t) => {
+  // A draft may attest the plan the trusted envelope selected for it.
   const draft = runStatusReporter(t, { IS_DRAFT: 'true' })
   assert.equal(draft.status, 0, draft.output)
   assert.equal(draft.metadata.execution_result, 'success')
   assert.equal(draft.metadata.mode, 'full')
+  assert.equal(draft.metadata.is_draft, 'true')
+
+  const draftPartial = runStatusReporter(t, {
+    IS_DRAFT: 'true',
+    MODE: 'selected',
+    SHARD_MATRIX: JSON.stringify({
+      include: [{ shardIndex: 3, shardTotal: 8 }],
+    }),
+  })
+  assert.equal(draftPartial.status, 0, draftPartial.output)
+  assert.equal(draftPartial.metadata.mode, 'selected')
+
+  const draftSkipped = runStatusReporter(t, {
+    IS_DRAFT: 'true',
+    MODE: 'skip',
+    SHOULD_RUN: 'false',
+    SHARD_MATRIX: JSON.stringify({ include: [] }),
+  })
+  assert.equal(draftSkipped.status, 0, draftSkipped.output)
+  assert.equal(draftSkipped.metadata.mode, 'skip')
 
   const ready = runStatusReporter(t)
   assert.equal(ready.status, 0, ready.output)
@@ -292,6 +313,72 @@ test('status reporter accepts one full plan for drafts and ready and rejects any
         SHARD_MATRIX: JSON.stringify({
           include: fullShardMatrix().include.slice(0, 4),
         }),
+      },
+    },
+    {
+      name: 'ready partial plan',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 8 }],
+        }),
+      },
+    },
+    {
+      name: 'ready skipped plan',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+      },
+    },
+    {
+      name: 'push partial plan',
+      overrides: {
+        IS_PULL_REQUEST: 'false',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 8 }],
+        }),
+      },
+    },
+    {
+      name: 'draft partial plan without shards',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+      },
+    },
+    {
+      name: 'draft partial plan with duplicate shards',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [
+            { shardIndex: 2, shardTotal: 8 },
+            { shardIndex: 2, shardTotal: 8 },
+          ],
+        }),
+      },
+    },
+    {
+      name: 'draft full plan with a partial matrix',
+      overrides: {
+        IS_DRAFT: 'true',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 8 }],
+        }),
+      },
+    },
+    {
+      name: 'draft skip that still selects tests',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'skip',
+        SHOULD_RUN: 'true',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
       },
     },
   ]
