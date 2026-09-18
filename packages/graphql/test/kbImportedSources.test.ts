@@ -11,12 +11,14 @@ import { getKbImportedSourcesConnection } from '../src/services/knowledge.js'
 
 const KB_ID = '11111111-1111-4111-8111-111111111111'
 const OWNER_ID = '22222222-2222-4222-8222-222222222222'
+const MANAGED_RESOURCE_ID = '33333333-3333-4333-8333-333333333333'
 const MCP_URL = 'http://localhost:1417/mcp'
 
 function videoSource(overrides: Record<string, unknown> = {}) {
   return {
     identity_field: 'video_source_id',
     identity_value: 'vid-1',
+    external_resource_id: null,
     title: 'Synthetic lecture recording',
     source_type: 'video',
     source_url: null,
@@ -31,6 +33,7 @@ function documentSource(overrides: Record<string, unknown> = {}) {
   return {
     identity_field: 'source_id',
     identity_value: 'src-1',
+    external_resource_id: null,
     title: 'Synthetic handbook',
     source_type: 'document',
     source_url: 'https://example.org/handbook',
@@ -108,6 +111,7 @@ function createDeps(
 function createContext({
   kb = { id: KB_ID, ownerId: OWNER_ID },
   account = { aiFeaturesEnabled: true, betaEnabled: true },
+  managedResourceIds = [],
   mcpServer = {
     id: 'mcp-1',
     isActive: true,
@@ -118,6 +122,7 @@ function createContext({
 }: {
   kb?: { id: string; ownerId: string } | null
   account?: { aiFeaturesEnabled: boolean; betaEnabled: boolean } | null
+  managedResourceIds?: string[]
   mcpServer?: Record<string, unknown> | null
 } = {}) {
   return {
@@ -132,6 +137,14 @@ function createContext({
       kB: { findFirst: vi.fn(async () => kb) },
       user: { findUnique: vi.fn(async () => account) },
       chatbotMCPServer: { findUnique: vi.fn(async () => mcpServer) },
+      kBResource: {
+        findMany: vi.fn(
+          async ({ where }: { where: { id: { in: string[] } } }) =>
+            managedResourceIds
+              .filter((id) => where.id.in.includes(id))
+              .map((id) => ({ id }))
+        ),
+      },
     },
     featureFlags: {
       getAiBetaDecision: vi.fn(() => 'enabled'),
@@ -163,6 +176,7 @@ describe('fetchKbSourceInventory', () => {
     expect(inventory.items).toHaveLength(2)
     expect(inventory.items[0]).toEqual({
       id: expectedSourceId('video_source_id', 'vid-1'),
+      externalResourceId: null,
       title: 'Synthetic lecture recording',
       sourceType: 'video',
       sourceUrl: null,
@@ -401,10 +415,93 @@ describe('getKbImportedSourcesConnection', () => {
     expect(connection.items[0]?.id).toBe(
       expectedSourceId('video_source_id', 'vid-1')
     )
+    // A source without an app-managed resource id stays manually imported.
+    expect(connection.items.map((item) => item.origin)).toEqual([
+      'IMPORTED',
+      'IMPORTED',
+    ])
     expect(factory.toolCalls[0]?.arguments).toEqual({
       limit: 20,
       after: 'cursor-1',
     })
+  })
+
+  it('labels a source whose resource id belongs to the KB as app-managed', async () => {
+    const factory = createClientFactory([
+      textResult(
+        envelope({
+          sources: [
+            videoSource(),
+            documentSource({ external_resource_id: MANAGED_RESOURCE_ID }),
+          ],
+        })
+      ),
+    ])
+
+    const context = createContext({ managedResourceIds: [MANAGED_RESOURCE_ID] })
+    const connection = await getKbImportedSourcesConnection(
+      { kbId: KB_ID },
+      context,
+      createDeps(factory)
+    )
+
+    expect(connection.items.map((item) => item.origin)).toEqual([
+      'IMPORTED',
+      'MANAGED',
+    ])
+    // The lookup is bounded to the UUID-shaped ids that actually appeared.
+    expect(context.prisma.kBResource.findMany).toHaveBeenCalledWith({
+      where: { kbId: KB_ID, id: { in: [MANAGED_RESOURCE_ID] } },
+      select: { id: true },
+    })
+  })
+
+  it('keeps an unmatched or non-UUID resource id as imported', async () => {
+    const factory = createClientFactory([
+      textResult(
+        envelope({
+          sources: [
+            // A UUID that belongs to another knowledge base must not count.
+            documentSource({ external_resource_id: MANAGED_RESOURCE_ID }),
+            // A non-UUID operator marker is never a resource id.
+            videoSource({ external_resource_id: 'video-lecture:01' }),
+          ],
+        })
+      ),
+    ])
+
+    const context = createContext()
+    const connection = await getKbImportedSourcesConnection(
+      { kbId: KB_ID },
+      context,
+      createDeps(factory)
+    )
+
+    expect(connection.items.map((item) => item.origin)).toEqual([
+      'IMPORTED',
+      'IMPORTED',
+    ])
+    expect(context.prisma.kBResource.findMany).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not query resources when no source carries a UUID', async () => {
+    const factory = createClientFactory([
+      textResult(
+        envelope({
+          sources: [videoSource({ external_resource_id: 'video-lecture:01' })],
+        })
+      ),
+    ])
+
+    const context = createContext()
+    const connection = await getKbImportedSourcesConnection(
+      { kbId: KB_ID },
+      context,
+      createDeps(factory)
+    )
+
+    expect(connection.items[0]?.origin).toBe('IMPORTED')
+    expect(context.prisma.kBResource.findMany).not.toHaveBeenCalled()
   })
 
   it('rejects knowledge bases owned by another user', async () => {
