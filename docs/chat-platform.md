@@ -1046,8 +1046,8 @@ this order:
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
 6. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
    integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-7. fixed Markdown, inline/display mathematics, and fenced-code rules from
-   `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
+7. fixed Markdown, inline/display mathematics, chemistry and biology notation, and fenced-code
+   rules from `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
 8. the conditional citation policy when a `doc_query`-style tool is available; and
 9. the fixed conversation-language and Swiss Standard German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
