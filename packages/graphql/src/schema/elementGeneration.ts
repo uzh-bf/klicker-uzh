@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ElementGenerationSlotFailure,
   FlashcardGenerationConfiguration,
   GeneratedFlashcard,
   GeneratedFlashcardEditable,
@@ -55,6 +56,10 @@ export const ElementGenerationBloomLevel = builder.enumType(
 export const ElementGenerationObjectiveSource = builder.enumType(
   'ElementGenerationObjectiveSource',
   { values: ['provided', 'neutral'] as const }
+)
+export const ElementGenerationFailureClass = builder.enumType(
+  'ElementGenerationFailureClass',
+  { values: ['user_input', 'self_repairable', 'system'] as const }
 )
 export const ElementGenerationDifficultyPreset = builder.enumType(
   'ElementGenerationDifficultyPreset',
@@ -710,10 +715,45 @@ ElementGenerationBuildSourceRef.implement({
   }),
 })
 
+// The reason code stays an open string; the failure class selects how the
+// reviewing client renders the slot, so an unknown code from a newer worker
+// release still reaches the client with its structured fields.
+const ElementGenerationSlotFailureRef =
+  builder.objectRef<ElementGenerationSlotFailure>(
+    'ElementGenerationSlotFailure'
+  )
+ElementGenerationSlotFailureRef.implement({
+  fields: (t) => ({
+    slotId: t.exposeID('slotId'),
+    moduleId: t.exposeString('moduleId', { nullable: true }),
+    objective: t.exposeString('objective', { nullable: true }),
+    objectiveSource: t.expose('objectiveSource', {
+      type: ElementGenerationObjectiveSource,
+      nullable: true,
+    }),
+    requestedLevel: t.expose('requestedLevel', {
+      type: ElementGenerationBloomLevel,
+      nullable: true,
+    }),
+    evidenceTarget: t.exposeString('evidenceTarget', { nullable: true }),
+    reasonCode: t.exposeString('reasonCode'),
+    failureClass: t.expose('failureClass', {
+      type: ElementGenerationFailureClass,
+    }),
+    detail: t.exposeString('detail', { nullable: true }),
+    suggestions: t.exposeStringList('suggestions'),
+  }),
+})
+
 export type ElementGenerationBuildView = DB.ElementGenerationBuild & {
   reviews?: DB.ElementGenerationReview[]
   drafts: DB.GeneratedElementDraft[]
   sourceGraphBuild: { sources: ElementGenerationBuildSourceView[] }
+  // Structured per-slot failure reasons are read back from the result manifest
+  // when the build query serves a failed build. Builds loaded for the other
+  // resolvers, and manifests written before the failure surface existed, keep
+  // the empty default instead of an absent field.
+  slotFailures?: ElementGenerationSlotFailure[]
 }
 export const ElementGenerationBuildRef =
   builder.objectRef<ElementGenerationBuildView>('ElementGenerationBuild')
@@ -752,6 +792,10 @@ ElementGenerationBuildRef.implement({
     errorCode: t.exposeString('errorCode', { nullable: true }),
     errorMessage: t.exposeString('errorMessage', { nullable: true }),
     errorRetryable: t.exposeBoolean('errorRetryable', { nullable: true }),
+    slotFailures: t.field({
+      type: [ElementGenerationSlotFailureRef],
+      resolve: (build) => build.slotFailures ?? [],
+    }),
     startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
     completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
     incompletePublishedAt: t.expose('incompletePublishedAt', {

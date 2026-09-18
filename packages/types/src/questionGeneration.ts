@@ -19,6 +19,10 @@ export type QuestionGenerationLanguage = 'de' | 'en'
 export type QuestionGenerationObjectiveSource = 'provided' | 'neutral'
 export const NEUTRAL_OBJECTIVE_SOURCE: QuestionGenerationObjectiveSource =
   'neutral'
+export type QuestionGenerationFailureClass =
+  | 'user_input'
+  | 'self_repairable'
+  | 'system'
 export type QuestionGenerationItemType = 'SC' | 'MC' | 'KPRIM'
 export type QuestionGenerationBloomLevel =
   | 'remember'
@@ -238,6 +242,23 @@ export type QuestionGenerationDesignSlotSummary = {
   // evidence candidates. Only these ids leave the parser; the surrounding
   // resolution remains server-internal. Empty when the artifact carries none.
   evidenceEntityIds: string[]
+}
+
+// Structured per-slot failure reason reported by the question-generation
+// worker. Reason codes are an open, append-only set and stay plain strings, so
+// an unknown code never rejects an artifact; the failure class carries the
+// stable rendering contract of the reviewing client.
+export type QuestionGenerationSlotFailure = {
+  slotId: string
+  moduleId: string | null
+  objective: string | null
+  objectiveSource: QuestionGenerationObjectiveSource | null
+  requestedLevel: QuestionGenerationBloomLevel | null
+  evidenceTarget: string | null
+  reasonCode: string
+  failureClass: QuestionGenerationFailureClass
+  detail: string | null
+  suggestions: string[]
 }
 
 export type QuestionGenerationDesignSummary = {

@@ -222,6 +222,27 @@ export type ElementGenerationReviewSourceSummary = {
   pageTo: number | null
 }
 
+export type ElementGenerationFailureClass =
+  | 'user_input'
+  | 'self_repairable'
+  | 'system'
+
+// Structured per-slot failure reason surfaced on an element-generation build.
+// The reason code stays an open string so a newer worker release cannot break
+// the client; the failure class selects the rendering contract.
+export type ElementGenerationSlotFailure = {
+  slotId: string
+  moduleId: string | null
+  objective: string | null
+  objectiveSource: 'provided' | 'neutral' | null
+  requestedLevel: ElementGenerationBloomLevel | null
+  evidenceTarget: string | null
+  reasonCode: string
+  failureClass: ElementGenerationFailureClass
+  detail: string | null
+  suggestions: string[]
+}
+
 export type ElementGenerationDesignSummary = {
   title: string
   elementCount: number

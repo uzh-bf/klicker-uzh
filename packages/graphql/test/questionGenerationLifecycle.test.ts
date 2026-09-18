@@ -172,6 +172,75 @@ function resolvedDesignArtifact() {
   )
 }
 
+function failedResultArtifact(overrides: Record<string, unknown> = {}): Buffer {
+  return Buffer.from(
+    JSON.stringify({
+      schema_version: 1,
+      question_build_id: fixtures.buildId,
+      status: 'failed',
+      generation_policy: 'new_only',
+      requested_questions: 1,
+      generated_questions: 0,
+      final_questions: null,
+      review_required_questions: 0,
+      review_required_question_ids: [],
+      rejected_at: null,
+      reviewed_by: null,
+      ...overrides,
+    })
+  )
+}
+
+function failedBuild() {
+  return {
+    ...preparingBuild(),
+    status: DB.ElementGenerationBuildStatus.FAILED,
+    stage: 'failed',
+    errorCode: 'WORKFLOW_FAILED',
+    resultManifestArtifact: {
+      containerName: 'question-results',
+      blobName: `question-builds/${fixtures.buildId}/result.json`,
+      sha256: 'e'.repeat(64),
+    },
+  }
+}
+
+function failedBuildRuntime(
+  downloadVerified: (ref: unknown) => Promise<Buffer>
+) {
+  return {
+    questionInputContainer: 'question-inputs',
+    questionOutputContainer: 'question-results',
+    questionOutputPrefix: 'question-builds',
+    uploadCreateOnly: vi.fn(),
+    downloadImmutable: vi.fn(),
+    downloadVerified,
+    downloadVerifiedStream: vi.fn(),
+    start: vi.fn(),
+    review: vi.fn(),
+    getRun: vi.fn(),
+    getRunById: vi.fn(),
+    findRunByBuildId: vi.fn(),
+    findRunByQuestionReview: vi.fn(),
+  } satisfies QuestionGenerationRuntime
+}
+
+function failedBuildContext(
+  build: ReturnType<typeof failedBuild>,
+  runtime: ReturnType<typeof failedBuildRuntime>
+) {
+  return {
+    user: { sub: fixtures.ownerId },
+    elementGenerationRuntime: runtime,
+    prisma: {
+      elementGenerationBuild: {
+        findFirst: vi.fn(async () => build),
+        updateMany: vi.fn(async () => ({ count: 1 })),
+      },
+    },
+  }
+}
+
 describe('question-generation preparation lifecycle', () => {
   it('resumes a crash-window build with its durable dispatch attempt', async () => {
     const build = preparingBuild()
@@ -621,6 +690,133 @@ describe('terminal workflow artifact lifecycle', () => {
         }),
       })
     )
+  })
+
+  it('serves the structured slot reasons of a build that fails during the poll', async () => {
+    const build = {
+      ...preparingBuild(),
+      status: DB.ElementGenerationBuildStatus.FINALIZING,
+      providerEventId: 'question-event',
+      providerWorkflowRunId: 'question-run',
+      lastSynchronizedAt: new Date('2026-08-26T12:05:00.000Z'),
+    }
+    const resultArtifact = {
+      containerName: 'question-results',
+      blobName: `question-builds/${fixtures.buildId}/result.json`,
+      sha256: 'e'.repeat(64),
+    }
+    const failedResult = failedResultArtifact({
+      slot_failures: [
+        {
+          slot_id: 'q01',
+          module_id: 'M1',
+          objective: 'Explain malolactic fermentation.',
+          objective_source: 'provided',
+          requested_level: 'apply',
+          evidence_target: 'wine-chemistry.pdf#page=3',
+          reason_code: 'NO_SUPPORTING_DOCUMENTS',
+          failure_class: 'user_input',
+          detail: null,
+          suggestions: ['Malolactic fermentation'],
+        },
+      ],
+    })
+    const failed = {
+      ...build,
+      resultManifestArtifact: resultArtifact,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'WORKFLOW_FAILED',
+    }
+    const updateMany = vi.fn(async () => ({ count: 1 }))
+    const downloadVerified = vi.fn(async () => failedResult)
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(async () => ({
+        ref: resultArtifact,
+        bytes: failedResult,
+      })),
+      downloadVerified,
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(async () => ({
+        runId: 'question-run',
+        status: 'SUCCEEDED' as const,
+      })),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+    } satisfies QuestionGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(failed),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toMatchObject({
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      slotFailures: [
+        {
+          slotId: 'q01',
+          moduleId: 'M1',
+          objective: 'Explain malolactic fermentation.',
+          objectiveSource: 'provided',
+          requestedLevel: 'apply',
+          evidenceTarget: 'wine-chemistry.pdf#page=3',
+          reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+          failureClass: 'user_input',
+          detail: null,
+          suggestions: ['Malolactic fermentation'],
+        },
+      ],
+    })
+    expect(downloadVerified).toHaveBeenCalledWith(resultArtifact)
+  })
+
+  it('serves an empty reason list for a legacy failed artifact', async () => {
+    const build = failedBuild()
+    const runtime = failedBuildRuntime(
+      vi.fn(async () => failedResultArtifact())
+    )
+    const ctx = failedBuildContext(build, runtime)
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toMatchObject({
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      slotFailures: [],
+    })
+  })
+
+  it('keeps the persisted failure surface when the result manifest is unreadable', async () => {
+    const build = failedBuild()
+    const runtime = failedBuildRuntime(
+      vi.fn(async () => Buffer.from('{"status":"failed"}'))
+    )
+    const ctx = failedBuildContext(build, runtime)
+
+    const resolved = await getQuestionGenerationBuild(
+      fixtures.buildId,
+      ctx as never
+    )
+    expect(resolved).toEqual(build)
+    // The legacy fallback stays distinct from a run that reported no failed
+    // slots: the persisted row carries no reason list at all.
+    expect(Object.hasOwn(resolved, 'slotFailures')).toBe(false)
   })
 
   it('fails a successful flashcard workflow whose required artifact is missing', async () => {

@@ -846,6 +846,28 @@ async function synchronizeLeasedBuild(
   }
 }
 
+// The structured per-slot failure reasons are persisted with the result
+// manifest. The build query reads them back for failed builds; a manifest
+// written before the failure surface existed, or an artifact that is no longer
+// readable, keeps the legacy failure surface instead of failing the query.
+async function withQuestionSlotFailureReasons(
+  build: Awaited<ReturnType<typeof findOwnedBuild>>,
+  runtime: QuestionGenerationRuntime
+) {
+  const artifact =
+    build.resultManifestArtifact as QuestionGenerationArtifactRef | null
+  if (!artifact) return build
+  try {
+    const result = parseQuestionGenerationResult(
+      await runtime.downloadVerified(artifact),
+      { buildId: build.id, questionCount: build.requestedElementCount }
+    )
+    return { ...build, slotFailures: result.slotFailures }
+  } catch {
+    return build
+  }
+}
+
 export async function getQuestionGenerationBuild(
   buildId: string,
   ctx: ContextWithUser
@@ -853,10 +875,22 @@ export async function getQuestionGenerationBuild(
   await assertQuestionGenerationPreviewAccess(ctx)
   const build = await findOwnedBuild(buildId, ctx)
   const runtime = ctx.elementGenerationRuntime
-  if (!runtime || TERMINAL_STATUSES.has(build.status)) return build
+  if (!runtime) return build
+  // The reviewing client stops polling on the first settled status, so the
+  // poll that observes a failure has to carry the structured reasons with it.
+  // Every other status keeps the persisted build shape.
+  const withFailureReasons = (current: typeof build) =>
+    current.status === DB.ElementGenerationBuildStatus.FAILED
+      ? withQuestionSlotFailureReasons(current, runtime)
+      : current
+  if (TERMINAL_STATUSES.has(build.status)) {
+    return withFailureReasons(build)
+  }
   assertElementGenerationCostAccounted(build)
   if (build.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT) {
-    return resumePreparingQuestionBuild(build, runtime, ctx)
+    return withFailureReasons(
+      await resumePreparingQuestionBuild(build, runtime, ctx)
+    )
   }
 
   const leaseOwner = await acquireElementGenerationLease(ctx.prisma, {
@@ -870,7 +904,7 @@ export async function getQuestionGenerationBuild(
       await releaseElementGenerationLease(ctx.prisma, build.id, leaseOwner)
     }
   }
-  return findOwnedBuild(buildId, ctx)
+  return withFailureReasons(await findOwnedBuild(buildId, ctx))
 }
 
 function questionReviewState(
