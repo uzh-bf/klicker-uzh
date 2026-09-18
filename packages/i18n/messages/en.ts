@@ -64,6 +64,7 @@ export default {
     },
     credits: {
       title: 'Available credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Every message uses credits — how many depends on the model and the length of the exchange.',
       resetAt: 'Refills on {date}.',
@@ -82,6 +83,9 @@ export default {
       logoAlt: 'Klicker Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
+    },
+    embedded: {
+      close: 'Close chat',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -2610,7 +2614,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
         bloomTitle: "Bloom's taxonomy",
         bloomHelp:
-          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments.',
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments. Higher levels need more detailed source material, so a level can still fail for thin material.',
         bloomLevel: 'Level {level}',
         bloomSelected: 'Selected',
         bloomSelect: 'Select level',

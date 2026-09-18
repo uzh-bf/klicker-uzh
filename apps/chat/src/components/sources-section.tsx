@@ -18,10 +18,12 @@ import { twMerge } from 'tailwind-merge'
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
 import { getSourceNavigationUrl } from '@/src/lib/sources/sourceUrl'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
+import { useChatUi } from './chat-ui-context'
 import {
   partitionSources,
   useMessageSourcesContext,
 } from './message-sources-context'
+import { SourceRow } from './source-row'
 import { SourcePreviewContent } from './source-preview-content'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -147,6 +149,7 @@ function SourceCard({
 
 export function SourcesSection() {
   const t = useTranslations()
+  const { embedded } = useChatUi()
   // Computed once in `AssistantMessage` (see `useMessageSources`) and shared
   // via context with the inline citation chips, instead of re-parsing the
   // tool JSON here again.
@@ -185,6 +188,57 @@ export function SourcesSection() {
   )
 
   const headingId = `chat-sources-heading-${messageId}`
+
+  // Embedded (and other narrow) layouts render the same normalized list as
+  // one compact line per source. No heading block and no border: the heading
+  // carries the count, and every row keeps its tooltip detail, so the compact
+  // form stays an accessibility-equivalent view, not a different feature.
+  if (embedded) {
+    return (
+      <section
+        aria-labelledby={headingId}
+        data-cy="chat-sources-section"
+        className="animate-in fade-in mt-2 min-w-0 duration-300 motion-reduce:animate-none"
+      >
+        <h3
+          ref={headingRef}
+          id={headingId}
+          className="text-muted-foreground mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide"
+        >
+          <BookOpenIcon aria-hidden="true" className="size-3" />
+          {t('chat.sources.title')} · {sources.length}
+        </h3>
+        <ul data-cy="chat-cited-sources" className="flex min-w-0 flex-col">
+          {citedSources.map((source) => (
+            <li key={source.id} className="min-w-0">
+              <SourceRow source={source} />
+            </li>
+          ))}
+          {uncitedSources.length > 0 && (
+            <li>
+              <details data-cy="chat-other-sources" className="mt-0.5">
+                <summary
+                  data-cy="chat-other-sources-toggle"
+                  className="text-muted-foreground cursor-pointer list-none select-none text-[11px] font-semibold uppercase tracking-wide outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {t('chat.sources.otherRetrieved', {
+                    count: uncitedSources.length,
+                  })}
+                </summary>
+                <ul className="mt-0.5 flex flex-col">
+                  {uncitedSources.map((source) => (
+                    <li key={source.id}>
+                      <SourceRow source={source} />
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </li>
+          )}
+        </ul>
+      </section>
+    )
+  }
 
   return (
     <section

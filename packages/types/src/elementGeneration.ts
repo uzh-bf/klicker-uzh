@@ -293,3 +293,12 @@ export const ELEMENT_GENERATION_CAPABILITIES = {
   },
   supportsIndividualRegeneration: false,
 } as const
+
+// The external knowledge-graph payload carries no language, so the generation
+// worker's CourseKGInput defaults every knowledge-base policy to German. Until
+// Klicker sends a language on that payload and stores one on the knowledge base,
+// German is the only policy language a generation can resolve against. This is
+// the offered language for a build, distinct from the languages Klicker could
+// theoretically support.
+export const KB_GRAPH_POLICY_LANGUAGE = 'de' as const
+export const KB_GRAPH_POLICY_LANGUAGES = [KB_GRAPH_POLICY_LANGUAGE] as const
