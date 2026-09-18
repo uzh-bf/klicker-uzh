@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   QUESTION_PARTIAL_RESULTS_ENABLED,
@@ -101,5 +102,19 @@ describe('question-generation partial-result rollout gate', () => {
     expect(questionWorkflowStartManifestSha256(payload)).toBe(
       questionWorkflowStartManifestSha256(legacyPayload)
     )
+  })
+
+  it('is not enabled by any production call site', () => {
+    const servicesDirectory = new URL('../src/services/', import.meta.url)
+    const sources = readdirSync(servicesDirectory)
+      .filter((name) => name.endsWith('.ts'))
+      .map((name) => readFileSync(new URL(name, servicesDirectory), 'utf8'))
+
+    // The override exists for tests only. Any production caller that passed it
+    // would silently enable a capability the deployed worker rejects, so the
+    // absence of an enabling call site is the actual rollout guarantee.
+    expect(
+      sources.filter((source) => source.includes('allowPartialResults: true'))
+    ).toEqual([])
   })
 })
