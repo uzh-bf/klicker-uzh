@@ -18,6 +18,12 @@ const ACTIVE = new Set([
   'requested',
 ])
 
+// A pull_request run is bound to its pull request a moment after creation.
+// A run that still has no binding after this window belongs to a pull request
+// that was closed, merged, or never opened for this head, so nothing consumes
+// its result any more.
+const UNBOUND_MIN_AGE_MS = 24 * 60 * 60 * 1000
+
 function ghApi(endpoint, method = 'GET') {
   const output = execFileSync('gh', ['api', '--method', method, endpoint], {
     encoding: 'utf8',
@@ -41,6 +47,8 @@ function identity(run) {
 }
 
 function allowedRun(run) {
+  const bindings = Array.isArray(run.pull_requests) ? run.pull_requests : null
+  const bound = bindings?.length === 1 ? bindings[0] : null
   return (
     Number.isSafeInteger(run.id) &&
     Number.isSafeInteger(run.workflow_id) &&
@@ -51,10 +59,12 @@ function allowedRun(run) {
     WORKFLOWS.has(run.path?.split('@')[0]) &&
     run.event === 'pull_request' &&
     ACTIVE.has(run.status) &&
-    run.pull_requests?.length === 1 &&
-    run.pull_requests[0].head?.sha === run.head_sha &&
-    run.pull_requests[0].head?.repo?.id === run.head_repository.id &&
-    run.pull_requests[0].base?.repo?.id === run.repository.id
+    bindings !== null &&
+    bindings.length <= 1 &&
+    (bound === null ||
+      (bound.head?.sha === run.head_sha &&
+        bound.head?.repo?.id === run.head_repository.id &&
+        bound.base?.repo?.id === run.repository.id))
   )
 }
 
@@ -65,7 +75,9 @@ async function inspectRun(api, id, expected) {
   if (expected && JSON.stringify(identity(run)) !== JSON.stringify(expected)) {
     return { id, eligible: false, reason: 'run-identity-changed' }
   }
-  const number = run.pull_requests[0].number
+  const bound = run.pull_requests?.[0]
+  if (!bound) return inspectUnboundRun(api, run)
+  const number = bound.number
   const { data: pull } = await api(`${prefix}/pulls/${number}`)
   if (
     pull.number !== number ||
@@ -84,46 +96,20 @@ async function inspectRun(api, id, expected) {
       identity: identity(run),
     }
   }
-  if (pull.state !== 'open' || pull.head.sha === run.head_sha) {
+  if (pull.state !== 'open') {
     return { id, eligible: false, reason: 'current-head' }
   }
-  const runs = await listAll(
-    async ({ page, per_page }) =>
-      api(
-        `${prefix}/actions/workflows/${run.workflow_id}/runs?event=pull_request&branch=${encodeURIComponent(pull.head.ref)}&head_sha=${pull.head.sha}&per_page=${per_page}&page=${page}`
-      ),
-    'workflow_runs'
-  )
-  const matches = runs
-    .filter(
-      (item) =>
-        item.pull_requests?.length === 1 &&
-        item.pull_requests[0].number === number
-    )
-    .sort((a, b) => b.id - a.id)
+  if (pull.head.sha === run.head_sha) {
+    return inspectQueuedDuplicate(api, run, pull, number)
+  }
+  const matches = await listActiveHeadRuns(api, run, pull)
   if (!matches.length || matches[0].id <= id) {
     return { id, eligible: false, reason: 'no-current-replacement' }
   }
   const { data: replacement } = await api(
     `${prefix}/actions/runs/${matches[0].id}`
   )
-  const binding = replacement.pull_requests?.[0]
-  if (
-    replacement.workflow_id !== run.workflow_id ||
-    replacement.path !== run.path ||
-    replacement.event !== 'pull_request' ||
-    replacement.repository?.full_name !== REPOSITORY ||
-    replacement.head_repository?.full_name !== REPOSITORY ||
-    replacement.head_sha !== pull.head.sha ||
-    replacement.head_branch !== pull.head.ref ||
-    replacement.pull_requests?.length !== 1 ||
-    binding?.number !== number ||
-    binding.head?.sha !== pull.head.sha ||
-    binding.base?.sha !== pull.base.sha ||
-    binding.head?.repo?.id !== pull.head.repo.id ||
-    binding.base?.repo?.id !== pull.base.repo.id ||
-    !(ACTIVE.has(replacement.status) || successful(replacement))
-  )
+  if (!bindsReplacement(replacement, run, pull, number))
     return { id, eligible: false, reason: 'unverified-replacement' }
   return {
     id,
@@ -133,6 +119,96 @@ async function inspectRun(api, id, expected) {
     replacement: replacement.id,
     identity: identity(run),
   }
+}
+
+// Every active run for the current head of one pull request, newest first.
+async function listActiveHeadRuns(api, run, pull) {
+  const prefix = `repos/${REPOSITORY}`
+  const runs = await listAll(
+    async ({ page, per_page }) =>
+      api(
+        `${prefix}/actions/workflows/${run.workflow_id}/runs?event=pull_request&branch=${encodeURIComponent(pull.head.ref)}&head_sha=${pull.head.sha}&per_page=${per_page}&page=${page}`
+      ),
+    'workflow_runs'
+  )
+  return runs
+    .filter(
+      (item) =>
+        item.pull_requests?.length === 1 &&
+        item.pull_requests[0].number === pull.number
+    )
+    .sort((a, b) => b.id - a.id)
+}
+
+function bindsReplacement(replacement, run, pull, number) {
+  const binding = replacement.pull_requests?.[0]
+  return (
+    replacement.workflow_id === run.workflow_id &&
+    replacement.path === run.path &&
+    replacement.event === 'pull_request' &&
+    replacement.repository?.full_name === REPOSITORY &&
+    replacement.head_repository?.full_name === REPOSITORY &&
+    replacement.head_sha === pull.head.sha &&
+    replacement.head_branch === pull.head.ref &&
+    replacement.pull_requests?.length === 1 &&
+    binding?.number === number &&
+    binding.head?.sha === pull.head.sha &&
+    binding.base?.sha === pull.base.sha &&
+    binding.head?.repo?.id === pull.head.repo.id &&
+    binding.base?.repo?.id === pull.base.repo.id &&
+    (ACTIVE.has(replacement.status) || successful(replacement))
+  )
+}
+
+// Two active runs for one workflow and one head test the same tree. When the
+// older one is still queued it has consumed no runner time, and the newer run
+// carries the authoritative plan for the current pull-request state, so the
+// older queue entry is pure waiting.
+async function inspectQueuedDuplicate(api, run, pull, number) {
+  const id = run.id
+  if (run.status !== 'queued') {
+    return { id, eligible: false, reason: 'current-head' }
+  }
+  const matches = await listActiveHeadRuns(api, run, pull)
+  const newer = matches.filter((item) => item.id > id)
+  if (!newer.length) return { id, eligible: false, reason: 'current-head' }
+  const { data: replacement } = await api(
+    `repos/${REPOSITORY}/actions/runs/${newer[0].id}`
+  )
+  if (!bindsReplacement(replacement, run, pull, number)) {
+    return { id, eligible: false, reason: 'unverified-replacement' }
+  }
+  return {
+    id,
+    eligible: true,
+    reason: 'redundant-queued-duplicate',
+    pull: number,
+    replacement: replacement.id,
+    identity: identity(run),
+  }
+}
+
+// A pull_request run that never received its pull-request binding cannot feed a
+// required status any more. Its result is only safe to drop once the binding
+// window has passed and no open pull request claims the same head, because the
+// binding appears a moment after creation.
+async function inspectUnboundRun(api, run) {
+  const id = run.id
+  const created = Date.parse(run.created_at ?? '')
+  if (!Number.isFinite(created) || Date.now() - created < UNBOUND_MIN_AGE_MS) {
+    return { id, eligible: false, reason: 'unbound-recent' }
+  }
+  const owner = REPOSITORY.split('/')[0]
+  const { data: pulls } = await api(
+    `repos/${REPOSITORY}/pulls?state=open&head=${encodeURIComponent(`${owner}:${run.head_branch}`)}`
+  )
+  if (
+    !Array.isArray(pulls) ||
+    pulls.some((pull) => pull.head?.sha === run.head_sha)
+  ) {
+    return { id, eligible: false, reason: 'unbound-live-head' }
+  }
+  return { id, eligible: true, reason: 'unbound-head', identity: identity(run) }
 }
 
 async function inventory(api) {

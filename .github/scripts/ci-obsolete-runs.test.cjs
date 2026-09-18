@@ -232,3 +232,167 @@ test('API errors during mutation preflight never trigger cancellation', async ()
   await assert.rejects(cancelRun(failed, 10), /rate limited/)
   assert.deepEqual(state.writes, [])
 })
+
+// The current head can legitimately own more than one active run: a push and a
+// pull-request event for the same branch land in different concurrency groups.
+// The older queued entry has consumed nothing, so it is safe to drop while the
+// newer run carries the plan for the current pull-request state.
+function duplicateFixture({
+  olderStatus = 'queued',
+  newerStatus = 'queued',
+} = {}) {
+  const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+  const head = { sha: 'head', repo }
+  const binding = { number: 3, head, base: { sha: 'base', repo } }
+  const run = {
+    id: 10,
+    workflow_id: 2,
+    run_attempt: 1,
+    path: '.github/workflows/test-playwright.yml',
+    event: 'pull_request',
+    status: olderStatus,
+    head_sha: 'head',
+    head_branch: 'branch',
+    repository: repo,
+    head_repository: repo,
+    pull_requests: [binding],
+  }
+  const newer = { ...run, id: 12, status: newerStatus }
+  const pull = {
+    number: 3,
+    state: 'open',
+    head: { sha: 'head', ref: 'branch', repo },
+    base: { sha: 'base', repo },
+  }
+  const state = { run, newer, pull, ids: [newer], writes: [] }
+  const api = async (endpoint, method = 'GET') => {
+    if (method === 'POST') {
+      state.writes.push(endpoint)
+      return { data: null }
+    }
+    if (endpoint.endsWith('/runs/10'))
+      return { data: structuredClone(state.run) }
+    if (endpoint.endsWith('/runs/12'))
+      return { data: structuredClone(state.newer) }
+    if (endpoint.endsWith('/pulls/3')) return { data: state.pull }
+    if (endpoint.includes('/workflows/2/runs?'))
+      return {
+        data: { total_count: state.ids.length, workflow_runs: [...state.ids] },
+      }
+    throw new Error(`Unexpected endpoint ${endpoint}`)
+  }
+  return { state, api }
+}
+
+test('a queued duplicate for the current head is redundant', async () => {
+  const { state, api } = duplicateFixture()
+  const result = await inspectRun(api, 10)
+  assert.equal(result.eligible, true)
+  assert.equal(result.reason, 'redundant-queued-duplicate')
+  assert.equal(result.replacement, 12)
+  assert.deepEqual(state.writes, [])
+})
+
+test('a duplicate that already started keeps running', async () => {
+  const { api } = duplicateFixture({ olderStatus: 'in_progress' })
+  assert.equal((await inspectRun(api, 10)).reason, 'current-head')
+})
+
+test('a sole queued run for the current head is never redundant', async () => {
+  const { state, api } = duplicateFixture()
+  state.ids = [state.run]
+  assert.equal((await inspectRun(api, 10)).reason, 'current-head')
+})
+
+test('a newer duplicate only from another workflow is not a replacement', async () => {
+  const { state, api } = duplicateFixture()
+  state.newer.workflow_id = 9
+  assert.equal((await inspectRun(api, 10)).reason, 'unverified-replacement')
+})
+
+// A pull_request run whose binding never appeared belongs to a pull request that
+// was closed, merged, or never opened for this head; nothing reads its result.
+function unboundFixture({ created, openPulls }) {
+  const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+  const run = {
+    id: 20,
+    workflow_id: 2,
+    run_attempt: 1,
+    path: '.github/workflows/test-playwright.yml',
+    event: 'pull_request',
+    status: 'queued',
+    head_sha: 'orphan',
+    head_branch: 'rs/audit-ci-fixtures',
+    created_at: created,
+    repository: repo,
+    head_repository: repo,
+    pull_requests: [],
+  }
+  const api = async (endpoint) => {
+    if (endpoint.endsWith('/runs/20')) return { data: structuredClone(run) }
+    if (endpoint.includes('/pulls?state=open')) return { data: openPulls }
+    throw new Error(`Unexpected endpoint ${endpoint}`)
+  }
+  return api
+}
+
+test('an unbound run whose binding never appeared is abandoned', async () => {
+  const created = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  const result = await inspectRun(
+    unboundFixture({ created, openPulls: [] }),
+    20
+  )
+  assert.equal(result.eligible, true)
+  assert.equal(result.reason, 'unbound-head')
+})
+
+test('an unbound run inside the binding window is preserved', async () => {
+  const created = new Date(Date.now() - 60 * 1000).toISOString()
+  const result = await inspectRun(
+    unboundFixture({ created, openPulls: [] }),
+    20
+  )
+  assert.equal(result.eligible, false)
+  assert.equal(result.reason, 'unbound-recent')
+})
+
+test('an unbound run whose head an open pull request claims is preserved', async () => {
+  const created = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+  const result = await inspectRun(
+    unboundFixture({
+      created,
+      openPulls: [{ number: 3, head: { sha: 'orphan', repo } }],
+    }),
+    20
+  )
+  assert.equal(result.eligible, false)
+  assert.equal(result.reason, 'unbound-live-head')
+})
+
+test('an unbound run without a creation timestamp is preserved', async () => {
+  const result = await inspectRun(
+    unboundFixture({ created: undefined, openPulls: [] }),
+    20
+  )
+  assert.equal(result.eligible, false)
+  assert.equal(result.reason, 'unbound-recent')
+})
+
+test('the run policy admits an unbound pull-request run', () => {
+  const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+  assert.equal(
+    allowedRun({
+      id: 21,
+      workflow_id: 2,
+      run_attempt: 1,
+      path: '.github/workflows/test-playwright.yml',
+      event: 'pull_request',
+      status: 'queued',
+      repository: repo,
+      head_repository: repo,
+      pull_requests: [],
+    }),
+    true
+  )
+})

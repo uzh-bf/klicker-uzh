@@ -1320,3 +1320,61 @@ required from the user.
   belongs to a different head, and asserts `should_run=true` every time. It is
   not reproduced on the live repository because that would require deliberately
   publishing a failing suite.
+- 2026-09-18 queue forensics and obsolete-run hygiene (branch
+  `rs/ci-obsolete-run-hygiene`). A live snapshot at 07:24 took 132 queued workflow
+  runs: Playwright 15, Final AI review 14, unit 11, GraphQL 11, OLAT-API 10,
+  Promote to stg 10, lecturer MCP 8, translation context 8, gitleaks 5, check 4,
+  CodeQL 3, Build Fallback 3, and 16 staging image builds. The reaper inventory
+  (`node .github/scripts/ci-obsolete-runs.cjs`) returned 31 active runs and
+  rejected every one as `current-head`.
+
+  **Six of the fifteen queued Playwright runs were redundant.** Three were
+  same-head pairs, one per branch: `de900cbe` on `rs/v3-audit-sync-20260918`
+  (`35318160764` with `35318351559`), `5b4f5949` on `v3-ai` (`35317794684` with
+  `35317799687`) and `cdf50fe3` on `rs/v3-ai-sync-20260917b` (`35317150179` with
+  `35317775815`). A push and a pull-request event for one branch use different
+  concurrency groups, because the group key falls back to `github.ref_name` for
+  pushes and uses the pull-request number otherwise, so neither event cancels
+  the other and both create a wave for the same tree. `35245361536`
+  (`rs/kg-focus-topic-ui`) waited about fifteen hours, and `34749125387`
+  (`rs/audit-ci-fixtures`) has been queued since 2026-09-13 with `updated_at`
+  equal to `created_at`, so it never reached a runner.
+
+  **Why the existing reaper could not touch them.** `allowedRun` required exactly
+  one pull-request binding, so the September 13 run, whose `pull_requests` array
+  is empty, was outside the policy entirely. For runs that are bound, `inspectRun`
+  returned `current-head` as soon as the run's sha matched the pull request head,
+  which is exactly the duplicate case: both runs are current-head by definition.
+  The reaper therefore had no path for either gap.
+
+  **What the fix adds.** Two reasons. `redundant-queued-duplicate` applies when
+  the run is still `queued`, so it has consumed no runner time, and a newer run of
+  the same workflow already covers the same head; the newer run carries the
+  authoritative plan and is validated by the same `bindsReplacement` contract the
+  superseded-head path uses. `unbound-head` applies to a pull-request run with no
+  binding whose head no open pull request claims, gated on a 24-hour window
+  because GitHub attaches the binding a moment after creation and a newer pull
+  request can still claim the same head. A run that does not satisfy either rule
+  keeps its previous verdict, so nothing that could still report a required
+  status is dropped.
+
+  **Live verification.** `--run-id 34749125387` now reports
+  `eligible=true, reason=unbound-head`; `35318160764` reports
+  `unbound-recent`, correctly refusing to cancel a 24-hour-young unbound run;
+  `35316321922` reports `current-head`; and `35317794684` is
+  `outside-policy` because it completed before the query. Nine new tests cover a
+  redundant queued duplicate, a duplicate that already started, a sole queued run,
+  a newer run from another workflow, an abandoned unbound run, the binding
+  window, a live pull request on the same head, a missing creation timestamp, and
+  the relaxed run policy; all 33 tests pass.
+
+  **The docs-only routing premise in the 2026-09-16 ranking is stale.** Rank 3
+  assumed a prose-only pull request pays a full typecheck. Step timings from
+  check run `35316998769` show the opposite: `Check Next.js development
+  configuration and readiness` 117s, install 56s, `Check linting` 29s, checkout
+  20s, KB lifecycle contracts 18s and file formatting 10s, while `Build packages
+  for typecheck (turbo)` took 1s and `Check typescript types`, `Check Prisma
+  schema sync drift`, `Check syncpack conformity` and knip took 0 to 1s each
+  because the turbo affected filter and the remote cache already collapse them.
+  A docs-only fast path would save at most the 29s lint step, so rank 3 should
+  drop below the review and deployment fan-out it was ranked above.

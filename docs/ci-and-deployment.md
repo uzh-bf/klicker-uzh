@@ -148,11 +148,20 @@ After reviewing exact IDs, apply normal cancellation:
 node .github/scripts/ci-obsolete-runs.cjs --apply --run-id <run-id>
 ```
 
-The utility only accepts allowlisted PR validation runs whose PR is closed or
-whose old head has a verified current replacement in the same workflow. It
+The utility accepts allowlisted PR validation runs in four cases: the PR is
+closed, the run's old head has a verified current replacement in the same
+workflow, the run is still queued while a newer run of the same workflow
+already covers the current head, or the run is a pull-request run whose
+pull-request binding never appeared while no open pull request claims its head.
+The third case exists because a push and a pull-request event for one branch use
+different concurrency groups, so both can create a run for the same head; the
+queued older entry has consumed no runner time and the newer run carries the
+authoritative plan. The fourth case is the only one judged by age: the run must
+be older than the 24-hour binding window, because GitHub attaches the binding a
+moment after creation and a newer pull request can still claim the same head. It
 revalidates repository, PR, workflow, head and attempt before cancellation and
-checks the terminal result. It never cancels by age, and excludes pushes,
-manual runs, image publication, deployments and final-review status writers.
+checks the terminal result. It excludes pushes, manual runs, image publication,
+deployments and final-review status writers.
 Incomplete API evidence stops the operation. If a verified obsolete run retains
 an `always()` tail, `--apply --force --run-id <run-id>` first attempts ordinary
 cancellation, then revalidates before force cancellation. Unconfirmed readback
