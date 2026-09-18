@@ -416,7 +416,9 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
 
         // The completion request fails with a generic (non-conflict) error,
         // which previously left the local intent and acknowledgement intact.
-        if (operationName === completionOperation) {
+        // Only this first attempt fails; the deliberate retry after the
+        // reload must reach the API.
+        if (operationName === completionOperation && failedCompletions === 0) {
           failedCompletions += 1
           await route.fulfill({
             status: 200,
@@ -439,7 +441,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       })
 
       // Tab A selects Learning Analytics = yes and submits.
-      await page.getByTestId('account-data-use-analytics-yes').click()
+      await page.getByTestId('account-data-use-analytics-true').click()
       await page.getByTestId('account-data-use-acknowledged').click()
       await expect(page.getByTestId('account-data-use-submit')).toBeEnabled()
       await page.getByTestId('account-data-use-submit').click()
@@ -458,7 +460,9 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       await secondPage
         .locator(dataCy('account-data-use-research-false'))
         .click()
-      await secondPage.locator(dataCy('account-data-use-analytics-no')).click()
+      await secondPage
+        .locator(dataCy('account-data-use-analytics-false'))
+        .click()
       await secondPage.locator(dataCy('account-data-use-acknowledged')).click()
       await secondPage.locator(dataCy('account-data-use-submit')).click()
       await expect(secondPage).not.toHaveURL(/\/account\/data-use$/)
@@ -480,7 +484,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       // stale choice or silently overwrite tab B.
       releaseRefetch()
       await expect(
-        page.getByTestId('account-data-use-analytics-no')
+        page.getByTestId('account-data-use-analytics-false')
       ).toHaveAttribute('aria-checked', 'true')
       await expect(page.getByTestId('account-data-use-submit')).toBeDisabled()
       await expect(
