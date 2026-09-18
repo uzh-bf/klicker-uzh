@@ -360,3 +360,9 @@ Updated 2026-09-18.
   `biome format --write` and the Prettier check now pass on the full changed
   file set; the fix is committed on both branches (`d36ecf4c93` here,
   `17d6795d15` on `v3`).
+- **Vitest spec drift fixed on this line.** Merging `v3` brought in the exact
+  `3.2.4` pin from #6137, but ten audit-only packages still floated on
+  `~3.2.4`, so `syncpack lint` failed the codebase check here while `v3`
+  passed. The manifests now carry the exact pin (`95b9020a0d`); the lockfile
+  already recorded `specifier: 3.2.4` for all ten, so no dependency
+  re-resolution was needed. `check-suite` is green on both heads again.
