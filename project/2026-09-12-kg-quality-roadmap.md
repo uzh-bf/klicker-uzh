@@ -1,7 +1,7 @@
 # Knowledge graph quality roadmap
 
 Date: 2026-09-12  
-Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12; a 2026-09-13 investigation added the focus-topic control design to W8 and the improvement levers. Remaining roadmap acceptance work is listed below.  
+Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12; a 2026-09-13 investigation added the focus-topic control design to W8 and the improvement levers; a 2026-09-14 follow-up delivered the lecturer-facing generation-language selector. Remaining roadmap acceptance work is listed below.  
 Scope: graph generation and its use in content generation, chatbot retrieval, and lecturer review.  
 Parent: [six-domain selection plan](2026-09-11-kg-domain-selection-plan.md).
 
@@ -95,6 +95,7 @@ The [existing production roadmap](2026-08-10-kb-graph-production-roadmap.md) own
 | Lever                         | Current foothold                                                                                              | Proposed quality improvement and tradeoff                                                                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Domain selection              | Six explicit policies: Finance, Economics, Business Administration, Mathematics, Informatics, General / Mixed | Tune entity definitions, relation guidance, examples, exclusion and retention rules. More specific labels help only when they preserve the right concepts and relations |
+| Generation language           | Delivered selector for German and English; Klicker freezes it with the policy pair and every catalog policy ships both category sets  | Evaluate whether one language's categories fit sources written in the other. The control is explicit, so it never follows the UI locale                                              |
 | Course context                | Policy supports terminology, themes, audience, and bounded overrides; UI currently selects a domain           | Add justified course-level context after evaluation. Avoid silently inferring a domain or exposing a large prompt editor                                                |
 | Document conversion           | Existing ingestion and page/source identity                                                                   | Preserve headings, table structure, formulas, code, captions, and reading order. Multimodal extraction adds cost and a data boundary; use it only for demonstrated gaps |
 | Chunking and context          | Worker uses fixed-token chunking; size, overlap, and gleaning are recipe inputs                               | Compare structure-aware sections and parent context with fixed chunks. Larger context may improve cross-sentence relations but dilute extraction and increase cost      |
@@ -156,7 +157,7 @@ Completion: consumers can resolve a selected claim to authorized matching source
 
 Evaluate all six policies on type assignment, important-concept retention, useful relationships, and downstream tasks. Revise examples and definitions, not just allowed names. Test domain-confusable concepts, German/English terminology, mixed material, and course-specific notation. Use bounded existing policy overrides for audience, terminology, and exclusions before proposing new UI controls.
 
-Completion: versioned policy candidates improve a declared target without material regressions in other domain/use-case strata. Compare specialist versus General / Mixed on identical sources and holdout tasks; report where the generic policy remains preferable. Keep v1 immutable and retries pinned. Expose a new version only through existing capability/catalog checks. Any change to generation language or automatic domain selection is a separate product decision; UI locale alone must not change the ontology.
+Completion: versioned policy candidates improve a declared target without material regressions in other domain/use-case strata. Compare specialist versus General / Mixed on identical sources and holdout tasks; report where the generic policy remains preferable. Keep v1 immutable and retries pinned. Expose a new version only through existing capability/catalog checks. The generation language is the lecturer's explicit choice as of 2026-09-14, and UI locale alone must never change it or the ontology; automatic domain selection remains a separate product decision.
 
 **W7 — Model, embedding, and compute calibration.** Owner: evaluation/generator engineer. Dependency: W1 and W2–W3; use stable corpus/policy variants. Size: medium, bounded experiments.
 

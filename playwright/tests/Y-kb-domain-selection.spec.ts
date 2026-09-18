@@ -48,6 +48,32 @@ function domainLabels(messages: MessageCatalog): Record<string, string> {
 const EN_DOMAIN_LABELS = domainLabels(enMessages as unknown as MessageCatalog)
 const DE_DOMAIN_LABELS = domainLabels(deMessages as unknown as MessageCatalog)
 
+// The generation-language control resolves its labels through the same shipped
+// catalogs, so the spec never restates product copy.
+type LanguageMessageCatalog = { kb: Record<string, string> }
+const LANGUAGE_MESSAGE_KEYS: Record<string, string> = {
+  German: 'graphDomainLanguageGerman',
+  English: 'graphDomainLanguageEnglish',
+}
+
+function domainLanguageLabels(
+  messages: LanguageMessageCatalog
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(LANGUAGE_MESSAGE_KEYS).map(([language, key]) => [
+      language,
+      messages.kb[key],
+    ])
+  )
+}
+
+const EN_LANGUAGE_LABELS = domainLanguageLabels(
+  enMessages as unknown as LanguageMessageCatalog
+)
+const DE_LANGUAGE_LABELS = domainLanguageLabels(
+  deMessages as unknown as LanguageMessageCatalog
+)
+
 // Synthetic German node types used as catalog input.
 const GERMAN_CATEGORIES: Record<string, Array<[string, string]>> = {
   finance: [
@@ -79,36 +105,78 @@ const GERMAN_CATEGORIES: Record<string, Array<[string, string]>> = {
 const BUSINESS_CATEGORIES = GERMAN_CATEGORIES.business.map(([name]) => name)
 const ECONOMICS_CATEGORIES = GERMAN_CATEGORIES.economics.map(([name]) => name)
 
+// The English counterpart of one catalog language. A generation language is
+// only observable through the category names it resolves, so the spec asserts
+// the visible switch between the two name sets.
+const ENGLISH_CATEGORIES: Record<string, Array<[string, string]>> = {
+  finance: [
+    ['Financing', 'Capital structure and financing decisions.'],
+    ['Asset Classes', 'Portfolio choice and valuation.'],
+  ],
+  economics: [
+    ['Markets', 'Supply, demand and price formation.'],
+    ['Business Cycle', 'Growth, inflation and employment.'],
+  ],
+  business: [
+    ['Accounting', 'Financial reporting and bookkeeping.'],
+    ['Sales', 'Customer value and market cultivation.'],
+  ],
+  mathematics: [
+    ['Vector Spaces', 'Vector spaces and linear maps.'],
+    ['Probability', 'Random variables and distributions.'],
+  ],
+  informatics: [
+    ['Algorithms', 'Correctness and complexity of procedures.'],
+    ['Databases', 'Relational modelling and queries.'],
+  ],
+  'general-academic': [
+    ['Research Methods', 'Planning and evaluating studies.'],
+    ['Literature Work', 'Structuring academic texts.'],
+  ],
+}
+
+const BUSINESS_EN_CATEGORIES = ENGLISH_CATEGORIES.business.map(([name]) => name)
+
+const CATEGORIES_BY_LANGUAGE: Record<
+  string,
+  Record<string, Array<[string, string]>>
+> = { German: GERMAN_CATEGORIES, English: ENGLISH_CATEGORIES }
+
 function syntheticDomainOption(
   id: string,
   version = 1,
-  language = 'German'
+  languages: readonly string[] = ['German']
 ): SyntheticDomainOption {
   return {
     id,
     version,
     labelKey: id,
-    languages: [
-      {
-        language,
-        categories: (GERMAN_CATEGORIES[id] ?? []).map(([name, definition]) => ({
+    languages: languages.map((language) => ({
+      language,
+      categories: (CATEGORIES_BY_LANGUAGE[language]?.[id] ?? []).map(
+        ([name, definition]) => ({
           name,
           definition,
-        })),
-      },
-    ],
+        })
+      ),
+    })),
   }
 }
 
-function domainCatalog(ids: readonly string[]): SyntheticDomainOption[] {
-  return ids.map((id) => syntheticDomainOption(id))
+function domainCatalog(
+  ids: readonly string[],
+  languages: readonly string[] = ['German']
+): SyntheticDomainOption[] {
+  return ids.map((id) => syntheticDomainOption(id, 1, languages))
 }
 
-function domainCategoriesFor(id: string): SyntheticCategory[] {
-  return (GERMAN_CATEGORIES[id] ?? []).map(([name, definition]) => ({
-    name,
-    definition,
-  }))
+function domainCategoriesFor(
+  id: string,
+  language = 'German'
+): SyntheticCategory[] {
+  return (CATEGORIES_BY_LANGUAGE[language]?.[id] ?? []).map(
+    ([name, definition]) => ({ name, definition })
+  )
 }
 
 type DomainMockState = {
@@ -301,6 +369,11 @@ async function selectDomain(page: Page, label: string) {
   await page.getByRole('option', { name: label }).click()
 }
 
+async function selectDomainLanguage(page: Page, label: string) {
+  await page.getByTestId('kb-knowledge-graph-domain-language').click()
+  await page.getByRole('option', { name: label }).click()
+}
+
 async function expectDomainOptions(page: Page, labels: Record<string, string>) {
   await page.getByTestId('kb-knowledge-graph-domain').click()
   await expect(page.getByRole('option')).toHaveCount(DOMAIN_IDS.length)
@@ -326,7 +399,10 @@ test.describe('Knowledge base domain selection', () => {
     const kbName = `Domain catalog ${Date.now()}`
     const state: DomainMockState = {
       capabilityEnabled: true,
-      options: domainCatalog(DOMAIN_IDS),
+      // The catalog serves both generation languages here, because the
+      // language switch is only observable through the category names a served
+      // language resolves.
+      options: domainCatalog(DOMAIN_IDS, ['German', 'English']),
       config: {},
       rebuildVariables: [],
     }
@@ -343,6 +419,12 @@ test.describe('Knowledge base domain selection', () => {
       await expect(domainSelect).toBeEnabled()
       await expect(domainSelect).toContainText(EN_DOMAIN_LABELS.finance)
       await expectDomainOptions(page, EN_DOMAIN_LABELS)
+      // The generation language is an explicit control that defaults to German
+      // and is never derived from the interface locale.
+      const languageSelect = page.getByTestId(
+        'kb-knowledge-graph-domain-language'
+      )
+      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.German)
 
       await selectDomain(page, EN_DOMAIN_LABELS.business)
       const categories = page.getByTestId(
@@ -351,6 +433,29 @@ test.describe('Knowledge base domain selection', () => {
       await expect(categories).toBeVisible()
       await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
       await expect(categories).toContainText(BUSINESS_CATEGORIES[1])
+
+      // Switching the generation language switches the categories the build
+      // will use, without touching the interface language.
+      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.English)
+      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.English)
+      await expect(categories).toContainText(BUSINESS_EN_CATEGORIES[0])
+      await expect(categories).toContainText(BUSINESS_EN_CATEGORIES[1])
+      await expect(categories).not.toContainText(BUSINESS_CATEGORIES[0])
+
+      // The generation language is only visible through the control and the
+      // category names it resolves, so the gallery keeps one capture of the
+      // non-default language.
+      await mkdir(galleryDirectory, { recursive: true })
+      await page.setViewportSize({ width: 1440, height: 1000 })
+      await page.screenshot({
+        path: fileURLToPath(
+          new URL('kb-domain-language-en-desktop.png', galleryDirectory)
+        ),
+        fullPage: true,
+      })
+
+      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.German)
+      await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
 
       await mkdir(galleryDirectory, { recursive: true })
       await page.setViewportSize({ width: 1440, height: 1000 })
@@ -381,18 +486,35 @@ test.describe('Knowledge base domain selection', () => {
         domainPolicyLanguage: 'German',
       })
 
+      // An explicitly chosen generation language is submitted with the pair.
+      await expect(rebuild).toBeEnabled()
+      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.English)
+      await rebuild.click()
+      await expect.poll(() => state.rebuildVariables.length).toBe(2)
+      expect(state.rebuildVariables[1]).toEqual({
+        kbId,
+        qualityTier: 'STANDARD',
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      })
+      await expect(rebuild).toBeEnabled()
+      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.German)
+
       // A pending build disables the control and swallows a duplicate submit.
       let releaseRebuild = () => {}
       state.rebuildGate = new Promise<void>((resolve) => {
         releaseRebuild = resolve
       })
+      await expect(rebuild).toBeEnabled()
       await rebuild.click()
-      await expect.poll(() => state.rebuildVariables.length).toBe(2)
+      await expect.poll(() => state.rebuildVariables.length).toBe(3)
       await expect(domainSelect).toBeDisabled()
+      await expect(languageSelect).toBeDisabled()
       await expect(rebuild).toBeDisabled()
       await rebuild.dispatchEvent('click')
       await page.waitForTimeout(250)
-      expect(state.rebuildVariables.length).toBe(2)
+      expect(state.rebuildVariables.length).toBe(3)
       releaseRebuild()
       state.rebuildGate = undefined
 
@@ -516,11 +638,12 @@ test.describe('Knowledge base domain selection', () => {
         page.getByTestId('kb-knowledge-graph-rebuild')
       ).toBeDisabled()
 
-      // A retained pair the catalog keeps only in English cannot generate the
-      // German categories, so it stays blocked until an explicit valid choice.
+      // A retained pair the catalog keeps only in English cannot serve the
+      // retained German generation language, so it stays blocked until an
+      // explicit valid choice.
       state.options = [
         ...domainCatalog(DOMAIN_IDS.filter((id) => id !== 'business')),
-        syntheticDomainOption('business', 1, 'English'),
+        syntheticDomainOption('business', 1, ['English']),
       ]
       await page.reload()
       await expect(
@@ -554,6 +677,71 @@ test.describe('Knowledge base domain selection', () => {
       expect(state.rebuildVariables[0]).toMatchObject({
         domainPolicyId: 'business',
         domainPolicyVersion: 2,
+        domainPolicyLanguage: 'German',
+      })
+    } finally {
+      await deleteKnowledgeBase(page, manageUrl, kbName)
+    }
+  })
+
+  test('restores the stored generation language and submits it with the pair', async ({
+    loginLecturer,
+    page,
+  }) => {
+    await loginLecturer()
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const kbName = `Domain language ${Date.now()}`
+    const state: DomainMockState = {
+      capabilityEnabled: true,
+      options: domainCatalog(DOMAIN_IDS, ['German', 'English']),
+      config: {
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+        domainCategories: domainCategoriesFor('business', 'English'),
+      },
+      rebuildVariables: [],
+    }
+    let detailPath: string | undefined
+
+    try {
+      await installKnowledgeGraphMocks(page, state)
+      detailPath = await createKnowledgeBase(page, manageUrl, kbName)
+      await openKnowledgeGraphPanel(page, manageUrl, detailPath)
+
+      const languageSelect = page.getByTestId(
+        'kb-knowledge-graph-domain-language'
+      )
+      // The stored build language wins over the German default and the English
+      // category set is shown for it.
+      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.English)
+      const categories = page.getByTestId(
+        'kb-knowledge-graph-domain-categories'
+      )
+      await expect(categories).toContainText(BUSINESS_EN_CATEGORIES[0])
+
+      // A catalog that no longer serves the stored language keeps the pair
+      // readable and blocks the rebuild until the lecturer picks one it serves.
+      state.options = domainCatalog(DOMAIN_IDS)
+      await page.reload()
+      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.English)
+      await expect(
+        page.getByTestId('kb-knowledge-graph-domain-unsupported')
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('kb-knowledge-graph-rebuild')
+      ).toBeDisabled()
+
+      // Picking a served language unblocks the rebuild and is submitted.
+      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.German)
+      const rebuild = page.getByTestId('kb-knowledge-graph-rebuild')
+      await expect(rebuild).toBeEnabled()
+      await rebuild.click()
+      await expect.poll(() => state.rebuildVariables.length).toBe(1)
+      expect(state.rebuildVariables[0]).toMatchObject({
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
         domainPolicyLanguage: 'German',
       })
     } finally {
