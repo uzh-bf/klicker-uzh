@@ -8,6 +8,9 @@ on:
     types: [opened, synchronize, reopened, edited]
 permissions:
   contents: read
+  # The selector reads this workflow's prior required-status result for the head
+  # to decide whether a metadata-only edit may skip the suite.
+  checks: read
 concurrency:
   group: intl-production-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -24,6 +27,7 @@ jobs:
         uses: ./.github/actions/changed-paths
         with:
           pattern: '^(apps/frontend-pwa/|apps/frontend-manage/|apps/frontend-control/|apps/auth/|apps/chat/|packages/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.npmrc$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-intl-production\.yml$|\.github/scripts/intl-production-smoke\.mjs$|\.github/fixtures/intl-production/|util/test-intl-resolution\.mjs$|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          prior-check-name: test-intl-production-status
 
   intl-production-smoke:
     name: intl-production-smoke (${{ matrix.app }})
