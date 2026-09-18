@@ -69,7 +69,9 @@ function pushContext() {
 }
 
 test('the plan outputs round-trip through the environment', () => {
-  const plan = readPlanFromEnv(planEnv({ scanJobNames: ['scan-arm-backend-docker'] }))
+  const plan = readPlanFromEnv(
+    planEnv({ scanJobNames: ['scan-arm-backend-docker'] })
+  )
   assert.deepEqual(plan.buildJobNames, ['build-arm-auth'])
   assert.deepEqual(plan.scanJobNames, ['scan-arm-backend-docker'])
   assert.equal(plan.state, 'run')
@@ -78,7 +80,8 @@ test('the plan outputs round-trip through the environment', () => {
 
 test('a malformed plan list fails closed instead of parsing as empty', () => {
   assert.throws(
-    () => readPlanFromEnv({ ...planEnv(), PLAN_BUILD_JOB_NAMES: 'build-arm-auth' }),
+    () =>
+      readPlanFromEnv({ ...planEnv(), PLAN_BUILD_JOB_NAMES: 'build-arm-auth' }),
     /not valid JSON/
   )
   assert.throws(
@@ -90,7 +93,11 @@ test('a malformed plan list fails closed instead of parsing as empty', () => {
 test('a selected run requires every planned job exactly once', () => {
   const plan = readPlanFromEnv(planEnv())
   assert.equal(
-    determineStagingDecision({ binding: binding(), observedJobs: [job('build-arm-auth')], plan }).ok,
+    determineStagingDecision({
+      binding: binding(),
+      observedJobs: [job('build-arm-auth')],
+      plan,
+    }).ok,
     true
   )
   const missing = determineStagingDecision({
@@ -127,7 +134,9 @@ test('a still-running leg is retryable rather than immediately failed', () => {
   const plan = readPlanFromEnv(planEnv())
   const decision = determineStagingDecision({
     binding: binding(),
-    observedJobs: [job('build-arm-auth', { conclusion: null, status: 'in_progress' })],
+    observedJobs: [
+      job('build-arm-auth', { conclusion: null, status: 'in_progress' }),
+    ],
     plan,
   })
   assert.equal(decision.ok, false)
@@ -165,7 +174,10 @@ test('a failed plan blocks even when it selected targets', () => {
     binding: binding(),
     observedJobs: [job('build-arm-auth')],
     plan: readPlanFromEnv(
-      planEnv({ result: 'failure', reason: 'changed-file selection is unavailable' })
+      planEnv({
+        result: 'failure',
+        reason: 'changed-file selection is unavailable',
+      })
     ),
   })
   assert.equal(decision.ok, false)
@@ -188,7 +200,11 @@ test('the evidence artifact keeps the shared promotion contract', () => {
   const plan = readPlanFromEnv(planEnv())
   const evidence = buildStagingEvidence({
     binding: binding(),
-    decision: { ok: true, reason: 'all 1 selected image build job(s) succeeded', state: 'run' },
+    decision: {
+      ok: true,
+      reason: 'all 1 selected image build job(s) succeeded',
+      state: 'run',
+    },
     plan,
   })
   assert.equal(evidence.schemaVersion, EVIDENCE_SCHEMA_VERSION)
@@ -214,7 +230,9 @@ test('the evaluator writes evidence and fails the job on a block', async () => {
       actions: {
         listJobsForWorkflowRunAttempt: async (params) => {
           calls.push(params)
-          return { data: { jobs: [job('build-arm-auth', { conclusion: 'failure' })] } }
+          return {
+            data: { jobs: [job('build-arm-auth', { conclusion: 'failure' })] },
+          }
         },
       },
     },
@@ -249,7 +267,10 @@ test('the evaluator polls a running leg to completion', async () => {
             data: {
               jobs: [
                 call === 1
-                  ? job('build-arm-auth', { conclusion: null, status: 'in_progress' })
+                  ? job('build-arm-auth', {
+                      conclusion: null,
+                      status: 'in_progress',
+                    })
                   : job('build-arm-auth'),
               ],
             },

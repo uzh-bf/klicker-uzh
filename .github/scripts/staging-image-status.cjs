@@ -299,8 +299,11 @@ async function evaluateStagingImageStatus({
     if (!evidencePath) return
     fs.writeFileSync(
       evidencePath,
-      JSON.stringify(buildStagingEvidence({ binding, decision, plan }), null, 2) +
-        '\n'
+      JSON.stringify(
+        buildStagingEvidence({ binding, decision, plan }),
+        null,
+        2
+      ) + '\n'
     )
   }
 
@@ -334,7 +337,11 @@ if (require.main === module) {
   const plan = readPlanFromEnv()
   process.stdout.write(
     JSON.stringify(
-      determineStagingDecision({ binding: { runId: 0 }, observedJobs: [], plan }),
+      determineStagingDecision({
+        binding: { runId: 0 },
+        observedJobs: [],
+        plan,
+      }),
       null,
       2
     ) + '\n'

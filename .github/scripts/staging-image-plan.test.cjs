@@ -116,7 +116,10 @@ test('the inventory keeps one entry per promoted image', () => {
 
 test('the job names are deterministic functions of the trusted inventory', () => {
   assert.equal(buildJobName({ jobBase: 'auth' }), 'build-arm-auth')
-  assert.equal(scanJobName({ jobBase: 'backend-docker' }), 'scan-arm-backend-docker')
+  assert.equal(
+    scanJobName({ jobBase: 'backend-docker' }),
+    'scan-arm-backend-docker'
+  )
   for (const target of STAGING_IMAGE_TARGETS) {
     assert.equal(
       matrixEntry(target).jobName,
@@ -145,7 +148,9 @@ test('every matrix entry names the registry image it publishes', () => {
   }
   // The migrator publishes its own repository, not the app image.
   assert.equal(
-    matrixEntry(STAGING_IMAGE_TARGETS.find((t) => t.id === 'backend-docker-migrator-arm')).image,
+    matrixEntry(
+      STAGING_IMAGE_TARGETS.find((t) => t.id === 'backend-docker-migrator-arm')
+    ).image,
     'backend-docker-migrator'
   )
 })
@@ -286,7 +291,12 @@ test('the consolidated workflow declares the matrix the plan emits', () => {
   // No path filter: the required context must always be reportable.
   assert.equal(workflow.on.pull_request.paths, undefined)
   assert.deepEqual(workflow.on.pull_request.branches, ['v3', 'v3*'])
-  for (const job of ['plan', 'build', 'build-migrator', 'build-after-migrator']) {
+  for (const job of [
+    'plan',
+    'build',
+    'build-migrator',
+    'build-after-migrator',
+  ]) {
     assert.ok(workflow.jobs[job], 'missing job ' + job)
   }
   // The terminal job keeps the exact required context name.
@@ -350,7 +360,10 @@ test('target globs omit unrelated workspaces', () => {
   // packages/transactional only by chat. A change there must never wake the
   // backend, worker, lti, olat-api or response-api images.
   const expectations = [
-    ['packages/word-cloud/src/index.ts', ['backend-docker-arm', 'olat-api-arm']],
+    [
+      'packages/word-cloud/src/index.ts',
+      ['backend-docker-arm', 'olat-api-arm'],
+    ],
     [
       'packages/transactional/src/index.ts',
       ['response-api-arm', 'hatchet-worker-general-arm'],
