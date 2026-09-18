@@ -2329,6 +2329,7 @@ type KBImportedSource {
   id: ID!
   ingestedAt: Date
   observedAt: Date
+  origin: KBSourceOrigin!
   sourceType: String
   sourceUrl: String
   title: String!
@@ -2476,6 +2477,11 @@ enum KBResourceStatus {
 enum KBResourceType {
   BLOB
   URL
+}
+
+enum KBSourceOrigin {
+  IMPORTED
+  MANAGED
 }
 
 type KnowledgeGraphEdge {

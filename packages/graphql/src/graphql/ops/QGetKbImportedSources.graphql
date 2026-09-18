@@ -8,6 +8,7 @@ query GetKbImportedSources($kbId: ID!, $first: Int, $after: String) {
       ingestedAt
       observedAt
       chunkCount
+      origin
     }
     pageInfo {
       hasNextPage

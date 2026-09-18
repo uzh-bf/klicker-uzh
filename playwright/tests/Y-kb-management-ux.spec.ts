@@ -101,6 +101,7 @@ test.describe('Knowledge base management workspace', () => {
       ).toISOString()
       const importedVideoSource = {
         id: 'imported-video-source',
+        origin: 'IMPORTED',
         sourceType: 'video',
         title: 'Synthetic lecture recording',
         sourceUrl: null,
@@ -110,6 +111,7 @@ test.describe('Knowledge base management workspace', () => {
       }
       const importedLinkSource = {
         id: 'imported-link-source',
+        origin: 'IMPORTED',
         sourceType: 'link',
         title: 'Synthetic reading list',
         sourceUrl: 'https://example.org/synthetic-reading-list',
@@ -119,6 +121,8 @@ test.describe('Knowledge base management workspace', () => {
       }
       const importedDocumentSource = {
         id: 'imported-document-source',
+        // A resource the lecturer added through the app, so it is app-managed.
+        origin: 'MANAGED',
         sourceType: 'document',
         title: 'Synthetic handbook',
         sourceUrl: null,
@@ -130,6 +134,7 @@ test.describe('Knowledge base management workspace', () => {
       // rejected by registration and must never render as a link.
       const importedSignedSource = {
         id: 'imported-signed-source',
+        origin: 'IMPORTED',
         sourceType: 'document',
         title: 'Synthetic signed handbook',
         sourceUrl:
@@ -581,6 +586,10 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByTestId('kb-imported-source-type-imported-video-source')
       ).toContainText('Video')
+      // The origin badge distinguishes operator imports from app uploads.
+      await expect(
+        page.getByTestId('kb-imported-source-origin-imported-video-source')
+      ).toContainText(/Manually imported|Manuell importiert/)
       // A video-derived source is listed without any stored file or link.
       await expect(
         page.getByTestId('kb-imported-source-video-hint-imported-video-source')
@@ -599,6 +608,9 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByTestId('kb-imported-source-link-imported-link-source')
       ).toHaveAttribute('href', 'https://example.org/synthetic-reading-list')
+      await expect(
+        page.getByTestId('kb-imported-source-origin-imported-document-source')
+      ).toContainText(/App-managed|App-verwaltet/)
       // An unrecorded ingestion time stays honestly unknown.
       await expect(
         page.getByTestId('kb-imported-source-ingested-imported-link-source')

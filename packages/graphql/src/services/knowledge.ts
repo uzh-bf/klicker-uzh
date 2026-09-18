@@ -124,7 +124,16 @@ export interface KBImportedSource {
   ingestedAt: Date | null
   observedAt: Date | null
   chunkCount: number
+  origin: KBSourceOrigin
 }
+
+/**
+ * Where an indexed source came from. ``MANAGED`` is a resource added through
+ * the app, ``IMPORTED`` is content written straight into the vector store by
+ * an operator import.
+ */
+export const KB_SOURCE_ORIGINS = ['MANAGED', 'IMPORTED'] as const
+export type KBSourceOrigin = (typeof KB_SOURCE_ORIGINS)[number]
 
 export interface KBImportedSourceConnection {
   items: KBImportedSource[]
@@ -1060,8 +1069,34 @@ export async function getKbImportedSourcesConnection(
       },
       deps
     )
+    // A source is app-managed exactly when its recorded external resource id
+    // belongs to this knowledge base; everything else was written into the
+    // vector scope by an operator import. Only the ids on this page are looked
+    // up, and only the UUID-shaped ones, so one bounded indexed read answers the
+    // whole page without touching the import lane's non-UUID markers.
+    const candidateResourceIds = inventory.items
+      .map((item) => item.externalResourceId)
+      .filter((value): value is string => value !== null && validateUuid(value))
+    const resourceIds = new Set(
+      candidateResourceIds.length === 0
+        ? []
+        : (
+            await ctx.prisma.kBResource.findMany({
+              where: { kbId, id: { in: candidateResourceIds } },
+              select: { id: true },
+            })
+          ).map((resource) => resource.id)
+    )
     return {
-      items: inventory.items,
+      items: inventory.items.map(
+        ({ externalResourceId, ...item }): KBImportedSource => ({
+          ...item,
+          origin:
+            externalResourceId !== null && resourceIds.has(externalResourceId)
+              ? 'MANAGED'
+              : 'IMPORTED',
+        })
+      ),
       pageInfo: {
         hasNextPage: inventory.nextCursor !== null,
         endCursor: inventory.nextCursor,
