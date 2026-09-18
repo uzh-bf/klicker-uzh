@@ -44,7 +44,7 @@ jobs:
       reason_codes: ${{ steps.metadata.outputs.reason_codes }}
     steps:
       - name: Check out trusted CI control
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
@@ -52,7 +52,7 @@ jobs:
           persist-credentials: false
 
       - name: Check out candidate as data
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -183,7 +183,7 @@ jobs:
           NODE
 
       - name: Upload canonical execution plan
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-execution-plan
           path: playwright-execution-plan.json
@@ -191,7 +191,7 @@ jobs:
           retention-days: 7
 
       - name: Upload route metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-route-metadata
           path: route.json
@@ -200,7 +200,7 @@ jobs:
 
       - name: Upload selector shadow plan
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-selector-shadow
           path: playwright-selector-shadow.json
@@ -218,7 +218,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -249,7 +249,7 @@ jobs:
       - name: Upload tested source receipt
         continue-on-error: true
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-validation-receipt
           path: ci-validation-receipt.json
@@ -275,7 +275,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -306,7 +306,7 @@ jobs:
       - name: Upload tested source receipt
         continue-on-error: true
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-validation-receipt
           path: ci-validation-receipt.json
@@ -404,7 +404,7 @@ jobs:
           - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -504,7 +504,7 @@ jobs:
           - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
