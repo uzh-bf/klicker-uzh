@@ -1,5 +1,7 @@
 import {
   allocateQuestionGenerationDifficulty,
+  KB_GRAPH_POLICY_LANGUAGE,
+  KB_GRAPH_POLICY_LANGUAGES,
   type KBGraphSourceSnapshot,
 } from '@klicker-uzh/types'
 import {
@@ -307,5 +309,24 @@ describe('question generation configuration', () => {
     expect(() =>
       normalizeQuestionGenerationConfiguration(input, graphVersion)
     ).toThrowError(expect.objectContaining({ code: 'CONFIGURATION_INVALID' }))
+  })
+
+  it('accepts only the language in force for the knowledge-base policy', () => {
+    // A graph resolves to the German policy while the external payload carries
+    // no language, so an English request must fail before dispatch rather than
+    // contradict the policy in the worker.
+    expect(KB_GRAPH_POLICY_LANGUAGES).toEqual([KB_GRAPH_POLICY_LANGUAGE])
+    expect(() =>
+      normalizeQuestionGenerationConfiguration(
+        configurationInput({ language: 'en' }),
+        { ...graphVersion, language: KB_GRAPH_POLICY_LANGUAGE }
+      )
+    ).toThrowError(expect.objectContaining({ code: 'CONFIGURATION_INVALID' }))
+    expect(
+      normalizeQuestionGenerationConfiguration(
+        configurationInput({ language: KB_GRAPH_POLICY_LANGUAGE }),
+        { ...graphVersion, language: KB_GRAPH_POLICY_LANGUAGE }
+      ).configuration.language
+    ).toBe(KB_GRAPH_POLICY_LANGUAGE)
   })
 })

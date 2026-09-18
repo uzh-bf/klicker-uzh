@@ -2652,7 +2652,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Alle Typen werden als Klicker-Elemente generiert. Wählen Sie das Format passend zum Lernziel.',
         bloomTitle: 'Blooms Taxonomie',
         bloomHelp:
-          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten.',
+          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten. Höhere Stufen benötigen detaillierteres Quellenmaterial, daher kann eine Stufe bei dünnem Material weiterhin fehlschlagen.',
         bloomLevel: 'Stufe {level}',
         bloomSelected: 'Ausgewählt',
         bloomSelect: 'Stufe auswählen',
