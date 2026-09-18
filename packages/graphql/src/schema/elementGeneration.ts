@@ -522,6 +522,24 @@ function planSummaryView(
   }
 }
 
+// A partial run persists its per-slot attention cards on the build summary so
+// they survive without the result manifest. The query fills the view field
+// from the manifest when it can; this fallback keeps the cards visible for a
+// settled build that is no longer re-synchronized.
+function slotFailuresView(
+  build: ElementGenerationBuildView
+): ElementGenerationSlotFailure[] {
+  if (build.slotFailures && build.slotFailures.length > 0) {
+    return build.slotFailures
+  }
+  const summary = build.planSummary as
+    | (QuestionGenerationPlanSummary & {
+        slotFailures?: ElementGenerationSlotFailure[]
+      })
+    | null
+  return summary?.slotFailures ?? []
+}
+
 type GeneratedElementChoiceView = GeneratedQuestionEditable['choices'][number]
 const GeneratedElementChoiceRef = builder.objectRef<GeneratedElementChoiceView>(
   'GeneratedElementChoice'
@@ -794,7 +812,7 @@ ElementGenerationBuildRef.implement({
     errorRetryable: t.exposeBoolean('errorRetryable', { nullable: true }),
     slotFailures: t.field({
       type: [ElementGenerationSlotFailureRef],
-      resolve: (build) => build.slotFailures ?? [],
+      resolve: slotFailuresView,
     }),
     startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
     completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),

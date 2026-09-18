@@ -107,6 +107,7 @@ function complete(
           buildId,
           leaseOwner,
           questions: [{ ...question(), provenance: null }],
+          resultStatus: 'completed',
           resultManifestArtifact: artifact,
           finalBankArtifact: artifact,
           questionProvenanceIndexArtifact: null,
@@ -290,6 +291,7 @@ describe('initial Element completion', () => {
         buildId: build.id,
         leaseOwner: build.syncLeaseOwner!,
         questions: [generated],
+        resultStatus: 'completed',
         resultManifestArtifact: artifact,
         finalBankArtifact: artifact,
         questionProvenanceIndexArtifact: artifact,
@@ -328,6 +330,121 @@ describe('initial Element completion', () => {
     expect(after.drafts[0]?.original).toMatchObject({ suggestedTags })
     expect(after.drafts[0]?.current).not.toHaveProperty('suggestedTags')
     expect(await prisma.element.count({ where: { ownerId } })).toBe(0)
+  })
+
+  it('settles a partial question build as incomplete and persists its attention cards', async () => {
+    const build = await createBuild('question', { requestedElementCount: 2 })
+    await completeElementGeneration(
+      {
+        kind: 'questions',
+        buildId: build.id,
+        leaseOwner: build.syncLeaseOwner!,
+        questions: [{ ...question(), provenance: null }],
+        resultStatus: 'incomplete',
+        unresolvedElementCount: 1,
+        slotFailures: [
+          {
+            slotId: 'q02',
+            moduleId: 'M1',
+            objective: 'Explain malolactic fermentation.',
+            objectiveSource: 'provided',
+            requestedLevel: 'remember',
+            evidenceTarget: 'wine-chemistry.pdf#page=3',
+            reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+            failureClass: 'user_input',
+            detail: null,
+            suggestions: ['Malolactic fermentation'],
+          },
+        ],
+        resultManifestArtifact: artifact,
+        finalBankArtifact: artifact,
+        questionProvenanceIndexArtifact: null,
+      },
+      context()
+    )
+    const after = await snapshot(build.id)
+    expect(after.build).toMatchObject({
+      status: 'INCOMPLETE',
+      stage: 'incomplete',
+      generatedElementCount: 1,
+      unresolvedElementCount: 1,
+      planSummary: {
+        slotFailures: [
+          expect.objectContaining({
+            slotId: 'q02',
+            reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+            failureClass: 'user_input',
+          }),
+        ],
+      },
+    })
+    // The passing question is delivered for review; nothing is published.
+    expect(after.drafts).toHaveLength(1)
+    expect(after.drafts[0]).toMatchObject({ decision: 'OPEN' })
+    expect(await prisma.element.count({ where: { ownerId } })).toBe(0)
+  })
+
+  it('keeps a strict question build free of attention cards', async () => {
+    const build = await createBuild('question')
+    await completeElementGeneration(
+      {
+        kind: 'questions',
+        buildId: build.id,
+        leaseOwner: build.syncLeaseOwner!,
+        questions: [{ ...question(), provenance: null }],
+        resultStatus: 'completed',
+        unresolvedElementCount: 0,
+        slotFailures: [],
+        resultManifestArtifact: artifact,
+        finalBankArtifact: artifact,
+        questionProvenanceIndexArtifact: null,
+      },
+      context()
+    )
+    const after = await snapshot(build.id)
+    expect(after.build).toMatchObject({
+      status: 'COMPLETED',
+      stage: 'completed',
+      unresolvedElementCount: 0,
+    })
+    expect(after.build.planSummary).toBeNull()
+  })
+
+  it('rolls back a partial publication that lost its lease without attention cards', async () => {
+    const build = await createBuild('question', { requestedElementCount: 2 })
+    const before = await snapshot(build.id)
+    await expect(
+      completeElementGeneration(
+        {
+          kind: 'questions',
+          buildId: build.id,
+          leaseOwner: randomUUID(),
+          questions: [{ ...question(), provenance: null }],
+          resultStatus: 'incomplete',
+          unresolvedElementCount: 1,
+          slotFailures: [
+            {
+              slotId: 'q02',
+              moduleId: 'M1',
+              objective: 'Explain malolactic fermentation.',
+              objectiveSource: 'provided',
+              requestedLevel: 'remember',
+              evidenceTarget: 'wine-chemistry.pdf#page=3',
+              reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+              failureClass: 'user_input',
+              detail: null,
+              suggestions: ['Malolactic fermentation'],
+            },
+          ],
+          resultManifestArtifact: artifact,
+          finalBankArtifact: artifact,
+          questionProvenanceIndexArtifact: null,
+        },
+        context()
+      )
+    ).rejects.toMatchObject(leaseError('question'))
+    // A failed publication leaves neither drafts nor persisted attention cards.
+    expect(await snapshot(build.id)).toEqual(before)
   })
 
   it.each(

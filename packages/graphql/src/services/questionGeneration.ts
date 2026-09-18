@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ElementGenerationSlotFailure,
   ElementManipulationInput,
   GeneratedQuestionEditable,
   QuestionGenerationArtifactRef,
@@ -81,9 +82,26 @@ export const QUESTION_PARTIAL_RESULTS_ENABLED = false
 
 const TERMINAL_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.COMPLETED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
   DB.ElementGenerationBuildStatus.REJECTED,
   DB.ElementGenerationBuildStatus.FAILED,
 ])
+// The statuses whose result manifest carries structured per-slot reasons. A
+// failed run reports them for the slots it could not produce, and a partial
+// run reports them alongside the passing subset it delivered.
+const SLOT_FAILURE_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
+  DB.ElementGenerationBuildStatus.FAILED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
+  DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
+  DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
+])
+// A partial question run settles as INCOMPLETE with only the grounded drafts.
+// Those drafts stay fully reviewable, exactly like a completed run's; the
+// remaining per-slot reasons render as attention cards next to the review.
+const QUESTION_REVIEWABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
+  DB.ElementGenerationBuildStatus.COMPLETED,
+  DB.ElementGenerationBuildStatus.INCOMPLETE,
+]
 const QUESTION_ELEMENT_TYPES: DB.ElementType[] = [
   DB.ElementType.SC,
   DB.ElementType.MC,
@@ -709,6 +727,18 @@ async function synchronizeLeasedBuild(
             errorRetryable: false,
             completedAt: new Date(),
             lastSynchronizedAt: new Date(),
+            // A partial run whose slots all failed arrives as a failed result
+            // that still carries its reasons, so the attention cards survive
+            // the terminal transition.
+            ...(result.slotFailures.length > 0
+              ? {
+                  planSummary: {
+                    ...((build.planSummary ??
+                      {}) as QuestionGenerationPlanSummary),
+                    slotFailures: result.slotFailures,
+                  },
+                }
+              : {}),
           },
         })
       } else {
@@ -832,6 +862,12 @@ async function synchronizeLeasedBuild(
             buildId: build.id,
             leaseOwner,
             questions,
+            resultStatus:
+              result.status === 'completed_partial'
+                ? 'incomplete'
+                : 'completed',
+            unresolvedElementCount: result.slotFailures.length,
+            slotFailures: result.slotFailures,
             resultManifestArtifact: artifact.ref,
             finalBankArtifact: finalQuestions,
             questionProvenanceIndexArtifact: provenanceIndex,
@@ -885,13 +921,25 @@ async function synchronizeLeasedBuild(
 }
 
 // The structured per-slot failure reasons are persisted with the result
-// manifest. The build query reads them back for failed builds; a manifest
-// written before the failure surface existed, or an artifact that is no longer
-// readable, keeps the legacy failure surface instead of failing the query.
+// manifest and, for a partial run, also on the build summary. The summary copy
+// is read first because it needs no artifact download; a build written before
+// the summary copy existed, a manifest written before the failure surface
+// existed, or an artifact that is no longer readable keeps the legacy failure
+// surface instead of failing the query.
 async function withQuestionSlotFailureReasons(
   build: Awaited<ReturnType<typeof findOwnedBuild>>,
   runtime: QuestionGenerationRuntime
 ) {
+  const persisted = (
+    build.planSummary as
+      | (QuestionGenerationPlanSummary & {
+          slotFailures?: ElementGenerationSlotFailure[]
+        })
+      | null
+  )?.slotFailures
+  if (persisted && persisted.length > 0) {
+    return { ...build, slotFailures: persisted }
+  }
   const artifact =
     build.resultManifestArtifact as QuestionGenerationArtifactRef | null
   if (!artifact) return build
@@ -915,10 +963,10 @@ export async function getQuestionGenerationBuild(
   const runtime = ctx.elementGenerationRuntime
   if (!runtime) return build
   // The reviewing client stops polling on the first settled status, so the
-  // poll that observes a failure has to carry the structured reasons with it.
-  // Every other status keeps the persisted build shape.
+  // poll that observes a failure or a partial delivery has to carry the
+  // structured reasons with it. Every other status keeps the persisted shape.
   const withFailureReasons = (current: typeof build) =>
-    current.status === DB.ElementGenerationBuildStatus.FAILED
+    SLOT_FAILURE_STATUSES.has(current.status)
       ? withQuestionSlotFailureReasons(current, runtime)
       : current
   if (TERMINAL_STATUSES.has(build.status)) {
@@ -1282,7 +1330,7 @@ export async function saveGeneratedQuestions(
         elementType: {
           in: [DB.ElementType.SC, DB.ElementType.MC, DB.ElementType.KPRIM],
         },
-        status: DB.ElementGenerationBuildStatus.COMPLETED,
+        status: { in: QUESTION_REVIEWABLE_STATUSES },
       },
       select: {
         drafts: {

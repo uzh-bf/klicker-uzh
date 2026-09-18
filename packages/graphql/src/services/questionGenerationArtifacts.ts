@@ -2172,6 +2172,10 @@ export function parseQuestionGenerationFinalBank(
   }
   const bank = parsed.data
   const expectedItemType = expected.itemType ?? 'SC'
+  // A partial result delivers only the slots the worker could ground, so its
+  // bank is a non-empty subset of the Plan universe. A strict run still has to
+  // match the requested count exactly.
+  const partialBank = expected.result.status === 'completed_partial'
   if (
     (expected.result.schemaVersion === 2 &&
       (!expected.lineage ||
@@ -2183,16 +2187,19 @@ export function parseQuestionGenerationFinalBank(
       expectedItemType,
       expected.result.schemaVersion === 2
     ) ||
-    bank.metadata.total_questions !== expected.questionCount ||
-    bank.questions.length !== expected.questionCount ||
     new Set(bank.questions.map((question) => question.id)).size !==
       bank.questions.length ||
     new Set(expected.expectedQuestionIds).size !==
       expected.expectedQuestionIds.length ||
-    expected.expectedQuestionIds.length !== expected.questionCount ||
     bank.questions.some(
       (question) => !expected.expectedQuestionIds.includes(question.id)
-    )
+    ) ||
+    (partialBank
+      ? bank.metadata.total_questions !== bank.questions.length ||
+        bank.questions.length > expected.questionCount
+      : bank.metadata.total_questions !== expected.questionCount ||
+        bank.questions.length !== expected.questionCount ||
+        expected.expectedQuestionIds.length !== expected.questionCount)
   ) {
     return artifactError('Final question bank does not match the build')
   }

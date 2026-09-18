@@ -2468,6 +2468,87 @@ describe('question-generation artifact normalization', () => {
     ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
   })
 
+  it('accepts a partial bank that is a non-empty subset of the reviewed Plan', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          requested_questions: 2,
+          generated_questions: 1,
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+
+    const questions = parseQuestionGenerationFinalBank(bytes(finalBank()), {
+      questionCount: 2,
+      sourceSnapshot,
+      expectedQuestionIds: ['q01', 'q02'],
+      result,
+    })
+
+    expect(questions).toHaveLength(1)
+    expect(questions[0]?.sourceQuestionId).toBe('q01')
+  })
+
+  it('rejects an inconsistent or out-of-Plan partial bank', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          requested_questions: 2,
+          generated_questions: 1,
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+    const first = finalBank().questions[0]!
+    const missingPlanId = {
+      ...finalBank(),
+      questions: [{ ...first, id: 'q09' }],
+    }
+    const wrongTotal = {
+      ...finalBank(),
+      metadata: { ...finalBank().metadata, total_questions: 2 },
+    }
+    const overRequested = {
+      ...finalBank(),
+      metadata: { ...finalBank().metadata, total_questions: 3 },
+      questions: [
+        { ...first, id: 'q01' },
+        { ...first, id: 'q02' },
+        { ...first, id: 'q03' },
+      ],
+    }
+
+    for (const artifact of [missingPlanId, wrongTotal, overRequested]) {
+      expect(() =>
+        parseQuestionGenerationFinalBank(bytes(artifact), {
+          questionCount: 2,
+          sourceSnapshot,
+          expectedQuestionIds: ['q01', 'q02'],
+          result,
+        })
+      ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+    }
+  })
+
+  it('still requires a strict completed bank to match the requested count', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        completedResult({ requested_questions: 2, generated_questions: 2 })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+
+    expect(() =>
+      parseQuestionGenerationFinalBank(bytes(finalBank()), {
+        questionCount: 2,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01', 'q02'],
+        result,
+      })
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
   it('truncates fallback names by Unicode grapheme without splitting them', () => {
     const family = '👨‍👩‍👧‍👦'
     const name = deriveGeneratedQuestionName(
