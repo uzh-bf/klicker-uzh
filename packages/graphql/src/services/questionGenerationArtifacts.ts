@@ -317,6 +317,41 @@ const provenanceIndexSchema = z
   })
   .strict()
 
+// The worker persists resolved_slots[].graph_resolution with its evidence
+// candidates. Only the entity ids of the primary candidate (or the fallback
+// entity_ids list) may leave the server, so this schema reads those and keeps
+// the rest of graph_resolution opaque behind .passthrough().
+const designGraphResolutionSchema = z
+  .object({
+    evidence_candidates: z
+      .array(
+        z
+          .object({
+            entity_ids: z.array(boundedText(200)).max(200).optional(),
+          })
+          .passthrough()
+      )
+      .max(50)
+      .optional(),
+    entity_ids: z.array(boundedText(200)).max(200).optional(),
+  })
+  .passthrough()
+  .optional()
+
+const designSlotSchema = z
+  .object({
+    design_slot_id: boundedText(200),
+    module_id: boundedText(100),
+    objective_id: z.string().trim().max(100),
+    origin_mode: z.string().optional(),
+    allocated_origin_mode: z.string().optional(),
+    item_format: z.enum(['single_choice', 'multiple_choice', 'kprim']),
+    difficulty_scale: z.number().int().min(1).max(5),
+    bloom_level: z.union([z.enum(BLOOM_LEVELS), z.literal('')]),
+    graph_resolution: designGraphResolutionSchema,
+  })
+  .passthrough()
+
 const designSchema = z
   .object({
     schema_version: z.literal(1),
@@ -363,23 +398,7 @@ const designSchema = z
           .passthrough()
       )
       .max(100),
-    resolved_slots: z
-      .array(
-        z
-          .object({
-            design_slot_id: boundedText(200),
-            module_id: boundedText(100),
-            objective_id: z.string().trim().max(100),
-            origin_mode: z.string().optional(),
-            allocated_origin_mode: z.string().optional(),
-            item_format: z.enum(['single_choice', 'multiple_choice', 'kprim']),
-            difficulty_scale: z.number().int().min(1).max(5),
-            bloom_level: z.union([z.enum(BLOOM_LEVELS), z.literal('')]),
-          })
-          .passthrough()
-      )
-      .min(1)
-      .max(20),
+    resolved_slots: z.array(designSlotSchema).min(1).max(20),
     topic_overview: z
       .object({
         coverage_warnings: z.array(boundedText(1000)).max(MAX_WARNING_COUNT),
@@ -589,6 +608,25 @@ export type QuestionGenerationProvenanceAuthority = {
 function optionalText(value: string | null | undefined): string | null {
   const normalized = value?.trim() ?? ''
   return normalized || null
+}
+
+// The worker records the evidence candidates grounding each planned slot. Only
+// the primary candidate's entity ids (or the older top-level entity_ids list)
+// may leave the server; the rest of graph_resolution stays opaque. Entity ids
+// are deduplicated in order so the review surface and its concentration check
+// see a stable set.
+function designSlotEvidenceEntityIds(
+  slot: z.infer<typeof designSlotSchema>
+): string[] {
+  const resolution = slot.graph_resolution
+  const candidates = resolution?.evidence_candidates ?? []
+  const raw = candidates[0]?.entity_ids ?? resolution?.entity_ids ?? []
+  const entityIds: string[] = []
+  for (const value of raw) {
+    const entityId = value.trim()
+    if (entityId && !entityIds.includes(entityId)) entityIds.push(entityId)
+  }
+  return entityIds
 }
 
 function normalizedPlainText(value: string): string {
@@ -1784,6 +1822,7 @@ export function parseQuestionGenerationDesign(
       objectiveId: optionalText(slot.objective_id),
       bloomLevel: slot.bloom_level === '' ? null : slot.bloom_level,
       targetDifficulty: slot.difficulty_scale,
+      evidenceEntityIds: designSlotEvidenceEntityIds(slot),
     })),
     warnings: design.topic_overview.coverage_warnings.map((message) =>
       warning('PIPELINE_COVERAGE_WARNING', message)

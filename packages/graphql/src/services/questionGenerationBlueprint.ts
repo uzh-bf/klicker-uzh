@@ -6,14 +6,25 @@ import type {
 
 const MODULE_ID = 'M1'
 
+// Rollout gate for the neutral-objective marker. The deployed content-generation
+// worker rejects unknown fields on blueprint objective rows (its
+// exam_blueprint.py validates against a closed allowlist), so objective_source
+// must only be emitted while a worker release that accepts the field is live.
+// Enabled after the evidence-anchoring worker build was deployed; lower this
+// constant again if the worker is rolled back to a build without the field.
+export const BLUEPRINT_OBJECTIVE_SOURCE_ENABLED = true
+
 function sourceBasename(sourceFile: string): string {
   return basename(sourceFile.replaceAll('\\', '/'))
 }
 
 export async function createQuestionGenerationBlueprint(
   configuration: QuestionGenerationConfiguration,
-  sourceSnapshot: KBGraphSourceSnapshot
+  sourceSnapshot: KBGraphSourceSnapshot,
+  options: { emitObjectiveSource?: boolean } = {}
 ): Promise<Buffer> {
+  const emitObjectiveSource =
+    options.emitObjectiveSource ?? BLUEPRINT_OBJECTIVE_SOURCE_ENABLED
   const sourcesById = new Map(
     sourceSnapshot.map((source) => [source.resourceId, source])
   )
@@ -84,6 +95,9 @@ export async function createQuestionGenerationBlueprint(
       ...(objective.bloomLevel === null
         ? {}
         : { bloom_level: objective.bloomLevel }),
+      ...(emitObjectiveSource && objective.objectiveSource !== undefined
+        ? { objective_source: objective.objectiveSource }
+        : {}),
     })),
     sources,
     pool_allocation: [],

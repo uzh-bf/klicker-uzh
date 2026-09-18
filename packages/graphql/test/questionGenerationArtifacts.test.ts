@@ -4,6 +4,7 @@ import type {
   KBGraphSourceSnapshot,
   QuestionGenerationConfiguration,
 } from '@klicker-uzh/types'
+import { designSummaryView } from '../src/schema/elementGeneration.js'
 import {
   deriveGeneratedQuestionName,
   normalizeGeneratedTagSuggestions,
@@ -724,6 +725,7 @@ describe('question-generation artifact normalization', () => {
           objectiveId: 'OBJ-01',
           bloomLevel: 'understand',
           targetDifficulty: 3,
+          evidenceEntityIds: [],
         },
       ],
       warnings: [
@@ -735,6 +737,104 @@ describe('question-generation artifact normalization', () => {
     })
     expect(JSON.stringify(summary)).not.toContain('raw_model_trace')
     expect(JSON.stringify(summary)).not.toContain('private/worker')
+  })
+
+  it('resolves a design summary persisted before the slot evidence field', () => {
+    const summary = parseQuestionGenerationDesign(bytes(design()), {
+      buildId: BUILD_ID,
+      configuration,
+      sourceSnapshot,
+    })
+    // A summary written by a server that predates the evidence surface has no
+    // slots list. The GraphQL slot field is non-null, so the resolver must
+    // default it or a build still in design review across a deploy fails the
+    // whole query. The stored column is schema-less JSON, so the legacy shape
+    // is what the resolver actually receives.
+    const { slots: _slots, ...legacy } = summary
+
+    const view = designSummaryView({
+      designSummary: legacy,
+      elementType: 'SC',
+    } as unknown as Parameters<typeof designSummaryView>[0])
+
+    expect(view?.slots).toEqual([])
+  })
+
+  it('surfaces only the primary evidence entity ids of each slot', () => {
+    const artifact = design({
+      resolved_slots: [
+        {
+          ...design().resolved_slots[0],
+          graph_resolution: {
+            evidence_candidates: [
+              {
+                entity_ids: ['entity-a', 'entity-b', 'entity-a'],
+                is_primary: true,
+                raw_model_trace: 'must not escape',
+              },
+              { entity_ids: ['entity-c'], is_primary: false },
+            ],
+            raw_model_trace: 'must not escape',
+          },
+        },
+      ],
+    })
+
+    const summary = parseQuestionGenerationDesign(bytes(artifact), {
+      buildId: BUILD_ID,
+      configuration,
+      sourceSnapshot,
+    })
+
+    expect(summary.slots[0]!.evidenceEntityIds).toEqual([
+      'entity-a',
+      'entity-b',
+    ])
+    expect(JSON.stringify(summary)).not.toContain('raw_model_trace')
+    expect(JSON.stringify(summary)).not.toContain('entity-c')
+  })
+
+  it('falls back to the top-level entity ids when no candidate is present', () => {
+    const artifact = design({
+      resolved_slots: [
+        {
+          ...design().resolved_slots[0],
+          graph_resolution: { entity_ids: ['entity-a'] },
+        },
+      ],
+    })
+
+    const summary = parseQuestionGenerationDesign(bytes(artifact), {
+      buildId: BUILD_ID,
+      configuration,
+      sourceSnapshot,
+    })
+
+    expect(summary.slots[0]!.evidenceEntityIds).toEqual(['entity-a'])
+  })
+
+  it('leaves the slot evidence empty when the artifact carries no resolution', () => {
+    const artifact = design({
+      resolved_slots: [
+        {
+          design_slot_id: 'slot-1',
+          module_id: 'M1',
+          objective_id: 'OBJ-01',
+          origin_mode: 'new',
+          item_format: 'single_choice',
+          difficulty_scale: 3,
+          bloom_level: 'understand',
+        },
+      ],
+    })
+
+    const summary = parseQuestionGenerationDesign(bytes(artifact), {
+      buildId: BUILD_ID,
+      configuration,
+      sourceSnapshot,
+    })
+
+    expect(summary.slots[0]!.evidenceEntityIds).toEqual([])
   })
 
   it.each([
@@ -815,6 +915,7 @@ describe('question-generation artifact normalization', () => {
         objectiveId: 'OBJ-01',
         bloomLevel: null,
         targetDifficulty: 3,
+        evidenceEntityIds: [],
       },
     ])
   })

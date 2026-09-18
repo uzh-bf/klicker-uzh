@@ -1,4 +1,7 @@
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  KBResourceMaterialType,
+  type PrismaClient,
+} from '@klicker-uzh/prisma/client'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -21,7 +24,7 @@ function mockPrisma(
 }
 
 describe('KB content digest', () => {
-  it('covers every resource that has active serving content', async () => {
+  it('covers every course-content resource that has active serving content', async () => {
     const { prisma, findMany } = mockPrisma([])
 
     await computeKBContentDigest(prisma, 'kb-id')
@@ -32,6 +35,7 @@ describe('KB content digest', () => {
           kbId: 'kb-id',
           deletedAt: null,
           activeContentSha256: { not: null },
+          materialType: KBResourceMaterialType.COURSE_CONTENT,
         },
         orderBy: { id: 'asc' },
       })
