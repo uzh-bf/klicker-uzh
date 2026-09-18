@@ -396,3 +396,59 @@ test('the run policy admits an unbound pull-request run', () => {
     true
   )
 })
+
+// GitHub answers both the cancel and the force-cancel endpoint with the same
+// refusal when it never enqueued a run. Such a record holds no runner slot, so
+// a sweep reports it and moves on instead of stopping at the first one.
+function neverQueuedFixture() {
+  const repo = { id: 1, full_name: 'uzh-bf/klicker-uzh' }
+  const created = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  const run = {
+    id: 20,
+    workflow_id: 2,
+    run_attempt: 1,
+    path: '.github/workflows/test-playwright.yml',
+    event: 'pull_request',
+    status: 'queued',
+    head_sha: 'orphan',
+    head_branch: 'rs/audit-ci-fixtures',
+    created_at: created,
+    repository: repo,
+    head_repository: repo,
+    pull_requests: [],
+  }
+  const state = { writes: [] }
+  const api = async (endpoint, method = 'GET') => {
+    if (method === 'POST') {
+      state.writes.push(endpoint)
+      const error = new Error(
+        'gh: Cannot cancel a workflow run that has not been queued yet. (HTTP 409)'
+      )
+      error.neverQueued = true
+      throw error
+    }
+    if (endpoint.endsWith('/runs/20')) return { data: structuredClone(run) }
+    if (endpoint.includes('/pulls?state=open')) return { data: [] }
+    throw new Error(`Unexpected endpoint ${endpoint}`)
+  }
+  return { state, api }
+}
+
+test('a run GitHub never enqueued is reported instead of aborting the sweep', async () => {
+  const { state, api } = neverQueuedFixture()
+  const result = await cancelRun(api, 20)
+  assert.equal(result.result, 'not-queued')
+  assert.equal(result.reason, 'unbound-head')
+  assert.deepEqual(state.writes, [
+    'repos/uzh-bf/klicker-uzh/actions/runs/20/cancel',
+  ])
+})
+
+test('an unrelated cancellation failure still stops the sweep', async () => {
+  const { api } = neverQueuedFixture()
+  const failing = async (endpoint, method) => {
+    if (method === 'POST') throw new Error('rate limited')
+    return api(endpoint, method)
+  }
+  await assert.rejects(cancelRun(failing, 20), /rate limited/)
+})

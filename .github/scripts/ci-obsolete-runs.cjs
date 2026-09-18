@@ -24,12 +24,27 @@ const ACTIVE = new Set([
 // its result any more.
 const UNBOUND_MIN_AGE_MS = 24 * 60 * 60 * 1000
 
+// GitHub refuses to cancel a run it never enqueued, with the same answer from
+// both the cancel and the force-cancel endpoint. Such a run consumes no runner
+// slot, so a sweep reports it and continues.
+const NEVER_QUEUED_MESSAGE = 'has not been queued yet'
+
 function ghApi(endpoint, method = 'GET') {
-  const output = execFileSync('gh', ['api', '--method', method, endpoint], {
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-    timeout: 30000,
-  })
+  let output
+  try {
+    output = execFileSync('gh', ['api', '--method', method, endpoint], {
+      encoding: 'utf8',
+      maxBuffer: 16 * 1024 * 1024,
+      timeout: 30000,
+    })
+  } catch (error) {
+    // A run GitHub never enqueued holds no runner slot and cannot be cancelled
+    // by any endpoint. Mark it so a sweep can report it and continue instead of
+    // aborting on the first such record.
+    const detail = `${error.stderr ?? ''}${error.stdout ?? ''}${error.message ?? ''}`
+    error.neverQueued = detail.includes(NEVER_QUEUED_MESSAGE)
+    throw error
+  }
   return { data: output.trim() ? JSON.parse(output) : null }
 }
 
@@ -242,7 +257,19 @@ async function cancelRun(
   const current = await inspectRun(api, id, initial.identity)
   if (!current.eligible) return current
   const endpoint = `repos/${REPOSITORY}/actions/runs/${id}`
-  await api(`${endpoint}/cancel`, 'POST')
+  try {
+    await api(`${endpoint}/cancel`, 'POST')
+  } catch (error) {
+    if (error.neverQueued) {
+      return {
+        id,
+        eligible: true,
+        reason: initial.reason,
+        result: 'not-queued',
+      }
+    }
+    throw error
+  }
   for (let attempt = 0; attempt < 6; attempt += 1) {
     await wait(5000)
     const { data: run } = await api(endpoint)
