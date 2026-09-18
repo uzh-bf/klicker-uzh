@@ -381,7 +381,7 @@ export async function startFlashcardGeneration(
   let normalized: ReturnType<typeof normalizeFlashcardGenerationConfiguration>
   try {
     normalized = normalizeFlashcardGenerationConfiguration(input, {
-      language: null,
+      language: graph.language,
     })
   } catch (error) {
     if (error instanceof FlashcardGenerationConfigurationError) {
