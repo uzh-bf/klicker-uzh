@@ -28,6 +28,7 @@ import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
 import { asChatbotAuthor } from './authScopes.js'
+import { PartnerChatbotGrant } from './chatbotPartnerGrant.js'
 import {
   Course,
   CourseDeletionRequestPayload,
@@ -1566,6 +1567,36 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbot(args, ctx)
+        },
+      }),
+
+      grantPartnerChatbotAccess: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: PartnerChatbotGrant,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          partnerId: t.arg.string({
+            required: true,
+            validate: { minLength: 2, maxLength: 64 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.grantPartnerChatbotAccess(args, ctx)
+        },
+      }),
+
+      revokePartnerChatbotAccess: t.withAuth(asChatbotAuthor).field({
+        nullable: true,
+        type: PartnerChatbotGrant,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          partnerId: t.arg.string({
+            required: true,
+            validate: { minLength: 2, maxLength: 64 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.revokePartnerChatbotAccess(args, ctx)
         },
       }),
 
