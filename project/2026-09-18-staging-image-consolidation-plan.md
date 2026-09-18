@@ -327,3 +327,36 @@ worktrees; repository or runner settings.
 - Playwright shard routing and the hosted required test contexts.
 - The MCP AMD64 leg's platform or its publish guard, which stay as-is.
 - The optional follow-up that removes the two dead MCP names from the watch list.
+
+## Progress
+
+Updated 2026-09-18.
+
+- **S0 done.** Current `v3` is merged into `v3-audit`, so the audit branch
+  starts from a current base.
+- **S1 done on the `v3` branch.** `v3_images-stg.yml` and the shared plan,
+  status, target and workflow modules are in place; the thirteen per-image
+  workflows and `v3_build-fallback.yml` are deleted.
+- **S2 done on the `v3` branch.** The promoter, the derived scan-admission
+  inventory, the controller watch list, the closed-PR sweeper, the event-gate
+  tests, the `check.yml` contract list and `docs/ci-and-deployment.md` all read
+  the one workflow. The superseded `required-build-status` module and its
+  fifteen-file fixture suite are removed.
+- **S3 done on this branch.** The consolidated tree is merged in, the two MCP
+  staging workflows are deleted, and `mcp-lecturer-arm` and
+  `mcp-student-arm` build through the shared matrix. The audit-only
+  `stg-release-ref-promotion.test.cjs` is rebound to the trusted inventory.
+- **S4 done for the canary path.** Both draft PRs are open (#6141 on `v3`,
+  #6147 on `v3-audit`). The consolidated staging workflow ran to success on
+  both draft heads: run `35360584817` for `2be208ee30` on `v3-audit`
+  (plan success, `build-images-status` success, six `matrix.jobName` legs
+  skipped with no runner allocated) and run `35361628890` for `eb6abcd255`
+  on `v3` with the same shape. Queue depth fell from roughly 153 to 14. This
+  proves the draft-deferral contract and the required `build-images-status`
+  context; it does not yet exercise a real build or publish, which only a
+  ready-for-review or push run triggers.
+- **Format regression fixed.** The plan and status helpers created in earlier
+  sessions carried Biome format errors that failed `check-suite` on both PRs.
+  `biome format --write` and the Prettier check now pass on the full changed
+  file set; the fix is committed on both branches (`d36ecf4c93` here,
+  `17d6795d15` on `v3`).
