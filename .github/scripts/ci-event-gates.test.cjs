@@ -489,3 +489,41 @@ test('summary reporters always report and never suppress a required check', () =
     assert.equal(upload.with['if-no-files-found'], 'error', name)
   }
 })
+
+// The codebase check reuses its own completed validation only for a
+// metadata-only edit on an unchanged tree, and reports the required context
+// from a job that always runs. The suite job must never carry that context,
+// because GitHub can treat a skipped required check as acceptable.
+test('the codebase check reuses prior validation without suppressing its context', () => {
+  const workflow = readWorkflow('check.yml')
+  const terminal = workflow.jobs.check
+  assert.ok(terminal, 'check.yml must define the required check job')
+  assert.equal(terminal.if, 'always()')
+  assert.deepEqual(terminal.needs, ['select', 'check-suite'])
+  assert.ok(
+    terminal.steps.some(
+      (step) =>
+        step.run === 'node .github/scripts/required-ci-status.cjs report'
+    )
+  )
+  const upload = terminal.steps.find(
+    (step) => step.uses === 'actions/upload-artifact@v4'
+  )
+  assert.equal(upload.with.name, 'required-ci-evidence')
+  assert.equal(upload.with['if-no-files-found'], 'error')
+
+  const selector = workflow.jobs.select.steps.find(
+    (step) => step.uses === './.github/actions/changed-paths'
+  )
+  // The lookup names the stable terminal context, never a suite job.
+  assert.equal(selector.with['prior-check-name'], 'check')
+  assert.match(
+    String(workflow.jobs['check-suite'].if),
+    /needs\.select\.outputs\.should_run == 'true'/
+  )
+  assert.equal(workflow.permissions.checks, 'read')
+  // The ready boundary still recomputes, and an edited retarget still selects
+  // through the same action.
+  assert.ok(workflow.on.pull_request.types.includes('ready_for_review'))
+  assert.ok(workflow.on.pull_request.types.includes('edited'))
+})

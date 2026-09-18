@@ -1557,3 +1557,26 @@ required from the user.
   correctly kept `current-head`. Repo-wide queue at 09:00Z was 134 queued
   against 15 in progress, and the ARM pool was saturated by five concurrent
   Playwright runs, which is why #6075's eight shards waited rather than failed.
+
+- 2026-09-18 codebase-check reuse for metadata-only edits. The path selector
+  already reuses a validated prior success for the four path-filtered suites,
+  but the required check workflow stayed unconditional and did not use the
+  action, so a title or body edit repeated the full validation on an unchanged
+  tree. Measured before the fix: Check codebase ran 5 times for the single head
+  87ccc36b on PR #6133 and 4 times for c4b7ba95 on #5970, at 7 to 29
+  wall-minutes each. The workflow now selects through changed-paths with an
+  unrestricted pattern, runs the suite as a separate job, and reports the
+  required context from a terminal job that always runs, so only a validated
+  metadata-only edit reuses the suite while an unexpected skip, a cancellation,
+  or a failed suite still fails the context. ready_for_review and base
+  retargets keep running the suite, and pushes still force a run, so promotion
+  candidate evidence is unaffected.
+
+  The same window also explains the persistent queue reading: 24 queued and 11
+  in progress at 13:3xZ, of which 9 were five-day-old Promote to stg records
+  with zero jobs (created 2026-09-13 for the same candidate 927f2336, never
+  scheduled, no check runs). They hold no runner slot, and the reaper correctly
+  refuses them: the documented contract excludes deployments, final-review
+  writers, and cancellation by age. The queue metric therefore overstates real
+  pending work by those inert records, which matters because capacity decisions
+  were being made against it.
