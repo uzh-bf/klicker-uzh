@@ -1480,3 +1480,45 @@ required from the user.
   guarded, so it is not a queue-relief target; the ruling stands as written
   for the images it was about, with the MCP exception now recorded so the next
   audit does not re-derive it or mistake it for a defect.
+
+- 2026-09-18 reaper merge and the false-policy blocker. Both authorized reapers
+  landed: #6132 merged as `c504f78776f44437c02d866464c0619770590729` at
+  10:34:47Z with the queued-duplicate rule layered onto #6075's push-sweep and
+  detached-run proof, and #6075 closed as superseded rather than merged: its
+  three touched files are byte-identical between `v3` and #6132's verified
+  head (`ci-obsolete-runs.cjs`, `ci-obsolete-runs.test.cjs`,
+  `docs/ci-and-deployment.md`), so it conflicted only because its content had
+  already landed. Nothing was lost; the superseded-closure note records the
+  comparison.
+
+  **A merge was blocked by stale cancelled check runs, not by failing policy.**
+  `gh pr merge 6132` reported "the base branch policy prohibits the merge", and
+  the REST rollup showed `FAILURE`. All eight required contexts nonetheless had
+  a newer SUCCESS run at the same head `5d27b67577`; the failures were
+  `test-playwright-status` check runs (ids `105543062758`, `105543064279`,
+  completed 09:37:16Z and 09:37:57Z) left behind by two *cancelled* Playwright
+  workflow runs, while the authoritative run `35327243832` reported SUCCESS at
+  09:41:48Z. GitHub's `filter=latest` view still returned the cancelled
+  failures as latest, and the `pull_request` ruleset's
+  `require_code_owner_review`/`require_extra_approval_for_unattributed_changes`
+  were not the cause: every commit is attributed to `rschlaefli`, the same
+  author as the successfully merged #6104.
+
+  The identical PUT to `/pulls/6132/merge` succeeded on the first attempt and
+  returned `c504f78776`, so the CLI's policy message was not the real state.
+  Consequence for this roadmap: a required-status context can be pinned to a
+  cancelled run's failure even when a later success exists for the same head,
+  which is the same cancellation-artifact class as the earlier
+  `test-playwright-status` and `Promote to stg` findings. The practical
+  unblock is to re-run or re-report the affected required context, or to merge
+  through the API when every required context has a newer success; the
+  durable fix is the cancellation-hygiene work already carried by this
+  roadmap's reaper and the `cancel-closed-pr` path.
+
+  Live reaper evidence at merge time, read-only over 59 active allowlisted
+  runs: 8 `redundant-queued-duplicate` (PRs #6124, #6133, #5970), 1
+  `merged-or-closed-PR` (run 34749125387, the run that answers 409 to both
+  `/cancel` and `/force-cancel` and therefore holds no runner slot), and 50
+  correctly kept `current-head`. Repo-wide queue at 09:00Z was 134 queued
+  against 15 in progress, and the ARM pool was saturated by five concurrent
+  Playwright runs, which is why #6075's eight shards waited rather than failed.
