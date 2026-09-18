@@ -18,33 +18,12 @@ const ACTIVE = new Set([
   'requested',
 ])
 
-// A pull_request run is bound to its pull request a moment after creation.
-// A run that still has no binding after this window belongs to a pull request
-// that was closed, merged, or never opened for this head, so nothing consumes
-// its result any more.
-const UNBOUND_MIN_AGE_MS = 24 * 60 * 60 * 1000
-
-// GitHub refuses to cancel a run it never enqueued, with the same answer from
-// both the cancel and the force-cancel endpoint. Such a run consumes no runner
-// slot, so a sweep reports it and continues.
-const NEVER_QUEUED_MESSAGE = 'has not been queued yet'
-
-function ghApi(endpoint, method = 'GET') {
-  let output
-  try {
-    output = execFileSync('gh', ['api', '--method', method, endpoint], {
-      encoding: 'utf8',
-      maxBuffer: 16 * 1024 * 1024,
-      timeout: 30000,
-    })
-  } catch (error) {
-    // A run GitHub never enqueued holds no runner slot and cannot be cancelled
-    // by any endpoint. Mark it so a sweep can report it and continue instead of
-    // aborting on the first such record.
-    const detail = `${error.stderr ?? ''}${error.stdout ?? ''}${error.message ?? ''}`
-    error.neverQueued = detail.includes(NEVER_QUEUED_MESSAGE)
-    throw error
-  }
+async function ghApi(endpoint, method = 'GET') {
+  const output = execFileSync('gh', ['api', '--method', method, endpoint], {
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+    timeout: 30000,
+  })
   return { data: output.trim() ? JSON.parse(output) : null }
 }
 
@@ -54,6 +33,7 @@ function identity(run) {
     run.workflow_id,
     run.path,
     run.head_sha,
+    run.head_branch,
     run.run_attempt,
     run.repository?.id,
     run.head_repository?.id,
@@ -61,9 +41,24 @@ function identity(run) {
   ]
 }
 
-function allowedRun(run) {
-  const bindings = Array.isArray(run.pull_requests) ? run.pull_requests : null
-  const bound = bindings?.length === 1 ? bindings[0] : null
+// GitHub reports a missing branch as HTTP 404; every other failure (rate limit,
+// network, authorization) must leave the run's future relevance unresolved.
+// The CLI prints the API error body to stdout and a short line to stderr, so
+// the status can arrive in either stream.
+function isNotFound(error) {
+  const message = [error?.message, error?.stdout, error?.stderr].join(' ')
+  return /HTTP 404/.test(message) || /"status":\s*404/.test(message)
+}
+
+// A run still waiting for its first runner rejects cancellation with HTTP 409
+// ("not in progress") or 422 ("not been queued yet"). Both are transient queue
+// states rather than policy failures.
+function isNotCancellable(error) {
+  const message = [error?.message, error?.stdout, error?.stderr].join(' ')
+  return /HTTP (409|422)/.test(message)
+}
+
+function sharedPolicy(run) {
   return (
     Number.isSafeInteger(run.id) &&
     Number.isSafeInteger(run.workflow_id) &&
@@ -72,71 +67,146 @@ function allowedRun(run) {
     run.repository?.full_name === REPOSITORY &&
     run.head_repository?.full_name === REPOSITORY &&
     WORKFLOWS.has(run.path?.split('@')[0]) &&
-    run.event === 'pull_request' &&
-    ACTIVE.has(run.status) &&
-    bindings !== null &&
-    bindings.length <= 1 &&
-    (bound === null ||
-      (bound.head?.sha === run.head_sha &&
-        bound.head?.repo?.id === run.head_repository.id &&
-        bound.base?.repo?.id === run.repository.id))
+    ACTIVE.has(run.status)
   )
 }
 
-async function inspectRun(api, id, expected) {
+function allowedPullRequestRun(run) {
+  return (
+    run.event === 'pull_request' &&
+    (allowedBoundPullRequestRun(run) || allowedDetachedPullRequestRun(run))
+  )
+}
+
+function allowedBoundPullRequestRun(run) {
+  return (
+    run.pull_requests?.length === 1 &&
+    run.pull_requests[0].head?.sha === run.head_sha &&
+    run.pull_requests[0].head?.repo?.id === run.head_repository.id &&
+    run.pull_requests[0].base?.repo?.id === run.repository.id
+  )
+}
+
+// Merging or closing a pull request and deleting its head branch clears the
+// run's pull_request binding, so the binding can no longer prove the PR state.
+// The head branch no longer existing is then the positive proof that the run
+// cannot become relevant again.
+function allowedDetachedPullRequestRun(run) {
+  return (
+    (run.pull_requests?.length ?? 0) === 0 &&
+    typeof run.head_branch === 'string' &&
+    run.head_branch.length > 0
+  )
+}
+
+// A queued push validation is reclaimable only against the branch's current
+// tip run of the same workflow. Push runs are never bound to a pull request, so
+// the branch tip is the only stable identity that proves supersession.
+function allowedPushRun(run) {
+  return (
+    run.event === 'push' &&
+    typeof run.head_branch === 'string' &&
+    run.head_branch.length > 0 &&
+    (run.pull_requests?.length ?? 0) === 0
+  )
+}
+
+function allowedRun(run) {
+  return (
+    sharedPolicy(run) && (allowedPullRequestRun(run) || allowedPushRun(run))
+  )
+}
+
+// A detached run's pull_request binding is gone. Its head branch must no longer
+// exist, which is the positive proof that no future commit can revive the run.
+async function inspectDetachedRun(api, run) {
   const prefix = `repos/${REPOSITORY}`
-  const { data: run } = await api(`${prefix}/actions/runs/${id}`)
-  if (!allowedRun(run)) return { id, eligible: false, reason: 'outside-policy' }
-  if (expected && JSON.stringify(identity(run)) !== JSON.stringify(expected)) {
-    return { id, eligible: false, reason: 'run-identity-changed' }
+  const branch = run.head_branch
+  const head = await api(`${prefix}/branches/${encodeURIComponent(branch)}`)
+    .then(({ data }) => ({ data }))
+    .catch((error) => ({ error }))
+  if (head?.data?.name === branch) {
+    return { id: run.id, eligible: false, reason: 'branch-still-exists' }
   }
-  const bound = run.pull_requests?.[0]
-  if (!bound) return inspectUnboundRun(api, run)
-  const number = bound.number
-  const { data: pull } = await api(`${prefix}/pulls/${number}`)
-  if (
-    pull.number !== number ||
-    pull.base?.repo?.full_name !== REPOSITORY ||
-    pull.head?.repo?.full_name !== REPOSITORY ||
-    pull.head.ref !== run.head_branch
-  ) {
-    return { id, eligible: false, reason: 'PR-identity-mismatch' }
+  // Only an explicit not-found proves the branch is gone; any other failure
+  // leaves the run's future relevance unresolved.
+  if (!isNotFound(head?.error)) {
+    return { id: run.id, eligible: false, reason: 'branch-state-unavailable' }
   }
-  if (pull.state === 'closed') {
-    return {
-      id,
-      eligible: true,
-      reason: 'closed-PR',
-      pull: number,
-      identity: identity(run),
-    }
+  const pullRequest = await api(`${prefix}/commits/${run.head_sha}/pulls`)
+    .then(({ data }) => data)
+    .catch(() => null)
+  if (!Array.isArray(pullRequest)) {
+    return { id: run.id, eligible: false, reason: 'binding-unavailable' }
   }
-  if (pull.state !== 'open') {
-    return { id, eligible: false, reason: 'current-head' }
+  const open = pullRequest.find(
+    (item) => item.head?.ref === branch && item.state === 'open'
+  )
+  if (open) {
+    return { id: run.id, eligible: false, reason: 'PR-still-open' }
   }
-  if (pull.head.sha === run.head_sha) {
-    return inspectQueuedDuplicate(api, run, pull, number)
+  return {
+    id: run.id,
+    eligible: true,
+    reason: 'merged-or-closed-PR',
+    branch,
+    identity: identity(run),
   }
-  const matches = await listActiveHeadRuns(api, run, pull)
-  if (!matches.length || matches[0].id <= id) {
-    return { id, eligible: false, reason: 'no-current-replacement' }
+}
+
+async function inspectPushRun(api, run) {
+  const prefix = `repos/${REPOSITORY}`
+  const branch = run.head_branch
+  const { data: head } = await api(
+    `${prefix}/commits/${encodeURIComponent(branch)}`
+  )
+  const tip = head?.sha
+  if (typeof tip !== 'string' || !/^[0-9a-f]{40}$/.test(tip)) {
+    return { id: run.id, eligible: false, reason: 'branch-tip-unavailable' }
+  }
+  if (run.head_sha === tip) {
+    return { id: run.id, eligible: false, reason: 'current-head' }
+  }
+  const runs = await listAll(
+    async ({ page, per_page }) =>
+      api(
+        `${prefix}/actions/workflows/${run.workflow_id}/runs?event=push&branch=${encodeURIComponent(branch)}&head_sha=${tip}&per_page=${per_page}&page=${page}`
+      ),
+    'workflow_runs'
+  )
+  const matches = runs
+    .filter((item) => (item.pull_requests?.length ?? 0) === 0)
+    .sort((a, b) => b.id - a.id)
+  if (!matches.length || matches[0].id <= run.id) {
+    return { id: run.id, eligible: false, reason: 'no-current-replacement' }
   }
   const { data: replacement } = await api(
     `${prefix}/actions/runs/${matches[0].id}`
   )
-  if (!bindsReplacement(replacement, run, pull, number))
-    return { id, eligible: false, reason: 'unverified-replacement' }
+  if (
+    replacement.workflow_id !== run.workflow_id ||
+    replacement.path !== run.path ||
+    replacement.event !== 'push' ||
+    replacement.repository?.full_name !== REPOSITORY ||
+    replacement.head_repository?.full_name !== REPOSITORY ||
+    replacement.head_sha !== tip ||
+    replacement.head_branch !== branch ||
+    (replacement.pull_requests?.length ?? 0) !== 0 ||
+    !(ACTIVE.has(replacement.status) || successful(replacement))
+  )
+    return { id: run.id, eligible: false, reason: 'unverified-replacement' }
   return {
-    id,
+    id: run.id,
     eligible: true,
-    reason: 'superseded-head',
-    pull: number,
+    reason: 'superseded-branch-tip',
+    branch,
     replacement: replacement.id,
     identity: identity(run),
   }
 }
 
-// Every active run for the current head of one pull request, newest first.
+// Active runs of one workflow for the pull request's current head. Supersession
+// is decided from this list, so only runs bound to the same pull request count.
 async function listActiveHeadRuns(api, run, pull) {
   const prefix = `repos/${REPOSITORY}`
   const runs = await listAll(
@@ -155,6 +225,8 @@ async function listActiveHeadRuns(api, run, pull) {
     .sort((a, b) => b.id - a.id)
 }
 
+// A replacement proves supersession only when it is the same workflow and path
+// for the same pull-request head and base, and is still active or succeeded.
 function bindsReplacement(replacement, run, pull, number) {
   const binding = replacement.pull_requests?.[0]
   return (
@@ -175,10 +247,9 @@ function bindsReplacement(replacement, run, pull, number) {
   )
 }
 
-// Two active runs for one workflow and one head test the same tree. When the
-// older one is still queued it has consumed no runner time, and the newer run
-// carries the authoritative plan for the current pull-request state, so the
-// older queue entry is pure waiting.
+// The current head can hold more than one active run of one workflow. The older
+// run tests the same tree and, while it is still queued, has consumed no runner
+// time; the newer run carries the authoritative plan for the pull-request state.
 async function inspectQueuedDuplicate(api, run, pull, number) {
   const id = run.id
   if (run.status !== 'queued') {
@@ -203,40 +274,75 @@ async function inspectQueuedDuplicate(api, run, pull, number) {
   }
 }
 
-// A pull_request run that never received its pull-request binding cannot feed a
-// required status any more. Its result is only safe to drop once the binding
-// window has passed and no open pull request claims the same head, because the
-// binding appears a moment after creation.
-async function inspectUnboundRun(api, run) {
-  const id = run.id
-  const created = Date.parse(run.created_at ?? '')
-  if (!Number.isFinite(created) || Date.now() - created < UNBOUND_MIN_AGE_MS) {
-    return { id, eligible: false, reason: 'unbound-recent' }
+async function inspectRun(api, id, expected) {
+  const prefix = `repos/${REPOSITORY}`
+  const { data: run } = await api(`${prefix}/actions/runs/${id}`)
+  if (!allowedRun(run)) return { id, eligible: false, reason: 'outside-policy' }
+  if (expected && JSON.stringify(identity(run)) !== JSON.stringify(expected)) {
+    return { id, eligible: false, reason: 'run-identity-changed' }
   }
-  const owner = REPOSITORY.split('/')[0]
-  const { data: pulls } = await api(
-    `repos/${REPOSITORY}/pulls?state=open&head=${encodeURIComponent(`${owner}:${run.head_branch}`)}`
-  )
+  if (run.event === 'push') return inspectPushRun(api, run)
+  if (allowedDetachedPullRequestRun(run)) return inspectDetachedRun(api, run)
+  const number = run.pull_requests[0].number
+  const { data: pull } = await api(`${prefix}/pulls/${number}`)
   if (
-    !Array.isArray(pulls) ||
-    pulls.some((pull) => pull.head?.sha === run.head_sha)
+    pull.number !== number ||
+    pull.base?.repo?.full_name !== REPOSITORY ||
+    pull.head?.repo?.full_name !== REPOSITORY ||
+    pull.head.ref !== run.head_branch
   ) {
-    return { id, eligible: false, reason: 'unbound-live-head' }
+    return { id, eligible: false, reason: 'PR-identity-mismatch' }
   }
-  return { id, eligible: true, reason: 'unbound-head', identity: identity(run) }
+  if (pull.state === 'closed') {
+    return {
+      id,
+      eligible: true,
+      reason: 'closed-PR',
+      pull: number,
+      identity: identity(run),
+    }
+  }
+  if (pull.state !== 'open') {
+    return { id, eligible: false, reason: 'current-head' }
+  }
+  // A run that already tests the current head cannot be superseded by a newer
+  // one, but that head can still hold a redundant duplicate of this run.
+  if (pull.head.sha === run.head_sha) {
+    return inspectQueuedDuplicate(api, run, pull, number)
+  }
+  const matches = await listActiveHeadRuns(api, run, pull)
+  if (!matches.length || matches[0].id <= id) {
+    return { id, eligible: false, reason: 'no-current-replacement' }
+  }
+  const { data: replacement } = await api(
+    `${prefix}/actions/runs/${matches[0].id}`
+  )
+  if (!bindsReplacement(replacement, run, pull, number)) {
+    return { id, eligible: false, reason: 'unverified-replacement' }
+  }
+  return {
+    id,
+    eligible: true,
+    reason: 'superseded-head',
+    pull: number,
+    replacement: replacement.id,
+    identity: identity(run),
+  }
 }
 
 async function inventory(api) {
   const all = new Map()
   for (const status of ACTIVE) {
-    const runs = await listAll(
-      async ({ page, per_page }) =>
-        api(
-          `repos/${REPOSITORY}/actions/runs?event=pull_request&status=${status}&per_page=${per_page}&page=${page}`
-        ),
-      'workflow_runs'
-    )
-    for (const run of runs) if (allowedRun(run)) all.set(run.id, run)
+    for (const event of ['pull_request', 'push']) {
+      const runs = await listAll(
+        async ({ page, per_page }) =>
+          api(
+            `repos/${REPOSITORY}/actions/runs?event=${event}&status=${status}&per_page=${per_page}&page=${page}`
+          ),
+        'workflow_runs'
+      )
+      for (const run of runs) if (allowedRun(run)) all.set(run.id, run)
+    }
   }
   const results = []
   for (const run of all.values())
@@ -257,19 +363,15 @@ async function cancelRun(
   const current = await inspectRun(api, id, initial.identity)
   if (!current.eligible) return current
   const endpoint = `repos/${REPOSITORY}/actions/runs/${id}`
-  try {
-    await api(`${endpoint}/cancel`, 'POST')
-  } catch (error) {
-    if (error.neverQueued) {
-      return {
-        id,
-        eligible: true,
-        reason: initial.reason,
-        result: 'not-queued',
-      }
-    }
-    throw error
+  // A run that has not reached a runner can reject cancellation with HTTP 409.
+  // That is a deferred outcome for this run, not a failure of the whole batch.
+  const cancelled = await api(`${endpoint}/cancel`, 'POST')
+    .then(() => true)
+    .catch((error) => error)
+  if (cancelled !== true && isNotCancellable(cancelled)) {
+    return { ...current, result: 'cancellation-not-yet-accepted' }
   }
+  if (cancelled !== true) throw cancelled
   for (let attempt = 0; attempt < 6; attempt += 1) {
     await wait(5000)
     const { data: run } = await api(endpoint)
@@ -286,7 +388,13 @@ async function cancelRun(
   if (!force) return { ...current, result: 'cancellation-unconfirmed' }
   const fresh = await inspectRun(api, id, initial.identity)
   if (!fresh.eligible) return fresh
-  await api(`${endpoint}/force-cancel`, 'POST')
+  const forced = await api(`${endpoint}/force-cancel`, 'POST')
+    .then(() => true)
+    .catch((error) => error)
+  if (forced !== true && isNotCancellable(forced)) {
+    return { ...fresh, result: 'force-cancellation-not-yet-accepted' }
+  }
+  if (forced !== true) throw forced
   for (let attempt = 0; attempt < 6; attempt += 1) {
     await wait(5000)
     const { data: run } = await api(endpoint)
