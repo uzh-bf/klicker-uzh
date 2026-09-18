@@ -2614,7 +2614,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
         bloomTitle: "Bloom's taxonomy",
         bloomHelp:
-          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments.',
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments. Higher levels need more detailed source material, so a level can still fail for thin material.',
         bloomLevel: 'Level {level}',
         bloomSelected: 'Selected',
         bloomSelect: 'Select level',
