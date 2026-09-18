@@ -28,7 +28,7 @@
     "rollup": "~4.34.9",
     "tsx": "~4.19.4",
     "typescript": "~6.0.3",
-    "vitest": "~3.2.4"
+    "vitest": "3.2.4"
   },
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
