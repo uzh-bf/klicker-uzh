@@ -20,6 +20,13 @@ export interface KbMcpServerEndpoint {
 
 export interface KbImportedSourceItem {
   id: string
+  /**
+   * Provenance recorded by the writing lane: the app-managed ingestion API
+   * stores the KB resource id here, while operator imports either store their
+   * own marker or nothing at all. Kept internal; the resolver decides the
+   * user-facing origin by matching it against the knowledge base resources.
+   */
+  externalResourceId: string | null
   title: string
   sourceType: string | null
   sourceUrl: string | null
@@ -130,6 +137,7 @@ function parseInventory(payload: unknown): KbImportedSourceInventory {
       id: createHash('sha256')
         .update(`${identityField}\n${identityValue}`)
         .digest('hex'),
+      externalResourceId: toNonEmptyString(source.external_resource_id),
       title: toNonEmptyString(source.title) ?? identityValue,
       sourceType: toNonEmptyString(source.source_type),
       sourceUrl: toNonEmptyString(source.source_url),

@@ -1826,23 +1826,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
-    importedSourcesTitle: 'Imported sources',
+    importedSourcesTitle: 'Indexed sources',
     importedSourceColumn: 'Source',
     importedSourcesNotice:
-      'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
+      'Everything indexed in this knowledge base, whether you added it through the app or the course team imported it. App-managed resources count toward the resource and storage limits and are included in knowledge graph builds; manually imported sources are not.',
     importedSourcesIncomplete:
       'The list covers the most recently scanned sources. Older sources may not be listed yet.',
-    importedSourcesEmpty:
-      'No imported sources have been found for this knowledge base yet.',
-    importedSourcesLoadError: 'The imported sources could not be loaded.',
-    loadMoreImportedSources: 'Load more imported sources',
+    importedSourcesEmpty: 'No sources are indexed in this knowledge base yet.',
+    importedSourcesLoadError: 'The indexed sources could not be loaded.',
+    loadMoreImportedSources: 'Load more sources',
     importedSourcesLoadMoreError:
-      'The additional imported sources could not be loaded. Try again.',
+      'The additional sources could not be loaded. Try again.',
     importedObservedAt: 'Observed {date}',
     importedIngestedColumn: 'Ingested',
     importedObservedColumn: 'Observed',
     importedIngestionUnknown: 'Ingestion time not recorded',
     importedSourceGeneric: 'Source',
+    importedSourceManagedBadge: 'App-managed',
+    importedSourceImportedBadge: 'Manually imported',
     importedVideoNoFileHint:
       'Video content is indexed without storing the original file.',
     noResources: 'No resources have been added yet.',

@@ -1843,24 +1843,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
-    importedSourcesTitle: 'Importierte Quellen',
+    importedSourcesTitle: 'Indexierte Quellen',
     importedSourceColumn: 'Quelle',
     importedSourcesNotice:
-      'Importierte Metadaten für Inhalte, die bereits in dieser Wissensdatenbank indexiert sind. Importierte Quellen werden nicht für Wissensgraphen verwendet und zählen nicht zu den Ressourcen- und Speicherlimits.',
+      'Alles, was in dieser Wissensdatenbank indexiert ist, unabhängig davon, ob Sie es über die Anwendung hinzugefügt haben oder das Kursteam es importiert hat. App-verwaltete Ressourcen zählen zu den Ressourcen- und Speicherlimits und fliessen in Wissensgraphen ein; manuell importierte Quellen nicht.',
     importedSourcesIncomplete:
       'Die Liste umfasst die zuletzt durchsuchten Quellen. Ältere Quellen sind möglicherweise noch nicht erfasst.',
     importedSourcesEmpty:
-      'Für diese Wissensdatenbank wurden noch keine importierten Quellen gefunden.',
+      'In dieser Wissensdatenbank sind noch keine Quellen indexiert.',
     importedSourcesLoadError:
-      'Die importierten Quellen konnten nicht geladen werden.',
-    loadMoreImportedSources: 'Weitere importierte Quellen laden',
+      'Die indexierten Quellen konnten nicht geladen werden.',
+    loadMoreImportedSources: 'Weitere Quellen laden',
     importedSourcesLoadMoreError:
-      'Die weiteren importierten Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
+      'Die weiteren Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
     importedObservedAt: 'Beobachtet am {date}',
     importedIngestedColumn: 'Verarbeitet',
     importedObservedColumn: 'Beobachtet',
     importedIngestionUnknown: 'Verarbeitungszeit nicht erfasst',
     importedSourceGeneric: 'Quelle',
+    importedSourceManagedBadge: 'App-verwaltet',
+    importedSourceImportedBadge: 'Manuell importiert',
     importedVideoNoFileHint:
       'Videoinhalte werden ohne Speicherung der Originaldatei indexiert.',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',

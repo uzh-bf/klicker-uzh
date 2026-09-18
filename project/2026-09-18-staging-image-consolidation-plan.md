@@ -366,3 +366,8 @@ Updated 2026-09-18.
   passed. The manifests now carry the exact pin (`95b9020a0d`); the lockfile
   already recorded `specifier: 3.2.4` for all ten, so no dependency
   re-resolution was needed. `check-suite` is green on both heads again.
+
+Local verification on both trees: `node --test` over the CI contract list
+passes (293 tests on `v3`, 301 on `v3-audit`), Biome and Prettier are clean,
+and a local promoter dry run resolves 14 targets on `v3` and 16 on
+`v3-audit` with no required CI workflow absent from either tree.

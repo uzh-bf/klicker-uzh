@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
+import {
+  KB_SOURCE_ORIGINS,
+  type KBImportedSource as KBImportedSourceType,
+} from '../services/knowledge.js'
 import { ChatbotKnowledgeBaseSummaryRef } from './resource.js'
 
 interface IKBFileUpload {
@@ -34,6 +38,10 @@ export const KBResourceStatus = builder.enumType('KBResourceStatus', {
 
 export const KBIngestionStatus = builder.enumType('KBIngestionStatus', {
   values: Object.values(DB.KBIngestionStatus),
+})
+
+export const KBSourceOrigin = builder.enumType('KBSourceOrigin', {
+  values: KB_SOURCE_ORIGINS,
 })
 
 export const KBIngestionRunRef =
@@ -211,15 +219,7 @@ export const KBResourceConnection = KBResourceConnectionRef.implement({
   }),
 })
 
-interface IKBImportedSource {
-  id: string
-  title: string
-  sourceType: string | null
-  sourceUrl: string | null
-  ingestedAt: Date | null
-  observedAt: Date | null
-  chunkCount: number
-}
+type IKBImportedSource = KBImportedSourceType
 
 export const KBImportedSourceRef =
   builder.objectRef<IKBImportedSource>('KBImportedSource')
@@ -232,6 +232,7 @@ export const KBImportedSource = KBImportedSourceRef.implement({
     ingestedAt: t.expose('ingestedAt', { type: 'Date', nullable: true }),
     observedAt: t.expose('observedAt', { type: 'Date', nullable: true }),
     chunkCount: t.exposeInt('chunkCount'),
+    origin: t.expose('origin', { type: KBSourceOrigin }),
   }),
 })
 
