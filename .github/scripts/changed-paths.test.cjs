@@ -1,9 +1,13 @@
 const assert = require('node:assert/strict')
-const { execFileSync } = require('node:child_process')
+const http = require('node:http')
+const { execFile, execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
+const { promisify } = require('node:util')
+
+const execFileAsync = promisify(execFile)
 
 const ACTION = path.join(__dirname, '../actions/changed-paths/action.yml')
 // A pattern the fixtures deliberately match, mirroring how the real
@@ -40,32 +44,23 @@ function commitPackageChange(root, name) {
   return git(root, 'rev-parse', 'HEAD')
 }
 
-function runAction(root, env) {
-  // The composite's step body is extracted verbatim so the test exercises the
-  // exact script CI runs rather than a paraphrase.
-  const source = fs.readFileSync(ACTION, 'utf8')
-  const start = source.indexOf('- id: check')
-  assert.ok(start >= 0, 'check step not found')
-  const runMarker = source.indexOf('run: |', start)
-  assert.ok(runMarker > start, 'run block not found')
-  // The run block is the tail of this action, so everything after the marker
-  // belongs to the script; blank lines inside it are literal content.
-  const script = source
-    .slice(runMarker + 'run: |'.length + 1)
-    .split('\n')
-    .map((line) => line.replace(/^ {8}/, ''))
-    .join('\n')
+// One mock server per runAction call: it stands in for the GitHub check-run
+// endpoint the composite queries before honouring a metadata-only skip. The
+// action runs the step script through an asynchronous child, because the mock
+// answers on this process's event loop; a synchronous child would deadlock.
+async function withCheckRunServer(handler, fn) {
+  const server = http.createServer(handler)
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address()
+  try {
+    return await fn(`http://127.0.0.1:${port}`)
+  } finally {
+    await new Promise((resolve) => server.close(resolve))
+  }
+}
+
+function readOutput(root) {
   const out = path.join(root, 'gh_output.txt')
-  fs.rmSync(out, { force: true })
-  execFileSync('bash', ['-c', script], {
-    cwd: root,
-    env: {
-      ...process.env,
-      GITHUB_OUTPUT: out,
-      PATTERN,
-      ...env,
-    },
-  })
   return Object.fromEntries(
     fs
       .readFileSync(out, 'utf8')
@@ -78,69 +73,294 @@ function runAction(root, env) {
   )
 }
 
-test('a metadata-only edited event selects no suite on an unchanged base', () => {
-  const root = makeRepo()
-  const base = git(root, 'rev-parse', 'HEAD')
-  commitPackageChange(root, 'graphql.txt')
-  const out = runAction(root, {
-    GITHUB_EVENT_NAME: 'pull_request',
-    BASE_REF: base,
-    ACTION: 'edited',
-    EDITED_BASE_FROM: '',
-  })
-  assert.equal(out.should_run, 'false')
+function extractScript() {
+  // The run block is the tail of the action, so everything after the marker
+  // belongs to the script; blank lines inside it are literal content.
+  const source = fs.readFileSync(ACTION, 'utf8')
+  const start = source.indexOf('- id: check')
+  assert.ok(start >= 0, 'check step not found')
+  const runMarker = source.indexOf('run: |', start)
+  assert.ok(runMarker > start, 'run block not found')
+  return source
+    .slice(runMarker + 'run: |'.length + 1)
+    .split('\n')
+    .map((line) => line.replace(/^ {8}/, ''))
+    .join('\n')
+}
+
+async function runAction(
+  root,
+  { env, checkRuns = [], checkRunsStatus = 200, skipRequestAssertions = false }
+) {
+  let hits = 0
+  return withCheckRunServer(
+    (req, res) => {
+      hits += 1
+      if (!skipRequestAssertions && checkRunsStatus === 200) {
+        const url = new URL(req.url, 'http://localhost')
+        assert.equal(
+          url.pathname,
+          `/repos/test-owner/test-repo/commits/${env.HEAD_SHA}/check-runs`
+        )
+        assert.equal(url.searchParams.get('check_name'), env.PRIOR_CHECK_NAME)
+      }
+      res.writeHead(checkRunsStatus, { 'content-type': 'application/json' })
+      res.end(
+        checkRunsStatus === 200
+          ? JSON.stringify({
+              total_count: checkRuns.length,
+              check_runs: checkRuns,
+            })
+          : JSON.stringify({ message: 'boom' })
+      )
+    },
+    async (apiUrl) => {
+      const out = path.join(root, 'gh_output.txt')
+      fs.rmSync(out, { force: true })
+      await execFileAsync('bash', ['-c', extractScript()], {
+        cwd: root,
+        env: {
+          ...process.env,
+          GITHUB_OUTPUT: out,
+          GITHUB_API_URL: apiUrl,
+          GITHUB_REPOSITORY: 'test-owner/test-repo',
+          PATTERN,
+          ...env,
+        },
+      })
+      const outputs = readOutput(root)
+      if (skipRequestAssertions) {
+        assert.equal(hits, 0, 'the lookup must be skipped when no name is set')
+      }
+      return outputs
+    }
+  )
+}
+
+const successCheckRun = (headSha) => ({
+  name: 'suite',
+  head_sha: headSha,
+  status: 'completed',
+  conclusion: 'success',
 })
 
-test('an edited event that retargets the base still computes the diff', () => {
+test('a metadata-only edited event skips when the prior run succeeded', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [successCheckRun(head)],
+  })
+  assert.equal(out.should_run, 'false')
+  assert.equal(out.skip_reason, 'validated-prior-success')
+})
+
+test('a metadata-only edited event re-runs after a prior failure', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [
+      {
+        name: 'suite',
+        head_sha: head,
+        status: 'completed',
+        conclusion: 'failure',
+      },
+    ],
+  })
+  assert.equal(out.should_run, 'true')
+  assert.equal(out.skip_reason, undefined)
+})
+
+test('a metadata-only edited event re-runs while the prior run is pending', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [
+      {
+        name: 'suite',
+        head_sha: head,
+        status: 'in_progress',
+        conclusion: null,
+      },
+    ],
+  })
+  assert.equal(out.should_run, 'true')
+})
+
+test('a metadata-only edited event re-runs when the prior check is missing', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [],
+  })
+  assert.equal(out.should_run, 'true')
+})
+
+test('a metadata-only edited event re-runs when the check API fails', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRunsStatus: 500,
+  })
+  assert.equal(out.should_run, 'true')
+  assert.equal(out.skip_reason, undefined)
+})
+
+test('a metadata-only edited event re-runs when the prior check belongs to another head', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [successCheckRun('0'.repeat(40))],
+  })
+  assert.equal(out.should_run, 'true')
+})
+
+test('a metadata-only edited event without a prior-check name always runs', async () => {
+  const root = makeRepo()
+  const base = git(root, 'rev-parse', 'HEAD')
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: '',
+    },
+    checkRuns: [successCheckRun(head)],
+    // An unset name disables the lookup entirely, so the mock must not be hit.
+    skipRequestAssertions: true,
+  })
+  assert.equal(out.should_run, 'true')
+})
+
+test('an edited event that retargets the base still computes the diff', async () => {
   const root = makeRepo()
   const oldBase = git(root, 'rev-parse', 'HEAD')
   commitPackageChange(root, 'graphql.txt')
   const newBase = git(root, 'rev-parse', 'HEAD')
   commitPackageChange(root, 'grading.txt')
-  const out = runAction(root, {
-    GITHUB_EVENT_NAME: 'pull_request',
-    BASE_REF: newBase,
-    ACTION: 'edited',
-    EDITED_BASE_FROM: oldBase,
+  const head = git(root, 'rev-parse', 'HEAD')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: newBase,
+      HEAD_SHA: head,
+      ACTION: 'edited',
+      EDITED_BASE_FROM: oldBase,
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [successCheckRun(head)],
   })
   assert.equal(out.should_run, 'true')
+  assert.equal(out.skip_reason, undefined)
 })
 
-test('a synchronize event still selects matching changes', () => {
+test('a synchronize event still selects matching changes', async () => {
   const root = makeRepo()
   const base = git(root, 'rev-parse', 'HEAD')
-  commitPackageChange(root, 'graphql.txt')
-  const out = runAction(root, {
-    GITHUB_EVENT_NAME: 'pull_request',
-    BASE_REF: base,
-    ACTION: 'synchronize',
-    EDITED_BASE_FROM: '',
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'synchronize',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [successCheckRun(head)],
   })
   assert.equal(out.should_run, 'true')
 })
 
-test('a non-edited event ignores metadata-only state entirely', () => {
+test('a non-edited event never consults the prior check', async () => {
   const root = makeRepo()
   const base = git(root, 'rev-parse', 'HEAD')
-  commitPackageChange(root, 'graphql.txt')
-  const out = runAction(root, {
-    GITHUB_EVENT_NAME: 'pull_request',
-    BASE_REF: base,
-    ACTION: 'reopened',
-    EDITED_BASE_FROM: '',
+  const head = commitPackageChange(root, 'graphql.txt')
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'pull_request',
+      BASE_REF: base,
+      HEAD_SHA: head,
+      ACTION: 'reopened',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [],
   })
   assert.equal(out.should_run, 'true')
 })
 
-test('an empty diff still fails open on a push event', () => {
+test('an empty diff still fails open on a push event', async () => {
   const root = makeRepo()
   const sha = git(root, 'rev-parse', 'HEAD')
-  const out = runAction(root, {
-    GITHUB_EVENT_NAME: 'push',
-    BEFORE_SHA: '0000000000000000000000000000000000000000',
-    BASE_REF: sha,
-    ACTION: '',
-    EDITED_BASE_FROM: '',
+  const out = await runAction(root, {
+    env: {
+      GITHUB_EVENT_NAME: 'push',
+      BEFORE_SHA: '0000000000000000000000000000000000000000',
+      BASE_REF: sha,
+      HEAD_SHA: sha,
+      ACTION: '',
+      EDITED_BASE_FROM: '',
+      PRIOR_CHECK_NAME: 'suite',
+    },
+    checkRuns: [],
   })
   assert.equal(out.should_run, 'true')
 })
