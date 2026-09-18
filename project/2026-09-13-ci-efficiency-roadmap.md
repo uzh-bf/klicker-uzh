@@ -1428,27 +1428,34 @@ required from the user.
   records remain the largest avoidable class and are the confirmed
   wake-per-producer symptom, not runner-minutes.
 
-- 2026-09-18 AMD ruling correction: the guard does not hold on `v3-audit`.
-  The goal carried "all build-amd jobs already if:false everywhere including prd
-  tags", and the 09-16 re-verification confirmed it for `origin/v3`: all 26
-  workflow files on that branch that declare `build-amd:` guard it with an
-  always-false condition. That claim is branch-local and was never checked
-  against `v3-audit`, where the assistant and MCP workflows live.
+- 2026-09-18 AMD ruling: the scope is branch-local, and the MCP shape is
+  different, not broken. The goal carried "all build-amd jobs already if:false
+  everywhere including prd tags", and the 09-16 re-verification confirmed it for
+  `origin/v3`: all 26 workflow files on that branch that declare `build-amd:`
+  guard it with an always-false condition. Re-checking the same claim against
+  `v3-audit`, where the assistant and MCP workflows live, shows four MCP
+  workflows whose `build-amd` job is not always-false:
+  `v3_mcp-lecturer-stg.yml`, `v3_mcp-student-stg.yml`,
+  `v3_mcp-lecturer-prd.yml` and `v3_mcp-student-prd.yml`.
 
-  **Four MCP workflows on `v3-audit` still run AMD.** `v3_mcp-lecturer-stg.yml`,
-  `v3_mcp-student-stg.yml`, `v3_mcp-lecturer-prd.yml` and
-  `v3_mcp-student-prd.yml` declare `build-amd` with no always-false guard; the
-  two staging ones carry the ordinary draft deferral instead. This is not
-  theoretical: push run `35318844446` on `v3-audit` (07:19Z, success) ran
-  `build-amd` on `ubuntu-latest` from 07:24:50Z to 07:26:21Z, 91 seconds of
-  hosted runner time, and `v3_mcp-lecturer-stg.yml` is still picking up
-  pull-request runs behind the current queue (run `35323224032`, queued).
+  **First reading was wrong; the record is corrected here.** The MCP
+  `build-amd` is not the disabled legacy QEMU job. It runs on `ubuntu-latest`
+  with a native `platforms: linux/amd64` build, installs no QEMU, and gates
+  publication on `.github/scripts/stg-image-publish-guard.sh` so a push only
+  rebuilds when the full-SHA tag is absent. Push run `35318844446` on
+  `v3-audit` (07:19Z, success) ran it from 07:24:50Z to 07:26:21Z, 91 seconds,
+  and `v3_mcp-lecturer-stg.yml` is still picking up pull-request runs behind
+  the queue (run `35323224032`, queued). So AMD is not "inert everywhere"; it
+  is live on exactly the four MCP workflows, which is the intended shape for
+  the two MCP images and not a regression. `required-build-status.cjs` on
+  `v3-audit` agrees, listing `jobs: ['build-arm', 'build-amd']` for the two MCP
+  staging workflows and `['build-arm']` for every other entry, and the
+  inventory invariant test passes there (24/24), including the assertion that
+  an active `build-*` job installs no QEMU.
 
-  **The paired guard also expects it.** `required-build-status.cjs` on
-  `v3-audit` lists `jobs: ['build-arm', 'build-amd']` for both
-  `v3_mcp-lecturer-stg.yml` and `v3_mcp-student-stg.yml`, unlike every other
-  entry, which lists only `build-arm`. Disabling the job alone would therefore
-  break the required `build-images-status` context, so the workflow guard and
-  the required-job inventory must move together. Correcting it reclaims hosted
-  capacity and restores the invariant the deployment ruling depends on; the
-  re-enable path stays limited to prd-tag release artifacts.
+  **Consequence for the ruling.** "AMD stays disabled" is accurate for `v3`
+  and for every non-MCP `v3-audit` image, and it is the wrong description of
+  the MCP pair. The 91-second native rebuild per MCP push is small and
+  guarded, so it is not a queue-relief target; the ruling stands as written
+  for the images it was about, with the MCP exception now recorded so the next
+  audit does not re-derive it or mistake it for a defect.
