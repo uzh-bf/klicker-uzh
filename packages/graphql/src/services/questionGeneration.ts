@@ -70,6 +70,15 @@ import type {
 } from './questionGenerationRuntime.js'
 
 const REVIEW_DISPATCH_RECOVERY_MILLISECONDS = 15_000
+
+// Rollout gate for the partial-result capability. The deployed
+// content-generation worker rejects unknown start-payload fields, so
+// allow_partial_results may only be emitted while a worker release that
+// accepts it is live. Raise this constant once that release is deployed and
+// verified in the target environment; lower it again if the worker is rolled
+// back to a build without the field.
+export const QUESTION_PARTIAL_RESULTS_ENABLED = false
+
 const TERMINAL_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.COMPLETED,
   DB.ElementGenerationBuildStatus.REJECTED,
@@ -145,7 +154,7 @@ function requireRuntime(ctx: ContextWithUser): QuestionGenerationRuntime {
   return ctx.elementGenerationRuntime
 }
 
-function questionWorkflowStartManifestSha256(
+export function questionWorkflowStartManifestSha256(
   payload: QuestionWorkflowStartPayload
 ): string {
   const normalized = {
@@ -279,6 +288,36 @@ async function recordBuildFailure(
   throw normalized
 }
 
+export function questionWorkflowStartPayload(
+  input: {
+    buildId: string
+    graphVersionId: string
+    graphManifest: QuestionGenerationArtifactRef
+    storageName: string
+    blueprint: QuestionGenerationArtifactRef
+    output: { containerName: string; blobPrefix: string }
+    language: QuestionGenerationConfiguration['language']
+  },
+  options: { allowPartialResults?: boolean } = {}
+): QuestionWorkflowStartPayload {
+  const allowPartialResults =
+    options.allowPartialResults ?? QUESTION_PARTIAL_RESULTS_ENABLED
+  return {
+    schema_version: 3,
+    question_build_id: input.buildId,
+    graph_version_id: input.graphVersionId,
+    graph_manifest: elementGenerationArtifactPayload(input.graphManifest),
+    storage_name: input.storageName,
+    blueprint: elementGenerationArtifactPayload(input.blueprint),
+    output: {
+      container_name: input.output.containerName,
+      blob_prefix: input.output.blobPrefix,
+    },
+    language: input.language,
+    ...(allowPartialResults ? { allow_partial_results: true } : {}),
+  }
+}
+
 function questionWorkflowPayload(
   build: Pick<
     QuestionBuild,
@@ -297,21 +336,18 @@ function questionWorkflowPayload(
     )
   }
   const configuration = build.configuration as QuestionGenerationConfiguration
-  return {
-    schema_version: 3,
-    question_build_id: build.id,
-    graph_version_id: build.sourceGraphBuild.id,
-    graph_manifest: elementGenerationArtifactPayload(
-      build.sourceGraphBuild.graphManifestArtifact
-    ),
-    storage_name: build.sourceGraphBuild.graphBundleStorageName,
-    blueprint: elementGenerationArtifactPayload(build.blueprintArtifact),
+  return questionWorkflowStartPayload({
+    buildId: build.id,
+    graphVersionId: build.sourceGraphBuild.id,
+    graphManifest: build.sourceGraphBuild.graphManifestArtifact,
+    storageName: build.sourceGraphBuild.graphBundleStorageName,
+    blueprint: build.blueprintArtifact,
     output: {
-      container_name: runtime.questionOutputContainer,
-      blob_prefix: runtime.questionOutputPrefix,
+      containerName: runtime.questionOutputContainer,
+      blobPrefix: runtime.questionOutputPrefix,
     },
     language: configuration.language,
-  }
+  })
 }
 
 async function dispatchPreparingQuestionBuild(
@@ -598,19 +634,21 @@ async function synchronizeLeasedBuild(
             'Question-generation build has incomplete dispatched graph evidence'
           )
         }
-        const startPayload: QuestionWorkflowStartPayload = {
-          schema_version: 3,
-          question_build_id: build.id,
-          graph_version_id: build.sourceGraphBuild.id,
-          graph_manifest: elementGenerationArtifactPayload(graphManifest),
-          storage_name: build.sourceGraphBuild.graphBundleStorageName!,
-          blueprint: elementGenerationArtifactPayload(blueprint),
+        // The provenance check recomputes the dispatched start-manifest hash,
+        // so this payload must be built by the same function as the dispatch
+        // payload above; otherwise the optional rollout-gated fields diverge.
+        const startPayload = questionWorkflowStartPayload({
+          buildId: build.id,
+          graphVersionId: build.sourceGraphBuild.id,
+          graphManifest,
+          storageName: build.sourceGraphBuild.graphBundleStorageName!,
+          blueprint,
           output: {
-            container_name: runtime.questionOutputContainer,
-            blob_prefix: runtime.questionOutputPrefix,
+            containerName: runtime.questionOutputContainer,
+            blobPrefix: runtime.questionOutputPrefix,
           },
           language: configuration.language,
-        }
+        })
         v3Evidence = {
           graphVersionId: build.sourceGraphBuild.id,
           graphManifest,
