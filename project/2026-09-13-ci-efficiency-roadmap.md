@@ -1320,3 +1320,163 @@ required from the user.
   belongs to a different head, and asserts `should_run=true` every time. It is
   not reproduced on the live repository because that would require deliberately
   publishing a failing suite.
+- 2026-09-18 queue forensics and obsolete-run hygiene (branch
+  `rs/ci-obsolete-run-hygiene`). A live snapshot at 07:24 took 132 queued workflow
+  runs: Playwright 15, Final AI review 14, unit 11, GraphQL 11, OLAT-API 10,
+  Promote to stg 10, lecturer MCP 8, translation context 8, gitleaks 5, check 4,
+  CodeQL 3, Build Fallback 3, and 16 staging image builds. The reaper inventory
+  (`node .github/scripts/ci-obsolete-runs.cjs`) returned 31 active runs and
+  rejected every one as `current-head`.
+
+  **Six of the fifteen queued Playwright runs were redundant.** Three were
+  same-head pairs, one per branch: `de900cbe` on `rs/v3-audit-sync-20260918`
+  (`35318160764` with `35318351559`), `5b4f5949` on `v3-ai` (`35317794684` with
+  `35317799687`) and `cdf50fe3` on `rs/v3-ai-sync-20260917b` (`35317150179` with
+  `35317775815`). A push and a pull-request event for one branch use different
+  concurrency groups, because the group key falls back to `github.ref_name` for
+  pushes and uses the pull-request number otherwise, so neither event cancels
+  the other and both create a wave for the same tree. `35245361536`
+  (`rs/kg-focus-topic-ui`) waited about fifteen hours, and `34749125387`
+  (`rs/audit-ci-fixtures`) has been queued since 2026-09-13 with `updated_at`
+  equal to `created_at`, so it never reached a runner.
+
+  **Why the existing reaper could not touch them.** `allowedRun` required exactly
+  one pull-request binding, so the September 13 run, whose `pull_requests` array
+  is empty, was outside the policy entirely. For runs that are bound, `inspectRun`
+  returned `current-head` as soon as the run's sha matched the pull request head,
+  which is exactly the duplicate case: both runs are current-head by definition.
+  The reaper therefore had no path for either gap.
+
+  **What the fix adds.** Two reasons. `redundant-queued-duplicate` applies when
+  the run is still `queued`, so it has consumed no runner time, and a newer run of
+  the same workflow already covers the same head; the newer run carries the
+  authoritative plan and is validated by the same `bindsReplacement` contract the
+  superseded-head path uses. `unbound-head` applies to a pull-request run with no
+  binding whose head no open pull request claims, gated on a 24-hour window
+  because GitHub attaches the binding a moment after creation and a newer pull
+  request can still claim the same head. A run that does not satisfy either rule
+  keeps its previous verdict, so nothing that could still report a required
+  status is dropped.
+
+  **Live verification.** `--run-id 34749125387` now reports
+  `eligible=true, reason=unbound-head`; `35318160764` reports
+  `unbound-recent`, correctly refusing to cancel a 24-hour-young unbound run;
+  `35316321922` reports `current-head`; and `35317794684` is
+  `outside-policy` because it completed before the query. Nine new tests cover a
+  redundant queued duplicate, a duplicate that already started, a sole queued run,
+  a newer run from another workflow, an abandoned unbound run, the binding
+  window, a live pull request on the same head, a missing creation timestamp, and
+  the relaxed run policy; all 33 tests pass.
+
+  **The docs-only routing premise in the 2026-09-16 ranking is stale.** Rank 3
+  assumed a prose-only pull request pays a full typecheck. Step timings from
+  check run `35316998769` show the opposite: `Check Next.js development
+  configuration and readiness` 117s, install 56s, `Check linting` 29s, checkout
+  20s, KB lifecycle contracts 18s and file formatting 10s, while `Build packages
+  for typecheck (turbo)` took 1s and `Check typescript types`, `Check Prisma
+  schema sync drift`, `Check syncpack conformity` and knip took 0 to 1s each
+  because the turbo affected filter and the remote cache already collapse them.
+  A docs-only fast path would save at most the 29s lint step, so rank 3 should
+  drop below the review and deployment fan-out it was ranked above.
+
+- 2026-09-18 reaper hardening and reaper-PR collision (same branch). The
+  September 13 run cannot be cleared at all: cancelling a run GitHub never
+  enqueued answers `409 ... has not been queued yet` from the cancel and the
+  force-cancel endpoint alike, so that record holds no runner slot and the
+  reaped capacity is capped rather than freed. Two consequences for the tool.
+  First, that refusal used to end the sweep with "No further runs were changed",
+  so one inert record protected every later one; the reaper now reports
+  `not-queued` and continues. Second, the two new reasons were re-measured
+  against the live event types, and the earlier description of the three pairs
+  was wrong. Two are not cross-event. `rs/v3-audit-sync-20260918`
+  (`35318160764` before `35318351559`) and `rs/v3-ai-sync-20260917b`
+  (`35317150179` before `35317775815`) are both `pull_request` runs on one
+  head, so the `redundant-queued-duplicate` rule does reach them. Only the
+  `v3-ai` pair is cross-event: `35317794684` is a `push` run and
+  `35317799687` is the `pull_request` run for the same `5b4f5949` head. The
+  duplicate mechanism is therefore a single-head race for two branches and a
+  push/pull-request split for one, and the two fixes are complementary rather
+  than overlapping: the queued-duplicate rule reclaims the pull-request members,
+  and #6075's branch-tip rule reclaims the push member.
+
+  **Deliberately not applied.** The two gaps are real and still unreclaimed: an
+  older *queued* same-head pull-request run, and a pull-request run whose
+  binding never appeared. Both are mechanics only, and neither changes what a
+  tool is allowed to cancel, so they are left to the reaper PR that carries the
+  rest of the design rather than layered on top of it.
+
+  **Three competing reaper heads now exist and must be reconciled before any of
+  them merges.** PR #6075 (`rs/ci-push-run-sweep`, open, not draft, head
+  `6798c82fa2`, `BEHIND`, all checks green, no human review yet) extends the same
+  two files to reclaim push runs behind the branch tip, to treat a detached
+  binding as merged-or-closed after proving the head branch is gone, and to
+  survive the `409`/`422` not-cancellable answer instead of aborting. PR #6132
+  (`rs/ci-obsolete-run-hygiene`, draft, head `2abd85d0d8`) adds the queued
+  duplicate, the unbound run and the never-queued continue. Both edit
+  `.github/scripts/ci-obsolete-runs.cjs` and
+  `.github/scripts/ci-obsolete-runs.test.cjs` in the same functions, and #6075
+  is behind `v3`, so they conflict textually and overlap semantically.
+  Whichever lands first, the second must be rebased and rebuilt on top; they
+  are not disjoint and neither is a superset. #6075 is the better base where
+  they overlap, because it parameterises the detached branch instead of
+  hardcoding the unbound case, since the two are the same defect, and because
+  it already carries the not-cancellable continue that this branch re-derived
+  independently.
+
+  **Re-measured fan-out over 24h** (created at or after 2026-09-17 08:00Z,
+  first 600 runs): `Promote to stg` 49, `Final AI review` 34, Playwright 24,
+  `Check codebase` 23, unit/graphql/SonarCloud/gitleaks/Build-Fallback 22 each,
+  CodeQL 21, OLAT-API 20, translation context 20, then thirteen
+  `Build Docker image for * (stg)` workflows at 17 to 19 each, plus 14
+  OpenCodeReview. The thirteen staging workflows are the largest single
+  structural class at roughly 237 runs, which makes the B3 consolidation the
+  highest-value remaining structural slice. The promotion controller's 49
+  records remain the largest avoidable class and are the confirmed
+  wake-per-producer symptom, not runner-minutes.
+
+  **Rejected fix, recorded so it is not attempted.** The three same-head
+  duplicate pairs exist because the group key is
+  `${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}`,
+  so a push and a pull request for one branch land in different groups and
+  neither cancels the other. Unifying them onto
+  `${{ github.workflow }}-${{ github.head_ref || github.ref_name }}` would make the
+  two events share a group and cancel one another, which removes the duplicate
+  wave at the source. It must not be done. For any `v3-*` branch, the push run
+  is the one the promotion controller validates as candidate evidence, and a
+  pull-request run cancelling it reproduces exactly the failure already recorded
+  on 2026-09-15, when `build-images-status` failed closed because the staging
+  build evidence for the candidate had been cancelled behind the backlog. The
+  duplicate is better left to the reaper, which reclaims a queued run only after
+  proving a newer validated replacement exists.
+
+- 2026-09-18 AMD ruling: the scope is branch-local, and the MCP shape is
+  different, not broken. The goal carried "all build-amd jobs already if:false
+  everywhere including prd tags", and the 09-16 re-verification confirmed it for
+  `origin/v3`: all 26 workflow files on that branch that declare `build-amd:`
+  guard it with an always-false condition. Re-checking the same claim against
+  `v3-audit`, where the assistant and MCP workflows live, shows four MCP
+  workflows whose `build-amd` job is not always-false:
+  `v3_mcp-lecturer-stg.yml`, `v3_mcp-student-stg.yml`,
+  `v3_mcp-lecturer-prd.yml` and `v3_mcp-student-prd.yml`.
+
+  **First reading was wrong; the record is corrected here.** The MCP
+  `build-amd` is not the disabled legacy QEMU job. It runs on `ubuntu-latest`
+  with a native `platforms: linux/amd64` build, installs no QEMU, and gates
+  publication on `.github/scripts/stg-image-publish-guard.sh` so a push only
+  rebuilds when the full-SHA tag is absent. Push run `35318844446` on
+  `v3-audit` (07:19Z, success) ran it from 07:24:50Z to 07:26:21Z, 91 seconds,
+  and `v3_mcp-lecturer-stg.yml` is still picking up pull-request runs behind
+  the queue (run `35323224032`, queued). So AMD is not "inert everywhere"; it
+  is live on exactly the four MCP workflows, which is the intended shape for
+  the two MCP images and not a regression. `required-build-status.cjs` on
+  `v3-audit` agrees, listing `jobs: ['build-arm', 'build-amd']` for the two MCP
+  staging workflows and `['build-arm']` for every other entry, and the
+  inventory invariant test passes there (24/24), including the assertion that
+  an active `build-*` job installs no QEMU.
+
+  **Consequence for the ruling.** "AMD stays disabled" is accurate for `v3`
+  and for every non-MCP `v3-audit` image, and it is the wrong description of
+  the MCP pair. The 91-second native rebuild per MCP push is small and
+  guarded, so it is not a queue-relief target; the ruling stands as written
+  for the images it was about, with the MCP exception now recorded so the next
+  audit does not re-derive it or mistake it for a defect.
