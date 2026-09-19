@@ -421,3 +421,30 @@ ineligible because this plan covers private repositories and internal staging ev
   reclaim would terminalize it, but `INGESTION_RESOURCE_RECLAIM_ENABLED` is unset on STG
   (defaults to false). Enabling reclaim is the plan's cluster/GitOps item and needs its own
   approval; the code fix itself is deployed and verified.
+- Reclaim applied on STG 2026-09-19 (user `apply` instruction) as two GitOps changes on
+  `ai-infrastructure/deployment` `main`, auto-synced by ArgoCD app `ai-generic-ingestion-stg`
+  (`enableAutoSync: true`, path `ingestion/stg-generic`, revision `main`):
+  - `03db1375` ([!930](https://gitlab.uzh.ch/ai-infrastructure/deployment/-/merge_requests/930))
+    sets `INGESTION_RESOURCE_RECLAIM_ENABLED: "true"` in `ingestion/stg-generic/cm.yaml`.
+  - `411ff169` ([!931](https://gitlab.uzh.ch/ai-infrastructure/deployment/-/merge_requests/931))
+    adds `reloader.stakater.com/auto: "true"` to `ingestion-resource-dispatcher-deployment.yaml`.
+    The dispatcher calls `_reclaim_enabled()` once in `main()`, and the shared `ingestion`
+    ConfigMap keeps a stable name, so without this annotation the flag stays inert. The
+    dispatcher was one of three deployments in the overlay without it; the other six workers
+    already carried it. Deliberately not added to `resource-fetch-worker`, where a restart
+    cancels an in-flight fetch and a cancelled parent skips `on_failure` -- the exact failure
+    reclaim exists to clean up.
+  - Gate re-verified against the deployed pins before enabling: the STG fleet moved to
+    `data-ingestion` `2cbe9f1c` (rollout `c95ce279`), which contains the generation-aware
+    contract from `!191`; the one older pin, `durable-control-worker` at `d835fb7`, also
+    accepts `reclaim_generation` (`default=0`, `exclude_if=lambda value: value == 0`).
+    `validate_render.py` passes against the rendered overlay (38 documents at `2cbe9f1c`).
+- Live STG confirmation of the effect (V3, user-facing surface only -- the cluster tunnel was
+  down and Azure CLI needed interactive `az login`, so pod-level evidence is still outstanding):
+  KB `355f529c` shows `Diversification (finance) - Wikipedia` with `File size 371.4 KiB` and
+  `Media type text/html`, which only a successful fetch can record; its `Updated` timestamp
+  moved off the Sep 18 13:57 freeze point for the first time in ~31 h, and `Recent attempts`
+  lists `Processing Version 2 Sep 18, 2026, 3:57 PM` as the newest entry. Reclaim is the only
+  mechanism that clears the abandoned `hatchet_run_id` fence that blocked the re-fetch.
+  Outstanding: whether it settles as `Succeeded` or closes as `resource_reclaim_exhausted`
+  after the third reclaim, plus the `resource.processing_failed` event count.
