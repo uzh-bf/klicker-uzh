@@ -1,0 +1,15 @@
+{{- if .Values.mcpStudent.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}-config-mcp-student
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+  FASTMCP_STATELESS: "true"
+  MCP_STUDENT_GRAPHQL_ENDPOINT: {{ printf "http://%s-backend-graphql:%v/api/graphql" (include "chart.fullname" .) .Values.backendGraphql.service.port | quote }}
+  MCP_STUDENT_HOST: "0.0.0.0"
+  MCP_STUDENT_PATH: {{ .Values.mcpStudent.path | quote }}
+  MCP_STUDENT_PORT: {{ .Values.mcpStudent.service.port | quote }}
+  MCP_STUDENT_QUESTION_REF_TTL_SECONDS: {{ .Values.mcpStudent.questionRefTtlSeconds | quote }}
+{{- end }}
