@@ -1,0 +1,6 @@
+query GetCourseAssessmentMode($courseId: String!) {
+  basicCourseInformation(courseId: $courseId) {
+    id
+    isAssessmentEnabled
+  }
+}
