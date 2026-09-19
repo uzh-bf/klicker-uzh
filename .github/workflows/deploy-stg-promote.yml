@@ -18,22 +18,10 @@ on:
       # A candidate whose quality gate is still running is reconsidered when the
       # analysis finishes, instead of waiting for the next candidate push.
       - 'Perform sonarcloud analysis'
-      - 'Build Fallback'
-      - 'Build Docker image for analytics (stg)'
-      - 'Build Docker image for auth (stg)'
-      - 'Build Docker image for backend-docker (stg)'
-      - 'Build Docker image for chat (stg)'
-      - 'Build Docker image for frontend-assessment (stg)'
-      - 'Build Docker image for frontend-control (stg)'
-      - 'Build Docker image for frontend-manage (stg)'
-      - 'Build Docker image for frontend-pwa (stg)'
-      - 'Build Docker image for hatchet-worker-general (stg)'
-      - 'Build Docker image for hatchet-worker-response-processor (stg)'
-      - 'Build Docker image for lti (stg)'
-      - 'Build Docker image for mcp-lecturer (stg)'
-      - 'Build Docker image for mcp-student (stg)'
-      - 'Build Docker image for olat-api (stg)'
-      - 'Build Docker image for response-api (stg)'
+      # One consolidated producer replaces Build Fallback and the fifteen
+      # per-image workflows, so the controller wakes once per image-publication
+      # event instead of once per image.
+      - 'Build staging images'
     types: [completed]
     branches: ['v3', 'v3*']
   workflow_dispatch:
