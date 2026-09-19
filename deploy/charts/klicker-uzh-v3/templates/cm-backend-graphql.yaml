@@ -41,6 +41,9 @@ data:
   KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
   KB_FALKORDB_TLS: {{ .Values.backendGraphql.knowledgeGraph.tls | quote }}
   KB_FALKORDB_QUERY_TIMEOUT_MS: {{ .Values.backendGraphql.knowledgeGraph.queryTimeoutMs | quote }}
+  {{- if .Values.backendGraphql.knowledgeGraph.domainCatalogRevision }}
+  KB_GRAPH_DOMAIN_CATALOG_REVISION: {{ .Values.backendGraphql.knowledgeGraph.domainCatalogRevision | quote }}
+  {{- end }}
   {{- end }}
   {{- if or .Values.hatchet.kbGraph.workflowName .Values.backendGraphql.elementGeneration.enabled }}
   # Shared graph and element-generation semester quota ledger.
