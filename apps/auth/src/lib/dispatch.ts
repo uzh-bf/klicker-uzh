@@ -124,9 +124,12 @@ export async function resolveCallbackAudience(params: {
   return { audience: null, reason: 'ambiguous_state_match' }
 }
 
-// A callback returned by the identity provider with an error parameter can
-// carry no verifiable transaction context. It must end in a controlled error
-// without account handling in any configuration.
+// A callback returned by the identity provider with an error parameter has no
+// authorization code to exchange and never performs account handling. The
+// error response still echoes the state of the initiation, so the caller
+// resolves the audience from the state cookies before applying this predicate:
+// a verified participant is returned to the participant restart page with the
+// bounded error code, while every other provider error stays neutral.
 export function isProviderErrorCallback(query: AuthQuery): boolean {
-  return typeof query.error === 'string' && query.error.length > 0
+  return query.error !== undefined
 }

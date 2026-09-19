@@ -1,36 +1,16 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
-import type { GetStaticPropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { signIn } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import { useStudentSession } from '../hooks/useStudentSession'
-import { DEFAULT_STUDENT_HOSTS } from '../lib/constants'
+import { resolveSecureCookies } from '../lib/authCookies'
+import { getStudentHosts } from '../lib/helpers'
 import { validateRedirectTarget } from '../lib/redirectTarget'
-
-// Return target of the assessment login. The proxy already rejects an invalid
-// `redirectTo` for this route; validating again keeps the client-side
-// navigation from depending on that single gate. Only an absolute URL on an
-// allowed assessment host is used, everything else returns to the assessment
-// root.
-function assessmentReturnTarget(
-  requested: string | string[] | undefined
-): string {
-  const fallback =
-    process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
-    'https://assessment.klicker.uzh.ch'
-
-  const validation = validateRedirectTarget(
-    typeof requested === 'string' ? requested : undefined,
-    DEFAULT_STUDENT_HOSTS,
-    { secure: process.env.NODE_ENV === 'production' }
-  )
-
-  return validation.url ?? fallback
-}
 
 // Signs out of the participant session only. The explicit ?participant=true
 // parameter routes the NextAuth signout through the participant
@@ -46,12 +26,9 @@ async function participantSignOut() {
   })
 }
 
-function StudentSignIn() {
+function StudentSignIn({ redirectTo }: { redirectTo: string }) {
   const t = useTranslations()
-  const router = useRouter()
   const { status, participant, refetch } = useStudentSession()
-
-  const redirectTo = assessmentReturnTarget(router.query?.redirectTo)
 
   if (status === 'loading') {
     return null
@@ -152,7 +129,7 @@ function StudentSignIn() {
   )
 }
 
-export default function Student() {
+export default function Student({ redirectTo }: { redirectTo: string }) {
   const router = useRouter()
   const t = useTranslations()
 
@@ -184,7 +161,7 @@ export default function Student() {
           </div>
         </div>
         <div className="w-full px-6 sm:px-10">
-          <StudentSignIn />
+          <StudentSignIn redirectTo={redirectTo} />
         </div>
       </div>
       <div className="w-full flex-none">
@@ -194,9 +171,28 @@ export default function Student() {
   )
 }
 
-export async function getStaticProps({ locale }: GetStaticPropsContext) {
+export async function getServerSideProps({
+  locale,
+  query,
+}: GetServerSidePropsContext) {
+  // Resolve once on the server so configured deployment hosts and deep links
+  // survive both initial rendering and client-side navigation.
+  const target = validateRedirectTarget(
+    typeof query.redirectTo === 'string' ? query.redirectTo : undefined,
+    getStudentHosts(),
+    {
+      secure: resolveSecureCookies(
+        process.env.NEXTAUTH_URL,
+        process.env.AUTH_SECURE_COOKIES
+      ),
+    }
+  )
   return {
     props: {
+      redirectTo:
+        target.url ??
+        (process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
+          'https://assessment.klicker.uzh.ch'),
       messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }

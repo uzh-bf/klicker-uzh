@@ -326,5 +326,6 @@ test('provider error callbacks are detected for controlled failure', () => {
     true
   )
   assert.equal(isProviderErrorCallback({ state: 'x' }), false)
-  assert.equal(isProviderErrorCallback({ error: '' }), false)
+  assert.equal(isProviderErrorCallback({ error: '' }), true)
+  assert.equal(isProviderErrorCallback({ error: ['a', 'b'] }), true)
 })

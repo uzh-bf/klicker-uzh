@@ -307,3 +307,146 @@ test('the auth homepage is not accepted as a participant destination', async () 
   assert.equal(result.location, ASSESSMENT_ROOT)
   await assertParticipantPrincipal(result)
 })
+
+// Provider errors: the identity provider answers with an error parameter
+// instead of an authorization code, and the error response still echoes the
+// state of the initiation. The verified state cookie therefore decides the
+// recovery: a verified participant keeps the participant restart page with the
+// bounded error code, while lecturer and unverified attempts stay on the
+// neutral restart page. The raw provider-supplied error must reach neither the
+// response nor telemetry.
+
+type ProviderErrorCase = {
+  name: string
+  error: string | string[]
+  stateContext: 'participant' | 'lecturer'
+  stateParam: 'match' | 'mismatch' | 'missing' | 'duplicate'
+  expectedLocation: string
+  expectedAudience: 'participant' | 'lecturer' | null
+}
+
+const PROVIDER_ERROR_STATE = 'state-provider-error'
+
+const providerErrorCases: ProviderErrorCase[] = [
+  {
+    name: 'a duplicated provider error retains participant recovery without forwarding its values',
+    error: ['access_denied', 'provider diagnostic'],
+    stateContext: 'participant',
+    stateParam: 'match',
+    expectedLocation: '/restart?audience=participant',
+    expectedAudience: 'participant',
+  },
+  {
+    name: 'a verified participant provider error is recovered with its error code',
+    error: 'access_denied',
+    stateContext: 'participant',
+    stateParam: 'match',
+    expectedLocation: '/restart?audience=participant&error=access_denied',
+    expectedAudience: 'participant',
+  },
+  {
+    name: 'a provider outage is recovered for a verified participant',
+    error: 'temporarily_unavailable',
+    stateContext: 'participant',
+    stateParam: 'match',
+    expectedLocation:
+      '/restart?audience=participant&error=temporarily_unavailable',
+    expectedAudience: 'participant',
+  },
+  {
+    name: 'an unbounded provider error is dropped from participant recovery',
+    error: 'access denied: user@example.edu',
+    stateContext: 'participant',
+    stateParam: 'match',
+    expectedLocation: '/restart?audience=participant',
+    expectedAudience: 'participant',
+  },
+  {
+    name: 'a verified lecturer provider error stays on the neutral restart page',
+    error: 'access_denied',
+    stateContext: 'lecturer',
+    stateParam: 'match',
+    expectedLocation: '/restart',
+    expectedAudience: 'lecturer',
+  },
+  {
+    name: 'a mismatched state parameter stays neutral on a provider error',
+    error: 'access_denied',
+    stateContext: 'participant',
+    stateParam: 'mismatch',
+    expectedLocation: '/restart',
+    expectedAudience: null,
+  },
+  {
+    name: 'a missing state parameter stays neutral on a provider error',
+    error: 'access_denied',
+    stateContext: 'participant',
+    stateParam: 'missing',
+    expectedLocation: '/restart',
+    expectedAudience: null,
+  },
+  {
+    name: 'a duplicated state parameter stays neutral on a provider error',
+    error: 'access_denied',
+    stateContext: 'participant',
+    stateParam: 'duplicate',
+    expectedLocation: '/restart',
+    expectedAudience: null,
+  },
+]
+
+for (const providerError of providerErrorCases) {
+  test(providerError.name, async () => {
+    const stateCookies =
+      providerError.stateContext === 'lecturer'
+        ? {
+            [lecturerCookies.state]: await temporaryCookie(
+              lecturerCookies.state,
+              PROVIDER_ERROR_STATE
+            ),
+          }
+        : await participantCallbackCookies(PROVIDER_ERROR_STATE)
+
+    const stateParam =
+      providerError.stateParam === 'missing'
+        ? undefined
+        : providerError.stateParam === 'mismatch'
+          ? 'state-provider-error-unrelated'
+          : providerError.stateParam === 'duplicate'
+            ? [PROVIDER_ERROR_STATE, PROVIDER_ERROR_STATE]
+            : PROVIDER_ERROR_STATE
+
+    const result = await invokeAuthHandler({
+      query: {
+        nextauth: ['callback', PROVIDER_ID],
+        ...(stateParam === undefined ? {} : { state: stateParam }),
+        error: providerError.error,
+      },
+      cookies: stateCookies,
+      headers: { host: 'auth.klicker.uzh.ch' },
+    })
+
+    assert.equal(result.statusCode, 302)
+    assert.equal(result.location, providerError.expectedLocation)
+
+    // Whatever the state resolved to, a provider error never exchanges a
+    // code, handles an account or issues a session.
+    assert.equal(identityProvider.tokenRequests.length, 0)
+    assert.deepEqual(helperCalls, [])
+    assert.deepEqual(prismaCalls, [])
+    assert.equal(result.sessionCookies[PARTICIPANT_COOKIE_NAME], undefined)
+    assert.equal(result.sessionCookies[MANAGER_COOKIE_NAME], undefined)
+
+    // The verified audience is recorded, while the raw provider error is
+    // written to neither the response nor telemetry.
+    const rejected = result.telemetry.find(
+      (event) => event.event === 'auth.callback_rejected'
+    )
+    assert.equal(rejected?.outcome, 'provider_error')
+    assert.equal(rejected?.audience, providerError.expectedAudience)
+    assert.ok(
+      !JSON.stringify(result.telemetry).includes(String(providerError.error)),
+      'telemetry must not carry the provider-supplied error'
+    )
+  })
+}

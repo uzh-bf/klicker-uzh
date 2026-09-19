@@ -1,7 +1,7 @@
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import LanguageChanger from '@klicker-uzh/shared-components/src/LanguageChanger'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
-import type { GetStaticPropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
@@ -15,10 +15,15 @@ import { useTranslations } from 'next-intl'
 // verified for the attempt (see lib/errorRecovery.ts). In that case only the
 // matching entry point is offered, so a retry cannot drift into the other
 // audience's account handling.
-export default function Restart() {
+export default function Restart({
+  participantRestart,
+  hasError,
+}: {
+  participantRestart: boolean
+  hasError: boolean
+}) {
   const router = useRouter()
   const t = useTranslations()
-  const participantRestart = router.query.audience === 'participant'
 
   return (
     <div className="md:grow-0! m-auto flex w-full grow flex-col md:max-w-2xl md:rounded-lg md:border md:shadow">
@@ -48,7 +53,7 @@ export default function Restart() {
           </div>
         </div>
         <div className="flex w-full flex-col gap-4 px-6 sm:px-10">
-          {router.query.error ? (
+          {hasError ? (
             <UserNotification type="warning">
               {t('auth.restart.errorInfo')}
             </UserNotification>
@@ -85,9 +90,14 @@ export default function Restart() {
   )
 }
 
-export async function getStaticProps({ locale }: GetStaticPropsContext) {
+export async function getServerSideProps({
+  locale,
+  query,
+}: GetServerSidePropsContext) {
   return {
     props: {
+      participantRestart: query.audience === 'participant',
+      hasError: typeof query.error === 'string' && query.error.length > 0,
       messages: (await import(`@klicker-uzh/i18n/messages/${locale}`)).default,
     },
   }

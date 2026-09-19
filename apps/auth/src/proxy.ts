@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { resolveSecureCookies } from './lib/authCookies'
 import {
   DEFAULT_LECTURER_HOSTS,
   DEFAULT_PWA_HOSTS,
@@ -21,10 +22,12 @@ const LECTURER_HOSTS = _LECTURER.length ? _LECTURER : DEFAULT_LECTURER_HOSTS
 const _PWA = parseCsvHosts(process.env.AUTH_PWA_HOSTS)
 const PWA_HOSTS = _PWA.length ? _PWA : DEFAULT_PWA_HOSTS
 
-const SECURE = process.env.NODE_ENV === 'production'
-
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+  const secure = resolveSecureCookies(
+    process.env.NEXTAUTH_URL,
+    process.env.AUTH_SECURE_COOKIES
+  )
 
   // If the request is initiated from the PWA, redirect to the PWA login.
   // Restricted to UI paths: this referer-based routing must never intercept
@@ -53,7 +56,7 @@ export async function proxy(request: NextRequest) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     if (redirectTo) {
       const validation = validateRedirectTarget(redirectTo, LECTURER_HOSTS, {
-        secure: SECURE,
+        secure,
       })
       if (!validation.ok) {
         return new NextResponse('Invalid redirect URL', { status: 400 })
@@ -69,7 +72,7 @@ export async function proxy(request: NextRequest) {
       'https://manage.klicker.uzh.ch'
 
     const validation = validateRedirectTarget(redirectTo, LECTURER_HOSTS, {
-      secure: SECURE,
+      secure,
     })
     if (!validation.ok) {
       return new NextResponse('Invalid redirect URL', { status: 400 })
@@ -88,7 +91,7 @@ export async function proxy(request: NextRequest) {
       'https://assessment.klicker.uzh.ch'
 
     const validation = validateRedirectTarget(redirectTo, STUDENT_HOSTS, {
-      secure: SECURE,
+      secure,
     })
     if (!validation.ok) {
       return new NextResponse('Invalid redirect URL', { status: 400 })

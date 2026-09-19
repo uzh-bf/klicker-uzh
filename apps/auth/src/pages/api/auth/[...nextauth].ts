@@ -30,6 +30,7 @@ import {
 import {
   authServiceBaseUrl,
   installParticipantFailureRecovery,
+  participantRestartTarget,
 } from '@/lib/errorRecovery'
 import {
   createOrLinkParticipant,
@@ -645,7 +646,10 @@ function sendRestartRedirect(res: NextApiResponse, errorCode?: string) {
 // The intended account audience is resolved once per request:
 //  - OAuth callbacks (eduid) from the audience-namespaced state cookies only.
 //    Missing, expired, malformed, duplicated or contradictory context fails
-//    safely to the neutral restart page without any account handling.
+//    safely to the neutral restart page without any account handling. The same
+//    resolution covers a provider error response: a verified participant is
+//    returned to the participant restart page with the bounded error code,
+//    while lecturer and unverified attempts stay neutral.
 //  - Initiation (signin/signout) from the explicit audience parameter.
 //  - Generic actions (session, csrf, providers, error) stay on the lecturer
 //    configuration; participants use /api/student-session instead.
@@ -681,18 +685,6 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
     delete req.query.participant
     delete req.query.callbackUrl
 
-    if (isProviderErrorCallback(query)) {
-      // The provider returned an error; no state equality is possible.
-      authEvent('auth.callback_rejected', requestId, {
-        audience: null,
-        providerId,
-        outcome: 'provider_error',
-        errorCategory: String(query.error),
-        elapsedMs: Date.now() - startedAt,
-      })
-      return sendRestartRedirect(res, String(query.error))
-    }
-
     const secure = secureCookies()
     const resolution = await resolveCallbackAudience({
       query,
@@ -715,6 +707,31 @@ export default async function auth(req: NextApiRequest, res: NextApiResponse) {
           secret: process.env.APP_SECRET ?? '',
         }),
     })
+
+    if (isProviderErrorCallback(query)) {
+      // Provider errors still echo state. Keep verified participant recovery
+      // without exchanging a code or logging provider-supplied diagnostics.
+      authEvent('auth.callback_rejected', requestId, {
+        audience: resolution.audience,
+        providerId,
+        outcome: 'provider_error',
+        errorCategory:
+          resolution.audience === null ? resolution.reason : undefined,
+        elapsedMs: Date.now() - startedAt,
+      })
+
+      if (resolution.audience === 'participant') {
+        res.writeHead(302, {
+          Location: participantRestartTarget(
+            typeof query.error === 'string' ? query.error : undefined
+          ),
+        })
+        res.end()
+        return
+      }
+
+      return sendRestartRedirect(res)
+    }
 
     if (!resolution.audience) {
       authEvent('auth.callback_rejected', requestId, {

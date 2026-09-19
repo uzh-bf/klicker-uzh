@@ -31,7 +31,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/frontend-pwa/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          pattern: '^(apps/auth/|apps/frontend-pwa/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
           prior-check-name: test-unit-status
 
   test-unit:
@@ -135,6 +135,10 @@ jobs:
       - name: Test frontend PWA
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/frontend-pwa test:run
+
+      - name: Test auth audience and recovery contracts
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/auth test:run
 
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
