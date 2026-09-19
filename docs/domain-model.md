@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-09-02'
+timestamp: '2026-09-07'
 tags:
   - backend
   - prisma
@@ -26,6 +26,52 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Participant access to a published chatbot is likewise authorized by the existence of the course `Participation`, regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`). Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
+
+### Participant data-use choices
+
+Research and learning-analytics choices are participant-global current state on
+`Participant`, not course-scoped history. `researchConsent` and
+`learningAnalyticsConsent` both default to `false`; their choice timestamps and
+disclosure-version fields describe the current decision. Every completion and
+choice change is also appended to `ParticipantDataUseEvent`, an audit row per
+participant and revision; an immutability trigger blocks updates, deletes, and
+truncation, and analytics withdrawal requests reference the revision that
+recorded them.
+
+`researchConsent = true` allows a future research export to include all stored
+canonical data for that participant; `false` excludes all of it. Returning to
+`true` makes all stored canonical data eligible for future exports again.
+`learningAnalyticsConsent = true` allows eligible individual learning analytics
+to include all stored activity history after a course has been recomputed
+strictly after the current choice; `false` excludes individual learning
+analytics. The privacy policy also makes Learning Analytics voluntary at course
+level, but no course-level activation setting exists in this schema yet;
+`Course.areAnalyticsValid` records only whether previously computed data are
+still valid and must not be reused as that setting. The course-level choice is
+owned by a later layer.
+
+An analytics withdrawal request is created only on a true-to-false transition.
+The migration initializes existing accounts with
+`learningAnalyticsConsent = false` and records no choice, so legacy analytics
+data for an account whose first recorded choice is false is not represented by
+any withdrawal request. Consuming the queue is therefore not, by itself, a
+legacy-data cleanup strategy; that reconciliation belongs to the later
+analytics layer.
+
+`Participation` remains the course-membership row and keeps its existing
+leaderboard meaning. It carries no research or learning-analytics choice or
+history, and participants have no per-course data-use choice in this schema.
+
+The public Prisma schema is the sole authority for these models. Catalyst must
+pin the exact immutable public commit and digest it consumes; a moving branch,
+dirty tree, or generated Analytics mirror is not provenance. The stored fields
+alone do not enable export, computation, or workflow dispatch.
+
+Chatbot and live-quiz analytics rows reference their owning `Chatbot` or
+`LiveQuiz` instead of storing a second, independently writable `courseId`.
+Course-scoped analytics joins through that owner, which keeps course ownership
+consistent by construction. Participant live-quiz point totals retain the
+canonical fractional `REAL` values.
 
 ### Assessment participant invitations
 

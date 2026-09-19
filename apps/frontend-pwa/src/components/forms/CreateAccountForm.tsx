@@ -1,17 +1,14 @@
 import { useLazyQuery } from '@apollo/client'
 import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
-import { Markdown } from '@klicker-uzh/markdown'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import {
   Button,
   Checkbox,
-  Collapsible,
   FormikSwitchField,
   FormikTextField,
   H3,
-  H4,
   Prose,
 } from '@uzh-bf/design-system'
 import { Form, Formik } from 'formik'
@@ -19,6 +16,9 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
+
+import ParticipantDataDisclosure from '../participant/ParticipantDataDisclosure'
+import ParticipantDataUseChoices from '../participant/ParticipantDataUseChoices'
 
 interface Props {
   initialUsername?: string
@@ -32,6 +32,7 @@ function CreateAccountForm({
   handleSubmit,
 }: Props) {
   const t = useTranslations()
+  const isAssessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
   const [checkParticipantNameAvailable] = useLazyQuery(
     CheckParticipantNameAvailableDocument
   )
@@ -70,10 +71,18 @@ function CreateAccountForm({
       otherwise: (schema) =>
         schema.oneOf([''], t('pwa.profile.identicalPasswords')),
     }),
+    researchConsent: yup
+      .boolean()
+      .required(t('pwa.createAccount.signup.dataUseChoiceRequired')),
+    learningAnalyticsConsent: yup
+      .boolean()
+      .required(t('pwa.createAccount.signup.dataUseChoiceRequired')),
+    acknowledged: yup
+      .boolean()
+      .required(t('pwa.createAccount.signup.acknowledgementRequired'))
+      .oneOf([true], t('pwa.createAccount.signup.acknowledgementRequired')),
   })
 
-  const [tosChecked, setTosChecked] = useState<boolean>(false)
-  const [openCollapsibleIx, setOpenCollapsibleIx] = useState<number>(0)
   const [isUsernameAvailable, setIsUsernameAvailable] = useState<
     boolean | undefined
   >(true)
@@ -87,67 +96,26 @@ function CreateAccountForm({
         password: '',
         passwordRepetition: '',
         isProfilePublic: true,
+        researchConsent: true,
+        learningAnalyticsConsent: undefined as boolean | undefined,
+        acknowledged: false,
       }}
       validationSchema={createAccountSchema}
       onSubmit={handleSubmit}
     >
-      {({ isSubmitting, isValid, values, validateField }) => (
+      {({ isSubmitting, isValid, setFieldValue, values, validateField }) => (
         <Form>
           <div className="flex flex-col gap-2 md:mx-auto md:grid md:w-full md:max-w-[1090px] md:grid-cols-2">
-            <div className="order-3 flex flex-col items-center justify-between gap-2 rounded bg-slate-100 p-4 py-2 md:col-span-2 md:flex-row md:gap-4 md:px-4">
-              <div className="flex flex-row items-center gap-4">
-                <div className="flex-1 text-slate-600">
-                  {/* <FontAwesomeIcon icon={faWarning} /> */}
-                  <Checkbox
-                    className={{
-                      root: twMerge(
-                        'h-6 w-6',
-                        !tosChecked && 'border-red-600 bg-red-400'
-                      ),
-                    }}
-                    data={{ cy: 'tos-checkbox' }}
-                    label={
-                      <DynamicMarkdown
-                        withProse
-                        withLinkButtons={false}
-                        className={{
-                          root: twMerge(
-                            'prose-p:mb-0 prose-sm ml-4 max-w-lg',
-                            !tosChecked && 'text-red-600'
-                          ),
-                        }}
-                        content={t('pwa.createAccount.confirmationMessage')}
-                      />
-                    }
-                    onCheck={() => setTosChecked(!tosChecked)}
-                    checked={tosChecked}
-                  />
-                </div>
-              </div>
-              <Button
-                primary
-                type="submit"
-                disabled={!tosChecked || !isValid}
-                loading={isSubmitting}
-                className={{
-                  root: 'h-8 w-full flex-none md:w-max',
-                }}
-                data={{ cy: 'create-profile-button' }}
-              >
-                <Button.Icon icon={faSave} loading={isSubmitting} />
-                <Button.Label>{t('pwa.profile.createProfile')}</Button.Label>
-              </Button>
-            </div>
             <div className="order-1 gap-3 rounded md:order-1 md:bg-slate-50 md:p-4">
               <H3 className={{ root: 'mb-0 border-b' }}>
-                {t('shared.generic.profile')}
+                {t('pwa.createAccount.signup.accountTitle')}
               </H3>
               <div className="mb-2 space-y-3">
                 <FormikTextField
                   required
                   disabled={!!initialEmail}
                   name="email"
-                  label={t('shared.generic.email')}
+                  label={t('pwa.createAccount.signup.emailLabel')}
                   className={{
                     label: 'mt-4 text-black',
                   }}
@@ -175,6 +143,9 @@ function CreateAccountForm({
                   className={{ label: 'mt-0' }}
                   data={{ cy: 'username-field-account-creation' }}
                 />
+                <p className="text-sm text-slate-600">
+                  {t('pwa.createAccount.signup.usernameHint')}
+                </p>
                 <FormikTextField
                   required
                   name="password"
@@ -218,73 +189,95 @@ function CreateAccountForm({
                   </div>
                 </div>
               </div>
+              <div className="mt-4">
+                <ParticipantDataDisclosure isAssessment={isAssessment} />
+              </div>
             </div>
-            <div className="order-2 space-y-2 rounded md:order-2 md:justify-between md:bg-slate-50 md:p-4">
+            <div className="order-2 space-y-2 rounded md:order-2 md:bg-slate-50 md:p-4">
               <H3 className={{ root: 'mb-0 border-b' }}>
-                {t('pwa.createAccount.dataProcessingTitle')}
+                {t('pwa.createAccount.signup.dataUseTitle')}
               </H3>
-              <Collapsible
-                open={openCollapsibleIx === 0}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 0 ? -1 : 0)
+              <ParticipantDataUseChoices
+                isAssessment={isAssessment}
+                researchConsent={values.researchConsent}
+                learningAnalyticsConsent={values.learningAnalyticsConsent}
+                onResearchConsentChange={(consent) =>
+                  setFieldValue('researchConsent', consent)
                 }
-                staticContent={
-                  <H4>{t('pwa.createAccount.dataCollectionTitle')}</H4>
+                onLearningAnalyticsConsentChange={(consent) =>
+                  setFieldValue('learningAnalyticsConsent', consent)
                 }
+                dataCy={{
+                  researchYes: 'research-consent-yes',
+                  researchNo: 'research-consent-no',
+                  researchToggle: 'research-consent-toggle',
+                  learningAnalyticsYes: 'learning-analytics-consent-yes',
+                  learningAnalyticsNo: 'learning-analytics-consent-no',
+                  learningAnalyticsToggle: 'learning-analytics-consent-toggle',
+                  learningAnalyticsPrivacy: 'learning-analytics-privacy-policy',
+                }}
+              />
+            </div>
+            <div className="order-3 flex flex-col items-center justify-between gap-2 rounded bg-slate-100 p-4 py-2 md:col-span-2 md:flex-row md:gap-4 md:px-4">
+              <div className="flex flex-row items-center gap-4">
+                <div className="flex-1 text-slate-600">
+                  {/* <FontAwesomeIcon icon={faWarning} /> */}
+                  <Checkbox
+                    className={{
+                      root: twMerge(
+                        'h-6 w-6',
+                        !values.acknowledged && 'border-red-600 bg-red-400'
+                      ),
+                    }}
+                    data={{ cy: 'tos-checkbox' }}
+                    label={
+                      <DynamicMarkdown
+                        withProse
+                        withLinkButtons={false}
+                        className={{
+                          root: twMerge(
+                            'prose-p:mb-0 prose-sm ml-4 max-w-lg',
+                            !values.acknowledged && 'text-red-600'
+                          ),
+                        }}
+                        content={t(
+                          isAssessment
+                            ? 'pwa.createAccount.signup.assessmentAcknowledgement'
+                            : 'pwa.createAccount.signup.acknowledgement'
+                        )}
+                      />
+                    }
+                    onCheck={() =>
+                      setFieldValue('acknowledged', !values.acknowledged)
+                    }
+                    checked={values.acknowledged}
+                  />
+                </div>
+              </div>
+              <Button
+                primary
+                type="submit"
+                disabled={
+                  !isValid ||
+                  typeof values.researchConsent !== 'boolean' ||
+                  typeof values.learningAnalyticsConsent !== 'boolean' ||
+                  !values.acknowledged
+                }
+                loading={isSubmitting}
+                className={{
+                  root: 'h-8 w-full flex-none md:w-max',
+                }}
+                data={{ cy: 'create-profile-button' }}
               >
-                <Markdown
-                  withProse
-                  withLinkButtons={false}
-                  className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataCollectionNotice')}
-                />
-              </Collapsible>
-              <Collapsible
-                open={openCollapsibleIx === 1}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 1 ? -1 : 1)
-                }
-                staticContent={
-                  <H4>{t('pwa.createAccount.dataSharingTitle')}</H4>
-                }
-              >
-                <Markdown
-                  withProse
-                  withLinkButtons={false}
-                  className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataSharingNotice')}
-                />
-              </Collapsible>
-              <Collapsible
-                open={openCollapsibleIx === 2}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 2 ? -1 : 2)
-                }
-                staticContent={<H4>{t('pwa.createAccount.dataUsageTitle')}</H4>}
-              >
-                <Markdown
-                  withProse
-                  withLinkButtons={false}
-                  className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataUsageNotice')}
-                />
-              </Collapsible>
-              <Collapsible
-                open={openCollapsibleIx === 3}
-                onChange={() =>
-                  setOpenCollapsibleIx(openCollapsibleIx === 3 ? -1 : 3)
-                }
-                staticContent={
-                  <H4>{t('pwa.createAccount.dataStorageTitle')}</H4>
-                }
-              >
-                <Markdown
-                  withProse
-                  withLinkButtons={false}
-                  className={{ root: 'prose-sm' }}
-                  content={t('pwa.createAccount.dataStorageNotice')}
-                />
-              </Collapsible>
+                <Button.Icon icon={faSave} loading={isSubmitting} />
+                <Button.Label>
+                  {t(
+                    isAssessment
+                      ? 'pwa.createAccount.signup.assessmentSubmit'
+                      : 'pwa.createAccount.signup.submit'
+                  )}
+                </Button.Label>
+              </Button>
             </div>
           </div>
         </Form>
