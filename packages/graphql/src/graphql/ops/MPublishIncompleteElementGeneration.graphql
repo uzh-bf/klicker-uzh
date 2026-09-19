@@ -1,0 +1,7 @@
+mutation PublishIncompleteElementGeneration(
+  $input: PublishIncompleteElementGenerationInput!
+) {
+  publishIncompleteElementGeneration(input: $input) {
+    ...ElementGenerationBuildData
+  }
+}

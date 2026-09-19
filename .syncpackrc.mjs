@@ -86,6 +86,17 @@ export default {
       isIgnored: true,
     },
     {
+      // FIXME: drop once backend-docker migrates to the OpenTelemetry v2 SDK line;
+      // chat is on v2 (required by @langfuse/otel v4) while backend-docker stays on v1.
+      label: 'backend-docker stays on the OpenTelemetry v1 SDK line',
+      dependencies: [
+        '@opentelemetry/exporter-trace-otlp-http',
+        '@opentelemetry/sdk-trace-node',
+      ],
+      packages: ['@klicker-uzh/backend-docker'],
+      isIgnored: true,
+    },
+    {
       // mhchem JS, CSS and fonts must come from one katex build across all
       // render surfaces; a split version silently breaks chemistry rendering.
       // Docs keeps its policy-required tilde dev range, so only the exact

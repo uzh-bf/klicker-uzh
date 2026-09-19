@@ -14,6 +14,7 @@
 - **Integration mechanics**: the `v3` and `v3-*` rulesets block deletion and force-push, and their required checks evaluate both pull requests and direct pushes. Admins may bypass required checks on pull requests; `v3-ai` additionally permits a repository-admin direct push, and the push still runs the full CI suite on the branch. A non-fast-forward push is rejected when the branch has moved, so duplicate syncs cannot land.
 - **Sync routing**: use the direct merge push for `v3` -> `v3-ai`; keep `v3-ai` -> `v3-audit` as an integration PR so the staging candidate only advances to a merge commit that already passed all required checks. The staging promoter independently re-validates the exact `v3-audit` head before moving `stg-release`. When a direct merge needs substantive conflict resolution (for example lockfile conflicts), resolve it on a task branch and open an integration PR instead so the required checks gate the resolution, and record the integrated source SHA in the merge message.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
+- `v3-ai` is a long-lived consolidation branch that combines AI feature work for deployment to environments such as staging. Treat PRs targeting `v3-ai` as ordinary PRs into that branch. Never stack them with the separate eventual promotion PR from `v3-ai` into `v3`; that promotion can remain open or draft for an extended period.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
 - Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
 
@@ -103,6 +104,8 @@ apps/
   frontend-manage/         # Lecturer UI (port 3002)
   frontend-pwa/            # Student PWA (port 3001)
   response-api/            # Response API (port 7078)
+  mcp-lecturer/            # Lecturer MCP server for the manage assistant (port 7081)
+  mcp-student/             # Student practice MCP server used by chat (port 7080)
   hatchet-worker-general/  # General Hatchet worker
   hatchet-worker-response-processor/  # Response processing worker
   analytics/               # Analytics service
@@ -175,7 +178,7 @@ devrouter ensure .
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `full` profile runs every routed app plus the two Hatchet workers (no worker route); `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `standard` profile runs ordinary apps and workers without the deterministic MCP fixture; explicit `full` selects every capability. `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
 
 #### OpenRouter-backed local chat
 
@@ -224,8 +227,10 @@ usage class. Chat can select allow-listed Luna for a BASE selection before
 calling LiteLLM; current ADVANCED selections such as Auto are denied while no
 ADVANCED fallback is allow-listed.
 
-The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
-and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
+The explicit `mcp` profile creates a dedicated synthetic chatbot in an isolated
+temporary database, with a deterministic `doc_query` tool in Tutor and Explainer
+modes; see `.devcontainer/README.md` for its identity and lifecycle.
+`post-start.sh` runs the tool at `http://localhost:1417/mcp`;
 its source is `apps/chat/scripts/local-mcp-server.mjs` and its log is
 `/tmp/local-mcp.log`. Keep `Auto Mode` selected, then test the complete path in
 Chat with: “Use the local MCP tool to test the integration.

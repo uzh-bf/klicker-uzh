@@ -1,0 +1,116 @@
+import { prisma } from '@klicker-uzh/prisma'
+import type {
+  KnowledgeGraphEdge,
+  KnowledgeGraphNode,
+  KnowledgeGraphResponse,
+  KnowledgeGraphSourceReference,
+} from '@klicker-uzh/types'
+import {
+  getPublishedKnowledgeGraphForChatbot,
+  readKnowledgeGraphNeighbors,
+  readKnowledgeGraphOverview,
+  searchKnowledgeGraph,
+} from './knowledgeGraphRuntime'
+
+export {
+  isKnowledgeGraphNotPublishedError,
+  KnowledgeGraphSelectionRequiredError,
+} from './knowledgeGraphRuntime'
+
+export type ChatbotKnowledgeGraphReadRequest = { kbId?: string } & (
+  | { operation: 'overview' }
+  | { operation: 'search'; query: string }
+  | { operation: 'neighbors'; nodeId: string; kbId: string; buildId: string }
+)
+
+export class KnowledgeGraphBuildChangedError extends Error {
+  constructor() {
+    super('Knowledge graph build changed')
+    this.name = 'KnowledgeGraphBuildChangedError'
+  }
+}
+
+function browserSafeSourceReference(
+  source: KnowledgeGraphSourceReference
+): KnowledgeGraphSourceReference {
+  return {
+    resourceId: source.resourceId,
+    title: source.title,
+    ...(source.reference === undefined ? {} : { reference: source.reference }),
+  }
+}
+
+function browserSafeNode(node: KnowledgeGraphNode): KnowledgeGraphNode {
+  return {
+    id: node.id,
+    labels: node.labels,
+    kind: node.kind,
+    displayLabel: node.displayLabel,
+    ...(node.summary === undefined ? {} : { summary: node.summary }),
+    ...(node.content === undefined ? {} : { content: node.content }),
+    degree: node.degree,
+    sourceReferences: node.sourceReferences.map(browserSafeSourceReference),
+  }
+}
+
+function browserSafeEdge(edge: KnowledgeGraphEdge): KnowledgeGraphEdge {
+  return {
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    type: edge.type,
+    label: edge.label,
+    properties: edge.properties,
+  }
+}
+
+function browserSafeResponse(
+  response: KnowledgeGraphResponse
+): KnowledgeGraphResponse {
+  return {
+    kbId: response.kbId,
+    buildId: response.buildId,
+    isStale: response.isStale,
+    nodes: response.nodes.map(browserSafeNode),
+    edges: response.edges.map(browserSafeEdge),
+    truncated: response.truncated,
+  }
+}
+
+export async function readPublishedChatbotKnowledgeGraph(
+  chatbotId: string,
+  request: ChatbotKnowledgeGraphReadRequest
+): Promise<KnowledgeGraphResponse> {
+  const publication = await getPublishedKnowledgeGraphForChatbot(
+    prisma,
+    chatbotId,
+    request.kbId
+  )
+
+  if (publication.isStale) throw new KnowledgeGraphBuildChangedError()
+
+  if (
+    request.operation === 'neighbors' &&
+    (publication.kbId !== request.kbId ||
+      publication.buildId !== request.buildId)
+  ) {
+    throw new KnowledgeGraphBuildChangedError()
+  }
+
+  const response =
+    request.operation === 'overview'
+      ? await readKnowledgeGraphOverview(publication)
+      : request.operation === 'search'
+        ? await searchKnowledgeGraph(publication, request.query)
+        : await readKnowledgeGraphNeighbors(publication, request.nodeId)
+
+  const current = await getPublishedKnowledgeGraphForChatbot(
+    prisma,
+    chatbotId,
+    publication.kbId
+  )
+  if (current.isStale || current.buildId !== publication.buildId) {
+    throw new KnowledgeGraphBuildChangedError()
+  }
+  return browserSafeResponse(response)
+}

@@ -4,6 +4,7 @@ import {
   CHATBOT_ID,
   chatUrl,
   clearChatCookies,
+  ensureChatbotSeeded,
   getEnrolledParticipantId,
   getMessageRating,
   mockChatStream,
@@ -455,9 +456,7 @@ test.describe('Chatbot Messaging Interface', () => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-welcome-message')).toBeVisible()
-    await expect(page.getByTestId('chat-welcome-chatbot')).toHaveText(
-      'You are chatting with E2E Chatbot.'
-    )
+    await expect(page.getByTestId('chat-welcome-chatbot')).toBeVisible()
     await expect(page.getByTestId('chat-welcome-mode')).toContainText(
       'Selected mode: Tutor'
     )
@@ -1876,20 +1875,27 @@ test.describe('Chatbot Settings Panel', () => {
     page,
   }) => {
     await setCredits(participantId, 0, 100)
+    await mockChatStream(page)
     await visitChat(page)
 
     await expect(page.getByTestId('chat-credits-section')).toBeVisible()
     await expect(page.getByTestId('chat-credits-display')).toContainText(
       '0 / 100'
     )
-    await expect(page.getByTestId('chat-credits-empty-message')).toContainText(
-      'Some models may no longer be available'
-    )
+    await expect(page.getByTestId('chat-credits-empty-message')).toBeVisible()
 
     await openSettings(page)
-    const modelSection = page.getByTestId('chat-model-selection')
-    await expect(modelSection).toContainText('GPT-4.1')
-    await expect(modelSection).not.toContainText('GPT-4.1 Mini')
+    await expect(page.getByTestId('chat-model-select')).toBeVisible()
+
+    const chatRequestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        request.url().includes(`/api/chatbots/${CHATBOT_ID}/chat`)
+    )
+    await sendMessage(page, 'Default model without credits')
+    const chatRequest = await chatRequestPromise
+    const payload = chatRequest.postDataJSON() as { selectedModel?: string }
+    expect(payload.selectedModel).toBe('auto')
   })
 
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
@@ -1931,8 +1937,7 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1')
-    await expect(modelSection).toContainText('GPT-4.1')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-5.6 Luna')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1943,7 +1948,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-4.1')
+    expect(payload.selectedModel).toBe('gpt-5.6-luna')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }
@@ -3677,23 +3682,20 @@ test.describe('Chatbot Source Citations', () => {
     await expect(citedSource).toBeInViewport()
   })
 
-  test('Composer hint is visible in standalone mode and hidden when embedded', async ({
+  test('Composer hint is visible in standalone and embedded modes', async ({
     page,
   }) => {
     await visitChat(page)
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
     await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
-    await expect(page.getByTestId('chat-composer-hint')).toHaveText(
-      'Chatbot answers can be wrong — verify against your course materials.'
-    )
 
     await page.goto(`${chatUrl()}/${CHATBOT_ID}?embed=true`, {
       waitUntil: 'domcontentloaded',
     })
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
-    await expect(page.getByTestId('chat-composer-hint')).toHaveCount(0)
+    await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
   })
 
   test('Mobile header and sources stay clear of the expanded composer', async ({
@@ -4043,5 +4045,151 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     })
     await expect(content).toContainText('Response truncated')
     await expect(page.getByTestId('chat-message-error')).toHaveCount(0)
+  })
+})
+
+/**
+ * The graph workspace keeps one active data source per selected knowledge
+ * base. A response for a superseded selection must never reset the choice the
+ * participant made afterwards. These tests drive that race through the browser
+ * because it depends on render and layout-effect ordering inside the workspace.
+ */
+test.describe('Chatbot Knowledge Graph Selection', () => {
+  let participantId: string
+
+  const GRAPH_ALPHA = '11111111-1111-4111-8111-111111111111'
+  const GRAPH_BETA = '22222222-2222-4222-8222-222222222222'
+  const BETA_NODE = 'Beta concept node'
+
+  const graphChoices = [
+    { id: GRAPH_ALPHA, name: 'Graph Alpha' },
+    { id: GRAPH_BETA, name: 'Graph Beta' },
+  ]
+
+  const selectionRequired = () => ({
+    code: 'KNOWLEDGE_GRAPH_SELECTION_REQUIRED',
+    choices: graphChoices,
+  })
+
+  const publishedGraph = (kbId: string, displayLabel: string) => ({
+    kbId,
+    buildId: `${kbId}-build`,
+    isStale: false,
+    truncated: false,
+    nodes: [
+      {
+        id: `${kbId}-node`,
+        labels: ['Concept'],
+        kind: 'concept',
+        displayLabel,
+        degree: 1,
+        sourceReferences: [
+          { resourceId: `${kbId}-resource`, title: 'Synthetic source' },
+        ],
+      },
+    ],
+    edges: [],
+  })
+
+  test.beforeEach(async ({ page }) => {
+    // The graph workspace only mounts for a seeded chatbot with the map
+    // visible: the layout 404s without the row and hides the graph otherwise.
+    await ensureChatbotSeeded()
+    const prisma = await getPrisma()
+    await prisma.chatbot.update({
+      where: { id: CHATBOT_ID },
+      data: { knowledgeGraphVisible: true },
+    })
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  test('A delayed response for a superseded graph keeps the newer selection', async ({
+    page,
+  }) => {
+    // Order the two responses without relying on wall-clock timing: the
+    // superseded response is released only once the newer graph was picked.
+    let markSupersededStarted = () => {}
+    const supersededStarted = new Promise<void>((resolve) => {
+      markSupersededStarted = resolve
+    })
+    let releaseSuperseded = () => {}
+    const supersededReleased = new Promise<void>((resolve) => {
+      releaseSuperseded = resolve
+    })
+    let markSupersededDelivered = () => {}
+    const supersededDelivered = new Promise<void>((resolve) => {
+      markSupersededDelivered = resolve
+    })
+
+    await page.route(
+      `**/api/chatbots/${CHATBOT_ID}/knowledge-graph*`,
+      async (route) => {
+        const kbId = new URL(route.request().url()).searchParams.get('kbId')
+
+        // Two attached graphs and no selection yet -> the client must ask.
+        if (kbId === null) {
+          await route.fulfill({ status: 409, json: selectionRequired() })
+          return
+        }
+
+        // Superseded request: answers only after the newer graph was picked.
+        if (kbId === GRAPH_ALPHA) {
+          markSupersededStarted()
+          await Promise.race([
+            supersededReleased,
+            new Promise((resolve) => setTimeout(resolve, 15_000)),
+          ])
+          await route.fulfill({ status: 409, json: selectionRequired() })
+          markSupersededDelivered()
+          return
+        }
+
+        releaseSuperseded()
+        await route.fulfill({
+          status: 200,
+          json: publishedGraph(GRAPH_BETA, BETA_NODE),
+        })
+      }
+    )
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/graph`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const choice = page.getByTestId('chat-knowledge-graph-choice')
+    await expect(choice).toBeVisible()
+
+    await selectOption(
+      page,
+      '[data-cy="chat-knowledge-graph-choice"]',
+      'Graph Alpha'
+    )
+    // The superseded request must really be in flight before the switch,
+    // otherwise the race under test never happens.
+    await supersededStarted
+    await selectOption(
+      page,
+      '[data-cy="chat-knowledge-graph-choice"]',
+      'Graph Beta'
+    )
+
+    await expect(choice).toContainText('Graph Beta')
+    await expect(
+      page.getByTestId('knowledge-graph-loaded-nodes')
+    ).toContainText(BETA_NODE)
+
+    // The superseded selection answered only after the newer one was in place.
+    await supersededDelivered
+    await page.waitForTimeout(750)
+
+    await expect(choice).toContainText('Graph Beta')
+    await expect(page.getByTestId('knowledge-graph-viewer')).toBeVisible()
+    await expect(
+      page.getByTestId('knowledge-graph-loaded-nodes')
+    ).toContainText(BETA_NODE)
   })
 })

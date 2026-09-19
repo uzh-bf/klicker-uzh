@@ -1,9 +1,12 @@
 {
   "private": true,
   "name": "@klicker-uzh/shared-components",
-  "version": "3.4.0-alpha.75",
+  "version": "3.4.0-alpha.79",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "dependencies": {
+    "cytoscape": "3.34.0"
+  },
   "devDependencies": {
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",

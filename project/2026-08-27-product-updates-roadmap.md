@@ -1869,4 +1869,3 @@ available and must not be stopped. Everything the browser could show was
 resolved from driver.js source by the final review, so the pass is expected to
 be a confirmation. The three tours' rendering was browser-verified before the
 skip control (entry above).
-
