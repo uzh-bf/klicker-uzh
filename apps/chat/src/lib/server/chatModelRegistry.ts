@@ -303,6 +303,37 @@ export function getModelsForChatbot(chatbot: {
   }))
 }
 
+/**
+ * Resolves the credit-safe fallback for a chatbot.
+ *
+ * The fallback is a property of the registry, not of a chatbot's allow-list: a
+ * lecturer may restrict which models participants pick, but every chatbot must
+ * keep a fallback resolvable so an exhausted-credit or anonymous (LTI guest)
+ * session always has a model to land on. Filtering the registry by the
+ * allow-list alone would drop the fallback for a chatbot that allows other
+ * models, which is the state this helper exists to make unreachable.
+ */
+export function resolveChatbotFallbackModel(chatbot: {
+  allowedModelIds: string[]
+  allowedReasoningEffortsByModel?: unknown
+}): ChatModelConfig | null {
+  const fallbackModelId = getParticipantFallbackModelId()
+  if (!fallbackModelId) return null
+
+  const fallbackModel = getChatModelRegistry().find(
+    (model) => model.id === fallbackModelId
+  )
+  if (!fallbackModel) return null
+
+  return {
+    ...fallbackModel,
+    supportedReasoningEfforts: getAllowedReasoningEffortsForModel(
+      fallbackModel,
+      chatbot.allowedReasoningEffortsByModel
+    ),
+  }
+}
+
 export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
   const registry = filterRegistryByAllowList(allowedModelIds)
   if (registry.length === 0) return null
