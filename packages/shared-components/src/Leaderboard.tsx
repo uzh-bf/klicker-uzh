@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { Participant } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import React, { useMemo } from 'react'
@@ -57,6 +58,7 @@ function Leaderboard({
   topKOnly,
 }: LeaderboardProps): React.ReactElement {
   const t = useTranslations()
+  const shouldReduceMotion = useReducedMotion()
   const { rankedEntriesAndSelf, inTopK, selfEntry } = useMemo(
     () =>
       leaderboard.reduce<{
@@ -107,6 +109,69 @@ function Leaderboard({
     [filteredEntries]
   )
 
+  const renderEntry = (
+    entry: LeaderboardCombinedEntry,
+    index: number,
+    selfIsActive?: boolean
+  ): React.ReactElement => {
+    const mountDelay = Math.min(index * 0.04, 0.4)
+
+    return (
+      <motion.div
+        key={entry.id}
+        role="listitem"
+        layout={!shouldReduceMotion}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+        exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.96 }}
+        transition={{
+          layout: { duration: 0.35, ease: 'easeOut' },
+          opacity: { duration: 0.25, delay: mountDelay },
+          y: { duration: 0.25, delay: mountDelay },
+        }}
+        className={className?.listItem}
+      >
+        {entry.isSelf === true ? (
+          <ParticipantSelf
+            isActive={selfIsActive ?? true}
+            isTemporary={entry.isTemporary}
+            pseudonym={entry.username}
+            avatar={entry.avatar}
+            withAvatar={!hideAvatars}
+            points={entry.score}
+            rank={entry.rank}
+            level={entry.level}
+            onJoinLeaderboard={onJoin}
+            onLeaveLeaderboard={onLeave}
+            onClick={
+              onParticipantClick && typeof entry.participantId !== 'undefined'
+                ? () => onParticipantClick(entry.participantId!, true)
+                : undefined
+            }
+          />
+        ) : (
+          <ParticipantOther
+            isTemporary={entry.isTemporary}
+            rank={entry.rank}
+            pseudonym={entry.username}
+            avatar={entry.avatar}
+            withAvatar={!hideAvatars}
+            points={entry.score}
+            level={entry.level}
+            onClick={
+              onParticipantClick && typeof entry.participantId !== 'undefined'
+                ? () => onParticipantClick(entry.participantId!, false)
+                : undefined
+            }
+          />
+        )}
+      </motion.div>
+    )
+  }
+
+  const selfOutsideTopK =
+    typeof topKOnly !== 'undefined' && !inTopK && selfEntry !== undefined
+
   return (
     <div className={twMerge('w-full space-y-4', className?.root)}>
       {!hidePodium && (
@@ -119,61 +184,29 @@ function Leaderboard({
           imgSrc={podiumImgSrc}
         />
       )}
-      <div className={twMerge('space-y-1', className?.list)}>
-        {filteredEntries.map((entry: LeaderboardCombinedEntry) =>
-          entry.isSelf === true ? (
-            <ParticipantSelf
-              key={entry.id}
-              isActive={entry.isSelf}
-              isTemporary={entry.isTemporary}
-              pseudonym={entry.username}
-              avatar={entry.avatar}
-              withAvatar={!hideAvatars}
-              points={entry.score}
-              rank={entry.rank}
-              level={entry.level}
-              onJoinLeaderboard={onJoin}
-              onLeaveLeaderboard={onLeave}
-              onClick={
-                onParticipantClick && typeof entry.participantId !== 'undefined'
-                  ? () => onParticipantClick(entry.participantId!, true)
-                  : undefined
-              }
-            />
-          ) : (
-            <ParticipantOther
-              key={entry.id}
-              isTemporary={entry.isTemporary}
-              rank={entry.rank}
-              pseudonym={entry.username}
-              avatar={entry.avatar}
-              withAvatar={!hideAvatars}
-              points={entry.score}
-              level={entry.level}
-              onClick={
-                onParticipantClick && typeof entry.participantId !== 'undefined'
-                  ? () => onParticipantClick(entry.participantId!, false)
-                  : undefined
-              }
-              className={className?.listItem}
-            />
-          )
+      <div role="list" className={twMerge('space-y-1.5', className?.list)}>
+        <AnimatePresence mode="popLayout" initial={true}>
+          {filteredEntries.map((entry, index) => renderEntry(entry, index))}
+        </AnimatePresence>
+
+        {selfOutsideTopK && (
+          <div
+            role="presentation"
+            className="flex items-center gap-2 py-0.5 text-xs font-medium text-slate-400"
+          >
+            <div className="h-px flex-1 bg-slate-200" />
+            {t('shared.leaderboard.selfPositionDivider')}
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
         )}
-        {typeof topKOnly !== 'undefined' && !inTopK && selfEntry && (
-          <ParticipantSelf
-            key={selfEntry.id}
-            isTemporary={selfEntry.isTemporary}
-            isActive={selfEntry.isSelf ?? false}
-            pseudonym={selfEntry.username}
-            avatar={selfEntry.avatar}
-            withAvatar={!hideAvatars}
-            points={selfEntry.score}
-            rank={selfEntry.rank}
-            level={selfEntry.level}
-            onJoinLeaderboard={onJoin}
-            onLeaveLeaderboard={onLeave}
-          />
-        )}
+
+        {selfOutsideTopK &&
+          renderEntry(
+            { ...selfEntry, isSelf: true },
+            filteredEntries.length,
+            selfEntry.isSelf ?? false
+          )}
+
         {hasTemporaryParticipants && (
           <div className="text-base">
             * {t('pwa.liveQuiz.temporaryParticipantsLeaderboard')}
