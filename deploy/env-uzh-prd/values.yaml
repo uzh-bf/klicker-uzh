@@ -432,8 +432,8 @@ mcpStudent:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.61
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.79
 
   strategy:
     type: RollingUpdate
@@ -482,8 +482,8 @@ mcpLecturer:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.61
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.79
 
   strategy:
     type: RollingUpdate

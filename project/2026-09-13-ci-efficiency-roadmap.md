@@ -1580,3 +1580,130 @@ required from the user.
   writers, and cancellation by age. The queue metric therefore overstates real
   pending work by those inert records, which matters because capacity decisions
   were being made against it.
+- 2026-09-18 package: smart draft Playwright routing (branch
+  `rs/ci-smart-draft-routing`). Draft pull requests now run the same
+  change-based selection as ready pull requests instead of a forced full
+  eight-shard wave. The package also completes the coverage half of the
+  contract, so a narrowed draft reports honest `selected` or `skip` metadata
+  rather than being rejected by the status reporter.
+
+  **Why the guard was lifted now.** The roadmap held the routing change behind a
+  qualification gate: implement lifecycle guards first, then restore smart
+  selection and ready-state proof as one coherent change, because
+  `playwright-route.cjs` hard-forced `selectorPrState: 'ready'` and the shadow
+  selector could not be activated by a variable alone. That gate is now met by
+  measured shadow artifacts rather than by design intent.
+
+  **Qualification sample.** 53 shadow artifacts across 21 distinct branches,
+  collected in `/tmp/pw-shadow-evidence/`. Chosen mode: `full:8` on 32
+  artifacts, `selected:1` on 2, `selected:4` on 2, and `skip:0` on 17. Reason
+  codes: `global-surface` 29, `unknown-path` 20, `documentation-only` 17,
+  `spec-changed` 10, `feature-group` 4, `spec-added` 3. The 17 skips are the
+  material finding: those drafts had no application-behaviour change at all and
+  still held ARM capacity.
+
+  **Proof that skips were burning full waves.** Runs `35216658570`
+  (`rs/v3-audit-sync-20260917b`) and `35212907412`
+  (`rs/course-video-import-plan-update`) each recorded shadow mode `skip` with
+  reason `documentation-only`, yet each executed eight shards. Nine shard jobs
+  were scheduled and eight ran.
+
+  **Shard cost, measured.** On `35316262518` and `35317146279` all eight shards
+  consistently reported roughly 0.1 minutes of wait and 16 to 20 minutes of
+  duration. Wall clock tracks the slowest shard while wave-seconds track the
+  sum, so removing shards cuts ARM occupancy directly, which is what releases
+  the queued waves that block other pull requests.
+
+  **Implementation.** `playwright/relevance-manifest.json` gains
+  `draftBoundedPathPrefixes` and `draftBoundedSpecs`, and its `reviewRule`
+  explains that these name paths which cannot change application behaviour.
+  `playwright-selector.cjs` learns a `bounded` classification. For a draft, a
+  path under a `draftBoundedPathPrefixes` entry returns `bounded` through a rule
+  placed deliberately before the full-surface checks, so a CI-only `.github/`
+  change narrows instead of expanding to the whole suite; the selection is the
+  `draftBoundedSpecs` present in the candidate set, reported as
+  `draft-bounded-surface`. A `full` verdict still wins over `bounded` inside one
+  change set. `validateRelevanceManifest` enforces both keys as arrays,
+  rejects duplicate specs, and requires each `draftBoundedSpecs` entry to be a
+  trusted non-production spec. `playwright-route.cjs` replaces the unconditional
+  draft override with `selectorPrState: 'draft'` only when `smartDraftApplies`
+  holds, which requires public eligibility, an enabled or canary control, a
+  non-bot author, and a valid draft state. Drafts stay on the hosted route, so
+  narrowing never takes public ARM slots from ready pull requests. Any unset,
+  malformed, or non-matching control keeps the full plan, as does a
+  force-hosted canary.
+
+  **Coverage half of the contract.** The reusable workflow renames its step to
+  `Build opposite-state selector shadow plan` and derives the shadow state from
+  `selectorPrState`, so qualification keeps measuring the plan the draft did not
+  run in both directions. In `test-playwright.yml`, the status reporter accepts
+  `full`, `selected`, or `skip` for drafts while every other event still
+  requires `full`, requires `should_run=false` exactly for `skip`, and validates
+  the embedded shard matrix: eight unique shards for `full`, a positive number
+  of unique valid shards for a partial plan, and no matrix check for `skip`.
+  Partial shards must carry `shardIndex` 1 to 8 with `shardTotal` 8. The
+  `cancel-closed-pr` comment now records that a draft conversion must not cancel
+  an in-flight run, because that run stays valid evidence.
+
+  **Verification.** All 331 tests across the check.yml script set pass, including
+  `playwright-selector` 10/10, `playwright-route` 14/14, and
+  `validate-public-playwright-workflow` 8/8. New coverage includes a draft
+  narrowing a CI-only change to the bounded smoke selection with no
+  `global-surface` reason, the same change staying full on a ready pull request,
+  a mixed `.github/` and `pnpm-lock.yaml` change staying full, draft acceptance
+  of partial and skip plans, and rejections for ready partial, ready skipped,
+  push partial, partial without shards, partial with duplicate shards, full with
+  a partial matrix, and skip that still selects tests. Prettier is clean on both
+  workflows, the manifest and the docs page; Biome is clean on all six scripts.
+
+  **Activation gate and its limit.** `test-playwright.yml` calls the reusable
+  workflow pinned to `@v3`, so a pre-merge run proves only the caller and
+  reporter half of this change. The narrowed selector cannot be exercised until
+  the branch is on `v3` and repository variable
+  `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` is set, or a single pull request is
+  targeted through `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR`. That variable
+  change is a repository settings change and stays behind named authority.
+
+- 2026-09-18 slice B3 merged and activated (PRs #6141 and #6147). The thirteen
+  `v3_*-stg.yml` workflows and `v3_build-fallback.yml` are gone; one
+  `v3_images-stg.yml` builds the affected-image matrix and a needs-based
+  `build-images-status` job owns the unchanged required context.
+  - **#6141** merged to `v3` as `0de1f3de1b`; **#6147** merged to `v3-audit`
+    as `c1cfd2f7c6`. Both landed minutes apart so no candidate ever carried the
+    per-image files while the other line rejected them.
+  - **Draft path proved before merge.** Draft runs `35361628890` (`v3`,
+    head `eb6abcd255`) and `35360584817` (`v3-audit`, head `2be208ee30`)
+    passed `plan` and `build-images-status` with all six `matrix.jobName`
+    legs skipped and no runner allocated. Queue depth fell from roughly 153 to
+    14 across that window.
+  - **Build and publish path proved after merge.** The `v3` push run
+    `35386896558` on the merge commit `0de1f3de1b` succeeded: 18 of 19 jobs
+    passed, including all fourteen `build-arm-*` legs, both
+    `scan-arm-backend-docker*` legs, and `build-images-status`; the only skip
+    is the `matrix.jobName` sentinel. The audit line's own push run
+    `35390209041` is building the same matrix on `c1cfd2f7c6`.
+  - **The fail-closed gate behaved as designed, twice, with no bad promotion.**
+    The merged promoter rejects any candidate still carrying a per-image
+    workflow. While `v3-audit` still had all fifteen, the current candidate
+    tree failed that predicate - verified directly against the committed
+    `LEGACY_STAGING_PATTERN` and predicate. Promotion run `35391131388`
+    failed closed with "staging build evidence is incomplete ..." rather than
+    promoting stale evidence. After #6147 merged, the same probe over
+    `origin/v3-audit` reports zero legacy files and the gate passes.
+  - **Slice B2's cache contract survived the consolidation.** All three
+    consolidated ARM build jobs keep the `no-cache: ${ github.event_name ==
+    'push' }}` / `cache-from` / `cache-to ... mode=max` triple for
+    same-repository pull requests, and AMD stays `if: false`. First live
+    evidence that the cache is no longer inert: `<image>-arm:buildcache`
+    versions now exist for `auth-arm`, `chat-arm`, `backend-docker-arm`,
+    `frontend-manage-arm`, `frontend-pwa-arm` and `analytics-arm`, where the
+    2026-09-13 audit had found the tag absent across 100 versions each.
+  - **Two format/version regressions fixed on the way.** The new plan and
+    status helpers carried Biome format errors that failed `check-suite` on
+    both PRs; and after merging `v3`, ten audit-only packages still floated
+    `vitest: ~3.2.4` against `v3`'s exact `3.2.4` pin from #6137, failing
+    `syncpack lint` on the audit line alone. Both are corrected; `check-suite`
+    is green on the merged audit head.
+  - **Still open.** The consolidated workflow's AMD legs are `optional: true`
+    and remain `if: false`. The live promotion that consumes the audit line
+    had not yet completed at the time of this record.

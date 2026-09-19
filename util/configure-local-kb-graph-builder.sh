@@ -44,6 +44,11 @@ KB_GRAPH_STANDARD_GENERATION_MODEL=openai/gpt-5.4
 KB_GRAPH_STANDARD_CLEANING_MODEL=openai/gpt-5.4
 KB_GRAPH_HIGH_GENERATION_MODEL=openai/gpt-5.4
 KB_GRAPH_HIGH_CLEANING_MODEL=openai/gpt-5.4
+# A Klicker-initiated build must carry its graph artifacts back, and the graph
+# provider rejects the payload without this flag. Production derives it from
+# backendGraphql.elementGeneration.enabled, which is true wherever this local
+# stack is used.
+KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS=true
 KB_FALKORDB_HOST=host.docker.internal
 KB_FALKORDB_PORT=$falkordb_host_port
 KB_FALKORDB_TLS=false
