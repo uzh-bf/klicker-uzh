@@ -238,6 +238,9 @@ test('a draft narrows CI-only changes to the bounded smoke selection', () => {
   assert.ok(!draft.reasonCodes.includes('global-surface'))
 
   // The same change on a ready pull request keeps the full-surface policy.
+  // The negative assertion is what actually guards the draft condition: ready
+  // state forces full mode on its own, so only the absent bounded reason
+  // distinguishes a rejected draft rule from an unconditional one.
   const ready = selectFromChanges({
     ...base,
     changes: ciOnly,
@@ -246,6 +249,7 @@ test('a draft narrows CI-only changes to the bounded smoke selection', () => {
   assert.equal(ready.mode, 'full')
   assert.deepEqual(ready.selectedSpecs, base.candidateSpecs)
   assert.ok(ready.reasonCodes.includes('ready-for-review'))
+  assert.ok(!ready.reasonCodes.includes('draft-bounded-surface'))
 
   // Any full-surface path in the same change set still wins over the bound.
   const mixed = selectFromChanges({
@@ -259,6 +263,23 @@ test('a draft narrows CI-only changes to the bounded smoke selection', () => {
   assert.equal(mixed.mode, 'full')
   assert.deepEqual(mixed.selectedSpecs, base.candidateSpecs)
   assert.ok(mixed.reasonCodes.includes('global-surface'))
+
+  // A bounded surface whose smoke spec is missing from the candidate tree must
+  // run the full suite. Falling through to the empty selection would report a
+  // documentation-only skip for a change that is not documentation.
+  const missingBounded = selectFromChanges({
+    ...base,
+    changes: ciOnly,
+    candidateSpecs: ['A-login.spec.ts', 'Y-chat.spec.ts'],
+    prState: 'draft',
+  })
+  assert.equal(missingBounded.mode, 'full')
+  assert.deepEqual(missingBounded.selectedSpecs, [
+    'A-login.spec.ts',
+    'Y-chat.spec.ts',
+  ])
+  assert.ok(missingBounded.reasonCodes.includes('draft-bounded-fallback'))
+  assert.ok(!missingBounded.reasonCodes.includes('documentation-only'))
 })
 
 test('ready state overrides a documentation-only diff with the full candidate suite', () => {

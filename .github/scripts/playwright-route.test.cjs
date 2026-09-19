@@ -87,14 +87,14 @@ test('an enabled smart-draft control narrows an eligible draft on the hosted rou
     assert.ok(route.reasonCodes.includes('hosted-fallback'))
   }
 
-  // The public rollout control never moves a draft onto the public route, so a
-  // narrowed draft keeps its hosted slots and ready pull requests keep the
-  // public runner pool. The narrowing itself does not depend on that control.
-  const publicDraft = choosePlaywrightRoute(
-    pullRequest({ prDraft: 'true', smartDraftEnabled: 'true' })
+  // The enabled control must never move a ready pull request onto a narrowed
+  // plan. Without this case, dropping the draft condition in the narrowing rule
+  // would leave every other assertion in this file passing.
+  const readyWithSmartDraft = choosePlaywrightRoute(
+    pullRequest({ smartDraftEnabled: 'true' })
   )
-  assert.equal(publicDraft.route, 'hosted')
-  assert.equal(publicDraft.selectorPrState, 'draft')
+  assert.equal(readyWithSmartDraft.route, 'public-pr')
+  assert.equal(readyWithSmartDraft.selectorPrState, 'ready')
 })
 
 test('a smart-draft control narrows a draft even when the public rollout is off', () => {

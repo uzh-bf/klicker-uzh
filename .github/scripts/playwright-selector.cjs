@@ -448,6 +448,11 @@ function selectFromChanges({
   const reasonCodes = new Set()
   const groupIds = new Set()
   let full = prState === 'ready'
+  // A bounded surface only intends the smoke specs. Track whether one was
+  // actually selectable so a candidate tree that lost the bounded spec cannot
+  // masquerade as a documentation-only diff.
+  let boundedSurfaceSeen = false
+  let boundedSpecSelected = false
 
   if (prState === 'ready') reasonCodes.add('ready-for-review')
   if (changes.length === 0) {
@@ -488,8 +493,12 @@ function selectFromChanges({
       }
       if (classification.kind === 'bounded') {
         reasonCodes.add('draft-bounded-surface')
+        boundedSurfaceSeen = true
         for (const spec of manifest.draftBoundedSpecs) {
-          if (candidateSet.has(spec)) selected.add(spec)
+          if (candidateSet.has(spec)) {
+            selected.add(spec)
+            boundedSpecSelected = true
+          }
         }
       }
     }
@@ -536,6 +545,14 @@ function selectFromChanges({
     } else {
       classifyNonSpecPaths([changedPath])
     }
+  }
+
+  // A bounded surface that selected nothing means the bounded spec is missing
+  // from the candidate tree, not that the change was documentation. Running the
+  // full candidate suite keeps that case honest instead of reporting a skip.
+  if (boundedSurfaceSeen && !boundedSpecSelected) {
+    full = true
+    reasonCodes.add('draft-bounded-fallback')
   }
 
   if (full) {
