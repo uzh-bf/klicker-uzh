@@ -1,5 +1,7 @@
 import {
   allocateQuestionGenerationDifficulty,
+  KB_GRAPH_POLICY_LANGUAGE,
+  KB_GRAPH_POLICY_LANGUAGES,
   type KBGraphSourceSnapshot,
 } from '@klicker-uzh/types'
 import {
@@ -164,11 +166,13 @@ describe('question generation configuration', () => {
           id: 'OBJ-01',
           text: 'Explain malolactic fermentation.',
           bloomLevel: 'apply',
+          objectiveSource: 'provided',
         },
         {
           id: 'OBJ-02',
           text: 'Compare acid profiles.',
           bloomLevel: null,
+          objectiveSource: 'provided',
         },
       ],
       bloomLevels: ['remember', 'evaluate'],
@@ -216,7 +220,7 @@ describe('question generation configuration', () => {
     expect(kprim.configurationHash).not.toBe(singleChoice.configurationHash)
   })
 
-  it('creates localized neutral objectives for global Bloom intent', () => {
+  it('marks synthesized Bloom objectives neutral and keeps every selected level', () => {
     const german = normalizeQuestionGenerationConfiguration(
       configurationInput({ bloomLevels: ['understand', 'apply'] }),
       graphVersion
@@ -227,22 +231,43 @@ describe('question generation configuration', () => {
     )
 
     expect(german.configuration.objectives).toEqual([
-      {
+      expect.objectContaining({
         id: 'OBJ-01',
-        text: 'Prüfe das ausgewählte Wissensbasismaterial auf der kognitiven Stufe Verstehen.',
         bloomLevel: 'understand',
-      },
-      {
+        objectiveSource: 'neutral',
+      }),
+      expect.objectContaining({
         id: 'OBJ-02',
-        text: 'Prüfe das ausgewählte Wissensbasismaterial auf der kognitiven Stufe Anwenden.',
         bloomLevel: 'apply',
-      },
+        objectiveSource: 'neutral',
+      }),
     ])
     expect(english.configuration.objectives).toEqual([
+      expect.objectContaining({
+        id: 'OBJ-01',
+        bloomLevel: 'analyze',
+        objectiveSource: 'neutral',
+      }),
+    ])
+  })
+
+  it('marks lecturer-authored objectives provided and keeps their text and level', () => {
+    const result = normalizeQuestionGenerationConfiguration(
+      configurationInput({
+        objectives: [
+          { text: 'Explain malolactic fermentation.', bloomLevel: 'apply' },
+        ],
+        bloomLevels: ['remember'],
+      }),
+      graphVersion
+    )
+
+    expect(result.configuration.objectives).toEqual([
       {
         id: 'OBJ-01',
-        text: 'Assess the selected knowledge-base material at the analyze cognitive level.',
-        bloomLevel: 'analyze',
+        text: 'Explain malolactic fermentation.',
+        bloomLevel: 'apply',
+        objectiveSource: 'provided',
       },
     ])
   })
@@ -284,6 +309,25 @@ describe('question generation configuration', () => {
     expect(() =>
       normalizeQuestionGenerationConfiguration(input, graphVersion)
     ).toThrowError(expect.objectContaining({ code: 'CONFIGURATION_INVALID' }))
+  })
+
+  it('accepts only the language in force for the knowledge-base policy', () => {
+    // A graph resolves to the German policy while the external payload carries
+    // no language, so an English request must fail before dispatch rather than
+    // contradict the policy in the worker.
+    expect(KB_GRAPH_POLICY_LANGUAGES).toEqual([KB_GRAPH_POLICY_LANGUAGE])
+    expect(() =>
+      normalizeQuestionGenerationConfiguration(
+        configurationInput({ language: 'en' }),
+        { ...graphVersion, language: KB_GRAPH_POLICY_LANGUAGE }
+      )
+    ).toThrowError(expect.objectContaining({ code: 'CONFIGURATION_INVALID' }))
+    expect(
+      normalizeQuestionGenerationConfiguration(
+        configurationInput({ language: KB_GRAPH_POLICY_LANGUAGE }),
+        { ...graphVersion, language: KB_GRAPH_POLICY_LANGUAGE }
+      ).configuration.language
+    ).toBe(KB_GRAPH_POLICY_LANGUAGE)
   })
 
   it('normalizes a focus topic into the configuration and its hash', () => {

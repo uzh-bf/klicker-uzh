@@ -25,10 +25,11 @@ type SourceScopeValue = ElementGenerationSourceScopeInput & {
   pageToText: string
 }
 
-const DEFAULT_BLOOM_LEVELS = [
-  ElementGenerationBloomLevel.Understand,
-  ElementGenerationBloomLevel.Apply,
-]
+// Klicker cannot tell before dispatch whether the selected material can ground a
+// higher cognitive level: the worker raises its evidence bar per level and only
+// then finds out whether a script anchor exists. The form therefore opens without
+// pre-selecting Apply, so the default request is one thin material can satisfy.
+const DEFAULT_BLOOM_LEVELS = [ElementGenerationBloomLevel.Understand]
 const DIFFICULTY_LEVELS = [
   ElementGenerationDifficultyPreset.D1,
   ElementGenerationDifficultyPreset.D2,

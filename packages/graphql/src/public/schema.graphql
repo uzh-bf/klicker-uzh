@@ -1431,6 +1431,7 @@ type ElementGenerationBuild {
   requestedElementCount: Int!
   retryCount: Int!
   reviews: [ElementGenerationReview!]!
+  slotFailures: [ElementGenerationSlotFailure!]!
   sources: [ElementGenerationBuildSource!]!
   stage: String!
   startedAt: Date
@@ -1501,10 +1502,20 @@ type ElementGenerationDesignModule {
   moduleName: String!
 }
 
+type ElementGenerationDesignSlot {
+  bloomLevel: ElementGenerationBloomLevel
+  evidenceEntityIds: [String!]!
+  moduleId: ID!
+  objectiveId: ID
+  sourceElementId: ID!
+  targetDifficulty: Int
+}
+
 type ElementGenerationDesignSummary {
   elementCount: Int!
   modules: [ElementGenerationDesignModule!]!
   objectives: [ElementGenerationObjective!]!
+  slots: [ElementGenerationDesignSlot!]!
   sources: [ElementGenerationReviewSource!]!
   title: String!
   warnings: [ElementGenerationWarning!]!
@@ -1529,6 +1540,12 @@ enum ElementGenerationDifficultyPreset {
   MIXED
 }
 
+enum ElementGenerationFailureClass {
+  self_repairable
+  system
+  user_input
+}
+
 enum ElementGenerationLanguage {
   de
   en
@@ -1537,12 +1554,18 @@ enum ElementGenerationLanguage {
 type ElementGenerationObjective {
   bloomLevel: ElementGenerationBloomLevel
   id: ID!
+  objectiveSource: ElementGenerationObjectiveSource
   text: String!
 }
 
 input ElementGenerationObjectiveInput {
   bloomLevel: ElementGenerationBloomLevel
   text: String!
+}
+
+enum ElementGenerationObjectiveSource {
+  neutral
+  provided
 }
 
 type ElementGenerationPlanElement {
@@ -1586,6 +1609,19 @@ type ElementGenerationReviewSource {
 type ElementGenerationSaveResult {
   alreadySavedElementIds: [Int!]!
   createdElementIds: [Int!]!
+}
+
+type ElementGenerationSlotFailure {
+  detail: String
+  evidenceTarget: String
+  failureClass: ElementGenerationFailureClass!
+  moduleId: String
+  objective: String
+  objectiveSource: ElementGenerationObjectiveSource
+  reasonCode: String!
+  requestedLevel: ElementGenerationBloomLevel
+  slotId: ID!
+  suggestions: [String!]!
 }
 
 type ElementGenerationSource {
@@ -2314,6 +2350,7 @@ type KBImportedSource {
   id: ID!
   ingestedAt: Date
   observedAt: Date
+  origin: KBSourceOrigin!
   sourceType: String
   sourceUrl: String
   title: String!
@@ -2493,6 +2530,11 @@ enum KBResourceStatus {
 enum KBResourceType {
   BLOB
   URL
+}
+
+enum KBSourceOrigin {
+  IMPORTED
+  MANAGED
 }
 
 type KnowledgeGraphEdge {

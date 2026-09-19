@@ -6,7 +6,10 @@ import type {
   GeneratedQuestionEditable,
   GeneratedQuestionTagSelectionInput,
 } from '@klicker-uzh/types'
-import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
+import {
+  ELEMENT_GENERATION_CAPABILITIES,
+  KB_GRAPH_POLICY_LANGUAGES,
+} from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
@@ -56,7 +59,7 @@ function isQuestionElementType(
 ): elementType is 'SC' | 'MC' | 'KPRIM' {
   return QUESTION_TYPES.has(elementType)
 }
-const TERMINAL_EDITABLE_STATUSES = [
+const TERMINAL_EDITABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
   DB.ElementGenerationBuildStatus.COMPLETED,
   DB.ElementGenerationBuildStatus.INCOMPLETE,
 ]
@@ -544,11 +547,7 @@ export async function keepGeneratedElementDraft(
         'Generated element draft not found'
       )
     }
-    const validStatuses: DB.ElementGenerationBuildStatus[] =
-      draft.elementType === DB.ElementType.FLASHCARD
-        ? TERMINAL_EDITABLE_STATUSES
-        : [DB.ElementGenerationBuildStatus.COMPLETED]
-    if (!validStatuses.includes(draft.build.status)) {
+    if (!TERMINAL_EDITABLE_STATUSES.includes(draft.build.status)) {
       throw questionGenerationServiceError(
         'INVALID_STAGE',
         'Generated elements can only be kept after terminal publication'
@@ -828,7 +827,7 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
-    languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],
+    languages: [...KB_GRAPH_POLICY_LANGUAGES],
     bloomLevels: [...ELEMENT_GENERATION_CAPABILITIES.bloomLevels],
     difficultyLevels: [...ELEMENT_GENERATION_CAPABILITIES.difficultyLevels],
     typeCapabilities: ELEMENT_GENERATION_CAPABILITIES.elementTypes.map(

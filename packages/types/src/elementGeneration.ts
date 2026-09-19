@@ -98,6 +98,7 @@ export type ElementGenerationObjective = {
   id: string
   text: string
   bloomLevel: ElementGenerationBloomLevel | null
+  objectiveSource?: 'provided' | 'neutral'
 }
 
 export type AssessmentElementGenerationConfiguration = {
@@ -221,6 +222,27 @@ export type ElementGenerationReviewSourceSummary = {
   pageTo: number | null
 }
 
+export type ElementGenerationFailureClass =
+  | 'user_input'
+  | 'self_repairable'
+  | 'system'
+
+// Structured per-slot failure reason surfaced on an element-generation build.
+// The reason code stays an open string so a newer worker release cannot break
+// the client; the failure class selects the rendering contract.
+export type ElementGenerationSlotFailure = {
+  slotId: string
+  moduleId: string | null
+  objective: string | null
+  objectiveSource: 'provided' | 'neutral' | null
+  requestedLevel: ElementGenerationBloomLevel | null
+  evidenceTarget: string | null
+  reasonCode: string
+  failureClass: ElementGenerationFailureClass
+  detail: string | null
+  suggestions: string[]
+}
+
 export type ElementGenerationDesignSummary = {
   title: string
   elementCount: number
@@ -237,6 +259,9 @@ export type ElementGenerationDesignSummary = {
     objectiveId: string | null
     bloomLevel: ElementGenerationBloomLevel | null
     targetDifficulty: number | null
+    // Evidence entity ids the worker resolved for this slot; empty when the
+    // artifact predates the evidence surface or carries none.
+    evidenceEntityIds: string[]
   }>
   warnings: ElementGenerationWarning[]
 }
@@ -268,3 +293,12 @@ export const ELEMENT_GENERATION_CAPABILITIES = {
   },
   supportsIndividualRegeneration: false,
 } as const
+
+// The external knowledge-graph payload carries no language, so the generation
+// worker's CourseKGInput defaults every knowledge-base policy to German. Until
+// Klicker sends a language on that payload and stores one on the knowledge base,
+// German is the only policy language a generation can resolve against. This is
+// the offered language for a build, distinct from the languages Klicker could
+// theoretically support.
+export const KB_GRAPH_POLICY_LANGUAGE = 'de' as const
+export const KB_GRAPH_POLICY_LANGUAGES = [KB_GRAPH_POLICY_LANGUAGE] as const

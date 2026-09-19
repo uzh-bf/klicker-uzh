@@ -64,6 +64,7 @@ export default {
     },
     credits: {
       title: 'Available credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Every message uses credits — how many depends on the model and the length of the exchange.',
       resetAt: 'Refills on {date}.',
@@ -82,6 +83,9 @@ export default {
       logoAlt: 'Klicker Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
+    },
+    embedded: {
+      close: 'Close chat',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -1822,23 +1826,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
-    importedSourcesTitle: 'Imported sources',
+    importedSourcesTitle: 'Indexed sources',
     importedSourceColumn: 'Source',
     importedSourcesNotice:
-      'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
+      'Everything indexed in this knowledge base, whether you added it through the app or the course team imported it. App-managed resources count toward the resource and storage limits and are included in knowledge graph builds; manually imported sources are not.',
     importedSourcesIncomplete:
       'The list covers the most recently scanned sources. Older sources may not be listed yet.',
-    importedSourcesEmpty:
-      'No imported sources have been found for this knowledge base yet.',
-    importedSourcesLoadError: 'The imported sources could not be loaded.',
-    loadMoreImportedSources: 'Load more imported sources',
+    importedSourcesEmpty: 'No sources are indexed in this knowledge base yet.',
+    importedSourcesLoadError: 'The indexed sources could not be loaded.',
+    loadMoreImportedSources: 'Load more sources',
     importedSourcesLoadMoreError:
-      'The additional imported sources could not be loaded. Try again.',
+      'The additional sources could not be loaded. Try again.',
     importedObservedAt: 'Observed {date}',
     importedIngestedColumn: 'Ingested',
     importedObservedColumn: 'Observed',
     importedIngestionUnknown: 'Ingestion time not recorded',
     importedSourceGeneric: 'Source',
+    importedSourceManagedBadge: 'App-managed',
+    importedSourceImportedBadge: 'Manually imported',
     importedVideoNoFileHint:
       'Video content is indexed without storing the original file.',
     noResources: 'No resources have been added yet.',
@@ -2011,9 +2016,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphDomainGeneralAcademic: 'General / Mixed',
     graphDomainCategoriesLabel: 'Generated categories',
     graphDomainLanguageNote:
-      'The graph is generated in German. The interface language does not change the categories.',
+      'The graph is generated in the selected language. The interface language does not change the categories.',
+    graphDomainLanguageLabel: 'Generation language',
+    graphDomainLanguageSelectPlaceholder: 'Select a language',
     graphDomainCurrentUnavailable:
       'The selected domain {domain} (version {version}) is not available in this deployment. Choose a supported domain to build again.',
+    graphDomainLanguageUnavailable:
+      'The selected domain {domain} does not serve {language} in this deployment. Choose a supported generation language to build again.',
     graphDomainRebuildBlocked:
       'This knowledge base uses an explicit domain ({domain}, version {version}, {language}) that this deployment cannot reapply. Rebuilding is blocked until an explicit domain selection is available again.',
     graphDomainVersionUnknown: 'unknown',
@@ -2634,7 +2643,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
         bloomTitle: "Bloom's taxonomy",
         bloomHelp:
-          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments.',
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments. Higher levels need more detailed source material, so a level can still fail for thin material.',
         bloomLevel: 'Level {level}',
         bloomSelected: 'Selected',
         bloomSelect: 'Select level',
@@ -2758,6 +2767,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         FAILED: 'Failed',
         REJECTED: 'Rejected',
       },
+      failureClasses: {
+        user_input:
+          'This element could not be grounded in the selected material. Adjust the source scope or the learning objective and generate again.',
+        self_repairable:
+          'The workflow retried this element with alternative material but exhausted the usable evidence without grounding it.',
+        system:
+          'The generation service could not process this element, which is not caused by your input. Retry the generation; if the problem persists, contact support.',
+      },
+      failureClassLabels: {
+        user_input: 'Source material',
+        self_repairable: 'No alternative evidence',
+        system: 'System error',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'The selected sources contain no matching documents for this element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'The requested topic does not appear in the selected material.',
+        LEVEL_NOT_GROUNDABLE:
+          'The selected material does not support the requested cognitive level for this element.',
+        NO_DISTINCT_EVIDENCE:
+          'Several elements would rely on the same evidence, so this element was left out.',
+        GROUNDING_EXHAUSTED:
+          'The workflow used all usable evidence without producing a grounded element.',
+        SYSTEM_FAILURE:
+          'The generation service reported an internal failure for this element.',
+      },
       build: {
         title: '{type} generation',
         stage: 'Current stage: {stage}',
@@ -2780,6 +2816,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'I understand that the resulting set contains fewer elements than requested.',
         rejected: 'This generation was rejected during review.',
         noDrafts: 'The generation completed without reviewable elements.',
+        legacyFailure:
+          'This run failed before the workflow reported per-element reasons.',
+        failureReasonsTitle:
+          '{count, plural, one {# element is missing from this generation} other {# elements are missing from this generation}}',
+        failureReasonsHelp:
+          'The workflow reported why these elements could not be generated. The delivered elements are unaffected and stay in review.',
+        failureModule: 'Module',
+        failureObjective: 'Learning objective',
+        failureLevel: 'Bloom level',
+        failureEvidence: 'Required evidence',
+        failureSuggestions: 'Topics covered by your material',
+        failureRetryGuidance:
+          'This is a system-side problem. Retry the generation; if it persists, contact support.',
+        failureDiagnostics: 'Technical diagnostics',
       },
       gate: {
         eyebrow: 'Review gate',
@@ -2793,6 +2843,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         elementNumber: 'Element {number}',
         objectives: 'Learning objectives',
         noObjectives: 'No explicit learning objectives.',
+        generatedDefaultObjective: 'Generated default',
+        slotEvidence: 'Evidence per element',
+        noSlotEvidence: 'No evidence resolved',
+        concentrationTitle: 'Concentrated evidence',
+        concentrationNotice:
+          '{count, plural, one {# element} other {# elements}} in this module share the same evidence entities: {entities}.',
         difficulty: 'Difficulty {difficulty}',
         warnings: '{count, plural, one {# warning} other {# warnings}}',
         acknowledgeWarnings: 'I reviewed and acknowledge these warnings.',

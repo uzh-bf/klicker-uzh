@@ -1,5 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  ElementGenerationSlotFailure,
   FlashcardGenerationConfiguration,
   GeneratedFlashcard,
   GeneratedFlashcardEditable,
@@ -51,6 +52,14 @@ export const ElementGenerationBloomLevel = builder.enumType(
   {
     values: ['remember', 'understand', 'apply', 'analyze', 'evaluate'] as const,
   }
+)
+export const ElementGenerationObjectiveSource = builder.enumType(
+  'ElementGenerationObjectiveSource',
+  { values: ['provided', 'neutral'] as const }
+)
+export const ElementGenerationFailureClass = builder.enumType(
+  'ElementGenerationFailureClass',
+  { values: ['user_input', 'self_repairable', 'system'] as const }
 )
 export const ElementGenerationDifficultyPreset = builder.enumType(
   'ElementGenerationDifficultyPreset',
@@ -207,6 +216,7 @@ type ElementGenerationObjectiveView = {
   id: string
   text: string
   bloomLevel: ElementGenerationBloomLevelValue | null
+  objectiveSource?: 'provided' | 'neutral' | null
 }
 const ElementGenerationObjectiveRef =
   builder.objectRef<ElementGenerationObjectiveView>(
@@ -218,6 +228,10 @@ ElementGenerationObjectiveRef.implement({
     text: t.exposeString('text'),
     bloomLevel: t.expose('bloomLevel', {
       type: ElementGenerationBloomLevel,
+      nullable: true,
+    }),
+    objectiveSource: t.expose('objectiveSource', {
+      type: ElementGenerationObjectiveSource,
       nullable: true,
     }),
   }),
@@ -357,6 +371,14 @@ type ElementGenerationDesignSummaryView = {
     elementCount: number
   }>
   sources: ElementGenerationReviewSourceView[]
+  slots: Array<{
+    sourceElementId: string
+    moduleId: string
+    objectiveId: string | null
+    bloomLevel: ElementGenerationBloomLevelValue | null
+    targetDifficulty: number | null
+    evidenceEntityIds: string[]
+  }>
   warnings: ElementGenerationWarningView[]
 }
 const ElementGenerationDesignModuleRef = builder.objectRef<
@@ -373,6 +395,22 @@ const ElementGenerationDesignSummaryRef =
   builder.objectRef<ElementGenerationDesignSummaryView>(
     'ElementGenerationDesignSummary'
   )
+const ElementGenerationDesignSlotRef = builder.objectRef<
+  ElementGenerationDesignSummaryView['slots'][number]
+>('ElementGenerationDesignSlot')
+ElementGenerationDesignSlotRef.implement({
+  fields: (t) => ({
+    sourceElementId: t.exposeID('sourceElementId'),
+    moduleId: t.exposeID('moduleId'),
+    objectiveId: t.exposeID('objectiveId', { nullable: true }),
+    bloomLevel: t.expose('bloomLevel', {
+      type: ElementGenerationBloomLevel,
+      nullable: true,
+    }),
+    targetDifficulty: t.exposeInt('targetDifficulty', { nullable: true }),
+    evidenceEntityIds: t.exposeStringList('evidenceEntityIds'),
+  }),
+})
 ElementGenerationDesignSummaryRef.implement({
   fields: (t) => ({
     title: t.exposeString('title'),
@@ -384,17 +422,27 @@ ElementGenerationDesignSummaryRef.implement({
     sources: t.expose('sources', {
       type: [ElementGenerationReviewSourceRef],
     }),
+    slots: t.expose('slots', { type: [ElementGenerationDesignSlotRef] }),
     warnings: t.expose('warnings', { type: [ElementGenerationWarningRef] }),
   }),
 })
 
-function designSummaryView(
+export function designSummaryView(
   build: DB.ElementGenerationBuild
 ): ElementGenerationDesignSummaryView | null {
   if (!build.designSummary || build.elementType === DB.ElementType.FLASHCARD) {
     return null
   }
   const summary = build.designSummary as QuestionGenerationDesignSummary
+  // designSummary is a schema-less Json column written by whichever server
+  // version was live at parse time, and the design-review transition does not
+  // re-parse it. A build still in design review across a deploy therefore
+  // serves a summary from before the slot evidence surface existed, so the
+  // persisted shape is read with the field absent rather than trusting the
+  // always-populated type the current parser produces.
+  const persisted = summary as {
+    slots?: QuestionGenerationDesignSummary['slots']
+  }
   return {
     title: summary.title,
     elementCount: summary.questionCount,
@@ -404,6 +452,14 @@ function designSummaryView(
       elementCount: questionCount,
     })),
     sources: summary.sources,
+    slots: (persisted.slots ?? []).map((slot) => ({
+      sourceElementId: slot.sourceQuestionId,
+      moduleId: slot.moduleId,
+      objectiveId: slot.objectiveId,
+      bloomLevel: slot.bloomLevel,
+      targetDifficulty: slot.targetDifficulty,
+      evidenceEntityIds: slot.evidenceEntityIds ?? [],
+    })),
     warnings: summary.warnings,
   }
 }
@@ -466,6 +522,24 @@ function planSummaryView(
     })),
     warnings: summary.warnings,
   }
+}
+
+// A partial run persists its per-slot attention cards on the build summary so
+// they survive without the result manifest. The query fills the view field
+// from the manifest when it can; this fallback keeps the cards visible for a
+// settled build that is no longer re-synchronized.
+function slotFailuresView(
+  build: ElementGenerationBuildView
+): ElementGenerationSlotFailure[] {
+  if (build.slotFailures && build.slotFailures.length > 0) {
+    return build.slotFailures
+  }
+  const summary = build.planSummary as
+    | (QuestionGenerationPlanSummary & {
+        slotFailures?: ElementGenerationSlotFailure[]
+      })
+    | null
+  return summary?.slotFailures ?? []
 }
 
 type GeneratedElementChoiceView = GeneratedQuestionEditable['choices'][number]
@@ -661,10 +735,45 @@ ElementGenerationBuildSourceRef.implement({
   }),
 })
 
+// The reason code stays an open string; the failure class selects how the
+// reviewing client renders the slot, so an unknown code from a newer worker
+// release still reaches the client with its structured fields.
+const ElementGenerationSlotFailureRef =
+  builder.objectRef<ElementGenerationSlotFailure>(
+    'ElementGenerationSlotFailure'
+  )
+ElementGenerationSlotFailureRef.implement({
+  fields: (t) => ({
+    slotId: t.exposeID('slotId'),
+    moduleId: t.exposeString('moduleId', { nullable: true }),
+    objective: t.exposeString('objective', { nullable: true }),
+    objectiveSource: t.expose('objectiveSource', {
+      type: ElementGenerationObjectiveSource,
+      nullable: true,
+    }),
+    requestedLevel: t.expose('requestedLevel', {
+      type: ElementGenerationBloomLevel,
+      nullable: true,
+    }),
+    evidenceTarget: t.exposeString('evidenceTarget', { nullable: true }),
+    reasonCode: t.exposeString('reasonCode'),
+    failureClass: t.expose('failureClass', {
+      type: ElementGenerationFailureClass,
+    }),
+    detail: t.exposeString('detail', { nullable: true }),
+    suggestions: t.exposeStringList('suggestions'),
+  }),
+})
+
 export type ElementGenerationBuildView = DB.ElementGenerationBuild & {
   reviews?: DB.ElementGenerationReview[]
   drafts: DB.GeneratedElementDraft[]
   sourceGraphBuild: { sources: ElementGenerationBuildSourceView[] }
+  // Structured per-slot failure reasons are read back from the result manifest
+  // when the build query serves a failed build. Builds loaded for the other
+  // resolvers, and manifests written before the failure surface existed, keep
+  // the empty default instead of an absent field.
+  slotFailures?: ElementGenerationSlotFailure[]
 }
 export const ElementGenerationBuildRef =
   builder.objectRef<ElementGenerationBuildView>('ElementGenerationBuild')
@@ -703,6 +812,10 @@ ElementGenerationBuildRef.implement({
     errorCode: t.exposeString('errorCode', { nullable: true }),
     errorMessage: t.exposeString('errorMessage', { nullable: true }),
     errorRetryable: t.exposeBoolean('errorRetryable', { nullable: true }),
+    slotFailures: t.field({
+      type: [ElementGenerationSlotFailureRef],
+      resolve: slotFailuresView,
+    }),
     startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
     completedAt: t.expose('completedAt', { type: 'Date', nullable: true }),
     incompletePublishedAt: t.expose('incompletePublishedAt', {

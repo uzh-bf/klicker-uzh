@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   citationHrefFor,
+  extractCitedPages,
   type MarkdownAstNode,
   parseCitationHref,
   splitCitationMarkers,
@@ -191,6 +192,50 @@ describe('splitCitationMarkers', () => {
     expect(splitCitationMarkers('See [123] here')).toEqual([
       textNode('See [123] here'),
     ])
+  })
+})
+
+describe('extractCitedPages', () => {
+  test('reads the labelled page detail of a marker', () => {
+    expect([...extractCitedPages('See [1, p. 6] and [1, S. 8–10].')]).toEqual([
+      [1, [6, 8, 9, 10]],
+    ])
+  })
+
+  test('keeps pages per source index and ignores markers without a detail', () => {
+    const cited = extractCitedPages('A [1, p. 6–7]. B [2]. C [2, S. 7].')
+    expect(cited.get(1)).toEqual([6, 7])
+    expect(cited.get(2)).toEqual([7])
+  })
+
+  // A group marker names one detail for several sources, so no single card
+  // can claim it; the same holds for a detail that is not a forward range.
+  test('attributes no page to a multi-source marker or an invalid range', () => {
+    expect(extractCitedPages('Grouped [2–4, S. 10–12].')).toEqual(new Map())
+    expect(extractCitedPages('Descending [1, p. 12–6].')).toEqual(new Map())
+  })
+
+  test('ignores bracket lists the grammar does not read as a page detail', () => {
+    expect(extractCitedPages('Math [0, 1] and [1, 2, 3] and [1, 7].')).toEqual(
+      new Map()
+    )
+  })
+
+  test('ignores markers inside code fences and code spans', () => {
+    expect(extractCitedPages('```\nSee [1, p. 6].\n```')).toEqual(new Map())
+    expect(extractCitedPages('Use `[1, p. 6]` literally.')).toEqual(new Map())
+  })
+
+  test('masks an unterminated fence to the end of a streamed answer', () => {
+    expect(extractCitedPages('Text [1, p. 6].\n```\n[2, p. 9]')).toEqual(
+      new Map([[1, [6]]])
+    )
+  })
+
+  test('deduplicates pages that several markers repeat', () => {
+    expect(extractCitedPages('[1, p. 6] and [1, p. 6–7].')).toEqual(
+      new Map([[1, [6, 7]]])
+    )
   })
 })
 

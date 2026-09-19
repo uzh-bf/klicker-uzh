@@ -40,17 +40,32 @@ const KnowledgeGraphViewer = dynamic(
   { ssr: false }
 )
 
-// Explicit domain selection is German-first: the graph is always generated in
-// German, independent of the interface locale, so the panel offers domains but
-// never a generation language.
-const DOMAIN_GENERATION_LANGUAGE = 'German'
 const DEFAULT_DOMAIN_POLICY_ID = 'finance'
 const DEFAULT_DOMAIN_POLICY_VERSION = 1
+// The generation language is an explicit part of the domain selection, so it is
+// never derived from the interface locale. German stays the default for builds
+// that predate an explicit language.
+const DEFAULT_DOMAIN_GENERATION_LANGUAGE = 'German'
+const DOMAIN_GENERATION_LANGUAGES = ['German', 'English'] as const
+type DomainGenerationLanguage = (typeof DOMAIN_GENERATION_LANGUAGES)[number]
 // Mirrors the API bound so the field stops the lecturer at the same limit the
 // server enforces.
 const FOCUS_TOPIC_MAX_LENGTH = 300
 
-type KnowledgeGraphDomainSelection = { id: string; version: number | null }
+type KnowledgeGraphDomainSelection = {
+  id: string
+  version: number | null
+  language: DomainGenerationLanguage
+}
+
+function isDomainGenerationLanguage(
+  language: string | null | undefined
+): language is DomainGenerationLanguage {
+  return (
+    language != null &&
+    (DOMAIN_GENERATION_LANGUAGES as readonly string[]).includes(language)
+  )
+}
 
 type GraphResponse =
   | GetKbKnowledgeGraphOverviewQuery['getKbKnowledgeGraphOverview']
@@ -335,6 +350,11 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
       ? {
           id: config.domainPolicyId,
           version: config.domainPolicyVersion ?? null,
+          // A persisted triple always records its language; the default only
+          // covers rows a legacy deployment wrote before explicit languages.
+          language: isDomainGenerationLanguage(config.domainPolicyLanguage)
+            ? config.domainPolicyLanguage
+            : DEFAULT_DOMAIN_GENERATION_LANGUAGE,
         }
       : null
   const currentUserDomainSelection =
@@ -344,6 +364,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
       persistedDomainSelection ?? {
         id: DEFAULT_DOMAIN_POLICY_ID,
         version: DEFAULT_DOMAIN_POLICY_VERSION,
+        language: DEFAULT_DOMAIN_GENERATION_LANGUAGE,
       }
   const domainSelectedOption = domainOptions.find(
     (option) =>
@@ -351,11 +372,11 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
       option.version === domainSelection.version
   )
   const domainSelectionSupported =
-    // The generation language is fixed to German, so a catalog option that
-    // keeps no German categories cannot produce this build and stays blocked.
+    // A catalog option that keeps no categories in the selected generation
+    // language cannot produce this build and stays blocked.
     domainCapabilityEnabled &&
     (domainSelectedOption?.languages.some(
-      (language) => language.language === DOMAIN_GENERATION_LANGUAGE
+      (option) => option.language === domainSelection.language
     ) ??
       false)
   // A retired pair is reported from the persisted build metadata and must not
@@ -365,7 +386,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     currentUserDomainSelection == null && persistedDomainSelection != null
   const domainCategoryNames =
     domainSelectedOption?.languages
-      .find((language) => language.language === DOMAIN_GENERATION_LANGUAGE)
+      .find((option) => option.language === domainSelection.language)
       ?.categories.map((category) => category.name) ??
     (showingPersistedDomain
       ? (config?.domainCategories ?? []).map((category) => category.name)
@@ -429,6 +450,14 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
       ? `${domainOptionLabel(option)} (v${option.version})`
       : domainOptionLabel(option),
   }))
+  const domainLanguageItems = DOMAIN_GENERATION_LANGUAGES.map((language) => ({
+    value: language,
+    label: translateDomainLanguage(language),
+  }))
+  // The language control keeps showing the stored choice even when the catalog
+  // cannot serve it. The submit gate and the status message carry the block, so
+  // the lecturer sees what is stored and replaces it explicitly.
+  const domainLanguageSelectValue = domainSelection.language
   const domainSelectValue = domainSelectedOption
     ? domainOptionValue(domainSelectedOption)
     : ''
@@ -453,7 +482,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const legacyDomain = {
     id: DEFAULT_DOMAIN_POLICY_ID,
     version: DEFAULT_DOMAIN_POLICY_VERSION,
-    language: DOMAIN_GENERATION_LANGUAGE,
+    language: DEFAULT_DOMAIN_GENERATION_LANGUAGE,
   }
   const reportedDomain = {
     id: config?.domainPolicyId ?? null,
@@ -494,6 +523,28 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     publishedDomain.id != null
       ? (domainLabelForId(publishedDomain.id) ?? publishedDomain.id)
       : null
+  // The blocked-domain message names the stored selection and each branch
+  // carries only the fields the lecturer needs to replace it.
+  const domainBlockedMessage = () => {
+    const domain = domainLabelForId(domainSelection.id) ?? domainSelection.id
+    if (domainCapabilityEnabled) {
+      if (domainSelectedOption !== undefined) {
+        return t('kb.graphDomainLanguageUnavailable', {
+          domain,
+          language: translateDomainLanguage(domainSelection.language),
+        })
+      }
+      return t('kb.graphDomainCurrentUnavailable', {
+        domain,
+        version: formatDomainVersion(domainSelection.version),
+      })
+    }
+    return t('kb.graphDomainRebuildBlocked', {
+      domain,
+      version: formatDomainVersion(persistedDomainSelection?.version ?? null),
+      language: translateDomainLanguage(reportedDomain.language),
+    })
+  }
 
   useEffect(() => {
     if (config?.qualityTier != null && !isActive) {
@@ -569,7 +620,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
         ? {
             domainPolicyId: domainSelectedOption.id,
             domainPolicyVersion: domainSelectedOption.version,
-            domainPolicyLanguage: DOMAIN_GENERATION_LANGUAGE,
+            domainPolicyLanguage: domainSelection.language,
           }
         : {}
     // The focus rides the same capability gate as the domain selection; a blank
@@ -715,37 +766,71 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   {t('kb.graphCostUnavailable')}
                 </p>
               ) : null}
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
                 {domainCapabilityEnabled ? (
-                  <SelectField
-                    label={t('kb.graphDomainLabel')}
-                    items={domainItems}
-                    value={domainSelectValue}
-                    placeholder={t('kb.graphDomainSelectPlaceholder')}
-                    onChange={(value) => {
-                      setOperationError(null)
-                      const option = domainOptions.find(
-                        (candidate) => domainOptionValue(candidate) === value
-                      )
-                      if (!option) return
-                      setUserDomainSelection({
-                        kbId,
-                        id: option.id,
-                        version: option.version,
-                      })
-                    }}
-                    disabled={
-                      isActive ||
-                      isRebuilding ||
-                      !config.isEnabled ||
-                      !config.costConfigurationReady
-                    }
-                    data={{ cy: 'kb-knowledge-graph-domain' }}
-                    className={{
-                      root: 'w-full',
-                      select: { trigger: 'w-full' },
-                    }}
-                  />
+                  <>
+                    <SelectField
+                      label={t('kb.graphDomainLabel')}
+                      items={domainItems}
+                      value={domainSelectValue}
+                      placeholder={t('kb.graphDomainSelectPlaceholder')}
+                      onChange={(value) => {
+                        setOperationError(null)
+                        const option = domainOptions.find(
+                          (candidate) => domainOptionValue(candidate) === value
+                        )
+                        if (!option) return
+                        setUserDomainSelection({
+                          kbId,
+                          id: option.id,
+                          version: option.version,
+                          // The language is carried over unchanged. A domain
+                          // that cannot serve it leaves the rebuild blocked
+                          // until the lecturer picks a supported language,
+                          // instead of silently rewriting the stored choice.
+                          language: domainSelection.language,
+                        })
+                      }}
+                      disabled={
+                        isActive ||
+                        isRebuilding ||
+                        !config.isEnabled ||
+                        !config.costConfigurationReady
+                      }
+                      data={{ cy: 'kb-knowledge-graph-domain' }}
+                      className={{
+                        root: 'w-full',
+                        select: { trigger: 'w-full' },
+                      }}
+                    />
+                    <SelectField
+                      label={t('kb.graphDomainLanguageLabel')}
+                      items={domainLanguageItems}
+                      value={domainLanguageSelectValue}
+                      placeholder={t('kb.graphDomainLanguageSelectPlaceholder')}
+                      onChange={(value) => {
+                        setOperationError(null)
+                        if (!isDomainGenerationLanguage(value)) return
+                        setUserDomainSelection({
+                          kbId,
+                          id: domainSelection.id,
+                          version: domainSelection.version,
+                          language: value,
+                        })
+                      }}
+                      disabled={
+                        isActive ||
+                        isRebuilding ||
+                        !config.isEnabled ||
+                        !config.costConfigurationReady
+                      }
+                      data={{ cy: 'kb-knowledge-graph-domain-language' }}
+                      className={{
+                        root: 'w-full',
+                        select: { trigger: 'w-full' },
+                      }}
+                    />
+                  </>
                 ) : (
                   <div
                     className="space-y-1"
@@ -818,7 +903,8 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                     {t('kb.graphFocusTopicNote')}
                   </p>
                 </div>
-              ) : config?.focusTopic != null ? (
+              ) : null}
+              {!domainCapabilityEnabled && config?.focusTopic != null ? (
                 <div
                   className="mt-3 space-y-1"
                   data-cy="kb-knowledge-graph-focus-topic"
@@ -845,26 +931,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                       role="status"
                       data-cy="kb-knowledge-graph-domain-unsupported"
                     >
-                      {domainCapabilityEnabled
-                        ? t('kb.graphDomainCurrentUnavailable', {
-                            domain:
-                              domainLabelForId(domainSelection.id) ??
-                              domainSelection.id,
-                            version: formatDomainVersion(
-                              domainSelection.version
-                            ),
-                          })
-                        : t('kb.graphDomainRebuildBlocked', {
-                            domain:
-                              domainLabelForId(domainSelection.id) ??
-                              domainSelection.id,
-                            version: formatDomainVersion(
-                              persistedDomainSelection?.version ?? null
-                            ),
-                            language: translateDomainLanguage(
-                              reportedDomain.language
-                            ),
-                          })}
+                      {domainBlockedMessage()}
                     </p>
                   ) : null}
                   {domainCategoryNames.length > 0 ? (

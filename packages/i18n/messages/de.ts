@@ -65,6 +65,7 @@ export default {
     },
     credits: {
       title: 'Verfügbare Credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Jede Nachricht verbraucht Credits — wie viele, hängt vom Modell und der Länge des Austauschs ab.',
       resetAt: 'Werden am {date} wieder aufgefüllt.',
@@ -83,6 +84,9 @@ export default {
       logoAlt: 'Klicker-Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. Alle Rechte vorbehalten.',
+    },
+    embedded: {
+      close: 'Chat schliessen',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
@@ -1839,24 +1843,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
-    importedSourcesTitle: 'Importierte Quellen',
+    importedSourcesTitle: 'Indexierte Quellen',
     importedSourceColumn: 'Quelle',
     importedSourcesNotice:
-      'Importierte Metadaten für Inhalte, die bereits in dieser Wissensdatenbank indexiert sind. Importierte Quellen werden nicht für Wissensgraphen verwendet und zählen nicht zu den Ressourcen- und Speicherlimits.',
+      'Alles, was in dieser Wissensdatenbank indexiert ist, unabhängig davon, ob Sie es über die Anwendung hinzugefügt haben oder das Kursteam es importiert hat. App-verwaltete Ressourcen zählen zu den Ressourcen- und Speicherlimits und fliessen in Wissensgraphen ein; manuell importierte Quellen nicht.',
     importedSourcesIncomplete:
       'Die Liste umfasst die zuletzt durchsuchten Quellen. Ältere Quellen sind möglicherweise noch nicht erfasst.',
     importedSourcesEmpty:
-      'Für diese Wissensdatenbank wurden noch keine importierten Quellen gefunden.',
+      'In dieser Wissensdatenbank sind noch keine Quellen indexiert.',
     importedSourcesLoadError:
-      'Die importierten Quellen konnten nicht geladen werden.',
-    loadMoreImportedSources: 'Weitere importierte Quellen laden',
+      'Die indexierten Quellen konnten nicht geladen werden.',
+    loadMoreImportedSources: 'Weitere Quellen laden',
     importedSourcesLoadMoreError:
-      'Die weiteren importierten Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
+      'Die weiteren Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
     importedObservedAt: 'Beobachtet am {date}',
     importedIngestedColumn: 'Verarbeitet',
     importedObservedColumn: 'Beobachtet',
     importedIngestionUnknown: 'Verarbeitungszeit nicht erfasst',
     importedSourceGeneric: 'Quelle',
+    importedSourceManagedBadge: 'App-verwaltet',
+    importedSourceImportedBadge: 'Manuell importiert',
     importedVideoNoFileHint:
       'Videoinhalte werden ohne Speicherung der Originaldatei indexiert.',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
@@ -2037,9 +2043,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphDomainGeneralAcademic: 'Allgemein / Gemischt',
     graphDomainCategoriesLabel: 'Erzeugte Kategorien',
     graphDomainLanguageNote:
-      'Der Graph wird auf Deutsch erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
+      'Der Graph wird in der gewählten Sprache erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
+    graphDomainLanguageLabel: 'Generierungssprache',
+    graphDomainLanguageSelectPlaceholder: 'Sprache wählen',
     graphDomainCurrentUnavailable:
       'Die gewählte Domäne {domain} (Version {version}) ist in dieser Installation nicht verfügbar. Wählen Sie eine unterstützte Domäne, um erneut aufzubauen.',
+    graphDomainLanguageUnavailable:
+      'Die gewählte Domäne {domain} bietet {language} in dieser Installation nicht an. Wählen Sie eine unterstützte Generierungssprache, um erneut aufzubauen.',
     graphDomainRebuildBlocked:
       'Diese Wissensdatenbank verwendet eine explizite Domäne ({domain}, Version {version}, {language}), die diese Installation nicht erneut anwenden kann. Ein Neuaufbau ist blockiert, bis eine explizite Domänenwahl wieder möglich ist.',
     graphDomainVersionUnknown: 'unbekannt',
@@ -2670,7 +2680,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Alle Typen werden als Klicker-Elemente generiert. Wählen Sie das Format passend zum Lernziel.',
         bloomTitle: 'Blooms Taxonomie',
         bloomHelp:
-          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten.',
+          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten. Höhere Stufen benötigen detaillierteres Quellenmaterial, daher kann eine Stufe bei dünnem Material weiterhin fehlschlagen.',
         bloomLevel: 'Stufe {level}',
         bloomSelected: 'Ausgewählt',
         bloomSelect: 'Stufe auswählen',
@@ -2799,6 +2809,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         FAILED: 'Fehlgeschlagen',
         REJECTED: 'Abgelehnt',
       },
+      failureClasses: {
+        user_input:
+          'Dieses Element konnte nicht im ausgewählten Material verankert werden. Passen Sie den Quellenbereich oder das Lernziel an und generieren Sie erneut.',
+        self_repairable:
+          'Der Workflow hat dieses Element mit alternativem Material erneut versucht, aber die nutzbare Evidenz ohne Verankerung ausgeschöpft.',
+        system:
+          'Der Generierungsdienst konnte dieses Element nicht verarbeiten; die Ursache liegt nicht bei Ihrer Eingabe. Starten Sie die Generierung erneut und wenden Sie sich bei anhaltenden Problemen an den Support.',
+      },
+      failureClassLabels: {
+        user_input: 'Quellenmaterial',
+        self_repairable: 'Keine alternative Evidenz',
+        system: 'Systemfehler',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'Die ausgewählten Quellen enthalten keine passenden Dokumente für dieses Element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'Das gewünschte Thema kommt im ausgewählten Material nicht vor.',
+        LEVEL_NOT_GROUNDABLE:
+          'Das ausgewählte Material trägt die gewünschte kognitive Stufe für dieses Element nicht.',
+        NO_DISTINCT_EVIDENCE:
+          'Mehrere Elemente würden auf dieselbe Evidenz zurückgreifen; dieses Element wurde deshalb weggelassen.',
+        GROUNDING_EXHAUSTED:
+          'Der Workflow hat die nutzbare Evidenz ausgeschöpft, ohne ein verankertes Element zu erzeugen.',
+        SYSTEM_FAILURE:
+          'Der Generierungsdienst hat für dieses Element einen internen Fehler gemeldet.',
+      },
       build: {
         title: 'Generierung: {type}',
         stage: 'Aktuelle Phase: {stage}',
@@ -2821,6 +2858,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Ich verstehe, dass das Ergebnis weniger Elemente als angefordert enthält.',
         rejected: 'Diese Generierung wurde bei der Prüfung abgelehnt.',
         noDrafts: 'Die Generierung wurde ohne prüfbare Elemente abgeschlossen.',
+        legacyFailure:
+          'Dieser Lauf ist fehlgeschlagen, bevor der Workflow Begründungen pro Element geliefert hat.',
+        failureReasonsTitle:
+          '{count, plural, one {# Element fehlt in dieser Generierung} other {# Elemente fehlen in dieser Generierung}}',
+        failureReasonsHelp:
+          'Der Workflow hat begründet, warum diese Elemente nicht generiert werden konnten. Die gelieferten Elemente sind davon nicht betroffen und bleiben in Prüfung.',
+        failureModule: 'Modul',
+        failureObjective: 'Lernziel',
+        failureLevel: 'Bloom-Stufe',
+        failureEvidence: 'Benötigte Evidenz',
+        failureSuggestions: 'Im Material behandelte Themen',
+        failureRetryGuidance:
+          'Das deutet auf ein systemseitiges Problem hin. Starten Sie die Generierung erneut; bei wiederholtem Auftreten wenden Sie sich an den Support.',
+        failureDiagnostics: 'Technische Diagnose',
       },
       gate: {
         eyebrow: 'Prüfschritt',
@@ -2834,6 +2885,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         elementNumber: 'Element {number}',
         objectives: 'Lernziele',
         noObjectives: 'Keine expliziten Lernziele.',
+        generatedDefaultObjective: 'Generierter Standardwert',
+        slotEvidence: 'Evidenz pro Element',
+        noSlotEvidence: 'Keine Evidenz aufgelöst',
+        concentrationTitle: 'Konzentrierte Evidenz',
+        concentrationNotice:
+          '{count, plural, one {# Element} other {# Elemente}} in diesem Modul nutzen dieselben Evidenz-Entitäten: {entities}.',
         difficulty: 'Schwierigkeit {difficulty}',
         warnings: '{count, plural, one {# Warnung} other {# Warnungen}}',
         acknowledgeWarnings: 'Ich habe diese Warnungen geprüft und bestätigt.',

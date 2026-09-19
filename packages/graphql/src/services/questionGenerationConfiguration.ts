@@ -10,6 +10,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   allocateQuestionGenerationDifficulty,
+  NEUTRAL_OBJECTIVE_SOURCE,
   QUESTION_GENERATION_CAPABILITIES,
 } from '@klicker-uzh/types'
 
@@ -166,6 +167,7 @@ function normalizeObjectives(
       id: `OBJ-${String(index + 1).padStart(2, '0')}`,
       text: neutralObjective(language, bloomLevel),
       bloomLevel,
+      objectiveSource: NEUTRAL_OBJECTIVE_SOURCE,
     }))
   }
 
@@ -188,6 +190,7 @@ function normalizeObjectives(
       id: `OBJ-${String(index + 1).padStart(2, '0')}`,
       text,
       bloomLevel,
+      objectiveSource: 'provided' as const,
     }
   })
 }
