@@ -59,7 +59,7 @@ function isQuestionElementType(
 ): elementType is 'SC' | 'MC' | 'KPRIM' {
   return QUESTION_TYPES.has(elementType)
 }
-const TERMINAL_EDITABLE_STATUSES = [
+const TERMINAL_EDITABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
   DB.ElementGenerationBuildStatus.COMPLETED,
   DB.ElementGenerationBuildStatus.INCOMPLETE,
 ]
@@ -514,11 +514,7 @@ export async function keepGeneratedElementDraft(
         'Generated element draft not found'
       )
     }
-    const validStatuses: DB.ElementGenerationBuildStatus[] =
-      draft.elementType === DB.ElementType.FLASHCARD
-        ? TERMINAL_EDITABLE_STATUSES
-        : [DB.ElementGenerationBuildStatus.COMPLETED]
-    if (!validStatuses.includes(draft.build.status)) {
+    if (!TERMINAL_EDITABLE_STATUSES.includes(draft.build.status)) {
       throw questionGenerationServiceError(
         'INVALID_STAGE',
         'Generated elements can only be kept after terminal publication'
