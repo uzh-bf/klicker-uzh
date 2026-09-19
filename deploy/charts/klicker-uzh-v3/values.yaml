@@ -491,6 +491,12 @@ backendGraphql:
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
+    # Non-secret capability gate for explicit domain selection. Leaving this
+    # empty keeps the legacy provider default policy as the only offered route.
+    # Setting it to the revision of the catalog shipped by the deployment
+    # enables the explicit domain options in the backend and the dispatch
+    # re-validation in the worker; both must agree.
+    domainCatalogRevision: ''
     # One shared semester ledger covers graph builds and element-generation
     # dispatches. These values are non-secret and must be explicit before either
     # producer is enabled.
