@@ -484,10 +484,10 @@ Operational notes:
   rebuild staging images. The publishers accept `v3`/`v3*`, not `stg-release`.
 
 The static contract test at
-`.github/scripts/stg-release-ref-promotion.test.cjs` derives the 15 workflow
-paths and names, validates all 32 metadata/build pairs and the active
-repository/job map, checks the promoter trigger list, and verifies chart
-image override and fallback behavior through source checks and Helm renders.
+`.github/scripts/stg-release-ref-promotion.test.cjs` derives the consolidated
+workflow's target, guard, and repository/job contract from the trusted
+inventory, checks the promoter trigger list, and verifies chart image override
+and fallback behavior through source checks and Helm renders.
 
 The superseded annotation mechanism and its incident context remain in
 [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).
