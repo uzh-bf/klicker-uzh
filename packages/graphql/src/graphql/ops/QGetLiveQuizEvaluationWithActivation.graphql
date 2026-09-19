@@ -1,4 +1,4 @@
-query GetLiveQuizEvaluation($id: String!, $hmac: String) {
+query GetLiveQuizEvaluationWithActivation($id: String!, $hmac: String) {
   liveQuizEvaluation(id: $id, hmac: $hmac) {
     id
     name
@@ -12,6 +12,10 @@ query GetLiveQuizEvaluation($id: String!, $hmac: String) {
     pinCode
 
     ...EvaluationResults
+    results {
+      stackId
+      startedAt
+    }
 
     feedbacks {
       id
