@@ -180,8 +180,12 @@ jobs:
 
           // A draft may run a subset of the canonical eight shards; a full
           // plan always runs all eight. Both must be well-formed and unique.
+          // A narrowed plan reports its own shard count as every shard's
+          // shardTotal, so that value is validated against the emitted count
+          // rather than the canonical eight.
           const requiredShards = process.env.MODE === 'full' ? 8 : 0
           const shards = matrix?.include
+          const shardCount = Array.isArray(shards) ? shards.length : 0
           const complete =
             matrix !== null &&
             !Array.isArray(matrix) &&
@@ -195,8 +199,10 @@ jobs:
                 !Array.isArray(shard) &&
                 Object.keys(shard).length === 2 &&
                 Number.isInteger(shard.shardIndex) &&
-                shard.shardIndex >= 1 && shard.shardIndex <= 8 &&
-                shard.shardTotal === 8
+                Number.isInteger(shard.shardTotal) &&
+                shard.shardIndex >= 1 &&
+                shard.shardIndex <= shardCount &&
+                shard.shardTotal === shardCount
             ) &&
             new Set(shards.map((shard) => shard.shardIndex)).size ===
               shards.length

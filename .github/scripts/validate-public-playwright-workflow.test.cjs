@@ -264,11 +264,27 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
     IS_DRAFT: 'true',
     MODE: 'selected',
     SHARD_MATRIX: JSON.stringify({
-      include: [{ shardIndex: 3, shardTotal: 8 }],
+      include: [{ shardIndex: 1, shardTotal: 1 }],
     }),
   })
   assert.equal(draftPartial.status, 0, draftPartial.output)
   assert.equal(draftPartial.metadata.mode, 'selected')
+
+  // A narrowed plan spreads its selected specs over its own shard count, so
+  // every shard reports that emitted count rather than the canonical eight.
+  const draftNarrowed = runStatusReporter(t, {
+    IS_DRAFT: 'true',
+    MODE: 'selected',
+    SHARD_MATRIX: JSON.stringify({
+      include: [
+        { shardIndex: 1, shardTotal: 3 },
+        { shardIndex: 2, shardTotal: 3 },
+        { shardIndex: 3, shardTotal: 3 },
+      ],
+    }),
+  })
+  assert.equal(draftNarrowed.status, 0, draftNarrowed.output)
+  assert.equal(draftNarrowed.metadata.mode, 'selected')
 
   const draftSkipped = runStatusReporter(t, {
     IS_DRAFT: 'true',
@@ -320,7 +336,7 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
       overrides: {
         MODE: 'selected',
         SHARD_MATRIX: JSON.stringify({
-          include: [{ shardIndex: 1, shardTotal: 8 }],
+          include: [{ shardIndex: 1, shardTotal: 1 }],
         }),
       },
     },
@@ -338,7 +354,7 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
         IS_PULL_REQUEST: 'false',
         MODE: 'selected',
         SHARD_MATRIX: JSON.stringify({
-          include: [{ shardIndex: 1, shardTotal: 8 }],
+          include: [{ shardIndex: 1, shardTotal: 1 }],
         }),
       },
     },
@@ -357,9 +373,19 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
         MODE: 'selected',
         SHARD_MATRIX: JSON.stringify({
           include: [
-            { shardIndex: 2, shardTotal: 8 },
-            { shardIndex: 2, shardTotal: 8 },
+            { shardIndex: 2, shardTotal: 2 },
+            { shardIndex: 2, shardTotal: 2 },
           ],
+        }),
+      },
+    },
+    {
+      name: 'draft partial plan with an inflated shard total',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 8 }],
         }),
       },
     },
