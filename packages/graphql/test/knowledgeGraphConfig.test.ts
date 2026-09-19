@@ -34,6 +34,7 @@ const build: Parameters<typeof getKBGraphBuildConfig>[1] = {
   actualRequestCount: 2,
   costCurrency: 'CHF',
   costStatus: null,
+  focusTopic: null,
   quotaId: '22222222-2222-4222-8222-222222222222',
   quota: {
     currency: 'CHF',
@@ -104,6 +105,7 @@ describe('KB knowledge graph config', () => {
       publishedDomainPolicyVersion: null,
       publishedDomainPolicyLanguage: null,
       domainCategories: null,
+      focusTopic: null,
     })
   })
 
@@ -168,5 +170,24 @@ describe('KB knowledge graph config', () => {
 
     expect(result.domainPolicyId).toBe('retired-policy')
     expect(result.domainCategories).toBeNull()
+  })
+
+  it('reports the focus recorded on the build', () => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: null,
+      },
+      { ...build, focusTopic: 'Capital budgeting' },
+      false,
+      null,
+      costConfiguration,
+      false
+    )
+
+    expect(result.focusTopic).toBe('Capital budgeting')
   })
 })

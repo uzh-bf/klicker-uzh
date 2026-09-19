@@ -4,6 +4,7 @@ mutation RebuildKbKnowledgeGraphWithDomain(
   $domainPolicyId: ID
   $domainPolicyVersion: Int
   $domainPolicyLanguage: String
+  $focusTopic: String
 ) {
   rebuildKbKnowledgeGraphWithDomain(
     kbId: $kbId
@@ -11,6 +12,7 @@ mutation RebuildKbKnowledgeGraphWithDomain(
     domainPolicyId: $domainPolicyId
     domainPolicyVersion: $domainPolicyVersion
     domainPolicyLanguage: $domainPolicyLanguage
+    focusTopic: $focusTopic
   ) {
     kbId
     isEnabled
@@ -21,6 +23,7 @@ mutation RebuildKbKnowledgeGraphWithDomain(
     domainPolicyId
     domainPolicyVersion
     domainPolicyLanguage
+    focusTopic
     publishedDomainPolicyId
     publishedDomainPolicyVersion
     publishedDomainPolicyLanguage

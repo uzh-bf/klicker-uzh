@@ -1,7 +1,7 @@
 # Knowledge graph quality roadmap
 
 Date: 2026-09-12  
-Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12. Remaining roadmap acceptance work is listed below.  
+Status: roadmap direction reviewed; approved checkpoint A source package and controlled evaluation delivered on 2026-09-12; a 2026-09-13 investigation added the focus-topic control design to W8 and the improvement levers. Remaining roadmap acceptance work is listed below.  
 Scope: graph generation and its use in content generation, chatbot retrieval, and lecturer review.  
 Parent: [six-domain selection plan](2026-09-11-kg-domain-selection-plan.md).
 
@@ -78,8 +78,11 @@ These observations establish defects, not their historical origin or the best do
 | Source chunk identity, graph-to-chunk selection, blueprint objectives, evidence and calculation validation           | Compose          | Evaluate coverage and strengthen provenance at the existing seams; generator/content owner                                                              |
 | Graph correction sets, instructor assertions, preview/materialization and consistency validation in generator branch | Compose          | Product review and correction adoption after dependency readiness; avoid a separate mutable graph editor                                                |
 | Document retrieval plus basic graph-assisted query expansion in PR #5912                                             | Reuse / evaluate | Chat owner measures the existing design, then adds passage-oriented graph retrieval only if justified                                                   |
+| Graph build focus topic in draft [PR #5957](https://github.com/uzh-bf/klicker-uzh/pull/5957) and [generator MR !18](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/18) | Reuse / evaluate | Extraction-emphasis lever already recorded in recipe lineage; decide retention once the question-side focus lands; generator and Klicker UI owners        |
 
 The domain feature is in draft [Klicker foundation PR #5904](https://github.com/uzh-bf/klicker-uzh/pull/5904), [selector PR #5906](https://github.com/uzh-bf/klicker-uzh/pull/5906), and [generator MR !15](https://gitlab.uzh.ch/uzh-bf/tc/kg-content-generation/-/merge_requests/15), with the generator's existing MR !4 dependency preserved. Source presence is not deployment proof.
+
+The graph-side focus-topic delivery is a draft stacked on the domain feature. It biases extraction emphasis only — it cannot add facts or narrow coverage — so the question-side focus described under W8 is the control that actually scopes a generation batch.
 
 The separate [graph-assisted chat PR #5912](https://github.com/uzh-bf/klicker-uzh/pull/5912) already proposes bounded lexical seeds, one-hop hints, and at most one extra document query. It preserves the original retrieval, source scope, citations, and fallback. Retrieval and map display have separate lecturer controls. It is a draft with no paid quality comparison; do not propose its basic behavior again as new work.
 
@@ -97,6 +100,7 @@ The [existing production roadmap](2026-08-10-kb-graph-production-roadmap.md) own
 | Chunking and context          | Worker uses fixed-token chunking; size, overlap, and gleaning are recipe inputs                               | Compare structure-aware sections and parent context with fixed chunks. Larger context may improve cross-sentence relations but dilute extraction and increase cost      |
 | Extraction strategy           | LightRAG extraction, domain guidance, and gleaning                                                            | Improve endpoint completeness, bounded structured output, relation direction and conditions. Additional passes must earn their cost through missed-evidence recovery    |
 | Entity identity and relations | Alias/merge candidates, qualifier/index/acronym guards, relation descriptions                                 | Preserve symbol values, units, subtype distinctions, negation, and context. Introduce stable machine identity separately from translated display labels where needed    |
+| Build focus topic             | Draft focus field renders a prioritization block inside extraction guidance and enters recipe parameters and digest | Measure whether extraction emphasis improves downstream selection; it never narrows coverage or adds facts, so it cannot replace domain policy or source scoping        |
 
 ### Cleaning, consumers, and operation
 
@@ -106,6 +110,7 @@ The [existing production roadmap](2026-08-10-kb-graph-production-roadmap.md) own
 | Evidence and diagnostics   | Source/chunk maps, recipe and bundle hashes, correction reports                | Record why a node exists or disappeared, and whether each pass actually ran. Extend lineage without copying private source bodies into product telemetry |
 | Model and embedding choice | Separate extraction/cleaning models, reasoning controls, speed/quality presets | Compare effective model routes, embeddings, reranking, and budgets. A stronger model or a “high” tier is a hypothesis, not demonstrated quality          |
 | Consumer selection         | Content subgraph/evidence ranking; separate chat query expansion               | Optimize evidence selection per task, controlling centrality bias, duplication, irrelevant expansion, and evidence truncation                            |
+| Generation focus topic     | Blueprint objectives and graph-proposed topic targets steer each slot; a legacy topic subgraph filter is unreachable from Klicker | Expose a lecturer focus that concentrates one generation batch on a topic; requires a versioned blueprint contract because the generator rejects unknown fields |
 | Lecturer feedback          | Content review plus generator correction primitives                            | Classify errors and apply reviewable, versioned corrections. Ratings alone do not identify a graph defect or justify automated prompt changes            |
 | Freshness and reuse        | Pinned sources, immutable artifacts, staleness/publication checks              | Reuse unchanged computation safely; reconcile changed/deleted sources and corrections. Automatic paid rebuilds remain a separate product decision        |
 
@@ -166,6 +171,12 @@ Completion: publish a quality–cost–latency comparison and select configurati
 Reuse blueprint source/page scope, learning objectives, Bloom levels, requested formats/difficulty, graph selection, source evidence, and calculation checks. Compare ordinary evidence selection with graph-guided selection on the same generation tasks. Improve coverage of important low-degree concepts, complementary relationships, diversity across a batch, and objective-to-evidence alignment. Separate domain understanding from difficulty: advanced vocabulary or graph depth does not establish cognitive demand.
 
 Score question correctness, answer uniqueness where applicable, true multiple-correct behavior, plausible evidence-consistent distractors, feedback quality, and calculation validity. For flashcards, score atomicity and answerability. For response examples, reuse the accepted source-matching and evidence-eligibility rules; the inspected Klicker head has review/runtime primitives but no production candidate-generation path. Adding that producer is a distinct execution slice, not a hidden consequence of better graphs.
+
+**Focus topic for content generation.** The lecturer-facing focus belongs on the element-generation path, not the graph build: the graph keeps covering all course content, and the focus concentrates one generation batch. The reviewed blueprint path already steers topics through two seams. Blueprint objectives become each slot's required learning objective, and graph resolution proposes topic targets drawn from a deterministic catalog of degree- and chunk-ranked graph entities (build_course_inventory, capped at 120 topics); per-slot retrieval then embeds module focus, learning objective, and topic targets together, with the module as the hard candidate boundary. A separate filter_subgraph_by_topic helper (LLM seed selection, one-hop expansion, minimum five nodes, full-graph fallback) narrows the whole graph, but only the unreviewed local pipeline can reach it.
+
+Delivering the control is one versioned cross-repo contract. Klicker normalizes a focusTopic (trimmed, bounded length, blank to null), persists it in the hashed ElementGenerationBuild configuration, and serializes it into the uploaded blueprint artifact; the generator accepts the field in its top-level blueprint allowlist, carries it through ExamBlueprint and the assessment design, and applies it. The recommended application restricts the topic catalog and proposal to focus-relevant topics so the batch concentrates on the focus, with a priority-only variant that seeds retrieval without restricting the catalog as the comparison arm. Because exam blueprint loading rejects unknown top-level fields, an older generator fails a newer blueprint outright, so Klicker needs the same capability-gate pattern the domain selection used before sending the field. Flashcard generation needs the parallel flashcard blueprint change or must reject the field explicitly, matching its stricter configuration rules. The narrowing-versus-prioritizing semantics is the open product decision; narrowing is recommended for the single field, with prioritization remaining available through objectives.
+
+The focus arm is accepted only when a paired same-graph comparison shows the intended topic concentration without loss of evidence grounding or answerability, and without silently dropping source-supported material. A focus that only relabels coverage is not a quality gain.
 
 Completion: blinded educator review demonstrates a meaningful gain in predeclared measures, with no critical grounding or format regression. Report usable drafts per attempted batch and editing effort, not just quality of retained items. Preserve explicit review/approval before publication. Deterministic generation contracts and focused end-to-end synthetic jobs support, but do not replace, content review.
 
@@ -281,8 +292,12 @@ Klicker source anchors are relative to this worktree. Generator anchors below ar
 | Bundle inventory and correction seam             | Generator `hatchet_workflows/graph_bundle_io.py:21`; `graph_correction_schemas.py:284`; `graph_corrections.py:461`                                                                         |
 | Existing graph/evidence content selection        | Generator `questions_generation/graph_retrieval.py:54`; `questions_generation/pipeline.py:1935`; `questions_generation/source_evidence.py`; `questions_generation/calculation_verifier.py` |
 | Basic chat augmentation prior art                | Separate chat worktree `apps/chat/src/services/graphAssistedDocQuery.ts:143`; `packages/knowledge-graph/src/retrieval.ts:1`; its `project/2026-09-11-student-chat-graphrag-basic.md`       |
+| Question topic steering seams                    | Generator `questions_generation/assessment_design.py:2770`, `:2860`; `questions_generation/graph_retrieval.py:1349`; `questions_generation/graph_helpers.py:655`; `questions_generation/exam_blueprint.py:47` |
+| Element-generation configuration and blueprint   | Klicker `packages/graphql/src/services/questionGenerationConfiguration.ts:249`; `questionGenerationBlueprint.ts:17`; `questionGeneration.ts:411`                                           |
 
 The independent generator inspection was reconciled with schema and call-site evidence. A suggested explicit-policy allowlist bypass is not established: `schemas.py:257` rejects that combination. Strict validation also runs after cleaning. File presence on a default branch is not evidence of shipping. Neither claim is used to justify new work here. Benchmark logs already establish false merges and leaf loss; additional diagnostics improve repeatability rather than making those findings real for the first time.
+
+The focus-topic seams in the last two rows were inspected on 2026-09-13 at Klicker head `140873d8cc627b41a4c23ef4031637c2d1208529` (branch `rs/kg-focus-topic-ui`, worktree `trees/rs/kg-focus-topic-ui`) and generator head `71b41d51418fe3d792393f7f2ffa699b0da9077b` (branch `rs/kg-focus-topic`), both fetched, clean, and in sync with their remotes. Their generator anchors are relative to that worktree's `lightrag_research/` directory.
 
 ### External research informing experiments
 

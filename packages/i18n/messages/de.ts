@@ -2031,6 +2031,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
     graphDomainLabel: 'Domäne',
     graphDomainSelectPlaceholder: 'Domäne wählen',
+    graphFocusTopicLabel: 'Schwerpunktthema (optional)',
+    graphFocusTopicPlaceholder: 'z. B. Investitionsrechnung',
+    graphFocusTopicNote:
+      'Steuert, welches Material die Extraktion betont. Das Schwerpunktthema ist keine Quelle: es kann keine Fakten hinzufügen, und das übrige Material behält seine Abdeckung.',
     graphDomainFinance: 'Finanzwirtschaft',
     graphDomainEconomics: 'Volkswirtschaftslehre',
     graphDomainBusiness: 'Betriebswirtschaftslehre',
