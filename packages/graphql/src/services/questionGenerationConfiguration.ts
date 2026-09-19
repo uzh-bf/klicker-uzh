@@ -16,6 +16,7 @@ import {
 
 const MAX_OBJECTIVES = 20
 const MAX_OBJECTIVE_LENGTH = 500
+const MAX_FOCUS_TOPIC_LENGTH = 300
 
 const GERMAN_BLOOM_LABELS: Record<QuestionGenerationBloomLevel, string> = {
   remember: 'Erinnern',
@@ -40,6 +41,7 @@ export type QuestionGenerationConfigurationInput = {
     bloomLevel?: string | null
   }> | null
   bloomLevels?: string[] | null
+  focusTopic?: string | null
 }
 
 export type NormalizedQuestionGenerationConfiguration = {
@@ -128,6 +130,24 @@ function neutralObjective(
   }
 
   return `Assess the selected knowledge-base material at the ${bloomLevel} cognitive level.`
+}
+
+function normalizeFocusTopic(value: string | null | undefined): string | null {
+  const text = value?.trim() ?? ''
+  if (!text) {
+    return null
+  }
+  if (text.length > MAX_FOCUS_TOPIC_LENGTH) {
+    return configurationError(
+      `A focus topic may contain at most ${MAX_FOCUS_TOPIC_LENGTH} characters`
+    )
+  }
+  if (/[\u0000-\u001f]/.test(text)) {
+    return configurationError(
+      'A focus topic must not contain control characters'
+    )
+  }
+  return text
 }
 
 function normalizeObjectives(
@@ -293,6 +313,7 @@ export function normalizeQuestionGenerationConfiguration(
       bloomLevels
     ),
     bloomLevels,
+    focusTopic: normalizeFocusTopic(input.focusTopic),
   }
   const canonical = JSON.stringify(configuration)
 
