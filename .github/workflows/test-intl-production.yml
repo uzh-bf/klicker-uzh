@@ -21,7 +21,7 @@ jobs:
       should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Check for changes
         id: check
         uses: ./.github/actions/changed-paths
@@ -40,7 +40,7 @@ jobs:
       matrix:
         app: [frontend-pwa, frontend-manage]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -58,7 +58,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           sparse-checkout: .github/scripts
@@ -87,7 +87,7 @@ jobs:
         run: node .github/scripts/required-ci-status.cjs report
       - name: Upload required CI evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: required-ci-evidence
           path: required-ci-evidence.json

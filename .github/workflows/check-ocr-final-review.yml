@@ -621,7 +621,7 @@ jobs:
           (steps.run_review.outputs.validation_failure == 'true' ||
           steps.validate_result.outcome == 'failure' ||
           steps.publish.outcome == 'failure')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-individual-publisher-failure
@@ -853,7 +853,7 @@ jobs:
 
       - name: Upload frozen stack snapshot
         if: steps.start.outputs.run_review == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: final-ai-stack-manifest-${{ github.run_id }}
           path: ${{ runner.temp }}/final-ai-stack-manifest.json
@@ -904,7 +904,7 @@ jobs:
           node --test .github/scripts/final-ai-review.test.js .github/scripts/final-ai-stack-review.test.js
 
       - name: Download frozen stack snapshot
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: final-ai-stack-manifest-${{ github.run_id }}
           path: ${{ runner.temp }}
@@ -1242,7 +1242,7 @@ jobs:
           (steps.code_review.outputs.validation_failure == 'true' ||
           steps.topology_review.outcome == 'failure' ||
           steps.publish.outcome == 'failure')
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/final-ai-stack-publisher-failure
