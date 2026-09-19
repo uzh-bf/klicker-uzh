@@ -65,6 +65,14 @@ export type ExternalKBGraphPayload = {
   speed_mode: 'balanced' | 'quality'
   generation_model: string
   cleaning_model: string
+  // Present only for a build with an explicit, validated domain selection. The
+  // legacy path omits both keys so its payload stays identical to the manifest
+  // the provider already accepts.
+  domain_policy?: {
+    template_id: string
+    template_version: number
+  }
+  language?: string
   klicker_graph_build: {
     build_id: string
     kb_id: string

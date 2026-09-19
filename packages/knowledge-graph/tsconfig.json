@@ -1,5 +1,5 @@
 {
-  "include": ["**/**/*"],
+  "include": ["**/**/*", "src/**/*.json"],
   "compilerOptions": {
     "esModuleInterop": true,
     "skipLibCheck": true,
