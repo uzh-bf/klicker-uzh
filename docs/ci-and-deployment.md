@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-09-04'
+timestamp: '2026-09-19'
 tags:
   - ci
   - deployment
@@ -308,6 +308,36 @@ launcher.
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
 
 **When bumping prd image tags** in `deploy/env-uzh-prd/values.yaml`: if the new tag is the first release whose CI built `backend-docker-migrator-arm`, set `migrator.enabled: true` in the same commit — that is what switches prd from manual migrations to the automatic hook. Conversely, rolling prd back to a tag from before this feature requires setting it to `false` again, or the hook fails on a missing image and blocks the sync.
+
+## Deploy parity across `v3` and `v3-ai`
+
+**Production renders `deploy/` from one branch and runs images built from the
+other.** ArgoCD `app-klicker` tracks `rev=v3` with
+`path=deploy/charts/klicker-uzh-v3` and the value file
+`deploy/env-uzh-prd/values.yaml`, while the production images are tagged on
+`v3-ai` (`v*.*.*` tag pushes). A `deploy/` change that exists on only one
+branch therefore ships a release whose images never met those manifests: the
+lecturer and student MCP servers stayed out of production although their images
+were published, and a later promotion reverted `v3`'s `FASTMCP_STATELESS` fix,
+which `v3-ai` never carried.
+
+`check.yml` runs `.github/scripts/deploy-parity.cjs` on pushes to `v3` and on
+pull requests whose base is `v3`. It compares the candidate revision with
+`origin/v3-ai`, fails when anything under `deploy/` differs, and names the
+paths to reconcile: promote the `v3-ai` revision to `v3`, or backport the
+`v3` change to `v3-ai` first. Until the two revisions match again the gate is
+red for every `v3` pull request, because any merge into `v3` while they diverge
+can ship production a chart that the tagged images never met.
+
+Image `tag:` and `pullPolicy:` lines in `deploy/env-<environment>/values.yaml`
+are excluded: the environment's image reference is owned by the branch that
+renders the environment, which is `v3` for production, so a tag roll or a
+pull-policy change is not a divergence there. The rest of the environment file
+must still match, so a promotion or a `v3` integration merge cannot drop keys.
+Repointing production at `v3-ai` would invalidate that exclusion, because stale
+pins in `v3-ai` would then reach production. When `v3-ai` is retired
+([ADR-0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md)), the gate
+reports itself as not applicable and can be removed with the branch.
 
 ## Deployment values (facts, not procedures)
 
