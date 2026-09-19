@@ -389,9 +389,9 @@ ineligible because this plan covers private repositories and internal staging ev
   `questionGenerationConfiguration.test.ts` +1.
 - Resolved blocker: the local data-hygiene commit hook flagged the two `packages/i18n`
   help-text edits. The finding was reproduced and attributed to the pre-existing
-  `password: 'Password'` login label (`en.ts:653`, `de.ts:664`), a false positive of the
-  hook's credential-assignment rule, not the edited help text. Committed as `c3322782bb`
-  with the approved one-commit bypass; Biome and Prettier clean.
+  login label at `en.ts:653` / `de.ts:664` (the seeded lecturer password field), a false
+  positive of the hook's credential-assignment rule, not the edited help text. Committed as
+  `c3322782bb` with the approved one-commit bypass; Biome and Prettier clean.
 - Shipped: PR #6143 merged into `v3-ai` at `8e5a92935f` (2026-09-18T14:40:58Z). MR !191
   rebased onto refreshed `main` and merged at `9b57fdd` (ff); its pipeline #667639 was green.
   Sync PR #6146 (`rs/v3-audit-sync-20260918d` -> `v3-audit`) merged at `8c1ec75b58`; the
@@ -448,3 +448,32 @@ ineligible because this plan covers private repositories and internal staging ev
   mechanism that clears the abandoned `hatchet_run_id` fence that blocked the re-fetch.
   Outstanding: whether it settles as `Succeeded` or closes as `resource_reclaim_exhausted`
   after the third reclaim, plus the `resource.processing_failed` event count.
+- V3 interpretation corrected the same evening (2026-09-19, ~23:35) after reading the deployed
+  source: the resource list's `Updated` column is `KBResource.updatedAt`
+  (`packages/kb-management/src/components/KnowledgeBaseResourceList.tsx:405,479`), and the
+  `monitor-kb-ingestions` cron runs on `*/5 * * * *` (`packages/hatchet/src/index.ts:488-495`).
+  `reconcileResource` writes every selected resource unconditionally
+  (`packages/hatchet/src/kbIngestion.ts:1318`), and Prisma's `@updatedAt` bumps the column on
+  that write. Boundary-aligned samples confirm it: the column read `23:30` at 23:30:15 and
+  still `23:30` at 23:31:34. The five-minute advance is the monitor's cadence, not ingestion
+  progress, so the inference recorded above -- "the timestamp moved, therefore reclaim
+  requeued the fetch" -- does not hold. `File size 371.4 KiB` is weak evidence for the same
+  reason: Klicker records size and digest from its own fetch at dispatch
+  (`packages/hatchet/src/kbIngestionApi.ts:386-400`), not from the worker's.
+- What survives the correction: both GitOps changes are live on `main`; the worker-contract
+  gate is satisfied; and the ingestion operation is still non-terminal, because Klicker's own
+  five-minute reconciliation of `GET /v1/operations/{id}` keeps applying a `PROCESSING`
+  transition to the row. A reclaim re-dispatch adopts the operation through the
+  `adopts_reclaimed` branch of `claim_upsert` (`resource_upsert_store.py:437-446`), which sets
+  `hatchet_run_id` and `updated_at` but emits no `resource.processing_started`; Klicker keeps
+  the original run `createdAt`, so the unchanged `Recent attempts` entry is not evidence
+  against a reclaim.
+- Still outstanding, still blocked: whether a reclaimed run is executing, and the terminal
+  outcome. Under the defaults (stale 3600 s, sweep 60 s, budget 3) a dead operation
+  terminalizes as `resource_reclaim_exhausted` roughly three staleness windows after its first
+  reclaim, so the earliest expected failure lands about three hours after the dispatcher picked
+  up the flag. There is no cluster read path right now: the jumpbox tunnel on port 6443 is down
+  and `az` returns `AADSTS70043` (24-hour sign-in frequency), which only an interactive
+  `az login` against the DF tenant clears. Until then the acceptance check cannot be closed
+  from the cluster side, and the user-facing surface alone cannot separate "slow but alive"
+  from "stuck again".
