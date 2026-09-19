@@ -556,6 +556,213 @@ or an explicit evidence-backed decision to defer it. Report source, merged
 activation and performance separately. No infrastructure change is currently
 required from the user.
 
+## 2026-09-19 output-reuse prioritization
+
+This refresh records the next efficiency horizon after the event, staging-image,
+public-ARM64, and lifecycle-reuse packages have landed. The controlling question
+is no longer whether the runners can execute more work; it is whether Klicker can
+produce fewer equivalent outputs. The baseline is current `v3` at
+`50a1549d2c`, repository controls read through the GitHub API, and a
+350-record Actions sample from 18:49-19:30 UTC on 2026-09-19.
+
+The sample reported 101 queued, 22 pending, 12 in-progress, and 215 completed
+workflow records. Those counts are workflow records, not occupied runner slots.
+Nevertheless, duplicate push and pull-request records for the same integration
+branch head were visible in the sample. A readable subset of the production tag
+builds was more concrete: nine successful `build-arm` jobs consumed 26.7
+execution minutes, with a median queue of 7.0 minutes and median execution of
+3.0 minutes. At that ratio, suppressing an unnecessary build is worth more than
+micro-optimizing a build that must run.
+
+### Current state worth preserving
+
+- One consolidated staging-image workflow resolves affected targets from trusted
+  workspace closures. Draft image legs are deferred, and the terminal status job
+  owns the required context.
+- Playwright builds once per route and distributes outputs to shards. Public
+  ARM64 jobs restore trusted pnpm and Turbo caches but never write them.
+- Public ready pull requests use the restricted ARM64 pool; its workflow
+  boundary remains Klicker-only and tied to the trusted reusable workflow.
+- Metadata-only edits and unchanged lifecycle events can reuse successful
+  validation when their exact evidence contract matches.
+- AMD publication remains disabled except for the optional targets whose AMD
+  jobs are explicitly disabled; no broad AMD fan-out has returned.
+
+### Priority R1: activate change-based draft Playwright selection
+
+The narrowed draft selector and its status coverage are merged, but the
+repository-level control list contained no
+`PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` or canary variable. Organization or
+environment inheritance could not be inspected with the current token. Until an
+effective control is present, an eligible draft falls back to a full hosted
+Playwright wave.
+
+Execute this first because it is already implemented and its qualification sample
+showed material avoidable work: documentation-only drafts previously consumed a
+full eight-shard wave, while the selector can emit `skip`, a bounded smoke
+selection, or a small partial plan. Use one exact draft canary first, inspect the
+execution plan, route, selected jobs, and status receipt, then enable the global
+control. Ready pull requests must continue to require the full eight-shard plan.
+
+Acceptance is live proof on one canary draft and one ready pull request that the
+draft mode is honored without weakening the ready-state full-coverage gate. This
+activation is a repository settings change and needs its existing named gate.
+
+### Priority R1a: define a minimum validation envelope for bounded changes
+
+Several validation lanes are already path-aware (`test-unit`, `test-graphql`,
+`test-olat-api`, `test-intl-production`, and the staging-image plan), but a
+pull request that only changes documentation, workflow orchestration, or agent
+guidance can still pay for a full codebase install/build/typecheck, full
+Playwright on ready pull requests, and Sonar/CodeQL analysis. That mismatch is
+the remaining source of avoidable waves after smart drafts.
+
+Introduce one repository-owned minimum-validation classifier rather than a
+second selector in each workflow. It receives the same merge-base diff and emits
+a validated change class together with the exact required contexts that class
+must satisfy. The first classes should be:
+
+- `documentation-and-planning`: Markdown under `docs/`, `project/`, and
+  `.agents/skills/`. Required evidence is the codebase check's documentation
+  and policy validation, gitleaks, and image/status reporters that can prove a
+  no-change selection. No Playwright, unit, GraphQL, OLAT, i18n smoke, Sonar, or
+  CodeQL.
+- `ci-orchestration`: files under `.github/workflows/` and
+  `.github/scripts/`. Required evidence is the codebase check's CI contract
+  suite (including the workflow validators and event-gate tests), gitleaks, and
+  the status reporters that validate skips. Playwright runs only the trusted
+  bounded smoke selection unless the diff also touches application or spec
+  inputs. Unit/GraphQL suites run only when their declared inputs changed.
+
+The classifier must fail closed like the Playwright selector: an empty diff,
+unknown path, deleted spec, renamed file, workflow that no longer declares its
+trigger, or candidate tree that lost the bounded spec expands to the full
+validation envelope. Base retargets, non-empty diffs after a metadata-only edit,
+and unresolvable diffs also expand. A skip is admissible only with a recorded
+class, the paths that justified it, and the required-context result that
+validated it; it must never inherit a prior failed or pending result.
+
+Keep the ready-state full Playwright gate for changes that can affect application
+behaviour or the tested runtime. The minimum envelope intentionally accepts
+lower test coverage for bounded CI/docs changes; the class definitions and their
+fail-closed expansion rules are therefore explicit review contracts, not silent
+path filters. Changing a class boundary is a reviewable source change.
+
+Acceptance is two live PR proofs: a documentation-only PR and a CI-only PR. Each
+must show the bounded codebase check, validated skips for irrelevant suites, no
+Playwright beyond the bounded smoke plan, no Sonar/CodeQL where the class
+excludes them, and a normal full envelope when one unrelated application file is
+added to the same diff. Branch protection must keep every required context
+reporting, with skips validated by the terminal reporter rather than absent.
+
+### Priority R2: give trusted image publication its own BuildKit cache
+
+Same-repository staging pull requests import and export a GHCR BuildKit cache,
+but consolidated staging push builds still force `no-cache: true`, and the
+release-tag production workflows also build uncached. This leaves the most
+trusted, expensive publications colder than ordinary pull-request builds.
+
+Add a separately controlled trusted cache namespace for branch-push and
+release-tag publication. A push may import both its branch cache and a protected
+baseline cache, but must not consume a cache written by an untrusted pull
+request. Keep `mode=max` for intermediate install and build layers. Introduce a
+periodic base-image refresh job so cache reuse does not preserve obsolete base
+packages indefinitely; vulnerability admission and image receipts remain
+unchanged.
+
+Qualify one representative backend image and one representative Next image. A
+cold build seeds the trusted cache; a second trusted build with unchanged inputs
+must show cache hits, equivalent runtime configuration and labels, successful
+scan admission, and lower execution time. Record queue and execution separately.
+Only after that proof should the cache contract expand to all staging and release
+targets.
+
+### Priority R3: reuse unchanged component images by input identity
+
+The current full-SHA publication guard prevents rebuilding only when the exact
+commit tag already exists. A squash merge or an unrelated documentation commit
+creates a new SHA and therefore rebuilds every selected component even when its
+build inputs are unchanged.
+
+Introduce a canonical input fingerprint per image target, derived from the same
+trusted dependency closure that already drives staging selection, plus Dockerfile,
+build arguments, environment file selection, lockfile, manifests, and base-image
+digest. Persist a complete release manifest that maps every target to its
+original source SHA, canonical input fingerprint, image digest, architecture,
+and qualification receipts. A missing target remains a failure; reuse never
+produces an incomplete release.
+
+Start with backend, worker, migrator, and other runtime-configured services.
+They are the best candidates for one build promoted across environments. The
+frontend images need a separate decision: their staging and production workflows
+replace environment files and pass `NEXT_PUBLIC_*` build arguments, and Next.js
+freezes those values into the browser bundle at build time. Until those values
+move behind a runtime-injected configuration seam, unchanged frontend images must
+not be promoted from staging to production.
+
+Acceptance is a release whose manifest deliberately reuses several unchanged
+backend components and rebuilds one changed component. The promoter must bind the
+reused digest to its original qualification evidence and the current release
+manifest, and must reject any incomplete, ambiguous, or frontend-unsafe reuse.
+
+### Priority R4: remove duplicate integration-branch validation
+
+Integration branches currently receive both pull-request and push workflows for
+the same head. The equivalent-run contract deliberately excludes every `v3*`
+push because those branches can be deployment sources. Preserve that caution,
+but extend reuse only where the tested tree, event semantics, route, coverage,
+environment inputs, and trusted control revisions are exactly equivalent.
+
+The safest first slice is a read-only audit that groups same-head push and PR
+runs and counts which pairs satisfy a proposed equivalence predicate. Use it to
+identify one non-deployment-critical workflow, confirm that its inputs cannot
+differ between the two events, and then implement reuse for that workflow. Do
+not globally let a pull-request result satisfy a candidate push until release
+admission can distinguish equivalent validation from a deployment candidate that
+needs its own push evidence.
+
+### Priority R5: stop occupying runners while Sonar waits
+
+The Sonar workflow can hold a hosted runner for up to ten minutes while polling
+for unit and GraphQL coverage producers. Convert coverage collection to an
+event-driven path or make the waiter runner-neutral. If GitHub has no suitable
+runner-neutral dependency mechanism, split analysis so the scanner starts only
+after its producers have terminal artifacts, without introducing a generic
+runner-consuming poller.
+
+Acceptance is a representative run where the Sonar job starts after producer
+completion and no hosted job spends its timeout waiting on another queued run.
+Coverage receipts and the fail-closed missing-artifact policy stay unchanged.
+
+### Priority R6: narrow Playwright build work to the selected plan
+
+Once smart drafts are active, a `skip` or bounded draft must not first build
+every package and application. Derive the minimum build graph from the selected
+spec profile and its application/runtime dependencies. Keep the current full
+`build:test` graph for full ready-state waves. This should follow R1 so the
+selector's live behavior, rather than its shadow artifacts, defines the graph.
+
+### Priority R7: repair Turbo cache consumers without adding infrastructure
+
+Do not add another cache provider yet. Codebase checks already use remote
+caching, while GraphQL and unit validation restore dependencies but rebuild their
+dependency graphs locally. First make those consumers restore compatible build
+artifacts. Then narrow task-local environment hashes instead of using the broad
+`globalEnv` list for every package, and reconsider type-check caching only with
+output-equivalence proof.
+
+Any Turbo change must compare restored outputs and task hits, not only elapsed
+time. Environment inputs that materially affect an output stay in that task's
+hash; narrowing them is a correctness-reviewed change, not a mechanical cleanup.
+
+### Runner disposition
+
+Keep the current two-host, eight-process public pool and one Playwright worker
+per shard. The prior two-worker experiment regressed and exposed shared seeded
+course state. Do not place trusted image publication or credential-adjacent
+reporting on the persistent public pool. Any proposal to add VMs or hosted
+concurrency must now compete against R1-R5, which remove work entirely.
+
 ## Progress
 - 2026-09-13 slice C1 (affected-image path filters): each `v3_*-stg.yml`
   pull-request filter now lists that image's transitive workspace dependency
@@ -1707,3 +1914,26 @@ required from the user.
   - **Still open.** The consolidated workflow's AMD legs are `optional: true`
     and remain `if: false`. The live promotion that consumes the audit line
     had not yet completed at the time of this record.
+- 2026-09-19 roadmap refresh at `v3` `50a1549d2c`: smart-draft routing is
+  merged and verified on the exact head, staging-image consolidation is active,
+  public Playwright caching is enabled, and production/release output reuse is
+  now the highest-value frontier. A 350-record Actions sample showed 101 queued,
+  22 pending, and 12 in-progress workflow records; a readable production-build
+  subset spent a median 7.0 minutes queued versus 3.0 minutes executing across
+  nine successful jobs. The new `2026-09-19 output-reuse prioritization`
+  section sequences R1 smart-draft activation, R2 trusted BuildKit caches, R3
+  input-identity image reuse, R4 duplicate integration-branch validation, R5
+  runner-neutral Sonar coverage collection, R6 selected-plan build graphs, and
+  R7 Turbo consumer repair. Immediate next actions are the exact-draft
+  smart-routing canary and the backend-plus-Next trusted-cache qualification;
+  capacity expansion is deferred until those work-removal slices are measured.
+- 2026-09-20 roadmap amendment at `v3` `0e2c0e8b76`: added priority R1a, a
+  minimum-validation envelope for bounded changes. Documentation/planning-only
+  and CI-orchestration-only pull requests should not pay for application builds,
+  Playwright waves, Sonar, CodeQL, or unrelated test suites when their changed
+  inputs cannot affect those outcomes. The slice must use one repository-owned,
+  fail-closed classifier with recorded class evidence and validated terminal
+  skips; unknown paths, empty diffs, deleted or renamed specs, missing bounded
+  specs, retargets, and mixed application changes expand back to the full
+  envelope. R1 remains first because smart-draft activation already provides the
+  draft-side selector and status machinery that R1a reuses.
