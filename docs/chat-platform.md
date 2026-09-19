@@ -351,6 +351,89 @@ owner ID. Other lecturer login scopes are denied by the service. Participant
 roles are denied by the schema, while the service repeats the role and scope
 checks as a direct-call safeguard.
 
+### Account usage activation
+
+Two switches gate account usage, and they are separate cutovers for a named
+environment. `chat.lifecycleWritersEnabled`
+(`CHAT_TURN_LIFECYCLE_WRITES_ENABLED`) turns on attempt markers and credit
+counters; the Helm template omits the runtime key while it is false, so an
+older chart cannot accidentally enable it after a newer application is rolled
+back. `chat.accountUsageEnforcementEnabled`
+(`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED`) adds the participant route's
+pre-provider budget rejection. With enforcement off, a request whose account has
+no configured usage row is served and simply records nothing; with enforcement
+on, the same request fails closed with `403` and the class-specific
+`CHAT_MODEL_UNAVAILABLE_*` code. `deploy/env-uzh-stg/values.yaml` carries the
+activation values and `deploy/env-uzh-prd/values.yaml` keeps both switches inert.
+
+Enforcement does not control class admission. Whether or not the switch is on,
+the participant and preview routes admit a candidate only when its usage class
+is entitled: the account-level AI approval opens the cost-free base class, and a
+cost-carrying advanced class additionally needs a non-blank cost center. An
+account without a cost center therefore cannot reach an advanced model, such as
+the automatic default, even while enforcement is off.
+
+An account with no configured base budget receives the default
+`DEFAULT_BASE_CHAT_BUDGET_CREDITS` (`packages/util/src/chatUsage.ts`) for the
+current Zurich month. The grant happens in two places: enabling the account's AI
+entitlement grants it, and
+`packages/prisma-data/src/scripts/2026-09-14_backfill_chat_base_budget.ts`
+grants it to accounts that were entitled before that grant existed. The backfill
+only ever creates missing rows, only for the current month, and only when the
+account has no configured base budget at or before it, because
+`getEffectiveChatAccountUsage` carries the newest configured budget forward: a
+fresh row would replace a value an administrator set, and a past-month row would
+leak into every later month. It is therefore safe to re-run, and it never raises,
+lowers, or replaces a configured budget or a used-credit counter.
+
+Cutover order for one environment:
+
+1. Run the backfill dry, then apply it, **before** promoting the release that
+   carries `accountUsageEnforcementEnabled: true`. Applying it to an
+   already-running environment is safe and idempotent.
+2. Verify that entitled accounts have a current-month `BASE` row and that
+   `getChatAccountUsage` reports a positive base budget for them. Set an explicit
+   budget through `setChatAccountUsageBudgets` where the default is not the
+   intended allowance.
+3. Promote the release and confirm the running pods carry both variables.
+4. Exercise one participant turn on a budgeted account and confirm the class
+   counter increments, the answer persists, and no `CHAT_MODEL_UNAVAILABLE_*`
+   appears for the cohort.
+5. Watch class-exhaustion responses for the cohort; they are expected only when a
+   budget is genuinely spent.
+
+Commands (secrets come from the local operator profile, never from the shell
+history):
+
+```bash
+pnpm --filter @klicker-uzh/prisma-data run script src/scripts/2026-09-14_backfill_chat_base_budget.ts
+pnpm --filter @klicker-uzh/prisma-data run script src/scripts/2026-09-14_backfill_chat_base_budget.ts --apply
+pnpm --filter @klicker-uzh/prisma-data run script:qa src/scripts/2026-09-14_backfill_chat_base_budget.ts --apply
+pnpm --filter @klicker-uzh/prisma-data run script:prod src/scripts/2026-09-14_backfill_chat_base_budget.ts --apply
+```
+
+Rollback is `chat.accountUsageEnforcementEnabled: false` plus a promotion. The
+route then skips the rejection while retaining lifecycle claims and
+post-completion accounting, and no data repair is needed, because enforcement
+never writes usage. Class admission is unaffected by the rollback, because it
+does not depend on this switch.
+
+One partial-failure state has no automatic recovery. With enforcement on,
+`finalizeChatTurn` throws when the owner has no configured usage row for the
+charged class after the provider response: the provider was already paid, and
+the turn is not persisted, so the assistant message stays an `IN_PROGRESS` or
+`FAILED` placeholder and no credit is recorded. Recovery is to run the backfill
+for the affected accounts and ask the participant to send the message again - a
+failed attempt is reclaimable with a new attempt id. This state is reachable when
+a row disappears between the route's pre-check and finalization, or when
+enforcement is enabled while a turn is in flight, so flip the switch outside an
+active cohort session where that is operationally possible.
+
+The production cutover is the same procedure run with the production values and
+the production backfill, and it waits for the staging proof. Account-usage
+telemetry is independent of Langfuse tracing (`chat.telemetry.enabled`), which
+keeps its production value.
+
 `setChatAccountUsageBudgets` is an `ADMIN`-only operations mutation and requires
 an explicit target owner ID. It validates both values against the shared
 `Decimal(18,6)` credit contract and upserts the current BASE and ADVANCED rows

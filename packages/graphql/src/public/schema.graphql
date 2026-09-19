@@ -242,6 +242,11 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
+enum AiSubscriptionTier {
+  ADVANCED
+  BASE
+}
+
 type AnswerCollection {
   createdAt: Date
   description: String!
@@ -715,6 +720,7 @@ type CatalogSelectionObject {
 
 type ChatAccountUsageLane {
   budgetCredits: Float!
+  entitled: Boolean!
   remainingCredits: Float!
   resetAt: Date!
   usageClass: ChatUsageClass!
@@ -725,6 +731,7 @@ type ChatAccountUsageOverview {
   advancedModelUsage: ChatAccountUsageLane!
   authorized: Boolean!
   baseModelUsage: ChatAccountUsageLane!
+  subscriptionTier: AiSubscriptionTier!
 }
 
 type ChatModelCapability {
@@ -2850,7 +2857,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
-  setAiFeatures(email: String!, enabled: Boolean!): Int
+  setAiFeatures(costCenter: String, email: String!, enabled: Boolean!, tier: AiSubscriptionTier): Int
   setBetaEnrollment(enabled: Boolean!): BetaEnrollmentCapability!
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
   setGeneratedElementDecision(input: SetGeneratedElementDecisionInput!): GeneratedElementDraft!
@@ -3971,6 +3978,7 @@ input UpdateGeneratedElementDraftInput {
 
 type User {
   aiFeaturesEnabled: Boolean!
+  aiSubscriptionTier: AiSubscriptionTier!
   betaEnabled: Boolean!
   catalyst: Boolean!
   catalystTier: String

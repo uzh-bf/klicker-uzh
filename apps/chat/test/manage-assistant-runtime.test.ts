@@ -1,10 +1,46 @@
+import {
+  CHAT_BASE_MODEL_ID,
+  getChatModelBasePolicyIssues,
+} from '@klicker-uzh/util'
 import { describe, expect, test } from 'vitest'
+import type { ChatModelConfig } from '@/src/lib/server/chatModelRegistry'
 import {
   buildManageAssistantSystemPrompt,
   getManageAssistantOpenAIProviderOptions,
   selectManageAssistantModel,
 } from '@/src/services/manageAssistantRuntime'
 import type { ManageElementCreateProposal } from '@/src/services/manageProposals'
+
+function model(
+  overrides: Pick<ChatModelConfig, 'id' | 'fallback' | 'usageClass'>
+): ChatModelConfig {
+  return {
+    deploymentId: `${overrides.id}-deployment`,
+    name: overrides.id,
+    description: '',
+    supportsReasoning: false,
+    usesResponsesApi: false,
+    supportsImageAttachments: false,
+    supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
+    cost: { input: 0, output: 0 },
+    ...overrides,
+  }
+}
+
+// Both deployed registries lead with the ADVANCED "auto" entry, followed by the
+// BASE fallback. The two orderings below mirror the stg/prd shape while
+// disagreeing on position so the resolution cannot pass by ordering alone.
+const stgOrdering: ChatModelConfig[] = [
+  model({ id: 'auto', fallback: false, usageClass: 'ADVANCED' }),
+  model({ id: CHAT_BASE_MODEL_ID, fallback: true, usageClass: 'BASE' }),
+  model({ id: 'gpt-4.1', fallback: false, usageClass: 'ADVANCED' }),
+]
+const prdOrdering: ChatModelConfig[] = [
+  model({ id: 'gpt-4.1', fallback: false, usageClass: 'ADVANCED' }),
+  model({ id: CHAT_BASE_MODEL_ID, fallback: true, usageClass: 'BASE' }),
+  model({ id: 'auto', fallback: false, usageClass: 'ADVANCED' }),
+]
 
 const SAMPLE_CONTEXT = {
   version: 1 as const,
@@ -279,56 +315,35 @@ describe('Manage assistant runtime helpers', () => {
     expect(readOnlyPrompt).toContain(`KLICKER_TOOL_DATA ${sentinel}`)
   })
 
-  test('selects the first primary model and falls back when needed', () => {
-    expect(
-      selectManageAssistantModel([
-        {
-          id: 'fallback',
-          deploymentId: 'fallback-deployment',
-          name: 'Fallback',
-          description: '',
-          fallback: true,
-          supportsReasoning: false,
-          usesResponsesApi: false,
-          supportsImageAttachments: false,
-          supportedReasoningEfforts: [],
-          maxOutputTokens: 2048,
-          usageClass: 'BASE',
-          cost: { input: 0, output: 0 },
-        },
-        {
-          id: 'primary',
-          deploymentId: 'primary-deployment',
-          name: 'Primary',
-          description: '',
-          fallback: false,
-          supportsReasoning: false,
-          usesResponsesApi: false,
-          supportsImageAttachments: false,
-          supportedReasoningEfforts: [],
-          maxOutputTokens: 2048,
-          usageClass: 'ADVANCED',
-          cost: { input: 0, output: 0 },
-        },
-      ]).deploymentId
-    ).toBe('primary-deployment')
+  test('resolves the base-class entry in both the stg and prd registry orderings', () => {
+    for (const registry of [stgOrdering, prdOrdering]) {
+      // The registry's own base-class policy holds for both orderings.
+      expect(getChatModelBasePolicyIssues(registry)).toEqual([])
 
+      const resolved = selectManageAssistantModel(registry)
+
+      expect(resolved.id).toBe(CHAT_BASE_MODEL_ID)
+      expect(resolved.usageClass).toBe('BASE')
+      expect(resolved.fallback).toBe(true)
+      // The old first-non-fallback rule would have returned "auto" or "gpt-4.1".
+      expect(resolved.id).not.toBe(
+        registry.find((candidate) => !candidate.fallback)?.id
+      )
+    }
+  })
+
+  test('base-class resolution does not depend on registry order', () => {
+    const forward = selectManageAssistantModel(stgOrdering)
+    const reversed = selectManageAssistantModel([...stgOrdering].reverse())
+
+    expect(forward.id).toBe(CHAT_BASE_MODEL_ID)
+    expect(reversed.deploymentId).toBe(forward.deploymentId)
+  })
+
+  test('falls back to the first entry when no base-class entry exists', () => {
     expect(
       selectManageAssistantModel([
-        {
-          id: 'fallback',
-          deploymentId: 'fallback-deployment',
-          name: 'Fallback',
-          description: '',
-          fallback: true,
-          supportsReasoning: false,
-          usesResponsesApi: false,
-          supportsImageAttachments: false,
-          supportedReasoningEfforts: [],
-          maxOutputTokens: 2048,
-          usageClass: 'BASE',
-          cost: { input: 0, output: 0 },
-        },
+        model({ id: 'fallback', fallback: true, usageClass: 'BASE' }),
       ]).deploymentId
     ).toBe('fallback-deployment')
   })

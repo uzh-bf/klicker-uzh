@@ -235,6 +235,15 @@ chat:
     enabled: false
     environment: 'production'
 
+  # Account usage stays inert in production: the base-budget backfill has not
+  # run there, so turning enforcement on would refuse every unbudgeted account.
+  # The lifecycle switch alone records usage without refusing anything. Both
+  # values are written out explicitly so the production cutover is a deliberate
+  # change with the procedure in docs/chat-platform.md, "Account usage
+  # activation".
+  lifecycleWritersEnabled: false
+  accountUsageEnforcementEnabled: false
+
   replicaCount: 2
 
   automaticModels:

@@ -137,6 +137,7 @@ import {
   UserGroupMembersInput,
 } from './sharing.js'
 import {
+  AiSubscriptionTier,
   BetaEnrollmentCapability,
   FileUploadSAS,
   LocaleType,
@@ -2378,6 +2379,8 @@ export const Mutation = builder.mutationType({
         args: {
           email: t.arg.string({ required: true }),
           enabled: t.arg.boolean({ required: true }),
+          tier: t.arg({ type: AiSubscriptionTier }),
+          costCenter: t.arg.string(),
         },
         resolve: async (_, args, ctx) => {
           return await AccountService.setAiFeatures(args, ctx)
