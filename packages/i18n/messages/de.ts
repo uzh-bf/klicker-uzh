@@ -2043,9 +2043,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphDomainGeneralAcademic: 'Allgemein / Gemischt',
     graphDomainCategoriesLabel: 'Erzeugte Kategorien',
     graphDomainLanguageNote:
-      'Der Graph wird auf Deutsch erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
+      'Der Graph wird in der gewählten Sprache erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
+    graphDomainLanguageLabel: 'Generierungssprache',
+    graphDomainLanguageSelectPlaceholder: 'Sprache wählen',
     graphDomainCurrentUnavailable:
       'Die gewählte Domäne {domain} (Version {version}) ist in dieser Installation nicht verfügbar. Wählen Sie eine unterstützte Domäne, um erneut aufzubauen.',
+    graphDomainLanguageUnavailable:
+      'Die gewählte Domäne {domain} bietet {language} in dieser Installation nicht an. Wählen Sie eine unterstützte Generierungssprache, um erneut aufzubauen.',
     graphDomainRebuildBlocked:
       'Diese Wissensdatenbank verwendet eine explizite Domäne ({domain}, Version {version}, {language}), die diese Installation nicht erneut anwenden kann. Ein Neuaufbau ist blockiert, bis eine explizite Domänenwahl wieder möglich ist.',
     graphDomainVersionUnknown: 'unbekannt',
