@@ -1431,6 +1431,7 @@ type ElementGenerationBuild {
   requestedElementCount: Int!
   retryCount: Int!
   reviews: [ElementGenerationReview!]!
+  slotFailures: [ElementGenerationSlotFailure!]!
   sources: [ElementGenerationBuildSource!]!
   stage: String!
   startedAt: Date
@@ -1539,6 +1540,12 @@ enum ElementGenerationDifficultyPreset {
   MIXED
 }
 
+enum ElementGenerationFailureClass {
+  self_repairable
+  system
+  user_input
+}
+
 enum ElementGenerationLanguage {
   de
   en
@@ -1602,6 +1609,19 @@ type ElementGenerationReviewSource {
 type ElementGenerationSaveResult {
   alreadySavedElementIds: [Int!]!
   createdElementIds: [Int!]!
+}
+
+type ElementGenerationSlotFailure {
+  detail: String
+  evidenceTarget: String
+  failureClass: ElementGenerationFailureClass!
+  moduleId: String
+  objective: String
+  objectiveSource: ElementGenerationObjectiveSource
+  reasonCode: String!
+  requestedLevel: ElementGenerationBloomLevel
+  slotId: ID!
+  suggestions: [String!]!
 }
 
 type ElementGenerationSource {
@@ -2385,15 +2405,23 @@ type KBKnowledgeGraphConfig {
   costCurrency: String
   costStatus: KBGraphCostStatus
   createdAt: Date
+  domainCategories: [KBKnowledgeGraphDomainCategory!]
+  domainPolicyId: String
+  domainPolicyLanguage: String
+  domainPolicyVersion: Int
   elementGenerationReady: Boolean!
   estimatedCostMinorUnits: Int
   finishedAt: Date
+  focusTopic: String
   highEstimateMinorUnits: Int
   isEnabled: Boolean!
   isStale: Boolean!
   kbId: ID!
   maxCostMinorUnits: Int
   publishedBuildId: ID
+  publishedDomainPolicyId: String
+  publishedDomainPolicyLanguage: String
+  publishedDomainPolicyVersion: Int
   qualityTier: KBGraphQualityTier
   quotaCurrency: String
   remainingSemesterQuotaMinorUnits: Int
@@ -2408,6 +2436,30 @@ type KBKnowledgeGraphConfig {
   statusMessage: String
   updatedAt: Date
   worstCaseRemainingMinorUnits: Int
+}
+
+type KBKnowledgeGraphDomainCategory {
+  definition: String!
+  name: String!
+}
+
+type KBKnowledgeGraphDomainConfig {
+  capabilityEnabled: Boolean!
+  catalogDigest: String
+  catalogRevision: String
+  options: [KBKnowledgeGraphDomainOption!]!
+}
+
+type KBKnowledgeGraphDomainLanguage {
+  categories: [KBKnowledgeGraphDomainCategory!]!
+  language: String!
+}
+
+type KBKnowledgeGraphDomainOption {
+  id: ID!
+  labelKey: String!
+  languages: [KBKnowledgeGraphDomainLanguage!]!
+  version: Int!
 }
 
 type KBMetrics {
@@ -2824,6 +2876,7 @@ type Mutation {
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   rebuildKbKnowledgeGraph(kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
+  rebuildKbKnowledgeGraphWithDomain(domainPolicyId: ID, domainPolicyLanguage: String, domainPolicyVersion: Int, focusTopic: String, kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
   rejectChatbotRevision(comment: String!, expectedRevisionVersion: Int!, id: String!): Chatbot
   rejectResponseExample(id: String!): ResponseExampleSet
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
@@ -3396,6 +3449,7 @@ type Query {
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
   getKbImportedSources(after: String, first: Int, kbId: ID!): KBImportedSourceConnection!
   getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
+  getKbKnowledgeGraphDomainConfig(kbId: ID!): KBKnowledgeGraphDomainConfig!
   getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
   getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!
   getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!

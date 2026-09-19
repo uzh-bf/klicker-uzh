@@ -376,6 +376,35 @@ function completedResult(
   }
 }
 
+function slotFailure(
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    slot_id: 'q02',
+    module_id: 'M1',
+    objective: 'Explain malolactic fermentation.',
+    objective_source: 'provided',
+    requested_level: 'understand',
+    evidence_target: 'wine-chemistry.pdf#page=3',
+    reason_code: 'NO_SUPPORTING_DOCUMENTS',
+    failure_class: 'user_input',
+    detail: 'No chunk covers the malolactic step.',
+    suggestions: ['Malolactic fermentation', 'Cellar practices'],
+    ...overrides,
+  }
+}
+
+function partialResult(
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  return {
+    ...completedResult(),
+    status: 'completed_partial',
+    slot_failures: [slotFailure()],
+    ...overrides,
+  }
+}
+
 function completeQuestionProvenance() {
   return {
     schema_version: 1,
@@ -1286,6 +1315,7 @@ describe('question-generation artifact normalization', () => {
       questionProvenanceIndex: null,
       reviewRequiredQuestions: 0,
       reviewRequiredQuestionIds: [],
+      slotFailures: [],
       legacyCompleted: false,
       rejectedAt: null,
       reviewedBy: null,
@@ -1628,6 +1658,157 @@ describe('question-generation artifact normalization', () => {
         { buildId: BUILD_ID, questionCount: 1 }
       )
     ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it('parses a partial result manifest with its structured slot reasons', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          slot_failures: [
+            slotFailure(),
+            {
+              slot_id: 'q06',
+              reason_code: 'SYSTEM_FAILURE',
+              failure_class: 'system',
+            },
+          ],
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 1 }
+    )
+
+    expect(result.status).toBe('completed_partial')
+    expect(result.finalQuestions).toEqual({
+      containerName: 'question-results',
+      blobName: `question-builds/${BUILD_ID}/questions/final.json`,
+      sha256: 'c'.repeat(64),
+    })
+    expect(result.slotFailures).toEqual([
+      {
+        slotId: 'q02',
+        moduleId: 'M1',
+        objective: 'Explain malolactic fermentation.',
+        objectiveSource: 'provided',
+        requestedLevel: 'understand',
+        evidenceTarget: 'wine-chemistry.pdf#page=3',
+        reasonCode: 'NO_SUPPORTING_DOCUMENTS',
+        failureClass: 'user_input',
+        detail: 'No chunk covers the malolactic step.',
+        suggestions: ['Malolactic fermentation', 'Cellar practices'],
+      },
+      {
+        slotId: 'q06',
+        moduleId: null,
+        objective: null,
+        objectiveSource: null,
+        requestedLevel: null,
+        evidenceTarget: null,
+        reasonCode: 'SYSTEM_FAILURE',
+        failureClass: 'system',
+        detail: null,
+        suggestions: [],
+      },
+    ])
+  })
+
+  it('keeps a future reason surface parseable on a partial result', () => {
+    // Reason codes are an open, append-only set, so an unknown code has to
+    // reach the client with its structured fields. An unknown failure class
+    // and an unknown Bloom level from a future worker release fall back to the
+    // fields the reviewing client can render.
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          slot_failures: [
+            slotFailure({
+              reason_code: 'GROUNDING_EXHAUSTED_AFTER_RETRY',
+              failure_class: 'self_repairable',
+              objective_source: 'neutral',
+              requested_level: 'create',
+            }),
+            slotFailure({
+              slot_id: 'q06',
+              reason_code: 'FUTURE_REASON_CODE',
+              failure_class: 'unsupported_future_class',
+              objective_source: 'inferred',
+              suggestions: [],
+            }),
+          ],
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 1 }
+    )
+
+    expect(result.slotFailures).toEqual([
+      expect.objectContaining({
+        slotId: 'q02',
+        reasonCode: 'GROUNDING_EXHAUSTED_AFTER_RETRY',
+        failureClass: 'self_repairable',
+        objectiveSource: 'neutral',
+        requestedLevel: null,
+      }),
+      expect.objectContaining({
+        slotId: 'q06',
+        reasonCode: 'FUTURE_REASON_CODE',
+        failureClass: 'system',
+        objectiveSource: null,
+        requestedLevel: 'understand',
+        suggestions: [],
+      }),
+    ])
+  })
+
+  it('rejects a partial result without slot reasons', () => {
+    expect(() =>
+      parseQuestionGenerationResult(
+        bytes(partialResult({ slot_failures: [] })),
+        { buildId: BUILD_ID, questionCount: 1 }
+      )
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it('rejects a completed result that also reports unsupplied slots', () => {
+    // A status claiming the complete requested bank cannot carry per-slot
+    // reasons, or the reviewing client would show attention cards for a build
+    // with nothing missing.
+    expect(() =>
+      parseQuestionGenerationResult(
+        bytes(
+          completedResult({
+            slot_failures: [slotFailure()],
+          })
+        ),
+        { buildId: BUILD_ID, questionCount: 1 }
+      )
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it('parses a failed result manifest without the slot reason field', () => {
+    // Older workers report a failure without structured reasons. The failure
+    // surface stays intact and the reasons parse to an empty list, which the
+    // reviewing client renders as the legacy fallback state.
+    const result = parseQuestionGenerationResult(
+      bytes({
+        schema_version: 1,
+        question_build_id: BUILD_ID,
+        status: 'failed',
+        generation_policy: 'new_only',
+        requested_questions: 1,
+        generated_questions: 0,
+        final_questions: null,
+        review_required_questions: 0,
+        review_required_question_ids: [],
+        rejected_at: null,
+        reviewed_by: null,
+      }),
+      { buildId: BUILD_ID, questionCount: 1 }
+    )
+
+    expect(result).toMatchObject({
+      status: 'failed',
+      finalQuestions: null,
+      slotFailures: [],
+    })
   })
 
   it.each([
@@ -2295,6 +2476,87 @@ describe('question-generation artifact normalization', () => {
 
     expect(() =>
       parseQuestionGenerationFinalBank(bytes(artifact), {
+        questionCount: 2,
+        sourceSnapshot,
+        expectedQuestionIds: ['q01', 'q02'],
+        result,
+      })
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+  })
+
+  it('accepts a partial bank that is a non-empty subset of the reviewed Plan', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          requested_questions: 2,
+          generated_questions: 1,
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+
+    const questions = parseQuestionGenerationFinalBank(bytes(finalBank()), {
+      questionCount: 2,
+      sourceSnapshot,
+      expectedQuestionIds: ['q01', 'q02'],
+      result,
+    })
+
+    expect(questions).toHaveLength(1)
+    expect(questions[0]?.sourceQuestionId).toBe('q01')
+  })
+
+  it('rejects an inconsistent or out-of-Plan partial bank', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        partialResult({
+          requested_questions: 2,
+          generated_questions: 1,
+        })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+    const first = finalBank().questions[0]!
+    const missingPlanId = {
+      ...finalBank(),
+      questions: [{ ...first, id: 'q09' }],
+    }
+    const wrongTotal = {
+      ...finalBank(),
+      metadata: { ...finalBank().metadata, total_questions: 2 },
+    }
+    const overRequested = {
+      ...finalBank(),
+      metadata: { ...finalBank().metadata, total_questions: 3 },
+      questions: [
+        { ...first, id: 'q01' },
+        { ...first, id: 'q02' },
+        { ...first, id: 'q03' },
+      ],
+    }
+
+    for (const artifact of [missingPlanId, wrongTotal, overRequested]) {
+      expect(() =>
+        parseQuestionGenerationFinalBank(bytes(artifact), {
+          questionCount: 2,
+          sourceSnapshot,
+          expectedQuestionIds: ['q01', 'q02'],
+          result,
+        })
+      ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
+    }
+  })
+
+  it('still requires a strict completed bank to match the requested count', () => {
+    const result = parseQuestionGenerationResult(
+      bytes(
+        completedResult({ requested_questions: 2, generated_questions: 2 })
+      ),
+      { buildId: BUILD_ID, questionCount: 2 }
+    )
+
+    expect(() =>
+      parseQuestionGenerationFinalBank(bytes(finalBank()), {
         questionCount: 2,
         sourceSnapshot,
         expectedQuestionIds: ['q01', 'q02'],

@@ -5,6 +5,7 @@
       "profile": "manage",
       "specs": [
         "Y-ai-beta-availability.spec.ts",
+        "Y-question-generation-failure-gallery.spec.ts",
         "Y-question-generation-review.spec.ts"
       ]
     },
@@ -45,6 +46,7 @@
         "Y-ai-beta-management-gate.spec.ts",
         "Y-chat.spec.ts",
         "Y-chat-knowledge-graph.spec.ts",
+        "Y-kb-domain-selection.spec.ts",
         "Y-kb-management-ux.spec.ts",
         "Y-manage-assistant.spec.ts",
         "Y-response-examples.spec.ts"

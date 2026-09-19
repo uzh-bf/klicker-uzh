@@ -6,13 +6,21 @@ import {
 } from '@azure/storage-blob'
 import {
   computeKBContentDigest,
+  getDefaultKBGraphDomainCatalog,
   getKnowledgeGraphName,
   getPublishedKnowledgeGraph,
   hashKBContentDigestEntries,
+  isKBGraphDomainCapabilityEnabled,
+  KB_GRAPH_DOMAIN_ERROR_CODES,
+  type KBGraphDomainCategory,
+  type KBGraphDomainSelection,
+  type KBGraphDomainSelectionRejectionReason,
+  type KBGraphDomainSelectionRequest,
   KnowledgeGraphNotPublishedError,
   type PublishedKnowledgeGraph,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
+  resolveKBGraphDomainSelection,
   searchKnowledgeGraph,
 } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
@@ -59,6 +67,10 @@ const KB_MAX_PAGE_SIZE = 50
 const KB_BULK_DELETE_LIMIT = 50
 const KB_BULK_INGEST_DISPATCH_CONCURRENCY = 8
 const KB_CURSOR_VERSION = 1
+// Mirrors the provider's CourseKGInput.focus_topic bound. The provider rejects
+// longer values, so the request is refused before a cost reservation exists
+// rather than failing after dispatch.
+const KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH = 300
 const KB_MCP_SERVER_NAME = 'KB'
 const KB_MCP_CHAT_MODES = ['tutor', 'explainer'] as const
 const KB_FILE_TYPES: Record<string, readonly string[]> = {
@@ -2590,6 +2602,18 @@ export interface KBKnowledgeGraphConfig {
   status: DB.KBGraphBuildStatus | null
   statusMessage: string | null
   qualityTier: DB.KBGraphQualityTier | null
+  /** Frozen domain selection of the reported build; null is the legacy policy. */
+  domainPolicyId: string | null
+  domainPolicyVersion: number | null
+  domainPolicyLanguage: string | null
+  /** Lecturer focus recorded on the reported build; null means no focus. */
+  focusTopic: string | null
+  /** Domain selection frozen on the currently published build, when it has one. */
+  publishedDomainPolicyId: string | null
+  publishedDomainPolicyVersion: number | null
+  publishedDomainPolicyLanguage: string | null
+  /** Categories of the selected policy, so the panel never restates catalog prose. */
+  domainCategories: KBGraphDomainCategory[] | null
   sourceContentDigest: string | null
   activeBuildId: string | null
   publishedBuildId: string | null
@@ -2630,6 +2654,10 @@ const KB_GRAPH_BUILD_CONFIG_SELECT = {
   status: true,
   statusMessage: true,
   qualityTier: true,
+  domainPolicyId: true,
+  domainPolicyVersion: true,
+  domainPolicyLanguage: true,
+  focusTopic: true,
   sourceContentDigest: true,
   startedAt: true,
   finishedAt: true,
@@ -2655,6 +2683,163 @@ const KB_GRAPH_BUILD_CONFIG_SELECT = {
   },
 } satisfies DB.Prisma.KBGraphBuildSelect
 
+export interface KbGraphDomainConfigLanguage {
+  language: string
+  categories: KBGraphDomainCategory[]
+}
+
+export interface KbGraphDomainConfigOption {
+  id: string
+  version: number
+  labelKey: string
+  languages: KbGraphDomainConfigLanguage[]
+}
+
+export interface KbGraphDomainConfig {
+  capabilityEnabled: boolean
+  catalogRevision: string | null
+  catalogDigest: string | null
+  options: KbGraphDomainConfigOption[]
+}
+
+type KBGraphDomainPersistedFields = {
+  domainPolicyId?: string | null
+  domainPolicyVersion?: number | null
+  domainPolicyLanguage?: string | null
+} | null
+
+/**
+ * Categories of a persisted explicit domain selection, resolved through the
+ * shipped catalog. A legacy all-null build has no explicit selection, and a
+ * selection the current catalog no longer describes returns null rather than
+ * inventing category labels.
+ */
+function resolvePersistedKBGraphDomainCategories(
+  build: KBGraphDomainPersistedFields
+): KBGraphDomainCategory[] | null {
+  if (!build) {
+    return null
+  }
+  const catalog = getDefaultKBGraphDomainCatalog()
+  const resolution = resolveKBGraphDomainSelection(
+    {
+      domainPolicyId: build.domainPolicyId ?? null,
+      domainPolicyVersion: build.domainPolicyVersion ?? null,
+      language: build.domainPolicyLanguage ?? null,
+    },
+    { catalog, capabilityEnabled: true }
+  )
+  return resolution.ok ? (resolution.selection?.categories ?? null) : null
+}
+
+/**
+ * Domain-selection capability handshake for the lecturer panel. Category prose
+ * is only advertised while the configured catalog revision matches the shipped
+ * export, so the client never offers a selection this deployment would reject.
+ */
+export async function getKbKnowledgeGraphDomainConfig(
+  { kbId }: { kbId: string },
+  ctx: ContextWithUser
+): Promise<KbGraphDomainConfig> {
+  await assertManageAiEnabled(ctx)
+  await getOwnedKbOrThrow(ctx, kbId)
+  const catalog = getDefaultKBGraphDomainCatalog()
+  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
+    catalog.revision,
+    process.env
+  )
+  return {
+    capabilityEnabled,
+    catalogRevision: catalog.revision,
+    catalogDigest: catalog.digest,
+    options: capabilityEnabled
+      ? catalog.policies.map((policy) => ({
+          id: policy.id,
+          version: policy.version,
+          labelKey: policy.labelKey,
+          languages: policy.languages.map((language) => ({
+            language: language.language,
+            categories: language.categories,
+          })),
+        }))
+      : [],
+  }
+}
+
+function kbGraphDomainRejectionMessage(
+  reason: KBGraphDomainSelectionRejectionReason
+): string {
+  switch (reason) {
+    case 'INCOMPLETE':
+      return 'A domain selection requires a policy, a positive version, and a language.'
+    case 'CAPABILITY_DISABLED':
+      return 'This deployment does not support explicit domain selection.'
+    case 'UNKNOWN_POLICY':
+      return 'The requested domain policy is not part of this deployment catalog.'
+    case 'UNSUPPORTED_VERSION':
+      return 'The requested domain policy version is not supported.'
+    case 'UNSUPPORTED_LANGUAGE':
+      return 'The requested domain language is not provided by this policy.'
+  }
+}
+
+/**
+ * Resolves a lecturer-supplied domain selection, rejecting anything the catalog
+ * or the capability gate does not support before any cost reservation is made.
+ * An entirely omitted request is the legacy path and resolves to null.
+ */
+function resolveRequestedKBGraphDomainSelection(
+  request: KBGraphDomainSelectionRequest,
+  env: NodeJS.ProcessEnv = process.env
+): KBGraphDomainSelection | null {
+  const catalog = getDefaultKBGraphDomainCatalog()
+  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
+    catalog.revision,
+    env
+  )
+  const resolution = resolveKBGraphDomainSelection(request, {
+    catalog,
+    capabilityEnabled,
+  })
+  if (!resolution.ok) {
+    throw new GraphQLError(kbGraphDomainRejectionMessage(resolution.reason), {
+      extensions: { code: KB_GRAPH_DOMAIN_ERROR_CODES[resolution.reason] },
+    })
+  }
+  return resolution.selection
+}
+
+/**
+ * Normalizes a lecturer-supplied build focus. The focus is prompt guidance, so
+ * a blank value is the same as no focus. It rides the same provider contract as
+ * the explicit domain selection, so a deployment whose capability gate is
+ * closed refuses one it cannot honor instead of recording guidance that is
+ * dropped later.
+ */
+function resolveRequestedKBGraphFocusTopic(
+  focusTopic: string | null | undefined,
+  env: NodeJS.ProcessEnv = process.env
+): string | null {
+  const normalized = focusTopic?.trim()
+  if (!normalized) {
+    return null
+  }
+  if (normalized.length > KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH) {
+    throw new GraphQLError(
+      `A graph build focus may contain at most ${KB_GRAPH_FOCUS_TOPIC_MAX_LENGTH} characters.`,
+      { extensions: { code: 'KB_GRAPH_FOCUS_TOPIC_TOO_LONG' } }
+    )
+  }
+  const catalog = getDefaultKBGraphDomainCatalog()
+  if (!isKBGraphDomainCapabilityEnabled(catalog.revision, env)) {
+    throw new GraphQLError(
+      'This deployment does not support a graph build focus.',
+      { extensions: { code: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED } }
+    )
+  }
+  return normalized
+}
+
 export function getKBGraphBuildConfig(
   kb: {
     id: string
@@ -2667,6 +2852,10 @@ export function getKBGraphBuildConfig(
     status: DB.KBGraphBuildStatus
     statusMessage: string | null
     qualityTier: DB.KBGraphQualityTier
+    domainPolicyId?: string | null
+    domainPolicyVersion?: number | null
+    domainPolicyLanguage?: string | null
+    focusTopic?: string | null
     sourceContentDigest: string
     startedAt: Date | null
     finishedAt: Date | null
@@ -2696,7 +2885,12 @@ export function getKBGraphBuildConfig(
     settledMinorUnits: number
   } | null,
   costConfiguration: ReturnType<typeof getKBGraphCostConfiguration>,
-  elementGenerationReady: boolean
+  elementGenerationReady: boolean,
+  publishedDomain?: {
+    domainPolicyId: string | null
+    domainPolicyVersion: number | null
+    domainPolicyLanguage: string | null
+  } | null
 ): KBKnowledgeGraphConfig {
   const quotaConfigurationMatches =
     quota === null ||
@@ -2720,6 +2914,15 @@ export function getKBGraphBuildConfig(
     status: build?.status ?? null,
     statusMessage: build?.statusMessage ?? null,
     qualityTier: build?.qualityTier ?? null,
+    domainPolicyId: build?.domainPolicyId ?? null,
+    domainPolicyVersion: build?.domainPolicyVersion ?? null,
+    domainPolicyLanguage: build?.domainPolicyLanguage ?? null,
+    focusTopic: build?.focusTopic ?? null,
+    publishedDomainPolicyId: publishedDomain?.domainPolicyId ?? null,
+    publishedDomainPolicyVersion: publishedDomain?.domainPolicyVersion ?? null,
+    publishedDomainPolicyLanguage:
+      publishedDomain?.domainPolicyLanguage ?? null,
+    domainCategories: resolvePersistedKBGraphDomainCategories(build),
     sourceContentDigest: build?.sourceContentDigest ?? null,
     activeBuildId: kb.activeGraphBuildId,
     publishedBuildId: kb.publishedGraphBuildId,
@@ -2777,6 +2980,9 @@ export async function getKbKnowledgeGraphConfig(
           },
           select: {
             sourceContentDigest: true,
+            domainPolicyId: true,
+            domainPolicyVersion: true,
+            domainPolicyLanguage: true,
             status: true,
             graphBundleContainerName: true,
             graphBundleBlobPrefix: true,
@@ -2814,7 +3020,8 @@ export async function getKbKnowledgeGraphConfig(
     isStale,
     quota,
     costConfiguration,
-    isElementGenerationGraphBundleReady(publishedBuild)
+    isElementGenerationGraphBundleReady(publishedBuild),
+    publishedBuild
   )
 }
 
@@ -2930,15 +3137,31 @@ export async function rebuildKbKnowledgeGraph(
   {
     kbId,
     qualityTier: requestedQualityTier,
+    domainPolicyId,
+    domainPolicyVersion,
+    domainPolicyLanguage,
+    focusTopic,
   }: {
     kbId: string
     qualityTier?: DB.KBGraphQualityTier | null
+    domainPolicyId?: string | null
+    domainPolicyVersion?: number | null
+    domainPolicyLanguage?: string | null
+    focusTopic?: string | null
   },
   ctx: ContextWithUser
 ): Promise<KBKnowledgeGraphConfig> {
   const qualityTier = requestedQualityTier ?? DB.KBGraphQualityTier.STANDARD
   await assertManageAiEnabled(ctx)
   assertKbGraphGenerationEnabled()
+  // Reject a partial, unknown, or unsupported explicit selection before any
+  // cost reservation exists, so a bad request cannot leave reserved money.
+  const requestedDomain = resolveRequestedKBGraphDomainSelection({
+    domainPolicyId,
+    domainPolicyVersion,
+    language: domainPolicyLanguage,
+  })
+  const requestedFocusTopic = resolveRequestedKBGraphFocusTopic(focusTopic)
   const result = await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     const kb = await prisma.kB.findUniqueOrThrow({
@@ -3026,12 +3249,23 @@ export async function rebuildKbKnowledgeGraph(
       ownerId: ctx.user.sub,
       qualityTier,
     })
+    // Only an explicit, validated selection is frozen onto the build; the
+    // legacy path writes nothing so established provider defaults stay implicit.
+    const domainFields = requestedDomain
+      ? {
+          domainPolicyId: requestedDomain.domainPolicyId,
+          domainPolicyVersion: requestedDomain.domainPolicyVersion,
+          domainPolicyLanguage: requestedDomain.language,
+        }
+      : {}
     const build = await prisma.kBGraphBuild.create({
       data: {
         id: buildId,
         kbId,
         requestedById: ctx.user.sub,
         qualityTier,
+        ...domainFields,
+        focusTopic: requestedFocusTopic,
         sourceContentDigest,
         graphName: getKnowledgeGraphName(kbId, buildId),
         graphmlBlobName: getKBGraphArtifactBlobName(buildId),
@@ -3132,6 +3366,9 @@ export async function rebuildKbKnowledgeGraph(
         },
         select: {
           status: true,
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
           graphBundleContainerName: true,
           graphBundleBlobPrefix: true,
           graphBundleStorageName: true,
@@ -3148,6 +3385,7 @@ export async function rebuildKbKnowledgeGraph(
     isStale,
     quota,
     costConfiguration,
-    isElementGenerationGraphBundleReady(publishedBuild)
+    isElementGenerationGraphBundleReady(publishedBuild),
+    publishedBuild
   )
 }
