@@ -125,7 +125,17 @@ jobs:
             .github/scripts/sonar-new-code-boundary.test.cjs \
             .github/scripts/image-scan-admission.test.cjs \
             .github/scripts/sonar-coverage-transport.test.cjs \
-            .github/scripts/image-scan-receipt.test.cjs
+            .github/scripts/image-scan-receipt.test.cjs \
+            .github/scripts/deploy-parity.test.cjs
+
+      # Production renders deploy/ from v3 while the release images are tagged
+      # from v3-ai, so the two revisions must not drift apart. The gate names
+      # the divergent paths; see docs/ci-and-deployment.md.
+      - name: Check deploy parity across v3 and v3-ai
+        if: >-
+          (github.event_name == 'push' && github.ref_name == 'v3') ||
+          (github.event_name == 'pull_request' && github.base_ref == 'v3')
+        run: node ./.github/scripts/deploy-parity.cjs --other v3-ai
 
       - name: Check Playwright CI contracts
         run: |
