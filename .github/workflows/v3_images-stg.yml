@@ -176,7 +176,10 @@ jobs:
           cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      # Only a push publishes, so only a push produces a digest; the scan that
+      # consumes it is likewise limited to publish events.
       - name: Record the published digest
+        if: github.event_name != 'pull_request'
         env:
           DIGEST: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
           DIGEST_PATH: ${{ runner.temp }}/digest.txt
@@ -189,6 +192,7 @@ jobs:
           printf '%s\n' "$DIGEST" > "$DIGEST_PATH"
 
       - name: Upload the published digest
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
@@ -269,7 +273,10 @@ jobs:
           cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      # Only a push publishes, so only a push produces a digest; the scan that
+      # consumes it is likewise limited to publish events.
       - name: Record the published digest
+        if: github.event_name != 'pull_request'
         env:
           DIGEST: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
           DIGEST_PATH: ${{ runner.temp }}/digest.txt
@@ -282,6 +289,7 @@ jobs:
           printf '%s\n' "$DIGEST" > "$DIGEST_PATH"
 
       - name: Upload the published digest
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
@@ -362,7 +370,10 @@ jobs:
           cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      # Only a push publishes, so only a push produces a digest; the scan that
+      # consumes it is likewise limited to publish events.
       - name: Record the published digest
+        if: github.event_name != 'pull_request'
         env:
           DIGEST: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
           DIGEST_PATH: ${{ runner.temp }}/digest.txt
@@ -375,6 +386,7 @@ jobs:
           printf '%s\n' "$DIGEST" > "$DIGEST_PATH"
 
       - name: Upload the published digest
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
