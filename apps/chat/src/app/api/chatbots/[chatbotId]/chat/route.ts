@@ -1,11 +1,11 @@
-import type {
-  ELearningSnapshotContent,
-  KlickerChatContext,
-} from '@klicker-uzh/types'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import type { Prisma } from '@klicker-uzh/prisma/client'
 import { HANDOFF_SOURCES } from '@klicker-uzh/shared-components/src/utils/handoff'
+import type {
+  ELearningSnapshotContent,
+  KlickerChatContext,
+} from '@klicker-uzh/types'
 import {
   type LangfuseSpan,
   propagateAttributes,
@@ -34,6 +34,11 @@ import {
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import { withModelCitationIndices } from '@/src/lib/server/citationInstructions'
+import {
+  courseImageStoreConfigured,
+  readCourseImage,
+} from '@/src/lib/server/courseImageStore'
+import { withCourseImageTool } from '@/src/lib/server/courseImageTools'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -88,6 +93,13 @@ import {
 import { CreditsService } from '@/src/services/credits'
 import { DisclaimersService } from '@/src/services/disclaimers'
 import {
+  formatElearningGroundingPolicy,
+  matchesPersistedLearningHistory,
+  normalizePersistedLearningContext,
+  resolveElearningThreadOrigin,
+  verifyAndNormalizeElearningChatContext,
+} from '@/src/services/elearningContext'
+import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
   type MCPToolsHandle,
@@ -103,13 +115,6 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
-import {
-  formatElearningGroundingPolicy,
-  normalizePersistedLearningContext,
-  resolveElearningThreadOrigin,
-  verifyAndNormalizeElearningChatContext,
-  matchesPersistedLearningHistory,
-} from '@/src/services/elearningContext'
 import { ThreadService } from '@/src/services/threads'
 
 export const runtime = 'nodejs'
@@ -1381,10 +1386,17 @@ export async function POST(
       })
     }
 
-    const chatTools: Record<string, any> = {
+    let chatTools: Record<string, any> = {
       ...(mcpTools || {}),
       ...responseExampleTools,
       ...studentPracticeTools,
+    }
+    if (courseImageStoreConfigured()) {
+      chatTools = withCourseImageTool(
+        chatTools,
+        scopedKbIds ?? [],
+        readCourseImage
+      )
     }
     const toolNames = Object.keys(chatTools)
     const docQueryToolName = toolNames.find(isDocQueryToolName)
