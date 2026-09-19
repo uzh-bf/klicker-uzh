@@ -1,5 +1,6 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { getDefaultKBGraphDomainCatalog } from '@klicker-uzh/knowledge-graph'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
   KBGraphBuildStatus,
@@ -287,6 +288,7 @@ describe('Integration tests for knowledge base CRUD', () => {
   let blobServiceUrl: string
   const graphCostEnvironmentKeys = [
     'KB_GRAPH_DISABLED',
+    'KB_GRAPH_DOMAIN_CATALOG_REVISION',
     'KB_GRAPH_COST_CURRENCY',
     'KB_GRAPH_STANDARD_ESTIMATE_MINOR_UNITS',
     'KB_GRAPH_HIGH_ESTIMATE_MINOR_UNITS',
@@ -529,6 +531,199 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
     ).resolves.toBe(1)
+  })
+
+  it('reserves a build only for a complete, supported domain selection', async () => {
+    const catalog = getDefaultKBGraphDomainCatalog()
+    const kb = await createKb({ name: 'Domain-scoped graph' }, userOneCtx)
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Domain graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        sourceUrl: 'https://example.com/domain-graph-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'c'.repeat(64),
+      },
+    })
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+
+    // A partial selection is rejected before any cost reservation exists.
+    await expect(
+      rebuildKbKnowledgeGraph(
+        { kbId: kb.id, domainPolicyId: 'finance' },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_SELECTION_INCOMPLETE' },
+    })
+    await expect(
+      rebuildKbKnowledgeGraph(
+        {
+          kbId: kb.id,
+          domainPolicyId: 'retired-policy',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNKNOWN_POLICY' },
+    })
+    await expect(
+      rebuildKbKnowledgeGraph(
+        {
+          kbId: kb.id,
+          domainPolicyId: 'finance',
+          domainPolicyVersion: 2,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_UNSUPPORTED_VERSION' },
+    })
+
+    // The same request without the capability gate is refused as well.
+    delete process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION
+    await expect(
+      rebuildKbKnowledgeGraph(
+        {
+          kbId: kb.id,
+          domainPolicyId: 'finance',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
+    })
+
+    await expect(
+      prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
+    ).resolves.toBe(0)
+
+    // A complete, supported selection is frozen onto the build.
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+    const config = await rebuildKbKnowledgeGraph(
+      {
+        kbId: kb.id,
+        domainPolicyId: 'finance',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      userOneCtx
+    )
+    expect(config).toMatchObject({
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+      publishedDomainPolicyId: null,
+    })
+    expect(config.domainCategories).not.toBeNull()
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({
+        where: { id: config.buildId! },
+        select: {
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
+        },
+      })
+    ).resolves.toEqual({
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+      domainPolicyLanguage: 'German',
+    })
+  })
+
+  it('records a normalized lecturer focus and refuses one the deployment cannot honor', async () => {
+    const catalog = getDefaultKBGraphDomainCatalog()
+    const kb = await createKb({ name: 'Focused graph' }, userOneCtx)
+    await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+    await prisma.kBResource.create({
+      data: {
+        kbId: kb.id,
+        type: KBResourceType.URL,
+        title: 'Focused graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        sourceUrl: 'https://example.com/focused-graph-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'd'.repeat(64),
+      },
+    })
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+
+    // The provider refuses a longer focus, so the request fails before a cost
+    // reservation exists rather than after dispatch.
+    await expect(
+      rebuildKbKnowledgeGraph(
+        { kbId: kb.id, focusTopic: 'x'.repeat(301) },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_FOCUS_TOPIC_TOO_LONG' },
+    })
+
+    // A focus rides the same capability gate as an explicit domain, so a
+    // deployment that closed the gate must not record guidance it would drop.
+    delete process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION
+    await expect(
+      rebuildKbKnowledgeGraph(
+        { kbId: kb.id, focusTopic: 'Capital budgeting' },
+        userOneCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
+    })
+
+    await expect(
+      prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
+    ).resolves.toBe(0)
+
+    // A blank focus is no focus: the build still reserves, and it stores no
+    // empty string the panel would report back as a recorded focus.
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+    const unfocusedConfig = await rebuildKbKnowledgeGraph(
+      { kbId: kb.id, focusTopic: '   ' },
+      userOneCtx
+    )
+    expect(unfocusedConfig.focusTopic).toBeNull()
+
+    // A supplied focus is trimmed and frozen onto the build that reports it.
+    const focusedKb = await createKb({ name: 'Padded focus graph' }, userOneCtx)
+    await setKbKnowledgeGraphEnabled(
+      { kbId: focusedKb.id, enabled: true },
+      userOneCtx
+    )
+    await prisma.kBResource.create({
+      data: {
+        kbId: focusedKb.id,
+        type: KBResourceType.URL,
+        title: 'Padded focus graph source',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
+        sourceUrl: 'https://example.com/padded-focus-graph-source',
+        status: KBResourceStatus.READY,
+        activeResourceVersion: 1,
+        activeContentSha256: 'e'.repeat(64),
+      },
+    })
+    const focusedConfig = await rebuildKbKnowledgeGraph(
+      { kbId: focusedKb.id, focusTopic: '  Capital budgeting  ' },
+      userOneCtx
+    )
+    expect(focusedConfig.focusTopic).toBe('Capital budgeting')
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({
+        where: { id: focusedConfig.buildId! },
+        select: { focusTopic: true },
+      })
+    ).resolves.toEqual({ focusTopic: 'Capital budgeting' })
   })
 
   it('builds only from course-content resources and refuses builds without any', async () => {

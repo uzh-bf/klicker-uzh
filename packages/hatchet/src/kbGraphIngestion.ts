@@ -1,16 +1,25 @@
-import { getKnowledgeGraphName } from '@klicker-uzh/knowledge-graph'
 import {
+  getDefaultKBGraphDomainCatalog,
+  getKnowledgeGraphName,
+  isKBGraphDomainCapabilityEnabled,
+  KB_GRAPH_DOMAIN_ERROR_CODES,
+  type KBGraphDomainSelectionRejectionReason,
+  type KBGraphDomainSelectionResolution,
+  resolveKBGraphDomainSelection,
+} from '@klicker-uzh/knowledge-graph'
+import {
+  type KBGraphBuildSource,
   KBGraphBuildStatus,
   KBGraphCostStatus,
-  type KBGraphBuildSource,
   type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import type { BuildKBGraphInput } from '@klicker-uzh/types'
 import {
-  KB_GRAPH_BUILD_METADATA_KEY,
-  KB_GRAPH_KB_METADATA_KEY,
   cancelExternalKBGraphRunBestEffort,
+  type ExternalKBGraphClient,
+  type ExternalKBGraphPayload,
+  type ExternalKBGraphRequestOptions,
   getExternalKBGraphClient,
   getExternalKBGraphConfig,
   getKBGraphArtifactBlobName,
@@ -18,11 +27,10 @@ import {
   getKBGraphQualityConfig,
   getKBGraphSourceUrl,
   getKBGraphTimeoutSeconds,
-  recoverExternalKBGraphRun,
-  type ExternalKBGraphClient,
-  type ExternalKBGraphPayload,
+  KB_GRAPH_BUILD_METADATA_KEY,
+  KB_GRAPH_KB_METADATA_KEY,
   type KBGraphLogger,
-  type ExternalKBGraphRequestOptions,
+  recoverExternalKBGraphRun,
 } from './kbGraphIngestionApi.js'
 
 const KB_GRAPH_MONITOR_BATCH_SIZE = 32
@@ -65,6 +73,10 @@ type KBGraphDispatchRecord = {
   graphName: string
   graphmlBlobName: string | null
   qualityTier: Parameters<typeof getKBGraphQualityConfig>[0]
+  domainPolicyId: string | null
+  domainPolicyVersion: number | null
+  domainPolicyLanguage: string | null
+  focusTopic: string | null
   createdAt: Date
   kb: {
     ownerId: string
@@ -404,6 +416,84 @@ function getDispatchGateFailure(
   return null
 }
 
+function kbGraphDomainRejectionMessage(
+  reason: KBGraphDomainSelectionRejectionReason
+): string {
+  switch (reason) {
+    case 'INCOMPLETE':
+      return 'The KB graph build has an incomplete domain selection and requires review.'
+    case 'CAPABILITY_DISABLED':
+      return 'This deployment does not support the domain selection frozen on the KB graph build.'
+    case 'UNKNOWN_POLICY':
+      return 'The domain policy frozen on the KB graph build is not part of this deployment catalog.'
+    case 'UNSUPPORTED_VERSION':
+      return 'The domain policy version frozen on the KB graph build is not supported.'
+    case 'UNSUPPORTED_LANGUAGE':
+      return 'The domain language frozen on the KB graph build is not provided by its policy.'
+  }
+}
+
+/**
+ * Re-resolves the provider inputs frozen at rebuild time against the catalog and
+ * capability gate this worker is running with. Dispatch happens in a separate
+ * process from the lecturer request, so a rollout that narrowed the catalog or
+ * disabled the gate must fail the build here, before the provider call spends
+ * reservation money on a policy it cannot honor or silently drops a recorded
+ * focus.
+ */
+function getProviderContractGateFailure(
+  build: Pick<
+    KBGraphDispatchRecord,
+    | 'domainPolicyId'
+    | 'domainPolicyVersion'
+    | 'domainPolicyLanguage'
+    | 'focusTopic'
+  >,
+  env: NodeJS.ProcessEnv
+): { statusMessage: string; errorCode: string } | null {
+  const catalog = getDefaultKBGraphDomainCatalog()
+  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
+    catalog.revision,
+    env
+  )
+  // A focus travels on the same provider contract the capability gate
+  // advertises, so a rollout that closed the gate must fail the build here
+  // rather than record a focus the provider never applied.
+  if (build.focusTopic != null && !capabilityEnabled) {
+    return {
+      statusMessage:
+        'This deployment does not support the focus topic frozen on the KB graph build.',
+      errorCode: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED,
+    }
+  }
+  if (
+    build.domainPolicyId == null &&
+    build.domainPolicyVersion == null &&
+    build.domainPolicyLanguage == null
+  ) {
+    return null
+  }
+  const resolution: KBGraphDomainSelectionResolution =
+    resolveKBGraphDomainSelection(
+      {
+        domainPolicyId: build.domainPolicyId,
+        domainPolicyVersion: build.domainPolicyVersion,
+        language: build.domainPolicyLanguage,
+      },
+      {
+        catalog,
+        capabilityEnabled,
+      }
+    )
+  if (resolution.ok) {
+    return null
+  }
+  return {
+    statusMessage: kbGraphDomainRejectionMessage(resolution.reason),
+    errorCode: KB_GRAPH_DOMAIN_ERROR_CODES[resolution.reason],
+  }
+}
+
 async function failKBGraphBuildBeforeDispatch(
   prisma: KBGraphPrisma,
   {
@@ -499,7 +589,7 @@ export function buildExternalKBGraphPayload(
   }
 
   const quality = getKBGraphQualityConfig(build.qualityTier, env)
-  return {
+  const payload: ExternalKBGraphPayload = {
     course_id: build.id,
     storage_name: build.id,
     sources: build.sources.map((source, index) => ({
@@ -523,6 +613,26 @@ export function buildExternalKBGraphPayload(
       graphml_blob_name: build.graphmlBlobName,
     },
   }
+  // The dispatch gate has already re-validated the frozen selection, so a
+  // complete triple here is a supported policy. The legacy all-null build adds
+  // no keys and keeps the provider manifest byte-identical.
+  if (
+    build.domainPolicyId != null &&
+    build.domainPolicyVersion != null &&
+    build.domainPolicyLanguage != null
+  ) {
+    payload.domain_policy = {
+      template_id: build.domainPolicyId,
+      template_version: build.domainPolicyVersion,
+    }
+    payload.language = build.domainPolicyLanguage
+  }
+  // A focus is prompt guidance the provider applies on top of the policy, so it
+  // is dispatched independently of an explicit domain selection.
+  if (build.focusTopic != null) {
+    payload.focus_topic = build.focusTopic
+  }
+  return payload
 }
 
 function validateBuildIdentity(build: KBGraphDispatchRecord): void {
@@ -692,6 +802,10 @@ export async function dispatchKBGraphBuild(
       graphName: true,
       graphmlBlobName: true,
       qualityTier: true,
+      domainPolicyId: true,
+      domainPolicyVersion: true,
+      domainPolicyLanguage: true,
+      focusTopic: true,
       status: true,
       externalOperationId: true,
       dispatchClaimedAt: true,
@@ -764,7 +878,9 @@ export async function dispatchKBGraphBuild(
     return undefined
   }
   if (isUnstartedActiveBuild(build)) {
-    const gateFailure = getDispatchGateFailure(build, env)
+    const gateFailure =
+      getDispatchGateFailure(build, env) ??
+      getProviderContractGateFailure(build, env)
     if (gateFailure) {
       await failKBGraphBuildBeforeDispatch(
         dependencies.prisma,
@@ -787,6 +903,10 @@ export async function dispatchKBGraphBuild(
     graphName: build.graphName,
     graphmlBlobName: build.graphmlBlobName,
     qualityTier: build.qualityTier,
+    domainPolicyId: build.domainPolicyId,
+    domainPolicyVersion: build.domainPolicyVersion,
+    domainPolicyLanguage: build.domainPolicyLanguage,
+    focusTopic: build.focusTopic,
     createdAt: build.createdAt,
     kb: {
       ownerId: build.kb.ownerId,
@@ -849,6 +969,10 @@ export async function dispatchKBGraphBuild(
           semesterKey: true,
           costStatus: true,
           quotaId: true,
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
+          focusTopic: true,
           quota: {
             select: {
               id: true,
@@ -869,7 +993,12 @@ export async function dispatchKBGraphBuild(
           },
         },
       })
-      const gateFailure = current ? getDispatchGateFailure(current, env) : null
+      // The provider effect is immediately below this point, so the frozen
+      // provider inputs are validated here for the last time.
+      const gateFailure = current
+        ? (getDispatchGateFailure(current, env) ??
+          getProviderContractGateFailure(current, env))
+        : null
       if (!current || !isUnstartedActiveBuild(current) || gateFailure) {
         if (current && isUnstartedActiveBuild(current) && gateFailure) {
           await failKBGraphBuildBeforeDispatch(

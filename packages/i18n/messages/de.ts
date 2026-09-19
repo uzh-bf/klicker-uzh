@@ -2029,6 +2029,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Dieser veröffentlichte Graph enthält noch kein Paket zur Elementgenerierung. Erstellen Sie ihn neu, um Klicker-Elemente zu generieren.',
     graphPreviewUnavailable:
       'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
+    graphDomainLabel: 'Domäne',
+    graphDomainSelectPlaceholder: 'Domäne wählen',
+    graphFocusTopicLabel: 'Schwerpunktthema (optional)',
+    graphFocusTopicPlaceholder: 'z. B. Investitionsrechnung',
+    graphFocusTopicNote:
+      'Steuert, welches Material die Extraktion betont. Das Schwerpunktthema ist keine Quelle: es kann keine Fakten hinzufügen, und das übrige Material behält seine Abdeckung.',
+    graphDomainFinance: 'Finanzwirtschaft',
+    graphDomainEconomics: 'Volkswirtschaftslehre',
+    graphDomainBusiness: 'Betriebswirtschaftslehre',
+    graphDomainMathematics: 'Mathematik',
+    graphDomainInformatics: 'Informatik',
+    graphDomainGeneralAcademic: 'Allgemein / Gemischt',
+    graphDomainCategoriesLabel: 'Erzeugte Kategorien',
+    graphDomainLanguageNote:
+      'Der Graph wird in der gewählten Sprache erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
+    graphDomainLanguageLabel: 'Generierungssprache',
+    graphDomainLanguageSelectPlaceholder: 'Sprache wählen',
+    graphDomainCurrentUnavailable:
+      'Die gewählte Domäne {domain} (Version {version}) ist in dieser Installation nicht verfügbar. Wählen Sie eine unterstützte Domäne, um erneut aufzubauen.',
+    graphDomainLanguageUnavailable:
+      'Die gewählte Domäne {domain} bietet {language} in dieser Installation nicht an. Wählen Sie eine unterstützte Generierungssprache, um erneut aufzubauen.',
+    graphDomainRebuildBlocked:
+      'Diese Wissensdatenbank verwendet eine explizite Domäne ({domain}, Version {version}, {language}), die diese Installation nicht erneut anwenden kann. Ein Neuaufbau ist blockiert, bis eine explizite Domänenwahl wieder möglich ist.',
+    graphDomainVersionUnknown: 'unbekannt',
+    graphDomainPublished:
+      'Ausgelieferter Graph: {domain} (Version {version}, {language})',
+    graphDomainLanguageGerman: 'Deutsch',
+    graphDomainLanguageEnglish: 'Englisch',
     ingestionDisabledError:
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
@@ -2777,6 +2805,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         FAILED: 'Fehlgeschlagen',
         REJECTED: 'Abgelehnt',
       },
+      failureClasses: {
+        user_input:
+          'Dieses Element konnte nicht im ausgewählten Material verankert werden. Passen Sie den Quellenbereich oder das Lernziel an und generieren Sie erneut.',
+        self_repairable:
+          'Der Workflow hat dieses Element mit alternativem Material erneut versucht, aber die nutzbare Evidenz ohne Verankerung ausgeschöpft.',
+        system:
+          'Der Generierungsdienst konnte dieses Element nicht verarbeiten; die Ursache liegt nicht bei Ihrer Eingabe. Starten Sie die Generierung erneut und wenden Sie sich bei anhaltenden Problemen an den Support.',
+      },
+      failureClassLabels: {
+        user_input: 'Quellenmaterial',
+        self_repairable: 'Keine alternative Evidenz',
+        system: 'Systemfehler',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'Die ausgewählten Quellen enthalten keine passenden Dokumente für dieses Element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'Das gewünschte Thema kommt im ausgewählten Material nicht vor.',
+        LEVEL_NOT_GROUNDABLE:
+          'Das ausgewählte Material trägt die gewünschte kognitive Stufe für dieses Element nicht.',
+        NO_DISTINCT_EVIDENCE:
+          'Mehrere Elemente würden auf dieselbe Evidenz zurückgreifen; dieses Element wurde deshalb weggelassen.',
+        GROUNDING_EXHAUSTED:
+          'Der Workflow hat die nutzbare Evidenz ausgeschöpft, ohne ein verankertes Element zu erzeugen.',
+        SYSTEM_FAILURE:
+          'Der Generierungsdienst hat für dieses Element einen internen Fehler gemeldet.',
+      },
       build: {
         title: 'Generierung: {type}',
         stage: 'Aktuelle Phase: {stage}',
@@ -2799,6 +2854,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Ich verstehe, dass das Ergebnis weniger Elemente als angefordert enthält.',
         rejected: 'Diese Generierung wurde bei der Prüfung abgelehnt.',
         noDrafts: 'Die Generierung wurde ohne prüfbare Elemente abgeschlossen.',
+        legacyFailure:
+          'Dieser Lauf ist fehlgeschlagen, bevor der Workflow Begründungen pro Element geliefert hat.',
+        failureReasonsTitle:
+          '{count, plural, one {# Element fehlt in dieser Generierung} other {# Elemente fehlen in dieser Generierung}}',
+        failureReasonsHelp:
+          'Der Workflow hat begründet, warum diese Elemente nicht generiert werden konnten. Die gelieferten Elemente sind davon nicht betroffen und bleiben in Prüfung.',
+        failureModule: 'Modul',
+        failureObjective: 'Lernziel',
+        failureLevel: 'Bloom-Stufe',
+        failureEvidence: 'Benötigte Evidenz',
+        failureSuggestions: 'Im Material behandelte Themen',
+        failureRetryGuidance:
+          'Das deutet auf ein systemseitiges Problem hin. Starten Sie die Generierung erneut; bei wiederholtem Auftreten wenden Sie sich an den Support.',
+        failureDiagnostics: 'Technische Diagnose',
       },
       gate: {
         eyebrow: 'Prüfschritt',
