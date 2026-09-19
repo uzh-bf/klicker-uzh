@@ -266,27 +266,9 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
     'v3_sonarcloud.yml',
     'owned stable quality gate re-runs at the ready boundary',
   ],
-  ...[
-    'v3_analytics-stg.yml',
-    'v3_auth-stg.yml',
-    'v3_backend-docker-stg.yml',
-    'v3_chat-stg.yml',
-    'v3_frontend-control-docker-stg.yml',
-    'v3_frontend-manage-docker-stg.yml',
-    'v3_frontend-pwa-docker-assessment-stg.yml',
-    'v3_frontend-pwa-docker-stg.yml',
-    'v3_hatchet-worker-general-stg.yml',
-    'v3_hatchet-worker-response-processor-stg.yml',
-    'v3_lti-stg.yml',
-    'v3_olat-api-stg.yml',
-    'v3_response-api-stg.yml',
-  ].map((name) => [
-    name,
-    'draft pull requests defer their staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head',
-  ]),
   [
-    'v3_build-fallback.yml',
-    'the required image-build context recomputes at the ready boundary and validates the builds that the boundary restores',
+    'v3_images-stg.yml',
+    'draft pull requests defer the selected staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head, and the same run owns the required build-images-status context',
   ],
 ])
 
