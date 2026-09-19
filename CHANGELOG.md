@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.80](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.79...v3.4.0-alpha.80) (2026-09-19)
+
+
+### Features
+
+* **ci:** narrow draft Playwright plans to the change-based selection ([#6131](https://github.com/uzh-bf/klicker-uzh/issues/6131)) ([b15ac74](https://github.com/uzh-bf/klicker-uzh/commit/b15ac7434e9a427ff00d3b2868ef4821fd0d1bb7))
+* **kb:** label indexed source origin in KB detail ([#6149](https://github.com/uzh-bf/klicker-uzh/issues/6149)) ([6a6ab04](https://github.com/uzh-bf/klicker-uzh/commit/6a6ab04ba8e596234ae3f10c81368b1e6be0f660))
+* **scientific-visuals:** render chemistry notation across Markdown, Chat, and Docs ([#5870](https://github.com/uzh-bf/klicker-uzh/issues/5870)) ([a9aa837](https://github.com/uzh-bf/klicker-uzh/commit/a9aa8379c0529b5ef71740108567f6c8e6759f6a))
+
+
+### Bug Fixes
+
+* **chat:** show cited page ranges on source cards ([#6126](https://github.com/uzh-bf/klicker-uzh/issues/6126)) ([b260af3](https://github.com/uzh-bf/klicker-uzh/commit/b260af379a9203763ea365b8a91873d38d7ede8e))
+* **ci:** complete the vitest 3.2.4 spec pin ([#6151](https://github.com/uzh-bf/klicker-uzh/issues/6151)) ([b2d1b63](https://github.com/uzh-bf/klicker-uzh/commit/b2d1b63b6567d04c47ce6b4a878941e96089ce2c))
+* **ci:** gate metadata-only suite skips on a prior validated success ([#6108](https://github.com/uzh-bf/klicker-uzh/issues/6108)) ([9717193](https://github.com/uzh-bf/klicker-uzh/commit/971719359445e626865f60505a468c529a80accf))
+* **ci:** let Playwright shards reuse the seeded pnpm store ([#6104](https://github.com/uzh-bf/klicker-uzh/issues/6104)) ([07aa286](https://github.com/uzh-bf/klicker-uzh/commit/07aa28676320d7f55d177dc86bf43cd8b366f75c))
+* **ci:** pin vitest specs to the overridden 3.2.4 release ([#6137](https://github.com/uzh-bf/klicker-uzh/issues/6137)) ([fcbc047](https://github.com/uzh-bf/klicker-uzh/commit/fcbc047eea33c30173388910fd8a6e8db219d38e))
+* **ci:** reap redundant queued runs and abandoned pull-request runs ([#6132](https://github.com/uzh-bf/klicker-uzh/issues/6132)) ([c504f78](https://github.com/uzh-bf/klicker-uzh/commit/c504f78776f44437c02d866464c0619770590729))
+* **ci:** record staging image digests only on publish events ([#6155](https://github.com/uzh-bf/klicker-uzh/issues/6155)) ([03cfbd6](https://github.com/uzh-bf/klicker-uzh/commit/03cfbd6f21602bf2bc7e7df1dd8d324b6d789c2c))
+* **ci:** retry the Playwright pnpm install with bounded backoff ([#6103](https://github.com/uzh-bf/klicker-uzh/issues/6103)) ([904d72f](https://github.com/uzh-bf/klicker-uzh/commit/904d72fd9d5a91e692b59e517c874ce44267a85b))
+* **ci:** reuse the codebase check for metadata-only edits ([#6136](https://github.com/uzh-bf/klicker-uzh/issues/6136)) ([71f09ee](https://github.com/uzh-bf/klicker-uzh/commit/71f09eef0dbf522b73a5e8d85e0a8d50d06ec31e))
+* **course-duplication:** keep activity owner as admin on copied activities ([#6111](https://github.com/uzh-bf/klicker-uzh/issues/6111)) ([58d0d67](https://github.com/uzh-bf/klicker-uzh/commit/58d0d67b6962707e612ed1a784d9795670ecdf10))
+* **generation:** bind the offered language to the knowledge-base policy ([#6143](https://github.com/uzh-bf/klicker-uzh/issues/6143)) ([8e5a929](https://github.com/uzh-bf/klicker-uzh/commit/8e5a92935fef6f9b64bf9c7616faa9f7545b9d3f))
+
+
+### Documentation
+
+* **agents:** correct the integration mechanics for direct pushes ([#6150](https://github.com/uzh-bf/klicker-uzh/issues/6150)) ([c425a95](https://github.com/uzh-bf/klicker-uzh/commit/c425a955a0846b2b1ec97ca69972b6e262ff9025))
+* **agents:** record the integration sync routing convention ([#6145](https://github.com/uzh-bf/klicker-uzh/issues/6145)) ([a18d831](https://github.com/uzh-bf/klicker-uzh/commit/a18d831948165b7c905bcb3383990bd2015d7f72))
+* **ci:** record the 2026-09-16 portfolio review in the CI efficiency roadmap ([#6102](https://github.com/uzh-bf/klicker-uzh/issues/6102)) ([987dfc8](https://github.com/uzh-bf/klicker-uzh/commit/987dfc8c2ec566af21f6cfa762f65a811e3f16aa))
+* **project:** close out the S7 video import lane ([#6127](https://github.com/uzh-bf/klicker-uzh/issues/6127)) ([71b8328](https://github.com/uzh-bf/klicker-uzh/commit/71b83286a83d9e7f8d13435794a2ba29344adcfa))
+* **project:** record the chemistry notation chatbot e2e acceptance ([#6148](https://github.com/uzh-bf/klicker-uzh/issues/6148)) ([f6004b6](https://github.com/uzh-bf/klicker-uzh/commit/f6004b619d92817faf1ee5307942d726d6061d87))
+* **project:** record the S7 merge heads and the two deploy gaps ([#6109](https://github.com/uzh-bf/klicker-uzh/issues/6109)) ([819df9b](https://github.com/uzh-bf/klicker-uzh/commit/819df9bc747b330703c48d33847b8f6920d355a9))
+* **project:** record the scientific visuals promotion to v3-ai ([cdf50fe](https://github.com/uzh-bf/klicker-uzh/commit/cdf50fe3e18e922a71805e1c16bc204d2d3cba5a))
+
+
+### Refactors
+
+* **ci:** consolidate the staging image workflows into one target matrix ([#6141](https://github.com/uzh-bf/klicker-uzh/issues/6141)) ([0de1f3d](https://github.com/uzh-bf/klicker-uzh/commit/0de1f3de1b308857483836c650375bdb19ce5f41))
+
+
+### Enhancements
+
+* **chat:** compact embedded chat layout with close and credit controls ([#6133](https://github.com/uzh-bf/klicker-uzh/issues/6133)) ([a84f8c9](https://github.com/uzh-bf/klicker-uzh/commit/a84f8c9384aa9e2e9f8d6af30c00a41878103cb9))
+* **chat:** teach chemistry and biology notation in the output contract ([#6140](https://github.com/uzh-bf/klicker-uzh/issues/6140)) ([d82cb53](https://github.com/uzh-bf/klicker-uzh/commit/d82cb53890c553deaf2c655309e08eaf95420096))
+* **element-generation:** surface question-generation failure reasons and partial delivery ([#6152](https://github.com/uzh-bf/klicker-uzh/issues/6152)) ([fde799a](https://github.com/uzh-bf/klicker-uzh/commit/fde799a07884e2dd05a234c974f52cb4eb858168))
+* **knowledge-graph:** focus a graph build on a lecturer topic ([#5957](https://github.com/uzh-bf/klicker-uzh/issues/5957)) ([43fb164](https://github.com/uzh-bf/klicker-uzh/commit/43fb164cffbfe27f8edb80c9da775dbc26274434))
+* **knowledge-graph:** freeze versioned generation domains ([#5904](https://github.com/uzh-bf/klicker-uzh/issues/5904)) ([61c925a](https://github.com/uzh-bf/klicker-uzh/commit/61c925a79e745290a5911e3a8562ee5f10224674))
+* **knowledge-graph:** let lecturers choose the generation language ([#6032](https://github.com/uzh-bf/klicker-uzh/issues/6032)) ([e752c70](https://github.com/uzh-bf/klicker-uzh/commit/e752c70db39e0120fd2f47d8e7d3e98180e373af))
+* **knowledge-graph:** select generation domains in the UI ([#5906](https://github.com/uzh-bf/klicker-uzh/issues/5906)) ([571e7f8](https://github.com/uzh-bf/klicker-uzh/commit/571e7f8d6d7d047ac1d747073b01388363f3ced1))
+
 ## [3.4.0-alpha.79](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.78...v3.4.0-alpha.79) (2026-09-17)
 
 
