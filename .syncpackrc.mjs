@@ -52,6 +52,15 @@ export default {
       packages: ['**'],
     },
     {
+      // The @babel/core override rewrites the lockfile specifier to the exact
+      // pin, and verifyDepsBeforeRun compares spec strings, so the manifest
+      // must carry the exact release too.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@babel/core'],
+      packages: ['**'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],
