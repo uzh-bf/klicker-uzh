@@ -2765,6 +2765,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
+  completeParticipantDataUse(acknowledged: Boolean!, disclosureVersion: String!, expectedRevision: Int!, learningAnalyticsConsent: Boolean!, researchConsent: Boolean!): ParticipantAccountDataUse!
   confirmKbFileReplacement(blobName: String!, kbId: ID!, mimeType: String!, originalFilename: String!, resourceId: ID!, sizeBytes: Int!): KBResource!
   confirmKbFileUpload(blobName: String!, kbId: ID!, materialType: KBResourceMaterialType, mimeType: String!, originalFilename: String!, sizeBytes: Int!, title: String!): KBResource!
   copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
@@ -2783,7 +2784,7 @@ type Mutation {
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
-  createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
+  createParticipantAccount(courseId: String, dataUse: ParticipantInitialDataUseInput!, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
@@ -2909,7 +2910,9 @@ type Mutation {
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
   setGeneratedElementDecision(input: SetGeneratedElementDecisionInput!): GeneratedElementDraft!
   setKbKnowledgeGraphEnabled(enabled: Boolean!, kbId: ID!): KBKnowledgeGraphConfig!
+  setLearningAnalyticsConsent(consent: Boolean!, disclosureVersion: String!, expectedRevision: Int!): ParticipantDataUse
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
+  setResearchConsent(consent: Boolean!, disclosureVersion: String!, expectedRevision: Int!): ParticipantDataUse
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
@@ -3159,6 +3162,18 @@ type Participant {
   xp: Int
 }
 
+type ParticipantAccountDataUse {
+  currentDisclosureVersion: String!
+  dataUseAcknowledgedAt: Date
+  dataUseAcknowledgedVersion: String
+  dataUseRevision: Int!
+  isComplete: Boolean!
+  learningAnalyticsChoiceRecorded: Boolean!
+  learningAnalyticsConsent: Boolean!
+  researchChoiceRecorded: Boolean!
+  researchConsent: Boolean!
+}
+
 type ParticipantAchievementInstance {
   achievedAt: Date!
   achievedCount: Int!
@@ -3192,6 +3207,15 @@ type ParticipantCourseActivity {
   meanElementsPerDay: Float!
 }
 
+type ParticipantDataUse {
+  learningAnalyticsChoiceAt: Date
+  learningAnalyticsConsent: Boolean!
+  learningAnalyticsDisclosureVersion: String
+  researchConsent: Boolean!
+  researchConsentChoiceAt: Date
+  researchConsentDisclosureVersion: String
+}
+
 type ParticipantGroup {
   averageMemberScore: Int!
   code: Int!
@@ -3201,6 +3225,13 @@ type ParticipantGroup {
   name: String!
   participants: [Participant!]
   score: Float
+}
+
+input ParticipantInitialDataUseInput {
+  acknowledged: Boolean!
+  disclosureVersion: String!
+  learningAnalyticsConsent: Boolean!
+  researchConsent: Boolean!
 }
 
 type ParticipantLearningData {
@@ -3501,6 +3532,7 @@ type Query {
   publicParticipantProfile(participantId: String!): Participant
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
+  selfAccountDataUse: ParticipantAccountDataUse
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentAssessmentResults(courseId: String!): StudentAssessmentResults
