@@ -7,7 +7,10 @@ const test = require('node:test')
 
 const {
   FIXTURE_STAGING_WORKFLOWS,
+  FIXTURE_TARGET_IDS,
+  FIXTURE_WORKFLOW_PATH,
   fixtureDefinitions,
+  fixtureJobNames,
   registryManifestResponse,
   transientReadbackFailure,
   workflowJobs,
@@ -20,6 +23,8 @@ const {
   REQUIRED_CI_WORKFLOWS,
   MANUAL_CONFIRMATION,
   PROMOTION_REF,
+  STAGING_IMAGE_TARGETS,
+  STAGING_TARGET_IDS,
   STAGING_WORKFLOWS,
   STAGING_WORKFLOW_PATHS,
   checksumReceipt,
@@ -29,6 +34,7 @@ const {
   getSourceBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
+  resolveCandidateTargetIds,
   resolveStableRegistryDigests,
   runPromotion,
   validateCandidateAncestry,
@@ -39,6 +45,10 @@ const REPOSITORY = 'uzh-bf/klicker-uzh'
 const CANDIDATE_SHA = 'a'.repeat(40)
 const CURRENT_SHA = 'b'.repeat(40)
 const NEXT_SHA = 'c'.repeat(40)
+
+async function fixtureScanAdmission() {
+  return { attempts: [{ attempt: 1, failures: [] }], entries: [], valid: true }
+}
 
 async function fixtureCiEvidence({ run }) {
   const workflow = REQUIRED_CI_WORKFLOWS[run.id - 500]
@@ -78,8 +88,18 @@ function reviewContext(eventName = 'workflow_dispatch', inputs = {}) {
   }
 }
 
-function validWorkflows() {
+// The fixture candidate builds three targets, so every validation call binds
+// that same set against the real consolidated workflow text.
+function validateFixture({ definitions, ...rest }) {
   return validateStagingWorkflows({
+    definitions,
+    targetIds: FIXTURE_TARGET_IDS,
+    ...rest,
+  })
+}
+
+function validWorkflows() {
+  return validateFixture({
     definitions: fixtureDefinitions(),
     expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
     repository: REPOSITORY,
@@ -194,10 +214,8 @@ function successfulJobs(workflows) {
         runId,
         workflowJobs({
           candidateSha: CANDIDATE_SHA,
-          includeMigrator: workflow.jobs.some(
-            (job) => job.id === 'build-migrator-arm'
-          ),
           path: workflow.path,
+          targetIds: FIXTURE_TARGET_IDS,
         }),
       ]
     })
@@ -274,202 +292,220 @@ test('requires the trusted workflow to resolve the selected source branch', () =
   assert.throws(() => getSourceBranch('main'), /approved push triggers/)
 })
 
-test('validates the candidate workflow set and only inventories active ARM publishers', () => {
+test('validates the consolidated candidate workflow and derives the publisher inventory', () => {
   const workflows = validWorkflows()
+  assert.equal(workflows.length, 1)
+  assert.equal(workflows[0].path, FIXTURE_WORKFLOW_PATH)
+  assert.equal(workflows[0].name, 'Build staging images')
+  // Only the ARM64 publisher jobs carry a promotable image; the scan and AMD64
+  // legs are required to succeed but publish nothing the controller promotes.
   assert.deepEqual(
-    workflows.map((workflow) => workflow.jobs.map((job) => job.id)),
-    [['build-arm'], ['build-arm', 'build-migrator-arm'], ['build-arm']]
+    workflows[0].jobs.map((job) => job.id),
+    [
+      'build-arm-auth',
+      'build-arm-backend-docker',
+      'build-arm-backend-docker-migrator',
+    ]
   )
-  assert.equal(
-    workflows.some((workflow) =>
-      workflow.jobs.some((job) => job.id === 'build-amd')
-    ),
-    false
-  )
-  assert.equal(
-    workflows.every((workflow) => workflow.name.endsWith('(stg)')),
-    true
+  assert.deepEqual(workflows[0].requiredJobIds, [
+    'build-arm-auth',
+    'build-arm-backend-docker',
+    'build-arm-backend-docker-migrator',
+    'scan-arm-backend-docker',
+    'scan-arm-backend-docker-migrator',
+  ])
+  assert.deepEqual(
+    workflows[0].jobs.map((job) => job.image),
+    [
+      'ghcr.io/uzh-bf/klicker-uzh/auth-arm',
+      'ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm',
+      'ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm',
+    ]
   )
 })
 
+test('a candidate that still publishes per-image workflows fails closed', () => {
+  const legacy = fixtureDefinitions()
+  legacy.push({
+    content: 'name: Build Docker image for auth (stg)\n',
+    path: '.github/workflows/v3_auth-stg.yml',
+  })
+  assert.throws(
+    () =>
+      validateFixture({
+        definitions: legacy,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /must carry exactly one staging workflow/
+  )
+})
+
+test('only the controlled set of integration-only targets may be absent', () => {
+  const optionalIds = STAGING_IMAGE_TARGETS.filter(
+    (target) => target.optional === true
+  ).map((target) => target.id)
+  assert.ok(optionalIds.length > 0, 'no optional target is declared')
+
+  assert.deepEqual(resolveCandidateTargetIds([]), STAGING_TARGET_IDS)
+  // An optional target may be absent: the integration lines carry those apps and
+  // 'v3' does not.
+  const withoutOptional = resolveCandidateTargetIds(optionalIds)
+  for (const optionalId of optionalIds) {
+    assert.equal(withoutOptional.includes(optionalId), false)
+  }
+  assert.equal(withoutOptional.includes('auth-arm'), true)
+
+  // A required target may never be absent.
+  const requiredId = STAGING_TARGET_IDS.find((id) => !optionalIds.includes(id))
+  assert.throws(
+    () => resolveCandidateTargetIds([requiredId]),
+    /missing the required staging image target/
+  )
+  assert.throws(
+    () => resolveCandidateTargetIds(['not-a-target']),
+    /unknown staging image target/
+  )
+})
+
+test('admits inventoried scan jobs without treating them as publishers', () => {
+  // The scan legs are required jobs but never publishers.
+  const workflows = validWorkflows()
+  assert.equal(
+    workflows[0].jobs.some((job) => job.id.startsWith('scan-')),
+    false
+  )
+  assert.equal(
+    workflows[0].requiredJobIds.some((id) => id.startsWith('scan-')),
+    true
+  )
+  // A scan leg that stops enforcing the policy blocks the candidate even though
+  // it publishes nothing the controller promotes.
+  const uncheckedScan = fixtureDefinitions()
+  uncheckedScan[0].content = uncheckedScan[0].content.replace(
+    'node .github/scripts/image-scan-receipt.cjs check',
+    'node .github/scripts/other.cjs check'
+  )
+  assert.throws(
+    () =>
+      validateFixture({
+        definitions: uncheckedScan,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /does not enforce the scan policy/
+  )
+})
+
+// Every workflow-level property the old per-image validator enforced is still
+// enforced against the consolidated file, so a candidate cannot weaken the
+// publication pipeline by editing the one workflow it now owns.
 test('rejects unsafe workflow publication changes', () => {
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: fixtureDefinitions({ pushBranches: ["'v3'"] }),
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /approved push triggers/
-  )
-
-  const filteredPush = fixtureDefinitions()
-  filteredPush[0].content = filteredPush[0].content.replace(
-    "      - 'v3*'\n  pull_request:",
-    "      - 'v3*'\n    paths:\n      - 'apps/auth/**'\n  pull_request:"
-  )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: filteredPush,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /approved push triggers/
-  )
-
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: fixtureDefinitions({ fullShaTag: false }),
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /full source SHA tag/
-  )
-
-  const prefixedSha = fixtureDefinitions()
-  prefixedSha[0].content = prefixedSha[0].content.replace(
-    'type=raw,value=${{ github.sha }}',
-    'type=sha,format=long'
-  )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: prefixedSha,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /full source SHA tag/
-  )
-
-  const definitions = fixtureDefinitions()
-  definitions[0].content = definitions[0].content.replace(
-    'if: ${{ false }}',
-    'if: github.event.pull_request.draft == false'
-  )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
+  const reject = (label, definitions, pattern) => {
+    const targetIds = FIXTURE_TARGET_IDS
+    try {
+      validateFixture({
         definitions,
         expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
         repository: REPOSITORY,
         sourceBranch: 'v3',
-      }),
-    /must remain disabled/
-  )
-
-  const misleadingDisabledStep = fixtureDefinitions()
-  misleadingDisabledStep[0].content = misleadingDisabledStep[0].content
-    .replace(
-      '  build-amd:\n    if: ${{ false }}',
-      "  build-amd:\n    if: github.event_name != 'pull_request'"
+        targetIds,
+      })
+    } catch (error) {
+      assert.match(error.message, pattern, label)
+      return
+    }
+    assert.fail(label + ' was accepted')
+  }
+  const mutate = (from, to) => {
+    const definitions = fixtureDefinitions()
+    assert.ok(
+      definitions[0].content.includes(from),
+      'fixture no longer contains the text to replace: ' + from
     )
-    .replace(
-      '      - uses: docker/metadata-action@v4\n',
-      '      - if: ${{ false }}\n        uses: docker/metadata-action@v4\n'
-    )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: misleadingDisabledStep,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /must remain disabled/
-  )
+    definitions[0].content = definitions[0].content.replace(from, to)
+    return definitions
+  }
 
-  const fakePublisherText = fixtureDefinitions()
-  fakePublisherText[0].content = fakePublisherText[0].content.replace(
-    `      - uses: docker/build-push-action@v5
-        with:
-          push: \${{ github.event_name != 'pull_request' }}
-          tags: \${{ steps.meta.outputs.tags }}`,
-    `      - name: Fake publisher text
-        run: |
-          uses: docker/build-push-action@v5
-          push: \${{ github.event_name != 'pull_request' }}
-          tags: \${{ steps.meta.outputs.tags }}`
+  reject(
+    'narrowed push triggers',
+    fixtureDefinitions({ pushBranches: ["'v3'"] }),
+    /approved push triggers/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: fakePublisherText,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /must use exactly one docker\/build-push-action/
+  reject(
+    'reduced pull-request types',
+    mutate(
+      'types: [opened, synchronize, reopened, edited, ready_for_review]',
+      'types: [opened]'
+    ),
+    /approved pull-request triggers/
   )
-
-  const renamed = fixtureDefinitions()
-  renamed[0].content = renamed[0].content.replace(
-    'Build Docker image for auth (stg)',
-    'Build Docker image for renamed-auth (stg)'
+  reject(
+    'workflow-level path filter',
+    mutate(
+      '    types: [opened, synchronize, reopened, edited, ready_for_review]',
+      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, edited, ready_for_review]'
+    ),
+    /must not filter pull-request paths/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: renamed,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
+  reject(
+    'missing full-SHA tag',
+    fixtureDefinitions({ fullShaTag: false }),
+    /full source SHA tag/
+  )
+  reject(
+    'renamed workflow',
+    mutate('Build staging images', 'Build staging images renamed'),
     /trusted workflow name/
   )
-
-  const retargeted = fixtureDefinitions()
-  retargeted[0].content = retargeted[0].content.replace(
-    '${{ github.repository }}/auth',
-    '${{ github.repository }}/other-auth'
+  reject(
+    'ungated publication',
+    mutate("steps.publish_guard.outputs.publish == 'true'", 'true'),
+    /publish guard/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: retargeted,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /runtime image inventory changed/
+  reject(
+    'removed publish guard script',
+    mutate(
+      '.github/scripts/stg-image-publish-guard.sh',
+      '.github/scripts/other-guard.sh'
+    ),
+    /full-SHA tag before publishing/
   )
-
-  const noMigrator = fixtureDefinitions()
-  noMigrator[1].content = noMigrator[1].content.replace(
-    /^  build-migrator-arm:[\s\S]*?(?=^  build-migrator-amd:)/m,
-    ''
+  reject(
+    'floating scanner revision',
+    mutate(
+      'aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8',
+      'aquasecurity/trivy-action@v0.36.0'
+    ),
+    /pin exactly one trivy action revision/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: noMigrator,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /active ARM job inventory changed/
+  reject(
+    'removed scan policy',
+    mutate(
+      'node .github/scripts/image-scan-receipt.cjs check',
+      'node .github/scripts/other.cjs check'
+    ),
+    /does not enforce the scan policy/
   )
-
-  const extraPublisher = fixtureDefinitions()
-  extraPublisher[0].content += `  publish-extra:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker/build-push-action@v5
-`
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: extraPublisher,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /unexpected active image publisher/
+  reject(
+    'ARM build no longer defers drafts',
+    mutate('github.event.pull_request.draft == false', 'true'),
+    /does not defer draft builds/
+  )
+  reject(
+    'retargeted matrix image',
+    mutate('matrix.image', 'matrix.imageName'),
+    /derive the image from the matrix/
+  )
+  reject(
+    'status job no longer reports',
+    mutate(
+      '    if: always()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10',
+      '    if: success()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10'
+    ),
+    /must report for every outcome/
   )
 })
 
@@ -664,7 +700,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
   const runningJobs = successfulJobs(workflows)
   runningJobs[100] = workflowJobs({
     candidateSha: CANDIDATE_SHA,
-    jobState: { 'build-arm': { status: 'in_progress' } },
+    jobState: { 'build-arm-auth': { status: 'in_progress' } },
     path: workflows[0].path,
   })
   const { github: runningGithub } = evidenceGithub({
@@ -679,7 +715,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
     sourceBranch: 'v3',
     maxAttempts: 1,
   })
-  assert.match(runningResult.reason, /build-arm is running/)
+  assert.match(runningResult.reason, /build-arm-auth is running/)
 
   const jobCases = [
     ['skipped', { conclusion: 'skipped' }],
@@ -691,7 +727,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
     const terminalJobs = successfulJobs(workflows)
     terminalJobs[100] = workflowJobs({
       candidateSha: CANDIDATE_SHA,
-      jobState: { 'build-arm': jobState },
+      jobState: { 'build-arm-auth': jobState },
       path: workflows[0].path,
     })
     const { github: terminalGithub } = evidenceGithub({
@@ -1439,6 +1475,8 @@ test('writes receipts before rejecting uncertain or mismatched post-push readbac
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+        getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1512,6 +1550,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   try {
     const result = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_dispatch', {
@@ -1548,6 +1588,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     }
     const rerun = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github: rerunGithub,
       context: reviewContext('workflow_dispatch', {
@@ -1574,6 +1616,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const automatic = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1585,6 +1629,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const enabled = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+      getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
       context: reviewContext('workflow_run'),
@@ -1619,6 +1665,8 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+        getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1659,20 +1707,22 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
   assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/)
   assert.match(workflow, /gitToken: process\.env\.STG_PROMOTE_TOKEN/)
   assert.match(workflow, /secrets\.STG_PROMOTE_TOKEN/)
-  assert.match(workflow, /^  contents: read$/m)
+  assert.match(workflow, /^ {2}contents: read$/m)
 
-  const workflowRunNames = [
-    ...workflow.matchAll(/^      - '([^']+ \(stg\))'$/gm),
-  ].map((match) => match[1])
+  // The controller watches the one consolidated producer instead of the fifteen
+  // per-image workflows it replaced.
+  const stagingProducers = [...workflow.matchAll(/^ {6}- '(Build .+)'$/gm)].map(
+    (match) => match[1]
+  )
   assert.deepEqual(
-    workflowRunNames.sort(),
+    stagingProducers.sort(),
     STAGING_WORKFLOWS.map((entry) => entry.name).sort()
   )
 
   const permissions = [
     ...workflow
-      .match(/\npermissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/)[1]
-      .matchAll(/^  ([a-z-]+): (read|write)$/gm),
+      .match(/\npermissions:\n((?: {2}[a-z-]+: (?:read|write)\n)+)/)[1]
+      .matchAll(/^ {2}([a-z-]+): (read|write)$/gm),
   ].map((match) => match[1])
   assert.deepEqual([...new Set(permissions)].sort(), ['actions', 'contents'])
 
@@ -1695,12 +1745,16 @@ test('does not use candidate files as executable workflow inputs', () => {
   assert.match(promoter, /ref: candidateSha/)
   assert.doesNotMatch(promoter, /require\([^)]*candidate/)
   assert.doesNotMatch(promoter, /eval\(|new Function\(/)
-  assert.equal(STAGING_WORKFLOW_PATHS.length, 15)
-  assert.equal(STAGING_WORKFLOWS.length, 15)
+  // One consolidated workflow replaces the fifteen per-image files, and the
+  // candidate tree never becomes an executable input: it is read as text and
+  // validated structurally.
+  assert.equal(STAGING_WORKFLOW_PATHS.length, 1)
+  assert.equal(STAGING_WORKFLOWS.length, 1)
   assert.deepEqual(
     STAGING_WORKFLOW_PATHS,
     STAGING_WORKFLOWS.map((workflow) => workflow.path)
   )
+  assert.deepEqual(STAGING_WORKFLOW_PATHS, [FIXTURE_WORKFLOW_PATH])
 })
 
 test('requires complete candidate CI before a release write', async (t) => {
@@ -1738,6 +1792,8 @@ test('requires complete candidate CI before a release write', async (t) => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+        getScanAdmission: fixtureScanAdmission,
         github,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,
@@ -1823,6 +1879,8 @@ test('rejects manual apply when controller or release changed after dry run', as
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+        getScanAdmission: fixtureScanAdmission,
         ...args,
         context: reviewContext('workflow_dispatch', {
           sha: CANDIDATE_SHA,

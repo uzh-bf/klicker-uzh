@@ -111,7 +111,7 @@ jobs:
             --pr-state "$PR_STATE" \
             --output playwright-execution-plan.json
 
-      - name: Build draft selector shadow plan
+      - name: Build opposite-state selector shadow plan
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
         shell: bash
         env:
@@ -119,12 +119,18 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          # The shadow records the plan this draft did not run, so the
+          # qualification comparison keeps measuring both directions: the full
+          # wave while smart drafts are off, and the deferred full coverage
+          # while an enabled control narrows the executed plan.
+          RAN_STATE=$(node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync("route.json", "utf8")).selectorPrState)')
+          if [ "$RAN_STATE" = 'draft' ]; then SHADOW_STATE=ready; else SHADOW_STATE=draft; fi
           node .ci-control/.github/scripts/playwright-selector.cjs \
             --control-root .ci-control \
             --candidate-root .candidate \
             --base-sha "$BASE_SHA" \
             --head-sha "$HEAD_SHA" \
-            --pr-state draft \
+            --pr-state "$SHADOW_STATE" \
             --output playwright-selector-shadow.json
 
       - name: Validate plan and expose workflow outputs

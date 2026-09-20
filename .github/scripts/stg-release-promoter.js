@@ -1,10 +1,31 @@
-'use strict'
-
 const crypto = require('node:crypto')
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+
+const {
+  evaluateScanAdmission,
+  evaluateScanJobStatus,
+  receiptFileName,
+} = require('./image-scan-admission.cjs')
+
+const {
+  STAGING_STATUS_JOB_ID,
+  STAGING_WORKFLOW_NAME,
+  validateStagingWorkflow: validateConsolidatedStagingWorkflow,
+} = require('./staging-image-workflow.cjs')
+
+const {
+  CONSOLIDATED_WORKFLOW_PATH,
+  STAGING_IMAGE_TARGETS,
+  WORKFLOWS_DIRECTORY,
+  amdJobName,
+  buildJobName,
+  imageName,
+  scanJobName,
+  targetById,
+} = require('./staging-image-targets.cjs')
 
 const PROMOTION_REF = 'refs/heads/stg-release'
 const PROMOTION_REF_NAME = 'stg-release'
@@ -16,10 +37,19 @@ const DEFAULT_MAX_ATTEMPTS = 6
 const DEFAULT_RETRY_DELAY_MS = 20_000
 const DEFAULT_POST_PUSH_READBACK_ATTEMPTS = 3
 const DEFAULT_POST_PUSH_READBACK_DELAY_MS = 2_000
-const WORKFLOW_PATH_PATTERN = /^\.github\/workflows\/v3_.*-stg\.yml$/
+// One consolidated workflow replaces the per-image files. It stays a single
+// trusted path, so the controller keeps validating a fixed workflow identity
+// instead of a candidate-chosen set.
+const WORKFLOW_PATH_PATTERN = new RegExp(
+  '^' + CONSOLIDATED_WORKFLOW_PATH.replace(/[.]/g, '\\.') + '$'
+)
 const APPROVED_PUSH_BRANCHES = Object.freeze(['v3', 'v3*'])
 const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/
 const SHA_PATTERN = /^[0-9a-f]{40}$/
+// One scanned image uploads its findings report, SBOM, and receipt together, so
+// the archive budget has to cover a full vulnerability report rather than a
+// receipt alone.
+const SCAN_ARCHIVE_LIMIT = 67108864
 const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.oci.image.index.v1+json',
   'application/vnd.docker.distribution.manifest.list.v2+json',
@@ -47,7 +77,14 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
     ['test-unit.yml', 'test-unit-status'],
     ['test-olat-api.yml', 'test-olat-api-status'],
     ['test-intl-production.yml', 'test-intl-production-status'],
-    ['v3_build-fallback.yml', 'build-images-status'],
+    ['v3_images-stg.yml', 'build-images-status'],
+    // Admission reads push runs. There the SonarCloud job publishes a branch
+    // analysis without awaiting the quality gate, and the boundary step names
+    // an inflated branch classification in an annotation rather than failing
+    // the job. A hard scan failure still fails this candidate, which is what
+    // admission checks. The awaited gate is on the pull request, where new
+    // code is the diff against the base.
+    ['v3_sonarcloud.yml', 'SonarCloud'],
   ].map(([file, id]) => ({
     path: `.github/workflows/${file}`,
     jobs:
@@ -62,94 +99,87 @@ const REQUIRED_CI_WORKFLOWS = Object.freeze(
   }))
 )
 
-// Keep this inventory synchronized with the workflow_run names below. A
-// candidate cannot rename, add, remove, or retarget a runtime publisher without
-// a trusted controller change.
+// The trusted runtime publisher inventory.
+//
+// One consolidated workflow now owns every staging image publication, so the
+// controller no longer compares a candidate-authored set of workflow files
+// against a list of trusted names. What stays trusted is the target list in
+// .github/scripts/staging-image-targets.cjs, read from the controller's own
+// revision: a candidate can neither add, drop nor retarget a promoted image.
+// Which of those targets a candidate can actually build is resolved from the
+// candidate tree through its dockerfiles, never from candidate output.
 const STAGING_WORKFLOWS = Object.freeze([
-  {
-    jobs: [{ id: 'build-arm', image: 'analytics-arm' }],
-    name: 'Build Docker image for analytics (stg)',
-    path: '.github/workflows/v3_analytics-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'auth-arm' }],
-    name: 'Build Docker image for auth (stg)',
-    path: '.github/workflows/v3_auth-stg.yml',
-  },
-  {
-    jobs: [
-      { id: 'build-arm', image: 'backend-docker-arm' },
-      { id: 'build-migrator-arm', image: 'backend-docker-migrator-arm' },
-    ],
-    name: 'Build Docker image for backend-docker (stg)',
-    path: '.github/workflows/v3_backend-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'chat-arm' }],
-    name: 'Build Docker image for chat (stg)',
-    path: '.github/workflows/v3_chat-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-control-arm' }],
-    name: 'Build Docker image for frontend-control (stg)',
-    path: '.github/workflows/v3_frontend-control-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-manage-arm' }],
-    name: 'Build Docker image for frontend-manage (stg)',
-    path: '.github/workflows/v3_frontend-manage-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-assessment-arm' }],
-    name: 'Build Docker image for frontend-assessment (stg)',
-    path: '.github/workflows/v3_frontend-pwa-docker-assessment-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'frontend-pwa-arm' }],
-    name: 'Build Docker image for frontend-pwa (stg)',
-    path: '.github/workflows/v3_frontend-pwa-docker-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'hatchet-worker-general-arm' }],
-    name: 'Build Docker image for hatchet-worker-general (stg)',
-    path: '.github/workflows/v3_hatchet-worker-general-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'hatchet-worker-response-processor-arm' }],
-    name: 'Build Docker image for hatchet-worker-response-processor (stg)',
-    path: '.github/workflows/v3_hatchet-worker-response-processor-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'lti-arm' }],
-    name: 'Build Docker image for lti (stg)',
-    path: '.github/workflows/v3_lti-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'mcp-lecturer-arm' }],
-    name: 'Build Docker image for mcp-lecturer (stg)',
-    nonRuntimeJobs: [{ id: 'build-amd', image: 'mcp-lecturer-amd' }],
-    path: '.github/workflows/v3_mcp-lecturer-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'mcp-student-arm' }],
-    name: 'Build Docker image for mcp-student (stg)',
-    nonRuntimeJobs: [{ id: 'build-amd', image: 'mcp-student-amd' }],
-    path: '.github/workflows/v3_mcp-student-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'olat-api-arm' }],
-    name: 'Build Docker image for olat-api (stg)',
-    path: '.github/workflows/v3_olat-api-stg.yml',
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'response-api-arm' }],
-    name: 'Build Docker image for response-api (stg)',
-    path: '.github/workflows/v3_response-api-stg.yml',
-  },
+  { name: STAGING_WORKFLOW_NAME, path: CONSOLIDATED_WORKFLOW_PATH },
 ])
-const STAGING_WORKFLOW_PATHS = Object.freeze(
-  STAGING_WORKFLOWS.map((workflow) => workflow.path)
+const STAGING_WORKFLOW_PATHS = Object.freeze([CONSOLIDATED_WORKFLOW_PATH])
+
+// Every target the trusted inventory names, regardless of whether a given
+// branch can build it. Availability is resolved per candidate below.
+const STAGING_TARGET_IDS = Object.freeze(
+  STAGING_IMAGE_TARGETS.map((target) => target.id)
 )
+
+function stagingTargets(targetIds) {
+  return (targetIds ?? [])
+    .map((targetId) => targetById(targetId))
+    .filter(Boolean)
+}
+
+// The ARM64 build job names, the scan job names and the AMD64 job names are
+// deterministic functions of the trusted inventory. The controller matches them
+// in the candidate run's own job list, so a candidate cannot fulfill an
+// expected target with a differently named job of its own choosing.
+function stagingArmBuildJobIds(targetIds) {
+  return stagingTargets(targetIds).map((target) => buildJobName(target))
+}
+
+function stagingScanJobIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.scan === true)
+    .map((target) => scanJobName(target))
+}
+
+function stagingAmdJobIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.amd === true)
+    .map((target) => amdJobName(target))
+}
+
+// The publisher inventory for one candidate. 'jobs' pairs each ARM64 build job
+// with the registry image the trusted target list binds to it; those are the
+// images a promotion may contain. 'requiredJobIds' is every job the candidate
+// must complete, so the scan and AMD64 legs are proved from the run's own job
+// list rather than from candidate evidence.
+function stagingWorkflowIncarnation({ repository, targetIds }) {
+  const jobs = stagingTargets(targetIds)
+    .map((target) => ({
+      id: buildJobName(target),
+      image: 'ghcr.io/' + repository + '/' + imageName(target) + '-arm',
+    }))
+    .sort((left, right) => left.id.localeCompare(right.id))
+  return {
+    jobs,
+    name: STAGING_WORKFLOW_NAME,
+    path: CONSOLIDATED_WORKFLOW_PATH,
+    requiredJobIds: [
+      ...jobs.map((job) => job.id),
+      ...stagingScanJobIds(targetIds),
+      ...stagingAmdJobIds(targetIds),
+    ].sort(),
+  }
+}
+
+// The scan admission entries for one candidate, derived from the same trusted
+// target list, so the admitted set can never differ from the built set.
+function stagingScanAdmissionInventory(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.scan === true)
+    .map((target) => ({
+      buildJob: buildJobName(target),
+      scanJob: scanJobName(target),
+      workflowPath: CONSOLIDATED_WORKFLOW_PATH,
+    }))
+}
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
@@ -208,374 +238,31 @@ function matchesApprovedBranch(sourceBranch) {
   )
 }
 
-function parseScalar(value) {
-  return String(value ?? '')
-    .trim()
-    .replace(/^(['"])(.*)\1$/, '$2')
-}
-
-function extractTopLevelBlock(
-  content,
-  key,
-  workflowPath,
-  { optional = false } = {}
-) {
-  const lines = String(content).split(/\r?\n/)
-  const indexes = lines
-    .map((line, index) => (line === `${key}:` ? index : -1))
-    .filter((index) => index >= 0)
-  if (indexes.length === 0 && optional) return []
-  if (indexes.length !== 1) {
-    throw new Error(
-      `${workflowPath} must have exactly one top-level ${key} block`
-    )
-  }
-  const start = indexes[0]
-  const relativeEnd = lines
-    .slice(start + 1)
-    .findIndex((line) => line.trim() !== '' && !/^\s/.test(line))
-  const end = relativeEnd < 0 ? lines.length : start + 1 + relativeEnd
-  return lines.slice(start + 1, end)
-}
-
-function extractName(content, workflowPath) {
-  const matches = [...String(content).matchAll(/^name:\s*(.+)$/gm)]
-  if (matches.length !== 1 || !parseScalar(matches[0][1])) {
-    throw new Error(`${workflowPath} must have exactly one workflow name`)
-  }
-  return parseScalar(matches[0][1])
-}
-
-function extractPushBranches(content, workflowPath) {
-  const lines = extractTopLevelBlock(content, 'on', workflowPath)
-  const pushIndex = lines.findIndex((line) => /^  push:\s*$/.test(line))
-  if (pushIndex < 0) {
-    throw new Error(`${workflowPath} has no push trigger`)
-  }
-  const end = lines.slice(pushIndex + 1).findIndex((line) => {
-    return line.trim() !== '' && !/^\s*#/.test(line) && /^  \S/.test(line)
-  })
-  const endIndex = end < 0 ? lines.length : pushIndex + 1 + end
-  const branchesIndex = lines.findIndex(
-    (line, index) =>
-      index > pushIndex && index < endIndex && /^    branches:\s*$/.test(line)
-  )
-  if (branchesIndex < 0) {
-    throw new Error(`${workflowPath} push trigger has no branches`)
-  }
-  const pushKeys = lines
-    .slice(pushIndex + 1, endIndex)
-    .flatMap((line) => line.match(/^    ([A-Za-z0-9_-]+):/)?.[1] ?? [])
-  if (canonicalJson(pushKeys) !== canonicalJson(['branches'])) {
-    throw new Error(`${workflowPath} does not use the approved push triggers`)
-  }
-  const branches = []
-  for (let index = branchesIndex + 1; index < endIndex; index += 1) {
-    const match = lines[index].match(/^      -\s*(.+?)\s*$/)
-    if (match) branches.push(parseScalar(match[1]))
-  }
-  return branches
-}
-
-function extractRootEnvironment(content, workflowPath) {
-  const lines = extractTopLevelBlock(content, 'env', workflowPath, {
-    optional: true,
-  })
-  const values = {}
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]
-    const match = line.match(/^  ([A-Z][A-Z0-9_]*)\s*:\s*(.*?)\s*$/)
-    if (match) values[match[1]] = parseScalar(match[2])
-  }
-  return values
-}
-
-function extractJobBlocks(content, workflowPath) {
-  const lines = extractTopLevelBlock(content, 'jobs', workflowPath)
-  const jobs = []
-  let current = null
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index]
-    const jobMatch = line.match(/^  ([A-Za-z0-9_-]+):\s*$/)
-    if (jobMatch) {
-      if (current) jobs.push(current)
-      current = { id: jobMatch[1], lines: [] }
-      continue
-    }
-    if (current) {
-      if (/^\S/.test(line) && line.trim() !== '') break
-      current.lines.push(line)
-    }
-  }
-  if (current) jobs.push(current)
-  return jobs.map((job) => ({ ...job, content: job.lines.join('\n') }))
-}
-
-function isDisabledJob(job) {
-  return /^    if:\s*\$\{\{\s*false\s*\}\}\s*(?:#.*)?$/m.test(job.content)
-}
-
-function resolveTemplate(value, environment, repository) {
-  let resolved = parseScalar(value)
-  for (let pass = 0; pass < 3; pass += 1) {
-    const next = resolved
-      .replace(/\$\{\{\s*github\.repository\s*\}\}/g, repository)
-      .replace(
-        /\$\{\{\s*env\.([A-Z][A-Z0-9_]*)\s*\}\}/g,
-        (_match, name) => environment[name] ?? ''
-      )
-    if (next === resolved) break
-    resolved = next
-  }
-  return resolved
-}
-
-function extractActionSteps(job, workflowPath) {
-  const lines = job.content.split(/\r?\n/)
-  const stepsIndexes = lines
-    .map((line, index) => (line === '    steps:' ? index : -1))
-    .filter((index) => index >= 0)
-  if (stepsIndexes.length !== 1) {
-    throw new Error(
-      `${workflowPath}/${job.id} must have exactly one steps block`
-    )
-  }
-  const start = stepsIndexes[0]
-  const relativeEnd = lines.slice(start + 1).findIndex((line) => {
-    return (
-      line.trim() !== '' &&
-      !/^\s*#/.test(line) &&
-      /^    [A-Za-z0-9_-]+:/.test(line)
-    )
-  })
-  const end = relativeEnd < 0 ? lines.length : start + 1 + relativeEnd
-  const steps = []
-  let current = null
-  for (const line of lines.slice(start + 1, end)) {
-    if (/^      -\s+/.test(line)) {
-      if (current) steps.push(current.join('\n'))
-      current = [line]
-    } else if (current) {
-      current.push(line)
-    }
-  }
-  if (current) steps.push(current.join('\n'))
-  return steps
-}
-
-function actionStep(job, action, workflowPath) {
-  const matches = extractActionSteps(job, workflowPath).filter((step) =>
-    new RegExp(
-      `^(?:      - uses|        uses):\\s*${action.replace('/', '\\/')}@[^\\s#]+\\s*(?:#.*)?$`,
-      'm'
-    ).test(step)
-  )
-  if (matches.length !== 1) {
-    throw new Error(`${workflowPath}/${job.id} must use exactly one ${action}`)
-  }
-  return matches[0]
-}
-
-function extractImageReference(
-  step,
-  environment,
-  repository,
-  workflowPath,
-  jobId
-) {
-  const matches = [...step.matchAll(/^          images:\s*(.+)$/gm)]
-  if (matches.length !== 1) {
-    throw new Error(
-      `${workflowPath}/${jobId} must declare exactly one metadata image`
-    )
-  }
-  const match = matches[0]
-  if (!match) {
-    throw new Error(`${workflowPath}/${jobId} has no Docker image metadata`)
-  }
-  const image = resolveTemplate(match[1], environment, repository)
-  if (
-    image.includes('${{') ||
-    !/^[A-Za-z0-9.-]+\/[A-Za-z0-9._/-]+$/.test(image)
-  ) {
-    throw new Error(
-      `${workflowPath}/${jobId} has an unresolved image reference`
-    )
-  }
-  return image
-}
-
-function hasFullShaTag(metadataStep) {
-  return (
-    /^\s*type\s*=\s*raw[^\n#]*value\s*=\s*\$\{\{\s*github\.sha\s*\}\}\s*$/m.test(
-      metadataStep
-    ) || /^\s*tags:\s*\$\{\{\s*github\.sha\s*\}\}\s*$/m.test(metadataStep)
-  )
-}
-
+// Structural validation of the candidate's consolidated staging workflow.
+//
+// The controller must not execute candidate code, so the shape the promotion
+// contract depends on is pinned by staging-image-workflow.cjs (trusted name and
+// trigger, plan and matrix structure, ARM runner, full-SHA publish guard,
+// per-target digest handoff, pinned scanner, enforced scan policy, terminal
+// reporting job). Which images that pipeline proves is then bound from the
+// controller's own target inventory, never from candidate output.
 function validateStagingWorkflow({
   path: workflowPath,
   content,
-  expectedWorkflow,
   repository,
   sourceBranch,
+  targetIds = STAGING_TARGET_IDS,
 }) {
-  if (!WORKFLOW_PATH_PATTERN.test(workflowPath)) {
-    throw new Error(`${workflowPath} is not an approved staging workflow path`)
-  }
-  const workflowName = extractName(content, workflowPath)
-  if (workflowName !== expectedWorkflow.name) {
-    throw new Error(`${workflowPath} does not use the trusted workflow name`)
-  }
-  const branches = extractPushBranches(content, workflowPath)
-  if (canonicalJson(branches) !== canonicalJson([...APPROVED_PUSH_BRANCHES])) {
-    throw new Error(`${workflowPath} does not use the approved push triggers`)
-  }
-  if (!matchesApprovedBranch(sourceBranch)) {
-    throw new Error(
-      `${sourceBranch} is not covered by the approved push triggers`
-    )
-  }
-
-  const environment = extractRootEnvironment(content, workflowPath)
-  const jobs = extractJobBlocks(content, workflowPath)
-  if (jobs.length === 0) throw new Error(`${workflowPath} has no jobs`)
-
-  const expectedNonRuntimeJobIds = (expectedWorkflow.nonRuntimeJobs ?? [])
-    .map((job) => job.id)
-    .sort()
-  for (const job of jobs.filter((entry) => entry.id.endsWith('-amd'))) {
-    if (!isDisabledJob(job) && !expectedNonRuntimeJobIds.includes(job.id)) {
-      throw new Error(`${workflowPath}/${job.id} must remain disabled`)
-    }
-  }
-
-  const activeArmJobs = jobs.filter(
-    (job) => job.id.endsWith('-arm') && !isDisabledJob(job)
-  )
-  const expectedJobIds = expectedWorkflow.jobs.map((job) => job.id).sort()
-  const actualJobIds = activeArmJobs.map((job) => job.id).sort()
-  if (canonicalJson(actualJobIds) !== canonicalJson(expectedJobIds)) {
-    throw new Error(`${workflowPath} active ARM job inventory changed`)
-  }
-
-  const activeNonRuntimeJobs = jobs.filter(
-    (job) => expectedNonRuntimeJobIds.includes(job.id) && !isDisabledJob(job)
-  )
-  const actualNonRuntimeJobIds = activeNonRuntimeJobs
-    .map((job) => job.id)
-    .sort()
-  if (
-    canonicalJson(actualNonRuntimeJobIds) !==
-    canonicalJson(expectedNonRuntimeJobIds)
-  ) {
-    throw new Error(`${workflowPath} active non-runtime job inventory changed`)
-  }
-
-  const publisherJobs = [...activeArmJobs, ...activeNonRuntimeJobs]
-  const images = publisherJobs.map((job) => {
-    if (
-      job.id.endsWith('-arm') &&
-      !/^    runs-on:\s*ubuntu-24\.04-arm\s*$/m.test(job.content)
-    ) {
-      throw new Error(
-        `${workflowPath}/${job.id} is not pinned to the ARM runner`
-      )
-    }
-    const metadataStep = actionStep(job, 'docker/metadata-action', workflowPath)
-    const publisherStep = actionStep(
-      job,
-      'docker/build-push-action',
-      workflowPath
-    )
-    const metadataId = metadataStep.match(
-      /^        id:\s*([A-Za-z0-9_-]+)\s*$/m
-    )?.[1]
-    if (!metadataId) {
-      throw new Error(
-        `${workflowPath}/${job.id} metadata action has no stable id`
-      )
-    }
-    if (
-      !/^          push:\s*\$\{\{\s*github\.event_name\s*!=\s*'pull_request'\s*\}\}\s*$/m.test(
-        publisherStep
-      )
-    ) {
-      throw new Error(`${workflowPath}/${job.id} has an unsafe push condition`)
-    }
-    if (
-      !new RegExp(
-        `^          tags:\\s*\\$\\{\\{\\s*steps\\.${metadataId}\\.outputs\\.tags\\s*\\}\\}\\s*$`,
-        'm'
-      ).test(publisherStep)
-    ) {
-      throw new Error(
-        `${workflowPath}/${job.id} does not publish the validated metadata tags`
-      )
-    }
-    if (!hasFullShaTag(metadataStep)) {
-      throw new Error(
-        `${workflowPath}/${job.id} does not publish a full source SHA tag`
-      )
-    }
-    return {
-      id: job.id,
-      image: extractImageReference(
-        metadataStep,
-        environment,
-        repository,
-        workflowPath,
-        job.id
-      ),
-    }
-  })
-
-  const unexpectedPublishers = jobs.filter(
-    (job) =>
-      extractActionSteps(job, workflowPath).some((step) =>
-        /^(?:      - uses|        uses):\s*docker\/build-push-action@[^\s#]+\s*(?:#.*)?$/m.test(
-          step
-        )
-      ) &&
-      !publisherJobs.includes(job) &&
-      !(job.id.endsWith('-amd') && isDisabledJob(job))
-  )
-  if (unexpectedPublishers.length > 0) {
-    throw new Error(`${workflowPath} has an unexpected active image publisher`)
-  }
-
-  const hasMigratorJob = expectedJobIds.includes('build-migrator-arm')
-  if (
-    hasMigratorJob &&
-    !/^    needs:\s*build-migrator-arm\s*$/m.test(
-      activeArmJobs.find((job) => job.id === 'build-arm').content
-    )
-  ) {
-    throw new Error(`${workflowPath}/build-arm does not wait for the migrator`)
-  }
-
-  const expectedImages = [
-    ...expectedWorkflow.jobs,
-    ...(expectedWorkflow.nonRuntimeJobs ?? []),
-  ]
-    .map((job) => ({
-      id: job.id,
-      image: `ghcr.io/${repository}/${job.image}`,
-    }))
-    .sort((left, right) => left.id.localeCompare(right.id))
-  const actualImages = images.sort((left, right) =>
-    left.id.localeCompare(right.id)
-  )
-  if (canonicalJson(actualImages) !== canonicalJson(expectedImages)) {
-    throw new Error(`${workflowPath} runtime image inventory changed`)
-  }
-
-  const runtimeJobIds = new Set(expectedJobIds)
-  return {
-    name: workflowName,
+  validateConsolidatedStagingWorkflow({
+    content,
     path: workflowPath,
-    jobs: actualImages.filter((job) => runtimeJobIds.has(job.id)),
+    sourceBranch,
+  })
+  const incarnation = stagingWorkflowIncarnation({ repository, targetIds })
+  if (incarnation.jobs.length === 0) {
+    throw new Error(`${workflowPath} proves no staging image target`)
   }
+  return incarnation
 }
 
 function validateStagingWorkflows({
@@ -583,34 +270,27 @@ function validateStagingWorkflows({
   repository,
   sourceBranch,
   expectedWorkflows = STAGING_WORKFLOWS,
+  targetIds = STAGING_TARGET_IDS,
 }) {
   assertSafeSourceBranch(sourceBranch)
-  const paths = definitions.map((definition) => definition.path).sort()
+  if (definitions.length !== 1) {
+    throw new Error('the candidate must carry exactly one staging workflow')
+  }
   const expected = expectedWorkflows.map((workflow) => workflow.path).sort()
+  const paths = definitions.map((definition) => definition.path).sort()
   if (canonicalJson(paths) !== canonicalJson(expected)) {
     throw new Error(
       'candidate staging workflow set differs from the trusted set'
     )
   }
-  const workflows = definitions
-    .map((definition) => {
-      const expectedWorkflow = expectedWorkflows.find(
-        (workflow) => workflow.path === definition.path
-      )
-      return validateStagingWorkflow({
-        ...definition,
-        expectedWorkflow,
-        repository,
-        sourceBranch,
-      })
-    })
-    .sort((left, right) => left.path.localeCompare(right.path))
-  const jobCount = workflows.reduce(
-    (count, workflow) => count + workflow.jobs.length,
-    0
-  )
-  if (jobCount === 0) throw new Error('candidate has no active ARM image jobs')
-  return workflows
+  return [
+    validateStagingWorkflow({
+      ...definitions[0],
+      repository,
+      sourceBranch,
+      targetIds,
+    }),
+  ]
 }
 
 async function getFileText(github, context, filePath, ref) {
@@ -631,6 +311,28 @@ async function getFileText(github, context, filePath, ref) {
   return Buffer.from(data.content, 'base64').toString('utf8')
 }
 
+// The per-image workflows this consolidation replaces. A candidate that still
+// carries one would publish outside the planned matrix, so its presence fails
+// the candidate closed until the integration line carries the consolidation.
+const LEGACY_STAGING_PATTERN = /^[.]github[/]workflows[/]v3_.*-stg[.]yml$/
+
+function isLegacyStagingWorkflowPath(entryPath) {
+  return (
+    String(entryPath) !== CONSOLIDATED_WORKFLOW_PATH &&
+    LEGACY_STAGING_PATTERN.test(String(entryPath))
+  )
+}
+
+function legacyStagingWorkflowPaths(entries) {
+  return (entries ?? [])
+    .filter(
+      (entry) =>
+        entry?.type === 'file' && isLegacyStagingWorkflowPath(entry.path)
+    )
+    .map((entry) => entry.path)
+    .sort()
+}
+
 async function getCandidateDefinitions({
   github,
   context,
@@ -640,34 +342,97 @@ async function getCandidateDefinitions({
   const response = await github.rest.repos.getContent({
     owner: context.repo.owner,
     repo: context.repo.repo,
-    path: '.github/workflows',
+    path: WORKFLOWS_DIRECTORY,
     ref: candidateSha,
   })
   if (!Array.isArray(response.data)) {
     throw new Error('candidate workflow directory is unavailable')
   }
-  const entries = response.data
-    .filter(
-      (entry) =>
-        entry?.type === 'file' && WORKFLOW_PATH_PATTERN.test(entry.path)
+  const legacy = legacyStagingWorkflowPaths(response.data)
+  if (legacy.length > 0) {
+    throw new Error(
+      'candidate still publishes per-image staging workflows: ' +
+        legacy.join(', ')
     )
-    .map((entry) => entry.path)
-    .sort()
+  }
   const expectedPaths = expectedWorkflows
     .map((workflow) => workflow.path)
     .sort()
-  if (canonicalJson(entries) !== canonicalJson(expectedPaths)) {
+  const present = response.data
+    .filter(
+      (entry) => entry?.type === 'file' && expectedPaths.includes(entry.path)
+    )
+    .map((entry) => entry.path)
+    .sort()
+  if (canonicalJson(present) !== canonicalJson(expectedPaths)) {
     throw new Error(
       'candidate staging workflow set differs from the trusted set'
     )
   }
-  const definitions = await Promise.all(
-    entries.map(async (workflowPath) => ({
+  return Promise.all(
+    expectedPaths.map(async (workflowPath) => ({
       content: await getFileText(github, context, workflowPath, candidateSha),
       path: workflowPath,
     }))
   )
-  return definitions
+}
+
+// The targets a candidate must have built, from the targets its tree does not
+// carry. A target marked optional in the trusted inventory exists on the
+// integration lines only; every other absence is a missing publication and fails
+// the candidate. Pure, so the boundary is covered without a token or a network.
+function resolveCandidateTargetIds(unavailableTargetIds = []) {
+  const known = new Set(STAGING_TARGET_IDS)
+  const optional = new Set(
+    STAGING_IMAGE_TARGETS.filter((target) => target.optional === true).map(
+      (target) => target.id
+    )
+  )
+  const missing = new Set()
+  for (const targetId of unavailableTargetIds) {
+    if (!known.has(targetId)) {
+      throw new Error(
+        `candidate reports an unknown staging image target: ${targetId}`
+      )
+    }
+    if (!optional.has(targetId)) {
+      throw new Error(
+        `candidate is missing the required staging image target ${targetId}`
+      )
+    }
+    missing.add(targetId)
+  }
+  return STAGING_TARGET_IDS.filter((targetId) => !missing.has(targetId))
+}
+
+// Availability is read from the candidate tree rather than from the plan output,
+// so a candidate that omits a build also drops its dockerfile or fails here.
+const MISSING_DOCKERFILE_STATUS = 404
+
+async function getCandidateTargetIds({ github, context, candidateSha }) {
+  const probe = async (target) => {
+    try {
+      const response = await github.rest.repos.getContent({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        path: target.dockerfile,
+        ref: candidateSha,
+      })
+      if (Array.isArray(response.data) || response.data?.type !== 'file') {
+        throw new Error(
+          `${target.dockerfile} is not a regular file in the candidate tree`
+        )
+      }
+      return null
+    } catch (error) {
+      if (error?.status === MISSING_DOCKERFILE_STATUS) return target.id
+      throw error
+    }
+  }
+  const unavailable = (
+    await Promise.all(STAGING_IMAGE_TARGETS.map(probe))
+  ).filter(Boolean)
+  return resolveCandidateTargetIds(unavailable)
 }
 
 function getSourceBranch(selectedSourceBranch) {
@@ -758,6 +523,18 @@ function runState(run, sourceBranch, repository) {
   return 'failed'
 }
 
+// The jobs a candidate run must have completed successfully. The publisher
+// inventory carries the image each ARM64 build proves; the remaining required
+// ids are the scan and AMD64 legs, which publish no runtime image and are
+// verified for success alone.
+function requiredJobIds(workflow) {
+  return workflow.requiredJobIds ?? workflow.jobs.map((job) => job.id)
+}
+
+function publisherJobIds(workflow) {
+  return workflow.jobs.map((job) => job.id)
+}
+
 function jobState(job, expectedJobId, candidateSha) {
   if (!job) return 'missing'
   if (job.name !== expectedJobId || job.head_sha !== candidateSha) {
@@ -840,22 +617,25 @@ async function collectWorkflowEvidence({
     }
   )
   const verifiedJobs = []
-  for (const required of workflow.jobs) {
-    const matches = jobs.filter((job) => job?.name === required.id)
+  // Every job the candidate had to complete must be present and successful, but
+  // only the ARM64 publisher jobs carry an image reference for promotion.
+  const publisherIds = new Set(publisherJobIds(workflow))
+  for (const requiredJobId of requiredJobIds(workflow)) {
+    const matches = jobs.filter((job) => job?.name === requiredJobId)
     if (matches.length > 1) {
       return {
         path: workflow.path,
-        reason: `${required.id} is ambiguous`,
+        reason: `${requiredJobId} is ambiguous`,
         run: exact,
         status: 'wrong_evidence',
       }
     }
     const matching = matches[0]
-    const stateForJob = jobState(matching, required.id, candidateSha)
+    const stateForJob = jobState(matching, requiredJobId, candidateSha)
     if (stateForJob !== 'success') {
       return {
         path: workflow.path,
-        reason: `${required.id} is ${stateForJob.replace('_', ' ')}`,
+        reason: `${requiredJobId} is ${stateForJob.replace('_', ' ')}`,
         run: exact,
         status: stateForJob,
       }
@@ -863,11 +643,12 @@ async function collectWorkflowEvidence({
     if (!Number.isSafeInteger(matching.id) || matching.id <= 0) {
       return {
         path: workflow.path,
-        reason: `${required.id} has no stable job id`,
+        reason: `${requiredJobId} has no stable job id`,
         run: exact,
         status: 'wrong_evidence',
       }
     }
+    if (!publisherIds.has(requiredJobId)) continue
     verifiedJobs.push({
       id: matching.id,
       name: matching.name,
@@ -933,6 +714,167 @@ async function readCiEvidence({ github, context, run }) {
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
+}
+
+// Scan receipts travel as one artifact per scanned image, next to the findings
+// JSON and SBOM they describe. The findings report can be large, so the
+// archive is bounded before it is read.
+async function readScanReceipts({ github, context, run }) {
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    { ...context.repo, run_id: run.id, per_page: 100 }
+  )
+  const scanned = artifacts.filter(
+    (artifact) =>
+      typeof artifact.name === 'string' &&
+      artifact.name.startsWith('image-scan-') &&
+      !artifact.expired
+  )
+  const receipts = []
+  for (const artifact of scanned) {
+    if (artifact.size_in_bytes > SCAN_ARCHIVE_LIMIT) {
+      throw new Error(`${artifact.name} exceeds the scan receipt read budget`)
+    }
+    const response = await github.rest.actions.downloadArtifact({
+      ...context.repo,
+      artifact_id: artifact.id,
+      archive_format: 'zip',
+    })
+    if (response.data.byteLength > SCAN_ARCHIVE_LIMIT)
+      throw new Error(`${artifact.name} archive too large`)
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-scan-'))
+    try {
+      const archive = path.join(directory, 'receipt.zip')
+      fs.writeFileSync(archive, Buffer.from(response.data))
+      receipts.push(
+        JSON.parse(
+          execFileSync(
+            'unzip',
+            ['-p', archive, receiptFileName(artifact.name)],
+            { encoding: 'utf8', maxBuffer: 1048576, timeout: 10000 }
+          )
+        )
+      )
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
+  }
+  return receipts
+}
+
+// The scans run after the images they judge, so a candidate can legitimately
+// finish its builds while a scan is still running. Only that state is retried.
+// A failed or missing scan job, and a receipt that does not describe the
+// promoted digest, block the candidate instead of being retried.
+async function collectScanAdmission({
+  github,
+  context,
+  workflows,
+  images,
+  candidateSha,
+  sourceBranch,
+  targetIds = STAGING_TARGET_IDS,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+  sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
+  getReceipts = readScanReceipts,
+  inventory = stagingScanAdmissionInventory(targetIds),
+}) {
+  const repository = repositoryName(context)
+  const paths = [...new Set(inventory.map((entry) => entry.workflowPath))]
+  const attempts = []
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const collected = await Promise.all(
+      paths.map(async (workflowPath) => {
+        const workflow = workflows.find((entry) => entry.path === workflowPath)
+        if (!workflow) {
+          return { path: workflowPath, status: 'wrong_evidence' }
+        }
+        const result = await collectWorkflowEvidence({
+          github,
+          context,
+          workflow,
+          candidateSha,
+          sourceBranch,
+          repository,
+        })
+        if (result.status !== 'success') return { ...result, workflowPath }
+        const jobs = inventory
+          .filter((entry) => entry.workflowPath === workflowPath)
+          .map((entry) => ({
+            ...evaluateScanJobStatus(result.observedJobs, entry.scanJob),
+            scanJob: entry.scanJob,
+          }))
+        const failed = jobs.find((job) => job.status !== 'success')
+        if (failed) {
+          return {
+            ...failed,
+            path: workflowPath,
+            reason: `${failed.scanJob} is ${failed.status.replace('_', ' ')}`,
+            workflowPath,
+          }
+        }
+        return { path: workflowPath, run: result.run, status: 'success' }
+      })
+    )
+    const failures = collected.filter((result) => result.status !== 'success')
+    attempts.push({
+      attempt,
+      failures: failures.map(({ path, reason, status }) => ({
+        path,
+        reason,
+        status,
+      })),
+    })
+    if (failures.length > 0) {
+      const retryable = failures.every((failure) =>
+        isRetryableEvidenceStatus(failure.status)
+      )
+      if (!retryable || attempt === maxAttempts) {
+        return {
+          attempts,
+          entries: [],
+          reason: failures
+            .map(({ path, reason }) => `${path} (${reason})`)
+            .join(', '),
+          valid: false,
+        }
+      }
+      await sleep(retryDelayMs)
+      continue
+    }
+    const runs = Object.fromEntries(
+      collected.map((result) => [result.path, result.run])
+    )
+    const receipts = Object.fromEntries(
+      await Promise.all(
+        collected.map(async (result) => [
+          result.path,
+          await getReceipts({ github, context, run: result.run }),
+        ])
+      )
+    )
+    const decision = evaluateScanAdmission({
+      images,
+      inventory,
+      receipts,
+      runs,
+    })
+    if (decision.valid) {
+      return { attempts, entries: decision.entries, valid: true }
+    }
+    return {
+      attempts,
+      entries: decision.entries,
+      reason: decision.entries
+        .filter((entry) => !entry.ok)
+        .map((entry) => `${entry.scanJob} (${entry.reason})`)
+        .join(', '),
+      valid: false,
+    }
+  }
+  throw new Error('bounded scan admission did not reach a terminal state')
 }
 
 function validateCiSelection(
@@ -1628,8 +1570,10 @@ async function runPromotion({
   promotionEnabled,
   controllerSha = process.env.TRUSTED_WORKFLOW_SHA,
   expectedWorkflows = STAGING_WORKFLOWS,
+  getCandidateTargetIds: resolveTargetIds = getCandidateTargetIds,
   getRegistryDigest = fetchRegistryDigest,
   getCiEvidence = readCiEvidence,
+  getScanAdmission = collectScanAdmission,
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
@@ -1677,6 +1621,14 @@ async function runPromotion({
     throw new Error('trusted controller SHA changed since dry run')
   }
   const repository = repositoryName(context)
+  // Which targets this candidate can build is read from its own tree, so a
+  // candidate that drops an integration-only image is tolerated while a missing
+  // required image fails before any evidence is collected.
+  const targetIds = await resolveTargetIds({
+    github,
+    context,
+    candidateSha: inputs.candidateSha,
+  })
   const definitions = await getCandidateDefinitions({
     github,
     context,
@@ -1688,6 +1640,7 @@ async function runPromotion({
     repository,
     sourceBranch: inputs.sourceBranch,
     expectedWorkflows,
+    targetIds,
   })
   await validateCandidateAncestry({
     github,
@@ -1746,6 +1699,25 @@ async function runPromotion({
     workflows,
     getRegistryDigest,
   })
+  // A promoted digest must be the digest the scan policy judged, so the scan
+  // evidence is bound to the resolved references rather than to an image name.
+  const scanEvidence = await getScanAdmission({
+    github,
+    context,
+    workflows,
+    images,
+    candidateSha: inputs.candidateSha,
+    sourceBranch: inputs.sourceBranch,
+    targetIds,
+    maxAttempts,
+    retryDelayMs,
+    sleep,
+  })
+  if (!scanEvidence.valid) {
+    throw new Error(
+      `staging image scan evidence is incomplete: ${scanEvidence.reason}`
+    )
+  }
 
   const currentSha = await getReleaseRef({ github, context })
   if (
@@ -1815,6 +1787,10 @@ async function runPromotion({
       jobs: workflow.jobs,
     })),
     images,
+    scan: {
+      attempts: scanEvidence.attempts,
+      images: scanEvidence.entries,
+    },
   }
   const checksum = checksumReceipt(receipt)
   const artifacts = writeReceiptArtifacts({
@@ -1848,6 +1824,7 @@ module.exports = {
   validateCiSelection,
   REQUIRED_CI_WORKFLOWS,
   APPROVED_PUSH_BRANCHES,
+  STAGING_IMAGE_TARGETS,
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_POST_PUSH_READBACK_ATTEMPTS,
   DEFAULT_POST_PUSH_READBACK_DELAY_MS,
@@ -1859,22 +1836,35 @@ module.exports = {
   PROMOTION_REF_API,
   PROMOTION_REF_NAME,
   SOURCE_BRANCH_VARIABLE,
+  STAGING_TARGET_IDS,
   STAGING_WORKFLOWS,
   STAGING_WORKFLOW_PATHS,
   canonicalJson,
   checksumReceipt,
   collectBuildEvidence,
+  collectScanAdmission,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
   getCandidateDefinitions,
+  getCandidateTargetIds,
   getReleaseRef,
   getSourceBranch,
-  isDisabledJob,
+  isLegacyStagingWorkflowPath,
+  legacyStagingWorkflowPaths,
   matchesApprovedBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
+  readScanReceipts,
+  requiredJobIds,
+  resolveCandidateTargetIds,
   resolveStableRegistryDigests,
   runPromotion,
+  stagingAmdJobIds,
+  stagingArmBuildJobIds,
+  stagingScanAdmissionInventory,
+  stagingScanJobIds,
+  stagingTargets,
+  stagingWorkflowIncarnation,
   validateCandidateAncestry,
   validateStagingWorkflow,
   validateStagingWorkflows,
