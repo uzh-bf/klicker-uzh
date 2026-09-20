@@ -22,6 +22,10 @@ import type {
 import * as EmailService from '../services/email.js'
 import { seedDemoSelectionAndCaseStudyElements } from './demoQuestions.js'
 import { sendTeamsNotification } from './notifications.js'
+import {
+  initialParticipantDataUseData,
+  validateInitialParticipantDataUse,
+} from './participantAccountDataUse.js'
 
 const COOKIE_SETTINGS: CookieOptions = {
   domain: process.env.COOKIE_DOMAIN,
@@ -590,6 +594,9 @@ export async function changeParticipantLocale(
 }
 
 export async function deleteParticipantAccount(ctx: ContextWithUser) {
+  // Assessment records must remain available for grading and retention duties.
+  if (process.env.ASSESSMENT_MODE === 'true') return false
+
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },
     include: {
@@ -657,6 +664,7 @@ interface ResolveOrCreateParticipantForLtiArgs {
   password?: string
   isProfilePublic?: boolean
   courseId?: string
+  dataUse?: ReturnType<typeof validateInitialParticipantDataUse>
 }
 
 async function resolveOrCreateParticipantForLti(
@@ -668,6 +676,7 @@ async function resolveOrCreateParticipantForLti(
     password,
     isProfilePublic,
     courseId,
+    dataUse,
   }: ResolveOrCreateParticipantForLtiArgs,
   ctx: Context
 ): Promise<ResolveOrCreateParticipantForLtiResult> {
@@ -844,6 +853,7 @@ async function resolveOrCreateParticipantForLti(
     if (!username || !password || typeof isProfilePublic !== 'boolean') {
       return { type: 'invalid_create_input' }
     }
+    if (!dataUse) return { type: 'invalid_create_input' }
 
     const trimmedUsername = username.trim()
     const existingUsername = await prisma.participant.findUnique({
@@ -864,6 +874,7 @@ async function resolveOrCreateParticipantForLti(
         isProfilePublic,
         isSSOAccount: true,
         lastLoginAt: new Date(),
+        ...(await initialParticipantDataUseData(dataUse, prisma)),
       },
     })
 
@@ -904,6 +915,7 @@ interface CreateParticipantAccountArgs {
   isProfilePublic: boolean
   courseId?: string | null
   signedLtiData?: string | null
+  dataUse?: unknown
 }
 
 export async function createParticipantAccount(
@@ -914,9 +926,11 @@ export async function createParticipantAccount(
     password,
     courseId,
     signedLtiData,
+    dataUse,
   }: CreateParticipantAccountArgs,
   ctx: Context
 ) {
+  const initialDataUse = validateInitialParticipantDataUse(dataUse)
   // verify that the course that should be joined is not an assessment course
   if (courseId) {
     const course = await ctx.prisma.course.findUnique({
@@ -937,6 +951,7 @@ export async function createParticipantAccount(
         password,
         isProfilePublic,
         courseId: courseId ?? undefined,
+        dataUse: initialDataUse,
       },
       ctx
     )
@@ -997,6 +1012,7 @@ export async function createParticipantAccount(
           isProfilePublic,
           isSSOAccount: false,
           lastLoginAt: new Date(),
+          ...(await initialParticipantDataUseData(initialDataUse, prisma)),
         },
       })
 

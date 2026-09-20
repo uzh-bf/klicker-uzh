@@ -8,10 +8,11 @@ import { toast } from '@uzh-bf/design-system'
 import { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
+import Layout from '../components/Layout'
 import AccountDeletionForm from '../components/forms/AccountDeletionForm'
 import AvatarUpdateForm from '../components/forms/AvatarUpdateForm'
 import UpdateAccountInfoForm from '../components/forms/UpdateAccountInfoForm'
-import Layout from '../components/Layout'
+import DataUseSettings from '../components/participant/DataUseSettings'
 
 function EditProfile({
   participantToken,
@@ -75,6 +76,7 @@ function EditProfile({
             />
           </div>
         </div>
+        <DataUseSettings />
         <div className="flex flex-col gap-4 md:flex-row">
           <AccountDeletionForm />
         </div>
@@ -84,14 +86,8 @@ function EditProfile({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
-  const { createSsrRequestLogging } = await import('@lib/server/logger')
-  const { logFailure, requestContext } = createSsrRequestLogging(
-    ctx.req.headers,
-    '/editProfile'
-  )
-
   try {
-    const apolloClient = initializeApollo(undefined, ctx, requestContext)
+    const apolloClient = initializeApollo()
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
       ctx,
@@ -124,8 +120,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           .default,
       },
     })
-  } catch {
-    logFailure('data_load_failed')
+  } catch (error) {
+    console.error('Error in getServerSideProps on editProfile:', error)
 
     // remove the lti-token, if it is defined
     try {
@@ -133,8 +129,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
-    } catch {
-      logFailure('cookie_cleanup_failed')
+    } catch (nookiesError) {
+      console.error(nookiesError)
     }
 
     // redirect to lti error page with redirect back to this page
