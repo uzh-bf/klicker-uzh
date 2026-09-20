@@ -134,6 +134,7 @@ hatchet:
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
     responseProcessor:
       replicaCount: 1
@@ -158,6 +159,7 @@ hatchet:
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
     responseProcessorAssessment:
       replicaCount: 1
@@ -182,6 +184,7 @@ hatchet:
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
 assessmentAudit:
   # Remains dormant until the Pulumi-provisioned identity, tables, and alert
@@ -770,6 +773,8 @@ assessment:
 
     affinity: {}
 
+    topologySpreadConstraints: []
+
   backendGraphql:
     priorityClassName: production-workload
 
@@ -802,6 +807,8 @@ assessment:
     tolerations: []
 
     affinity: {}
+
+    topologySpreadConstraints: []
 
   responseApi:
     corsAllowedOrigins: ''
