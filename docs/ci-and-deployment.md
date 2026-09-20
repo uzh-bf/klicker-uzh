@@ -51,6 +51,36 @@ the long-lived source branch. An API failure is reported rather than treated
 as evidence that a PR exists; a duplicate-creation response is accepted only
 after the matching open PR is found.
 
+### Changing the sync chain
+
+The `PAIRS` constant in [draft-sync-prs.cjs](../.github/scripts/draft-sync-prs.cjs)
+is the authoritative list of automated source (`head`) and target (`base`)
+pairs. Branch names matching `v3-*` do not enroll themselves. Change this list
+only for an explicitly approved integration-chain change; ordinary feature
+branches and reverse release promotions remain outside automatic maintenance.
+
+When adding, renaming, reordering, or retiring an integration branch, agents
+must update the following together in the same PR:
+
+1. Update `PAIRS` to contain exactly the approved adjacent forward hops, removing
+   obsolete pairs without introducing shortcuts or reverse pairs.
+2. Set `on.workflow_run.branches` in
+   [maintain-draft-sync-prs.yml](../.github/workflows/maintain-draft-sync-prs.yml)
+   to the distinct source branches in `PAIRS`. Verify that Check codebase still
+   runs on pushes to every source; its name must match the workflow subscription
+   and controller event guard.
+3. Update the structured pair and event expectations in
+   [draft-sync-prs.test.cjs](../.github/scripts/draft-sync-prs.test.cjs), retaining
+   coverage that every new PR is a draft and unapproved sources are rejected.
+   Update the chain in `AGENTS.md` and this page to match.
+4. Run the focused controller tests and, after the controller change reaches
+   `v3`, its manual dry run. Check the reported pairs against the approved chain
+   before relying on automated creation.
+
+Removing a pair stops future maintenance but does not close or retarget its
+existing PR. Report any such PR for explicit disposition. Branch deletion,
+merge authority, and staging-source configuration remain separate decisions.
+
 ## Required branch checks
 
 The required baseline for PRs into `v3` and `v3-*` is `check`,
