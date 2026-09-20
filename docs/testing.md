@@ -331,7 +331,7 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-CI installs `@devrouter/cli` version `0.1.1` through
+CI installs `@devrouter/cli` version `0.1.2` through
 `.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
 scripts disabled. The shard action uses the trusted control checkout's installer
 and passes its absolute executable path to the runtime adapter, including for
