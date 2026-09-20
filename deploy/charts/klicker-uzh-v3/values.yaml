@@ -528,9 +528,6 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
-  kbIngestionDisabled: false
-  kbGraphDisabled: false
-
   knowledgeGraph:
     host: ''
     port: '6379'

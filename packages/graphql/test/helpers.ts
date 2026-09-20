@@ -31,6 +31,7 @@ import {
 import {
   getInitialInstanceResults,
   MISSING_CATALOG_COLLECTION_ID,
+  PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   processElementData,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
@@ -374,7 +375,16 @@ export async function testInitialization(
     },
     prisma,
     featureFlags: {
-      isEnabled: vi.fn((key) => key === 'ai-beta'),
+      // The seeded owners hold every knowledge-base admission; a case that
+      // exercises a denial builds its own context from this one.
+      isEnabled: vi.fn((key) =>
+        [
+          'ai-beta',
+          'kb-ingestion',
+          'kb-graph-builds',
+          'kb-graph-domain-selection',
+        ].includes(key)
+      ),
       getAiBetaDecision: vi.fn(() => 'enabled' as const),
       refresh: vi.fn(async () => undefined),
     },
@@ -1179,6 +1189,30 @@ export async function seedGroupActivity(
 
 // ! Specific test case helpers (e.g. seeding of live quiz including responses to test correction workflows)
 // #region
+// Synthetic test participants must satisfy the persisted account data-use
+// gate. A recorded refusal of both optional purposes is a valid, complete
+// state; only the metadata marks the account as already onboarded.
+const acknowledgedParticipantDataUse = {
+  researchConsent: false,
+  learningAnalyticsConsent: false,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  dataUseRevision: 1,
+  dataUseEvents: {
+    create: {
+      revision: 1,
+      disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+      acknowledged: true,
+    },
+  },
+}
+
 export async function seedLiveQuizWithResponses({
   userOneCtx,
   userTwoCtx,
@@ -1363,6 +1397,7 @@ export async function seedLiveQuizWithResponses({
   // create participant 1 with a correct answer to both questions
   const participant1 = await prisma.participant.create({
     data: {
+      ...acknowledgedParticipantDataUse,
       id: '36a3b9cf-00eb-46f3-a701-b222b68d0386',
       username: 'participant1',
       password: 'participant1',
@@ -1415,6 +1450,7 @@ export async function seedLiveQuizWithResponses({
   // create participant 2 with a partially correct answer to the first question and no answer to the second one
   const participant2 = await prisma.participant.create({
     data: {
+      ...acknowledgedParticipantDataUse,
       id: 'fbdc8107-0f7e-4b9b-9dc5-9268c99dc784',
       username: 'participant2',
       password: 'participant2',
@@ -1446,6 +1482,7 @@ export async function seedLiveQuizWithResponses({
   // create participant 3 with a course participation but no answers
   const participant3 = await prisma.participant.create({
     data: {
+      ...acknowledgedParticipantDataUse,
       id: '56409db9-4bba-425d-81f6-98864ca3daed',
       username: 'participant3',
       password: 'participant3',

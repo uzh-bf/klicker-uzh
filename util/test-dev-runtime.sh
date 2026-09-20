@@ -768,4 +768,75 @@ dead_start_output="$(
   fail 'post-start did not report the managed process that is not live'
 [ ! -s "$CURL_LOG" ] || fail 'a dead managed process reached the readiness pass'
 
+# A managed process that dies inside the liveness grace interval must fail the
+# start after that interval and stay out of the readiness pass, and the process
+# recorded in the state file must really be gone by then. The state file exists
+# with a valid id, so the guard has to observe the process itself rather than
+# fall back to the missing-state path.
+write_file "$FAKE_BIN/process-helper-dying" '#!/usr/bin/env bash
+set -euo pipefail
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0
+mkdir -p "${DEVROUTER_PROCESS_STATE_DIR}"
+sleep 4 &
+printf "%s dying-process\n" "$!" >"${DEVROUTER_PROCESS_STATE_DIR}/devrouter-process-klicker-dev.state"'
+chmod +x "$FAKE_BIN/process-helper-dying"
+dying_state_dir="$TEST_ROOT/dying-process-state"
+: >"$CURL_LOG"
+dying_started=$SECONDS
+dying_status=0
+dying_log="$TEST_ROOT/dying-start.log"
+KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  DEVROUTER_PROFILE=chat \
+  DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper-dying" \
+  DEVROUTER_PROCESS_STATE_DIR="$dying_state_dir" \
+  bash "$REPO_ROOT/.devcontainer/post-start.sh" >"$dying_log" 2>&1 || dying_status=$?
+[ "$dying_status" -ne 0 ] || {
+  cat "$dying_log" >&2
+  fail 'post-start accepted a managed process that died during the grace interval'
+}
+[ "$((SECONDS - dying_started))" -ge 4 ] || \
+  fail 'post-start skipped the grace interval before failing a managed process'
+assert_exists "$dying_state_dir/devrouter-process-klicker-dev.state"
+dying_pid="$(cut -d' ' -f1 <"$dying_state_dir/devrouter-process-klicker-dev.state")"
+[ -z "$(ps -o stat= -p "$dying_pid" 2>/dev/null | tr -d '[:space:]')" ] || \
+  fail 'the managed process recorded during the grace interval was still live after it'
+[ ! -s "$CURL_LOG" ] || fail 'a process that died during the grace interval reached the readiness pass'
+
+# A managed process that survives the interval must advance into the readiness
+# pass; the same guard must not fail a live process merely because it rechecked.
+write_file "$FAKE_BIN/process-helper-survivor" '#!/usr/bin/env bash
+set -euo pipefail
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0
+mkdir -p "${DEVROUTER_PROCESS_STATE_DIR}"
+sleep 30 &
+printf "%s surviving-process\n" "$!" >"${DEVROUTER_PROCESS_STATE_DIR}/devrouter-process-klicker-dev.state"'
+chmod +x "$FAKE_BIN/process-helper-survivor"
+survivor_state_dir="$TEST_ROOT/survivor-process-state"
+: >"$CURL_LOG"
+survivor_status=0
+survivor_output="$(
+  KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+    DEVROUTER_PROFILE=chat \
+    DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper-survivor" \
+    DEVROUTER_PROCESS_STATE_DIR="$survivor_state_dir" \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" 2>&1
+)" || survivor_status=$?
+assert_exists "$survivor_state_dir/devrouter-process-klicker-dev.state"
+survivor_pid="$(cut -d' ' -f1 <"$survivor_state_dir/devrouter-process-klicker-dev.state")"
+kill "$survivor_pid" 2>/dev/null || true
+[ "$survivor_status" -eq 0 ] || {
+  printf '%s\n' "$survivor_output" >&2
+  fail 'post-start failed a managed process that survived the grace interval'
+}
+grep -Fq 'http://localhost:3004/api/chatbots/' "$CURL_LOG" || \
+  fail 'a surviving managed process did not reach the readiness pass'
+
 echo '[test-dev-runtime] PASS'
