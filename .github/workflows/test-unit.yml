@@ -39,7 +39,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/frontend-pwa/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          pattern: '^(apps/auth/|apps/frontend-pwa/|apps/chat/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
           prior-check-name: test-unit-status
 
   test-unit:
@@ -143,6 +143,23 @@ jobs:
       - name: Test frontend PWA
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/frontend-pwa test:run
+
+      - name: Test auth unit and handler integration suites
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/auth test:run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+
+      - name: Build auth for production HTTP integration tests
+        id: build_auth
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm exec turbo run build --filter=@klicker-uzh/auth... --concurrency=4
+        env:
+          APP_SECRET: synthetic-auth-built-test-secret
+          APP_ORIGIN_AUTH: https://auth.example.test
+          NEXTAUTH_URL: https://auth.example.test
+
+      - name: Test built auth under HTTP and HTTPS deployment policies
+        if: ${{ !cancelled() && steps.build_auth.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/auth test:built
 
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
