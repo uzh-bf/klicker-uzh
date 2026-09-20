@@ -42,6 +42,20 @@ Two vehicles target `v3-audit` with `v3-ai`: the auto-sync #6203 (CONFLICTING, h
 
 After STG validation, promote the validated artifact to production along the existing release path. STG sign-off does not itself authorize the PRD release, which keeps its own approval. Confirm that the exact validated `v3-audit` head is what is promoted, re-check migration compatibility and rollback behavior (a rollback must not erase saved choices, acknowledgement history or audit events), and re-run the applicable post-deploy health evidence.
 
+#### PRD preparation checklist
+
+Production runs at `*.klicker.uzh.ch` on hand-edited pinned image tags in `deploy/env-uzh-prd/values.yaml` (currently `v3.4.0-alpha.80`) with `replicaCount: 2` for web/API services. The Prisma migration runs automatically as the ArgoCD `PreSync` hook because `migrator.enabled: true`, and the migrator tag auto-tracks the backend tag, so a tag roll needs no separate migrator pin. Prepare, do not execute, the following:
+
+- [ ] **STG acceptance recorded.** The exact `v3-audit` head that passed STG verification is written here with its promotion receipt artifact, and the disclaimer surfaces are confirmed serving that head. A later `v3-audit` advance means repeating STG verification for the new head before PRD.
+- [ ] **Live containment evidence attached.** Values-free evidence that LA writers are stopped, in-flight work cannot recreate derivatives, retained derivative tables and pending withdrawals are reconciled or scheduled, and the four optional analytics reads are contained in the running staging deployment. Source containment alone does not satisfy this gate.
+- [ ] **Release version prepared.** Run the repository release script from the root to generate the version and `CHANGELOG.md` (never hand-edit package versions), pass `--skip.tag` during PR preparation, and create the tag only at the approved merged release commit.
+- [ ] **PRD values update drafted on `v3`.** One reviewable change rolls the pinned tags in `deploy/env-uzh-prd/values.yaml` to the validated release. Keep `migrator.enabled: true`; a rollback to a pre-migrator tag is the only case that requires setting it back to `false`. The staging/production values-parity gate must pass with the image reference as the only exclusion.
+- [ ] **Migration and rollback reviewed.** Confirm the pending DPO migrations are additive and safe under the `PreSync` hook, and that a rollback preserves saved research/LA choices, acknowledgement history and `ParticipantDataUseEvent` audit records. Note the assessment database is covered only if its backend Secret targets the migrated database.
+- [ ] **Reviews complete.** Required CI green on the exact heads, and `/final-review` posted on the unstacked PR under the standing approval. A pending or provider-failed review is not a pass.
+- [ ] **Post-deploy evidence planned.** Health checks, the disclaimer surfaces serving the new head on `*.klicker.uzh.ch`, and a persistence read-back confirming choices survive a renew. Mixed-version behavior during the rolling update is reviewed, not assumed.
+
+Executing this checklist — the release commit/tag, the `v3` values change, and the PRD rollout — remains a separate named-authority action.
+
 ### Stage 3 — Next steps, after the PRD release
 
 Resume the deferred packages below. They are preserved, not cancelled, and none is required for the STG or PRD notice release:
