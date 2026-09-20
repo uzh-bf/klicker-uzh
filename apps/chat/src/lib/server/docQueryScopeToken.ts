@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { importPKCS8, SignJWT } from 'jose'
+import { DOC_QUERY_SCOPE_TOKEN_HEADER } from '@/src/services/mcpScope'
 
 const DOC_QUERY_SCOPE_TOKEN_ALGORITHM = 'ES256'
 const DOC_QUERY_SCOPE_TOKEN_TTL_SECONDS = 5 * 60
@@ -9,6 +11,11 @@ export class DocQueryScopeTokenError extends Error {
     this.name = 'DocQueryScopeTokenError'
   }
 }
+
+export type DocQueryScopedFetch = (
+  url: string | URL,
+  init?: RequestInit
+) => Promise<Response>
 
 function requireScopeTokenEnv(name: string): string {
   const value = process.env[name]?.trim()
@@ -63,5 +70,48 @@ export async function signDocQueryScopeToken({
       throw error
     }
     throw new DocQueryScopeTokenError('Scope token signing failed')
+  }
+}
+
+/**
+ * Mints a fresh scope token for every outbound request of one MCP client.
+ * The binding snapshot is captured per turn, so the authorization of another
+ * turn or user can never be reused. A signing failure rejects before any
+ * network call and never falls back to the shared transport bearer.
+ */
+export function createDocQueryScopedFetch({
+  target,
+  kbIds,
+  chatbotId,
+  sessionId,
+}: {
+  target: URL
+  kbIds: readonly string[]
+  chatbotId: string
+  sessionId: string
+}): DocQueryScopedFetch {
+  return async (url, init) => {
+    const requestUrl = typeof url === 'string' ? new URL(url, target) : url
+    if (requestUrl.href !== target.href) {
+      throw new DocQueryScopeTokenError('Scope token target mismatch')
+    }
+
+    const headers = new Headers(init?.headers)
+    headers.delete('authorization')
+    headers.delete(DOC_QUERY_SCOPE_TOKEN_HEADER)
+
+    const token = await signDocQueryScopeToken({
+      kbIds,
+      chatbotId,
+      sessionId,
+      jti: randomUUID(),
+    })
+    headers.set(DOC_QUERY_SCOPE_TOKEN_HEADER, `Bearer ${token}`)
+
+    return fetch(requestUrl, {
+      ...init,
+      headers,
+      redirect: 'error',
+    })
   }
 }
