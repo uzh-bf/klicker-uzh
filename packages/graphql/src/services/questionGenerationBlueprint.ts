@@ -76,6 +76,9 @@ export async function createQuestionGenerationBlueprint(
           ? 'mc'
           : 'sc',
     objective_form: 1,
+    ...(configuration.focusTopic === null
+      ? {}
+      : { focus_topic: configuration.focusTopic }),
     modules: [
       {
         module_id: MODULE_ID,

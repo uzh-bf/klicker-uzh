@@ -329,4 +329,39 @@ describe('question generation configuration', () => {
       ).configuration.language
     ).toBe(KB_GRAPH_POLICY_LANGUAGE)
   })
+
+  it('normalizes a focus topic into the configuration and its hash', () => {
+    const focused = normalizeQuestionGenerationConfiguration(
+      configurationInput({ focusTopic: '  Portfolio diversification  ' }),
+      graphVersion
+    )
+    const canonical = normalizeQuestionGenerationConfiguration(
+      configurationInput({ focusTopic: 'Portfolio diversification' }),
+      graphVersion
+    )
+    const blank = normalizeQuestionGenerationConfiguration(
+      configurationInput({ focusTopic: '   ' }),
+      graphVersion
+    )
+
+    expect(focused).toEqual(canonical)
+    expect(focused.configuration.focusTopic).toBe('Portfolio diversification')
+    expect(blank.configuration.focusTopic).toBeNull()
+    expect(blank.configurationHash).not.toBe(focused.configurationHash)
+  })
+
+  it('rejects overlong and control-character focus topics', () => {
+    expect(() =>
+      normalizeQuestionGenerationConfiguration(
+        configurationInput({ focusTopic: 'f'.repeat(301) }),
+        graphVersion
+      )
+    ).toThrowError(expect.objectContaining({ code: 'CONFIGURATION_INVALID' }))
+    expect(() =>
+      normalizeQuestionGenerationConfiguration(
+        configurationInput({ focusTopic: 'Line\nbroken topic' }),
+        graphVersion
+      )
+    ).toThrowError(expect.objectContaining({ code: 'CONFIGURATION_INVALID' }))
+  })
 })

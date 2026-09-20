@@ -94,6 +94,7 @@ type ElementGenerationTypeCapability = {
   supportsSourceScopes: boolean
   supportsDifficulty: boolean
   supportsBloomLevels: boolean
+  supportsFocusTopic: boolean
   supportsRetry: boolean
   supportsIncompletePublication: boolean
 }
@@ -113,6 +114,7 @@ ElementGenerationTypeCapabilityRef.implement({
     supportsSourceScopes: t.exposeBoolean('supportsSourceScopes'),
     supportsDifficulty: t.exposeBoolean('supportsDifficulty'),
     supportsBloomLevels: t.exposeBoolean('supportsBloomLevels'),
+    supportsFocusTopic: t.exposeBoolean('supportsFocusTopic'),
     supportsRetry: t.exposeBoolean('supportsRetry'),
     supportsIncompletePublication: t.exposeBoolean(
       'supportsIncompletePublication'
@@ -906,6 +908,10 @@ export const StartElementGenerationInputRef = builder
         type: [ElementGenerationBloomLevel],
         required: false,
         validate: { maxLength: 5 },
+      }),
+      focusTopic: t.string({
+        required: false,
+        validate: { maxLength: 300 },
       }),
       idempotencyKey: t.string({
         required: true,

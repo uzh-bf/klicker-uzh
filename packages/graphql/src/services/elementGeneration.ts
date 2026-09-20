@@ -64,6 +64,35 @@ const TERMINAL_EDITABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
   DB.ElementGenerationBuildStatus.INCOMPLETE,
 ]
 
+function isQuestionFocusTopicCapabilityEnabled(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  return env.QUESTION_GENERATION_FOCUS_TOPIC_ENABLED?.trim() === 'true'
+}
+
+/**
+ * Normalizes a lecturer-supplied generation focus. The focus narrows exactly
+ * one generation batch to a topic; a blank value is the same as no focus. A
+ * deployment whose capability gate is closed refuses a focus it cannot honor
+ * instead of recording guidance that the provider would drop.
+ */
+function resolveRequestedQuestionFocusTopic(
+  focusTopic: string | null | undefined,
+  env: NodeJS.ProcessEnv = process.env
+): string | null {
+  const normalized = focusTopic?.trim()
+  if (!normalized) {
+    return null
+  }
+  if (!isQuestionFocusTopicCapabilityEnabled(env)) {
+    throw questionGenerationServiceError(
+      'CONFIGURATION_INVALID',
+      'This deployment does not support question focus topics'
+    )
+  }
+  return normalized
+}
+
 export type StartElementGenerationInput = {
   graphBuildId: string
   elementType: 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD'
@@ -80,6 +109,7 @@ export type StartElementGenerationInput = {
     bloomLevel?: string | null
   }> | null
   bloomLevels?: string[] | null
+  focusTopic?: string | null
   idempotencyKey: string
 }
 
@@ -157,16 +187,18 @@ export async function startElementGeneration(
   input: StartElementGenerationInput,
   ctx: ContextWithUser
 ) {
+  const focusTopic = resolveRequestedQuestionFocusTopic(input.focusTopic)
   if (input.elementType === 'FLASHCARD') {
     if (
       input.difficultyPreset != null ||
       (input.sourceScopes?.length ?? 0) > 0 ||
       (input.bloomLevels?.length ?? 0) > 0 ||
-      input.objectives?.some((objective) => objective.bloomLevel != null)
+      input.objectives?.some((objective) => objective.bloomLevel != null) ||
+      focusTopic !== null
     ) {
       throw questionGenerationServiceError(
         'CONFIGURATION_INVALID',
-        'Flashcard generation does not support difficulty, Bloom, or source scoping'
+        'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
       )
     }
     return startFlashcardGeneration(
@@ -191,6 +223,7 @@ export async function startElementGeneration(
       sourceScopes: input.sourceScopes,
       objectives: input.objectives,
       bloomLevels: input.bloomLevels,
+      focusTopic,
     },
     ctx
   )
@@ -806,6 +839,9 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         supportsSourceScopes: elementType !== 'FLASHCARD',
         supportsDifficulty: elementType !== 'FLASHCARD',
         supportsBloomLevels: elementType !== 'FLASHCARD',
+        supportsFocusTopic:
+          elementType !== 'FLASHCARD' &&
+          isQuestionFocusTopicCapabilityEnabled(),
         supportsRetry: elementType === 'FLASHCARD',
         supportsIncompletePublication: elementType === 'FLASHCARD',
       })
