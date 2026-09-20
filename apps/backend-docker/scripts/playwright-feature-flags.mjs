@@ -54,6 +54,58 @@ function featurePayload() {
           },
         ],
       },
+      'kb-ingestion': {
+        defaultValue: false,
+        rules: [
+          {
+            condition: {
+              id: enrolledLecturerId,
+              actorType: 'user',
+              environment: { $in: evaluationEnvironments },
+            },
+            force: true,
+          },
+        ],
+      },
+      'kb-graph-builds': {
+        defaultValue: false,
+        rules: [
+          {
+            condition: {
+              id: enrolledLecturerId,
+              actorType: 'user',
+              environment: { $in: evaluationEnvironments },
+            },
+            force: true,
+          },
+        ],
+      },
+      'kb-graph-domain-selection': {
+        defaultValue: false,
+        rules: [
+          {
+            condition: {
+              id: enrolledLecturerId,
+              actorType: 'user',
+              environment: { $in: evaluationEnvironments },
+            },
+            force: true,
+          },
+        ],
+      },
+      'question-focus-topic': {
+        defaultValue: false,
+        rules: [
+          {
+            condition: {
+              id: enrolledLecturerId,
+              actorType: 'user',
+              environment: { $in: evaluationEnvironments },
+            },
+            force: true,
+          },
+        ],
+      },
     },
   }
 }
