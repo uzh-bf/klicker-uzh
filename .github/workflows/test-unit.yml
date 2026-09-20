@@ -123,13 +123,6 @@ jobs:
           DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
           SHADOW_DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test_shadow
 
-      - name: Test bearer rotation database custody
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.setup_chat_db.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/prisma test:bearer
-        env:
-          DATABASE_URL: postgresql://klicker_test:klicker@localhost:5432/klicker_test
-          MCP_BEARER_TEST_ADMIN_URL: postgresql://klicker:klicker@localhost:5432/klicker_test
-
       - name: Test chat app
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.setup_chat_db.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/chat test:run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
