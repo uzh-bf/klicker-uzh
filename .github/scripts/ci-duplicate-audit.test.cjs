@@ -1,4 +1,8 @@
 const assert = require('node:assert/strict')
+const { execFileSync } = require('node:child_process')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
 const test = require('node:test')
 
 const {
@@ -7,6 +11,7 @@ const {
   formatSummary,
   isDeploymentSource,
   normalizeRun,
+  normalizeRuns,
   wallMinutes,
 } = require('./ci-duplicate-audit.cjs')
 
@@ -87,6 +92,45 @@ test('a run record without a full head SHA is rejected', () => {
         })
       ),
     /full head SHA/
+  )
+})
+
+test('a gh run list record normalizes its database id and workflow name', () => {
+  const normalized = normalizeRun({
+    conclusion: 'success',
+    databaseId: 35504725741,
+    event: 'push',
+    headBranch: 'v3',
+    headSha: HEAD,
+    startedAt: '2026-09-20T10:56:00Z',
+    status: 'completed',
+    updatedAt: '2026-09-20T11:06:00Z',
+    workflowName: 'Test lightweight unit suites',
+  })
+
+  assert.equal(normalized.id, '35504725741')
+  assert.equal(normalized.workflowPath, 'Test lightweight unit suites')
+  assert.equal(wallMinutes(normalized), 10)
+})
+
+test('records whose run never started are counted instead of normalized', () => {
+  const sample = normalizeRuns(
+    [
+      run({ event: 'push', id: 31, startedAt: null, status: 'queued' }),
+      run({
+        event: 'pull_request',
+        id: 32,
+        startedAt: '2026-09-20T10:00:00Z',
+      }),
+      run({ event: 'push', id: 33, startedAt: '2026-09-20T11:00:00Z' }),
+    ],
+    'push'
+  )
+
+  assert.equal(sample.skipped, 1)
+  assert.deepEqual(
+    sample.runs.map((entry) => entry.id),
+    ['33']
   )
 })
 
@@ -246,10 +290,95 @@ test('the audit groups pairs by workflow and head and counts the shapes', () => 
   assert.match(summary, /No changes were made/)
 })
 
+test('a queued record is reported and does not stop the measurement', () => {
+  const report = auditDuplicateValidation({
+    pullRequestRuns: [
+      run({
+        event: 'pull_request',
+        id: 41,
+        startedAt: '2026-09-20T10:00:30Z',
+        updatedAt: '2026-09-20T10:40:00Z',
+      }),
+    ],
+    pushRuns: [
+      run({
+        event: 'push',
+        id: 42,
+        startedAt: '2026-09-20T10:00:00Z',
+        updatedAt: '2026-09-20T10:50:00Z',
+      }),
+      run({
+        event: 'push',
+        headSha: OTHER_HEAD,
+        id: 43,
+        startedAt: null,
+        status: 'queued',
+        updatedAt: '2026-09-20T10:50:00Z',
+      }),
+    ],
+  })
+
+  assert.equal(report.summary.skippedPushRecordsWithoutStart, 1)
+  assert.equal(report.summary.skippedPullRequestRecordsWithoutStart, 0)
+  assert.equal(report.summary.pushRuns, 1)
+  assert.equal(report.summary.duplicatePairs, 1)
+})
+
 test('an empty sample reports zero instead of guessing', () => {
   const report = auditDuplicateValidation({ pullRequestRuns: [], pushRuns: [] })
   assert.deepEqual(report.pairs, [])
   assert.equal(report.summary.duplicatePairs, 0)
   assert.equal(report.summary.duplicatePushWallMinutes, 0)
   assert.equal(report.summary.twinWindowMinutes, 5)
+})
+
+test('the documented invocation runs with a valueless --json switch', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'duplicate-audit-'))
+  const pushFile = path.join(directory, 'push-runs.json')
+  const pullRequestFile = path.join(directory, 'pr-runs.json')
+  const record = (overrides) => ({
+    conclusion: 'success',
+    event: 'push',
+    headBranch: 'v3-ai',
+    headSha: HEAD,
+    startedAt: '2026-09-20T10:00:00Z',
+    status: 'completed',
+    updatedAt: '2026-09-20T10:50:00Z',
+    workflowName: 'Test lightweight unit suites',
+    ...overrides,
+  })
+  fs.writeFileSync(pushFile, JSON.stringify([record({ databaseId: 51 })]))
+  fs.writeFileSync(
+    pullRequestFile,
+    JSON.stringify([
+      record({
+        databaseId: 52,
+        event: 'pull_request',
+        startedAt: '2026-09-20T10:00:30Z',
+        updatedAt: '2026-09-20T10:40:00Z',
+      }),
+    ])
+  )
+
+  const output = execFileSync(
+    process.execPath,
+    [
+      path.join(__dirname, 'ci-duplicate-audit.cjs'),
+      '--push',
+      pushFile,
+      '--pull-request',
+      pullRequestFile,
+      '--json',
+    ],
+    { encoding: 'utf8' }
+  )
+  const report = JSON.parse(output)
+
+  assert.equal(report.summary.pushRuns, 1)
+  assert.equal(report.summary.duplicatePairs, 1)
+  assert.equal(report.summary.duplicatePushWallMinutes, 50)
+  assert.deepEqual(report.summary.duplicatePairsByWorkflow, {
+    'Test lightweight unit suites': 1,
+  })
+  fs.rmSync(directory, { force: true, recursive: true })
 })

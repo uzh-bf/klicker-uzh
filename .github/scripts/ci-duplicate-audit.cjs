@@ -48,17 +48,21 @@ function millis(label, value) {
   return parsed
 }
 
-// `gh run list --json` and `gh api` disagree on field names for the workflow
-// path, so both spellings are accepted and normalized here.
+// `gh run list --json` and `gh api` disagree on the field names for the run
+// id, the workflow path and the start time, so every spelling is accepted and
+// normalized here.
 function normalizeRun(record) {
-  const started = millis('startedAt', record.startedAt ?? record.run_started_at)
+  const started = millis(
+    'startedAt',
+    record.startedAt ?? record.started_at ?? record.run_started_at
+  )
   const completedSource = record.updatedAt ?? record.updated_at
   const completed =
     record.status === 'completed' && completedSource
       ? millis('updatedAt', completedSource)
       : null
   const run = {
-    id: String(record.id ?? ''),
+    id: String(record.id ?? record.databaseId ?? ''),
     conclusion: record.conclusion ?? null,
     event: requiredText('event', record.event),
     headBranch: requiredText(
@@ -71,13 +75,33 @@ function normalizeRun(record) {
     status: record.status ?? null,
     workflowPath: requiredText(
       'workflowPath',
-      record.workflowPath ?? record.path ?? record.workflowName
+      record.workflowPath ?? record.path ?? record.workflowName ?? record.name
     ),
   }
   if (!/^[0-9a-f]{40}$/.test(run.headSha)) {
     fail(`run ${run.id} has no full head SHA`)
   }
   return run
+}
+
+// A record whose run never started carries no wall time and cannot belong to a
+// duplicate pair, so it is skipped rather than guessed at. The count is
+// reported, because a sample that quietly drops records would understate the
+// traffic it is supposed to measure.
+function normalizeRuns(records, event) {
+  const runs = []
+  let skipped = 0
+  for (const record of records) {
+    if (record.event !== event) continue
+    const startedAt =
+      record.startedAt ?? record.started_at ?? record.run_started_at
+    if (startedAt === undefined || startedAt === null) {
+      skipped += 1
+      continue
+    }
+    runs.push(normalizeRun(record))
+  }
+  return { runs, skipped }
 }
 
 function wallMinutes(run) {
@@ -156,10 +180,10 @@ function auditDuplicateValidation({
   pullRequestRuns,
   twinWindowMs = DEFAULT_TWIN_WINDOW_MS,
 }) {
-  const push = pushRuns.map(normalizeRun).filter((run) => run.event === 'push')
-  const pull = pullRequestRuns
-    .map(normalizeRun)
-    .filter((run) => run.event === 'pull_request')
+  const pushSample = normalizeRuns(pushRuns, 'push')
+  const pullSample = normalizeRuns(pullRequestRuns, 'pull_request')
+  const push = pushSample.runs
+  const pull = pullSample.runs
   const integrationPush = push.filter((run) =>
     isDeploymentSource(run.headBranch)
   )
@@ -211,6 +235,8 @@ function auditDuplicateValidation({
       pushRuns: push.length,
       pushStartedFirstPairs: pairs.filter((pair) => pair.pushStartedFirst)
         .length,
+      skippedPullRequestRecordsWithoutStart: pullSample.skipped,
+      skippedPushRecordsWithoutStart: pushSample.skipped,
       twinConcurrentPairs: pairs.filter((pair) => pair.twinConcurrent).length,
       twinConcurrentReverseRuns: reverseTwin.length,
       twinWindowMinutes: twinWindowMs / 60000,
@@ -230,6 +256,7 @@ function formatSummary(report, source = {}) {
     `- Overlapping pairs: ${summary.overlappingPairs}`,
     `- Twin-concurrent pairs (within ${summary.twinWindowMinutes} min): ${summary.twinConcurrentPairs}`,
     `- Push wall minutes inside those pairs: ${summary.duplicatePushWallMinutes}`,
+    `- Records without a start time, skipped: ${summary.skippedPushRecordsWithoutStart} push / ${summary.skippedPullRequestRecordsWithoutStart} pull request`,
     `- Pull-request runs on integration heads: ${summary.pullRequestRunsOnIntegrationHeads}`,
     `- Of those, twin-concurrent with a push run: ${summary.twinConcurrentReverseRuns}`,
   ]
@@ -272,16 +299,20 @@ function readRecords(filePath) {
 
 function parseArguments(argv) {
   const args = {}
-  for (let index = 0; index < argv.length; index += 2) {
+  for (let index = 0; index < argv.length; index++) {
     const flag = argv[index]
-    const value = argv[index + 1]
     if (typeof flag !== 'string' || !flag.startsWith('--')) {
       fail(`unexpected argument ${flag}`)
     }
+    const value = argv[index + 1]
+    // `--json` is a switch; every other option takes the next argument.
     if (value === undefined || value.startsWith('--')) {
-      fail(`${flag} requires a value`)
+      if (flag !== '--json') fail(`${flag} requires a value`)
+      args[flag.slice(2)] = 'true'
+      continue
     }
     args[flag.slice(2)] = value
+    index += 1
   }
   return args
 }
@@ -290,13 +321,17 @@ function parseArguments(argv) {
 // list` call cannot page both events together:
 //
 //   gh run list --event push --limit 1000 \
-//     --json id,event,status,conclusion,headBranch,headSha,workflowPath,startedAt,updatedAt \
+//     --json databaseId,event,status,conclusion,headBranch,headSha,workflowName,startedAt,updatedAt \
 //     > /tmp/push-runs.json
 //   gh run list --event pull_request --limit 1000 \
-//     --json id,event,status,conclusion,headBranch,headSha,workflowPath,startedAt,updatedAt \
+//     --json databaseId,event,status,conclusion,headBranch,headSha,workflowName,startedAt,updatedAt \
 //     > /tmp/pr-runs.json
 //   node .github/scripts/ci-duplicate-audit.cjs \
 //     --push /tmp/push-runs.json --pull-request /tmp/pr-runs.json --json
+//
+// `gh api --paginate 'repos/<owner>/<repo>/actions/runs?event=push&per_page=100'`
+// can supply the same two sets from the REST API, where the run id is `id`,
+// the path is `path` and the start time is `run_started_at`.
 function runAuditCli(argv = process.argv.slice(2)) {
   const args = parseArguments(argv)
   const pushFile = args.push
@@ -320,10 +355,11 @@ function runAuditCli(argv = process.argv.slice(2)) {
       formatSummary(report, { pullRequestFile, pushFile }) + '\n'
     )
   }
-  const printable = args.json
-    ? report
-    : { pairs: report.pairs, summary: report.summary }
-  process.stdout.write(`${JSON.stringify(printable, null, 2)}\n`)
+  // The report is always JSON; `--json` stays an accepted switch so the
+  // documented invocation can name the output format it gets.
+  process.stdout.write(
+    `${JSON.stringify({ pairs: report.pairs, summary: report.summary }, null, 2)}\n`
+  )
   return report
 }
 
@@ -344,6 +380,7 @@ module.exports = {
   isDeploymentSource,
   isEquivalentEligible,
   normalizeRun,
+  normalizeRuns,
   runAuditCli,
   wallMinutes,
 }

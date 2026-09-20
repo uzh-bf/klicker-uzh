@@ -2215,3 +2215,43 @@ concurrency must now compete against R1-R5, which remove work entirely.
   fingerprints without adopting anything, and only a later push with unchanged
   inputs can show an adoption. The measure is `reuse.reused` in the promotion
   receipt and the `release_manifest` entries of that run.
+
+- 2026-09-20 R4 audit repaired and re-measured (same branch). The preserved
+  `ci-duplicate-audit.cjs` could not be re-run as documented: its example asked
+  `gh run list --json` for `id` and `workflowPath`, which this `gh` does not
+  expose; a record whose run had not started aborted the whole measurement; and
+  the example passed `--json` without the value the argument parser required.
+  The script now accepts the run-id spellings `id` and `databaseId`, the
+  workflow spellings `workflowPath`, `path`, `workflowName` and `name`, and
+  the start spellings `startedAt`, `started_at` and `run_started_at`. A record
+  whose run never started is skipped and counted in
+  `skippedPushRecordsWithoutStart` / `skippedPullRequestRecordsWithoutStart`
+  rather than failing the audit, and `--json` works as the documented switch.
+  Four tests were added, including one that executes the documented command line
+  end to end and parses its report; the queue-policy suite is 407 green.
+
+  Measurement with the repaired query (1000 push and 1000 pull-request records,
+  2026-09-20 13:42Z): 985 push runs sat on integration branches, 132 of them
+  paired with a same-workflow pull-request run on the same head within five
+  minutes, and the push side of those pairs accounts for 2052.3 wall minutes.
+  Every pair has one topology: `v3-ai` pushed while the standing release pull
+  request #5092 (`v3-ai` → `v3`) revalidates the same head. Per workflow, the
+  push-side duplicate minutes are 297 Playwright, 274 Build staging images, 231
+  Check codebase, 221 test-graphql, 216 production translation context, 215
+  test-unit, 185 test-OLAT-API, 156 Test lecturer MCP server, 104 CodeQL, 87
+  SonarCloud and 61 gitleaks. Nine of those eleven workflows are release
+  admission evidence (`REQUIRED_CI_WORKFLOWS` in `stg-release-promoter.js` and
+  the `deploy-stg-promote.yml` watch list), so the roadmap's precondition — one
+  non-deployment-critical workflow — is met only by `Test lecturer MCP server`
+  and `CodeQL`, which together account for 260 of the 2052 minutes.
+
+  The second half of R4 stays unimplemented for a reason the measurement makes
+  concrete. A pull-request run checks out `refs/pull/5092/merge` while the push
+  run checks out the branch head, so the two validate the same tree only while
+  the base branch is already an ancestor of that head; that property changes as
+  `v3` advances. Reuse therefore needs a per-event proof (compare the merge
+  commit's tree with the head tree) and a reporter that reads the push run's
+  outcome after the fact instead of waiting on a runner while it runs, which is
+  the shape R5 established for Sonar coverage. Both change what validates the
+  release pull request, so they stay behind an explicit decision instead of
+  being inferred from this audit.
