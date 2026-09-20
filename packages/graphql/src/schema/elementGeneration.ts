@@ -173,6 +173,7 @@ ElementGenerationSourceScopeRef.implement({
 })
 
 export type ElementGenerationSourceView = {
+  language: ElementGenerationLanguageValue
   graphBuildId: string
   kbId: string
   kbName: string
@@ -185,6 +186,7 @@ export const ElementGenerationSourceRef =
   builder.objectRef<ElementGenerationSourceView>('ElementGenerationSource')
 ElementGenerationSourceRef.implement({
   fields: (t) => ({
+    language: t.expose('language', { type: ElementGenerationLanguage }),
     graphBuildId: t.exposeID('graphBuildId'),
     kbId: t.exposeID('kbId'),
     kbName: t.exposeString('kbName'),
