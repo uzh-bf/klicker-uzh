@@ -23,6 +23,32 @@ process.env.GROWTHBOOK_CLIENT_KEY = 'sdk-test'
 process.env.GROWTHBOOK_ENV = 'test'
 process.env.GROWTHBOOK_REFRESH_INTERVAL_MS = '250'
 
+// The knowledge-graph admissions in this PR enroll the same synthetic
+// lecturer, so their payload is generated from one list instead of repeating
+// the identical block for every flag.
+const knowledgeGraphAdmissions = [
+  'kb-ingestion',
+  'kb-graph-builds',
+  'kb-graph-domain-selection',
+  'question-focus-topic',
+]
+
+function enrolledLecturerPayload(force) {
+  return {
+    defaultValue: false,
+    rules: [
+      {
+        condition: {
+          id: enrolledLecturerId,
+          actorType: 'user',
+          environment: { $in: evaluationEnvironments },
+        },
+        force,
+      },
+    ],
+  }
+}
+
 function featurePayload() {
   return {
     features: {
@@ -41,71 +67,13 @@ function featurePayload() {
           },
         ],
       },
-      'learning-analytics': {
-        defaultValue: false,
-        rules: [
-          {
-            condition: {
-              id: enrolledLecturerId,
-              actorType: 'user',
-              environment: { $in: evaluationEnvironments },
-            },
-            force: learningAnalyticsEnabled,
-          },
-        ],
-      },
-      'kb-ingestion': {
-        defaultValue: false,
-        rules: [
-          {
-            condition: {
-              id: enrolledLecturerId,
-              actorType: 'user',
-              environment: { $in: evaluationEnvironments },
-            },
-            force: true,
-          },
-        ],
-      },
-      'kb-graph-builds': {
-        defaultValue: false,
-        rules: [
-          {
-            condition: {
-              id: enrolledLecturerId,
-              actorType: 'user',
-              environment: { $in: evaluationEnvironments },
-            },
-            force: true,
-          },
-        ],
-      },
-      'kb-graph-domain-selection': {
-        defaultValue: false,
-        rules: [
-          {
-            condition: {
-              id: enrolledLecturerId,
-              actorType: 'user',
-              environment: { $in: evaluationEnvironments },
-            },
-            force: true,
-          },
-        ],
-      },
-      'question-focus-topic': {
-        defaultValue: false,
-        rules: [
-          {
-            condition: {
-              id: enrolledLecturerId,
-              actorType: 'user',
-              environment: { $in: evaluationEnvironments },
-            },
-            force: true,
-          },
-        ],
-      },
+      'learning-analytics': enrolledLecturerPayload(learningAnalyticsEnabled),
+      ...Object.fromEntries(
+        knowledgeGraphAdmissions.map((flag) => [
+          flag,
+          enrolledLecturerPayload(true),
+        ])
+      ),
     },
   }
 }
