@@ -46,6 +46,48 @@ Two related properties of that resolver are worth knowing before changing it: it
 
 Note the account-duplication trap: participant emails are only unique per auth mode (`@@unique([email, isSSOAccount])` — details in [Data & Migrations](./data-and-migrations.md)).
 
+## Participant account completion
+
+A valid participant JWT establishes identity, but does not establish that the
+account has completed the current data-use disclosure. The shared
+`isParticipantDataUseComplete` predicate requires the current acknowledgement
+version and separately recorded research and Learning Analytics choices.
+The registered `participantAccountGate` Pothos plugin checks persisted state
+before protected GraphQL root fields and runs after the scope-auth plugin, so a
+field's own authorization error always wins. Its explicit support-field list
+keeps login, self-state, completion and account support accessible while locked.
+Lecturer and temporary-participant roles retain their separate authorization.
+The PWA redirects incomplete participants to `/account/data-use` when an API
+call answers with `PARTICIPANT_DATA_USE_COMPLETION_REQUIRED`, storing the return
+destination through `participantDataUseReturn`, which accepts local destinations
+and removes launch credentials.
+
+Account creation and completion record the acknowledgement and independent
+choices through the revisioned data-use service. Creation, completion, and
+settings all submit the disclosure version bundled with the displayed
+disclosure text together with the expected revision; a page whose bundled
+version no longer matches the server-required version must reload before it
+can save. Research starts allowed on the creation form, whereas Learning
+Analytics requires an explicit answer. These UI defaults do not backfill legacy
+accounts. Analytics withdrawal atomically records the new choice, its audit
+event, and a durable cleanup request in one transaction. Executing that
+cleanup as an ongoing consent-aware processing workflow is a later layer. The
+first release therefore blocks legacy analytics derivation and reads, and its
+launch requires stopping in-flight old collectors and completing any necessary
+retained-data reconciliation. A successful settings response confirms the
+persisted choice and cleanup request, not completed deletion. The canonical
+writer is available through the server-only GraphQL package entry
+`dist/participant-data-use`; its context contains only Prisma and verified
+participant identity/role, so chat can reuse the same transactions without
+constructing a GraphQL request context.
+
+Assessment completion uses the same four disclosure sections with additional
+identity, answer, audit-log, access and retention information. In the assessment
+backend (`ASSESSMENT_MODE=true`), `deleteParticipantAccount` rejects self-deletion
+before reading or deleting records or clearing the login cookie. The profile UI
+also hides the action, but that is not the enforcement boundary. This restriction
+does not implement expiry of retention periods or an operator deletion workflow.
+
 ## Login return targets
 
 Manage and PWA login pages treat return targets as untrusted input:

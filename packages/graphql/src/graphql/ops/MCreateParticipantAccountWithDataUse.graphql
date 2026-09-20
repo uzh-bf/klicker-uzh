@@ -1,10 +1,11 @@
-mutation CreateParticipantAccount(
+mutation CreateParticipantAccountWithDataUse(
   $email: String!
   $username: String!
   $password: String!
   $isProfilePublic: Boolean!
   $courseId: String
   $signedLtiData: String
+  $dataUse: ParticipantInitialDataUseInput!
 ) {
   createParticipantAccount(
     email: $email
@@ -13,6 +14,7 @@ mutation CreateParticipantAccount(
     isProfilePublic: $isProfilePublic
     courseId: $courseId
     signedLtiData: $signedLtiData
+    dataUse: $dataUse
   ) {
     participantToken
     participant {
