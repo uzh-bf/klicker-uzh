@@ -215,6 +215,7 @@ Check:
       negative cases.
 - [x] Run the verifier from the required `check` workflow.
 - [x] Update the deployment wiki and the verification skill.
-- [ ] Carry the `deploy/` revision to `v3-ai` and open its draft PR.
+- [x] Carry the `deploy/` revision to `v3-ai` and open its draft PR (#6180,
+      still open; it must land before the parity gate can pass on this branch).
 - [ ] Run fresh checks and the hosted final review on the integrated head.
 - [ ] Refresh the PR description for the final scope.
