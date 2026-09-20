@@ -102,6 +102,38 @@ async function interceptInitialSettings(
   })
 }
 
+// A browser-owned response queue controls completion order without another
+// request changing the generation under test. No real session is created.
+async function resolveStudentLookup(
+  page: Page,
+  index: number,
+  status: number,
+  authenticated: boolean
+) {
+  await page.evaluate(
+    async ({ index, status, authenticated }) => {
+      const state = window as typeof window & {
+        sessionLookups: Array<(response: Response) => void>
+      }
+      state.sessionLookups[index](
+        new Response(
+          JSON.stringify({
+            participant: authenticated
+              ? { id: 'synthetic', email: 'synthetic@example.org' }
+              : null,
+          }),
+          { status }
+        )
+      )
+      // Fetch/body microtasks settle before the next rendering opportunity.
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+    },
+    { index, status, authenticated }
+  )
+}
+
 test('CLEANUP', cleanupTest)
 
 test.describe('Login / Logout workflows for lecturer and students', () => {
@@ -147,6 +179,62 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
 
     await expect(page).toHaveURL(chatTarget)
   })
+
+  // -------------------------------------------------------------------------
+  // Student: stale session lookup responses
+  // -------------------------------------------------------------------------
+  // The session lookup runs on hydration, on window focus and after logout; an
+  // older response that arrives late must never overwrite a newer result.
+  for (const status of [200, 503]) {
+    test(`A stale ${status} response must not overwrite the signed-out session lookup`, async ({
+      page,
+    }) => {
+      const authUrl = process.env.URL_AUTH ?? URL_AUTH
+      await page.addInitScript(() => {
+        const state = window as typeof window & {
+          sessionLookups: Array<(response: Response) => void>
+        }
+        state.sessionLookups = []
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          const url = input instanceof Request ? input.url : String(input)
+          if (url.includes('/api/student-session'))
+            return new Promise<Response>((resolve) =>
+              state.sessionLookups.push(resolve)
+            )
+          if (url.includes('/api/auth/csrf'))
+            return new Response(JSON.stringify({ csrfToken: 'synthetic' }))
+          if (url.includes('/api/auth/signout')) return new Response('{}')
+          return originalFetch(input, init)
+        }
+      })
+      await page.goto(`${authUrl}/student`)
+      await page.waitForFunction(
+        () => (window as any).sessionLookups.length === 1
+      )
+      await resolveStudentLookup(page, 0, 200, true)
+      await expect(page.getByTestId('student-open-app-button')).toBeVisible()
+
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+      await page.waitForFunction(
+        () => (window as any).sessionLookups.length === 2
+      )
+      await page.getByTestId('student-logout-button').click()
+      await page.waitForFunction(
+        () => (window as any).sessionLookups.length === 3
+      )
+      await resolveStudentLookup(page, 2, 200, false)
+      await expect(page.getByTestId('student-eduid-login-button')).toBeVisible()
+
+      await resolveStudentLookup(page, 1, status, status === 200)
+
+      await expect(page.getByTestId('student-eduid-login-button')).toBeVisible()
+      await expect(page.getByTestId('student-open-app-button')).toHaveCount(0)
+      await expect(
+        page.getByTestId('student-session-retry-button')
+      ).toHaveCount(0)
+    })
+  }
 
   // -------------------------------------------------------------------------
   // Student: mobile viewport
