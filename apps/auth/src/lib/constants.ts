@@ -1,8 +1,11 @@
+// Persistent session cookie names. These are backend delivery contracts:
+// apps/backend-docker selects and verifies them per request origin (see
+// docs/auth-model.md). Do not rename without a coordinated backend release.
 export const MANAGER_COOKIE_NAME = 'next-auth.session-token'
 export const PARTICIPANT_COOKIE_NAME = 'next-auth.participant-session-token'
 
-export const STUDENT_REDIRECT_COOKIE_NAME = 'klicker_student_redirect_to'
-export const LECTURER_REDIRECT_COOKIE_NAME = 'klicker_lecturer_redirect_to'
+// Temporary OAuth cookies (state, PKCE verifier, nonce, callback URL) are
+// namespaced per audience by lib/authCookies.ts.
 
 export const DEFAULT_STUDENT_HOSTS = [
   'assessment.klicker.uzh.ch',
