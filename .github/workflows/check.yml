@@ -131,7 +131,13 @@ jobs:
       # The chart is what production consumes from this branch, and nothing
       # else renders it: a scheduling policy reaches a pod spec only when a
       # template forwards the value, so the rendered manifests are the only
-      # proof. Helm is preinstalled on the hosted runner.
+      # proof. The renderer is pinned because the runner image's preinstalled
+      # Helm version changes without notice.
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
+        with:
+          version: v3.21.4
+
       - name: Check Helm chart scheduling contract
         run: |
           node --test deploy/scripts/verify-topology-spread.test.mjs
