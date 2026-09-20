@@ -107,6 +107,7 @@ jobs:
             .github/scripts/changed-paths.test.cjs \
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
+            .github/scripts/draft-sync-prs.test.cjs \
             .github/scripts/required-ci-status.test.cjs \
             .github/scripts/ocr-self-update-guard.test.cjs \
             .github/scripts/stg-release-promoter.test.js \

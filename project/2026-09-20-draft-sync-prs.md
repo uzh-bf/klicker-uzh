@@ -50,5 +50,19 @@ creation remains post-merge proof because the controller lives on `v3`.
 
 ## Progress
 
-- Plan recorded from the approved scope; implementation pending.
-- Execution mode: solo. Final simplification and review will be self-performed.
+- Implementation complete; draft PR publication pending.
+- Node 24.21.0: all 18 focused controller and CI event-gate tests passed.
+  Eight new tests cover the controller; ten existing event-gate tests passed.
+- Biome, Prettier, AGENTS link/command validation, and diff whitespace checks
+  passed. The live read-only preview reported `v3` -> `v3-ai` up to date and
+  `v3-ai` -> `v3-audit` eligible for draft creation.
+- Focused Opengrep reported no findings in the new files. Its ten findings and
+  partial Bash parsing warnings are in unchanged parts of `check.yml`.
+- Solo simplification and final self-review completed: exact pair scope,
+  trusted controller checkout, minimal token permissions, draft creation,
+  existing ready-PR preservation, and error propagation were checked. This is
+  self-review, not independent review.
+- Full application check/build hooks were not run for this CI-only package.
+  Focused host checks used the existing repository tools; no application or
+  container runtime was started. Hosted CI and actual automated draft creation
+  remain separate evidence, with controller execution available after merge.

@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-09-19'
+timestamp: '2026-09-20'
 tags:
   - ci
   - deployment
@@ -11,6 +11,45 @@ tags:
 # CI & Deployment
 
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
+
+## Draft sync PR maintenance
+
+`maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
+`v3-ai` and `v3-ai` -> `v3-audit`. It opens a draft only when the source has
+commits and a non-empty diff absent from the target and no matching open PR.
+Existing PR descriptions and draft/ready states are preserved. Source pushes
+already update their diffs, so maintenance does not edit PR metadata, update
+branches, resolve conflicts, merge, or enforce merge methods. Maintainers choose
+when to mark ready and merge with a merge commit to preserve ancestry.
+
+The controller runs from `v3` after Check codebase completes for a push to
+either source branch, regardless of the check result. Completion is a wakeup,
+not a merge-readiness signal. Both pairs are reconciled against current refs on
+every run; delayed or coalesced events do not replay old heads. The workflow
+checks out its own trusted workflow SHA, never the triggering branch or its
+artifacts. It becomes active when merged into `v3`, without waiting for the
+workflow to reach the integration branches.
+
+For manual reconciliation, dispatch from `v3`. Preview is the default:
+
+```bash
+gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=true
+gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=false
+```
+
+The ordinary `GITHUB_TOKEN` has contents-read and pull-requests-write access;
+GitHub Actions must be allowed to create PRs in repository settings. No separate
+bot credential is needed. GitHub may require approval before running workflows
+for token-created PRs. Drafts skip staging image builds and some analysis, but
+other PR checks and source-branch push CI can still run. Marking ready invokes
+the existing ready-state validation; required checks must pass before merging.
+
+Closing a sync PR without merging does not pause maintenance: the next eligible
+run may create a new draft if changes remain. Conflicts remain a maintainer
+task. Avoid Update branch on these PRs because it merges the target back into
+the long-lived source branch. An API failure is reported rather than treated
+as evidence that a PR exists; a duplicate-creation response is accepted only
+after the matching open PR is found.
 
 ## Required branch checks
 
