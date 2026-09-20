@@ -159,6 +159,7 @@ jobs:
         run: |
           node --test \
             .github/scripts/ci-equivalent-run.test.cjs \
+            .github/scripts/ci-duplicate-audit.test.cjs \
             .github/scripts/minimum-validation-class.test.cjs \
             .github/scripts/changed-paths.test.cjs \
             .github/scripts/ci-obsolete-runs.test.cjs \

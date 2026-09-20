@@ -2068,3 +2068,58 @@ concurrency must now compete against R1-R5, which remove work entirely.
   `api,auth,manage,pwa`). The live measure is the build-graph mode and build
   duration of the next bounded pull-request wave, which this entry does not yet
   claim.
+
+- 2026-09-20 slice R7b (Turbo cache consumers measured on `faa84591ce`,
+  measurement only, no source change): the R7a wiring is live, but the effect is
+  not yet visible in either validation suite on that head. The unit wave
+  (`test-unit` run 35503927853, job `Build unit-test dependencies`) replayed
+  nothing: every task logged `cache miss, executing <hash>` for
+  `0523b2d1b7c4adee`, `8135b963558b8670`, `b08269a2410e3d03` and
+  `dc980cda9239a016`, and only the pnpm store came from a cache. The GraphQL
+  wave (`test-graphql` run 35503927846, job `Build dependency packages`) proves
+  the consumer works: it reported `Remote caching enabled`, replayed
+  `0523b2d1b7c4adee` (`@klicker-uzh/prisma:build`) from the remote cache, missed
+  the other seven tasks (including `@klicker-uzh/feature-flags`, `types`,
+  `hatchet`, `grading` and `util`), and finished all eight tasks in 50.7 s. One
+  hit of eight is the shape expected when a consumer starts before its producer:
+  the codebase check publishes these task outputs for the same commit, and the
+  unit wave began while that check was still queued, so there was nothing to
+  replay yet. The same log printed a `TURBO_REMOTE_ONLY` deprecation warning,
+  which is unrelated to this change and does not affect the hits. The measure
+  stays the cache-hit lines of a suite that starts after the codebase check for
+  the same commit, not elapsed time. Narrowing the 126-entry `globalEnv` list
+  stays unimplemented on purpose: removing a variable from a task hash needs
+  per-task evidence of which variables that task actually reads, and no such
+  evidence exists yet, so the broad list keeps the restored outputs correct.
+
+- 2026-09-20 slice R4 (integration-branch duplicate validation audited, reuse
+  deliberately not implemented, on `rs/ci-output-reuse-roadmap`): the read-only
+  audit covers 1000 push and 1000 pull-request runs from 2026-09-17T19:18Z to
+  2026-09-20T10:19Z. It found 985 integration push runs (`v3`, `v3-*`), of which
+  132 share a head and workflow with a pull-request run; those pairs consumed
+  about 2082 push-side wall minutes. The proposed equivalence predicate admits
+  none of them. In 132 of 132 pairs the push run started first, 131 pairs
+  overlap in time, and the one pair that ran sequentially had its pull-request
+  run start after the push run had already finished, which is the wrong
+  direction to save anything. The reverse direction has no pool to reclaim
+  either: 144 pull-request runs on `v3*` heads total 1708.7 wall minutes, and 132
+  of them are twin-concurrent waves that start within five minutes of the push
+  run for the same head, which is the ordinary `synchronize` shape rather than a
+  sequential lifecycle retest. Tree comparison shows why the pairs cannot be
+  treated as equivalent: a pull-request run validates the merge of the head into
+  its base, while the push run validates the head's own tree. Two structural
+  facts make the omission deliberate rather than a temporary measurement.
+  `deploy-stg-promote.yml` collects nine gated workflows from *push* runs of the
+  candidate SHA on the selected source branch, so no pull-request result can
+  satisfy release admission; and the selected source branch is a `v3-*` branch,
+  which is exactly why `ci-equivalent-run.cjs` excludes every `v3*` push.
+  Duplicate Playwright cost on those pushes already lands on hosted runners,
+  because `playwright-route.cjs` routes every push to `hosted`, so it never
+  occupied the self-hosted pool. The decision is to keep the equivalence
+  predicate unchanged and to leave supersede reclamation to the existing
+  `ci-obsolete-runs.cjs` inventory, which is already policy-limited and still
+  has no CI invocation path; adding one would cancel other contributors' runs
+  and needs its own authorization. The query and the predicate are preserved as
+  `.github/scripts/ci-duplicate-audit.cjs` so the next refresh can re-measure
+  them instead of rebuilding the analysis, with focused tests over synthetic run
+  records.
