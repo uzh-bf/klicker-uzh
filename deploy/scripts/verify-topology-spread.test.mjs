@@ -1,7 +1,8 @@
 // Negative cases for the chart's topology-spread verification. They prove the
 // assertions in verify-topology-spread.mjs fail on a wrong selector, a missing
-// zone constraint, a hard scheduling policy, or an unlisted workload, and that
-// the structural absence check ignores the field name inside string data.
+// zone constraint, a hard scheduling policy, an unlisted workload, or a
+// workload of another kind, and that the structural absence check ignores the
+// field name inside string data.
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
@@ -9,6 +10,7 @@ import {
   evaluateSpreadContract,
   expectedSpread,
   findRenderedSpreadFields,
+  findUnlistedSpreadFields,
   inspectRenderedDeployments,
 } from './verify-topology-spread.mjs'
 
@@ -261,6 +263,59 @@ describe('spread field absence in a render', () => {
         deployment('frontend-assessment', undefined),
       ]),
       []
+    )
+  })
+})
+
+describe('production spread field scope', () => {
+  it('accepts the field on the contract Deployments', () => {
+    assert.deepEqual(findUnlistedSpreadFields(renderedContract()), [])
+  })
+
+  it('rejects the field on a workload of another kind', () => {
+    const failures = findUnlistedSpreadFields([
+      ...renderedContract(),
+      {
+        kind: 'Job',
+        metadata: { name: 'app-klicker-migrate' },
+        spec: {
+          template: {
+            spec: { topologySpreadConstraints: spreadConstraints('migrate') },
+          },
+        },
+      },
+    ])
+    assert.ok(
+      failures.some(
+        (failure) =>
+          failure.includes('Job app-klicker-migrate') &&
+          failure.includes('$.spec.template.spec.topologySpreadConstraints') &&
+          failure.includes('covers only Deployment pod specs')
+      ),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+  })
+
+  it('rejects the field nested outside the pod spec of a Deployment', () => {
+    const labelled = deployment('chat', spreadConstraints('chat'))
+    const failures = findUnlistedSpreadFields([
+      {
+        ...labelled,
+        spec: {
+          topologySpreadConstraints:
+            labelled.spec.template.spec.topologySpreadConstraints,
+          template: labelled.spec.template,
+        },
+      },
+    ])
+    assert.ok(
+      failures.some(
+        (failure) =>
+          failure.includes('Deployment app-klicker-chat') &&
+          failure.includes('$.spec.topologySpreadConstraints') &&
+          failure.includes('covers only Deployment pod specs')
+      ),
+      `unexpected failures: ${failures.join(' | ')}`
     )
   })
 })

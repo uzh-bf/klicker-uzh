@@ -30,6 +30,7 @@ const spreadField = 'topologySpreadConstraints'
 const expectedMaxSkew = 1
 const expectedWhenUnsatisfiable = 'ScheduleAnyway'
 const topologyKeys = ['topology.kubernetes.io/zone', 'kubernetes.io/hostname']
+const deploymentSpreadPath = '$.spec.template.spec.topologySpreadConstraints'
 
 // The complete production contract. `origin` separates the workloads this
 // chart revision started rendering from the MCP workloads whose templates
@@ -114,6 +115,23 @@ export function inspectRenderedDeployments(documents) {
       component: deployment.spec?.template?.metadata?.labels?.[componentLabel],
       constraints: deployment.spec?.template?.spec?.[spreadField],
     }))
+}
+
+// The production render must carry the field only where the workload contract
+// below inspects it in detail. A values-driven workload of another kind (the
+// PreSync migrate Job renders `migrator` values into its pod spec) would
+// otherwise carry a scheduling policy that no assertion looks at.
+export function findUnlistedSpreadFields(documents) {
+  return findRenderedSpreadFields(documents)
+    .filter(
+      (field) =>
+        field.kind !== 'Deployment' || field.path !== deploymentSpreadPath
+    )
+    .map(
+      (field) =>
+        `production values: ${field.kind} ${field.name} renders ${field.path}; ` +
+        'the production contract covers only Deployment pod specs'
+    )
 }
 
 function evaluateConstraint(component, topologyKey, constraint) {
@@ -283,6 +301,7 @@ export function verifyChartContract() {
     }
   }
 
+  failures.push(...findUnlistedSpreadFields(productionDocuments))
   failures.push(
     ...evaluateSpreadContract(inspectRenderedDeployments(productionDocuments))
   )
