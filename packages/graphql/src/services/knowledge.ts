@@ -36,6 +36,7 @@ import {
   resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
+import { composeKbScope, resolveSharedKbIds } from '@klicker-uzh/util/kb-scope'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -1163,6 +1164,73 @@ export async function getKbChatbotBindings(
   }))
 }
 
+async function reconcileChatbotKbScope(
+  prisma: DB.Prisma.TransactionClient,
+  chatbotId: string,
+  mcpServerId: string,
+  ensureDefaultModes = false
+) {
+  // Serialize with operator CAS writes before reading the grants they own.
+  await prisma.$queryRaw`
+    SELECT id FROM "ChatbotMCPConfig"
+    WHERE "chatbotId" = ${chatbotId}::uuid
+      AND "mcpServerId" = ${mcpServerId}::uuid
+    ORDER BY id FOR UPDATE
+  `
+  const configs = await prisma.chatbotMCPConfig.findMany({
+    where: { chatbotId, mcpServerId },
+  })
+  const sharedIds = resolveSharedKbIds(
+    configs
+      .filter((config) => config.isEnabled)
+      .map((config) => config.parameters)
+  )
+  const bindings = await prisma.kBChatbot.findMany({
+    where: { chatbotId, isEnabled: true, kb: { deletedAt: null } },
+    select: { kbId: true },
+  })
+  const scope = composeKbScope(
+    bindings.map(({ kbId }) => kbId),
+    sharedIds
+  )
+  const isEnabled = Boolean(scope.kb_id || scope.kb_ids?.length)
+  const modes = new Set([
+    ...configs
+      .filter((config) => config.isEnabled)
+      .map((config) => config.chatMode),
+    ...(ensureDefaultModes ? KB_MCP_CHAT_MODES : []),
+  ])
+  for (const chatMode of modes) {
+    const existing = configs.find((config) => config.chatMode === chatMode)
+    const parameters: DB.Prisma.JsonObject =
+      existing?.parameters &&
+      typeof existing.parameters === 'object' &&
+      !Array.isArray(existing.parameters)
+        ? { ...existing.parameters }
+        : {}
+    delete parameters.kb_id
+    delete parameters.kb_ids
+    delete parameters.shared_kb_ids
+    const data = {
+      allowedTools: ['doc_query'],
+      parameters: {
+        ...parameters,
+        required: true,
+        toolAlias: 'doc_query',
+        ...scope,
+      },
+      isEnabled,
+    }
+    await prisma.chatbotMCPConfig.upsert({
+      where: {
+        chatbotId_mcpServerId_chatMode: { chatbotId, mcpServerId, chatMode },
+      },
+      create: { chatbotId, mcpServerId, chatMode, priority: 0, ...data },
+      update: data,
+    })
+  }
+}
+
 export async function attachKbToChatbot(
   { kbId, chatbotId }: { kbId: string; chatbotId: string },
   ctx: ContextWithUser
@@ -1187,32 +1255,7 @@ export async function attachKbToChatbot(
       update: { isEnabled: true },
     })
 
-    for (const chatMode of KB_MCP_CHAT_MODES) {
-      await prisma.chatbotMCPConfig.upsert({
-        where: {
-          chatbotId_mcpServerId_chatMode: {
-            chatbotId,
-            mcpServerId: mcpServer.id,
-            chatMode,
-          },
-        },
-        create: {
-          chatbotId,
-          mcpServerId: mcpServer.id,
-          chatMode,
-          allowedTools: ['doc_query'],
-          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-          priority: 0,
-          isEnabled: true,
-        },
-        update: {
-          allowedTools: ['doc_query'],
-          parameters: { required: true, toolAlias: 'doc_query', kb_id: kbId },
-          priority: 0,
-          isEnabled: true,
-        },
-      })
-    }
+    await reconcileChatbotKbScope(prisma, chatbotId, mcpServer.id, true)
 
     const [chatbot, kb] = await Promise.all([
       prisma.chatbot.findUniqueOrThrow({
@@ -1244,21 +1287,12 @@ export async function detachKbFromChatbot(
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
 
     await prisma.kBChatbot.deleteMany({ where: { kbId, chatbotId } })
-    const enabledBinding = await prisma.kBChatbot.findFirst({
-      where: { chatbotId, isEnabled: true },
+    const mcpServer = await prisma.chatbotMCPServer.findUnique({
+      where: { name: KB_MCP_SERVER_NAME },
       select: { id: true },
     })
-    if (!enabledBinding) {
-      const mcpServer = await prisma.chatbotMCPServer.findUnique({
-        where: { name: KB_MCP_SERVER_NAME },
-        select: { id: true },
-      })
-      if (mcpServer) {
-        await prisma.chatbotMCPConfig.updateMany({
-          where: { chatbotId, mcpServerId: mcpServer.id },
-          data: { isEnabled: false },
-        })
-      }
+    if (mcpServer) {
+      await reconcileChatbotKbScope(prisma, chatbotId, mcpServer.id)
     }
 
     return true
@@ -1454,31 +1488,15 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
           data: { isEnabled: false },
         })
         const chatbotIds = bindings.map(({ chatbotId }) => chatbotId)
-        const remainingBindings = await prisma.kBChatbot.findMany({
-          where: {
-            chatbotId: { in: chatbotIds },
-            isEnabled: true,
-          },
-          select: { chatbotId: true },
-        })
-        const stillEnabled = new Set(
-          remainingBindings.map(({ chatbotId }) => chatbotId)
-        )
-        const unboundChatbotIds = chatbotIds.filter(
-          (chatbotId) => !stillEnabled.has(chatbotId)
-        )
+
         const mcpServer = await prisma.chatbotMCPServer.findUnique({
           where: { name: KB_MCP_SERVER_NAME },
           select: { id: true },
         })
-        if (mcpServer && unboundChatbotIds.length > 0) {
-          await prisma.chatbotMCPConfig.updateMany({
-            where: {
-              mcpServerId: mcpServer.id,
-              chatbotId: { in: unboundChatbotIds },
-            },
-            data: { isEnabled: false },
-          })
+        if (mcpServer) {
+          for (const chatbotId of chatbotIds) {
+            await reconcileChatbotKbScope(prisma, chatbotId, mcpServer.id)
+          }
         }
       }
 

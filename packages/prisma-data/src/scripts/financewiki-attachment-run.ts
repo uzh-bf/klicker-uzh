@@ -151,11 +151,15 @@ function printValuesFree(
     write(
       JSON.stringify({
         status: value.status,
+        operation: value.operation,
         manifestFingerprint: value.manifestFingerprint,
         targetCount: value.targetCount,
         modeCount: value.modeCount,
         alreadyAttached: value.alreadyAttached,
+        alreadyRemoved: value.alreadyRemoved,
         wouldAttach: value.wouldAttach,
+        wouldAdopt: value.wouldAdopt,
+        wouldRemove: value.wouldRemove,
         receiptState: value.receiptState,
       })
     )
@@ -168,6 +172,7 @@ function printValuesFree(
   write(
     JSON.stringify({
       status: value.status,
+      operation: value.receipt?.operation ?? 'attach',
       targetCount: value.receipt?.entries.length ?? 0,
       receiptState: value.receipt?.state ?? null,
     })

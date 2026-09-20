@@ -33,6 +33,8 @@ function createPrismaMock({
       },
     },
     chatbotMCPConfig: {
+      findMany: async () =>
+        hasExistingConfig ? [{ parameters: existingParameters }] : [],
       findUnique: async ({
         where,
       }: {
@@ -123,4 +125,20 @@ describe('KB chatbot MCP seed reconciliation', () => {
       })
     }
   }
+})
+
+test('does not replace operator grants or create inconsistent modes', async () => {
+  const { prisma, updates, creates } = createPrismaMock({
+    enabledKbIds: ['course-kb'],
+    hasExistingConfig: true,
+    existingParameters: {
+      kb_ids: ['course-kb', 'shared-kb'],
+      shared_kb_ids: ['shared-kb'],
+    },
+  })
+  await seedChatbotMCPConfigurations(prisma, [KB_SERVER] as Awaited<
+    ReturnType<typeof import('../src/data/seedMCPServers.js').seedMCPServers>
+  >)
+  assert.equal(updates.length, 0)
+  assert.equal(creates.length, 0)
 })

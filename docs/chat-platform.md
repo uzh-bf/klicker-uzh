@@ -1131,22 +1131,47 @@ message write. Chat may create a short-lived thread and assistant lifecycle clai
 preflight, but it marks the attempt failed and discards that new thread before returning `503`. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
 
-The current-v3 Doc Query binding is the same reserved policy plus a `kb_id` on
-the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
-"kb_id": "<UUID>" }`. The target server name is exactly `KB`. Enabled `KB`
-configurations must contain at most one binding per stored mode, with one server
-ID and one normalized UUID across the chatbot. The selected effective mode must
-resolve exactly one matching binding; Quizzer may safely inherit Tutor's
-restricted `doc_query` binding under ADR 0021.
-Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
-`503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
-keeps the opaque bearer transport credential in `Authorization` and adds a
-five-minute ES256 token only in `X-Doc-Query-Scope-Token`. Its claims contain
-`kb_id`, `chatbot_id`, the owning thread as `sub`, and a request `jti`; issuer,
-audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
-`DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and
-`DOC_QUERY_SCOPE_PRIVATE_KEY`. Chatbots without an enabled `KB` binding and
-non-KB MCP servers retain their existing behavior.
+The Doc Query binding uses the reserved policy plus either one `kb_id` or a
+`kb_ids` array of up to 32 distinct UUIDs on the chatbot MCP configuration. The
+server name is exactly `KB`. All enabled modes of one chatbot must use the same
+server, representation and normalized scope. Different chatbots may have different
+course KBs. Quizzer may inherit Tutor's restricted binding under ADR 0021.
+
+An optional `shared_kb_ids` array records explicit operator-owned grants. Each
+shared ID must be included in the effective scope, and every enabled mode must
+carry the same grants. Course attach, replacement, detach and deletion rebuild
+the effective scope as current active course bindings plus those grants. Removing
+the last course binding keeps shared-only document retrieval enabled. An empty
+union disables the configuration. Extra IDs in legacy configurations are never
+inferred to be shared grants. Provisioning and stale provisioning rollback refuse
+configurations with shared metadata; fixture seeding skips their KB projection.
+
+Malformed, missing, duplicate, conflicting or misplaced scopes fail as
+`503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. The selected mode
+must match the validated scope. Graph-assisted retrieval revalidates participant
+access and the current course/shared union before using it. Mixed and shared-only
+scopes use document retrieval; graph hints require a single compatible course KB.
+The five-minute ES256 scope token carries the effective scope in the existing
+`kb_id` claim: a scalar for one ID, an array for multiple IDs. It also contains
+`chatbot_id`, the owning thread as `sub`, and a request `jti`. Shared ownership
+metadata is local configuration, not a client-supplied grant or token claim.
+Transport authentication stays in `Authorization`; the scope token is sent in
+`X-Doc-Query-Scope-Token` with the existing `DOC_QUERY_SCOPE_*` signer settings.
+
+The FinanceWiki attachment operator accepts version-one manifests with an optional
+`operation`: `attach` (default), `adopt` for deliberate conversion of existing
+legacy FinanceWiki scopes, or `remove` for current-state removal of the explicit
+grant. Include every enabled mode of each selected chatbot; the selected chatbots
+may use different mode sets and course KBs. Run `plan` before `apply` with the same
+manifest and a fresh receipt path for each operation. `remove` preserves current
+non-FinanceWiki scope, including course changes made since attachment; it does not
+reenable disabled modes. Its empty-scope result disables retrieval. Receipt
+`readback` reports the operation; the compatibility field `attached` counts rows
+matching that operation's resulting snapshot, including a removal snapshot.
+`recover` completes an interrupted receipt operation. `rollback` still requires
+exact recorded state and refuses later edits. Version-one receipts remain readable
+and recoverable; they do not implicitly adopt shared grants. None of these source
+capabilities select a live cohort or authorize ingestion or activation.
 
 - `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
   that range stays literal text in the answer — which is the intended failure mode, not a bug.

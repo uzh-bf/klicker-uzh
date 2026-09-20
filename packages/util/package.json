@@ -65,6 +65,10 @@
       "types": "./dist/clientAuth.d.ts",
       "default": "./dist/clientAuth.js"
     },
+    "./kb-scope": {
+      "types": "./dist/kbScope.d.ts",
+      "default": "./dist/kbScope.js"
+    },
     "./public-url": {
       "types": "./dist/publicUrl.d.ts",
       "default": "./dist/publicUrl.js"

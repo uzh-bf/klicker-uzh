@@ -1,3 +1,4 @@
+import { readSharedKbIds } from '@klicker-uzh/util/kb-scope'
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 
 export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
@@ -5,8 +6,8 @@ export const DOC_QUERY_TOOL_NAME = `${DOC_QUERY_MCP_SERVER_NAME}_doc_query`
 // The shared doc-query client owns the transport-security allowlist and the
 // scope-token header so the chat and graphql workloads cannot drift apart.
 export {
-  DOC_QUERY_SCOPE_TOKEN_HEADER,
   assertDocQueryTransportSecurity,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
 } from '@klicker-uzh/doc-query-client'
 
 const UUID_PATTERN =
@@ -37,6 +38,7 @@ type ResolvedMcpScope = {
   serverId: string
   kbIds: string[]
   representation: 'kb_id' | 'kb_ids'
+  sharedKbIds: string[]
 }
 
 /**
@@ -72,7 +74,7 @@ export function normalizeDocQueryKbIds(value: unknown): string[] {
 
 type ResolvedDocQueryParameters = Pick<
   ResolvedMcpScope,
-  'kbIds' | 'representation'
+  'kbIds' | 'representation' | 'sharedKbIds'
 >
 
 function resolveDocQueryParameters(value: unknown): ResolvedDocQueryParameters {
@@ -88,13 +90,22 @@ function resolveDocQueryParameters(value: unknown): ResolvedDocQueryParameters {
     requiredScopeError()
   }
 
+  let sharedKbIds: string[]
+  try {
+    sharedKbIds = readSharedKbIds(parameters)
+  } catch {
+    requiredScopeError()
+  }
+
   if (hasKbId) {
     return {
+      sharedKbIds,
       kbIds: [normalizeDocQueryKbId(parameters.kb_id)],
       representation: 'kb_id',
     }
   }
   return {
+    sharedKbIds,
     kbIds: normalizeDocQueryKbIds(parameters.kb_ids),
     representation: 'kb_ids',
   }
@@ -128,7 +139,12 @@ function resolveKbConfiguration(
 
   // The reserved binding is meaningful only on the exact KB server. This
   // prevents a typo or copied parameter from silently scoping another MCP.
-  if ((hasKbId || hasKbIds) && serverName !== DOC_QUERY_MCP_SERVER_NAME) {
+  if (
+    (hasKbId ||
+      hasKbIds ||
+      (parameters && Object.hasOwn(parameters, 'shared_kb_ids'))) &&
+    serverName !== DOC_QUERY_MCP_SERVER_NAME
+  ) {
     requiredScopeError()
   }
 
@@ -144,12 +160,14 @@ function resolveKbConfiguration(
     requiredScopeError()
   }
 
-  const { representation, kbIds } = resolveDocQueryParameters(parameters)
+  const { representation, kbIds, sharedKbIds } =
+    resolveDocQueryParameters(parameters)
 
   return {
     chatMode: config.chatMode,
     serverId,
     kbIds,
+    sharedKbIds,
     representation,
   }
 }
@@ -160,13 +178,23 @@ function assertOneScope(configurations: ResolvedMcpScope[]): void {
     configurations.map(({ representation }) => representation)
   )
   const firstKbIds = configurations[0]?.kbIds
+  const hasSameSharedSet = configurations.every(
+    ({ sharedKbIds }) =>
+      JSON.stringify(sharedKbIds) ===
+      JSON.stringify(configurations[0]?.sharedKbIds)
+  )
   const hasSameKbSet = configurations.every(
     ({ kbIds }) =>
       firstKbIds !== undefined &&
       kbIds.length === firstKbIds.length &&
       kbIds.every((kbId, index) => kbId === firstKbIds[index])
   )
-  if (serverIds.size !== 1 || representations.size !== 1 || !hasSameKbSet) {
+  if (
+    serverIds.size !== 1 ||
+    representations.size !== 1 ||
+    !hasSameKbSet ||
+    !hasSameSharedSet
+  ) {
     requiredScopeError()
   }
 }
@@ -196,6 +224,8 @@ function assertEffectiveConfigurationMatchesScope(
     configurations[0].chatMode !== selectedMode ||
     configurations[0].serverId !== expected.serverId ||
     configurations[0].representation !== expected.representation ||
+    JSON.stringify(configurations[0].sharedKbIds) !==
+      JSON.stringify(expected.sharedKbIds) ||
     configurations[0].kbIds.length !== expected.kbIds.length ||
     configurations[0].kbIds.some(
       (kbId, index) => kbId !== expected.kbIds[index]

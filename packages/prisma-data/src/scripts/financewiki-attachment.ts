@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, open, readFile, rename, unlink } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { composeKbScope, readSharedKbIds } from '@klicker-uzh/util/kb-scope'
 import type {
   CohortActivationConfigRecord,
   CohortActivationConfigUpdate,
@@ -12,7 +13,7 @@ import type {
 
 export const FINANCEWIKI_KB_ID = 'a3ba3c49-c770-5150-b393-4e750b31a61e' as const
 export const FINANCEWIKI_KB_SERVER_NAME = 'KB' as const
-export const FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION = 1 as const
+export const FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION = 2 as const
 
 const DOC_QUERY_TOOL_ALIAS = 'doc_query' as const
 const MAX_KB_IDS = 32
@@ -25,8 +26,11 @@ export type FinanceWikiAttachmentTarget = {
   chatMode: string
 }
 
+export type FinanceWikiAttachmentOperation = 'attach' | 'adopt' | 'remove'
+
 export type FinanceWikiAttachmentManifest = {
-  version: typeof FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION
+  version: 1
+  operation?: FinanceWikiAttachmentOperation
   targets: FinanceWikiAttachmentTarget[]
 }
 
@@ -62,7 +66,8 @@ export type FinanceWikiAttachmentReceiptIntentEntry = {
 }
 
 export type FinanceWikiAttachmentReceipt = {
-  receiptVersion: typeof FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION
+  receiptVersion: 1 | 2
+  operation?: FinanceWikiAttachmentOperation
   financeWikiKbId: typeof FINANCEWIKI_KB_ID
   manifestFingerprint: string
   server: FinanceWikiAttachmentServerSnapshot
@@ -72,7 +77,8 @@ export type FinanceWikiAttachmentReceipt = {
 }
 
 export type FinanceWikiAttachmentReceiptIntent = {
-  receiptVersion: typeof FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION
+  receiptVersion: 1 | 2
+  operation?: FinanceWikiAttachmentOperation
   financeWikiKbId: typeof FINANCEWIKI_KB_ID
   manifestFingerprint: string
   server: FinanceWikiAttachmentServerSnapshot
@@ -116,12 +122,16 @@ export interface FinanceWikiAttachmentReceiptStore {
 
 export type FinanceWikiAttachmentPlan = {
   status: 'ready' | 'noop'
+  operation: FinanceWikiAttachmentOperation
   manifestFingerprint: string
   serverId: string
   targetCount: number
   modeCount: number
   alreadyAttached: number
+  alreadyRemoved: number
   wouldAttach: number
+  wouldAdopt: number
+  wouldRemove: number
   receiptState: FinanceWikiAttachmentReceiptFile['state'] | null
 }
 
@@ -136,6 +146,7 @@ export type FinanceWikiAttachmentOperationResult =
     }
 
 export type FinanceWikiAttachmentReadback = {
+  operation: FinanceWikiAttachmentOperation
   state: FinanceWikiAttachmentReceiptFile['state']
   targetCount: number
   attached: number
@@ -229,36 +240,24 @@ function targetKey(target: FinanceWikiAttachmentTarget): string {
   return `${target.chatbotId}\u0000${target.chatMode}`
 }
 
-function assertIdenticalTargetModeSets(
-  targets: readonly FinanceWikiAttachmentTarget[]
-): void {
-  const modesByChatbot = new Map<string, Set<string>>()
-  for (const target of targets) {
-    const modes = modesByChatbot.get(target.chatbotId) ?? new Set<string>()
-    modes.add(target.chatMode)
-    modesByChatbot.set(target.chatbotId, modes)
-  }
-  const first = [...modesByChatbot.values()][0]
-  if (!first) fail('INVALID_MANIFEST', 'targets are required')
-  for (const modes of modesByChatbot.values()) {
-    if (
-      modes.size !== first.size ||
-      [...modes].some((mode) => !first.has(mode))
-    ) {
-      fail(
-        'TARGET_MODE_SET_MISMATCH',
-        'target chatbots must cover identical chat-mode sets'
-      )
-    }
-  }
-}
-
 export function parseFinanceWikiAttachmentManifest(
   value: unknown
 ): FinanceWikiAttachmentManifest {
   if (!isRecord(value)) fail('INVALID_MANIFEST', 'manifest must be an object')
-  assertExactKeys(value, ['version', 'targets'], 'manifest')
-  if (value.version !== FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION) {
+  assertExactKeys(
+    value,
+    Object.hasOwn(value, 'operation')
+      ? ['version', 'targets', 'operation']
+      : ['version', 'targets'],
+    'manifest'
+  )
+  if (
+    value.operation !== undefined &&
+    !['attach', 'adopt', 'remove'].includes(String(value.operation))
+  ) {
+    fail('INVALID_MANIFEST', 'unsupported shared attachment operation')
+  }
+  if (value.version !== 1) {
     fail('INVALID_MANIFEST', 'manifest version is unsupported')
   }
   if (!Array.isArray(value.targets) || value.targets.length === 0) {
@@ -286,18 +285,28 @@ export function parseFinanceWikiAttachmentManifest(
       compareStrings(left.chatbotId, right.chatbotId) ||
       compareStrings(left.chatMode, right.chatMode)
   )
-  assertIdenticalTargetModeSets(targets)
-  return { version: 1, targets }
+  return {
+    version: 1,
+    targets,
+    ...(value.operation && value.operation !== 'attach'
+      ? { operation: value.operation as FinanceWikiAttachmentOperation }
+      : {}),
+  }
 }
 
 export function financeWikiAttachmentManifestFingerprint(
   manifest: FinanceWikiAttachmentManifest
 ): string {
-  return digest({ version: manifest.version, targets: manifest.targets })
+  return digest({
+    version: manifest.version,
+    targets: manifest.targets,
+    ...(manifest.operation ? { operation: manifest.operation } : {}),
+  })
 }
 
 type ParsedDocQueryParameters = {
-  representation: 'kb_id' | 'kb_ids'
+  representation: 'kb_id' | 'kb_ids' | 'none'
+  sharedKbIds: string[]
   kbIds: string[]
   parameters: { [key: string]: JsonValue }
 }
@@ -308,13 +317,14 @@ function normalizeKbId(value: unknown): string {
 
 function parseDocQueryParameters(
   value: JsonValue,
-  errorCode = 'PARAMETERS_MALFORMED'
+  errorCode = 'PARAMETERS_MALFORMED',
+  allowEmpty = false
 ): ParsedDocQueryParameters {
   if (!isJsonRecord(value))
     fail(errorCode, 'Doc Query parameters are malformed')
   const hasKbId = Object.hasOwn(value, 'kb_id')
   const hasKbIds = Object.hasOwn(value, 'kb_ids')
-  if (hasKbId === hasKbIds) {
+  if ((hasKbId && hasKbIds) || (!hasKbId && !hasKbIds && !allowEmpty)) {
     fail(
       errorCode,
       'Doc Query parameters must use exactly one KB representation'
@@ -323,7 +333,8 @@ function parseDocQueryParameters(
   const allowedKeys = new Set([
     'required',
     'toolAlias',
-    hasKbId ? 'kb_id' : 'kb_ids',
+    ...(hasKbId ? ['kb_id'] : hasKbIds ? ['kb_ids'] : []),
+    ...(Object.hasOwn(value, 'shared_kb_ids') ? ['shared_kb_ids'] : []),
   ])
   if (
     Object.keys(value).length !== allowedKeys.size ||
@@ -335,24 +346,34 @@ function parseDocQueryParameters(
     fail(errorCode, 'Doc Query parameters are not a required doc_query binding')
   }
 
-  const kbIds = hasKbId
-    ? [normalizeKbId(value.kb_id)]
-    : (() => {
-        if (!Array.isArray(value.kb_ids)) {
-          fail(errorCode, 'kb_ids must be an array')
-        }
-        if (value.kb_ids.length < 2 || value.kb_ids.length > MAX_KB_IDS) {
-          fail(errorCode, 'kb_ids has an invalid size')
-        }
-        const normalized = value.kb_ids.map(normalizeKbId)
-        if (new Set(normalized).size !== normalized.length) {
-          fail(errorCode, 'kb_ids must be unique')
-        }
-        return [...normalized].sort(compareStrings)
-      })()
+  const kbIds =
+    !hasKbId && !hasKbIds
+      ? []
+      : hasKbId
+        ? [normalizeKbId(value.kb_id)]
+        : (() => {
+            if (!Array.isArray(value.kb_ids)) {
+              fail(errorCode, 'kb_ids must be an array')
+            }
+            if (value.kb_ids.length < 2 || value.kb_ids.length > MAX_KB_IDS) {
+              fail(errorCode, 'kb_ids has an invalid size')
+            }
+            const normalized = value.kb_ids.map(normalizeKbId)
+            if (new Set(normalized).size !== normalized.length) {
+              fail(errorCode, 'kb_ids must be unique')
+            }
+            return [...normalized].sort(compareStrings)
+          })()
 
+  let sharedKbIds: string[]
+  try {
+    sharedKbIds = readSharedKbIds(value)
+  } catch {
+    fail(errorCode, 'shared knowledge-base grants are malformed')
+  }
   return {
-    representation: hasKbId ? 'kb_id' : 'kb_ids',
+    sharedKbIds,
+    representation: hasKbId ? 'kb_id' : hasKbIds ? 'kb_ids' : 'none',
     kbIds,
     parameters: value,
   }
@@ -376,17 +397,59 @@ function withoutFinanceWiki(kbIds: readonly string[]): string[] {
   return kbIds.filter((kbId) => kbId !== FINANCEWIKI_KB_ID)
 }
 
-function nextParameters(parsed: ParsedDocQueryParameters): JsonValue {
-  if (hasFinanceWiki(parsed.kbIds)) {
-    fail('PARTIAL_ATTACHMENT', 'FinanceWiki is already attached')
+function nextParameters(
+  parsed: ParsedDocQueryParameters,
+  operation: FinanceWikiAttachmentOperation = 'attach',
+  legacy = false
+): JsonValue {
+  const present = hasFinanceWiki(parsed.kbIds)
+  const granted = hasFinanceWiki(parsed.sharedKbIds)
+  if (operation === 'attach' && present) {
+    fail(
+      'PARTIAL_ATTACHMENT',
+      'FinanceWiki is already attached; legacy scopes require explicit adoption'
+    )
   }
-  if (parsed.kbIds.length >= MAX_KB_IDS) {
+  if (operation === 'adopt' && (!present || granted)) {
+    fail(
+      'ADOPTION_INVALID',
+      'adoption requires an existing legacy FinanceWiki scope'
+    )
+  }
+  if (operation === 'remove' && !granted) {
+    fail(
+      'REMOVAL_INVALID',
+      'removal requires an explicit shared FinanceWiki grant'
+    )
+  }
+  if (operation === 'attach' && parsed.kbIds.length >= MAX_KB_IDS) {
     fail('KB_IDS_LIMIT', 'the knowledge-base scope has no free slot')
   }
   const parameters = structuredClone(parsed.parameters)
   delete parameters.kb_id
-  parameters.kb_ids = [...parsed.kbIds, FINANCEWIKI_KB_ID].sort(compareStrings)
-  return parameters
+  delete parameters.kb_ids
+  delete parameters.shared_kb_ids
+  if (legacy) {
+    parameters.kb_ids = [...parsed.kbIds, FINANCEWIKI_KB_ID].sort(
+      compareStrings
+    )
+    return parameters
+  }
+  const shared =
+    operation === 'remove'
+      ? withoutFinanceWiki(parsed.sharedKbIds)
+      : [...parsed.sharedKbIds, FINANCEWIKI_KB_ID]
+  return {
+    ...parameters,
+    ...composeKbScope(withoutFinanceWiki(parsed.kbIds), shared),
+  }
+}
+
+function parametersEnabled(parameters: JsonValue): boolean {
+  return (
+    isJsonRecord(parameters) &&
+    (Object.hasOwn(parameters, 'kb_id') || Object.hasOwn(parameters, 'kb_ids'))
+  )
 }
 
 function snapshotConfig(
@@ -567,12 +630,21 @@ function assertReceiptShape(receipt: FinanceWikiAttachmentReceiptFile): void {
   assertNoSecretKeys(receipt)
   if (!isRecord(receipt)) fail('RECEIPT_INVALID', 'receipt is malformed')
   if (
-    receipt.receiptVersion !== FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION ||
+    ![1, FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION].includes(
+      receipt.receiptVersion
+    ) ||
     receipt.financeWikiKbId !== FINANCEWIKI_KB_ID ||
     typeof receipt.manifestFingerprint !== 'string' ||
     !SHA256_PATTERN.test(receipt.manifestFingerprint)
   ) {
     fail('RECEIPT_INVALID', 'receipt identity is malformed')
+  }
+  if (
+    receipt.receiptVersion === 2
+      ? !['attach', 'adopt', 'remove'].includes(String(receipt.operation))
+      : receipt.operation !== undefined
+  ) {
+    fail('RECEIPT_INVALID', 'receipt operation is unsupported')
   }
   assertServerSnapshot(receipt.server)
   if (receipt.server.name !== FINANCEWIKI_KB_SERVER_NAME) {
@@ -588,10 +660,14 @@ function assertReceiptShape(receipt: FinanceWikiAttachmentReceiptFile): void {
     assertConfigSnapshot(entry.prior)
     const prior = parseDocQueryParameters(
       entry.prior.parameters,
-      'RECEIPT_INVALID'
+      'RECEIPT_INVALID',
+      !entry.prior.isEnabled
     )
     assertAllowedTools(entry.prior.allowedTools)
-    if (hasFinanceWiki(prior.kbIds)) {
+    if (
+      (receipt.operation ?? 'attach') === 'attach' &&
+      hasFinanceWiki(prior.kbIds)
+    ) {
       fail('RECEIPT_INVALID', 'receipt prior already contains FinanceWiki')
     }
     normalizeUuid(entry.configId, 'receipt config id')
@@ -608,18 +684,17 @@ function assertReceiptShape(receipt: FinanceWikiAttachmentReceiptFile): void {
       fail('RECEIPT_INVALID', 'receipt target is repeated')
     }
     keys.add(targetKey(entry.target))
+    const expectedParameters = nextParameters(
+      prior,
+      receipt.operation ?? 'attach',
+      receipt.receiptVersion === 1
+    )
     if (receipt.state === 'preparing') {
       if (!('nextParameters' in entry)) {
         fail('RECEIPT_INVALID', 'receipt intent is malformed')
       }
-      const next = parseDocQueryParameters(entry.nextParameters as JsonValue)
-      const expectedNext = parseDocQueryParameters(nextParameters(prior))
-      if (
-        next.representation !== 'kb_ids' ||
-        next.kbIds.length !== expectedNext.kbIds.length ||
-        next.kbIds.some((kbId, index) => kbId !== expectedNext.kbIds[index])
-      ) {
-        fail('RECEIPT_INVALID', 'receipt intent does not attach FinanceWiki')
+      if (!jsonEqual(entry.nextParameters as JsonValue, expectedParameters)) {
+        fail('RECEIPT_INVALID', 'receipt intent does not match its operation')
       }
     } else {
       if (!('attached' in entry)) {
@@ -631,9 +706,14 @@ function assertReceiptShape(receipt: FinanceWikiAttachmentReceiptFile): void {
         entry.prior.id !== entry.attached.id ||
         entry.prior.chatbotId !== entry.attached.chatbotId ||
         entry.prior.chatMode !== entry.attached.chatMode ||
-        !hasFinanceWiki(
-          parseDocQueryParameters(entry.attached.parameters).kbIds
+        !jsonEqual(
+          entry.attached.parameters as JsonValue,
+          expectedParameters
         ) ||
+        entry.attached.isEnabled !==
+          (receipt.receiptVersion === 1
+            ? entry.prior.isEnabled
+            : entry.prior.isEnabled && parametersEnabled(expectedParameters)) ||
         entry.attached.mcpServerId.toLowerCase() !==
           receipt.server.id.toLowerCase()
       ) {
@@ -662,7 +742,10 @@ function manifestFromReceipt(
   receipt: FinanceWikiAttachmentReceiptFile
 ): FinanceWikiAttachmentManifest {
   return parseFinanceWikiAttachmentManifest({
-    version: FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION,
+    version: 1,
+    ...(receipt.operation && receipt.operation !== 'attach'
+      ? { operation: receipt.operation }
+      : {}),
     targets: receipt.entries.map(({ target }) => target),
   })
 }
@@ -713,6 +796,7 @@ function makeIntent(
 ): FinanceWikiAttachmentReceiptIntent {
   const withoutDigest = {
     receiptVersion: FINANCEWIKI_ATTACHMENT_RECEIPT_VERSION,
+    operation: manifest.operation ?? 'attach',
     financeWikiKbId: FINANCEWIKI_KB_ID,
     manifestFingerprint: financeWikiAttachmentManifestFingerprint(manifest),
     server,
@@ -736,6 +820,7 @@ function makeAppliedReceipt(
   }
   const withoutDigest = {
     receiptVersion: intent.receiptVersion,
+    ...(intent.operation ? { operation: intent.operation } : {}),
     financeWikiKbId: intent.financeWikiKbId,
     manifestFingerprint: intent.manifestFingerprint,
     server: intent.server,
@@ -798,11 +883,13 @@ type AttachmentState = {
     parsed: ParsedDocQueryParameters
   }>
   allAttached: boolean
+  legacyAttached: boolean
 }
 
 async function readAttachmentState(
   store: FinanceWikiAttachmentStore,
-  manifest: FinanceWikiAttachmentManifest
+  manifest: FinanceWikiAttachmentManifest,
+  includeDisabled = false
 ): Promise<AttachmentState> {
   return store.transaction(async (tx) => {
     const server = await tx.findServerByName(FINANCEWIKI_KB_SERVER_NAME)
@@ -819,7 +906,7 @@ async function readAttachmentState(
 
     for (const config of configs) {
       if (
-        !config.isEnabled ||
+        (!config.isEnabled && !includeDisabled) ||
         !targetChatbots.has(config.chatbotId.toLowerCase())
       ) {
         continue
@@ -828,6 +915,7 @@ async function readAttachmentState(
         chatbotId: config.chatbotId.toLowerCase(),
         chatMode: config.chatMode,
       })
+      if (!targetsByKey.has(key) && !config.isEnabled) continue
       if (!targetsByKey.has(key)) {
         fail(
           'TARGET_MODES_INCOMPLETE',
@@ -853,25 +941,30 @@ async function readAttachmentState(
         fail('CONFIG_MISMATCH', 'target config identity does not match')
       }
       assertAllowedTools(config.allowedTools)
-      const parsed = parseDocQueryParameters(config.parameters)
+      const parsed = parseDocQueryParameters(
+        config.parameters,
+        'PARAMETERS_MALFORMED',
+        !config.isEnabled
+      )
       return { target, config, parsed }
     })
 
-    const first = entries[0]!.parsed
-    const firstBase = withoutFinanceWiki(first.kbIds)
-    for (const entry of entries.slice(1)) {
+    const firstByChatbot = new Map<string, ParsedDocQueryParameters>()
+    for (const entry of entries) {
+      const first = firstByChatbot.get(entry.target.chatbotId)
       if (
-        entry.parsed.representation !== first.representation ||
-        withoutFinanceWiki(entry.parsed.kbIds).length !== firstBase.length ||
-        withoutFinanceWiki(entry.parsed.kbIds).some(
-          (kbId, index) => kbId !== firstBase[index]
-        )
+        first &&
+        (first.representation !== entry.parsed.representation ||
+          JSON.stringify(first.kbIds) !== JSON.stringify(entry.parsed.kbIds) ||
+          JSON.stringify(first.sharedKbIds) !==
+            JSON.stringify(entry.parsed.sharedKbIds))
       ) {
         fail(
           'MODE_SET_MISMATCH',
-          'enabled target modes do not share one canonical KB set'
+          'enabled modes of a chatbot do not share one canonical KB and grant set'
         )
       }
+      firstByChatbot.set(entry.target.chatbotId, entry.parsed)
     }
 
     const attachedCount = entries.filter(({ parsed }) =>
@@ -881,11 +974,26 @@ async function readAttachmentState(
       fail('PARTIAL_ATTACHMENT', 'FinanceWiki is attached to only some modes')
     }
 
+    const grantCount = entries.filter(({ parsed }) =>
+      hasFinanceWiki(parsed.sharedKbIds)
+    ).length
+    if (grantCount !== 0 && grantCount !== entries.length) {
+      fail(
+        'PARTIAL_ATTACHMENT',
+        'FinanceWiki shared grants differ across targets'
+      )
+    }
     return {
       server,
       serverSnapshot: snapshotServer(server),
       entries,
-      allAttached: attachedCount === entries.length,
+      legacyAttached: attachedCount === entries.length && grantCount === 0,
+      allAttached:
+        manifest.operation === 'remove'
+          ? attachedCount === 0
+          : manifest.operation === 'adopt'
+            ? grantCount === entries.length
+            : attachedCount === entries.length,
     }
   })
 }
@@ -928,6 +1036,11 @@ function assertNoExistingReceiptForApply(
   manifest: FinanceWikiAttachmentManifest
 ): FinanceWikiAttachmentOperationResult | null {
   if (!receipt) {
+    if (!manifest.operation && state.legacyAttached)
+      fail(
+        'LEGACY_ATTACHMENT',
+        'use an explicit adopt manifest for legacy FinanceWiki scopes'
+      )
     if (state.allAttached) return { status: 'noop', receipt: null }
     return null
   }
@@ -949,7 +1062,11 @@ export async function planFinanceWikiAttachment(
 ): Promise<FinanceWikiAttachmentPlan> {
   const manifest = parseFinanceWikiAttachmentManifest(value)
   const receipt = await readReceipt(receiptStore)
-  const state = await readAttachmentState(store, manifest)
+  const state = await readAttachmentState(
+    store,
+    manifest,
+    manifest.operation === 'remove'
+  )
   if (receipt) {
     assertReceiptMatchesManifest(receipt, manifest)
     if (receipt.state === 'applied') {
@@ -960,14 +1077,39 @@ export async function planFinanceWikiAttachment(
       fail('RECEIPT_IN_PROGRESS', 'an unfinished FinanceWiki receipt exists')
     }
   }
+  if (!receipt && !manifest.operation && state.legacyAttached)
+    fail(
+      'LEGACY_ATTACHMENT',
+      'use an explicit adopt manifest for legacy FinanceWiki scopes'
+    )
+  if (!state.allAttached) {
+    for (const entry of state.entries)
+      nextParameters(entry.parsed, manifest.operation ?? 'attach')
+  }
   return {
     status: state.allAttached ? 'noop' : 'ready',
+    operation: manifest.operation ?? 'attach',
     manifestFingerprint: financeWikiAttachmentManifestFingerprint(manifest),
     serverId: state.server.id,
     targetCount: state.entries.length,
     modeCount: new Set(state.entries.map(({ target }) => target.chatMode)).size,
-    alreadyAttached: state.allAttached ? state.entries.length : 0,
-    wouldAttach: state.allAttached ? 0 : state.entries.length,
+    alreadyAttached: state.entries.filter(({ parsed }) =>
+      hasFinanceWiki(parsed.kbIds)
+    ).length,
+    alreadyRemoved:
+      manifest.operation === 'remove' && state.allAttached
+        ? state.entries.length
+        : 0,
+    wouldAttach:
+      !state.allAttached && !manifest.operation ? state.entries.length : 0,
+    wouldAdopt:
+      !state.allAttached && manifest.operation === 'adopt'
+        ? state.entries.length
+        : 0,
+    wouldRemove:
+      !state.allAttached && manifest.operation === 'remove'
+        ? state.entries.length
+        : 0,
     receiptState: receipt?.state ?? null,
   }
 }
@@ -988,10 +1130,6 @@ async function applyIntent(
         fail('RECEIPT_STALE', 'target config changed after the pre-read')
       }
       assertAllowedTools(current.allowedTools)
-      const parsed = parseDocQueryParameters(current.parameters)
-      if (hasFinanceWiki(parsed.kbIds)) {
-        fail('RECEIPT_STALE', 'FinanceWiki appeared after the pre-read')
-      }
       currentConfigs.push(current)
     }
 
@@ -1004,7 +1142,10 @@ async function applyIntent(
         chatMode: current.chatMode,
         allowedTools: cloneJson(current.allowedTools),
         priority: current.priority,
-        isEnabled: current.isEnabled,
+        isEnabled:
+          intent.receiptVersion === 1
+            ? current.isEnabled
+            : current.isEnabled && parametersEnabled(entry.nextParameters),
         parameters: cloneJson(entry.nextParameters),
       }
       const updated = await tx.updateConfig(current.id, current.updatedAt, data)
@@ -1023,7 +1164,11 @@ export async function applyFinanceWikiAttachment(
 ): Promise<FinanceWikiAttachmentOperationResult> {
   const manifest = parseFinanceWikiAttachmentManifest(value)
   const receipt = await readReceipt(receiptStore)
-  const state = await readAttachmentState(store, manifest)
+  const state = await readAttachmentState(
+    store,
+    manifest,
+    manifest.operation === 'remove'
+  )
   const noOp = assertNoExistingReceiptForApply(receipt, state, manifest)
   if (noOp) return noOp
 
@@ -1033,7 +1178,7 @@ export async function applyFinanceWikiAttachment(
     state.entries.map(({ target, config, parsed }) => ({
       target,
       config,
-      nextParameters: nextParameters(parsed),
+      nextParameters: nextParameters(parsed, manifest.operation ?? 'attach'),
     }))
   )
   await receiptStore.write(intent, null)
@@ -1074,7 +1219,11 @@ function expectedAttachedContent(
   prior: FinanceWikiAttachmentConfigSnapshot,
   nextParameters: JsonValue
 ): FinanceWikiAttachmentConfigSnapshot {
-  return { ...prior, parameters: cloneJson(nextParameters) }
+  return {
+    ...prior,
+    isEnabled: prior.isEnabled && parametersEnabled(nextParameters),
+    parameters: cloneJson(nextParameters),
+  }
 }
 
 function classifyIntentConfig(
@@ -1149,7 +1298,7 @@ async function rollbackTransaction(
         chatMode: current.chatMode,
         allowedTools: cloneJson(current.allowedTools),
         priority: current.priority,
-        isEnabled: current.isEnabled,
+        isEnabled: entry.prior.isEnabled,
         parameters: cloneJson(entry.prior.parameters),
       }
       if (!(await tx.updateConfig(current.id, current.updatedAt, data))) {
@@ -1212,7 +1361,11 @@ export async function rollbackFinanceWikiAttachment(
     fail('RECEIPT_STATE', 'rollback requires an applied receipt')
   }
   const manifest = receiptManifest(receipt)
-  const state = await readAttachmentState(store, manifest)
+  const state = await readAttachmentState(
+    store,
+    manifest,
+    manifest.operation === 'remove'
+  )
   assertCurrentReceiptState(state, receipt, 'attached')
   const rollingBack = updateReceiptState(receipt, 'rolling_back')
   await receiptStore.write(rollingBack, receiptExpectation(receipt))
@@ -1251,6 +1404,7 @@ export async function readFinanceWikiAttachment(
     fail('RECEIPT_STALE', 'receipt configs do not match the receipt state')
   }
   return {
+    operation: receipt.operation ?? 'attach',
     state: receipt.state,
     targetCount: receipt.entries.length,
     attached,

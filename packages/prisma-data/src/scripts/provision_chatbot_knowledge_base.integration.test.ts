@@ -376,6 +376,45 @@ describeWithDatabase('provision_chatbot_knowledge_base script', () => {
   )
 
   it(
+    'refuses a stale rollback after an operator adds shared access',
+    async () => {
+      const parameters = {
+        required: true,
+        toolAlias: DOC_QUERY_TOOL_ALIAS,
+        kb_ids: [KB_ID, FOREIGN_KB_ID],
+        shared_kb_ids: [FOREIGN_KB_ID],
+      }
+      await prisma.chatbotMCPConfig.update({
+        where: { id: TUTOR_CONFIG_ID },
+        data: { parameters },
+      })
+      try {
+        const output = runFailingScript([
+          '--rollback',
+          '--snapshot',
+          snapshotPath,
+        ])
+        expect(output).toContain('FAIL: shared_kb_grants_require_operator')
+        expect(
+          (
+            await prisma.chatbotMCPConfig.findUniqueOrThrow({
+              where: { id: TUTOR_CONFIG_ID },
+            })
+          ).parameters
+        ).toEqual(parameters)
+        expect(await prisma.kB.count({ where: { id: KB_ID } })).toBe(1)
+        expect(await prisma.kBChatbot.count({ where: { kbId: KB_ID } })).toBe(1)
+      } finally {
+        await prisma.chatbotMCPConfig.update({
+          where: { id: TUTOR_CONFIG_ID },
+          data: { parameters: PHANTOM_KB_PARAMETERS },
+        })
+      }
+    },
+    SPAWN_TIMEOUT
+  )
+
+  it(
     'restores the pre-apply state on rollback',
     async () => {
       const output = runScript(['--rollback', '--snapshot', snapshotPath])

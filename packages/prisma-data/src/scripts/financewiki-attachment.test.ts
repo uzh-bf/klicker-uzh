@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type {
   CohortActivationConfigRecord,
@@ -397,6 +398,56 @@ describe('FinanceWiki attachment operator', () => {
     ).toBe(true)
   })
 
+  it('recovers and rolls back a version-one preparation receipt without adopting grants', async () => {
+    const harness = makeHarness()
+    const before = harness.configs().map(parametersJson)
+    harness.receiptStore.interruptOnWrite(1, true)
+    await expect(
+      applyFinanceWikiAttachment(
+        harness.store,
+        makeManifest(),
+        harness.receiptStore
+      )
+    ).rejects.toThrow()
+    const receipt = await harness.receiptStore.read()
+    if (!receipt || receipt.state !== 'preparing')
+      throw new Error('Missing intent')
+    receipt.receiptVersion = 1
+    delete receipt.operation
+    for (const entry of receipt.entries) {
+      const parameters = entry.nextParameters as Record<string, JsonValue>
+      delete parameters.shared_kb_ids
+    }
+    // Version-one files use canonical JSON and a SHA-256 payload checksum.
+    const canonical = (value: unknown): string => {
+      if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`
+      if (value && typeof value === 'object')
+        return `{${Object.entries(value)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`)
+          .join(',')}}`
+      return JSON.stringify(value)
+    }
+    const { payloadDigest: _digest, ...payload } = receipt
+    receipt.payloadDigest = createHash('sha256')
+      .update(canonical(payload))
+      .digest('hex')
+    assertFinanceWikiAttachmentReceiptIntegrity(receipt)
+    const legacyStore = new MemoryReceiptStore()
+    await legacyStore.write(receipt, null)
+    await recoverFinanceWikiAttachment(harness.store, legacyStore)
+    expect(
+      await readFinanceWikiAttachment(harness.store, legacyStore)
+    ).toMatchObject({ state: 'applied', attached: 4 })
+    for (const config of harness.configs()) {
+      expect(config.parameters).toEqual(
+        makeParameters([BASE_KB_ID, FINANCEWIKI_KB_ID].sort(), 'kb_ids')
+      )
+    }
+    await rollbackFinanceWikiAttachment(harness.store, legacyStore)
+    expect(harness.configs().map(parametersJson)).toEqual(before)
+  })
+
   it('recovers a preparation receipt after the transaction committed', async () => {
     const harness = makeHarness()
     harness.receiptStore.interruptOnWrite(2)
@@ -460,6 +511,7 @@ describe('FinanceWiki attachment operator', () => {
       )
     ).toEqual(before)
     expect(readback).toEqual({
+      operation: 'attach',
       state: 'rolled_back',
       targetCount: 4,
       attached: 0,
@@ -553,7 +605,7 @@ describe('FinanceWiki attachment operator', () => {
     }
 
     expect(() => assertFinanceWikiAttachmentReceiptIntegrity(receipt)).toThrow(
-      'receipt intent does not attach FinanceWiki'
+      expect.objectContaining({ code: 'RECEIPT_INVALID' })
     )
   })
 
@@ -608,7 +660,7 @@ describe('FinanceWiki attachment operator', () => {
         { chatbotId: CHATBOT_A_ID, chatMode: 'tutor' },
         { chatbotId: CHATBOT_B_ID, chatMode: 'review' },
       ]),
-      code: 'TARGET_MODE_SET_MISMATCH',
+      code: 'TARGET_MODES_INCOMPLETE',
     },
     {
       name: 'enabled modes use different KB sets',
@@ -709,5 +761,192 @@ describe('FinanceWiki attachment operator', () => {
     expect(harness.receiptStore.writeCount).toBe(writesBefore)
     expect(harness.updateCalls()).toBe(updatesBefore)
     expect(harness.configs()[0]!.updatedAt).not.toEqual(stale.updatedAt)
+  })
+})
+
+describe('durable shared grants', () => {
+  it('retains different course scopes across accounts and different enabled mode sets', async () => {
+    const configs = makeConfigs().filter(
+      (config) => config.id !== CONFIG_B_REVIEW_ID
+    )
+    for (const config of configs) {
+      if (config.chatbotId === CHATBOT_B_ID)
+        config.parameters = makeParameters([OTHER_KB_ID])
+    }
+    const harness = makeHarness(configs)
+    const manifest = makeManifest(
+      configs.map(({ chatbotId, chatMode }) => ({ chatbotId, chatMode }))
+    )
+    await applyFinanceWikiAttachment(
+      harness.store,
+      manifest,
+      harness.receiptStore
+    )
+    for (const config of harness.configs()) {
+      expect(config.parameters).toMatchObject({
+        kb_ids: [
+          config.chatbotId === CHATBOT_A_ID ? BASE_KB_ID : OTHER_KB_ID,
+          FINANCEWIKI_KB_ID,
+        ].sort(),
+        shared_kb_ids: [FINANCEWIKI_KB_ID],
+      })
+    }
+  })
+
+  it('requires deliberate adoption of existing legacy scope and can undo the adoption', async () => {
+    const configs = makeConfigs().map((config) => ({
+      ...config,
+      parameters: makeParameters(
+        [BASE_KB_ID, FINANCEWIKI_KB_ID].sort(),
+        'kb_ids'
+      ),
+    }))
+    const harness = makeHarness(configs)
+    await expect(
+      planFinanceWikiAttachment(
+        harness.store,
+        makeManifest(),
+        harness.receiptStore
+      )
+    ).rejects.toMatchObject({ code: 'LEGACY_ATTACHMENT' })
+    expect(harness.updateCalls()).toBe(0)
+    const manifest = { ...makeManifest(), operation: 'adopt' }
+    expect(
+      await planFinanceWikiAttachment(
+        harness.store,
+        manifest,
+        harness.receiptStore
+      )
+    ).toMatchObject({ wouldAttach: 0, wouldAdopt: 4, wouldRemove: 0 })
+    await applyFinanceWikiAttachment(
+      harness.store,
+      manifest,
+      harness.receiptStore
+    )
+    expect(harness.configs()[0]!.parameters).toMatchObject({
+      shared_kb_ids: [FINANCEWIKI_KB_ID],
+    })
+    await rollbackFinanceWikiAttachment(harness.store, harness.receiptStore)
+    expect(harness.configs().map(parametersJson)).toEqual(
+      configs.map(parametersJson)
+    )
+  })
+
+  it('uses a fresh removal receipt after course replacement and retains the new course scope', async () => {
+    const harness = makeHarness()
+    await applyFinanceWikiAttachment(
+      harness.store,
+      makeManifest(),
+      harness.receiptStore
+    )
+    for (const config of harness.configs()) {
+      harness.replaceConfig({
+        ...config,
+        updatedAt: new Date(config.updatedAt.getTime() + 1),
+        parameters: {
+          required: true,
+          toolAlias: 'doc_query',
+          kb_ids: [OTHER_KB_ID, FINANCEWIKI_KB_ID].sort(),
+          shared_kb_ids: [FINANCEWIKI_KB_ID],
+        },
+      })
+    }
+    await expect(
+      rollbackFinanceWikiAttachment(harness.store, harness.receiptStore)
+    ).rejects.toMatchObject({ code: 'RECEIPT_STALE' })
+    const removalReceipt = new MemoryReceiptStore()
+    const manifest = { ...makeManifest(), operation: 'remove' }
+    expect(
+      await planFinanceWikiAttachment(harness.store, manifest, removalReceipt)
+    ).toMatchObject({ wouldAttach: 0, wouldAdopt: 0, wouldRemove: 4 })
+    await applyFinanceWikiAttachment(harness.store, manifest, removalReceipt)
+    for (const config of harness.configs()) {
+      expect(config.isEnabled).toBe(true)
+      expect(config.parameters).toEqual(makeParameters([OTHER_KB_ID]))
+    }
+    expect(
+      await readFinanceWikiAttachment(harness.store, removalReceipt)
+    ).toMatchObject({ attached: 4 })
+    await rollbackFinanceWikiAttachment(harness.store, removalReceipt)
+    expect(harness.configs()[0]!.parameters).toMatchObject({
+      kb_ids: [OTHER_KB_ID, FINANCEWIKI_KB_ID].sort(),
+    })
+  })
+
+  it('does not enable a disabled mode when removing its shared grant', async () => {
+    const configs = makeConfigs().map((config) => ({
+      ...config,
+      isEnabled: config.chatMode !== 'review',
+      parameters: {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_ids: [BASE_KB_ID, FINANCEWIKI_KB_ID],
+        shared_kb_ids: [FINANCEWIKI_KB_ID],
+      },
+    }))
+    const harness = makeHarness(configs)
+    await applyFinanceWikiAttachment(
+      harness.store,
+      { ...makeManifest(), operation: 'remove' },
+      harness.receiptStore
+    )
+    for (const config of harness.configs()) {
+      expect(config.isEnabled).toBe(config.chatMode !== 'review')
+      expect(config.parameters).toEqual(makeParameters())
+    }
+  })
+
+  it('disables an empty shared-only scope and recovers an interrupted removal receipt', async () => {
+    const configs = makeConfigs().map((config) => ({
+      ...config,
+      parameters: {
+        required: true,
+        toolAlias: 'doc_query',
+        kb_id: FINANCEWIKI_KB_ID,
+        shared_kb_ids: [FINANCEWIKI_KB_ID],
+      },
+    }))
+    const harness = makeHarness(configs)
+    harness.receiptStore.interruptOnWrite(2)
+    await expect(
+      applyFinanceWikiAttachment(
+        harness.store,
+        { ...makeManifest(), operation: 'remove' },
+        harness.receiptStore
+      )
+    ).rejects.toThrow()
+    for (const config of harness.configs()) {
+      expect(config.isEnabled).toBe(false)
+      expect(config.parameters).toEqual({
+        required: true,
+        toolAlias: 'doc_query',
+      })
+    }
+    harness.receiptStore.clearInterruption()
+    await recoverFinanceWikiAttachment(harness.store, harness.receiptStore)
+    await rollbackFinanceWikiAttachment(harness.store, harness.receiptStore)
+    expect(harness.configs().map(parametersJson)).toEqual(
+      configs.map(parametersJson)
+    )
+    expect(harness.configs().every((config) => config.isEnabled)).toBe(true)
+  })
+
+  it('rolls back the entire removal transaction after a failed CAS', async () => {
+    const harness = makeHarness()
+    await applyFinanceWikiAttachment(
+      harness.store,
+      makeManifest(),
+      harness.receiptStore
+    )
+    const before = harness.configs().map(parametersJson)
+    harness.failNextUpdateFor(CONFIG_B_REVIEW_ID)
+    await expect(
+      applyFinanceWikiAttachment(
+        harness.store,
+        { ...makeManifest(), operation: 'remove' },
+        new MemoryReceiptStore()
+      )
+    ).rejects.toMatchObject({ code: 'CONCURRENT_EDIT' })
+    expect(harness.configs().map(parametersJson)).toEqual(before)
   })
 })

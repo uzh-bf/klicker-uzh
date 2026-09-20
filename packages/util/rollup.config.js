@@ -10,6 +10,7 @@ const config = defineConfig([
       'src/auth.ts',
       'src/citations.ts',
       'src/clientAuth.ts',
+      'src/kbScope.ts',
       'src/publicUrl.ts',
       'src/responseExampleDigest.ts',
       'src/responseExampleEligibility.ts',

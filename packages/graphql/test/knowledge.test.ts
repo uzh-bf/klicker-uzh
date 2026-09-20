@@ -854,6 +854,113 @@ describe('Integration tests for knowledge base CRUD', () => {
     ])
   })
 
+  it.each([
+    'replace',
+    'detach',
+    'delete',
+  ] as const)('preserves shared grants and custom modes through course KB %s', async (action) => {
+    const first = await createKb({ name: 'Original course KB' }, userOneCtx)
+    const second = await createKb({ name: 'Replacement course KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Shared scope lifecycle fixture',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await attachKbToChatbot(
+      { kbId: first.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    const sharedId = randomUUID()
+    const parameters = {
+      required: true,
+      toolAlias: 'doc_query',
+      kb_ids: [first.id, sharedId].sort(),
+      shared_kb_ids: [sharedId],
+    }
+    await prisma.chatbotMCPConfig.updateMany({
+      where: { chatbotId: chatbot.id },
+      data: { parameters, priority: 4 },
+    })
+    const server = await prisma.chatbotMCPServer.findUniqueOrThrow({
+      where: { name: 'KB' },
+    })
+    await prisma.chatbotMCPConfig.create({
+      data: {
+        chatbotId: chatbot.id,
+        mcpServerId: server.id,
+        chatMode: 'review',
+        allowedTools: ['doc_query'],
+        parameters,
+        priority: 4,
+      },
+    })
+    if (action === 'replace')
+      await attachKbToChatbot(
+        { kbId: second.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+    else if (action === 'detach')
+      await detachKbFromChatbot(
+        { kbId: first.id, chatbotId: chatbot.id },
+        userOneCtx
+      )
+    else await deleteKb({ id: first.id }, userOneCtx)
+    const configs = await prisma.chatbotMCPConfig.findMany({
+      where: { chatbotId: chatbot.id },
+      include: { mcpServer: { select: { id: true, name: true } } },
+    })
+    const expected =
+      action === 'replace' ? [second.id, sharedId].sort() : [sharedId]
+    expect(configs).toHaveLength(3)
+    for (const config of configs) {
+      expect(config.isEnabled).toBe(true)
+      expect(config.priority).toBe(4)
+      expect(config.parameters).toMatchObject({ shared_kb_ids: [sharedId] })
+      expect(resolveMcpScope(configs, config.chatMode, [config])).toEqual(
+        expected
+      )
+    }
+  })
+
+  it('rolls back course replacement when enabled mode grants disagree', async () => {
+    const first = await createKb({ name: 'Original course KB' }, userOneCtx)
+    const second = await createKb({ name: 'Replacement course KB' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Inconsistent scope fixture',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await attachKbToChatbot(
+      { kbId: first.id, chatbotId: chatbot.id },
+      userOneCtx
+    )
+    const sharedId = randomUUID()
+    await prisma.chatbotMCPConfig.updateMany({
+      where: { chatbotId: chatbot.id, chatMode: 'tutor' },
+      data: {
+        parameters: {
+          required: true,
+          toolAlias: 'doc_query',
+          kb_ids: [first.id, sharedId],
+          shared_kb_ids: [sharedId],
+        },
+      },
+    })
+    await expect(
+      attachKbToChatbot({ kbId: second.id, chatbotId: chatbot.id }, userOneCtx)
+    ).rejects.toThrow()
+    const bindings = await prisma.kBChatbot.findMany({
+      where: { chatbotId: chatbot.id, isEnabled: true },
+    })
+    expect(bindings.map(({ kbId }) => kbId)).toEqual([first.id])
+  })
+
   it('replaces the enabled binding and provisions only doc_query', async () => {
     const firstKb = await createKb({ name: 'First KB' }, userOneCtx)
     const secondKb = await createKb({ name: 'Second KB' }, userOneCtx)

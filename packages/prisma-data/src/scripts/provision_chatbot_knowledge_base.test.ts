@@ -379,3 +379,16 @@ describe('provision snapshot', () => {
     expect(() => parseSnapshot('{"version":0}')).toThrow(ProvisionFailure)
   })
 })
+
+it('refuses to project over operator-owned shared grants', () => {
+  const state = baseState()
+  state.kbServerConfigs[0]!.parameters = {
+    required: true,
+    toolAlias: DOC_QUERY_TOOL_ALIAS,
+    kb_ids: [KB_ID, FOREIGN_KB_ID],
+    shared_kb_ids: [FOREIGN_KB_ID],
+  }
+  expect(planProvision(state, TARGET).refusal).toBe(
+    'shared_kb_grants_require_operator'
+  )
+})

@@ -540,3 +540,45 @@ describe('current-v3 Doc Query scope', () => {
     ).toBe('server-request')
   })
 })
+
+describe('shared KB scope metadata', () => {
+  const shared = '00000000-0000-4000-8000-000000000001'
+  const parameters = {
+    required: true,
+    toolAlias: 'doc_query',
+    kb_ids: [KB_ID, shared].sort(),
+    shared_kb_ids: [shared],
+  }
+  const configuration = (chatMode: string, params: unknown = parameters) => ({
+    chatMode,
+    parameters: params,
+    mcpServer: { id: 'kb-server', name: 'KB' },
+  })
+  test('resolves the same course/shared union in each enabled mode', () => {
+    const configs = [configuration('tutor'), configuration('review')]
+    expect(resolveMcpScope(configs, 'tutor', [configs[0]!])).toEqual(
+      parameters.kb_ids
+    )
+  })
+  test.each([
+    { ...parameters, shared_kb_ids: [shared, shared] },
+    { ...parameters, shared_kb_ids: ['invalid'] },
+    { ...parameters, shared_kb_ids: [CHATBOT_ID] },
+    { ...parameters, shared_kb_ids: [] },
+  ])('rejects invalid grants before signing', (params) => {
+    const config = configuration('tutor', params)
+    expect(() => resolveMcpScope([config], 'tutor', [config])).toThrow(
+      RequiredMCPUnavailableError
+    )
+  })
+  test('rejects different ownership metadata despite equal effective scopes', () => {
+    const first = configuration('tutor')
+    const second = configuration('review', {
+      ...parameters,
+      shared_kb_ids: [KB_ID],
+    })
+    expect(() => resolveMcpScope([first, second], 'tutor', [first])).toThrow(
+      RequiredMCPUnavailableError
+    )
+  })
+})

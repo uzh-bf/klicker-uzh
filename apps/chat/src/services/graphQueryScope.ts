@@ -1,4 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { composeKbScope, resolveSharedKbIds } from '@klicker-uzh/util/kb-scope'
 import { authorizeIdentityForChatbot } from '@/src/lib/server/apiGuards'
 import { isChatbotGraphRetrievalEnabled } from '@/src/lib/server/featureFlags'
 import {
@@ -10,6 +11,7 @@ import { GUEST_ACCOUNT_TYPE } from '@/src/lib/server/ltiGuest'
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 import type { GraphQueryDependencies } from './graphAssistedDocQuery'
 import type { MCPRequestContext } from './mcpClients'
+import { resolveMcpScope } from './mcpScope'
 
 export function graphQueryDependencies(
   context: MCPRequestContext
@@ -17,6 +19,7 @@ export function graphQueryDependencies(
   let publication: PublishedKnowledgeGraph | undefined
   return {
     async validateScope() {
+      publication = undefined
       if (!context.participantId) throw new RequiredMCPUnavailableError()
       const participant = await prisma.participant.findUnique({
         where: { id: context.participantId },
@@ -48,6 +51,17 @@ export function graphQueryDependencies(
         select: {
           knowledgeGraphRetrievalEnabled: true,
           ownerId: true,
+          mcpConfigurations: {
+            where: {
+              isEnabled: true,
+              mcpServer: { name: 'KB', isActive: true },
+            },
+            select: {
+              chatMode: true,
+              parameters: true,
+              mcpServer: { select: { id: true, name: true } },
+            },
+          },
           knowledgeBases: {
             where: { isEnabled: true, kb: { deletedAt: null } },
             select: {
@@ -60,17 +74,30 @@ export function graphQueryDependencies(
       const actual =
         chatbot?.knowledgeBases.map((binding) => binding.kbId).sort() ?? []
       const expected = [...(context.kbIds ?? [])].sort()
-      if (
-        !chatbot ||
-        actual.length === 0 ||
-        actual.length !== expected.length ||
-        actual.some((id, index) => id !== expected[index])
-      )
-        throw new RequiredMCPUnavailableError()
-      publication = undefined
+      const configs = chatbot?.mcpConfigurations ?? []
+      const first = configs[0]
+      if (!chatbot || !first)
+        throw new RequiredMCPUnavailableError('scope_violation')
+      try {
+        const configured = resolveMcpScope(configs, first.chatMode, [first])
+        const shared = resolveSharedKbIds(
+          configs.map((config) => config.parameters)
+        )
+        const scope = composeKbScope(actual, shared)
+        const authorized = scope.kb_ids ?? (scope.kb_id ? [scope.kb_id] : [])
+        if (
+          !configured?.length ||
+          JSON.stringify(configured) !== JSON.stringify(expected) ||
+          JSON.stringify(authorized) !== JSON.stringify(expected)
+        )
+          throw new RequiredMCPUnavailableError('scope_violation')
+      } catch {
+        throw new RequiredMCPUnavailableError('scope_violation')
+      }
       if (
         !chatbot.knowledgeGraphRetrievalEnabled ||
         !(await isChatbotGraphRetrievalEnabled(chatbot.ownerId)) ||
+        expected.length !== 1 ||
         actual.length !== 1 ||
         !chatbot.knowledgeBases[0]?.kb.knowledgeGraphEnabled
       )

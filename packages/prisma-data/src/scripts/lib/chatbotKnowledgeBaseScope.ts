@@ -275,6 +275,12 @@ export function planProvision(
 
   if (state.kbServerConfigs.length === 0) return refusal('kb_config_missing')
   for (const config of state.kbServerConfigs) {
+    if (
+      isPlainObject(config.parameters) &&
+      Object.hasOwn(config.parameters, 'shared_kb_ids')
+    ) {
+      return refusal('shared_kb_grants_require_operator')
+    }
     if (!hasDocQueryToolDefinition(config.allowedTools)) {
       return refusal('kb_config_tools_invalid')
     }

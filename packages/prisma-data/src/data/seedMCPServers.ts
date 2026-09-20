@@ -356,12 +356,31 @@ export async function seedChatbotMCPConfigurations(
 ) {
   console.log('Seeding example chatbot configurations...')
 
+  // This fixture seed cannot overwrite operator-owned shared grants.
+  const kbConfigs = await prisma.chatbotMCPConfig.findMany({
+    where: {
+      chatbotId: CHATBOT_ID_TEST,
+      mcpServer: { name: MCP_SERVER_NAMES.KB },
+    },
+    select: { parameters: true },
+  })
+  const hasSharedGrants = kbConfigs.some(
+    ({ parameters }) =>
+      isJsonObject(parameters) && Object.hasOwn(parameters, 'shared_kb_ids')
+  )
+
   const configurations = EXAMPLE_CONFIGURATIONS.map((config) => ({
     ...config,
     chatbotId: CHATBOT_ID_TEST,
   }))
 
   for (const config of configurations) {
+    if (hasSharedGrants && config.mcpServerName === MCP_SERVER_NAMES.KB) {
+      console.log(
+        'Skipping KB fixture reconciliation with operator-owned shared grants'
+      )
+      continue
+    }
     try {
       const mcpServer = servers.find((s) => s.name === config.mcpServerName)
       if (!mcpServer) {

@@ -70,10 +70,41 @@ browser-only verification must identify the precise interaction it proves.
 
 ## Progress
 
-- Planning and source inspection complete; implementation pending. No schema
-  migration or external dependency is planned. The shared helper has concrete
-  callers in the existing GraphQL, chat and prisma-data packages.
-- Runtime startup requested with `devrouter ensure` on the exact task checkout,
-  profile `manage`. Stop that runtime and verify provider/routes at completion.
-- Corpus acceptance and live ingestion are owned by the coordinating plan; this
-  source package cannot satisfy them through configuration or test success.
+- Implemented the shared-scope helper and its GraphQL, chat and operator callers.
+  Course lifecycle operations recompute every enabled mode under transaction
+  locks. Provisioning refuses shared grants; stale provisioning rollback also
+  refuses newly added grants. Fixture seeding preserves operator-owned scope.
+- Operator manifests retain version one and add explicit adoption/removal;
+  version-two receipts carry the operation. Version-one receipt recovery and
+  rollback retain their original semantics. Per-chatbot consistency permits
+  different course scopes and mode sets across the selected cohort. Removal
+  preserves disabled modes and disables empty scopes.
+- Focused verification: 72 GraphQL lifecycle tests, 40 chat scope/graph tests,
+  33 operator/CLI tests, 28 provisioning unit tests, 11 real-database provisioning
+  tests and 7 seed tests passed. The integration suite required the guarded
+  empty disposable test database rather than the runtime's preseeded KB server.
+  No live corpus, accounts or cluster were used.
+- Simplification and final self-review covered authorization, mode consistency,
+  lifecycle locking, receipt compatibility, stale rollback and disabled scopes.
+  Review corrected disabled-mode reactivation during removal. Type checking
+  found and corrected a missing JSON-object annotation. Complete split host/container repository
+  checks passed. Production build and exact-head forge checks are pending.
+- The first all-in-container check stopped at host-only Playwright launcher
+  tests. Verification now uses the repository's split host/container hook.
+  Dependency definitions and lockfiles are unchanged. Opengrep's baseline scan
+  ran 210 rules over 17 changed files and reported zero findings; four ignored
+  files were outside its coverage.
+- One cohesive source package is retained: the shared grant contract requires
+  lifecycle writers, request validation and the existing operator to agree.
+  A partial rollout would lose grants or reject legitimate shared scopes. The
+  package changes 703 substantive lines (additions plus deletions, excluding
+  tests and documentation), including the new shared helper. It has no migration
+  or external dependency. Tests cover distinct risky
+  behaviors in the seams identified above; they do not pin documentation or seed
+  prose. Screenshots and browser automation do not apply: the changes are server
+  scope calculations and transactional writes, with no changed browser contract.
+- Exact runtime: `trees/financewiki-shared-attachment`, DevPod
+  `fix-financewiki-shared-attachmen`, profile `manage`. It remains running for
+  verification and must be stopped and provider/routes verified before handoff.
+- Corpus acceptance, environment rollout and live cross-account retrieval remain
+  separate pending steps. Source tests do not establish live availability.

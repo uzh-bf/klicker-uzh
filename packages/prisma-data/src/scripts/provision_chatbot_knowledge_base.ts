@@ -32,6 +32,7 @@ import {
   describePlan,
   equalJson,
   hasDocQueryToolDefinition,
+  isPlainObject,
   type ProvisionArgs,
   ProvisionFailure,
   type ProvisionSnapshot,
@@ -343,6 +344,20 @@ async function rollback(snapshotPath: string) {
 
   const result = await prisma.$transaction(
     async (tx) => {
+      const currentConfigs = await tx.$queryRaw<Array<{ parameters: unknown }>>`
+        SELECT parameters FROM "ChatbotMCPConfig"
+        WHERE "chatbotId" = ${snapshot.chatbotId}::uuid
+        ORDER BY id FOR UPDATE
+      `
+      if (
+        [...currentConfigs, ...snapshot.configs].some(
+          ({ parameters }) =>
+            isPlainObject(parameters) &&
+            Object.hasOwn(parameters, 'shared_kb_ids')
+        )
+      ) {
+        throw new ProvisionFailure('shared_kb_grants_require_operator')
+      }
       for (const config of snapshot.configs) {
         await tx.chatbotMCPConfig.updateMany({
           where: { id: config.id },
