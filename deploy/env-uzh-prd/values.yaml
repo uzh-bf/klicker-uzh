@@ -900,7 +900,7 @@ assessment:
                   - key: app.kubernetes.io/component
                     operator: In
                     values:
-                      - frontend-pwa-assessment
+                      - frontend-assessment
               topologyKey: kubernetes.io/hostname
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -916,13 +916,13 @@ assessment:
         whenUnsatisfiable: ScheduleAnyway
         labelSelector:
           matchLabels:
-            app.kubernetes.io/component: frontend-pwa-assessment
+            app.kubernetes.io/component: frontend-assessment
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
         whenUnsatisfiable: ScheduleAnyway
         labelSelector:
           matchLabels:
-            app.kubernetes.io/component: frontend-pwa-assessment
+            app.kubernetes.io/component: frontend-assessment
     tolerations:
       - key: klickerasm
         operator: Equal
