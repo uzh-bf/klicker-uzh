@@ -77,7 +77,13 @@ function Leaderboard({
                 ...acc.rankedEntriesAndSelf,
                 { ...entry, isSelf: true },
               ],
-              inTopK: typeof topKOnly !== 'undefined' ? ix < topKOnly : false,
+              // must use the same criterion as filteredEntries below, which
+              // is rank-based: with a tie at the cutoff, an index-based test
+              // renders the self entry in the list and again below the divider
+              inTopK:
+                typeof topKOnly !== 'undefined'
+                  ? entry.rank <= topKOnly
+                  : false,
               selfEntry: entry,
             }
           }
