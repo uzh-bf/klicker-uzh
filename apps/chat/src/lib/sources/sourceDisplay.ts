@@ -149,28 +149,26 @@ export function getSourcePageLabel(value?: string): string | undefined {
 }
 
 /**
- * The page value to display: a publisher-labelled range when the chunks carry
- * integer labels, otherwise the physical page envelope, otherwise a single
- * publisher label. A single physical page is never displayed — it is a PDF
+ * The page value a card may show on its own, without the answer having named a
+ * page: the single publisher label the retrieved chunks agree on.
+ *
+ * A retrieved span is never displayed. `page`/`pageEnd` and
+ * `labeledPage`/`labeledPageEnd` are the envelope of everything retrieval
+ * returned, so one question about a 127-page script arrives as `2–127`; a card
+ * that prints it reads as "the answer used pages 2 to 127". Only the answer's
+ * own page detail may produce a displayed range (see
+ * `formatCitedPageRanges`), which is why a span degrades to no page line here.
+ * A single physical page stays hidden for the older reason: it is a PDF
  * navigation position, not the number printed on the page (see
- * `getSourceNavigationUrl`), so only a real range is worth showing there.
+ * `getSourceNavigationUrl`).
  */
 export function getSourcePageRange(source: ChatSource): string | undefined {
   const label = getSourcePageLabel(source.labeledPage)
-  if (label) {
-    const end = getSourcePageLabel(source.labeledPageEnd)
-    return end && end !== label ? `${label}–${end}` : label
-  }
+  if (!label) return undefined
 
-  if (
-    source.page !== undefined &&
-    source.pageEnd !== undefined &&
-    source.pageEnd > source.page
-  ) {
-    return `${source.page}–${source.pageEnd}`
-  }
-
-  return undefined
+  // `labeledPageEnd` is derived only when the chunk labels disagree, so its
+  // presence is exactly the "retrieval spread past one page" case.
+  return source.labeledPageEnd === undefined ? label : undefined
 }
 
 /**
