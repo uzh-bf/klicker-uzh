@@ -542,6 +542,44 @@ test('no workflow holds a runner while it waits for a coverage producer', () => 
   )
 })
 
+// A filtered build restores the artifacts another workflow already published for
+// the same commit, which is what turns a dependency rebuild into a download. The
+// public Playwright route is deliberately absent from this inventory: its pull
+// requests are untrusted, so it restores a read-only Actions cache instead and
+// no public run may hold a credential that can write the shared cache.
+const TURBO_REMOTE_CACHE_CONSUMERS = [
+  'check.yml',
+  'test-graphql.yml',
+  'test-unit.yml',
+]
+
+test('every Turbo consumer uses the shared remote cache', () => {
+  const directory = path.join(root, '.github/workflows')
+  const runsTurbo = []
+  const holdsCredential = []
+  for (const entry of fs.readdirSync(directory).sort()) {
+    if (!entry.endsWith('.yml')) continue
+    const content = fs.readFileSync(path.join(directory, entry), 'utf8')
+    if (/turbo run /.test(content)) runsTurbo.push(entry)
+    if (/TURBO_TOKEN:/.test(content)) holdsCredential.push(entry)
+  }
+
+  assert.deepEqual(
+    holdsCredential,
+    TURBO_REMOTE_CACHE_CONSUMERS,
+    'the remote cache credential must belong to exactly the trusted build consumers'
+  )
+  for (const entry of runsTurbo) {
+    assert.ok(
+      TURBO_REMOTE_CACHE_CONSUMERS.includes(entry),
+      entry + ' runs Turbo without the shared remote cache'
+    )
+    const content = fs.readFileSync(path.join(directory, entry), 'utf8')
+    assert.match(content, /TURBO_TEAM:/, entry)
+    assert.match(content, /TURBO_REMOTE_ONLY: true/, entry)
+  }
+})
+
 // Closing a pull request must reclaim every per-PR workflow concurrency group,
 // not only Playwright. The sweeper substitutes each target's group prefix
 // literally because github.workflow inside the sweeper names the sweeper, so a

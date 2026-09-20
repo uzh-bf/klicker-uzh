@@ -17,6 +17,14 @@ permissions:
   # to decide whether a metadata-only edit may skip the suite.
   checks: read
 
+env:
+  # The codebase check publishes the same build outputs for the same commit, so
+  # restoring them here replaces a local rebuild with a cache download. Remote-
+  # only keeps the decision independent of an empty runner-local cache.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_ONLY: true
+
 jobs:
   filter:
     runs-on: ubuntu-latest

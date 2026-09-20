@@ -1990,3 +1990,22 @@ concurrency must now compete against R1-R5, which remove work entirely.
   imports the coverage the draft already produced. The 359-test check-suite set
   and the 71 Playwright CI contracts pass locally; live acceptance is the
   analysis of this branch's own pull request.
+- 2026-09-20 slice R7a (shared Turbo remote cache for the validation suites,
+  implementation on `rs/ci-output-reuse-roadmap`): the unit and GraphQL
+  workflows ran `turbo run build` without cache credentials, so a filtered
+  dependency build compiled locally even though the codebase check had already
+  published the identical task outputs for the same commit; a codebase-check log
+  from `0e2c0e8b76` shows the remote cache working there (the lint task
+  reported `FULL TURBO` and the typecheck build replayed 24 cached tasks). Both
+  workflows now declare the same `TURBO_TOKEN`, `TURBO_TEAM`, and
+  `TURBO_REMOTE_ONLY` as the codebase check, and a contract test pins the
+  credential to exactly those three trusted consumers and requires every
+  workflow that runs `turbo run` to restore the shared cache. The measure is
+  the Turbo cache-hit lines in the `Build unit-test dependencies` and GraphQL
+  build steps of the next run, not elapsed time. The public Playwright route
+  stays on its read-only Actions cache, because a public pull request may not
+  hold a credential that can write the shared cache. `check: { cache: false }`
+  was already configured, so the remaining R7 work is the broad `globalEnv`
+  list: narrowing it needs per-task environment attribution evidence, since a
+  task that genuinely reads a removed variable would restore a stale artifact
+  instead of rebuilding.
