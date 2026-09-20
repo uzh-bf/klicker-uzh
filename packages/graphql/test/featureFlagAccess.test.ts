@@ -9,6 +9,10 @@ import {
   getCourseWeeklyActivity,
 } from '../src/services/analytics.js'
 
+vi.mock('../src/lib/learningAnalytics.js', () => ({
+  isLearningAnalyticsEnabled: vi.fn(() => true),
+}))
+
 const user = {
   sub: 'user-id',
   role: UserRole.ADMIN,
