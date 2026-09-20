@@ -32,7 +32,7 @@ import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { computeRanks } from '../lib/util.js'
+import { computeRanks, temporaryLeaderboardEntryId } from '../lib/util.js'
 import {
   getPermissionBooleans,
   liveQuizCourseVisibilityFilter,
@@ -3173,10 +3173,7 @@ export async function getLiveQuizLeaderboard(
       .concat(
         quiz?.temporaryLeaderboard?.flatMap((entry) => {
           return {
-            // stable numeric id hashed from the temporary participant id so
-            // entries keep their React key across refetches instead of
-            // remounting the whole list
-            id: createHash('sha256').update(entry.id).digest().readUInt32BE(0),
+            id: temporaryLeaderboardEntryId(entry.id),
             participantId: entry.id,
             username: participantProfilesVisible ? entry.username : 'Anonymous',
             avatar: participantProfilesVisible ? entry.avatar : null,

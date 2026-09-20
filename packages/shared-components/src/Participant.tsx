@@ -124,7 +124,7 @@ function Participant({
       {typeof points === 'number' && (
         <div
           className={twMerge(
-            'flex w-12 shrink-0 items-center justify-center rounded-full bg-slate-700 px-2 py-0.5 text-sm font-bold tabular-nums text-white',
+            'flex min-w-12 shrink-0 items-center justify-center rounded-full bg-slate-700 px-2 py-0.5 text-sm font-bold tabular-nums text-white',
             isHighlighted && 'bg-primary'
           )}
         >
