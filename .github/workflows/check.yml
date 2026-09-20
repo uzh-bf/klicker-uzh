@@ -158,6 +158,7 @@ jobs:
       - name: Check CI queue policy
         run: |
           node --test \
+            .github/scripts/direct-script-invocations.test.cjs \
             .github/scripts/ci-equivalent-run.test.cjs \
             .github/scripts/ci-duplicate-audit.test.cjs \
             .github/scripts/minimum-validation-class.test.cjs \
