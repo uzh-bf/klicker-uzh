@@ -3,6 +3,7 @@ import { faSave } from '@fortawesome/free-regular-svg-icons'
 import { CheckParticipantNameAvailableDocument } from '@klicker-uzh/graphql/dist/ops'
 import DebouncedUsernameField from '@klicker-uzh/shared-components/src/DebouncedUsernameField'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
+import ParticipantDataUseChoices from '@klicker-uzh/shared-components/src/participant/ParticipantDataUseChoices'
 import {
   Button,
   Checkbox,
@@ -16,9 +17,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import * as yup from 'yup'
-
 import ParticipantDataDisclosure from '../participant/ParticipantDataDisclosure'
-import ParticipantDataUseChoices from '../participant/ParticipantDataUseChoices'
 
 interface Props {
   initialUsername?: string

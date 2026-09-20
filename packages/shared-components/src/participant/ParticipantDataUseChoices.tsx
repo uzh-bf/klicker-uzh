@@ -1,3 +1,5 @@
+'use client'
+
 import {
   faCheck,
   faChevronDown,
@@ -46,7 +48,7 @@ function consentToRadioValue(consent: boolean | undefined): '' | 'yes' | 'no' {
 }
 
 function ParticipantDataUseChoices({
-  isAssessment = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true',
+  isAssessment = false,
   disabled,
   researchConsent,
   learningAnalyticsConsent,

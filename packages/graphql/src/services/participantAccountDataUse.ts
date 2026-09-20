@@ -2,12 +2,16 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { isParticipantDataUseComplete } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
-import type { ContextWithUser } from '../lib/context.js'
 import {
   LEARNING_ANALYTICS_ADVISORY_LOCK,
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   participantDataUseSelect,
 } from '../lib/learningAnalytics.js'
+
+export interface ParticipantDataUseContext {
+  prisma: DB.PrismaClient
+  user: { sub: string; role: DB.UserRole }
+}
 
 const accountDataUseSelect = {
   ...participantDataUseSelect,
@@ -21,7 +25,9 @@ export type ParticipantAccountDataUseFields = DB.Prisma.ParticipantGetPayload<{
   select: typeof accountDataUseSelect
 }>
 
-export async function getParticipantAccountDataUse(ctx: ContextWithUser) {
+export async function getParticipantAccountDataUse(
+  ctx: ParticipantDataUseContext
+) {
   if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
     throw dataUseError('PARTICIPANT_DATA_USE_FORBIDDEN')
   }
@@ -123,7 +129,7 @@ export async function initialParticipantDataUseData(
 
 export async function completeParticipantDataUse(
   input: unknown,
-  ctx: ContextWithUser
+  ctx: ParticipantDataUseContext
 ) {
   if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
     throw dataUseError('PARTICIPANT_DATA_USE_FORBIDDEN')
@@ -140,7 +146,7 @@ const choiceInput = completionInput
 export async function updateParticipantDataUseChoice(
   purpose: 'research' | 'analytics',
   input: unknown,
-  ctx: ContextWithUser
+  ctx: ParticipantDataUseContext
 ) {
   if (ctx.user.role !== DB.UserRole.PARTICIPANT) {
     throw dataUseError('PARTICIPANT_DATA_USE_FORBIDDEN')
@@ -154,7 +160,7 @@ async function saveParticipantDataUse(
   input:
     | ({ kind: 'completion' } & z.infer<typeof completionInput>)
     | ({ kind: 'research' | 'analytics' } & z.infer<typeof choiceInput>),
-  ctx: ContextWithUser
+  ctx: ParticipantDataUseContext
 ) {
   return ctx.prisma
     .$transaction(

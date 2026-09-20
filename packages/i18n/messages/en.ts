@@ -973,7 +973,7 @@ Your data will never be shared with other parties beside the above and will neve
         researchConsentControlLabel: 'Use for research:',
         learningAnalyticsConsentTitle: 'Learning Analytics',
         learningAnalyticsConsentDescription:
-          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/privacy_policy)',
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/learning_analytics)',
         learningAnalyticsDecisionRequired: 'Decision required',
         learningAnalyticsConsentYes: 'Yes, participate',
         learningAnalyticsConsentYesDescription:

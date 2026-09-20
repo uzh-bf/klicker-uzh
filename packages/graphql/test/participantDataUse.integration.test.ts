@@ -1,6 +1,14 @@
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   LEARNING_ANALYTICS_ADVISORY_LOCK,
@@ -8,7 +16,9 @@ import {
 } from '../src/lib/learningAnalytics.js'
 import {
   completeParticipantDataUse,
+  initialParticipantDataUseData,
   updateParticipantDataUseChoice,
+  validateInitialParticipantDataUse,
 } from '../src/services/participantAccountDataUse.js'
 import { getParticipantDataUse } from '../src/services/participants.js'
 
@@ -142,6 +152,65 @@ describe('participant data-use PostgreSQL integration', () => {
     await requireDisposableDatabase(prisma)
     await prisma.$disconnect()
   })
+
+  it('contains optional analytics reads before accessing stored derivatives', async () => {
+    const {
+      getCourseActivityAnalytics,
+      getCourseWeeklyActivity,
+      getCoursePerformanceAnalytics,
+      getActivityAnalytics,
+    } = await import('../src/services/analytics.js')
+    const findUnique = vi.fn(() => {
+      throw new Error('Unexpected derivative read')
+    })
+    const ctx = {
+      prisma: {
+        course: { findUnique },
+        practiceQuiz: { findUnique },
+        microLearning: { findUnique },
+      },
+      user: { sub: 'synthetic-lecturer', role: UserRole.USER },
+    } as unknown as ContextWithUser
+    for (const read of [
+      getCourseActivityAnalytics,
+      getCourseWeeklyActivity,
+      getCoursePerformanceAnalytics,
+    ]) {
+      await expect(
+        read({ courseId: 'synthetic-course' }, ctx)
+      ).resolves.toBeNull()
+    }
+    await expect(
+      getActivityAnalytics({ activityId: 'synthetic-activity' }, ctx)
+    ).resolves.toBeNull()
+    expect(findUnique).not.toHaveBeenCalled()
+  })
+
+  it('serializes a bounded renewal and settings cohort without losing audit revisions', async () => {
+    const participants: Awaited<ReturnType<typeof createParticipant>>[] = []
+    for (let index = 0; index < 20; index++) {
+      participants.push(await createParticipant(`cohort-${index}`))
+    }
+    for (let offset = 0; offset < participants.length; offset += 5) {
+      await Promise.all(
+        participants.slice(offset, offset + 5).map(async (participant) => {
+          const completed = await completeParticipant(participant.id)
+          const updated = await updateParticipantDataUseChoice(
+            'analytics',
+            choiceInput(true, completed.dataUseRevision),
+            participantContext(participant.id)
+          )
+          expect(updated.dataUseRevision).toBe(2)
+          expect(updated.learningAnalyticsConsent).toBe(true)
+          const events = await prisma.participantDataUseEvent.findMany({
+            where: { participantId: participant.id },
+            orderBy: { revision: 'asc' },
+          })
+          expect(events.map((event) => event.revision)).toEqual([1, 2])
+        })
+      )
+    }
+  }, 60_000)
 
   it('waits for the global LA lock and records only the current choice', async () => {
     const participant = await createParticipant('exclusive-lock')
@@ -280,6 +349,55 @@ describe('participant data-use PostgreSQL integration', () => {
       completedAt: null,
     })
   })
+
+  it('creates an account and initial choices while the learning-analytics lock is held', async () => {
+    const holder = await holdLearningAnalyticsWriterGate()
+    const creation = prisma
+      .$transaction(async (tx) => {
+        const dataUse = await initialParticipantDataUseData(
+          validateInitialParticipantDataUse({
+            disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+            researchConsent: false,
+            learningAnalyticsConsent: false,
+            acknowledged: true,
+          }),
+          tx
+        )
+        return tx.participant.create({
+          data: {
+            username: `${TEST_PREFIX}-signup-while-locked`,
+            password: 'integration-test-password',
+            ...dataUse,
+          },
+        })
+      })
+      .then((participant) => {
+        fixtureIds.participants.push(participant.id)
+        return participant
+      })
+    try {
+      const result = await Promise.race([
+        creation,
+        wait(1_000).then(() => null),
+      ])
+      expect(result).toMatchObject({
+        dataUseRevision: 1,
+        researchConsent: false,
+        learningAnalyticsConsent: false,
+        dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      })
+      if (!result) throw new Error('Account creation waited for analytics')
+      await expect(
+        prisma.participantDataUseEvent.count({
+          where: { participantId: result.id },
+        })
+      ).resolves.toBe(1)
+    } finally {
+      holder.release()
+      await holder.done.catch(() => undefined)
+      await creation.catch(() => undefined)
+    }
+  }, 10_000)
 
   it('updates research consent while the learning-analytics lock is held', async () => {
     const participant = await createParticipant('research-while-locked')

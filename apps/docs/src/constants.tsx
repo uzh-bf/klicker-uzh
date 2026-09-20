@@ -191,6 +191,7 @@ export const USE_CASES = {
               'https://teachingtools.uzh.ch/en/tools/classroom-response-systeme'
             }
             target="_blank"
+            rel="noopener"
           >
             UZH Teaching Tools
           </a>
@@ -442,6 +443,7 @@ export const USE_CASES = {
               'https://teachingtools.uzh.ch/en/tools/constructive-alignment'
             }
             target="_blank"
+            rel="noopener"
           >
             alignment between lecturers and students
           </a>{' '}
@@ -449,6 +451,7 @@ export const USE_CASES = {
           <a
             href={'https://teachingtools.uzh.ch/en/tools/flipped-classroom'}
             target="_blank"
+            rel="noopener"
           >
             Flippeed Classroom
           </a>{' '}
@@ -1002,6 +1005,7 @@ export const USE_CASES = {
           <a
             href="https://teachingtools.uzh.ch/en/tools/gruppenarbeiten"
             target="_blank"
+            rel="noopener"
           >
             group work
           </a>{' '}
@@ -1009,6 +1013,7 @@ export const USE_CASES = {
           <a
             href="https://teachingtools.uzh.ch/en/tools/methoden-zur-gruppenbildung"
             target="_blank"
+            rel="noopener"
           >
             methods to make group formation a success
           </a>
@@ -1654,8 +1659,8 @@ export const USE_CASES = {
       [
         'For Lecturers',
         [
-          'Use Learning Analytics (LA) to gain insights into and to understand students’ individual and collective engagement, knowledge levels, and performance to improve course design and delivery',
-          'Monitor student activities to recognize disengagement early and provide targeted interventions for improved outcomes',
+          'Use Learning Analytics (LA) to understand the engagement, knowledge levels, and performance of a course group in order to improve course design and delivery',
+          'Recognize group-level signs of disengagement early and plan targeted support for the course',
           'Analyze data on learning resource usage and success rates to align course content with student needs',
           'Utilize LA insights for data-driven adjustments to teaching strategies and future course iterations',
           'Engage in reflective practices to develop pedagogical skills based on LA-driven evaluations',
@@ -1801,17 +1806,22 @@ export const USE_CASES = {
     scenario: (
       <>
         <p>
-          In KlickerUZH, learning analytics allow both lecturers and students to
-          gain insight into the learning behavior and success of their class
-          and/or themselves.For lecturers, different dashboards provide insight
-          into the activity, progress, and performance of an entire class. For
-          students, analytics focus on their achievement of competencies and
-          mastery in specific quizzes and topics of a course. Learning analytics
-          are anonymized and shown in aggregate to ensure the privacy of
-          individual students. An example of a future learning analytics
-          dashboard is shown below.
+          In KlickerUZH, Learning Analytics (LA) is part of this use case and is
+          not yet available in the application; the description below therefore
+          covers the planned functionality. Once available, LA will give
+          lecturers insight into the activity and learning progress of a course
+          group, whereas participants can view insights into their own learning.
+          Lecturer views will show de-identified and aggregated group values and
+          no per-student performance or progress rows. Participants decide
+          independently and voluntarily whether their data may be used for LA,
+          separately from the research choice; the participant-facing
+          explanation is available in <a href="/learning_analytics">English</a>{' '}
+          and <a href="/lernanalyse">German</a>.
         </p>
-        <p>The three types of analytics for lecturers are the following:</p>
+        <p>
+          The three planned types of analytics for lecturers are the following
+          (the illustrations show examples of the planned dashboards):
+        </p>
         <ul>
           <li>
             <strong>Activity Analytics</strong>: These visualizations aim to
@@ -1827,16 +1837,11 @@ export const USE_CASES = {
           </li>
           <li>
             <strong>Progress and Performance Analytics</strong>: These
-            visualizations offer lecturers insights into course progress,
-            students' knowledge levels across various course topics, and
-            individual student performance. They supports lecturers in
-            identifying areas where students excel or may need additional
-            support, facilitating targeted interventions.
-            <Figure
-              imgSrc="/img/learning_analytics/la_performance_dashboard_example.png"
-              caption="Example illustration of the KlickerUZH performance dashboard"
-              width={700}
-            />
+            visualizations offer lecturers aggregated insights into course
+            progress and the group's knowledge levels across various course
+            topics. They support lecturers in identifying topics where the group
+            may need additional support, facilitating targeted adjustments to
+            the course.
           </li>
           <li>
             <strong>Quiz Performance Analytics</strong>: Survey results indicate
@@ -1846,11 +1851,6 @@ export const USE_CASES = {
             results and individual quiz questions. This enables lecturers to
             gain a deeper understanding of student performance and refine their
             assessment strategies.
-            <Figure
-              imgSrc="/img/learning_analytics/la_quiz_dashboard_example.png"
-              caption="Example illustration of the KlickerUZH quiz dashboard"
-              width={500}
-            />
           </li>
         </ul>
       </>
@@ -1869,7 +1869,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
@@ -2141,7 +2145,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
@@ -2430,7 +2438,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be
@@ -2765,7 +2777,11 @@ export const USE_CASES = {
           To systematically validate and further extend these findings, we will
           conduct comprehensive pilot studies during the spring term of 2025.
           Should you be interested in participating, please fill out the form at{' '}
-          <a href="https://forms.office.com/e/K8CXM2pKhJ" target="_blank">
+          <a
+            href="https://forms.office.com/e/K8CXM2pKhJ"
+            target="_blank"
+            rel="noopener"
+          >
             https://forms.office.com/e/K8CXM2pKhJ
           </a>{' '}
           so that we may contact you. The results of the piloting will be

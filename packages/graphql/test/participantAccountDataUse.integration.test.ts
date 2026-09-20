@@ -132,6 +132,30 @@ describe('complete participant account data-use PostgreSQL integration', () => {
     await prisma.$disconnect()
   })
 
+  it('shares canonical state with a verified participant context outside GraphQL', async () => {
+    const participant = await createParticipant('server-entry')
+    const {
+      completeParticipantDataUse: complete,
+      getParticipantAccountDataUse: read,
+    } = await import('../src/participant-data-use.js')
+    const ctx = {
+      prisma,
+      user: { sub: participant.id, role: UserRole.PARTICIPANT },
+    }
+    await complete(completionInput(), ctx)
+    await expect(read(ctx)).resolves.toMatchObject({
+      dataUseRevision: 1,
+      researchConsent: false,
+      learningAnalyticsConsent: false,
+    })
+    await expect(
+      read({ ...ctx, user: { ...ctx.user, role: UserRole.USER } })
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_FORBIDDEN' },
+    })
+    expect(await readEvents(participant.id)).toHaveLength(1)
+  })
+
   it('completes through GraphQL and reads persisted self-state with both purposes declined', async () => {
     const participant = await createParticipant('graphql-completion')
     const ctx = contextFor(participant.id)

@@ -71,10 +71,15 @@ can save. Research starts allowed on the creation form, whereas Learning
 Analytics requires an explicit answer. These UI defaults do not backfill legacy
 accounts. Analytics withdrawal atomically records the new choice, its audit
 event, and a durable cleanup request in one transaction. Executing that
-cleanup - deleting derived analytics data, invalidating analytics eligibility,
-and gating publication on pending cleanup - is a later layer; this layer only
-persists the request. A successful settings response therefore confirms the
-persisted choice and cleanup request, not any completed deletion.
+cleanup as an ongoing consent-aware processing workflow is a later layer. The
+first release therefore blocks legacy analytics derivation and reads, and its
+launch requires stopping in-flight old collectors and completing any necessary
+retained-data reconciliation. A successful settings response confirms the
+persisted choice and cleanup request, not completed deletion. The canonical
+writer is available through the server-only GraphQL package entry
+`dist/participant-data-use`; its context contains only Prisma and verified
+participant identity/role, so chat can reuse the same transactions without
+constructing a GraphQL request context.
 
 Assessment completion uses the same four disclosure sections with additional
 identity, answer, audit-log, access and retention information. In the assessment

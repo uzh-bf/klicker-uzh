@@ -32,3 +32,8 @@ export const participantDataUseSelect = {
   learningAnalyticsChoiceAt: true,
   learningAnalyticsDisclosureVersion: true,
 } satisfies DB.Prisma.ParticipantSelect
+
+/** Optional analytics stay unavailable until consent-aware processing is released. */
+export function isLearningAnalyticsEnabled(): boolean {
+  return false
+}

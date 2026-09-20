@@ -981,7 +981,7 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         researchConsentControlLabel: 'Nutzung für Forschung:',
         learningAnalyticsConsentTitle: 'Learning Analytics',
         learningAnalyticsConsentDescription:
-          'Erhalte persönliche Einblicke in dein Lernen. Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar.\n\nLA erfasst Daten nur, wenn es für dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden LA-Daten automatisch gelöscht. [Mehr zu Learning Analytics](https://www.klicker.uzh.ch/datenschutz)',
+          'Erhalte persönliche Einblicke in dein Lernen. Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar.\n\nLA erfasst Daten nur, wenn es für dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden LA-Daten automatisch gelöscht. [Mehr zu Learning Analytics](https://www.klicker.uzh.ch/lernanalyse)',
         learningAnalyticsDecisionRequired: 'Entscheidung erforderlich',
         learningAnalyticsConsentYes: 'Ja, teilnehmen',
         learningAnalyticsConsentYesDescription:

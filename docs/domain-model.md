@@ -55,8 +55,12 @@ The migration initializes existing accounts with
 `learningAnalyticsConsent = false` and records no choice, so legacy analytics
 data for an account whose first recorded choice is false is not represented by
 any withdrawal request. Consuming the queue is therefore not, by itself, a
-legacy-data cleanup strategy; that reconciliation belongs to the later
-analytics layer.
+legacy-data cleanup strategy. Before the consent release, the legacy Python
+analytics package and all four GraphQL analytics reads are contained. Running
+old collectors must be stopped, and any retained derived data requiring deletion
+must be reconciled before users receive the updated policy promises. Full
+consent-aware processing remains a later layer; `true` alone does not activate
+it. Operational answers, points and assessment records are not LA derivatives.
 
 `Participation` remains the course-membership row and keeps its existing
 leaderboard meaning. It carries no research or learning-analytics choice or
