@@ -152,6 +152,7 @@ Additive language metadata requires no migration. New files beyond the operation
 
 ## Progress
 
+- Roadmap update — 2026-09-20: the user agreed to [W12a, GrowthBook admission controls and separate audit follow-ups](2026-09-12-kg-quality-roadmap.md#agreed-rollout-control-follow-up--2026-09-20). It covers question focus, new ingestion and new graph requests, coordinated with domain capability verification. The delivered focus env/Helm wiring is temporary; migration remains unimplemented. Billing enforcement, lifecycle-toggle retirement and magic-link availability are separate follow-ups. This update records roadmap scope only and changes no live flags.
 - Status: consumer language/focus source package implemented in solo mode. Consumer draft delivery is available in [PR #6178](https://github.com/uzh-bf/klicker-uzh/pull/6178); hosted CI is pending. Runtime discovery, compatible generator release and paid live acceptance remain unresolved.
 - Completed: source/forge refresh, consultation review, catalog equality check, current transport/language/focus inspection, and verification portfolio review.
 - Review: independent planner approved the corrected draft. Findings were incorporated by separating planning/prototype/implementation authority and naming planning owners for all four steps. Main completed source/reference and simplification self-review; Markdown formatting and local links pass. The review receipt is retained at `project/_local/reviews/2026-09-20-kg-generation-simplification-plan-hardening.md`.

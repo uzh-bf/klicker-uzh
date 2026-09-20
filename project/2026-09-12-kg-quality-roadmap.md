@@ -209,6 +209,33 @@ Use synthetic/local regression evidence, then an approved internal corpus and ca
 
 Completion: required compatibility/source CI and live delivery gates pass independently; domain and consumer scorecards support the specific quality claim being made; rollback and incident ownership are exercised. Preserve [ADR 0014](../docs/adr/0014-beta-learns-before-quality-thresholds.md): do not invent retrospective statistical blockers for an initial beta. Known correctness defects need remediation; the reviewed 30–50-case corpus supports widening and broader quality claims. Learning-outcome studies belong later, with study design and data authority; answer ratings alone cannot prove educational benefit.
 
+### Agreed rollout-control follow-up — 2026-09-20
+
+**W12a — Move feature admission to GrowthBook.** Owner: Klicker backend/UI maintainer; deployment owner verifies worker compatibility. Status: agreed roadmap addition, not implemented. This bounded source package can precede W8/W9 quality comparisons; widening still requires their evidence. Continue from the [generation simplification plan](2026-09-20-kg-generation-simplification-plan.md) and [PR #6178](https://github.com/uzh-bf/klicker-uzh/pull/6178).
+
+Reuse the existing typed feature registry, backend evaluator and capability queries under [ADR 0038](../docs/adr/0038-backend-enforced-feature-entitlements.md). Keep `ai-beta`, account approval, resource permissions and quotas. GrowthBook controls whether new work is admitted for an actor; the provider contract establishes what a worker can execute; persisted builds retain their selected inputs.
+
+| Scope                     | Current control                           | Planned change                                                                                                                                                                 |
+| ------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Question focus            | `QUESTION_GENERATION_FOCUS_TOPIC_ENABLED` | Use a default-off GrowthBook rollout flag in capability discovery and request validation; retire the env/Helm rollout toggle once generator support is verified.               |
+| New ingestion work        | `KB_INGESTION_DISABLED`                   | Move backend admission of upload tickets, URL resources and ingestion attempts to GrowthBook; preserve reads, deletion, cleanup and reconciliation.                            |
+| New graph builds          | `KB_GRAPH_DISABLED`                       | Move backend admission to GrowthBook; separate worker registration and operational shutdown behavior from the actor's rollout decision.                                        |
+| Explicit domain selection | `KB_GRAPH_DOMAIN_CATALOG_REVISION`        | Coordinate with the existing capability/release work. A rollout flag may restrict admission, but cannot replace verified policy/version/language support or catalog integrity. |
+
+Sequence: settle flag keys and queued-job semantics; implement backend admission and capability responses; refresh open UI capabilities on relevant events and rejected submissions; remove obsolete configuration and document rollout. A rejected explicit focus or domain must never silently become an unfocused or legacy request. A rollout denial affects new requests; accepted jobs retain frozen inputs and existing settlement behavior. Preserve separate worker shutdown and cancellation controls, including compatible handling of retries and duplicate submissions.
+
+Completion: tests cover per-actor allow/deny, missing and stale definitions, direct API calls, rejection before credit reservation, open-form flag changes, and accepted-job/cleanup continuity. Validate generator support independently and verify environment rollout before claiming live completion. Reuse the adapter's bounded refresh policy; do not promise instantaneous revocation. Feature definition changes, deployment and paid acceptance require their existing named authority.
+
+**Separate follow-ups from the env-toggle audit.** These are recorded for their owning areas and do not expand W12a:
+
+| Follow-up and owner                                | Required outcome                                                                                                                                                                                                                                                           |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account-budget enforcement — chat/accounting owner | Review `CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` under [ADR 0041](../docs/adr/0041-chatbot-trusted-pilot-boundary.md). Define rollout and outage behavior so a false or unavailable flag cannot unintentionally bypass budget checks. Keep durable budgets in the database. |
+| Lifecycle-toggle retirement — chat lifecycle owner | Retire `CHAT_TURN_LIFECYCLE_WRITES_ENABLED` after compatible readers and the rollback floor are proven. Preserve attempt identity and settlement; avoid a permanent per-user persistence-mode flag.                                                                        |
+| Magic-link availability — authentication owner     | Assess `NEXT_PUBLIC_WITH_MAGIC_LINK` separately, coordinating anonymous login UI and API behavior before choosing GrowthBook rollout semantics.                                                                                                                            |
+
+Keep worker startup switches (`KB_INGESTION_WORKER_DISABLED` and the worker role of `KB_GRAPH_DISABLED`), graph artifact production (`KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS`), telemetry/retention opt-ins (`CHAT_ENABLE_AI_TELEMETRY`, `CHAT_OPENAI_STORE_RESPONSES`), assessment/authentication modes, connection settings and local test overrides in their existing configuration boundaries. The audit covered tracked source and chart wiring, not live secret-store values or serving worker capability.
+
 ## Dependencies and delivery checkpoints
 
 ```mermaid
