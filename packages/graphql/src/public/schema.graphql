@@ -1630,6 +1630,7 @@ type ElementGenerationSource {
   isStale: Boolean!
   kbId: ID!
   kbName: String!
+  language: ElementGenerationLanguage!
   sourceCount: Int!
   sources: [ElementGenerationSourceScope!]!
 }

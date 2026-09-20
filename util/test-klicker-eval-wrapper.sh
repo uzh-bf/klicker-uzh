@@ -592,7 +592,7 @@ run_judge_case KLICKER_EVAL_CONFIG=canonical.json
 assert_line 'LITELLM_API_KEY_PRESENT=yes' "$CHILD_LOG"
 
 LOCAL_STOP_MARKER="$TEST_ROOT/local-adapter-stopped"
-env -i PATH="$PATH" HOME="$HOME" git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
+PATH="$TEST_PATH" git init --bare "$TEST_ROOT/bare.git" >/dev/null 2>&1
 : >"$CHILD_LOG"
 env -i \
   GIT_DIR="$TEST_ROOT/bare.git" \
@@ -673,8 +673,8 @@ env -i \
   >"$TEST_ROOT/local-failure.stdout" \
   2>"$TEST_ROOT/local-failure.stderr" || status=$?
 
-assert_line 'AGENT_ID=auto' "$CHILD_LOG"
 [ "$status" -eq 74 ] || fail "local child failure returned $status instead of 74"
+assert_line 'AGENT_ID=auto' "$CHILD_LOG"
 [ -s "$LOCAL_STOP_MARKER" ] || fail 'local adapter must stop after a failed child run'
 
 # An unconfigured judge uses the standalone loopback gateway only.
