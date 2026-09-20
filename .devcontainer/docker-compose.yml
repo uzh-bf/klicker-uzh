@@ -7,7 +7,8 @@
 # - postgres on db.klicker.localhost -> host port 5432
 # - mailhog UI -> host port 8025
 # - hatchet dashboard -> host port 8888
-# - all web applications published on localhost ports (3000-3010, 3030, 7078)
+# - all web applications published on localhost ports (3000-3010, 3030, 7078,
+#   8090 for the local Edu-ID OIDC mock)
 #
 # Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
 # routes, and the same-path Git common-directory mount.

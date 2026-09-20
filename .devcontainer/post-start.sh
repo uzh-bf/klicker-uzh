@@ -84,43 +84,37 @@ fi
 # by the provider, and no local configuration can change that. The OIDC mock
 # accepts any redirect_uri, which makes Edu-ID login testable in every checkout.
 #
-# A real EDUID_CLIENT_SECRET always wins: the mock is devcontainer-only wiring
-# and must never displace configured provider credentials.
-if [ -z "${EDUID_CLIENT_SECRET:-}" ]; then
-  export EDUID_CLIENT_SECRET='dev-only-not-a-secret'
-  export EDUID_CLIENT_ID="${EDUID_CLIENT_ID:-klicker-local-dev}"
-  export NEXT_PUBLIC_EDUID_ID="${NEXT_PUBLIC_EDUID_ID:-eduid-test}"
-  export EDUID_WELL_KNOWN="${OIDC_ISSUER}/.well-known/openid-configuration"
-
-  # Node honours /etc/hosts for .localhost names. Point the issuer host at
-  # Traefik so server-side discovery/token/jwks requests use exactly the URL the
-  # browser uses; otherwise the id_token `iss` cannot match the configured
-  # issuer. Docker's host-gateway is not reliable under the DevPod provider.
-  case "$OIDC_ISSUER" in
-    https://*)
-      oidc_host="${OIDC_ISSUER#https://}"
-      oidc_host="${oidc_host%/default}"
-      traefik_ip="$(getent hosts devrouter-traefik | awk 'NR == 1 { print $1 }')"
-      if [ -n "$traefik_ip" ]; then
-        hosts_tmp="$(mktemp)"
-        grep -v -E '[[:space:]]oidc\.klicker(\.[^[:space:]]+)?\.localhost$' /etc/hosts >"$hosts_tmp" || true
-        cat "$hosts_tmp" >/etc/hosts
-        printf '%s\t%s\n' "$traefik_ip" "$oidc_host" >>/etc/hosts
-        rm -f "$hosts_tmp"
-        echo "[post-start] Local Edu-ID mock issuer: $OIDC_ISSUER (via $traefik_ip)"
-      else
-        echo "[post-start] WARN: devrouter-traefik is unresolvable; server-side OIDC discovery at $OIDC_ISSUER may fail." >&2
-      fi
-      ;;
-    *)
-      # Plain-localhost fallback: the mock shares this container's netns, so the
-      # app reaches it directly and no host entry is needed.
-      echo "[post-start] Local Edu-ID mock issuer: $OIDC_ISSUER"
-      ;;
-  esac
-else
-  echo '[post-start] EDUID_CLIENT_SECRET is set; using the configured Edu-ID provider instead of the local mock.'
-fi
+# The mock is wired only while the active selection routes it, so no checkout
+# advertises a provider it cannot reach. A real EDUID_CLIENT_SECRET always wins:
+# the mock is devcontainer-only wiring and must never displace configured
+# provider credentials. Issuer reachability is not a startup gate; the stack
+# keeps starting and the mock reports itself as disabled instead.
+# shellcheck source=/dev/null
+. "$ROOT/util/local-eduid-issuer.sh"
+local_eduid_wire "$OIDC_ISSUER"
+case "$LOCAL_EDUID_STATE" in
+  enabled)
+    export EDUID_CLIENT_SECRET='dev-only-not-a-secret'
+    export EDUID_CLIENT_ID="${EDUID_CLIENT_ID:-klicker-local-dev}"
+    export NEXT_PUBLIC_EDUID_ID="${NEXT_PUBLIC_EDUID_ID:-eduid-test}"
+    export EDUID_WELL_KNOWN="${OIDC_ISSUER}/.well-known/openid-configuration"
+    echo "[post-start] Local Edu-ID mock issuer: $OIDC_ISSUER"
+    ;;
+  external)
+    echo '[post-start] EDUID_CLIENT_SECRET is set; using the configured Edu-ID provider instead of the local mock.'
+    ;;
+  not-selected)
+    echo "[post-start] Local Edu-ID mock: ${LOCAL_EDUID_REASON}; add the eduid component to route it (for example --profile ${DEVROUTER_PROFILE:-full},eduid)."
+    ;;
+  disabled)
+    echo "[post-start] WARN: the local Edu-ID mock stays disabled: ${LOCAL_EDUID_REASON}." >&2
+    echo "[post-start] WARN: run 'devrouter setup --yes' and 'devrouter ensure .' to restore the issuer route; delegated login is unaffected." >&2
+    ;;
+  *)
+    echo "[post-start] ERROR: ${LOCAL_EDUID_REASON}." >&2
+    exit 2
+    ;;
+esac
 
 # No-TTY pnpm hardening (see post-create.sh). (GOTCHAS #18)
 export CI=true

@@ -112,10 +112,11 @@ It does not apply changed mounts to retained containers.
 | Profile                                 | What starts                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------- |
 | `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis |
+| `eduid`                                 | The local Edu-ID OIDC mock only - combine it with an application profile      |
 | `ai`                                    | LiteLLM only - no routes, no app process                                      |
 | `mcp`                                   | The local MCP fixture (Benibot) only                                          |
 | `email`                                 | MailHog only                                                                  |
-| `full` (default)                        | Everything, including LiteLLM, MailHog, and the MCP fixture                   |
+| `full` (default)                        | Everything, including LiteLLM, MailHog, the MCP fixture, and the OIDC mock    |
 
 Postgres and Hatchet stay in the managed base for every profile (the backend
 treats both as boot-critical). Capability-only selections keep the idle app
@@ -242,11 +243,35 @@ redirect URIs per client, so `uzh_klicker_auth_dev` only ever accepts
 `https://auth.klicker.<workspace>.localhost/...` callback is rejected by the
 provider and no local configuration can change that. The mock accepts any
 redirect URI, so Edu-ID login and the assessment flow are testable in every
-checkout. It signs in one fixed synthetic participant
+checkout.
+
+The mock is a devcontainer-only capability, so it stays out of the application
+profiles: CI plans those unions against `playwright/runtime-contract.yml`, whose
+closed schema requires a literal binding for every selected app and managed
+service, and the hosted Playwright runtime cannot provision a Compose-only
+proxy. The default `full` selection routes the mock; a selective selection adds
+the capability explicitly:
+
+```bash
+devrouter ensure . --profile manage,eduid
+```
+
+Outside such a selection `post-start` reports the mock as not selected and
+leaves the Edu-ID provider unregistered, so no checkout offers an issuer it
+cannot reach. When a selected mock cannot be prepared (for example an
+unresolvable Traefik), startup continues, the mock is reported as disabled, and
+the recovery is `devrouter setup --yes` followed by `devrouter ensure .`.
+
+The mock signs in one fixed synthetic participant
 (`testuser2@test.uzh.ch`, `sub=local-eduid-dev`); `post-start.sh` exposes it only
 while `EDUID_CLIENT_SECRET` is unset, so real provider credentials always win.
 Link that mock identity to a seeded participant with
 `pnpm --filter @klicker-uzh/prisma-data run seed:local-eduid-link`.
+
+In the plain-localhost fallback (a native Dev Container client without
+devrouter routing) the issuer is `http://localhost:8090/default`. The primary
+checkout publishes that port on `127.0.0.1` and `devcontainer.json` forwards it.
+Linked worktrees keep the routed HTTPS issuer and publish no fixed host port.
 
 ## Hatchet token
 
@@ -269,6 +294,7 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 | `mailhog`                           | `mailhog/mailhog`                          | dev SMTP sink                                                                    |
 | `hatchet`                           | `hatchet-lite-dev:v0.101.0`                | workflow engine (gRPC :7077, no UI auth)                                         |
 | `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net)             |
+| `oidc`                              | `ghcr.io/navikt/mock-oauth2-server:2.1.11` | local Edu-ID OIDC mock (dev-only, shares the app network namespace)              |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 host-side `initialize.sh` creates the persistent machine-local pnpm store,

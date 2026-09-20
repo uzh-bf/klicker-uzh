@@ -32,46 +32,57 @@ managedRuntime:
     baseServices: [postgres, hatchet]
     # Optional capabilities selected per profile. The three Redis clients are
     # selected by every application profile because backend startup eagerly
-    # creates all three. LiteLLM and MailHog are opt-in capabilities. The OIDC
-    # mock takes part in every application profile (it costs nothing when
-    # unused) so Edu-ID login works out of the box in any selection that can
-    # sign a participant in. Its route must be selected too: a managed profile
-    # publishes routes for its apps, and a service alone leaves the issuer host
-    # unrouted, which fails the server-side metadata fetch during sign-in.
+    # creates all three. LiteLLM, MailHog and the local Edu-ID OIDC mock are
+    # opt-in capabilities: an application profile never selects them, `full`
+    # (the default) selects everything registered, and `eduid` selects the
+    # mock alone for a selective selection.
+    #
+    # The mock stays out of the application profiles deliberately. CI plans
+    # those profile unions against playwright/runtime-contract.yml, whose
+    # closed schema demands a literal binding for every selected app and
+    # managed service; the mock is a Compose-only proxy app that the hosted
+    # Playwright runtime cannot provision. `eduid` keeps the devcontainer-only
+    # capability out of that planning surface without weakening the contract.
     profileServices:
       [redis_exec, redis_assessment, redis_cache, litellm, mailhog, oidc]
   processes: [klicker-dev, klicker-local-mcp]
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
   manage:
-    apps: [manage, api, auth, oidc]
+    apps: [manage, api, auth]
     readiness: [manage, api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # student PWA work: pwa + API and auth
   pwa:
-    apps: [pwa, api, auth, oidc]
+    apps: [pwa, api, auth]
     readiness: [pwa, api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # chat work: chat + API and auth; includes pwa for the no-login path
   chat:
-    apps: [chat, pwa, api, auth, oidc]
+    apps: [chat, pwa, api, auth]
     readiness: [chat, pwa, api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # live-quiz work: student PWA, controller, response ingestion, workers
   live-quiz:
-    apps: [pwa, control, api, auth, response-api, oidc]
+    apps: [pwa, control, api, auth, response-api]
     readiness: [pwa, api, response-api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # maximal application runtime for trusted Playwright fallback selection
   playwright:
-    apps: [chat, pwa, control, manage, api, auth, response-api, oidc]
+    apps: [chat, pwa, control, manage, api, auth, response-api]
     readiness: [chat, pwa, manage, api, response-api]
-    devcontainerServices: [redis_exec, redis_assessment, redis_cache, oidc]
+    devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
+  # local Edu-ID replacement, devcontainer-only: add `,eduid` to a selective
+  # selection to route the OIDC mock. The default `full` selection already
+  # includes it. See .devcontainer/README.md.
+  eduid:
+    apps: [oidc]
+    devcontainerServices: [oidc]
   # pure capabilities: no routes, no app process
   ai:
     apps: []
