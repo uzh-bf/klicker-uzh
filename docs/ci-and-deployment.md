@@ -294,6 +294,20 @@ assets. The Dockerfiles declare and export matching build arguments before the
 Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
 operator contract.
 
+The consolidated staging workflow forwards that configuration through the
+`build-args` list of its `build` job, which covers every web target. Those
+five Dockerfiles are the only ones that declare the arguments, so a target
+that bundles none of them ignores the list instead of failing. Each declares
+`NEXT_PUBLIC_ENV=production` as its default, which is why the workflow passes
+`NEXT_PUBLIC_ENV=staging` explicitly. The same list carries
+`NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS`
+(`vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG`), the exact-origin allowlist
+the chat image applies to eLearning chat contexts. An argument that never
+reaches the build fails without a build error or a failed check: the chat
+image then treats every context message as untrusted and answers without page
+context. After changing the list, confirm the arguments in the
+`build-arm-chat` job log and the expected origin in its served bundle.
+
 The Manage assistant target is also build-time browser configuration.
 `apps/frontend-manage/.env.stg` and `.env.prd` both map
 `NEXT_PUBLIC_CHAT_URL` from their environment-specific `APP_ORIGIN_CHAT`.
