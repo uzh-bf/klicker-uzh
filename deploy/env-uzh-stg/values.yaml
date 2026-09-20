@@ -764,6 +764,14 @@ lti:
       authConfig:
         method: JWK_SET
         key: https://lms.uzh.ch/lti/keys
+    - url: https://lms.uzh.ch
+      name: OLAT UZH LMS (eLearning STG Finance I)
+      clientId: c4e30fd6-ba11-4618-bbf5-ad074241c5e6
+      authenticationEndpoint: https://lms.uzh.ch/lti/auth
+      accesstokenEndpoint: https://lms.uzh.ch/lti/token
+      authConfig:
+        method: JWK_SET
+        key: https://lms.uzh.ch/lti/keys
   cookieDomain: .klicker.stg.df-app.ch
 
   image:
