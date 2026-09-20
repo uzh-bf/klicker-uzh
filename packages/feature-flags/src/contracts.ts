@@ -12,6 +12,14 @@ export const FEATURE_FLAG_DEFAULTS = {
   'ai-beta': false,
   'learning-analytics': false,
   'chatbot-graphrag': false,
+  // Knowledge-base admission controls. Each one answers whether an actor may
+  // start new work; the provider contract still decides what a worker can
+  // execute, and an accepted build keeps the inputs it was accepted with.
+  // Ingestion reads, deletion, cleanup and reconciliation stay outside them.
+  'kb-ingestion': false,
+  'kb-graph-builds': false,
+  'kb-graph-domain-selection': false,
+  'question-focus-topic': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

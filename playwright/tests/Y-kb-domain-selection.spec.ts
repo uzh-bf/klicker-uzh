@@ -403,7 +403,7 @@ test.describe('Knowledge base domain selection', () => {
       // language switch is only observable through the category names a served
       // language resolves.
       options: domainCatalog(DOMAIN_IDS, ['German', 'English']),
-      config: {},
+      config: { focusTopic: 'Historical graph focus' },
       rebuildVariables: [],
     }
     let detailPath: string | undefined
@@ -414,6 +414,12 @@ test.describe('Knowledge base domain selection', () => {
       const kbId = detailPath.split('/').filter(Boolean).pop() ?? ''
       await openKnowledgeGraphPanel(page, manageUrl, detailPath)
 
+      await expect(
+        page.locator('input[data-cy="kb-knowledge-graph-focus-topic"]')
+      ).toHaveCount(0)
+      await expect(
+        page.getByTestId('kb-knowledge-graph-focus-topic')
+      ).toBeVisible()
       const domainSelect = page.getByTestId('kb-knowledge-graph-domain')
       // The default is the explicit finance v1 pair, never the first catalog entry.
       await expect(domainSelect).toBeEnabled()
@@ -486,6 +492,7 @@ test.describe('Knowledge base domain selection', () => {
         domainPolicyLanguage: 'German',
       })
 
+      expect(state.rebuildVariables.at(-1)).not.toHaveProperty('focusTopic')
       // An explicitly chosen generation language is submitted with the pair.
       await expect(rebuild).toBeEnabled()
       await selectDomainLanguage(page, EN_LANGUAGE_LABELS.English)

@@ -17,10 +17,43 @@ vi.mock('../src/services/questionGenerationGraph.js', () => ({
   getQuestionGenerationSources: async () => [],
 }))
 
-import { startElementGeneration } from '../src/services/elementGeneration.js'
 import type { StartElementGenerationInput } from '../src/services/elementGeneration.js'
+import {
+  getElementGenerationCapabilities,
+  startElementGeneration,
+} from '../src/services/elementGeneration.js'
 
-const ctx = {} as ContextWithUser
+/**
+ * The focus capability is a per-actor rollout decision, so every case states the
+ * decision its actor received instead of a deployment-wide setting.
+ * `unevaluatedCtx` carries no evaluator at all, which is what a deployment
+ * without a usable payload produces.
+ */
+function contextWithFocusTopic(decision: boolean): ContextWithUser {
+  return {
+    user: { sub: 'focus-actor' },
+    featureFlags: {
+      isEnabled: () => decision,
+      getAiBetaDecision: () => 'enabled',
+      refresh: async () => undefined,
+    },
+    prisma: {
+      user: { findUnique: async () => ({ betaEnabled: true }) },
+    },
+  } as unknown as ContextWithUser
+}
+
+const admittedCtx = contextWithFocusTopic(true)
+const deniedCtx = contextWithFocusTopic(false)
+const unevaluatedCtx = {} as ContextWithUser
+
+function typesSupportingFocus(
+  capabilities: Awaited<ReturnType<typeof getElementGenerationCapabilities>>
+): string[] {
+  return capabilities.typeCapabilities
+    .filter((capability) => capability.supportsFocusTopic)
+    .map((capability) => capability.elementType)
+}
 
 function input(
   overrides: Partial<StartElementGenerationInput> = {}
@@ -39,48 +72,55 @@ describe('element generation focus topic gate', () => {
   afterEach(() => {
     starts.question.mockClear()
     starts.flashcard.mockClear()
-    vi.unstubAllEnvs()
+  })
+
+  it('advertises the focus capability only for the actors and types the rollout admits', async () => {
+    const admitted = await getElementGenerationCapabilities(admittedCtx)
+    expect(admitted.languages).toEqual(['de', 'en'])
+    expect(typesSupportingFocus(admitted)).toEqual(['SC', 'MC', 'KPRIM'])
+
+    for (const closedCtx of [deniedCtx, unevaluatedCtx]) {
+      expect(
+        typesSupportingFocus(await getElementGenerationCapabilities(closedCtx))
+      ).toEqual([])
+    }
   })
 
   it('passes a trimmed focus topic to question generation', async () => {
-    vi.stubEnv('QUESTION_GENERATION_FOCUS_TOPIC_ENABLED', 'true')
-
     await startElementGeneration(
       input({ focusTopic: '  Portfolio diversification  ' }),
-      ctx
+      admittedCtx
     )
 
     expect(starts.question).toHaveBeenCalledWith(
       expect.objectContaining({ focusTopic: 'Portfolio diversification' }),
-      ctx
+      admittedCtx
     )
     expect(starts.flashcard).not.toHaveBeenCalled()
   })
 
-  it('refuses a focus topic when the capability is disabled', async () => {
-    vi.stubEnv('QUESTION_GENERATION_FOCUS_TOPIC_ENABLED', 'false')
-
-    await expect(
-      startElementGeneration(
-        input({ focusTopic: 'Portfolio diversification' }),
-        ctx
+  it('refuses a focus topic the actor is not admitted to', async () => {
+    for (const ctx of [deniedCtx, unevaluatedCtx]) {
+      await expect(
+        startElementGeneration(
+          input({ focusTopic: 'Portfolio diversification' }),
+          ctx
+        )
+      ).rejects.toThrowError(
+        expect.objectContaining({ code: 'CONFIGURATION_INVALID' })
       )
-    ).rejects.toThrowError(
-      expect.objectContaining({ code: 'CONFIGURATION_INVALID' })
-    )
+    }
     expect(starts.question).not.toHaveBeenCalled()
   })
 
   it('rejects a focus topic for flashcard generation', async () => {
-    vi.stubEnv('QUESTION_GENERATION_FOCUS_TOPIC_ENABLED', 'true')
-
     await expect(
       startElementGeneration(
         input({
           elementType: 'FLASHCARD',
           focusTopic: 'Portfolio diversification',
         }),
-        ctx
+        admittedCtx
       )
     ).rejects.toThrowError(
       expect.objectContaining({ code: 'CONFIGURATION_INVALID' })
@@ -89,11 +129,11 @@ describe('element generation focus topic gate', () => {
   })
 
   it('treats a blank focus topic as absent without the capability', async () => {
-    await startElementGeneration(input({ focusTopic: '   ' }), ctx)
+    await startElementGeneration(input({ focusTopic: '   ' }), unevaluatedCtx)
 
     expect(starts.question).toHaveBeenCalledWith(
       expect.objectContaining({ focusTopic: null }),
-      ctx
+      unevaluatedCtx
     )
   })
 })
