@@ -12,9 +12,19 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 // source: index badge, truncated title, optional page/position label and the
 // external-link affordance. Full details stay in the shared tooltip, so the
 // compact shape does not hide information the card revealed.
-export function SourceRow({ source }: { source: ChatSource }) {
+//
+// `citedPageRange` travels with the row exactly as it does for the card grid:
+// the compact form is the embedded and narrow-screen surface, so it must not be
+// the one place that falls back to the retrieved page envelope.
+export function SourceRow({
+  source,
+  citedPageRange,
+}: {
+  source: ChatSource
+  citedPageRange?: string
+}) {
   const t = useTranslations()
-  const secondaryLine = getSourceSecondaryLine(source, t)
+  const secondaryLine = getSourceSecondaryLine(source, t, citedPageRange)
 
   const content = (
     <>

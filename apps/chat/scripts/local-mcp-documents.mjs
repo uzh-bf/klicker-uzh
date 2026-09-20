@@ -175,10 +175,11 @@ export function toLocalMcpDocumentSource(document) {
     page_number: document.page,
   }
 
-  // A document with continuation text spans the next page. The extra chunk is
-  // what lets the source card and tooltip show a real page range instead of a
-  // single page, while `page_number` on the first chunk stays the physical
-  // page used for the `#page` navigation anchor.
+  // A document with continuation text spans the next page. The extra chunk
+  // gives retrieval a real spread, which the source row must not print as if
+  // the answer had used every page in it; the display shows a range only when
+  // the answer names the pages itself. `page_number` on the first chunk stays
+  // the physical page used for the `#page` navigation anchor.
   const spansNextPage =
     typeof document.continuation === 'string' && document.continuation
   const chunks = spansNextPage

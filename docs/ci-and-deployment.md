@@ -317,6 +317,21 @@ workflow has installed its file as `.env.production`; an image build fails
 instead of producing a Manage bundle that silently hides the assistant
 launcher.
 
+### Dependency overrides
+
+The `overrides` block of `pnpm-workspace.yaml` decides which patched
+transitive releases the scanned images carry, so every entry there has to stay
+load-bearing against the locked graph: some dependency range still resolves
+below the patched release, or the line is pinned for lockstep or consolidation.
+An entry whose selector no longer matches any resolved version buys nothing and
+keeps rewriting importer specifiers — `verifyDepsBeforeRun: error` compares
+those strings against the manifests, so that drift, not the pin itself, is what
+fails an install in the Docker builders and the dev launcher. Audit, add, drop,
+and repair entries with
+[.agents/skills/klicker-dependency-overrides/SKILL.md](../.agents/skills/klicker-dependency-overrides/SKILL.md);
+the 2026-09-19 audit of that block dropped 17 stale image-scan lifts that
+resolved at or above their patched release without the pin.
+
 ## Release flow
 
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
