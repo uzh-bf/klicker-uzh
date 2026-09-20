@@ -215,7 +215,7 @@ test('maps known feature paths, skips documentation, and fails unknown paths clo
   assert.ok(empty.reasonCodes.includes('empty-diff'))
 })
 
-test('a draft narrows CI-only changes to the bounded smoke selection', () => {
+test('a CI-only change narrows to the bounded smoke selection in both states', () => {
   const manifest = fixtureManifest()
   const base = {
     candidateSpecs: [
@@ -233,23 +233,37 @@ test('a draft narrows CI-only changes to the bounded smoke selection', () => {
     prState: 'draft',
   })
   assert.equal(draft.mode, 'selected')
+  assert.equal(draft.envelopeClass, 'ci-orchestration')
   assert.deepEqual(draft.selectedSpecs, ['0-baseline-ops.spec.ts'])
   assert.ok(draft.reasonCodes.includes('draft-bounded-surface'))
   assert.ok(!draft.reasonCodes.includes('global-surface'))
 
-  // The same change on a ready pull request keeps the full-surface policy.
-  // The negative assertion is what actually guards the draft condition: ready
-  // state forces full mode on its own, so only the absent bounded reason
-  // distinguishes a rejected draft rule from an unconditional one.
+  // The same change on a ready pull request runs the same bounded smoke
+  // selection: a CI definition cannot reach application behaviour, so the
+  // ready state no longer expands it to the full wave. The class, not the
+  // draft flag, is what carries the decision.
   const ready = selectFromChanges({
     ...base,
     changes: ciOnly,
     prState: 'ready',
   })
-  assert.equal(ready.mode, 'full')
-  assert.deepEqual(ready.selectedSpecs, base.candidateSpecs)
-  assert.ok(ready.reasonCodes.includes('ready-for-review'))
-  assert.ok(!ready.reasonCodes.includes('draft-bounded-surface'))
+  assert.equal(ready.mode, 'selected')
+  assert.equal(ready.envelopeClass, 'ci-orchestration')
+  assert.deepEqual(ready.selectedSpecs, ['0-baseline-ops.spec.ts'])
+  assert.ok(ready.reasonCodes.includes('envelope-ci-orchestration'))
+  assert.ok(!ready.reasonCodes.includes('ready-for-review'))
+
+  // An application change in the same workflow-adjacent shape keeps the full
+  // wave in both states: only the classifier's bounded classes narrow.
+  const application = selectFromChanges({
+    ...base,
+    changes: [change('M', 'apps/frontend-manage/pages/index.tsx')],
+    prState: 'ready',
+  })
+  assert.equal(application.mode, 'full')
+  assert.equal(application.envelopeClass, 'application')
+  assert.deepEqual(application.selectedSpecs, base.candidateSpecs)
+  assert.ok(application.reasonCodes.includes('ready-for-review'))
 
   // Any full-surface path in the same change set still wins over the bound.
   const mixed = selectFromChanges({
@@ -282,28 +296,29 @@ test('a draft narrows CI-only changes to the bounded smoke selection', () => {
   assert.ok(!missingBounded.reasonCodes.includes('documentation-only'))
 })
 
-test('ready state overrides a documentation-only diff with the full candidate suite', () => {
-  const plan = buildSelectionPlan({
-    controlRoot: repositoryRoot,
-    candidateSpecs: trustedCandidateSpecs,
-    changes: [change('M', 'docs/ci.md')],
-    baseSha: 'base',
-    headSha: 'head',
-    mergeBase: 'merge',
-    prState: 'ready',
-  })
+test('a documentation-only plan skips the candidate suite in both states', () => {
+  for (const prState of ['draft', 'ready']) {
+    const plan = buildSelectionPlan({
+      controlRoot: repositoryRoot,
+      candidateSpecs: trustedCandidateSpecs,
+      changes: [change('M', 'docs/ci.md')],
+      baseSha: 'base',
+      headSha: 'head',
+      mergeBase: 'merge',
+      prState,
+    })
 
-  assert.equal(plan.mode, 'full')
-  assert.deepEqual(
-    plan.selectedSpecs,
-    trustedCandidateSpecs.map((spec) => `tests/${spec}`)
-  )
-  assert.equal(plan.shardCount, 8)
-  assert.deepEqual(
-    plan.shards.flatMap((shard) => shard.files).sort(),
-    plan.selectedSpecs.slice().sort()
-  )
-  assert.ok(plan.reasonCodes.includes('ready-for-review'))
+    assert.equal(plan.mode, 'skip', prState)
+    assert.equal(plan.envelopeClass, 'documentation-and-planning', prState)
+    assert.deepEqual(plan.selectedSpecs, [], prState)
+    assert.equal(plan.shardCount, 0, prState)
+    assert.deepEqual(plan.shards, [], prState)
+    assert.ok(plan.reasonCodes.includes('documentation-only'), prState)
+    assert.ok(
+      plan.reasonCodes.includes('envelope-documentation-and-planning'),
+      prState
+    )
+  }
 })
 
 test('production-designated specs stay out of ordinary plans', () => {
@@ -330,7 +345,7 @@ test('production-designated specs stay out of ordinary plans', () => {
   const ready = buildSelectionPlan({
     controlRoot: repositoryRoot,
     candidateSpecs,
-    changes: [change('M', 'docs/ci.md')],
+    changes: [change('M', 'packages/util/src/time.ts')],
     baseSha: 'base',
     headSha: 'head',
     mergeBase: 'merge',

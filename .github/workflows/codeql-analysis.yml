@@ -27,10 +27,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # One classification serves all three languages. A documentation-only pull
+  # request cannot change analyzed source, so its analyses are skipped instead of
+  # scanning an unchanged tree three times.
+  #
+  # The class narrows pull requests only: a branch push and the scheduled run
+  # always analyze. The condition on `analyze` repeats that boundary, and its
+  # `!cancelled()` keeps a failed or skipped classification from silently
+  # removing the analysis.
+  classify:
+    name: Classify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      change_class: ${{ steps.classify.outputs.change_class }}
+      static_analysis: ${{ steps.classify.outputs.static_analysis }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The classification reads changed-path records, not sources, so the
+          # working tree stays sparse.
+          sparse-checkout: .github
+
+      - name: Classify the change
+        id: classify
+        uses: ./.github/actions/change-envelope
+
   analyze:
     # Event-aware draft handling: push and schedule runs carry no
     # `pull_request.draft` field, so a bare draft check would skip them.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    # Everything except cancellation runs, so a class that could not be computed
+    # widens to the analysis rather than quietly removing it.
+    needs: classify
+    if: >-
+      !cancelled() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
+      (github.event_name != 'pull_request' || needs.classify.outputs.static_analysis != 'skip')
     name: Analyze
     runs-on: ubuntu-latest
     timeout-minutes: 30

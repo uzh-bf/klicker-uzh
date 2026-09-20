@@ -1,5 +1,7 @@
 const crypto = require('node:crypto')
+const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
 
 const {
@@ -9,6 +11,8 @@ const {
   buildJobName,
   scanJobName,
 } = require('./staging-image-targets.cjs')
+
+const { fingerprintTag } = require('./image-input-fingerprint.cjs')
 
 const OCI_MANIFEST_CONTENT_TYPE = 'application/vnd.oci.image.manifest.v1+json'
 
@@ -27,6 +31,12 @@ const FIXTURE_TARGET_IDS = Object.freeze([
   'backend-docker-migrator-arm',
 ])
 
+// The fixture targets a release may adopt instead of rebuilding, resolved from
+// the trusted inventory rather than restated here.
+const FIXTURE_REUSE_TARGET_IDS = Object.freeze(
+  FIXTURE_TARGET_IDS.filter((targetId) => targetById(targetId)?.reuse === true)
+)
+
 const REAL_WORKFLOW = fs.readFileSync(
   path.join(__dirname, '..', 'workflows', path.basename(FIXTURE_WORKFLOW_PATH)),
   'utf8'
@@ -42,6 +52,78 @@ const FIXTURE_STAGING_WORKFLOWS = Object.freeze([
 
 // The workflow text a candidate would carry. Callers mutate the returned copy to
 // express a hostile or broken candidate.
+
+// The digest artifact one staging publication uploads per reuse-capable
+// target: the published digest, the input fingerprint the build resolved, and
+// the reuse record that says whether this publication adopted an
+// already-qualified digest or built one.
+const PUBLICATION_ARCHIVE_CACHE = new Map()
+
+function publicationFingerprint(targetId) {
+  return 'sha256:' + crypto.createHash('sha256').update(targetId).digest('hex')
+}
+
+function publicationArtifacts({
+  adopted = {},
+  omit = [],
+  override = {},
+  runId = 100,
+  targetIds = FIXTURE_REUSE_TARGET_IDS,
+} = {}) {
+  const key = JSON.stringify({ adopted, omit, override, runId, targetIds })
+  const cached = PUBLICATION_ARCHIVE_CACHE.get(key)
+  if (cached) return cached
+  const archives = new Map()
+  const artifacts = targetIds.map((targetId, index) => {
+    const fingerprint = publicationFingerprint(targetId)
+    const tag = fingerprintTag(fingerprint)
+    const members = Object.fromEntries(
+      Object.entries({
+        'digest.txt': 'sha256:' + '0'.repeat(64) + '\n',
+        ['image-input-fingerprint-' + targetId + '.json']: JSON.stringify({
+          fingerprint,
+          reuseEligible: true,
+          tag,
+          target: targetId,
+        }),
+        ['image-reuse-' + targetId + '.json']: JSON.stringify({
+          adopted: adopted[targetId] !== undefined,
+          digest: adopted[targetId] ?? '',
+          schemaVersion: 1,
+          tag,
+        }),
+      })
+        .filter(([name]) => !omit.includes(name))
+        .map(([name, content]) => [name, override[name] ?? content])
+    )
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-record-'))
+    try {
+      for (const [name, content] of Object.entries(members)) {
+        fs.writeFileSync(path.join(directory, name), content)
+      }
+      execFileSync('zip', ['-q', 'record.zip', ...Object.keys(members)], {
+        cwd: directory,
+      })
+      archives.set(
+        index + 1,
+        fs.readFileSync(path.join(directory, 'record.zip'))
+      )
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
+    return {
+      expired: false,
+      id: index + 1,
+      name: 'build-digest-' + targetId,
+      run_id: runId,
+      size_in_bytes: archives.get(index + 1).byteLength,
+    }
+  })
+  const fixture = { archives, artifacts }
+  PUBLICATION_ARCHIVE_CACHE.set(key, fixture)
+  return fixture
+}
+
 function workflowDefinition(overrides = {}) {
   let content = REAL_WORKFLOW
   if (overrides.pushBranches) {
@@ -160,11 +242,14 @@ function transientReadbackFailure(status = 503) {
 
 module.exports = {
   FIXTURE_STAGING_WORKFLOWS,
+  FIXTURE_REUSE_TARGET_IDS,
   FIXTURE_TARGET_IDS,
   FIXTURE_WORKFLOW_PATH,
   OCI_MANIFEST_CONTENT_TYPE,
   fixtureDefinitions,
   fixtureJobNames,
+  publicationArtifacts,
+  publicationFingerprint,
   registryManifestResponse,
   transientReadbackFailure,
   workflowDefinition,
