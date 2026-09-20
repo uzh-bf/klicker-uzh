@@ -21,6 +21,11 @@ on:
       mode:
         description: Canonical selector mode
         value: ${{ jobs.prepare.outputs.mode }}
+      envelope_class:
+        description: >-
+          Change class the trusted minimum-validation classifier proved for the
+          planned diff; only its bounded classes may narrow the ready state
+        value: ${{ jobs.prepare.outputs.envelope_class }}
       shard_matrix:
         description: Canonical shard matrix
         value: ${{ jobs.prepare.outputs.shard_matrix }}
@@ -39,6 +44,7 @@ jobs:
       should_run: ${{ steps.metadata.outputs.should_run }}
       route: ${{ steps.metadata.outputs.route }}
       mode: ${{ steps.metadata.outputs.mode }}
+      envelope_class: ${{ steps.metadata.outputs.envelope_class }}
       selector_pr_state: ${{ steps.metadata.outputs.selector_pr_state }}
       shard_matrix: ${{ steps.metadata.outputs.shard_matrix }}
       reason_codes: ${{ steps.metadata.outputs.reason_codes }}
@@ -178,6 +184,7 @@ jobs:
             `- Route: \`${route.route}\``,
             `- Selector state: \`${route.selectorPrState}\``,
             `- Mode: \`${plan.mode}\``,
+            `- Change class: \`${plan.envelopeClass}\``,
             `- Reasons: \`${plan.reasonCodes.join(',')}\``,
             `- Candidate specs: \`${plan.candidateSpecs.length}\``,
             `- Selected specs: \`${plan.selectedSpecs.length}\``,
