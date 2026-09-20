@@ -2,6 +2,17 @@
 
 This service computes learning analytics for KlickerUZH, providing insights into student learning patterns and performance metrics.
 
+## Availability
+
+Optional Learning Analytics computation is disabled while consent-aware processing
+and withdrawal handling are completed. Importing the analytics package fails
+before opening a database connection, including initialization scripts and
+notebooks using its modules. The GraphQL analytics reads also return no data.
+Existing running processes must be stopped before this containment is considered
+active; deploying source alone does not stop an older process or remove retained
+derivatives. Operational responses, assessment records and gamification remain
+outside this analytics package.
+
 ## Requirements
 
 - Python 3.12.x (e.g., installed through `asdf`)
