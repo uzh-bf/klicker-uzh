@@ -40,7 +40,12 @@ export async function proxy(request: NextRequest) {
     const headers = new Headers(request.headers)
     headers.set('x-request-id', requestContext.requestId)
     headers.set('x-correlation-id', requestContext.correlationId)
-    return NextResponse.next({ request: { headers } })
+    const response = NextResponse.next({ request: { headers } })
+    // The logging contract covers every response: pass-throughs echo the
+    // resolved IDs too, so the Node handler and the client agree on them.
+    response.headers.set('x-request-id', requestContext.requestId)
+    response.headers.set('x-correlation-id', requestContext.correlationId)
+    return response
   }
   const secure = resolveSecureCookies(
     process.env.NEXTAUTH_URL,
