@@ -2,10 +2,24 @@ import { createServer } from 'node:http'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
+import {
+  createLocalAuthenticator,
+  LOCAL_CHATBOT_ID,
+} from './local-mcp-auth.mjs'
+import {
+  findLocalMcpDocuments,
+  loadLocalMcpDocuments,
+  toLocalMcpDocumentSource,
+} from './local-mcp-documents.mjs'
+import { loadLocalMcpFixture } from './local-mcp-fixture.mjs'
 
 const HOST = '127.0.0.1'
 const PORT = 1417
 const MAX_BODY_BYTES = 1024 * 1024
+const fixture = loadLocalMcpFixture(process.env)
+const authenticate = await createLocalAuthenticator(process.env, fixture, {
+  returnIdentity: true,
+})
 
 const SYNTHETIC_DOCUMENTS = [
   {
@@ -78,14 +92,15 @@ const SYNTHETIC_DOCUMENTS = [
   },
 ]
 
-function findDocuments(query) {
-  const normalizedQuery = query.toLowerCase()
-  return SYNTHETIC_DOCUMENTS.filter((document) =>
-    document.keywords.some((keyword) => normalizedQuery.includes(keyword))
-  )
-}
+const DOCUMENTS = loadLocalMcpDocuments(process.env, SYNTHETIC_DOCUMENTS)
+const additionalDocuments = fixture
+  ? loadLocalMcpDocuments(
+      { LOCAL_MCP_DOCUMENTS_FILE: fixture.documentsFile },
+      []
+    )
+  : null
 
-function createMcpServer() {
+function createMcpServer(documentsForIdentity) {
   const server = new McpServer({
     name: 'klicker-local-test-mcp',
     version: '1.0.0',
@@ -112,7 +127,7 @@ function createMcpServer() {
       },
     },
     async ({ query }) => {
-      const documents = findDocuments(query)
+      const documents = findLocalMcpDocuments(documentsForIdentity, query)
       const payload = {
         answer:
           `KLICKER_LOCAL_MCP_OK: the local MCP server received "${query}". ` +
@@ -120,18 +135,7 @@ function createMcpServer() {
         mode: 'documents',
         summary: { count: documents.length },
         sources_used: documents.length,
-        sources: documents.map((document) => ({
-          reference: 'synthetic-course-material.pdf',
-          reference_type: 'pdf',
-          source_type: 'document',
-          title: document.title,
-          chunks: [
-            {
-              content: document.content,
-              page_number: document.page,
-            },
-          ],
-        })),
+        sources: documents.map(toLocalMcpDocumentSource),
       }
 
       return {
@@ -166,7 +170,10 @@ function sendJson(response, status, body) {
 
 const httpServer = createServer(async (request, response) => {
   if (request.url === '/health' && request.method === 'GET') {
-    sendJson(response, 200, { status: 'ok' })
+    sendJson(response, 200, {
+      status: 'ok',
+      generation: process.env.LOCAL_MCP_GENERATION,
+    })
     return
   }
 
@@ -181,7 +188,15 @@ const httpServer = createServer(async (request, response) => {
     return
   }
 
-  const mcpServer = createMcpServer()
+  const identity = await authenticate(request.headers)
+  if (!identity) {
+    sendJson(response, 401, { error: 'Unauthorized' })
+    return
+  }
+
+  const mcpServer = createMcpServer(
+    identity === LOCAL_CHATBOT_ID ? DOCUMENTS : additionalDocuments
+  )
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
@@ -198,8 +213,8 @@ const httpServer = createServer(async (request, response) => {
     const body = await readJsonBody(request)
     await mcpServer.connect(transport)
     await transport.handleRequest(request, response, body)
-  } catch (error) {
-    console.error('[local-mcp] Request failed:', error)
+  } catch {
+    console.error('[local-mcp] Invalid request')
     if (!response.headersSent) {
       sendJson(response, 400, {
         jsonrpc: '2.0',

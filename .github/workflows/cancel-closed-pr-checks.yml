@@ -1,0 +1,78 @@
+# Closing or merging a pull request must also reclaim that pull request's
+# queued validation capacity outside Playwright. Workflows that list only
+# open-state pull_request actions leave their already-queued runs lingering
+# after closure. Each matrix leg joins one target workflow's per-PR concurrency
+# group as a checkout-free no-op with cancel-in-progress, which cancels the
+# obsolete run without an Actions write token.
+#
+# Exclusions:
+# - test-playwright.yml owns a dedicated cancel-closed-pr job in its
+#   "<workflow>-playwright-<pr>" group.
+# - check-ocr-final-review.yml triggers on closed itself and owns its
+#   final-review supersession lifecycle.
+# - claude.yml runs comment-triggered interactive sessions, not queued
+#   pull-request validation.
+# - Push-only (v3_*-prd, release), workflow_run/workflow_dispatch-keyed
+#   (deploy-stg-promote, update-playwright-timings, claude-dispatch,
+#   playwright-cache-seed) and reusable-only (public-pr-playwright-shards)
+#   workflows never occupy a per-PR-number group.
+#
+# A target still waiting for its first runner can reject the joining leg with a
+# 409 conflict; that state self-resolves. fail-fast stays disabled so one
+# rejected leg cannot mask the others. ci-event-gates.test.cjs fails when a
+# workflow gains or renames a per-PR group without updating this matrix.
+name: Cancel checks for closed pull requests
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cancel-closed-pr-checks:
+    name: Cancel ${{ matrix.workflow }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        # group is the target's literal concurrency-group prefix: the workflow
+        # name, or the literal prefix a workflow uses instead of
+        # github.workflow.
+        include:
+          - workflow: Check for secrets (gitleaks)
+            group: Check for secrets (gitleaks)
+          - workflow: Check codebase
+            group: Check codebase
+          - workflow: CodeQL
+            group: CodeQL
+          - workflow: Test lightweight unit suites
+            group: Test lightweight unit suites
+          - workflow: Test graphql package logic functionalities
+            group: Test graphql package logic functionalities
+          - workflow: Test OLAT-API functionalities
+            group: Test OLAT-API functionalities
+          - workflow: Production translation context
+            group: intl-production
+          - workflow: Build staging images
+            group: Build staging images
+          - workflow: Perform sonarcloud analysis
+            group: Perform sonarcloud analysis
+          - workflow: AI code review (OpenCodeReview)
+            group: AI code review (OpenCodeReview)
+          # The MCP entries cover workflows that exist only on the v3-ai and
+          # v3-audit integration branches. On v3 itself no run ever occupies
+          # those groups, so the legs finish as harmless no-ops while the
+          # matrix stays single-sourced across the sync chain.
+          - workflow: Test lecturer MCP server
+            group: Test lecturer MCP server
+          - workflow: Build Docker image for mcp-lecturer (stg)
+            group: Build Docker image for mcp-lecturer (stg)
+          - workflow: Build Docker image for mcp-student (stg)
+            group: Build Docker image for mcp-student (stg)
+    concurrency:
+      group: ${{ matrix.group }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Finish closed pull request execution
+        run: ':'

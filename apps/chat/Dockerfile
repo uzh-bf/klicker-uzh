@@ -1,4 +1,9 @@
-FROM docker.io/library/node:24.16.0-alpine AS base
+FROM docker.io/library/node:24.21.0-alpine AS base
+
+# See apps/backend-docker/Dockerfile: patched Alpine packages and npm for every
+# stage, including any scanned runtime image.
+RUN apk upgrade --no-cache \
+ && npm i -g --ignore-scripts npm@11.19.1
 
 ARG NODE_ENV production
 ENV NODE_ENV $NODE_ENV
@@ -62,4 +67,4 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 EXPOSE 3000
 
-CMD node apps/chat/server.js
+CMD ["node", "apps/chat/server.js"]

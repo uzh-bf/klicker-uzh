@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+node "$SCRIPT_DIR/../util/generate-dependency-mounts.mjs" "$SCRIPT_DIR/.."
 CERT_DIR="$SCRIPT_DIR/certs"
 PNPM_STORE_VOLUME='klicker-uzh-pnpm-store-v1'
 

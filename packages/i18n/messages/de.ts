@@ -250,6 +250,14 @@ export default {
       showMore:
         '{count, plural, one {Mehr anzeigen (# weitere Zeile)} other {Mehr anzeigen (# weitere Zeilen)}}',
       docQueryQueryLabel: 'Suchanfrage',
+      unnamedSource: 'Unbenannte Quelle',
+      originUnavailable: 'Original-URL der Quelle nicht verfügbar',
+      chunkUnavailable: 'Inhalt des Abschnitts nicht verfügbar',
+      resultUnavailable: 'Suchdetails nicht verfügbar',
+      openSource: 'Quelle öffnen',
+      showFullChunk: 'Vollständigen Abschnitt anzeigen',
+      moreChunks: 'Weitere Abschnitte anzeigen ({count} verbleibend)',
+      moreSources: 'Weitere Quellen anzeigen ({count} verbleibend)',
       docQuerySourcesHint:
         'Die Treffer erscheinen als Quellen unter der Antwort.',
     },
@@ -262,6 +270,8 @@ export default {
     },
     sources: {
       title: 'Quellen',
+      cited: 'In dieser Antwort zitiert',
+      otherRetrieved: 'Weitere gefundene Materialien ({count})',
       page: 'S. {page}',
       video: 'Video',
       image: 'Bild',
@@ -825,6 +835,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
     loginInfo:
       'Sie müssen sich nur hier einloggen, wenn Sie eigene Aktivitäten und Kurse erstellen möchten, nicht um an solchen teilzunehmen.',
+    sessionCheckFailed:
+      'Ihr Login konnte nicht überprüft werden, da der Dienst vorübergehend nicht verfügbar ist. Bitte versuchen Sie es in einem Moment erneut.',
+    sessionCheckRetry: 'Erneut versuchen',
+    restart: {
+      title: 'Login',
+      info: 'Der Login-Vorgang konnte nicht fortgesetzt werden. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      errorInfo:
+        'Der Login-Anbieter hat einen Fehler gemeldet. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      studentLogin: 'Studenten-Login (Assessment)',
+      lecturerLogin: 'Dozenten-Login',
+    },
   },
   pwa: {
     general: {
@@ -1961,10 +1982,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     settings: {
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
       baseModelUsage: 'Nutzung des Basismodells',
-      betaFeaturesDataUse:
-        'Wenn Sie sich anmelden, wird ein pseudonymer Bezeichner Ihres Kontos einer kontobasierten Beta-Kohorte für die Zielsteuerung von Features hinzugefügt. Sie können sich über dieselbe Einstellung wieder abmelden.',
       betaFeaturesDescription:
-        'Melden Sie sich optional für den frühzeitigen Zugang zu ausgewählten Beta-Features an. Diese Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+        'Zu den Beta-Features gehört die Erstellung von Chatbots. Ihre Beta-Einstellung ist standardmässig aktiviert und kann hier ausgeschaltet werden. Die Verfügbarkeit einzelner Features und die Freigabe der KI-Nutzung werden separat verwaltet. Beta-Features können instabil sein, sich ohne Vorankündigung ändern oder für wichtige Arbeiten ungeeignet sein.',
+      betaFeaturesSignupClosed:
+        'Neue Beta-Anmeldungen sind derzeit geschlossen. Informationen zu Beta-Features finden Sie weiterhin hier.',
+      betaFeaturesEnrollmentRestricted:
+        'Mit diesem Konto oder dieser Anmeldung kann die Beta-Anmeldung nicht geändert werden. Neue Anmeldungen erfordern Catalyst und vollen Kontozugriff.',
       betaFeaturesConvergedOff: 'Der Beta-Zugang ist nicht mehr aktiv.',
       betaFeaturesConvergedOn: 'Der Beta-Zugang ist jetzt aktiv.',
       betaFeaturesEnrollment: 'Beta-Anmeldung',
@@ -1973,16 +1996,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       betaFeaturesError:
         'Ihre Beta-Anmeldung konnte nicht gespeichert werden. Der aktuelle Anmeldestatus wurde nicht geändert. Bitte versuchen Sie es erneut.',
       betaFeaturesRefreshFailure:
-        'Ihre Beta-Anmeldung wurde gespeichert, aber die Informationen zum Beta-Zugang konnten nicht aktualisiert werden. Laden Sie die Seite neu oder versuchen Sie es erneut. Der Zugang kann bis zu 120 Sekunden benötigen, um aktualisiert zu werden.',
+        'Ihre Beta-Einstellung wurde gespeichert, aber die angezeigten Einstellungen konnten nicht aktualisiert werden. Laden Sie die Seite neu, um den aktuellen Stand zu sehen.',
       betaFeaturesRefreshing:
-        'Ihre Anmeldung wurde gespeichert. Die Informationen zum Beta-Zugang werden aktualisiert; der Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Die angezeigten Einstellungen werden aktualisiert.',
       betaFeaturesSaved:
-        'Ihre Beta-Anmeldung wurde gespeichert. Der Beta-Zugang kann bis zu 120 Sekunden benötigen.',
+        'Ihre Beta-Einstellung wurde gespeichert. Verfügbare Features hängen weiterhin von der Einführung und erforderlichen Freigaben ab.',
       betaFeaturesPending:
         'Ihre Beta-Anmeldung wird gespeichert. Der aktuelle Status bleibt unverändert, bis der Speichervorgang abgeschlossen ist.',
       betaFeaturesTitle: 'Beta-Features',
+      chatbotBetaAccessRequired:
+        'Die Erstellung von Chatbots ist ein Beta-Feature. Sie erfordert AI-Beta-Zugang, Catalyst und vollen Kontozugriff. Die Beta-Anmeldung finden Sie in Ihren Kontoeinstellungen.',
       betaFeaturesUnavailable:
-        'Die Beta-Anmeldung ist vorübergehend nicht verfügbar. Bitte versuchen Sie es später erneut. Ihr aktueller Anmeldestatus wurde nicht angenommen.',
+        'Ihre Beta-Einstellung kann derzeit nicht angezeigt oder geändert werden. Es wurde keine Einstellung angenommen.',
       chatAccountUsageDescription:
         'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
       chatAccountUsageBoundaryDescription:
@@ -3560,10 +3585,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       joinCourse: 'Kurs beitreten',
       viewCourse: 'Kurs einsehen',
       viewActivities: 'Aktivitäten einsehen',
+      openLibrary: 'Bibliothek öffnen',
+      noNotificationEmail: 'Nicht angegeben',
       executeActivities: 'Aktivitäten ausführen',
       modifyCourseSettings: 'Kurseinstellungen ändern',
       modifyContainedActivities: 'Aktivitäten im Kurs bearbeiten',
       manageParticipantGroups: 'Teilnehmergruppen verwalten',
+      leaderboardSummary:
+        'Vergleichen Sie die Punkte der Teilnehmenden im gewählten Zeitraum.',
+      leaderboardInclusionHelp: 'Wer erscheint in der Rangliste?',
+      leaderboardInclusion:
+        'Teilnehmende ohne Punkte werden in der Rangliste für den gesamten Kurs und in rollierenden Ranglisten aufgeführt.',
+      leaderboardExportHelp: 'Hinweise zum CSV-Export',
+      leaderboardExportDescription:
+        'Der CSV-Export enthält zusätzlich zu den Benutzernamen die E-Mail-Adressen der Teilnehmenden.',
       deleteCourse: 'Kurs löschen',
       removeCourse: 'Kurs entfernen',
       confirmCourseRemoval:

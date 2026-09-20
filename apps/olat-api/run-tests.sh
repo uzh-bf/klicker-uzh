@@ -2,6 +2,10 @@
 
 set -e
 
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+OLAT_TEST_WORKSPACE=$(cd -- "$SCRIPT_DIR/../.." && pwd -P)
+export OLAT_TEST_WORKSPACE
+
 echo "Stopping any existing containers..."
 docker compose -f test/docker/docker-compose.test.yml down --volumes 2>/dev/null || true
 

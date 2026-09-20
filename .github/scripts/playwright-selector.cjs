@@ -8,10 +8,26 @@ const {
   parseTimings,
   selectedDurationMap,
 } = require('./get-shard-files.js')
+const {
+  CHANGE_CLASS,
+  classifyRecords,
+  parseNameStatusRecords,
+} = require('./minimum-validation-class.cjs')
 
 const SELECTOR_SCHEMA_VERSION = 1
 const SUPPORTED_PROFILE_VERSION = 1
 const TEST_FILE_PATTERN = /^[^/]+\.spec\.ts$/
+
+// Change classes whose changes cannot reach application behaviour. The
+// repository-owned classifier proves them from the same merge-base diff this
+// selector already reads, and the ready-state full plan is the only plan those
+// classes may narrow: a bounded class selects the bounded smoke surface, a
+// documentation class selects nothing, and every other diff keeps the full
+// candidate suite.
+const BOUNDED_ENVELOPE_CLASSES = new Set([
+  CHANGE_CLASS.documentationAndPlanning,
+  CHANGE_CLASS.ciOrchestration,
+])
 
 function compareNames(a, b) {
   if (a < b) return -1
@@ -173,6 +189,7 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
 
   const trustedProfileSet = new Set(trustedProfileNames)
   const profiles = new Map()
+  const productionSpecs = new Set()
 
   for (const group of manifest.groups) {
     const profile = canonicalProfile(group?.profile)
@@ -182,14 +199,26 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
       }
     }
 
+    if (group.runtime !== undefined && group.runtime !== 'production-webpack') {
+      fail(`unsupported trusted profile runtime ${group.runtime}`)
+    }
+    // Production-lane specs are designated by the trusted manifest before
+    // their files land on this branch; the dedicated production workflow owns
+    // them and ordinary lanes must never run them.
+    const productionLane = group.runtime === 'production-webpack'
+
     if (!Array.isArray(group.specs) || group.specs.length === 0) {
       fail(`trusted profile ${profile} needs specs`)
     }
 
     for (const spec of group.specs) {
-      if (!TEST_FILE_PATTERN.test(spec) || !trustedSpecs.includes(spec)) {
+      if (!TEST_FILE_PATTERN.test(spec)) {
         fail(`trusted profile ${profile} references invalid spec ${spec}`)
       }
+      if (!productionLane && !trustedSpecs.includes(spec)) {
+        fail(`trusted profile ${profile} references invalid spec ${spec}`)
+      }
+      if (productionLane) productionSpecs.add(spec)
       if (profiles.has(spec)) {
         fail(`trusted spec ${spec} has duplicate profile assignments`)
       }
@@ -202,10 +231,14 @@ function parseTrustedProfiles(controlRoot, trustedSpecs, trustedProfileNames) {
     fail(`trusted specs without profiles: ${missing.join(', ')}`)
   }
 
-  return profiles
+  return { profiles, productionSpecs }
 }
 
-function validateRelevanceManifest(manifest, trustedSpecs) {
+function validateRelevanceManifest(
+  manifest,
+  trustedSpecs,
+  productionSpecs = new Set()
+) {
   if (!manifest || manifest.version !== SELECTOR_SCHEMA_VERSION) {
     fail(`unsupported relevance manifest schema version ${manifest?.version}`)
   }
@@ -236,7 +269,7 @@ function validateRelevanceManifest(manifest, trustedSpecs) {
       fail(`relevance group ${group.id} contains duplicate specs`)
     }
     for (const spec of group.specs) {
-      if (!trustedSpecSet.has(spec)) {
+      if (!trustedSpecSet.has(spec) && !productionSpecs.has(spec)) {
         fail(`relevance group ${group.id} references inactive spec ${spec}`)
       }
     }
@@ -245,6 +278,8 @@ function validateRelevanceManifest(manifest, trustedSpecs) {
   for (const key of [
     'docsOnlyPathPrefixes',
     'docsOnlyExtensions',
+    'draftBoundedPathPrefixes',
+    'draftBoundedSpecs',
     'fullPathPrefixes',
     'fullPathEquals',
     'fullPathSuffixes',
@@ -253,47 +288,25 @@ function validateRelevanceManifest(manifest, trustedSpecs) {
       fail(`relevance manifest ${key} must be an array`)
     }
   }
-}
 
-function isSafeRepoPath(value) {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    !value.startsWith('/') &&
-    !value.startsWith('../') &&
-    !value.includes('\0')
-  )
-}
-
-function parseNameStatusZ(raw) {
-  if (raw === '') return []
-
-  const fields = raw.split('\0')
-  if (fields.at(-1) === '') fields.pop()
-
-  const changes = []
-  for (let index = 0; index < fields.length; ) {
-    const status = fields[index++]
-    if (!/^[A-Z](?:[0-9]{1,3})?$/.test(status)) {
-      fail(`malformed diff status ${JSON.stringify(status)}`)
-    }
-
-    const kind = status[0]
-    const paths = []
-    const pathCount = kind === 'R' || kind === 'C' ? 2 : 1
-    for (let pathIndex = 0; pathIndex < pathCount; pathIndex++) {
-      const changedPath = fields[index++]
-      if (!isSafeRepoPath(changedPath)) {
-        fail('malformed diff path')
-      }
-      paths.push(changedPath)
-    }
-
-    changes.push({ status, kind, paths })
+  if (
+    new Set(manifest.draftBoundedSpecs).size !==
+    manifest.draftBoundedSpecs.length
+  ) {
+    fail('relevance manifest draftBoundedSpecs contains duplicate specs')
   }
-
-  return changes
+  for (const spec of manifest.draftBoundedSpecs) {
+    if (!trustedSpecSet.has(spec) || productionSpecs.has(spec)) {
+      fail(
+        `relevance manifest draftBoundedSpecs needs a trusted non-production spec, got ${spec}`
+      )
+    }
+  }
 }
+
+// Rename-aware diff records come from the shared classifier parser, so the
+// selector and the codebase check read one definition of a changed diff.
+const parseNameStatusZ = parseNameStatusRecords
 
 function runGit(candidateRoot, args) {
   // Hooks export repository-local Git variables. Candidate commands must use
@@ -337,7 +350,21 @@ function isPrefixMatch(value, prefix) {
   return value === normalizedPrefix || value.startsWith(`${normalizedPrefix}/`)
 }
 
-function classifyPath(changedPath, manifest) {
+function classifyPath(changedPath, manifest, { boundedSurface }) {
+  // The bounded smoke selection covers changes that cannot alter application
+  // behaviour: the repository's own CI definitions and CI-owned scripts. It
+  // applies to a draft that the smart-draft control admits and to any change
+  // the minimum validation envelope classified as bounded, so the same surface
+  // serves both selections. Every other diff reaches the full candidate suite.
+  if (
+    boundedSurface &&
+    manifest.draftBoundedPathPrefixes.some((prefix) =>
+      isPrefixMatch(changedPath, prefix)
+    )
+  ) {
+    return { kind: 'bounded' }
+  }
+
   if (manifest.fullPathEquals.includes(changedPath)) return { kind: 'full' }
   if (
     manifest.fullPathSuffixes.some(
@@ -386,18 +413,40 @@ function specFromPath(changedPath) {
   return match?.[1] ?? null
 }
 
-function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
+function selectFromChanges({
+  changes,
+  candidateSpecs,
+  manifest,
+  prState,
+  productionSet = new Set(),
+}) {
   if (prState !== 'draft' && prState !== 'ready') {
     fail(`unsupported pull request state ${prState}`)
   }
 
+  // The minimum validation envelope is derived from the same records this
+  // selection consumes, so one trusted classification serves every lane. An
+  // empty, unresolvable, renamed, or application-touching diff classifies as
+  // the application envelope and keeps the full plan.
+  const envelope = classifyRecords(changes)
+  const boundedEnvelope = BOUNDED_ENVELOPE_CLASSES.has(envelope.changeClass)
+  // The bounded smoke surface serves a draft the smart-draft control admitted
+  // and any diff the minimum validation envelope classified as bounded.
+  const boundedSurface = prState === 'draft' || boundedEnvelope
   const candidateSet = new Set(candidateSpecs)
   const selected = new Set()
   const reasonCodes = new Set()
   const groupIds = new Set()
-  let full = prState === 'ready'
+  let full = prState === 'ready' && !boundedEnvelope
+  // A bounded surface only intends the smoke specs. Track whether one was
+  // actually selectable so a candidate tree that lost the bounded spec cannot
+  // masquerade as a documentation-only diff.
+  let boundedSurfaceSeen = false
+  let boundedSpecSelected = false
 
-  if (prState === 'ready') reasonCodes.add('ready-for-review')
+  if (prState === 'ready' && !boundedEnvelope)
+    reasonCodes.add('ready-for-review')
+  if (boundedEnvelope) reasonCodes.add(`envelope-${envelope.changeClass}`)
   if (changes.length === 0) {
     full = true
     reasonCodes.add('empty-diff')
@@ -418,7 +467,7 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
 
   const classifyNonSpecPaths = (paths) => {
     const classifications = paths.map((changedPath) =>
-      classifyPath(changedPath, manifest)
+      classifyPath(changedPath, manifest, { boundedSurface })
     )
     if (classifications.some(({ kind }) => kind === 'full')) {
       full = true
@@ -433,6 +482,16 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
     for (const classification of classifications) {
       if (classification.kind === 'groups') {
         for (const groupId of classification.groups) addGroup(groupId)
+      }
+      if (classification.kind === 'bounded') {
+        reasonCodes.add('draft-bounded-surface')
+        boundedSurfaceSeen = true
+        for (const spec of manifest.draftBoundedSpecs) {
+          if (candidateSet.has(spec)) {
+            selected.add(spec)
+            boundedSpecSelected = true
+          }
+        }
       }
     }
   }
@@ -449,6 +508,8 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
         if (oldSpec && !candidateSet.has(oldSpec)) {
           reasonCodes.add('spec-renamed')
         }
+      } else if (oldSpec && productionSet.has(oldSpec)) {
+        // Production-lane spec changes are owned by the dedicated workflow.
       } else if (oldSpec) {
         full = true
         reasonCodes.add('spec-deleted')
@@ -461,7 +522,9 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
     const changedPath = change.paths[0]
     const spec = specFromPath(changedPath)
     if (spec) {
-      if (change.kind === 'D') {
+      if (productionSet.has(spec)) {
+        // Production-lane spec changes are owned by the dedicated workflow.
+      } else if (change.kind === 'D') {
         full = true
         reasonCodes.add('spec-deleted')
       } else if (candidateSet.has(spec)) {
@@ -476,9 +539,18 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
     }
   }
 
+  // A bounded surface that selected nothing means the bounded spec is missing
+  // from the candidate tree, not that the change was documentation. Running the
+  // full candidate suite keeps that case honest instead of reporting a skip.
+  if (boundedSurfaceSeen && !boundedSpecSelected) {
+    full = true
+    reasonCodes.add('draft-bounded-fallback')
+  }
+
   if (full) {
     reasonCodes.delete('documentation-only')
     return {
+      envelopeClass: envelope.changeClass,
       mode: 'full',
       reasonCodes: [...reasonCodes].sort(compareNames),
       selectedSpecs: [...candidateSpecs],
@@ -489,6 +561,7 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
   if (selected.size === 0) {
     reasonCodes.add('documentation-only')
     return {
+      envelopeClass: envelope.changeClass,
       mode: 'skip',
       reasonCodes: [...reasonCodes].sort(compareNames),
       selectedSpecs: [],
@@ -498,6 +571,7 @@ function selectFromChanges({ changes, candidateSpecs, manifest, prState }) {
 
   if (groupIds.size > 0) reasonCodes.add('feature-group')
   return {
+    envelopeClass: envelope.changeClass,
     mode: 'selected',
     reasonCodes: [...reasonCodes].sort(compareNames),
     selectedSpecs: [...selected].sort(compareNames),
@@ -529,16 +603,22 @@ function buildSelectionPlan({
   const trustedSpecs = listTrustedSpecs(controlRoot)
   const runtimeApps = readRuntimeApps(controlRoot)
   const trustedProfileNames = readTrustedProfileNames(controlRoot)
-  const trustedProfiles = parseTrustedProfiles(
+  const { profiles: trustedProfiles, productionSpecs } = parseTrustedProfiles(
     controlRoot,
     trustedSpecs,
     trustedProfileNames
   )
+  // Only trusted control can move an existing spec out of ordinary shards.
+  // Production-lane specs always run in the dedicated production workflow,
+  // and remaining candidate-only specs retain the maximal-profile fallback
+  // until they land.
+  const productionSet = new Set(productionSpecs)
+  candidateSpecs = candidateSpecs.filter((spec) => !productionSet.has(spec))
   const relevanceManifest = readJson(
     path.join(controlRoot, 'playwright/relevance-manifest.json'),
     'relevance manifest'
   )
-  validateRelevanceManifest(relevanceManifest, trustedSpecs)
+  validateRelevanceManifest(relevanceManifest, trustedSpecs, productionSet)
 
   const maximalProfile = trustedProfileNames.includes('full')
     ? 'full'
@@ -553,6 +633,7 @@ function buildSelectionPlan({
     candidateSpecs,
     manifest: relevanceManifest,
     prState,
+    productionSet,
   })
   const profileMap = new Map(Object.entries(assignments))
   const trustedTimings = readJson(
@@ -580,6 +661,7 @@ function buildSelectionPlan({
   return {
     schemaVersion: SELECTOR_SCHEMA_VERSION,
     mode: selection.mode,
+    envelopeClass: selection.envelopeClass,
     reasonCodes: selection.reasonCodes,
     baseSha,
     headSha,
@@ -636,6 +718,8 @@ function selectPlaywrightPlan({
 
   if (fallbackReason) {
     plan.mode = 'full'
+    // A diff the selector could not resolve never stays bounded.
+    plan.envelopeClass = CHANGE_CLASS.application
     plan.reasonCodes = [fallbackReason]
     plan.selectedSpecs = plan.candidateSpecs
     plan.selectedProfiles = [
@@ -697,6 +781,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  BOUNDED_ENVELOPE_CLASSES,
   SELECTOR_SCHEMA_VERSION,
   buildSelectionPlan,
   classifyPath,

@@ -248,6 +248,14 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
       docQueryQueryLabel: 'Search query',
+      unnamedSource: 'Unnamed source',
+      originUnavailable: 'Original source URL unavailable',
+      chunkUnavailable: 'Chunk content unavailable',
+      resultUnavailable: 'Search details unavailable',
+      openSource: 'Open source',
+      showFullChunk: 'Show full passage',
+      moreChunks: 'Show more passages ({count} remaining)',
+      moreSources: 'Show more sources ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {
@@ -259,6 +267,8 @@ export default {
     },
     sources: {
       title: 'Sources',
+      cited: 'Cited in this answer',
+      otherRetrieved: 'Other retrieved material ({count})',
       page: 'p. {page}',
       video: 'Video',
       image: 'Image',
@@ -818,6 +828,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
     loginInfo:
       'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
+    sessionCheckFailed:
+      'Your login could not be verified because the service is temporarily unavailable. Please try again in a moment.',
+    sessionCheckRetry: 'Try again',
+    restart: {
+      title: 'Login',
+      info: 'Your login attempt could not be continued. Please choose how you would like to log in again.',
+      errorInfo:
+        'The login provider reported an error. Please choose how you would like to log in again.',
+      studentLogin: 'Student login (assessment)',
+      lecturerLogin: 'Lecturer login',
+    },
   },
   pwa: {
     general: {
@@ -1949,10 +1970,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
-      betaFeaturesDataUse:
-        'If you opt in, a pseudonymous identifier for your account is added to an account-level beta cohort for feature targeting. You can opt out again using this same setting.',
       betaFeaturesDescription:
-        'Opt in to optional early access to selected beta features. These features may be unstable, change without notice, or be unsuitable for important work.',
+        'Beta features include chatbot creation. Your beta preference is enabled by default and can be turned off here. Feature availability and approval for AI usage are managed separately. Beta features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesSignupClosed:
+        'New beta enrollment is currently closed. You can still discover beta features here.',
+      betaFeaturesEnrollmentRestricted:
+        'Enrollment cannot be changed with this account or login. New enrollment requires Catalyst and full account access.',
       betaFeaturesConvergedOff: 'Beta access is no longer active.',
       betaFeaturesConvergedOn: 'Beta access is now active.',
       betaFeaturesEnrollment: 'Beta enrollment',
@@ -1961,16 +1984,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       betaFeaturesError:
         'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
       betaFeaturesRefreshFailure:
-        'Your beta enrollment was saved, but beta access information could not be refreshed. Reload the page or try again. Access may take up to 120 seconds to update.',
+        'Your beta preference was saved, but the displayed settings could not be refreshed. Reload the page to see the current state.',
       betaFeaturesRefreshing:
-        'Your enrollment was saved. Refreshing beta access information now; access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Refreshing the displayed settings.',
       betaFeaturesSaved:
-        'Your beta enrollment was saved. Beta access may take up to 120 seconds to become available.',
+        'Your beta preference was saved. Available features still depend on rollout and any required approval.',
       betaFeaturesPending:
         'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
       betaFeaturesTitle: 'Beta features',
+      chatbotBetaAccessRequired:
+        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
       betaFeaturesUnavailable:
-        'Beta enrollment is temporarily unavailable. Please try again later. Your current enrollment status has not been assumed.',
+        'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:
@@ -3498,10 +3523,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       joinCourse: 'Join course',
       viewCourse: 'View Course',
       viewActivities: 'View Activities',
+      openLibrary: 'Open library',
+      noNotificationEmail: 'Not set',
       executeActivities: 'Execute Activities',
       modifyCourseSettings: 'Modify Course Settings',
       modifyContainedActivities: 'Modify Activities in Course',
       manageParticipantGroups: 'Manage Participant Groups',
+      leaderboardSummary: 'Compare participant points for the selected period.',
+      leaderboardInclusionHelp: 'Who appears in the leaderboard?',
+      leaderboardInclusion:
+        'Participants without points are included in the entire-course and rolling leaderboards.',
+      leaderboardExportHelp: 'About CSV export',
+      leaderboardExportDescription:
+        'The CSV export includes participant email addresses in addition to usernames.',
       deleteCourse: 'Delete Course',
       removeCourse: 'Remove Course',
       confirmCourseRemoval:

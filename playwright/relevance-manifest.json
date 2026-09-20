@@ -1,9 +1,11 @@
 {
   "version": 1,
   "owner": "Klicker CI maintainers",
-  "reviewRule": "Update this manifest when a Playwright spec or runtime dependency changes; unknown paths fall back to the full suite.",
+  "reviewRule": "Update this manifest when a Playwright spec or runtime dependency changes; unknown paths fall back to the full suite. draftBoundedPathPrefixes name paths that cannot change application behaviour, so a draft runs only draftBoundedSpecs for them while a ready pull request still runs the full suite.",
   "docsOnlyPathPrefixes": [".agents/skills/", "docs/", "project/"],
   "docsOnlyExtensions": [".md", ".mdx"],
+  "draftBoundedPathPrefixes": [".github/"],
+  "draftBoundedSpecs": ["0-baseline-ops.spec.ts"],
   "fullPathPrefixes": [
     ".devrouter.yml",
     ".github/",
@@ -158,6 +160,25 @@
         "X-review.spec.ts",
         "Y-chat.spec.ts",
         "Z-credential-verification.spec.ts"
+      ]
+    },
+    {
+      "id": "account-production",
+      "pathPrefixes": [
+        "apps/frontend-pwa/",
+        "apps/frontend-manage/",
+        "apps/auth/",
+        "apps/lti/",
+        "packages/shared-components/",
+        "packages/i18n/",
+        "packages/graphql/",
+        "packages/prisma/",
+        "packages/transactional/"
+      ],
+      "specs": [
+        "A-account-production.spec.ts",
+        "A-account-registration.spec.ts",
+        "A-account-lti.spec.ts"
       ]
     }
   ]

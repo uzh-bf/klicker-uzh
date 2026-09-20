@@ -9,9 +9,23 @@
 
 ## Stacked PRs
 
+- Use the maintained draft sync PRs for `v3` -> `v3-ai` and `v3-ai` -> `v3-audit`. Merge these integrations with normal merge commits to preserve ancestry, retaining the applicable verification and merge/deployment authorization gates. Other feature-branch synchronization remains manual.
+- **Branch promotion chain**: `v3` -> `v3-ai` -> `v3-audit`. Never merge `v3` into `v3-audit` directly, and do not cherry-pick around a hop. `v3-audit` is the branch staging builds from, so every `v3-ai` commit it is meant to release has to arrive through a `v3-ai` -> `v3-audit` merge. When an approved change adds, renames, reorders, or retires an integration branch, agents must maintain the explicit sync pairs and their workflow triggers, tests, and documentation together; follow [Changing the sync chain](docs/ci-and-deployment.md#changing-the-sync-chain).
+- **Integration mechanics**: the `v3` and `v3-*` rulesets block deletion and force-push, and their required checks evaluate both pull requests and direct pushes. Admins may bypass required checks on pull requests; `v3-ai` additionally permits a repository-admin direct push, and the push still runs the full CI suite on the branch. A non-fast-forward push is rejected when the branch has moved, so duplicate syncs cannot land.
+- **Sync routing**: automation creates drafts for those two pairs only; source pushes keep their diffs current. Maintainers control readiness, conflict resolution, and merging. Resolve substantive conflicts on a task branch and open an integration PR, recording the integrated source SHA in the merge message. The staging promoter independently re-validates the exact `v3-audit` head before moving `stg-release`. See [Draft sync PR maintenance](docs/ci-and-deployment.md#draft-sync-pr-maintenance) for triggers and CI behavior.
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
 - Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` for an unstacked PR or ordinary stack layer, and `/final-review-stack` only on the top PR of a verified native stack, without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
+
+## Release preparation
+
+Use the release scripts in the root `package.json` to generate versions and
+`CHANGELOG.md`; never hand-edit package versions or assemble release notes as a
+substitute. For an alpha release, run `pnpm run release:alpha` (preview with
+`pnpm run release:alpha:dry`). The script uses `.versionrc.js` as the authoritative
+version-target list. During PR preparation, pass `--skip.tag` and create the tag
+only at the approved merged release commit. Tag publication and production
+activation remain separately authorized actions.
 
 ## Commands
 
@@ -49,7 +63,15 @@ pnpm run prisma:studio        # open Prisma Studio
 pnpm run prisma:sync          # sync schema to apps/analytics
 ```
 
-The commands above are the legacy host/Infisical path. In the self-contained DevPod, the environment is already injected: use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` for a full destructive reset and reseed.
+The commands above are legacy host/Infisical wrappers, not permission to mutate
+retained development, staging or production databases. Guarded reset, push,
+development migration and test seeds require the restricted `klicker_test`
+login and marked databases. Inside the provisioned self-contained container,
+use `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` for development
+migration (also requires marked `klicker_test_shadow`). For a full destructive
+reset and reseed, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`,
+then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then
+`pnpm --filter @klicker-uzh/prisma-data run seed:raw`.
 
 ### GraphQL codegen
 
@@ -125,7 +147,7 @@ Code-first with **Pothos** in `packages/graphql/src/`. After changing types/reso
 
 ## Database Workflow
 
-Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file: `pnpm run prisma:migrate` (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit setup or seed command for local fixtures.
+Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a `.prisma` file, run `pnpm --filter @klicker-uzh/prisma run prisma:migrate:raw` inside the provisioned disposable container (creates/applies the migration and explicitly regenerates the TypeScript client), then `pnpm run prisma:sync` (mirrors model files into `apps/analytics` while preserving its Python generator and datasource), then rebuild dependents. Update GraphQL types/resolvers if the change affects the API. Prisma 7 reset and migration commands do not seed automatically; use the explicit raw seed command for local fixtures. See [Data & Migrations](docs/data-and-migrations.md) for the guarded shadow requirement and schema-drift checks.
 
 ## Auth Model
 
@@ -214,7 +236,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.46 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, and 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.72 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery, 0.0.52 adds explicit `ensure --repair` for a retained degraded runtime, and 0.0.53-0.0.55 add synchronous adapter dependency preparation and correct retained-runtime configuration and mount comparison. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -347,6 +369,7 @@ Quick validation sequence:
 - `devrouter app ls --repo .`
 - Primary or linked devcontainer checkout: `devrouter ensure . --json`
 - Managed selective profile: `devrouter ensure . --profile <name> --json`
+- Side-effect-free automation: `devrouter profile resolve --repo . --profile <name> --json`; add `profile plan --contract <repo-relative-yaml>` when the repository needs literal bindings.
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
 - Managed devcontainer source configs with `postCreateCommand` and a managed post-start adapter must set `waitFor` exactly to `postCreateCommand` or `postStartCommand`; generated managed configs preserve lifecycle fields and change only `runServices`.

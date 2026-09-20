@@ -2,7 +2,7 @@
   "private": true,
   "name": "@klicker-uzh/monorepo",
   "description": "KlickerUZH instant-class-response system.",
-  "version": "3.4.0-alpha.73",
+  "version": "3.4.0-alpha.75",
   "repository": "uzh-bf/klicker-uzh.git",
   "homepage": "https://www.klicker.uzh.ch/",
   "bugs": "https://github.com/uzh-bf/klicker-uzh/issues",
@@ -26,9 +26,10 @@
     "Bulin Shaqiri <bulin.shaqiri@bf.uzh.ch>"
   ],
   "devDependencies": {
+    "@babel/core": "~7.28.3",
     "@biomejs/biome": "~2.5.2",
-    "@devrouter/cli": "0.0.51",
     "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "3.2.4",
     "cross-env": "~7.0.3",
     "husky": "~9.1.7",
     "knip": "~6.24.0",
@@ -52,7 +53,7 @@
     "check:format": "lint-staged",
     "check:git-identity": "node --test ./util/check-git-identity.test.mjs",
     "check:lint": "turbo run lint --parallel --continue",
-    "check:playwright-ci": "node --test ./.github/scripts/get-shard-files.test.cjs ./.github/scripts/playwright-cache-contract.test.cjs ./.github/scripts/playwright-telemetry.test.cjs ./.github/scripts/turbo-telemetry.test.cjs ./.github/scripts/playwright-selector.test.cjs ./.github/scripts/playwright-route.test.cjs ./.github/scripts/playwright-plan-metadata.test.cjs ./.github/scripts/validate-public-playwright-workflow.test.cjs ./util/playwright-profile-runtime.test.mjs",
+    "check:playwright-ci": "node --test ./.github/scripts/get-shard-files.test.cjs ./.github/scripts/playwright-cache-contract.test.cjs ./.github/scripts/playwright-telemetry.test.cjs ./.github/scripts/turbo-telemetry.test.cjs ./.github/scripts/playwright-selector.test.cjs ./.github/scripts/playwright-route.test.cjs ./.github/scripts/playwright-plan-metadata.test.cjs ./.github/scripts/playwright-build-graph.test.cjs ./.github/scripts/validate-public-playwright-workflow.test.cjs ./util/playwright-profile-runtime.test.mjs",
     "check:playwright-host": "node --test ./util/run-playwright-host.test.mjs",
     "check:prisma-sync": "bash ./util/check-prisma-sync.sh",
     "check:removed-doc-artifacts": "node ./util/check-removed-doc-artifacts.mjs",
@@ -111,7 +112,7 @@
     "syncpack:mismatches": "syncpack list-mismatches",
     "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "syncpack:update": "syncpack update",
-    "test:dev-runtime": "bash ./util/test-dev-runtime.sh && node --test ./util/dev-runtime-readiness.test.mjs",
+    "test:dev-runtime": "bash ./util/test-dev-runtime.sh && node --test ./util/dev-runtime-readiness.test.mjs && bash ./util/test-recover-bootstrap.sh",
     "test:profile-resolver": "bash ./util/test-profile-resolver.sh",
     "test:run": "turbo run test:run",
     "test:run:playwright": "pnpm playwright:host",
@@ -121,7 +122,7 @@
     "node": "=24"
   },
   "volta": {
-    "node": "24.16.0",
+    "node": "24.21.0",
     "pnpm": "11.5.0"
   },
   "packageManager": "pnpm@11.5.0"

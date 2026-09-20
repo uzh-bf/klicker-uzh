@@ -5,47 +5,101 @@ on:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    types: [
+        opened,
+        synchronize,
+        reopened,
+        # The ready boundary runs the envelope so it can validate the draft-era
+        # full proof instead of rebuilding and retesting an unchanged head.
+        ready_for_review,
+        # A base retarget must recompute validation; a title or body edit
+        # reuses the existing same-head proof through the envelope.
+        edited,
+        # Converting back to a draft conservatively re-runs full validation.
+        converted_to_draft,
+        # A closed pull request cancels its in-flight execution.
+        closed,
+      ]
 
 jobs:
-  # The called workflow is the only execution envelope. It recomputes the
-  # route and selector state from the immutable event payload and exposes one
-  # result to the required status job.
+  # A closed pull request cancels its in-flight execution through the shared
+  # group without an API token. A draft conversion must not cancel: the running
+  # plan stays valid evidence, and the next event selects the plan its own pull
+  # request state requires.
+  cancel-closed-pr:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    concurrency:
+      group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Finish closed pull request execution
+        run: ':'
+
+  # The called workflow is the only execution envelope. It recomputes the route
+  # and selector state from the immutable event payload. Drafts run the plan
+  # that route selects: the full candidate suite by default, or the change-based
+  # plan when the smart-draft control is enabled, so the caller never gates on
+  # draft state.
+  # The open-state guard keeps lifecycle events on a merged or closed pull
+  # request (for example a post-merge title edit) from launching new execution.
   test-playwright-execution:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.state == 'open'
     concurrency:
       group: ${{ github.workflow }}-playwright-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     permissions:
       contents: read
+      actions: read
+      pull-requests: read
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
     with:
       route_hint: auto
 
   # Always reports a status even when the canonical plan skips all tests.
   # This job intentionally stays outside the reusable workflow's concurrency
-  # group so a stale reporter cannot block the current invocation.
+  # group so a stale reporter cannot block the current invocation. Closed pull
+  # requests report nothing: their gate no longer exists, and reporting could
+  # only launch reporting work for a merged branch.
   test-playwright-status:
     needs: test-playwright-execution
-    if: always()
+    # Unconditional for open events: a skipped required context can count as
+    # acceptable, so cancellation must fail inside the job instead.
+    if: >-
+      always() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.state == 'open')
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      actions: read
     steps:
       - name: Check result
         shell: bash
         env:
+          DUPLICATE_RUN_ID: ${{ needs.test-playwright-execution.outputs.duplicate_run_id }}
           EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
           ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
+          ENVELOPE_CLASS: ${{ needs.test-playwright-execution.outputs.envelope_class }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
           SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
+          IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          IS_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
         run: |
           set -euo pipefail
           {
             printf 'route=%s\n' "${ROUTE:-unknown}"
             printf 'mode=%s\n' "${MODE:-unknown}"
+            printf 'envelope_class=%s\n' "${ENVELOPE_CLASS:-unknown}"
             printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
             printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
+            printf 'is_pull_request=%s\n' "${IS_PULL_REQUEST:-unknown}"
+            printf 'is_draft=%s\n' "${IS_DRAFT:-unknown}"
+            printf 'duplicate_run_id=%s\n' "${DUPLICATE_RUN_ID:-}"
             printf 'execution_result=%s\n' "$EXECUTION_RESULT"
           } > playwright-run-metadata.txt
 
@@ -54,15 +108,19 @@ jobs:
             echo
             echo "- Route: \`${ROUTE:-unknown}\`"
             echo "- Mode: \`${MODE:-unknown}\`"
+            echo "- Change class: \`${ENVELOPE_CLASS:-unknown}\`"
             echo "- Tests selected: \`${SHOULD_RUN:-unknown}\`"
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
+            if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
+              echo "- Reused validated run: \`${DUPLICATE_RUN_ID}\`"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-          # A newer event cancels the old reusable invocation. The surviving
-          # invocation is the required signal for the pull request.
+          # A cancelled invocation may be obsolete, but this job has no proof
+          # that a newer invocation survived. Keep the required status failed.
           if [ "$EXECUTION_RESULT" = 'cancelled' ]; then
-            echo 'Superseded by a newer Playwright invocation.'
-            exit 0
+            echo 'Playwright execution was cancelled without proven supersession.'
+            exit 1
           fi
           if [ "$EXECUTION_RESULT" != 'success' ]; then
             echo 'Playwright execution envelope failed.'
@@ -72,35 +130,125 @@ jobs:
             echo 'Playwright execution returned an invalid route.'
             exit 1
           fi
-          if [ "$SHOULD_RUN" = 'false' ]; then
-            echo 'No Playwright-relevant tests selected.'
-            exit 0
-          fi
-          if [ "$SHOULD_RUN" != 'true' ]; then
-            echo 'Playwright execution did not expose a valid selection result.'
+          # Push validation always runs independently. A pull-request lifecycle
+          # event may reuse validation: the trusted envelope emits a duplicate
+          # run id only after binding that run to the same pull request, head,
+          # base, merge tree, control revision, full plan and complete coverage,
+          # and then skips its own build and shards. Older envelopes cannot
+          # offer pull-request duplicates, so this acceptance stays inert until
+          # the reuse contract is live on the pinned control ref.
+          if [ -n "${DUPLICATE_RUN_ID:-}" ] && [ "$IS_PULL_REQUEST" != 'true' ]; then
+            echo 'Push validation cannot be reused; it must run independently.'
             exit 1
           fi
+
+          # Every push and every ready pull request must attest the complete
+          # trusted eight-shard plan. A draft may attest the narrower plan the
+          # trusted envelope selected for it: a partial shard set or a skip,
+          # both of which the reusable workflow publishes together with its
+          # reasons. A ready pull request may narrow its plan only through a
+          # bounded change class the trusted classifier proved for the same
+          # diff: a documentation class may skip, and a CI class may run the
+          # bounded smoke selection. Nothing else may pass required CI, and a
+          # push is never bounded.
+          if [ "$IS_PULL_REQUEST" = 'true' ] && [ "${IS_DRAFT:-}" = 'true' ]; then
+            case "$MODE" in
+              full | selected | skip) ;;
+              *)
+                echo 'Draft execution reported a plan mode the envelope cannot select.'
+                exit 1
+                ;;
+            esac
+          elif [ "$MODE" != 'full' ]; then
+            # Push validation is a deployment-candidate path and is never
+            # narrowed, whatever class the envelope reports for the push diff.
+            if [ "$IS_PULL_REQUEST" != 'true' ]; then
+              echo 'Playwright execution did not use full mode.'
+              exit 1
+            fi
+            case "$MODE:${ENVELOPE_CLASS:-}" in
+              skip:documentation-and-planning | selected:ci-orchestration) ;;
+              *)
+                echo 'Playwright execution did not use full mode.'
+                exit 1
+                ;;
+            esac
+          fi
+
+          if [ "$MODE" = 'skip' ]; then
+            if [ "$SHOULD_RUN" != 'false' ]; then
+              echo 'A skipped Playwright plan must not select tests.'
+              exit 1
+            fi
+          else
+            if [ "$SHOULD_RUN" != 'true' ]; then
+              echo 'Playwright execution did not select Playwright.'
+              exit 1
+            fi
+          fi
+
+          if [ "$MODE" != 'skip' ] && ! MODE="$MODE" node <<'NODE'
+          const raw = process.env.SHARD_MATRIX ?? ''
+          let matrix
+          try {
+            matrix = JSON.parse(raw)
+          } catch {
+            process.exit(1)
+          }
+
+          // A draft may run a subset of the canonical eight shards; a full
+          // plan always runs all eight. Both must be well-formed and unique.
+          // A narrowed plan reports its own shard count as every shard's
+          // shardTotal, so that value is validated against the emitted count
+          // rather than the canonical eight.
+          const requiredShards = process.env.MODE === 'full' ? 8 : 0
+          const shards = matrix?.include
+          const shardCount = Array.isArray(shards) ? shards.length : 0
+          const complete =
+            matrix !== null &&
+            !Array.isArray(matrix) &&
+            Object.keys(matrix).length === 1 &&
+            Array.isArray(shards) &&
+            (requiredShards === 0 ? shards.length > 0 : shards.length === 8) &&
+            shards.every(
+              (shard) =>
+                shard !== null &&
+                typeof shard === 'object' &&
+                !Array.isArray(shard) &&
+                Object.keys(shard).length === 2 &&
+                Number.isInteger(shard.shardIndex) &&
+                Number.isInteger(shard.shardTotal) &&
+                shard.shardIndex >= 1 &&
+                shard.shardIndex <= shardCount &&
+                shard.shardTotal === shardCount
+            ) &&
+            new Set(shards.map((shard) => shard.shardIndex)).size ===
+              shards.length
+          process.exit(complete ? 0 : 1)
+          NODE
+          then
+            echo 'Playwright execution did not expose a trusted shard matrix.'
+            exit 1
+          fi
+
           echo 'Playwright execution passed.'
 
       - name: Upload run metadata
-        if: always()
+        if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-run-metadata
           path: playwright-run-metadata.txt
           retention-days: 7
 
-  # Queue inspection is deliberately hosted and checkout-free. It has only
-  # actions: read permission and never runs on the public self-hosted pool.
-  playwright-queue-telemetry:
-    needs: [test-playwright-execution, test-playwright-status]
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      actions: read
-    steps:
+      # Queue inspection is best effort, hosted, and checkout-free. It runs
+      # for every non-cancelled open-event status report, including failures.
       - name: Collect current-run queue telemetry
+        id: queue_telemetry
+        if: >-
+          always() &&
+          !cancelled()
+        continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ github.token }}
@@ -146,25 +294,20 @@ jobs:
                   per_page: 100,
                 }
               )
-              const records = jobs
-                .filter(
-                  (job) =>
-                    !job.name.toLowerCase().includes('queue-telemetry')
-                )
-                .map((job) => ({
-                  jobClass: jobClass(job.name),
-                  status: job.status ?? 'unknown',
-                  conclusion: job.conclusion ?? null,
-                  runner: job.runner_name ?? null,
-                  queueSeconds: secondsBetween(
-                    job.created_at,
-                    job.started_at
-                  ),
-                  durationSeconds: secondsBetween(
-                    job.started_at,
-                    job.completed_at
-                  ),
-                }))
+              const records = jobs.map((job) => ({
+                jobClass: jobClass(job.name),
+                status: job.status ?? 'unknown',
+                conclusion: job.conclusion ?? null,
+                runner: job.runner_name ?? null,
+                queueSeconds: secondsBetween(
+                  job.created_at,
+                  job.started_at
+                ),
+                durationSeconds: secondsBetween(
+                  job.started_at,
+                  job.completed_at
+                ),
+              }))
               const queueSeconds = records
                 .map((record) => record.queueSeconds)
                 .filter((value) => value !== null)
@@ -206,10 +349,14 @@ jobs:
               .write()
 
       - name: Upload queue telemetry
-        if: always()
+        if: >-
+          always() &&
+          !cancelled() &&
+          steps.queue_telemetry.outcome != 'skipped'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: playwright-queue-telemetry
           path: playwright-queue-telemetry.json
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 7

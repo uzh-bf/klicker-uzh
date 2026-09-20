@@ -9,6 +9,9 @@ on:
         type: string
         default: auto
     outputs:
+      duplicate_run_id:
+        description: Successful equivalent PR validation run, when reused
+        value: ${{ jobs.prepare.outputs.duplicate_run_id }}
       should_run:
         description: Whether the canonical Playwright plan contains tests
         value: ${{ jobs.prepare.outputs.should_run }}
@@ -18,24 +21,30 @@ on:
       mode:
         description: Canonical selector mode
         value: ${{ jobs.prepare.outputs.mode }}
+      envelope_class:
+        description: >-
+          Change class the trusted minimum-validation classifier proved for the
+          planned diff; only its bounded classes may narrow the ready state
+        value: ${{ jobs.prepare.outputs.envelope_class }}
       shard_matrix:
         description: Canonical shard matrix
         value: ${{ jobs.prepare.outputs.shard_matrix }}
-
-permissions:
-  contents: read
 
 env:
   PLAYWRIGHT_CACHE_ENABLED: ${{ github.event_name != 'pull_request' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED == 'true' || vars.PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR == format('{0}', github.event.pull_request.number) }}
 
 jobs:
   prepare:
+    # Inherit the caller token so older contents-only callers remain compatible.
+    # Missing API scopes make the optional reuse lookup fall back to validation.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
+      duplicate_run_id: ${{ steps.equivalent.outputs.duplicate_run_id }}
       should_run: ${{ steps.metadata.outputs.should_run }}
       route: ${{ steps.metadata.outputs.route }}
       mode: ${{ steps.metadata.outputs.mode }}
+      envelope_class: ${{ steps.metadata.outputs.envelope_class }}
       selector_pr_state: ${{ steps.metadata.outputs.selector_pr_state }}
       shard_matrix: ${{ steps.metadata.outputs.shard_matrix }}
       reason_codes: ${{ steps.metadata.outputs.reason_codes }}
@@ -87,7 +96,8 @@ jobs:
           set -euo pipefail
           if [ "$EVENT_NAME" = 'pull_request' ]; then
             git -C .candidate remote add base "https://github.com/$BASE_REPOSITORY.git"
-            git -C .candidate fetch --no-tags base "$BASE_SHA" --depth=1
+            # Preserve ancestry from the full candidate checkout for merge-base.
+            git -C .candidate fetch --no-tags base "$BASE_SHA"
           fi
           test "$(git -C .candidate rev-parse HEAD)" = "$HEAD_SHA"
 
@@ -107,7 +117,7 @@ jobs:
             --pr-state "$PR_STATE" \
             --output playwright-execution-plan.json
 
-      - name: Build draft selector shadow plan
+      - name: Build opposite-state selector shadow plan
         if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
         shell: bash
         env:
@@ -115,12 +125,18 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          # The shadow records the plan this draft did not run, so the
+          # qualification comparison keeps measuring both directions: the full
+          # wave while smart drafts are off, and the deferred full coverage
+          # while an enabled control narrows the executed plan.
+          RAN_STATE=$(node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync("route.json", "utf8")).selectorPrState)')
+          if [ "$RAN_STATE" = 'draft' ]; then SHADOW_STATE=ready; else SHADOW_STATE=draft; fi
           node .ci-control/.github/scripts/playwright-selector.cjs \
             --control-root .ci-control \
             --candidate-root .candidate \
             --base-sha "$BASE_SHA" \
             --head-sha "$HEAD_SHA" \
-            --pr-state draft \
+            --pr-state "$SHADOW_STATE" \
             --output playwright-selector-shadow.json
 
       - name: Validate plan and expose workflow outputs
@@ -131,6 +147,29 @@ jobs:
             --plan playwright-execution-plan.json \
             --route route.json \
             --output "$GITHUB_OUTPUT"
+
+      - name: Reuse proven equivalent PR validation
+        id: equivalent
+        # Push validation of a non-v3 branch may reuse its ready pull request's
+        # proof; a pull-request lifecycle event that kept the merge input
+        # unchanged may reuse the same head's completed full run. Every other
+        # event runs normal validation.
+        if: >-
+          (github.event_name == 'push' && github.ref != 'refs/heads/v3') ||
+          (github.event_name == 'pull_request' && contains(fromJSON('["ready_for_review","edited","reopened"]'), github.event.action))
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          CONTROL_SHA: ${{ job.workflow_sha }}
+        with:
+          script: |
+            const fs = require('node:fs')
+            await require('./.ci-control/.github/scripts/ci-equivalent-run.cjs').reportEquivalentRun({
+              github, context, core, kind: 'playwright',
+              controlSha: process.env.CONTROL_SHA,
+              plan: JSON.parse(fs.readFileSync('playwright-execution-plan.json', 'utf8')),
+              route: JSON.parse(fs.readFileSync('route.json', 'utf8')).route,
+            })
 
       - name: Summarize canonical plan
         shell: bash
@@ -145,6 +184,7 @@ jobs:
             `- Route: \`${route.route}\``,
             `- Selector state: \`${route.selectorPrState}\``,
             `- Mode: \`${plan.mode}\``,
+            `- Change class: \`${plan.envelopeClass}\``,
             `- Reasons: \`${plan.reasonCodes.join(',')}\``,
             `- Candidate specs: \`${plan.candidateSpecs.length}\``,
             `- Selected specs: \`${plan.selectedSpecs.length}\``,
@@ -181,8 +221,10 @@ jobs:
           retention-days: 7
 
   build-and-compile-hosted:
+    permissions:
+      contents: read
     needs: prepare
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     container:
@@ -193,6 +235,39 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Record tested source tree
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CONTROL_SHA: ${{ job.workflow_sha }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const { execFileSync } = require('node:child_process')
+          fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
+            schemaVersion: 1,
+            event: process.env.GITHUB_EVENT_NAME,
+            runId: Number(process.env.GITHUB_RUN_ID),
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            headSha: process.env.SOURCE_HEAD_SHA,
+            baseSha: process.env.SOURCE_BASE_SHA,
+            controlSha: process.env.CONTROL_SHA,
+            treeSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+          }))
+          NODE
+
+      - name: Upload tested source receipt
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-validation-receipt
+          path: ci-validation-receipt.json
+          retention-days: 7
+
       - name: Build shared Playwright artifact
         uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
         with:
@@ -201,8 +276,10 @@ jobs:
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
 
   build-and-compile-public-pr:
+    permissions:
+      contents: read
     needs: prepare
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
     runs-on:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
@@ -215,6 +292,39 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Record tested source tree
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CONTROL_SHA: ${{ job.workflow_sha }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const { execFileSync } = require('node:child_process')
+          fs.writeFileSync('ci-validation-receipt.json', JSON.stringify({
+            schemaVersion: 1,
+            event: process.env.GITHUB_EVENT_NAME,
+            runId: Number(process.env.GITHUB_RUN_ID),
+            runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+            headSha: process.env.SOURCE_HEAD_SHA,
+            baseSha: process.env.SOURCE_BASE_SHA,
+            controlSha: process.env.CONTROL_SHA,
+            treeSha: execFileSync('git', ['-c', `safe.directory=${process.env.GITHUB_WORKSPACE}`, 'rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+          }))
+          NODE
+
+      - name: Upload tested source receipt
+        continue-on-error: true
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-validation-receipt
+          path: ci-validation-receipt.json
+          retention-days: 7
+
       - name: Build shared Playwright artifact
         uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3
         with:
@@ -223,8 +333,10 @@ jobs:
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
 
   test-playwright-hosted:
+    permissions:
+      contents: read
     needs: [prepare, build-and-compile-hosted]
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'hosted'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
@@ -319,8 +431,10 @@ jobs:
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
 
   test-playwright-public-pr:
+    permissions:
+      contents: read
     needs: [prepare, build-and-compile-public-pr]
-    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
+    if: needs.prepare.outputs.duplicate_run_id == '' && needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.route == 'public-pr'
     runs-on:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
@@ -415,3 +529,4 @@ jobs:
           shard-index: ${{ matrix.shardIndex }}
           shard-total: ${{ matrix.shardTotal }}
           cache-enabled: ${{ env.PLAYWRIGHT_CACHE_ENABLED }}
+          workers: ${{ vars.PUBLIC_PR_PLAYWRIGHT_WORKERS || '1' }}

@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-09-03'
+timestamp: '2026-09-20'
 tags:
   - testing
   - ci
@@ -10,18 +10,88 @@ tags:
 
 # Testing
 
-**There is no component-test layer.** Coverage is pure-function vitest at the bottom and full-stack e2e at the top — nothing in between (no @testing-library/react). Don't look for one, and don't assume a React component is covered unless an e2e spec exercises it.
+**There is no React component-test layer** (no @testing-library/react).
+Vitest covers pure logic and server-side integrations; Playwright covers
+browser user flows. Server-rendered HTML tests do not prove hydration or
+browser interaction.
+
+Coverage is published, not enforced. `test-unit.yml` and `test-graphql.yml` run their
+existing Vitest suites with the v8 provider and upload LCOV as the `coverage-lcov`
+artifact. The upload collects only reports directly inside `apps/*` and `packages/*`,
+because a workspace-wide glob would also gather the pnpm-linked copy of every report
+from `node_modules`. The SonarCloud analysis imports a report only when the producing
+run belongs to the analyzed revision and recorded the same tested source tree, so a
+report from another tree or base cannot become a metric. Imported reports are rewritten
+so their `SF:` entries are repository-relative: the analysis resolves the package that
+produced a report from the report path and the sources it records, and refuses to
+import a report that matches no package or more than one. A source that only exists in
+the producing checkout, such as a generated and ignored codegen output, stays in the
+report and reads as absent coverage instead of failing the import. An upload that finds no
+report fails its job, and a missing, pending, or unverified report leaves coverage "not
+computed" in SonarCloud; no coverage threshold is armed yet. Suites that do not use
+Vitest (the frontend PWA uses the Node test runner) publish no LCOV and are covered by
+their own job results instead.
 
 ## Which level for which change
 
-| Change                                                                            | Test level                                                                                 | Command                                                                                                             |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
-| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
-| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+### Disposable database boundary
+
+Destructive test setup, cleanup, test seeds and Prisma development commands
+require the `klicker_test` database and login, plus the database comment
+`klicker-disposable-test-v1`. The login must have no elevated PostgreSQL role
+privileges. A localhost address, port forward, CI variable or `--force` is not
+proof that a database is disposable. Never mark an existing retained database
+to get past a refusal.
+
+Every new destructive test setup, cleanup or test-seed entrypoint must await
+`requireDisposableDatabase(client)` before its first database operation. Arm
+the same actual client used for mutation; cleanup must also check it when setup
+has failed. Do not substitute a hostname check or a separate verification client.
+
+`packages/prisma/src/disposableDatabase.ts:requireDisposableDatabase` checks
+the actual registered Prisma client and its captured connection string.
+It rejects a client already used without the guard, checks the live identity
+and marker before setup or cleanup, and gates each new pooled connection.
+Changing `DATABASE_URL` after importing Prisma does not change that client's
+destination. GraphQL tests no longer provide a default URL.
+
+The repository reset, push, development-migration and seed wrappers validate
+their destinations before invoking Prisma. Development migration requires a
+separately marked `klicker_test_shadow`; migration diff guards its shadow replay
+while allowing its main datasource to remain read-only. Configuration/schema
+overrides, unsupported CLI flags and ambient `PG*` overrides are refused.
+Production application access and `prisma migrate deploy` are unchanged.
+These guards protect repository entrypoints, not arbitrary administrative SQL
+or direct invocation of the installed Prisma binary.
+
+Fresh self-contained volumes provision the dedicated test databases. Existing
+volumes without them fail closed and require an explicitly approved fresh
+disposable environment. The legacy `test:local` Compose helper is disabled
+because it deletes shared volumes. Run the serialized GraphQL suite inside a
+provisioned self-contained environment using
+`pnpm --filter @klicker-uzh/graphql test` (config-derived).
+
+On a refusal, stop destructive work. Without displaying connection strings,
+check that the invoking process uses the intended disposable database/login,
+that no ambient `PG*` override is present, and that the exact PostgreSQL service
+completed fresh provisioning. The current sanitized refusal can represent a
+connection failure, wrong identity/marker, or a client used before arming;
+it does not identify which one. Do not retry reset blindly or print driver
+errors, which can contain credentials. For retained volumes, follow the
+[fresh-environment guidance](../.devcontainer/README.md#retained-postgresql-volumes).
+
+### Test selection
+
+| Change                                                                            | Test level                                                                                              | Command                                                                                                             |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                                          | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
+| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                                | `npx agent-browser@0.32.2` against the adopting app                                                                 |
+| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs marked disposable Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment                         |
+| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
+| Auth routing, cookies and API handlers                                            | Vitest unit and handler integration projects; no database or real identity provider                     | `pnpm --filter @klicker-uzh/auth test:run`                                                                          |
+| Compiled auth proxy and server-rendered recovery                                  | Vitest built-app integration project; requires an auth production build                                 | `pnpm --filter @klicker-uzh/auth test:built`                                                                        |
+| UI / user flows                                                                   | Playwright e2e                                                                                          | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
+| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                                     | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
 sizes, the opt-in `All` transition, the reset back to 50, and explicit
@@ -37,6 +107,23 @@ offers only finite `10`, `20`, and `50` sizes, rejects CSV files above 1 MiB or
 after import or deletion.
 
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
+
+Auth tests live in `apps/auth/test/` and use the named Vitest projects `unit`,
+`integration`, and `built`. `test:run` runs the first two; `test:unit` and
+`test:integration` select them individually. Handler integration tests exercise
+the real NextAuth library with mocked account/database operations and a local
+synthetic OpenID Connect provider. They do not prove real Edu-ID compatibility
+or database persistence; the guarded Prisma adapter suite remains separate.
+
+The `built` project starts and stops its own production auth servers on random
+loopback ports. It checks HTTP and HTTPS deployment policy, configured deep
+links and initial recovery HTML without a database or external provider.
+HTTPS policy is selected through `NEXTAUTH_URL`; the local HTTP listener models
+an application behind a TLS proxy, not a TLS-handshake test. Build with
+`pnpm exec turbo run build --filter=@klicker-uzh/auth... --concurrency=4` before
+running it. The unit CI workflow runs all three projects, builds auth before
+the built-app checks, and publishes coverage from the unit/handler suites.
+Browser login and request-ordering journeys remain in `playwright/tests/A-login.spec.ts`.
 
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` first. It injects an
@@ -111,14 +198,31 @@ before global setup can reset data. The devcontainer also sets a non-directory
 browser path so browser installation fails there. GitHub Actions is explicitly
 allowed and retains the direct official-container workflow.
 
+For focused local checks against an existing synthetic baseline, pass
+`--runtime-profile chat --preserve-database` before the Playwright arguments.
+The explicit profile is validated by Devrouter. Database preservation skips
+global cleanup and seed only for a local host-launcher run. An explicit request
+in CI or without the launcher marker fails before setup instead of resetting
+the database. Individual specs still own their fixture writes and cleanup. Use this only
+when the required baseline already exists, and never against real course data.
+Explicit spec paths infer the smallest runtime union from `playwright/profiles.json`.
+Broad or unresolved filters use the maximal `playwright` profile. An explicit
+`--runtime-profile` takes precedence. Applying a profile reconciles the runtime
+downward and stops services outside it, so pass `--runtime-profile` explicitly
+when optional services such as LiteLLM or MailHog must stay up. Normal database
+cleanup and seeding remain
+the acceptance default. Keep one worker for a shared runtime because per-spec
+cleanup resets shared fixed identities; parallel shards need separate complete
+worktree runtimes, including Redis and Hatchet.
+
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
-|               | Playwright (`playwright/`)                                 |
-| ------------- | ---------------------------------------------------------- |
-| Local command | `pnpm playwright:host -- <args>`                           |
-| Infisical env | `dev-playwright`                                           |
-| Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
-| CI            | official Playwright container, 8-way shard, all PRs        |
+|               | Playwright (`playwright/`)                            |
+| ------------- | ----------------------------------------------------- |
+| Local command | `pnpm playwright:host -- <args>`                      |
+| Infisical env | `dev-playwright`                                      |
+| Seed          | own `seedDatabase()` in `global-setup.ts`             |
+| CI            | official Playwright container, 8-way shard, ready PRs |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
@@ -153,6 +257,23 @@ provider-level acceptance check.
 
 ## CI matrix
 
+Playwright's trusted shard action provisions a fresh `klicker_test` database
+and login on each shard's private PostgreSQL service before reset or seed.
+The login owns that database without superuser, role-management, replication
+or row-security-bypass privileges. The database comment
+`klicker-disposable-test-v1` identifies its disposable purpose and survives a
+schema reset. Existing test roles or databases cause provisioning to fail;
+partial failures require a fresh service, never adoption of existing data.
+The provisioner ignores caller database URLs and targets only the fixed CI
+service. It is not a local reset helper and must not be used to mark staging,
+production or a retained development database.
+
+Both runner routes load this action from trusted v3. A candidate PR cannot
+change its own provisioning action. Local PostgreSQL reset/seed proof is
+therefore required before changing the action, followed by a non-skipped
+postmerge shard run. The action logs its provisioner checksum so that run can
+be matched to the reviewed source.
+
 The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
 suites with one frozen install. It builds Prisma, types, grading, and util once,
 then keeps each suite as a separately visible step. The chat suite runs against
@@ -173,9 +294,11 @@ Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
 `public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
-across the two-host public pool; pushes, fork PRs, drafts, bots, private
-repositories, and
-disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+across the two-host public pool; pushes, fork PRs, bots, private
+repositories, and disabled rollouts keep all eight shards on GitHub-hosted
+runners. Draft PRs never enter either route: the caller skips the reusable
+execution workflow and `test-playwright-status` reports an explicit successful
+skip, so no Playwright worker is allocated until the PR is marked ready. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
 public-PR routes to be selected. The workflow tars the five `.next` trees before
@@ -208,10 +331,17 @@ trusted planner assigns candidate-only specs to `full`. The runtime adapter
 resolves a union containing `full` through the explicit `playwright` Devrouter
 profile, which includes every CI-supported application but excludes local-only
 MCP, LiteLLM, and MailHog resources.
-The root dependency pins `@devrouter/cli` to exact version `0.0.51`; its reviewed
-minimum-release-age exception is exact as well. The package's optional native
-SSH helpers are explicitly denied build scripts because profile planning has no
-Docker or SSH path.
+CI installs `@devrouter/cli` version `0.0.72` through
+`.github/scripts/install-devrouter.sh` in a job-local tool prefix, with install
+scripts disabled. The shard action uses the trusted control checkout's installer
+and passes its absolute executable path to the runtime adapter, including for
+older caller branches. The codebase-check job uses the same installer for real
+profile-contract tests. No Docker or SSH setup runs through this CLI in CI.
+Local launchers use the host installation, excluding workspace executable bins,
+and check its version against `.devrouter.yml` before runtime access. Set
+`KLICKER_DEVROUTER_BIN` to an absolute host executable when PATH is ambiguous.
+Devrouter is not a repository dependency; update the reviewed CI tool release
+alongside `.devrouter.yml` when raising the required version.
 The repository-owned contract maps app identities to literal Turbo filters and
 loopback readiness endpoints, constrains managed services, and requires the
 exact process marker. `util/playwright-profile-runtime.mjs` remains a thin
@@ -239,9 +369,13 @@ introduce cross-file ordering assumptions.
 `check:all` + identity guard, pre-push = outgoing-commit identity guard +
 `build`). `util/check-git-identity.sh` rejects the exact selector fixture
 identity in repository configuration, effective author/committer state, or
-outgoing commit authors, committers, or co-author trailers. The pull-request
+outgoing commit authors, committers, or co-author trailers. Outgoing means not
+yet reachable from a remote-tracking ref: commits that already reached any
+remote (typically through a v3 sync merge) were scanned when they were first
+pushed and are skipped on later pushes. The pull-request
 check repeats the commit-range guard on GitHub, where local hooks cannot be
-assumed. The second pre-commit check catches any test that mutates Git
+assumed, and bounds the range at the PR merge base so merged upstream history
+is not re-scanned. The second pre-commit check catches any test that mutates Git
 configuration while `check:all` runs. The Prisma package check regenerates the
 raw Prisma 7 client before typechecking; no generated-source patch remains.
 Clean CI jobs therefore do not depend on generated files left by an earlier
@@ -255,3 +389,21 @@ Root typecheck includes the Playwright compiler surface through its package `che
 Check-only configs must state their no-output role with `noEmit`. When they extend a declaration-emitting config, `noEmit` alone does not disable declaration portability analysis: GraphQL and Prisma therefore also set `declaration: false` and `declarationMap: false`. Incremental checks use `tsconfig.check.tsbuildinfo` rather than overwriting the emitting compiler's state. The full compiler-role matrix lives in [Getting Started](./getting-started.md#toolchain-verified-2026-07-07).
 
 For framework upgrades, run both bundler paths: `pnpm run build:test` must exercise Turbopack in all five Next apps, while `pnpm run build` must exercise production Turbopack for auth/chat and production Webpack for control/manage/PWA. All five Next builds use their canonical `tsconfig.json`; the three PWA apps reserve `tsconfig.check.json` for raw package checks that must exclude stale development validators. Inspect `.next/standalone` for all five apps and the service worker, Workbox, and custom worker outputs for control/manage/PWA. Treat configuration inspection as **config-derived**; call the artifacts verified only when the command, date, and tested SHA are recorded.
+
+## Local recovery regression checks
+
+`pnpm run test:dev-runtime` runs the shell process/readiness regressions,
+the HTTP readiness deadline tests, and `util/test-recover-bootstrap.sh`.
+The recovery suite uses synthetic commands and temporary files, checks pinned
+consumer sources and mounted-source refusal, and never invokes real Docker or
+initializes a database. The existing runtime CI step runs this command.
+
+The MCP parent-repair acceptance suite is a separate manual integration check:
+inside the provisioned self-contained container at `/workspaces/klicker-uzh`,
+run `LOCAL_MCP_SEED_TEST=1 node apps/chat/scripts/test-local-mcp-seed.mjs`
+after building its util dependency. It requires the local PostgreSQL connection in the process
+environment and builds temporary mirror tables on that connection. It verifies
+restoration and rollback using synthetic fixtures, not production tables.
+It is not currently scheduled in CI; a passing shell recovery check does not
+claim MCP transaction coverage. Do not print connection strings or supply
+remote/production database credentials to this command.

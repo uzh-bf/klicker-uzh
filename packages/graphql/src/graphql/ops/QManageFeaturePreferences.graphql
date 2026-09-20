@@ -1,0 +1,9 @@
+query ManageFeaturePreferences {
+  userProfile {
+    id
+    role
+    catalyst
+    betaEnabled
+    aiFeaturesEnabled
+  }
+}
