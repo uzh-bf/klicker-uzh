@@ -39,11 +39,13 @@ hatchet:
   workers:
     general:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.79
+        tag: v3.4.0-alpha.80
       resources:
         requests:
           cpu: 50m
@@ -78,11 +80,13 @@ hatchet:
 
     responseProcessor:
       replicaCount: 6
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.79
+        tag: v3.4.0-alpha.80
       resources:
         requests:
           cpu: 50m
@@ -117,11 +121,13 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 4
+      podDisruptionBudget:
+        minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.79
+        tag: v3.4.0-alpha.80
       resources:
         requests:
           cpu: 50m
@@ -172,9 +178,6 @@ auth:
 
   replicaCount: 3
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -191,7 +194,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
+    tag: v3.4.0-alpha.80
 
   ingress:
     annotations:
@@ -233,9 +236,6 @@ chat:
     environment: 'production'
 
   replicaCount: 2
-
-  autoscaling:
-    enabled: false
 
   automaticModels:
     primaryId: auto
@@ -329,25 +329,6 @@ chat:
       cost:
         input: 2.5
         output: 15.0
-    - id: gpt-5.5
-      deploymentId: klickeruzh/azure/gpt-5.5
-      name: GPT-5.5
-      description: OpenAI reasoning model
-      supportsImageAttachments: true
-      supportsReasoning: true
-      supportedReasoningEfforts:
-        - none
-        - minimal
-        - low
-        - medium
-        - high
-        - xhigh
-      fallback: false
-      usageClass: ADVANCED
-      maxOutputTokens: 4096
-      cost:
-        input: 5.0
-        output: 30.0
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -363,7 +344,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
+    tag: v3.4.0-alpha.80
 
   ingress:
     annotations:
@@ -393,6 +374,106 @@ chat:
       cpu: 200m
       memory: 1Gi
 
+mcpStudent:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-student
+            topologyKey: kubernetes.io/hostname
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-student
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-student
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.80
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      memory: 200Mi
+
+mcpLecturer:
+  priorityClassName: production-workload
+
+  replicaCount: 2
+
+  autoscaling:
+    enabled: false
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - mcp-lecturer
+            topologyKey: kubernetes.io/hostname
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/component: mcp-lecturer
+
+  image:
+    repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.80
+
+  strategy:
+    type: RollingUpdate
+
+  resources:
+    requests:
+      cpu: 25m
+      memory: 50Mi
+    limits:
+      memory: 200Mi
+
 frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
@@ -418,7 +499,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
+    tag: v3.4.0-alpha.80
 
   ingress:
     className: haproxy
@@ -471,7 +552,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
+    tag: v3.4.0-alpha.80
 
   ingress:
     className: haproxy
@@ -509,10 +590,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
-
-  autoscaling:
-    enabled: false
+    tag: v3.4.0-alpha.80
 
   affinity:
     podAntiAffinity:
@@ -555,6 +633,7 @@ frontendControl:
       memory: 512Mi
 
 backendGraphql:
+  betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: production-workload
 
   knowledgeGraph:
@@ -608,7 +687,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
+    tag: v3.4.0-alpha.80
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -620,6 +699,7 @@ backendGraphql:
   appStudentDomain: pwa.klicker.uzh.ch
   appControlDomain: control.klicker.uzh.ch
   cookieDomain: .klicker.uzh.ch
+  # kbIngestionDisabled: true # interim kill switch — set to true to refuse new KB ingestion during an incident
 
   ingress:
     className: haproxy
@@ -661,10 +741,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
-
-  autoscaling:
-    enabled: false
+    tag: v3.4.0-alpha.80
 
   affinity:
     podAntiAffinity:
@@ -734,7 +811,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.79
+    tag: v3.4.0-alpha.80
 
   ingress:
     className: haproxy
@@ -766,11 +843,8 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.79
+    tag: v3.4.0-alpha.80
     pullPolicy: IfNotPresent
-
-  autoscaling:
-    enabled: false
 
   affinity:
     podAntiAffinity:
@@ -816,8 +890,6 @@ assessment:
   frontendPWA:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -861,7 +933,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.79
+      tag: v3.4.0-alpha.80
 
     ingress:
       className: haproxy
@@ -893,8 +965,6 @@ assessment:
   backendGraphql:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -938,7 +1008,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.79
+      tag: v3.4.0-alpha.80
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -985,9 +1055,6 @@ assessment:
 
     replicaCount: 3
 
-    autoscaling:
-      enabled: false
-
     affinity:
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution:
@@ -1017,7 +1084,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.79
+      tag: v3.4.0-alpha.80
 
     ingress:
       className: haproxy

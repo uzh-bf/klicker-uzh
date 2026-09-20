@@ -1320,3 +1320,390 @@ required from the user.
   belongs to a different head, and asserts `should_run=true` every time. It is
   not reproduced on the live repository because that would require deliberately
   publishing a failing suite.
+- 2026-09-18 queue forensics and obsolete-run hygiene (branch
+  `rs/ci-obsolete-run-hygiene`). A live snapshot at 07:24 took 132 queued workflow
+  runs: Playwright 15, Final AI review 14, unit 11, GraphQL 11, OLAT-API 10,
+  Promote to stg 10, lecturer MCP 8, translation context 8, gitleaks 5, check 4,
+  CodeQL 3, Build Fallback 3, and 16 staging image builds. The reaper inventory
+  (`node .github/scripts/ci-obsolete-runs.cjs`) returned 31 active runs and
+  rejected every one as `current-head`.
+
+  **Six of the fifteen queued Playwright runs were redundant.** Three were
+  same-head pairs, one per branch: `de900cbe` on `rs/v3-audit-sync-20260918`
+  (`35318160764` with `35318351559`), `5b4f5949` on `v3-ai` (`35317794684` with
+  `35317799687`) and `cdf50fe3` on `rs/v3-ai-sync-20260917b` (`35317150179` with
+  `35317775815`). A push and a pull-request event for one branch use different
+  concurrency groups, because the group key falls back to `github.ref_name` for
+  pushes and uses the pull-request number otherwise, so neither event cancels
+  the other and both create a wave for the same tree. `35245361536`
+  (`rs/kg-focus-topic-ui`) waited about fifteen hours, and `34749125387`
+  (`rs/audit-ci-fixtures`) has been queued since 2026-09-13 with `updated_at`
+  equal to `created_at`, so it never reached a runner.
+
+  **Why the existing reaper could not touch them.** `allowedRun` required exactly
+  one pull-request binding, so the September 13 run, whose `pull_requests` array
+  is empty, was outside the policy entirely. For runs that are bound, `inspectRun`
+  returned `current-head` as soon as the run's sha matched the pull request head,
+  which is exactly the duplicate case: both runs are current-head by definition.
+  The reaper therefore had no path for either gap.
+
+  **What the fix adds.** Two reasons. `redundant-queued-duplicate` applies when
+  the run is still `queued`, so it has consumed no runner time, and a newer run of
+  the same workflow already covers the same head; the newer run carries the
+  authoritative plan and is validated by the same `bindsReplacement` contract the
+  superseded-head path uses. `unbound-head` applies to a pull-request run with no
+  binding whose head no open pull request claims, gated on a 24-hour window
+  because GitHub attaches the binding a moment after creation and a newer pull
+  request can still claim the same head. A run that does not satisfy either rule
+  keeps its previous verdict, so nothing that could still report a required
+  status is dropped.
+
+  **Live verification.** `--run-id 34749125387` now reports
+  `eligible=true, reason=unbound-head`; `35318160764` reports
+  `unbound-recent`, correctly refusing to cancel a 24-hour-young unbound run;
+  `35316321922` reports `current-head`; and `35317794684` is
+  `outside-policy` because it completed before the query. Nine new tests cover a
+  redundant queued duplicate, a duplicate that already started, a sole queued run,
+  a newer run from another workflow, an abandoned unbound run, the binding
+  window, a live pull request on the same head, a missing creation timestamp, and
+  the relaxed run policy; all 33 tests pass.
+
+  **The docs-only routing premise in the 2026-09-16 ranking is stale.** Rank 3
+  assumed a prose-only pull request pays a full typecheck. Step timings from
+  check run `35316998769` show the opposite: `Check Next.js development
+  configuration and readiness` 117s, install 56s, `Check linting` 29s, checkout
+  20s, KB lifecycle contracts 18s and file formatting 10s, while `Build packages
+  for typecheck (turbo)` took 1s and `Check typescript types`, `Check Prisma
+  schema sync drift`, `Check syncpack conformity` and knip took 0 to 1s each
+  because the turbo affected filter and the remote cache already collapse them.
+  A docs-only fast path would save at most the 29s lint step, so rank 3 should
+  drop below the review and deployment fan-out it was ranked above.
+
+- 2026-09-18 reaper hardening and reaper-PR collision (same branch). The
+  September 13 run cannot be cleared at all: cancelling a run GitHub never
+  enqueued answers `409 ... has not been queued yet` from the cancel and the
+  force-cancel endpoint alike, so that record holds no runner slot and the
+  reaped capacity is capped rather than freed. Two consequences for the tool.
+  First, that refusal used to end the sweep with "No further runs were changed",
+  so one inert record protected every later one; the reaper now reports
+  `not-queued` and continues. Second, the two new reasons were re-measured
+  against the live event types, and the earlier description of the three pairs
+  was wrong. Two are not cross-event. `rs/v3-audit-sync-20260918`
+  (`35318160764` before `35318351559`) and `rs/v3-ai-sync-20260917b`
+  (`35317150179` before `35317775815`) are both `pull_request` runs on one
+  head, so the `redundant-queued-duplicate` rule does reach them. Only the
+  `v3-ai` pair is cross-event: `35317794684` is a `push` run and
+  `35317799687` is the `pull_request` run for the same `5b4f5949` head. The
+  duplicate mechanism is therefore a single-head race for two branches and a
+  push/pull-request split for one, and the two fixes are complementary rather
+  than overlapping: the queued-duplicate rule reclaims the pull-request members,
+  and #6075's branch-tip rule reclaims the push member.
+
+  **Deliberately not applied.** The two gaps are real and still unreclaimed: an
+  older *queued* same-head pull-request run, and a pull-request run whose
+  binding never appeared. Both are mechanics only, and neither changes what a
+  tool is allowed to cancel, so they are left to the reaper PR that carries the
+  rest of the design rather than layered on top of it.
+
+  **Three competing reaper heads now exist and must be reconciled before any of
+  them merges.** PR #6075 (`rs/ci-push-run-sweep`, open, not draft, head
+  `6798c82fa2`, `BEHIND`, all checks green, no human review yet) extends the same
+  two files to reclaim push runs behind the branch tip, to treat a detached
+  binding as merged-or-closed after proving the head branch is gone, and to
+  survive the `409`/`422` not-cancellable answer instead of aborting. PR #6132
+  (`rs/ci-obsolete-run-hygiene`, draft, head `2abd85d0d8`) adds the queued
+  duplicate, the unbound run and the never-queued continue. Both edit
+  `.github/scripts/ci-obsolete-runs.cjs` and
+  `.github/scripts/ci-obsolete-runs.test.cjs` in the same functions, and #6075
+  is behind `v3`, so they conflict textually and overlap semantically.
+  Whichever lands first, the second must be rebased and rebuilt on top; they
+  are not disjoint and neither is a superset. #6075 is the better base where
+  they overlap, because it parameterises the detached branch instead of
+  hardcoding the unbound case, since the two are the same defect, and because
+  it already carries the not-cancellable continue that this branch re-derived
+  independently.
+
+  **Re-measured fan-out over 24h** (created at or after 2026-09-17 08:00Z,
+  first 600 runs): `Promote to stg` 49, `Final AI review` 34, Playwright 24,
+  `Check codebase` 23, unit/graphql/SonarCloud/gitleaks/Build-Fallback 22 each,
+  CodeQL 21, OLAT-API 20, translation context 20, then thirteen
+  `Build Docker image for * (stg)` workflows at 17 to 19 each, plus 14
+  OpenCodeReview. The thirteen staging workflows are the largest single
+  structural class at roughly 237 runs, which makes the B3 consolidation the
+  highest-value remaining structural slice. The promotion controller's 49
+  records remain the largest avoidable class and are the confirmed
+  wake-per-producer symptom, not runner-minutes.
+
+  **Rejected fix, recorded so it is not attempted.** The three same-head
+  duplicate pairs exist because the group key is
+  `${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}`,
+  so a push and a pull request for one branch land in different groups and
+  neither cancels the other. Unifying them onto
+  `${{ github.workflow }}-${{ github.head_ref || github.ref_name }}` would make the
+  two events share a group and cancel one another, which removes the duplicate
+  wave at the source. It must not be done. For any `v3-*` branch, the push run
+  is the one the promotion controller validates as candidate evidence, and a
+  pull-request run cancelling it reproduces exactly the failure already recorded
+  on 2026-09-15, when `build-images-status` failed closed because the staging
+  build evidence for the candidate had been cancelled behind the backlog. The
+  duplicate is better left to the reaper, which reclaims a queued run only after
+  proving a newer validated replacement exists.
+
+- 2026-09-18 AMD ruling: the scope is branch-local, and the MCP shape is
+  different, not broken. The goal carried "all build-amd jobs already if:false
+  everywhere including prd tags", and the 09-16 re-verification confirmed it for
+  `origin/v3`: all 26 workflow files on that branch that declare `build-amd:`
+  guard it with an always-false condition. Re-checking the same claim against
+  `v3-audit`, where the assistant and MCP workflows live, shows four MCP
+  workflows whose `build-amd` job is not always-false:
+  `v3_mcp-lecturer-stg.yml`, `v3_mcp-student-stg.yml`,
+  `v3_mcp-lecturer-prd.yml` and `v3_mcp-student-prd.yml`.
+
+  **First reading was wrong; the record is corrected here.** The MCP
+  `build-amd` is not the disabled legacy QEMU job. It runs on `ubuntu-latest`
+  with a native `platforms: linux/amd64` build, installs no QEMU, and gates
+  publication on `.github/scripts/stg-image-publish-guard.sh` so a push only
+  rebuilds when the full-SHA tag is absent. Push run `35318844446` on
+  `v3-audit` (07:19Z, success) ran it from 07:24:50Z to 07:26:21Z, 91 seconds,
+  and `v3_mcp-lecturer-stg.yml` is still picking up pull-request runs behind
+  the queue (run `35323224032`, queued). So AMD is not "inert everywhere"; it
+  is live on exactly the four MCP workflows, which is the intended shape for
+  the two MCP images and not a regression. `required-build-status.cjs` on
+  `v3-audit` agrees, listing `jobs: ['build-arm', 'build-amd']` for the two MCP
+  staging workflows and `['build-arm']` for every other entry, and the
+  inventory invariant test passes there (24/24), including the assertion that
+  an active `build-*` job installs no QEMU.
+
+  **Consequence for the ruling.** "AMD stays disabled" is accurate for `v3`
+  and for every non-MCP `v3-audit` image, and it is the wrong description of
+  the MCP pair. The 91-second native rebuild per MCP push is small and
+  guarded, so it is not a queue-relief target; the ruling stands as written
+  for the images it was about, with the MCP exception now recorded so the next
+  audit does not re-derive it or mistake it for a defect.
+
+- 2026-09-18 reaper merge and the false-policy blocker. Both authorized reapers
+  landed: #6132 merged as `c504f78776f44437c02d866464c0619770590729` at
+  10:34:47Z with the queued-duplicate rule layered onto #6075's push-sweep and
+  detached-run proof, and #6075 closed as superseded rather than merged: its
+  three touched files are byte-identical between `v3` and #6132's verified
+  head (`ci-obsolete-runs.cjs`, `ci-obsolete-runs.test.cjs`,
+  `docs/ci-and-deployment.md`), so it conflicted only because its content had
+  already landed. Nothing was lost; the superseded-closure note records the
+  comparison.
+
+  **A stale mergeability evaluation reported a policy block that did not
+  exist.** `gh pr merge 6132 --squash` reported "the base branch policy
+  prohibits the merge" and suggested `--auto` or `--admin`, and
+  `mergeStateStatus` read `BLOCKED`. All eight required contexts had a
+  SUCCESS at the head `5d27b67577`, the head contained the current `v3` tip,
+  and the `pull_request` ruleset's `require_code_owner_review` and
+  `require_extra_approval_for_unattributed_changes` were satisfied: every
+  commit is attributed to `rschlaefli`, the same author as the successfully
+  merged #6104. The identical PUT to `/pulls/6132/merge` succeeded on the
+  first attempt and returned `c504f78776`, so the block was GitHub's
+  asynchronous mergeability cache, not an unmet requirement.
+
+  **Correction to the first reading of this entry.** I initially attributed the
+  block to two `test-playwright-status` FAILURE check runs (ids
+  `105543062758`, `105543064279`, completed 09:37:16Z and 09:37:57Z) left by
+  cancelled Playwright runs, because they appear in the check-run listing next
+  to a later SUCCESS. That attribution is not supported: `filter=latest`
+  subsequently resolved `test-playwright-status` to a non-failure, and the
+  other blocked PRs I checked did **not** share the signature. #6133
+  (`87ccc36b`) and #6095 (`114c7dd6`) both carry genuine `failure`
+  conclusions at their newest check-run ids, so stale-cancelled failures are
+  not a general explanation for `BLOCKED`. What remains proven is narrower and
+  still worth recording: cancelled workflow runs do leave `failure` check runs
+  on the head, the same cancellation-artifact class as the earlier
+  `test-playwright-status` and `Promote to stg` findings, and that residue
+  should be cleared by the reaper and the `cancel-closed-pr` path.
+
+  Practical rule for this repository: when `gh pr merge` reports a policy
+  block, first confirm every required context has a success at the exact head
+  and that the head contains the base tip. If both hold, retry through the
+  merge API rather than reaching for `--admin`; the state is usually a stale
+  evaluation. `--admin` bypasses the requirement rather than satisfying it and
+  stays out of bounds.
+
+- 2026-09-18 first applied reap on the merged `v3` reaper. Read-only inventory
+  at 12:5xZ over 25 active allowlisted runs found 6 `merged-or-closed-PR`
+  entries, all residue from the deleted `rs/v3-audit-sync-20260918b` and
+  `rs/audit-ci-fixtures` branches; the earlier queued duplicates had already
+  drained. `--apply` cancelled three to terminal `completed/cancelled`
+  (`35336300690`, `35336300770`, `35336300579`). Three accepted the
+  cancellation but had not reached terminal state at readback
+  (`35336300710`, `34749125387`), and `35336008675` had already left the
+  allowlist by the time it was processed (`outside-policy`).
+
+  Two behaviours worth keeping. First, the fail-closed readback works as
+  designed: an unconfirmed cancellation stops the batch and sets exit code 1, so
+  the remaining IDs need separate invocations rather than a retry loop. Second,
+  `34749125387` again returned `409 has not been queued yet`, confirming that
+  this run holds no runner slot and that its reap caps rather than frees
+  capacity.
+
+  Queue depth moved from 134 queued / 15 in progress at 09:00Z to 45 queued /
+  8 in progress by ~13:0xZ. Most of that is normal draining, not the six reaps;
+  the reaps removed dead entries that could never run. The measured structural
+  conclusion is unchanged: the queue is dominated by real work fanned out across
+  many workflows, which keeps B3 staging consolidation and the promotion-wakeup
+  consolidation as the highest-value remaining slices.
+
+
+  Live reaper evidence at merge time, read-only over 59 active allowlisted
+  runs: 8 `redundant-queued-duplicate` (PRs #6124, #6133, #5970), 1
+  `merged-or-closed-PR` (run 34749125387, the run that answers 409 to both
+  `/cancel` and `/force-cancel` and therefore holds no runner slot), and 50
+  correctly kept `current-head`. Repo-wide queue at 09:00Z was 134 queued
+  against 15 in progress, and the ARM pool was saturated by five concurrent
+  Playwright runs, which is why #6075's eight shards waited rather than failed.
+
+- 2026-09-18 codebase-check reuse for metadata-only edits. The path selector
+  already reuses a validated prior success for the four path-filtered suites,
+  but the required check workflow stayed unconditional and did not use the
+  action, so a title or body edit repeated the full validation on an unchanged
+  tree. Measured before the fix: Check codebase ran 5 times for the single head
+  87ccc36b on PR #6133 and 4 times for c4b7ba95 on #5970, at 7 to 29
+  wall-minutes each. The workflow now selects through changed-paths with an
+  unrestricted pattern, runs the suite as a separate job, and reports the
+  required context from a terminal job that always runs, so only a validated
+  metadata-only edit reuses the suite while an unexpected skip, a cancellation,
+  or a failed suite still fails the context. ready_for_review and base
+  retargets keep running the suite, and pushes still force a run, so promotion
+  candidate evidence is unaffected.
+
+  The same window also explains the persistent queue reading: 24 queued and 11
+  in progress at 13:3xZ, of which 9 were five-day-old Promote to stg records
+  with zero jobs (created 2026-09-13 for the same candidate 927f2336, never
+  scheduled, no check runs). They hold no runner slot, and the reaper correctly
+  refuses them: the documented contract excludes deployments, final-review
+  writers, and cancellation by age. The queue metric therefore overstates real
+  pending work by those inert records, which matters because capacity decisions
+  were being made against it.
+- 2026-09-18 package: smart draft Playwright routing (branch
+  `rs/ci-smart-draft-routing`). Draft pull requests now run the same
+  change-based selection as ready pull requests instead of a forced full
+  eight-shard wave. The package also completes the coverage half of the
+  contract, so a narrowed draft reports honest `selected` or `skip` metadata
+  rather than being rejected by the status reporter.
+
+  **Why the guard was lifted now.** The roadmap held the routing change behind a
+  qualification gate: implement lifecycle guards first, then restore smart
+  selection and ready-state proof as one coherent change, because
+  `playwright-route.cjs` hard-forced `selectorPrState: 'ready'` and the shadow
+  selector could not be activated by a variable alone. That gate is now met by
+  measured shadow artifacts rather than by design intent.
+
+  **Qualification sample.** 53 shadow artifacts across 21 distinct branches,
+  collected in `/tmp/pw-shadow-evidence/`. Chosen mode: `full:8` on 32
+  artifacts, `selected:1` on 2, `selected:4` on 2, and `skip:0` on 17. Reason
+  codes: `global-surface` 29, `unknown-path` 20, `documentation-only` 17,
+  `spec-changed` 10, `feature-group` 4, `spec-added` 3. The 17 skips are the
+  material finding: those drafts had no application-behaviour change at all and
+  still held ARM capacity.
+
+  **Proof that skips were burning full waves.** Runs `35216658570`
+  (`rs/v3-audit-sync-20260917b`) and `35212907412`
+  (`rs/course-video-import-plan-update`) each recorded shadow mode `skip` with
+  reason `documentation-only`, yet each executed eight shards. Nine shard jobs
+  were scheduled and eight ran.
+
+  **Shard cost, measured.** On `35316262518` and `35317146279` all eight shards
+  consistently reported roughly 0.1 minutes of wait and 16 to 20 minutes of
+  duration. Wall clock tracks the slowest shard while wave-seconds track the
+  sum, so removing shards cuts ARM occupancy directly, which is what releases
+  the queued waves that block other pull requests.
+
+  **Implementation.** `playwright/relevance-manifest.json` gains
+  `draftBoundedPathPrefixes` and `draftBoundedSpecs`, and its `reviewRule`
+  explains that these name paths which cannot change application behaviour.
+  `playwright-selector.cjs` learns a `bounded` classification. For a draft, a
+  path under a `draftBoundedPathPrefixes` entry returns `bounded` through a rule
+  placed deliberately before the full-surface checks, so a CI-only `.github/`
+  change narrows instead of expanding to the whole suite; the selection is the
+  `draftBoundedSpecs` present in the candidate set, reported as
+  `draft-bounded-surface`. A `full` verdict still wins over `bounded` inside one
+  change set. `validateRelevanceManifest` enforces both keys as arrays,
+  rejects duplicate specs, and requires each `draftBoundedSpecs` entry to be a
+  trusted non-production spec. `playwright-route.cjs` replaces the unconditional
+  draft override with `selectorPrState: 'draft'` only when `smartDraftApplies`
+  holds, which requires public eligibility, an enabled or canary control, a
+  non-bot author, and a valid draft state. Drafts stay on the hosted route, so
+  narrowing never takes public ARM slots from ready pull requests. Any unset,
+  malformed, or non-matching control keeps the full plan, as does a
+  force-hosted canary.
+
+  **Coverage half of the contract.** The reusable workflow renames its step to
+  `Build opposite-state selector shadow plan` and derives the shadow state from
+  `selectorPrState`, so qualification keeps measuring the plan the draft did not
+  run in both directions. In `test-playwright.yml`, the status reporter accepts
+  `full`, `selected`, or `skip` for drafts while every other event still
+  requires `full`, requires `should_run=false` exactly for `skip`, and validates
+  the embedded shard matrix: eight unique shards for `full`, a positive number
+  of unique valid shards for a partial plan, and no matrix check for `skip`.
+  Partial shards must carry `shardIndex` 1 to 8 with `shardTotal` 8. The
+  `cancel-closed-pr` comment now records that a draft conversion must not cancel
+  an in-flight run, because that run stays valid evidence.
+
+  **Verification.** All 331 tests across the check.yml script set pass, including
+  `playwright-selector` 10/10, `playwright-route` 14/14, and
+  `validate-public-playwright-workflow` 8/8. New coverage includes a draft
+  narrowing a CI-only change to the bounded smoke selection with no
+  `global-surface` reason, the same change staying full on a ready pull request,
+  a mixed `.github/` and `pnpm-lock.yaml` change staying full, draft acceptance
+  of partial and skip plans, and rejections for ready partial, ready skipped,
+  push partial, partial without shards, partial with duplicate shards, full with
+  a partial matrix, and skip that still selects tests. Prettier is clean on both
+  workflows, the manifest and the docs page; Biome is clean on all six scripts.
+
+  **Activation gate and its limit.** `test-playwright.yml` calls the reusable
+  workflow pinned to `@v3`, so a pre-merge run proves only the caller and
+  reporter half of this change. The narrowed selector cannot be exercised until
+  the branch is on `v3` and repository variable
+  `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` is set, or a single pull request is
+  targeted through `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR`. That variable
+  change is a repository settings change and stays behind named authority.
+
+- 2026-09-18 slice B3 merged and activated (PRs #6141 and #6147). The thirteen
+  `v3_*-stg.yml` workflows and `v3_build-fallback.yml` are gone; one
+  `v3_images-stg.yml` builds the affected-image matrix and a needs-based
+  `build-images-status` job owns the unchanged required context.
+  - **#6141** merged to `v3` as `0de1f3de1b`; **#6147** merged to `v3-audit`
+    as `c1cfd2f7c6`. Both landed minutes apart so no candidate ever carried the
+    per-image files while the other line rejected them.
+  - **Draft path proved before merge.** Draft runs `35361628890` (`v3`,
+    head `eb6abcd255`) and `35360584817` (`v3-audit`, head `2be208ee30`)
+    passed `plan` and `build-images-status` with all six `matrix.jobName`
+    legs skipped and no runner allocated. Queue depth fell from roughly 153 to
+    14 across that window.
+  - **Build and publish path proved after merge.** The `v3` push run
+    `35386896558` on the merge commit `0de1f3de1b` succeeded: 18 of 19 jobs
+    passed, including all fourteen `build-arm-*` legs, both
+    `scan-arm-backend-docker*` legs, and `build-images-status`; the only skip
+    is the `matrix.jobName` sentinel. The audit line's own push run
+    `35390209041` is building the same matrix on `c1cfd2f7c6`.
+  - **The fail-closed gate behaved as designed, twice, with no bad promotion.**
+    The merged promoter rejects any candidate still carrying a per-image
+    workflow. While `v3-audit` still had all fifteen, the current candidate
+    tree failed that predicate - verified directly against the committed
+    `LEGACY_STAGING_PATTERN` and predicate. Promotion run `35391131388`
+    failed closed with "staging build evidence is incomplete ..." rather than
+    promoting stale evidence. After #6147 merged, the same probe over
+    `origin/v3-audit` reports zero legacy files and the gate passes.
+  - **Slice B2's cache contract survived the consolidation.** All three
+    consolidated ARM build jobs keep the `no-cache: ${ github.event_name ==
+    'push' }}` / `cache-from` / `cache-to ... mode=max` triple for
+    same-repository pull requests, and AMD stays `if: false`. First live
+    evidence that the cache is no longer inert: `<image>-arm:buildcache`
+    versions now exist for `auth-arm`, `chat-arm`, `backend-docker-arm`,
+    `frontend-manage-arm`, `frontend-pwa-arm` and `analytics-arm`, where the
+    2026-09-13 audit had found the tag absent across 100 versions each.
+  - **Two format/version regressions fixed on the way.** The new plan and
+    status helpers carried Biome format errors that failed `check-suite` on
+    both PRs; and after merging `v3`, ten audit-only packages still floated
+    `vitest: ~3.2.4` against `v3`'s exact `3.2.4` pin from #6137, failing
+    `syncpack lint` on the audit line alone. Both are corrected; `check-suite`
+    is green on the merged audit head.
+  - **Still open.** The consolidated workflow's AMD legs are `optional: true`
+    and remain `if: false`. The live promotion that consumes the audit line
+    had not yet completed at the time of this record.

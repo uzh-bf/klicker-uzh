@@ -15,6 +15,9 @@ concurrency:
 
 permissions:
   contents: read
+  # The selector reads this workflow's prior required-status result for the head
+  # to decide whether a metadata-only edit may reuse the completed validation.
+  checks: read
 
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -22,7 +25,32 @@ env:
   TURBO_REMOTE_ONLY: true
 
 jobs:
-  check:
+  # A metadata-only edited event leaves the merge tree and the commit range
+  # unchanged, so it reuses a completed successful check at the same head
+  # instead of repeating the full validation. Every other event still selects
+  # the suite, and the selector runs the suite when the prior result is missing,
+  # pending, failed, or unavailable.
+  select:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ github.event_name == 'push' && 'true' || steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          # The codebase check is not path-scoped, so every changed path matches
+          # and only the validated metadata-only reuse selects nothing.
+          pattern: '.'
+          prior-check-name: check
+
+  check-suite:
+    needs: select
+    if: >-
+      !cancelled() &&
+      needs.select.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -82,16 +110,28 @@ jobs:
             .github/scripts/required-ci-status.test.cjs \
             .github/scripts/ocr-self-update-guard.test.cjs \
             .github/scripts/stg-release-promoter.test.js \
-            .github/scripts/required-build-status.test.cjs \
+            .github/scripts/staging-image-plan.test.cjs \
+            .github/scripts/staging-image-status.test.cjs \
             .github/scripts/sonar-coverage-inputs.test.cjs \
             .github/scripts/sonar-new-code-boundary.test.cjs \
             .github/scripts/image-scan-admission.test.cjs \
             .github/scripts/sonar-coverage-transport.test.cjs \
-            .github/scripts/image-scan-receipt.test.cjs
+            .github/scripts/image-scan-receipt.test.cjs \
+            .github/scripts/deploy-parity.test.cjs
+
+      # Production renders deploy/ from v3 while the release images are tagged
+      # from v3-ai, so the two revisions must not drift apart. The gate names
+      # the divergent paths; see docs/ci-and-deployment.md.
+      - name: Check deploy parity across v3 and v3-ai
+        if: >-
+          (github.event_name == 'push' && github.ref_name == 'v3') ||
+          (github.event_name == 'pull_request' && github.base_ref == 'v3')
+        run: node ./.github/scripts/deploy-parity.cjs --other v3-ai
 
       - name: Check Playwright CI contracts
         run: |
           pnpm run check:playwright-ci
+          node --test .github/scripts/playwright-pnpm-seed-fallback.test.cjs
           node --test .github/scripts/pnpm-install-retry.test.cjs
           node --test .github/scripts/playwright-resource-sampler.test.cjs
 
@@ -154,3 +194,51 @@ jobs:
         continue-on-error: true
         shell: bash
         run: pnpm run knip
+
+  # Always reports the required check context, including when the selector
+  # reused the completed validation of an unchanged head. It runs
+  # unconditionally: GitHub can treat a skipped required check as acceptable, so
+  # an unexpected skip, a cancellation, a failed suite or a missing selection
+  # must fail inside it.
+  check:
+    needs: [select, check-suite]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Report required status
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+          FILTER_RESULT: ${{ needs.select.result }}
+          SHOULD_RUN: ${{ needs.select.outputs.should_run }}
+          TEST_RESULT: ${{ needs.check-suite.result }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+          SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          WORKFLOW_PATH: .github/workflows/check.yml
+          TERMINAL_JOB: check
+          EVIDENCE_PATH: required-ci-evidence.json
+          SELECTION_JOB: select
+          SELECTION_JOB_RESULT: ${{ needs.select.result }}
+          SUITE_JOB: check-suite
+          SUITE_JOB_RESULT: ${{ needs.check-suite.result }}
+        run: node .github/scripts/required-ci-status.cjs report
+      - name: Upload required CI evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: required-ci-evidence
+          path: required-ci-evidence.json
+          if-no-files-found: error
+          retention-days: 7

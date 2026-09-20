@@ -84,6 +84,14 @@ runs:
       with:
         path: ${{ env.STORE_PATH }}
         key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.dependency-fingerprint }}
+        # The seed publishes only from v3 and its key embeds the full
+        # dependency fingerprint, so any branch whose manifests differ
+        # (v3-ai does) can never match exactly and installs from an empty
+        # store. The pnpm store is content-addressed and verified against
+        # the lockfile, so a near-match reuses compatible packages and only
+        # fetches the remainder. Public readers cannot write this cache.
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-
 
     - name: Restore turbo build artifacts
       if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
