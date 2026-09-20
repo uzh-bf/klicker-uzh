@@ -217,3 +217,16 @@ The runtime was stopped after this build. Fresh exact-source Devsy status was
 changes and the shared export together; no schema migration or dependency was
 introduced. Final self-review found no unresolved local source issue. Hosted
 verification of the corrected analytics cases remains pending.
+
+### No-op CLI operation correction
+
+A later automated review found that a receipt-free no-op apply reported attach
+for requested adopt/remove operations. Both cases were reproduced before the
+fix. The output now falls back to the validated manifest operation; receipt
+operations retain precedence and legacy/default attach remains compatible.
+All 36 operator/CLI tests passed, including the three CLI operation cases.
+Complete split repository checks passed. Final self-review confirmed that only
+values-free operation metadata changes, with no database or receipt mutation.
+All 27 production build tasks passed (26 reused from cache). The exact task
+runtime is stopped; fresh Devsy source identity and zero devrouter routes
+confirmed release. No runtime data or worktree was deleted.

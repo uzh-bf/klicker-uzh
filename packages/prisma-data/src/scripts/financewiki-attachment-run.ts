@@ -10,6 +10,7 @@ import {
   createFileFinanceWikiAttachmentReceiptStore,
   FinanceWikiAttachmentError,
   type FinanceWikiAttachmentManifest,
+  type FinanceWikiAttachmentOperation,
   type FinanceWikiAttachmentReceiptStore,
   type FinanceWikiAttachmentStore,
   parseFinanceWikiAttachmentManifest,
@@ -145,7 +146,8 @@ function printValuesFree(
     | Awaited<ReturnType<typeof recoverFinanceWikiAttachment>>
     | Awaited<ReturnType<typeof rollbackFinanceWikiAttachment>>
     | Awaited<ReturnType<typeof readFinanceWikiAttachment>>,
-  write: (line: string) => void
+  write: (line: string) => void,
+  requestedOperation: FinanceWikiAttachmentOperation
 ): void {
   if ('manifestFingerprint' in value) {
     write(
@@ -172,7 +174,7 @@ function printValuesFree(
   write(
     JSON.stringify({
       status: value.status,
-      operation: value.receipt?.operation ?? 'attach',
+      operation: value.receipt?.operation ?? requestedOperation,
       targetCount: value.receipt?.entries.length ?? 0,
       receiptState: value.receipt?.state ?? null,
     })
@@ -222,7 +224,7 @@ export async function runFinanceWikiAttachmentCli(
             : arguments_.action === 'rollback'
               ? await rollbackFinanceWikiAttachment(store, receiptStore)
               : await readFinanceWikiAttachment(store, receiptStore)
-    printValuesFree(result, write)
+    printValuesFree(result, write, manifest?.operation ?? 'attach')
     return 0
   } catch (error) {
     if (error instanceof FinanceWikiAttachmentError) {
