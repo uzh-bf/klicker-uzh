@@ -10,6 +10,7 @@ import {
   ltiLaunchUrl,
   mintLtiLaunchToken,
   resetChatState,
+  seedThread,
   setLtiProbeCookie,
   setParticipantToken,
   siblingAppOrigin,
@@ -36,6 +37,7 @@ const LTI_SUB_LINKED = 'https://olat.uzh.ch/lti-sub/linked-account'
 const LTI_SUB_CURRENT_SESSION = 'https://olat.uzh.ch/lti-sub/current-session'
 const LTI_SUB_GUEST = 'https://olat.uzh.ch/lti-sub/anonymous-guest'
 const LTI_SUB_REJECTED = 'https://olat.uzh.ch/lti-sub/rejected'
+const LTI_SUB_CLAIM = 'https://olat.uzh.ch/lti-sub/guest-then-account'
 const MISSING_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
 
 // Placeholder for the synthetic participants this spec creates. These accounts
@@ -414,5 +416,53 @@ test.describe('LTI chatbot launch identity resolution', () => {
       cookieTokenSubject(await chatCookie(page, 'participant_token'))
     ).toBe(participant.id)
     await resetChatState(participant.id)
+  })
+
+  test('guest conversations move into the account on the next verified launch', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+
+    // 1. Anonymous guest launch creates the course-scoped persona.
+    await launchChatbot(page, { sub: LTI_SUB_CLAIM })
+    await expectChatbotReached(page)
+    const persona = await prisma.participantAccount.findFirst({
+      where: { ssoId: { startsWith: 'chat-guest:' }, type: 'lti_guest' },
+      select: { participantId: true },
+    })
+    expect(persona).not.toBeNull()
+
+    // 2. That persona owns a conversation from the guest session.
+    const guestThread = await seedThread(persona!.participantId, {
+      title: 'Started as a guest',
+    })
+
+    // 3. The same LMS subject later holds a real account and relaunches.
+    const account = await prisma.participant.create({
+      data: {
+        username: 'lti-e2e-claim',
+        password: FIXTURE_PASSWORD,
+        accounts: { create: { ssoId: LTI_SUB_CLAIM, ssoType: 'LTI1.3' } },
+      },
+    })
+    await clearChatCookies(page)
+    await launchChatbot(page, { sub: LTI_SUB_CLAIM })
+    await expectChatbotReached(page)
+
+    // The launch authenticated the account, not the guest persona...
+    expect(
+      cookieTokenSubject(await chatCookie(page, 'participant_token'))
+    ).toBe(account.id)
+    // ...and the guest conversation now belongs to it.
+    expect(
+      (await prisma.chatThread.findUnique({ where: { id: guestThread.id } }))
+        ?.participantId
+    ).toBe(account.id)
+
+    // 4. The account's sidebar shows the claimed conversation.
+    await expect(page.getByTestId('chat-thread-list')).toBeVisible()
+    await expect(page.getByText('Started as a guest')).toBeVisible()
+
+    await resetChatState(account.id)
   })
 })

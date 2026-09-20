@@ -48,3 +48,6 @@ export * from './chatbotStandardModeConfig.js'
 
 // export everything from the eLearning chat handoff module
 export * from './elearningChatHandoff.js'
+
+// export the shared guest chat persona identity derivation
+export * from './chatGuestIdentity.js'

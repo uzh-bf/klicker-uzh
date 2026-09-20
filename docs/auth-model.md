@@ -60,7 +60,24 @@ LTI account resolver with account creation disabled, then a course-scoped guest
 when there is no matching account. A current session never relinks the LMS identity
 as a side effect. Ambiguous matches and infrastructure errors deny the launch.
 Missing participation is created with `isActive=false`; existing leaderboard
-preferences remain unchanged. Guest history is not transferred to an account.
+preferences remain unchanged.
+
+Guest history is transferred to the account it belongs to. When a launch resolves
+to an existing account, the backend moves that person's guest chat threads into the
+account before issuing the token. The guest persona key is a deterministic
+per-course HMAC over the verified LTI subject and the course id, so the resolver
+re-derives it from the launch's own subject — never from the browser session
+cookie. Threads are claimed across every course the account participates in, and a
+persona that a different account would have claimed is left alone. The claim runs
+in its own transaction and never blocks the launch: a transfer failure is logged as
+`event=guest_thread_claim_failed` and retried on the next verified launch. Guest
+personas are retained after the claim, and persona-scoped state (usage credits,
+disclaimer acceptance) is not merged.
+
+**Do not rotate `CHAT_GUEST_SEED` without a claim backfill.** Rotating the seed
+changes the derived key for every existing guest, so personas created under the old
+seed become unclaimable and their history stays stranded. Any rotation must be
+paired with a backfill that claims those personas under the old seed first.
 
 The account decision uses the persisted `LoginParticipantForLtiChatbot` operation.
 Deploy the backend operation before Chat starts using it, and deploy the LTI
