@@ -4,7 +4,7 @@
 # project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
 #
 # The primary checkout adds the localhost overlay through `devrouter ensure`:
-# - postgres on db.klicker.localhost -> host port 5432
+# - postgres on db.klicker.localhost -> router port 5432, ephemeral direct port
 # - mailhog UI -> host port 8025
 # - hatchet dashboard -> host port 8888
 # - all web applications published on localhost ports (3000-3010, 3030, 7078)
