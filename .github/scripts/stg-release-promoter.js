@@ -590,9 +590,28 @@ function publisherJobIds(workflow) {
   return workflow.jobs.map((job) => job.id)
 }
 
+// A required job name is the trusted inventory's own identifier for that job,
+// but a job that delegates to a reusable workflow is reported under the caller
+// name and the callee name joined by " / ". The Sonar job is the one required
+// job that now calls a reusable workflow, so the expected identifier appears as
+// "SonarCloud / SonarCloud". Matching the identifier as a prefix keeps the
+// trusted name mandatory -- a candidate cannot substitute an unrelated job --
+// while tolerating the expansion GitHub performs for the delegation.
+function jobNameMatches(reportedName, expectedJobId) {
+  if (reportedName === expectedJobId) return true
+  return (
+    typeof reportedName === 'string' &&
+    reportedName.startsWith(expectedJobId + ' / ') &&
+    reportedName.length > expectedJobId.length + 3
+  )
+}
+
 function jobState(job, expectedJobId, candidateSha) {
   if (!job) return 'missing'
-  if (job.name !== expectedJobId || job.head_sha !== candidateSha) {
+  if (
+    !jobNameMatches(job.name, expectedJobId) ||
+    job.head_sha !== candidateSha
+  ) {
     return 'wrong_evidence'
   }
   if (job.status !== 'completed') return 'running'
@@ -676,7 +695,13 @@ async function collectWorkflowEvidence({
   // only the ARM64 publisher jobs carry an image reference for promotion.
   const publisherIds = new Set(publisherJobIds(workflow))
   for (const requiredJobId of requiredJobIds(workflow)) {
-    const matches = jobs.filter((job) => job?.name === requiredJobId)
+    // Matching tolerates the reusable-workflow name expansion, so a required
+    // job that delegates is still proved from the run's own job list. More than
+    // one match stays a hard failure: two reported names cannot both be the one
+    // trusted job this identifier names.
+    const matches = jobs.filter((job) =>
+      jobNameMatches(job?.name, requiredJobId)
+    )
     if (matches.length > 1) {
       return {
         path: workflow.path,
