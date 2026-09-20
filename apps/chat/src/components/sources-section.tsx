@@ -211,7 +211,10 @@ export function SourcesSection() {
         <ul data-cy="chat-cited-sources" className="flex min-w-0 flex-col">
           {citedSources.map((source) => (
             <li key={source.id} className="min-w-0">
-              <SourceRow source={source} />
+              <SourceRow
+                source={source}
+                citedPageRange={citedPageRanges.get(source.index)}
+              />
             </li>
           ))}
           {uncitedSources.length > 0 && (
@@ -228,7 +231,10 @@ export function SourcesSection() {
                 <ul className="mt-0.5 flex flex-col">
                   {uncitedSources.map((source) => (
                     <li key={source.id}>
-                      <SourceRow source={source} />
+                      <SourceRow
+                        source={source}
+                        citedPageRange={citedPageRanges.get(source.index)}
+                      />
                     </li>
                   ))}
                 </ul>
