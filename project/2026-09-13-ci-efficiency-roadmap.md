@@ -608,6 +608,17 @@ Acceptance is live proof on one canary draft and one ready pull request that the
 draft mode is honored without weakening the ready-state full-coverage gate. This
 activation is a repository settings change and needs its existing named gate.
 
+Current state (2026-09-20, read from the repository variable list): the variable
+set contains `PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR`, `PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED`,
+`PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR`, `PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED`,
+`PUBLIC_PR_PLAYWRIGHT_WORKERS`, and the promotion and release-branch variables. The
+two variables this priority needs are still absent, so an eligible draft falls
+back to a full hosted wave. The outstanding request is one named-authority
+change with two steps: set `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR` to one
+draft and read its execution plan, route, selected jobs, and status receipt, then
+set `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED=true` and prove the same on one
+ready pull request.
+
 ### Priority R1a: define a minimum validation envelope for bounded changes
 
 Several validation lanes are already path-aware (`test-unit`, `test-graphql`,
@@ -2123,3 +2134,84 @@ concurrency must now compete against R1-R5, which remove work entirely.
   `.github/scripts/ci-duplicate-audit.cjs` so the next refresh can re-measure
   them instead of rebuilding the analysis, with focused tests over synthetic run
   records.
+
+- 2026-09-20 slice R3 (canonical image-input fingerprints, reuse records, and a
+  release manifest in the promotion controller, implementation on
+  `rs/ci-output-reuse-roadmap`): the full-SHA publication guard skipped a
+  rebuild only when the exact commit tag already existed, so a squash merge or a
+  documentation commit rebuilt every selected image even when its build inputs
+  were unchanged. Three pieces now close that gap. `image-input-fingerprint.cjs`
+  derives one canonical SHA-256 per target over the trusted dependency closure,
+  the Dockerfile, the build arguments, the selected environment file, the
+  lockfile and manifests, and the resolved base-image digests.
+  `staging-image-targets.cjs` marks ten runtime-configured targets
+  `reuse: true`; the Next.js frontends stay unmarked because their staging and
+  production builds freeze `NEXT_PUBLIC_*` values into the browser bundle, which
+  is the R1 exclusion the manifest validator now enforces as
+  `unexpected-fingerprint`. In `.github/workflows/v3_images-stg.yml` each ARM64
+  job resolves its fingerprint after checkout and publishes it as the
+  content-addressed tag `fp-<fingerprint>` through
+  `.github/actions/staging-image-input-fingerprint` and
+  `.github/scripts/stg-image-reuse-guard.sh`. The guard runs in `check` mode
+  before the build: when the tag already exists it adopts that digest instead of
+  building, and on every path it writes a reuse record, so a publication can
+  never carry a fingerprint without saying whether it rebuilt. The job uploads
+  `build-digest-<targetId>` with `digest.txt`, the fingerprint record, and the
+  reuse record. Promotion reads those records from the exact promoted run and
+  refuses a missing, duplicated, expired, or oversized artifact, then validates
+  each record against the trusted inventory: matching target, canonical
+  fingerprint, tag derived from that fingerprint, `reuseEligible === true`, a
+  known schema version, a boolean `adopted`, and a digest whenever the record
+  claims an adoption. The assembled release manifest binds every promoted digest
+  to its target, architecture, fingerprint, and scan receipt, and an adopted
+  digest additionally names the commit it was built from. That commit is read
+  from the image's own `org.opencontainers.image.revision` label (index or image
+  manifest, then the single `linux/arm64` platform manifest, then the config
+  blob) rather than from a run id, and the promoter proves it is an ancestor of
+  the candidate before the manifest is admissible. Rejections are named:
+  `reuse-ancestry`, `reuse-digest`, `reuse-fingerprint`, `reuse-provenance`,
+  `reuse-not-eligible`, `incomplete-reuse`, `unexpected-fingerprint`,
+  `unexpected-receipt`, and `missing-target`; an adoption whose digest is not the
+  published one fails earlier with `adopted <digest> but published <digest>`. The
+  `stg-release-promotion/v2` receipt now carries `release_manifest` and
+  `reuse: {rebuilt, reused}`. Deliberately out of scope: frontend reuse (the R1
+  exclusion above) and the AMD64 legs, which publish nothing the controller
+  promotes. Two consequences of adoption are accepted rather than solved. The
+  first publisher of a fingerprint keeps the tag, so a later publication with
+  the same inputs adopts the digest that publication produced instead of building
+  its own. The tag is shared by every line that publishes this image, so when a
+  `v3` commit changes a target's inputs and the release line adopts that digest
+  before `v3` has been merged, the promotion fails closed with
+  `reuse-ancestry`; the recovery is the standing `v3` to `v3-audit` merge, after
+  which the same digest is a proven ancestor and the next complete push promotes
+  it. Adoption is also what makes the resolved fingerprint and the promoted
+  digest the same object: `adopt` mode creates the immutable full-SHA tag from
+  the adopted digest with `docker buildx imagetools create`, so the scan leg
+  judges exactly the digest the release later promotes and no step rebuilds a
+  digest that is already qualified. The step order is part of that contract, and
+  the trusted validator now rejects a job that resolves reuse after the publish
+  guard. One boundary stays open on purpose. The input set is declared by the
+  candidate tree (the inventory's globs and prep steps), so the promotion side
+  proves that an adopted digest carries a fingerprint of a trusted-eligible
+  target, that the scan admitted exactly that digest, and that the digest's own
+  revision label is an ancestor of the candidate; it does not recompute the
+  fingerprint, because that would load candidate files into the trusted process.
+  A publisher that narrows a target's closure can therefore adopt a digest that
+  does not describe its tree. That needs push access to a `v3` line, which
+  already carries the ability to publish and promote images for that line, and a
+  closure narrowed for a target the trusted inventory does not mark reusable is
+  still rejected as `unexpected-fingerprint`. Verification:
+  `stg-release-promoter.test.js` grew from 31 to 46
+  tests covering the reuse path with its receipt, a same-commit re-run, a
+  non-ancestor reuse source, an adoption of a foreign digest, records of
+  non-eligible targets being ignored instead of trusted, an incomplete record
+  pair, six record shapes that contradict the inventory, and a publication
+  missing its digest artifact; `release-image-manifest.test.js` is 11 tests,
+  `image-input-fingerprint.test.js` 10, the check-suite set is 403 green, the
+  workflow mutation suite rejects 22 weakened candidates including one that
+  resolves reuse after the publish guard, and the guard was executed against a
+  fake `docker` with the tag present and absent.
+  Live qualification is not claimed here: the first staging push publishes
+  fingerprints without adopting anything, and only a later push with unchanged
+  inputs can show an adoption. The measure is `reuse.reused` in the promotion
+  receipt and the `release_manifest` entries of that run.

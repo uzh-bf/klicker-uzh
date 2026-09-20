@@ -14,6 +14,16 @@
 // request reads and writes the untrusted namespace, and no publication turns
 // the cache off to hide that difference.
 //
+// The input fingerprint is pinned as well: a reuse-capable leg resolves it
+// before the build, publishes its tag after the build under the same guard, and
+// ships it next to the digest, because that record is what lets the promotion
+// controller bind a reused digest to the inputs that produced it.
+//
+// So is the reuse record and the revision label: the record says whether the
+// publication adopted an already-qualified digest or built one, the label names
+// the commit the promoted digest was built from, and the promotion controller
+// rejects a manifest that cannot name the source of a reused image.
+//
 // Which targets a candidate can build is resolved separately from the tree, and
 // which targets were actually published is proved by the run's own job list.
 // This module only establishes that the pipeline that produced those jobs still
@@ -216,6 +226,120 @@ function validateBuildCache(block, path, jobId) {
   }
 }
 
+// The input fingerprint is what a reusable digest is keyed by, so the steps that
+// resolve it, publish its tag and ship the record are trusted architecture: a
+// reuse-capable leg resolves the fingerprint before the build, publishes the tag
+// under the same publication guard as the build it records, and uploads the
+// record next to the digest the promotion controller promotes.
+function validateFingerprintReuse(block, path, jobId) {
+  if (
+    !/^[ ]{8}id:[ ]*fingerprint[ ]*$/m.test(block) ||
+    !/^[ ]{8}uses:[ ]*[.]\/[.]github\/actions\/staging-image-input-fingerprint[ ]*$/m.test(
+      block
+    )
+  ) {
+    fail(path, jobId, 'does not resolve the input fingerprint for reuse')
+  }
+  // Only a publication produces a fingerprint tag, and only a reuse-capable
+  // target has one, so a pull request and a non-reusable target resolve nothing.
+  if (
+    !/^[ ]{8}if:[ ]*github[.]event_name[ ]*!=[ ]*'pull_request'[ ]*&&[ ]*matrix[.]reuse[ ]*==[ ]*true[ ]*$/m.test(
+      block
+    )
+  ) {
+    fail(
+      path,
+      jobId,
+      'does not limit fingerprint reuse to reuse-capable publications'
+    )
+  }
+  if (
+    !/^[ ]{8}run:[ ]*[.]github\/scripts\/stg-image-reuse-guard[.]sh[ ]*$/m.test(
+      block
+    ) ||
+    !/^[ ]{10}MODE:[ ]*write[ ]*$/m.test(block) ||
+    !/^[ ]{10}TAG:[ ]*[$][{][{][ ]*steps[.]fingerprint[.]outputs[.]tag[ ]*[}][}][ ]*$/m.test(
+      block
+    )
+  ) {
+    fail(path, jobId, 'does not publish the resolved fingerprint tag')
+  }
+  // The write step publishes to the same registry namespace as the build, so it
+  // carries the publish guard and the reuse condition the build is gated on.
+  if (
+    !/^[ ]{8}if:[ ]*>-?[ ]*$/m.test(block) ||
+    !/^[ ]{10}github[.]event_name[ ]*!=[ ]*'pull_request'[ ]*&&[ ]*$/m.test(
+      block
+    ) ||
+    !/^[ ]{10}matrix[.]reuse[ ]*==[ ]*true[ ]*&&[ ]*$/m.test(block) ||
+    !/^[ ]{10}steps[.]publish_guard[.]outputs[.]publish[ ]*==[ ]*'true'[ ]*$/m.test(
+      block
+    )
+  ) {
+    fail(path, jobId, 'does not gate the fingerprint tag on the publish guard')
+  }
+  // The record has to reach the promotion controller with the digest it
+  // describes; the digest artifact alone cannot bind a reused image to its
+  // inputs.
+  if (
+    !/image-input-fingerprint-[$][{][{][ ]*matrix[.]id[ ]*[}][}][.]json/.test(
+      block
+    )
+  ) {
+    fail(path, jobId, 'does not ship the input fingerprint with the digest')
+  }
+  // The reuse record is the only evidence a promotion has that a digest was
+  // adopted rather than rebuilt, so the publication has to write one and ship
+  // it with the digest it describes.
+  if (
+    !/^[ ]{10}reuse-record:[ ]*[$][{][{][ ]*runner[.]temp[ ]*[}][}]\/image-reuse-[$][{][{][ ]*matrix[.]id[ ]*[}][}][.]json[ ]*$/m.test(
+      block
+    ) ||
+    !/^[ ]{12}[$][{][{][ ]*runner[.]temp[ ]*[}][}]\/image-reuse-[$][{][{][ ]*matrix[.]id[ ]*[}][}][.]json[ ]*$/m.test(
+      block
+    )
+  ) {
+    fail(path, jobId, 'does not publish a reuse record with the digest')
+  }
+  // The revision label is how the promotion controller names the commit an
+  // adopted digest was built from; leaving it to the metadata action defaults
+  // would make the provenance an undocumented side effect.
+  if (
+    !/^[ ]{10}labels:[ ]*[|][ ]*$/m.test(block) ||
+    !/^[ ]{12}org[.]opencontainers[.]image[.]revision[ ]*=[ ]*[$][{][{][ ]*github[.]sha[ ]*[}][}][ ]*$/m.test(
+      block
+    )
+  ) {
+    fail(path, jobId, 'does not label the image with its source revision')
+  }
+  // The position of these four steps is what makes reuse work: the fingerprint
+  // step publishes the digest under the full-SHA tag when it adopts one, which
+  // is what then makes the publish guard skip the build, and the fingerprint tag
+  // and the digest artifact have to follow that build so the record describes
+  // the digest this run owns. Every assertion above survives a reordering, so
+  // only a position check catches a moved step.
+  const ordered = [
+    ['the reuse resolution', /^[ ]{8}id:[ ]*fingerprint[ ]*$/m],
+    ['the publish guard', /^[ ]{8}id:[ ]*publish_guard[ ]*$/m],
+    ['the fingerprint tag publication', /^[ ]{10}MODE:[ ]*write[ ]*$/m],
+    [
+      'the digest artifact',
+      /^[ ]{10}name:[ ]*build-digest-[$][{][{][ ]*matrix[.]id[ ]*[}][}][ ]*$/m,
+    ],
+  ].map(([label, pattern]) => [label, block.search(pattern)])
+  if (ordered.every(([, index]) => index >= 0)) {
+    for (let position = 1; position < ordered.length; position += 1) {
+      if (ordered[position][1] < ordered[position - 1][1]) {
+        fail(
+          path,
+          jobId,
+          `resolves ${ordered[position][0]} before ${ordered[position - 1][0]}`
+        )
+      }
+    }
+  }
+}
+
 // A matrix leg must run only after the plan, name its check run after the
 // target, build from the plan's matrix, publish under the full-SHA guard, and
 // hand its digest to the scan leg.
@@ -289,8 +413,9 @@ function validateArmBuildJob(block, path, jobId) {
     fail(path, jobId, 'does not check the full-SHA tag before publishing')
   }
   if (
-    !/steps[.]publish_guard[.]outputs[.]publish[ ]*==[ ]*'true'/.test(block) ||
-    !/github[.]event_name[ ]*==[ ]*'pull_request'[ ]*[|][|]/.test(block)
+    !/^[ ]{8}if:[ ]*github[.]event_name[ ]*==[ ]*'pull_request'[ ]*[|][|][ ]*steps[.]publish_guard[.]outputs[.]publish[ ]*==[ ]*'true'[ ]*$/m.test(
+      block
+    )
   ) {
     fail(path, jobId, 'does not gate publication on the publish guard')
   }
@@ -318,6 +443,7 @@ function validateArmBuildJob(block, path, jobId) {
   ) {
     fail(path, jobId, 'does not publish a full source SHA tag')
   }
+  validateFingerprintReuse(block, path, jobId)
   validateBuildCache(block, path, jobId)
 }
 

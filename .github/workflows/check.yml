@@ -174,6 +174,8 @@ jobs:
             .github/scripts/image-scan-admission.test.cjs \
             .github/scripts/sonar-coverage-transport.test.cjs \
             .github/scripts/image-scan-receipt.test.cjs \
+            .github/scripts/image-input-fingerprint.test.cjs \
+            .github/scripts/release-image-manifest.test.cjs \
             .github/scripts/deploy-parity.test.cjs
 
       # Production renders deploy/ from v3 while the release images are tagged

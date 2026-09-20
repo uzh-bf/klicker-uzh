@@ -163,12 +163,24 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve input fingerprint reuse
+        id: fingerprint
+        if: github.event_name != 'pull_request' && matrix.reuse == true
+        uses: ./.github/actions/staging-image-input-fingerprint
+        with:
+          fingerprint-output: ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+          image: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          reuse-record: ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+          sha: ${{ github.sha }}
+          target: ${{ matrix.id }}
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -199,6 +211,21 @@ jobs:
           cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
           cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
+      # A publication that built an image publishes its input fingerprint under
+      # the fingerprint tag, which is what lets a later commit with the same
+      # inputs adopt this digest instead of rebuilding it.
+      - name: Publish the input fingerprint tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          matrix.reuse == true &&
+          steps.publish_guard.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          MODE: write
+          TAG: ${{ steps.fingerprint.outputs.tag }}
+        shell: bash
+        run: .github/scripts/stg-image-reuse-guard.sh
 
       # Only a push publishes, so only a push produces a digest; the scan that
       # consumes it is likewise limited to publish events.
@@ -221,7 +248,12 @@ jobs:
         with:
           if-no-files-found: error
           name: build-digest-${{ matrix.id }}
-          path: ${{ runner.temp }}/digest.txt
+          # The fingerprint record travels with the digest so the promotion
+          # controller can bind a reused digest to its input identity.
+          path: |
+            ${{ runner.temp }}/digest.txt
+            ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+            ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
 
   build:
     needs: plan
@@ -262,12 +294,24 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve input fingerprint reuse
+        id: fingerprint
+        if: github.event_name != 'pull_request' && matrix.reuse == true
+        uses: ./.github/actions/staging-image-input-fingerprint
+        with:
+          fingerprint-output: ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+          image: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          reuse-record: ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+          sha: ${{ github.sha }}
+          target: ${{ matrix.id }}
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -298,6 +342,21 @@ jobs:
           cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
           cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
+      # A publication that built an image publishes its input fingerprint under
+      # the fingerprint tag, which is what lets a later commit with the same
+      # inputs adopt this digest instead of rebuilding it.
+      - name: Publish the input fingerprint tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          matrix.reuse == true &&
+          steps.publish_guard.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          MODE: write
+          TAG: ${{ steps.fingerprint.outputs.tag }}
+        shell: bash
+        run: .github/scripts/stg-image-reuse-guard.sh
 
       # Only a push publishes, so only a push produces a digest; the scan that
       # consumes it is likewise limited to publish events.
@@ -320,7 +379,12 @@ jobs:
         with:
           if-no-files-found: error
           name: build-digest-${{ matrix.id }}
-          path: ${{ runner.temp }}/digest.txt
+          # The fingerprint record travels with the digest so the promotion
+          # controller can bind a reused digest to its input identity.
+          path: |
+            ${{ runner.temp }}/digest.txt
+            ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+            ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
 
   build-after-migrator:
     needs: [plan, build-migrator]
@@ -361,12 +425,24 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve input fingerprint reuse
+        id: fingerprint
+        if: github.event_name != 'pull_request' && matrix.reuse == true
+        uses: ./.github/actions/staging-image-input-fingerprint
+        with:
+          fingerprint-output: ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+          image: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          reuse-record: ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+          sha: ${{ github.sha }}
+          target: ${{ matrix.id }}
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -397,6 +473,21 @@ jobs:
           cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
           cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
+      # A publication that built an image publishes its input fingerprint under
+      # the fingerprint tag, which is what lets a later commit with the same
+      # inputs adopt this digest instead of rebuilding it.
+      - name: Publish the input fingerprint tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          matrix.reuse == true &&
+          steps.publish_guard.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          MODE: write
+          TAG: ${{ steps.fingerprint.outputs.tag }}
+        shell: bash
+        run: .github/scripts/stg-image-reuse-guard.sh
 
       # Only a push publishes, so only a push produces a digest; the scan that
       # consumes it is likewise limited to publish events.
@@ -419,7 +510,12 @@ jobs:
         with:
           if-no-files-found: error
           name: build-digest-${{ matrix.id }}
-          path: ${{ runner.temp }}/digest.txt
+          # The fingerprint record travels with the digest so the promotion
+          # controller can bind a reused digest to its input identity.
+          path: |
+            ${{ runner.temp }}/digest.txt
+            ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+            ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
 
   # The AMD64 legs publish the non-runtime images the integration branches
   # need. They run natively on the hosted x64 runner rather than through QEMU,
