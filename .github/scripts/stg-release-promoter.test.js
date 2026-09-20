@@ -7,15 +7,25 @@ const test = require('node:test')
 
 const {
   FIXTURE_STAGING_WORKFLOWS,
+  FIXTURE_REUSE_TARGET_IDS,
   FIXTURE_TARGET_IDS,
   FIXTURE_WORKFLOW_PATH,
   fixtureDefinitions,
   fixtureJobNames,
   registryManifestResponse,
   transientReadbackFailure,
+  publicationArtifacts,
+  publicationFingerprint,
   workflowJobs,
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
+const {
+  buildJobName,
+  imageName,
+  scanJobName,
+  targetById,
+} = require('./staging-image-targets.cjs')
+const { fingerprintTag } = require('./image-input-fingerprint.cjs')
 const {
   readCiEvidence,
   resolveInputs,
@@ -46,8 +56,23 @@ const CANDIDATE_SHA = 'a'.repeat(40)
 const CURRENT_SHA = 'b'.repeat(40)
 const NEXT_SHA = 'c'.repeat(40)
 
+// The admitted scan receipts of the fixture targets. The release manifest binds
+// a scanned target to the receipt that judged its digest, so the stub names the
+// exact jobs the trusted inventory scans.
 async function fixtureScanAdmission() {
-  return { attempts: [{ attempt: 1, failures: [] }], entries: [], valid: true }
+  const entries = FIXTURE_TARGET_IDS.filter(
+    (targetId) => targetById(targetId)?.scan === true
+  ).map((targetId) => ({
+    buildJob: buildJobName(targetById(targetId)),
+    digest: `sha256:${'4'.repeat(64)}`,
+    image:
+      'ghcr.io/' + REPOSITORY + '/' + imageName(targetById(targetId)) + '-arm',
+    ok: true,
+    reason: 'scanned',
+    scanJob: scanJobName(targetById(targetId)),
+    workflowPath: FIXTURE_WORKFLOW_PATH,
+  }))
+  return { attempts: [{ attempt: 1, failures: [] }], entries, valid: true }
 }
 
 async function fixtureCiEvidence({ run }) {
@@ -128,6 +153,7 @@ function evidenceGithub({
   runs = evidenceRuns(workflows),
   jobs = {},
   comparisons = {},
+  publication = publicationArtifacts(),
 }) {
   const ciRuns = Object.fromEntries(
     REQUIRED_CI_WORKFLOWS.map((w, i) => [
@@ -168,7 +194,17 @@ function evidenceGithub({
   const github = {
     rest: {
       actions: {
+        downloadArtifact: async ({ artifact_id }) => ({
+          data: publication.archives.get(artifact_id),
+        }),
         listJobsForWorkflowRunAttempt: jobEndpoint,
+        listWorkflowRunArtifacts: async ({ run_id }) => ({
+          data: {
+            artifacts: publication.artifacts.filter(
+              (artifact) => artifact.run_id === run_id
+            ),
+          },
+        }),
         listWorkflowRuns: runEndpoint,
       },
       repos: {
@@ -200,7 +236,12 @@ function evidenceGithub({
     },
     paginate: async (endpoint, params) => {
       const response = await endpoint(params)
-      return response.data.workflow_runs ?? response.data.jobs ?? []
+      return (
+        response.data.workflow_runs ??
+        response.data.jobs ??
+        response.data.artifacts ??
+        []
+      )
     },
   }
   return { github, jobEndpoint, runEndpoint }
@@ -419,15 +460,20 @@ test('rejects unsafe workflow publication changes', () => {
     }
     assert.fail(label + ' was accepted')
   }
-  const mutate = (from, to) => {
+  const mutateAll = (pairs) => {
     const definitions = fixtureDefinitions()
-    assert.ok(
-      definitions[0].content.includes(from),
-      'fixture no longer contains the text to replace: ' + from
-    )
-    definitions[0].content = definitions[0].content.replace(from, to)
+    for (const [from, to] of pairs) {
+      assert.ok(
+        definitions[0].content.includes(from),
+        'fixture no longer contains the text to replace: ' + from
+      )
+      // Every occurrence, so a mutant that removes a required guardrail removes
+      // it from every leg instead of leaving a matching sibling behind.
+      definitions[0].content = definitions[0].content.split(from).join(to)
+    }
     return definitions
   }
+  const mutate = (from, to) => mutateAll([[from, to]])
 
   reject(
     'narrowed push triggers',
@@ -466,6 +512,53 @@ test('rejects unsafe workflow publication changes', () => {
     /publish guard/
   )
   reject(
+    'removed fingerprint resolution',
+    mutate(
+      'uses: ./.github/actions/staging-image-input-fingerprint',
+      'uses: ./.github/actions/other-fingerprint'
+    ),
+    /does not resolve the input fingerprint/
+  )
+  reject(
+    'removed fingerprint tag publication',
+    mutate(
+      '.github/scripts/stg-image-reuse-guard.sh',
+      '.github/scripts/other-reuse-guard.sh'
+    ),
+    /does not publish the resolved fingerprint tag/
+  )
+  reject(
+    'fingerprint tag published without the reuse condition',
+    mutate('matrix.reuse == true', 'true'),
+    /reuse-capable publications/
+  )
+  reject(
+    'digest published without its input fingerprint',
+    mutate('image-input-fingerprint-', 'fingerprint-record-'),
+    /does not ship the input fingerprint with the digest/
+  )
+  reject(
+    'digest published without its reuse record',
+    mutate('runner.temp }}/image-reuse-', 'runner.temp }}/reuse-'),
+    /does not publish a reuse record with the digest/
+  )
+  reject(
+    'image published without its source revision label',
+    mutate('org.opencontainers.image.revision', 'org.example.revision'),
+    /does not label the image with its source revision/
+  )
+  // The reuse resolution has to run before the guard decides whether to build:
+  // it is the adoption that publishes the full-SHA tag the guard then finds.
+  reject(
+    'reuse resolved after the publish guard',
+    mutateAll([
+      ['id: fingerprint', 'id: reuse-resolution'],
+      ['id: publish_guard', 'id: fingerprint'],
+      ['id: reuse-resolution', 'id: publish_guard'],
+    ]),
+    /resolves the publish guard before the reuse resolution/
+  )
+  reject(
     'removed publish guard script',
     mutate(
       '.github/scripts/stg-image-publish-guard.sh',
@@ -493,6 +586,30 @@ test('rejects unsafe workflow publication changes', () => {
     'ARM build no longer defers drafts',
     mutate('github.event.pull_request.draft == false', 'true'),
     /does not defer draft builds/
+  )
+  reject(
+    'publication reading the pull-request cache',
+    mutate(
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}'",
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache'"
+    ),
+    /trusted epoch cache/
+  )
+  reject(
+    'pull request reaching the trusted cache',
+    mutate(
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache'",
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted'"
+    ),
+    /trusted epoch cache/
+  )
+  reject(
+    'publication with the shared cache disabled',
+    mutate(
+      '          cache-from: ',
+      '          no-cache: true\n          cache-from: '
+    ),
+    /disables the shared build cache/
   )
   reject(
     'retargeted matrix image',
@@ -1681,6 +1798,267 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
       new RegExp(`confirm_ref_update=${MANUAL_CONFIRMATION}`)
     )
   }
+})
+
+// One dry-run promotion of the fixture candidate, wired with the registry
+// revision labels and the published records a test wants the controller to
+// read. The receipt is parsed before the temporary directory is removed, so the
+// assertions describe what the run actually wrote.
+async function fixturePromotion({
+  comparisons = {},
+  publication,
+  revisionOf,
+} = {}) {
+  const workflows = validWorkflows()
+  const { github: baseGithub } = evidenceGithub({
+    comparisons,
+    definitions: fixtureDefinitions(),
+    jobs: successfulJobs(workflows),
+    publication,
+    runs: evidenceRuns(workflows),
+  })
+  const refs = refGithub()
+  const github = {
+    ...baseGithub,
+    rest: { ...baseGithub.rest, git: refs.github.rest.git },
+  }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-promotion-'))
+  const receiptPath = path.join(directory, 'receipt.json')
+  try {
+    const result = await runPromotion({
+      candidateSha: CANDIDATE_SHA,
+      context: reviewContext('workflow_dispatch', {
+        dry_run: true,
+        sha: CANDIDATE_SHA,
+      }),
+      controllerSha: NEXT_SHA,
+      expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+      getCiEvidence: fixtureCiEvidence,
+      getImageRevision: revisionOf,
+      getRegistryDigest: async () => `sha256:${'4'.repeat(64)}`,
+      getScanAdmission: fixtureScanAdmission,
+      github,
+      maxAttempts: 1,
+      receiptPath,
+      checksumPath: path.join(directory, 'receipt.sha256'),
+      sourceBranch: 'v3',
+      summaryPath: path.join(directory, 'summary.md'),
+    })
+    return { receipt: JSON.parse(fs.readFileSync(receiptPath, 'utf8')), result }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+test('a publication that adopted a qualified digest is promoted as reused', async () => {
+  const digest = `sha256:${'4'.repeat(64)}`
+  const sourceSha = 'd'.repeat(40)
+  const fingerprint = publicationFingerprint('backend-docker-arm')
+  const { receipt, result } = await fixturePromotion({
+    publication: publicationArtifacts({
+      adopted: { 'backend-docker-arm': digest },
+    }),
+    revisionOf: async () => sourceSha,
+  })
+
+  const entry = result.release_manifest.entries.find(
+    (candidate) => candidate.targetId === 'backend-docker-arm'
+  )
+  assert.equal(entry.digest, digest)
+  assert.equal(
+    entry.image,
+    `ghcr.io/${REPOSITORY}/backend-docker-arm@${digest}`
+  )
+  assert.deepEqual(entry.reusedFrom, {
+    digest,
+    fingerprint,
+    sourceSha,
+    tag: fingerprintTag(fingerprint),
+  })
+  // The provenance of an adopted image is the revision label it carries, not
+  // the run that built it: the receipt names the commit and nothing else.
+  assert.equal('runId' in entry.reusedFrom, false)
+  // Only a target the inventory marks reusable may be reported as reused.
+  assert.deepEqual(result.reuse, {
+    rebuilt: ['auth-arm', 'backend-docker-migrator-arm'],
+    reused: ['backend-docker-arm'],
+  })
+  assert.deepEqual(receipt.reuse, result.reuse)
+  assert.deepEqual(receipt.release_manifest, result.release_manifest)
+  assert.equal(receipt.schema_version, 'stg-release-promotion/v2')
+
+  // An image built from the candidate itself is a proven ancestor without a
+  // commit comparison, so a re-run of the same commit still reuses.
+  const self = await fixturePromotion({
+    publication: publicationArtifacts({
+      adopted: { 'backend-docker-arm': digest },
+    }),
+    revisionOf: async () => CANDIDATE_SHA,
+  })
+  assert.equal(
+    self.result.release_manifest.entries.find(
+      (candidate) => candidate.targetId === 'backend-docker-arm'
+    ).reusedFrom.sourceSha,
+    CANDIDATE_SHA
+  )
+  assert.deepEqual(self.result.reuse, result.reuse)
+})
+
+test('a reuse source that is not an ancestor of the candidate fails closed', async () => {
+  const digest = `sha256:${'4'.repeat(64)}`
+  const sourceSha = 'e'.repeat(40)
+  await assert.rejects(
+    fixturePromotion({
+      comparisons: {
+        [`${sourceSha}...${CANDIDATE_SHA}`]: { status: 'behind' },
+      },
+      publication: publicationArtifacts({
+        adopted: { 'backend-docker-arm': digest },
+      }),
+      revisionOf: async () => sourceSha,
+    }),
+    /release manifest rejected: backend-docker-arm:reuse-ancestry/
+  )
+})
+
+test('an adoption of a digest other than the published one fails closed', async () => {
+  const adopted = `sha256:${'5'.repeat(64)}`
+  await assert.rejects(
+    fixturePromotion({
+      publication: publicationArtifacts({
+        adopted: { 'backend-docker-arm': adopted },
+      }),
+      revisionOf: async () => CANDIDATE_SHA,
+    }),
+    /backend-docker-arm adopted sha256:5{64} but published sha256:4{64}/
+  )
+})
+
+test('only the records of reuse-capable targets are read', async () => {
+  // 'auth-arm' is fingerprinted nowhere in the trusted inventory, so a
+  // publication that ships a record for it is ignored rather than trusted.
+  const { result } = await fixturePromotion({
+    publication: publicationArtifacts({
+      adopted: { 'auth-arm': `sha256:${'4'.repeat(64)}` },
+      targetIds: [...FIXTURE_REUSE_TARGET_IDS, 'auth-arm'],
+    }),
+    revisionOf: async () => CANDIDATE_SHA,
+  })
+  const entry = result.release_manifest.entries.find(
+    (candidate) => candidate.targetId === 'auth-arm'
+  )
+  assert.equal(entry.fingerprint, null)
+  assert.equal(entry.reusedFrom, null)
+  assert.deepEqual(result.reuse.reused, [])
+})
+
+test('an incomplete publication record fails closed', async (t) => {
+  const cases = [
+    {
+      label: 'no input fingerprint',
+      options: { omit: ['image-input-fingerprint-backend-docker-arm.json'] },
+      reason: /published no input fingerprint with its staging digest/,
+    },
+    {
+      label: 'no reuse record',
+      options: { omit: ['image-reuse-backend-docker-arm.json'] },
+      reason: /published no reuse record with its digest/,
+    },
+  ]
+  for (const fixture of cases) {
+    await t.test(fixture.label, async () => {
+      await assert.rejects(
+        fixturePromotion({
+          publication: publicationArtifacts(fixture.options),
+        }),
+        fixture.reason
+      )
+    })
+  }
+})
+
+test('a record that contradicts the trusted inventory fails closed', async (t) => {
+  const targetId = 'backend-docker-arm'
+  const fingerprint = publicationFingerprint(targetId)
+  const tag = fingerprintTag(fingerprint)
+  const fingerprintMember = 'image-input-fingerprint-' + targetId + '.json'
+  const reuseMember = 'image-reuse-' + targetId + '.json'
+  const cases = [
+    {
+      label: 'fingerprint of another target',
+      member: fingerprintMember,
+      record: { fingerprint, reuseEligible: true, tag, target: 'auth-arm' },
+      reason: /published a fingerprint for another target/,
+    },
+    {
+      label: 'fingerprint that is not canonical',
+      member: fingerprintMember,
+      record: {
+        fingerprint: 'latest',
+        reuseEligible: true,
+        tag,
+        target: targetId,
+      },
+      reason: /published no canonical input fingerprint/,
+    },
+    {
+      label: 'fingerprint under another tag',
+      member: fingerprintMember,
+      record: {
+        fingerprint,
+        reuseEligible: true,
+        tag: 'fp-' + '0'.repeat(64),
+        target: targetId,
+      },
+      reason: /published a fingerprint under another tag/,
+    },
+    {
+      label: 'target that is not reusable in its own record',
+      member: fingerprintMember,
+      record: { fingerprint, reuseEligible: false, tag, target: targetId },
+      reason: /is reusable in the trusted inventory but not in its own/,
+    },
+    {
+      label: 'reuse record of another schema',
+      member: reuseMember,
+      record: { adopted: false, digest: '', schemaVersion: 2, tag },
+      reason: /published a reuse record of another schema/,
+    },
+    {
+      label: 'adoption without a digest',
+      member: reuseMember,
+      record: { adopted: true, digest: '', schemaVersion: 1, tag },
+      reason: /adopted an image without a digest/,
+    },
+  ]
+  for (const fixture of cases) {
+    await t.test(fixture.label, async () => {
+      await assert.rejects(
+        fixturePromotion({
+          publication: publicationArtifacts({
+            override: { [fixture.member]: JSON.stringify(fixture.record) },
+          }),
+        }),
+        fixture.reason
+      )
+    })
+  }
+})
+
+test('a publication must ship exactly one digest artifact per reusable target', async () => {
+  const publication = publicationArtifacts()
+  await assert.rejects(
+    fixturePromotion({
+      publication: {
+        artifacts: publication.artifacts.filter(
+          (artifact) => artifact.name !== 'build-digest-backend-docker-arm'
+        ),
+        archives: publication.archives,
+      },
+    }),
+    /backend-docker-arm published 0 build-digest-backend-docker-arm artifacts/
+  )
 })
 
 test('uses only trusted controller checkout and has no commit or PR commands', () => {

@@ -8,10 +8,26 @@ const {
   parseTimings,
   selectedDurationMap,
 } = require('./get-shard-files.js')
+const {
+  CHANGE_CLASS,
+  classifyRecords,
+  parseNameStatusRecords,
+} = require('./minimum-validation-class.cjs')
 
 const SELECTOR_SCHEMA_VERSION = 1
 const SUPPORTED_PROFILE_VERSION = 1
 const TEST_FILE_PATTERN = /^[^/]+\.spec\.ts$/
+
+// Change classes whose changes cannot reach application behaviour. The
+// repository-owned classifier proves them from the same merge-base diff this
+// selector already reads, and the ready-state full plan is the only plan those
+// classes may narrow: a bounded class selects the bounded smoke surface, a
+// documentation class selects nothing, and every other diff keeps the full
+// candidate suite.
+const BOUNDED_ENVELOPE_CLASSES = new Set([
+  CHANGE_CLASS.documentationAndPlanning,
+  CHANGE_CLASS.ciOrchestration,
+])
 
 function compareNames(a, b) {
   if (a < b) return -1
@@ -288,45 +304,9 @@ function validateRelevanceManifest(
   }
 }
 
-function isSafeRepoPath(value) {
-  return (
-    typeof value === 'string' &&
-    value.length > 0 &&
-    !value.startsWith('/') &&
-    !value.startsWith('../') &&
-    !value.includes('\0')
-  )
-}
-
-function parseNameStatusZ(raw) {
-  if (raw === '') return []
-
-  const fields = raw.split('\0')
-  if (fields.at(-1) === '') fields.pop()
-
-  const changes = []
-  for (let index = 0; index < fields.length; ) {
-    const status = fields[index++]
-    if (!/^[A-Z](?:[0-9]{1,3})?$/.test(status)) {
-      fail(`malformed diff status ${JSON.stringify(status)}`)
-    }
-
-    const kind = status[0]
-    const paths = []
-    const pathCount = kind === 'R' || kind === 'C' ? 2 : 1
-    for (let pathIndex = 0; pathIndex < pathCount; pathIndex++) {
-      const changedPath = fields[index++]
-      if (!isSafeRepoPath(changedPath)) {
-        fail('malformed diff path')
-      }
-      paths.push(changedPath)
-    }
-
-    changes.push({ status, kind, paths })
-  }
-
-  return changes
-}
+// Rename-aware diff records come from the shared classifier parser, so the
+// selector and the codebase check read one definition of a changed diff.
+const parseNameStatusZ = parseNameStatusRecords
 
 function runGit(candidateRoot, args) {
   // Hooks export repository-local Git variables. Candidate commands must use
@@ -370,13 +350,14 @@ function isPrefixMatch(value, prefix) {
   return value === normalizedPrefix || value.startsWith(`${normalizedPrefix}/`)
 }
 
-function classifyPath(changedPath, manifest, prState) {
-  // A draft needs only the bounded smoke selection for changes that cannot
-  // alter application behaviour: the repository's own CI definitions and
-  // CI-owned scripts. A ready pull request never reaches this rule, because
-  // its plan is the full candidate suite whatever the change touches.
+function classifyPath(changedPath, manifest, { boundedSurface }) {
+  // The bounded smoke selection covers changes that cannot alter application
+  // behaviour: the repository's own CI definitions and CI-owned scripts. It
+  // applies to a draft that the smart-draft control admits and to any change
+  // the minimum validation envelope classified as bounded, so the same surface
+  // serves both selections. Every other diff reaches the full candidate suite.
   if (
-    prState === 'draft' &&
+    boundedSurface &&
     manifest.draftBoundedPathPrefixes.some((prefix) =>
       isPrefixMatch(changedPath, prefix)
     )
@@ -443,18 +424,29 @@ function selectFromChanges({
     fail(`unsupported pull request state ${prState}`)
   }
 
+  // The minimum validation envelope is derived from the same records this
+  // selection consumes, so one trusted classification serves every lane. An
+  // empty, unresolvable, renamed, or application-touching diff classifies as
+  // the application envelope and keeps the full plan.
+  const envelope = classifyRecords(changes)
+  const boundedEnvelope = BOUNDED_ENVELOPE_CLASSES.has(envelope.changeClass)
+  // The bounded smoke surface serves a draft the smart-draft control admitted
+  // and any diff the minimum validation envelope classified as bounded.
+  const boundedSurface = prState === 'draft' || boundedEnvelope
   const candidateSet = new Set(candidateSpecs)
   const selected = new Set()
   const reasonCodes = new Set()
   const groupIds = new Set()
-  let full = prState === 'ready'
+  let full = prState === 'ready' && !boundedEnvelope
   // A bounded surface only intends the smoke specs. Track whether one was
   // actually selectable so a candidate tree that lost the bounded spec cannot
   // masquerade as a documentation-only diff.
   let boundedSurfaceSeen = false
   let boundedSpecSelected = false
 
-  if (prState === 'ready') reasonCodes.add('ready-for-review')
+  if (prState === 'ready' && !boundedEnvelope)
+    reasonCodes.add('ready-for-review')
+  if (boundedEnvelope) reasonCodes.add(`envelope-${envelope.changeClass}`)
   if (changes.length === 0) {
     full = true
     reasonCodes.add('empty-diff')
@@ -475,7 +467,7 @@ function selectFromChanges({
 
   const classifyNonSpecPaths = (paths) => {
     const classifications = paths.map((changedPath) =>
-      classifyPath(changedPath, manifest, prState)
+      classifyPath(changedPath, manifest, { boundedSurface })
     )
     if (classifications.some(({ kind }) => kind === 'full')) {
       full = true
@@ -558,6 +550,7 @@ function selectFromChanges({
   if (full) {
     reasonCodes.delete('documentation-only')
     return {
+      envelopeClass: envelope.changeClass,
       mode: 'full',
       reasonCodes: [...reasonCodes].sort(compareNames),
       selectedSpecs: [...candidateSpecs],
@@ -568,6 +561,7 @@ function selectFromChanges({
   if (selected.size === 0) {
     reasonCodes.add('documentation-only')
     return {
+      envelopeClass: envelope.changeClass,
       mode: 'skip',
       reasonCodes: [...reasonCodes].sort(compareNames),
       selectedSpecs: [],
@@ -577,6 +571,7 @@ function selectFromChanges({
 
   if (groupIds.size > 0) reasonCodes.add('feature-group')
   return {
+    envelopeClass: envelope.changeClass,
     mode: 'selected',
     reasonCodes: [...reasonCodes].sort(compareNames),
     selectedSpecs: [...selected].sort(compareNames),
@@ -666,6 +661,7 @@ function buildSelectionPlan({
   return {
     schemaVersion: SELECTOR_SCHEMA_VERSION,
     mode: selection.mode,
+    envelopeClass: selection.envelopeClass,
     reasonCodes: selection.reasonCodes,
     baseSha,
     headSha,
@@ -722,6 +718,8 @@ function selectPlaywrightPlan({
 
   if (fallbackReason) {
     plan.mode = 'full'
+    // A diff the selector could not resolve never stays bounded.
+    plan.envelopeClass = CHANGE_CLASS.application
     plan.reasonCodes = [fallbackReason]
     plan.selectedSpecs = plan.candidateSpecs
     plan.selectedProfiles = [
@@ -783,6 +781,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  BOUNDED_ENVELOPE_CLASSES,
   SELECTOR_SCHEMA_VERSION,
   buildSelectionPlan,
   classifyPath,

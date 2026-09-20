@@ -16,9 +16,17 @@
 // with every release; the rest of the file must still match, so a promotion or
 // a 'v3' integration merge cannot silently drop keys.
 //
-// Usage: node .github/scripts/deploy-parity.cjs [--other v3-ai] [--candidate HEAD]
-// Exit 0: parity, or the other branch is no longer published.
-// Exit 1: the two branches diverge under deploy/.
+// A divergence between the two integration branches is a repository condition
+// that most changes cannot influence. With '--base', the gate fails only a
+// change that itself edits 'deploy/'; a candidate that leaves 'deploy/'
+// untouched reports the existing divergence and passes. Without '--base' the
+// strict whole-branch comparison applies.
+//
+// Usage: node .github/scripts/deploy-parity.cjs [--other <branch>]
+//        [--candidate <ref>] [--base <ref>]
+// Exit 0: parity, a divergence this change did not introduce, or the other
+//         branch is no longer published.
+// Exit 1: this change leaves the two branches divergent under deploy/.
 // Exit 2: the comparison could not be evaluated.
 
 const { execFileSync } = require('node:child_process')
@@ -31,7 +39,7 @@ const GIT_MAX_BUFFER = 32 * 1024 * 1024
 const DEFAULT_OTHER_BRANCH = 'v3-ai'
 const DEFAULT_CANDIDATE = 'HEAD'
 const USAGE =
-  'usage: node .github/scripts/deploy-parity.cjs [--other <branch>] [--candidate <ref>]'
+  'usage: node .github/scripts/deploy-parity.cjs [--other <branch>] [--candidate <ref>] [--base <ref>]'
 
 function git(args) {
   return execFileSync('git', args, {
@@ -85,6 +93,15 @@ function evaluateParity(changes) {
   return { violations, environmentOwned }
 }
 
+// A divergence is this change's responsibility only when the change itself
+// edited 'deploy/'. Otherwise the candidate inherits whatever alignment the two
+// integration branches already had, and failing it would block unrelated work
+// on a repository condition it cannot influence.
+function attributeDivergence(violations, touchesDeploy) {
+  if (touchesDeploy) return { blocking: violations, preexisting: [] }
+  return { blocking: [], preexisting: violations }
+}
+
 function parseNameStatus(output) {
   const fields = output.split('\0').filter((field) => field !== '')
   const changes = []
@@ -94,10 +111,28 @@ function parseNameStatus(output) {
   return changes
 }
 
+function candidateTouchesDeploy(baseRef, candidate) {
+  if (baseRef === null) return true
+  const touched = parseNameStatus(
+    git([
+      'diff',
+      '--name-status',
+      '--no-renames',
+      '-z',
+      baseRef,
+      candidate,
+      '--',
+      DEPLOY_PATH,
+    ])
+  )
+  return touched.length > 0
+}
+
 function parseArguments(argv) {
   const options = {
     other: DEFAULT_OTHER_BRANCH,
     candidate: DEFAULT_CANDIDATE,
+    base: null,
   }
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
@@ -106,6 +141,13 @@ function parseArguments(argv) {
       index += 1
     } else if (argument === '--candidate') {
       options.candidate = argv[index + 1]
+      index += 1
+    } else if (argument === '--base') {
+      const value = argv[index + 1]
+      if (!value || value.startsWith('--')) {
+        throw new Error('missing value for --base\n' + USAGE)
+      }
+      options.base = value
       index += 1
     } else {
       throw new Error('unknown argument ' + argument + '\n' + USAGE)
@@ -159,6 +201,13 @@ function readDeployFile(ref, path) {
   return tryGit(['show', ref + ':' + path])
 }
 
+// '--base' is the revision the candidate is responsible for. It is resolved
+// locally only: the caller passes a revision its checkout already has, and an
+// unavailable base keeps the strict whole-branch comparison.
+function resolveBaseRef(ref) {
+  return refExists(ref) ? ref : null
+}
+
 function describeViolation(violation, otherRef, candidate) {
   if (violation.kind === 'only-candidate') return 'only in ' + candidate
   if (violation.kind === 'only-other') return 'only in ' + otherRef
@@ -197,6 +246,37 @@ function reportDivergence(violations, otherRef, candidate) {
   for (const line of lines) console.error(line)
 }
 
+function reportPreexisting(violations, otherRef, candidate) {
+  const lines = [
+    '::warning::deploy parity: ' +
+      violations.length +
+      ' path(s) under ' +
+      DEPLOY_PATH +
+      '/ differ between ' +
+      otherRef +
+      ' and ' +
+      candidate +
+      ', but this change does not edit ' +
+      DEPLOY_PATH +
+      '/.',
+    'The divergence already exists between the integration branches, so it is',
+    'reported here instead of failing a change that cannot influence it:',
+    '',
+    ...violations.map(
+      (violation) =>
+        '  - ' +
+        violation.path +
+        ' (' +
+        describeViolation(violation, otherRef, candidate) +
+        ')'
+    ),
+    '',
+    'Resolve it on the branch that owns the drift; a change that edits',
+    DEPLOY_PATH + '/ is still blocked until the two revisions match.',
+  ]
+  for (const line of lines) console.log(line)
+}
+
 function main(argv) {
   const options = parseArguments(argv)
   const otherRef = resolveOtherRef(options.other)
@@ -207,6 +287,15 @@ function main(argv) {
         ' is not published by this repository; the parity gate does not apply.'
     )
     return 0
+  }
+
+  const baseRef = options.base === null ? null : resolveBaseRef(options.base)
+  if (options.base !== null && baseRef === null) {
+    console.log(
+      'deploy parity: base ' +
+        options.base +
+        ' is not present in this checkout; comparing the whole branch.'
+    )
   }
 
   const changes = parseNameStatus(
@@ -248,7 +337,16 @@ function main(argv) {
     return 0
   }
 
-  reportDivergence(violations, otherRef, options.candidate)
+  const { blocking, preexisting } = attributeDivergence(
+    violations,
+    candidateTouchesDeploy(baseRef, options.candidate)
+  )
+  if (blocking.length === 0) {
+    reportPreexisting(preexisting, otherRef, options.candidate)
+    return 0
+  }
+
+  reportDivergence(blocking, otherRef, options.candidate)
   return 1
 }
 
@@ -263,6 +361,7 @@ if (require.main === module) {
 
 module.exports = {
   ENV_VALUES_FILE_PATH,
+  attributeDivergence,
   evaluateParity,
   normalizeDeployFile,
   parseNameStatus,
