@@ -202,8 +202,42 @@ Do not treat every head/release difference as an incident.
 - Completed: current remote refresh; source/consumer/test review; correction
   of earlier GLM discussion conclusions; PR #6170/#6174 and CI snapshot checks;
   isolated planning worktree created.
-- Active slice: planning only. Source changes, runtime tests, integration,
-  promotion, and deployment have not been performed under this plan.
+- Slice 1 delivered: commit `a4cc7f23c9` (ephemeral PostgreSQL loopback port
+  plus the affected primary-access instructions) on
+  `rs/runtime-reliability-plan`, draft PR [#6176](https://github.com/uzh-bf/klicker-uzh/pull/6176)
+  to `v3`. Evidence: effective Compose render for both overlays; `node --test
+  util/run-playwright-host.test.mjs` 39 pass / 0 fail; synthetic containers for
+  both overlays started while the router held `:5432` and answered through the
+  discovered direct port and the devnet aliases; both test projects stopped
+  with volumes preserved.
+- Slice 2 delivered: commit `e2b4e6f840` (grace-interval death and survivor
+  cases in `util/test-dev-runtime.sh`, coverage note in `docs/testing.md`) on
+  `rs/runtime-liveness-guard-tests` from the refreshed `origin/v3-ai`
+  `545a6ef746c2d6585e7e06424c0bd03ec96da096`, draft PR
+  [#6177](https://github.com/uzh-bf/klicker-uzh/pull/6177) to `v3-ai`. The full
+  harness passed twice outside the sandbox; a restricted sandbox cannot inspect
+  processes and that attempt is not counted as evidence.
+- Slice 3 disposition: the existing Devrouter task reports 0.1.1 released, with
+  a refused `ensure` now surfaced as `start-refused` plus `devrouter doctor
+  <repo>` remediation that names the conflicting binding and its holder,
+  verified live against a synthetic fixture publishing `127.0.0.1:5432` while
+  the router held it. The checkout pin is a minimum contract, not an exact pin,
+  so adopting 0.1.1 is a separate source decision and is not part of this plan.
+  The upstream owner still asks for the before/after `status --json` pair around
+  the `{"stopped": false, "freedRoutes": 0}` observation; that reproduction
+  needs a disposable managed runtime and stays recorded as open here rather
+  than claimed as verified.
+- Slice 4 evidence (independent of the source packages; execution-time
+  snapshot): candidate
+  `55efc535a6b6d31643b8670e6eaff9e97911a971` (`v3-audit`) passed Playwright run
+  `35501900380` attempt 2, and the promotion controller woke for the candidate
+  (`35506556527`, queued at snapshot). `stg-release` resolved to
+  `19c5da241191ac72ed25d39e167a640f214b72aa`, so the result is recorded as
+  promotion-pending evidence: no deployment or runtime-health claim is made and
+  no promotion was dispatched.
+- Active slice: none; the two source packages are delivered as drafts, the
+  upstream disposition is recorded, and staging observation continues from the
+  controller receipt.
 - Existing history: [Doc Query canary plan](2026-09-04-doc-query-canary-activation-proof-plan.md)
   and [host Playwright plan](2026-08-30-playwright-profile-runtime-plan.md).
   Preserve their historical evidence rather than rewriting completed plans.
