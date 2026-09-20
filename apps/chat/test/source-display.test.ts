@@ -189,21 +189,23 @@ describe('getSourceSecondaryLine', () => {
     ).toBe('p. 12')
   })
 
-  test('documents show a publisher-labelled page range', () => {
+  // The retrieved envelope is a spread, not a location: printing it would put
+  // "S. 2–127" on the card of a one-question answer about a 127-page script.
+  test('documents never show a publisher-labelled retrieval span', () => {
     expect(
       getSourceSecondaryLine(
         source({
-          page: 6,
-          pageEnd: 89,
-          labeledPage: '6',
-          labeledPageEnd: '89',
+          page: 2,
+          pageEnd: 127,
+          labeledPage: '2',
+          labeledPageEnd: '127',
         }),
         t
       )
-    ).toBe('p. 6–89')
+    ).toBeNull()
   })
 
-  test('documents fall back to the physical range without any label', () => {
+  test('documents fall back to the url instead of the physical span', () => {
     expect(
       getSourceSecondaryLine(
         source({
@@ -213,10 +215,10 @@ describe('getSourceSecondaryLine', () => {
         }),
         t
       )
-    ).toBe('p. 6–89')
+    ).toBe('example.com/lecture-01.pdf')
   })
 
-  test('images can carry a page range as well', () => {
+  test('images keep their type label instead of the retrieval span', () => {
     expect(
       getSourceSecondaryLine(
         source({
@@ -228,7 +230,7 @@ describe('getSourceSecondaryLine', () => {
         }),
         t
       )
-    ).toBe('Image · p. 6–8')
+    ).toBe('Image')
   })
 
   test('documents without a page fall back to the url', () => {
@@ -302,7 +304,7 @@ describe('getSourceSecondaryLine', () => {
     ).toBe('p. 6–7, 12')
   })
 
-  test('keeps the retrieved range when the answer cites no page', () => {
+  test('shows no page when the answer cites none and retrieval spread', () => {
     expect(
       getSourceSecondaryLine(
         source({
@@ -313,7 +315,18 @@ describe('getSourceSecondaryLine', () => {
         }),
         t
       )
-    ).toBe('p. 2–95')
+    ).toBeNull()
+  })
+
+  // Retrieval that returned exactly one page does name a location, so the line
+  // survives even when the answer itself carries no page detail.
+  test('keeps a single retrieved label when the answer cites no page', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({ page: 2, pageEnd: 2, labeledPage: '2' }),
+        t
+      )
+    ).toBe('p. 2')
   })
 
   test('a cited range also applies to media sources', () => {
@@ -361,16 +374,16 @@ describe('formatCitedPageRanges', () => {
 })
 
 describe('getSourcePageRange', () => {
-  test('prefers the labelled range over the physical envelope', () => {
+  test('drops a labelled span', () => {
     expect(
       getSourcePageRange(
         source({ page: 6, pageEnd: 89, labeledPage: '8', labeledPageEnd: '18' })
       )
-    ).toBe('8–18')
+    ).toBeUndefined()
   })
 
-  test('uses the physical envelope when no label exists', () => {
-    expect(getSourcePageRange(source({ page: 6, pageEnd: 89 }))).toBe('6–89')
+  test('drops the physical envelope', () => {
+    expect(getSourcePageRange(source({ page: 6, pageEnd: 89 }))).toBeUndefined()
   })
 
   test('keeps a single label single', () => {
