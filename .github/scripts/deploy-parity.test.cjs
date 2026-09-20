@@ -1,7 +1,11 @@
 const assert = require('node:assert/strict')
 const { describe, it } = require('node:test')
 
-const { evaluateParity, normalizeDeployFile } = require('./deploy-parity.cjs')
+const {
+  attributeDivergence,
+  evaluateParity,
+  normalizeDeployFile,
+} = require('./deploy-parity.cjs')
 
 const CHART_TEMPLATE =
   'deploy/charts/klicker-uzh-v3/templates/cm-mcp-lecturer.yaml'
@@ -123,5 +127,24 @@ describe('deploy parity between the integration branches', () => {
     assert.match(normalized, /replicaCount: 2/)
     assert.match(normalized, /tag: <environment-owned>/)
     assert.match(normalized, /pullPolicy: <environment-owned>/)
+  })
+})
+
+describe('deploy parity attribution', () => {
+  it('blocks a divergence the change itself introduced', () => {
+    const violations = [{ path: CHART_TEMPLATE, kind: 'content' }]
+    const { blocking, preexisting } = attributeDivergence(violations, true)
+    assert.deepEqual(blocking, violations)
+    assert.deepEqual(preexisting, [])
+  })
+
+  it('reports a divergence the change did not introduce without failing it', () => {
+    const violations = [
+      { path: CHART_TEMPLATE, kind: 'only-candidate' },
+      { path: CHART_VALUES, kind: 'content' },
+    ]
+    const { blocking, preexisting } = attributeDivergence(violations, false)
+    assert.deepEqual(blocking, [])
+    assert.deepEqual(preexisting, violations)
   })
 })
