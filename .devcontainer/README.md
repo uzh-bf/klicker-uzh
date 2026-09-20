@@ -77,6 +77,12 @@ Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
 `/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
 
+Post-start re-checks the managed `klicker-dev` and `klicker-local-mcp`
+processes shortly after `ensure` returns. When one has already exited, startup
+fails immediately with the owned state line and the last log lines instead of
+waiting out the readiness deadline; the `[dev-runtime] start requested` marker
+shows whether the runtime command was reached at all.
+
 ### Retained PostgreSQL volumes
 
 The Compose-scoped `<compose-project>_pgdata` volume retains PostgreSQL data.
