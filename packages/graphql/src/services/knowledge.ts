@@ -42,6 +42,7 @@ import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import {
   fetchKbSourceInventory,
@@ -451,16 +452,30 @@ async function assertKbQuotaAvailable(
   }
 }
 
-function assertKbIngestionEnabled() {
-  if (process.env.KB_INGESTION_DISABLED === 'true') {
+/**
+ * Admission for new ingestion work. The actor's rollout decides whether an
+ * upload ticket, URL resource, or ingestion attempt may start; an absent,
+ * unregistered, or unusable evaluation refuses one rather than admitting work
+ * the deployment cannot honor. Reads, upload confirmation, deletion, cleanup
+ * and already queued reconciliation stay available, and the general worker
+ * keeps its separate startup gate.
+ */
+async function assertKbIngestionEnabled(ctx: ContextWithUser) {
+  if (!(await isFeatureFlagEnabled(ctx, 'kb-ingestion'))) {
     throw new GraphQLError('KB ingestion is currently disabled', {
       extensions: { code: 'KB_INGESTION_DISABLED' },
     })
   }
 }
 
-function assertKbGraphGenerationEnabled() {
-  if (process.env.KB_GRAPH_DISABLED === 'true') {
+/**
+ * Admission for new graph builds. Opting a KB in and rebuilding both start
+ * work, so both consult the actor's rollout before any cost reservation. A
+ * published graph keeps being served, and an accepted build keeps running,
+ * settling and publishing on the gates it passed.
+ */
+async function assertKbGraphGenerationEnabled(ctx: ContextWithUser) {
+  if (!(await isFeatureFlagEnabled(ctx, 'kb-graph-builds'))) {
     throw new GraphQLError('KB graph generation is currently disabled', {
       extensions: { code: 'KB_GRAPH_DISABLED' },
     })
@@ -1552,7 +1567,7 @@ export async function requestKbFileUpload(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  assertKbIngestionEnabled()
+  await assertKbIngestionEnabled(ctx)
   await getOwnedKbOrThrow(ctx, kbId)
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
   const { accountUrl, containerClient, credential } = getKbBlobContainer(
@@ -1820,7 +1835,7 @@ export async function requestKbFileReplacement(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  assertKbIngestionEnabled()
+  await assertKbIngestionEnabled(ctx)
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
   const { accountUrl, containerClient, credential } = getKbBlobContainer(
     ctx.user.sub
@@ -1886,7 +1901,7 @@ export async function confirmKbFileReplacement(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  assertKbIngestionEnabled()
+  await assertKbIngestionEnabled(ctx)
   const validated = validateKbFile({
     fileName: originalFilename,
     contentType: mimeType,
@@ -2082,7 +2097,7 @@ export async function createKbUrlResource(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  assertKbIngestionEnabled()
+  await assertKbIngestionEnabled(ctx)
   await getOwnedKbOrThrow(ctx, kbId)
 
   let sourceUrl: string
@@ -2376,7 +2391,7 @@ export async function ingestKbResource(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  assertKbIngestionEnabled()
+  await assertKbIngestionEnabled(ctx)
   const resource = await getOwnedKbResourceOrThrow(ctx, id)
   if (
     resource.status !== DB.KBResourceStatus.ADDED &&
@@ -2456,7 +2471,7 @@ export async function ingestAllKbResources(
   ctx: ContextWithUser
 ): Promise<KBIngestAllResult> {
   await assertManageAiEnabled(ctx)
-  assertKbIngestionEnabled()
+  await assertKbIngestionEnabled(ctx)
   await getOwnedKbOrThrow(ctx, kbId)
 
   const { queued, alreadyCurrentCount, alreadyInProgressCount } =
@@ -2751,9 +2766,27 @@ function resolvePersistedKBGraphDomainCategories(
 }
 
 /**
+ * Explicit domain selection and the graph build focus share one admission
+ * decision: the deployment must declare the catalog revision its provider
+ * pipeline supports, and the actor's rollout must admit the request. The
+ * rollout narrows that contract and never widens it, so no flag can offer a
+ * selection the shipped catalog does not cover.
+ */
+async function isKBGraphDomainSelectionAdmitted(
+  ctx: ContextWithUser
+): Promise<boolean> {
+  const catalog = getDefaultKBGraphDomainCatalog()
+  return (
+    isKBGraphDomainCapabilityEnabled(catalog.revision, process.env) &&
+    (await isFeatureFlagEnabled(ctx, 'kb-graph-domain-selection'))
+  )
+}
+
+/**
  * Domain-selection capability handshake for the lecturer panel. Category prose
  * is only advertised while the configured catalog revision matches the shipped
- * export, so the client never offers a selection this deployment would reject.
+ * export and the requesting actor's rollout admits explicit selection, so the
+ * client never offers a selection this deployment or this actor would reject.
  */
 export async function getKbKnowledgeGraphDomainConfig(
   { kbId }: { kbId: string },
@@ -2762,10 +2795,7 @@ export async function getKbKnowledgeGraphDomainConfig(
   await assertManageAiEnabled(ctx)
   await getOwnedKbOrThrow(ctx, kbId)
   const catalog = getDefaultKBGraphDomainCatalog()
-  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
-    catalog.revision,
-    process.env
-  )
+  const capabilityEnabled = await isKBGraphDomainSelectionAdmitted(ctx)
   return {
     capabilityEnabled,
     catalogRevision: catalog.revision,
@@ -2806,15 +2836,12 @@ function kbGraphDomainRejectionMessage(
  * or the capability gate does not support before any cost reservation is made.
  * An entirely omitted request is the legacy path and resolves to null.
  */
-function resolveRequestedKBGraphDomainSelection(
+async function resolveRequestedKBGraphDomainSelection(
   request: KBGraphDomainSelectionRequest,
-  env: NodeJS.ProcessEnv = process.env
-): KBGraphDomainSelection | null {
+  ctx: ContextWithUser
+): Promise<KBGraphDomainSelection | null> {
   const catalog = getDefaultKBGraphDomainCatalog()
-  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
-    catalog.revision,
-    env
-  )
+  const capabilityEnabled = await isKBGraphDomainSelectionAdmitted(ctx)
   const resolution = resolveKBGraphDomainSelection(request, {
     catalog,
     capabilityEnabled,
@@ -2830,14 +2857,14 @@ function resolveRequestedKBGraphDomainSelection(
 /**
  * Normalizes a lecturer-supplied build focus. The focus is prompt guidance, so
  * a blank value is the same as no focus. It rides the same provider contract as
- * the explicit domain selection, so a deployment whose capability gate is
- * closed refuses one it cannot honor instead of recording guidance that is
+ * the explicit domain selection, so a deployment or actor this rollout does not
+ * admit refuses one it cannot honor instead of recording guidance that is
  * dropped later.
  */
-function resolveRequestedKBGraphFocusTopic(
+async function resolveRequestedKBGraphFocusTopic(
   focusTopic: string | null | undefined,
-  env: NodeJS.ProcessEnv = process.env
-): string | null {
+  ctx: ContextWithUser
+): Promise<string | null> {
   const normalized = focusTopic?.trim()
   if (!normalized) {
     return null
@@ -2848,8 +2875,7 @@ function resolveRequestedKBGraphFocusTopic(
       { extensions: { code: 'KB_GRAPH_FOCUS_TOPIC_TOO_LONG' } }
     )
   }
-  const catalog = getDefaultKBGraphDomainCatalog()
-  if (!isKBGraphDomainCapabilityEnabled(catalog.revision, env)) {
+  if (!(await isKBGraphDomainSelectionAdmitted(ctx))) {
     throw new GraphQLError(
       'This deployment does not support a graph build focus.',
       { extensions: { code: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED } }
@@ -3093,7 +3119,7 @@ export async function setKbKnowledgeGraphEnabled(
 ): Promise<KBKnowledgeGraphConfig> {
   await assertManageAiEnabled(ctx)
   if (enabled) {
-    assertKbGraphGenerationEnabled()
+    await assertKbGraphGenerationEnabled(ctx)
     requireKBGraphCostConfiguration()
   }
 
@@ -3171,15 +3197,21 @@ export async function rebuildKbKnowledgeGraph(
 ): Promise<KBKnowledgeGraphConfig> {
   const qualityTier = requestedQualityTier ?? DB.KBGraphQualityTier.STANDARD
   await assertManageAiEnabled(ctx)
-  assertKbGraphGenerationEnabled()
+  await assertKbGraphGenerationEnabled(ctx)
   // Reject a partial, unknown, or unsupported explicit selection before any
   // cost reservation exists, so a bad request cannot leave reserved money.
-  const requestedDomain = resolveRequestedKBGraphDomainSelection({
-    domainPolicyId,
-    domainPolicyVersion,
-    language: domainPolicyLanguage,
-  })
-  const requestedFocusTopic = resolveRequestedKBGraphFocusTopic(focusTopic)
+  const requestedDomain = await resolveRequestedKBGraphDomainSelection(
+    {
+      domainPolicyId,
+      domainPolicyVersion,
+      language: domainPolicyLanguage,
+    },
+    ctx
+  )
+  const requestedFocusTopic = await resolveRequestedKBGraphFocusTopic(
+    focusTopic,
+    ctx
+  )
   const result = await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     const kb = await prisma.kB.findUniqueOrThrow({

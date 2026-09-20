@@ -13,6 +13,7 @@ import { GraphQLError } from 'graphql'
 import { DateTimeResolver, JSONResolver } from 'graphql-scalars'
 import type { Context, ContextWithUser } from './lib/context.js'
 import { isFeatureFlagEnabled } from './lib/featureFlags.js'
+import { participantAccountGatePluginName } from './lib/participantAccountGate.js'
 import './types/app.js'
 
 const builder = new SchemaBuilder<{
@@ -51,7 +52,15 @@ const builder = new SchemaBuilder<{
   }
 }>({
   defaultFieldNullability: false,
-  plugins: [ScopeAuthPlugin, PrismaPlugin, ZodPlugin, DirectivePlugin],
+  // The participant account gate registers after scope-auth so field
+  // authorization runs before the data-use completion check.
+  plugins: [
+    ScopeAuthPlugin,
+    participantAccountGatePluginName,
+    PrismaPlugin,
+    ZodPlugin,
+    DirectivePlugin,
+  ],
   prisma: {
     client: prisma,
     filterConnectionTotalCount: true,

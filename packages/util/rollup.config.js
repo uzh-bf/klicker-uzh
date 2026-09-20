@@ -5,12 +5,16 @@ import { defineConfig } from 'rollup'
 const config = defineConfig([
   {
     // Main build configuration
+    // participantAccountDataUse is a runtime-dependency-free module that
+    // browser bundles import directly; keep it as its own entry chunk so the
+    // server barrel (with ioredis and other Node-only code) stays out.
     input: [
       'src/index.ts',
       'src/auth.ts',
       'src/citations.ts',
       'src/clientAuth.ts',
       'src/kbScope.ts',
+      'src/participantAccountDataUse.ts',
       'src/publicUrl.ts',
       'src/responseExampleDigest.ts',
       'src/responseExampleEligibility.ts',

@@ -117,3 +117,40 @@ browser-only verification must identify the precise interaction it proves.
   split host/container checks and full container build.
 - Corpus acceptance, environment rollout and live cross-account retrieval remain
   separate pending steps. Source tests do not establish live availability.
+
+### Integration after draft publication
+
+The first 20-minute GitHub watch ended with replacement runs still queued or
+running. Earlier jobs were cancelled during the description-triggered rerun;
+their cancelled conclusions are not assertion failures. Dependency Review,
+Gitleaks, CodeQL and the lecturer-MCP suite passed; broader hosted proof remains
+unresolved. The watcher exited and no local monitor remains for that attempt.
+
+The final PR check found a new upstream conflict after `v3-ai` advanced to
+`a4960ba1bd`. Integration is needed to restore readiness. The only textual
+conflict is the util build input list: preserve both the shared-scope module
+and upstream's participant-data-use module. The KB service and tests merged
+automatically with upstream's feature-flag admission changes and require renewed
+verification. Both util entries are preserved. The integrated source passed all
+191 focused tests and all 42 type-check/dependency-build tasks. Upstream introduced
+a participant-data-use subpath import without its package export; the integration
+adds that export. The schema generator also removes an upstream trailing newline;
+its canonical output is retained without any schema semantic change.
+
+The full staged-file formatting hook stopped on unchanged upstream
+`docs/auth-model.md`. That file is identical to the target. All files in the
+actual PR delta pass their configured formatters. Remaining repository checks
+and all 27 production build tasks passed. This integration merges upstream into the
+task branch; it does not merge or deploy the source package.
+
+The local pre-tool data-hygiene gate initially rejected the integration commit
+because inherited target files matched credential heuristics. All ten flagged
+files are byte-identical to `origin/v3-ai`; staged Gitleaks reported no leaks.
+The user explicitly approved `AGENTS_SKIP_DATA_HYGIENE=1` for this integration
+commit. The approved sequence is commit, ordinary task-branch push and exact-head
+CI verification. A fresh fetch confirmed the integrated target remains
+`a4960ba1bd`. Merge into the target and deployment remain separately gated.
+
+After the final build and formatting check, the exact task runtime was stopped.
+Fresh Devsy status reported `Stopped`, the provider source path matched this
+checkout, and devrouter listed zero exact routes. Runtime data was retained.

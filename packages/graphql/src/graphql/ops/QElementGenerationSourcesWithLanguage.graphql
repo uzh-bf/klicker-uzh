@@ -1,0 +1,17 @@
+query ElementGenerationSourcesWithLanguage {
+  elementGenerationSources {
+    language
+    graphBuildId
+    kbId
+    kbName
+    indexedAt
+    isStale
+    sourceCount
+    sources {
+      resourceId
+      title
+      sourceFile
+      pageCount
+    }
+  }
+}
