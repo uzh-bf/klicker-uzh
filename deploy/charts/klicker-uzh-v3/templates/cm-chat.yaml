@@ -8,17 +8,7 @@
 {{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
 {{- end -}}
 {{- $langfuseRelease := .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion -}}
-{{- $scopedMcp := .Values.docQuery.scopedMcp | default dict -}}
-{{- $scopedMcpServerId := $scopedMcp.serverId | default "" -}}
-{{- $scopedMcpLegacyUrl := $scopedMcp.legacyUrl | default "" -}}
-{{- $scopedMcpUrl := $scopedMcp.url | default "" -}}
-{{- $scopedMcpCount := 0 -}}
-{{- range $value := list $scopedMcpServerId $scopedMcpLegacyUrl $scopedMcpUrl -}}
-{{- if $value -}}{{- $scopedMcpCount = add $scopedMcpCount 1 -}}{{- end -}}
-{{- end -}}
-{{- if and (gt $scopedMcpCount 0) (lt $scopedMcpCount 3) -}}
-{{- fail "docQuery.scopedMcp requires serverId, legacyUrl and url together" -}}
-{{- end -}}
+{{- $scopedMcpEnv := include "chart.docQueryScopedMcpEnv" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -44,10 +34,8 @@ data:
   DOC_QUERY_SCOPE_ISSUER: {{ .Values.chat.docQueryScope.issuer | quote }}
   DOC_QUERY_SCOPE_AUDIENCE: {{ .Values.chat.docQueryScope.audience | quote }}
   DOC_QUERY_SCOPE_KID: {{ .Values.chat.docQueryScope.keyId | quote }}
-  {{- if eq $scopedMcpCount 3 }}
-  DOC_QUERY_SCOPED_MCP_SERVER_ID: {{ $scopedMcpServerId | quote }}
-  DOC_QUERY_SCOPED_MCP_LEGACY_URL: {{ $scopedMcpLegacyUrl | quote }}
-  DOC_QUERY_SCOPED_MCP_URL: {{ $scopedMcpUrl | quote }}
+  {{- if $scopedMcpEnv }}
+  {{- $scopedMcpEnv | nindent 2 }}
   {{- end }}
   {{- if .Values.chat.lifecycleWritersEnabled }}
   CHAT_TURN_LIFECYCLE_WRITES_ENABLED: "true"
