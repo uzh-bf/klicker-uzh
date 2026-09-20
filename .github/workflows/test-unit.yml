@@ -136,9 +136,22 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/frontend-pwa test:run
 
-      - name: Test auth audience and recovery contracts
+      - name: Test auth unit and handler integration suites
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: pnpm --filter @klicker-uzh/auth test:run
+        run: pnpm --filter @klicker-uzh/auth test:run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+
+      - name: Build auth for production HTTP integration tests
+        id: build_auth
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm exec turbo run build --filter=@klicker-uzh/auth... --concurrency=4
+        env:
+          APP_SECRET: synthetic-auth-built-test-secret
+          APP_ORIGIN_AUTH: https://auth.example.test
+          NEXTAUTH_URL: https://auth.example.test
+
+      - name: Test built auth under HTTP and HTTPS deployment policies
+        if: ${{ !cancelled() && steps.build_auth.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/auth test:built
 
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

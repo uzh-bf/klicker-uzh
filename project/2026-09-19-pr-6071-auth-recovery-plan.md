@@ -45,6 +45,19 @@ the approved design; no new product or data-model decision is required.
 5. Close the confirmed session-lookup race in `useStudentSession.ts` and extend
    `playwright/tests/A-login.spec.ts` with a synthetic out-of-order response
    journey. Only the latest mounted lookup may update the participant UI.
+6. User-approved test restructuring: replace the script-based regression suite
+   with discoverable Vitest unit and integration tests in `apps/auth/test/`,
+   standard module mocks, and a small HTTP/OIDC fixture. Use one
+   `apps/auth/vitest.config.ts` with unit, integration, and built-app projects.
+   The built-app tests own server startup/cleanup and cover both transport
+   policies. Run all three projects through the existing unit CI workflow,
+   including the auth build required by the built-app project. Keep browser
+   journeys in the existing Playwright suite. Migrate the existing guarded
+   adapter/identity checks only if needed by this change; no database or
+   production behavior changes are authorized. The executor owns script-to-test
+   migration, fixtures, Vitest config and package scripts; the main session owns
+   built-app tests, CI, lockfile, testing guide and verification. Acceptance is
+   preserved regression coverage, passing discovered suites and exact-head CI.
 
 ### Verification portfolio
 
@@ -56,8 +69,8 @@ the approved design; no new product or data-model decision is required.
 | Lecturer choice exposed before hydration | Server HTML and browser with scripts blocked; EN/DE and compact viewport |
 
 Run the auth regression suite, typecheck, lint, build and repository formatting.
-Add `apps/auth/scripts/testAuthPages.mts` as a small HTTP contract suite against
-the built app for transport, configured destinations, and initial recovery HTML.
+Keep built-app integration coverage in `apps/auth/test/auth-pages.built.test.ts`
+for transport, configured destinations, and initial recovery HTML.
 Include the existing auth handler suite in the unit CI workflow; it currently
 does not run there, leaving these regressions unprotected on future changes.
 Reuse prior unaffected checks. Record genuine infrastructure blockers rather
@@ -68,6 +81,16 @@ the authenticated GitHub CLI.
 
 ## Progress
 
+- Test restructuring is implemented: 31 Vitest unit tests, 21 real-handler
+  integration tests and 14 automatically managed built-app checks pass locally.
+  Unit/handler coverage emits LCOV for CI. The custom Node module loader is
+  removed; tests now participate in TypeScript checking. CI builds auth before
+  running the built project. Coverage output is excluded from auth lint.
+  Frozen dependency installation and focused formatting pass; whole-repository
+  checking still fails only in the unrelated untracked chat test described below.
+  The primary container startup refused a host-port conflict with the shared
+  router before creating a runtime; service-free verification used the host
+  toolchain. Hosted CI remains the clean-environment gate.
 - Active: verification and review. All four fixes are implemented, including
   rejecting duplicated provider-error values before NextAuth logging.
 - The user approved the data-hygiene hook exception for the pre-existing

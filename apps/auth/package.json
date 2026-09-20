@@ -45,7 +45,8 @@
     "tailwindcss": "~4.3.3",
     "tailwindcss-animate": "~1.0.7",
     "tw-animate-css": "~1.3.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "3.2.4"
   },
   "scripts": {
     "build": "next build --turbopack",
@@ -60,9 +61,13 @@
     "lint": "eslint .",
     "start": "next start --port 3010",
     "start:test": "cross-env NODE_ENV=test pnpm start",
-    "test:pages": "node --experimental-strip-types scripts/testAuthPages.mts",
+    "test": "vitest run --project unit --project integration",
+    "test:built": "vitest run --project built",
+    "test:integration": "vitest run --project integration",
     "test:prisma-adapter": "pnpm --filter @klicker-uzh/util build && node scripts/testPrismaAdapter.mjs && node --experimental-strip-types scripts/testAssessmentIdentity.mts",
-    "test:run": "node --experimental-strip-types scripts/testRedirect.mts && node --experimental-strip-types scripts/testRedirectTarget.mts && node --experimental-strip-types scripts/testAuthCookies.mts && node --experimental-strip-types scripts/testDispatch.mts && node --experimental-strip-types scripts/testSaltedJwt.mts && node --experimental-strip-types scripts/testAuthCallbackJourney.mts && node --experimental-strip-types scripts/testStudentSession.mts"
+    "test:run": "vitest run --project unit --project integration",
+    "test:unit": "vitest run --project unit",
+    "test:watch": "vitest --project unit --project integration"
   },
   "engines": {
     "node": "=24"

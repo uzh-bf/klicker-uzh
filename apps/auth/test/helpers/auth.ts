@@ -1,172 +1,36 @@
-// Harness for journeys that must run through the real NextAuth handler.
+// Fixtures for the auth route-handler journeys.
 //
-// The audience-dispatch fixes can only be verified against the library itself:
-// next-auth answers OAuth failures with its own returned redirects
+// The audience-dispatch fixes can only be verified against the real next-auth
+// handler: next-auth answers OAuth failures with its own returned redirects
 // (core/routes/callback.js -> ${url}/error -> ${url}/signin) and resolves the
 // destination of a successful callback from the callback-URL cookie before the
 // application redirect callback is consulted. Unit tests of the helpers cannot
 // show whether those two paths still reach the application configuration, so
-// the regression tests in scripts/testAuthCallbackJourney.mts and
-// scripts/testStudentSession.mts import the actual route handler through this
-// harness.
+// the regression journeys in auth-callback-journey.integration.test.ts and
+// student-session.integration.test.ts import the actual route handlers and use
+// the doubles below.
 //
-// It provides three things:
-//   1. module hooks that resolve the app's "@/" alias and replace the Prisma
-//      client and the account-handling helpers with recording stubs, so no
-//      database and no network are involved;
-//   2. a local OpenID Connect provider whose token endpoint can be made to
-//      fail, so callbacks run through the real openid-client exchange;
-//   3. request/response doubles good enough for next-auth's API handler,
-//      including the Set-Cookie handling it performs.
+// A caller mocks exactly two modules with vi.mock: the Prisma client
+// (`@klicker-uzh/prisma`, replaced by the recording double) and the
+// account-handling helpers (`@/lib/helpers`, partially mocked onto the
+// recording stubs while every other helper keeps its implementation). NextAuth
+// itself, the local OpenID Connect provider and the JWT implementation all stay
+// the real library code.
 //
-// The caller must set the environment before the first invocation:
-// APP_ORIGIN_AUTH and APP_SECRET (validated by the handler module), NEXTAUTH_URL,
-// NEXT_PUBLIC_EDUID_ID, EDUID_WELL_KNOWN, EDUID_CLIENT_ID and
+// The caller must set the environment before the handler module is imported:
+// APP_ORIGIN_AUTH and APP_SECRET (validated by the handler module),
+// NEXTAUTH_URL, NEXT_PUBLIC_EDUID_ID, EDUID_WELL_KNOWN, EDUID_CLIENT_ID and
 // EDUID_CLIENT_SECRET (the provider is otherwise absent), plus
 // NEXT_PUBLIC_ASSESSMENT_URL and the AUTH_*_ALLOWED_HOSTS lists for the
 // redirect validation.
 
 import crypto from 'node:crypto'
-import { existsSync } from 'node:fs'
 import http from 'node:http'
-import { registerHooks } from 'node:module'
 import type { AddressInfo } from 'node:net'
-import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { vi } from 'vitest'
 
-const HARNESS_URL = import.meta.url
-const SCRIPTS_DIR = path.dirname(fileURLToPath(HARNESS_URL))
-const SRC_DIR = path.resolve(SCRIPTS_DIR, '..', '..', 'src')
-const HELPERS_URL = pathToFileURL(path.join(SRC_DIR, 'lib', 'helpers.ts')).href
-const AUTH_HANDLER_URL = pathToFileURL(
-  path.join(SRC_DIR, 'pages', 'api', 'auth', '[...nextauth].ts')
-).href
-
-const STUB_SCHEME = 'auth-test-stub'
-
-// The application sources use the bundler's extension-less relative imports,
-// which plain Node does not resolve.
-const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.js', '.mjs']
-const INDEX_FILES = ['index.ts', 'index.tsx', 'index.js']
-
-function resolveSourceModule(basePath: string): string | undefined {
-  for (const extension of SOURCE_EXTENSIONS) {
-    if (existsSync(`${basePath}${extension}`)) return `${basePath}${extension}`
-  }
-  for (const indexFile of INDEX_FILES) {
-    const candidate = path.join(basePath, indexFile)
-    if (existsSync(candidate)) return candidate
-  }
-  return undefined
-}
-
-let hooksInstalled = false
-
-export function installAuthTestModuleHooks(): void {
-  if (hooksInstalled) return
-  hooksInstalled = true
-
-  // Synthesized modules are collected per stub URL, because the interop
-  // wrappers below need the resolved location of the module they wrap.
-  const stubSources = new Map<string, string>()
-  const stubUrl = (id: string) => `${STUB_SCHEME}:${id}`
-
-  const stubs: Record<string, string> = {
-    prisma: [
-      `import { testPrisma } from ${JSON.stringify(HARNESS_URL)}`,
-      'export const prisma = testPrisma',
-      'export default testPrisma',
-    ].join('\n'),
-    // Only the helpers the route handler imports are replaced; every other
-    // helper keeps its implementation. Extend this list when the handler starts
-    // importing more of the module.
-    helpers: [
-      `import { testHelpers } from ${JSON.stringify(HARNESS_URL)}`,
-      `import * as real from ${JSON.stringify(HELPERS_URL)}`,
-      'export const createOrLinkParticipant = (...args) =>',
-      '  testHelpers.createOrLinkParticipant(...args)',
-      'export const createUserAffiliations = (...args) =>',
-      '  testHelpers.createUserAffiliations(...args)',
-      'export const getStudentHosts = () => real.getStudentHosts()',
-      'export const getLecturerHosts = () => real.getLecturerHosts()',
-    ].join('\n'),
-  }
-
-  const stubIds = new Map([
-    ['@klicker-uzh/prisma', 'prisma'],
-    ['@/lib/helpers', 'helpers'],
-  ])
-
-  // next-auth is CommonJS, so its default import resolves to the module object
-  // under plain Node instead of the exported function that bundlers hand to the
-  // application. The wrapper restores that interop for the two default-only
-  // imports of the route handler.
-  const defaultInteropSpecifiers = [
-    'next-auth',
-    'next-auth/providers/credentials',
-  ]
-
-  registerHooks({
-    resolve(specifier, context, nextResolve) {
-      if (defaultInteropSpecifiers.includes(specifier)) {
-        const resolved = nextResolve(specifier, context)
-        const url = stubUrl(
-          `default-${specifier.replace(/[^a-zA-Z0-9]+/g, '-')}`
-        )
-        stubSources.set(
-          url,
-          [
-            `import target from ${JSON.stringify(resolved.url)}`,
-            'const exported = target instanceof Function ? target : target.default',
-            'export default exported',
-          ].join('\n')
-        )
-        return { url, format: 'module', shortCircuit: true }
-      }
-      const stubId = stubIds.get(specifier)
-      if (stubId) {
-        const url = stubUrl(stubId)
-        stubSources.set(url, stubs[stubId]!)
-        return {
-          url,
-          format: 'module',
-          shortCircuit: true,
-        }
-      }
-      const base = specifier.startsWith('@/')
-        ? path.join(SRC_DIR, specifier.slice(2))
-        : specifier.startsWith('.') && context.parentURL?.startsWith('file:')
-          ? path.resolve(
-              path.dirname(fileURLToPath(context.parentURL)),
-              specifier
-            )
-          : undefined
-      if (
-        base &&
-        (specifier.startsWith('@/') ||
-          path.dirname(base).startsWith(SRC_DIR) ||
-          path.dirname(base).startsWith(SCRIPTS_DIR))
-      ) {
-        const resolved = resolveSourceModule(base)
-        if (resolved) {
-          return { url: pathToFileURL(resolved).href, shortCircuit: true }
-        }
-      }
-      return nextResolve(specifier, context)
-    },
-    load(url, context, nextLoad) {
-      const source = stubSources.get(url)
-      if (source !== undefined) {
-        return {
-          format: 'module',
-          source,
-          shortCircuit: true,
-        }
-      }
-      return nextLoad(url, context)
-    },
-  })
-}
+// --- fail-closed database and account-handling doubles ----------------------
 
 export interface RecordedCall {
   path: string
@@ -177,18 +41,22 @@ export const prismaCalls: RecordedCall[] = []
 export const helperCalls: RecordedCall[] = []
 export const prismaOverrides: Record<string, (...args: never[]) => unknown> = {}
 
+function recordDatabaseCall(path: string, args: unknown[]): unknown {
+  prismaCalls.push({ path, args })
+  const override = prismaOverrides[path]
+  if (override) return override(...(args as never[]))
+  // Reaching the database from these journeys is always a defect: account
+  // handling and session lookups are expected to run against the double.
+  throw new Error(`auth test harness: unexpected database call "${path}"`)
+}
+
+// The recording double is a plain proxy rather than a tree of vi.fn() mocks:
+// every unexpected property access has to stay callable and fail closed, and the
+// journeys assert on the recorded call log below rather than on mock state.
 function createPrismaRecorder(segments: string[]): unknown {
-  const call = (...args: unknown[]) => {
-    const callPath = segments.join('.')
-    prismaCalls.push({ path: callPath, args })
-    const override = prismaOverrides[callPath]
-    if (override) return override(...(args as never[]))
-    // Reaching the database from these journeys is always a defect: account
-    // handling and session lookups are expected to run against the stubs.
-    throw new Error(`auth test harness: unexpected database call "${callPath}"`)
-  }
-  return new Proxy(call, {
-    apply: (_target, _thisArg, args: unknown[]) => call(...args),
+  const recorder = (...args: unknown[]) =>
+    recordDatabaseCall(segments.join('.'), args)
+  return new Proxy(recorder, {
     get: (_target, property) => {
       // "then" must stay undefined so the recorder is never awaited as a
       // thenable.
@@ -200,25 +68,41 @@ function createPrismaRecorder(segments: string[]): unknown {
 
 export const testPrisma = createPrismaRecorder([])
 
-export const testHelpers = {
-  createOrLinkParticipant: (...args: unknown[]) => {
-    helperCalls.push({ path: 'createOrLinkParticipant', args })
-    throw new Error(
-      'auth test harness: createOrLinkParticipant is not configured for this test'
-    )
-  },
-  createUserAffiliations: (...args: unknown[]) => {
-    helperCalls.push({ path: 'createUserAffiliations', args })
-    throw new Error(
-      'auth test harness: lecturer account handling must not run in this test'
-    )
-  },
+function unconfiguredCreateOrLinkParticipant(...args: unknown[]): never {
+  helperCalls.push({ path: 'createOrLinkParticipant', args })
+  throw new Error(
+    'auth test harness: createOrLinkParticipant is not configured for this test'
+  )
+}
+
+function unconfiguredCreateUserAffiliations(...args: unknown[]): never {
+  helperCalls.push({ path: 'createUserAffiliations', args })
+  throw new Error(
+    'auth test harness: lecturer account handling must not run in this test'
+  )
+}
+
+// The stubs are typed by their call signature rather than as mocks, because a
+// journey replaces one with a plain function returning the value that test
+// needs.
+export interface AuthTestHelperStubs {
+  createOrLinkParticipant: (...args: unknown[]) => unknown
+  createUserAffiliations: (...args: unknown[]) => unknown
+}
+
+export const testHelpers: AuthTestHelperStubs = {
+  createOrLinkParticipant: vi.fn(unconfiguredCreateOrLinkParticipant),
+  createUserAffiliations: vi.fn(unconfiguredCreateUserAffiliations),
 }
 
 export function resetAuthTestState(): void {
   prismaCalls.length = 0
   helperCalls.length = 0
   for (const key of Object.keys(prismaOverrides)) delete prismaOverrides[key]
+  testHelpers.createOrLinkParticipant = vi.fn(
+    unconfiguredCreateOrLinkParticipant
+  )
+  testHelpers.createUserAffiliations = vi.fn(unconfiguredCreateUserAffiliations)
 }
 
 // --- request and response doubles ------------------------------------------
@@ -240,6 +124,21 @@ export interface AuthTestResult {
   sessionCookies: Record<string, string>
   telemetry: Record<string, unknown>[]
   consoleErrors: string[]
+}
+
+export type AuthHandlerUnderTest = (
+  req: NextApiRequest,
+  res: NextApiResponse
+) => unknown
+
+function createRequestDouble(request: AuthTestRequest): NextApiRequest {
+  return {
+    method: request.method ?? 'GET',
+    query: request.query ?? {},
+    cookies: request.cookies ?? {},
+    headers: request.headers ?? {},
+    body: request.body,
+  } as unknown as NextApiRequest
 }
 
 function createResponseDouble() {
@@ -289,7 +188,11 @@ function createResponseDouble() {
     },
   }
 
-  return { res, state, headers }
+  return {
+    res: res as unknown as NextApiResponse,
+    state,
+    headers,
+  }
 }
 
 function parseCookieHeaders(
@@ -310,65 +213,59 @@ function parseCookieHeaders(
   return cookies
 }
 
-let cachedHandler:
-  | ((req: unknown, res: unknown) => Promise<unknown>)
-  | undefined
+let cachedHandler: AuthHandlerUnderTest | undefined
 
-async function loadAuthHandler() {
+// Imports the catch-all NextAuth route handler. The import stays dynamic so a
+// caller can complete its environment and provider setup first.
+export async function loadAuthHandler(): Promise<AuthHandlerUnderTest> {
   if (!cachedHandler) {
-    const handlerModule = await import(AUTH_HANDLER_URL)
-    cachedHandler = handlerModule.default
+    const handlerModule = await import('../../src/pages/api/auth/[...nextauth]')
+    cachedHandler = handlerModule.default as unknown as AuthHandlerUnderTest
   }
-  return cachedHandler!
+  return cachedHandler
 }
 
 export async function invokeApiHandler(
-  handler: (req: unknown, res: unknown) => Promise<unknown>,
+  handler: AuthHandlerUnderTest,
   request: AuthTestRequest
 ): Promise<AuthTestResult> {
-  const req = {
-    method: request.method ?? 'GET',
-    query: request.query ?? {},
-    cookies: request.cookies ?? {},
-    headers: request.headers ?? {},
-    body: request.body,
-  }
+  const req = createRequestDouble(request)
   const { res, state, headers } = createResponseDouble()
 
   const telemetry: Record<string, unknown>[] = []
   const consoleErrors: string[] = []
-  const originalLog = console.log
-  const originalError = console.error
-  const originalWarn = console.warn
+  const captureError = (...args: unknown[]) => {
+    consoleErrors.push(args.map(String).join(' '))
+  }
   // The route handler reports one JSON telemetry line per decision through
   // console.log, and next-auth logs its own failures through console.error.
   // Both are captured instead of printed so a failing journey stays readable.
-  console.log = (...args: unknown[]) => {
-    const [first] = args
-    if (typeof first === 'string' && first.startsWith('{')) {
-      try {
-        telemetry.push(JSON.parse(first) as Record<string, unknown>)
-        return
-      } catch {
-        // Not a telemetry line; keep the message with the captured errors.
+  const logSpy = vi
+    .spyOn(console, 'log')
+    .mockImplementation((...args: unknown[]) => {
+      const [first] = args
+      if (typeof first === 'string' && first.startsWith('{')) {
+        try {
+          telemetry.push(JSON.parse(first) as Record<string, unknown>)
+          return
+        } catch {
+          // Not a telemetry line; keep the message with the captured errors.
+        }
       }
-    }
-    consoleErrors.push(args.map(String).join(' '))
-  }
-  console.error = (...args: unknown[]) => {
-    consoleErrors.push(args.map(String).join(' '))
-  }
-  console.warn = console.error
+      captureError(...args)
+    })
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(captureError)
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(captureError)
 
   try {
     await handler(req, res)
   } finally {
-    console.log = originalLog
-    console.error = originalError
-    console.warn = originalWarn
+    logSpy.mockRestore()
+    errorSpy.mockRestore()
+    warnSpy.mockRestore()
   }
 
-  const locationHeader = headers['location']
+  const locationHeader = headers.location
   return {
     statusCode: state.statusCode,
     location: Array.isArray(locationHeader)
@@ -386,7 +283,6 @@ export async function invokeApiHandler(
 export async function invokeAuthHandler(
   request: AuthTestRequest
 ): Promise<AuthTestResult> {
-  installAuthTestModuleHooks()
   const handler = await loadAuthHandler()
   return invokeApiHandler(handler, request)
 }
