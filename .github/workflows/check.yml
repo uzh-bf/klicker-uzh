@@ -119,20 +119,13 @@ jobs:
             .github/scripts/image-scan-receipt.test.cjs \
             .github/scripts/deploy-parity.test.cjs
 
-      # Production renders deploy/ from v3 while the release images are tagged
-      # from v3-ai, so the two revisions must not drift apart. The gate names
-      # the divergent paths; see docs/ci-and-deployment.md.
-      - name: Check deploy parity across v3 and v3-ai
-        if: >-
-          (github.event_name == 'push' && github.ref_name == 'v3') ||
-          (github.event_name == 'pull_request' && github.base_ref == 'v3')
-        run: node ./.github/scripts/deploy-parity.cjs --other v3-ai
-
       # The chart is what production consumes from this branch, and nothing
       # else renders it: a scheduling policy reaches a pod spec only when a
       # template forwards the value, so the rendered manifests are the only
       # proof. The renderer is pinned because the runner image's preinstalled
-      # Helm version changes without notice.
+      # Helm version changes without notice. The step precedes the deploy
+      # parity gate, which reports a cross-branch ordering state and must not
+      # hide the chart result.
       - name: Set up Helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
         with:
@@ -142,6 +135,15 @@ jobs:
         run: |
           node --test deploy/scripts/verify-topology-spread.test.mjs
           node deploy/scripts/verify-topology-spread.mjs
+
+      # Production renders deploy/ from v3 while the release images are tagged
+      # from v3-ai, so the two revisions must not drift apart. The gate names
+      # the divergent paths; see docs/ci-and-deployment.md.
+      - name: Check deploy parity across v3 and v3-ai
+        if: >-
+          (github.event_name == 'push' && github.ref_name == 'v3') ||
+          (github.event_name == 'pull_request' && github.base_ref == 'v3')
+        run: node ./.github/scripts/deploy-parity.cjs --other v3-ai
 
       - name: Check Playwright CI contracts
         run: |
