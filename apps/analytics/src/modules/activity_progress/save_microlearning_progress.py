@@ -1,3 +1,6 @@
+from ..analytics_eligibility import AnalyticsEligibilityContext, publish_analytics
+
+
 def save_microlearning_progress(
     db,
     course_participants,
@@ -5,6 +8,7 @@ def save_microlearning_progress(
     completed_count,
     course_id,
     ml_id,
+    eligibility: AnalyticsEligibilityContext | None = None,
 ):
     values = {
         "totalCourseParticipants": course_participants,
@@ -15,7 +19,10 @@ def save_microlearning_progress(
     creation_values["course"] = {"connect": {"id": course_id}}
     creation_values["microLearning"] = {"connect": {"id": ml_id}}
 
-    db.activityprogress.upsert(
-        where={"microLearningId": ml_id},
-        data={"create": creation_values, "update": values},
-    )
+    def write(transaction):
+        transaction.activityprogress.upsert(
+            where={"microLearningId": ml_id},
+            data={"create": creation_values, "update": values},
+        )
+
+    publish_analytics(db, eligibility, (course_id,), write)

@@ -1,0 +1,5 @@
+mutation SetLearningAnalyticsConsent($consent: Boolean!) {
+  setLearningAnalyticsConsent(consent: $consent) {
+    ...ParticipantDataUseData
+  }
+}

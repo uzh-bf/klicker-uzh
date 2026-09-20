@@ -391,7 +391,29 @@ export function prepareHatchetTasks({
     },
   })
 
+  const participantAnalyticsWithdrawals = hatchet.task({
+    name: 'participant-analytics-withdrawals',
+    retries: 3,
+    backoff: { factor: 60, maxSeconds: 120 },
+    executionTimeout: '30m',
+    scheduleTimeout: '60m',
+    concurrency: {
+      expression: "'participant-analytics-withdrawals'",
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    },
+    onCrons: ['*/5 * * * *'],
+    fn: async (_input, executionContext) => ({
+      success: await handlers.handleParticipantAnalyticsWithdrawals(
+        {},
+        globalContext,
+        executionContext
+      ),
+    }),
+  })
+
   const tasks = {
+    participantAnalyticsWithdrawals,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

@@ -34,7 +34,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     const embedded = parseEmbedParam(ctx.query.embed)
     const handoffParameters = buildChatbotRedirectParams(ctx.query, embedded)
 
-    const { participantToken } = await getParticipantToken({
+    const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
       courseId,
       ctx,
@@ -79,6 +79,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     if (!ensureSuccess) {
       return {
         props: {
+          participantToken,
+          cookiesAvailable,
           participationError: true,
           courseLink: coursePath,
           messages: (
