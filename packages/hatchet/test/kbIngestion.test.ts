@@ -951,6 +951,7 @@ describe('KB ingestion reconciliation', () => {
           .fn()
           .mockResolvedValue(operation({ status: externalStatus })),
       }),
+      now: () => NOW,
     })
 
     expect(prisma.kBResource.updateMany).toHaveBeenCalledWith({
@@ -1236,5 +1237,99 @@ describe('KB ingestion reconciliation', () => {
       expect.objectContaining({ take: 15 })
     )
     expect(getOperation).toHaveBeenCalledTimes(32)
+  })
+
+  it('fails an operation that stays non-terminal past the ingestion bound', async () => {
+    const prisma = monitorPrisma([activeResource])
+    const logger = { info: vi.fn() }
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client(),
+      env: { KB_INGESTION_TIMEOUT_SECONDS: '300' },
+      now: () => NOW,
+      logger,
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: RESOURCE_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        contentSha256: CONTENT_SHA256,
+        externalOperationId: OPERATION_ID,
+        ingestionOperation: KBIngestionOperation.UPSERT,
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBResourceStatus.FAILED,
+        statusMessage: expect.any(String),
+        errorCode: 'KB_INGESTION_TIMEOUT',
+      },
+    })
+    expect(prisma.kBIngestionRun.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: ATTEMPT_ID,
+        resourceId: RESOURCE_ID,
+        operation: KBIngestionOperation.UPSERT,
+        resourceVersion: 3,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.FAILED,
+        statusMessage: expect.any(String),
+        errorCode: 'KB_INGESTION_TIMEOUT',
+        finishedAt: NOW,
+      },
+    })
+    expect(logger.info).toHaveBeenCalledWith(
+      'KB ingestion operation timed out',
+      {
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        ingestionAttemptId: ATTEMPT_ID,
+      }
+    )
+  })
+
+  it('keeps a succeeded serving cutover outside the ingestion bound', async () => {
+    const prisma = monitorPrisma([activeResource])
+    const logger = { info: vi.fn() }
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({
+        getOperation: vi.fn().mockResolvedValue(
+          operation({
+            status: 'succeeded',
+            observedSha256: CONTENT_SHA256,
+            serving: {
+              activeResourceVersion: 2,
+              activeSha256: 'a'.repeat(64),
+            },
+          })
+        ),
+      }),
+      env: { KB_INGESTION_TIMEOUT_SECONDS: '300' },
+      now: () => NOW,
+      logger,
+    })
+
+    expect(prisma.kBResource.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: KBResourceStatus.PROCESSING,
+          errorCode: null,
+        }),
+      })
+    )
+    expect(logger.info).not.toHaveBeenCalledWith(
+      'KB ingestion operation timed out',
+      expect.anything()
+    )
   })
 })

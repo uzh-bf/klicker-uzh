@@ -17,6 +17,10 @@ import {
 const KB_INGESTION_PROJECT_ID = 'klicker-course-materials'
 const KB_INGESTION_PRODUCER = 'klicker'
 const KB_INGESTION_REQUEST_TIMEOUT_MS = 10_000
+// The ingestion service reclaims and retries an abandoned upsert on its own,
+// so this bound only has to catch an operation the provider never reports as
+// terminal at all. It matches the external graph-build bound.
+const DEFAULT_KB_INGESTION_TIMEOUT_SECONDS = 6 * 60 * 60
 const KB_SOURCE_FETCH_TIMEOUT_MS = 30_000
 const MAX_KB_SOURCE_BYTES = 25 * 1024 * 1024
 const MAX_KB_SOURCE_REDIRECTS = 3
@@ -101,6 +105,24 @@ export function getKBIngestionProjectId(
   env: NodeJS.ProcessEnv = process.env
 ): string {
   return env.KB_INGESTION_PROJECT_ID?.trim() || KB_INGESTION_PROJECT_ID
+}
+
+export function getKBIngestionTimeoutSeconds(
+  env: NodeJS.ProcessEnv = process.env
+): number {
+  const configuredValue = env.KB_INGESTION_TIMEOUT_SECONDS
+  if (configuredValue === undefined) {
+    return DEFAULT_KB_INGESTION_TIMEOUT_SECONDS
+  }
+  if (!/^[1-9]\d*$/.test(configuredValue)) {
+    throw new Error('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
+  }
+
+  const timeoutSeconds = Number(configuredValue)
+  if (!Number.isSafeInteger(timeoutSeconds)) {
+    throw new Error('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
+  }
+  return timeoutSeconds
 }
 
 type KBIngestionFetch = (
