@@ -73,6 +73,7 @@ environment.
 | Validate the scheduling settings, not only the constraint count | The verifier requires exactly one zone and one hostname constraint per expected workload with `maxSkew: 1`, `whenUnsatisfiable: ScheduleAnyway`, and a selector matching the pod label, and replaces the substring search with a structural walk. |
 | Make the render check an automated deployment check | The required `check` workflow lints and renders defaults, staging, and production and then runs the verifier. `deploy/scripts/verify-topology-spread.test.mjs` proves that a wrong selector, a missing zone constraint, a hard policy, and an unlisted workload all fail. |
 | Carry the fix forward so a later promotion preserves it | A `v3-ai` branch carries the identical `deploy/` revision. The deploy-parity gate requires that revision to land before this PR can be green. |
+| The acceptance test is self-referential and nothing pins the contract's membership | Accepted and fixed. `evaluateValuesContract` compares the contract's values paths with the production values in both directions, so deleting a workload from the contract fails the check. Four cases cover the accepted values, a contract that drops a workload the values still define, a values entry that no contract entry claims, and a contract entry the values no longer define. |
 
 ## Execution slices
 
@@ -217,5 +218,8 @@ Check:
 - [x] Update the deployment wiki and the verification skill.
 - [x] Carry the `deploy/` revision to `v3-ai` and open its draft PR (#6180,
       still open; it must land before the parity gate can pass on this branch).
-- [ ] Run fresh checks and the hosted final review on the integrated head.
-- [ ] Refresh the PR description for the final scope.
+- [x] Refresh the PR description for the final scope.
+- [x] Run the fresh checks on the final head: the verifier with the production
+      values anchor, the negative cases, `helm lint`, three renders, and parity.
+- [ ] Request the hosted final review for this head and disposition its
+      findings.

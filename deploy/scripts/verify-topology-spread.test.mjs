@@ -8,6 +8,7 @@ import { describe, it } from 'node:test'
 
 import {
   evaluateSpreadContract,
+  evaluateValuesContract,
   expectedSpread,
   findRenderedSpreadFields,
   findUnlistedSpreadFields,
@@ -16,6 +17,7 @@ import {
 
 const zoneKey = 'topology.kubernetes.io/zone'
 const hostnameKey = 'kubernetes.io/hostname'
+const spreadFieldName = 'topologySpreadConstraints'
 
 const spreadConstraint = (component, topologyKey, overrides = {}) => ({
   maxSkew: 1,
@@ -62,6 +64,30 @@ const withConstraints = (documents, component, constraints) =>
 
 const failuresFor = (documents) =>
   evaluateSpreadContract(inspectRenderedDeployments(documents))
+
+// The production values that own a spread field, built from the same seven
+// paths the chart reads. A nested entry per values path keeps the fixture
+// independent of the render.
+const valuesEntry = (valuesPath, component) =>
+  valuesPath.split('.').reduceRight((nested, key) => ({ [key]: nested }), {
+    [spreadFieldName]: spreadConstraints(component),
+  })
+
+const mergeValues = (entries) =>
+  entries.reduce((merged, entry) => {
+    const result = merged
+    for (const [key, value] of Object.entries(entry)) {
+      result[key] =
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? mergeValues([result[key] ?? {}, value])
+          : value
+    }
+    return result
+  }, {})
+
+const productionValues = mergeValues(
+  expectedSpread.map((entry) => valuesEntry(entry.valuesPath, entry.component))
+)
 
 describe('topology spread contract', () => {
   it('accepts the complete production contract', () => {
@@ -223,6 +249,58 @@ describe('topology spread contract', () => {
         (failure) =>
           failure.includes('app-klicker-unlabelled') &&
           failure.includes('without an app.kubernetes.io/component pod label')
+      ),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+  })
+})
+
+describe('production values contract membership', () => {
+  it('accepts the values paths the contract covers', () => {
+    assert.deepEqual(evaluateValuesContract(productionValues), [])
+  })
+
+  it('rejects a contract that drops a workload the values still define', () => {
+    const failures = evaluateValuesContract(
+      productionValues,
+      expectedSpread.filter(
+        (entry) => entry.component !== 'hatchet-worker-general'
+      )
+    )
+    assert.ok(
+      failures.some(
+        (failure) =>
+          failure.includes(
+            'hatchet.workers.general.topologySpreadConstraints'
+          ) && failure.includes('the expected contract does not cover')
+      ),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+  })
+
+  it('rejects a values entry that no contract entry claims', () => {
+    const failures = evaluateValuesContract({
+      ...productionValues,
+      chat: { [spreadFieldName]: spreadConstraints('chat') },
+    })
+    assert.ok(
+      failures.some(
+        (failure) =>
+          failure.includes('chat.topologySpreadConstraints') &&
+          failure.includes('the expected contract does not cover')
+      ),
+      `unexpected failures: ${failures.join(' | ')}`
+    )
+  })
+
+  it('rejects a contract entry the values no longer define', () => {
+    const { mcpLecturer, ...withoutLecturer } = productionValues
+    const failures = evaluateValuesContract(withoutLecturer)
+    assert.ok(
+      failures.some(
+        (failure) =>
+          failure.includes('mcpLecturer') &&
+          failure.includes('the contract entry is stale')
       ),
       `unexpected failures: ${failures.join(' | ')}`
     )
