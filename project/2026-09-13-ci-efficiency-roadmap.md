@@ -2009,3 +2009,62 @@ concurrency must now compete against R1-R5, which remove work entirely.
   list: narrowing it needs per-task environment attribution evidence, since a
   task that genuinely reads a removed variable would restore a stale artifact
   instead of rebuilding.
+
+- 2026-09-20 slice R2 (trusted image-publication cache, implementation on
+  `rs/ci-output-reuse-roadmap`): a push to a staging branch built every selected
+  image with `no-cache: true`, so the publication a deployment is promoted from
+  was the coldest build in the pipeline while an ordinary same-repository pull
+  request already imported and exported a GHCR BuildKit cache. The three ARM
+  build jobs in `.github/workflows/v3_images-stg.yml` now read and write
+  `ghcr.io/<repo>/<image>-arm:buildcache-trusted-<epoch>,mode=max`, where the
+  plan job resolves the epoch as the ISO week (`date -u +%G-W%V`) and records it
+  in the run summary and the `cache-epoch` workflow output. A publication never
+  reads the pull-request namespace, a same-repository pull request keeps exactly
+  that namespace, a cross-repository pull request still gets no cache, and the
+  release-tag production workflows keep their own `no-cache` contract because
+  they are out of this slice. Rebuilding the base layer at least once per epoch
+  replaces the roadmap's proposed periodic base-image refresh job: reuse cannot
+  preserve obsolete `apk` packages indefinitely, the previous epoch is
+  deliberately not imported, and the scanner still enforces the same
+  HIGH/CRITICAL admission on the pushed digest. The trusted promotion validator
+  rejects any other cache shape; `validateBuildCache` in
+  `.github/scripts/staging-image-workflow.cjs` compares both inputs against the
+  exact expected expression, requires `mode=max`, and fails a publication that
+  disables the shared cache, with three new negative cases in
+  `stg-release-promoter.test.js`. Verification: 31/31 promotion tests, 17/17
+  event gates, the staging workflow validator against the edited workflow, and
+  Prettier clean. Live qualification (a cold seed, then a second trusted build
+  with unchanged inputs showing hits, equivalent labels, successful scan
+  admission, and lower execution time, with queue and execution recorded
+  separately) still requires a staging push and is not claimed here.
+- 2026-09-20 slice R6 (build only the planned Playwright graph, implementation on
+  `rs/ci-output-reuse-roadmap`): the Playwright build job built every workspace
+  package and every application even when the canonical plan had already
+  selected a bounded set of specs, so a bounded draft paid the whole
+  application build (approximately 218 s of application builds in the ARM64
+  sample of run 34747467117) to run a handful of specs. The build action now
+  resolves the minimum graph from the plan before it installs anything: every
+  shard declares the devrouter profile it resolves at startup, and the union of
+  those profiles is the smallest graph that can serve the wave. The union is
+  resolved by the candidate's own profile runtime
+  (`util/playwright-profile-runtime.mjs resolve`), so the built filters are the
+  same `--filter=@klicker-uzh/…` selectors the shards pass to
+  `turbo run start:test`, and Turbo's `^build:test` dependency edges still pull
+  the shared packages those applications import. Only a bounded `selected` plan
+  narrows the graph; a full plan, a skip, a missing profile runtime, a maximal
+  profile (`full`/`playwright`), a shard without a profile, an unavailable
+  resolver, a filter that is not a workspace package selector, or a build that
+  arrived without usable filters all keep the complete graph and warn, because
+  an incomplete graph fails the shards while an oversized one only costs time.
+  The archive carries the Next outputs that exist, so a bounded wave publishes
+  a readable archive for the applications it actually built, and the build
+  telemetry records `buildGraphMode`, `buildGraphProfile`, and
+  `buildGraphReason` so the next run proves which graph executed. Verification:
+  224 local contract tests (including the new
+  `.github/scripts/playwright-build-graph.test.cjs`), the public Playwright
+  workflow validator, `bash -n` on every changed step, GNU tar 1.34 in a Debian
+  container for the archive in both the populated and the empty form, and the
+  real resolver in this checkout (profile `manage,pwa` resolves to
+  `api,auth,manage,pwa`). The live measure is the build-graph mode and build
+  duration of the next bounded pull-request wave, which this entry does not yet
+  claim.

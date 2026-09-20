@@ -44,6 +44,14 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   // so a new package like packages/audit/dist is covered without editing a list.
   assert.match(sources[2], /^\s+packages\/\*\/dist$/m)
   assert.doesNotMatch(sources[2], /packages\/[^/*\s]+\/dist/)
+  // The build graph is resolved from the plan before anything installs, and a
+  // resolver failure keeps the complete graph instead of the shards' subset.
+  assert.match(sources[2], /playwright-build-graph\.cjs/)
+  assert.match(
+    sources[2],
+    /- name: Resolve the minimum build graph[\s\S]*?continue-on-error: true/
+  )
+  assert.match(sources[2], /if \[ "\$PLAYWRIGHT_BUILD_GRAPH" = 'bounded' \]/)
   assert.match(sources[3], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[3], /ref: \$\{\{ job\.workflow_sha \}\}/)
 
