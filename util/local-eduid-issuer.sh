@@ -19,8 +19,10 @@
 # local_eduid_selection_selects_mock: 0 when the selection contains the mock, 1
 # when it does not, 2 for a malformed selection. An unset selection means the
 # devrouter config default (`full`), which selects every registered resource.
+# Every component is validated before the result is reported, so a selection
+# that contains the mock still fails closed when a later component is empty.
 local_eduid_selection_selects_mock() {
-  local remaining="${DEVROUTER_PROFILE-}" component has_more
+  local remaining="${DEVROUTER_PROFILE-}" component has_more selected=no
 
   [ -n "$remaining" ] || return 0
   while true; do
@@ -37,11 +39,12 @@ local_eduid_selection_selects_mock() {
     component="${component%"${component##*[![:space:]]}"}"
     [ -n "$component" ] || return 2
     case "$component" in
-      full|eduid) return 0 ;;
+      full|eduid) selected=yes ;;
     esac
 
     [ "$has_more" = yes ] || break
   done
+  [ "$selected" = yes ] && return 0
   return 1
 }
 
@@ -73,16 +76,28 @@ local_eduid_resolve_traefik_ip() {
 local_eduid_point_host_at_ip() {
   local host="$1" address="$2"
   local hosts_file="${LOCAL_EDUID_HOSTS_FILE:-/etc/hosts}"
-  local tmp grep_status=0
+  local tmp filter_status=0
 
   case "$host" in
     ''|*[!a-z0-9.-]*) return 2 ;;
   esac
 
   tmp="$(mktemp)" || return 1
-  grep -v -E "[[:space:]]${host}\$" "$hosts_file" >"$tmp" 2>/dev/null ||
-    grep_status=$?
-  if [ "$grep_status" -gt 1 ]; then
+  # Drop only the field that equals the host: an unrelated name that merely
+  # resembles it survives, and another alias on the same line is kept.
+  awk -v target="$host" '
+    {
+      kept = ""
+      hit = 0
+      for (i = 1; i <= NF; i++) {
+        if ($i == target) { hit = 1; continue }
+        kept = kept (kept == "" ? "" : " ") $i
+      }
+      if (!hit) print
+      else if (kept != "") print kept
+    }
+  ' "$hosts_file" >"$tmp" 2>/dev/null || filter_status=$?
+  if [ "$filter_status" -gt 1 ]; then
     rm -f "$tmp"
     return 1
   fi
@@ -108,8 +123,10 @@ local_eduid_wire() {
   LOCAL_EDUID_STATE=invalid
   LOCAL_EDUID_REASON="unsupported profile selection '${DEVROUTER_PROFILE-}'"
 
-  # A configured provider always wins: the mock is devcontainer-only wiring.
-  if [ -n "${EDUID_CLIENT_SECRET:-}" ]; then
+  # A configured provider always wins: the mock is devcontainer-only wiring. The
+  # auth app registers Edu-ID whenever the variable is defined, so an empty
+  # value still counts as configured.
+  if [ "${EDUID_CLIENT_SECRET+x}" = x ]; then
     LOCAL_EDUID_STATE=external
     LOCAL_EDUID_REASON='EDUID_CLIENT_SECRET is set'
     return 0

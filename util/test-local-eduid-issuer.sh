@@ -90,6 +90,30 @@ assert_host_maps_to 'oidc.klicker.localhost' '198.51.100.7' 'repeated routed iss
 grep -q -E '^203\.0\.113\.9[[:space:]]+oidc\.klicker\.other\.localhost$' "$HOSTS" ||
   fail 'repeated routed issuer dropped another checkout-host entry'
 
+# The removal matches whole fields: a lookalike name that the old pattern would
+# have treated as a wildcard match survives, and an alias that follows the
+# replaced host on the same line is kept instead of dropping the whole line.
+printf '203.0.113.9 oidc.klicker.alias.localhost other-alias\n203.0.113.9 oidcXklicker.localhost\n' \
+  >>"$HOSTS"
+cp "$HOSTS" "$HOSTS_PRISTINE"
+local_eduid_wire 'https://oidc.klicker.alias.localhost/default'
+assert_state enabled 'host with a following alias'
+assert_host_maps_to 'oidc.klicker.alias.localhost' '198.51.100.7' \
+  'host with a following alias'
+grep -q -E '^203\.0\.113\.9[[:space:]]+other-alias$' "$HOSTS" ||
+  fail 'host with a following alias dropped the other alias'
+grep -q -E '^203\.0\.113\.9[[:space:]]+oidcXklicker\.localhost$' "$HOSTS" ||
+  fail 'a lookalike host entry was removed'
+
+# A defined-but-empty secret still counts as configured, because the auth app
+# registers Edu-ID whenever the variable is defined.
+reset_case
+DEVROUTER_PROFILE='full'
+EDUID_CLIENT_SECRET=''
+local_eduid_wire 'https://oidc.klicker.localhost/default'
+assert_state external 'defined empty secret'
+assert_hosts_untouched 'defined empty secret'
+
 # Bounded retries absorb a lookup that only answers after the first attempt.
 reset_case
 rm -f "$FLAKY_COUNTER"
@@ -181,6 +205,8 @@ full|0
 eduid|0
 manage,eduid|0
 eduid,ai|0
+eduid,|2
+full,|2
 manage|1
 manage,pwa|1
 playwright|1
