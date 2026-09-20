@@ -40,7 +40,11 @@ export async function proxy(request: NextRequest) {
     const headers = new Headers(request.headers)
     headers.set('x-request-id', requestContext.requestId)
     headers.set('x-correlation-id', requestContext.correlationId)
-    return NextResponse.next({ request: { headers } })
+    // The pass-through overrides the request headers the Node handler sees, so
+    // the handler resolves the same correlation IDs the edge did. The response
+    // echoes them too, which keeps the diagnostics of a pass-through request
+    // observable to the caller and to the client-side correlation checks.
+    return withRequestId(NextResponse.next({ request: { headers } }))
   }
   const secure = resolveSecureCookies(
     process.env.NEXTAUTH_URL,
