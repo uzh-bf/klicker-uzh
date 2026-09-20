@@ -1,10 +1,10 @@
 import {
   ApolloClient,
-  ApolloLink,
+  type ApolloLink,
   from,
   HttpLink,
   InMemoryCache,
-  NormalizedCacheObject,
+  type NormalizedCacheObject,
   split,
 } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
@@ -22,7 +22,7 @@ import merge from 'deepmerge'
 import { getOperationAST } from 'graphql'
 import { usePregeneratedHashes } from 'graphql-codegen-persisted-query-ids/lib/apollo'
 import { createClient } from 'graphql-ws'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import Router from 'next/router'
 import { useMemo } from 'react'
 import { isDeepEqual } from 'remeda'

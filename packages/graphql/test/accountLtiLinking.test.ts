@@ -1,6 +1,6 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import { createLogger } from '@klicker-uzh/logging/node'
-import { CourseAuthType, PrismaClient } from '@klicker-uzh/prisma/client'
+import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import { CourseAuthType, type PrismaClient } from '@klicker-uzh/prisma/client'
 import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   signJWT,
