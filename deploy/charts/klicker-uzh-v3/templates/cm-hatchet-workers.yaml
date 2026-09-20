@@ -26,6 +26,9 @@ data:
   KB_INGESTION_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
   KB_INGESTION_PROJECT_ID: {{ .Values.hatchet.kbIngestion.projectId | quote }}
   KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
+  {{- if .Values.hatchet.kbIngestion.timeoutSeconds }}
+  KB_INGESTION_TIMEOUT_SECONDS: {{ .Values.hatchet.kbIngestion.timeoutSeconds | quote }}
+  {{- end }}
   {{- end }}
   {{- if .Values.hatchet.kbGraph }}
   {{- if .Values.hatchet.kbGraph.disabled }}
