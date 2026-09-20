@@ -27,6 +27,7 @@ import {
 } from '../src/services/mcpClients'
 import {
   assertDocQueryTransportSecurity,
+  createDocQueryScopedFetch,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
   DOC_QUERY_TOOL_NAME,
   normalizeDocQueryKbId,
@@ -642,6 +643,41 @@ describe('current-v3 Doc Query scope', () => {
         new Headers(secondInit?.headers).get(DOC_QUERY_SCOPE_TOKEN_HEADER)
       ).toBe('Bearer second-token')
       expect(firstInit?.redirect).toBe('error')
+    })
+
+    test('preserves Request protocol headers and overlays init headers', async () => {
+      const fetchSpy = vi.fn(async () => new Response('{}', { status: 200 }))
+      vi.stubGlobal('fetch', fetchSpy)
+      const signToken = vi.fn(async () => 'request-token')
+      const request = new Request(SCOPED_URL, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json, text/event-stream',
+          authorization: 'Bearer request-bearer',
+          'content-type': 'application/json',
+          'mcp-session-id': 'session-1',
+          [DOC_QUERY_SCOPE_TOKEN_HEADER]: 'Bearer request-scope',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'ping' }),
+      })
+
+      await createDocQueryScopedFetch({
+        target: new URL(SCOPED_URL),
+        kbIds: [KB_ID],
+        signToken,
+      })(request, { headers: { 'x-custom': 'init-value' } })
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+      expect(fetchSpy.mock.calls[0][0]).toBe(request)
+      const headers = new Headers(fetchSpy.mock.calls[0][1]?.headers)
+      expect(headers.get('accept')).toBe('application/json, text/event-stream')
+      expect(headers.get('content-type')).toBe('application/json')
+      expect(headers.get('mcp-session-id')).toBe('session-1')
+      expect(headers.get('x-custom')).toBe('init-value')
+      expect(headers.get('authorization')).toBeNull()
+      expect(headers.get(DOC_QUERY_SCOPE_TOKEN_HEADER)).toBe(
+        'Bearer request-token'
+      )
     })
 
     test('rejects a request outside the bound target and a signing failure before the network', async () => {

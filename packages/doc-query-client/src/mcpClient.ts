@@ -272,7 +272,15 @@ export function createDocQueryScopedFetch({
       throw new DocQueryScopeTokenError('Scope token target mismatch')
     }
 
-    const headers = new Headers(init?.headers)
+    // A Request carries protocol headers (content type, accept, session id)
+    // that init.headers would replace rather than merge. Seed the outgoing
+    // list from the request, overlay init, then strip credentials.
+    const headers = new Headers(
+      input instanceof Request ? input.headers : undefined
+    )
+    new Headers(init?.headers).forEach((value, key) => {
+      headers.set(key, value)
+    })
     headers.delete('authorization')
     headers.delete(DOC_QUERY_SCOPE_TOKEN_HEADER)
 
