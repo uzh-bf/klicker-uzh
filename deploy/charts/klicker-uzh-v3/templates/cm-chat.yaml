@@ -8,6 +8,7 @@
 {{- $chatTelemetryEnabled = $chatTelemetry.enabled -}}
 {{- end -}}
 {{- $langfuseRelease := .Values.global.imageTag | default .Values.chat.image.tag | default .Chart.AppVersion -}}
+{{- $scopedMcpEnv := include "chart.docQueryScopedMcpEnv" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -33,6 +34,9 @@ data:
   DOC_QUERY_SCOPE_ISSUER: {{ .Values.chat.docQueryScope.issuer | quote }}
   DOC_QUERY_SCOPE_AUDIENCE: {{ .Values.chat.docQueryScope.audience | quote }}
   DOC_QUERY_SCOPE_KID: {{ .Values.chat.docQueryScope.keyId | quote }}
+  {{- if $scopedMcpEnv }}
+  {{- $scopedMcpEnv | nindent 2 }}
+  {{- end }}
   {{- if .Values.chat.lifecycleWritersEnabled }}
   CHAT_TURN_LIFECYCLE_WRITES_ENABLED: "true"
   {{- end }}

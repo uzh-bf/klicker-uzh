@@ -1,4 +1,5 @@
 {{- $fullName := include "chart.fullname" . -}}
+{{- $scopedMcpEnv := include "chart.docQueryScopedMcpEnv" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -36,6 +37,9 @@ data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   # Deprecated - kept for backward compatibility during transition
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  {{- if $scopedMcpEnv }}
+  {{- $scopedMcpEnv | nindent 2 }}
+  {{- end }}
   {{- if .Values.backendGraphql.knowledgeGraph.host }}
   KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}
   KB_FALKORDB_PORT: {{ .Values.backendGraphql.knowledgeGraph.port | quote }}
