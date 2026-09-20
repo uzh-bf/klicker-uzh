@@ -380,6 +380,168 @@ test('static analysis narrows only for a proven pull-request class', () => {
   }
 })
 
+// The pull-request analysis used to be one runner-held job that polled the
+// coverage producers, so an analysis runner waited while a queued test run
+// finished. The producer run that observes every producer terminal now owns the
+// analysis, so the workflow that runs too early releases its runner instead.
+const PRODUCER_HOSTED_ANALYSIS = new Map([
+  ['test-unit.yml', 'test-unit'],
+  ['test-graphql.yml', 'test-graphql'],
+])
+
+function sameRepositoryPullRequest(overrides) {
+  return {
+    event_name: 'pull_request',
+    actor: 'rschlaefli',
+    repository: 'uzh-bf/klicker-uzh',
+    event: {
+      pull_request: {
+        draft: true,
+        head: { repo: { full_name: 'uzh-bf/klicker-uzh' } },
+      },
+    },
+    ...overrides,
+  }
+}
+
+test('the producer-hosted analysis runs for a same-repository pull request only', () => {
+  for (const [name, suite] of PRODUCER_HOSTED_ANALYSIS) {
+    const workflow = readWorkflow(name)
+    const job = workflow.jobs.sonarcloud
+    assert.ok(job, name + ' must analyze the coverage it just produced')
+    assert.equal(job.uses, './.github/workflows/sonar-analysis.yml', name)
+    assert.deepEqual(job.needs, ['filter', suite], name)
+
+    // A draft is admitted here and deferred inside the analysis, because the
+    // job is evaluated minutes after its event, when the pull request may
+    // already be ready for review.
+    const gate = String(job.if)
+    assert.equal(
+      evaluateGate(gate, sameRepositoryPullRequest()),
+      true,
+      name + ' for a same-repository draft pull request'
+    )
+    assert.equal(
+      evaluateGate(
+        gate,
+        sameRepositoryPullRequest({
+          event: {
+            pull_request: {
+              draft: false,
+              head: { repo: { full_name: 'fork/x' } },
+            },
+          },
+        })
+      ),
+      false,
+      name + ' for a fork pull request, which receives no secrets'
+    )
+    assert.equal(
+      evaluateGate(
+        gate,
+        sameRepositoryPullRequest({ actor: 'dependabot[bot]' })
+      ),
+      false,
+      name + ' for a Dependabot pull request'
+    )
+    assert.equal(
+      evaluateGate(gate, sameRepositoryPullRequest({ event_name: 'push' })),
+      false,
+      name + ' for a push, which the branch boundary analyzes'
+    )
+  }
+})
+
+test('one reusable workflow owns the analysis decision', () => {
+  const analysis = readWorkflow('sonar-analysis.yml')
+  assert.ok(
+    analysis.on && analysis.on.workflow_call !== undefined,
+    'sonar-analysis.yml must stay reusable so every host shares one definition'
+  )
+
+  const steps = analysis.jobs.sonarcloud.steps
+  const decide = steps.find((step) => step.id === 'coverage')
+  assert.ok(decide, 'the analysis must decide before it scans')
+  assert.deepEqual(
+    String(decide.env.COVERAGE_PRODUCER_WORKFLOWS)
+      .split(',')
+      .map((entry) => entry.trim())
+      .sort(),
+    ['.github/workflows/test-graphql.yml', '.github/workflows/test-unit.yml'],
+    'the decision must know every coverage producer'
+  )
+  assert.deepEqual(
+    String(decide.env.ANALYSIS_WORKFLOW_FILES)
+      .split(',')
+      .map((entry) => entry.trim())
+      .sort(),
+    [
+      '.github/workflows/test-graphql.yml',
+      '.github/workflows/test-unit.yml',
+      '.github/workflows/v3_sonarcloud.yml',
+    ],
+    'every host of the analysis must be listed, or a receipt stays invisible to the others'
+  )
+
+  const scan = steps.find((step) => step.id === 'scan')
+  assert.equal(scan.if, "steps.coverage.outputs.decision == 'scan'")
+  assert.match(String(scan.with.args), /steps\.coverage\.outputs\.scanner_args/)
+
+  // The receipt is published only after a scan that succeeded, because only a
+  // published analysis may suppress the analysis of another producer.
+  const receipt = steps.find(
+    (step) => step.uses === 'actions/upload-artifact@v4'
+  )
+  assert.match(
+    String(receipt.if),
+    /steps\.coverage\.outputs\.decision == 'scan'/
+  )
+  assert.match(String(receipt.if), /steps\.scan\.outcome == 'success'/)
+  assert.match(
+    String(receipt.with.name),
+    /steps\.coverage\.outputs\.receipt_name/
+  )
+})
+
+test('the branch and ready boundary keeps the analysis without a producer', () => {
+  const workflow = readWorkflow('v3_sonarcloud.yml')
+  assert.deepEqual(workflow.on.push.branches, ['v3', 'v3*'])
+  assert.deepEqual(
+    workflow.on.pull_request.types,
+    ['ready_for_review'],
+    'a synchronize and a reopen re-run both producers, so the boundary must not duplicate them'
+  )
+  const job = workflow.jobs.sonarcloud
+  assert.equal(job.needs, 'classify')
+  assert.equal(job.uses, './.github/workflows/sonar-analysis.yml')
+})
+
+test('no workflow holds a runner while it waits for a coverage producer', () => {
+  const directory = path.join(root, '.github')
+  const offenders = []
+  const walk = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const candidate = path.join(current, entry.name)
+      if (entry.isDirectory()) {
+        walk(candidate)
+        continue
+      }
+      if (!entry.name.endsWith('.yml') && !entry.name.endsWith('.cjs')) return
+      if (
+        /COVERAGE_(WAIT|POLL)_SECONDS/.test(fs.readFileSync(candidate, 'utf8'))
+      ) {
+        offenders.push(path.relative(directory, candidate))
+      }
+    }
+  }
+  walk(directory)
+  assert.deepEqual(
+    offenders,
+    [],
+    'a coverage wait window holds a runner while a queued test run finishes'
+  )
+})
+
 // Closing a pull request must reclaim every per-PR workflow concurrency group,
 // not only Playwright. The sweeper substitutes each target's group prefix
 // literally because github.workflow inside the sweeper names the sweeper, so a

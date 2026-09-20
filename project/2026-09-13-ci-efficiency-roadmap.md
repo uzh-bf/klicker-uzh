@@ -1962,3 +1962,31 @@ concurrency must now compete against R1-R5, which remove work entirely.
   documentation-only and a CI-only pull request, including the full-envelope
   contrast when one application file joins the same diff, is still pending on
   this branch.
+- 2026-09-20 slice R5 (runner-neutral Sonar analysis, implementation on
+  `rs/ci-output-reuse-roadmap`): the analysis no longer holds a runner while it
+  waits for its coverage producers. Five consecutive runs measured the old
+  `Collect verified coverage inputs` step at 2 s, 63 s, 184 s, and 378 s
+  (`35472129815`, `35471995800`, `35470927162`, `35470527301`,
+  `35468150000`), and the long waits ended only when producers that were queued
+  behind other runs finished: in `35470527301` the `test-unit` suite ran
+  21:29:03-21:32:34 UTC and `test-graphql` 21:29:11-21:35:34 UTC while the
+  analysis job held its runner. One reusable `.github/workflows/sonar-analysis.yml`
+  now owns the single analysis definition. Both coverage producers call it from
+  a job that needs their own suite, and `v3_sonarcloud.yml` calls it at the
+  branch and ready-for-review boundary; the workflow that observes every
+  producer terminal imports the coverage and analyzes, and one that still sees a
+  queued producer defers with a named reason and returns immediately. At most
+  one analysis is published per pull request, head, and base: a successful scan
+  uploads a receipt artifact named for that revision, a later host that finds
+  the receipt defers, the caller-level concurrency group plus that lookup close
+  the race between the two producers, and `run_attempt > 1` ignores the receipt
+  so an explicit re-run analyzes again. The coverage identity checks are
+  unchanged (head, base, tested tree, and artifact), and the wait window
+  constants are gone, with a contract test that fails if a coverage wait
+  returns. The decision reads the live pull request rather than the event
+  payload, because a producer job is evaluated minutes after its event.
+  Accepted limitation: a pull request that becomes ready between a producer run
+  and its job evaluation receives its analysis at the ready boundary, which
+  imports the coverage the draft already produced. The 359-test check-suite set
+  and the 71 Playwright CI contracts pass locally; live acceptance is the
+  analysis of this branch's own pull request.
