@@ -32,6 +32,10 @@ RUN echo '#!/bin/bash\n\
   sleep 2\n\
   done\n\
   \n\
+  # Build the logging package\n\
+  cd "$OLAT_TEST_WORKSPACE/packages/logging"\n\
+  pnpm run build\n\
+  \n\
   # Build the types package\n\
   echo "Building types package..."\n\
   cd "$OLAT_TEST_WORKSPACE/packages/types"\n\

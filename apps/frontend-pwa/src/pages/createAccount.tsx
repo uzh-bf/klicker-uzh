@@ -1,21 +1,20 @@
+import { useMutation } from '@apollo/client'
+import CreateAccountForm from '@components/forms/CreateAccountForm'
+import Layout from '@components/Layout'
+import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
   PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
   verifyJWT,
 } from '@klicker-uzh/util'
-import { toast } from '@uzh-bf/design-system'
-import generatePassword from 'generate-password'
-import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
-import nookies from 'nookies'
-
-import { useMutation } from '@apollo/client'
-import Layout from '@components/Layout'
-import CreateAccountForm from '@components/forms/CreateAccountForm'
-import { CreateParticipantAccountWithDataUseDocument } from '@klicker-uzh/graphql/dist/ops'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
+import { toast } from '@uzh-bf/design-system'
+import generatePassword from 'generate-password'
+import { GetServerSidePropsContext } from 'next'
+import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
+import nookies from 'nookies'
 
 interface Props {
   signedLtiData?: string
@@ -111,6 +110,12 @@ function CreateAccount({
 }
 
 export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { createSsrRequestLogging } = await import('@lib/server/logger')
+  const { logFailure, requestContext } = createSsrRequestLogging(
+    ctx.req.headers,
+    '/createAccount'
+  )
+
   // in assessment application, redirect to assessment home page
   if (process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true') {
     return {
@@ -123,7 +128,7 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
 
   try {
     const { query } = ctx
-    const apolloClient = initializeApollo()
+    const apolloClient = initializeApollo(undefined, ctx, requestContext)
     const { participantToken, cookiesAvailable } = await getParticipantToken({
       apolloClient,
       ctx,
@@ -203,8 +208,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
           .default,
       },
     }
-  } catch (error) {
-    console.error('Error in getServerSideProps on createAccount:', error)
+  } catch {
+    logFailure('data_load_failed')
 
     // remove the lti-token, if it is defined
     try {
@@ -212,8 +217,8 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
         domain: process.env.COOKIE_DOMAIN,
         path: '/',
       })
-    } catch (nookiesError) {
-      console.error(nookiesError)
+    } catch {
+      logFailure('cookie_cleanup_failed')
     }
 
     // redirect to lti error page with redirect back to this page

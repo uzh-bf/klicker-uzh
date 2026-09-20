@@ -51,7 +51,15 @@ Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations th
 
 ## Split schema
 
-The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
+The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 16 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, `assessmentAudit`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
+
+`assessmentAudit.prisma` is a deliberately separate subsystem boundary. Its
+scope, rollout inventory, and outbox models use scalar UUIDs with no relations
+or foreign keys to mutable business models, so evidence survives deletion of a
+LiveQuiz, user, course, or participant. The outbox stores exact canonical JSON
+as `String @db.Text`, not `Json`/JSONB, because PostgreSQL must not rewrite the
+evidence bytes. Its migration also contains explicit SQL checks for invariants
+that Prisma cannot express. See [Assessment Audit Evidence](./assessment-audit-evidence.md).
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
 
@@ -230,6 +238,17 @@ Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc
 
 ## Schema-level gotchas
 
+- **Assessment `LiveQuizResponse.submissionId` is optional but unique.** New
+  assessment submissions store the PWA-generated UUID so Hatchet retries and
+  duplicate commands can be classified durably. Existing, correction-only, and
+  non-assessment responses remain `NULL`; do not synthesize IDs for old rows.
+  Its expand migration creates the unique index concurrently so the rollout
+  does not block writes to the existing response table. Keep that migration
+  non-transactional: PostgreSQL rejects `CREATE INDEX CONCURRENTLY` inside a
+  transaction. The same migration adds the
+  `AuditOutbox_quiz_correlation_event_idx` lookup used to classify Hatchet
+  retries and duplicate submission commands without scanning a quiz's full
+  evidence history.
 - **Prisma `Decimal` is an object, never truthy-check it** — `Decimal(0)` is truthy. Convert with a `toNumber()` helper and compare with `!= null` (pattern in `packages/graphql/src/services/chatbots.ts`).
 - **`Participant` email is unique per auth mode**: `@@unique([email, isSSOAccount])` means the same normalized email can exist once as manual and once as SSO. Queries by email alone can return the wrong account; blocking new cross-mode duplicates must happen in service logic (`packages/graphql/src/services/accounts.ts`).
 - **One enabled KB per chatbot is a SQL invariant**: Prisma cannot express the partial unique index `KBChatbot_one_enabled_per_chatbot_key`. Preserve it in `packages/prisma/src/prisma/schema/migrations/20260825190000_kb_management_foundation/migration.sql` and any replacement migration. The migration deliberately leaves an existing KB MCP server row unchanged so the previous Chat runtime remains usable during rollout and rollback. The new runtime identifies the reserved `KB` server by name, sends the scoped token in its dedicated header, and preserves an existing transport bearer in `Authorization`. `packages/prisma-data/src/data/seedMCPServers.ts:seedMCPServers` reconciles new or explicitly reseeded environments to `scope_token` auth and leaves KB MCP configs disabled unless an enabled binding exists; a shared multi-tenant deployment still needs its transport bearer configured separately from the scope token.

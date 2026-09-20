@@ -67,6 +67,11 @@ vapid:
   publicKey: ''
   privateKey: ''
 
+logging:
+  # Pino threshold for all server apps: debug | info | warn | error.
+  # Empty keeps the application default (info).
+  logLevel: ''
+
 global:
   deploymentEnvironment: development
   # Optional release-wide tag; unset keeps the per-image tag fallbacks below.
@@ -180,6 +185,43 @@ hatchet:
       tolerations: []
       affinity: {}
       topologySpreadConstraints: []
+
+assessmentAudit:
+  # Remains dormant until the Pulumi-provisioned identity, tables, and alert
+  # route have passed the staging permission matrix.
+  enabled: false
+  environment: ''
+  rollout: disabled
+  pilotLiveQuizIds: ''
+  tableEndpoint: ''
+  blobEndpoint: ''
+  worker:
+    replicaCount: 1
+    serviceAccountName: ''
+    priorityClassName: production-workload
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
+      pullPolicy: IfNotPresent
+      tag: ''
+    resources:
+      requests:
+        cpu: 50m
+        memory: 96Mi
+      limits:
+        memory: 384Mi
+    podAnnotations: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+  monitoring:
+    enabled: false
+    interval: 30s
+    alertRoutingLabel: assessment-audit-owners
+    # Forecast inputs for the launch capacity signal. The deployment injects
+    # these values into the audit worker; both must be set when monitoring is
+    # enabled in a real environment.
+    deliveredUnsealedCapacityBytes: 0
+    deliveredUnsealedGrowthBytesPerWeek: 0
 
 auth:
   priorityClassName: production-workload

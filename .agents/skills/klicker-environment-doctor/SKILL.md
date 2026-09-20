@@ -124,6 +124,15 @@ Continuation for app work: `.github/scripts/wait-for-infra.sh`, then `./util/_cr
 
 Feature "does nothing" / mutation fails `workflow not found` → the Hatchet engine or a worker is missing, or a worker points at the wrong DB. Workers need the **same `DATABASE_URL`, `APP_SECRET`, Redis settings** as the apps, plus `HATCHET_CLIENT_TOKEN`. See [docs/async-and-workers.md](../../../docs/async-and-workers.md).
 
+The assessment audit dispatcher must use
+`ASSESSMENT_AUDIT_WORKER_ROLE=dispatcher` and select only
+`dispatchAssessmentAuditOutbox,monitorAssessmentAudit`. The ordinary worker
+must select neither; the retired `media-policy` role is invalid. A mismatch
+is expected to fail at startup. Baselines and instance refreshes retain public
+image URLs within element content without reading or copying the images, so
+activation has no audit Blob identity or image MIME/byte-verification requirement.
+See [assessment audit evidence](../../../docs/assessment-audit-evidence.md).
+
 ## Check 8 — database state (config-derived)
 
 Seeded dev DB contains the AGENTS.md test accounts (`lecturer`, `testuser1..50` — values in AGENTS.md only). Prisma 7 reset/migrate commands are seed-free. On the legacy host stack, `pnpm run prisma:setup` wraps the reset/push/seed composite with Infisical. In the self-contained DevPod, use `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`, then `pnpm --filter @klicker-uzh/prisma run prisma:push:raw`, then `pnpm --filter @klicker-uzh/prisma-data run seed:raw` as shown in `.devcontainer/post-create.sh`. Use either path **only after confirming the volume holds no real work** (fresh volume, test course names like "Testkurs"). When in doubt, ask the user.

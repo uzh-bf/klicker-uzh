@@ -4,6 +4,7 @@ import type {
 } from '@klicker-uzh/feature-flags'
 import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import { prisma } from '@klicker-uzh/prisma'
+import { getRouteLogger } from '@/src/lib/server/requestLogging'
 import type { AuthenticatedManageUser } from './manageAuth'
 
 // One client per process, not per request: it holds the fetched payload and a
@@ -72,7 +73,8 @@ export async function getManageAiCapability(
       betaEnabled: account.betaEnabled,
     })
   } catch {
-    console.warn(
+    getRouteLogger().warn(
+      { event: 'chat.feature_flags.unavailable' },
       '[feature-flags] AI beta evaluation failed; temporarily unavailable'
     )
     return 'temporarilyUnavailable'

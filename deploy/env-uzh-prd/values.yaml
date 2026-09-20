@@ -173,6 +173,18 @@ hatchet:
           value: reserved
           effect: NoSchedule
 
+assessmentAudit:
+  enabled: false
+  environment: prd
+  rollout: disabled
+  pilotLiveQuizIds: ''
+  tableEndpoint: ''
+  blobEndpoint: ''
+  worker:
+    serviceAccountName: ''
+  monitoring:
+    enabled: false
+
 auth:
   priorityClassName: production-workload
 

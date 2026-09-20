@@ -72,9 +72,9 @@ export async function unsubscribeFromPush(
     })
     return true
   } catch (error) {
-    console.error(
-      'An error occured while trying to unsubscribe from push notifications: ',
-      error
+    ctx.log.error(
+      { event: 'push-subscription.unsubscribe.failed' },
+      'Push notification unsubscribe failed'
     )
     return false
   }
@@ -110,10 +110,6 @@ export async function unsubscribeFromPush(
 //         })
 //       )
 //     } catch (error) {
-//       console.error(
-//         'An error occured while trying to send the push notification: ',
-//         error
-//       )
 //       if (error instanceof WebPushError && error.statusCode === 410) {
 //         try {
 //           // subscription has expired or is no longer valid
@@ -124,10 +120,6 @@ export async function unsubscribeFromPush(
 //             },
 //           })
 //         } catch (error) {
-//           console.error(
-//             'An error occured while trying to remove the expired subscription from the database: ',
-//             error
-//           )
 //         }
 //       } else {
 //         throw error
@@ -193,10 +185,6 @@ export const handleSendPushNotifications: HatchetHandlers['handleSendPushNotific
     //       })
     //     } catch (error) {
     //       allSuccessful = false
-    //       console.error(
-    //         'An error occured while trying to send the push notifications: ',
-    //         error
-    //       )
     //     }
     //   })
     // )
@@ -227,8 +215,7 @@ export async function sendTeamsNotification({
         title: scope,
         text: `[${process.env.NODE_ENV}:${scope}] ${text}`,
       })
-    } catch (error) {
-      console.error('Failed to send Teams notification:', error)
+    } catch {
       return null
     }
   }
