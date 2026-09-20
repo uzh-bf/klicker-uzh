@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-09-19'
+timestamp: '2026-09-20'
 tags:
   - ci
   - deployment
@@ -11,6 +11,75 @@ tags:
 # CI & Deployment
 
 **The deploy driver is ArgoCD** (confirmed with maintainers; the ArgoCD `Application`/sync trigger itself lives outside this repo). What IS in-repo: the chart (`deploy/charts/klicker-uzh-v3/` — internally still named `klicker-uzh-v2`, chart version drifted behind the repo version), per-env values (`deploy/env-uzh-stg`, `deploy/env-uzh-prd`), Stakater **Reloader** annotations (`reloader.stakater.com/auto: "true"`) so config/secret changes restart pods, and an ArgoCD **PreSync migration hook** that runs `prisma migrate deploy` before each rollout — enabled on stg and prd (see [Deployment migrations](#deployment-migrations)).
+
+## Draft sync PR maintenance
+
+`maintain-draft-sync-prs.yml` maintains the exact forward pairs `v3` ->
+`v3-ai` and `v3-ai` -> `v3-audit`. It opens a draft only when the source has
+commits and a non-empty diff absent from the target and no matching open PR.
+Existing PR descriptions and draft/ready states are preserved. Source pushes
+already update their diffs, so maintenance does not edit PR metadata, update
+branches, resolve conflicts, merge, or enforce merge methods. Maintainers choose
+when to mark ready and merge with a merge commit to preserve ancestry.
+
+The controller runs from `v3` after Check codebase completes for a push to
+either source branch, regardless of the check result. Completion is a wakeup,
+not a merge-readiness signal. Both pairs are reconciled against current refs on
+every run; delayed or coalesced events do not replay old heads. The workflow
+checks out its own trusted workflow SHA, never the triggering branch or its
+artifacts. It becomes active when merged into `v3`, without waiting for the
+workflow to reach the integration branches.
+
+For manual reconciliation, dispatch from `v3`. Preview is the default:
+
+```bash
+gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=true
+gh workflow run maintain-draft-sync-prs.yml --ref v3 -f dry_run=false
+```
+
+The ordinary `GITHUB_TOKEN` has contents-read and pull-requests-write access;
+GitHub Actions must be allowed to create PRs in repository settings. No separate
+bot credential is needed. GitHub may require approval before running workflows
+for token-created PRs. Drafts skip staging image builds and some analysis, but
+other PR checks and source-branch push CI can still run. Marking ready invokes
+the existing ready-state validation; required checks must pass before merging.
+
+Closing a sync PR without merging does not pause maintenance: the next eligible
+run may create a new draft if changes remain. Conflicts remain a maintainer
+task. Avoid Update branch on these PRs because it merges the target back into
+the long-lived source branch. An API failure is reported rather than treated
+as evidence that a PR exists; a duplicate-creation response is accepted only
+after the matching open PR is found.
+
+### Changing the sync chain
+
+The `PAIRS` constant in [draft-sync-prs.cjs](../.github/scripts/draft-sync-prs.cjs)
+is the authoritative list of automated source (`head`) and target (`base`)
+pairs. Branch names matching `v3-*` do not enroll themselves. Change this list
+only for an explicitly approved integration-chain change; ordinary feature
+branches and reverse release promotions remain outside automatic maintenance.
+
+When adding, renaming, reordering, or retiring an integration branch, agents
+must update the following together in the same PR:
+
+1. Update `PAIRS` to contain exactly the approved adjacent forward hops, removing
+   obsolete pairs without introducing shortcuts or reverse pairs.
+2. Set `on.workflow_run.branches` in
+   [maintain-draft-sync-prs.yml](../.github/workflows/maintain-draft-sync-prs.yml)
+   to the distinct source branches in `PAIRS`. Verify that Check codebase still
+   runs on pushes to every source; its name must match the workflow subscription
+   and controller event guard.
+3. Update the structured pair and event expectations in
+   [draft-sync-prs.test.cjs](../.github/scripts/draft-sync-prs.test.cjs), retaining
+   coverage that every new PR is a draft and unapproved sources are rejected.
+   Update the chain in `AGENTS.md` and this page to match.
+4. Run the focused controller tests and, after the controller change reaches
+   `v3`, its manual dry run. Check the reported pairs against the approved chain
+   before relying on automated creation.
+
+Removing a pair stops future maintenance but does not close or retarget its
+existing PR. Report any such PR for explicit disposition. Branch deletion,
+merge authority, and staging-source configuration remain separate decisions.
 
 ## Required branch checks
 
@@ -79,8 +148,9 @@ can remain on readers; verify the absence of cache upload attempts, not of post
 steps. Playwright's separate trusted seed and cache contracts are unchanged.
 
 Per-commit workflows: required `check` (one install covering format, syncpack,
-lint, schema and guide drift, incremental builds and types, plus advisory Knip)
-and required `check-gitleaks`. Branch protection binds both contexts to GitHub
+lint, schema and guide drift, incremental builds and types, the rendered chart's
+scheduling contract, plus advisory Knip) and required `check-gitleaks`. Branch
+protection binds both contexts to GitHub
 Actions and no longer requires the former split check jobs. The Node/pnpm
 workflow uses pnpm 11.5.0, pins Node 24 via the root Volta configuration
 (`package.json`), and uses the Turbo remote cache; `check-gitleaks` is a
@@ -334,6 +404,7 @@ reports itself as not applicable and can be removed with the branch.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
+- **Topology spread contract**: production values define zone + hostname `topologySpreadConstraints` for seven workloads — the three Hatchet workers, the assessment frontend and backend, and the two MCP servers. The chart renders the value at each pod spec only when non-empty (chart defaults are `[]` and render nothing), and every constraint selector must match the workload's own `app.kubernetes.io/component` pod label — the assessment frontend selects `frontend-assessment`, not `frontend-pwa-assessment`. The required `check` workflow runs `node --test deploy/scripts/verify-topology-spread.test.mjs` and `node deploy/scripts/verify-topology-spread.mjs`: the script lints and renders the chart with defaults, staging values, and production values, requires exactly one zone and one hostname constraint for each of the seven workloads with `maxSkew: 1` and `whenUnsatisfiable: ScheduleAnyway`, requires every selector to match the workload's pod label, requires the default and staging renders to contain no spread field at all, and rejects constraints on any workload outside that contract. It also compares the contract's values paths with the production values in both directions, so a workload cannot leave the assertions unnoticed by deleting its contract entry. The MCP pair already rendered its constraints before these template additions, so the contract pins them instead of relaxing them. The check is not part of `check:all`, which must run in any working copy, because the Helm CLI is not part of the dev container; the hosted runner provides it. A passing render is still source-level proof — live spread behavior must be confirmed against the synced cluster.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 
 ## Deployment migrations
