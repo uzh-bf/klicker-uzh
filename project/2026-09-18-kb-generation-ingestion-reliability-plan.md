@@ -477,3 +477,65 @@ ineligible because this plan covers private repositories and internal staging ev
   `az login` against the DF tenant clears. Until then the acceptance check cannot be closed
   from the cluster side, and the user-facing surface alone cannot separate "slow but alive"
   from "stuck again".
+- Cluster evidence closed 2026-09-20 after the jumpbox tunnel returned, read-only on context
+  `aks-stg-apps-admin` apart from one pod recreate. It settles the outcome and uncovers a
+  deeper defect that explains the whole stuck-at-Processing family.
+  - The enablement was **inert in the running process**. The dispatcher pod started
+    `2026-09-19T09:39:06Z`; ArgoCD last wrote the `ingestion` ConfigMap at
+    `2026-09-19T18:48:17Z` (`managedFields`: `argocd-controller|Update`), which is the sync
+    that carried `!930`. `envFrom` is resolved once at container start, so that pod kept the
+    pre-change environment. `printenv` inside it shows control variables from the same
+    ConfigMap (`INGESTION_ENV=stg`, `INGESTION_STATE_BACKEND=postgres`) while
+    `INGESTION_RESOURCE_RECLAIM_ENABLED` is absent. `!931`'s annotation is present on the
+    Deployment object -- it is a Deployment-level annotation, not a pod-template one, which is
+    why the template reads empty -- but Stakater Reloader only rolls on a subsequent ConfigMap
+    change, so it cannot react to the edit that predated it. Recreating the single pod
+    (`kubectl delete pod`; the ReplicaSet recreates it, and because the pod template is
+    untouched there is no Argo drift) made `RECLAIM=true` effective.
+  - Reclaim then behaved exactly as designed. The first sweep logged
+    `Reclaimed 1 abandoned resource upserts` at `2026-09-20T09:29:11Z`, the operation's
+    `hatchet_run_id` rotated `2f6d9f5d` -> `f3005a53`, KEDA's ScaledObject went active at
+    `09:29:31Z` and `ingestion-resource-fetch-worker` reached 1/1. The candidate predicate is
+    verifiable in the state DB: the row had been `running` since `2026-09-18T13:57:31Z` with
+    `operation='update'` and a non-null `hatchet_run_id`, and `source_lock` held no row for
+    that source. So the A3 safety net works end to end; it is the terminal state that does not.
+  - The re-dispatched run fails in ~0.49 s with `SnapshotFetchError: digest_mismatch`, and the
+    failure is then **silently dropped**. `fetch_source_snapshot`
+    (`modules/ingestion/src/ingestion/source_snapshot.py:386`) re-fetches the URL and requires
+    `sha256(body) == event.expected_sha256`. Klicker computes that digest from its own
+    dispatch-time fetch (`packages/hatchet/src/kbIngestionApi.ts:386-400`), so for a volatile
+    page such as this Wikipedia article the two digests diverge and the operation can never
+    succeed. That is a product-level weakness independent of reclaim.
+  - The reason no terminal state lands is the more serious defect: the workflow's
+    `on_failure` task did run (`resource-upsert:on_failure` at `09:29:31` on the durable
+    control worker) but `fail_unclaimed_upsert` raised before writing, logging
+    `Resource-upsert repair_required operation_id=op_d6e26e65... error_class=ValueError`. The
+    raise is in `failure_hook_connection`
+    (`modules/ingestion/src/ingestion/resource_state_store.py:100`):
+    `ValueError: failure hook requires one explicit numeric hostaddr`. STG's
+    `INGESTION_STATE_DSN` is a URI whose host is the DNS name
+    `db-server-stg-apps.postgres.database.azure.com:6432` with no `hostaddr` parameter, and the
+    hook deliberately refuses a DNS-dependent connection. Reproduced read-only in the pod by
+    calling the context manager directly. The `except Exception` in `on_failure` is deliberate
+    ("unknown state must preserve artifacts"), so the hook fails safe and fails silent.
+  - Consequence, and the reason it matters beyond this one resource: on STG **every**
+    resource-upsert failure is invisible. The row stays `running`, Klicker's five-minute
+    reconciliation keeps re-applying `PROCESSING`, and no `resource.processing_failed` event is
+    emitted, so the product shows a resource that never finishes. Reclaim is only a partial
+    workaround, because `_terminalize_reclaimed_upsert` runs on the dispatcher's ordinary
+    connection and therefore bypasses the broken hook -- but it needs the full reclaim budget
+    first. With generation 1 burned at `09:29:11Z` and one staleness window per generation
+    (3600 s stale, 60 s sweep, budget 3), generation 2 lands ~10:29, generation 3 ~11:29, and
+    the row closes as `resource_reclaim_exhausted` at roughly `12:29Z` (14:29 CEST). That is
+    the expected terminal outcome to confirm; a successful ingest is not available for this
+    resource while the digest contract stands.
+  - Fixes required, none of them yet implemented:
+    - Ingestion, root cause: let the failure hook fall back to the configured host when
+      `hostaddr` is absent, or pin `hostaddr` in the STG DSN. The hook's DNS-avoidance intent is
+      sound during failure handling, but refusing outright turns every failure into a silent
+      no-op.
+    - Klicker, defence in depth (A3, second half): terminalize a resource whose ingestion
+      operation stays in progress past a bound, so a stuck operation is visible in the product
+      without depending on the ingestion side.
+    - Product: decide how a `digest_mismatch` should resolve for a changed upstream page --
+      re-dispatch with a refreshed digest, or accept the fetched bytes as the new version.
