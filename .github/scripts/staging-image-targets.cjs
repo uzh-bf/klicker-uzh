@@ -28,6 +28,15 @@ const path = require('node:path')
 // only. An optional target allocates no runner where it is absent, and the
 // promotion controller tolerates its absence from a candidate tree while
 // failing closed on the absence of any other target.
+//
+// 'reuse' marks the targets whose image may be adopted from an earlier
+// publication by input fingerprint instead of being rebuilt. It is set only for
+// targets whose configuration is injected at runtime, so the same image can
+// serve another commit or environment without changing its contents. A Next.js
+// image is deliberately excluded: its staging and production workflows pass
+// different `NEXT_PUBLIC_*` build arguments and replace the app's environment
+// file before building, and Next.js freezes those values into the browser
+// bundle, so a reused frontend image would ship the wrong configuration.
 
 // Root build inputs shared by every image whose docker build context is the
 // repository root: 'turbo prune --docker' reads the workspace manifest, the
@@ -59,6 +68,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'analytics-arm',
     jobBase: 'analytics',
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
     syncSchema: true,
   },
@@ -121,6 +131,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'backend-docker-arm',
     jobBase: 'backend-docker',
     publishGuard: true,
+    reuse: true,
     scan: true,
     stage: 'after-migrator',
   },
@@ -148,6 +159,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'backend-docker-migrator-arm',
     jobBase: 'backend-docker-migrator',
     publishGuard: true,
+    reuse: true,
     scan: true,
     stage: 'migrator',
   },
@@ -353,6 +365,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'hatchet-worker-general-arm',
     jobBase: 'hatchet-worker-general',
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
   },
   {
@@ -376,6 +389,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'hatchet-worker-response-processor-arm',
     jobBase: 'hatchet-worker-response-processor',
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
   },
   {
@@ -396,6 +410,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'lti-arm',
     jobBase: 'lti',
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
   },
   {
@@ -417,6 +432,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     jobBase: 'mcp-lecturer',
     amd: true,
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
   },
   {
@@ -445,6 +461,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     jobBase: 'mcp-student',
     amd: true,
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
   },
   {
@@ -465,6 +482,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'olat-api-arm',
     jobBase: 'olat-api',
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
   },
   {
@@ -487,6 +505,7 @@ const STAGING_IMAGE_TARGETS = Object.freeze([
     id: 'response-api-arm',
     jobBase: 'response-api',
     publishGuard: true,
+    reuse: true,
     stage: 'independent',
   },
 ])

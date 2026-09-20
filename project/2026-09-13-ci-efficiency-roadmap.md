@@ -556,6 +556,224 @@ or an explicit evidence-backed decision to defer it. Report source, merged
 activation and performance separately. No infrastructure change is currently
 required from the user.
 
+## 2026-09-19 output-reuse prioritization
+
+This refresh records the next efficiency horizon after the event, staging-image,
+public-ARM64, and lifecycle-reuse packages have landed. The controlling question
+is no longer whether the runners can execute more work; it is whether Klicker can
+produce fewer equivalent outputs. The baseline is current `v3` at
+`50a1549d2c`, repository controls read through the GitHub API, and a
+350-record Actions sample from 18:49-19:30 UTC on 2026-09-19.
+
+The sample reported 101 queued, 22 pending, 12 in-progress, and 215 completed
+workflow records. Those counts are workflow records, not occupied runner slots.
+Nevertheless, duplicate push and pull-request records for the same integration
+branch head were visible in the sample. A readable subset of the production tag
+builds was more concrete: nine successful `build-arm` jobs consumed 26.7
+execution minutes, with a median queue of 7.0 minutes and median execution of
+3.0 minutes. At that ratio, suppressing an unnecessary build is worth more than
+micro-optimizing a build that must run.
+
+### Current state worth preserving
+
+- One consolidated staging-image workflow resolves affected targets from trusted
+  workspace closures. Draft image legs are deferred, and the terminal status job
+  owns the required context.
+- Playwright builds once per route and distributes outputs to shards. Public
+  ARM64 jobs restore trusted pnpm and Turbo caches but never write them.
+- Public ready pull requests use the restricted ARM64 pool; its workflow
+  boundary remains Klicker-only and tied to the trusted reusable workflow.
+- Metadata-only edits and unchanged lifecycle events can reuse successful
+  validation when their exact evidence contract matches.
+- AMD publication remains disabled except for the optional targets whose AMD
+  jobs are explicitly disabled; no broad AMD fan-out has returned.
+
+### Priority R1: activate change-based draft Playwright selection
+
+The narrowed draft selector and its status coverage are merged, but the
+repository-level control list contained no
+`PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED` or canary variable. Organization or
+environment inheritance could not be inspected with the current token. Until an
+effective control is present, an eligible draft falls back to a full hosted
+Playwright wave.
+
+Execute this first because it is already implemented and its qualification sample
+showed material avoidable work: documentation-only drafts previously consumed a
+full eight-shard wave, while the selector can emit `skip`, a bounded smoke
+selection, or a small partial plan. Use one exact draft canary first, inspect the
+execution plan, route, selected jobs, and status receipt, then enable the global
+control. Ready pull requests must continue to require the full eight-shard plan.
+
+Acceptance is live proof on one canary draft and one ready pull request that the
+draft mode is honored without weakening the ready-state full-coverage gate. This
+activation is a repository settings change and needs its existing named gate.
+
+Current state (2026-09-20, read from the repository variable list): the variable
+set contains `PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR`, `PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED`,
+`PUBLIC_PR_PLAYWRIGHT_CACHE_CANARY_PR`, `PUBLIC_PR_PLAYWRIGHT_CACHE_ENABLED`,
+`PUBLIC_PR_PLAYWRIGHT_WORKERS`, and the promotion and release-branch variables. The
+two variables this priority needs are still absent, so an eligible draft falls
+back to a full hosted wave. The outstanding request is one named-authority
+change with two steps: set `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_CANARY_PR` to one
+draft and read its execution plan, route, selected jobs, and status receipt, then
+set `PUBLIC_PR_PLAYWRIGHT_SMART_DRAFT_ENABLED=true` and prove the same on one
+ready pull request.
+
+### Priority R1a: define a minimum validation envelope for bounded changes
+
+Several validation lanes are already path-aware (`test-unit`, `test-graphql`,
+`test-olat-api`, `test-intl-production`, and the staging-image plan), but a
+pull request that only changes documentation, workflow orchestration, or agent
+guidance can still pay for a full codebase install/build/typecheck, full
+Playwright on ready pull requests, and Sonar/CodeQL analysis. That mismatch is
+the remaining source of avoidable waves after smart drafts.
+
+Introduce one repository-owned minimum-validation classifier rather than a
+second selector in each workflow. It receives the same merge-base diff and emits
+a validated change class together with the exact required contexts that class
+must satisfy. The first classes should be:
+
+- `documentation-and-planning`: Markdown under `docs/`, `project/`, and
+  `.agents/skills/`. Required evidence is the codebase check's documentation
+  and policy validation, gitleaks, and image/status reporters that can prove a
+  no-change selection. No Playwright, unit, GraphQL, OLAT, i18n smoke, Sonar, or
+  CodeQL.
+- `ci-orchestration`: files under `.github/workflows/` and
+  `.github/scripts/`. Required evidence is the codebase check's CI contract
+  suite (including the workflow validators and event-gate tests), gitleaks, and
+  the status reporters that validate skips. Playwright runs only the trusted
+  bounded smoke selection unless the diff also touches application or spec
+  inputs. Unit/GraphQL suites run only when their declared inputs changed.
+
+The classifier must fail closed like the Playwright selector: an empty diff,
+unknown path, deleted spec, renamed file, workflow that no longer declares its
+trigger, or candidate tree that lost the bounded spec expands to the full
+validation envelope. Base retargets, non-empty diffs after a metadata-only edit,
+and unresolvable diffs also expand. A skip is admissible only with a recorded
+class, the paths that justified it, and the required-context result that
+validated it; it must never inherit a prior failed or pending result.
+
+Keep the ready-state full Playwright gate for changes that can affect application
+behaviour or the tested runtime. The minimum envelope intentionally accepts
+lower test coverage for bounded CI/docs changes; the class definitions and their
+fail-closed expansion rules are therefore explicit review contracts, not silent
+path filters. Changing a class boundary is a reviewable source change.
+
+Acceptance is two live PR proofs: a documentation-only PR and a CI-only PR. Each
+must show the bounded codebase check, validated skips for irrelevant suites, no
+Playwright beyond the bounded smoke plan, no Sonar/CodeQL where the class
+excludes them, and a normal full envelope when one unrelated application file is
+added to the same diff. Branch protection must keep every required context
+reporting, with skips validated by the terminal reporter rather than absent.
+
+### Priority R2: give trusted image publication its own BuildKit cache
+
+Same-repository staging pull requests import and export a GHCR BuildKit cache,
+but consolidated staging push builds still force `no-cache: true`, and the
+release-tag production workflows also build uncached. This leaves the most
+trusted, expensive publications colder than ordinary pull-request builds.
+
+Add a separately controlled trusted cache namespace for branch-push and
+release-tag publication. A push may import both its branch cache and a protected
+baseline cache, but must not consume a cache written by an untrusted pull
+request. Keep `mode=max` for intermediate install and build layers. Introduce a
+periodic base-image refresh job so cache reuse does not preserve obsolete base
+packages indefinitely; vulnerability admission and image receipts remain
+unchanged.
+
+Qualify one representative backend image and one representative Next image. A
+cold build seeds the trusted cache; a second trusted build with unchanged inputs
+must show cache hits, equivalent runtime configuration and labels, successful
+scan admission, and lower execution time. Record queue and execution separately.
+Only after that proof should the cache contract expand to all staging and release
+targets.
+
+### Priority R3: reuse unchanged component images by input identity
+
+The current full-SHA publication guard prevents rebuilding only when the exact
+commit tag already exists. A squash merge or an unrelated documentation commit
+creates a new SHA and therefore rebuilds every selected component even when its
+build inputs are unchanged.
+
+Introduce a canonical input fingerprint per image target, derived from the same
+trusted dependency closure that already drives staging selection, plus Dockerfile,
+build arguments, environment file selection, lockfile, manifests, and base-image
+digest. Persist a complete release manifest that maps every target to its
+original source SHA, canonical input fingerprint, image digest, architecture,
+and qualification receipts. A missing target remains a failure; reuse never
+produces an incomplete release.
+
+Start with backend, worker, migrator, and other runtime-configured services.
+They are the best candidates for one build promoted across environments. The
+frontend images need a separate decision: their staging and production workflows
+replace environment files and pass `NEXT_PUBLIC_*` build arguments, and Next.js
+freezes those values into the browser bundle at build time. Until those values
+move behind a runtime-injected configuration seam, unchanged frontend images must
+not be promoted from staging to production.
+
+Acceptance is a release whose manifest deliberately reuses several unchanged
+backend components and rebuilds one changed component. The promoter must bind the
+reused digest to its original qualification evidence and the current release
+manifest, and must reject any incomplete, ambiguous, or frontend-unsafe reuse.
+
+### Priority R4: remove duplicate integration-branch validation
+
+Integration branches currently receive both pull-request and push workflows for
+the same head. The equivalent-run contract deliberately excludes every `v3*`
+push because those branches can be deployment sources. Preserve that caution,
+but extend reuse only where the tested tree, event semantics, route, coverage,
+environment inputs, and trusted control revisions are exactly equivalent.
+
+The safest first slice is a read-only audit that groups same-head push and PR
+runs and counts which pairs satisfy a proposed equivalence predicate. Use it to
+identify one non-deployment-critical workflow, confirm that its inputs cannot
+differ between the two events, and then implement reuse for that workflow. Do
+not globally let a pull-request result satisfy a candidate push until release
+admission can distinguish equivalent validation from a deployment candidate that
+needs its own push evidence.
+
+### Priority R5: stop occupying runners while Sonar waits
+
+The Sonar workflow can hold a hosted runner for up to ten minutes while polling
+for unit and GraphQL coverage producers. Convert coverage collection to an
+event-driven path or make the waiter runner-neutral. If GitHub has no suitable
+runner-neutral dependency mechanism, split analysis so the scanner starts only
+after its producers have terminal artifacts, without introducing a generic
+runner-consuming poller.
+
+Acceptance is a representative run where the Sonar job starts after producer
+completion and no hosted job spends its timeout waiting on another queued run.
+Coverage receipts and the fail-closed missing-artifact policy stay unchanged.
+
+### Priority R6: narrow Playwright build work to the selected plan
+
+Once smart drafts are active, a `skip` or bounded draft must not first build
+every package and application. Derive the minimum build graph from the selected
+spec profile and its application/runtime dependencies. Keep the current full
+`build:test` graph for full ready-state waves. This should follow R1 so the
+selector's live behavior, rather than its shadow artifacts, defines the graph.
+
+### Priority R7: repair Turbo cache consumers without adding infrastructure
+
+Do not add another cache provider yet. Codebase checks already use remote
+caching, while GraphQL and unit validation restore dependencies but rebuild their
+dependency graphs locally. First make those consumers restore compatible build
+artifacts. Then narrow task-local environment hashes instead of using the broad
+`globalEnv` list for every package, and reconsider type-check caching only with
+output-equivalence proof.
+
+Any Turbo change must compare restored outputs and task hits, not only elapsed
+time. Environment inputs that materially affect an output stay in that task's
+hash; narrowing them is a correctness-reviewed change, not a mechanical cleanup.
+
+### Runner disposition
+
+Keep the current two-host, eight-process public pool and one Playwright worker
+per shard. The prior two-worker experiment regressed and exposed shared seeded
+course state. Do not place trusted image publication or credential-adjacent
+reporting on the persistent public pool. Any proposal to add VMs or hosted
+concurrency must now compete against R1-R5, which remove work entirely.
+
 ## Progress
 - 2026-09-13 slice C1 (affected-image path filters): each `v3_*-stg.yml`
   pull-request filter now lists that image's transitive workspace dependency
@@ -1707,3 +1925,333 @@ required from the user.
   - **Still open.** The consolidated workflow's AMD legs are `optional: true`
     and remain `if: false`. The live promotion that consumes the audit line
     had not yet completed at the time of this record.
+- 2026-09-19 roadmap refresh at `v3` `50a1549d2c`: smart-draft routing is
+  merged and verified on the exact head, staging-image consolidation is active,
+  public Playwright caching is enabled, and production/release output reuse is
+  now the highest-value frontier. A 350-record Actions sample showed 101 queued,
+  22 pending, and 12 in-progress workflow records; a readable production-build
+  subset spent a median 7.0 minutes queued versus 3.0 minutes executing across
+  nine successful jobs. The new `2026-09-19 output-reuse prioritization`
+  section sequences R1 smart-draft activation, R2 trusted BuildKit caches, R3
+  input-identity image reuse, R4 duplicate integration-branch validation, R5
+  runner-neutral Sonar coverage collection, R6 selected-plan build graphs, and
+  R7 Turbo consumer repair. Immediate next actions are the exact-draft
+  smart-routing canary and the backend-plus-Next trusted-cache qualification;
+  capacity expansion is deferred until those work-removal slices are measured.
+- 2026-09-20 roadmap amendment at `v3` `0e2c0e8b76`: added priority R1a, a
+  minimum-validation envelope for bounded changes. Documentation/planning-only
+  and CI-orchestration-only pull requests should not pay for application builds,
+  Playwright waves, Sonar, CodeQL, or unrelated test suites when their changed
+  inputs cannot affect those outcomes. The slice must use one repository-owned,
+  fail-closed classifier with recorded class evidence and validated terminal
+  skips; unknown paths, empty diffs, deleted or renamed specs, missing bounded
+  specs, retargets, and mixed application changes expand back to the full
+  envelope. R1 remains first because smart-draft activation already provides the
+  draft-side selector and status machinery that R1a reuses.
+- 2026-09-20 slice R1a (minimum validation envelope, implementation on
+  `rs/ci-output-reuse-roadmap`): one classifier
+  (`.github/scripts/minimum-validation-class.cjs`) now resolves the changed-path
+  records into `documentation-and-planning`, `ci-orchestration`, or
+  `application` with the decisions that class requires, and every lane reads its
+  own decision from it. The Playwright lane derives the class from the records it
+  already fetched, carries `envelope_class` into its plan artifact and workflow
+  outputs, and the required status reporter validates mode and class together;
+  the bounded classes narrow only on pull requests, never on a push. The
+  required codebase check classifies inside its own suite job, keeps every
+  contract suite, skips the Turbo build, the type check, ESLint, Biome, Knip,
+  and the Prisma drift check for a bounded class, uploads a classification
+  receipt, and gates each skipped step on `!= 'bounded'` so an absent or broken
+  classification widens the suite. CodeQL and SonarCloud skip a
+  documentation-and-planning pull request through a small `classify` job and
+  repeat the pull-request-only boundary in their analysis condition.
+  `.github/actions/change-envelope` is the one lane adapter, and
+  `.github/actions/changed-paths` now writes rename-aware records for its
+  consumers, where a missing record file stays an unproven diff. Contract tests
+  cover the classifier, the selector and plan metadata, the workflow validator,
+  the gating shape, and the records contract: the 330-test check-suite set and
+  the 71 Playwright CI contracts pass locally. Live acceptance on a
+  documentation-only and a CI-only pull request, including the full-envelope
+  contrast when one application file joins the same diff, is still pending on
+  this branch.
+- 2026-09-20 slice R5 (runner-neutral Sonar analysis, implementation on
+  `rs/ci-output-reuse-roadmap`): the analysis no longer holds a runner while it
+  waits for its coverage producers. Five consecutive runs measured the old
+  `Collect verified coverage inputs` step at 2 s, 63 s, 184 s, and 378 s
+  (`35472129815`, `35471995800`, `35470927162`, `35470527301`,
+  `35468150000`), and the long waits ended only when producers that were queued
+  behind other runs finished: in `35470527301` the `test-unit` suite ran
+  21:29:03-21:32:34 UTC and `test-graphql` 21:29:11-21:35:34 UTC while the
+  analysis job held its runner. One reusable `.github/workflows/sonar-analysis.yml`
+  now owns the single analysis definition. Both coverage producers call it from
+  a job that needs their own suite, and `v3_sonarcloud.yml` calls it at the
+  branch and ready-for-review boundary; the workflow that observes every
+  producer terminal imports the coverage and analyzes, and one that still sees a
+  queued producer defers with a named reason and returns immediately. At most
+  one analysis is published per pull request, head, and base: a successful scan
+  uploads a receipt artifact named for that revision, a later host that finds
+  the receipt defers, the caller-level concurrency group plus that lookup close
+  the race between the two producers, and `run_attempt > 1` ignores the receipt
+  so an explicit re-run analyzes again. The coverage identity checks are
+  unchanged (head, base, tested tree, and artifact), and the wait window
+  constants are gone, with a contract test that fails if a coverage wait
+  returns. The decision reads the live pull request rather than the event
+  payload, because a producer job is evaluated minutes after its event.
+  Accepted limitation: a pull request that becomes ready between a producer run
+  and its job evaluation receives its analysis at the ready boundary, which
+  imports the coverage the draft already produced. The 359-test check-suite set
+  and the 71 Playwright CI contracts pass locally; live acceptance is the
+  analysis of this branch's own pull request.
+- 2026-09-20 slice R7a (shared Turbo remote cache for the validation suites,
+  implementation on `rs/ci-output-reuse-roadmap`): the unit and GraphQL
+  workflows ran `turbo run build` without cache credentials, so a filtered
+  dependency build compiled locally even though the codebase check had already
+  published the identical task outputs for the same commit; a codebase-check log
+  from `0e2c0e8b76` shows the remote cache working there (the lint task
+  reported `FULL TURBO` and the typecheck build replayed 24 cached tasks). Both
+  workflows now declare the same `TURBO_TOKEN`, `TURBO_TEAM`, and
+  `TURBO_REMOTE_ONLY` as the codebase check, and a contract test pins the
+  credential to exactly those three trusted consumers and requires every
+  workflow that runs `turbo run` to restore the shared cache. The measure is
+  the Turbo cache-hit lines in the `Build unit-test dependencies` and GraphQL
+  build steps of the next run, not elapsed time. The public Playwright route
+  stays on its read-only Actions cache, because a public pull request may not
+  hold a credential that can write the shared cache. `check: { cache: false }`
+  was already configured, so the remaining R7 work is the broad `globalEnv`
+  list: narrowing it needs per-task environment attribution evidence, since a
+  task that genuinely reads a removed variable would restore a stale artifact
+  instead of rebuilding.
+
+- 2026-09-20 slice R2 (trusted image-publication cache, implementation on
+  `rs/ci-output-reuse-roadmap`): a push to a staging branch built every selected
+  image with `no-cache: true`, so the publication a deployment is promoted from
+  was the coldest build in the pipeline while an ordinary same-repository pull
+  request already imported and exported a GHCR BuildKit cache. The three ARM
+  build jobs in `.github/workflows/v3_images-stg.yml` now read and write
+  `ghcr.io/<repo>/<image>-arm:buildcache-trusted-<epoch>,mode=max`, where the
+  plan job resolves the epoch as the ISO week (`date -u +%G-W%V`) and records it
+  in the run summary and the `cache-epoch` workflow output. A publication never
+  reads the pull-request namespace, a same-repository pull request keeps exactly
+  that namespace, a cross-repository pull request still gets no cache, and the
+  release-tag production workflows keep their own `no-cache` contract because
+  they are out of this slice. Rebuilding the base layer at least once per epoch
+  replaces the roadmap's proposed periodic base-image refresh job: reuse cannot
+  preserve obsolete `apk` packages indefinitely, the previous epoch is
+  deliberately not imported, and the scanner still enforces the same
+  HIGH/CRITICAL admission on the pushed digest. The trusted promotion validator
+  rejects any other cache shape; `validateBuildCache` in
+  `.github/scripts/staging-image-workflow.cjs` compares both inputs against the
+  exact expected expression, requires `mode=max`, and fails a publication that
+  disables the shared cache, with three new negative cases in
+  `stg-release-promoter.test.js`. Verification: 31/31 promotion tests, 17/17
+  event gates, the staging workflow validator against the edited workflow, and
+  Prettier clean. Live qualification (a cold seed, then a second trusted build
+  with unchanged inputs showing hits, equivalent labels, successful scan
+  admission, and lower execution time, with queue and execution recorded
+  separately) still requires a staging push and is not claimed here.
+- 2026-09-20 slice R6 (build only the planned Playwright graph, implementation on
+  `rs/ci-output-reuse-roadmap`): the Playwright build job built every workspace
+  package and every application even when the canonical plan had already
+  selected a bounded set of specs, so a bounded draft paid the whole
+  application build (approximately 218 s of application builds in the ARM64
+  sample of run 34747467117) to run a handful of specs. The build action now
+  resolves the minimum graph from the plan before it installs anything: every
+  shard declares the devrouter profile it resolves at startup, and the union of
+  those profiles is the smallest graph that can serve the wave. The union is
+  resolved by the candidate's own profile runtime
+  (`util/playwright-profile-runtime.mjs resolve`), so the built filters are the
+  same `--filter=@klicker-uzh/…` selectors the shards pass to
+  `turbo run start:test`, and Turbo's `^build:test` dependency edges still pull
+  the shared packages those applications import. Only a bounded `selected` plan
+  narrows the graph; a full plan, a skip, a missing profile runtime, a maximal
+  profile (`full`/`playwright`), a shard without a profile, an unavailable
+  resolver, a filter that is not a workspace package selector, or a build that
+  arrived without usable filters all keep the complete graph and warn, because
+  an incomplete graph fails the shards while an oversized one only costs time.
+  The archive carries the Next outputs that exist, so a bounded wave publishes
+  a readable archive for the applications it actually built, and the build
+  telemetry records `buildGraphMode`, `buildGraphProfile`, and
+  `buildGraphReason` so the next run proves which graph executed. Verification:
+  224 local contract tests (including the new
+  `.github/scripts/playwright-build-graph.test.cjs`), the public Playwright
+  workflow validator, `bash -n` on every changed step, GNU tar 1.34 in a Debian
+  container for the archive in both the populated and the empty form, and the
+  real resolver in this checkout (profile `manage,pwa` resolves to
+  `api,auth,manage,pwa`). The live measure is the build-graph mode and build
+  duration of the next bounded pull-request wave, which this entry does not yet
+  claim.
+
+- 2026-09-20 slice R7b (Turbo cache consumers measured on `faa84591ce`,
+  measurement only, no source change): the R7a wiring is live, but the effect is
+  not yet visible in either validation suite on that head. The unit wave
+  (`test-unit` run 35503927853, job `Build unit-test dependencies`) replayed
+  nothing: every task logged `cache miss, executing <hash>` for
+  `0523b2d1b7c4adee`, `8135b963558b8670`, `b08269a2410e3d03` and
+  `dc980cda9239a016`, and only the pnpm store came from a cache. The GraphQL
+  wave (`test-graphql` run 35503927846, job `Build dependency packages`) proves
+  the consumer works: it reported `Remote caching enabled`, replayed
+  `0523b2d1b7c4adee` (`@klicker-uzh/prisma:build`) from the remote cache, missed
+  the other seven tasks (including `@klicker-uzh/feature-flags`, `types`,
+  `hatchet`, `grading` and `util`), and finished all eight tasks in 50.7 s. One
+  hit of eight is the shape expected when a consumer starts before its producer:
+  the codebase check publishes these task outputs for the same commit, and the
+  unit wave began while that check was still queued, so there was nothing to
+  replay yet. The same log printed a `TURBO_REMOTE_ONLY` deprecation warning,
+  which is unrelated to this change and does not affect the hits. The measure
+  stays the cache-hit lines of a suite that starts after the codebase check for
+  the same commit, not elapsed time. Narrowing the 126-entry `globalEnv` list
+  stays unimplemented on purpose: removing a variable from a task hash needs
+  per-task evidence of which variables that task actually reads, and no such
+  evidence exists yet, so the broad list keeps the restored outputs correct.
+
+- 2026-09-20 slice R4 (integration-branch duplicate validation audited, reuse
+  deliberately not implemented, on `rs/ci-output-reuse-roadmap`): the read-only
+  audit covers 1000 push and 1000 pull-request runs from 2026-09-17T19:18Z to
+  2026-09-20T10:19Z. It found 985 integration push runs (`v3`, `v3-*`), of which
+  132 share a head and workflow with a pull-request run; those pairs consumed
+  about 2082 push-side wall minutes. The proposed equivalence predicate admits
+  none of them. In 132 of 132 pairs the push run started first, 131 pairs
+  overlap in time, and the one pair that ran sequentially had its pull-request
+  run start after the push run had already finished, which is the wrong
+  direction to save anything. The reverse direction has no pool to reclaim
+  either: 144 pull-request runs on `v3*` heads total 1708.7 wall minutes, and 132
+  of them are twin-concurrent waves that start within five minutes of the push
+  run for the same head, which is the ordinary `synchronize` shape rather than a
+  sequential lifecycle retest. Tree comparison shows why the pairs cannot be
+  treated as equivalent: a pull-request run validates the merge of the head into
+  its base, while the push run validates the head's own tree. Two structural
+  facts make the omission deliberate rather than a temporary measurement.
+  `deploy-stg-promote.yml` collects nine gated workflows from *push* runs of the
+  candidate SHA on the selected source branch, so no pull-request result can
+  satisfy release admission; and the selected source branch is a `v3-*` branch,
+  which is exactly why `ci-equivalent-run.cjs` excludes every `v3*` push.
+  Duplicate Playwright cost on those pushes already lands on hosted runners,
+  because `playwright-route.cjs` routes every push to `hosted`, so it never
+  occupied the self-hosted pool. The decision is to keep the equivalence
+  predicate unchanged and to leave supersede reclamation to the existing
+  `ci-obsolete-runs.cjs` inventory, which is already policy-limited and still
+  has no CI invocation path; adding one would cancel other contributors' runs
+  and needs its own authorization. The query and the predicate are preserved as
+  `.github/scripts/ci-duplicate-audit.cjs` so the next refresh can re-measure
+  them instead of rebuilding the analysis, with focused tests over synthetic run
+  records.
+
+- 2026-09-20 slice R3 (canonical image-input fingerprints, reuse records, and a
+  release manifest in the promotion controller, implementation on
+  `rs/ci-output-reuse-roadmap`): the full-SHA publication guard skipped a
+  rebuild only when the exact commit tag already existed, so a squash merge or a
+  documentation commit rebuilt every selected image even when its build inputs
+  were unchanged. Three pieces now close that gap. `image-input-fingerprint.cjs`
+  derives one canonical SHA-256 per target over the trusted dependency closure,
+  the Dockerfile, the build arguments, the selected environment file, the
+  lockfile and manifests, and the resolved base-image digests.
+  `staging-image-targets.cjs` marks ten runtime-configured targets
+  `reuse: true`; the Next.js frontends stay unmarked because their staging and
+  production builds freeze `NEXT_PUBLIC_*` values into the browser bundle, which
+  is the R1 exclusion the manifest validator now enforces as
+  `unexpected-fingerprint`. In `.github/workflows/v3_images-stg.yml` each ARM64
+  job resolves its fingerprint after checkout and publishes it as the
+  content-addressed tag `fp-<fingerprint>` through
+  `.github/actions/staging-image-input-fingerprint` and
+  `.github/scripts/stg-image-reuse-guard.sh`. The guard runs in `check` mode
+  before the build: when the tag already exists it adopts that digest instead of
+  building, and on every path it writes a reuse record, so a publication can
+  never carry a fingerprint without saying whether it rebuilt. The job uploads
+  `build-digest-<targetId>` with `digest.txt`, the fingerprint record, and the
+  reuse record. Promotion reads those records from the exact promoted run and
+  refuses a missing, duplicated, expired, or oversized artifact, then validates
+  each record against the trusted inventory: matching target, canonical
+  fingerprint, tag derived from that fingerprint, `reuseEligible === true`, a
+  known schema version, a boolean `adopted`, and a digest whenever the record
+  claims an adoption. The assembled release manifest binds every promoted digest
+  to its target, architecture, fingerprint, and scan receipt, and an adopted
+  digest additionally names the commit it was built from. That commit is read
+  from the image's own `org.opencontainers.image.revision` label (index or image
+  manifest, then the single `linux/arm64` platform manifest, then the config
+  blob) rather than from a run id, and the promoter proves it is an ancestor of
+  the candidate before the manifest is admissible. Rejections are named:
+  `reuse-ancestry`, `reuse-digest`, `reuse-fingerprint`, `reuse-provenance`,
+  `reuse-not-eligible`, `incomplete-reuse`, `unexpected-fingerprint`,
+  `unexpected-receipt`, and `missing-target`; an adoption whose digest is not the
+  published one fails earlier with `adopted <digest> but published <digest>`. The
+  `stg-release-promotion/v2` receipt now carries `release_manifest` and
+  `reuse: {rebuilt, reused}`. Deliberately out of scope: frontend reuse (the R1
+  exclusion above) and the AMD64 legs, which publish nothing the controller
+  promotes. Two consequences of adoption are accepted rather than solved. The
+  first publisher of a fingerprint keeps the tag, so a later publication with
+  the same inputs adopts the digest that publication produced instead of building
+  its own. The tag is shared by every line that publishes this image, so when a
+  `v3` commit changes a target's inputs and the release line adopts that digest
+  before `v3` has been merged, the promotion fails closed with
+  `reuse-ancestry`; the recovery is the standing `v3` to `v3-audit` merge, after
+  which the same digest is a proven ancestor and the next complete push promotes
+  it. Adoption is also what makes the resolved fingerprint and the promoted
+  digest the same object: `adopt` mode creates the immutable full-SHA tag from
+  the adopted digest with `docker buildx imagetools create`, so the scan leg
+  judges exactly the digest the release later promotes and no step rebuilds a
+  digest that is already qualified. The step order is part of that contract, and
+  the trusted validator now rejects a job that resolves reuse after the publish
+  guard. One boundary stays open on purpose. The input set is declared by the
+  candidate tree (the inventory's globs and prep steps), so the promotion side
+  proves that an adopted digest carries a fingerprint of a trusted-eligible
+  target, that the scan admitted exactly that digest, and that the digest's own
+  revision label is an ancestor of the candidate; it does not recompute the
+  fingerprint, because that would load candidate files into the trusted process.
+  A publisher that narrows a target's closure can therefore adopt a digest that
+  does not describe its tree. That needs push access to a `v3` line, which
+  already carries the ability to publish and promote images for that line, and a
+  closure narrowed for a target the trusted inventory does not mark reusable is
+  still rejected as `unexpected-fingerprint`. Verification:
+  `stg-release-promoter.test.js` grew from 31 to 46
+  tests covering the reuse path with its receipt, a same-commit re-run, a
+  non-ancestor reuse source, an adoption of a foreign digest, records of
+  non-eligible targets being ignored instead of trusted, an incomplete record
+  pair, six record shapes that contradict the inventory, and a publication
+  missing its digest artifact; `release-image-manifest.test.js` is 11 tests,
+  `image-input-fingerprint.test.js` 10, the check-suite set is 403 green, the
+  workflow mutation suite rejects 22 weakened candidates including one that
+  resolves reuse after the publish guard, and the guard was executed against a
+  fake `docker` with the tag present and absent.
+  Live qualification is not claimed here: the first staging push publishes
+  fingerprints without adopting anything, and only a later push with unchanged
+  inputs can show an adoption. The measure is `reuse.reused` in the promotion
+  receipt and the `release_manifest` entries of that run.
+
+- 2026-09-20 R4 audit repaired and re-measured (same branch). The preserved
+  `ci-duplicate-audit.cjs` could not be re-run as documented: its example asked
+  `gh run list --json` for `id` and `workflowPath`, which this `gh` does not
+  expose; a record whose run had not started aborted the whole measurement; and
+  the example passed `--json` without the value the argument parser required.
+  The script now accepts the run-id spellings `id` and `databaseId`, the
+  workflow spellings `workflowPath`, `path`, `workflowName` and `name`, and
+  the start spellings `startedAt`, `started_at` and `run_started_at`. A record
+  whose run never started is skipped and counted in
+  `skippedPushRecordsWithoutStart` / `skippedPullRequestRecordsWithoutStart`
+  rather than failing the audit, and `--json` works as the documented switch.
+  Four tests were added, including one that executes the documented command line
+  end to end and parses its report; the queue-policy suite is 407 green.
+
+  Measurement with the repaired query (1000 push and 1000 pull-request records,
+  2026-09-20 13:42Z): 985 push runs sat on integration branches, 132 of them
+  paired with a same-workflow pull-request run on the same head within five
+  minutes, and the push side of those pairs accounts for 2052.3 wall minutes.
+  Every pair has one topology: `v3-ai` pushed while the standing release pull
+  request #5092 (`v3-ai` → `v3`) revalidates the same head. Per workflow, the
+  push-side duplicate minutes are 297 Playwright, 274 Build staging images, 231
+  Check codebase, 221 test-graphql, 216 production translation context, 215
+  test-unit, 185 test-OLAT-API, 156 Test lecturer MCP server, 104 CodeQL, 87
+  SonarCloud and 61 gitleaks. Nine of those eleven workflows are release
+  admission evidence (`REQUIRED_CI_WORKFLOWS` in `stg-release-promoter.js` and
+  the `deploy-stg-promote.yml` watch list), so the roadmap's precondition — one
+  non-deployment-critical workflow — is met only by `Test lecturer MCP server`
+  and `CodeQL`, which together account for 260 of the 2052 minutes.
+
+  The second half of R4 stays unimplemented for a reason the measurement makes
+  concrete. A pull-request run checks out `refs/pull/5092/merge` while the push
+  run checks out the branch head, so the two validate the same tree only while
+  the base branch is already an ancestor of that head; that property changes as
+  `v3` advances. Reuse therefore needs a per-event proof (compare the merge
+  commit's tree with the head tree) and a reporter that reads the push run's
+  outcome after the fact instead of waiting on a runner while it runs, which is
+  the shape R5 established for Sonar coverage. Both change what validates the
+  release pull request, so they stay behind an explicit decision instead of
+  being inferred from this audit.

@@ -7,21 +7,31 @@ expected_tools_by_profile:
 
 ## Ex-Ante Alpha Under Heterogeneous Expectations
 
-Yes, ex-ante alpha differs because under heterogeneous expectations each investor $i$ can have their own expected return $\mu_k^i$.
+Ex-ante alpha uses expected returns, whereas ex-post alpha uses realized returns. Under homogeneous expectations, the course defines
 
-A useful form is:
+$$
+\alpha_k=\mu_k-\left[R_f+\beta_k(\mu^M-R_f)\right]
+$$
+
+and the realized one-period deviation as
+
+$$
+\hat\alpha_k=R_k-\left[R_f+\beta_k(R^M-R_f)\right].
+$$
+
+Under heterogeneous expectations, investor $i$ can have an individual expected return $\mu_k^i$. The investor-specific ex-ante alpha is
 
 $$
 \alpha_k^i = (\mu_k^i - R_f) - \beta_k(\bar{\mu}^M - R_f)
 $$
 
-Here $\mu_k^i$ is investor $i$'s expected return for asset $k$, and $\bar{\mu}^M$ is the market expectation aggregated across investors.
+Here $\bar{\mu}^M$ is the aggregate market expectation. The investor index belongs on the expected return and alpha because beliefs differ.
 
-Under homogeneous expectations, everyone uses the same expected returns, so there is no investor-specific $\mu_k^i$. Under heterogeneous expectations, the alpha is investor-specific.
+Heterogeneous expectations do not imply that every ex-ante or ex-post alpha must be nonzero. The formula can still evaluate to zero, and ex-post alpha depends on realized returns rather than directly on investors' prior disagreement.
 
 Looking at the formula, which term makes the ex-ante alpha specific to investor $i$?
 
 ## Sources
 
-- Financial Economics script FS26, Chapter 3.6, homogeneous CAPM and alpha, p. 50
-- Financial Economics script FS26, Chapter 4.2, alpha under heterogeneous expectations, p. 57
+- Financial Economics script FS26, Section 3.6, ex-ante and ex-post alpha, Equations 3.20–3.21
+- Financial Economics script FS26, Section 4.2, ex-ante alpha under heterogeneous expectations, Equations 4.11–4.13

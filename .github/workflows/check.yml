@@ -1,5 +1,23 @@
 name: Check codebase
 
+# The suite runs in one of two envelopes, decided by the repository-owned
+# classifier from the same changed-path records the rest of CI selects on. A
+# class that cannot affect the application build skips the application build, the
+# type check, and the code-quality gates, and still runs every contract suite that
+# can falsify that class. The class is a reviewable source change in
+# .github/scripts/minimum-validation-class.cjs, and the classification receipt
+# records the exact paths that justified it.
+#
+# Narrowing is limited to pull requests. A push validates a deployment candidate
+# and always runs the full envelope, whatever the class of its changed paths.
+#
+# The envelope is computed inside the suite job rather than in a job of its own:
+# it costs one diff on a checkout the suite already performs, so it never delays
+# the suite behind a second runner allocation. An unresolvable classification
+# leaves every class output empty, and a gated step runs whenever its class
+# output is anything but the bounded decision, so a broken classification can only
+# widen the suite.
+
 on:
   push:
     branches: ['v3', 'v3*']
@@ -58,6 +76,43 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The class comes from the one repository-owned classifier, which reads the
+      # same rename-aware changed-path records the selectors decide on.
+      - name: Classify the changed paths
+        id: classify
+        uses: ./.github/actions/change-envelope
+        with:
+          receipt-path: minimum-validation-classification.json
+
+      - name: Upload the classification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimum-validation-classification
+          path: minimum-validation-classification.json
+          # An absent receipt means the classification failed, which the previous
+          # step reports and which widens the suite instead of failing it.
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Report the bounded codebase check
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.classify.outputs.codebase_check == 'bounded'
+        env:
+          CHANGE_CLASS: ${{ steps.classify.outputs.change_class }}
+          CHANGE_CLASS_REASON: ${{ steps.classify.outputs.change_class_reason }}
+        run: |
+          {
+            echo "### Bounded codebase check"
+            echo
+            echo "Change class '$CHANGE_CLASS' ($CHANGE_CLASS_REASON) cannot affect the"
+            echo "application build, so this run deliberately skips the turbo build, the type"
+            echo "check, ESLint, Biome, knip, and the Prisma schema-sync drift check. Every"
+            echo "contract suite that can falsify this class still runs, and the classification"
+            echo "receipt names the paths that justified the class."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check pull request commit identities
         if: github.event_name == 'pull_request'
         env:
@@ -94,6 +149,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Test evaluation launcher without private submodule access
+        run: |
+          node --test util/read-klicker-eval-config.test.mjs
+          bash util/test-klicker-eval-wrapper.sh
+          uv run --no-project --python 3.12 python -m unittest util/test-klicker-eval-judge.py
+
       - name: Install Devrouter profile planner
         run: bash .github/scripts/install-devrouter.sh
 
@@ -103,7 +164,10 @@ jobs:
       - name: Check CI queue policy
         run: |
           node --test \
+            .github/scripts/direct-script-invocations.test.cjs \
             .github/scripts/ci-equivalent-run.test.cjs \
+            .github/scripts/ci-duplicate-audit.test.cjs \
+            .github/scripts/minimum-validation-class.test.cjs \
             .github/scripts/changed-paths.test.cjs \
             .github/scripts/ci-obsolete-runs.test.cjs \
             .github/scripts/ci-event-gates.test.cjs \
@@ -118,7 +182,26 @@ jobs:
             .github/scripts/image-scan-admission.test.cjs \
             .github/scripts/sonar-coverage-transport.test.cjs \
             .github/scripts/image-scan-receipt.test.cjs \
+            .github/scripts/image-input-fingerprint.test.cjs \
+            .github/scripts/release-image-manifest.test.cjs \
             .github/scripts/deploy-parity.test.cjs
+
+      # The chart is what production consumes from this branch, and nothing
+      # else renders it: a scheduling policy reaches a pod spec only when a
+      # template forwards the value, so the rendered manifests are the only
+      # proof. The renderer is pinned because the runner image's preinstalled
+      # Helm version changes without notice. The step precedes the deploy
+      # parity gate, which reports a cross-branch ordering state and must not
+      # hide the chart result.
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
+        with:
+          version: v3.21.4
+
+      - name: Check Helm chart scheduling contract
+        run: |
+          node --test deploy/scripts/verify-topology-spread.test.mjs
+          node deploy/scripts/verify-topology-spread.mjs
 
       # Production renders deploy/ from v3 while the release images are tagged
       # from v3-ai, so the two revisions must not drift apart. The gate names
@@ -127,7 +210,18 @@ jobs:
         if: >-
           (github.event_name == 'push' && github.ref_name == 'v3') ||
           (github.event_name == 'pull_request' && github.base_ref == 'v3')
-        run: node ./.github/scripts/deploy-parity.cjs --other v3-ai
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        # A pull request is responsible only for the deploy/ paths it edits, so
+        # it passes its base and an already divergent pair of branches is
+        # reported instead of failing an unrelated change. A push to v3
+        # validates the branch itself and keeps the strict comparison.
+        run: |
+          if [ -n "$PR_BASE_SHA" ]; then
+            node ./.github/scripts/deploy-parity.cjs --other v3-ai --base "$PR_BASE_SHA"
+          else
+            node ./.github/scripts/deploy-parity.cjs --other v3-ai
+          fi
 
       - name: Check Playwright CI contracts
         run: |
@@ -156,15 +250,26 @@ jobs:
         run: pnpm run check:syncpack
 
       - name: Check linting (Biome, advisory)
+        # Runs unless the class proved that linting the changed paths cannot
+        # falsify the change. A missing class output runs it.
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
         continue-on-error: true
         shell: bash
         run: pnpm run lint:biome
 
       - name: Check linting
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
         shell: bash
         run: pnpm run lint
 
       - name: Check Prisma schema sync drift
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
         run: pnpm run check:prisma-sync
 
       - name: Check AGENTS.md command smoke
@@ -174,6 +279,9 @@ jobs:
         run: pnpm run check:removed-doc-artifacts
 
       - name: Build packages for typecheck (turbo)
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch origin ${{ github.base_ref }}
@@ -183,6 +291,9 @@ jobs:
           fi
 
       - name: Check typescript types
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -192,6 +303,9 @@ jobs:
           fi
 
       - name: Check unused code and dependencies (knip, advisory)
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.classify.outputs.codebase_check != 'bounded'
         continue-on-error: true
         shell: bash
         run: pnpm run knip

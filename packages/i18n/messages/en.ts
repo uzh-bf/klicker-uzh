@@ -937,6 +937,65 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      signup: {
+        accountTitle: 'Your account',
+        emailLabel: 'E-mail',
+        usernameHint:
+          'Your username is shown when you join a course leaderboard.',
+        assessmentTitle: 'Enable assessment access',
+        assessmentSubmit: 'Enable access',
+        assessmentDataCollectionNotice:
+          'We store your account data and the identity information provided by Switch edu-ID as well as data from courses and activities: such as answers and inputs in activities, assessments, points, and feedback.\n\nIn an assessment, identity information such as your matriculation number as well as detailed logs of your answer attempts and interactions (audit logs) are added.',
+        assessmentDataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.\n\nIn an assessment, authorised lecturers and assessment staff additionally receive your identity, answer details, and results for grading and follow-up. Other participants cannot see this assessment data.',
+        assessmentDataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. In an assessment, they additionally support grading and traceability. Your choice in the account settings applies to research and Learning Analytics. It does not affect points, grades, or assessment access.',
+        assessmentDataStorageNotice:
+          'Account data and answers are stored for the lifetime of your account. You cannot delete your assessment account and its data yourself: they remain available for traceability and during the applicable appeal and retention periods. Afterwards, they are deleted or anonymised. [Details in the privacy policy](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'I have read the [KlickerUZH privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of use](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. I have acknowledged the additional information about assessment data, inspection, and retention.',
+        accessTitle: 'Your access',
+        accessNoPassword: 'You do not need a password or any further input.',
+        dataUseTitle: 'Data use and settings',
+        dataCollectionTitle: 'What data do you collect about me?',
+        dataCollectionNotice:
+          'We store your account data and data from your courses and activities, such as answers and inputs in activities, their assessment, points, and feedback.',
+        dataSharingTitle: 'Who can see my data?',
+        dataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.',
+        dataUsageTitle: 'How is my data used?',
+        dataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. Your choice in the account settings applies to research and Learning Analytics.',
+        dataStorageTitle: 'How long is my data stored?',
+        dataStorageNotice:
+          'Your account data and answers are stored while your account exists. Data may be retained until legal or contractual retention periods expire. Afterwards, they are deleted or changed so that they can no longer be linked to any person. You can request deletion of your account and your data.',
+        acknowledgement:
+          'I have read the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of service](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. Research and Learning Analytics are voluntary.',
+        researchConsentTitle: 'Data for research',
+        researchConsentDescription:
+          'Your usage and learning data may be used without personal identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentDescriptionAssessment:
+          'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentBadgeAllowed: 'Allowed',
+        researchConsentBadgeRefused: 'Refused',
+        researchConsentBadgeUnanswered: 'Not answered',
+        researchConsentYes: 'Allow',
+        researchConsentNo: 'Object',
+        researchConsentControlLabel: 'Use for research:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/learning_analytics)',
+        learningAnalyticsDecisionRequired: 'Decision required',
+        learningAnalyticsConsentYes: 'Yes, participate',
+        learningAnalyticsConsentYesDescription:
+          'Private insights and protected group reports.',
+        learningAnalyticsConsentNo: 'No, do not participate',
+        learningAnalyticsConsentNoDescription:
+          'Courses, points, and chat work as usual.',
+        submit: 'Create account',
+        acknowledgementRequired: 'Please confirm your choices.',
+        dataUseChoiceRequired: 'Please choose yes or no.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1276,6 +1335,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can opt out at any time in your settings. Your data will then be excluded from future research exports.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      dataUseConflict:
+        'This page is out of date. Reload it before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsWithdrawalTitle:
+        'Stop participating in Learning Analytics?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',

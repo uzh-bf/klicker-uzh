@@ -5,7 +5,10 @@ import { defineConfig } from 'rollup'
 const config = defineConfig([
   {
     // Main build configuration
-    input: ['src/index.ts'],
+    // participantAccountDataUse is a runtime-dependency-free module that
+    // browser bundles import directly; keep it as its own entry chunk so the
+    // server barrel (with ioredis and other Node-only code) stays out.
+    input: ['src/index.ts', 'src/participantAccountDataUse.ts'],
     output: {
       dir: 'dist',
       format: 'esm',
