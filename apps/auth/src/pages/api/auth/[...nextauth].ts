@@ -633,11 +633,8 @@ function getLecturerConfig({
   }
 }
 
-function sendRestartRedirect(res: NextApiResponse, errorCode?: string) {
-  const target = errorCode
-    ? `/restart?error=${encodeURIComponent(errorCode)}`
-    : '/restart'
-  res.writeHead(302, { Location: target })
+function sendRestartRedirect(res: NextApiResponse) {
+  res.writeHead(302, { Location: '/restart' })
   res.end()
 }
 

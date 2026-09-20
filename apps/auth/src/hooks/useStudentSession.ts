@@ -9,6 +9,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // lookup error. Revalidation happens after login (manual refetch), window
 // focus and logout; an existing lecturer session neither satisfies nor
 // blocks assessment login.
+//
+// Initial, focus and manual lookups all run through one path and are ordered
+// by a request generation: only the newest lookup may update state, so a slow
+// authenticated or failed response cannot overwrite a later result (for
+// example the signed-out result after logout), and responses of an obsolete
+// effect generation are dropped after unmount.
 
 export type StudentSessionStatus =
   | 'loading'
@@ -47,54 +53,42 @@ export function useStudentSession() {
   const [participant, setParticipant] =
     useState<StudentSessionParticipant | null>(null)
   const activeRef = useRef(true)
+  const generationRef = useRef(0)
+
+  const lookup = useCallback(() => {
+    generationRef.current += 1
+    const generation = generationRef.current
+
+    return fetchStudentSession().then(
+      (data) => {
+        if (activeRef.current && generation === generationRef.current) {
+          applyResponse(data, setParticipant, setStatus)
+        }
+      },
+      () => {
+        if (activeRef.current && generation === generationRef.current) {
+          setStatus('error')
+        }
+      }
+    )
+  }, [])
 
   useEffect(() => {
     activeRef.current = true
 
     // State updates only run inside promise callbacks, never synchronously
     // within the effect body.
-    fetchStudentSession().then(
-      (data) => {
-        if (activeRef.current) {
-          applyResponse(data, setParticipant, setStatus)
-        }
-      },
-      () => {
-        if (activeRef.current) {
-          setStatus('error')
-        }
-      }
-    )
+    void lookup()
 
     const onFocus = () => {
-      fetchStudentSession().then(
-        (data) => {
-          if (activeRef.current) {
-            applyResponse(data, setParticipant, setStatus)
-          }
-        },
-        () => {
-          if (activeRef.current) {
-            setStatus('error')
-          }
-        }
-      )
+      void lookup()
     }
     window.addEventListener('focus', onFocus)
     return () => {
       activeRef.current = false
       window.removeEventListener('focus', onFocus)
     }
-  }, [])
+  }, [lookup])
 
-  const refetch = useCallback(async () => {
-    try {
-      const data = await fetchStudentSession()
-      applyResponse(data, setParticipant, setStatus)
-    } catch {
-      setStatus('error')
-    }
-  }, [])
-
-  return { status, participant, refetch }
+  return { status, participant, refetch: lookup }
 }

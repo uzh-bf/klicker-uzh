@@ -42,6 +42,9 @@ the approved design; no new product or data-model decision is required.
    lecturer entry point, including before hydration.
 4. Verify, inspect the integrated diff, publish, and follow current-head CI and
    final review. Integrate target drift only if required for readiness.
+5. Close the confirmed session-lookup race in `useStudentSession.ts` and extend
+   `playwright/tests/A-login.spec.ts` with a synthetic out-of-order response
+   journey. Only the latest mounted lookup may update the participant UI.
 
 ### Verification portfolio
 
@@ -72,11 +75,18 @@ the authenticated GitHub CLI.
   Source publication and independent reviews can now proceed.
 - Rendered the production auth ConfigMap with Helm and verified it supplies
   `NEXTAUTH_URL: https://auth.klicker.uzh.ch`. No deployment occurred.
-- Latest forge feedback also identifies a stale-response race in the participant
-  session hook: an older lookup can restore authenticated UI after logout, but
-  cannot restore the cleared cookie. It is not part of the four accepted fixes;
-  disposition remains open for the final review alongside the pre-existing
-  session-expiry finding described above.
+- The confirmed stale-response race is folded into this recovery package:
+  an older lookup must not restore authenticated UI after logout. A bounded
+  executor owns the hook and existing login-spec regression; the main session
+  owns browser verification and integration. Session expiry remains the
+  pre-existing follow-up described above.
+- The hook correction is verified in the browser: the old build restores the
+  authenticated controls when an older response arrives after logout; the fixed
+  build retains signed-out controls for both stale success and stale failure.
+  Two regression cases extend the existing login spec. The test-owned response
+  queue controls order without changing production code or issuing another
+  lookup as a completion barrier. Auth check, lint and build plus Playwright
+  typecheck and focused formatting pass.
 - Verified: 52 auth regressions; auth typecheck, lint and production build;
   repository formatting; four HTTP deployment page contracts and five HTTPS
   deployment contracts. Red-before-green reproductions cover each finding.
@@ -87,8 +97,21 @@ the authenticated GitHub CLI.
 - Whole-repository local checks are blocked by unrelated host dependencies and
   sandbox access (analytics uv cache, concurrent Prisma generation). Focused
   auth checks pass; exact-head hosted CI remains required.
-- Existing CI at `0f6c8719d7`: Playwright shards 4 and 8 failed; final AI review
-  pending. Target is six commits ahead of the common baseline, without a known
-  interaction requiring another integration.
+- Re-running `check:all` outside the sandbox on September 20 passes 34 of 35
+  Turbo check tasks. The remaining chat check fails only in the pre-existing
+  untracked `apps/chat/test/proxy-correlation.test.ts`, which imports absent
+  logging and LTI modules. This unrelated file is preserved and not staged.
+- Hosted CI at `74619403a1`: all eight Playwright shards, unit suites, GraphQL,
+  translation smoke and image builds pass. The codebase check stops before
+  typechecking because deploy parity with `v3-ai` fails. The new auth ConfigMap
+  entry requires coordinated source delivery to `v3-ai`; the other reported
+  staging-values difference is already reconciled in current `origin/v3`.
+  Do not remove the required configuration or weaken the parity gate.
+- The prior slice reviewer is no longer present in native lifecycle state and
+  produced no saved report. One replacement reviews the same immutable range.
+- Final-review routing is not yet qualified: Claude CLI cannot refresh its
+  expired OAuth session; Gemini CLI cannot obtain the required read permission
+  in headless mode. Neither produced a completed review. An additional native
+  advisory review is separate from that configured final-review gate.
 - Terminal: all four corrections verified and published, CI/review resolved,
   with any unavailable real Edu-ID proof explicitly recorded. No deployment.
