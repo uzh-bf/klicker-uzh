@@ -44,6 +44,14 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   // so a new package like packages/audit/dist is covered without editing a list.
   assert.match(sources[2], /^\s+packages\/\*\/dist$/m)
   assert.doesNotMatch(sources[2], /packages\/[^/*\s]+\/dist/)
+  // The build graph is resolved from the plan before anything installs, and a
+  // resolver failure keeps the complete graph instead of the shards' subset.
+  assert.match(sources[2], /playwright-build-graph\.cjs/)
+  assert.match(
+    sources[2],
+    /- name: Resolve the minimum build graph[\s\S]*?continue-on-error: true/
+  )
+  assert.match(sources[2], /if \[ "\$PLAYWRIGHT_BUILD_GRAPH" = 'bounded' \]/)
   assert.match(sources[3], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[3], /ref: \$\{\{ job\.workflow_sha \}\}/)
 
@@ -302,6 +310,36 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
   assert.equal(ready.metadata.should_run, 'true')
   assert.deepEqual(JSON.parse(ready.metadata.shard_matrix), fullShardMatrix())
 
+  // A ready pull request may narrow its plan only through the bounded change
+  // class the trusted classifier proved for the same diff: the documentation
+  // class skips, and the CI class runs the bounded smoke selection.
+  const boundedReady = [
+    {
+      name: 'documentation-and-planning',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
+      },
+    },
+    {
+      name: 'ci-orchestration',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+        ENVELOPE_CLASS: 'ci-orchestration',
+      },
+    },
+  ]
+  for (const { name, overrides } of boundedReady) {
+    const bounded = runStatusReporter(t, overrides)
+    assert.equal(bounded.status, 0, `${name}: ${bounded.output}`)
+    assert.equal(bounded.metadata.envelope_class, name)
+  }
+
   const rejected = [
     {
       name: 'skipped ready execution',
@@ -332,7 +370,7 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
       },
     },
     {
-      name: 'ready partial plan',
+      name: 'ready partial plan without an attested class',
       overrides: {
         MODE: 'selected',
         SHARD_MATRIX: JSON.stringify({
@@ -341,11 +379,43 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
       },
     },
     {
-      name: 'ready skipped plan',
+      name: 'ready skipped plan without an attested class',
       overrides: {
         MODE: 'skip',
         SHOULD_RUN: 'false',
         SHARD_MATRIX: JSON.stringify({ include: [] }),
+      },
+    },
+    {
+      // The class and the plan it would justify are one pair: a documentation
+      // class never selects specs, and a CI class never skips the smoke run.
+      name: 'ready plan narrowed by the wrong bounded class',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
+      },
+    },
+    {
+      name: 'ready skip attested by the CI class',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'ci-orchestration',
+      },
+    },
+    {
+      // Push validation is a deployment-candidate path and is never bounded.
+      name: 'push plan narrowed by a bounded class',
+      overrides: {
+        IS_PULL_REQUEST: 'false',
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
       },
     },
     {

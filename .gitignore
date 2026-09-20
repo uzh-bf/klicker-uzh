@@ -66,6 +66,11 @@ output/
 # Environment-specific files
 .env.*
 
+# CI-generated minimum-validation classification receipt, written into the
+# workspace by the check and sonar lanes. Generated, never committed; ignoring
+# it also keeps biome's format gate from scanning it.
+/minimum-validation-classification.json
+
 # Obsidian workspace state (keep `deploy/docs/.obsidian/` tracked; ignore the docs-site vault state)
 /apps/docs/docs/.obsidian/
 
