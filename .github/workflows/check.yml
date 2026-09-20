@@ -186,7 +186,18 @@ jobs:
         if: >-
           (github.event_name == 'push' && github.ref_name == 'v3') ||
           (github.event_name == 'pull_request' && github.base_ref == 'v3')
-        run: node ./.github/scripts/deploy-parity.cjs --other v3-ai
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        # A pull request is responsible only for the deploy/ paths it edits, so
+        # it passes its base and an already divergent pair of branches is
+        # reported instead of failing an unrelated change. A push to v3
+        # validates the branch itself and keeps the strict comparison.
+        run: |
+          if [ -n "$PR_BASE_SHA" ]; then
+            node ./.github/scripts/deploy-parity.cjs --other v3-ai --base "$PR_BASE_SHA"
+          else
+            node ./.github/scripts/deploy-parity.cjs --other v3-ai
+          fi
 
       - name: Check Playwright CI contracts
         run: |

@@ -388,11 +388,16 @@ which `v3-ai` never carried.
 
 `check.yml` runs `.github/scripts/deploy-parity.cjs` on pushes to `v3` and on
 pull requests whose base is `v3`. It compares the candidate revision with
-`origin/v3-ai`, fails when anything under `deploy/` differs, and names the
-paths to reconcile: promote the `v3-ai` revision to `v3`, or backport the
-`v3` change to `v3-ai` first. Until the two revisions match again the gate is
-red for every `v3` pull request, because any merge into `v3` while they diverge
-can ship production a chart that the tagged images never met.
+`origin/v3-ai` and names every path under `deploy/` that differs. A push to `v3`
+is an authoritative check of the branch itself and must match.
+
+A pull request is responsible only for the `deploy/` paths it edits: it passes
+its base revision, so a change that leaves `deploy/` untouched reports an
+already divergent pair of branches as a warning instead of failing work that
+cannot influence it. A pull request that does edit `deploy/` is blocked until
+the two revisions match: promote the `v3-ai` revision to `v3`, or backport the
+`v3` change to `v3-ai` first. Keep them aligned, because any merge into `v3`
+while they diverge can ship production a chart that the tagged images never met.
 
 Image `tag:` and `pullPolicy:` lines in `deploy/env-<environment>/values.yaml`
 are excluded: the environment's image reference is owned by the branch that
