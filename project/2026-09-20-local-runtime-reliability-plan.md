@@ -227,14 +227,17 @@ Do not treat every head/release difference as an incident.
   the `{"stopped": false, "freedRoutes": 0}` observation; that reproduction
   needs a disposable managed runtime and stays recorded as open here rather
   than claimed as verified.
-- Slice 4 evidence (independent of the source packages; execution-time
-  snapshot): candidate
-  `55efc535a6b6d31643b8670e6eaff9e97911a971` (`v3-audit`) passed Playwright run
-  `35501900380` attempt 2, and the promotion controller woke for the candidate
-  (`35506556527`, queued at snapshot). `stg-release` resolved to
-  `19c5da241191ac72ed25d39e167a640f214b72aa`, so the result is recorded as
-  promotion-pending evidence: no deployment or runtime-health claim is made and
-  no promotion was dispatched.
+- Slice 4 verified from three independent artifacts: candidate
+  `55efc535a6b6d31643b8670e6eaff9e97911a971` (`v3-audit`) passed all nine
+  required workflows, including Playwright run `35501900380` attempt 2; the
+  controller run `35506556527` completed; and its
+  `stg-release-promotion/v2` receipt records `decision.mode=apply`,
+  `update_result.result=push-succeeded`, `verification=verified` on the first
+  readback, previous release `19c5da241191ac72ed25d39e167a640f214b72aa`,
+  candidate and applied release `55efc535…`, and 16 scanned image digests.
+  `refs/heads/stg-release` reads `55efc535…`, matching the receipt. GitOps
+  adoption and running images were not observed here and are not claimed, and
+  no promotion was dispatched manually.
 - Active slice: none; the two source packages are delivered as drafts, the
   upstream disposition is recorded, and staging observation continues from the
   controller receipt.
