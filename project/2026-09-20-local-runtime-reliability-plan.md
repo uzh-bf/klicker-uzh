@@ -37,7 +37,10 @@ observation is independent and does not block the local source package.
 
 ### Working context and authority
 
-- Plan status: proposed executable batch; implementation has not started.
+- Plan status: Slice 2 is merged (#6177 into `v3-ai` at `b9e2a561f1`) and
+  Slice 1 is carried by the PR containing this document; no slice is active.
+  Staging observation and the upstream `status --json` reproduction request
+  remain open.
 - Planning branch: `rs/runtime-reliability-plan`, based on `origin/v3` at
   `02aaaa87b14c2d27db8ceb9a8e617ec5a5875fef` after a successful fetch on 2026-09-20.
   Worktree: `trees/rs/runtime-reliability-plan`; artifact root: `project/`.
@@ -204,7 +207,7 @@ Do not treat every head/release difference as an incident.
   isolated planning worktree created.
 - Slice 1 delivered: commit `a4cc7f23c9` (ephemeral PostgreSQL loopback port
   plus the affected primary-access instructions) on
-  `rs/runtime-reliability-plan`, draft PR [#6176](https://github.com/uzh-bf/klicker-uzh/pull/6176)
+  `rs/runtime-reliability-plan`, PR [#6176](https://github.com/uzh-bf/klicker-uzh/pull/6176)
   to `v3`. Evidence: effective Compose render for both overlays; `node --test
   util/run-playwright-host.test.mjs` 39 pass / 0 fail; synthetic containers for
   both overlays started while the router held `:5432` and answered through the
@@ -213,8 +216,9 @@ Do not treat every head/release difference as an incident.
 - Slice 2 delivered: commit `e2b4e6f840` (grace-interval death and survivor
   cases in `util/test-dev-runtime.sh`, coverage note in `docs/testing.md`) on
   `rs/runtime-liveness-guard-tests` from the refreshed `origin/v3-ai`
-  `545a6ef746c2d6585e7e06424c0bd03ec96da096`, draft PR
-  [#6177](https://github.com/uzh-bf/klicker-uzh/pull/6177) to `v3-ai`. The full
+  `545a6ef746c2d6585e7e06424c0bd03ec96da096`, PR
+  [#6177](https://github.com/uzh-bf/klicker-uzh/pull/6177) to `v3-ai`, merged at
+  `b9e2a561f1`. The full
   harness passed twice outside the sandbox; a restricted sandbox cannot inspect
   processes and that attempt is not counted as evidence.
 - Slice 3 disposition: the existing Devrouter task reports 0.1.1 released, with
@@ -238,7 +242,7 @@ Do not treat every head/release difference as an incident.
   `refs/heads/stg-release` reads `55efc535…`, matching the receipt. GitOps
   adoption and running images were not observed here and are not claimed, and
   no promotion was dispatched manually.
-- Active slice: none; the two source packages are delivered as drafts, the
+- Active slice: none; Slice 2 is merged, Slice 1 merges with this document, the
   upstream disposition is recorded, and staging observation continues from the
   controller receipt.
 - Existing history: [Doc Query canary plan](2026-09-04-doc-query-canary-activation-proof-plan.md)
@@ -253,8 +257,8 @@ Do not treat every head/release difference as an incident.
   `project/_local/reviews/2026-09-20-local-runtime-reliability-plan-hardening.md`.
   Markdown formatting and all four local document links pass; no application
   runtime was started for this documentation-only work.
-- Required delivery now: reviewed project plan. Proposed later delivery:
-  focused source PR(s) and bounded local acceptance, with upstream concerns
-  tracked explicitly and no claim of release completion.
-- Next action after implementation approval: apply the primary random-port
-  change and focused checks in the current planning worktree.
+- Required delivery now: none beyond this record; bounded local acceptance for
+  both slices is recorded above, upstream concerns stay tracked explicitly, and
+  no release completion is claimed.
+- Next action: observe the staging candidate chain from the controller receipt;
+  no local implementation work remains.
