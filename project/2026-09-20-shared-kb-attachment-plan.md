@@ -88,7 +88,9 @@ browser-only verification must identify the precise interaction it proves.
   lifecycle locking, receipt compatibility, stale rollback and disabled scopes.
   Review corrected disabled-mode reactivation during removal. Type checking
   found and corrected a missing JSON-object annotation. Complete split host/container repository
-  checks passed. Production build and exact-head forge checks are pending.
+  checks passed, followed by all 27 production build tasks. Exact-head forge
+  checks are pending. The tested implementation is `b4e6cb458c`; subsequent
+  progress edits change documentation only.
 - The first all-in-container check stopped at host-only Playwright launcher
   tests. Verification now uses the repository's split host/container hook.
   Dependency definitions and lockfiles are unchanged. Opengrep's baseline scan
@@ -104,7 +106,14 @@ browser-only verification must identify the precise interaction it proves.
   prose. Screenshots and browser automation do not apply: the changes are server
   scope calculations and transactional writes, with no changed browser contract.
 - Exact runtime: `trees/financewiki-shared-attachment`, DevPod
-  `fix-financewiki-shared-attachmen`, profile `manage`. It remains running for
-  verification and must be stopped and provider/routes verified before handoff.
+  `fix-financewiki-shared-attachmen`, profile `manage`. After the full build,
+  `devrouter stop` completed. Fresh Devsy workspace status reported `Stopped`,
+  its source path matched this checkout, and devrouter listed zero exact routes.
+  Worktree and runtime data were retained.
+- Delivery refresh found `origin/v3-ai` at `a3d1181c58`, five commits ahead of
+  the tested baseline. None overlap package files and `git merge-tree` succeeded
+  without conflicts; no integration was needed. Source commits passed staged
+  Gitleaks and personal-data inspection. The host hooks were replaced with their
+  split host/container checks and full container build.
 - Corpus acceptance, environment rollout and live cross-account retrieval remain
   separate pending steps. Source tests do not establish live availability.
