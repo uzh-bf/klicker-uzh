@@ -10,6 +10,7 @@
 // The required `check` workflow runs this script together with the negative
 // cases in `deploy/scripts/verify-topology-spread.test.mjs`.
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parseAllDocuments } from 'yaml'
@@ -237,6 +238,59 @@ export function evaluateSpreadContract(deployments, expected = expectedSpread) {
   return failures
 }
 
+// Values paths that own a spread field, such as `hatchet.workers.general` for
+// `hatchet.workers.general.topologySpreadConstraints`. The production values
+// are the second source of truth for the contract's membership: without them,
+// deleting an entry from `expectedSpread` would silently drop its assertions.
+export function findValuesSpreadOwners(value, path = []) {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) =>
+      findValuesSpreadOwners(item, [...path, index])
+    )
+  }
+  if (value === null || typeof value !== 'object') return []
+  return Object.entries(value).flatMap(([key, nested]) =>
+    key === spreadField
+      ? [path.join('.')]
+      : findValuesSpreadOwners(nested, [...path, key])
+  )
+}
+
+export function evaluateValuesContract(values, expected = expectedSpread) {
+  const failures = []
+  const defined = new Set(findValuesSpreadOwners(values))
+  const covered = new Set(expected.map((entry) => entry.valuesPath))
+
+  for (const valuesPath of defined) {
+    if (covered.has(valuesPath)) continue
+    failures.push(
+      `production values: ${valuesPath}.${spreadField} defines a scheduling ` +
+        'policy that the expected contract does not cover; extend ' +
+        'expectedSpread or remove the values entry'
+    )
+  }
+  for (const valuesPath of covered) {
+    if (defined.has(valuesPath)) continue
+    failures.push(
+      `expectedSpread covers ${valuesPath}, but the production values define ` +
+        `no ${spreadField} there; the contract entry is stale`
+    )
+  }
+
+  return failures
+}
+
+export function readProductionValues() {
+  const documents = parseAllDocuments(
+    readFileSync(productionValuesPath, 'utf8')
+  )
+  const parseErrors = documents.flatMap((document) => document.errors)
+  if (parseErrors.length > 0) {
+    throw new Error(`production values are not valid YAML: ${parseErrors[0]}`)
+  }
+  return documents.map((document) => document.toJS()).filter(Boolean)
+}
+
 function parseRenderedDocuments(rendered) {
   const documents = parseAllDocuments(rendered)
   const parseErrors = documents.flatMap((document) => document.errors)
@@ -286,6 +340,11 @@ export function verifyChartContract() {
   for (const render of renderConfigurations) lintChart(render.valuesPath)
 
   const failures = []
+  failures.push(
+    ...readProductionValues().flatMap((values) =>
+      evaluateValuesContract(values)
+    )
+  )
   let productionDocuments = []
   for (const render of renderConfigurations) {
     const documents = renderChart(render.valuesPath)
