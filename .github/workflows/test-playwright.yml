@@ -84,6 +84,7 @@ jobs:
           EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
           ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
+          ENVELOPE_CLASS: ${{ needs.test-playwright-execution.outputs.envelope_class }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
           SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
@@ -93,6 +94,7 @@ jobs:
           {
             printf 'route=%s\n' "${ROUTE:-unknown}"
             printf 'mode=%s\n' "${MODE:-unknown}"
+            printf 'envelope_class=%s\n' "${ENVELOPE_CLASS:-unknown}"
             printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
             printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
             printf 'is_pull_request=%s\n' "${IS_PULL_REQUEST:-unknown}"
@@ -106,6 +108,7 @@ jobs:
             echo
             echo "- Route: \`${ROUTE:-unknown}\`"
             echo "- Mode: \`${MODE:-unknown}\`"
+            echo "- Change class: \`${ENVELOPE_CLASS:-unknown}\`"
             echo "- Tests selected: \`${SHOULD_RUN:-unknown}\`"
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
             if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
@@ -143,7 +146,11 @@ jobs:
           # trusted eight-shard plan. A draft may attest the narrower plan the
           # trusted envelope selected for it: a partial shard set or a skip,
           # both of which the reusable workflow publishes together with its
-          # reasons. Nothing else may pass required CI.
+          # reasons. A ready pull request may narrow its plan only through a
+          # bounded change class the trusted classifier proved for the same
+          # diff: a documentation class may skip, and a CI class may run the
+          # bounded smoke selection. Nothing else may pass required CI, and a
+          # push is never bounded.
           if [ "$IS_PULL_REQUEST" = 'true' ] && [ "${IS_DRAFT:-}" = 'true' ]; then
             case "$MODE" in
               full | selected | skip) ;;
@@ -153,8 +160,19 @@ jobs:
                 ;;
             esac
           elif [ "$MODE" != 'full' ]; then
-            echo 'Playwright execution did not use full mode.'
-            exit 1
+            # Push validation is a deployment-candidate path and is never
+            # narrowed, whatever class the envelope reports for the push diff.
+            if [ "$IS_PULL_REQUEST" != 'true' ]; then
+              echo 'Playwright execution did not use full mode.'
+              exit 1
+            fi
+            case "$MODE:${ENVELOPE_CLASS:-}" in
+              skip:documentation-and-planning | selected:ci-orchestration) ;;
+              *)
+                echo 'Playwright execution did not use full mode.'
+                exit 1
+                ;;
+            esac
           fi
 
           if [ "$MODE" = 'skip' ]; then

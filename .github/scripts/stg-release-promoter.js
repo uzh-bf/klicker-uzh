@@ -11,6 +11,13 @@ const {
 } = require('./image-scan-admission.cjs')
 
 const {
+  buildReleaseManifest,
+  validateReleaseManifest,
+} = require('./release-image-manifest.cjs')
+
+const { fingerprintTag } = require('./image-input-fingerprint.cjs')
+
+const {
   STAGING_STATUS_JOB_ID,
   STAGING_WORKFLOW_NAME,
   validateStagingWorkflow: validateConsolidatedStagingWorkflow,
@@ -57,6 +64,28 @@ const REGISTRY_CONTENT_TYPES = Object.freeze([
   'application/vnd.docker.distribution.manifest.v2+json',
 ])
 const REGISTRY_ACCEPT = REGISTRY_CONTENT_TYPES.join(', ')
+// An index has to be resolved to its platform manifest before the config that
+// carries the labels can be read, so the two reads declare different types.
+const REGISTRY_INDEX_ACCEPT = REGISTRY_CONTENT_TYPES.slice(0, 2).join(', ')
+const REGISTRY_IMAGE_ACCEPT = REGISTRY_CONTENT_TYPES.slice(2).join(', ')
+const REGISTRY_CONFIG_ACCEPT =
+  'application/vnd.oci.image.config.v1+json, application/vnd.docker.container.image.v1+json'
+const REGISTRY_CONFIG_CONTENT_TYPES = Object.freeze(
+  REGISTRY_CONFIG_ACCEPT.split(', ')
+)
+// The publication publishes one ARM64 image per target, so a manifest that
+// describes another platform, or several, cannot be the promoted digest.
+const PUBLICATION_ARCHITECTURE = Object.freeze({
+  architecture: 'arm64',
+  os: 'linux',
+})
+const PUBLICATION_DIGEST_ARTIFACT_PREFIX = 'build-digest-'
+const PUBLICATION_ARTIFACT_LIMIT = 1048576
+const PUBLICATION_RECORD_SCHEMA_VERSION = 1
+// Which label names the commit an image was built from. It is declared by the
+// trusted workflow next to the fingerprinted inputs, so an adopted digest can
+// be bound to the revision that produced it.
+const REVISION_LABEL = 'org.opencontainers.image.revision'
 
 const CI_SUITE_JOBS = Object.freeze({
   'test-graphql.yml': ['test-graphql'],
@@ -137,6 +166,32 @@ function stagingScanJobIds(targetIds) {
   return stagingTargets(targetIds)
     .filter((target) => target.scan === true)
     .map((target) => scanJobName(target))
+}
+
+// The targets a release may adopt instead of rebuilding, and the targets whose
+// scan receipt a promotion admits. Both come from the trusted inventory, so a
+// release manifest can never claim more reuse or more qualification than the
+// publication produces.
+function stagingReuseEligibleTargetIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.reuse === true)
+    .map((target) => target.id)
+    .sort()
+}
+
+function stagingScannedTargetIds(targetIds) {
+  return stagingTargets(targetIds)
+    .filter((target) => target.scan === true)
+    .map((target) => target.id)
+    .sort()
+}
+
+// The ARM64 build job name of each target, so a resolved image is bound to the
+// inventory entry that owns it instead of to a name the run chose.
+function stagingTargetIdByBuildJob(targetIds) {
+  return new Map(
+    stagingTargets(targetIds).map((target) => [buildJobName(target), target.id])
+  )
 }
 
 function stagingAmdJobIds(targetIds) {
@@ -1091,12 +1146,191 @@ async function resolveStableRegistryDigests({
   }))
 }
 
+// An archive member of one publication record, or null when the publication
+// did not write it. The artifact is small and trusted in shape only, so a
+// member that is absent, unreadable or not an object is reported by the caller
+// instead of being repaired here.
+function readArchiveMember(archive, member) {
+  let parsed
+  try {
+    parsed = JSON.parse(
+      execFileSync('unzip', ['-p', archive, member], {
+        encoding: 'utf8',
+        maxBuffer: PUBLICATION_ARTIFACT_LIMIT,
+        timeout: 10000,
+      })
+    )
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return null
+  }
+  return parsed
+}
+
+// The two records a reuse-capable publication uploads next to its digest: the
+// input fingerprint it resolved and whether it adopted an already-qualified
+// digest or built one. Both are candidate-run output, so every field is
+// checked against the trusted inventory before the manifest may use it.
+function readPublicationRecord({ archive, targetId }) {
+  const fingerprint = readArchiveMember(
+    archive,
+    'image-input-fingerprint-' + targetId + '.json'
+  )
+  if (!fingerprint) {
+    throw new Error(
+      targetId + ' published no input fingerprint with its staging digest'
+    )
+  }
+  if (fingerprint.target !== targetId) {
+    throw new Error(targetId + ' published a fingerprint for another target')
+  }
+  if (!DIGEST_PATTERN.test(fingerprint.fingerprint ?? '')) {
+    throw new Error(targetId + ' published no canonical input fingerprint')
+  }
+  if (fingerprintTag(fingerprint.fingerprint) !== fingerprint.tag) {
+    throw new Error(targetId + ' published a fingerprint under another tag')
+  }
+  if (fingerprint.reuseEligible !== true) {
+    throw new Error(
+      targetId + ' is reusable in the trusted inventory but not in its own'
+    )
+  }
+  const reuse = readArchiveMember(archive, 'image-reuse-' + targetId + '.json')
+  if (!reuse) {
+    throw new Error(targetId + ' published no reuse record with its digest')
+  }
+  if (reuse.schemaVersion !== PUBLICATION_RECORD_SCHEMA_VERSION) {
+    throw new Error(targetId + ' published a reuse record of another schema')
+  }
+  if (typeof reuse.adopted !== 'boolean' || reuse.tag !== fingerprint.tag) {
+    throw new Error(targetId + ' published an unreadable reuse record')
+  }
+  if (reuse.adopted && !DIGEST_PATTERN.test(reuse.digest ?? '')) {
+    throw new Error(targetId + ' adopted an image without a digest')
+  }
+  return {
+    adopted: reuse.adopted,
+    adoptedDigest: reuse.adopted ? reuse.digest : null,
+    fingerprint: fingerprint.fingerprint,
+    tag: fingerprint.tag,
+    targetId,
+  }
+}
+
+// Reads the digest artifacts of the reuse-capable targets of one publication.
+// A missing artifact is a broken publication rather than a rebuilt image:
+// without the record the release could not say what produced the digest it
+// promotes, and an incomplete release manifest is not admissible.
+async function readPublicationRecords({
+  github,
+  context,
+  run,
+  targetIds = [],
+}) {
+  const records = new Map()
+  if (targetIds.length === 0) return records
+  const artifacts = await paginate(
+    github,
+    github.rest.actions.listWorkflowRunArtifacts,
+    { ...context.repo, run_id: run.id, per_page: 100 }
+  )
+  for (const targetId of targetIds) {
+    const name = PUBLICATION_DIGEST_ARTIFACT_PREFIX + targetId
+    const matches = artifacts.filter(
+      (artifact) => artifact?.name === name && !artifact.expired
+    )
+    if (matches.length !== 1) {
+      throw new Error(
+        targetId + ' published ' + matches.length + ' ' + name + ' artifacts'
+      )
+    }
+    const artifact = matches[0]
+    if (Number(artifact.size_in_bytes) > PUBLICATION_ARTIFACT_LIMIT) {
+      throw new Error(name + ' exceeds the publication record read budget')
+    }
+    const response = await github.rest.actions.downloadArtifact({
+      ...context.repo,
+      artifact_id: artifact.id,
+      archive_format: 'zip',
+    })
+    const bytes = Buffer.from(response?.data ?? [])
+    if (
+      bytes.byteLength === 0 ||
+      bytes.byteLength > PUBLICATION_ARTIFACT_LIMIT
+    ) {
+      throw new Error(name + ' archive is outside the read budget')
+    }
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-publication-'))
+    try {
+      const archive = path.join(directory, 'record.zip')
+      fs.writeFileSync(archive, bytes)
+      records.set(targetId, readPublicationRecord({ archive, targetId }))
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true })
+    }
+  }
+  return records
+}
+
 function registryManifestUrl(repository, tag) {
   const parts = repository.split('/')
   if (parts.length < 2)
     throw new Error(`invalid registry repository ${repository}`)
   const registry = parts.shift()
   return `https://${registry}/v2/${parts.map(encodeURIComponent).join('/')}/manifests/${encodeURIComponent(tag)}`
+}
+
+function registryBlobUrl(repository, digest) {
+  const parts = repository.split('/')
+  if (parts.length < 2)
+    throw new Error(`invalid registry repository ${repository}`)
+  const registry = parts.shift()
+  return `https://${registry}/v2/${parts.map(encodeURIComponent).join('/')}/blobs/${encodeURIComponent(digest)}`
+}
+
+// One pull authorization covers every read of one repository, so the manifest
+// read and the configuration read that follows it share a single token.
+async function resolveRegistryAuthorization({
+  challenge,
+  fetchImpl,
+  manifestUrl,
+  repository,
+  tag,
+}) {
+  const repositoryPath = repository.split('/').slice(1).join('/')
+  const registry = new URL(manifestUrl).hostname
+  const realm = new URL(challenge.realm)
+  if (realm.protocol !== 'https:' || realm.hostname !== registry) {
+    throw new Error('registry Bearer challenge uses an untrusted token realm')
+  }
+  if (challenge.service && challenge.service !== registry) {
+    throw new Error('registry Bearer challenge uses an unexpected service')
+  }
+  const expectedScope = `repository:${repositoryPath}:pull`
+  if (challenge.scope && challenge.scope !== expectedScope) {
+    throw new Error('registry Bearer challenge uses an unexpected scope')
+  }
+  realm.searchParams.set('service', registry)
+  realm.searchParams.set('scope', expectedScope)
+  const tokenResponse = await fetchImpl(realm, { redirect: 'error' })
+  if (tokenResponse.redirected) {
+    throw new Error(`${repository}:${tag} registry token response redirected`)
+  }
+  if (!tokenResponse.ok) {
+    throw new Error(
+      `${repository}:${tag} registry token response was ${tokenResponse.status}`
+    )
+  }
+  const tokenPayload = await tokenResponse.json()
+  const token = tokenPayload?.token ?? tokenPayload?.access_token
+  if (typeof token !== 'string' || token.length === 0) {
+    throw new Error(
+      `${repository}:${tag} registry token response was incomplete`
+    )
+  }
+  return `Bearer ${token}`
 }
 
 function parseBearerChallenge(value) {
@@ -1133,41 +1367,14 @@ async function registryResponse({ repository, tag, fetchImpl }) {
   }
   if (response.status !== 401) return response
 
-  const challenge = parseBearerChallenge(
-    response.headers.get('www-authenticate')
-  )
-  const repositoryPath = repository.split('/').slice(1).join('/')
-  const registry = new URL(manifestUrl).hostname
-  const realm = new URL(challenge.realm)
-  if (realm.protocol !== 'https:' || realm.hostname !== registry) {
-    throw new Error('registry Bearer challenge uses an untrusted token realm')
-  }
-  if (challenge.service && challenge.service !== registry) {
-    throw new Error('registry Bearer challenge uses an unexpected service')
-  }
-  const expectedScope = `repository:${repositoryPath}:pull`
-  if (challenge.scope && challenge.scope !== expectedScope) {
-    throw new Error('registry Bearer challenge uses an unexpected scope')
-  }
-  realm.searchParams.set('service', registry)
-  realm.searchParams.set('scope', expectedScope)
-  const tokenResponse = await fetchImpl(realm, { redirect: 'error' })
-  if (tokenResponse.redirected) {
-    throw new Error(`${repository}:${tag} registry token response redirected`)
-  }
-  if (!tokenResponse.ok) {
-    throw new Error(
-      `${repository}:${tag} registry token response was ${tokenResponse.status}`
-    )
-  }
-  const tokenPayload = await tokenResponse.json()
-  const token = tokenPayload?.token ?? tokenPayload?.access_token
-  if (typeof token !== 'string' || token.length === 0) {
-    throw new Error(
-      `${repository}:${tag} registry token response was incomplete`
-    )
-  }
-  response = await request(`Bearer ${token}`)
+  const authorization = await resolveRegistryAuthorization({
+    challenge: parseBearerChallenge(response.headers.get('www-authenticate')),
+    fetchImpl,
+    manifestUrl,
+    repository,
+    tag,
+  })
+  response = await request(authorization)
   if (response.redirected) {
     throw new Error(`${repository}:${tag} registry response redirected`)
   }
@@ -1215,6 +1422,252 @@ async function fetchRegistryDigest({ repository, tag, fetchImpl = fetch }) {
     )
   }
   return digest
+}
+
+// The commit an adopted digest was built from. A registry tag carries no
+// provenance, so the image itself does: the trusted workflow declares the
+// revision label next to the inputs it fingerprints, and the label survives
+// adoption because adoption republishes the same digest under another tag.
+//
+// The walk is deliberately narrow: one index or image manifest for the exact
+// digest, one platform manifest for an index, and one configuration blob. A
+// registry answer that cannot be resolved to exactly one ARM64 image, or an
+// image without a readable source revision, fails instead of guessing.
+async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
+  if (!DIGEST_PATTERN.test(digest ?? '')) {
+    throw new Error('an adopted image needs an immutable digest')
+  }
+  const label = repository + '@' + digest
+  let authorization = null
+  const read = async (accept, reference, allowed) => {
+    const url = allowed.blobs
+      ? registryBlobUrl(repository, reference)
+      : registryManifestUrl(repository, reference)
+    const request = (header) =>
+      fetchImpl(url, {
+        headers: { accept, ...(header ? { authorization: header } : {}) },
+        redirect: 'error',
+      })
+    let response = await request(authorization)
+    if (response.redirected) {
+      throw new Error(label + ' registry response redirected')
+    }
+    if (response.status === 401) {
+      authorization = await resolveRegistryAuthorization({
+        challenge: parseBearerChallenge(
+          response.headers.get('www-authenticate')
+        ),
+        fetchImpl,
+        manifestUrl: registryManifestUrl(repository, digest),
+        repository,
+        tag: digest,
+      })
+      response = await request(authorization)
+      if (response.redirected) {
+        throw new Error(label + ' registry response redirected')
+      }
+    }
+    if (!response.ok) {
+      throw new Error(label + ' registry response was ' + response.status)
+    }
+    const contentType = String(response.headers.get('content-type') ?? '')
+      .split(';', 1)[0]
+      .trim()
+      .toLowerCase()
+    if (!allowed.types.includes(contentType)) {
+      throw new Error(
+        label + ' registry response has an unexpected content type'
+      )
+    }
+    let body
+    try {
+      body = Buffer.from(await response.arrayBuffer()).toString('utf8')
+    } catch {
+      throw new Error(label + ' registry response was incomplete')
+    }
+    try {
+      return JSON.parse(body)
+    } catch {
+      throw new Error(label + ' registry response was not readable JSON')
+    }
+  }
+  const top = await read(REGISTRY_INDEX_ACCEPT, digest, {
+    types: REGISTRY_CONTENT_TYPES,
+  })
+  let manifest = top
+  if (Array.isArray(top?.manifests)) {
+    const platform = top.manifests.filter(
+      (entry) =>
+        entry?.platform?.architecture ===
+          PUBLICATION_ARCHITECTURE.architecture &&
+        entry?.platform?.os === PUBLICATION_ARCHITECTURE.os
+    )
+    if (
+      platform.length !== 1 ||
+      !DIGEST_PATTERN.test(platform[0]?.digest ?? '')
+    ) {
+      throw new Error(
+        label +
+          ' does not describe exactly one ' +
+          PUBLICATION_ARCHITECTURE.os +
+          '/' +
+          PUBLICATION_ARCHITECTURE.architecture +
+          ' image'
+      )
+    }
+    manifest = await read(REGISTRY_IMAGE_ACCEPT, platform[0].digest, {
+      types: REGISTRY_CONTENT_TYPES,
+    })
+  }
+  const configDigest = manifest?.config?.digest
+  if (!DIGEST_PATTERN.test(configDigest ?? '')) {
+    throw new Error(label + ' has no image configuration')
+  }
+  const config = await read(REGISTRY_CONFIG_ACCEPT, configDigest, {
+    blobs: true,
+    types: REGISTRY_CONFIG_CONTENT_TYPES,
+  })
+  const revision = config?.config?.Labels?.[REVISION_LABEL]
+  if (!SHA_PATTERN.test(revision ?? '')) {
+    throw new Error(label + ' does not label its source revision')
+  }
+  return revision
+}
+
+// The release manifest of one candidate: every target it publishes, with the
+// digest the registry resolved, the input identity the publication recorded,
+// the qualification the scan leg admitted, and, for a target that adopted an
+// already-qualified digest instead of rebuilding, the commit that digest was
+// built from.
+//
+// The manifest is the release's own answer to 'what is in this release and
+// where did each part come from', so it is assembled from trusted inventory
+// plus published evidence only: an image without an admitted scan receipt, an
+// adoption whose digest is not the digest being promoted, or a reuse source
+// that is not a proven ancestor of the candidate all block the promotion.
+async function collectReleaseManifest({
+  candidateSha,
+  context,
+  fetchImpl = fetch,
+  getImageRevision = fetchImageRevision,
+  github,
+  images,
+  records,
+  reuseEligibleIds = [],
+  scanEvidence,
+  scannedTargetIds = [],
+  sourceBranch,
+  targetIdByBuildJob,
+  unavailableTargetIds = [],
+}) {
+  const reusable = new Set(reuseEligibleIds)
+  const scanned = new Set(scannedTargetIds)
+  const architecture =
+    PUBLICATION_ARCHITECTURE.os + '/' + PUBLICATION_ARCHITECTURE.architecture
+  const entries = []
+  const reused = new Map()
+  for (const image of images) {
+    const targetId = targetIdByBuildJob.get(image.job_name)
+    if (!targetId) {
+      throw new Error(image.job_name + ' is not a trusted staging image target')
+    }
+    const record = records.get(targetId)
+    const receipts = []
+    if (scanned.has(targetId)) {
+      const admitted = (scanEvidence?.entries ?? []).find(
+        (entry) => entry?.buildJob === image.job_name && entry.ok === true
+      )
+      if (!admitted) {
+        throw new Error(targetId + ' has no admitted scan receipt to bind')
+      }
+      receipts.push({
+        digest: image.digest,
+        kind: 'image-scan',
+        path: 'image-scan-' + admitted.scanJob,
+      })
+    }
+    if (record?.adopted === true) {
+      if (record.adoptedDigest !== image.digest) {
+        throw new Error(
+          targetId +
+            ' adopted ' +
+            record.adoptedDigest +
+            ' but published ' +
+            image.digest
+        )
+      }
+      reused.set(targetId, {
+        digest: image.digest,
+        fingerprint: record.fingerprint,
+        sourceSha: await getImageRevision({
+          digest: image.digest,
+          fetchImpl,
+          repository: image.repository,
+        }),
+        tag: record.tag,
+      })
+    }
+    entries.push({
+      architecture,
+      digest: image.digest,
+      fingerprint: record?.fingerprint ?? null,
+      image: image.repository + '@' + image.digest,
+      receipts,
+      reusedFrom: null,
+      sourceSha: candidateSha,
+      targetId,
+    })
+  }
+  // A reuse names the commit its digest was built from, and only a proven
+  // ancestor of the candidate may be promoted that way: an image built on
+  // another line is not a shorter path to this release, it is a different one.
+  const proven = new Set()
+  for (const source of new Set(
+    [...reused.values()].map((entry) => entry.sourceSha)
+  )) {
+    if (source === candidateSha) {
+      proven.add(source)
+      continue
+    }
+    const comparison = await compareRevisions({
+      base: source,
+      context,
+      github,
+      head: candidateSha,
+    })
+    if (['ahead', 'identical'].includes(comparison?.status)) proven.add(source)
+  }
+  for (const [targetId, source] of reused) {
+    entries.find((entry) => entry.targetId === targetId).reusedFrom = source
+  }
+  const manifest = buildReleaseManifest({
+    candidateSha,
+    entries,
+    sourceBranch,
+  })
+  const decision = validateReleaseManifest({
+    expectedTargetIds: [...targetIdByBuildJob.values()],
+    isAncestor: (sha) => proven.has(sha),
+    manifest,
+    resolvedDigests: new Map(
+      entries.map((entry) => [entry.targetId, entry.digest])
+    ),
+    reuseEligibleIds: [...reusable],
+    scannedTargetIds: [...scanned],
+    unavailableTargetIds,
+  })
+  if (!decision.ok) {
+    throw new Error(
+      'release manifest rejected: ' +
+        decision.errors
+          .slice(0, 5)
+          .map((error) =>
+            error.targetId ? error.targetId + ':' + error.code : error.code
+          )
+          .join(', ')
+    )
+  }
+  return { decision, manifest }
 }
 
 async function getReleaseRef({ github, context }) {
@@ -1574,6 +2027,8 @@ async function runPromotion({
   getRegistryDigest = fetchRegistryDigest,
   getCiEvidence = readCiEvidence,
   getScanAdmission = collectScanAdmission,
+  getImageRevision = fetchImageRevision,
+  getPublicationRecords = readPublicationRecords,
   maxAttempts = DEFAULT_MAX_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay)),
@@ -1719,6 +2174,34 @@ async function runPromotion({
     )
   }
 
+  // The release manifest binds every promoted digest to the identity and the
+  // qualification that produced it, so it is assembled after the scans are
+  // admitted and before any release ref is touched.
+  const reuseEligibleIds = stagingReuseEligibleTargetIds(targetIds)
+  const scannedTargetIds = stagingScannedTargetIds(targetIds)
+  const targetIdByBuildJob = stagingTargetIdByBuildJob(targetIds)
+  const release = await collectReleaseManifest({
+    candidateSha: inputs.candidateSha,
+    context,
+    getImageRevision,
+    github,
+    images,
+    records: await getPublicationRecords({
+      context,
+      github,
+      run: evidence.workflows[0].run,
+      targetIds: reuseEligibleIds,
+    }),
+    reuseEligibleIds,
+    scanEvidence,
+    scannedTargetIds,
+    sourceBranch: inputs.sourceBranch,
+    targetIdByBuildJob,
+    unavailableTargetIds: STAGING_TARGET_IDS.filter(
+      (targetId) => !targetIds.includes(targetId)
+    ),
+  })
+
   const currentSha = await getReleaseRef({ github, context })
   if (
     inputs.expectedReleaseSha &&
@@ -1787,12 +2270,25 @@ async function runPromotion({
       jobs: workflow.jobs,
     })),
     images,
+    release_manifest: release.manifest,
+    reuse: {
+      rebuilt: release.decision.rebuilt,
+      reused: release.decision.reused,
+    },
     scan: {
       attempts: scanEvidence.attempts,
       images: scanEvidence.entries,
     },
   }
   const checksum = checksumReceipt(receipt)
+  core?.info?.(
+    'release image manifest: ' +
+      release.manifest.entries.length +
+      ' targets, reused ' +
+      (release.decision.reused.join(', ') || 'none') +
+      ', rebuilt ' +
+      (release.decision.rebuilt.join(', ') || 'none')
+  )
   const artifacts = writeReceiptArtifacts({
     receipt,
     checksum,
