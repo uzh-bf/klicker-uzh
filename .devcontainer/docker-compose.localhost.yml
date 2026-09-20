@@ -1,12 +1,18 @@
 # Primary-checkout overlay selected by `devrouter ensure`.
-# Fixed host ports remain bound to 127.0.0.1, while stable devnet aliases let
-# devrouter prove and route the same container. Only one primary checkout can
-# run per machine; linked worktrees use docker-compose.devrouter.yml instead.
+# Application host ports stay fixed on 127.0.0.1, while stable devnet aliases let
+# devrouter prove and route the same container. The shared router owns
+# 127.0.0.1:5432 for the `db.klicker.localhost` entrypoint, so Postgres publishes
+# an ephemeral loopback port instead. Only one primary checkout can run per
+# machine; linked worktrees use docker-compose.devrouter.yml instead.
 
 services:
   postgres:
+    # Ephemeral loopback port: a fixed 5432 publish collides with the router
+    # entrypoint. Host tooling reads the assigned port from
+    # `docker port <container> 5432/tcp` (util/run-playwright-host.mjs) and the
+    # router still serves `db.klicker.localhost:5432` over direct-SSL SNI.
     ports:
-      - '127.0.0.1:5432:5432'
+      - '127.0.0.1::5432'
     networks:
       devnet:
         aliases:

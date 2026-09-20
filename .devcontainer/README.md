@@ -5,9 +5,9 @@ external EduID, no `/etc/hosts` edits — clone, route through devrouter, and ru
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
 Hatchet, install + build + seed, `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
-`:443` / `:5432`. Linked worktrees publish no host ports and can coexist;
-the primary checkout intentionally keeps fixed localhost ports and is
-one-at-a-time.
+`:443` / `:5432`. Linked worktrees publish only ephemeral host ports and can
+coexist; the primary checkout keeps fixed localhost application ports,
+publishes its database on an ephemeral loopback port, and is one-at-a-time.
 
 > **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
 > frontend-control, olat-api, response-api, lti-service, chat**, and the **two
@@ -24,7 +24,7 @@ You can run the devcontainer in two modes:
 
 ### Mode 1: Primary checkout
 
-The primary checkout keeps fixed localhost ports and receives stable unnamespaced devrouter routes:
+The primary checkout keeps fixed localhost application ports, publishes the database on an ephemeral loopback port, and receives stable unnamespaced devrouter routes:
 
 1. Run one-time setup: `devrouter setup --yes`.
 2. Start and prove the checkout: `devrouter ensure .`.
@@ -37,7 +37,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
    - Auth Service: `http://localhost:3010`
    - MailHog UI: `http://localhost:8025`
    - Hatchet Dashboard: `http://localhost:8888`
-   - Postgres DB: `localhost:5432`
+   - Postgres DB: ephemeral loopback port (`docker port <postgres-container> 5432/tcp`), or `db.klicker.localhost:5432` through the router with direct-SSL SNI (libpq 17+)
 
 ### Mode 2: Linked checkout
 
@@ -194,10 +194,11 @@ continues to run directly in the official Playwright container.
 
 The monorepo runs the selected apps in **one container** via `turbo dev`;
 devrouter's Traefik (on `devnet`) routes each hostname to that container's
-internal port. The linked-worktree overlay publishes no host ports and exposes
-`${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. The primary overlay exposes
-stable unnamespaced aliases plus fixed localhost ports. `.devrouter.yml` uses
-the selected checkout identity in every proxy upstream.
+internal port. Both overlays publish the database on an ephemeral loopback port
+and expose a database alias; the linked overlay uses `${WORKSPACE}-app` and
+`${WORKSPACE}-db`, while the primary overlay uses stable unnamespaced aliases
+plus fixed localhost application ports. `.devrouter.yml` uses the selected
+checkout identity in every proxy upstream.
 
 | What              | Host                                                 | Upstream (devnet)       |
 | ----------------- | ---------------------------------------------------- | ----------------------- |
