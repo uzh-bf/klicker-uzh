@@ -3,9 +3,8 @@ import {
   ElementGenerationBloomLevel,
   ElementGenerationCapabilitiesDocument,
   ElementGenerationDifficultyPreset,
-  ElementGenerationLanguage,
   type ElementGenerationSourceScopeInput,
-  ElementGenerationSourcesDocument,
+  ElementGenerationSourcesWithLanguageDocument,
   GeneratableElementType,
   StartElementGenerationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -92,14 +91,11 @@ export default function ElementGenerationConfigure({
   const t = useTranslations('manage.elementGeneration')
   const format = useFormatter()
   const capabilitiesQuery = useQuery(ElementGenerationCapabilitiesDocument)
-  const sourcesQuery = useQuery(ElementGenerationSourcesDocument)
+  const sourcesQuery = useQuery(ElementGenerationSourcesWithLanguageDocument)
   const [startGeneration] = useMutation(StartElementGenerationDocument)
   const [graphBuildId, setGraphBuildId] = useState('')
   const [elementType, setElementType] = useState<GeneratableElementType>(
     GeneratableElementType.Sc
-  )
-  const [language, setLanguage] = useState<ElementGenerationLanguage>(
-    ElementGenerationLanguage.De
   )
   const [elementCount, setElementCount] = useState(6)
   const [difficulty, setDifficulty] =
@@ -135,6 +131,7 @@ export default function ElementGenerationConfigure({
   const selectedSource = sources.find(
     (source) => source.graphBuildId === graphBuildId
   )
+  const language = selectedSource?.language
   const selectedCapability = capabilities?.typeCapabilities.find(
     (capability) => capability.elementType === elementType
   )
@@ -217,7 +214,12 @@ export default function ElementGenerationConfigure({
     setValidationError(undefined)
     setSubmissionError(undefined)
 
-    if (!graphBuildId || !selectedCapability) {
+    if (
+      !selectedSource ||
+      !language ||
+      !capabilities?.languages.includes(language) ||
+      !selectedCapability
+    ) {
       setValidationError(t('validation.sourceRequired'))
       return
     }
@@ -300,15 +302,17 @@ export default function ElementGenerationConfigure({
           input: { ...input, idempotencyKey: idempotencyRef.current.key },
         },
       })
-      const buildId = result.data?.startElementGeneration.id
-      if (!buildId) throw new Error('Element generation did not return a build')
+      const build = result.data?.startElementGeneration
+      if (!build?.id)
+        throw new Error('Element generation did not return a build')
+      const buildId = build.id
       window.dispatchEvent(
         new CustomEvent(GENERATION_STARTED_EVENT, {
           detail: {
             kind: 'element',
             id: buildId,
             label: t(`elementTypes.${elementType}.label`),
-            startedAt: Date.now(),
+            startedAt: new Date(build.createdAt).getTime(),
           },
         })
       )
@@ -600,18 +604,18 @@ export default function ElementGenerationConfigure({
               <label className="text-sm font-semibold text-slate-700">
                 {t('configure.language')}
                 <select
-                  value={language}
-                  onChange={(event) =>
-                    setLanguage(event.target.value as ElementGenerationLanguage)
-                  }
+                  value={language ?? ''}
+                  disabled
                   className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
                   data-cy="element-generation-language"
                 >
-                  {capabilities.languages.map((value) => (
-                    <option key={value} value={value}>
-                      {t(`language.${value}`)}
-                    </option>
-                  ))}
+                  {capabilities.languages
+                    .filter((value) => value === language)
+                    .map((value) => (
+                      <option key={value} value={value}>
+                        {t(`language.${value}`)}
+                      </option>
+                    ))}
                 </select>
               </label>
               {selectedCapability?.supportsDifficulty ? (

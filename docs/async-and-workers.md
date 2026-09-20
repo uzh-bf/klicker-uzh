@@ -173,6 +173,10 @@ rules remain distinct compatibility constraints within this shared Element
 operation. Completion creates drafts, not ordinary Elements, and does not
 settle usage or dispatch another generation run.
 
+Element generation reads the published build's frozen `domainPolicyLanguage`: `German` becomes `de`, `English` becomes `en`, and only a legacy null defaults to German. Unknown explicit languages make that build ineligible. `ElementGenerationSourcesWithLanguage` adds this metadata without changing the older persisted operation. The configure form derives output language from the selected graph; question and flashcard validation still reject cross-language output.
+
+Question focus is a per-batch setting, gated by `QUESTION_GENERATION_FOCUS_TOPIC_ENABLED`. The chart exposes it as `backendGraphql.elementGeneration.focusTopicEnabled`, defaulting to false; enable it only after the question worker supports the blueprint field. Flashcards reject focus. The graph panel shows retained graph-focus history but omits focus from new requests. The compatibility mutation and retry paths retain their existing frozen-focus semantics.
+
 ## Course duplication operations
 
 Job state lives in Redis under three key families (all self-expiring): status records `course-duplication:job:<jobId>` and per-user/per-course source locks `course-duplication:source:<userId>:<sourceCourseId>` expire after **24 hours**; process leases `course-duplication:job:<jobId>:processing` and heartbeats `course-duplication:job:<jobId>:heartbeat` expire after 60/120 seconds. Postgres is the source of truth for outcomes: a committed course row whose id equals the job id proves the copy succeeded regardless of Redis state.

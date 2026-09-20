@@ -516,6 +516,8 @@ backendGraphql:
   # The chart projects only the storage credential into the maintenance worker.
   elementGeneration:
     enabled: false
+    # Enable only after the question worker supports focus in the blueprint.
+    focusTopicEnabled: false
     hatchetHostPort: ''
     hatchetServerUrl: ''
     graphArtifactContainer: 'kg-graph-artifacts'

@@ -17,8 +17,11 @@ vi.mock('../src/services/questionGenerationGraph.js', () => ({
   getQuestionGenerationSources: async () => [],
 }))
 
-import { startElementGeneration } from '../src/services/elementGeneration.js'
 import type { StartElementGenerationInput } from '../src/services/elementGeneration.js'
+import {
+  getElementGenerationCapabilities,
+  startElementGeneration,
+} from '../src/services/elementGeneration.js'
 
 const ctx = {} as ContextWithUser
 
@@ -40,6 +43,23 @@ describe('element generation focus topic gate', () => {
     starts.question.mockClear()
     starts.flashcard.mockClear()
     vi.unstubAllEnvs()
+  })
+
+  it('advertises both matching graph languages and gates focus by element type', async () => {
+    vi.stubEnv('QUESTION_GENERATION_FOCUS_TOPIC_ENABLED', 'true')
+    const capabilities = await getElementGenerationCapabilities(ctx)
+    expect(capabilities.languages).toEqual(['de', 'en'])
+    expect(
+      capabilities.typeCapabilities
+        .filter((value) => value.supportsFocusTopic)
+        .map((value) => value.elementType)
+    ).toEqual(['SC', 'MC', 'KPRIM'])
+    vi.stubEnv('QUESTION_GENERATION_FOCUS_TOPIC_ENABLED', 'false')
+    expect(
+      (await getElementGenerationCapabilities(ctx)).typeCapabilities.every(
+        (value) => !value.supportsFocusTopic
+      )
+    ).toBe(true)
   })
 
   it('passes a trimmed focus topic to question generation', async () => {

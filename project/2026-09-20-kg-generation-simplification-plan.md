@@ -152,8 +152,11 @@ Additive language metadata requires no migration. New files beyond the operation
 
 ## Progress
 
-- Status: source execution approved and active; solo mode. Release/transport audit completed; consumer language/focus compatibility package is next. Runtime discovery and live acceptance remain unresolved.
+- Status: consumer language/focus source package implemented in solo mode. Draft delivery verification is in progress. Runtime discovery, compatible generator release and paid live acceptance remain unresolved.
 - Completed: source/forge refresh, consultation review, catalog equality check, current transport/language/focus inspection, and verification portfolio review.
 - Review: independent planner approved the corrected draft. Findings were incorporated by separating planning/prototype/implementation authority and naming planning owners for all four steps. Main completed source/reference and simplification self-review; Markdown formatting and local links pass. The review receipt is retained at `project/_local/reviews/2026-09-20-kg-generation-simplification-plan-hardening.md`.
 - Required delivery: verified consumer source package and draft PR, with the remaining discovery/release decision explicit. No PR exists yet. Exact task runtime startup is owned by main.
-- Immediate next avenue: resolve the generator release and capability transport in step 1; do not activate staging merely by setting the catalog revision.
+- Source implementation: published build language now reaches source discovery and the configure form; unknown explicit languages fail closed. The new persisted operation preserves the existing operation. Question focus chart wiring defaults off. New graph requests omit focus while history and backend retry compatibility remain.
+- Verification: 54 focused contract tests passed before the additional capability assertion; GraphQL TypeScript and code generation passed. Browser checks passed for language switching, locale independence, preselection/reload, submitted question focus, flashcard omission, graph-focus history and graph-request omission. Browser dispatch is intercepted; these checks do not prove real generator behavior. Helm renders the focus variable as false by default and true only when selected.
+- UI limitation: compact captures show shared navigation overflowing horizontally at 390px; the generation form remains usable. This package does not claim complete mobile layout acceptance. No paid run or staging activation occurred.
+- Immediate next avenue: finish source checks, solo simplification/final review and draft delivery. Then resolve the generator release and capability transport; do not activate staging merely by setting the catalog revision.
