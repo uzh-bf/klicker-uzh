@@ -1,23 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import {
-  AzureImmutableAuditMediaStore,
   AzureTableAppendSink,
-  auditMediaContentAddress,
-  baselinePartPayloadSchema,
   collectAssessmentAuditMonitorSnapshot,
   createAzureAuditClients,
   dispatchAssessmentAuditOutbox,
   PrismaAuditMonitorRepository,
   PrismaAuditOutboxRepository,
-  parseCanonicalAuditEnvelope,
   readAzureAuditStorageConfig,
   recordAssessmentAuditDispatcherSuccess,
-  recordAssessmentAuditMediaPolicySuccess,
   recordAssessmentAuditMonitorSuccess,
-  renewActiveAssessmentMediaPolicies,
-  retentionBatchFor,
 } from '@klicker-uzh/audit'
-import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlers } from '@klicker-uzh/types'
 
 let auditClients: ReturnType<typeof createAzureAuditClients> | undefined
@@ -82,8 +74,7 @@ export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessm
       deliveredUnsealedBytes: snapshot.deliveredUnsealedBytes,
       deliveredUnsealedCapacityWeeksRemaining:
         snapshot.deliveredUnsealedCapacityWeeksRemaining,
-      requiredMediaCaptureFailureCount:
-        snapshot.requiredMediaCaptureFailureCount,
+      activationFailureCount: snapshot.activationFailureCount,
       coveredSubmissionWithoutTerminalCount:
         snapshot.coveredSubmissionWithoutTerminalCount,
       oldestCoveredSubmissionWithoutTerminalSeconds:
@@ -95,103 +86,5 @@ export const handleMonitorAssessmentAudit: HatchetHandlers['handleMonitorAssessm
       throw new Error('Assessment audit monitor detected a critical signal')
     }
     await executionCtx.logger.info(JSON.stringify(metadata))
-    return true
-  }
-
-export async function* activeAssessmentMediaReferences(
-  client: Pick<
-    DB.PrismaClient,
-    'assessmentAuditScope' | 'assessmentAuditOutboxEvent'
-  >
-) {
-  let scopeCursor: { liveQuizId: string; lifecycleEpoch: number } | undefined
-  while (true) {
-    const scopes = await client.assessmentAuditScope.findMany({
-      where: {
-        coverageState: DB.AssessmentAuditCoverageState.COVERED,
-      },
-      orderBy: [{ liveQuizId: 'asc' }, { lifecycleEpoch: 'asc' }],
-      take: 100,
-      ...(scopeCursor === undefined
-        ? {}
-        : {
-            cursor: { liveQuizId_lifecycleEpoch: scopeCursor },
-            skip: 1,
-          }),
-      select: {
-        liveQuizId: true,
-        lifecycleEpoch: true,
-        retentionAnchorAt: true,
-      },
-    })
-    if (scopes.length === 0) break
-
-    for (const scope of scopes) {
-      let eventCursor: string | undefined
-      while (true) {
-        const events = await client.assessmentAuditOutboxEvent.findMany({
-          where: {
-            liveQuizId: scope.liveQuizId,
-            lifecycleEpoch: scope.lifecycleEpoch,
-            eventType: 'ASSESSMENT_BASELINE_PART_RECORDED',
-          },
-          orderBy: { eventId: 'asc' },
-          take: 250,
-          ...(eventCursor === undefined
-            ? {}
-            : { cursor: { eventId: eventCursor }, skip: 1 }),
-          select: { eventId: true, canonicalEnvelope: true },
-        })
-        if (events.length === 0) break
-        for (const event of events) {
-          const envelope = parseCanonicalAuditEnvelope(event.canonicalEnvelope)
-          const payload = baselinePartPayloadSchema.parse(envelope.payload)
-          if (payload.content.kind === 'MEDIA_REFERENCE') {
-            const media = payload.content.media
-            const retainUntil =
-              scope.retentionAnchorAt === null
-                ? undefined
-                : retentionBatchFor(scope.retentionAnchorAt)
-            if (
-              media.blobName !== auditMediaContentAddress(media.contentHash)
-            ) {
-              throw new Error(
-                `Assessment media blob ${media.blobName} has conflicting content hashes`
-              )
-            }
-            // Stream duplicates: the store never shortens retention, and each
-            // scope must retain its horizon without an unbounded deduplication map.
-            yield {
-              blobName: media.blobName,
-              contentHash: media.contentHash,
-              ...(retainUntil === undefined ? {} : { retainUntil }),
-            }
-          }
-        }
-        eventCursor = events.at(-1)!.eventId
-      }
-    }
-    const lastScope = scopes.at(-1)!
-    scopeCursor = {
-      liveQuizId: lastScope.liveQuizId,
-      lifecycleEpoch: lastScope.lifecycleEpoch,
-    }
-  }
-}
-
-export const handleRenewAssessmentAuditMediaPolicies: HatchetHandlers['handleRenewAssessmentAuditMediaPolicies'] =
-  async (_input, globalCtx, executionCtx) => {
-    const clients = getAuditClients()
-    const summary = await renewActiveAssessmentMediaPolicies({
-      references: activeAssessmentMediaReferences(globalCtx.prisma),
-      store: new AzureImmutableAuditMediaStore(clients.blobs.media),
-    })
-    recordAssessmentAuditMediaPolicySuccess(summary.minimumHorizonDays)
-    await executionCtx.logger.info(
-      JSON.stringify({
-        operation: 'ASSESSMENT_AUDIT_MEDIA_POLICY_RENEWAL',
-        ...summary,
-      })
-    )
     return true
   }

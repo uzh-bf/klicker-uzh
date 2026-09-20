@@ -1,17 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import {
-  type AssessmentBaselineContent,
   type AuditActor,
   type AuditAuthorization,
   type AuditEventDraft,
   type AuditTransactionClient,
   canonicalizeJson,
   createTrustedAuditContext,
-  type EventPayload,
   emitAuditEvents,
   hashCanonicalValue,
   type NormalizedAnswer,
-  parseCanonicalAuditEnvelope,
   recordStandaloneAuditEvents,
 } from '@klicker-uzh/audit'
 import type { Prisma } from '@klicker-uzh/prisma/client'
@@ -93,11 +90,6 @@ type CoveredScope = {
   retentionAnchorAt: Date | null
 }
 
-export type AssessmentAuditMediaState = Extract<
-  AssessmentBaselineContent,
-  { kind: 'MEDIA_REFERENCE' }
->['media']
-
 async function coveredScope(
   tx: Pick<Prisma.TransactionClient, 'assessmentAuditScope'>,
   liveQuizId: string
@@ -115,92 +107,6 @@ async function coveredScope(
       retentionAnchorAt: true,
     },
   })
-}
-
-export async function loadCoveredAssessmentMediaStates(
-  tx: Pick<
-    Prisma.TransactionClient,
-    'assessmentAuditScope' | 'assessmentAuditOutboxEvent'
-  >,
-  liveQuizId: string
-): Promise<Map<string, AssessmentAuditMediaState> | null> {
-  const scope = await coveredScope(tx, liveQuizId)
-  if (scope === null) return null
-  const rows = await tx.assessmentAuditOutboxEvent.findMany({
-    where: {
-      liveQuizId,
-      lifecycleEpoch: scope.lifecycleEpoch,
-      eventType: {
-        in: [
-          'ASSESSMENT_BASELINE_PART_RECORDED',
-          'ASSESSMENT_MEDIA_CAPTURED',
-          'ASSESSMENT_MEDIA_REPLACED',
-        ],
-      },
-    },
-    orderBy: [{ recordedAt: 'asc' }, { eventId: 'asc' }],
-    select: { canonicalEnvelope: true },
-  })
-  const states = new Map<string, AssessmentAuditMediaState>()
-  for (const row of rows) {
-    const envelope = parseCanonicalAuditEnvelope(row.canonicalEnvelope)
-    if (envelope.eventType === 'ASSESSMENT_BASELINE_PART_RECORDED') {
-      const payload =
-        envelope.payload as EventPayload<'ASSESSMENT_BASELINE_PART_RECORDED'>
-      if (payload.content.kind === 'MEDIA_REFERENCE') {
-        states.set(payload.content.media.mediaId, payload.content.media)
-      }
-      continue
-    }
-    const payload = envelope.payload as EventPayload<
-      'ASSESSMENT_MEDIA_CAPTURED' | 'ASSESSMENT_MEDIA_REPLACED'
-    >
-    if (
-      payload.entityType === 'MEDIA' &&
-      payload.after !== null &&
-      'mediaId' in payload.after
-    ) {
-      states.set(
-        payload.after.mediaId,
-        payload.after as AssessmentAuditMediaState
-      )
-    }
-  }
-  return states
-}
-
-export function assessmentMediaChangeDrafts(input: {
-  before: ReadonlyMap<string, AssessmentAuditMediaState>
-  after: readonly AssessmentAuditMediaState[]
-  producerOperationId: string
-}): AuditEventDraft<
-  'ASSESSMENT_MEDIA_CAPTURED' | 'ASSESSMENT_MEDIA_REPLACED'
->[] {
-  return [...input.after]
-    .sort((left, right) => left.mediaId.localeCompare(right.mediaId))
-    .flatMap((media) => {
-      const previous = input.before.get(media.mediaId)
-      if (previous !== undefined && !differs(previous, media)) {
-        return []
-      }
-      const eventType =
-        previous === undefined
-          ? 'ASSESSMENT_MEDIA_CAPTURED'
-          : 'ASSESSMENT_MEDIA_REPLACED'
-      return [
-        {
-          eventType,
-          producerOperationId: `${input.producerOperationId}:media:${media.mediaId}:${eventType.toLowerCase()}`,
-          payload: {
-            entityType: 'MEDIA',
-            entityId: media.mediaId,
-            before: previous ?? null,
-            after: media,
-            reasonCode: 'ASSESSMENT_SOURCE_MEDIA_MUTATION',
-          },
-        },
-      ]
-    })
 }
 
 export async function emitCoveredAssessmentAuditEvents(input: {

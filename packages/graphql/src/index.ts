@@ -62,7 +62,6 @@ import './schema/subscription.js'
 import {
   handleDispatchAssessmentAuditOutbox,
   handleMonitorAssessmentAudit,
-  handleRenewAssessmentAuditMediaPolicies,
 } from './services/assessmentAudit.js'
 import { handleProcessCourseDeletion } from './services/courseDeletion.js'
 import {
@@ -101,7 +100,6 @@ export const schema = builder.toSchema({
 export const handlers: HatchetHandlers = {
   handleDispatchAssessmentAuditOutbox,
   handleMonitorAssessmentAudit,
-  handleRenewAssessmentAuditMediaPolicies,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

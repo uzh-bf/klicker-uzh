@@ -11,7 +11,6 @@ import type { AssessmentBaselineSnapshot } from '../src/services/assessmentAudit
 import {
   assessmentAuditSystemOperation,
   assessmentLecturerPermissionChangeDrafts,
-  assessmentMediaChangeDrafts,
   assessmentParticipantResetDrafts,
   assessmentResponseSnapshot,
   buildAssessmentMutationAuditDrafts,
@@ -160,6 +159,48 @@ describe('assessment lecturer and system producer snapshots', () => {
     expect(JSON.stringify(drafts)).not.toContain('MUST_NOT_LEAK')
   })
 
+  it('records refreshed image links as element content without media history', () => {
+    const before = snapshot()
+    before.blocks[0]!.elements[0]!.elementData.content =
+      '![Image](https://public.example.invalid/before.png)'
+    const after = structuredClone(before)
+    after.blocks[0]!.elements[0]!.elementData.id = '31-v2'
+    after.blocks[0]!.elements[0]!.elementData.content =
+      '![Image](https://public.example.invalid/after.png)'
+    const drafts = buildAssessmentMutationAuditDrafts({
+      before,
+      after,
+      producerOperationId: randomUUID(),
+    })
+    expect(drafts.map((draft) => draft.eventType)).toEqual([
+      'ASSESSMENT_ELEMENT_INSTANCE_REFRESHED',
+    ])
+    expect(drafts[0]?.payload).toMatchObject({
+      before: {
+        effectiveElement: {
+          content: {
+            content: before.blocks[0]!.elements[0]!.elementData.content,
+          },
+        },
+      },
+      after: {
+        effectiveElement: {
+          content: {
+            content: after.blocks[0]!.elements[0]!.elementData.content,
+          },
+        },
+      },
+    })
+    expect(validateDrafts(before.id, drafts)).toHaveLength(1)
+    expect(
+      buildAssessmentMutationAuditDrafts({
+        before: after,
+        after: structuredClone(after),
+        producerOperationId: randomUUID(),
+      })
+    ).toEqual([])
+  })
+
   it('records scheduled and unpublished states as exact configuration changes', () => {
     const before = snapshot()
     const scheduled = {
@@ -256,49 +297,6 @@ describe('assessment lecturer and system producer snapshots', () => {
       afterAggregateHash: null,
       reasonCode: 'COURSE_ADMIN_ASSESSMENT_RESET',
     })
-  })
-
-  it('emits media capture, replacement, and no event for an identical replay', () => {
-    const mediaId = randomUUID()
-    const initial = {
-      mediaId,
-      sourceUrl:
-        'https://media.blob.core.windows.net/owner/assessment-image.png',
-      contentHash: 'a'.repeat(64),
-      byteLength: 10,
-      mimeType: 'image/png',
-      blobName: `sha256/${'a'.repeat(64)}`,
-      sourceReferenceHash: 'b'.repeat(64),
-    }
-    const replaced = {
-      ...initial,
-      contentHash: 'c'.repeat(64),
-      byteLength: 11,
-      blobName: `sha256/${'c'.repeat(64)}`,
-    }
-    const operationId = randomUUID()
-
-    expect(
-      assessmentMediaChangeDrafts({
-        before: new Map(),
-        after: [initial],
-        producerOperationId: operationId,
-      })
-    ).toMatchObject([{ eventType: 'ASSESSMENT_MEDIA_CAPTURED' }])
-    expect(
-      assessmentMediaChangeDrafts({
-        before: new Map([[mediaId, initial]]),
-        after: [initial],
-        producerOperationId: operationId,
-      })
-    ).toEqual([])
-    expect(
-      assessmentMediaChangeDrafts({
-        before: new Map([[mediaId, initial]]),
-        after: [replaced],
-        producerOperationId: operationId,
-      })
-    ).toMatchObject([{ eventType: 'ASSESSMENT_MEDIA_REPLACED' }])
   })
 
   it('records only effective lecturer permission changes', () => {

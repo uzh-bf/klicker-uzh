@@ -25,7 +25,6 @@ const workflows = {
   publishScheduledLiveQuiz: 'publish-quiz',
   dispatchAssessmentAuditOutbox: 'audit-dispatch',
   monitorAssessmentAudit: 'audit-monitor',
-  renewAssessmentAuditMediaPolicies: 'audit-media',
 }
 
 describe('audit worker identity selection alongside KB gates', () => {
@@ -33,7 +32,6 @@ describe('audit worker identity selection alongside KB gates', () => {
 
   it.each([
     ['dispatcher', ['dispatchAssessmentAuditOutbox', 'monitorAssessmentAudit']],
-    ['media-policy', ['renewAssessmentAuditMediaPolicies']],
   ] as const)('registers only the %s role tasks', (auditWorkerRole, keys) => {
     const selection = selectWorkflows(workflows, {
       ...disabledKB,
@@ -46,6 +44,7 @@ describe('audit worker identity selection alongside KB gates', () => {
   it.each([
     undefined,
     'unknown',
+    'media-policy',
     'toString',
   ])('rejects invalid role %s', (role) => {
     expect(() =>

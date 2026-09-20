@@ -77,7 +77,11 @@ const producerSources = {
 
 describe('launch lecturer and system producer coverage', () => {
   const registrations = Object.entries(EVENT_REGISTRY).filter(
-    ([, registration]) =>
+    ([eventType, registration]) =>
+      // Retained version-1 media events are read compatibility only.
+      !['ASSESSMENT_MEDIA_CAPTURED', 'ASSESSMENT_MEDIA_REPLACED'].includes(
+        eventType
+      ) &&
       registration.tier === 'LAUNCH' &&
       registration.ownerPackage === '@klicker-uzh/graphql'
   )

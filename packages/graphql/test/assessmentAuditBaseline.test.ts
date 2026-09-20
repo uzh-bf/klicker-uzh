@@ -120,8 +120,10 @@ describe('assessment audit baseline snapshot mapping', () => {
                   elementId: 31,
                   type: 'SC',
                   name: 'Question',
-                  content: 'Question content',
-                  explanation: 'Explanation',
+                  content:
+                    'Question content\n\n![Assessment image](https://public.example.invalid/assessment-image.png)',
+                  explanation:
+                    '![Explanation](https://public.example.invalid/explanation.png)',
                   basePoints: true,
                   pointsMultiplier: 1,
                   options: {
@@ -131,9 +133,11 @@ describe('assessment audit baseline snapshot mapping', () => {
                     choices: [
                       {
                         ix: 1,
-                        value: 'Wrong',
+                        value:
+                          '![Choice](https://public.example.invalid/choice.png)',
                         correct: false,
-                        feedback: 'No',
+                        feedback:
+                          '![Feedback](https://public.example.invalid/feedback.png)',
                       },
                       {
                         ix: 0,
@@ -154,8 +158,6 @@ describe('assessment audit baseline snapshot mapping', () => {
         ],
         permissions: [{ userId, permissionLevel: 'OWNER', effective: true }],
       },
-      capturedMedia: [],
-      limitations: [],
     })
 
     expect(contents).toHaveLength(6)
@@ -184,6 +186,27 @@ describe('assessment audit baseline snapshot mapping', () => {
       })
     )
     expect(JSON.stringify(contents)).not.toContain('MUST_NOT_LEAK')
+    const element = contents.find((part) => part.kind === 'ELEMENT_INSTANCE')
+    expect(element?.effectiveContent).toMatchObject({
+      content:
+        'Question content\n\n![Assessment image](https://public.example.invalid/assessment-image.png)',
+      explanation:
+        '![Explanation](https://public.example.invalid/explanation.png)',
+      contentOptions: {
+        options: expect.arrayContaining([
+          expect.objectContaining({
+            value: '![Choice](https://public.example.invalid/choice.png)',
+            feedback:
+              '![Feedback](https://public.example.invalid/feedback.png)',
+          }),
+        ]),
+      },
+    })
+    expect(
+      contents.some(
+        (part) => part.kind === 'MEDIA_REFERENCE' || part.kind === 'LIMITATION'
+      )
+    ).toBe(false)
   })
 })
 

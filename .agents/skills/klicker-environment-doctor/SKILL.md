@@ -124,20 +124,13 @@ Continuation for app work: `.github/scripts/wait-for-infra.sh`, then `./util/_cr
 
 Feature "does nothing" / mutation fails `workflow not found` → the Hatchet engine or a worker is missing, or a worker points at the wrong DB. Workers need the **same `DATABASE_URL`, `APP_SECRET`, Redis settings** as the apps, plus `HATCHET_CLIENT_TOKEN`. See [docs/async-and-workers.md](../../../docs/async-and-workers.md).
 
-Assessment audit deployments are deliberately split by identity class. The
-dispatcher worker must use `ASSESSMENT_AUDIT_WORKER_ROLE=dispatcher` and select
-only `dispatchAssessmentAuditOutbox,monitorAssessmentAudit`; the media-policy
-worker must use `ASSESSMENT_AUDIT_WORKER_ROLE=media-policy` and select only
-`renewAssessmentAuditMediaPolicies`. The ordinary worker must select neither.
-A mismatch is expected to fail at startup. Baseline media capture runs in the
-GraphQL backend under its separate Blob-only service account, so a healthy
-dispatcher does not prove that activation media capture is authorized.
-
-For image-baseline failures, check source Blob read access under the backend
-identity separately from audit destination access. After a successful read,
-compare Blob content type with `MediaFile.type`: generic binary metadata is
-accepted only when audit signature detection matches the expected image type.
-Do not rewrite source images or database metadata to hide a genuine mismatch.
+The assessment audit dispatcher must use
+`ASSESSMENT_AUDIT_WORKER_ROLE=dispatcher` and select only
+`dispatchAssessmentAuditOutbox,monitorAssessmentAudit`. The ordinary worker
+must select neither; the retired `media-policy` role is invalid. A mismatch
+is expected to fail at startup. Baselines and instance refreshes retain public
+image URLs within element content without reading or copying the images, so
+activation has no audit Blob identity or image MIME/byte-verification requirement.
 See [assessment audit evidence](../../../docs/assessment-audit-evidence.md).
 
 ## Check 8 — database state (config-derived)

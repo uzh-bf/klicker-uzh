@@ -9,7 +9,6 @@ import {
 import type { Prisma } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  type AssessmentAuditMediaDependencies,
   type AssessmentAuditRolloutObservation,
   activateAssessmentAudit,
   assessmentIsSelectedForAuditActivation,
@@ -380,7 +379,6 @@ export async function processAssessmentAuditRolloutItem(input: {
   client: DB.PrismaClient
   candidate: AssessmentAuditRolloutCandidate
   inventory: AssessmentAuditRolloutInventoryItem
-  media?: AssessmentAuditMediaDependencies
   baselineKind?: 'CREATION' | 'ROLLOUT_CONFIGURATION_CURRENT_STATE'
 }): Promise<DB.AssessmentAuditRolloutOutcome> {
   if (input.inventory.outcome !== DB.AssessmentAuditRolloutOutcome.PENDING) {
@@ -405,7 +403,6 @@ export async function processAssessmentAuditRolloutItem(input: {
       baselineKind: input.baselineKind ?? 'ROLLOUT_CONFIGURATION_CURRENT_STATE',
       actor: { kind: 'SYSTEM' },
       correlationId: randomUUID(),
-      media: input.media,
       rollout: input.inventory,
     })
     return input.baselineKind === 'CREATION'
@@ -422,7 +419,6 @@ export async function processAssessmentAuditRolloutItem(input: {
 export async function activateNewAssessmentAuditIfSelected(input: {
   client: DB.PrismaClient
   liveQuizId: string
-  media?: AssessmentAuditMediaDependencies
 }): Promise<DB.AssessmentAuditRolloutOutcome | 'NOT_SELECTED'> {
   const config = readAssessmentAuditRolloutConfig()
   if (config.mode !== 'all') return 'NOT_SELECTED'
@@ -447,7 +443,6 @@ export async function activateNewAssessmentAuditIfSelected(input: {
     client: input.client,
     candidate,
     inventory,
-    media: input.media,
     baselineKind: 'CREATION',
   })
 }

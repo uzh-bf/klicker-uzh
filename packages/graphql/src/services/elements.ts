@@ -4,12 +4,7 @@ import {
   generateBlobSASQueryParameters,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
-import {
-  type AuditEventDraft,
-  extractBaselineMediaUrls,
-  hashCanonicalValue,
-  runInAuditTransaction,
-} from '@klicker-uzh/audit'
+import { type AuditEventDraft, runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   type ActivityLogModificationDetails,
@@ -41,21 +36,12 @@ import type {
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { validateElementDifficultyLevel } from '../lib/validateElementDifficultyLevel.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
-import {
-  captureAssessmentAuditSnapshotMedia,
-  createAssessmentAuditMediaDependencies,
-  loadAssessmentAuditSnapshot,
-} from './assessmentAuditActivation.js'
-import {
-  assessmentBaselineMarkdown,
-  assessmentSourceElementState,
-} from './assessmentAuditBaseline.js'
+import { loadAssessmentAuditSnapshot } from './assessmentAuditActivation.js'
+import { assessmentSourceElementState } from './assessmentAuditBaseline.js'
 import {
   assessmentAuditUserOperation,
-  assessmentMediaChangeDrafts,
   buildAssessmentMutationAuditDrafts,
   emitCoveredAssessmentAuditEvents,
-  loadCoveredAssessmentMediaStates,
 } from './assessmentAuditProducers.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
@@ -961,158 +947,6 @@ export async function manipulateElementWithAssessmentAudit(
   )
 }
 
-type PreparedAssessmentInstanceRefreshMedia = Awaited<
-  ReturnType<typeof captureAssessmentAuditSnapshotMedia>
-> & {
-  mediaReferenceHash: string
-}
-
-async function prepareAssessmentInstanceRefreshMedia(input: {
-  client: ContextWithUser['prisma']
-  elementId: number
-  userId: string
-  includeTemplates: boolean
-  capturedAt: Date
-}): Promise<Map<string, PreparedAssessmentInstanceRefreshMedia>> {
-  const element = await input.client.element.findUnique({
-    where: { id: input.elementId, isDeleted: false },
-    include: {
-      answerCollection: { include: { entries: true } },
-      answerCollectionItems: true,
-    },
-  })
-  if (element === null) return new Map()
-
-  const acceptedStatuses = input.includeTemplates
-    ? [
-        DB.PublicationStatus.DRAFT,
-        DB.PublicationStatus.SCHEDULED,
-        DB.PublicationStatus.TEMPLATE,
-      ]
-    : [DB.PublicationStatus.DRAFT, DB.PublicationStatus.SCHEDULED]
-  const liveQuizzes = await input.client.liveQuiz.findMany({
-    where: {
-      isAssessmentEnabled: true,
-      status: { in: acceptedStatuses },
-      permissions: {
-        some: {
-          userId: input.userId,
-          permissionLevel: {
-            in: [
-              DB.PermissionLevel.WRITE,
-              DB.PermissionLevel.ADMIN,
-              DB.PermissionLevel.OWNER,
-            ],
-          },
-        },
-      },
-      blocks: { some: { elements: { some: { elementId: input.elementId } } } },
-    },
-    orderBy: { id: 'asc' },
-    select: { id: true },
-  })
-  const coveredScopes = await input.client.assessmentAuditScope.findMany({
-    where: {
-      liveQuizId: { in: liveQuizzes.map((liveQuiz) => liveQuiz.id) },
-      coverageState: DB.AssessmentAuditCoverageState.COVERED,
-    },
-    select: { liveQuizId: true },
-  })
-  const coveredLiveQuizIds = new Set(
-    coveredScopes.map((scope) => scope.liveQuizId)
-  )
-  if (coveredLiveQuizIds.size === 0) return new Map()
-  const replacement = processElementData(element)
-  const prepared = new Map<string, PreparedAssessmentInstanceRefreshMedia>()
-  const media = createAssessmentAuditMediaDependencies()
-  for (const liveQuiz of liveQuizzes.filter((quiz) =>
-    coveredLiveQuizIds.has(quiz.id)
-  )) {
-    const snapshot = await loadAssessmentAuditSnapshot(
-      input.client,
-      liveQuiz.id
-    )
-    if (snapshot === null) continue
-    const projected = {
-      ...snapshot,
-      blocks: snapshot.blocks.map((block) => ({
-        ...block,
-        elements: block.elements.map((instance) =>
-          instance.elementId === input.elementId
-            ? { ...instance, elementData: replacement }
-            : instance
-        ),
-      })),
-    }
-    const captured = await captureAssessmentAuditSnapshotMedia({
-      client: input.client,
-      snapshot: projected,
-      media,
-      capturedAt: input.capturedAt,
-    })
-    prepared.set(liveQuiz.id, {
-      ...captured,
-      mediaReferenceHash: hashCanonicalValue(
-        extractBaselineMediaUrls(assessmentBaselineMarkdown(projected))
-      ),
-    })
-  }
-  return prepared
-}
-
-function appendPreparedAssessmentMediaDrafts(input: {
-  drafts: AuditEventDraft[]
-  liveQuizId: string
-  afterSnapshot: Parameters<typeof assessmentBaselineMarkdown>[0]
-  mediaBefore: Awaited<ReturnType<typeof loadCoveredAssessmentMediaStates>>
-  prepared: PreparedAssessmentInstanceRefreshMedia | undefined
-  producerOperationId: string
-}) {
-  const hasEffectiveInstanceChange = input.drafts.some(
-    (draft) =>
-      draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_REFRESHED' ||
-      draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED'
-  )
-  if (!hasEffectiveInstanceChange || input.mediaBefore === null) return
-  if (input.prepared === undefined) {
-    throw new Error(
-      `Assessment media was not staged for refreshed live quiz ${input.liveQuizId}`
-    )
-  }
-  const afterMediaReferenceHash = hashCanonicalValue(
-    extractBaselineMediaUrls(assessmentBaselineMarkdown(input.afterSnapshot))
-  )
-  if (afterMediaReferenceHash !== input.prepared.mediaReferenceHash) {
-    throw new Error(
-      `Assessment media staging no longer matches live quiz ${input.liveQuizId}`
-    )
-  }
-  if (input.prepared.limitations.length > 0) {
-    for (const [index, draft] of input.drafts.entries()) {
-      if (
-        draft.eventType !== 'ASSESSMENT_ELEMENT_INSTANCE_REFRESHED' &&
-        draft.eventType !== 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED'
-      ) {
-        continue
-      }
-      input.drafts[index] = {
-        ...draft,
-        payload: {
-          ...draft.payload,
-          reasonCode: 'LECTURER_CONTENT_MUTATION_EXTERNAL_MEDIA_NOT_CAPTURED',
-        },
-      } as AuditEventDraft
-    }
-  }
-  input.drafts.push(
-    ...assessmentMediaChangeDrafts({
-      before: input.mediaBefore,
-      after: input.prepared.capturedMedia,
-      producerOperationId: input.producerOperationId,
-    })
-  )
-}
-
 export async function applyElementBatchOperations(
   {
     elementIds,
@@ -1240,15 +1074,6 @@ export async function applyElementBatchOperations(
     (left, right) => left.id - right.id
   )) {
     try {
-      const preparedMedia = updateInstances
-        ? await prepareAssessmentInstanceRefreshMedia({
-            client: ctx.prisma,
-            elementId: element.id,
-            userId: ctx.user.sub,
-            includeTemplates: updateTemplateInstances,
-            capturedAt: auditOperation.occurredAt,
-          })
-        : new Map<string, PreparedAssessmentInstanceRefreshMedia>()
       const updatedElement = await runInAuditTransaction(
         ctx.prisma,
         async (tx, auditTx) => {
@@ -1401,18 +1226,6 @@ export async function applyElementBatchOperations(
                     draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED' ||
                     draft.eventType === 'ASSESSMENT_CONFIGURATION_CHANGED'
                 )
-                const mediaBefore = await loadCoveredAssessmentMediaStates(
-                  tx,
-                  liveQuizId
-                )
-                appendPreparedAssessmentMediaDrafts({
-                  drafts: instanceDrafts,
-                  liveQuizId,
-                  afterSnapshot,
-                  mediaBefore,
-                  prepared: preparedMedia.get(liveQuizId),
-                  producerOperationId: `${auditOperation.correlationId}:element:${element.id}`,
-                })
                 drafts.push(...instanceDrafts)
               }
             }
@@ -2719,13 +2532,6 @@ export async function updateElementInstancesWithAssessmentAudit(
     userId: ctx.user.sub,
     requiredPermission: 'WRITE',
   })
-  const preparedMedia = await prepareAssessmentInstanceRefreshMedia({
-    client: ctx.prisma,
-    elementId: args.elementId,
-    userId: ctx.user.sub,
-    includeTemplates: args.includeTemplates,
-    capturedAt: auditOperation.occurredAt,
-  })
   return runInAuditTransaction(
     ctx.prisma,
     async (tx, auditTx) => {
@@ -2777,18 +2583,6 @@ export async function updateElementInstancesWithAssessmentAudit(
             draft.eventType === 'ASSESSMENT_ELEMENT_INSTANCE_UPDATED' ||
             draft.eventType === 'ASSESSMENT_CONFIGURATION_CHANGED'
         )
-        const mediaBefore = await loadCoveredAssessmentMediaStates(
-          tx,
-          liveQuizId
-        )
-        appendPreparedAssessmentMediaDrafts({
-          drafts: instanceDrafts,
-          liveQuizId,
-          afterSnapshot,
-          mediaBefore,
-          prepared: preparedMedia.get(liveQuizId),
-          producerOperationId: auditOperation.correlationId,
-        })
         await emitCoveredAssessmentAuditEvents({
           tx,
           auditTx,

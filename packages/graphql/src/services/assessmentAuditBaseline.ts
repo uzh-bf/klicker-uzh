@@ -63,45 +63,6 @@ export type AssessmentBaselineSnapshot = {
   }>
 }
 
-function collectStringLeaves(value: unknown, output: string[]): void {
-  if (typeof value === 'string') {
-    output.push(value)
-    return
-  }
-  if (Array.isArray(value)) {
-    for (const nested of value) collectStringLeaves(nested, output)
-    return
-  }
-  if (typeof value === 'object' && value !== null) {
-    for (const nested of Object.values(value)) {
-      collectStringLeaves(nested, output)
-    }
-  }
-}
-
-export function assessmentBaselineMarkdown(
-  snapshot: AssessmentBaselineSnapshot
-): string[] {
-  const markdown: string[] = []
-  if (snapshot.description !== null) markdown.push(snapshot.description)
-  for (const block of snapshot.blocks) {
-    for (const element of block.elements) {
-      collectStringLeaves(element.elementData, markdown)
-    }
-  }
-  return markdown
-}
-
-type CapturedMediaState = Extract<
-  AssessmentBaselineContent,
-  { kind: 'MEDIA_REFERENCE' }
->['media']
-
-type BaselineLimitation = Extract<
-  AssessmentBaselineContent,
-  { kind: 'LIMITATION' }
->
-
 export function sourceElementVersion(elementData: ElementData): number {
   const match = elementData.id.match(/-v([1-9]\d*)$/u)
   if (
@@ -446,8 +407,6 @@ export function assessmentSourceElementState(
 
 export function buildAssessmentBaselineContents(input: {
   snapshot: AssessmentBaselineSnapshot
-  capturedMedia: readonly CapturedMediaState[]
-  limitations: readonly BaselineLimitation[]
 }): AssessmentBaselineContent[] {
   const { snapshot } = input
   const contents: AssessmentBaselineContent[] = [
@@ -494,14 +453,7 @@ export function buildAssessmentBaselineContents(input: {
           permission: permission.permissionLevel,
           effective: permission.effective,
         })
-      ),
-    ...input.capturedMedia.map(
-      (media): AssessmentBaselineContent => ({
-        kind: 'MEDIA_REFERENCE',
-        media,
-      })
-    ),
-    ...input.limitations
+      )
   )
 
   return contents

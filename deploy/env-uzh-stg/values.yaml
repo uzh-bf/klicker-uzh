@@ -153,8 +153,6 @@ assessmentAudit:
   # Do not use the legacy audit account or URLs containing SAS credentials.
   tableEndpoint: https://stgklickerevidenceaohwr.table.core.windows.net/
   blobEndpoint: https://stgklickerevidenceaohwr.blob.core.windows.net/
-  backendMedia:
-    serviceAccountName: stg-audit-backend-media
   worker:
     serviceAccountName: stg-audit-dispatcher
     priorityClassName: staging-workload
@@ -166,21 +164,6 @@ assessmentAudit:
       requests:
         cpu: 50m
         memory: 320Mi
-      limits:
-        memory: 512Mi
-  mediaPolicyWorker:
-    serviceAccountName: stg-audit-media-policy
-    priorityClassName: staging-workload
-    image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
-      pullPolicy: Always
-      tag: v3-audit
-    # The default 256Mi limit OOMKills under VPA target 362.7Mi (11 restarts
-    # observed 2026-09-15); size both audit workers from the staging VPAs.
-    resources:
-      requests:
-        cpu: 25m
-        memory: 384Mi
       limits:
         memory: 512Mi
   monitoring:
