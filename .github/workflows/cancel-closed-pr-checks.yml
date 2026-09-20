@@ -60,6 +60,8 @@ jobs:
             group: Perform sonarcloud analysis
           - workflow: AI code review (OpenCodeReview)
             group: AI code review (OpenCodeReview)
+          - workflow: Dependency Review
+            group: Dependency Review
           # The MCP entries cover workflows that exist only on the v3-ai and
           # v3-audit integration branches. On v3 itself no run ever occupies
           # those groups, so the legs finish as harmless no-ops while the
