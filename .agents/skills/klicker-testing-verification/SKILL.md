@@ -13,7 +13,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
 | Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI includes it in `test-unit.yml`, but still run it locally before claiming verification               |
-| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
+| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment (marked disposable Postgres + Redis + Hatchet); serialized, don't parallelize                   |
 | Auth adapter against shared Prisma client                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
 | React/browser feature-flag behavior                                               | browser verification with `npx agent-browser@0.32.2`; use e2e when a user flow covers it                                                                                                    |
 | UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
@@ -28,6 +28,19 @@ atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
 
+Every new destructive test setup, cleanup or test-seed entrypoint must await
+`requireDisposableDatabase(client)` on the actual client before its first
+database operation, including cleanup after failed setup. Do not use a separate
+verification client or a hostname-only check. A refusal requires correcting the
+disposable environment, never bypassing the guard or marking retained data.
+
+For Git fixture or hook changes, run the focused Node test that exercises the
+fixture plus `pnpm run check:git-identity` and
+`bash util/check-git-identity.sh current`. The guard test covers synthetic
+normal, fixture-author, and fixture-trailer commit ranges. The guard's explicit
+range mode is also the pull-request CI entry point. It must reject the exact
+fixture identity without rejecting ordinary GitHub or human commit identities.
+
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` before the full chat suite. The
 fixture uses injected OpenAI-compatible SSE with a sparse first tool-call index
@@ -39,6 +52,57 @@ For OpenAI-compatible request-policy or prompt-cache changes, run
 `apps/chat/test/prompt-cache-identity.test.ts` after the streaming fixture;
 see [docs/testing.md](../../../docs/testing.md#which-level-for-which-change)
 for contract details and evidence boundaries.
+
+For the external synthetic evaluation wrapper, run
+`bash util/test-klicker-eval-wrapper.sh` before any credentialed smoke test.
+Then validate all FineCo Markdown cases against
+`evaluation/data/tools/klicker_fineco.yaml` without a provider request. Use the
+approved secret manager or masked CI variables for live judge checks. Require
+caller-provided `LITELLM_API_BASE` and a visible namespaced model first;
+`LITELLM_API_KEY` is optional because the wrapper fetches
+`PIPELINES_LITELLM_API_KEY` with the standard Infisical CLI (klicker-uzh
+project, `stg` environment; targets CLI 0.43.x flags) when it is unset, and the
+wrapper test suite covers that fetch path. Require the wrapper to fail fast on
+a missing CLI, a failed fetch, or an empty key before starting the evaluator,
+and require its metrics, tools, and ground-truth preflights to fail before
+invoking the evaluator. Eval mode judges an existing QA artifact; it does not
+query Klicker's authenticated AI-SDK chat route and is not live
+product-quality evidence.
+
+For local Klicker target evaluation, start the exact worktree after the VPN is
+active. Map the developer Foundry values to `UPSTREAM_OPENAI_API_KEY` and
+`UPSTREAM_OPENAI_BASE_URL` with the approved secret manager. The wrapper
+fetches its own judge key via the standard Infisical CLI when
+`LITELLM_API_KEY` is unset, so no personal operator is needed; the Infisical
+and CI examples are documented in `evaluation/README.md`.
+
+If the LiteLLM container already exists with different upstream values, stop
+the exact checkout and rerun this command. Run the wrapper fake-runtime test
+before credentialed traffic. Set namespaced KLICKER_EVAL_API_ORIGIN and
+KLICKER_EVAL_CHAT_ORIGIN plus seeded participant credentials in the invoking
+shell; the wrapper keeps them out of the evaluator child and creates an
+ephemeral loopback target key. Use --local-target with direct gpt-5.6-luna and
+one in-flight request.
+
+The KB_doc_query canary is only synthetic transport evidence. It proves the
+local authentication, disclaimer, thread/message persistence, mode, and
+expected-tool gates, but it does not prove FineCo quality. Do not run the
+20-case FineCo phase unless EXPERT_df_fineco_expert is already reachable through
+an authorized synthetic binding with a finite response bound; otherwise record
+delivery_pending and do not establish a tunnel or substitute the canary. Keep
+caller-provided `LITELLM_API_BASE` and `LITELLM_API_KEY` for the judge path
+separate from the developer-Foundry values injected into the local Chat
+container. Stop and verify the exact devrouter checkout after the run.
+
+For course-chat prompt compiler or fixed-policy changes, use
+`apps/chat/test/system-prompt-compiler.test.ts` as the primary composition
+seam. Also run `language-instructions.test.ts` or
+`citation-instructions.test.ts` when those contracts change, and the focused
+chat-route test when its selected chatbot data or compiler context changes.
+These static tests prove section ownership, ordering, and required text; they
+do not prove model obedience. Pure prompt-source changes do not by themselves
+require a runtime or browser, but the normal package check, formatting, lint,
+build, and focused tests remain required before merge.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
@@ -93,7 +157,7 @@ seconds so container readiness is detected promptly.
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
 - Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
-- You are **authorized to start the required servers for this purpose** through the host launcher. It reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor.
+- You are **authorized to start the required servers for this purpose** through the host launcher. By default it reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor. For focused tests with an existing synthetic baseline, explicit local options `--runtime-profile chat --preserve-database` before Playwright arguments select Chat dependencies and skip global reset/seed. Inspect the selected spec's own fixture writes and cleanup first; those remain active. CI and default setup are unchanged.
 - If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 

@@ -11,7 +11,9 @@ import nookies from 'nookies'
 import { useState } from 'react'
 import Layout from '../../../components/Layout'
 import Footer from '../../../components/common/Footer'
-import PracticeQuiz from '../../../components/practiceQuiz/PracticeQuiz'
+import PracticeQuiz, {
+  resetPracticeQuizLocalStorage,
+} from '../../../components/practiceQuiz/PracticeQuiz'
 
 interface Props {
   courseId: string
@@ -23,15 +25,21 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
   const t = useTranslations()
 
   const [currentIx, setCurrentIx] = useState(-1)
+  const [roundComplete, setRoundComplete] = useState(false)
+  const [preparingNextRound, setPreparingNextRound] = useState(false)
+  const [roundRefreshError, setRoundRefreshError] = useState(false)
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
-  const { loading, error, data } = useQuery(GetCoursePracticeQuizDocument, {
-    variables: { courseId },
-  })
+  const { loading, error, data, refetch } = useQuery(
+    GetCoursePracticeQuizDocument,
+    {
+      variables: { courseId },
+    }
+  )
 
   if (loading)
     return (
@@ -50,7 +58,7 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
       </Layout>
     )
   }
-  if (error) {
+  if (error || roundRefreshError) {
     return <Layout>{t('shared.generic.systemError')}</Layout>
   }
 
@@ -59,23 +67,56 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
     setCurrentIx((ix) => ix + 1)
   }
 
+  const handleAllStacksCompletion = async () => {
+    scrollTo(0, 0)
+    // A completed pool round starts fresh in the UI. The spaced repetition
+    // schedule on the server is kept and re-selects the stacks of the next
+    // round, which is why the query is refetched after resetting.
+    resetPracticeQuizLocalStorage(courseId)
+    setRoundComplete(false)
+    setPreparingNextRound(true)
+    setCurrentIx(-1)
+
+    try {
+      await refetch()
+      setRoundComplete(true)
+    } catch {
+      setRoundRefreshError(true)
+    } finally {
+      setPreparingNextRound(false)
+    }
+  }
+
   return (
     <Layout
       displayName={t('shared.generic.practiceTitle')}
       course={data.coursePracticeQuiz.course ?? undefined}
     >
-      <PracticeQuiz
-        quiz={{
-          ...data?.coursePracticeQuiz,
-          description: t('pwa.courses.coursePracticeArea', {
-            courseName: data?.coursePracticeQuiz.course?.displayName ?? 0,
-          }),
-          course: data?.coursePracticeQuiz.course!,
-        }}
-        currentIx={currentIx}
-        setCurrentIx={setCurrentIx}
-        handleNextElement={handleNextQuestion}
-      />
+      {roundComplete && currentIx === -1 && (
+        <div data-cy="practice-pool-round-complete">
+          <UserNotification
+            type="success"
+            message={t('pwa.general.practicePoolRoundComplete')}
+          />
+        </div>
+      )}
+      {preparingNextRound ? (
+        <Loader />
+      ) : (
+        <PracticeQuiz
+          quiz={{
+            ...data?.coursePracticeQuiz,
+            description: t('pwa.courses.coursePracticeArea', {
+              courseName: data?.coursePracticeQuiz.course?.displayName ?? 0,
+            }),
+            course: data?.coursePracticeQuiz.course!,
+          }}
+          currentIx={currentIx}
+          setCurrentIx={setCurrentIx}
+          handleNextElement={handleNextQuestion}
+          onAllStacksCompletion={handleAllStacksCompletion}
+        />
+      )}
       <Footer
         browserLink={`${process.env.NEXT_PUBLIC_PWA_URL}/course/${courseId}/practice`}
       />

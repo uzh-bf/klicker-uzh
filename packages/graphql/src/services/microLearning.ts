@@ -30,6 +30,7 @@ export async function getMicroLearningData(
   const microLearning = await ctx.prisma.microLearning.findUnique({
     where: {
       id,
+      course: { deletionRequestedAt: null },
       OR: [
         { AND: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false } },
         // if user has access to the microlearning, the query should be enabled for loading the preview
@@ -79,6 +80,7 @@ export async function getMicroLearningEvaluation(
         in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
       },
       isDeleted: false,
+      course: { deletionRequestedAt: null },
     },
     include: {
       stacks: {
@@ -118,7 +120,11 @@ export async function getSingleMicroLearning(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id, isDeleted: false },
+    where: {
+      id,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       course: true,
       stacks: {
@@ -136,7 +142,7 @@ export async function getCoursePublishedMicroLearnings(
   ctx: Context
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       microLearnings: {
         where: { status: DB.PublicationStatus.PUBLISHED, isDeleted: false },
@@ -706,7 +712,7 @@ export async function getMicroLearningSummary(
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: { stacks: { include: { elements: true } } },
   })
 

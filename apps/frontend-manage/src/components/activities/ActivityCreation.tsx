@@ -43,6 +43,7 @@ interface ActivityCreationProps {
   conversionMode?: string
   selection: Record<number, Element | undefined>
   resetSelection: () => void
+  restoreSelection: (selection: Record<number, Element>) => void
 }
 
 function ActivityCreation({
@@ -54,6 +55,7 @@ function ActivityCreation({
   conversionMode,
   selection,
   resetSelection,
+  restoreSelection,
 }: ActivityCreationProps) {
   const t = useTranslations()
   const { data: dataLiveQuiz, loading: liveLoading } = useQuery(
@@ -237,6 +239,7 @@ function ActivityCreation({
             }
             selection={selectedElements}
             resetSelection={resetSelection}
+            restoreSelection={restoreSelection}
             editMode={editMode === ActivityType.LiveQuiz}
             duplicationMode={duplicationMode === ActivityType.LiveQuiz}
           />
@@ -260,6 +263,7 @@ function ActivityCreation({
             }
             selection={selectedElements}
             resetSelection={resetSelection}
+            restoreSelection={restoreSelection}
             editMode={editMode === ActivityType.MicroLearning}
             duplicationMode={duplicationMode === ActivityType.MicroLearning}
           />
@@ -284,6 +288,12 @@ function ActivityCreation({
             }
             selection={selectedElements}
             resetSelection={resetSelection}
+            restoreSelection={restoreSelection}
+            recoverySourceId={
+              conversionMode === 'microLearningToPracticeQuiz'
+                ? activityId
+                : undefined
+            }
             conversion={conversionMode === 'microLearningToPracticeQuiz'}
             editMode={editMode === ActivityType.PracticeQuiz}
             duplicationMode={duplicationMode === ActivityType.PracticeQuiz}
@@ -296,6 +306,7 @@ function ActivityCreation({
             courses={courseSelection ?? []}
             selection={selectedElements}
             resetSelection={resetSelection}
+            restoreSelection={restoreSelection}
             initialValues={
               (dataGroupActivity?.groupActivity as GroupActivity) ?? undefined
             }

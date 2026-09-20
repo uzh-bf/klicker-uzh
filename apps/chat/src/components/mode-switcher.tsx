@@ -6,6 +6,7 @@ import {
   ChevronDownIcon,
   GraduationCapIcon,
   LightbulbIcon,
+  ListChecksIcon,
   SparklesIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -23,6 +24,10 @@ function ModeIcon({ mode, className }: { mode: string; className?: string }) {
 
   if (mode === 'explainer') {
     return <LightbulbIcon aria-hidden="true" className={className} />
+  }
+
+  if (mode === 'quizzer') {
+    return <ListChecksIcon aria-hidden="true" className={className} />
   }
 
   return <SparklesIcon aria-hidden="true" className={className} />

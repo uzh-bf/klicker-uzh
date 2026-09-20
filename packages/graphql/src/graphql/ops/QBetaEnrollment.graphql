@@ -1,0 +1,7 @@
+query BetaEnrollment {
+  betaEnrollment {
+    mayChange
+    membership
+    signupAvailable
+  }
+}

@@ -3,17 +3,31 @@ description: >-
   Determine whether any changed file matches a path pattern. Uses a plain
   two-endpoint diff so it works on the default shallow checkout (a
   merge-base/three-dot diff would fail there). Fails open: if the diff cannot
-  be computed, should_run is true.
+  be computed, should_run is true. A pull_request edited event that only
+  changed PR metadata (title or body) leaves the merge tree unchanged, so the
+  suite may be skipped only when the prior status check for this head already
+  succeeded; a prior failure, pending state, or API error re-runs the suite.
 
 inputs:
   pattern:
     description: Extended regex (grep -E) matched against changed file paths
     required: true
+  prior-check-name:
+    description: >-
+      Name of the always-reporting required-status context whose latest
+      completed result on this head can validate a skip on a metadata-only
+      edited event. Empty disables the skip entirely, and the calling workflow
+      also needs "checks: read" for the lookup to be allowed.
+    required: false
+    default: ''
 
 outputs:
   should_run:
     description: '"true" if any changed file matches the pattern'
     value: ${{ steps.check.outputs.should_run }}
+  skip_reason:
+    description: 'Why the suite was skipped, when should_run is false on a metadata-only edit'
+    value: ${{ steps.check.outputs.skip_reason }}
 
 runs:
   using: composite
@@ -22,8 +36,49 @@ runs:
       shell: bash
       env:
         PATTERN: ${{ inputs.pattern }}
-        BASE_REF: ${{ github.base_ref }}
+        PRIOR_CHECK_NAME: ${{ inputs.prior-check-name }}
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
+        BEFORE_SHA: ${{ github.event.before }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        GITHUB_TOKEN: ${{ github.token }}
+        ACTION: ${{ github.event.action }}
+        EDITED_BASE_FROM: ${{ github.event.changes.base.from }}
       run: |
+        PRIOR_SUCCESS=0
+        MAY_SKIP=0
+        if [ "$GITHUB_EVENT_NAME" = "pull_request" ] &&
+          [ "$ACTION" = "edited" ] &&
+          [ -z "$EDITED_BASE_FROM" ] &&
+          [ -n "$PRIOR_CHECK_NAME" ]; then
+          # A metadata-only edited event leaves base and head unchanged, so the
+          # merge tree is identical to the tree the prior run tested. Skipping
+          # is sound only when the required-status context already succeeded for
+          # this head; a failure, pending state, or API error must re-run the
+          # suite. Querying the terminal context rather than the suite job keeps
+          # one stable name per workflow, so matrix-expanded job names are never
+          # guessed. A base retarget carries changes.base.from and is never
+          # metadata-only.
+          MAY_SKIP=1
+          if [[ "$BASE_REF" =~ ^[0-9a-f]{40}$ ]] &&
+             [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            if API_BODY=$(curl -fsS \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/check-runs?check_name=$PRIOR_CHECK_NAME&filter=latest&per_page=1"); then
+              PRIOR_SUCCESS=$(API_BODY="$API_BODY" node -e '
+                const body = JSON.parse(process.env.API_BODY)
+                const run = (body.check_runs ?? []).find(
+                  (item) => item.head_sha === process.env.HEAD_SHA
+                )
+                process.stdout.write(
+                  run?.status === "completed" && run?.conclusion === "success"
+                    ? "1"
+                    : "0"
+                )
+              ' || echo 0)
+            fi
+          fi
+        fi
         if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
           # Only shallow-fetch when the clone is already shallow. A full clone
           # (fetch-depth: 0) must retain its history for later merge-base
@@ -36,11 +91,16 @@ runs:
           else
             git fetch origin "$BASE_REF"
           fi
-          diff=$(git diff --name-only "origin/$BASE_REF" HEAD) || diff=""
+          diff=$(git diff --name-only "$BASE_REF" HEAD) || diff=""
         else
-          # Deepen the shallow clone so the previous commit is available
-          git fetch --deepen=1 origin || true
-          diff=$(git diff --name-only HEAD^ HEAD) || diff=""
+          # Compare the complete push, including earlier commits in a batch.
+          # Missing/deleted initial refs fall back to running the suite below.
+          if [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            git fetch --depth=1 origin "$BEFORE_SHA" || true
+            diff=$(git diff --name-only "$BEFORE_SHA" HEAD) || diff=""
+          else
+            diff=""
+          fi
         fi
 
         if [ -z "$diff" ]; then
@@ -53,7 +113,13 @@ runs:
         echo "$diff"
 
         if echo "$diff" | grep -qE "$PATTERN"; then
-          echo "should_run=true" >> "$GITHUB_OUTPUT"
+          if [ "$MAY_SKIP" = "1" ] && [ "$PRIOR_SUCCESS" = "1" ]; then
+            echo "Metadata-only edited event; prior completed success validates this unchanged tree."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "skip_reason=validated-prior-success" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
         else
           echo "should_run=false" >> "$GITHUB_OUTPUT"
         fi

@@ -1,4 +1,4 @@
-import { prisma } from '@klicker-uzh/prisma'
+import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import * as Prisma from '@klicker-uzh/prisma/client'
 import { DisplayMode } from '@klicker-uzh/types'
 import {
@@ -57,6 +57,7 @@ function assessmentInvitationEmail(username: string, index: number) {
 }
 
 async function seedAssessmentCourse(prismaClient: Prisma.PrismaClient) {
+  await requireDisposableDatabase(prismaClient)
   if (process.env.ENV !== 'development') {
     throw new Error('The assessment course fixture is development-only')
   }

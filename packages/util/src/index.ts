@@ -33,3 +33,6 @@ export * from './chatUsage.js'
 
 // export everything from the chat model registry module
 export * from './chatModelRegistry.js'
+
+// export standard chatbot mode configuration validation and normalization
+export * from './chatbotStandardModeConfig.js'

@@ -1,5 +1,6 @@
 const {
   getPermission,
+  isEligibleBaseBranch,
   listCheckRunsForRef,
   repositoryName,
   safeFence,
@@ -31,15 +32,10 @@ const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
 const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review clean; evidence=`
+const FINAL_REVIEW_REQUIRED_DESCRIPTION = `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
 const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
 const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
-const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
-// Long-lived consolidation branches (for example, v3-ai) that staging
-// deployments are cut from. Individual final reviews treat open ready pull
-// requests targeting one of these bases exactly like pull requests targeting
-// the default branch. Stack review and native-stack root validation stay
-// bound to the default branch.
-const CONSOLIDATION_BASE_BRANCHES = Object.freeze(['v3-ai'])
+const OCR_RUN_MANIFEST_SCHEMA = 'ocr.run-manifest/v1'
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -65,7 +61,6 @@ const OPENROUTER_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
 const OPENROUTER_TOOL_CANARY_NAME = 'final_review_probe'
 const OPENROUTER_TOOL_CANARY_TIMEOUT_MS = 30_000
 const OCR_MAX_COMPLETION_TOKENS = 16_384
-const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
 const MAX_INCREMENTAL_LINES = 1_000
@@ -82,6 +77,8 @@ const FINDING_CATEGORIES = new Set([
 ])
 const FINDING_SEVERITIES = new Set(['critical', 'high', 'medium', 'low'])
 const DISPOSITION_STATES = new Set(['fixed', 'follow-up', 'rejected'])
+const FINDING_CONTENT_PREFIX_RE =
+  /^Confidence: (\d{1,3})\/100\nAutofix: (mechanical|manual|not-applicable)\nMotivating line: `([^`\r\n]+)`(?:\n|$)/
 
 function buildFinalReviewEvidenceDigest(value) {
   return sha256(JSON.stringify(value))
@@ -653,264 +650,6 @@ function removeOCRConfig(configPath = defaultOCRConfigPath()) {
   fs.rmSync(configPath, { force: true })
 }
 
-function promotionBody(targetSha) {
-  return [
-    `Automated staging promotion of \`${targetSha}\`.`,
-    '',
-    'Writes the built commit into `rollout.klicker.uzh.ch/release` so ArgoCD',
-    'detects drift, runs the PreSync migration hook, and rolls the stg pods.',
-    'Opened only after every `v3_*-stg.yml` image build succeeded for this',
-    'commit. See ADR-0003.',
-    '',
-  ].join('\n')
-}
-
-function parsePromotionTarget(body) {
-  const match = String(body ?? '').match(
-    /^Automated staging promotion of `([0-9a-f]{40})`\.\n\n/
-  )
-  return match?.[1] ?? ''
-}
-
-function isPromotionCandidate(headRef) {
-  return /^chore\/promote-stg-[0-9a-f]{12}$/.test(headRef)
-}
-
-function buildExpectedPromotionContent(baseContent, shortSha, sourceBranch) {
-  let releaseCount = 0
-  let tagCount = 0
-
-  const withRelease = baseContent.replace(
-    /^([ \t]*rollout\.klicker\.uzh\.ch\/release: ).*$/gm,
-    (_line, prefix) => {
-      releaseCount += 1
-      return `${prefix}'${shortSha}'`
-    }
-  )
-  const content = withRelease.replace(
-    /^([ \t]+tag: ).*$/gm,
-    (_line, prefix) => {
-      tagCount += 1
-      return `${prefix}${sourceBranch}`
-    }
-  )
-
-  return { content, releaseCount, tagCount }
-}
-
-function invalidPromotion(reason) {
-  return { valid: false, reason }
-}
-
-async function verifyPromotionBuilds({
-  github,
-  context,
-  sourceBranch,
-  targetSha,
-  trustedSha,
-}) {
-  if (!/^[0-9a-f]{40}$/.test(trustedSha ?? '')) {
-    return invalidPromotion('trusted promotion workflow commit is missing')
-  }
-  if (
-    typeof github.paginate !== 'function' ||
-    typeof github.rest.actions?.listWorkflowRunsForRepo !== 'function'
-  ) {
-    return invalidPromotion('staging build evidence is unavailable')
-  }
-  const response = await github.rest.repos.getContent({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    path: '.github/workflows',
-    ref: trustedSha,
-  })
-  const workflowPaths = Array.isArray(response.data)
-    ? response.data
-        .filter(
-          (entry) =>
-            entry?.type === 'file' &&
-            /^v3_.*-stg\.yml$/.test(String(entry.name ?? ''))
-        )
-        .map((entry) => String(entry.path ?? ''))
-        .filter(Boolean)
-        .sort()
-    : []
-  if (workflowPaths.length === 0) {
-    return invalidPromotion('no staging build workflows were found')
-  }
-
-  const results = await Promise.all(
-    workflowPaths.map(async (workflowPath) => {
-      let trustedDefinition
-      let targetDefinition
-      try {
-        const definitions = await Promise.all([
-          getFileText(github, context, workflowPath, trustedSha),
-          getFileText(github, context, workflowPath, targetSha),
-        ])
-        trustedDefinition = definitions[0]
-        targetDefinition = definitions[1]
-      } catch {
-        return {
-          reason: 'workflow definition could not be verified',
-          verified: false,
-          workflowPath,
-        }
-      }
-      if (sha256(trustedDefinition) !== sha256(targetDefinition)) {
-        return {
-          reason: 'workflow definition differs from trusted policy',
-          verified: false,
-          workflowPath,
-        }
-      }
-      const runs = await github.paginate(
-        github.rest.actions.listWorkflowRunsForRepo,
-        {
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          workflow_id: workflowPath,
-          event: 'push',
-          head_sha: targetSha,
-          status: 'completed',
-          per_page: 100,
-        }
-      )
-      const verified = Array.isArray(runs)
-        ? runs.some(
-            (run) =>
-              run?.path === workflowPath &&
-              run?.event === 'push' &&
-              run?.head_branch === sourceBranch &&
-              run?.head_sha === targetSha &&
-              run?.status === 'completed' &&
-              run?.conclusion === 'success' &&
-              run?.repository?.full_name === repositoryName(context)
-          )
-        : false
-      return {
-        reason: verified ? '' : 'successful exact-SHA run is missing',
-        verified,
-        workflowPath,
-      }
-    })
-  )
-  const failures = results.filter(({ verified }) => !verified)
-  if (failures.length > 0) {
-    return invalidPromotion(
-      `staging build evidence or trusted workflow definition is missing for ${failures
-        .map(({ reason, workflowPath }) => `${workflowPath} (${reason})`)
-        .join(', ')}`
-    )
-  }
-  return {
-    valid: true,
-    reason: `verified ${workflowPaths.length} staging build runs for the target SHA`,
-    sourceBranch,
-    targetSha,
-    workflowPaths,
-  }
-}
-
-function validatePromotionContract(input) {
-  const {
-    pull,
-    permission,
-    repository,
-    sourceBranch,
-    commits,
-    files,
-    baseContent,
-    headContent,
-    targetIsAncestor,
-    buildEvidence,
-  } = input
-
-  if (pull.state !== 'open' || pull.draft) {
-    return invalidPromotion('promotion PR must be open and ready')
-  }
-  if (
-    pull.baseRef !== sourceBranch ||
-    pull.baseRepo !== repository ||
-    pull.headRepo !== repository
-  ) {
-    return invalidPromotion('promotion PR repository or base does not match')
-  }
-  if (!isTrustedPermission(permission)) {
-    return invalidPromotion('promotion author lacks write permission')
-  }
-  if (!/^[A-Za-z0-9_.-]+$/.test(sourceBranch)) {
-    return invalidPromotion('staging source branch is invalid')
-  }
-
-  const branchMatch = pull.headRef.match(/^chore\/promote-stg-([0-9a-f]{12})$/)
-  if (!branchMatch) {
-    return invalidPromotion('promotion head branch does not match')
-  }
-  const shortSha = branchMatch[1]
-  if (pull.title !== `chore(deploy): promote ${shortSha} to stg [skip ci]`) {
-    return invalidPromotion('promotion title does not match')
-  }
-
-  const targetSha = parsePromotionTarget(pull.body)
-  if (
-    !targetSha?.startsWith(shortSha) ||
-    pull.body !== promotionBody(targetSha)
-  ) {
-    return invalidPromotion('promotion body or target SHA does not match')
-  }
-  if (!targetIsAncestor) {
-    return invalidPromotion('promotion target is not on the staging source')
-  }
-  if (
-    !buildEvidence?.valid ||
-    buildEvidence.targetSha !== targetSha ||
-    buildEvidence.sourceBranch !== sourceBranch
-  ) {
-    return invalidPromotion(
-      'exact successful staging build evidence is missing'
-    )
-  }
-
-  if (commits.length !== 1) {
-    return invalidPromotion('promotion PR must contain one commit')
-  }
-  const [commit] = commits
-  if (
-    commit.message !== `chore(deploy): promote ${shortSha} to stg` ||
-    commit.parents.length !== 1 ||
-    commit.parents[0] !== pull.baseSha
-  ) {
-    return invalidPromotion('promotion commit or parent does not match')
-  }
-
-  if (
-    files.length !== 1 ||
-    files[0].filename !== PROMOTION_FILE ||
-    files[0].status !== 'modified'
-  ) {
-    return invalidPromotion('promotion changed an unexpected file')
-  }
-
-  const expected = buildExpectedPromotionContent(
-    baseContent,
-    shortSha,
-    sourceBranch
-  )
-  if (expected.releaseCount === 0 || expected.tagCount === 0) {
-    return invalidPromotion('base promotion file has unexpected structure')
-  }
-  if (headContent !== expected.content) {
-    return invalidPromotion('promotion content exceeds generated replacements')
-  }
-
-  return {
-    valid: true,
-    reason: 'verified generated staging promotion',
-    targetSha,
-  }
-}
-
 async function setCommitStatus({ github, context, sha, state, description }) {
   await github.rest.repos.createCommitStatus({
     owner: context.repo.owner,
@@ -930,13 +669,6 @@ async function getPull(github, context, pullNumber) {
     pull_number: pullNumber,
   })
   return response.data
-}
-
-function isEligibleBaseBranch({ baseRef, context }) {
-  return (
-    baseRef === context.payload.repository.default_branch ||
-    CONSOLIDATION_BASE_BRANCHES.includes(baseRef)
-  )
 }
 
 function isEligibleDefaultPull({ pull, context, baseSha, headSha }) {
@@ -1215,88 +947,6 @@ async function latestVerifiedCleanFinalReviewEvidence({
   })
 }
 
-async function getStagingSourceBranch({ github, context, defaultBranch }) {
-  if (typeof github.rest.actions?.getRepoVariable !== 'function') {
-    return defaultBranch
-  }
-  try {
-    const response = await github.rest.actions.getRepoVariable({
-      name: 'STG_SOURCE_BRANCH',
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-    })
-    const value = response.data?.value
-    return /^[A-Za-z0-9_.-]+$/.test(value ?? '') ? value : defaultBranch
-  } catch (error) {
-    if (
-      error?.status === 404 ||
-      /\b404\b|not found/i.test(String(error?.stderr ?? ''))
-    ) {
-      return defaultBranch
-    }
-    throw error
-  }
-}
-
-async function hasVerifiedGeneratedPromotionStatus({
-  github,
-  context,
-  pull,
-  sourceBranch,
-  trustedSha,
-}) {
-  const status = await getLatestFinalReviewStatus(
-    github,
-    context,
-    pull.head.sha
-  )
-  if (
-    status?.state !== 'success' ||
-    status.description !== GENERATED_PROMOTION_STATUS
-  ) {
-    return false
-  }
-  const workflowRunId = workflowRunIdFromUrl(context, status.target_url)
-  if (
-    workflowRunId == null ||
-    typeof github.rest.actions?.getWorkflowRun !== 'function'
-  ) {
-    return false
-  }
-  const workflow = (
-    await github.rest.actions.getWorkflowRun({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      run_id: workflowRunId,
-    })
-  )?.data
-  if (
-    !workflow ||
-    workflow.id !== workflowRunId ||
-    workflow.path !== FINAL_REVIEW_WORKFLOW_PATH ||
-    workflow.event !== 'pull_request_target' ||
-    workflow.head_branch !== context.payload.repository.default_branch ||
-    workflow.conclusion !== 'success' ||
-    workflow.repository?.full_name !== repositoryName(context) ||
-    !(await hasSuccessfulFinalReview(
-      github,
-      context,
-      pull.head.sha,
-      workflowRunId
-    ))
-  ) {
-    return false
-  }
-  const promotion = await inspectPromotion({
-    github,
-    context,
-    pull,
-    sourceBranch,
-    trustedSha,
-  })
-  return promotion.valid === true
-}
-
 async function getFileText(github, context, filePath, ref) {
   const response = await github.rest.repos.getContent({
     owner: context.repo.owner,
@@ -1336,7 +986,6 @@ function reviewPolicySettings() {
     model: FINAL_REVIEW_MODEL,
     ocr: buildOCRPolicy(),
     openrouter_url: OPENROUTER_URL,
-    promotion_file: PROMOTION_FILE,
     report_limit: REPORT_LIMIT,
     review_schemas: {
       individual: FINAL_REVIEW_SCHEMA,
@@ -1368,81 +1017,6 @@ async function getReviewPolicyDigest({ github, context, trustedSha }) {
       settings: reviewPolicySettings(),
     })
   )
-}
-
-async function inspectPromotion({
-  github,
-  context,
-  pull,
-  sourceBranch,
-  trustedSha,
-}) {
-  const permission = await getPermission(github, context, pull.user.login)
-  const targetSha = parsePromotionTarget(pull.body)
-  if (!targetSha) {
-    return invalidPromotion('promotion target SHA is missing')
-  }
-
-  const [commits, files, baseContent, headContent, comparison, buildEvidence] =
-    await Promise.all([
-      github.paginate(github.rest.pulls.listCommits, {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: pull.number,
-        per_page: 100,
-      }),
-      github.paginate(github.rest.pulls.listFiles, {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: pull.number,
-        per_page: 100,
-      }),
-      getFileText(github, context, PROMOTION_FILE, pull.base.sha),
-      getFileText(github, context, PROMOTION_FILE, pull.head.sha),
-      github.rest.repos.compareCommitsWithBasehead({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        basehead: `${targetSha}...${sourceBranch}`,
-      }),
-      verifyPromotionBuilds({
-        github,
-        context,
-        sourceBranch,
-        targetSha,
-        trustedSha,
-      }),
-    ])
-
-  return validatePromotionContract({
-    pull: {
-      state: pull.state,
-      draft: pull.draft,
-      baseRef: pull.base.ref,
-      baseSha: pull.base.sha,
-      baseRepo: pull.base.repo.full_name,
-      headRef: pull.head.ref,
-      headRepo: pull.head.repo.full_name,
-      title: pull.title,
-      body: pull.body ?? '',
-    },
-    permission,
-    repository: `${context.repo.owner}/${context.repo.repo}`,
-    sourceBranch,
-    commits: commits.map((commit) => ({
-      message: commit.commit.message,
-      parents: commit.parents.map((parent) => parent.sha),
-    })),
-    files: files.map((file) => ({
-      filename: file.filename,
-      status: file.status,
-    })),
-    baseContent,
-    headContent,
-    targetIsAncestor:
-      comparison.data.status === 'ahead' ||
-      comparison.data.status === 'identical',
-    buildEvidence,
-  })
 }
 
 function parseReviewMetadata(body) {
@@ -2217,46 +1791,14 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
   }
 }
 
-async function initializeFinalReview({
-  github,
-  context,
-  core,
-  sourceBranch,
-  trustedSha,
-}) {
+async function initializeFinalReview({ github, context, core }) {
   const pull = context.payload.pull_request
   let state = 'pending'
-  let description = `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
+  let description = FINAL_REVIEW_REQUIRED_DESCRIPTION
 
   if (pull.state !== 'open') {
     state = 'error'
     description = 'Final review is unavailable for a closed pull request'
-  } else if (isPromotionCandidate(pull.head.ref)) {
-    try {
-      const promotion = await inspectPromotion({
-        github,
-        context,
-        pull,
-        sourceBranch,
-        trustedSha,
-      })
-      core.info(`Promotion exemption: ${promotion.reason}`)
-      if (promotion.valid) {
-        state = 'success'
-        description = 'Verified generated staging promotion'
-      }
-    } catch (error) {
-      state = 'error'
-      description = 'Promotion validation failed; use /final-review'
-      await setCommitStatus({
-        github,
-        context,
-        sha: pull.head.sha,
-        state,
-        description,
-      })
-      throw error
-    }
   } else if (!pull.draft) {
     try {
       const eligibility = await resolvePullEligibility({
@@ -2431,19 +1973,13 @@ function validateFinding(comment, index) {
     throw new Error(`Finding ${index + 1} is not an object`)
   }
 
-  const filePath = String(comment.path ?? '')
-  if (
-    !filePath ||
-    filePath.length > 500 ||
-    path.isAbsolute(filePath) ||
-    filePath.split('/').includes('..') ||
-    /[\p{Cc}\p{Cf}`]/u.test(filePath)
-  ) {
+  const filePath = comment.path
+  if (!isSafeRepositoryPath(filePath) || path.isAbsolute(filePath)) {
     throw new Error(`Finding ${index + 1} has an invalid repository path`)
   }
 
-  const start = Number(comment.start_line)
-  const end = Number(comment.end_line)
+  const start = comment.start_line
+  const end = comment.end_line
   if (
     !Number.isSafeInteger(start) ||
     !Number.isSafeInteger(end) ||
@@ -2453,8 +1989,8 @@ function validateFinding(comment, index) {
     throw new Error(`Finding ${index + 1} has an invalid line range`)
   }
 
-  const severity = String(comment.severity ?? '').toLowerCase()
-  const category = String(comment.category ?? '').toLowerCase()
+  const severity = comment.severity
+  const category = comment.category
   if (!FINDING_SEVERITIES.has(severity)) {
     throw new Error(`Finding ${index + 1} has an invalid severity`)
   }
@@ -2462,18 +1998,25 @@ function validateFinding(comment, index) {
     throw new Error(`Finding ${index + 1} has an invalid category`)
   }
 
-  const content = String(comment.content ?? '').trim()
-  const confidenceMatch = content.match(/\bConfidence:\s*(\d{1,3})\/100\b/i)
+  const content = comment.content
+  if (typeof content !== 'string' || !content) {
+    throw new Error(`Finding ${index + 1} has invalid content`)
+  }
+  if (content.length > 12_000) {
+    throw new Error(`Finding ${index + 1} content is too long`)
+  }
+  const confidenceMatch = content.match(FINDING_CONTENT_PREFIX_RE)
   const confidence = Number(confidenceMatch?.[1])
   const threshold = severity === 'critical' ? 50 : 75
   if (!confidenceMatch || confidence < threshold || confidence > 100) {
     throw new Error(`Finding ${index + 1} has an invalid confidence score`)
   }
-  if (!/\bAutofix:\s*(mechanical|manual|not-applicable)\b/i.test(content)) {
-    throw new Error(`Finding ${index + 1} has no valid autofix class`)
-  }
-  if (!/\bMotivating line:\s*`[^`\r\n]+`/i.test(content)) {
-    throw new Error(`Finding ${index + 1} has no quoted motivating line`)
+  if (
+    Object.hasOwn(comment, 'suggestion_code') &&
+    (typeof comment.suggestion_code !== 'string' ||
+      comment.suggestion_code.length > 12_000)
+  ) {
+    throw new Error(`Finding ${index + 1} has invalid suggestion code`)
   }
 
   return { category, content, end, filePath, severity, start }
@@ -2557,7 +2100,8 @@ function validateReviewSummary(summary, commentCount) {
     counters.some(
       (key) => !Number.isSafeInteger(summary[key]) || summary[key] < 0
     ) ||
-    summary.comments !== commentCount
+    summary.comments !== commentCount ||
+    summary.total_tokens !== summary.input_tokens + summary.output_tokens
   ) {
     throw new Error('OCR result has incomplete review usage counters')
   }
@@ -2572,6 +2116,78 @@ function validateReviewSummary(summary, commentCount) {
     output_tokens: summary.output_tokens,
     total_tokens: summary.total_tokens,
   }
+}
+
+function validateOCRBudgetFlag(summary, label) {
+  if (
+    summary &&
+    typeof summary === 'object' &&
+    Object.hasOwn(summary, 'budget_exceeded') &&
+    typeof summary.budget_exceeded !== 'boolean'
+  ) {
+    throw new Error(`${label} has an invalid budget flag`)
+  }
+  return summary?.budget_exceeded === true
+}
+
+function validateOCRResult(result) {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    throw new Error('OCR result envelope is not an object')
+  }
+  if (result.status !== 'complete') {
+    throw new Error('OCR result has an unexpected terminal status')
+  }
+  if (
+    result.manifest?.schema_version !== OCR_RUN_MANIFEST_SCHEMA ||
+    result.manifest.terminal_state !== 'complete'
+  ) {
+    throw new Error('OCR result has no complete v1 run manifest')
+  }
+  if (
+    !result.llm ||
+    typeof result.llm !== 'object' ||
+    Array.isArray(result.llm) ||
+    result.llm.model !== FINAL_REVIEW_MODEL ||
+    (Object.hasOwn(result.llm, 'provider') &&
+      (typeof result.llm.provider !== 'string' || !result.llm.provider))
+  ) {
+    throw new Error('OCR result has an unexpected model identity')
+  }
+  if (result.finish_reason != null && result.finish_reason !== 'stop') {
+    throw new Error('OCR result has an incomplete finish reason')
+  }
+  if (!result.summary || typeof result.summary !== 'object') {
+    throw new Error('OCR result has no review summary')
+  }
+  if (validateOCRBudgetFlag(result.summary, 'OCR result')) {
+    throw new Error('OCR exhausted its review budget')
+  }
+  if (!Array.isArray(result.comments)) {
+    throw new Error('OCR result has no comments array')
+  }
+  if (result.comments.length > 100) {
+    throw new Error('OCR result has too many comments')
+  }
+  if (result.warnings != null && !Array.isArray(result.warnings)) {
+    throw new Error('OCR result has an invalid warnings array')
+  }
+  if ((result.warnings?.length ?? 0) > 0) {
+    throw new Error('OCR result has coverage warnings; rerun the review')
+  }
+  validateReviewSummary(result.summary, result.comments.length)
+
+  const { coverage } = validateOCRSessionEnvelope(
+    result,
+    'complete',
+    'Complete OCR result'
+  )
+  if (coverage.failed.length > 0 || coverage.waived.length > 0) {
+    throw new Error('Complete OCR result retained failed or waived coverage')
+  }
+  validateOCRResumeEnvelope(result, coverage, 'Complete OCR result')
+
+  result.comments.forEach((comment, index) => validateFinding(comment, index))
+  return result
 }
 
 function validateOCRTokenCounters(summary, label) {
@@ -2596,16 +2212,53 @@ function validateOCRTokenCounters(summary, label) {
 function validateOCRCoverage(manifest, label) {
   const coverage = manifest?.coverage
   const keys = ['selected', 'completed', 'reused', 'failed', 'waived']
-  if (
-    !coverage ||
-    keys.some((key) => !Array.isArray(coverage[key])) ||
-    coverage.selected.length !==
-      coverage.completed.length +
-        coverage.reused.length +
-        coverage.failed.length +
-        coverage.waived.length
-  ) {
+  if (!coverage || keys.some((key) => !Array.isArray(coverage[key]))) {
     throw new Error(`${label} has invalid manifest coverage`)
+  }
+
+  const identity = (item) => {
+    if (
+      !item ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      !/^[0-9a-f]{64}$/.test(item.item_id ?? '') ||
+      typeof item.path !== 'string' ||
+      !item.path ||
+      !/^[0-9a-f]{64}$/.test(item.fingerprint ?? '') ||
+      (item.old_path != null && typeof item.old_path !== 'string')
+    ) {
+      throw new Error(`${label} has an invalid coverage item identity`)
+    }
+    return JSON.stringify([
+      item.item_id,
+      item.path,
+      item.old_path ?? '',
+      item.fingerprint,
+    ])
+  }
+  const selected = new Map()
+  for (const item of coverage.selected) {
+    if (selected.has(item.item_id)) {
+      throw new Error(`${label} has duplicate selected coverage`)
+    }
+    selected.set(item.item_id, identity(item))
+  }
+  const terminal = new Set()
+  for (const key of keys.slice(1)) {
+    for (const item of coverage[key]) {
+      const itemIdentity = identity(item)
+      if (
+        !selected.has(item.item_id) ||
+        selected.get(item.item_id) !== itemIdentity ||
+        terminal.has(item.item_id)
+      ) {
+        throw new Error(`${label} has a non-disjoint coverage partition`)
+      }
+      terminal.add(item.item_id)
+    }
+  }
+  if (terminal.size !== selected.size) {
+    throw new Error(`${label} has incomplete manifest coverage`)
   }
   return coverage
 }
@@ -2620,15 +2273,56 @@ function validateOCRSessionEnvelope(result, expectedStatus, label) {
   }
   const manifest = result.manifest
   if (
-    manifest?.schema_version !== 'ocr.run-manifest/v1' ||
+    manifest?.schema_version !== OCR_RUN_MANIFEST_SCHEMA ||
     manifest.run_id !== sessionId ||
     manifest.operation !== 'review' ||
     manifest.terminal_state !== expectedStatus ||
-    result.status !== expectedStatus
+    result.status !== expectedStatus ||
+    !Number.isSafeInteger(manifest.elapsed_ms) ||
+    manifest.elapsed_ms < 0 ||
+    !manifest.repository ||
+    typeof manifest.repository !== 'object' ||
+    !manifest.input ||
+    typeof manifest.input !== 'object' ||
+    !manifest.execution ||
+    typeof manifest.execution !== 'object' ||
+    Array.isArray(manifest.execution) ||
+    !result.llm ||
+    typeof result.llm !== 'object' ||
+    Array.isArray(result.llm) ||
+    result.llm.model !== FINAL_REVIEW_MODEL ||
+    manifest.execution.model !== FINAL_REVIEW_MODEL
   ) {
     throw new Error(`${label} has inconsistent session or manifest identity`)
   }
   return { coverage: validateOCRCoverage(manifest, label), manifest, sessionId }
+}
+
+function validateOCRResumeEnvelope(result, coverage, label) {
+  const manifest = result.manifest
+  const hasResumeMetadata =
+    Object.hasOwn(result, 'resume') || Object.hasOwn(manifest, 'parent_run_id')
+  if (!hasResumeMetadata && coverage.reused.length === 0) return
+
+  const resume = result.resume
+  if (
+    !resume ||
+    typeof resume !== 'object' ||
+    Array.isArray(resume) ||
+    typeof resume.resumed_from !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(resume.resumed_from) ||
+    typeof manifest.parent_run_id !== 'string' ||
+    !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(manifest.parent_run_id) ||
+    manifest.parent_run_id !== resume.resumed_from ||
+    !Number.isSafeInteger(resume.reused_files) ||
+    resume.reused_files < 0 ||
+    !Number.isSafeInteger(resume.rerun_files) ||
+    resume.rerun_files < 0 ||
+    resume.reused_files !== coverage.reused.length ||
+    resume.rerun_files !== coverage.completed.length
+  ) {
+    throw new Error(`${label} has an invalid resume envelope`)
+  }
 }
 
 function hasOCRBudgetExhaustion(result, coverage) {
@@ -2647,25 +2341,43 @@ function planOCRResume(result, maxTokensBudget) {
   }
   if (result?.status !== 'partial') return null
 
+  validateOCRBudgetFlag(result.summary, 'Partial OCR result')
+
   const { coverage, manifest, sessionId } = validateOCRSessionEnvelope(
     result,
     'partial',
     'Partial OCR result'
   )
-  if (result.resume != null || manifest.parent_run_id) {
+  if (
+    Object.hasOwn(result, 'resume') ||
+    Object.hasOwn(manifest, 'parent_run_id')
+  ) {
     throw new Error('Partial OCR result is already a resumed run')
   }
   if (coverage.failed.length === 0) {
     throw new Error('Partial OCR result has no failed coverage to resume')
   }
+  if (coverage.reused.length > 0 || coverage.waived.length > 0) {
+    throw new Error('Partial OCR result has reused or waived coverage')
+  }
   if (result.warnings != null && !Array.isArray(result.warnings)) {
     throw new Error('Partial OCR result has an invalid warnings array')
   }
-  const usage = validateOCRTokenCounters(result.summary, 'Partial OCR result')
+  if (!Array.isArray(result.comments)) {
+    throw new Error('Partial OCR result has no comments array')
+  }
+  if (result.comments.length > 100) {
+    throw new Error('Partial OCR result has too many comments')
+  }
+  result.comments.forEach((comment, index) => validateFinding(comment, index))
   if (hasOCRBudgetExhaustion(result, coverage)) {
     throw new Error('Partial OCR result exhausted its token budget')
   }
-  const remainingTokens = maxTokensBudget - usage.totalTokens
+  if ((result.warnings?.length ?? 0) > 0) {
+    throw new Error('Partial OCR result has coverage warnings')
+  }
+  const usage = validateReviewSummary(result.summary, result.comments.length)
+  const remainingTokens = maxTokensBudget - usage.total_tokens
   if (remainingTokens <= 0) {
     throw new Error('Partial OCR result has no token budget left to resume')
   }
@@ -2689,6 +2401,7 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
   ) {
     throw new Error('Resumed OCR result has incorrect parent lineage')
   }
+  validateOCRResult(resumedResult)
   if (
     !isDeepStrictEqual(
       resumed.manifest.repository,
@@ -2708,6 +2421,62 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
   }
   if (resumed.coverage.failed.length > 0) {
     throw new Error('Resumed OCR result retained failed coverage')
+  }
+  if (
+    !isDeepStrictEqual(
+      resumed.coverage.selected.map((item) => ({
+        fingerprint: item.fingerprint,
+        item_id: item.item_id,
+        old_path: item.old_path ?? '',
+        path: item.path,
+      })),
+      initialResult.manifest.coverage.selected.map((item) => ({
+        fingerprint: item.fingerprint,
+        item_id: item.item_id,
+        old_path: item.old_path ?? '',
+        path: item.path,
+      }))
+    )
+  ) {
+    throw new Error('Resumed OCR result changed its selected coverage')
+  }
+  const resume = resumedResult.resume
+  if (
+    !resume ||
+    typeof resume !== 'object' ||
+    Array.isArray(resume) ||
+    typeof resume.resumed_from !== 'string' ||
+    !resume.resumed_from ||
+    !Number.isSafeInteger(resume.reused_files) ||
+    resume.reused_files < 0 ||
+    !Number.isSafeInteger(resume.rerun_files) ||
+    resume.rerun_files < 0
+  ) {
+    throw new Error('Resumed OCR result has an invalid resume envelope')
+  }
+  const itemIds = (items) => new Set(items.map((item) => item.item_id))
+  const sameItemIds = (left, right) =>
+    left.size === right.size && [...left].every((itemId) => right.has(itemId))
+  const parentCoverage = initialResult.manifest.coverage
+  if (
+    !sameItemIds(
+      itemIds(parentCoverage.completed),
+      itemIds(resumed.coverage.reused)
+    ) ||
+    !sameItemIds(
+      itemIds(parentCoverage.failed),
+      itemIds(resumed.coverage.completed)
+    )
+  ) {
+    throw new Error('Resumed OCR result changed its coverage partition')
+  }
+  if (
+    resume.reused_files !== resumed.coverage.reused.length ||
+    resume.rerun_files !== resumed.coverage.completed.length ||
+    resume.reused_files !== parentCoverage.completed.length ||
+    resume.rerun_files !== parentCoverage.failed.length
+  ) {
+    throw new Error('Resumed OCR result has inconsistent resume counts')
   }
   if (
     resumedResult.warnings != null &&
@@ -2744,34 +2513,7 @@ function mergeOCRResumeResults(initialResult, resumedResult, maxTokensBudget) {
 }
 
 function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
-  if (result.status !== 'complete') {
-    throw new Error(`OCR returned unexpected status: ${result.status}`)
-  }
-  if (
-    result.manifest?.schema_version !== 'ocr.run-manifest/v1' ||
-    result.manifest.terminal_state !== 'complete'
-  ) {
-    throw new Error('OCR result has no complete v1 run manifest')
-  }
-  if (result.llm?.model !== FINAL_REVIEW_MODEL) {
-    throw new Error(`OCR returned unexpected model: ${result.llm?.model}`)
-  }
-  if (!result.summary || typeof result.summary !== 'object') {
-    throw new Error('OCR result has no review summary')
-  }
-  if (result.summary.budget_exceeded === true) {
-    throw new Error('OCR exhausted its review budget')
-  }
-  if (!Array.isArray(result.comments)) {
-    throw new Error('OCR result has no comments array')
-  }
-  if (!Array.isArray(result.warnings)) {
-    if (result.warnings != null) {
-      throw new Error('OCR result has an invalid warnings array')
-    }
-  } else if (result.warnings.length > 0) {
-    throw new Error('OCR result has coverage warnings; rerun the review')
-  }
+  validateOCRResult(result)
   if (!/^[0-9a-f]{40}$/.test(headSha)) {
     throw new Error('Final review head is not a full commit SHA')
   }
@@ -3023,18 +2765,22 @@ function decideFinalStatus({
   }
 }
 
+function canFinalizeLatestStatus(latestStatus, context) {
+  return (
+    !latestStatus?.target_url ||
+    latestStatus.target_url === workflowRunUrl(context) ||
+    (latestStatus.state === 'pending' &&
+      latestStatus.description === FINAL_REVIEW_REQUIRED_DESCRIPTION)
+  )
+}
+
 async function finalizeFinalReviewFailure({ github, context, headSha }) {
   const latestStatus = await getLatestFinalReviewStatus(
     github,
     context,
     headSha
   )
-  if (
-    latestStatus?.target_url &&
-    latestStatus.target_url !== workflowRunUrl(context)
-  ) {
-    return
-  }
+  if (!canFinalizeLatestStatus(latestStatus, context)) return
   await setCommitStatus({
     github,
     context,
@@ -3073,10 +2819,7 @@ async function finalizeFinalReview({
       context,
       headSha
     )
-    return (
-      !latestStatus?.target_url ||
-      latestStatus.target_url === workflowRunUrl(context)
-    )
+    return canFinalizeLatestStatus(latestStatus, context)
   }
   let pull
   let eligibility
@@ -3187,12 +2930,7 @@ async function finalizeFinalReview({
     context,
     headSha
   )
-  if (
-    latestStatus?.target_url &&
-    latestStatus.target_url !== workflowRunUrl(context)
-  ) {
-    return
-  }
+  if (!canFinalizeLatestStatus(latestStatus, context)) return
   if (status.state === 'success' && cleanEvidenceMetadata) {
     try {
       await publishIndividualCleanEvidence({
@@ -3432,23 +3170,9 @@ async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
   }
   const pull = await getPull(github, context, prNumber)
   const plan = await buildReviewPlan({ github, context, pull, trustedSha })
-  const promotion = isPromotionCandidate(pull.head?.ref)
-    ? await hasVerifiedGeneratedPromotionStatus({
-        github,
-        context,
-        pull,
-        sourceBranch: await getStagingSourceBranch({
-          github,
-          context,
-          defaultBranch,
-        }),
-        trustedSha,
-      })
-    : false
   const current =
-    promotion ||
-    (plan.eligible &&
-      (await hasCurrentSuccessfulFinalReview({ github, context, pull, plan })))
+    plan.eligible &&
+    (await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }))
   return {
     current,
     head_sha: pull.head?.sha ?? '',
@@ -3481,6 +3205,17 @@ function runCli() {
           : 'OpenRouter tool canary passed via automatic routing'
       )
     })
+  }
+  if (command === 'validate-ocr-result') {
+    const resultPath = process.argv[3]
+    if (!resultPath) {
+      throw new Error(
+        'Usage: final-ai-review.js validate-ocr-result <result-path>'
+      )
+    }
+    validateOCRResult(JSON.parse(fs.readFileSync(resultPath, 'utf8')))
+    console.log('OCR result passed validation')
+    return
   }
   if (command === 'plan-ocr-resume') {
     const resultPath = process.argv[3]
@@ -3553,20 +3288,18 @@ module.exports = {
   FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
   FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
-  GENERATED_PROMOTION_STATUS,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_POLICY_SCHEMA,
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_WORKFLOW_PATH,
   DISPOSITION_SCHEMA,
+  OCR_RUN_MANIFEST_SCHEMA,
   MAX_INCREMENTAL_LINES,
   MAX_INCREMENTAL_PATHS,
-  PROMOTION_FILE,
   authorizeFinalReview,
   buildFinalReviewEvidenceDigest,
   buildIndividualCleanReviewEvidenceDigest,
   buildIndividualCleanEvidenceMetadata,
-  buildExpectedPromotionContent,
   buildOCRPolicy,
   buildOCRConfig,
   buildOpenRouterToolCanaryRequest,
@@ -3581,13 +3314,10 @@ module.exports = {
   finalizeFinalReviewFailure,
   initializeFinalReview,
   isFinalReviewCommand,
-  isPromotionCandidate,
   isTrustedPermission,
   getReviewPolicyDigest,
-  getStagingSourceBranch,
   ghRepositoryPath,
   hasCurrentSuccessfulFinalReview,
-  hasVerifiedGeneratedPromotionStatus,
   verifyCurrentIndividualFinalReview,
   mergeOCRResumeResults,
   normalizeTitle,
@@ -3596,8 +3326,6 @@ module.exports = {
   listReviewArtifacts,
   parseDispositionRecord,
   parseReviewMetadata,
-  parsePromotionTarget,
-  promotionBody,
   publishFinalReview,
   removeOCRConfig,
   resolveFinalReviewLockKey,
@@ -3607,9 +3335,8 @@ module.exports = {
   runGhApi,
   startFinalReview,
   validateDispositionRecord,
-  validatePromotionContract,
+  validateOCRResult,
   validateFinding,
-  verifyPromotionBuilds,
   verifyOpenRouterToolAccess,
   writeOCRConfig,
 }

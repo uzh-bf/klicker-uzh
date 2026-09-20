@@ -53,18 +53,22 @@ runner, but no artifact survived for exact parser replay.
 
 ## Solution
 
-Upload only the JSON files already passed to a failed publisher. The individual
-job keeps `final-ai-review-result.json`
+Upload only the exact JSON inputs involved in the failed validation or
+publisher step. The individual job keeps its initial, resumed, or final result
+JSON as applicable
 ([check-ocr-final-review.yml](../../../.github/workflows/check-ocr-final-review.yml#L503)).
-The stack job keeps `final-ai-stack-code-result.json` and
-`final-ai-stack-topology-result.json`
+The stack job normally keeps `final-ai-stack-code-result.json` and the optional
+`final-ai-stack-topology-result.json`. An incremental validation or resume
+failure may instead retain the exact affected range result JSONs, while a
+combine failure retains every range result passed to that failed combine step
 ([check-ocr-final-review.yml](../../../.github/workflows/check-ocr-final-review.yml#L1015)).
 
-Both steps run only when their publisher step fails, require the expected file,
-and retain the artifact for one day. They upload no stderr, provider
-configuration, manifest, review-range directory, wildcard path, or runner
-workspace. Because the repository is public, treat the artifacts as public
-output and use only public pull-request inputs in this diagnostic path.
+These paths run only after the corresponding validation or publisher step
+fails, require the expected files, and retain the artifact for one day. They
+upload no stderr, provider configuration, manifest, review-range directory as
+a directory, unrelated wildcard input, or runner workspace. Because the
+repository is public, treat the artifacts as public output and use only public
+pull-request inputs in this diagnostic path.
 
 Download a rejected payload for offline parser diagnosis. Do not replay the
 review, publish feedback, or infer a clean result from the artifact without the
@@ -82,6 +86,33 @@ while every retained input comes from public pull-request diffs, public review
 context, and model output intended for publication.
 
 ## Prevention
+
+### Distinguish process failure from publisher rejection
+
+The diagnostic boundary above starts after a review result exists. In
+[run 34326218356](https://github.com/uzh-bf/klicker-uzh/actions/runs/34326218356),
+`ocr version` succeeded but `ocr review` exited 127 before findings. No rejected
+publisher input existed, so widening the publisher artifact list would not
+explain this failure. Its exact historical cause remains unproved.
+
+The install step reported `open-code-review v1.11.0 (c7dd11e03) linux/amd64`.
+This observed banner supports the exact version-token boundary in the guard;
+the synthetic test is not its only evidence.
+
+OCR 1.11.0's [npm launcher](https://github.com/alibaba/open-code-review/blob/v1.11.0/bin/ocr.js)
+starts a detached updater even for `ocr version`. Its
+[updater](https://github.com/alibaba/open-code-review/blob/v1.11.0/scripts/update.js)
+can replace the pinned global installation with registry latest. The workflow
+therefore sets `OCR_NO_UPDATE=1` at job scope and checks the expected version
+before every review attempt. A pinned install alone does not prevent this drift.
+
+Process failures record only the stage, original exit status and numeric output
+sizes. Raw stderr stays suppressed because it may contain provider or credential
+details. Shell-boundary tests must call the extracted function directly under
+`set -e`; calling it inside an `if` condition disables that error behavior and
+can conceal the regression the test intends to reproduce.
+
+### Keep publisher artifacts narrow
 
 - Keep source tests that assert the exact failure condition, pinned upload
   action, file list, and one-day retention
