@@ -1,10 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import type {
-  APIRequestContext,
-  Page,
-  Request,
-  Response as PlaywrightResponse,
-} from '@playwright/test'
+import type { APIRequestContext, Page, Request } from '@playwright/test'
 import { seedActivities } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
@@ -70,15 +65,7 @@ async function backendLearningAnalyticsState(
   return state.enabled
 }
 
-type AnalyticsGraphqlResult = {
-  allowed: boolean
-  forbidden: boolean
-  response: PlaywrightResponse
-}
-
-async function loadActivityAnalytics(
-  page: Page
-): Promise<AnalyticsGraphqlResult> {
+async function loadActivityAnalytics(page: Page) {
   const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
   const analyticsResponsePromise = page.waitForResponse(
     (response) =>
@@ -96,44 +83,7 @@ async function loadActivityAnalytics(
     errors?: Array<{ extensions?: { code?: string } }>
     data?: { getCourseActivityAnalytics?: unknown } | null
   }
-  const hasAnalytics = body.data?.getCourseActivityAnalytics != null
-  const forbidden = Boolean(
-    !hasAnalytics &&
-      body.errors?.some((error) => error.extensions?.code === 'FORBIDDEN')
-  )
-
-  return {
-    allowed: response.ok() && !body.errors?.length && hasAnalytics,
-    forbidden,
-    response,
-  }
-}
-
-async function waitForBackendGrowthBookLearningAnalytics(
-  page: Page,
-  enabled: boolean
-): Promise<AnalyticsGraphqlResult> {
-  let result: AnalyticsGraphqlResult | undefined
-
-  await expect
-    .poll(
-      async () => {
-        result = await loadActivityAnalytics(page)
-        return enabled ? result.allowed : result.forbidden
-      },
-      {
-        intervals: [100, 250, 500],
-        message: `Wait for backend learning analytics entitlement to become ${enabled ? 'enabled' : 'disabled'}`,
-        timeout: 15_000,
-      }
-    )
-    .toBe(true)
-
-  if (!result) {
-    throw new Error('Backend learning analytics decision was not observed')
-  }
-
-  return result
+  return { response, body }
 }
 
 test('CLEANUP', cleanupTest)
@@ -470,58 +420,26 @@ test.describe('Tests the availability of standard activity creation formats', ()
     expect(activityAnalyticsRequests).toBe(0)
   })
 
-  test('Allows direct analytics navigation with feature access', async ({
-    page,
-    loginLecturer,
-    request,
-  }) => {
-    const previousState = await backendLearningAnalyticsState(request)
-    await mockGrowthBookLearningAnalytics(page, true)
-    await loginLecturer()
-    try {
-      await backendLearningAnalyticsState(request, true)
-      const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
-        page,
-        true
-      )
-      expect(analyticsResult.response.ok()).toBe(true)
-      await expect(
-        page.getByRole('heading', {
-          name: `Activity Dashboard: ${SEEDED_COURSE}`,
-        })
-      ).toBeVisible()
-
-      await expect(
-        page.getByTestId('learning-analytics-access-denied')
-      ).not.toBeAttached()
-    } finally {
-      await backendLearningAnalyticsState(request, previousState)
-      await waitForBackendGrowthBookLearningAnalytics(page, previousState)
-    }
-  })
-
-  test('Denies analytics data when the backend entitlement is false', async ({
-    page,
-    loginLecturer,
-    request,
-  }) => {
-    await mockGrowthBookLearningAnalytics(page, true)
-    await loginLecturer()
-    const previousState = await backendLearningAnalyticsState(request)
-
-    try {
-      await backendLearningAnalyticsState(request, false)
-      const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
-        page,
-        false
-      )
-      expect(analyticsResult.response.ok()).toBe(true)
-      expect(analyticsResult.forbidden).toBe(true)
-    } finally {
-      await backendLearningAnalyticsState(request, previousState)
-      await waitForBackendGrowthBookLearningAnalytics(page, previousState)
-    }
-  })
+  for (const enabled of [true, false]) {
+    test(`Keeps analytics data unavailable during the consent hold (backend flag: ${enabled})`, async ({
+      page,
+      loginLecturer,
+      request,
+    }) => {
+      const previousState = await backendLearningAnalyticsState(request)
+      await mockGrowthBookLearningAnalytics(page, true)
+      await loginLecturer()
+      try {
+        await backendLearningAnalyticsState(request, enabled)
+        const { response, body } = await loadActivityAnalytics(page)
+        expect(response.ok()).toBe(true)
+        expect(body.errors).toBeUndefined()
+        expect(body.data).toHaveProperty('getCourseActivityAnalytics', null)
+      } finally {
+        await backendLearningAnalyticsState(request, previousState)
+      }
+    })
+  }
 
   test('Shows analytics unavailable when the feature flag profile cannot load', async ({
     page,

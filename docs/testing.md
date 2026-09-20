@@ -243,15 +243,18 @@ Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
-The Playwright stack starts
+The CI Playwright stack starts
 `playwright/util/mockGrowthBookServer.mjs` alongside the applications. The
 test-origin wrapper points backend SDK evaluation at this synthetic feature
 endpoint, while each browser test still controls its own public SDK
-response with Playwright routing. This separation lets the learning-analytics
-allow and deny tests exercise the real browser → persisted GraphQL →
-backend-entitlement path without a live GrowthBook deployment or management
-credential. The test wrapper shortens backend polling to 250 ms; production
-keeps the package's 30-second default.
+response with Playwright routing. The analytics consent-hold tests exercise the
+real browser → persisted GraphQL path and require unavailable analytics data
+with the backend feature flag both on and off. The current release blocks legacy
+analytics reads until consent-aware processing is released. These tests need no
+live GrowthBook deployment or management credential. The test wrapper shortens
+backend polling to 250 ms; production keeps the package's 30-second default.
+The local devrouter profile currently omits the backend test controller; those
+two controller-dependent cases require the CI harness.
 
 For authoring specifics, helper patterns, and failure triage, use the `klicker-playwright-e2e` skill ([.agents/skills/](../.agents/skills/)).
 

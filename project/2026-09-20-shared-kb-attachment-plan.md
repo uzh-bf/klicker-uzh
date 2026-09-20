@@ -168,3 +168,31 @@ integrated-source evidence. No new tests are needed for this simplification.
 All split host/container repository checks and all 27 production build tasks
 passed. Final self-review found no further changes needed. The follow-up has no
 new dependency, migration, or browser-only behavior. Hosted checks remain pending.
+
+### Target consent-hold test compatibility
+
+Hosted verification on `2aa065caa3` found four GraphQL assertions and two
+Playwright cases that still expect analytics access or feature-flag rejection.
+The integrated target deliberately returns unavailable analytics before either
+feature evaluation or data access until consent-aware processing is released.
+This is confirmed by `isLearningAnalyticsEnabled` and the participant-account
+contract in `docs/auth-model.md`. No application behavior is changed.
+
+The four service cases now require null with flags enabled and disabled and
+assert no feature or preference lookup. The two browser cases require a
+successful persisted GraphQL response with an explicitly null analytics field.
+Their test count remains two; obsolete enabled/forbidden polling is removed.
+All eight focused feature-access service tests passed. The complete local
+browser file passed 20 cases; the two repaired cases cannot reach their assertions
+because the local runtime omits the backend feature-flag controller that CI
+provides. Their actual browser proof remains pending in CI. The host launcher
+installed its pinned browser dependencies after its interactive package prompt.
+Runtime identity remains this task checkout, with profile `manage,pwa`.
+
+All split host/container repository checks passed after the test correction.
+The 27-task production build from `2aa065caa3` remains valid because this
+follow-up changes only tests and documentation. Final self-review verified the
+null GraphQL field contract and the absence of a data-access or policy bypass.
+The task runtime is stopped again, confirmed by exact-source Devsy status and
+zero devrouter routes. The old-head local CI watcher was stopped before pushing
+the correction; hosted jobs were left to GitHub's normal concurrency handling.

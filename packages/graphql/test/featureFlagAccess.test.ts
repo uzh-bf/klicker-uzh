@@ -110,7 +110,7 @@ describe('learning analytics services', () => {
       (ctx: ContextWithUser) =>
         getActivityAnalytics({ activityId: 'activity-id' }, ctx),
     ],
-  ])('denies %s before accessing service data', async (_, getAnalytics) => {
+  ])('keeps %s unavailable before accessing service data', async (_, getAnalytics) => {
     const preferenceLookup = vi.fn().mockResolvedValue({ betaEnabled: true })
     const prisma = new Proxy(
       { user: { findUnique: preferenceLookup } },
@@ -123,23 +123,22 @@ describe('learning analytics services', () => {
         },
       }
     )
+    const isEnabled = vi.fn()
     const ctx = {
       user,
       featureFlags: {
-        isEnabled: vi.fn().mockReturnValue(false),
+        isEnabled,
         getAiBetaDecision: vi.fn(),
         refresh: vi.fn(async () => undefined),
       },
       prisma,
     } as unknown as ContextWithUser
 
-    await expect(getAnalytics(ctx)).rejects.toMatchObject({
-      message: 'Forbidden',
-      extensions: { code: 'FORBIDDEN' },
-    })
-    expect(preferenceLookup).toHaveBeenCalledWith({
-      where: { id: user.sub },
-      select: { betaEnabled: true },
-    })
+    for (const enabled of [true, false]) {
+      isEnabled.mockReturnValue(enabled)
+      await expect(getAnalytics(ctx)).resolves.toBeNull()
+    }
+    expect(isEnabled).not.toHaveBeenCalled()
+    expect(preferenceLookup).not.toHaveBeenCalled()
   })
 })
