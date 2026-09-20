@@ -133,6 +133,7 @@ hatchet:
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
     responseProcessor:
       replicaCount: 1
@@ -157,6 +158,7 @@ hatchet:
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
     responseProcessorAssessment:
       replicaCount: 1
@@ -181,6 +183,7 @@ hatchet:
       nodeSelector: {}
       tolerations: []
       affinity: {}
+      topologySpreadConstraints: []
 
 auth:
   priorityClassName: production-workload
@@ -487,9 +490,6 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
-  kbIngestionDisabled: false
-  kbGraphDisabled: false
-
   knowledgeGraph:
     host: ''
     port: '6379'
@@ -732,6 +732,8 @@ assessment:
 
     affinity: {}
 
+    topologySpreadConstraints: []
+
   backendGraphql:
     priorityClassName: production-workload
 
@@ -764,6 +766,8 @@ assessment:
     tolerations: []
 
     affinity: {}
+
+    topologySpreadConstraints: []
 
   responseApi:
     corsAllowedOrigins: ''

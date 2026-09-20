@@ -19,13 +19,7 @@ import {
 import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
-import {
-  Badge,
-  Button,
-  SelectField,
-  Switch,
-  TextField,
-} from '@uzh-bf/design-system'
+import { Badge, Button, SelectField, Switch } from '@uzh-bf/design-system'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useFormatter, useTranslations } from 'next-intl'
@@ -48,9 +42,6 @@ const DEFAULT_DOMAIN_POLICY_VERSION = 1
 const DEFAULT_DOMAIN_GENERATION_LANGUAGE = 'German'
 const DOMAIN_GENERATION_LANGUAGES = ['German', 'English'] as const
 type DomainGenerationLanguage = (typeof DOMAIN_GENERATION_LANGUAGES)[number]
-// Mirrors the API bound so the field stops the lecturer at the same limit the
-// server enforces.
-const FOCUS_TOPIC_MAX_LENGTH = 300
 
 type KnowledgeGraphDomainSelection = {
   id: string
@@ -276,10 +267,6 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const [userDomainSelection, setUserDomainSelection] = useState<
     (KnowledgeGraphDomainSelection & { kbId: string }) | null
   >(null)
-  const [userFocusTopic, setUserFocusTopic] = useState<{
-    kbId: string
-    value: string
-  } | null>(null)
   const [operationError, setOperationError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(
@@ -462,18 +449,6 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     ? domainOptionValue(domainSelectedOption)
     : ''
 
-  // The focus input restores the focus recorded on the latest build; a blank
-  // value means "no focus" rather than a stored empty string.
-  const currentUserFocusTopic =
-    userFocusTopic?.kbId === kbId ? userFocusTopic.value : null
-  const focusTopicValue = currentUserFocusTopic ?? config?.focusTopic ?? ''
-  const focusTopicEditable =
-    domainCapabilityEnabled &&
-    !isActive &&
-    !isRebuilding &&
-    (config?.isEnabled ?? false) &&
-    (config?.costConfigurationReady ?? false)
-
   // A failed or superseded attempt must not relabel the graph that is actually
   // served, so the published build's own domain is reported separately. A
   // legacy published build records no triple, and by contract that served graph
@@ -623,19 +598,12 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
             domainPolicyLanguage: domainSelection.language,
           }
         : {}
-    // The focus rides the same capability gate as the domain selection; a blank
-    // input omits the variable so a build without a focus stays distinguishable.
-    const focusVariables =
-      domainCapabilityEnabled && focusTopicValue.trim()
-        ? { focusTopic: focusTopicValue.trim() }
-        : {}
     try {
       const result = await rebuildGraph({
         variables: {
           kbId,
           qualityTier: selectedTier,
           ...domainVariables,
-          ...focusVariables,
         },
       })
       const buildId = result.data?.rebuildKbKnowledgeGraphWithDomain.buildId
@@ -883,28 +851,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   </Button.Label>
                 </Button>
               </div>
-              {domainCapabilityEnabled ? (
-                <div className="mt-3">
-                  <TextField
-                    id="kb-graph-focus-topic"
-                    autoComplete="off"
-                    value={focusTopicValue}
-                    onChange={(value: string) => {
-                      setOperationError(null)
-                      setUserFocusTopic({ kbId, value })
-                    }}
-                    label={t('kb.graphFocusTopicLabel')}
-                    placeholder={t('kb.graphFocusTopicPlaceholder')}
-                    maxLength={FOCUS_TOPIC_MAX_LENGTH}
-                    disabled={!focusTopicEditable}
-                    data={{ cy: 'kb-knowledge-graph-focus-topic' }}
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    {t('kb.graphFocusTopicNote')}
-                  </p>
-                </div>
-              ) : null}
-              {!domainCapabilityEnabled && config?.focusTopic != null ? (
+              {config?.focusTopic != null ? (
                 <div
                   className="mt-3 space-y-1"
                   data-cy="kb-knowledge-graph-focus-topic"

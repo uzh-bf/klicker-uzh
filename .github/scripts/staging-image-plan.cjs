@@ -124,6 +124,10 @@ function matrixEntry(target, jobName = buildJobName(target)) {
     jobName,
     prep: (target.prep ?? []).join('\n'),
     publishGuard: target.publishGuard === true,
+    // Only the ARM64 publication consults this: it decides whether the job
+    // resolves an input fingerprint before it builds. See
+    // image-input-fingerprint.cjs for what makes a target reusable.
+    reuse: target.reuse === true,
     syncSchema: target.syncSchema === true,
   }
 }
