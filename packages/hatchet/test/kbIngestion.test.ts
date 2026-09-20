@@ -12,6 +12,7 @@ import {
   MAX_KB_TOTAL_SIZE_BYTES,
 } from '@klicker-uzh/types'
 import { describe, expect, it, vi } from 'vitest'
+import { getKBGraphTimeoutSeconds } from '../src/kbGraphIngestionApi.js'
 import {
   dispatchKBDeletion,
   dispatchKBIngestion,
@@ -25,6 +26,7 @@ import type {
   KBIngestionSource,
   KBOperationStatusResponse,
 } from '../src/kbIngestionApi.js'
+import { getKBIngestionTimeoutSeconds } from '../src/kbIngestionApi.js'
 
 const RESOURCE_ID = '7f3e2a10-9c4b-4d8e-b1a6-5e0f9d2c7b3a'
 const KB_ID = 'c2a91f74-6e0b-4c3d-8f5a-1b9e7d4a2c60'
@@ -1331,5 +1333,39 @@ describe('KB ingestion reconciliation', () => {
       'KB ingestion operation timed out',
       expect.anything()
     )
+  })
+})
+
+describe('KB environment bounds', () => {
+  it('reads the ingestion bound and keeps the default when unset', () => {
+    expect(getKBIngestionTimeoutSeconds({})).toBe(6 * 60 * 60)
+    expect(
+      getKBIngestionTimeoutSeconds({ KB_INGESTION_TIMEOUT_SECONDS: '3600' })
+    ).toBe(3600)
+  })
+
+  it('refuses a value that is not a run of digits, naming the variable', () => {
+    for (const invalid of ['0', '-1', '1e3', ' 300', '300s', '']) {
+      expect(() =>
+        getKBIngestionTimeoutSeconds({ KB_INGESTION_TIMEOUT_SECONDS: invalid })
+      ).toThrow('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
+    }
+  })
+
+  it('refuses a digit run that exceeds the safe integer range', () => {
+    const tooLarge = '9'.repeat(400)
+    expect(() =>
+      getKBIngestionTimeoutSeconds({ KB_INGESTION_TIMEOUT_SECONDS: tooLarge })
+    ).toThrow('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
+  })
+
+  it('applies the same contract to the graph bound', () => {
+    expect(getKBGraphTimeoutSeconds({})).toBe(6 * 60 * 60)
+    expect(getKBGraphTimeoutSeconds({ KB_GRAPH_TIMEOUT_SECONDS: '7200' })).toBe(
+      7200
+    )
+    expect(() =>
+      getKBGraphTimeoutSeconds({ KB_GRAPH_TIMEOUT_SECONDS: '0' })
+    ).toThrow('KB_GRAPH_TIMEOUT_SECONDS must be a positive integer')
   })
 })

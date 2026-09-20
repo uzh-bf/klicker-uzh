@@ -14,6 +14,7 @@ import {
   type KBGraphBuildSource,
 } from '@klicker-uzh/prisma/client'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
+import { parsePositiveIntegerEnv } from './env.js'
 
 const DEFAULT_KB_GRAPH_TIMEOUT_SECONDS = 6 * 60 * 60
 const KB_GRAPH_BLOB_SAS_CLOCK_SKEW_MS = 5 * 60 * 1000
@@ -196,19 +197,11 @@ export function getKBGraphOwnerContainerName(ownerId: string): string {
 export function getKBGraphTimeoutSeconds(
   env: NodeJS.ProcessEnv = process.env
 ): number {
-  const configuredValue = env.KB_GRAPH_TIMEOUT_SECONDS
-  if (configuredValue === undefined) {
-    return DEFAULT_KB_GRAPH_TIMEOUT_SECONDS
-  }
-  if (!/^[1-9]\d*$/.test(configuredValue)) {
-    throw new Error('KB_GRAPH_TIMEOUT_SECONDS must be a positive integer')
-  }
-
-  const timeoutSeconds = Number(configuredValue)
-  if (!Number.isSafeInteger(timeoutSeconds)) {
-    throw new Error('KB_GRAPH_TIMEOUT_SECONDS must be a positive integer')
-  }
-  return timeoutSeconds
+  return parsePositiveIntegerEnv(
+    'KB_GRAPH_TIMEOUT_SECONDS',
+    env.KB_GRAPH_TIMEOUT_SECONDS,
+    DEFAULT_KB_GRAPH_TIMEOUT_SECONDS
+  )
 }
 
 export function getExternalKBGraphConfig(

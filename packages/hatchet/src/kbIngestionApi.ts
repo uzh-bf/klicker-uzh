@@ -13,6 +13,7 @@ import {
   isPublicIPv4Address,
   normalizePublicHttpUrl,
 } from '@klicker-uzh/util/public-url'
+import { parsePositiveIntegerEnv } from './env.js'
 
 const KB_INGESTION_PROJECT_ID = 'klicker-course-materials'
 const KB_INGESTION_PRODUCER = 'klicker'
@@ -110,19 +111,11 @@ export function getKBIngestionProjectId(
 export function getKBIngestionTimeoutSeconds(
   env: NodeJS.ProcessEnv = process.env
 ): number {
-  const configuredValue = env.KB_INGESTION_TIMEOUT_SECONDS
-  if (configuredValue === undefined) {
-    return DEFAULT_KB_INGESTION_TIMEOUT_SECONDS
-  }
-  if (!/^[1-9]\d*$/.test(configuredValue)) {
-    throw new Error('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
-  }
-
-  const timeoutSeconds = Number(configuredValue)
-  if (!Number.isSafeInteger(timeoutSeconds)) {
-    throw new Error('KB_INGESTION_TIMEOUT_SECONDS must be a positive integer')
-  }
-  return timeoutSeconds
+  return parsePositiveIntegerEnv(
+    'KB_INGESTION_TIMEOUT_SECONDS',
+    env.KB_INGESTION_TIMEOUT_SECONDS,
+    DEFAULT_KB_INGESTION_TIMEOUT_SECONDS
+  )
 }
 
 type KBIngestionFetch = (
