@@ -137,6 +137,14 @@ jobs:
           (github.event_name == 'pull_request' && github.base_ref == 'v3')
         run: node ./.github/scripts/deploy-parity.cjs --other v3-ai
 
+      # A scheduling policy reaches a pod spec only when a template forwards
+      # the value, so the rendered manifests are the only proof; the pinned
+      # Helm above renders them for defaults, staging, and production.
+      - name: Check Helm chart scheduling contract
+        run: |
+          node --test deploy/scripts/verify-topology-spread.test.mjs
+          node deploy/scripts/verify-topology-spread.mjs
+
       - name: Check Playwright CI contracts
         run: |
           pnpm run check:playwright-ci
