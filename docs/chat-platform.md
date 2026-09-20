@@ -1069,3 +1069,48 @@ grading, and util once before the four suites because
 import ([Testing](./testing.md)).
 
 > **Do not run `pnpm --filter @klicker-uzh/chat check` while the devcontainer dev stack is up.** `check` is `next typegen && tsc --noEmit`, and typegen rewrites the same `.next/` the running dev server owns: from the next `✓ Compiled` line onward every chat route returns a bare Next 404 with nothing in `/tmp/dev.log`, including routes that just served 200. It is not a code bug — restart with `devrouter ensure .` from the host. Typecheck before the browser pass, not during it.
+
+## Transport bearer rotation custody
+
+`MCPBearerRotation` records one operation per environment and tenant. It stores
+configuration, the two allowed MCP server identities, generation ownership and
+expiry observations. It contains no bearer, ciphertext or credential hash.
+`ChatbotMCPServer.authSecret` remains the encrypted application delivery copy;
+Infisical owns the source credential. Transport rotation does not change
+per-request scope authorization or revoke previously issued tokens.
+
+The dedicated coordinator calls `public.mcp_bearer_rotation(action, payload)`
+through one direct PostgreSQL session. The database resolves targets from the
+login role, serializes callers with a session advisory lock, and checks both
+original ciphertexts before updating either copy. No transaction spans external
+HTTP calls. A generation belongs to the backend PID and its start timestamp;
+a successor cannot resume publication or delivery after connection loss. Any
+unfinished stage requires privileged reconciliation, including fencing an
+outstanding secret-store request before clearing the stage.
+
+The migration creates the table, routine, constraints and reader row policy.
+It creates no production roles, grants, allowlist rows or scheduled writers.
+Activation must assign the table and routine to a dedicated `NOLOGIN` owner,
+grant that owner the required `ChatbotMCPServer` read/update permissions, and
+grant each writer login only schema usage and routine execution. Writer logins
+must have no role memberships, direct table permissions or elevated attributes.
+The metrics login receives column-level `SELECT` on `environment`, `tenant`,
+`stage`, `expiries`, `lastInspectedAt`, `lastVerifiedAt` and `lastFailureClass`;
+the row policy scopes reads by its configured login. Do not grant table-level
+SELECT or writer execution to the metrics login.
+
+Each allowlist contains ordered `primary` and `compat` entries with exact
+`id`, `name`, `url`, `authType: bearer` and `isActive: true`. Configuration binds
+`databaseName`, `endpoint`, `projectId`, `secretEnvironment`, `secretPath` and
+`secretKey` (`DOC_QUERY_JWT_TOKEN_KLICKER`). Populate environment-specific values
+through the separately approved activation procedure. Parameter/statement
+logging must exclude credential-bearing routine arguments. Transaction pooling
+is incompatible with session custody.
+
+The database integration suite runs through `pnpm --filter @klicker-uzh/prisma
+test:bearer` after migrations in a marked disposable database. It requires the
+restricted `DATABASE_URL` plus `MCP_BEARER_TEST_ADMIN_URL` for that same test
+database to create and remove test-only roles. CI verifies permissions, process
+death, lock loss, stale configuration, both-copy CAS and rollback on a suppressed
+second update. Release activation still requires cross-store coordinator tests,
+staging rollout and alert delivery, followed by explicit production authority.

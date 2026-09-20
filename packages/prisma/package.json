@@ -68,6 +68,7 @@
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio",
+    "test:bearer": "tsx --test test/mcp-bearer-rotation.integration.test.ts",
     "test:disposable": "tsx --test test/disposableDatabase.test.ts test/disposable-prisma.test.ts"
   },
   "engines": {

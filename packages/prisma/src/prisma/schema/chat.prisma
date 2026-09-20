@@ -233,6 +233,31 @@ model ChatbotMCPServer {
   updatedAt DateTime @updatedAt
 }
 
+// Database-owned transport credential custody; contains no bearer or ciphertext.
+// Runtime writers use mcp_bearer_rotation(), never direct table writes.
+model MCPBearerRotation {
+  environment String
+  tenant      String
+  writerRole  String @unique
+  readerRole  String @unique
+  config      Json
+  targets     Json
+
+  stage                String    @default("idle")
+  generationId         String?   @db.Uuid
+  issuedAt             BigInt?
+  expiresAt            BigInt?
+  claimedBackendPid    Int?
+  claimedBackendStart  DateTime? @db.Timestamptz(6)
+  operationBinding     Json?
+  expiries             Json      @default("{}")
+  lastInspectedAt      DateTime? @db.Timestamptz(6)
+  lastVerifiedAt       DateTime? @db.Timestamptz(6)
+  lastFailureClass     String?
+
+  @@id([environment, tenant])
+}
+
 model ChatbotMCPConfig {
   id String @id @default(uuid()) @db.Uuid
 
