@@ -223,7 +223,7 @@ describe('assessment audit monitor PostgreSQL queries', () => {
       const repository = new PrismaAuditMonitorRepository(prisma)
       const counts: AuditMonitorCounts = await repository.readCounts()
 
-      expect(counts.requiredMediaCaptureFailureCount).toBe(3)
+      expect(counts.activationFailureCount).toBe(3)
       expect(counts.coveredSubmissionWithoutTerminalCount).toBe(4)
       expect(counts.oldestCoveredSubmissionWithoutTerminalAt).toEqual(
         new Date('2026-08-11T08:00:00.000Z')

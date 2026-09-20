@@ -17,7 +17,7 @@ const EMPTY: AuditMonitorCounts = {
   differentHashConflictCount: 0,
   deliveredUnsealedCount: 0,
   deliveredUnsealedBytes: 0,
-  requiredMediaCaptureFailureCount: 0,
+  activationFailureCount: 0,
   coveredSubmissionWithoutTerminalCount: 0,
   oldestCoveredSubmissionWithoutTerminalAt: null,
 }
@@ -46,7 +46,7 @@ describe('assessment audit monitor', () => {
         oldestPendingAt: new Date('2026-08-11T07:59:00.000Z'),
         quarantinedCount: 2,
         differentHashConflictCount: 1,
-        requiredMediaCaptureFailureCount: 1,
+        activationFailureCount: 1,
         coveredSubmissionWithoutTerminalCount: 1,
         oldestCoveredSubmissionWithoutTerminalAt: new Date(
           '2026-08-11T08:00:00.000Z'
@@ -63,7 +63,7 @@ describe('assessment audit monitor', () => {
       'DISPATCHER_HEARTBEAT_SECONDS',
       'DIFFERENT_HASH_CONFLICT',
       'QUARANTINED_ROWS',
-      'REQUIRED_MEDIA_CAPTURE_FAILURES',
+      'ACTIVATION_FAILURES',
       'OLDEST_COVERED_SUBMISSION_WITHOUT_TERMINAL_SECONDS',
     ])
   })

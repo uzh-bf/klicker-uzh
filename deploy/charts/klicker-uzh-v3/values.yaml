@@ -192,8 +192,6 @@ assessmentAudit:
   pilotLiveQuizIds: ''
   tableEndpoint: ''
   blobEndpoint: ''
-  backendMedia:
-    serviceAccountName: ''
   worker:
     replicaCount: 1
     serviceAccountName: ''
@@ -208,24 +206,6 @@ assessmentAudit:
         memory: 96Mi
       limits:
         memory: 384Mi
-    podAnnotations: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
-  mediaPolicyWorker:
-    replicaCount: 1
-    serviceAccountName: ''
-    priorityClassName: production-workload
-    image:
-      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
-      pullPolicy: IfNotPresent
-      tag: ''
-    resources:
-      requests:
-        cpu: 25m
-        memory: 64Mi
-      limits:
-        memory: 256Mi
     podAnnotations: {}
     nodeSelector: {}
     tolerations: []

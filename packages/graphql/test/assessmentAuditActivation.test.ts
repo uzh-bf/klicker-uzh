@@ -1,16 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import {
-  buildAssessmentBaselinePart,
-  createTrustedAuditContext,
-  type EventType,
-  emitAuditEvents,
-  runInAuditTransaction,
-} from '@klicker-uzh/audit'
+import { type EventType, runInAuditTransaction } from '@klicker-uzh/audit'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
-import { recomputeDerivedPermissions } from '@klicker-uzh/util'
-import { activeAssessmentMediaReferences } from '../src/services/assessmentAudit.js'
 import {
-  type AssessmentAuditMediaDependencies,
+  processElementData,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
+import {
   persistPreparedAssessmentAuditActivation,
   persistPreparedAssessmentAuditActivationInTransaction,
   prepareAssessmentAuditActivation,
@@ -20,20 +15,6 @@ import {
   assessmentAuditUserOperation,
   emitCoveredAssessmentAuditEvents,
 } from '../src/services/assessmentAuditProducers.js'
-
-const unavailableMedia: AssessmentAuditMediaDependencies = {
-  allowedHosts: ['test.blob.core.windows.net'],
-  source: {
-    async open() {
-      throw new Error('Test assessment has no media to capture')
-    },
-  },
-  store: {
-    async createFromFile() {
-      throw new Error('Test assessment has no media to store')
-    },
-  },
-}
 
 describe('assessment audit activation', () => {
   let userId: string
@@ -88,14 +69,48 @@ describe('assessment audit activation', () => {
       client: prisma,
       liveQuizId,
       baselineKind: 'CREATION',
-      media: unavailableMedia,
       capturedAt,
       now: () => new Date(capturedAt.getTime() + 500),
     })
   }
 
-  it('atomically activates coverage and emits an idempotent baseline', async () => {
+  it('activates without media storage and emits an idempotent baseline', async () => {
+    const content = '![Image](https://public.example.invalid/unavailable.png)'
+    const element = await prisma.element.create({
+      data: {
+        ownerId: userId,
+        name: 'Image content',
+        type: 'CONTENT',
+        content,
+        options: {},
+      },
+    })
+    await prisma.elementBlock.create({
+      data: {
+        liveQuizId,
+        order: 0,
+        elements: {
+          create: {
+            ownerId: userId,
+            elementId: element.id,
+            type: 'LIVE_QUIZ',
+            elementType: 'CONTENT',
+            order: 0,
+            options: {},
+            results: { total: 0 },
+            anonymousResults: { total: 0 },
+            elementData: processElementData(element),
+          },
+        },
+      },
+    })
     const prepared = await prepare()
+    expect(
+      prepared.parts.find((part) => part.content.kind === 'ELEMENT_INSTANCE')
+        ?.content
+    ).toMatchObject({ effectiveContent: { content } })
+    expect(JSON.stringify(prepared.parts)).not.toContain('MEDIA_REFERENCE')
+    expect(JSON.stringify(prepared.parts)).not.toContain('LIMITATION')
     const input = {
       client: prisma,
       prepared,
@@ -184,7 +199,6 @@ describe('assessment audit activation', () => {
     const prepared = await prepareReopeningAssessmentAuditActivation({
       client: prisma,
       liveQuizId,
-      media: unavailableMedia,
       capturedAt: new Date(finishedAt.getTime() + 500),
       now: () => new Date(finishedAt.getTime() + 750),
     })
@@ -233,7 +247,6 @@ describe('assessment audit activation', () => {
     const prepared = await prepareReopeningAssessmentAuditActivation({
       client: prisma,
       liveQuizId,
-      media: unavailableMedia,
     })
 
     await expect(
@@ -318,74 +331,5 @@ describe('assessment audit activation', () => {
     expect(
       await prisma.assessmentAuditOutboxEvent.count({ where: { liveQuizId } })
     ).toBe(0)
-  })
-
-  it('streams repeated immutable media references for active-policy renewal', async () => {
-    const baselineId = randomUUID()
-    const mediaId = randomUUID()
-    const contentHash = 'a'.repeat(64)
-    const capturedAt = new Date(Date.now() - 1_000).toISOString()
-    const part = buildAssessmentBaselinePart({
-      baselineId,
-      baselineKind: 'CREATION',
-      capturedAt,
-      content: {
-        kind: 'MEDIA_REFERENCE',
-        media: {
-          mediaId,
-          sourceUrl: `https://test.blob.core.windows.net/${userId}/image.png`,
-          contentHash,
-          byteLength: 42,
-          mimeType: 'image/png',
-          blobName: `sha256/${contentHash}`,
-          sourceReferenceHash: 'b'.repeat(64),
-        },
-      },
-    })
-
-    await runInAuditTransaction(prisma, async (tx, auditTx) => {
-      await tx.assessmentAuditScope.create({
-        data: {
-          liveQuizId,
-          lifecycleEpoch: 1,
-          coverageState: 'COVERED',
-          baselineId,
-          baselineKind: 'CREATION',
-          activatedAt: new Date(capturedAt),
-        },
-      })
-      const context = createTrustedAuditContext({
-        recordedVia: 'TRANSACTIONAL_OUTBOX',
-        receivedAt: capturedAt,
-        actor: { kind: 'SYSTEM' },
-        authorization: {
-          decision: 'NOT_APPLICABLE',
-          authScope: 'SYSTEM_ROLLOUT',
-        },
-        scope: { liveQuizId, lifecycleEpoch: 1 },
-        correlationId: randomUUID(),
-      })
-      await emitAuditEvents(auditTx, context, [
-        {
-          eventType: 'ASSESSMENT_BASELINE_PART_RECORDED',
-          producerOperationId: `${baselineId}:media:1`,
-          payload: part,
-        },
-        {
-          eventType: 'ASSESSMENT_BASELINE_PART_RECORDED',
-          producerOperationId: `${baselineId}:media:2`,
-          payload: part,
-        },
-      ])
-    })
-
-    const references: Array<{ blobName: string; contentHash: string }> = []
-    for await (const reference of activeAssessmentMediaReferences(prisma)) {
-      if (reference.contentHash === contentHash) references.push(reference)
-    }
-    expect(references).toEqual([
-      { blobName: `sha256/${contentHash}`, contentHash },
-      { blobName: `sha256/${contentHash}`, contentHash },
-    ])
   })
 })
