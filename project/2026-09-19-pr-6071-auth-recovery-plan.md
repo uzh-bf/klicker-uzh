@@ -81,6 +81,14 @@ the authenticated GitHub CLI.
 
 ## Progress
 
+- Test migration source is committed at `f8a4a4aae1`; a simplification removes
+  redundant mock wrappers from the recording fixture. The affected 21 handler
+  tests and auth typecheck pass again. A fresh production auth build with
+  synthetic CI origins and all 14 built-app checks pass. The dependency-wide
+  build was stopped after GraphQL Rollup stalled; it is not recorded as passed.
+  The full branch is 4,029 substantive changed lines excluding lockfile and
+  project artifacts, largely regression coverage for one auth-recovery fix.
+  It remains in the existing cohesive PR; no stack/topology change is made.
 - Test restructuring is implemented: 31 Vitest unit tests, 21 real-handler
   integration tests and 14 automatically managed built-app checks pass locally.
   Unit/handler coverage emits LCOV for CI. The custom Node module loader is

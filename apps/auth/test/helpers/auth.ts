@@ -91,18 +91,16 @@ export interface AuthTestHelperStubs {
 }
 
 export const testHelpers: AuthTestHelperStubs = {
-  createOrLinkParticipant: vi.fn(unconfiguredCreateOrLinkParticipant),
-  createUserAffiliations: vi.fn(unconfiguredCreateUserAffiliations),
+  createOrLinkParticipant: unconfiguredCreateOrLinkParticipant,
+  createUserAffiliations: unconfiguredCreateUserAffiliations,
 }
 
 export function resetAuthTestState(): void {
   prismaCalls.length = 0
   helperCalls.length = 0
   for (const key of Object.keys(prismaOverrides)) delete prismaOverrides[key]
-  testHelpers.createOrLinkParticipant = vi.fn(
-    unconfiguredCreateOrLinkParticipant
-  )
-  testHelpers.createUserAffiliations = vi.fn(unconfiguredCreateUserAffiliations)
+  testHelpers.createOrLinkParticipant = unconfiguredCreateOrLinkParticipant
+  testHelpers.createUserAffiliations = unconfiguredCreateUserAffiliations
 }
 
 // --- request and response doubles ------------------------------------------
