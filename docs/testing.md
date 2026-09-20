@@ -241,7 +241,9 @@ adapter requires the exact completion marker written at the end of successful
 bootstrap. `bash util/test-dev-runtime.sh` covers missing, malformed,
 symlinked, invalidated, and valid marker states plus the script ordering. This
 is static lifecycle evidence; cold DevPod and Devsy startup remain the
-provider-level acceptance check.
+provider-level acceptance check. The same harness proves the managed-process
+liveness guard: a process that dies inside the grace interval fails startup
+before any readiness probe, and a survivor advances into the readiness pass.
 
 - The local Chat model simulation includes LiteLLM's `auto-router` and
   the GPT-5.6 Luna/Sol target aliases. Start it with
