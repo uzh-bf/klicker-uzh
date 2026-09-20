@@ -483,9 +483,6 @@ frontendControl:
 backendGraphql:
   priorityClassName: production-workload
 
-  kbIngestionDisabled: false
-  kbGraphDisabled: false
-
   knowledgeGraph:
     host: ''
     port: '6379'
@@ -516,8 +513,6 @@ backendGraphql:
   # The chart projects only the storage credential into the maintenance worker.
   elementGeneration:
     enabled: false
-    # Enable only after the question worker supports focus in the blueprint.
-    focusTopicEnabled: false
     hatchetHostPort: ''
     hatchetServerUrl: ''
     graphArtifactContainer: 'kg-graph-artifacts'

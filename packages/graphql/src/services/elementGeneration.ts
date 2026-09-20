@@ -8,6 +8,7 @@ import type {
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
 import { manipulateElement } from './elements.js'
@@ -61,27 +62,22 @@ const TERMINAL_EDITABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
   DB.ElementGenerationBuildStatus.INCOMPLETE,
 ]
 
-function isQuestionFocusTopicCapabilityEnabled(
-  env: NodeJS.ProcessEnv = process.env
-): boolean {
-  return env.QUESTION_GENERATION_FOCUS_TOPIC_ENABLED?.trim() === 'true'
-}
-
 /**
  * Normalizes a lecturer-supplied generation focus. The focus narrows exactly
  * one generation batch to a topic; a blank value is the same as no focus. A
- * deployment whose capability gate is closed refuses a focus it cannot honor
- * instead of recording guidance that the provider would drop.
+ * deployment or actor whose rollout does not admit the capability refuses a
+ * focus it cannot honor instead of recording guidance that the provider would
+ * drop.
  */
-function resolveRequestedQuestionFocusTopic(
+async function resolveRequestedQuestionFocusTopic(
   focusTopic: string | null | undefined,
-  env: NodeJS.ProcessEnv = process.env
-): string | null {
+  ctx: ContextWithUser
+): Promise<string | null> {
   const normalized = focusTopic?.trim()
   if (!normalized) {
     return null
   }
-  if (!isQuestionFocusTopicCapabilityEnabled(env)) {
+  if (!(await isFeatureFlagEnabled(ctx, 'question-focus-topic'))) {
     throw questionGenerationServiceError(
       'CONFIGURATION_INVALID',
       'This deployment does not support question focus topics'
@@ -184,7 +180,10 @@ export async function startElementGeneration(
   input: StartElementGenerationInput,
   ctx: ContextWithUser
 ) {
-  const focusTopic = resolveRequestedQuestionFocusTopic(input.focusTopic)
+  const focusTopic = await resolveRequestedQuestionFocusTopic(
+    input.focusTopic,
+    ctx
+  )
   if (input.elementType === 'FLASHCARD') {
     if (
       input.difficultyPreset != null ||
@@ -822,6 +821,10 @@ export async function getElementGenerationSources(ctx: ContextWithUser) {
 
 export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
+  const focusTopicEnabled = await isFeatureFlagEnabled(
+    ctx,
+    'question-focus-topic'
+  )
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
     languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],
@@ -836,9 +839,7 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         supportsSourceScopes: elementType !== 'FLASHCARD',
         supportsDifficulty: elementType !== 'FLASHCARD',
         supportsBloomLevels: elementType !== 'FLASHCARD',
-        supportsFocusTopic:
-          elementType !== 'FLASHCARD' &&
-          isQuestionFocusTopicCapabilityEnabled(),
+        supportsFocusTopic: elementType !== 'FLASHCARD' && focusTopicEnabled,
         supportsRetry: elementType === 'FLASHCARD',
         supportsIncompletePublication: elementType === 'FLASHCARD',
       })

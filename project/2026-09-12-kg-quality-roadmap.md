@@ -211,7 +211,7 @@ Completion: required compatibility/source CI and live delivery gates pass indepe
 
 ### Agreed rollout-control follow-up — 2026-09-20
 
-**W12a — Move feature admission to GrowthBook.** Owner: Klicker backend/UI maintainer; deployment owner verifies worker compatibility. Status: agreed roadmap addition, not implemented. This bounded source package can precede W8/W9 quality comparisons; widening still requires their evidence. Continue from the [generation simplification plan](2026-09-20-kg-generation-simplification-plan.md) and [PR #6178](https://github.com/uzh-bf/klicker-uzh/pull/6178).
+**W12a — Move feature admission to GrowthBook.** Owner: Klicker backend/UI maintainer; deployment owner verifies worker compatibility. Status: implemented in source on the task branch; GrowthBook definitions, deployment and live rollout are outstanding. This bounded source package can precede W8/W9 quality comparisons; widening still requires their evidence. Continue from the [generation simplification plan](2026-09-20-kg-generation-simplification-plan.md) and [PR #6178](https://github.com/uzh-bf/klicker-uzh/pull/6178).
 
 Reuse the existing typed feature registry, backend evaluator and capability queries under [ADR 0038](../docs/adr/0038-backend-enforced-feature-entitlements.md). Keep `ai-beta`, account approval, resource permissions and quotas. GrowthBook controls whether new work is admitted for an actor; the provider contract establishes what a worker can execute; persisted builds retain their selected inputs.
 

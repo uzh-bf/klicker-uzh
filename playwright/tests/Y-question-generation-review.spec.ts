@@ -968,3 +968,126 @@ test('generation configuration follows graph language and scopes focus to questi
     await expect(language).toHaveValue('en')
   }
 })
+
+test('refreshes the generation capabilities after a rejected submission', async ({
+  loginLecturer,
+  page,
+}) => {
+  const submitted: Array<Record<string, unknown>> = []
+  const persisted = JSON.parse(
+    readFileSync(
+      new URL('../../packages/graphql/src/public/client.json', import.meta.url),
+      'utf8'
+    )
+  ) as Record<string, string>
+  const operationNames = new Map(
+    Object.entries(persisted).map(([name, hash]) => [hash, name])
+  )
+  const source = {
+    graphBuildId: 'b1000000-0000-4000-8000-00000000000a',
+    kbId: 'b2000000-0000-4000-8000-00000000000a',
+    kbName: 'Synthetic focus course',
+    language: 'en',
+    indexedAt: '2026-09-01T00:00:00Z',
+    isStale: false,
+    sourceCount: 1,
+    sources: [
+      {
+        resourceId: 'b3000000-0000-4000-8000-00000000000a',
+        title: 'Synthetic course evidence',
+        sourceFile: 'course.md',
+        pageCount: null,
+      },
+    ],
+  }
+  // The first capability answer still offers focus; every answer after the
+  // rejection reflects the actor's current rollout.
+  let capabilityCalls = 0
+  let focusAdmitted = true
+  await page.route('**/graphql*', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const body = request.method() === 'POST' ? request.postDataJSON() : null
+    const extensions =
+      body?.extensions ?? JSON.parse(url.searchParams.get('extensions') ?? '{}')
+    const operation =
+      body?.operationName ??
+      url.searchParams.get('operationName') ??
+      operationNames.get(extensions.persistedQuery?.sha256Hash)
+    if (operation === 'ElementGenerationSourcesWithLanguage') {
+      await route.fulfill({
+        json: { data: { elementGenerationSources: [source] } },
+      })
+      return
+    }
+    if (operation === 'ElementGenerationCapabilities') {
+      capabilityCalls += 1
+      await route.fulfill({
+        json: {
+          data: {
+            elementGenerationCapabilities: {
+              configured: true,
+              elementTypes: ['SC'],
+              languages: ['en'],
+              bloomLevels: ['remember'],
+              difficultyLevels: [1, 2, 3, 4, 5],
+              supportsIndividualRegeneration: false,
+              typeCapabilities: [
+                {
+                  elementType: 'SC',
+                  reviewGates: ['DESIGN', 'PLAN'],
+                  supportsSourceScopes: true,
+                  supportsDifficulty: true,
+                  supportsBloomLevels: true,
+                  supportsFocusTopic: focusAdmitted,
+                  supportsRetry: false,
+                  supportsIncompletePublication: false,
+                },
+              ],
+            },
+          },
+        },
+      })
+      return
+    }
+    if (operation === 'StartElementGeneration') {
+      submitted.push(body.variables.input)
+      focusAdmitted = false
+      await route.fulfill({
+        json: {
+          errors: [
+            {
+              message: 'This deployment does not support question focus topics',
+              extensions: { code: 'CONFIGURATION_INVALID' },
+            },
+          ],
+        },
+      })
+      return
+    }
+    await route.continue()
+  })
+  await loginLecturer()
+  const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+  await gotoCommit(page, `${manageUrl}/elements/generate?kbId=${source.kbId}`)
+
+  const focus = page.getByTestId('element-generation-focus-topic')
+  await expect(focus).toBeVisible()
+  await focus.fill('Synthetic topic')
+  await page.getByTestId('element-generation-start').click()
+
+  // The rejection is surfaced, and the form re-reads the capabilities it acted
+  // on instead of keeping a control the deployment would refuse again.
+  // Next.js renders its own route announcer with role="alert", so match the
+  // submission error by its text.
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'CONFIGURATION_INVALID' })
+  ).toBeVisible()
+  await expect(focus).toHaveCount(0)
+  await expect.poll(() => capabilityCalls).toBeGreaterThan(1)
+  expect(submitted).toHaveLength(1)
+  expect(submitted[0]).toMatchObject({
+    graphBuildId: source.graphBuildId,
+    focusTopic: 'Synthetic topic',
+  })
+})

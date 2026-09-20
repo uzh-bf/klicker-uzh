@@ -1,5 +1,6 @@
 import { BlobServiceClient } from '@azure/storage-blob'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type { FeatureFlagKey } from '@klicker-uzh/feature-flags'
 import { getDefaultKBGraphDomainCatalog } from '@klicker-uzh/knowledge-graph'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
@@ -58,6 +59,7 @@ import {
   getKb,
   getKbChatbotBindings,
   getKbKnowledgeGraphConfig,
+  getKbKnowledgeGraphDomainConfig,
   getKbKnowledgeGraphNeighbors,
   getKbKnowledgeGraphOverview,
   getKbResourceIngestionRuns,
@@ -101,6 +103,30 @@ function legacyUrlResources(kbId: string, count: number) {
     title: `Legacy URL ${index}`,
     sourceUrl: `https://example.com/legacy-${index}`,
   }))
+}
+
+/**
+ * Denies one admission for a single actor while the shared fixture keeps the
+ * others. The refusal is the actor's, not the deployment's, so the same request
+ * on the original context still succeeds. An evaluator that is absent or fails
+ * is covered by `featureFlagAccess.test.ts`, because every gate shares the same
+ * fail-closed helper.
+ */
+function withDeniedFeatureFlag(
+  ctx: ContextWithUser,
+  deniedKey: FeatureFlagKey
+): ContextWithUser {
+  const evaluator = ctx.featureFlags
+  return {
+    ...ctx,
+    featureFlags: {
+      ...evaluator!,
+      isEnabled: (key, attributes) =>
+        key === deniedKey
+          ? false
+          : (evaluator?.isEnabled(key, attributes) ?? false),
+    },
+  }
 }
 
 function withIngestionClaimSignal(
@@ -450,8 +476,9 @@ describe('Integration tests for knowledge base CRUD', () => {
     await testCleanup(prisma)
   })
 
-  it('requires graph opt-in and the kill switch before dispatching a build', async () => {
+  it('requires graph opt-in and the rollout admission before dispatching a build', async () => {
     const kb = await createKb({ name: 'Graph controls' }, userOneCtx)
+    const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-graph-builds')
 
     await expect(
       rebuildKbKnowledgeGraph({ kbId: kb.id }, userOneCtx)
@@ -459,14 +486,28 @@ describe('Integration tests for knowledge base CRUD', () => {
       extensions: { code: 'KB_GRAPH_NOT_ENABLED' },
     })
 
-    process.env.KB_GRAPH_DISABLED = 'true'
+    // Opt-in and rebuild both start new work, so both are refused before any
+    // cost reservation exists, and neither leaves a state change behind.
     await expect(
-      setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
+      setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, deniedCtx)
     ).rejects.toMatchObject({
       extensions: { code: 'KB_GRAPH_DISABLED' },
     })
+    await expect(
+      rebuildKbKnowledgeGraph({ kbId: kb.id }, deniedCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DISABLED' },
+    })
+    await expect(
+      prisma.kB.findUniqueOrThrow({
+        where: { id: kb.id },
+        select: { knowledgeGraphEnabled: true },
+      })
+    ).resolves.toEqual({ knowledgeGraphEnabled: false })
+    await expect(
+      prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
+    ).resolves.toBe(0)
 
-    process.env.KB_GRAPH_DISABLED = 'false'
     await setKbKnowledgeGraphEnabled({ kbId: kb.id, enabled: true }, userOneCtx)
     await prisma.kBResource.create({
       data: {
@@ -606,6 +647,39 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBGraphBuild.count({ where: { kbId: kb.id } })
     ).resolves.toBe(0)
+
+    // The catalog revision does not stand in for the actor's rollout. With the
+    // revision declared, an actor the rollout does not admit is refused, and
+    // the capability handshake advertises no options for that actor.
+    process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
+    const deniedCtx = withDeniedFeatureFlag(
+      userOneCtx,
+      'kb-graph-domain-selection'
+    )
+    await expect(
+      rebuildKbKnowledgeGraph(
+        {
+          kbId: kb.id,
+          domainPolicyId: 'finance',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+        deniedCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
+    })
+    await expect(
+      getKbKnowledgeGraphDomainConfig({ kbId: kb.id }, deniedCtx)
+    ).resolves.toMatchObject({ capabilityEnabled: false, options: [] })
+    await expect(
+      rebuildKbKnowledgeGraph(
+        { kbId: kb.id, focusTopic: 'Capital budgeting' },
+        deniedCtx
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_DOMAIN_CAPABILITY_DISABLED' },
+    })
 
     // A complete, supported selection is frozen onto the build.
     process.env.KB_GRAPH_DOMAIN_CATALOG_REVISION = catalog.revision
@@ -3421,68 +3495,91 @@ describe('Integration tests for knowledge base CRUD', () => {
     }
   })
 
-  it('refuses new KB content dispatch while the ingestion kill switch is enabled', async () => {
-    const kb = await createKb({ name: 'Kill switch KB' }, userOneCtx)
+  it('refuses new KB content dispatch for an actor the ingestion rollout does not admit', async () => {
+    const kb = await createKb({ name: 'Denied ingestion KB' }, userOneCtx)
     const existingResource = await createKbUrlResource(
       { kbId: kb.id, title: 'Existing', url: 'https://example.com/existing' },
       userOneCtx
     )
+    const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
 
-    vi.stubEnv('KB_INGESTION_DISABLED', 'true')
-    try {
-      const blockedCalls: Array<() => Promise<unknown>> = [
-        () =>
-          createKbUrlResource(
-            {
-              kbId: kb.id,
-              title: 'Blocked',
-              url: 'https://example.com/blocked',
-            },
-            userOneCtx
-          ),
-        () =>
-          requestKbFileUpload(
-            {
-              kbId: kb.id,
-              fileName: 'blocked.pdf',
-              contentType: 'application/pdf',
-              sizeBytes: 1024,
-            },
-            userOneCtx
-          ),
-        () => ingestKbResource({ id: existingResource.id }, userOneCtx),
-        () => ingestAllKbResources({ kbId: kb.id }, userOneCtx),
-      ]
-      for (const callBlockedEntryPoint of blockedCalls) {
-        await expect(callBlockedEntryPoint()).rejects.toMatchObject({
-          extensions: { code: 'KB_INGESTION_DISABLED' },
-        })
-      }
-
-      // reads and deletion of already-registered content stay live
-      await expect(getKb({ id: kb.id }, userOneCtx)).resolves.toMatchObject({
-        id: kb.id,
-      })
-      await expect(
-        updateKbResourceMaterialType(
+    const blockedCalls: Array<() => Promise<unknown>> = [
+      () =>
+        createKbUrlResource(
           {
-            id: existingResource.id,
-            materialType: KBResourceMaterialType.ADMINISTRATIVE,
+            kbId: kb.id,
+            title: 'Blocked',
+            url: 'https://example.com/blocked',
           },
-          userOneCtx
-        )
-      ).resolves.toMatchObject({
-        id: existingResource.id,
-        materialType: KBResourceMaterialType.ADMINISTRATIVE,
+          deniedCtx
+        ),
+      () =>
+        requestKbFileUpload(
+          {
+            kbId: kb.id,
+            fileName: 'blocked.pdf',
+            contentType: 'application/pdf',
+            sizeBytes: 1024,
+          },
+          deniedCtx
+        ),
+      () =>
+        requestKbFileReplacement(
+          {
+            kbId: kb.id,
+            resourceId: existingResource.id,
+            fileName: 'blocked.pdf',
+            contentType: 'application/pdf',
+            sizeBytes: 1024,
+          },
+          deniedCtx
+        ),
+      () =>
+        confirmKbFileReplacement(
+          {
+            kbId: kb.id,
+            resourceId: existingResource.id,
+            blobName: 'blocked.pdf',
+            originalFilename: 'blocked.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 1024,
+          },
+          deniedCtx
+        ),
+      () => ingestKbResource({ id: existingResource.id }, deniedCtx),
+      () => ingestAllKbResources({ kbId: kb.id }, deniedCtx),
+    ]
+    for (const callBlockedEntryPoint of blockedCalls) {
+      await expect(callBlockedEntryPoint()).rejects.toMatchObject({
+        extensions: { code: 'KB_INGESTION_DISABLED' },
       })
-      const deleted = await deleteKbResource(
-        { id: existingResource.id },
-        userOneCtx
-      )
-      expect(deleted.id).toBe(existingResource.id)
-    } finally {
-      vi.unstubAllEnvs()
     }
+
+    // The denied actor keeps everything it already owns: reads, deletion and
+    // the graph lifecycle configuration stay independent of new-work admission.
+    await expect(getKb({ id: kb.id }, deniedCtx)).resolves.toMatchObject({
+      id: kb.id,
+    })
+    await expect(
+      updateKbResourceMaterialType(
+        {
+          id: existingResource.id,
+          materialType: KBResourceMaterialType.ADMINISTRATIVE,
+        },
+        deniedCtx
+      )
+    ).resolves.toMatchObject({
+      id: existingResource.id,
+      materialType: KBResourceMaterialType.ADMINISTRATIVE,
+    })
+    await expect(
+      getKbKnowledgeGraphConfig({ kbId: kb.id }, deniedCtx)
+    ).resolves.toMatchObject({ isEnabled: false })
+    const deleted = await deleteKbResource(
+      { id: existingResource.id },
+      deniedCtx
+    )
+    expect(deleted.id).toBe(existingResource.id)
   })
 
   it('classifies resources and keeps complete-KB ingestion counts across filters', async () => {

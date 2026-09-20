@@ -322,6 +322,12 @@ export default function ElementGenerationConfigure({
       setSubmissionError(
         code ? t('errors.withCode', { code }) : t('errors.start')
       )
+      // A rejected configuration can mean this form's capabilities are stale,
+      // because the rollout may have moved since the page was opened. Refresh
+      // them so the next attempt offers only what the deployment admits now.
+      if (code === 'CONFIGURATION_INVALID') {
+        void capabilitiesQuery.refetch()
+      }
     } finally {
       setSubmitting(false)
     }

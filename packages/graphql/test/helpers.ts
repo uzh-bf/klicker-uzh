@@ -361,7 +361,16 @@ export async function testInitialization(
     },
     prisma,
     featureFlags: {
-      isEnabled: vi.fn((key) => key === 'ai-beta'),
+      // The seeded owners hold every knowledge-base admission; a case that
+      // exercises a denial builds its own context from this one.
+      isEnabled: vi.fn((key) =>
+        [
+          'ai-beta',
+          'kb-ingestion',
+          'kb-graph-builds',
+          'kb-graph-domain-selection',
+        ].includes(key)
+      ),
       getAiBetaDecision: vi.fn(() => 'enabled' as const),
       refresh: vi.fn(async () => undefined),
     },
