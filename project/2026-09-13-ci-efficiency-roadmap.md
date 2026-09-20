@@ -1937,3 +1937,28 @@ concurrency must now compete against R1-R5, which remove work entirely.
   specs, retargets, and mixed application changes expand back to the full
   envelope. R1 remains first because smart-draft activation already provides the
   draft-side selector and status machinery that R1a reuses.
+- 2026-09-20 slice R1a (minimum validation envelope, implementation on
+  `rs/ci-output-reuse-roadmap`): one classifier
+  (`.github/scripts/minimum-validation-class.cjs`) now resolves the changed-path
+  records into `documentation-and-planning`, `ci-orchestration`, or
+  `application` with the decisions that class requires, and every lane reads its
+  own decision from it. The Playwright lane derives the class from the records it
+  already fetched, carries `envelope_class` into its plan artifact and workflow
+  outputs, and the required status reporter validates mode and class together;
+  the bounded classes narrow only on pull requests, never on a push. The
+  required codebase check classifies inside its own suite job, keeps every
+  contract suite, skips the Turbo build, the type check, ESLint, Biome, Knip,
+  and the Prisma drift check for a bounded class, uploads a classification
+  receipt, and gates each skipped step on `!= 'bounded'` so an absent or broken
+  classification widens the suite. CodeQL and SonarCloud skip a
+  documentation-and-planning pull request through a small `classify` job and
+  repeat the pull-request-only boundary in their analysis condition.
+  `.github/actions/change-envelope` is the one lane adapter, and
+  `.github/actions/changed-paths` now writes rename-aware records for its
+  consumers, where a missing record file stays an unproven diff. Contract tests
+  cover the classifier, the selector and plan metadata, the workflow validator,
+  the gating shape, and the records contract: the 330-test check-suite set and
+  the 71 Playwright CI contracts pass locally. Live acceptance on a
+  documentation-only and a CI-only pull request, including the full-envelope
+  contrast when one application file joins the same diff, is still pending on
+  this branch.

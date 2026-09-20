@@ -302,6 +302,36 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
   assert.equal(ready.metadata.should_run, 'true')
   assert.deepEqual(JSON.parse(ready.metadata.shard_matrix), fullShardMatrix())
 
+  // A ready pull request may narrow its plan only through the bounded change
+  // class the trusted classifier proved for the same diff: the documentation
+  // class skips, and the CI class runs the bounded smoke selection.
+  const boundedReady = [
+    {
+      name: 'documentation-and-planning',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
+      },
+    },
+    {
+      name: 'ci-orchestration',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+        ENVELOPE_CLASS: 'ci-orchestration',
+      },
+    },
+  ]
+  for (const { name, overrides } of boundedReady) {
+    const bounded = runStatusReporter(t, overrides)
+    assert.equal(bounded.status, 0, `${name}: ${bounded.output}`)
+    assert.equal(bounded.metadata.envelope_class, name)
+  }
+
   const rejected = [
     {
       name: 'skipped ready execution',
@@ -332,7 +362,7 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
       },
     },
     {
-      name: 'ready partial plan',
+      name: 'ready partial plan without an attested class',
       overrides: {
         MODE: 'selected',
         SHARD_MATRIX: JSON.stringify({
@@ -341,11 +371,43 @@ test('status reporter accepts the trusted plan for drafts and a full plan for re
       },
     },
     {
-      name: 'ready skipped plan',
+      name: 'ready skipped plan without an attested class',
       overrides: {
         MODE: 'skip',
         SHOULD_RUN: 'false',
         SHARD_MATRIX: JSON.stringify({ include: [] }),
+      },
+    },
+    {
+      // The class and the plan it would justify are one pair: a documentation
+      // class never selects specs, and a CI class never skips the smoke run.
+      name: 'ready plan narrowed by the wrong bounded class',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
+      },
+    },
+    {
+      name: 'ready skip attested by the CI class',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'ci-orchestration',
+      },
+    },
+    {
+      // Push validation is a deployment-candidate path and is never bounded.
+      name: 'push plan narrowed by a bounded class',
+      overrides: {
+        IS_PULL_REQUEST: 'false',
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
       },
     },
     {

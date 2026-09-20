@@ -21,11 +21,44 @@ permissions:
   actions: read
 
 jobs:
+  # A documentation-and-planning pull request changes no analyzed source, so its
+  # analysis would re-report an unchanged tree and wait for coverage of code it
+  # does not contain. One classification decides that, and it narrows pull
+  # requests only.
+  #
+  # The analysis is not a required status check, so a skip cannot leave a
+  # required context unreported; branch pushes and the CI class still analyze.
+  classify:
+    name: Classify
+    runs-on: ubuntu-latest
+    # Shares the workflow-level contents/actions read permissions, and neither the
+    # classification nor a skip needs the analysis credential.
+    timeout-minutes: 10
+    outputs:
+      change_class: ${{ steps.classify.outputs.change_class }}
+      static_analysis: ${{ steps.classify.outputs.static_analysis }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # The classification reads changed-path records, not sources.
+          sparse-checkout: .github
+
+      - name: Classify the change
+        id: classify
+        uses: ./.github/actions/change-envelope
+
   sonarcloud:
     # Draft pull requests keep their previous behaviour: they are analyzed when
     # they become ready for review. The condition is written against the event
     # so a push run can never be skipped by an absent draft field.
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == false }}
+    # A class that cannot be computed leaves the analysis in place, so the
+    # envelope can only ever remove analysis it proved unnecessary.
+    needs: classify
+    if: >-
+      !cancelled() &&
+      (github.event_name != 'pull_request' || github.event.pull_request.draft == false) &&
+      (github.event_name != 'pull_request' || needs.classify.outputs.static_analysis != 'skip')
     name: SonarCloud
     runs-on: ubuntu-latest
     # The ceiling must fit the whole job: the shared coverage window, the
