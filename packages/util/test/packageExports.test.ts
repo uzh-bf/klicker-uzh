@@ -21,6 +21,15 @@ describe('package subpath exports', () => {
     expect(citations.extractCitationIndexes('Grounded [1].')).toEqual([1])
   })
 
+  it('loads participant data-use helpers through the public package path', async () => {
+    const dataUse = await import(
+      '@klicker-uzh/util/participant-account-data-use'
+    )
+
+    expect(dataUse.PARTICIPANT_DATA_USE_DISCLOSURE_VERSION).toBeTypeOf('string')
+    expect(dataUse.isParticipantDataUseComplete).toBeTypeOf('function')
+  })
+
   it('loads response-example digest helpers through the public package path', async () => {
     const digest = await import('@klicker-uzh/util/response-example-digest')
 
