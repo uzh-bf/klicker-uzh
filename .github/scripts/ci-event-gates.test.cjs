@@ -266,27 +266,9 @@ const READY_FOR_REVIEW_LIFECYCLE_WORKFLOWS = new Map([
     'v3_sonarcloud.yml',
     'owned stable quality gate re-runs at the ready boundary',
   ],
-  ...[
-    'v3_analytics-stg.yml',
-    'v3_auth-stg.yml',
-    'v3_backend-docker-stg.yml',
-    'v3_chat-stg.yml',
-    'v3_frontend-control-docker-stg.yml',
-    'v3_frontend-manage-docker-stg.yml',
-    'v3_frontend-pwa-docker-assessment-stg.yml',
-    'v3_frontend-pwa-docker-stg.yml',
-    'v3_hatchet-worker-general-stg.yml',
-    'v3_hatchet-worker-response-processor-stg.yml',
-    'v3_lti-stg.yml',
-    'v3_olat-api-stg.yml',
-    'v3_response-api-stg.yml',
-  ].map((name) => [
-    name,
-    'draft pull requests defer their staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head',
-  ]),
   [
-    'v3_build-fallback.yml',
-    'the required image-build context recomputes at the ready boundary and validates the builds that the boundary restores',
+    'v3_images-stg.yml',
+    'draft pull requests defer the selected staging image builds to relieve the constrained ARM64 build pool; ready_for_review restores the deferred builds on the unchanged head, and the same run owns the required build-images-status context',
   ],
 ])
 
@@ -488,4 +470,42 @@ test('summary reporters always report and never suppress a required check', () =
     assert.equal(upload.with.name, 'required-ci-evidence', name)
     assert.equal(upload.with['if-no-files-found'], 'error', name)
   }
+})
+
+// The codebase check reuses its own completed validation only for a
+// metadata-only edit on an unchanged tree, and reports the required context
+// from a job that always runs. The suite job must never carry that context,
+// because GitHub can treat a skipped required check as acceptable.
+test('the codebase check reuses prior validation without suppressing its context', () => {
+  const workflow = readWorkflow('check.yml')
+  const terminal = workflow.jobs.check
+  assert.ok(terminal, 'check.yml must define the required check job')
+  assert.equal(terminal.if, 'always()')
+  assert.deepEqual(terminal.needs, ['select', 'check-suite'])
+  assert.ok(
+    terminal.steps.some(
+      (step) =>
+        step.run === 'node .github/scripts/required-ci-status.cjs report'
+    )
+  )
+  const upload = terminal.steps.find(
+    (step) => step.uses === 'actions/upload-artifact@v4'
+  )
+  assert.equal(upload.with.name, 'required-ci-evidence')
+  assert.equal(upload.with['if-no-files-found'], 'error')
+
+  const selector = workflow.jobs.select.steps.find(
+    (step) => step.uses === './.github/actions/changed-paths'
+  )
+  // The lookup names the stable terminal context, never a suite job.
+  assert.equal(selector.with['prior-check-name'], 'check')
+  assert.match(
+    String(workflow.jobs['check-suite'].if),
+    /needs\.select\.outputs\.should_run == 'true'/
+  )
+  assert.equal(workflow.permissions.checks, 'read')
+  // The ready boundary still recomputes, and an edited retarget still selects
+  // through the same action.
+  assert.ok(workflow.on.pull_request.types.includes('ready_for_review'))
+  assert.ok(workflow.on.pull_request.types.includes('edited'))
 })

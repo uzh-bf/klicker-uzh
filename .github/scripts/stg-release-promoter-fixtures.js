@@ -1,167 +1,85 @@
-'use strict'
-
 const crypto = require('node:crypto')
+const fs = require('node:fs')
+const path = require('node:path')
+
+const {
+  CONSOLIDATED_WORKFLOW_PATH,
+  STAGING_IMAGE_TARGETS,
+  amdJobName,
+  buildJobName,
+  scanJobName,
+} = require('./staging-image-targets.cjs')
 
 const OCI_MANIFEST_CONTENT_TYPE = 'application/vnd.oci.image.manifest.v1+json'
 
-const FIXTURE_WORKFLOW_PATHS = Object.freeze([
-  '.github/workflows/v3_auth-stg.yml',
-  '.github/workflows/v3_backend-docker-stg.yml',
-  '.github/workflows/v3_mcp-lecturer-stg.yml',
+// The fixture workflow is the real consolidated workflow, read from the tree.
+// Deriving it rather than restating it keeps the structural contract the
+// promotion controller enforces under test against the file that ships.
+const FIXTURE_WORKFLOW_PATH = CONSOLIDATED_WORKFLOW_PATH
+
+// A representative candidate: one independent image, the migrator, and the
+// application image that waits for it. 'auth' and 'backend-docker' are
+// available on every branch, so the fixture resolves the same way on v3 and on
+// the integration lines.
+const FIXTURE_TARGET_IDS = Object.freeze([
+  'auth-arm',
+  'backend-docker-arm',
+  'backend-docker-migrator-arm',
 ])
+
+const REAL_WORKFLOW = fs.readFileSync(
+  path.join(__dirname, '..', 'workflows', path.basename(FIXTURE_WORKFLOW_PATH)),
+  'utf8'
+)
+
 const FIXTURE_STAGING_WORKFLOWS = Object.freeze([
   {
-    jobs: [{ id: 'build-arm', image: 'auth-arm' }],
-    name: 'Build Docker image for auth (stg)',
-    path: FIXTURE_WORKFLOW_PATHS[0],
-  },
-  {
-    jobs: [
-      { id: 'build-arm', image: 'backend-docker-arm' },
-      { id: 'build-migrator-arm', image: 'backend-docker-migrator-arm' },
-    ],
-    name: 'Build Docker image for backend-docker (stg)',
-    path: FIXTURE_WORKFLOW_PATHS[1],
-  },
-  {
-    jobs: [{ id: 'build-arm', image: 'mcp-lecturer-arm' }],
-    name: 'Build Docker image for mcp-lecturer (stg)',
-    nonRuntimeJobs: [{ id: 'build-amd', image: 'mcp-lecturer-amd' }],
-    path: FIXTURE_WORKFLOW_PATHS[2],
+    jobs: FIXTURE_TARGET_IDS.map((targetId) => ({ id: targetId })),
+    name: 'Build staging images',
+    path: FIXTURE_WORKFLOW_PATH,
   },
 ])
 
-function scanJobDefinition(id, needs) {
-  return `  ${id}:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04-arm
-    needs: ${needs}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Scan the pushed image for vulnerabilities
-        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
-      - name: Enforce the fixable HIGH/CRITICAL policy
-        run: |
-          node .github/scripts/image-scan-receipt.cjs check
-`
+// The workflow text a candidate would carry. Callers mutate the returned copy to
+// express a hostile or broken candidate.
+function workflowDefinition(overrides = {}) {
+  let content = REAL_WORKFLOW
+  if (overrides.pushBranches) {
+    content = content.replace(
+      "      - 'v3'\n      - 'v3*'\n  pull_request:",
+      overrides.pushBranches.map((branch) => '      - ' + branch).join('\n') +
+        '\n  pull_request:'
+    )
+  }
+  if (overrides.fullShaTag === false) {
+    content = content.replace('type=raw,value=${{ github.sha }}', 'type=sha')
+  }
+  return content
 }
 
-function workflowDefinition({
-  activeAmd = false,
-  image,
-  migrator = false,
-  pushBranches = ["'v3'", "'v3*'"],
-  fullShaTag = true,
-  scans = false,
-}) {
-  const imageEnvironment = migrator
-    ? `  MIGRATOR_IMAGE_NAME: \${{ github.repository }}/${image}-migrator`
-    : ''
-  const tagLines = fullShaTag
-    ? '          type=raw,value=\${{ github.sha }}'
-    : '          type=ref,event=branch'
-  const amdJob = activeAmd
-    ? `  build-amd:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker/metadata-action@v4
-        id: meta
-        with:
-          images: \${{ env.REGISTRY }}/\${{ env.IMAGE_NAME }}-amd
-          tags: |
-${tagLines}
-      - uses: docker/build-push-action@v5
-        with:
-          push: \${{ github.event_name != 'pull_request' }}
-          tags: \${{ steps.meta.outputs.tags }}
-`
-    : `  build-amd:
-    if: \${{ false }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker/metadata-action@v4
-`
-  const migratorJobs = migrator
-    ? `  build-migrator-arm:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: docker/metadata-action@v4
-        id: meta
-        with:
-          images: \${{ env.REGISTRY }}/\${{ env.MIGRATOR_IMAGE_NAME }}-arm
-          tags: |
-${tagLines}
-      - uses: docker/build-push-action@v5
-        with:
-          push: \${{ github.event_name != 'pull_request' }}
-          tags: \${{ steps.meta.outputs.tags }}
-  build-migrator-amd:
-    if: \${{ false }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker/metadata-action@v4
-`
-    : ''
-  // The admission inventory adds one scan job per published image. Those jobs
-  // are active ARM jobs that publish nothing, so a candidate that carries them
-  // still has to validate against the publisher inventory.
-  const scanJobs = scans
-    ? [
-        scanJobDefinition('scan-arm', 'build-arm'),
-        ...(migrator
-          ? [scanJobDefinition('scan-migrator-arm', 'build-migrator-arm')]
-          : []),
-      ].join('')
-    : ''
-  return `name: Build Docker image for ${image} (stg)
-
-on:
-  push:
-    branches:
-${pushBranches.map((branch) => `      - ${branch}`).join('\n')}
-  pull_request:
-    types: [opened]
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: \${{ github.repository }}/${image}
-${imageEnvironment}
-jobs:
-  build-arm:
-    if: github.event.pull_request.draft == false
-${migrator ? '    needs: build-migrator-arm\n' : ''}    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: docker/metadata-action@v4
-        id: meta
-        with:
-          images: \${{ env.REGISTRY }}/\${{ env.IMAGE_NAME }}-arm
-          tags: |
-${tagLines}
-      - uses: docker/build-push-action@v5
-        with:
-          push: \${{ github.event_name != 'pull_request' }}
-          tags: \${{ steps.meta.outputs.tags }}
-${amdJob}${migratorJobs}${scanJobs}
-`
+function fixtureDefinitions(overrides = {}) {
+  return [
+    { content: workflowDefinition(overrides), path: FIXTURE_WORKFLOW_PATH },
+  ]
 }
 
-function fixtureDefinitions(options = {}) {
-  return FIXTURE_WORKFLOW_PATHS.map((path) => {
-    const backend = path.includes('backend-docker')
-    const mcp = path.includes('mcp-lecturer')
-    return {
-      content: workflowDefinition({
-        activeAmd: mcp,
-        image: backend ? 'backend-docker' : mcp ? 'mcp-lecturer' : 'auth',
-        migrator: backend,
-        scans: backend,
-        ...options,
-      }),
-      path,
-    }
-  })
+function targetById(targetId) {
+  return STAGING_IMAGE_TARGETS.find((target) => target.id === targetId)
+}
+
+// Every job a candidate for the fixture target set must complete: the ARM64
+// publishers, the scan legs for the scanned targets, and the AMD64 legs. One
+// run of the consolidated workflow also carries the terminal status job, which
+// is the required CI context the promotion controller admits alongside the
+// build evidence.
+function fixtureJobNames(targetIds = FIXTURE_TARGET_IDS) {
+  const targets = targetIds.map(targetById).filter(Boolean)
+  return [
+    ...targets.map((target) => buildJobName(target)),
+    ...targets.filter((t) => t.scan).map((target) => scanJobName(target)),
+    ...targets.filter((t) => t.amd).map((target) => amdJobName(target)),
+    'build-images-status',
+  ].sort()
 }
 
 function workflowRun({
@@ -170,7 +88,7 @@ function workflowRun({
   event = 'push',
   headBranch = 'v3',
   id,
-  path,
+  path: workflowPath,
   repository = 'uzh-bf/klicker-uzh',
   status = 'completed',
 }) {
@@ -182,7 +100,7 @@ function workflowRun({
     head_sha: candidateSha,
     html_url: `https://github.com/${repository}/actions/runs/${id}`,
     id,
-    path,
+    path: workflowPath,
     repository: { full_name: repository },
     status,
   }
@@ -190,19 +108,17 @@ function workflowRun({
 
 function workflowJobs({
   candidateSha,
-  includeMigrator = false,
   jobState = {},
-  path,
+  path: workflowPath,
+  targetIds = FIXTURE_TARGET_IDS,
 }) {
-  const names = ['build-arm']
-  if (includeMigrator) names.push('build-migrator-arm')
-  return names.map((name, index) => ({
+  return fixtureJobNames(targetIds).map((name, index) => ({
     conclusion: jobState[name]?.conclusion ?? 'success',
     head_sha: jobState[name]?.head_sha ?? candidateSha,
     html_url: `https://github.com/uzh-bf/klicker-uzh/actions/runs/1/job/${index + 1}`,
     id: index + 1,
     name,
-    path,
+    path: workflowPath,
     status: jobState[name]?.status ?? 'completed',
   }))
 }
@@ -244,9 +160,11 @@ function transientReadbackFailure(status = 503) {
 
 module.exports = {
   FIXTURE_STAGING_WORKFLOWS,
-  FIXTURE_WORKFLOW_PATHS,
+  FIXTURE_TARGET_IDS,
+  FIXTURE_WORKFLOW_PATH,
   OCI_MANIFEST_CONTENT_TYPE,
   fixtureDefinitions,
+  fixtureJobNames,
   registryManifestResponse,
   transientReadbackFailure,
   workflowDefinition,
