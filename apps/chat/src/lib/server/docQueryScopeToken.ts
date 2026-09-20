@@ -5,6 +5,11 @@ import { DOC_QUERY_SCOPE_TOKEN_HEADER } from '@/src/services/mcpScope'
 const DOC_QUERY_SCOPE_TOKEN_ALGORITHM = 'ES256'
 const DOC_QUERY_SCOPE_TOKEN_TTL_SECONDS = 5 * 60
 
+// Every scoped request mints a fresh token, but the signing key itself only
+// changes through configuration. Caching the imported key by PEM keeps the
+// per-request cost at JWT minting and still picks up a rotated key.
+const importedScopeSigningKeys = new Map<string, CryptoKey>()
+
 export class DocQueryScopeTokenError extends Error {
   constructor(message: string) {
     super(message)
@@ -44,10 +49,14 @@ export async function signDocQueryScopeToken({
   const audience = requireScopeTokenEnv('DOC_QUERY_SCOPE_AUDIENCE')
 
   try {
-    const privateKey = await importPKCS8(
-      privateKeyPem,
-      DOC_QUERY_SCOPE_TOKEN_ALGORITHM
-    )
+    let privateKey = importedScopeSigningKeys.get(privateKeyPem)
+    if (!privateKey) {
+      privateKey = await importPKCS8(
+        privateKeyPem,
+        DOC_QUERY_SCOPE_TOKEN_ALGORITHM
+      )
+      importedScopeSigningKeys.set(privateKeyPem, privateKey)
+    }
 
     return await new SignJWT({
       kb_id: kbIds.length === 1 ? kbIds[0] : kbIds,
