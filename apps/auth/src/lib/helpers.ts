@@ -1,33 +1,22 @@
 import type { AppLogger } from '@klicker-uzh/logging/node'
 import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
-import { UserRole } from '@klicker-uzh/prisma/client'
-import type { CollectedInvitationEmails, JWTPayload } from '@klicker-uzh/util'
+import type { UserRole } from '@klicker-uzh/prisma/client'
 import {
+  type CollectedInvitationEmails,
   collectInvitationEmails,
   extractProviderFromAffiliationId,
   generateRandomString,
   InvitationEmailMode,
-  PrismaTransactionClient,
-  parseCookiesHeader,
+  type PrismaTransactionClient,
   parseCsvHosts,
-  signJWT,
-  verifyJWT,
 } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
-import { NextApiRequest } from 'next'
-import type { Profile } from 'next-auth'
-import { Account } from 'next-auth'
-import { DefaultJWT, JWTDecodeParams, JWTEncodeParams } from 'next-auth/jwt'
+import type { Account, Profile } from 'next-auth'
 import { sendTeamsNotifications } from '@/lib/util'
 import { updateAssessmentParticipantIdentity } from './assessmentIdentity'
-import {
-  DEFAULT_LECTURER_HOSTS,
-  DEFAULT_STUDENT_HOSTS,
-  LECTURER_REDIRECT_COOKIE_NAME,
-  STUDENT_REDIRECT_COOKIE_NAME,
-} from './constants'
+import { DEFAULT_LECTURER_HOSTS, DEFAULT_STUDENT_HOSTS } from './constants'
 
 export interface ExtendedProfile extends Profile {
   swissEduPersonUniqueID: string
@@ -53,25 +42,6 @@ export interface ExtendedUser {
   catalystIndividual: boolean
 }
 
-export async function decode({ token, secret }: JWTDecodeParams) {
-  if (!token) return null
-  const secretString = typeof secret === 'string' ? secret : secret.toString()
-  return (await verifyJWT(token, secretString, {
-    issuer: process.env.APP_ORIGIN_AUTH,
-  })) as DefaultJWT
-}
-
-export async function encode({ token, secret }: JWTEncodeParams) {
-  const secretString = typeof secret === 'string' ? secret : secret.toString()
-
-  return signJWT((token as JWTPayload) ?? {}, secretString, {
-    issuer: process.env.APP_ORIGIN_AUTH,
-  })
-}
-
-// Context detection: prefer explicit URL params and paths; fall back to
-// referer and an ephemeral redirect cookie set by the proxy on signin.
-
 export function getStudentHosts(): string[] {
   const env = parseCsvHosts(process.env.AUTH_STUDENT_ALLOWED_HOSTS)
   return env.length ? env : DEFAULT_STUDENT_HOSTS
@@ -80,116 +50,6 @@ export function getStudentHosts(): string[] {
 export function getLecturerHosts(): string[] {
   const env = parseCsvHosts(process.env.AUTH_LECTURER_ALLOWED_HOSTS)
   return env.length ? env : DEFAULT_LECTURER_HOSTS
-}
-
-function isAssessmentHost(host: string): boolean {
-  return getStudentHosts().includes(host)
-}
-
-function isManageHost(host: string): boolean {
-  return getLecturerHosts().includes(host)
-}
-
-export function getAuthContext(
-  req: NextApiRequest,
-  log: AppLogger
-): 'lecturer' | 'participant' {
-  const { participant, callbackUrl } = req.query as {
-    participant?: string
-    callbackUrl?: string
-  }
-  const cookies = parseCookiesHeader(req.headers.cookie)
-  const studentRedirect = cookies[STUDENT_REDIRECT_COOKIE_NAME]
-  const lecturerRedirect = cookies[LECTURER_REDIRECT_COOKIE_NAME]
-
-  const hostFrom = (val?: string) => {
-    if (!val) return null
-    try {
-      return new URL(val).host
-    } catch {
-      return null
-    }
-  }
-
-  const hosts = {
-    student: hostFrom(studentRedirect),
-    lecturer: hostFrom(lecturerRedirect),
-    callback: hostFrom(callbackUrl),
-  }
-
-  // 1) Explicit participant flag wins
-  if (participant === 'true') {
-    log.info(
-      {
-        event: 'auth.audience.selected',
-        audience: 'participant',
-        decisionSource: 'explicit_param',
-      },
-      'Selected authentication audience'
-    )
-    return 'participant'
-  }
-
-  // 2) callbackUrl host is authoritative when present
-  if (hosts.callback) {
-    if (isAssessmentHost(hosts.callback)) {
-      log.info(
-        {
-          event: 'auth.audience.selected',
-          audience: 'participant',
-          decisionSource: 'callback_host',
-        },
-        'Selected authentication audience'
-      )
-      return 'participant'
-    }
-    if (isManageHost(hosts.callback)) {
-      log.info(
-        {
-          event: 'auth.audience.selected',
-          audience: 'lecturer',
-          decisionSource: 'callback_host',
-        },
-        'Selected authentication audience'
-      )
-      return 'lecturer'
-    }
-  }
-
-  // 3) Specific cookies (student first)
-  if (hosts.student && isAssessmentHost(hosts.student)) {
-    log.info(
-      {
-        event: 'auth.audience.selected',
-        audience: 'participant',
-        decisionSource: 'redirect_cookie',
-      },
-      'Selected authentication audience'
-    )
-    return 'participant'
-  }
-  if (hosts.lecturer && isManageHost(hosts.lecturer)) {
-    log.info(
-      {
-        event: 'auth.audience.selected',
-        audience: 'lecturer',
-        decisionSource: 'redirect_cookie',
-      },
-      'Selected authentication audience'
-    )
-    return 'lecturer'
-  }
-
-  // 4) Default to lecturer
-  log.info(
-    {
-      event: 'auth.audience.selected',
-      audience: 'lecturer',
-      decisionSource: 'default',
-    },
-    'Selected authentication audience'
-  )
-  return 'lecturer'
 }
 
 export async function autoAcceptInvitations(
@@ -400,7 +260,7 @@ async function createParticipantAffiliations(
   affiliationEmails?: string[], // Make emails optional
   log?: AppLogger
 ) {
-  let processedAffiliations = new Set<string>()
+  const processedAffiliations = new Set<string>()
 
   for (let i = 0; i < affiliationIds.length; i++) {
     const affiliationId = affiliationIds[i]
