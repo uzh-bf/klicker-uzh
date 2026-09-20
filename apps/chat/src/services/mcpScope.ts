@@ -1,4 +1,8 @@
-import { readSharedKbIds } from '@klicker-uzh/util/kb-scope'
+import {
+  MAX_KB_IDS as MAX_DOC_QUERY_KB_IDS,
+  readSharedKbIds,
+  UUID_PATTERN,
+} from '@klicker-uzh/util/kb-scope'
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 
 export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
@@ -9,10 +13,6 @@ export {
   assertDocQueryTransportSecurity,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
 } from '@klicker-uzh/doc-query-client'
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const MAX_DOC_QUERY_KB_IDS = 32
 
 export interface MCPScopedConfiguration {
   chatMode?: unknown

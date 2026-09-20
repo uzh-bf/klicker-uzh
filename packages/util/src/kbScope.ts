@@ -1,6 +1,6 @@
-const UUID_PATTERN =
+export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const MAX_KB_IDS = 32
+export const MAX_KB_IDS = 32
 
 function normalizeIds(value: unknown, allowEmpty = false): string[] {
   if (
@@ -67,12 +67,15 @@ export function composeKbScope(
   const course = normalizeIds(courseKbIds, true)
   const shared = normalizeIds(sharedKbIds, true)
   const ids = normalizeIds([...new Set([...course, ...shared])], true)
+  const scope: { kb_id?: string; kb_ids?: string[] } = {}
+  const [firstId] = ids
+  if (ids.length === 1 && firstId !== undefined) {
+    scope.kb_id = firstId
+  } else if (ids.length > 1) {
+    scope.kb_ids = ids
+  }
   return {
-    ...(ids.length === 1
-      ? { kb_id: ids[0]! }
-      : ids.length > 1
-        ? { kb_ids: ids }
-        : {}),
+    ...scope,
     ...(shared.length ? { shared_kb_ids: shared } : {}),
   }
 }

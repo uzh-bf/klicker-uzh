@@ -154,3 +154,17 @@ CI verification. A fresh fetch confirmed the integrated target remains
 After the final build and formatting check, the exact task runtime was stopped.
 Fresh Devsy status reported `Stopped`, the provider source path matched this
 checkout, and devrouter listed zero exact routes. Runtime data was retained.
+
+### Automated review follow-up
+
+Integration commit `53a58ff8dd` is pushed and GitHub confirmed the draft is
+mergeable against `v3-ai`. Automated feedback identified duplicated scope
+constants and nested scope construction. The two-file follow-up exports the
+existing UUID pattern and 32-ID bound from the shared module, reuses them in
+chat validation, and constructs singleton/multiple/empty scope explicitly.
+Existing normalization and error behavior are unchanged. All 112 affected
+lifecycle and chat tests passed; the other 79 package tests retain their
+integrated-source evidence. No new tests are needed for this simplification.
+All split host/container repository checks and all 27 production build tasks
+passed. Final self-review found no further changes needed. The follow-up has no
+new dependency, migration, or browser-only behavior. Hosted checks remain pending.
