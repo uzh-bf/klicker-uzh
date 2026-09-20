@@ -9,6 +9,11 @@
 // digest handoff, the pinned scanner and the enforced scan policy, and the
 // terminal job that owns the required status context.
 //
+// The build caches are pinned with the same intent: a publication reads and
+// writes the trusted namespace of the plan epoch, a same-repository pull
+// request reads and writes the untrusted namespace, and no publication turns
+// the cache off to hide that difference.
+//
 // Which targets a candidate can build is resolved separately from the tree, and
 // which targets were actually published is proved by the run's own job list.
 // This module only establishes that the pipeline that produced those jobs still
@@ -157,6 +162,60 @@ function requireJob(jobs, path, jobId) {
   return block
 }
 
+// A step input under a job with-block, for example the value of cache-from at
+// ten spaces of indentation. Null when the input is absent.
+function actionInput(block, key) {
+  const match = new RegExp(
+    '^[ ]{10}' + escapeRegExp(key) + ':[ ]*(.+?)[ ]*$',
+    'm'
+  ).exec(block)
+  return match ? match[1] : null
+}
+
+// The publication cache input: a push reads and writes the trusted namespace of
+// the epoch the plan resolved, a same-repository pull request reads and writes
+// the untrusted namespace, and a cross-repository pull request gets no cache.
+// mode=max keeps the intermediate install and build layers in both directions.
+function expectedCacheInput(key) {
+  const mode = key === 'cache-to' ? ',mode=max' : ''
+  return (
+    "${{ github.event_name == 'push' && format(" +
+    "'type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}" +
+    mode +
+    "', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || " +
+    "github.event_name == 'pull_request' && " +
+    'github.event.pull_request.head.repo.full_name == github.repository && ' +
+    "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache" +
+    mode +
+    "', github.repository, matrix.image) || '' }}"
+  )
+}
+
+// A publication must never publish from a cache a pull request can write, and it
+// must not disable the cache to hide that difference.
+function validateBuildCache(block, path, jobId) {
+  for (const key of ['cache-from', 'cache-to']) {
+    const value = actionInput(block, key)
+    if (value === null) {
+      fail(path, jobId, 'declares no ' + key + ' input')
+    }
+    if (value !== expectedCacheInput(key)) {
+      fail(
+        path,
+        jobId,
+        'does not scope ' +
+          key +
+          ' to the trusted epoch cache on a publication and to the untrusted ' +
+          'cache on a same-repository pull request'
+      )
+    }
+  }
+  const noCache = actionInput(block, 'no-cache')
+  if (noCache !== null && noCache !== 'false') {
+    fail(path, jobId, 'disables the shared build cache for a publication')
+  }
+}
+
 // A matrix leg must run only after the plan, name its check run after the
 // target, build from the plan's matrix, publish under the full-SHA guard, and
 // hand its digest to the scan leg.
@@ -259,6 +318,7 @@ function validateArmBuildJob(block, path, jobId) {
   ) {
     fail(path, jobId, 'does not publish a full source SHA tag')
   }
+  validateBuildCache(block, path, jobId)
 }
 
 function validateAmdJob(block, path, jobId) {
@@ -443,6 +503,8 @@ module.exports = {
   STAGING_STATUS_JOB_ID,
   STAGING_WORKFLOW_NAME,
   TRIVY_ACTION,
+  actionInput,
+  expectedCacheInput,
   jobNeeds,
   mappingEntries,
   validateStagingWorkflow,

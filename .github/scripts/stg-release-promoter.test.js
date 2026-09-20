@@ -495,6 +495,30 @@ test('rejects unsafe workflow publication changes', () => {
     /does not defer draft builds/
   )
   reject(
+    'publication reading the pull-request cache',
+    mutate(
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}'",
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache'"
+    ),
+    /trusted epoch cache/
+  )
+  reject(
+    'pull request reaching the trusted cache',
+    mutate(
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache'",
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted'"
+    ),
+    /trusted epoch cache/
+  )
+  reject(
+    'publication with the shared cache disabled',
+    mutate(
+      '          cache-from: ',
+      '          no-cache: true\n          cache-from: '
+    ),
+    /disables the shared build cache/
+  )
+  reject(
     'retargeted matrix image',
     mutate('matrix.image', 'matrix.imageName'),
     /derive the image from the matrix/

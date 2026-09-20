@@ -11,6 +11,16 @@ name: Build staging images
 # .github/scripts/staging-image-targets.json is read from the same revision as
 # this workflow, and the promotion controller validates the candidate against
 # its own copy of that inventory before it promotes anything.
+#
+# A publication and a pull request use different BuildKit registry caches. A
+# pull request reads and writes only the untrusted namespace, which no
+# publication reads, so no unreviewed revision can seed a published image. A
+# publication reads and writes only the trusted namespace of the current epoch:
+# it reuses the install and build layers the branch has already produced, while
+# the 'apk upgrade' base layer of every image is rebuilt at least once per epoch
+# instead of aging indefinitely behind a permanent cache hit. The previous
+# epoch is deliberately not imported, and nothing here replaces the fixable
+# HIGH/CRITICAL admission the scan job still enforces on the pushed digest.
 on:
   push:
     branches:
@@ -44,6 +54,7 @@ jobs:
       amd-matrix: ${{ steps.plan.outputs.amd-matrix }}
       build: ${{ steps.plan.outputs.build }}
       build-job-names: ${{ steps.plan.outputs.build-job-names }}
+      cache-epoch: ${{ steps.cache_epoch.outputs.epoch }}
       changed-file-count: ${{ steps.plan.outputs.changed-file-count }}
       matrix: ${{ steps.plan.outputs.matrix }}
       migrator-build: ${{ steps.plan.outputs.migrator-build }}
@@ -59,6 +70,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # The trusted cache namespace is scoped to one epoch so a publication can
+      # reuse install and build layers within the epoch but can never inherit
+      # the base packages of an older one. See the workflow header.
+      - name: Resolve the trusted cache epoch
+        id: cache_epoch
+        run: |
+          set -euo pipefail
+          epoch="$(date -u +%G-W%V)"
+          printf 'epoch=%s\n' "$epoch" >> "$GITHUB_OUTPUT"
+          printf 'Publication image cache epoch: %s\n' "$epoch" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Determine changed files
         if: github.event_name == 'pull_request'
@@ -171,9 +193,11 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: ${{ github.event_name == 'push' }}
-          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
-          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
+          # A publication reads and writes only the trusted namespace of the
+          # current epoch; a pull request reads and writes only the untrusted
+          # one. See the workflow header for the freshness contract.
+          cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
+          cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # Only a push publishes, so only a push produces a digest; the scan that
@@ -268,9 +292,11 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: ${{ github.event_name == 'push' }}
-          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
-          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
+          # A publication reads and writes only the trusted namespace of the
+          # current epoch; a pull request reads and writes only the untrusted
+          # one. See the workflow header for the freshness contract.
+          cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
+          cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # Only a push publishes, so only a push produces a digest; the scan that
@@ -365,9 +391,11 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
-          no-cache: ${{ github.event_name == 'push' }}
-          cache-from: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
-          cache-to: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
+          # A publication reads and writes only the trusted namespace of the
+          # current epoch; a pull request reads and writes only the untrusted
+          # one. See the workflow header for the freshness contract.
+          cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
+          cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # Only a push publishes, so only a push produces a digest; the scan that
