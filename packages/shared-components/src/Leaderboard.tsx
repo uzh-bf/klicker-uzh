@@ -118,7 +118,9 @@ function Leaderboard({
 
     return (
       <motion.div
-        key={entry.id}
+        // the participant id is the stable identity across refetches;
+        // group entries have none and fall back to the numeric id
+        key={entry.participantId ?? entry.id}
         role="listitem"
         layout={!shouldReduceMotion}
         initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}

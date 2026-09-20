@@ -26,7 +26,10 @@ type BlockResult = {
 // query resolves (refetches keep the existing list mounted to avoid flicker)
 function LeaderboardSkeleton() {
   return (
-    <div className="w-full animate-pulse space-y-1.5" aria-hidden="true">
+    <div
+      className="w-full animate-pulse space-y-1.5 motion-reduce:animate-none"
+      aria-hidden="true"
+    >
       <div className="flex items-end gap-4 pb-1">
         <div className="h-16 flex-1 rounded-t-lg bg-slate-100" />
         <div className="h-20 flex-1 rounded-t-lg bg-slate-100" />
@@ -250,7 +253,7 @@ function LiveQuizLeaderboard({
       ) : null}
 
       {blockDelta && (
-        <div className="flex animate-fade-in flex-row gap-4 text-xl">
+        <div className="flex animate-fade-in flex-row gap-4 text-xl motion-reduce:animate-none">
           <div>
             &Delta; {t('shared.leaderboard.ranks')}:{' '}
             <span

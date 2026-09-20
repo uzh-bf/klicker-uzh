@@ -169,7 +169,7 @@ export function Podium({ leaderboard, className, imgSrc }: PodiumProps) {
         username={rank2?.username}
         avatar={rank2?.avatar}
         score={rank2?.score}
-        noEntries={false}
+        noEntries={!rank2}
         className={className?.single}
         imgSrc={imgSrc?.rank2}
       />
@@ -179,7 +179,7 @@ export function Podium({ leaderboard, className, imgSrc }: PodiumProps) {
         username={rank1?.username}
         avatar={rank1?.avatar}
         score={rank1?.score}
-        noEntries={false}
+        noEntries={!rank1}
         className={className?.single}
         imgSrc={imgSrc?.rank1}
       />
@@ -189,7 +189,7 @@ export function Podium({ leaderboard, className, imgSrc }: PodiumProps) {
         username={rank3?.username}
         avatar={rank3?.avatar}
         score={rank3?.score}
-        noEntries={false}
+        noEntries={!rank3}
         className={className?.single}
         imgSrc={imgSrc?.rank3}
       />
