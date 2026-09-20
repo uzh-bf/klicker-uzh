@@ -3,37 +3,56 @@ import { faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
 import { GetCourseRunningLiveQuizzesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { addApolloState, initializeApollo } from '@lib/apollo'
+import type { ParticipantTokenSource } from '@lib/getParticipantToken'
 import getParticipantToken from '@lib/getParticipantToken'
+import { participantRedirect } from '@lib/participantRedirect'
 import useParticipantToken from '@lib/useParticipantToken'
 import { H2, UserNotification } from '@uzh-bf/design-system'
-import { GetServerSidePropsContext } from 'next'
+import type { GetServerSidePropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
-import Layout from '../../../../components/Layout'
 import LinkButton from '../../../../components/common/LinkButton'
+import Layout from '../../../../components/Layout'
+import ParticipantRedirect from '../../../../components/ParticipantRedirect'
 
 function LiveQuizOverview({
   isInactive,
   courseId,
   participantToken,
   cookiesAvailable,
+  tokenSource,
+  redirectTo,
 }: {
   isInactive: boolean
   courseId: string
-  participantToken?: string
+  participantToken?: string | null
   cookiesAvailable?: boolean
+  tokenSource?: ParticipantTokenSource
+  redirectTo?: string
 }) {
   const t = useTranslations()
 
   useParticipantToken({
     participantToken,
     cookiesAvailable,
+    tokenSource,
   })
 
   const { data, loading } = useQuery(GetCourseRunningLiveQuizzesDocument, {
     variables: { courseId: courseId },
-    skip: isInactive,
+    skip: isInactive || !!redirectTo,
   })
+
+  if (redirectTo && participantToken) {
+    return (
+      <ParticipantRedirect
+        participantToken={participantToken}
+        redirectTo={redirectTo}
+        cookiesAvailable={cookiesAvailable}
+        tokenSource={tokenSource}
+      />
+    )
+  }
 
   if (loading) {
     return (
@@ -102,6 +121,12 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     }
 
     const apolloClient = initializeApollo()
+    const { participantToken, cookiesAvailable, tokenSource } =
+      await getParticipantToken({
+        apolloClient,
+        courseId: ctx.params.courseId,
+        ctx,
+      })
     const result = await apolloClient.query({
       query: GetCourseRunningLiveQuizzesDocument,
       variables: {
@@ -114,6 +139,10 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
       return {
         props: {
           isInactive: true,
+          courseId: ctx.params.courseId,
+          participantToken: participantToken ?? null,
+          cookiesAvailable,
+          tokenSource,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,
         },
@@ -123,25 +152,21 @@ export async function getServerSideProps(ctx: GetServerSidePropsContext) {
     // if only a single live quiz is running, redirect directly to the corresponding quiz page
     // or if linkTo is set, redirect to the specified link
     if (result.data.getCourseRunningLiveQuizzes.length === 1) {
-      return {
-        redirect: {
-          destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
-          permanent: false,
-        },
-      }
+      return participantRedirect({
+        destination: `${ctx.locale ? `/${ctx.locale}` : ''}/session/${result.data.getCourseRunningLiveQuizzes[0].id}`,
+        participantToken,
+        cookiesAvailable,
+        tokenSource,
+        locale: ctx.locale,
+      })
     }
-
-    const { participantToken, cookiesAvailable } = await getParticipantToken({
-      apolloClient,
-      courseId: ctx.params.courseId,
-      ctx,
-    })
 
     if (participantToken) {
       return {
         props: {
           participantToken,
           cookiesAvailable,
+          tokenSource,
           courseId: ctx.params.courseId,
           messages: (await import(`@klicker-uzh/i18n/messages/${ctx.locale}`))
             .default,

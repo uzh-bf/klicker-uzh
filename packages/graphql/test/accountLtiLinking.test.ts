@@ -1,4 +1,7 @@
-import { prisma as prismaClient } from '@klicker-uzh/prisma'
+import {
+  prisma as prismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
 import { signJWT } from '@klicker-uzh/util'
 import bcrypt from 'bcryptjs'
@@ -64,6 +67,7 @@ async function createSignedLtiData({
 }
 
 async function cleanupTestData() {
+  await requireDisposableDatabase(prisma)
   const participants = await prisma.participant.findMany({
     where: {
       OR: [
@@ -142,6 +146,7 @@ describe('LTI participant linking and creation', () => {
       process.env.APP_ORIGIN_PWA ?? 'https://pwa.klicker.test'
 
     prisma = prismaClient
+    await requireDisposableDatabase(prisma)
     await prisma.$connect()
     await cleanupTestData()
   }, 60000)
@@ -388,7 +393,27 @@ describe('LTI participant linking and creation', () => {
         },
       },
     })
-    expect(participation).not.toBeNull()
+    expect(participation?.isActive).toBe(false)
+    expect(
+      await prisma.leaderboardEntry.count({
+        where: { courseId: course.id, participantId: participant.id },
+      })
+    ).toBe(0)
+
+    await loginParticipantWithLti(
+      { signedLtiData, courseId: course.id },
+      createCtx()
+    )
+    expect(
+      await prisma.participation.count({
+        where: { courseId: course.id, participantId: participant.id },
+      })
+    ).toBe(1)
+    expect(
+      await prisma.participation.findUnique({
+        where: { id: participation!.id },
+      })
+    ).toMatchObject({ isActive: false })
   })
 
   it('reuses existing ParticipantAccount when same ssoType but different ssoId matches by email', async () => {

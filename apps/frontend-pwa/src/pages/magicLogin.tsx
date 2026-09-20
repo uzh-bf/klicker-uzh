@@ -5,10 +5,10 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, toast } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useRef } from 'react'
 
 function MagicLogin() {
@@ -17,6 +17,20 @@ function MagicLogin() {
   const loginTimeout = useRef<any>(null)
   const redirectionTimeout = useRef<any>(null)
   const { token } = router.query
+
+  // Same-origin return target (e.g. a course join page) preserved through the
+  // magic link. Anything that is not a relative app path falls back to '/'.
+  const rawRedirectTo = Array.isArray(router.query.redirect_to)
+    ? router.query.redirect_to[0]
+    : router.query.redirect_to
+  const redirectTo =
+    rawRedirectTo &&
+    rawRedirectTo.startsWith('/') &&
+    !rawRedirectTo.startsWith('//') &&
+    !rawRedirectTo.includes('\\') &&
+    !rawRedirectTo.includes('://')
+      ? rawRedirectTo
+      : '/'
 
   const [loginWithMagicLink] = useMutation(LoginParticipantMagicLinkDocument)
   const [fetchSelf] = useLazyQuery(SelfDocument, {
@@ -39,7 +53,7 @@ function MagicLogin() {
           clearTimeout(loginTimeout.current)
           clearTimeout(redirectionTimeout.current)
           await fetchSelf()
-          router.push('/')
+          router.push(redirectTo)
         } else {
           toast({
             type: 'error',
