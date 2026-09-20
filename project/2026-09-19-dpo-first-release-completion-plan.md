@@ -21,12 +21,15 @@ Goal: get the merged notice/acceptance layer onto staging so the student-facing 
 Entry state, verified 20 September 2026:
 
 - `origin/v3` at `11e48f2aeb` contains the DPO squash `d3ab5f1c04` (PR #5970 merged 19:01Z).
-- `origin/v3-ai` at `a4960ba1bd` contains the layer through the `v3` → `v3-ai` synchronization (PR #6201 merged 19:38Z).
-- `origin/v3-audit` at `96ed33f8c7` is 20 commits behind `v3-ai` and does not yet contain `d3ab5f1c04`. Staging builds from `v3-audit`.
+- `origin/v3-ai` at `4be34ed26d` contains `a4960ba1bd` plus the participant data-use export fix through merge PR #6208.
+- `origin/v3-audit` at `ddfa6ee4d7` contains the layer through integration merge PR #6199. Its two parents are the prior `v3-audit` tip `96ed33f8c7` and the integration head `64e5c584f0`; it is a true merge commit, not a squash.
+- `origin/stg-release` remains at `55efc535a6`, so the merged layer is not yet promoted or serving.
+
+Integration branches and release-line hops use merge commits. Never squash a `v3` → `v3-ai`, `v3-ai` → `v3-audit`, or comparable integration PR, because flattening it hides the synchronization boundary and can make later conflict resolution silently drop line-only work.
 
 Actions, in order:
 
-1. Resolve PR #6203 (`v3-ai` → `v3-audit`), currently CONFLICTING. The conflicts are only in the two DPO-touched PWA pages, `apps/frontend-pwa/src/pages/createAccount.tsx` and `apps/frontend-pwa/src/pages/editProfile.tsx`. Keep the DPO layer's notice, acknowledgement and choice behavior; take the `v3-audit` side for unrelated changes. Resolve on a task branch so exact-head CI gates the resolution, then land it through #6203. This hop always uses an integration PR; never merge `v3` into `v3-audit` directly.
+1. Land PR #6211, the focused audit Rollup transform fix on `v3-audit`. It unblocks the exact-head rebuild exposed by #6199 after the old cached build replay no longer applied. Use a merge commit; preserve exact-head CI before merge.
 2. Let the staging promoter independently re-validate the exact `v3-audit` head and move `stg-release`. Promotion activation is a named-authority action.
 3. Test on STG: normal signup, assessment creation and first entry, existing-user renewal, profile settings, and the public privacy-policy and student LA pages. Distinguish merged, promoted, serving and E2E-proven; an artifact on the branch or a moved release ref is not live acceptance.
 
@@ -357,7 +360,7 @@ Use a bounded synthetic cohort of 20 existing participants with five concurrent 
 | Package                      | Status on 20 September (superseding the 19 September view)                                                        | Next concrete action                                                                        |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Planning                     | Complete: planner approved; narrowed follow-up recorded; this sequencing update folds in the merged state         | Execute Stage 1 below.                                                                      |
-| Core notices/persistence     | Merged: `v3` squash `d3ab5f1c04`; `v3-ai` merge `a4960ba1bd`                                                        | Resolve #6203 conflicts, then promote and test on STG.                                      |
+| Core notices/persistence     | Merged: `v3` squash `d3ab5f1c04`; `v3-ai` merge `4be34ed26d`; `v3-audit` merge `ddfa6ee4d7`                      | Land audit CI fix #6211, then promote and test on STG.                                       |
 | Optional processing          | Python/GraphQL containment merged; live state unproven                                                            | Prove live containment and any retained-LA reconciliation before exposure (Stage 1 gate).   |
 | Chat                         | Not implemented; deferred to Stage 3                                                                              | Implement after the PRD release, against current `v3-ai` contracts.                         |
 | Documentation                | Bilingual student pages, policy and group-only examples merged with the layer                                     | Verify rendering and links on STG; hold the guest present-tense claim until Stage 3.        |
