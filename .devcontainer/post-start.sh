@@ -244,6 +244,55 @@ if [ "$PROFILE_WANTS_DEV" = yes ] && [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
   done
 fi
 
+# A managed `ensure` returns as soon as devrouter owns the process, so a child
+# that dies moments later would otherwise surface as a 90-second readiness
+# timeout with nothing to diagnose. Re-check the owned process after a short
+# grace and surface its log instead.
+report_managed_process_log() {
+  local log_file="$1"
+
+  if [ ! -s "$log_file" ]; then
+    echo "[post-start] ${log_file} has no output; the process died before its first write." >&2
+    return 0
+  fi
+  echo "[post-start] Last lines of ${log_file}:" >&2
+  tail -n 40 "$log_file" >&2
+}
+
+verify_managed_process_alive() {
+  local name="$1"
+  local log_file="$2"
+  local grace_seconds="${3:-5}"
+  local state_dir="${DEVROUTER_PROCESS_STATE_DIR:-/tmp}"
+  local state_file="${state_dir}/devrouter-process-${name}.state"
+  local attempt managed_pid proc_state failure_reason
+
+  for attempt in 1 2; do
+    failure_reason=''
+    if [ ! -s "$state_file" ]; then
+      failure_reason='the managed process state is missing'
+    else
+      read -r managed_pid _ <"$state_file"
+      if ! [[ "$managed_pid" =~ ^[0-9]+$ ]]; then
+        failure_reason='the managed process state has no valid process id'
+      else
+        proc_state="$(ps -o stat= -p "$managed_pid" 2>/dev/null | tr -d '[:space:]')"
+        if [ -z "$proc_state" ] || [[ "$proc_state" == Z* ]]; then
+          failure_reason="process ${managed_pid} is no longer live"
+        fi
+      fi
+    fi
+    if [ -n "$failure_reason" ]; then
+      echo "[post-start] ERROR: ${name} failed to stay up: ${failure_reason}." >&2
+      [ ! -s "$state_file" ] || echo "[post-start] ${state_file}: $(<"$state_file")" >&2
+      report_managed_process_log "$log_file"
+      return 1
+    fi
+    [ "$attempt" -eq 2 ] || sleep "$grace_seconds"
+  done
+  return 0
+}
+
 # The isolated test database connects Tutor and Explainer to this local,
 # read-only MCP fixture; it is opt-in via the mcp capability. When the
 # selection drops it, stop the exact owned process instead of leaving it stale.
@@ -262,6 +311,8 @@ if [ "$PROFILE_WANTS_MCP" = yes ]; then
     --match 'apps/chat/scripts/local-mcp-server.mjs' \
     --log /tmp/local-mcp.log \
     -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256" "$LOCAL_MCP_GENERATION"
+
+  verify_managed_process_alive klicker-local-mcp /tmp/local-mcp.log
 
   # Keep startup bounded: this fixture check must not delay managed-app readiness.
   for attempt in $(seq 1 20); do
@@ -318,6 +369,7 @@ start_managed_runtime() {
       -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
       -- pnpm run dev:container
   fi
+  verify_managed_process_alive klicker-dev /tmp/dev.log
 }
 
 if [ "$PROFILE_WANTS_DEV" = yes ]; then

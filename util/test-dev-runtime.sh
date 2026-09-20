@@ -742,4 +742,30 @@ if grep -Fx launched "$HELPER_LOG" >/dev/null; then
 fi
 [ ! -s "$CURL_LOG" ] || fail 'failed preparation reached readiness'
 
+# A managed process that is not live once ensure returns must fail the start in
+# seconds with its log instead of stalling the readiness pass.
+write_file "$FAKE_BIN/process-helper-accepted" '#!/usr/bin/env bash
+set -euo pipefail
+if [ "${2:-}" = --help ]; then
+  echo --prepare-command
+  exit 0
+fi
+[ "$1" = ensure ] || exit 0'
+chmod +x "$FAKE_BIN/process-helper-accepted"
+: >"$CURL_LOG"
+dead_start_started=$SECONDS
+dead_start_status=0
+dead_start_output="$(
+  KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+    DEVROUTER_PROCESS_HELPER="$FAKE_BIN/process-helper-accepted" \
+    DEVROUTER_PROCESS_STATE_DIR="$TEST_ROOT/dead-process-state" \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" 2>&1
+)" || dead_start_status=$?
+[ "$dead_start_status" -ne 0 ] || fail 'post-start accepted a managed process that is not live'
+[ "$((SECONDS - dead_start_started))" -lt 30 ] || \
+  fail 'post-start stalled on a managed process that is not live'
+[[ "$dead_start_output" == *'failed to stay up'* ]] || \
+  fail 'post-start did not report the managed process that is not live'
+[ ! -s "$CURL_LOG" ] || fail 'a dead managed process reached the readiness pass'
+
 echo '[test-dev-runtime] PASS'
