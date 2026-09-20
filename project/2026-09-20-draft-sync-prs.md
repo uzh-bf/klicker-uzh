@@ -50,7 +50,8 @@ creation remains post-merge proof because the controller lives on `v3`.
 
 ## Progress
 
-- Implementation complete; draft PR publication pending.
+- Source package delivered in [draft PR #6183](https://github.com/uzh-bf/klicker-uzh/pull/6183)
+  targeting `v3`. Hosted CI is pending; the controller is not active before merge.
 - Node 24.21.0: all 18 focused controller and CI event-gate tests passed.
   Eight new tests cover the controller; ten existing event-gate tests passed.
 - Biome, Prettier, AGENTS link/command validation, and diff whitespace checks
