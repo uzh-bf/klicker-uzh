@@ -2387,3 +2387,77 @@ test('default CI evidence reader decodes bounded archives and rejects ambiguous 
   artifacts[0].size_in_bytes = 1048577
   await assert.rejects(readCiEvidence(args), /ambiguous/)
 })
+
+// The Sonar job delegates to the reusable analysis workflow, so GitHub reports
+// the caller and callee names joined by " / ". Both names of the delegation are
+// still reported as separate jobs, and only the trusted one proves the
+// analysis. The old exact-name check read this expansion as a missing job and
+// blocked every promotion from the selected staging source branch.
+test('a required job that delegates to a reusable workflow is proved by its reported name', async () => {
+  const workflow = REQUIRED_CI_WORKFLOWS.find((w) =>
+    w.path.endsWith('/v3_sonarcloud.yml')
+  )
+  assert.ok(workflow, 'the Sonar workflow is a required CI workflow')
+  const runId = 500 + REQUIRED_CI_WORKFLOWS.indexOf(workflow)
+  const reported = (name, extra = {}) => ({
+    conclusion: 'success',
+    head_sha: CANDIDATE_SHA,
+    id: 9000 + name.length,
+    name,
+    status: 'completed',
+    ...extra,
+  })
+
+  const delegated = [reported('Classify'), reported('SonarCloud / SonarCloud')]
+  const { github } = evidenceGithub({
+    workflows: validWorkflows(),
+    jobs: { [runId]: delegated },
+  })
+  const accepted = await collectBuildEvidence({
+    github,
+    context: reviewContext(),
+    workflows: [workflow],
+    candidateSha: CANDIDATE_SHA,
+    sourceBranch: 'v3',
+    maxAttempts: 1,
+  })
+  assert.equal(accepted.valid, true, accepted.reason)
+  assert.ok(
+    accepted.workflows[0].observedJobs.some(
+      (job) => job.name === 'SonarCloud / SonarCloud'
+    )
+  )
+
+  // Fail-closed stays intact: an unrelated name is not the trusted job, and two
+  // reported names for one required identifier are still ambiguous.
+  for (const [label, jobs, reason] of [
+    [
+      'an unrelated job name',
+      [reported('Classify'), reported('SonarCloud Analysis')],
+      /SonarCloud is missing/,
+    ],
+    [
+      'the delegation reported twice',
+      [
+        reported('SonarCloud / SonarCloud'),
+        reported('SonarCloud / Other', { id: 9100 }),
+      ],
+      /SonarCloud is ambiguous/,
+    ],
+  ]) {
+    const { github: failing } = evidenceGithub({
+      workflows: validWorkflows(),
+      jobs: { [runId]: jobs },
+    })
+    const rejected = await collectBuildEvidence({
+      github: failing,
+      context: reviewContext(),
+      workflows: [workflow],
+      candidateSha: CANDIDATE_SHA,
+      sourceBranch: 'v3',
+      maxAttempts: 1,
+    })
+    assert.equal(rejected.valid, false, label)
+    assert.match(rejected.reason, reason, label)
+  }
+})
