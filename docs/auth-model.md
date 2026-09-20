@@ -105,6 +105,7 @@ Current hardening boundaries:
 - The MCP token always stamps `role: USER` even for `ADMIN`-role sessions — a deliberate downscope (the MCP layer treats every caller as a lecturer; ADMIN gains nothing extra there).
 
 An external MCP integration therefore needs a separately approved authentication design: OAuth discovery and protected-resource metadata, audience-bound access tokens, external client registration/consent, delegated scope mapping, dedicated signing keys, ingress and network policy, and audit/rate-limit decisions.
+
 ## Participant account completion
 
 A valid participant JWT establishes identity, but does not establish that the
