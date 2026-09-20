@@ -52,10 +52,15 @@ assert_hosts_untouched() {
 }
 
 assert_host_maps_to() {
-  grep -q -E "^${2}[[:space:]]+${1}\$" "$HOSTS" ||
-    fail "$3: hosts file has no '$2 $1' entry"
-  [ "$(grep -c -E "[[:space:]]${1}\$" "$HOSTS")" -eq 1 ] ||
-    fail "$3: hosts file does not carry exactly one '$1' entry"
+  # Compare the fields literally: a pattern would treat the dots as wildcards
+  # and could accept a different host or address.
+  local found
+  found="$(awk -v host="$1" -v address="$2" '
+    $2 == host { entries += 1; if ($1 == address) exact = 1 }
+    END { printf "entries=%d exact=%d", entries, exact + 0 }
+  ' "$HOSTS")"
+  [ "$found" = 'entries=1 exact=1' ] ||
+    fail "$3: hosts file does not map exactly one '$1' entry to '$2' ($found)"
 }
 
 # The plain-localhost fallback needs no hosts entry in either spelling.
@@ -97,6 +102,7 @@ assert_host_maps_to 'oidc.klicker.retry.localhost' '198.51.100.7' 'retried looku
 # leaves the hosts file alone. This is the regression guard for the startup
 # abort that a failing lookup used to cause.
 reset_case
+lookup_status=0
 lookup_output="$(DEVROUTER_PROFILE='full' \
   LOCAL_EDUID_HOSTS_FILE="$HOSTS" \
   LOCAL_EDUID_HOSTS_LOOKUP="$FAILING_LOOKUP" \
@@ -109,7 +115,11 @@ lookup_output="$(DEVROUTER_PROFILE='full' \
     printf "state=%s\n" "$LOCAL_EDUID_STATE"
     printf "reason=%s\n" "$([ -n "$LOCAL_EDUID_REASON" ] && echo set || echo empty)"
     echo "startup-continued"
-  ' _ "$HELPER")"
+  ' _ "$HELPER")" || lookup_status=$?
+# A regression would end the sub-shell early, so report it here instead of
+# letting the test's own set -e stop before the assertions below.
+[ "$lookup_status" -eq 0 ] ||
+  fail "exhausted lookup terminated the caller (exit $lookup_status): $lookup_output"
 case "$lookup_output" in
   *state=disabled*) ;;
   *) fail "exhausted lookup must disable the mock, got: $lookup_output" ;;
