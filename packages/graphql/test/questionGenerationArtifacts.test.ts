@@ -67,6 +67,7 @@ const configuration: QuestionGenerationConfiguration = {
     },
   ],
   bloomLevels: ['understand'],
+  focusTopic: null,
 }
 
 function bytes(value: unknown): Buffer {
