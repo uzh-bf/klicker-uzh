@@ -65,7 +65,7 @@
       "types": "./dist/clientAuth.d.ts",
       "default": "./dist/clientAuth.js"
     },
-    "./dist/participantAccountDataUse": {
+    "./participant-account-data-use": {
       "types": "./dist/participantAccountDataUse.d.ts",
       "default": "./dist/participantAccountDataUse.js"
     },

@@ -196,3 +196,24 @@ null GraphQL field contract and the absence of a data-access or policy bypass.
 The task runtime is stopped again, confirmed by exact-source Devsy status and
 zero devrouter routes. The old-head local CI watcher was stopped before pushing
 the correction; hosted jobs were left to GitHub's normal concurrency handling.
+
+### Upstream export fix integration
+
+After the test correction was pushed as `4266fc6d6e`, `v3-ai` advanced to
+`4be34ed26d` with its canonical `participant-account-data-use` export and updated
+PWA imports. This created a package-map conflict. The integration retains that
+upstream public path and our `kb-scope` export, removing the superseded temporary
+`dist/participantAccountDataUse` alias. No source caller still uses the removed
+alias. The upstream import changes are unchanged against the new target and
+add no UI behavior to this PR. All seven package-export tests, split repository checks and all 27 production
+build tasks passed on the integrated source. Existing KB and consent-hold
+evidence remains applicable; no KB or analytics service logic changed. The
+current net production/config/generated delta is 716 added/deleted lines,
+excluding tests and documentation; two lines are the generated SDL newline.
+The original cohesive-package rationale still applies.
+
+The runtime was stopped after this build. Fresh exact-source Devsy status was
+`Stopped` and devrouter listed zero routes. The merge contains upstream import
+changes and the shared export together; no schema migration or dependency was
+introduced. Final self-review found no unresolved local source issue. Hosted
+verification of the corrected analytics cases remains pending.
