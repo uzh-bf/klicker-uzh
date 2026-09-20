@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-09-03'
+timestamp: '2026-09-20'
 tags:
   - testing
   - ci
@@ -10,7 +10,10 @@ tags:
 
 # Testing
 
-**There is no component-test layer.** Coverage is pure-function vitest at the bottom and full-stack e2e at the top — nothing in between (no @testing-library/react). Don't look for one, and don't assume a React component is covered unless an e2e spec exercises it.
+**There is no React component-test layer** (no @testing-library/react).
+Vitest covers pure logic and server-side integrations; Playwright covers
+browser user flows. Server-rendered HTML tests do not prove hydration or
+browser interaction.
 
 Coverage is published, not enforced. `test-unit.yml` and `test-graphql.yml` run their
 existing Vitest suites with the v8 provider and upload LCOV as the `coverage-lcov`
@@ -85,6 +88,8 @@ errors, which can contain credentials. For retained volumes, follow the
 | React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                                | `npx agent-browser@0.32.2` against the adopting app                                                                 |
 | GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs marked disposable Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test` inside the provisioned self-contained environment                         |
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
+| Auth routing, cookies and API handlers                                            | Vitest unit and handler integration projects; no database or real identity provider                     | `pnpm --filter @klicker-uzh/auth test:run`                                                                          |
+| Compiled auth proxy and server-rendered recovery                                  | Vitest built-app integration project; requires an auth production build                                 | `pnpm --filter @klicker-uzh/auth test:built`                                                                        |
 | UI / user flows                                                                   | Playwright e2e                                                                                          | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                                     | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
@@ -119,6 +124,23 @@ The development seed and focused Playwright journey also add deterministic
 synthetic chatbot/examples for local review; none of these paths mutate
 production data. A green GraphQL test proves the owner lifecycle and cascade
 contract without relying on the development seed.
+
+Auth tests live in `apps/auth/test/` and use the named Vitest projects `unit`,
+`integration`, and `built`. `test:run` runs the first two; `test:unit` and
+`test:integration` select them individually. Handler integration tests exercise
+the real NextAuth library with mocked account/database operations and a local
+synthetic OpenID Connect provider. They do not prove real Edu-ID compatibility
+or database persistence; the guarded Prisma adapter suite remains separate.
+
+The `built` project starts and stops its own production auth servers on random
+loopback ports. It checks HTTP and HTTPS deployment policy, configured deep
+links and initial recovery HTML without a database or external provider.
+HTTPS policy is selected through `NEXTAUTH_URL`; the local HTTP listener models
+an application behind a TLS proxy, not a TLS-handshake test. Build with
+`pnpm exec turbo run build --filter=@klicker-uzh/auth... --concurrency=4` before
+running it. The unit CI workflow runs all three projects, builds auth before
+the built-app checks, and publishes coverage from the unit/handler suites.
+Browser login and request-ordering journeys remain in `playwright/tests/A-login.spec.ts`.
 
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` first. It injects an

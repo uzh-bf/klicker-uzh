@@ -52,6 +52,14 @@ export default {
       packages: ['**'],
     },
     {
+      // Same class as the vitest pins above (#5924): the lodash override
+      // rewrites the lockfile specifier to the exact release, so a manifest
+      // carrying a range would fail the verifyDepsBeforeRun spec comparison.
+      range: '',
+      dependencies: ['lodash'],
+      packages: ['**'],
+    },
+    {
       // The @babel/core override rewrites the lockfile specifier to the exact
       // pin, and verifyDepsBeforeRun compares spec strings, so the manifest
       // must carry the exact release too.
