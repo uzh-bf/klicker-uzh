@@ -238,6 +238,9 @@ export default {
       errorTitle: 'Chatbot nicht verfügbar',
       errorMessage:
         'Der Chatbot konnte nicht geladen werden. Versuche es erneut oder kehre zu KlickerUZH zurück.',
+      accessDeniedTitle: 'Kein Zugriff auf diesen Chatbot',
+      accessDeniedMessage:
+        'Dein Konto kann diesen Chatbot nicht öffnen. Kehre zu KlickerUZH zurück und öffne den Chatbot über seinen Kurs.',
       retry: 'Erneut versuchen',
       openKlickerUzh: 'KlickerUZH öffnen',
     },
