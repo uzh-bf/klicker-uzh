@@ -58,16 +58,6 @@ query QGetChatbotsInfoWithKnowledgeBases {
       declinedCount
       pendingCount
     }
-    mcpConfigurations {
-      serverId
-      serverName
-      serverDescription
-      serverIsActive
-      chatMode
-      isEnabled
-      priority
-      allowedToolsCount
-    }
     enabledKnowledgeBases {
       id
       name

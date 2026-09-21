@@ -5025,9 +5025,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
-      chatbotUsageTechnicalIntegrations: 'Technische Integrationen',
-      chatbotUsageTechnicalIntegrationsDescription:
-        'Prüfen Sie konfigurierte MCP-Integrationen und deren aktuellen Status.',
       chatbotSetupTitle: 'Chatbot einrichten',
       chatbotSetupDescription:
         'Bearbeiten und speichern Sie die folgenden Bereiche, bevor Sie die Veröffentlichung beantragen.',
@@ -5306,7 +5303,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerAccepted: 'Akzeptiert',
       disclaimerDeclined: 'Abgelehnt',
       disclaimerPending: 'Ausstehend',
-      mcpConfigurations: 'MCP-Konfigurationen',
       knowledgeBase: 'Wissensdatenbank',
       knowledgeGraphPolicy: 'Wissensgraph',
       knowledgeGraphPolicyDescription:
@@ -5324,15 +5320,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       knowledgeGraphSaveSuccess: 'Wissensgraph-Einstellungen gespeichert.',
       noEnabledKnowledgeBase:
         'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
-      noMcpConfigurations: 'Keine MCP-Konfigurationen.',
-      mcpServerActive: 'Server aktiv',
-      mcpServerInactive: 'Server inaktiv',
-      mcpChatMode: 'Chat-Modus',
-      mcpStatus: 'Status',
-      mcpStatusEnabled: 'Aktiviert',
-      mcpStatusDisabled: 'Deaktiviert',
-      mcpPriority: 'Priorität',
-      mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
       openOwnerPreview: 'Eigentümer-Vorschau öffnen',
       chatbotOwnerPreviewLive: 'Live-Konfiguration',

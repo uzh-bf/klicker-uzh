@@ -58,16 +58,6 @@ query QGetChatbotsInfoWithAuthoringRevisions {
       declinedCount
       pendingCount
     }
-    mcpConfigurations {
-      serverId
-      serverName
-      serverDescription
-      serverIsActive
-      chatMode
-      isEnabled
-      priority
-      allowedToolsCount
-    }
     enabledKnowledgeBase {
       id
       name
