@@ -2,6 +2,7 @@ import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
 import type { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { requireFeatureFlagAccess } from '../src/lib/featureFlags.js'
+import { isLearningAnalyticsEnabled } from '../src/lib/learningAnalytics.js'
 import {
   getActivityAnalytics,
   getCourseActivityAnalytics,
@@ -9,9 +10,13 @@ import {
   getCourseWeeklyActivity,
 } from '../src/services/analytics.js'
 
-vi.mock('../src/lib/learningAnalytics.js', () => ({
-  isLearningAnalyticsEnabled: vi.fn(() => true),
-}))
+// The release switch stays off until consent-aware processing ships; the
+// service tests below enable it to exercise the fail-closed flag guard.
+vi.mock('../src/lib/learningAnalytics.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../src/lib/learningAnalytics.js')>()
+  return { ...actual, isLearningAnalyticsEnabled: vi.fn(() => true) }
+})
 
 const user = {
   sub: 'user-id',
@@ -92,29 +97,37 @@ describe('requireFeatureFlagAccess', () => {
   })
 })
 
+const learningAnalyticsServices: [
+  string,
+  (ctx: ContextWithUser) => Promise<unknown>,
+][] = [
+  [
+    'course activity analytics',
+    (ctx: ContextWithUser) =>
+      getCourseActivityAnalytics({ courseId: 'course-id' }, ctx),
+  ],
+  [
+    'weekly course activity',
+    (ctx: ContextWithUser) =>
+      getCourseWeeklyActivity({ courseId: 'course-id' }, ctx),
+  ],
+  [
+    'course performance analytics',
+    (ctx: ContextWithUser) =>
+      getCoursePerformanceAnalytics({ courseId: 'course-id' }, ctx),
+  ],
+  [
+    'activity analytics',
+    (ctx: ContextWithUser) =>
+      getActivityAnalytics({ activityId: 'activity-id' }, ctx),
+  ],
+]
+
 describe('learning analytics services', () => {
-  it.each([
-    [
-      'course activity analytics',
-      (ctx: ContextWithUser) =>
-        getCourseActivityAnalytics({ courseId: 'course-id' }, ctx),
-    ],
-    [
-      'weekly course activity',
-      (ctx: ContextWithUser) =>
-        getCourseWeeklyActivity({ courseId: 'course-id' }, ctx),
-    ],
-    [
-      'course performance analytics',
-      (ctx: ContextWithUser) =>
-        getCoursePerformanceAnalytics({ courseId: 'course-id' }, ctx),
-    ],
-    [
-      'activity analytics',
-      (ctx: ContextWithUser) =>
-        getActivityAnalytics({ activityId: 'activity-id' }, ctx),
-    ],
-  ])('denies %s before accessing service data', async (_, getAnalytics) => {
+  it.each(
+    learningAnalyticsServices
+  )('denies %s before accessing service data', async (_, getAnalytics) => {
+    vi.mocked(isLearningAnalyticsEnabled).mockReturnValue(true)
     const preferenceLookup = vi.fn().mockResolvedValue({ betaEnabled: true })
     const prisma = new Proxy(
       { user: { findUnique: preferenceLookup } },
@@ -145,5 +158,22 @@ describe('learning analytics services', () => {
       where: { id: user.sub },
       select: { betaEnabled: true },
     })
+  })
+
+  it.each(
+    learningAnalyticsServices
+  )('hides %s while the learning analytics release is disabled', async (_, getAnalytics) => {
+    vi.mocked(isLearningAnalyticsEnabled).mockReturnValue(false)
+    const prisma = new Proxy(
+      {},
+      {
+        get() {
+          throw new Error('Prisma service data must not be accessed')
+        },
+      }
+    )
+    const ctx = { user, prisma } as unknown as ContextWithUser
+
+    await expect(getAnalytics(ctx)).resolves.toBeNull()
   })
 })
