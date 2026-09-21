@@ -15,6 +15,34 @@ export async function readCourseImage(
 ): Promise<Buffer> {
   if (!root) throw new Error('Course image storage unavailable')
   const base = await realpath(root)
+  // Resolve the manifest's cache generation once; never mix generations.
+  if (!DIGEST.test(image.manifest_sha256))
+    throw new Error('Invalid image reference')
+  let generation: string | undefined
+  for (const candidate of ['e6/v3', 'e5/v3', 'e4/v3']) {
+    try {
+      await stat(
+        path.join(
+          base,
+          candidate,
+          'manifests',
+          'sha256',
+          image.manifest_sha256.slice(0, 2),
+          image.manifest_sha256.slice(2, 4),
+          `${image.manifest_sha256}.json`
+        )
+      )
+      generation = candidate
+      break
+    } catch (error) {
+      if (
+        !(error instanceof Error && 'code' in error && error.code === 'ENOENT')
+      )
+        throw error
+    }
+  }
+  if (!generation) throw new Error('Image manifest unavailable')
+  const storeGeneration = generation
   async function object(
     kind: string,
     hash: string,
@@ -25,7 +53,7 @@ export async function readCourseImage(
     const filename = await realpath(
       path.join(
         base,
-        'e4/v3',
+        storeGeneration,
         kind,
         'sha256',
         hash.slice(0, 2),

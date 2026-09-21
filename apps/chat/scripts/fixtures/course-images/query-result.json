@@ -26,10 +26,17 @@
                 "asset_id": "828f827e5b63ea4b7b6eb01244e96ed6024698331f663b9763d15a832c4132c5",
                 "image_sha256": "dfa7d8bb05115b375a53d8bcb91e1229f97b1040dbce421775908d622bea619b",
                 "physical_page_number": 2,
+                "logical_page_number": 2,
                 "width_px": 1025,
                 "height_px": 608,
                 "mime_type": "image/png",
-                "kind": "figure"
+                "kind": "figure",
+                "captions": [
+                  {
+                    "ref": "#/texts/12",
+                    "text": "Figure 1. Original synthetic diagram for the course-material retrieval test."
+                  }
+                ]
               }
             ],
             "manifest_sha256": "d0b6e56a857ba7585d7d5e6af94890632c871944bbf527534efe0726e068f52a",

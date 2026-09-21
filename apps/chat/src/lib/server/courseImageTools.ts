@@ -1,5 +1,6 @@
 import { type ToolSet, tool } from 'ai'
 import { z } from 'zod'
+import { courseImageMarker } from '@/src/lib/markdown/remarkCourseImages'
 import {
   COURSE_IMAGE_TOOL,
   type CourseImage,
@@ -72,7 +73,12 @@ export function withCourseImageTool(
         selected.delete(asset_id)
         return { status: 'unavailable' as const }
       }
-      return { status: 'selected' as const, image, reason }
+      return {
+        status: 'selected' as const,
+        image,
+        reason,
+        placement_marker: courseImageMarker(image.asset_id),
+      }
     },
   })
   return wrapped
