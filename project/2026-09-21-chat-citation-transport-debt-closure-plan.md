@@ -119,6 +119,23 @@ the largest correctness risk in the chatbot program.
   #6197 lands, seven paths conflict; the transport ones resolve by keeping the
   `v3-ai` package re-export. Receipt:
   `project/_local/evidence/2026-09-21-chat-citation-transport-c4-preflight.md`.
+- 2026-09-21, the `v3` ruleset was read rather than assumed. It sets
+  `strict: true` on the required status checks (`check`, `check-gitleaks`,
+  `test-graphql-status`, `test-playwright-status`, `test-unit-status`,
+  `test-olat-api-status`, `test-intl-production-status`,
+  `build-images-status`), so a `BEHIND` PR cannot merge at any check state.
+  #6197 was therefore brought up to date: merging current `v3` into
+  `rs/mcp-bearer-rotation` is conflict-free, the new head is `e5cf41ec94`,
+  `deploy/` is byte-identical to `v3`, and the computed merge candidate stays
+  `725d8c0fd2769b0682b1208fbd8d3827d830be2`. A fresh CI generation now runs
+  on that head.
+- 2026-09-21, the plan itself was persisted. It lived only as an untracked
+  file in the primary checkout, so it is now committed on
+  `rs/chat-citation-transport-plan` as
+  `docs(project): plan the chat citation and KB-transport debt closure` and
+  opened as draft PR #6225, matching the repository's `docs(project)`
+  precedent. The `project/_local/` evidence files stay untracked by design
+  (`.gitignore`).
 
 ## Known failure mode and merge order
 
@@ -221,6 +238,12 @@ Delivered (2026-09-21): `rs/mcp-bearer-rotation` at `bcbbdbf925`. Its four
 plus `turbo.json`. The gate exits 0 and reports the branch-level divergence
 as a warning. The PR description records that #6224 merges first. Awaiting
 merge.
+
+Updated (2026-09-21): the branch is now at `e5cf41ec94` after merging current
+`v3`. The `v3` ruleset requires an up-to-date branch, so `BEHIND` blocked the
+merge even with every context green. The merge was conflict-free, `deploy/`
+matches `v3` exactly, and the merge candidate is unchanged at
+`725d8c0fd2769b0682b1208fbd8d3827d830be2`. CI re-runs on the updated head.
 
 Blocker found 2026-09-21: the required `check` lane runs
 `.github/scripts/deploy-parity.cjs --other v3-ai --base <merge-base>` for
