@@ -791,6 +791,15 @@ lti:
         hosts:
           - lti.klicker.stg.df-app.ch
 
+  # The chart default (200m CPU / 200Mi memory) over-reserves this service: its
+  # staging VPA sits at the clamp floor (15m CPU / 100Mi memory) while live usage
+  # is about 1m CPU and 63Mi memory. CPU matches the 50m used by every other
+  # staging app; the chart's 500Mi memory limit is retained.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.stg.df-app.ch'
 
