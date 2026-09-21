@@ -27,11 +27,19 @@ Entry state, verified 20 September 2026:
 
 Integration branches and release-line hops use merge commits. Never squash a `v3` → `v3-ai`, `v3-ai` → `v3-audit`, or comparable integration PR, because flattening it hides the synchronization boundary and can make later conflict resolution silently drop line-only work.
 
+#### Stage-1 promotion and rollout evidence, 21 September
+
+The integration hops retained merge ancestry. #6199 merged as `ddfa6ee4d7` with parents `96ed33f8c7` and `64e5c584f0`; it was not squashed. #6211 merged as `330364bb12` with parents `6ecaac08eb` and `7be454c69a`. #6203 merged as `cd308e7bae` with parents `330364bb12` and `dda8029041`, making it the `v3-audit` candidate.
+
+The first automatic promotion attempt failed because the controller rejected GHCR's trusted `307` blob redirects. The focused controller fix on `rs/stg-promoter-redirect-debug` follows only trusted blob redirects, drops the authorization header when forwarding to storage, and still fails closed otherwise. Diagnostic dry-run `35555539472` passed at controller SHA `f1b3d30a88`; authorized apply run `35555663257` then fast-forwarded `stg-release` from `55efc535a6` to `cd308e7bae`. Its receipt records exact-head CI, image builds and scans, and a first-attempt apply with no failures.
+
+Argo refreshed and synced `app-klicker` at `cd308e7bae`, ran the PreSync migration from the matching migrator image, and reported the application healthy after the rollout. At 03:00 to 03:01 UTC on 21 September, the new PWA, assessment, auth, API, response API, chat, worker and MCP pods ran images tagged `cd308e7bae` with no restarts. Startup readiness warnings and the brief HTTP `503` responses occurred during pod replacement; PWA, assessment and auth subsequently returned HTTP `200`. This establishes promotion and serving at the new head; student-facing DPO acceptance testing remains open.
+
 Actions, in order:
 
-1. Land PR #6211, the focused audit Rollup transform fix on `v3-audit`. It unblocks the exact-head rebuild exposed by #6199 after the old cached build replay no longer applied. Use a merge commit; preserve exact-head CI before merge.
-2. Let the staging promoter independently re-validate the exact `v3-audit` head and move `stg-release`. Promotion activation is a named-authority action.
-3. Test on STG: normal signup, assessment creation and first entry, existing-user renewal, profile settings, and the public privacy-policy and student LA pages. Distinguish merged, promoted, serving and E2E-proven; an artifact on the branch or a moved release ref is not live acceptance.
+1. ~~Land PR #6211, the focused audit Rollup transform fix on `v3-audit`. It unblocks the exact-head rebuild exposed by #6199 after the old cached build replay no longer applied. Use a merge commit; preserve exact-head CI before merge.~~ Done as a merge commit.
+2. ~~Let the staging promoter independently re-validate the exact `v3-audit` head and move `stg-release`. Promotion activation is a named-authority action.~~ Done manually after the controller redirect fix.
+3. Test on STG: normal signup, assessment creation and first entry, existing-user renewal, profile settings, and the public privacy-policy and student LA pages. Distinguish merged, promoted, serving and E2E-proven; an artifact on the branch or a moved release ref is not live acceptance. This is the remaining Stage-1 action.
 
 Deployment prerequisite carried into this stage: prove live optional-processing containment and any required retained-LA reconciliation before the new promises and choices are exposed. Source containment alone is not live containment.
 
