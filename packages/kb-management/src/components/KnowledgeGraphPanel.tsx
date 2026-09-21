@@ -1072,7 +1072,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                 {hasPublishedGraph ? (
                   <KnowledgeGraphPreview
                     kbId={kbId}
-                    servedBuildId={config.publishedBuildId}
+                    servedBuildId={config.publishedBuildId ?? null}
                   />
                 ) : (
                   <div
