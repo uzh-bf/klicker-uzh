@@ -168,6 +168,15 @@ the largest correctness risk in the chatbot program.
   agree). Head is `f719d6790e`; `deploy/` is empty against both branches, no
   conflict markers remain, and the release bump to `3.4.0-alpha.81` is
   preserved alongside the dependency union.
+- 2026-09-21, #6228 reached its finish gate at `f719d6790e`. All eight
+  required contexts pass (`check`, `check-gitleaks`, `test-graphql-status`,
+  `test-playwright-status`, `test-unit-status`, `test-olat-api-status`,
+  `test-intl-production-status`, `build-images-status`), all eight Playwright
+  shards pass, all 15 staging images build, and the PR reports `MERGEABLE`.
+  `v3-ai` advanced to `d447a18094` (#6230) meanwhile; because that branch's
+  ruleset is `strict: false`, the branch does not need refreshing, only the
+  checks at this head. The only residual `fail` row belongs to a superseded,
+  cancelled generation. The final AI review was triggered at this head.
 
 ## Known failure mode and merge order
 
