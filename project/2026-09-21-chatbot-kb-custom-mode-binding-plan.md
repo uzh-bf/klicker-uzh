@@ -248,7 +248,12 @@ Files: `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.ts
 `packages/graphql/src/services/chatbots.ts`, the four chatbot ops under
 `packages/graphql/src/graphql/ops/`,
 `packages/graphql/test/chatbotKnowledgeBaseReaders.test.ts`, and the
-regenerated `packages/graphql/src/public/schema.graphql`.
+regenerated `packages/graphql/src/public/schema.graphql`. Dropping the
+`mcpConfigurations` selection makes the generated query result no longer
+satisfy the full `Chatbot` entity, so the list and workspace helpers take
+declared subsets instead: `Chatbots.tsx`, `ChatbotItem.tsx` (new exported
+`ChatbotListItem`), `ChatbotList.tsx`, and `chatbotWorkspace.ts` (new
+`ChatbotWorkspaceFacts`).
 
 Acceptance: the chat-usage view renders no technical-integrations panel and no
 MCP wording; the knowledge view still lists the bound knowledge base;
@@ -350,7 +355,7 @@ populated projection, changes this decision and needs its own ADR update.
 | Attachment leaves a disabled exact `quizzer` override in place | add new | `attachKbToChatbot` integration test | none | removing the suppression exposes Quizzer through Tutor inheritance | 2 |
 | Attachment reconciles an enabled exact `quizzer` binding to the new KB | add new | `attachKbToChatbot` integration test plus `resolveMcpScope` | none | the stale KB keeps `assertOneScope` rejecting every mode | 2 |
 | Shared standard-mode key contract | add new | `apps/chat/test` registry assertion | none | attach and resolver disagree on standard keys | 2 |
-| Deprecated `mcpConfigurations` resolves empty | add new | schema and service seam | none | a deprecated field still loads MCP rows | 3 |
+| Deprecated `mcpConfigurations` resolves empty | no new test | schema and service seam | none | a deprecated field still loads MCP rows | 3 |
 | MCP surface absent from lecturer UI | replace/consolidate | browser capture plus existing knowledge-view selector | none | MCP copy still rendered | 3 |
 
 ### Research
@@ -384,18 +389,48 @@ directions separately. Both are applied in Decision 2, Slice 2, and the test
 portfolio.
 
 
-- Status: planned, hardened to review_deadlock, awaiting approval. Active slice: none.
-- Completed slices: none.
-- Remaining slices: 1 runtime, 2 KB attach, 3 lecturer surface, 4 docs/ADR.
-- Latest verified commit: `5eaf18ccbe` (branch base fast-forwarded to `origin/v3-ai`
-  before execution; clean, in sync). The four incoming commits touch only deploy
-  values and `KnowledgeGraphPanel.tsx`, none of this plan's seams.
-- Verification evidence: none yet; focused test and browser runs are scheduled per slice.
-- Required gates: planner pass complete (rounds 1-3 REVISE, 12 findings accepted;
-  cap reached, review_deadlock on the two applied round-3 findings), simplifier
-  and slice review per slice, integrated final review at the finish.
-- Delivery layer: not started. Required layer: pushed branch and draft PR.
-  Blocker: slice 3's browser acceptance needs the devcontainer stack from a host
-  shell; without it that evidence stays incomplete.
-- Next action: present for approval; the user may instead authorize one extra
-  verification round for the two residual findings.
+- Status: implemented, at the finish gate. Active slice: none.
+- Completed slices: 1 runtime, 2 KB attach, 3 lecturer surface, 4 docs/ADR.
+- Remaining slices: none.
+- Latest verified commit: `2ac8606c54` on `fix/chatbot-kb-custom-mode-binding`,
+  six commits ahead of `origin/v3-ai` (`171c3e96cb`). Commits: `df59394769`
+  plan, `4d5c440fa4` slice 1, `78f45999c6` slice 2, `ac3e43aa65` slice 3,
+  `4193cb4259` slice 4, `2ac8606c54` progress.
+- Base repair: the branch began on `2c1533f5d2`, whose `KnowledgeGraphPanel.tsx`
+  passed `publishedBuildId` into a `string | null` prop because the introducing
+  commit's CI run was cancelled, so `check:all` failed and no commit could land.
+  A local `?? null` repair unblocked the slices; upstream then landed the
+  equivalent fix as #6246 (`171c3e96cb`), which the final rebase onto
+  `origin/v3-ai` adopted, dropping the local duplicate. The branch carries no
+  base-repair commit of its own.
+- Verification evidence: `@klicker-uzh/util` 10 focused cases; `@klicker-uzh/graphql`
+  `knowledge.test.ts` 71 and `chatbotKnowledgeBaseReaders.test.ts` 3; `@klicker-uzh/chat`
+  `effective-chat-modes`, `required-mcp-route`, `mcp-clients-scope-token` 65 cases.
+  Slice 3 browser evidence: seven captures in
+  `project/_local/screenshots/chatbot-kb-custom-mode-binding/` (before/after usage
+  in `en`/`de`, knowledge in `en`/`de`, compact) with interaction checks; the
+  bound-KB link navigates to `/resources/knowledgeBases/<id>`.
+- Required gates: planner pass (rounds 1-3 REVISE, 12 findings accepted, cap
+  reached with two applied residual findings), simplifier and slice review per
+  slice, integrated final review at the finish. Slice 1+2 slice review
+  (`f166bd6bee`, pre-rebase SHA) returned one test-contract finding
+  (the unbound-mode test asserted a 503 rather than proceeding past discovery),
+  applied as a fixup; the rebased slice 1 is `4d5c440fa4`. Slice 3 slice review
+  returned no findings; simplifier none.
+- Integrated final review on the then-head `c07eab6317` returned
+  `status: findings` with five low-severity items, all verified and applied:
+  a dead `Chatbot` type import in `ChatbotList.tsx`; a rejected ADR option that
+  read as the accepted decision; the four narrowed manage files missing from the
+  slice-3 file list; a promised-but-absent deprecated-field test (portfolio row
+  corrected to `no new test`, since the field is a one-line `?? []` with no
+  remaining producer); and two util assertions that restated the constants'
+  literals. The reviewer confirmed both product requirements, the isolation path,
+  and the security-relevant invariants.
+- Delivery layer: branch six commits ahead of `origin/v3-ai`, not yet pushed;
+  draft PR not yet created.
+- Environment note: the devcontainer database was migrated but unseeded, so the
+  delegated lecturer login failed until `pnpm --filter @klicker-uzh/prisma run
+  prisma:seed:raw` loaded the disposable dev seed.
+- Next action: integrated final review, then ordinary push and draft PR. Merge,
+  deployment, marking ready, PRD writes, and publishing the ethics bot draft
+  revision are withheld.
