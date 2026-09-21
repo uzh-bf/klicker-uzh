@@ -125,8 +125,10 @@ through its `standardModeConfig` section in editable first-publication or
 revision states, requires Tutor or Explainer to remain enabled, and fences every save with the authoring
 version so a concurrent submission cannot be overwritten. Published changes
 remain staged until approval. Tutor and Explainer do not require
-a knowledge base; Quizzer remains independently configurable but is filtered by
-the safe course-material capability gate. Missing or malformed persisted values
+a knowledge base, and a mode without a retrieval binding of its own is not
+hidden on account of another mode's required binding; Quizzer remains
+independently configurable but is filtered by the safe course-material
+capability gate. Missing or malformed persisted values
 derive all three flags from legacy mode opt-outs/defaults, while valid legacy
 two-flag values derive Quizzer from its legacy opt-out/default. The owner-only
 Manage projection exposes the combined effective settings, never raw

@@ -8,6 +8,10 @@ Lecturer setup editing after publication is superseded by
 [ADR 0043](./0043-review-chatbot-revisions-before-activation.md). Its saved
 revision and approval contract leaves unrelated runtime dependencies unchanged.
 
+The required-MCP visibility rule below is superseded by
+[ADR 0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md), which makes
+availability per mode and resolves retrieval scope for the selected mode.
+
 ## Context
 
 Historically a chatbot's `systemPrompts[mode].prompt` fully replaced the
@@ -58,7 +62,10 @@ replacing:
 - The server may hide any mode that cannot satisfy the chatbot's required-MCP
   policy. The same effective-mode resolver drives participant presentation,
   settings data, request validation, and request-time MCP selection, so a
-  hidden mode cannot be selected with a crafted request.
+  hidden mode cannot be selected with a crafted request. **Superseded by
+  [ADR 0050](./0050-per-mode-retrieval-scope-and-kb-attachment.md):** the
+  resolver no longer hides an unbound mode, and retrieval scope is resolved for
+  the selected mode.
 - Lecturers may later edit a small set of constrained persona fields — course
   name, subject domain, language of instruction, optional scope note — that
   the server compiles into standard prompts. No approval is needed because
