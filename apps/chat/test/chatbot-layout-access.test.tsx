@@ -19,6 +19,10 @@ vi.mock('next/navigation', () => ({
   notFound: mocks.notFound,
 }))
 
+vi.mock('next-intl/server', () => ({
+  getTranslations: async () => (key: string) => key,
+}))
+
 vi.mock('../src/components/assistant', () => ({
   Assistant: mocks.assistant,
 }))
@@ -86,12 +90,17 @@ describe('chatbot layout access', () => {
       params: Promise.resolve({ chatbotId: CHATBOT_ID }),
     })
 
-    expect(mocks.resolveParticipantIdentity).toHaveBeenCalledWith({
-      participantToken: 'participant-token',
-      chatGuestToken: undefined,
-      pwaEmbedToken: undefined,
-      scopedFallbackToken: undefined,
-    })
+    expect(mocks.resolveParticipantIdentity).toHaveBeenCalledWith(
+      {
+        participantToken: 'participant-token',
+        chatGuestToken: undefined,
+        pwaEmbedToken: undefined,
+        scopedFallbackToken: undefined,
+      },
+      {
+        targetChatbotId: CHATBOT_ID,
+      }
+    )
     expect(mocks.authorizeIdentityForChatbot).toHaveBeenCalledWith(
       { participantId: 'participant-1', authMode: 'account' },
       CHATBOT_ID
@@ -129,7 +138,8 @@ describe('chatbot layout access', () => {
     // The layout hands the header value to the shared resolver, which verifies
     // its signature; the header never carries an identity of its own.
     expect(mocks.resolveParticipantIdentity).toHaveBeenCalledWith(
-      expect.objectContaining({ scopedFallbackToken: SCOPE_TOKEN })
+      expect.objectContaining({ scopedFallbackToken: SCOPE_TOKEN }),
+      { targetChatbotId: CHATBOT_ID }
     )
     expect(mocks.authorizeIdentityForChatbot).toHaveBeenCalledWith(
       { participantId: 'guest-1', authMode: 'anonymous' },
@@ -137,25 +147,40 @@ describe('chatbot layout access', () => {
     )
   })
 
-  test('does not load chatbot data when participant access fails', async () => {
+  test('renders the access-denied card when participant access fails', async () => {
     mocks.resolveParticipantIdentity.mockResolvedValue({
       response: Response.json({ error: 'unauthorized' }, { status: 401 }),
     })
 
-    await expect(
-      ChatLayout({
-        children: null,
-        params: Promise.resolve({ chatbotId: CHATBOT_ID }),
-      })
-    ).rejects.toThrow('not found')
+    const layout = await ChatLayout({
+      children: null,
+      params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+    })
 
+    expect(layout.props).toMatchObject({ dataCy: 'chat-access-denied' })
+    expect(mocks.notFound).not.toHaveBeenCalled()
     expect(mocks.authorizeIdentityForChatbot).not.toHaveBeenCalled()
     expect(mocks.getChatbotOr404).not.toHaveBeenCalled()
   })
 
-  test('does not load chatbot data when authorization fails', async () => {
+  test('renders the access-denied card when authorization fails', async () => {
     mocks.authorizeIdentityForChatbot.mockResolvedValue({
       response: Response.json({ error: 'forbidden' }, { status: 403 }),
+    })
+
+    const layout = await ChatLayout({
+      children: null,
+      params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+    })
+
+    expect(layout.props).toMatchObject({ dataCy: 'chat-access-denied' })
+    expect(mocks.notFound).not.toHaveBeenCalled()
+    expect(mocks.getChatbotOr404).not.toHaveBeenCalled()
+  })
+
+  test('keeps the not-found response when the chatbot is missing or unpublished', async () => {
+    mocks.getChatbotOr404.mockResolvedValue({
+      response: Response.json({ error: 'Chatbot not found' }, { status: 404 }),
     })
 
     await expect(
@@ -164,7 +189,5 @@ describe('chatbot layout access', () => {
         params: Promise.resolve({ chatbotId: CHATBOT_ID }),
       })
     ).rejects.toThrow('not found')
-
-    expect(mocks.getChatbotOr404).not.toHaveBeenCalled()
   })
 })
