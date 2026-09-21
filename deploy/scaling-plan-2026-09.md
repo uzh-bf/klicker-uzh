@@ -51,7 +51,7 @@ limits are unchanged.
 Use rounded memory requests at or above the staging VPA target where the existing
 request is too small. This is a conservative sizing policy, not a literal copy
 of Goldilocks' Burstable view. Retain larger existing requests and existing
-memory limits except for the normal response worker and Manage. Retain existing
+memory limits except for auth, the normal response worker and Manage. Retain existing
 CPU requests except for `backendGraphql`, whose request increases from 50m to
 100m. The response worker needs headroom above its new request; Manage gets
 additional memory headroom. Assessment resource corrections
@@ -59,7 +59,7 @@ are independent of the excluded assessment replica increases.
 
 | Values key                                    | Request before → proposed | Limit change                    |
 | --------------------------------------------- | ------------------------- | ------------------------------- |
-| `auth`                                        | 50Mi → 192Mi              | None (200Mi)                    |
+| `auth`                                        | 50Mi → 192Mi              | 200Mi → 512Mi                   |
 | `frontendManage`                              | 50Mi → 192Mi              | 200Mi → 256Mi                   |
 | `frontendControl`                             | 50Mi → 128Mi              | None (200Mi)                    |
 | `olatApi`                                     | 50Mi → 128Mi              | None (200Mi)                    |

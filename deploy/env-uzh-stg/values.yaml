@@ -191,7 +191,7 @@ auth:
       memory: 192Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 512Mi
 
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
