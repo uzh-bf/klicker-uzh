@@ -94,6 +94,10 @@ hatchet:
     projectId: "klicker-course-materials"
     sourceGatewayUrl: ""
     workerDisabled: false
+    # Bound on a KB ingestion operation that the provider never reports as
+    # terminal, applied by monitor-kb-ingestions. Empty keeps the worker
+    # default of six hours.
+    timeoutSeconds: ""
   kbGraph:
     disabled: false
     hostPort: ""
@@ -267,6 +271,17 @@ chat:
   tolerations: []
 
   affinity: {}
+
+# Deployment-controlled binding for the scoped KB route of Doc Query. All three
+# values together switch Chat and the GraphQL backend to scope-token transport
+# authentication for the modern KB server, which then ignores the stored
+# bearer. Leaving them empty keeps the legacy transport bearer. Partial
+# configuration fails chart rendering.
+docQuery:
+  scopedMcp:
+    serverId: ''
+    legacyUrl: ''
+    url: ''
 
 mcpStudent:
   enabled: true
@@ -485,9 +500,6 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
-
-  kbIngestionDisabled: false
-  kbGraphDisabled: false
 
   knowledgeGraph:
     host: ''
