@@ -35,8 +35,8 @@ async function renderAccessDenied() {
     <ChatRecoveryCard
       dataCy="chat-access-denied"
       logoAlt={t('chat.sidebar.logoAlt')}
-      title={t('chat.recovery.errorTitle')}
-      message={t('chat.recovery.errorMessage')}
+      title={t('chat.recovery.accessDeniedTitle')}
+      message={t('chat.recovery.accessDeniedMessage')}
     >
       <Link
         data-cy="chat-access-denied-home"
