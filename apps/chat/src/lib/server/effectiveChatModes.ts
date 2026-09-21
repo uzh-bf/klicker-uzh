@@ -1,4 +1,7 @@
-import { normalizeChatbotStandardModeConfig } from '@klicker-uzh/util'
+import {
+  isChatbotStandardModeKey,
+  normalizeChatbotStandardModeConfig,
+} from '@klicker-uzh/util'
 import { DEFAULT_MODE_DESCRIPTIONS } from '@/src/lib/config/mode-descriptions'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 
@@ -173,12 +176,6 @@ function isModeExplicitlyDisabled(
   return modeConfig?.enabled === false
 }
 
-function isTypedStandardMode(
-  mode: string
-): mode is 'tutor' | 'explainer' | 'quizzer' {
-  return mode === 'tutor' || mode === 'explainer' || mode === 'quizzer'
-}
-
 function isStandardModeEnabled(
   standardModeConfig: unknown,
   systemPrompts: unknown,
@@ -189,7 +186,7 @@ function isStandardModeEnabled(
     systemPrompts
   )
 
-  if (isTypedStandardMode(mode)) {
+  if (isChatbotStandardModeKey(mode)) {
     if (mode === 'tutor') return normalizedConfig.tutorEnabled
     if (mode === 'explainer') return normalizedConfig.explainerEnabled
     return normalizedConfig.quizzerEnabled

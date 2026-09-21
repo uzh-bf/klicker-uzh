@@ -1,4 +1,6 @@
+import { CHATBOT_STANDARD_MODE_KEYS } from '@klicker-uzh/util'
 import { describe, expect, test } from 'vitest'
+import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
@@ -33,6 +35,14 @@ function config({
 }
 
 describe('effective chatbot modes', () => {
+  // The shared key list decides which modes carry a standard-mode flag, so it
+  // has to name exactly the modes the runtime offers.
+  test('matches the shared standard-mode keys to the prompt registry', () => {
+    expect([...CHATBOT_STANDARD_MODE_KEYS].sort()).toEqual(
+      Object.keys(DEFAULT_PROMPT).sort()
+    )
+  })
+
   test('composes platform and stored modes while preserving custom copy', () => {
     expect(
       resolveEffectiveChatModeOptions(
