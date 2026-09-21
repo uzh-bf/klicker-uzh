@@ -30,6 +30,18 @@ export default {
       quizzerDescription:
         'Übe mit prüfungsnahen Fragen aus den Kursunterlagen, jeweils eine nach der anderen, mit Rückmeldung.',
     },
+    dataUse: {
+      accountTitle: 'Datennutzung für Ihr Konto',
+      guestTitle: 'Gastkonto und Datennutzung',
+      accountIntro:
+        'Der Chatbot antwortet in Ihrem Namen und speichert die Unterhaltung auf Ihrem KlickerUZH-Konto. Was gespeichert wird, beschreibt die [Datenschutzerklärung](https://www.klicker.uzh.ch/privacy_policy). Nachfolgend bestätigen Sie die beiden optionalen Zwecke; Sie können beide später in den Chat-Einstellungen ändern.',
+      guestIntro:
+        'Beim Chatten ohne Anmeldung entsteht ein KlickerUZH-Gastkonto. Es enthält keine Personendaten und kein Passwort, aber die Unterhaltung, Ihre Auswahl und die zugehörigen Nutzungsdaten werden darauf gespeichert. Was gespeichert wird, beschreibt die [Datenschutzerklärung](https://www.klicker.uzh.ch/privacy_policy). Nachfolgend nehmen Sie dieselben beiden optionalen Zwecke vor; Sie können sie später in den Chat-Einstellungen ändern.',
+      settingsTitle: 'Datennutzung',
+      settingsIntro:
+        'Ändern Sie die optionalen Zwecke für Ihr KlickerUZH-Konto. Forschung und Learning Analytics sind freiwillig, und ein Widerspruch gilt für deren künftige Nutzung.',
+      settingsLoading: 'Einstellungen zur Datennutzung werden geladen…',
+    },
     settingsPanel: {
       title: 'Einstellungen',
       aiModelLabel: 'KI-Modell',

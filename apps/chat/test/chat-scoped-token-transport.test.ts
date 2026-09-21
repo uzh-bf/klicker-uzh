@@ -28,6 +28,7 @@ import {
 import { signChatGuestToken } from '../src/lib/server/ltiGuest'
 import { signPwaEmbedSessionToken } from '../src/lib/server/pwaEmbed'
 import { proxy } from '../src/proxy'
+import { acknowledgedParticipantDataUse } from './participant-data-use-support'
 
 const CHATBOT_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 const OTHER_CHATBOT_ID = '9a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c3d'
@@ -46,6 +47,7 @@ function chatbotUrl(query: string, chatbotId = CHATBOT_ID) {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.participantFindUnique.mockResolvedValue({
+    ...acknowledgedParticipantDataUse,
     isActive: true,
     accounts: [],
   })

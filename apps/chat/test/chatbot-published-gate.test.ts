@@ -26,7 +26,9 @@ vi.mock('jose', () => ({
   jwtVerify: mocks.jwtVerify,
 }))
 
+import { PARTICIPANT_DATA_USE_COMPLETION_REQUIRED } from '../src/lib/dataUse'
 import { getChatbotOr404, withChatbotAuth } from '../src/lib/server/apiGuards'
+import { acknowledgedParticipantDataUse } from './participant-data-use-support'
 
 // A syntactically valid UUID so the guard proceeds to the DB lookup.
 const VALID_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -48,6 +50,7 @@ describe('getChatbotOr404 publication gate', () => {
       payload: { sub: 'participant-1', role: 'PARTICIPANT' },
     })
     mocks.participantFindUnique.mockResolvedValue({
+      ...acknowledgedParticipantDataUse,
       isActive: true,
       accounts: [{ type: 'credential' }],
     })
@@ -296,5 +299,74 @@ describe('getChatbotOr404 publication gate', () => {
     if ('response' in result) {
       expect(result.response.status).toBe(401)
     }
+  })
+
+  test('denies attributed access while the disclosure is unacknowledged', async () => {
+    mocks.findUnique.mockResolvedValue({
+      courseId: 'course-1',
+      status: 'PUBLISHED',
+    })
+    mocks.participantFindUnique.mockResolvedValue({
+      isActive: true,
+      accounts: [{ type: 'credential' }],
+    })
+
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(403)
+      await expect(result.response.json()).resolves.toEqual({
+        error: PARTICIPANT_DATA_USE_COMPLETION_REQUIRED,
+      })
+    }
+  })
+
+  test('denies attributed access when the acknowledgement is stale', async () => {
+    mocks.findUnique.mockResolvedValue({
+      courseId: 'course-1',
+      status: 'PUBLISHED',
+    })
+    mocks.participantFindUnique.mockResolvedValue({
+      ...acknowledgedParticipantDataUse,
+      dataUseAcknowledgedVersion: '2026-01-01',
+      isActive: true,
+      accounts: [{ type: 'credential' }],
+    })
+
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID
+    )
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(403)
+    }
+  })
+
+  test('keeps the completion surface reachable for an incomplete account', async () => {
+    mocks.findUnique.mockResolvedValue({
+      courseId: 'course-1',
+      status: 'PUBLISHED',
+    })
+    mocks.participantFindUnique.mockResolvedValue({
+      isActive: true,
+      accounts: [{ type: 'credential' }],
+    })
+
+    const result = await withChatbotAuth(
+      accountRequest('valid-token'),
+      VALID_ID,
+      { allowIncompleteDataUse: true }
+    )
+
+    expect(result).toMatchObject({
+      participantId: 'participant-1',
+      chatbot: { courseId: 'course-1' },
+    })
   })
 })

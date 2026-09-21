@@ -19,6 +19,7 @@ import { useEmbedded } from '../hooks/useEmbedded'
 import { useEmbeddedChatContext } from '../hooks/useEmbeddedChatContext'
 import { usePwaEmbedTokenBootstrap } from '../hooks/usePwaEmbedTokenBootstrap'
 import { authedFetch } from '../lib/client/authedFetch'
+import type { ChatDataUseState } from '../lib/dataUse'
 import { getKlickerChatContextLabel } from '../services/chatContext'
 import { useChatContextStore } from '../stores/chatContextStore'
 import { useChatStore } from '../stores/chatStore'
@@ -27,13 +28,14 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { MobileCreditsBar } from './credits-footer'
 import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedToolbar } from './embedded-settings'
+import { HandoffPrefill } from './handoff-prefill'
 import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import {
   ChatKnowledgeGraphPanel,
   useChatGraphPanel,
 } from './knowledge-graph/ChatKnowledgeGraphPanel'
-import { HandoffPrefill } from './handoff-prefill'
 import { ModeSwitcher } from './mode-switcher'
+import { ParticipantDataUseGate } from './participant-data-use'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -59,6 +61,12 @@ interface AssistantProps {
   readonly initialModeOptions: Record<string, string>
   readonly initialModeOptionsAreFallback?: boolean
   readonly knowledgeGraphVisible: boolean
+  /**
+   * Resolved on the server so the gate can render before any chat request is
+   * attempted; the same state is enforced again by every attributed route.
+   */
+  readonly dataUseState: ChatDataUseState
+  readonly isGuest: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -81,6 +89,8 @@ export function Assistant({
   initialModeOptions,
   initialModeOptionsAreFallback = false,
   knowledgeGraphVisible,
+  dataUseState,
+  isGuest,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -114,6 +124,16 @@ export function Assistant({
           participationMessage ??
           t('chat.assistant.participationRequiredDefaultMessage')
         }
+      />
+    )
+  }
+
+  if (!dataUseState.complete) {
+    return (
+      <ParticipantDataUseGate
+        chatbotId={chatbot.id}
+        isGuest={isGuest}
+        state={dataUseState}
       />
     )
   }
