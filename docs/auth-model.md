@@ -62,6 +62,18 @@ call answers with `PARTICIPANT_DATA_USE_COMPLETION_REQUIRED`, storing the return
 destination through `participantDataUseReturn`, which accepts local destinations
 and removes launch credentials.
 
+Live-quiz and assessment responses bypass GraphQL, so the response API applies
+the same predicate at its own ingress
+(`apps/response-api/src/participantAdmission.ts`) before pushing an event.
+Assessment submissions are always attributed and are therefore gated for every
+request. Regular submissions are gated only when the request carries a
+`participant_token` that verifies as a registered participant; anonymous and
+temporary participants have no account disclosure to apply, and an unverifiable
+cookie keeps the anonymous attribution it already had instead of turning a
+live-quiz answer into an error. A rejected submission answers with the same
+`PARTICIPANT_DATA_USE_COMPLETION_REQUIRED` code the GraphQL gate uses, so the PWA
+reacts with the same redirect to `/account/data-use`.
+
 Account creation and completion record the acknowledgement and independent
 choices through the revisioned data-use service. Creation, completion, and
 settings all submit the disclosure version bundled with the displayed

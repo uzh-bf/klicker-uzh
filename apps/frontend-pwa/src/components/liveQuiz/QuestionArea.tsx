@@ -12,8 +12,13 @@ import dayjs from 'dayjs'
 import localforage from 'localforage'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
 import React, { useEffect, useRef, useState } from 'react'
 import { isDeepEqual } from 'remeda'
+import {
+  participantDataUseReturn,
+  storeDataUseReturnTarget,
+} from '../../lib/participantDataUseReturn'
 import useRemainingInstances from '../hooks/useRemainingInstances'
 import { loadStoredResponse, updateStoredResponses } from './storageHelpers'
 
@@ -56,6 +61,7 @@ function QuestionArea({
   execution,
 }: QuestionAreaProps): React.ReactElement {
   const t = useTranslations()
+  const router = useRouter()
 
   const [showConfetti, setShowConfetti] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -260,6 +266,18 @@ function QuestionArea({
         message: t('pwa.assessment.submissionUnauthorizedError'),
         type: 'error',
       })
+    }
+    // status code 403 (regular and assessment responses) -> the account has not
+    // confirmed the current data-use settings yet
+    else if (statusCode === 403) {
+      toast({
+        message: t('pwa.assessment.submissionDataUseRequired'),
+        type: 'error',
+      })
+      storeDataUseReturnTarget(
+        participantDataUseReturn(window.location.href, window.location.origin)
+      )
+      void router.replace('/account/data-use')
     }
     // status code 404 (regular and assessment responses) -> submission endpoint not found
     else if (statusCode === 404) {

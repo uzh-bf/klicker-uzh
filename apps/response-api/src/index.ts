@@ -1,10 +1,25 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  participantAccountDataUseSelect,
+  verifyJWT,
+  type JWTPayload,
+} from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
 import { Redis } from 'ioredis'
 import { createHash } from 'node:crypto'
+import {
+  admitParticipantToken,
+  admitRegisteredParticipant,
+} from './participantAdmission.js'
+
+const loadDataUseState = (participantId: string) =>
+  prisma.participant.findUnique({
+    where: { id: participantId },
+    select: participantAccountDataUseSelect,
+  })
 
 const redis = new Redis({
   family: 4,
@@ -113,6 +128,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
 
   // Only forward participant-related cookies. If both exist, include both.
   let cookie: string | undefined
+  let participantToken: string | undefined
   if (typeof req.headers['cookie'] === 'string') {
     const raw = req.headers['cookie']
     const parts = raw.split(';').map((s) => s.trim())
@@ -128,6 +144,23 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     if (forwarded.length > 0) {
       cookie = forwarded.join('; ')
     }
+    if (participantPair) {
+      participantToken = participantPair.slice('participant_token='.length)
+    }
+  }
+
+  // A registered participant account must have acknowledged the current
+  // data-use disclosure before its responses are collected. Anonymous and
+  // temporary participants carry no account and keep their existing handling.
+  const participantAdmission = await admitParticipantToken(participantToken, {
+    verifyParticipantToken: (token) =>
+      verifyJWT(token, process.env.APP_SECRET as string),
+    loadDataUseState,
+  })
+  if (!participantAdmission.admitted) {
+    return sendJson(req, res, participantAdmission.status, {
+      error: participantAdmission.error,
+    })
   }
 
   const responseTimestamp = Date.now()
@@ -265,6 +298,23 @@ async function handleAddAssessmentResponse(
     })
     return sendJson(req, res, 401, {
       error: 'missing_invalid_assessment_cookie',
+    })
+  }
+
+  // Assessment responses are always attributed, so the account gate applies to
+  // every submission: the participant must have acknowledged the current
+  // data-use disclosure before the response is recorded and audited.
+  const participantAdmission = await admitRegisteredParticipant(
+    user.sub,
+    loadDataUseState
+  )
+  if (!participantAdmission.admitted) {
+    hatchetClient.events.push('create-audit-log-entry', {
+      info: `[ERROR] [AddResponse Assessment] Rejected response for participant ${user.sub}: the account has not completed the current data-use disclosure.`,
+    })
+
+    return sendJson(req, res, participantAdmission.status, {
+      error: participantAdmission.error,
     })
   }
 

@@ -1533,6 +1533,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Sie haben diese Frage bereits beantwortet. Ihre vorherige Antwort wurde gespeichert.',
       submissionUnauthorizedError:
         'Ihr Login konnte nicht korrekt verifiziert werden. Bitte loggen Sie sich erneut ein und beantworten Sie die Frage nochmals.',
+      submissionDataUseRequired:
+        'Ihre Antwort konnte nicht gespeichert werden, weil Sie die aktuellen Einstellungen zur Datennutzung für Ihr Konto noch nicht bestätigt haben. Bitte bestätigen Sie diese und beantworten Sie die Frage erneut.',
       submissionServerError:
         'Beim Abschicken Ihrer Antwort ist ein Serverfehler aufgetreten. Bitte versuchen Sie es erneut.',
       missingAssessmentCourseParticipation:

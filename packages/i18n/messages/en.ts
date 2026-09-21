@@ -1526,6 +1526,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You have already answered this question. Your previous response has been saved.',
       submissionUnauthorizedError:
         'Your login could not be verified correctly. Please log in again and answer the question again.',
+      submissionDataUseRequired:
+        'Your answer could not be saved because you have not confirmed the current data-use settings for your account yet. Please confirm them and answer the question again.',
       submissionServerError:
         'A server error occurred while submitting your answer. Please try again.',
       missingAssessmentCourseParticipation:
