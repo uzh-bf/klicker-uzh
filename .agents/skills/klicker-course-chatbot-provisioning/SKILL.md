@@ -62,10 +62,12 @@ One command in the data-ingestion checkout publishes a reviewed package:
 
 ```bash
 ingestion-cli corpus-import publish --package <dir> --corpus <slug> \
-  [--previous-catalog <prior final_catalog.json>] [--delete-missing] [--apply]
+  [--target-file <binding.yaml>] [--previous-catalog <prior final_catalog.json>] \
+  [--delete-missing] [--apply]
 ```
 
 - The package is `final_catalog.json` beside its Markdown payloads; prepare it with the acquisition tool, review it, then publish. The scope binding is committed at `modules/ingestion-cli/src/ingestion_cli/corpus_targets/<corpus>.yaml`: ingestion `project_id`, `kb_id`, `expected_collection`, `language`, `source_id_prefix`, `resource_version`. A package never chooses its own scope — a typo here decides which KB a corpus overwrites, so every field is required and unknown fields are rejected. One binding per (corpus, environment): `radiosurfvet-stg.yaml` and `radiosurfvet-prd.yaml` name the same corpus in two environments.
+- To add one reviewed corpus to multiple existing KBs, publish the same package once per KB with `--target-file`. Each binding still names exactly one `kb_id`; never widen one binding to a list. Keep bindings that identify a privately selected course cohort outside the repository unless that cohort and its identifiers are approved for storage there.
 - Row identity is the namespaced key `<source_id_prefix>:<record id>` — both the ingestion source id and the producer-facing `external_resource_id` — so a refresh updates the rows it created instead of forking duplicates. A first stable-key apply retires legacy bare-key rows from an earlier lane through `--previous-catalog` plus `--delete-missing` classification.
 - Without `--previous-catalog` every record plans as CREATE. With it, the plan classifies into buckets (DELETE → REPLACE → UPDATE-CONTENT → UPDATE-METADATA → CREATE → REFRESH, plus BLOCKED for classification transitions), deletes first so they free index space before creates run. `--delete-missing` is off by default; name it when the refresh retires rows the package no longer carries. `--max-deletes` (default from the catalog command) makes a delete-heavy plan confirm interactively unless `--yes` is passed — the counts in that confirmation are the counts the apply acts on.
 - Without `--apply` the command is a local plan only: the plan receipt (`records`, `events`, `payloads`, `buckets`, `delete_like`, `delete_missing`, `total_runs`) plus `dropped_by_reason` for records the package itself dropped. Read it before the first apply of a new corpus.
