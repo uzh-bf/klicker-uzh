@@ -155,6 +155,19 @@ the largest correctness risk in the chatbot program.
   sync sees `ours` unchanged and takes `v3`'s inline implementation silently,
   reverting the package-owned token with no conflict to review. See
   "Structural-split hazard" below.
+- 2026-09-21, C3 met. #6197 merged into `v3` as `ffcd3297c2` at 18:55:48Z.
+  `deploy/` parity between `v3` and `v3-ai` is empty at the merged head.
+- 2026-09-21, `v3-ai` advanced independently to `fd81ae5204`
+  (`chore(release): 3.4.0-alpha.81`) while #6197 was open, so the released
+  image already carries the transport change that #6198 delivered package-side.
+  C6's chart values therefore remain the only inert input.
+- 2026-09-21, C4 refreshed now that #6197 is real history. The branch merges the
+  merged `v3` tip instead of pre-merge content, so its ancestor chain matches
+  `v3`. Six paths conflicted (the `shared-components` manifest now merges
+  cleanly, and the auto-merged scope-token test converges because both sides
+  agree). Head is `f719d6790e`; `deploy/` is empty against both branches, no
+  conflict markers remain, and the release bump to `3.4.0-alpha.81` is
+  preserved alongside the dependency union.
 
 ## Known failure mode and merge order
 
@@ -330,6 +343,11 @@ auto-merged `doc-query-scope-token.test.ts` is kept because its assertions
 match the package implementation (fresh token per request, credentials
 stripped, `redirect: 'error'`, target mismatch, and no fetch when signing
 fails).
+
+Refreshed 2026-09-21 after C3 met: #6228 head `f719d6790e`, built from the
+real `v3` merge commit `ffcd3297c2` and refreshed against the `v3-ai` release
+commit `fd81ae5204`. Six conflicts, same resolutions. The PR is no longer a
+draft; its description records the final state.
 
 ### Structural-split hazard (needs a decision)
 
