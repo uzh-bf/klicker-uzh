@@ -653,6 +653,9 @@ backendGraphql:
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
+    # Explicit domain selection stays unavailable until this equals the
+    # revision of the catalog shipped by the deployed backend and workers.
+    domainCatalogRevision: 'kg-domains-v1-793deb4279a163c357bd976868bee17606d6a352f9596a7b961dc4c200f65e72'
     cost:
       currency: 'CHF'
       standardEstimateMinorUnits: '100'
