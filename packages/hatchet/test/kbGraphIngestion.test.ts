@@ -1536,4 +1536,3 @@ describe('KB graph unmetered reservation release', () => {
     expect(prisma.kBGraphQuota.updateMany).not.toHaveBeenCalled()
   })
 })
-
