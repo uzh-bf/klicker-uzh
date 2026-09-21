@@ -73,6 +73,19 @@ const REGISTRY_CONFIG_ACCEPT =
 const REGISTRY_CONFIG_CONTENT_TYPES = Object.freeze(
   REGISTRY_CONFIG_ACCEPT.split(', ')
 )
+// A registry serves a manifest where it is addressed, but a blob only through
+// a redirect to the storage host that holds the bytes. GHCR redirects to this
+// host, so a blob read has to follow exactly one hop. The hop is accepted only
+// when it stays on that host and the bytes it returns still hash to the digest
+// that was requested, so neither an unexpected redirect nor a substituted
+// storage response can decide what the promotion reads.
+const REGISTRY_BLOB_REDIRECT_HOSTS = Object.freeze([
+  'pkg-containers.githubusercontent.com',
+])
+const REGISTRY_BLOB_REDIRECT_STATUSES = Object.freeze([301, 302, 303, 307, 308])
+const REGISTRY_BLOB_STORAGE_CONTENT_TYPES = Object.freeze([
+  'application/octet-stream',
+])
 // The publication publishes one ARM64 image per target, so a manifest that
 // describes another platform, or several, cannot be the promoted digest.
 const PUBLICATION_ARCHITECTURE = Object.freeze({
@@ -590,9 +603,28 @@ function publisherJobIds(workflow) {
   return workflow.jobs.map((job) => job.id)
 }
 
+// A required job name is the trusted inventory's own identifier for that job,
+// but a job that delegates to a reusable workflow is reported under the caller
+// name and the callee name joined by " / ". The Sonar job is the one required
+// job that now calls a reusable workflow, so the expected identifier appears as
+// "SonarCloud / SonarCloud". Matching the identifier as a prefix keeps the
+// trusted name mandatory -- a candidate cannot substitute an unrelated job --
+// while tolerating the expansion GitHub performs for the delegation.
+function jobNameMatches(reportedName, expectedJobId) {
+  if (reportedName === expectedJobId) return true
+  return (
+    typeof reportedName === 'string' &&
+    reportedName.startsWith(expectedJobId + ' / ') &&
+    reportedName.length > expectedJobId.length + 3
+  )
+}
+
 function jobState(job, expectedJobId, candidateSha) {
   if (!job) return 'missing'
-  if (job.name !== expectedJobId || job.head_sha !== candidateSha) {
+  if (
+    !jobNameMatches(job.name, expectedJobId) ||
+    job.head_sha !== candidateSha
+  ) {
     return 'wrong_evidence'
   }
   if (job.status !== 'completed') return 'running'
@@ -676,7 +708,13 @@ async function collectWorkflowEvidence({
   // only the ARM64 publisher jobs carry an image reference for promotion.
   const publisherIds = new Set(publisherJobIds(workflow))
   for (const requiredJobId of requiredJobIds(workflow)) {
-    const matches = jobs.filter((job) => job?.name === requiredJobId)
+    // Matching tolerates the reusable-workflow name expansion, so a required
+    // job that delegates is still proved from the run's own job list. More than
+    // one match stays a hard failure: two reported names cannot both be the one
+    // trusted job this identifier names.
+    const matches = jobs.filter((job) =>
+      jobNameMatches(job?.name, requiredJobId)
+    )
     if (matches.length > 1) {
       return {
         path: workflow.path,
@@ -1443,13 +1481,19 @@ async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
     const url = allowed.blobs
       ? registryBlobUrl(repository, reference)
       : registryManifestUrl(repository, reference)
-    const request = (header) =>
-      fetchImpl(url, {
+    // Only a blob is served through a redirect, so a manifest keeps failing
+    // fast on one instead of following it.
+    const request = (header, target = url, redirect = 'error') =>
+      fetchImpl(target, {
         headers: { accept, ...(header ? { authorization: header } : {}) },
-        redirect: 'error',
+        redirect,
       })
-    let response = await request(authorization)
-    if (response.redirected) {
+    let response = await request(
+      authorization,
+      url,
+      allowed.blobs ? 'manual' : 'error'
+    )
+    if (!allowed.blobs && response.redirected) {
       throw new Error(label + ' registry response redirected')
     }
     if (response.status === 401) {
@@ -1462,10 +1506,40 @@ async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
         repository,
         tag: digest,
       })
-      response = await request(authorization)
-      if (response.redirected) {
+      response = await request(
+        authorization,
+        url,
+        allowed.blobs ? 'manual' : 'error'
+      )
+      if (!allowed.blobs && response.redirected) {
         throw new Error(label + ' registry response redirected')
       }
+    }
+    let storage = false
+    if (
+      allowed.blobs &&
+      REGISTRY_BLOB_REDIRECT_STATUSES.includes(response.status)
+    ) {
+      const location = String(response.headers.get('location') ?? '')
+      let target
+      try {
+        target = new URL(location, url)
+      } catch {
+        throw new Error(label + ' registry blob redirect is not a URL')
+      }
+      if (
+        target.protocol !== 'https:' ||
+        !REGISTRY_BLOB_REDIRECT_HOSTS.includes(target.hostname)
+      ) {
+        throw new Error(label + ' registry blob redirect left its storage host')
+      }
+      // The signed storage URL carries its own authorization, so the registry
+      // token stays with the registry.
+      response = await fetchImpl(target.href, { redirect: 'error' })
+      if (response.redirected) {
+        throw new Error(label + ' registry blob redirect chained')
+      }
+      storage = true
     }
     if (!response.ok) {
       throw new Error(label + ' registry response was ' + response.status)
@@ -1474,17 +1548,24 @@ async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
       .split(';', 1)[0]
       .trim()
       .toLowerCase()
-    if (!allowed.types.includes(contentType)) {
+    const accepted =
+      allowed.types.includes(contentType) ||
+      (storage && REGISTRY_BLOB_STORAGE_CONTENT_TYPES.includes(contentType))
+    if (!accepted) {
       throw new Error(
         label + ' registry response has an unexpected content type'
       )
     }
-    let body
+    let buffer
     try {
-      body = Buffer.from(await response.arrayBuffer()).toString('utf8')
+      buffer = Buffer.from(await response.arrayBuffer())
     } catch {
       throw new Error(label + ' registry response was incomplete')
     }
+    if (allowed.blobs && 'sha256:' + sha256Bytes(buffer) !== reference) {
+      throw new Error(label + ' registry blob is not the requested digest')
+    }
+    const body = buffer.toString('utf8')
     try {
       return JSON.parse(body)
     } catch {
@@ -2341,6 +2422,7 @@ module.exports = {
   collectScanAdmission,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
+  fetchImageRevision,
   getCandidateDefinitions,
   getCandidateTargetIds,
   getReleaseRef,

@@ -5,9 +5,9 @@ external EduID, no `/etc/hosts` edits — clone, route through devrouter, and ru
 The devcontainer owns the whole stack (toolchain, Postgres, 3× Redis, MailHog,
 Hatchet, install + build + seed, `turbo dev`);
 [devrouter](https://github.com/rschlaefli/devrouter) fronts it on a shared
-`:443` / `:5432`. Linked worktrees publish no host ports and can coexist;
-the primary checkout intentionally keeps fixed localhost ports and is
-one-at-a-time.
+`:443` / `:5432`. Linked worktrees publish only ephemeral host ports and can
+coexist; the primary checkout keeps fixed localhost application ports,
+publishes its database on an ephemeral loopback port, and is one-at-a-time.
 
 > **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
 > frontend-control, olat-api, response-api, lti-service, chat**, and the **two
@@ -24,7 +24,7 @@ You can run the devcontainer in two modes:
 
 ### Mode 1: Primary checkout
 
-The primary checkout keeps fixed localhost ports and receives stable unnamespaced devrouter routes:
+The primary checkout keeps fixed localhost application ports, publishes the database on an ephemeral loopback port, and receives stable unnamespaced devrouter routes:
 
 1. Run one-time setup: `devrouter setup --yes`.
 2. Start and prove the checkout: `devrouter ensure .`.
@@ -37,13 +37,13 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
    - Auth Service: `http://localhost:3010`
    - MailHog UI: `http://localhost:8025`
    - Hatchet Dashboard: `http://localhost:8888`
-   - Postgres DB: `localhost:5432`
+   - Postgres DB: ephemeral loopback port (`docker port <postgres-container> 5432/tcp`), or `db.klicker.localhost:5432` through the router with direct-SSL SNI (libpq 17+)
 
 ### Mode 2: Linked checkout
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.72 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.1.2 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -93,7 +93,7 @@ marker creation to work around a refusal.
 
 ## Profiles
 
-This repository pins devrouter 0.0.72. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.1.2. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -194,10 +194,11 @@ continues to run directly in the official Playwright container.
 
 The monorepo runs the selected apps in **one container** via `turbo dev`;
 devrouter's Traefik (on `devnet`) routes each hostname to that container's
-internal port. The linked-worktree overlay publishes no host ports and exposes
-`${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. The primary overlay exposes
-stable unnamespaced aliases plus fixed localhost ports. `.devrouter.yml` uses
-the selected checkout identity in every proxy upstream.
+internal port. Both overlays publish the database on an ephemeral loopback port
+and expose a database alias; the linked overlay uses `${WORKSPACE}-app` and
+`${WORKSPACE}-db`, while the primary overlay uses stable unnamespaced aliases
+plus fixed localhost application ports. `.devrouter.yml` uses the selected
+checkout identity in every proxy upstream.
 
 | What              | Host                                                 | Upstream (devnet)       |
 | ----------------- | ---------------------------------------------------- | ----------------------- |
@@ -324,7 +325,7 @@ analytics image and lint CI so the root quality gate runs inside the container.
   Generation failures abort startup and retain the previous output; unchanged
   output is not rewritten.
 - Generating updated configuration does not change mounts in an existing
-  container. Devrouter 0.0.72 does not support warm mount reconciliation.
+  container. Devrouter 0.1.2 does not support warm mount reconciliation.
   Do not recreate or reset a retained workspace to apply a package addition or
   removal. Keep its data intact and resolve the supported lifecycle procedure
   separately. Unchanged package inventories retain the same volume names.
@@ -368,7 +369,7 @@ and confirm its provider is stopped and its routes are gone before restarting.
 The repository's `.devcontainer/recover-runtime.sh` is a consumer callback for
 the separately reviewed devrouter retained-recovery implementation. It is not
 an ordinary startup hook or a command to invoke manually. The repository-pinned
-0.0.72 release does not provide this recovery contract. The recovery performed
+0.1.2 release does not provide this recovery contract. The recovery performed
 for this branch used devrouter source revision
 `aacf9ea595b9c76b0aaf66c0f4d52179b05197d8`, whose `recovery-preview`,
 `recovery-apply` and `recovery-resume` commands own the lifecycle locks, exact
