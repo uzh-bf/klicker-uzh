@@ -1,0 +1,6 @@
+mutation ApproveChatbotPublication($id: String!) {
+  approveChatbotPublication(id: $id) {
+    id
+    status
+  }
+}
