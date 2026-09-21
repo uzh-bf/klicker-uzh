@@ -421,6 +421,7 @@ describe('scoped KB transport over real HTTP', () => {
   })
 
   test('aborts an in-flight scoped request when the client closes', async () => {
+    const start = recorded.length
     const target = new URL(scopedUrl)
     const transport = new StreamableHTTPClientTransport(target, {
       requestInit: { redirect: 'error' },
@@ -435,7 +436,7 @@ describe('scoped KB transport over real HTTP', () => {
 
     const startedAt = performance.now()
     const pending = client.listTools()
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 40))
+    await vi.waitFor(() => expect(recorded[start]?.kbId).toBe(SLOW_KB_ID))
     await client.close()
 
     await expect(pending).rejects.toThrow()
