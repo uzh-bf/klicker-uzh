@@ -1483,7 +1483,16 @@ async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
         redirect: 'manual',
       })
     let response = await request(authorization)
-    if (response.redirected || (response.status >= 300 && response.status < 400)) {
+    if (allowed.blobs && response.status === 307) {
+      const location = new URL(response.headers.get('location') ?? '')
+      if (location.protocol !== 'https:' || location.hostname !== 'pkg-containers.githubusercontent.com') {
+        throw new Error(label + ' registry blob redirect is outside trusted storage')
+      }
+      response = await fetchImpl(location, {
+        headers: { accept },
+        redirect: 'manual',
+      })
+    } else if (response.redirected || (response.status >= 300 && response.status < 400)) {
       throw new Error(
         label + ' registry response redirected ' + response.status + ' to ' + response.headers.get('location')
       )
