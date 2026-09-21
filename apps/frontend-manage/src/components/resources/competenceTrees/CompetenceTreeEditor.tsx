@@ -10,13 +10,14 @@ import {
   DuplicateCompetenceTreeDocument,
   ReplaceCompetenceTreeDocument,
   UpdateCompetenceTreeMetadataDocument,
+  UserProfileDocument,
   ValidateCompetenceTreeDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useUnsavedChangesGuard } from '@lib/hooks/useUnsavedChangesGuard'
 import { Button, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import AssignmentTable from './AssignmentTable'
 import CoverageMatrix from './CoverageMatrix'
@@ -26,12 +27,12 @@ import MetadataEditor from './MetadataEditor'
 import ScaleVersionPanel from './ScaleVersionPanel'
 import {
   applyCompetenceTreeStructuralCommand,
-  CompetenceTreeStructuralCommand,
-  CompetenceTreeStructuralState,
+  type CompetenceTreeStructuralCommand,
+  type CompetenceTreeStructuralState,
   getChildren,
 } from './treeHelpers'
 import {
-  CompetenceTreeForm,
+  type CompetenceTreeForm,
   competenceTreeFormToInput,
   competenceTreeToForm,
   createDefaultCompetenceTreeForm,
@@ -41,6 +42,12 @@ import ValidationPanel from './ValidationPanel'
 function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   const t = useTranslations()
   const router = useRouter()
+  const { data: profile } = useQuery(UserProfileDocument)
+  const draftKey = profile?.userProfile?.id
+    ? `competence-tree-draft:v1:${profile.userProfile.id}:${treeId ?? 'new'}`
+    : null
+  const [localDraft, setLocalDraft] = useState<CompetenceTreeForm | null>(null)
+  const [draftSaved, setDraftSaved] = useState(false)
   const defaultForm = useMemo(
     () =>
       createDefaultCompetenceTreeForm({
@@ -119,11 +126,60 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   }, [loadedTreeId, tree])
 
   const { allowNextNavigation, confirmNavigation } = useUnsavedChangesGuard({
-    isDirty,
+    isDirty: isDirty && JSON.stringify(form) !== JSON.stringify(localDraft),
     message: t('manage.competenceTree.leaveUnsavedDescription'),
   })
 
+  useEffect(() => {
+    if (!draftKey || isLocked || !isOwner) return
+    try {
+      const stored = localStorage.getItem(draftKey)
+      if (!stored) {
+        setLocalDraft(null)
+        return
+      }
+      const value = JSON.parse(stored)
+      if (
+        value.version === 1 &&
+        value.form &&
+        typeof value.form.name === 'string' &&
+        typeof value.form.displayName === 'string' &&
+        ['levels', 'nodes', 'coverages', 'assignments'].every((key) =>
+          Array.isArray(value.form[key])
+        )
+      ) {
+        setLocalDraft(value.form)
+      }
+    } catch {
+      setLocalDraft(null)
+    }
+  }, [draftKey, isLocked, isOwner])
+
+  const saveLocalDraft = () => {
+    if (!draftKey) return
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ version: 1, form }))
+      setLocalDraft(form)
+      setDraftSaved(true)
+    } catch {
+      setRequestError(t('manage.competenceTree.localDraftError'))
+    }
+  }
+
+  const clearLocalDraft = () => {
+    if (draftKey) {
+      try {
+        localStorage.removeItem(draftKey)
+      } catch {
+        /* Saving the server tree still succeeded. */
+      }
+    }
+    setLocalDraft(null)
+    setDraftSaved(false)
+  }
+
   const handleFormChange = (nextForm: CompetenceTreeForm) => {
+    setDraftSaved(false)
     validationVersionRef.current += 1
     setRequestError(null)
     setEditorState((current) => {
@@ -150,6 +206,7 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
   const handleStructuralCommand = (
     command: CompetenceTreeStructuralCommand
   ) => {
+    setDraftSaved(false)
     validationVersionRef.current += 1
     setRequestError(null)
     setEditorState((current) =>
@@ -234,12 +291,14 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
           })
           setSavedForm(nextForm)
           setLoadedTreeId(updated.id)
+          clearLocalDraft()
         }
       } else {
         const result = await createTree({ variables: { input } })
         const created = result.data?.createCompetenceTree
         if (!created) throw new Error(t('manage.competenceTree.saveError'))
         setSavedForm(formToSave)
+        clearLocalDraft()
         allowNextNavigation()
         await router.replace(`/resources/competenceTrees/${created.id}`)
       }
@@ -327,6 +386,17 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
               </Button.Label>
             </Button>
           )}
+          {isOwner && !isLocked && (
+            <Button
+              onClick={saveLocalDraft}
+              disabled={!draftKey || saving}
+              data={{ cy: 'competence-tree-save-draft' }}
+            >
+              <Button.Label>
+                {t('manage.competenceTree.saveDraft')}
+              </Button.Label>
+            </Button>
+          )}
           {isOwner && (
             <Button
               primary
@@ -369,6 +439,43 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
         />
       )}
 
+      {!isLocked && isOwner && (
+        <UserNotification
+          type="info"
+          message={t('manage.competenceTree.draftDescription')}
+          className={{ root: 'mb-4' }}
+          data={{ cy: 'competence-tree-draft-notice' }}
+        />
+      )}
+      {!isLocked && isOwner && localDraft && (
+        <div
+          className="mb-4 flex flex-wrap items-center gap-3 rounded border border-slate-200 p-3"
+          data-cy="competence-tree-local-draft"
+        >
+          <p className="text-sm">
+            {t(
+              draftSaved
+                ? 'manage.competenceTree.draftSaved'
+                : 'manage.competenceTree.draftAvailable'
+            )}
+          </p>
+          <Button
+            onClick={() => {
+              if (
+                !isDirty ||
+                window.confirm(t('manage.competenceTree.restoreDraftPrompt'))
+              ) {
+                handleFormChange(localDraft)
+              }
+            }}
+            data={{ cy: 'competence-tree-restore-draft' }}
+          >
+            <Button.Label>
+              {t('manage.competenceTree.restoreDraft')}
+            </Button.Label>
+          </Button>
+        </div>
+      )}
       <MetadataEditor
         form={form}
         onChange={handleFormChange}
@@ -409,11 +516,19 @@ function CompetenceTreeEditor({ treeId }: { treeId?: string }) {
         }
       />
       {treeId && tree ? (
-        <ScaleVersionPanel
-          treeId={treeId}
-          treeLevels={tree.levels}
-          assignments={tree.elementAssignments}
-        />
+        <details className="border-t py-5" data-cy="competence-tree-advanced">
+          <summary className="cursor-pointer font-semibold">
+            {t('manage.competenceTree.advancedTitle')}
+          </summary>
+          <p className="my-3 text-sm text-slate-600">
+            {t('manage.competenceTree.advancedDescription')}
+          </p>
+          <ScaleVersionPanel
+            treeId={treeId}
+            treeLevels={tree.levels}
+            assignments={tree.elementAssignments}
+          />
+        </details>
       ) : null}
       <ValidationPanel
         validation={validation}

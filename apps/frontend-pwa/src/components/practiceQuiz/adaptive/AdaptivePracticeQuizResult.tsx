@@ -171,6 +171,9 @@ function AdaptivePracticeQuizResult({
       {!researchOnly && (
         <div className="space-y-3 border-t pt-6">
           <H3>{t('pwa.practiceQuiz.adaptive.profile.title')}</H3>
+          <p className="text-sm text-slate-600">
+            {t('pwa.practiceQuiz.adaptive.profile.evidenceHelp')}
+          </p>
           <AdaptiveCompetenceProfile
             overall={{
               name: t('pwa.practiceQuiz.adaptive.profile.overall'),

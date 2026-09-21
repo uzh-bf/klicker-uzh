@@ -997,7 +997,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           ABANDONED: 'This attempt was ended before it was completed.',
           CLASSIFIED: 'Your level could be estimated reliably.',
           ALL_ROOTS_CLASSIFIED:
-            'All competence areas could be estimated reliably.',
+            'The main competence areas could be estimated. Individual subcompetences may still need more answers.',
           TOTAL_QUESTION_CAP:
             'The quiz ended after the maximum number of questions.',
           NODE_QUESTION_CAP:
@@ -1007,6 +1007,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
             'There was not enough evidence for a complete result.',
         },
         trajectory: {
+          evidenceHelp:
+            'The line shows how your estimate changed as you answered. Early estimates are provisional: a level may not yet be determined at that point, even when your final result is available. The shaded range shows the remaining uncertainty.',
+          notYetDetermined: 'Not yet determined',
+
           title: 'Estimate over time',
           questionAxis: 'Answered questions',
           levelAxis: 'Estimated level',
@@ -1021,6 +1025,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
             '{count, plural, one {After # answered question, there is not enough evidence for an overall level.} other {After # answered questions, there is not enough evidence for an overall level.}}',
         },
         profile: {
+          evidenceHelp:
+            'Each row uses only answers relevant to that competence. Your overall result can be available while a subcompetence still lacks enough evidence. “Insufficient data” does not mean a low competence level.',
           title: 'Competence profile',
           overall: 'Overall',
           responses: '{count, plural, one {# response} other {# responses}}',
@@ -1461,6 +1467,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'An error occurred while granting access to private preview features. This might be due to insufficient permissions or a system error.',
     },
     activities: {
+      adaptiveInfo: 'Adaptive question pool · individually selected questions',
       activityType: 'Activity Type',
       modeFilters: 'Mode',
       noActivitiesAvailable:
@@ -3228,7 +3235,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       adaptive: {
         title: 'Adaptive cohort results',
         calibration: {
-          title: 'Calibration health',
+          title: 'Question-bank readiness (advanced)',
+          description:
+            'Checks the current competence tree: are level boundaries approved and question difficulty estimates available? This is setup readiness for future quizzes, not a measure of student performance or the quality of this completed quiz.',
           openTree: 'Open competence tree',
           loadFailed: 'Calibration health could not be loaded.',
         },
@@ -3257,22 +3266,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         },
         stopSummary: 'Stopping outcomes',
         qualitySummary: 'Quality flags',
-        suppressedValue: 'Withheld',
+        suppressedValue: '-',
         notEnoughData: 'Not enough data',
         suppression: {
           cohort:
-            'Some values are withheld unless every non-empty result group and its complement contain at least five released participants.',
+            'A dash (-) means no result is available yet; it does not mean zero.',
           summary:
-            'Outcome counts are withheld when either the result group or its complement is too small.',
+            'Outcome counts are available after a participant completes the quiz.',
           distribution:
-            'This distribution is hidden because one or more groups are too small.',
+            'This distribution is available after a participant completes the quiz.',
           pilot:
-            'Pilot values are withheld when a known, missing, anomaly, or complementary group contains fewer than five released participants.',
+            '“Not enough data” means there is not enough evidence to calculate the metric.',
         },
         pilot: {
           title: 'Pilot quality monitoring',
           description:
-            'Anonymous operational indicators for form length, exposure, and descriptive item fit. They do not recalibrate items or replace teaching review.',
+            'Aggregate indicators for form length, exposure, and descriptive item fit. They do not recalibrate items or replace teaching review.',
           medianQuestions: 'Median questions',
           p95Questions: '95th percentile questions',
           medianDuration: 'Median completion time',
@@ -3286,14 +3295,32 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
             'Stored estimates and canonical response rows do not agree. Investigate this data-integrity warning before interpreting the pilot.',
           durationMissing:
             'At least one selected attempt has no complete client-reported duration.',
+          columnHelp: {
+            item: 'The question as it appeared in the published quiz.',
+            competence:
+              'The competence and subcompetence assessed by this question.',
+            level:
+              'The level assigned to the question in the published question bank.',
+            responses:
+              'Number of responses to this question in the released cohort.',
+            exposure:
+              'Share of released participants who received this question. Adaptive selection means not everyone sees every question.',
+            observed: 'Percentage of responses graded correct.',
+            expected:
+              'Average probability of a correct answer predicted by the model, using each participant’s earlier answers and the question parameters. This is a model estimate, not a target pass rate.',
+            residual:
+              'Observed correct minus model-predicted correct, in percentage points. Positive means more correct answers than predicted. Requires at least 30 responses and sufficient group sizes. Descriptive only; not a significance test.',
+            flags:
+              'High exposure means this question was shown to more than 40% of participants in this report. This is a review hint, not an error; adaptive selection can use some questions more often.',
+          },
           item: 'Item',
           competence: 'Competence path',
           level: 'Level',
           responses: 'Responses',
           exposure: 'Exposure',
           observed: 'Observed correct',
-          expected: 'Expected correct',
-          residual: 'Residual',
+          expected: 'Model-predicted correct',
+          residual: 'Difference (pp)',
           flags: 'Review flags',
           highExposure: 'High exposure',
           reviewFit: 'Review fit',
@@ -3945,6 +3972,44 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       duplicationSuccess: 'Collection has been duplicated successfully.',
     },
     competenceTree: {
+      restoreDraftPrompt:
+        'Replace your current edits with the saved browser draft?',
+      tagFilter: 'Tag',
+      allTags: 'All tags',
+      sortElements: 'Sort elements',
+      sortName: 'Name (A–Z)',
+      sortModified: 'Recently modified',
+
+      draftDescription:
+        'Save an unfinished draft in this browser, even before all required fields are complete. Use “Save” to store a validated tree on the server. Questions and calibration can be completed later; neither action publishes a quiz.',
+      draftSaved:
+        'Draft saved in this browser for your account. It is not yet saved to the server.',
+      draftAvailable:
+        'An unfinished draft is available in this browser. Restoring it replaces the current editor contents.',
+      restoreDraft: 'Restore draft',
+      localDraftError:
+        'The browser could not save this draft. Keep this page open or save a valid tree to the server.',
+
+      draft: 'Draft',
+      saveDraft: 'Save draft',
+      advancedTitle: 'Advanced: level scale and question calibration',
+      advancedDescription:
+        'Levels describe what learners can do. Calibration places questions on the same difficulty scale so the adaptive quiz can choose suitable questions and estimate a level. The item-bank map helps specialists check gaps and question coverage; it is not needed to assign existing library elements.',
+      browseElements: 'Add existing elements',
+      searchElements: 'Search elements by name or content',
+      allTypes: 'All question types',
+      selectLeaf: 'Assign to subcompetence',
+      selectLevel: 'Expected level',
+      addElement: 'Add to tree',
+      assigned: 'Already assigned',
+      pickerDescription:
+        'Select existing questions, choose their subcompetence and expected level, then save the draft. Only supported questions with sample solutions can be added.',
+      loadElementsError: 'The element library could not be loaded.',
+      noElements: 'No matching elements. Adjust your search or filters.',
+      assignmentSearch: 'Search assigned elements',
+      allLevels: 'All levels',
+      allCompetences: 'All subcompetences',
+
       libraryDescription:
         'Create and manage reusable competence trees for adaptive practice quizzes.',
       create: 'Create competence tree',
@@ -4081,7 +4146,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noMatchingLeaves: 'No leaves match the current filters.',
       assignmentsTitle: 'Element assignments',
       assignmentsDescription:
-        'Review mappings for this tree. Add mappings while creating or editing an element.',
+        'Choose existing library elements below and assign them to a subcompetence and level. Changes are stored when you save the tree.',
       createElement: 'Create element',
       clearCoverageFilter: 'Clear cell filter',
       assignmentFilter: 'Showing assignments for {leaf} at {level}.',

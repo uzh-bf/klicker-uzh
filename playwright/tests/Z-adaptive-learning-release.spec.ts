@@ -649,12 +649,12 @@ test.describe('Adaptive PracticeQuiz release boundaries', () => {
     ).resolves.toEqual({ nextPoolItemId: staleItem.id })
   })
 
-  test('releases ten-person results while suppressing small complementary cells', async ({
+  test('reports ten-person results including small result categories', async ({
     page,
     loginLecturer,
   }) => {
     const fixture = await createAdaptiveReleaseFixture({
-      key: 'ten-person-privacy',
+      key: 'ten-person-reporting',
     })
     await seedTenPersonSuppressedCohort(fixture)
 
@@ -667,13 +667,13 @@ test.describe('Adaptive PracticeQuiz release boundaries', () => {
     ).toContainText('10')
     await expect(
       page.getByTestId('adaptive-evaluation-summary-suppressed')
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       page.getByTestId('adaptive-evaluation-distribution-overall-suppressed')
-    ).toBeVisible()
+    ).toHaveCount(0)
     await expect(
       page.getByTestId('adaptive-evaluation-attempt-insufficientData')
-    ).toContainText('Withheld')
+    ).toContainText('1')
 
     const cohort = await graphql<{
       adaptivePracticeQuizCohortResults: {
@@ -731,28 +731,19 @@ test.describe('Adaptive PracticeQuiz release boundaries', () => {
     expect(results).not.toBeNull()
     expect(results).toMatchObject({
       cohortSize: 10,
-      suppressed: true,
+      suppressed: false,
       attemptSummary: {
-        suppressed: true,
+        suppressed: false,
         capped: 10,
-        insufficientData: null,
+        insufficientData: 1,
       },
     })
-    expect(results?.attemptSummary.suppressions).toContainEqual({
-      field: 'INSUFFICIENT_DATA',
-      reason: 'SMALL_CELL_OR_COMPLEMENT',
-    })
+    expect(results?.attemptSummary.suppressions).toEqual([])
     expect(
       results?.distributions.find(({ nodeKind }) => nodeKind === 'OVERALL')
     ).toMatchObject({
-      suppressed: true,
-      buckets: [],
-      suppressions: [
-        {
-          field: 'DISTRIBUTION',
-          reason: 'SMALL_CELL_OR_COMPLEMENT',
-        },
-      ],
+      suppressed: false,
+      suppressions: [],
     })
     await expect(
       (await getPrisma()).adaptivePracticeQuizCohortSnapshot.findMany({

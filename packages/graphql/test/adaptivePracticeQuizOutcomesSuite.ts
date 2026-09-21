@@ -16,7 +16,7 @@ import {
 } from './adaptivePracticeQuizRuntimeTestSupport.js'
 
 export function registerAdaptivePracticeQuizOutcomeTests() {
-  it('abandons attempts and suppresses small cohort distributions', async () => {
+  it('abandons attempts and leaves empty cohort distributions unavailable', async () => {
     const fixture = await createRuntimeFixture()
     const participantCtx = contextFor(
       fixture.participantId,
@@ -77,7 +77,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
     )
   })
 
-  it('suppresses a small insufficient-data cohort bucket', async () => {
+  it('reports a small insufficient-data cohort bucket', async () => {
     const fixture = await createRuntimeFixture()
 
     for (let index = 0; index < 10; index++) {
@@ -142,22 +142,18 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
 
     expect(cohort.cohortSize).toBe(10)
     expect(overall).toMatchObject({
-      suppressed: true,
-      insufficientDataCount: null,
-      buckets: [],
+      suppressed: false,
+      insufficientDataCount: 1,
     })
     expect(cohort.attemptSummary).toMatchObject({
-      suppressed: true,
+      suppressed: false,
       capped: 10,
-      insufficientData: null,
-    })
-    expect(cohort.attemptSummary.suppressions).toContainEqual({
-      field: 'INSUFFICIENT_DATA',
-      reason: 'SMALL_CELL_OR_COMPLEMENT',
+      insufficientData: 1,
+      suppressions: [],
     })
   })
 
-  it('publishes cohort results only at fixed five-participant boundaries', async () => {
+  it('updates cohort results for each participant, retake, and deletion', async () => {
     const fixture = await createRuntimeFixture()
     const lecturerCtx = contextFor(fixture.ownerId, DB.UserRole.USER)
 
@@ -193,6 +189,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
           participationId: participation.id,
           status: DB.AdaptivePracticeQuizAttemptStatus.COMPLETED,
           stopReason,
+          elapsedSeconds: index,
           completedAt: new Date(
             new Date('2026-07-10T13:00:00.000Z').getTime() + index * 1000
           ),
@@ -257,7 +254,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
     ).toEqual([
       {
         releaseSize: 5,
-        policyVersion: 2,
+        policyVersion: 3,
         aggregate: expect.objectContaining({ schemaVersion: 2 }),
         invalidatedAt: null,
       },
@@ -268,7 +265,9 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       { practiceQuizId: fixture.quizId },
       lecturerCtx
     )
-    expect(afterRetake).toEqual(firstRelease)
+    expect(firstRelease.pilotMetrics.medianElapsedSeconds).toBe(2)
+    expect(afterRetake.cohortSize).toBe(5)
+    expect(afterRetake.pilotMetrics.medianElapsedSeconds).toBe(3)
     expect(
       await prisma.adaptivePracticeQuizCohortSnapshot.count({
         where: { configId: fixture.configId },
@@ -280,12 +279,12 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       { practiceQuizId: fixture.quizId },
       lecturerCtx
     )
-    expect(afterSixthParticipant).toEqual(firstRelease)
+    expect(afterSixthParticipant.cohortSize).toBe(6)
     expect(
       await prisma.adaptivePracticeQuizCohortSnapshot.count({
         where: { configId: fixture.configId },
       })
-    ).toBe(1)
+    ).toBe(2)
 
     for (let index = 7; index <= 10; index++) {
       releasedParticipants.push(await addCompletedAttempt(index))
@@ -299,11 +298,11 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       where: { configId: fixture.configId },
       orderBy: { releaseSize: 'asc' },
     })
-    expect(snapshots.map(({ releaseSize }) => releaseSize)).toEqual([5, 10])
+    expect(snapshots.map(({ releaseSize }) => releaseSize)).toEqual([5, 6, 10])
     expect(
       snapshots.every(
         ({ policyVersion, aggregate }) =>
-          policyVersion === 2 && aggregate.schemaVersion === 2
+          policyVersion === 3 && aggregate.schemaVersion === 2
       )
     ).toBe(true)
     const serializedSnapshots = JSON.stringify(snapshots)
@@ -322,7 +321,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
           invalidatedAt: { not: null },
         },
       })
-    ).toBe(2)
+    ).toBe(3)
     const afterDeletion = await getAdaptivePracticeQuizCohortResults(
       { practiceQuizId: fixture.quizId },
       lecturerCtx
@@ -331,7 +330,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       { practiceQuizId: fixture.quizId },
       lecturerCtx
     )
-    expect(afterDeletion).toEqual(firstRelease)
+    expect(afterDeletion.cohortSize).toBe(9)
     expect(afterRepeatedPolling).toEqual(afterDeletion)
     expect(
       await prisma.adaptivePracticeQuizCohortSnapshot.findMany({
@@ -340,7 +339,9 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
         select: { releaseSize: true, invalidatedAt: true },
       })
     ).toEqual([
-      { releaseSize: 5, invalidatedAt: null },
+      { releaseSize: 5, invalidatedAt: expect.any(Date) },
+      { releaseSize: 6, invalidatedAt: expect.any(Date) },
+      { releaseSize: 9, invalidatedAt: null },
       { releaseSize: 10, invalidatedAt: expect.any(Date) },
     ])
   })
@@ -421,7 +422,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
     })
   })
 
-  it('computes privacy-safe pilot metrics from canonical responses', async () => {
+  it('computes pilot metrics including small groups from canonical responses', async () => {
     const fixture = await createRuntimeFixture()
     const poolItems = await prisma.practiceQuizAdaptivePoolItem.findMany({
       where: { id: { in: fixture.poolItemIds.slice(0, 5) } },
@@ -513,39 +514,22 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       { practiceQuizId: fixture.quizId },
       contextFor(fixture.ownerId, DB.UserRole.USER)
     )
-    expect(telemetry).toHaveBeenCalledWith(
-      `event=adaptive_cohort_integrity_anomaly type=response_count_mismatch practiceQuizId=${fixture.quizId}`
-    )
     expect(JSON.stringify(telemetry.mock.calls)).not.toContain(
       'adaptive-pilot-participant'
     )
     telemetry.mockRestore()
-    expect(cohort.cohortSize).toBe(40)
+    expect(cohort.cohortSize).toBe(43)
     expect(cohort.pilotMetrics).toMatchObject({
-      suppressed: true,
+      suppressed: false,
       medianQuestionCount: 1,
       p95QuestionCount: 1,
-      medianElapsedSeconds: null,
-      p95ElapsedSeconds: null,
-      responseCountMismatchDetected: null,
-      durationMissingDetected: null,
+      medianElapsedSeconds: 81.5,
+      responseCountMismatchDetected: true,
+      durationMissingDetected: true,
+      suppressions: [],
     })
-    expect(cohort.pilotMetrics.suppressions).toEqual(
-      expect.arrayContaining([
-        {
-          field: 'DURATION_PERCENTILES',
-          reason: 'SMALL_KNOWN_OR_MISSING_PARTITION',
-        },
-        {
-          field: 'RESPONSE_COUNT_MISMATCH',
-          reason: 'SMALL_CELL_OR_COMPLEMENT',
-        },
-        {
-          field: 'DURATION_MISSING',
-          reason: 'SMALL_KNOWN_OR_MISSING_PARTITION',
-        },
-      ])
-    )
+
+    expect(cohort.pilotMetrics.p95ElapsedSeconds).toBeCloseTo(99.95)
 
     const diagnostic = cohort.itemDiagnostics.find(
       ({ poolItemId }) => poolItemId === poolItems[0]!.id
@@ -554,7 +538,7 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
       suppressed: false,
       suppressions: [],
       responseCount: 30,
-      exposureRate: 30 / 40,
+      exposureRate: 30 / 43,
       observedCorrectRate: 0.7,
       highExposure: true,
       misfitFlag: true,
@@ -584,29 +568,17 @@ export function registerAdaptivePracticeQuizOutcomeTests() {
         ({ poolItemId }) => poolItemId === poolItems[2]!.id
       )
     ).toMatchObject({
-      suppressed: true,
-      responseCount: null,
-      exposureRate: null,
-      observedCorrectRate: null,
-      expectedCorrectRate: null,
+      suppressed: false,
+      responseCount: 4,
+      exposureRate: 4 / 43,
+      observedCorrectRate: 0,
       residual: null,
     })
     expect(
       cohort.itemDiagnostics.find(
         ({ poolItemId }) => poolItemId === poolItems[2]!.id
       )?.suppressions
-    ).toEqual(
-      expect.arrayContaining([
-        {
-          field: 'ITEM_EXPOSURE',
-          reason: 'SMALL_CELL_OR_COMPLEMENT',
-        },
-        {
-          field: 'ITEM_ACCURACY',
-          reason: 'SMALL_CELL_OR_COMPLEMENT',
-        },
-      ])
-    )
+    ).toEqual([{ field: 'ITEM_RESIDUAL', reason: 'MINIMUM_RESPONSES' }])
     expect(
       cohort.itemDiagnostics.find(
         ({ poolItemId }) => poolItemId === poolItems[4]!.id

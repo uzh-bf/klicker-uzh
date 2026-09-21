@@ -5,17 +5,17 @@ import {
   releaseAdaptiveKnownMissingMetric,
 } from '../src/services/adaptivePracticeQuizPrivacy.js'
 
-describe('adaptive practice quiz privacy policy', () => {
+describe('adaptive practice quiz reporting availability', () => {
   it.each([
     { total: 0, positive: 0, released: false },
-    { total: 4, positive: 0, released: false },
+    { total: 4, positive: 0, released: true },
     { total: 5, positive: 0, released: true },
     { total: 5, positive: 5, released: true },
-    { total: 6, positive: 1, released: false },
-    { total: 6, positive: 5, released: false },
-    { total: 9, positive: 5, released: false },
+    { total: 6, positive: 1, released: true },
+    { total: 6, positive: 5, released: true },
+    { total: 9, positive: 5, released: true },
     { total: 10, positive: 5, released: true },
-    { total: 10, positive: 9, released: false },
+    { total: 10, positive: 9, released: true },
     { total: 15, positive: 5, released: true },
     { total: 15, positive: 10, released: true },
   ])('releases=$released for binary partition $positive/$total', ({
@@ -34,7 +34,7 @@ describe('adaptive practice quiz privacy policy', () => {
     expect(result.suppression === null).toBe(released)
   })
 
-  it('blocks singleton values and complements for every cohort size from 0 to 15', () => {
+  it('reports singleton values and complements for every cohort size from 0 to 15', () => {
     for (let total = 0; total <= 15; total++) {
       for (const positive of new Set(
         [0, 1, Math.max(0, total - 1), total].filter((count) => count <= total)
@@ -43,11 +43,7 @@ describe('adaptive practice quiz privacy policy', () => {
           positive,
           total - positive,
         ])
-        const expected =
-          total >= 5 &&
-          [positive, total - positive].every(
-            (count) => count === 0 || count >= 5
-          )
+        const expected = total > 0
 
         expect(decision.allowed).toBe(expected)
       }
@@ -68,22 +64,16 @@ describe('adaptive practice quiz privacy policy', () => {
         cells: [5, 4, 1],
         value: 'released',
       })
-    ).toEqual({
-      value: null,
-      suppression: {
-        field: 'DISTRIBUTION',
-        reason: 'SMALL_CELL_OR_COMPLEMENT',
-      },
-    })
+    ).toEqual({ value: 'released', suppression: null })
   })
 
   it.each([
     { total: 5, known: 5, released: true },
-    { total: 5, known: 4, released: false },
+    { total: 5, known: 4, released: true },
     { total: 10, known: 5, released: true },
-    { total: 10, known: 9, released: false },
+    { total: 10, known: 9, released: true },
     { total: 15, known: 10, released: true },
-  ])('protects known/missing source populations ($known/$total)', ({
+  ])('reports available data with small known/missing source populations ($known/$total)', ({
     total,
     known,
     released,
@@ -97,11 +87,6 @@ describe('adaptive practice quiz privacy policy', () => {
 
     expect(result.value === 42).toBe(released)
     expect(result.suppression === null).toBe(released)
-    if (!released && total >= 5) {
-      expect(result.suppression?.reason).toBe(
-        'SMALL_KNOWN_OR_MISSING_PARTITION'
-      )
-    }
   })
 
   it('rejects malformed partitions instead of silently releasing them', () => {

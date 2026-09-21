@@ -1005,7 +1005,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
             'Dieser Versuch wurde vor dem vollständigen Abschluss beendet.',
           CLASSIFIED: 'Dein Niveau konnte zuverlässig geschätzt werden.',
           ALL_ROOTS_CLASSIFIED:
-            'Alle Kompetenzbereiche konnten zuverlässig geschätzt werden.',
+            'Die übergeordneten Kompetenzbereiche konnten eingeschätzt werden. Für einzelne Teilkompetenzen können noch Antworten fehlen.',
           TOTAL_QUESTION_CAP:
             'Das Quiz endete nach der maximalen Anzahl Fragen.',
           NODE_QUESTION_CAP:
@@ -1015,6 +1015,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
             'Es lagen nicht genügend Daten für ein vollständiges Ergebnis vor.',
         },
         trajectory: {
+          evidenceHelp:
+            'Die Linie zeigt, wie sich Ihre Schätzung mit den Antworten verändert hat. Frühe Schätzungen sind vorläufig: Zu diesem Zeitpunkt kann die Stufe noch offen sein, obwohl inzwischen ein Endergebnis vorliegt. Der schattierte Bereich zeigt die verbleibende Unsicherheit.',
+          notYetDetermined: 'Noch nicht bestimmt',
+
           title: 'Verlauf der Schätzung',
           questionAxis: 'Beantwortete Fragen',
           levelAxis: 'Geschätztes Niveau',
@@ -1029,6 +1033,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
             '{count, plural, one {Nach # beantworteter Frage liegen noch nicht genügend Daten für ein Gesamtniveau vor.} other {Nach # beantworteten Fragen liegen noch nicht genügend Daten für ein Gesamtniveau vor.}}',
         },
         profile: {
+          evidenceHelp:
+            'Jede Zeile verwendet nur Antworten zum jeweiligen Kompetenzbereich. Ein Gesamtergebnis kann bereits vorliegen, während für eine Teilkompetenz noch genügend Nachweise fehlen. «Ungenügende Daten» bedeutet keine niedrige Kompetenzstufe.',
           title: 'Kompetenzprofil',
           overall: 'Gesamt',
           responses: '{count, plural, one {# Antwort} other {# Antworten}}',
@@ -1469,6 +1475,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Beim Gewähren des Zugriffs auf private Vorschaufunktionen ist ein Fehler aufgetreten. Dies könnte auf unzureichende Berechtigungen oder einen Systemfehler zurückzuführen sein.',
     },
     activities: {
+      adaptiveInfo: 'Adaptiver Fragenpool · individuell ausgewählte Fragen',
       activityType: 'Aktivitätstyp',
       modeFilters: 'Modus',
       noActivitiesAvailable:
@@ -3281,7 +3288,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       adaptive: {
         title: 'Adaptive Kohortenauswertung',
         calibration: {
-          title: 'Kalibrierungsstatus',
+          title: 'Bereitschaft des Fragenpools (erweitert)',
+          description:
+            'Prüft den aktuellen Kompetenzbaum: Sind die Stufengrenzen freigegeben und die Schwierigkeitsschätzungen vorhanden? Dies betrifft die Vorbereitung künftiger Quiz, nicht die Leistung der Teilnehmenden oder die Qualität dieses abgeschlossenen Quiz.',
           openTree: 'Kompetenzbaum öffnen',
           loadFailed: 'Der Kalibrierungsstatus konnte nicht geladen werden.',
         },
@@ -3310,22 +3319,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         },
         stopSummary: 'Beendigungsgründe',
         qualitySummary: 'Qualitätsmerkmale',
-        suppressedValue: 'Zurückgehalten',
+        suppressedValue: '-',
         notEnoughData: 'Nicht genügend Daten',
         suppression: {
           cohort:
-            'Einige Werte werden zurückgehalten, wenn eine nicht leere Resultatgruppe oder ihre Ergänzungsgruppe weniger als fünf freigegebene Teilnehmende enthält.',
+            'Ein Strich (-) bedeutet, dass noch kein Ergebnis vorliegt; er bedeutet nicht null.',
           summary:
-            'Ergebniszahlen werden zurückgehalten, wenn die Resultatgruppe oder ihre Ergänzungsgruppe zu klein ist.',
+            'Ergebniszahlen sind verfügbar, sobald eine Person das Quiz abgeschlossen hat.',
           distribution:
-            'Diese Verteilung ist ausgeblendet, weil eine oder mehrere Gruppen zu klein sind.',
+            'Diese Verteilung ist verfügbar, sobald eine Person das Quiz abgeschlossen hat.',
           pilot:
-            'Pilotwerte werden zurückgehalten, wenn eine bekannte, fehlende, auffällige oder ergänzende Gruppe weniger als fünf freigegebene Teilnehmende enthält.',
+            '«Nicht genügend Daten» bedeutet, dass die Datengrundlage für die Berechnung fehlt.',
         },
         pilot: {
           title: 'Qualitätsmonitoring des Piloten',
           description:
-            'Anonyme operative Indikatoren zu Testlänge, Exposition und deskriptiver Itempassung. Sie kalibrieren keine Items neu und ersetzen nicht die didaktische Prüfung.',
+            'Aggregierte Indikatoren zu Testlänge, Exposition und deskriptiver Itempassung. Sie kalibrieren keine Items neu und ersetzen nicht die didaktische Prüfung.',
           medianQuestions: 'Median der Fragenzahl',
           p95Questions: '95. Perzentil der Fragenzahl',
           medianDuration: 'Median der Bearbeitungsdauer',
@@ -3339,14 +3348,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
             'Gespeicherte Schätzungen und kanonische Antwortzeilen stimmen nicht überein. Prüfen Sie diese Datenwarnung vor der Interpretation des Piloten.',
           durationMissing:
             'Mindestens ein ausgewählter Versuch hat keine vollständige clientseitig gemeldete Bearbeitungsdauer.',
+          columnHelp: {
+            item: 'Die Frage in der veröffentlichten Version des Quiz.',
+            competence:
+              'Die mit dieser Frage erfasste Kompetenz und Teilkompetenz.',
+            level: 'Die zugewiesene Stufe im veröffentlichten Fragenpool.',
+            responses:
+              'Anzahl Antworten auf diese Frage in der freigegebenen Gruppe.',
+            exposure:
+              'Anteil der freigegebenen Teilnehmenden, denen diese Frage gestellt wurde. Bei adaptiver Auswahl sehen nicht alle dieselben Fragen.',
+            observed: 'Anteil der als richtig bewerteten Antworten.',
+            expected:
+              'Durchschnittliche vom Modell vorhergesagte Erfolgswahrscheinlichkeit aus früheren Antworten und Frageparametern. Eine Modellschätzung, keine angestrebte Bestehensquote.',
+            residual:
+              'Beobachteter minus vorhergesagter Anteil richtiger Antworten in Prozentpunkten. Positive Werte bedeuten mehr richtige Antworten als erwartet. Mindestens 30 Antworten und ausreichende Gruppengrössen erforderlich. Kein Signifikanztest.',
+            flags:
+              'Hohe Exposition bedeutet, dass diese Frage mehr als 40% der Teilnehmenden in diesem Bericht gestellt wurde. Dies ist ein Prüfhinweis, kein Fehler; die adaptive Auswahl kann manche Fragen häufiger verwenden.',
+          },
           item: 'Item',
           competence: 'Kompetenzpfad',
           level: 'Stufe',
           responses: 'Antworten',
           exposure: 'Exposition',
           observed: 'Beobachtet korrekt',
-          expected: 'Erwartet korrekt',
-          residual: 'Residuum',
+          expected: 'Vom Modell erwartet',
+          residual: 'Differenz (PP)',
           flags: 'Prüfhinweise',
           highExposure: 'Hohe Exposition',
           reviewFit: 'Passung prüfen',
@@ -4013,6 +4039,44 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       duplicationSuccess: 'Sammlung wurde erfolgreich dupliziert.',
     },
     competenceTree: {
+      restoreDraftPrompt:
+        'Aktuelle Änderungen durch den gespeicherten Browser-Entwurf ersetzen?',
+      tagFilter: 'Tag',
+      allTags: 'Alle Tags',
+      sortElements: 'Elemente sortieren',
+      sortName: 'Name (A–Z)',
+      sortModified: 'Zuletzt geändert',
+
+      draftDescription:
+        'Speichern Sie einen unfertigen Entwurf in diesem Browser, auch wenn Pflichtfelder fehlen. Mit «Speichern» wird ein gültiger Baum auf dem Server gespeichert. Fragen und Kalibrierung können später ergänzt werden; keine dieser Aktionen veröffentlicht ein Quiz.',
+      draftSaved:
+        'Entwurf für Ihr Konto in diesem Browser gespeichert. Er ist noch nicht auf dem Server gespeichert.',
+      draftAvailable:
+        'In diesem Browser ist ein unfertiger Entwurf vorhanden. Die Wiederherstellung ersetzt den aktuellen Inhalt des Editors.',
+      restoreDraft: 'Entwurf wiederherstellen',
+      localDraftError:
+        'Der Browser konnte den Entwurf nicht speichern. Lassen Sie die Seite geöffnet oder speichern Sie einen gültigen Baum auf dem Server.',
+
+      draft: 'Entwurf',
+      saveDraft: 'Entwurf speichern',
+      advancedTitle: 'Erweitert: Kompetenzskala und Fragenkalibrierung',
+      advancedDescription:
+        'Stufen beschreiben die Fähigkeiten der Lernenden. Die Kalibrierung ordnet Fragen auf einer gemeinsamen Schwierigkeitsskala ein, damit das adaptive Quiz passende Fragen auswählen und eine Stufe schätzen kann. Die Fragenpool-Karte hilft Fachpersonen, Lücken und Abdeckung zu prüfen; zur Zuordnung vorhandener Bibliothekselemente ist sie nicht nötig.',
+      browseElements: 'Vorhandene Elemente hinzufügen',
+      searchElements: 'Elemente nach Name oder Inhalt suchen',
+      allTypes: 'Alle Fragetypen',
+      selectLeaf: 'Teilkompetenz zuordnen',
+      selectLevel: 'Erwartete Stufe',
+      addElement: 'Zum Baum hinzufügen',
+      assigned: 'Bereits zugeordnet',
+      pickerDescription:
+        'Wählen Sie vorhandene Fragen, ihre Teilkompetenz und erwartete Stufe und speichern Sie den Entwurf. Nur unterstützte Fragen mit Musterlösung können hinzugefügt werden.',
+      loadElementsError: 'Die Elementbibliothek konnte nicht geladen werden.',
+      noElements: 'Keine passenden Elemente. Passen Sie Suche oder Filter an.',
+      assignmentSearch: 'Zugeordnete Elemente suchen',
+      allLevels: 'Alle Stufen',
+      allCompetences: 'Alle Teilkompetenzen',
+
       libraryDescription:
         'Erstellen und verwalten Sie wiederverwendbare Kompetenzbäume für adaptive Übungs-Quizzes.',
       create: 'Kompetenzbaum erstellen',
@@ -4151,7 +4215,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noMatchingLeaves: 'Keine Blätter entsprechen den aktuellen Filtern.',
       assignmentsTitle: 'Elementzuordnungen',
       assignmentsDescription:
-        'Prüfen Sie die Zuordnungen für diesen Baum. Neue Zuordnungen werden beim Erstellen oder Bearbeiten eines Elements hinzugefügt.',
+        'Wählen Sie vorhandene Bibliothekselemente und ordnen Sie sie einer Teilkompetenz und Stufe zu. Änderungen werden beim Speichern des Baums übernommen.',
       createElement: 'Element erstellen',
       clearCoverageFilter: 'Feldfilter aufheben',
       assignmentFilter: 'Zuordnungen für {leaf} auf Stufe {level}.',

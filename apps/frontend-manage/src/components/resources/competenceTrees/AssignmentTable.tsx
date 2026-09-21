@@ -1,13 +1,13 @@
-import { faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { Button, Switch } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import CompetenceTreePagination from './CompetenceTreePagination'
-import { CoverageCellSelection } from './CoverageMatrix'
+import type { CoverageCellSelection } from './CoverageMatrix'
+import ElementLibraryPicker from './ElementLibraryPicker'
 import IconAction from './IconAction'
 import { getBreadcrumb } from './treeHelpers'
-import { CompetenceTreeForm } from './types'
+import type { CompetenceTreeForm } from './types'
 
 const DEFAULT_PAGE_SIZE = 20
 
@@ -24,7 +24,6 @@ function AssignmentTable({
   selectedCell: CoverageCellSelection | null
   onClearCell: () => void
 }) {
-  const router = useRouter()
   const t = useTranslations()
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -32,13 +31,20 @@ function AssignmentTable({
     () => new Map(form.levels.map((level) => [level.key, level])),
     [form.levels]
   )
-  const assignments = selectedCell
+  const [search, setSearch] = useState('')
+  const [type, setType] = useState('')
+  const assignmentsInCell = selectedCell
     ? form.assignments.filter(
         (assignment) =>
           assignment.leafKey === selectedCell.leafKey &&
           assignment.levelKey === selectedCell.levelKey
       )
     : form.assignments
+  const assignments = assignmentsInCell.filter(
+    (item) =>
+      item.elementName.toLowerCase().includes(search.toLowerCase()) &&
+      (!type || item.elementType === type)
+  )
   const totalPages = Math.max(1, Math.ceil(assignments.length / pageSize))
   const visibleAssignments = assignments.slice(
     (currentPage - 1) * pageSize,
@@ -91,6 +97,42 @@ function AssignmentTable({
         </div>
       )}
 
+      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+        <label className="text-sm">
+          {t('manage.competenceTree.assignmentSearch')}
+          <input
+            className="mt-1 block w-full rounded border border-slate-300 p-2"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setCurrentPage(1)
+            }}
+            data-cy="competence-tree-assignment-search"
+          />
+        </label>
+        <label className="text-sm">
+          {t('manage.competenceTree.elementType')}
+          <select
+            className="mt-1 block w-full rounded border border-slate-300 p-2"
+            value={type}
+            onChange={(event) => {
+              setType(event.target.value)
+              setCurrentPage(1)
+            }}
+            data-cy="competence-tree-assignment-type"
+          >
+            <option value="">{t('manage.competenceTree.allTypes')}</option>
+            {Array.from(
+              new Set(form.assignments.map((item) => item.elementType))
+            ).map((value) => (
+              <option key={value} value={value}>
+                {t(`shared.types.${value}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {!disabled && <ElementLibraryPicker form={form} onChange={onChange} />}
       <div className="overflow-x-auto border-y border-slate-200">
         <table className="w-full min-w-[56rem] table-fixed text-left">
           <caption className="sr-only">
@@ -224,26 +266,6 @@ function AssignmentTable({
                         : 'manage.competenceTree.noAssignments'
                     )}
                   </div>
-                  {!selectedCell &&
-                  form.assignments.length === 0 &&
-                  !disabled ? (
-                    <Button
-                      primary
-                      className={{ root: 'mt-3' }}
-                      onClick={() =>
-                        router.push({
-                          pathname: '/',
-                          query: { createElement: 'true' },
-                        })
-                      }
-                      data={{ cy: 'competence-tree-create-element' }}
-                    >
-                      <Button.Icon icon={faPlus} />
-                      <Button.Label>
-                        {t('manage.competenceTree.createElement')}
-                      </Button.Label>
-                    </Button>
-                  ) : null}
                 </td>
               </tr>
             )}

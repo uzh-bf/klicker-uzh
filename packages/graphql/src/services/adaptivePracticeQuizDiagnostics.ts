@@ -5,7 +5,6 @@ import {
 } from '@klicker-uzh/adaptive-learning'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
-  ADAPTIVE_PRIVACY_MIN_CELL_SIZE,
   compactAdaptivePrivacySuppressions,
   hasAdaptivePrivacyWithholding,
   releaseAdaptiveBinaryMetric,
@@ -176,7 +175,7 @@ export function finalizeAdaptivePilotMetrics({
   })
   const knownDurations = histogramSize(accumulator.durations)
   const durationPercentileRelease =
-    cohortSize >= ADAPTIVE_PRIVACY_MIN_CELL_SIZE && knownDurations === 0
+    cohortSize > 0 && knownDurations === 0
       ? suppressAdaptiveMetric<{ median: number | null; p95: number | null }>(
           'DURATION_PERCENTILES',
           'MINIMUM_RESPONSES'

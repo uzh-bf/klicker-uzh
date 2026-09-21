@@ -57,6 +57,9 @@ function AdaptiveResultTrajectoryChart({
 
   return (
     <div className="space-y-3" data-cy="adaptive-result-trajectory">
+      <p className="text-sm text-slate-600">
+        {t('pwa.practiceQuiz.adaptive.trajectory.evidenceHelp')}
+      </p>
       <div className="h-[300px] w-full" aria-hidden="true">
         <ResponsiveContainer
           width="100%"
@@ -151,7 +154,9 @@ function AdaptiveResultTrajectoryChart({
                     </div>
                     <div>
                       {description.levelLabel ??
-                        t('pwa.practiceQuiz.adaptive.profile.insufficientData')}
+                        t(
+                          'pwa.practiceQuiz.adaptive.trajectory.notYetDetermined'
+                        )}
                     </div>
                     {description.lowerLevelLabel &&
                       description.upperLevelLabel && (
@@ -214,15 +219,15 @@ function AdaptiveResultTrajectoryChart({
               {t('pwa.practiceQuiz.adaptive.trajectory.estimate')}
               {': '}
               {description.levelLabel ??
-                t('pwa.practiceQuiz.adaptive.profile.insufficientData')}
+                t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}
               {'. '}
               {t('pwa.practiceQuiz.adaptive.trajectory.confidenceRange')}
               {': '}
               {description.lowerLevelLabel ??
-                t('pwa.practiceQuiz.adaptive.profile.insufficientData')}{' '}
+                t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}{' '}
               -{' '}
               {description.upperLevelLabel ??
-                t('pwa.practiceQuiz.adaptive.profile.insufficientData')}
+                t('pwa.practiceQuiz.adaptive.trajectory.notYetDetermined')}
             </li>
           )
         })}

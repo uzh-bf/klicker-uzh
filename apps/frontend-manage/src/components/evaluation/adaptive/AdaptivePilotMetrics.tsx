@@ -2,9 +2,9 @@ import {
   AdaptivePracticeQuizPrivacyField,
   AdaptivePracticeQuizPrivacySuppressionReason,
 } from '@klicker-uzh/graphql/dist/ops'
-import { H3, UserNotification } from '@uzh-bf/design-system'
+import { H3, Tooltip, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
-import {
+import type {
   AdaptiveItemDiagnostic,
   AdaptivePilotMetrics as AdaptivePilotMetricsData,
 } from './types'
@@ -66,15 +66,6 @@ function AdaptivePilotMetrics({
           minimumFractionDigits: 1,
           maximumFractionDigits: 1,
         })
-  const formatStatus = (
-    value: boolean | null | undefined,
-    field: AdaptivePracticeQuizPrivacyField
-  ) =>
-    value == null
-      ? unavailable(field)
-      : value
-        ? t('manage.evaluation.adaptive.pilot.issueDetected')
-        : t('manage.evaluation.adaptive.pilot.noIssue')
 
   return (
     <section
@@ -93,24 +84,7 @@ function AdaptivePilotMetrics({
           data={{ cy: 'adaptive-evaluation-pilot-suppressed' }}
         />
       ) : null}
-      {metrics.responseCountMismatchDetected ? (
-        <UserNotification
-          type="warning"
-          message={t('manage.evaluation.adaptive.pilot.responseCountMismatch')}
-          className={{ root: 'mb-3' }}
-          data={{ cy: 'adaptive-evaluation-response-mismatch' }}
-        />
-      ) : null}
-      {metrics.durationMissingDetected ? (
-        <UserNotification
-          type="warning"
-          message={t('manage.evaluation.adaptive.pilot.durationMissing')}
-          className={{ root: 'mb-3' }}
-          data={{ cy: 'adaptive-evaluation-duration-missing' }}
-        />
-      ) : null}
-
-      <dl className="mb-6 grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-4 xl:grid-cols-7">
+      <dl className="mb-6 grid grid-cols-2 gap-x-6 gap-y-3 text-sm md:grid-cols-4">
         <PilotMetric
           label={t('manage.evaluation.adaptive.pilot.medianQuestions')}
           dataCy="adaptive-pilot-median-questions"
@@ -141,30 +115,6 @@ function AdaptivePilotMetrics({
           value={formatDuration(
             metrics.p95ElapsedSeconds,
             AdaptivePracticeQuizPrivacyField.DurationPercentiles
-          )}
-        />
-        <PilotMetric
-          label={t('manage.evaluation.adaptive.pilot.nearBoundaryRate')}
-          dataCy="adaptive-pilot-near-boundary-rate"
-          value={formatRate(
-            metrics.nearBoundaryRate,
-            AdaptivePracticeQuizPrivacyField.NearBoundary
-          )}
-        />
-        <PilotMetric
-          label={t('manage.evaluation.adaptive.pilot.responseIntegrity')}
-          dataCy="adaptive-pilot-response-integrity"
-          value={formatStatus(
-            metrics.responseCountMismatchDetected,
-            AdaptivePracticeQuizPrivacyField.ResponseCountMismatch
-          )}
-        />
-        <PilotMetric
-          label={t('manage.evaluation.adaptive.pilot.durationCompleteness')}
-          dataCy="adaptive-pilot-duration-completeness"
-          value={formatStatus(
-            metrics.durationMissingDetected,
-            AdaptivePracticeQuizPrivacyField.DurationMissing
           )}
         />
       </dl>
@@ -211,22 +161,6 @@ function AdaptivePilotMetrics({
                   item.suppressions
                 )}
               />
-              <PilotMetric
-                label={t('manage.evaluation.adaptive.pilot.expected')}
-                value={formatRate(
-                  item.expectedCorrectRate,
-                  AdaptivePracticeQuizPrivacyField.ItemAccuracy,
-                  item.suppressions
-                )}
-              />
-              <PilotMetric
-                label={t('manage.evaluation.adaptive.pilot.residual')}
-                value={formatNumber(
-                  item.residual,
-                  AdaptivePracticeQuizPrivacyField.ItemResidual,
-                  item.suppressions
-                )}
-              />
             </dl>
             <div className="mt-3 text-sm">
               <div className="mb-1 text-xs text-gray-600">
@@ -239,35 +173,106 @@ function AdaptivePilotMetrics({
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[64rem] table-fixed text-left text-sm">
+        <table className="w-full min-w-[56rem] table-fixed text-left text-sm">
           <thead className="bg-gray-50 text-xs text-gray-700">
             <tr>
               <th className="w-52 px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.item')}
+                <Tooltip
+                  tooltip={t(
+                    'manage.evaluation.adaptive.pilot.columnHelp.item'
+                  )}
+                >
+                  <span
+                    className="cursor-help text-left underline decoration-dotted underline-offset-4"
+                    data-cy="adaptive-column-help-item"
+                  >
+                    {t('manage.evaluation.adaptive.pilot.item')}
+                  </span>
+                </Tooltip>
               </th>
               <th className="w-64 px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.competence')}
+                <Tooltip
+                  tooltip={t(
+                    'manage.evaluation.adaptive.pilot.columnHelp.competence'
+                  )}
+                >
+                  <span
+                    className="cursor-help text-left underline decoration-dotted underline-offset-4"
+                    data-cy="adaptive-column-help-competence"
+                  >
+                    {t('manage.evaluation.adaptive.pilot.competence')}
+                  </span>
+                </Tooltip>
               </th>
               <th className="w-28 px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.level')}
+                <Tooltip
+                  tooltip={t(
+                    'manage.evaluation.adaptive.pilot.columnHelp.level'
+                  )}
+                >
+                  <span
+                    className="cursor-help text-left underline decoration-dotted underline-offset-4"
+                    data-cy="adaptive-column-help-level"
+                  >
+                    {t('manage.evaluation.adaptive.pilot.level')}
+                  </span>
+                </Tooltip>
               </th>
               <th className="px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.responses')}
+                <Tooltip
+                  tooltip={t(
+                    'manage.evaluation.adaptive.pilot.columnHelp.responses'
+                  )}
+                >
+                  <span
+                    className="cursor-help text-left underline decoration-dotted underline-offset-4"
+                    data-cy="adaptive-column-help-responses"
+                  >
+                    {t('manage.evaluation.adaptive.pilot.responses')}
+                  </span>
+                </Tooltip>
               </th>
               <th className="px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.exposure')}
+                <Tooltip
+                  tooltip={t(
+                    'manage.evaluation.adaptive.pilot.columnHelp.exposure'
+                  )}
+                >
+                  <span
+                    className="cursor-help text-left underline decoration-dotted underline-offset-4"
+                    data-cy="adaptive-column-help-exposure"
+                  >
+                    {t('manage.evaluation.adaptive.pilot.exposure')}
+                  </span>
+                </Tooltip>
               </th>
               <th className="px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.observed')}
-              </th>
-              <th className="px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.expected')}
-              </th>
-              <th className="px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.residual')}
+                <Tooltip
+                  tooltip={t(
+                    'manage.evaluation.adaptive.pilot.columnHelp.observed'
+                  )}
+                >
+                  <span
+                    className="cursor-help text-left underline decoration-dotted underline-offset-4"
+                    data-cy="adaptive-column-help-observed"
+                  >
+                    {t('manage.evaluation.adaptive.pilot.observed')}
+                  </span>
+                </Tooltip>
               </th>
               <th className="w-32 px-2 py-2">
-                {t('manage.evaluation.adaptive.pilot.flags')}
+                <Tooltip
+                  tooltip={t(
+                    'manage.evaluation.adaptive.pilot.columnHelp.flags'
+                  )}
+                >
+                  <span
+                    className="cursor-help text-left underline decoration-dotted underline-offset-4"
+                    data-cy="adaptive-column-help-flags"
+                  >
+                    {t('manage.evaluation.adaptive.pilot.flags')}
+                  </span>
+                </Tooltip>
               </th>
             </tr>
           </thead>
@@ -306,20 +311,6 @@ function AdaptivePilotMetrics({
                     item.suppressions
                   )}
                 </td>
-                <td className="px-2 py-2 tabular-nums">
-                  {formatRate(
-                    item.expectedCorrectRate,
-                    AdaptivePracticeQuizPrivacyField.ItemAccuracy,
-                    item.suppressions
-                  )}
-                </td>
-                <td className="px-2 py-2 tabular-nums">
-                  {formatNumber(
-                    item.residual,
-                    AdaptivePracticeQuizPrivacyField.ItemResidual,
-                    item.suppressions
-                  )}
-                </td>
                 <td className="px-2 py-2">
                   <DiagnosticFlags item={item} />
                 </td>
@@ -351,47 +342,22 @@ function PilotMetric({
 
 function DiagnosticFlags({ item }: { item: AdaptiveItemDiagnostic }) {
   const t = useTranslations()
-  const flags = [
-    item.highExposure
-      ? t('manage.evaluation.adaptive.pilot.highExposure')
-      : null,
-    item.misfitFlag ? t('manage.evaluation.adaptive.pilot.reviewFit') : null,
-  ].filter((value): value is string => Boolean(value))
-  const unavailable = new Set<string>()
   if (item.highExposure == null) {
-    unavailable.add(t('manage.evaluation.adaptive.suppressedValue'))
-  }
-  if (item.misfitFlag == null) {
-    const residualSuppression = item.suppressions.find(
-      ({ field }) => field === AdaptivePracticeQuizPrivacyField.ItemResidual
-    )
-    unavailable.add(
-      residualSuppression?.reason ===
-        AdaptivePracticeQuizPrivacySuppressionReason.MinimumResponses
-        ? t('manage.evaluation.adaptive.pilot.notEnoughResponses')
-        : t('manage.evaluation.adaptive.suppressedValue')
-    )
-  }
-
-  if (flags.length === 0 && unavailable.size === 0) {
     return (
       <span className="text-gray-500">
-        {t('manage.evaluation.adaptive.pilot.noFlags')}
+        {t('manage.evaluation.adaptive.suppressedValue')}
       </span>
     )
   }
 
-  return (
-    <div className="space-y-1">
-      {flags.length > 0 ? (
-        <div className="font-medium text-red-700">{flags.join(', ')}</div>
-      ) : null}
-      {Array.from(unavailable).map((value) => (
-        <div key={value} className="text-gray-500">
-          {value}
-        </div>
-      ))}
-    </div>
+  return item.highExposure ? (
+    <span className="font-medium text-red-700">
+      {t('manage.evaluation.adaptive.pilot.highExposure')}
+    </span>
+  ) : (
+    <span className="text-gray-500">
+      {t('manage.evaluation.adaptive.pilot.noFlags')}
+    </span>
   )
 }
 

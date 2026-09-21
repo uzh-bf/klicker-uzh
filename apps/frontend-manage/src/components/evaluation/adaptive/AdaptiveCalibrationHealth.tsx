@@ -6,8 +6,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 
 function AdaptiveCalibrationHealth({ treeId }: { treeId: string }) {
   const t = useTranslations()
@@ -66,6 +66,9 @@ function AdaptiveCalibrationHealth({ treeId }: { treeId: string }) {
           </Button>
         ) : null}
       </div>
+      <p className="mb-4 text-sm text-gray-600">
+        {t('manage.evaluation.adaptive.calibration.description')}
+      </p>
       <UserNotification
         type={ready ? 'success' : 'warning'}
         message={t(

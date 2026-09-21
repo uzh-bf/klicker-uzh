@@ -1,5 +1,3 @@
-export const ADAPTIVE_PRIVACY_MIN_CELL_SIZE = 5
-
 export const ADAPTIVE_PRIVACY_FIELDS = [
   'DISTRIBUTION',
   'RESULT_CLASSIFICATION',
@@ -45,8 +43,7 @@ type AdaptivePrivacyDecision =
   | { allowed: false; reason: AdaptivePrivacySuppressionReason }
 
 export function decideAdaptivePrivacyPartition(
-  cells: readonly number[],
-  smallPartitionReason: AdaptivePrivacySuppressionReason = 'SMALL_CELL_OR_COMPLEMENT'
+  cells: readonly number[]
 ): AdaptivePrivacyDecision {
   if (cells.length < 2) {
     throw new Error('Adaptive privacy partitions require at least two cells.')
@@ -54,13 +51,9 @@ export function decideAdaptivePrivacyPartition(
   for (const count of cells) assertCount(count)
 
   const total = cells.reduce((sum, count) => sum + count, 0)
-  if (total < ADAPTIVE_PRIVACY_MIN_CELL_SIZE) {
+  // Empty populations have no reportable measurement; small groups are valid.
+  if (total === 0) {
     return { allowed: false, reason: 'BELOW_RELEASE_THRESHOLD' }
-  }
-  if (
-    cells.some((count) => count > 0 && count < ADAPTIVE_PRIVACY_MIN_CELL_SIZE)
-  ) {
-    return { allowed: false, reason: smallPartitionReason }
   }
   return { allowed: true, reason: null }
 }
@@ -125,10 +118,7 @@ export function releaseAdaptiveKnownMissingMetric<T>({
   return releaseAdaptiveMetric(
     field,
     value,
-    decideAdaptivePrivacyPartition(
-      [known, total - known],
-      'SMALL_KNOWN_OR_MISSING_PARTITION'
-    )
+    decideAdaptivePrivacyPartition([known, total - known])
   )
 }
 

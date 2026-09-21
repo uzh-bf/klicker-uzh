@@ -15,9 +15,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ActivityInfo,
+  type ActivityInfo,
   ActivityType,
   ObjectType,
+  PracticeQuizMode,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Badge, Checkbox, Tooltip } from '@uzh-bf/design-system'
@@ -189,15 +190,17 @@ function ActivityListEntry({
               />
             </div>
             <div className="ml-[1.65rem] text-sm text-gray-500">
-              {activity.type === ActivityType.LiveQuiz
-                ? t('manage.activities.liveQuizInfo', {
-                    numOfBlocks: activity.numOfStacks,
-                    numOfElements: activity.numOfElements,
-                  })
-                : t('manage.activities.activityInfo', {
-                    numOfStacks: activity.numOfStacks,
-                    numOfElements: activity.numOfElements,
-                  })}
+              {activity.mode === PracticeQuizMode.Adaptive
+                ? t('manage.activities.adaptiveInfo')
+                : activity.type === ActivityType.LiveQuiz
+                  ? t('manage.activities.liveQuizInfo', {
+                      numOfBlocks: activity.numOfStacks,
+                      numOfElements: activity.numOfElements,
+                    })
+                  : t('manage.activities.activityInfo', {
+                      numOfStacks: activity.numOfStacks,
+                      numOfElements: activity.numOfElements,
+                    })}
             </div>
             <div className="flex h-[1.4rem] flex-row items-center gap-4 text-gray-500">
               <div className="ml-[1.65rem] text-sm">
