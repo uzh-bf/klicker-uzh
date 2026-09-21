@@ -646,7 +646,10 @@ describe('current-v3 Doc Query scope', () => {
     })
 
     test('preserves Request protocol headers and overlays init headers', async () => {
-      const fetchSpy = vi.fn(async () => new Response('{}', { status: 200 }))
+      const fetchSpy = vi.fn(
+        async (..._args: Parameters<typeof fetch>) =>
+          new Response('{}', { status: 200 })
+      )
       vi.stubGlobal('fetch', fetchSpy)
       const signToken = vi.fn(async () => 'request-token')
       const request = new Request(SCOPED_URL, {
