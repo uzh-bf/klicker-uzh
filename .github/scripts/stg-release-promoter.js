@@ -1480,11 +1480,13 @@ async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
     const request = (header) =>
       fetchImpl(url, {
         headers: { accept, ...(header ? { authorization: header } : {}) },
-        redirect: 'error',
+        redirect: 'manual',
       })
     let response = await request(authorization)
-    if (response.redirected) {
-      throw new Error(label + ' registry response redirected')
+    if (response.redirected || (response.status >= 300 && response.status < 400)) {
+      throw new Error(
+        label + ' registry response redirected ' + response.status + ' to ' + response.headers.get('location')
+      )
     }
     if (response.status === 401) {
       authorization = await resolveRegistryAuthorization({
