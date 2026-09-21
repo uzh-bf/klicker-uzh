@@ -51,18 +51,20 @@ limits are unchanged.
 Use rounded memory requests at or above the staging VPA target where the existing
 request is too small. This is a conservative sizing policy, not a literal copy
 of Goldilocks' Burstable view. Retain larger existing requests and existing
-memory limits except for the normal response worker and Manage. Retain existing
-CPU requests except for `backendGraphql`, whose request increases from 50m to
-100m. The response worker needs headroom above its new request; Manage gets
-additional memory headroom. Assessment resource corrections
-are independent of the excluded assessment replica increases.
+memory limits except for auth, the normal response worker, Manage and LTI. Retain
+existing CPU requests except for `backendGraphql`, whose request increases from
+50m to 100m, and `lti`, whose request falls from 200m to 50m. The response worker
+needs headroom above its new request; Manage gets additional memory headroom.
+Assessment resource corrections are independent of the excluded assessment
+replica increases.
 
 | Values key                                    | Request before → proposed | Limit change                    |
 | --------------------------------------------- | ------------------------- | ------------------------------- |
-| `auth`                                        | 50Mi → 192Mi              | None (200Mi)                    |
+| `auth`                                        | 50Mi → 192Mi              | 200Mi → 512Mi                   |
 | `frontendManage`                              | 50Mi → 192Mi              | 200Mi → 256Mi                   |
 | `frontendControl`                             | 50Mi → 128Mi              | None (200Mi)                    |
 | `olatApi`                                     | 50Mi → 128Mi              | None (200Mi)                    |
+| `lti`                                         | 200m/200Mi → 50m/128Mi    | None (500Mi)                    |
 | `backendGraphql`                              | 50Mi → 384Mi              | None (1Gi)                      |
 | `chat`                                        | 250Mi → 320Mi             | None (768Mi); still one replica |
 | `hatchet.workers.general`                     | 64Mi inherited → 384Mi    | None (2Gi)                      |
@@ -76,9 +78,13 @@ At the staging `v3-ai` baseline, `backendGraphql` changes from a **50m CPU /
 is retained. The chart default is not the effective staging baseline because
 the environment values override it.
 
-Leave both PWA requests, assessment GraphQL and LTI unchanged. Environment-specific
-recommendations should not be transferred blindly between staging and production.
-No MCP service changes are included in this chart revision.
+Leave both PWA requests and assessment GraphQL unchanged. LTI is the exception on
+the low side: it inherited the chart default of 200m CPU / 200Mi memory, the only
+staging request far above its recommendation (target 15m CPU / 100Mi memory, live
+about 1m CPU / 63Mi memory), so it now requests 50m CPU and 128Mi memory with the
+chart's 500Mi limit retained. Environment-specific recommendations should not be
+transferred blindly between staging and production. No MCP service changes are
+included in this chart revision.
 
 ## Reservation deltas and capacity prerequisite
 
@@ -86,8 +92,10 @@ Compared with the production pre-scaling base (`e3fb9873c`), production adds **1
 800m CPU requests and 7292Mi memory requests (~7.12Gi)**. Of the memory increase, 650Mi
 belongs to assessment resource corrections, with no extra assessment pods.
 Compared with the staging `v3-ai` baseline at `c939ab348a67f1ffa4db5e97f9da3b3bf2e8d6da`,
-staging adds **50m CPU and 1640Mi memory requests**, with **zero additional pods**.
-These are computed manifest deltas, not private cluster observations.
+staging nets **-100m CPU and +1568Mi memory requests**, with **zero additional
+pods**. The increases in the staging table total 50m CPU and 1640Mi memory; the
+LTI reduction removes 150m CPU and 72Mi from that total. These are computed
+manifest deltas, not private cluster observations.
 
 **Provision or verify sufficient eligible application-node capacity before
 release.** Do not assume the existing pool can place the extra pods or that its

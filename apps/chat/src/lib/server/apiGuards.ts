@@ -1,4 +1,4 @@
-import { AppLogger, toSafeError } from '@klicker-uzh/logging/node'
+import { type AppLogger, toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   ChatbotStatus,
@@ -54,6 +54,18 @@ export interface ChatTransportTokens {
   scopedFallbackToken?: string
 }
 
+export interface ChatIdentityResolutionContext {
+  /**
+   * Chatbot the request targets, when the caller knows it. A PWA embed
+   * session is scoped to exactly one chatbot; when it was minted for a
+   * different one, resolution prefers the account session over the stale
+   * scoped session so a participant who used an embedded chat can still open
+   * every other chatbot from the PWA. Without a target the transports keep
+   * their order.
+   */
+  targetChatbotId?: string
+}
+
 /** Collect the identity transports carried by a participant request. */
 export function extractChatTransportTokens(
   req: NextRequest
@@ -76,11 +88,19 @@ export function extractChatTransportTokens(
 // Forward-compat: Phase C "switch to anonymous" only sets the guest cookie;
 // account cookie stays. Guest-first ordering means the switch takes effect
 // without clearing the account cookie or changing this code.
+// An embed-scoped transport bound to another chatbot defers to the account
+// session when the caller supplies that target chatbot (see
+// preferAccountOnScopeMiss).
 export async function getParticipantId(
   req: NextRequest,
+  context?: ChatIdentityResolutionContext,
   log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
-  return resolveParticipantIdentity(extractChatTransportTokens(req), log)
+  return resolveParticipantIdentity(
+    extractChatTransportTokens(req),
+    context,
+    log
+  )
 }
 
 /**
@@ -94,6 +114,7 @@ export async function resolveParticipantIdentity(
     pwaEmbedToken,
     scopedFallbackToken,
   }: ChatTransportTokens,
+  context?: ChatIdentityResolutionContext,
   log: AppLogger = getRouteLogger()
 ): Promise<ParticipantIdentity | { response: NextResponse }> {
   if (chatGuestToken) {
@@ -128,17 +149,22 @@ export async function resolveParticipantIdentity(
       // session: a deactivated or guest persona must not keep access for the
       // life of the scoped token.
       if (payload.sub && (await isActiveAccountParticipant(payload.sub))) {
-        return {
-          participantId: payload.sub,
-          authMode: 'account',
-          pwaEmbedScope: {
-            chatbotId: payload.chatbotId,
-            courseId: payload.courseId,
+        return preferAccountOnScopeMiss(
+          {
+            participantId: payload.sub,
+            authMode: 'account',
+            pwaEmbedScope: {
+              chatbotId: payload.chatbotId,
+              courseId: payload.courseId,
+            },
+            ...(payload.learnerBinding
+              ? { learnerBinding: payload.learnerBinding }
+              : {}),
           },
-          ...(payload.learnerBinding
-            ? { learnerBinding: payload.learnerBinding }
-            : {}),
-        }
+          participantToken,
+          context,
+          log
+        )
       }
       log.info(
         {
@@ -162,10 +188,47 @@ export async function resolveParticipantIdentity(
 
   if (scopedFallbackToken) {
     const fallbackIdentity = await getScopedTokenIdentity(scopedFallbackToken)
-    if (fallbackIdentity) return fallbackIdentity
+    if (fallbackIdentity) {
+      return preferAccountOnScopeMiss(
+        fallbackIdentity,
+        participantToken,
+        context,
+        log
+      )
+    }
   }
 
   return getParticipantIdFromToken(participantToken, log)
+}
+
+/**
+ * A PWA embed session is bound to one chatbot and course. On a request for a
+ * different chatbot it can only fail the scope binding in authorization, so
+ * when the caller targets a known chatbot and an account session also
+ * resolves, prefer that account session: a stale embed session from another
+ * chatbot must not shadow it. Guest transports carry no embed scope and keep
+ * their precedence; without a resolvable account session the embed identity is
+ * returned unchanged so authorization reports the scope failure as before.
+ */
+async function preferAccountOnScopeMiss(
+  identity: ParticipantIdentity,
+  participantToken: string | undefined,
+  context: ChatIdentityResolutionContext | undefined,
+  log: AppLogger = getRouteLogger()
+): Promise<ParticipantIdentity | { response: NextResponse }> {
+  if (
+    !identity.pwaEmbedScope ||
+    !context?.targetChatbotId ||
+    identity.pwaEmbedScope.chatbotId === context.targetChatbotId
+  ) {
+    return identity
+  }
+
+  const accountIdentity = await getParticipantIdFromToken(participantToken, log)
+  if ('response' in accountIdentity) {
+    return identity
+  }
+  return accountIdentity
 }
 
 /**
@@ -399,7 +462,11 @@ export async function withChatbotAuth(
     }
   | { response: NextResponse }
 > {
-  const participantResult = await getParticipantId(req, log)
+  const participantResult = await getParticipantId(
+    req,
+    { targetChatbotId: chatbotId },
+    log
+  )
   if ('response' in participantResult) {
     return participantResult
   }
