@@ -7,6 +7,13 @@ import {
 
 export const COURSE_IMAGE_TOOL = 'show_course_image'
 const digest = z.string().regex(/^[a-f0-9]{64}$/)
+const courseImageCaptionSchema = z.object({
+  ref: z
+    .string()
+    .regex(/^#\/[\w/-]+$/)
+    .max(512),
+  text: z.string().min(1).max(2000),
+})
 export const courseImageSchema = z.object({
   asset_id: digest,
   image_sha256: digest,
@@ -16,6 +23,7 @@ export const courseImageSchema = z.object({
   height_px: z.number().int().positive().max(20000),
   mime_type: z.literal('image/png'),
   kind: z.literal('figure'),
+  captions: z.array(courseImageCaptionSchema).max(16).optional(),
   source_content_hash: digest,
   extraction_options_hash: digest,
   manifest_sha256: digest,

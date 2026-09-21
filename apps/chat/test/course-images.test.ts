@@ -1,4 +1,5 @@
-import { readFile } from 'node:fs/promises'
+import { cp, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { type ToolSet, tool } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
@@ -93,11 +94,22 @@ describe('course image selection', () => {
   it('preserves exact figure page instead of the chunk starting page', () => {
     expect(candidate.physical_page_number).toBe(2)
     expect(candidate.logical_page_number).toBeUndefined()
+    expect(candidate.captions).toEqual([
+      {
+        ref: '#/texts/12',
+        text: 'Figure 1. Original synthetic diagram for the course-material retrieval test.',
+      },
+    ])
     expect(
       courseImageCandidates({
         content: [{ type: 'text', text: JSON.stringify(fixture) }],
       })
     ).toEqual([candidate])
+  })
+  it('accepts older image evidence without a caption', () => {
+    const legacy = structuredClone(fixture)
+    delete legacy.sources[0].chunks[0].visual_assets.assets[0].captions
+    expect(courseImageCandidates(legacy)[0]?.captions).toBeUndefined()
   })
   it('rejects failed, unbound and out-of-range evidence', () => {
     expect(
@@ -125,6 +137,7 @@ describe('course image selection', () => {
     ).toEqual({
       status: 'selected',
       image: candidate,
+      placement_marker: `[course-image:${candidate.asset_id}]`,
       reason: 'The retrieved passage identifies the requested figure.',
     })
     expect(read).toHaveBeenCalledTimes(1)
@@ -221,4 +234,19 @@ it('can decline an image without reading storage or producing a card', async () 
       { type: 'tool-call', toolName: 'show_course_image', result },
     ])
   ).toEqual([])
+})
+
+it('reads new caption projection generations while retaining legacy support', async () => {
+  const temporary = await mkdtemp(path.join(tmpdir(), 'caption-store-'))
+  try {
+    await mkdir(path.join(temporary, 'e6'), { recursive: true })
+    await cp(path.join(root, 'e4/v3'), path.join(temporary, 'e6/v3'), {
+      recursive: true,
+    })
+    expect(await readCourseImage(candidate, temporary)).toEqual(
+      await readCourseImage(candidate, root)
+    )
+  } finally {
+    await rm(temporary, { recursive: true, force: true })
+  }
 })

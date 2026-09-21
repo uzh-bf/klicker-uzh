@@ -27,8 +27,13 @@ function projectionContainer() {
   )
 }
 
-function projectionObjectPath(kind: string, hash: string, extension: string) {
-  return `e4/v3/${kind}/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}.${extension}`
+function projectionObjectPath(
+  kind: string,
+  hash: string,
+  extension: string,
+  generation: string
+) {
+  return `${generation}/${kind}/sha256/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}.${extension}`
 }
 
 /** Read only verified processor projections from a server-configured mounted store. */
@@ -36,6 +41,7 @@ export async function readCourseImage(
   image: CourseImage,
   root = process.env.CHAT_COURSE_IMAGE_STORE_PATH
 ): Promise<Buffer> {
+  let generation = 'e6/v3'
   async function object(
     kind: string,
     hash: string,
@@ -47,7 +53,7 @@ export async function readCourseImage(
     if (root) {
       const base = await realpath(root)
       const filename = await realpath(
-        path.join(base, projectionObjectPath(kind, hash, extension))
+        path.join(base, projectionObjectPath(kind, hash, extension, generation))
       )
       if (!filename.startsWith(base + path.sep))
         throw new Error('Invalid image path')
@@ -61,7 +67,7 @@ export async function readCourseImage(
         throw new Error('Course image storage unavailable')
       const client = BlobServiceClient.fromConnectionString(connectionString)
         .getContainerClient(container)
-        .getBlobClient(projectionObjectPath(kind, hash, extension))
+        .getBlobClient(projectionObjectPath(kind, hash, extension, generation))
       bytes = Buffer.from(await client.downloadToBuffer(0, limit + 1))
     }
     if (
@@ -71,11 +77,27 @@ export async function readCourseImage(
       throw new Error('Image artifact integrity failed')
     return bytes
   }
-  const manifest = JSON.parse(
-    (
-      await object('manifests', image.manifest_sha256, 'json', 2_000_000)
-    ).toString()
-  )
+  let manifestBytes: Buffer | undefined
+  for (const candidate of ['e6/v3', 'e5/v3', 'e4/v3']) {
+    generation = candidate
+    try {
+      manifestBytes = await object(
+        'manifests',
+        image.manifest_sha256,
+        'json',
+        2_000_000
+      )
+      break
+    } catch (error) {
+      const missing =
+        error instanceof Error &&
+        (('code' in error && error.code === 'ENOENT') ||
+          ('statusCode' in error && error.statusCode === 404))
+      if (!missing) throw error
+    }
+  }
+  if (!manifestBytes) throw new Error('Image manifest unavailable')
+  const manifest = JSON.parse(manifestBytes.toString())
   if (
     manifest.source_sha256 !== image.source_content_hash ||
     manifest.extraction_options_hash !== image.extraction_options_hash ||
