@@ -21,6 +21,11 @@ export default defineConfig({
     typescript({
       tsconfig: './tsconfig.json',
       rootDir: 'src',
+      // Keep Rollup independent from stale TypeScript incremental metadata.
+      compilerOptions: {
+        incremental: false,
+        tsBuildInfoFile: undefined,
+      },
     }),
   ],
   external: (id) =>
