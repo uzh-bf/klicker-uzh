@@ -1339,9 +1339,12 @@ async function resolveRegistryAuthorization({
   }
   realm.searchParams.set('service', registry)
   realm.searchParams.set('scope', expectedScope)
-  const tokenResponse = await fetchImpl(realm, { redirect: 'error' })
-  if (tokenResponse.redirected) {
-    throw new Error(`${repository}:${tag} registry token response redirected`)
+  const tokenResponse = await fetchImpl(realm, { redirect: 'manual' })
+  if (tokenResponse.redirected ||
+      (tokenResponse.status >= 300 && tokenResponse.status < 400)) {
+    throw new Error(
+      `${repository}:${tag} registry token response redirected ${tokenResponse.status} to ${tokenResponse.headers.get('location')}`
+    )
   }
   if (!tokenResponse.ok) {
     throw new Error(
@@ -1384,11 +1387,14 @@ async function registryResponse({ repository, tag, fetchImpl }) {
         accept: REGISTRY_ACCEPT,
         ...(authorization ? { authorization } : {}),
       },
-      redirect: 'error',
+      redirect: 'manual',
     })
   let response = await request()
-  if (response.redirected) {
-    throw new Error(`${repository}:${tag} registry response redirected`)
+  if (response.redirected ||
+      (response.status >= 300 && response.status < 400)) {
+    throw new Error(
+      `${repository}:${tag} registry response redirected ${response.status} to ${response.headers.get('location')}`
+    )
   }
   if (response.status !== 401) return response
 
@@ -1400,8 +1406,11 @@ async function registryResponse({ repository, tag, fetchImpl }) {
     tag,
   })
   response = await request(authorization)
-  if (response.redirected) {
-    throw new Error(`${repository}:${tag} registry response redirected`)
+  if (response.redirected ||
+      (response.status >= 300 && response.status < 400)) {
+    throw new Error(
+      `${repository}:${tag} authenticated registry response redirected ${response.status} to ${response.headers.get('location')}`
+    )
   }
   return response
 }
