@@ -20,9 +20,11 @@ interface ChatLayoutProps {
   params: Promise<{ chatbotId: string }>
 }
 
-// Authentication and authorization failures render an explicit unavailable
-// card instead of the not-found page: the chatbot exists, this session just
-// cannot use it, and that difference must stay visible for diagnosis.
+// An authorization failure on an existing chatbot renders an explicit
+// unavailable card instead of the not-found page: the bot exists, this session
+// just cannot use it, and that difference must stay visible for diagnosis.
+// Unresolvable sessions and missing, malformed or unpublished bots keep the
+// not-found response.
 async function renderAccessDenied() {
   const t = await getTranslations()
   const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
@@ -70,13 +72,19 @@ export default async function ChatLayout({
       targetChatbotId: chatbotId,
     }
   )
-  if ('response' in identityResult) return renderAccessDenied()
+  if ('response' in identityResult) notFound()
 
   const authorizationResult = await authorizeIdentityForChatbot(
     identityResult,
     chatbotId
   )
-  if ('response' in authorizationResult) return renderAccessDenied()
+  if ('response' in authorizationResult) {
+    // The shared guard reports a missing, malformed or unpublished chatbot as
+    // a 404-shaped failure; only other statuses mean access was denied to a
+    // bot that exists.
+    if (authorizationResult.response.status === 404) notFound()
+    return renderAccessDenied()
+  }
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     id: true,

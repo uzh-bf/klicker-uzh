@@ -147,18 +147,18 @@ describe('chatbot layout access', () => {
     )
   })
 
-  test('renders the access-denied card when participant access fails', async () => {
+  test('keeps the not-found response when participant access fails', async () => {
     mocks.resolveParticipantIdentity.mockResolvedValue({
       response: Response.json({ error: 'unauthorized' }, { status: 401 }),
     })
 
-    const layout = await ChatLayout({
-      children: null,
-      params: Promise.resolve({ chatbotId: CHATBOT_ID }),
-    })
+    await expect(
+      ChatLayout({
+        children: null,
+        params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+      })
+    ).rejects.toThrow('not found')
 
-    expect(layout.props).toMatchObject({ dataCy: 'chat-access-denied' })
-    expect(mocks.notFound).not.toHaveBeenCalled()
     expect(mocks.authorizeIdentityForChatbot).not.toHaveBeenCalled()
     expect(mocks.getChatbotOr404).not.toHaveBeenCalled()
   })
@@ -175,6 +175,20 @@ describe('chatbot layout access', () => {
 
     expect(layout.props).toMatchObject({ dataCy: 'chat-access-denied' })
     expect(mocks.notFound).not.toHaveBeenCalled()
+    expect(mocks.getChatbotOr404).not.toHaveBeenCalled()
+  })
+
+  test('keeps the not-found response when authorization reports a missing chatbot', async () => {
+    mocks.authorizeIdentityForChatbot.mockResolvedValue({
+      response: Response.json({ error: 'Chatbot not found' }, { status: 404 }),
+    })
+
+    await expect(
+      ChatLayout({
+        children: null,
+        params: Promise.resolve({ chatbotId: CHATBOT_ID }),
+      })
+    ).rejects.toThrow('not found')
     expect(mocks.getChatbotOr404).not.toHaveBeenCalled()
   })
 
