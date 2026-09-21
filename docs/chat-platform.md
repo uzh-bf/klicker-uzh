@@ -572,6 +572,17 @@ v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
 ## Lecturer authoring and publication contract
 
+Administrators review pending publication requests in Manage's `/admin` panel.
+The review query and approval mutation both enforce `ADMIN` at the schema and
+service boundaries, independently of author beta access. The queue contains
+only pending chatbots and selects configuration, owner identity and publishing
+capability, course, proposed participant credits, and disclaimer/tool details;
+it does not read model credentials, MCP connection secrets or participant
+conversations. Approval makes the existing chatbot available to its course and
+rechecks the owner's live publishing capability. It does not grant account usage
+budgets. After any approval attempt the UI reloads the queue without retrying the
+mutation, since another admin or an uncertain response may have changed its state.
+
 The owner-facing GraphQL contract lives in
 `packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
 can create a course-bound `DRAFT` chatbot before their account is authorized to
