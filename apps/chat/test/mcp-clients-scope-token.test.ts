@@ -431,17 +431,6 @@ describe('current-v3 Doc Query scope', () => {
       ],
     },
     {
-      name: 'the selected mode is not bound',
-      configurations: [
-        {
-          chatMode: 'tutor',
-          parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
-          mcpServer: { id: 'kb-server', name: 'KB' },
-        },
-      ],
-      selectedMode: 'explainer',
-    },
-    {
       name: 'two KB configs share a mode',
       configurations: [
         {
@@ -512,6 +501,18 @@ describe('current-v3 Doc Query scope', () => {
         )
       )
     ).toThrowError(RequiredMCPUnavailableError)
+  })
+
+  test('returns no scope for a selected mode without a knowledge-base binding', () => {
+    const configurations = [
+      {
+        chatMode: 'tutor',
+        parameters: { required: true, toolAlias: 'doc_query', kb_id: KB_ID },
+        mcpServer: { id: 'kb-server', name: 'KB' },
+      },
+    ]
+
+    expect(resolveMcpScope(configurations, 'explainer', [])).toBeUndefined()
   })
 
   test('keeps the citation card aligned with the runtime tool name', () => {

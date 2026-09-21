@@ -219,9 +219,6 @@ export function resolveEffectiveChatModeOptions(
   const standardModes = Object.keys(DEFAULT_PROMPT)
   const storedModes = storedPrompts ? Object.keys(storedPrompts) : []
   const candidates = Array.from(new Set([...standardModes, ...storedModes]))
-  const hasRequiredMCP = mcpConfigurations.some(
-    (config) => isEnabled(config) && isRequired(config)
-  )
   const modeOptions: Record<string, string> = {}
 
   for (const mode of candidates) {
@@ -238,9 +235,6 @@ export function resolveEffectiveChatModeOptions(
       mode === 'quizzer' &&
       !effectiveConfigurations.some(isSafeDocQueryBinding)
     ) {
-      continue
-    }
-    if (hasRequiredMCP && !effectiveConfigurations.some(isRequired)) {
       continue
     }
 
