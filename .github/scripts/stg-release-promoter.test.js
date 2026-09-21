@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict')
 const { execFileSync } = require('node:child_process')
+const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -41,6 +42,7 @@ const {
   collectBuildEvidence,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
+  fetchImageRevision,
   getSourceBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
@@ -1088,6 +1090,202 @@ test('rejects untrusted or incomplete registry manifest responses', async () => 
       fetchImpl: async () => interrupted,
     }),
     /incomplete/
+  )
+})
+
+const ADOPTED_IMAGE = 'ghcr.io/uzh-bf/klicker-uzh/analytics-arm'
+
+function registryHeaders(values) {
+  const entries = new Map(
+    Object.entries(values).map(([name, value]) => [
+      String(name).toLowerCase(),
+      value,
+    ])
+  )
+  return { get: (name) => entries.get(String(name).toLowerCase()) ?? null }
+}
+
+function registryJsonResponse(body, contentType) {
+  const bytes = Buffer.from(JSON.stringify(body))
+  return {
+    arrayBuffer: async () => bytes,
+    headers: registryHeaders({ 'content-type': contentType }),
+    ok: true,
+    redirected: false,
+    status: 200,
+  }
+}
+
+function registryBytesResponse(bytes, contentType) {
+  return {
+    arrayBuffer: async () => bytes,
+    headers: registryHeaders({ 'content-type': contentType }),
+    ok: true,
+    redirected: false,
+    status: 200,
+  }
+}
+
+function registryBlobRedirectResponse(location) {
+  return {
+    headers: registryHeaders({ location }),
+    ok: false,
+    redirected: false,
+    status: 307,
+  }
+}
+
+// The adoption walk of one image: the public challenge, the pull token, the
+// index, and the platform manifest, followed by the caller's blob responses.
+function adoptedImageWalk({ configBytes, platformDigest, tail }) {
+  const requests = []
+  const responses = [
+    {
+      headers: registryHeaders({
+        'www-authenticate':
+          'Bearer realm="https://ghcr.io/token",service="ghcr.io",' +
+          'scope="repository:uzh-bf/klicker-uzh/analytics-arm:pull"',
+      }),
+      ok: false,
+      redirected: false,
+      status: 401,
+    },
+    {
+      headers: registryHeaders({}),
+      json: async () => ({ token: 'synthetic-registry-token' }),
+      ok: true,
+      redirected: false,
+      status: 200,
+    },
+    registryJsonResponse(
+      {
+        manifests: [
+          {
+            digest: platformDigest,
+            platform: { architecture: 'arm64', os: 'linux' },
+          },
+        ],
+      },
+      'application/vnd.oci.image.index.v1+json'
+    ),
+    registryJsonResponse(
+      {
+        config: {
+          digest: `sha256:${crypto.createHash('sha256').update(configBytes).digest('hex')}`,
+        },
+      },
+      'application/vnd.oci.image.manifest.v1+json'
+    ),
+    ...tail,
+  ]
+  return {
+    requests,
+    responses,
+    fetchImpl: async (url, options = {}) => {
+      requests.push({ options, url: String(url) })
+      const response = responses.shift()
+      assert.ok(response, `unexpected registry request ${url}`)
+      return response
+    },
+  }
+}
+
+const ADOPTED_REVISION = 'e'.repeat(40)
+const ADOPTED_PLATFORM_DIGEST = `sha256:${'1'.repeat(64)}`
+const ADOPTED_INDEX_DIGEST = `sha256:${'2'.repeat(64)}`
+
+function adoptedConfigBytes() {
+  return Buffer.from(
+    JSON.stringify({
+      config: {
+        Labels: { 'org.opencontainers.image.revision': ADOPTED_REVISION },
+      },
+    })
+  )
+}
+
+// A registry serves a blob through a redirect to its storage host, so the
+// promotion has to follow exactly that hop: without it no adopted image can be
+// bound to the revision label that produced it, and staging never promotes.
+test('follows one registry blob redirect to the host that serves an adopted digest', async () => {
+  const configBytes = adoptedConfigBytes()
+  const configDigest = `sha256:${crypto
+    .createHash('sha256')
+    .update(configBytes)
+    .digest('hex')}`
+  const storageUrl =
+    `https://pkg-containers.githubusercontent.com/ghcrblobs10/` +
+    `blobs/${configDigest}?sig=synthetic`
+  const { fetchImpl, requests, responses } = adoptedImageWalk({
+    configBytes,
+    platformDigest: ADOPTED_PLATFORM_DIGEST,
+    tail: [
+      registryBlobRedirectResponse(storageUrl),
+      registryBytesResponse(configBytes, 'application/octet-stream'),
+    ],
+  })
+
+  assert.equal(
+    await fetchImageRevision({
+      digest: ADOPTED_INDEX_DIGEST,
+      fetchImpl,
+      repository: ADOPTED_IMAGE,
+    }),
+    ADOPTED_REVISION
+  )
+  assert.equal(responses.length, 0)
+  assert.equal(requests.length, 6)
+  assert.equal(requests[0].options.redirect, 'error')
+  assert.match(requests[1].url, /^https:\/\/ghcr\.io\/token\?/)
+  assert.equal(requests[4].options.redirect, 'manual')
+  assert.equal(requests[5].url, storageUrl)
+  // The signed storage URL authorizes itself, so the pull token stays with the
+  // registry that issued it.
+  assert.equal(requests[5].options.headers, undefined)
+})
+
+test('rejects a registry blob redirect that leaves the storage host', async () => {
+  const configBytes = adoptedConfigBytes()
+  const { fetchImpl } = adoptedImageWalk({
+    configBytes,
+    platformDigest: ADOPTED_PLATFORM_DIGEST,
+    tail: [
+      registryBlobRedirectResponse(
+        'https://storage.example.invalid/blobs/analytics'
+      ),
+    ],
+  })
+
+  await assert.rejects(
+    fetchImageRevision({
+      digest: ADOPTED_INDEX_DIGEST,
+      fetchImpl,
+      repository: ADOPTED_IMAGE,
+    }),
+    /left its storage host/
+  )
+})
+
+test('rejects registry blob bytes that are not the requested digest', async () => {
+  const configBytes = adoptedConfigBytes()
+  const { fetchImpl } = adoptedImageWalk({
+    configBytes,
+    platformDigest: ADOPTED_PLATFORM_DIGEST,
+    tail: [
+      registryBytesResponse(
+        Buffer.from('{"config":{"Labels":{}}}'),
+        'application/vnd.oci.image.config.v1+json'
+      ),
+    ],
+  })
+
+  await assert.rejects(
+    fetchImageRevision({
+      digest: ADOPTED_INDEX_DIGEST,
+      fetchImpl,
+      repository: ADOPTED_IMAGE,
+    }),
+    /is not the requested digest/
   )
 })
 
