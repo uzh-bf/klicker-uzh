@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "cytoscape": "3.34.0"
+    "cytoscape": "3.34.0",
+    "motion": "13.1.1"
   },
   "devDependencies": {
     "@klicker-uzh/graphql": "workspace:*",
