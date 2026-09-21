@@ -177,6 +177,8 @@ function createMonitorPrisma(
     servingResources = [],
     ambiguousBuilds = [],
     ambiguousBuildCount = ambiguousBuilds.length,
+    heldBuilds = [],
+    heldBuildCount = heldBuilds.length,
   }: {
     activeBuildCount?: number
     timedOutBuilds?: Array<Record<string, unknown>>
@@ -188,6 +190,8 @@ function createMonitorPrisma(
     }>
     ambiguousBuilds?: Array<Record<string, unknown>>
     ambiguousBuildCount?: number
+    heldBuilds?: Array<Record<string, unknown>>
+    heldBuildCount?: number
   } = {}
 ) {
   const prisma = {
@@ -196,12 +200,14 @@ function createMonitorPrisma(
         .fn()
         .mockResolvedValueOnce(builds)
         .mockResolvedValueOnce(timedOutBuilds)
-        .mockResolvedValueOnce(ambiguousBuilds),
+        .mockResolvedValueOnce(ambiguousBuilds)
+        .mockResolvedValueOnce(heldBuilds),
       count: vi
         .fn()
         .mockResolvedValueOnce(activeBuildCount)
         .mockResolvedValueOnce(timedOutBuildCount)
-        .mockResolvedValueOnce(ambiguousBuildCount),
+        .mockResolvedValueOnce(ambiguousBuildCount)
+        .mockResolvedValueOnce(heldBuildCount),
       findFirst: vi.fn().mockResolvedValue(newerBuild),
       findUnique: vi.fn().mockResolvedValue({
         quotaId: QUOTA_ID,
