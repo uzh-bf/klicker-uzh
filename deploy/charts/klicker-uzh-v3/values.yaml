@@ -268,17 +268,6 @@ chat:
 
   affinity: {}
 
-# Deployment-controlled binding for the scoped KB route of Doc Query. All three
-# values together switch Chat and the GraphQL backend to scope-token transport
-# authentication for the modern KB server, which then ignores the stored
-# bearer. Leaving them empty keeps the legacy transport bearer. Partial
-# configuration fails chart rendering.
-docQuery:
-  scopedMcp:
-    serverId: ''
-    legacyUrl: ''
-    url: ''
-
 mcpStudent:
   enabled: true
   priorityClassName: production-workload
