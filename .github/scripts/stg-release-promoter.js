@@ -1519,7 +1519,10 @@ async function fetchImageRevision({ digest, fetchImpl = fetch, repository }) {
       .split(';', 1)[0]
       .trim()
       .toLowerCase()
-    if (!allowed.types.includes(contentType)) {
+    if (
+      !allowed.types.includes(contentType) &&
+      !(allowed.blobs && contentType === 'application/octet-stream')
+    ) {
       throw new Error(
         label + ' registry response has an unexpected content type'
       )
