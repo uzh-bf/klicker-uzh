@@ -392,10 +392,10 @@ portfolio.
 - Status: implemented, at the finish gate. Active slice: none.
 - Completed slices: 1 runtime, 2 KB attach, 3 lecturer surface, 4 docs/ADR.
 - Remaining slices: none.
-- Latest verified commit: `2ac8606c54` on `fix/chatbot-kb-custom-mode-binding`,
+- Latest verified commit: `c0d53549e6` on `fix/chatbot-kb-custom-mode-binding`,
   six commits ahead of `origin/v3-ai` (`171c3e96cb`). Commits: `df59394769`
   plan, `4d5c440fa4` slice 1, `78f45999c6` slice 2, `ac3e43aa65` slice 3,
-  `4193cb4259` slice 4, `2ac8606c54` progress.
+  `4193cb4259` slice 4, `c0d53549e6` progress.
 - Base repair: the branch began on `2c1533f5d2`, whose `KnowledgeGraphPanel.tsx`
   passed `publishedBuildId` into a `string | null` prop because the introducing
   commit's CI run was cancelled, so `check:all` failed and no commit could land.
@@ -426,11 +426,21 @@ portfolio.
   remaining producer); and two util assertions that restated the constants'
   literals. The reviewer confirmed both product requirements, the isolation path,
   and the security-relevant invariants.
-- Delivery layer: branch six commits ahead of `origin/v3-ai`, not yet pushed;
-  draft PR not yet created.
+- Final review refreshed on the exact pushed head `c0d53549e6` after the base
+  advanced to `171c3e96cb`: `status: pass`, no findings. The configured Claude
+  CLI route failed terminally (`api_error` 429, session limit), so the review ran
+  through the `$rs-model-routing` continuity ladder on AGY Gemini 3.8 Flash high
+  with the complete final-review contract; the returned JSON validates against
+  `~/.agents/schemas/cross-provider-review.schema.json`. AGY provenance is
+  recorded because it is substitution evidence, not the configured route.
+- Delivery layer: branch pushed; `origin/fix/chatbot-kb-custom-mode-binding` is at
+  `c0d53549e6`. Draft PR
+  [#6247](https://github.com/uzh-bf/klicker-uzh/pull/6247) against `v3-ai`, with
+  the seven captures attached and rendered inline (receipt:
+  `project/_local/screenshots/chatbot-kb-custom-mode-binding/uploads.json`).
 - Environment note: the devcontainer database was migrated but unseeded, so the
   delegated lecturer login failed until `pnpm --filter @klicker-uzh/prisma run
   prisma:seed:raw` loaded the disposable dev seed.
-- Next action: integrated final review, then ordinary push and draft PR. Merge,
-  deployment, marking ready, PRD writes, and publishing the ethics bot draft
-  revision are withheld.
+- Next action: none inside this package; it is complete at the draft-PR boundary.
+  Merge, deployment, marking ready, PRD writes, and publishing the ethics bot
+  draft revision remain withheld.
