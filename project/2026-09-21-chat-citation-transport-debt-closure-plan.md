@@ -136,6 +136,25 @@ the largest correctness risk in the chatbot program.
   opened as draft PR #6225, matching the repository's `docs(project)`
   precedent. The `project/_local/` evidence files stay untracked by design
   (`.gitignore`).
+- 2026-09-21, #6197 went green at `e5cf41ec94` (all eight required contexts,
+  plus a clean final AI review), then `v3` advanced by one docs commit (#6217)
+  and the branch was refreshed again to `11973a8e25`; CI re-ran there. Each
+  new `v3` commit forces a refresh because the ruleset is `strict`, so prompt
+  merging avoids another cycle.
+- 2026-09-21, C4 delivered as draft PR #6228
+  (`chore(sync): merge v3 into v3-ai`, head `17735f22a8`). All seven expected
+  paths conflicted and were resolved to the `v3-ai` structure; the manifests
+  took unions. `deploy/` is byte-identical to both branches.
+- 2026-09-21, a silent-revert hazard was found while resolving C4 and is worth
+  a durable fix. `git` auto-merged
+  `apps/chat/test/doc-query-scope-token.test.ts` without a conflict into a
+  state that imports `createDocQueryScopedFetch` from the app-side module,
+  which on `v3-ai` only re-exported the signer. The resolution adds that
+  symbol to the `v3-ai` re-export. The deeper problem: after this merge the
+  common ancestor carries `v3-ai`'s re-export, so the **next** `v3` → `v3-ai`
+  sync sees `ours` unchanged and takes `v3`'s inline implementation silently,
+  reverting the package-owned token with no conflict to review. See
+  "Structural-split hazard" below.
 
 ## Known failure mode and merge order
 
@@ -303,6 +322,36 @@ post-#6197 consolidation yields seven conflicting paths:
 re-export, keep both `globalEnv` entries, and keep both dependency entries in
 the shared-components manifest; the last one is `cytoscape` vs `motion` and
 unrelated to this debt.
+
+Delivered 2026-09-21: draft PR #6228 at `17735f22a8`, merged content
+resolution per the table above. Two additions to the pre-flight: the
+app-side re-export also gains `createDocQueryScopedFetch`, and the
+auto-merged `doc-query-scope-token.test.ts` is kept because its assertions
+match the package implementation (fresh token per request, credentials
+stripped, `redirect: 'error'`, target mismatch, and no fetch when signing
+fails).
+
+### Structural-split hazard (needs a decision)
+
+C4's resolution does not stick on its own. The transport files legitimately
+differ between the branches (`v3` inline, `v3-ai` package-owned), and a
+sync resolution that keeps `ours` only holds for one merge. Once this
+consolidation is the common ancestor, the next `v3` → `v3-ai` sync sees
+`ours` unchanged, applies `base` → `theirs`, and silently adopts `v3`'s
+inline files, reverting the package-owned token without a conflict to review.
+
+Options, cheapest first:
+
+1. A merge driver or `.gitattributes` entry that keeps the `v3-ai` version of
+   the transport paths, so the sync never rewrites them.
+2. A CI guard in the shape of `deploy-parity.cjs` asserting that
+   `apps/chat/src/lib/server/docQueryScopeToken.ts` re-exports the package
+   token on `v3-ai`, which turns a silent revert into a failed check.
+3. Bring `@klicker-uzh/doc-query-client` onto `v3` and make `v3`'s file a
+   re-export too, converging both branches. This is the architectural fix,
+   because it removes the divergence rather than guarding it, but it moves
+   the package to the mainline and belongs with the multi-tenant Doc Query
+   work rather than this debt closure.
 
 ### C5 — Citation normalizer PR (gated; proposed: close as already delivered)
 
