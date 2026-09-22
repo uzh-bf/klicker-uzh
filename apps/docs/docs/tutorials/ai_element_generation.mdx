@@ -14,10 +14,10 @@ Beta features are enabled by default. You can disable or re-enable them in [User
 
 ## How do I start a generation?
 
-1. Open **AI → Generate elements** and select a published **Knowledge source**.
-2. Select one element type and the number of elements to generate, from **1 to 20**.
-3. Choose **German** or **English** and optionally add learning objectives.
-4. For **single choice**, **multiple choice**, or **KPRIM**, select the included sources and optionally restrict document pages using **From page** and **To page**. Choose a difficulty level and one or more Bloom levels: **Remember**, **Understand**, **Apply**, **Analyze**, or **Evaluate**. Flashcard generation does not offer source/page selection, difficulty, or Bloom-level settings.
+1. Open **Generate Klicker elements** from a published knowledge graph.
+2. Choose the **Element type**, the **Number of elements** from **1** to **20**, and the **Language**.
+3. Select a **Difficulty** and at least one **Bloom level**. Bloom levels are a multi-select: **Remember**, **Understand**, **Apply**, **Analyze**, or **Evaluate**.
+4. Optionally enter a **Focus topic**, add **Learning objectives**, and restrict the source pages when those controls are available for the selected element type.
 5. Select **Generate elements**.
 
 If the source shows **Update available**, its published graph is older than the current materials. You can use the existing version or rebuild the graph first to include the updates.
@@ -26,20 +26,22 @@ If the source shows **Update available**, its published graph is older than the 
 
 For **single choice**, **multiple choice**, and **KPRIM**, generation pauses for your review at two stages:
 
-- **Review the generation design:** Check the distribution across modules and learning objectives.
-- **Review the element plan:** Check the planned questions, difficulty, cognitive levels, and source coverage.
+- **Review the generation design:** Check the distribution across modules and learning objectives, including the evidence distribution.
+- **Review the element plan:** Check the planned stems, difficulty, cognitive levels, and source coverage.
 
-At each stage, select **Approve and continue** or **Reject generation**. If warnings are shown, review them and acknowledge them before continuing. Approving these stages allows generation to proceed; it does not save the final questions to your library.
+At each stage, select **Approve and continue** or **Reject generation**. If warnings are shown, review them and acknowledge them before continuing. The element plan is a draft: final titles and questions may be refined during generation while preserving the approved intent and evidence. Approving these stages allows generation to proceed; it does not save the final questions to your library.
 
 **Flashcards** skip these two approval stages and proceed to generated-content review. If a flashcard generation produces fewer elements than requested, choose **Retry**, or acknowledge the incomplete set and select **Use generated elements**. These recovery actions are specific to flashcard generation.
 
 ## How do I review and save the results?
 
+After approval, generation continues in the background. The generation page shows the current stage, the number of generated elements, and progress. You can leave the page and return when generation is complete.
+
 In **Review generated elements**, use **Needs review**, **Needs attention**, **Kept**, and **Discarded** to find drafts at each stage.
 
-1. **Open** a draft and compare its content and source citations with your course materials. Inspect its learning design and quality flags.
+1. **Open** a draft and compare its question, answer choices, marked correct answer or answers, feedback, explanation, learning design, and source citations with your course materials. Inspect its learning design and quality flags.
 2. Edit the question, answers, or explanation as needed. Verify correctness and suitability for your students.
 3. Select **Keep element** to save that element to your question library, or **Discard** to leave it out. A discarded draft can be restored for further review.
-4. Use **Open saved element** to continue working with a kept element in the library.
+4. Use **Open saved element** to open the kept element in the **Library**.
 
-Generated output is not added to the library automatically. Keeping an element also does not publish it to students; add reviewed elements to an activity through the usual [element management workflow](/tutorials/element_management/).
+Generated output is not added to the library automatically. Keep an element only after reviewing the generated answer and its sources. This workflow ends when the accepted element appears in the **Library**.

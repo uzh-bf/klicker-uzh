@@ -17,7 +17,7 @@ Knowledge bases and graphs are AI beta features. Beta features are enabled by de
 1. Open **AI → Knowledge Bases** and select **Create knowledge base**.
 2. Enter a **Name** and, optionally, a **Description**.
 3. Select **Add resource**. Choose **Document** to upload a PDF, TXT, or Markdown file, or **Website** to add a web address. Give the resource a title and choose its material category where requested.
-4. Check the ingestion status. A resource moves through **Queued** and **Processing** before it is **Ready**. Use **Ingest** if processing has not started, or **Retry** if it failed.
+4. Check the ingestion status. A newly added resource may be **Added**, **Queued**, or **Processing** before it becomes **Succeeded**. Wait until the resource has a current version and is **Available to AI** before using it for graph building, retrieval, or generation. Use **Ingest** if processing has not started, or **Retry** if it failed.
 
 Document uploads are limited to **25 MB** per file. The resource dialog lists the supported formats; video ingestion is not yet available. Processing runs in the background, so you can return to the knowledge base later to check the result.
 
@@ -27,20 +27,20 @@ Use **Replace file** and **Replace and ingest** to update a document. The previo
 
 In the knowledge base, open **Connected chatbots** and select **Connect chatbot**. Choose the chatbot that should use these materials. A chatbot can use one knowledge base at a time; connecting another replaces its current connection.
 
-Materials must finish processing before they are available for retrieval. Check the chatbot's answers and citations against the source documents before using it with students. Connecting materials does not publish a draft chatbot; follow the [publication workflow](/tutorials/chatbot/#how-do-i-get-a-chatbot-for-my-course).
+Materials must finish processing before they are available to AI. Check the current version and availability state for each resource before continuing. Check a chatbot's answers and citations against the source documents before using it with students. Connecting materials does not publish a draft chatbot; follow the [publication workflow](/tutorials/chatbot/#how-do-i-create-and-publish-a-course-chatbot).
 
 ## How do I build a knowledge graph?
 
 1. Open **Knowledge graph → Configure** and enable **Enable the knowledge graph for this KB**.
-2. Choose **Standard (lower cost)** or **High (higher cost)**.
-3. Review the displayed estimate and cost controls, then select **Build graph**. The control is unavailable until the required configuration is complete.
+2. Choose the graph **Domain**, **Generation language**, and **Build quality**. Higher quality can require more processing and cost.
+3. Review the **estimated**, **reserved**, and, after completion, **actual** cost at a user level, then select **Build graph**. The control is unavailable until the required configuration is complete.
 4. Wait for the build to finish, then open the **Published graph**.
 
 Graph building processes your materials in the background and can incur usage costs. Check the status and any error message before retrying a failed build.
 
 ## How do I explore and update the graph?
 
-Search for a concept and select a node to inspect its summary, content, and source references. Select relationships to explore how concepts connect, or use **Expand connections** to bring related concepts into view.
+Search for a concept and select a node to inspect its summary, content, and source references. Use the layout controls to change the graph view. Select relationships to explore how concepts connect, or use **Expand connections** to bring related concepts into view.
 
 After materials change, the published graph can be marked **Stale**. The existing graph remains usable, but it does not yet reflect those changes. Select **Rebuild graph** when you want it to include the updated materials.
 

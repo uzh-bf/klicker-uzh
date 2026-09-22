@@ -23,12 +23,12 @@ module.exports = {
       // 'tutorials/activity_templates',
       'tutorials/activity_batch_operations',
       'tutorials/element_updates_activities',
-      'tutorials/chatbot',
     ],
     'Upcoming AI Features': [
       'tutorials/ai_element_generation',
       'tutorials/ai_assistant',
       'tutorials/knowledge_bases',
+      'tutorials/chatbot',
     ],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
