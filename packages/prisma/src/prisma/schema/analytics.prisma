@@ -5,6 +5,12 @@ enum AnalyticsType {
   COURSE // analytics for the entire course
 }
 
+// The shared generation invalidates computations after eligibility changes.
+model AnalyticsEligibilityGeneration {
+  id         Int    @id
+  generation BigInt @default(0)
+}
+
 enum ActivityLevel {
   LOW
   MEDIUM
