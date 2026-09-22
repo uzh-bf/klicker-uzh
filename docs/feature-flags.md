@@ -41,15 +41,15 @@ and worker-only KB settlement are unaffected.
 
 ## Active flags
 
-| Key                         | Consumer                                                | Fallback | Disabled behavior                                                                                               |
-| --------------------------- | ------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------- |
-| `learning-analytics`        | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                            |
-| `ai-beta`                   | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                  |
-| `ai-advanced-management`    | Lecturer Manage UI                                      | `false`  | Manage shows the simplified chatbot surface; the advanced controls are not mounted                              |
-| `kb-ingestion`              | Lecturer KB ingestion admission                         | `false`  | New upload, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue |
-| `kb-graph-builds`           | Lecturer graph opt-in and rebuilds                      | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue |
-| `kb-graph-domain-selection` | Explicit graph-domain and graph-focus requests          | `false`  | The capability handshake advertises no options and a complete selection is refused                              |
-| `question-focus-topic`      | Per-batch question-generation focus                     | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                  |
+| Key                         | Consumer                                                | Fallback | Disabled behavior                                                                                                                    |
+| --------------------------- | ------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `learning-analytics`        | Lecturer UI/Manage                                      | `false`  | Analytics controls remain visible but are not usable                                                                                 |
+| `ai-beta`                   | Server-side chatbot authoring and account-usage rollout | `false`  | Authoring UI is not mounted; authoring API calls are denied and protected reads return no data                                       |
+| `ai-advanced-management`    | Lecturer Manage UI                                      | `false`  | Manage shows the simplified chatbot surface; the advanced controls are not mounted                                                   |
+| `kb-ingestion`              | Lecturer KB ingestion admission                         | `false`  | New upload, upload confirmation, URL, replacement and ingest requests are refused; reads, deletion, cleanup and queued work continue |
+| `kb-graph-builds`           | Lecturer graph opt-in and rebuilds                      | `false`  | New opt-ins and rebuilds are refused before any cost reservation; published graphs and accepted builds continue                      |
+| `kb-graph-domain-selection` | Explicit graph-domain and graph-focus requests          | `false`  | The capability handshake advertises no options and a complete selection is refused                                                   |
+| `question-focus-topic`      | Per-batch question-generation focus                     | `false`  | `supportsFocusTopic` is false and a requested focus is refused                                                                       |
 
 Beta Features is discoverable in account settings and the first-login dialog
 regardless of Catalyst, login scope, or rollout availability. The information
@@ -598,12 +598,12 @@ backend-enforced entitlements under [ADR 0038](./adr/0038-backend-enforced-featu
 the capability queries advertise what the requesting actor's own evaluation
 allows, and every entry point re-evaluates the flag before it accepts work.
 
-| Key                         | Admits                                                                 | Closed or unavailable behavior                                                                                                              |
-| --------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kb-ingestion`              | Upload tickets, URL resources, file replacement, and ingest/retry work | `KB_INGESTION_DISABLED` on new requests only; reads, upload confirmation, deletion, cleanup and queued reconciliation stay live             |
-| `kb-graph-builds`           | Graph opt-in, rebuild and focus requests, before any cost reservation  | `KB_GRAPH_DISABLED` on new requests only; a published graph keeps being served and an accepted build keeps running, settling and publishing |
-| `kb-graph-domain-selection` | Explicit domain selection and the graph build focus                    | `KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`; the capability handshake advertises no options                                                       |
-| `question-focus-topic`      | A per-batch question-generation focus                                  | `CONFIGURATION_INVALID` for a requested focus, and `supportsFocusTopic: false` in the capability query                                      |
+| Key                         | Admits                                                                                      | Closed or unavailable behavior                                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kb-ingestion`              | Upload tickets, upload confirmation, URL resources, file replacement, and ingest/retry work | `KB_INGESTION_DISABLED` on new requests only; reads, deletion, cleanup and queued reconciliation stay live                                  |
+| `kb-graph-builds`           | Graph opt-in, rebuild and focus requests, before any cost reservation                       | `KB_GRAPH_DISABLED` on new requests only; a published graph keeps being served and an accepted build keeps running, settling and publishing |
+| `kb-graph-domain-selection` | Explicit domain selection and the graph build focus                                         | `KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`; the capability handshake advertises no options                                                       |
+| `question-focus-topic`      | A per-batch question-generation focus                                                       | `CONFIGURATION_INVALID` for a requested focus, and `supportsFocusTopic: false` in the capability query                                      |
 
 These flags narrow existing provider contracts and never replace them. Explicit
 domain selection still requires `KB_GRAPH_DOMAIN_CATALOG_REVISION` to match the

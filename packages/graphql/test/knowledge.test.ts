@@ -2262,7 +2262,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       })
     ).resolves.toBeNull()
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
     expect(deleteBlobIfExists).toHaveBeenCalledOnce()
     expect(requestedBlobName).toBe(originalTicket.blobName)
@@ -2286,7 +2288,9 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     expect(runNoWait).toHaveBeenCalledOnce()
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
   })
 
@@ -2354,7 +2358,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       status: KBResourceStatus.QUEUED,
     })
     await expect(
-      prisma.kBIngestionRun.count({ where: { resourceId: resource.id } })
+      prisma.kBIngestionRun.count({
+        where: { resourceId: resource.id, resourceVersion: 2 },
+      })
     ).resolves.toBe(1)
     expect(runNoWait).toHaveBeenCalledOnce()
   })
@@ -2562,6 +2568,14 @@ describe('Integration tests for knowledge base CRUD', () => {
       deleteKbResource({ id: resource.id }, userTwoCtx)
     ).rejects.toThrow('KB resource not found')
 
+    // Creation auto-starts ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this update stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.READY },
+    })
+
     await deleteKbResource({ id: resource.id }, userOneCtx)
     await expect(
       prisma.kBResource.findUnique({ where: { id: resource.id } })
@@ -2570,7 +2584,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       deletedAt: expect.any(Date),
       ingestionOperation: KBIngestionOperation.DELETE,
       status: KBResourceStatus.QUEUED,
-      resourceVersion: 1,
+      resourceVersion: 2,
     })
     await expect(
       getKbResourcesConnection({ kbId: created.id }, userOneCtx)
@@ -2587,6 +2601,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       },
       userOneCtx
     )
+    // Creation auto-starts ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this update stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: resource.id },
+      data: { status: KBResourceStatus.READY },
+    })
     vi.spyOn(
       userOneCtx.tasks.deleteKBResource,
       'runNoWait'
@@ -2620,14 +2641,12 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('returns only the five newest ingestion runs to the resource owner', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/watch?id=123',
-      },
-      userOneCtx
-    )
+    // A direct create keeps this resource free of the automatic ingestion
+    // run that the ordinary creation mutation would enqueue, so the six
+    // runs seeded below are the only ones competing for the top five.
+    const resource = await prisma.kBResource.create({
+      data: legacyUrlResources(created.id, 1)[0]!,
+    })
     const runIds = Array.from({ length: 6 }, () => randomUUID())
 
     for (const [index, id] of runIds.entries()) {
@@ -3335,6 +3354,13 @@ describe('Integration tests for knowledge base CRUD', () => {
         )
       )
     )
+    // Creation auto-started ingestion, so each resource must settle out of
+    // QUEUED before bulk deletion is permitted; this stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.updateMany({
+      where: { id: { in: resources.map(({ id }) => id) } },
+      data: { status: KBResourceStatus.READY },
+    })
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.deleteKBResource, 'runNoWait')
       .mockRejectedValueOnce(new Error('queue unavailable'))
@@ -3575,6 +3601,13 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       getKbKnowledgeGraphConfig({ kbId: kb.id }, deniedCtx)
     ).resolves.toMatchObject({ isEnabled: false })
+    // Creation auto-started ingestion, so the resource must settle out of
+    // QUEUED before deletion is permitted; this stands in for that
+    // completed ingestion rather than exercising deletion timing itself.
+    await prisma.kBResource.update({
+      where: { id: existingResource.id },
+      data: { status: KBResourceStatus.READY },
+    })
     const deleted = await deleteKbResource(
       { id: existingResource.id },
       deniedCtx
@@ -3584,13 +3617,18 @@ describe('Integration tests for knowledge base CRUD', () => {
 
   it('classifies resources and keeps complete-KB ingestion counts across filters', async () => {
     const kb = await createKb({ name: 'Material categories' }, userOneCtx)
+    // Direct creation keeps these resources at their pre-ingestion ADDED
+    // status so the reconciliation counts below reflect the classification
+    // and status overrides this test applies, not the ordinary creation
+    // mutation's automatic QUEUED transition.
     const resources = await Promise.all(
       ['content', 'administrative', 'unclassified'].map((title) =>
-        createKbUrlResource(
-          {
+        prisma.kBResource.create({
+          data: {
             kbId: kb.id,
+            type: KBResourceType.URL,
             title,
-            url: `https://example.com/${title}`,
+            sourceUrl: `https://example.com/${title}`,
             materialType:
               title === 'content'
                 ? KBResourceMaterialType.COURSE_CONTENT
@@ -3598,8 +3636,7 @@ describe('Integration tests for knowledge base CRUD', () => {
                   ? KBResourceMaterialType.ADMINISTRATIVE
                   : undefined,
           },
-          userOneCtx
-        )
+        })
       )
     )
     const [content, administrative, unclassified] = resources as [
