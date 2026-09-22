@@ -1,5 +1,4 @@
-import { mkdir, readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import { readFile } from 'node:fs/promises'
 import type { Page } from '@playwright/test'
 import deMessages from '../../packages/i18n/messages/de.js'
 import enMessages from '../../packages/i18n/messages/en.js'
@@ -15,8 +14,9 @@ type SyntheticDomainOption = {
   languages: Array<{ language: string; categories: SyntheticCategory[] }>
 }
 
-// Contract domains. The panel resolves each labelKey to the interface language,
-// so every assertion below stays on ids, versions and the submitted protocol.
+// Contract domains. The controls resolve each labelKey to the interface
+// language, so every assertion below stays on ids, versions and the submitted
+// protocol.
 const DOMAIN_IDS = [
   'finance',
   'economics',
@@ -39,25 +39,27 @@ const DOMAIN_MESSAGE_KEYS: Record<string, string> = {
 
 type MessageCatalog = { kb: Record<string, string> }
 
+const EN_MESSAGES = enMessages as unknown as MessageCatalog
+const DE_MESSAGES = deMessages as unknown as MessageCatalog
+
 function domainLabels(messages: MessageCatalog): Record<string, string> {
   return Object.fromEntries(
     DOMAIN_IDS.map((id) => [id, messages.kb[DOMAIN_MESSAGE_KEYS[id]]])
   )
 }
 
-const EN_DOMAIN_LABELS = domainLabels(enMessages as unknown as MessageCatalog)
-const DE_DOMAIN_LABELS = domainLabels(deMessages as unknown as MessageCatalog)
+const EN_DOMAIN_LABELS = domainLabels(EN_MESSAGES)
+const DE_DOMAIN_LABELS = domainLabels(DE_MESSAGES)
 
-// The generation-language control resolves its labels through the same shipped
+// The content-language control resolves its labels through the same shipped
 // catalogs, so the spec never restates product copy.
-type LanguageMessageCatalog = { kb: Record<string, string> }
 const LANGUAGE_MESSAGE_KEYS: Record<string, string> = {
   German: 'graphDomainLanguageGerman',
   English: 'graphDomainLanguageEnglish',
 }
 
 function domainLanguageLabels(
-  messages: LanguageMessageCatalog
+  messages: MessageCatalog
 ): Record<string, string> {
   return Object.fromEntries(
     Object.entries(LANGUAGE_MESSAGE_KEYS).map(([language, key]) => [
@@ -67,12 +69,8 @@ function domainLanguageLabels(
   )
 }
 
-const EN_LANGUAGE_LABELS = domainLanguageLabels(
-  enMessages as unknown as LanguageMessageCatalog
-)
-const DE_LANGUAGE_LABELS = domainLanguageLabels(
-  deMessages as unknown as LanguageMessageCatalog
-)
+const EN_LANGUAGE_LABELS = domainLanguageLabels(EN_MESSAGES)
+const DE_LANGUAGE_LABELS = domainLanguageLabels(DE_MESSAGES)
 
 // Synthetic German node types used as catalog input.
 const GERMAN_CATEGORIES: Record<string, Array<[string, string]>> = {
@@ -105,9 +103,7 @@ const GERMAN_CATEGORIES: Record<string, Array<[string, string]>> = {
 const BUSINESS_CATEGORIES = GERMAN_CATEGORIES.business.map(([name]) => name)
 const ECONOMICS_CATEGORIES = GERMAN_CATEGORIES.economics.map(([name]) => name)
 
-// The English counterpart of one catalog language. A generation language is
-// only observable through the category names it resolves, so the spec asserts
-// the visible switch between the two name sets.
+// The English counterpart of one catalog language.
 const ENGLISH_CATEGORIES: Record<string, Array<[string, string]>> = {
   finance: [
     ['Financing', 'Capital structure and financing decisions.'],
@@ -134,8 +130,6 @@ const ENGLISH_CATEGORIES: Record<string, Array<[string, string]>> = {
     ['Literature Work', 'Structuring academic texts.'],
   ],
 }
-
-const BUSINESS_EN_CATEGORIES = ENGLISH_CATEGORIES.business.map(([name]) => name)
 
 const CATEGORIES_BY_LANGUAGE: Record<
   string,
@@ -179,11 +173,22 @@ function domainCategoriesFor(
   )
 }
 
+type StoredKbDomain = {
+  domainPolicyId: string | null
+  domainPolicyVersion: number | null
+  domainPolicyLanguage: string | null
+}
+
 type DomainMockState = {
+  kbName: string
   capabilityEnabled: boolean
   options: SyntheticDomainOption[]
+  /** Overrides the graph configuration the panel reads. */
   config: Record<string, unknown>
+  /** Overrides the triple the knowledge base itself reports, or null to keep it. */
+  kbDomain: StoredKbDomain | null
   rebuildVariables: Array<Record<string, unknown>>
+  updateVariables: Array<Record<string, unknown>>
   rebuildGate?: Promise<void>
 }
 
@@ -199,6 +204,7 @@ function graphConfig(overrides: Record<string, unknown> = {}) {
     domainPolicyId: null,
     domainPolicyVersion: null,
     domainPolicyLanguage: null,
+    focusTopic: null,
     publishedDomainPolicyId: null,
     publishedDomainPolicyVersion: null,
     publishedDomainPolicyLanguage: null,
@@ -237,10 +243,12 @@ function graphConfig(overrides: Record<string, unknown> = {}) {
 }
 
 /**
- * Serves the graph domain configuration from the synthetic catalog and captures
- * rebuild requests, so no paid generation ever reaches the backend.
+ * Serves the domain catalog from the synthetic options and captures the writes
+ * the controls make, so no paid generation and no explicit triple ever reaches
+ * the backend. The catalog is mocked in both directions, which keeps the spec
+ * independent of whether the deployment under test has the capability gate open.
  */
-async function installKnowledgeGraphMocks(page: Page, state: DomainMockState) {
+async function installKbMocks(page: Page, state: DomainMockState) {
   const persistedOperations = JSON.parse(
     await readFile(
       new URL('../../packages/graphql/src/public/client.json', import.meta.url),
@@ -273,6 +281,27 @@ async function installKnowledgeGraphMocks(page: Page, state: DomainMockState) {
       operationName = hash ? operationNamesByHash.get(hash) : undefined
     }
 
+    const domainConfig = {
+      __typename: 'KBKnowledgeGraphDomainConfig',
+      capabilityEnabled: state.capabilityEnabled,
+      catalogRevision: 'synthetic-catalog-revision',
+      catalogDigest: 'synthetic-catalog-digest',
+      options: state.options,
+    }
+
+    // The creation form and the settings section read the catalog without a
+    // knowledge base, the graph panel reads it together with the build.
+    if (operationName === 'GetKbGraphDomainOptions') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: { getKbKnowledgeGraphDomainConfig: domainConfig },
+        }),
+      })
+      return
+    }
+
     if (operationName === 'GetKbKnowledgeGraphDomainConfig') {
       await route.fulfill({
         status: 200,
@@ -280,12 +309,46 @@ async function installKnowledgeGraphMocks(page: Page, state: DomainMockState) {
         body: JSON.stringify({
           data: {
             getKbKnowledgeGraphConfig: graphConfig(state.config),
-            getKbKnowledgeGraphDomainConfig: {
-              __typename: 'KBKnowledgeGraphDomainConfig',
-              capabilityEnabled: state.capabilityEnabled,
-              catalogRevision: 'synthetic-catalog-revision',
-              catalogDigest: 'synthetic-catalog-digest',
-              options: state.options,
+            getKbKnowledgeGraphDomainConfig: domainConfig,
+          },
+        }),
+      })
+      return
+    }
+
+    // The stored triple is patched into the real knowledge base so the metrics
+    // and the identity stay authentic while the spec controls the selection.
+    if (operationName === 'GetKb' && state.kbDomain != null) {
+      const response = await route.fetch()
+      const json = (await response.json()) as {
+        data?: { getKb?: Record<string, unknown> | null }
+      }
+      if (json.data?.getKb) {
+        Object.assign(json.data.getKb, state.kbDomain)
+      }
+      await route.fulfill({ response, json })
+      return
+    }
+
+    if (operationName === 'UpdateKb') {
+      const body = request.postDataJSON() as {
+        variables?: Record<string, unknown>
+      } | null
+      const variables = body?.variables ?? {}
+      state.updateVariables.push(variables)
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            updateKb: {
+              __typename: 'KB',
+              id: variables.id ?? null,
+              name: state.kbName,
+              description: null,
+              domainPolicyId: variables.domainPolicyId ?? null,
+              domainPolicyVersion: variables.domainPolicyVersion ?? null,
+              domainPolicyLanguage: variables.domainPolicyLanguage ?? null,
             },
           },
         }),
@@ -321,23 +384,39 @@ async function installKnowledgeGraphMocks(page: Page, state: DomainMockState) {
   })
 }
 
+/**
+ * Creates the knowledge base the test works on. The catalog is served as
+ * unavailable for the duration, so the real creation carries no explicit triple
+ * and the backend never has to accept one.
+ */
 async function createKnowledgeBase(
   page: Page,
   manageUrl: string,
-  kbName: string
+  state: DomainMockState
 ) {
-  await page.goto(`${manageUrl}/resources/knowledgeBases`)
-  await expect(
-    page.getByRole('main').getByRole('heading', { level: 1 })
-  ).toBeVisible()
-  await page.getByTestId('create-knowledge-base').click()
-  await page.getByTestId('knowledge-base-name').fill(kbName)
-  await page.getByTestId('submit-create-knowledge-base').click()
+  const capabilityEnabled = state.capabilityEnabled
+  state.capabilityEnabled = false
+  try {
+    await page.goto(`${manageUrl}/resources/knowledgeBases`)
+    await expect(
+      page.getByRole('main').getByRole('heading', { level: 1 })
+    ).toBeVisible()
+    await page.getByTestId('create-knowledge-base').click()
+    await expect(page.getByTestId('knowledge-base-domain-fields')).toHaveCount(
+      0
+    )
+    await page.getByTestId('knowledge-base-name').fill(state.kbName)
+    await page.getByTestId('submit-create-knowledge-base').click()
 
-  const knowledgeBaseLink = page.getByRole('link').filter({ hasText: kbName })
-  await expect(knowledgeBaseLink).toBeVisible()
-  const href = (await knowledgeBaseLink.getAttribute('href')) ?? ''
-  return new URL(href, manageUrl).pathname
+    const knowledgeBaseLink = page
+      .getByRole('link')
+      .filter({ hasText: state.kbName })
+    await expect(knowledgeBaseLink).toBeVisible()
+    const href = (await knowledgeBaseLink.getAttribute('href')) ?? ''
+    return new URL(href, manageUrl).pathname
+  } finally {
+    state.capabilityEnabled = capabilityEnabled
+  }
 }
 
 async function openKnowledgeGraphPanel(
@@ -347,7 +426,7 @@ async function openKnowledgeGraphPanel(
 ) {
   await page.goto(`${manageUrl}${detailPath}#knowledge-graph`)
   await expect(page.getByTestId('kb-knowledge-graph-panel')).toBeVisible()
-  await expect(page.getByTestId('kb-knowledge-graph-domain')).toBeVisible()
+  await expect(page.getByTestId('kb-knowledge-graph-rebuild')).toBeVisible()
 }
 
 async function deleteKnowledgeBase(
@@ -364,168 +443,278 @@ async function deleteKnowledgeBase(
   }
 }
 
-async function selectDomain(page: Page, label: string) {
-  await page.getByTestId('kb-knowledge-graph-domain').click()
+async function selectOption(page: Page, testId: string, label: string) {
+  await page.getByTestId(testId).click()
   await page.getByRole('option', { name: label }).click()
 }
 
-async function selectDomainLanguage(page: Page, label: string) {
-  await page.getByTestId('kb-knowledge-graph-domain-language').click()
-  await page.getByRole('option', { name: label }).click()
+function kbIdFrom(detailPath: string) {
+  return detailPath.split('/').filter(Boolean).pop() ?? ''
 }
 
-async function expectDomainOptions(page: Page, labels: Record<string, string>) {
-  await page.getByTestId('kb-knowledge-graph-domain').click()
-  await expect(page.getByRole('option')).toHaveCount(DOMAIN_IDS.length)
-  for (const id of DOMAIN_IDS) {
-    await expect(page.getByRole('option', { name: labels[id] })).toBeVisible()
-  }
-  await page.keyboard.press('Escape')
-}
-
-const galleryDirectory = new URL(
-  '../../project/_local/kg-domain-gallery/',
-  import.meta.url
-)
-
-test.describe('Knowledge base domain selection', () => {
-  test('offers the catalog domains, submits the selected pair and reports the served domain', async ({
+test.describe('Knowledge base subject area and language', () => {
+  test('stores the subject area and language on the knowledge base itself', async ({
     loginLecturer,
     page,
   }) => {
     await loginLecturer()
 
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
-    const kbName = `Domain catalog ${Date.now()}`
     const state: DomainMockState = {
+      kbName: `Domain settings ${Date.now()}`,
       capabilityEnabled: true,
-      // The catalog serves both generation languages here, because the
-      // language switch is only observable through the category names a served
-      // language resolves.
       options: domainCatalog(DOMAIN_IDS, ['German', 'English']),
-      config: { focusTopic: 'Historical graph focus' },
+      config: {},
+      kbDomain: null,
       rebuildVariables: [],
+      updateVariables: [],
     }
     let detailPath: string | undefined
 
     try {
-      await installKnowledgeGraphMocks(page, state)
-      detailPath = await createKnowledgeBase(page, manageUrl, kbName)
-      const kbId = detailPath.split('/').filter(Boolean).pop() ?? ''
+      await installKbMocks(page, state)
+      detailPath = await createKnowledgeBase(page, manageUrl, state)
+      const kbId = kbIdFrom(detailPath)
+
+      await page.goto(`${manageUrl}${detailPath}`)
+      const settings = page.getByTestId('kb-domain-settings')
+      await expect(settings).toBeVisible()
+      // A knowledge base created without the catalog records no selection.
+      await expect(
+        page.getByTestId('kb-domain-settings-subject-value')
+      ).toHaveText(EN_MESSAGES.kb.domainSettingsNotSet)
+      await expect(
+        page.getByTestId('kb-domain-settings-language-value')
+      ).toHaveText(EN_MESSAGES.kb.domainSettingsNotSet)
+
+      // Editing opens on the suggested pair rather than an empty control, and
+      // the content language defaults to German independently of the interface.
+      await page.getByTestId('kb-domain-settings-edit').click()
+      const subject = page.getByTestId('kb-domain-settings-subject')
+      const language = page.getByTestId('kb-domain-settings-language')
+      await expect(subject).toContainText(EN_DOMAIN_LABELS.finance)
+      await expect(language).toContainText(EN_LANGUAGE_LABELS.German)
+
+      await selectOption(
+        page,
+        'kb-domain-settings-subject',
+        EN_DOMAIN_LABELS.business
+      )
+      await selectOption(
+        page,
+        'kb-domain-settings-language',
+        EN_LANGUAGE_LABELS.English
+      )
+      await page.getByTestId('kb-domain-settings-save').click()
+      await expect.poll(() => state.updateVariables.length).toBe(1)
+      expect(state.updateVariables[0]).toEqual({
+        id: kbId,
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      })
+
+      // The saved pair replaces the read view without a refetch.
+      await expect(
+        page.getByTestId('kb-domain-settings-subject-value')
+      ).toHaveText(EN_DOMAIN_LABELS.business)
+      await expect(
+        page.getByTestId('kb-domain-settings-language-value')
+      ).toHaveText(EN_LANGUAGE_LABELS.English)
+
+      // The interface locale changes only the labels of the stored pair.
+      state.kbDomain = {
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      }
+      await page.goto(`${manageUrl}/de${detailPath}`)
+      await expect(
+        page.getByTestId('kb-domain-settings-subject-value')
+      ).toHaveText(DE_DOMAIN_LABELS.business)
+      await expect(
+        page.getByTestId('kb-domain-settings-language-value')
+      ).toHaveText(DE_LANGUAGE_LABELS.English)
+    } finally {
+      await deleteKnowledgeBase(page, manageUrl, state.kbName)
+    }
+  })
+
+  test('keeps a stored pair readable and refuses to save one the catalog cannot serve', async ({
+    loginLecturer,
+    page,
+  }) => {
+    await loginLecturer()
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const state: DomainMockState = {
+      kbName: `Domain retired ${Date.now()}`,
+      capabilityEnabled: true,
+      options: domainCatalog(DOMAIN_IDS, ['German', 'English']),
+      config: {},
+      kbDomain: {
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+      rebuildVariables: [],
+      updateVariables: [],
+    }
+    let detailPath: string | undefined
+
+    try {
+      await installKbMocks(page, state)
+      detailPath = await createKnowledgeBase(page, manageUrl, state)
+      const kbId = kbIdFrom(detailPath)
+
+      // A pair the catalog no longer offers still reads as a subject area.
+      state.options = domainCatalog(
+        DOMAIN_IDS.filter((id) => id !== 'business')
+      )
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(
+        page.getByTestId('kb-domain-settings-subject-value')
+      ).toHaveText(EN_DOMAIN_LABELS.business)
+
+      // It cannot be saved again, so the control opens empty and the save stays
+      // blocked until the lecturer picks a pair the catalog serves.
+      await page.getByTestId('kb-domain-settings-edit').click()
+      await expect(
+        page.getByTestId('kb-domain-settings-subject')
+      ).not.toContainText(EN_DOMAIN_LABELS.business)
+      await expect(page.getByTestId('kb-domain-settings-save')).toBeDisabled()
+
+      await selectOption(
+        page,
+        'kb-domain-settings-subject',
+        EN_DOMAIN_LABELS.mathematics
+      )
+      await expect(page.getByTestId('kb-domain-settings-save')).toBeEnabled()
+      await page.getByTestId('kb-domain-settings-save').click()
+      await expect.poll(() => state.updateVariables.length).toBe(1)
+      expect(state.updateVariables[0]).toEqual({
+        id: kbId,
+        domainPolicyId: 'mathematics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      })
+
+      // A subject the catalog keeps but cannot serve in the chosen language is
+      // named explicitly instead of silently rewriting either half of the pair.
+      state.options = domainCatalog(DOMAIN_IDS)
+      state.kbDomain = {
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      }
+      await page.goto(`${manageUrl}${detailPath}`)
+      await page.getByTestId('kb-domain-settings-edit').click()
+      await expect(
+        page.getByTestId('kb-domain-settings-unsupported')
+      ).toBeVisible()
+      await expect(page.getByTestId('kb-domain-settings-save')).toBeDisabled()
+
+      await selectOption(
+        page,
+        'kb-domain-settings-language',
+        EN_LANGUAGE_LABELS.German
+      )
+      await expect(
+        page.getByTestId('kb-domain-settings-unsupported')
+      ).toHaveCount(0)
+      await expect(page.getByTestId('kb-domain-settings-save')).toBeEnabled()
+    } finally {
+      await deleteKnowledgeBase(page, manageUrl, state.kbName)
+    }
+  })
+
+  test('reports the domain a build ran with and rebuilds without sending one', async ({
+    loginLecturer,
+    page,
+  }) => {
+    await loginLecturer()
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    const state: DomainMockState = {
+      kbName: `Domain build ${Date.now()}`,
+      capabilityEnabled: true,
+      options: domainCatalog(DOMAIN_IDS, ['German', 'English']),
+      config: { focusTopic: 'Historical graph focus' },
+      kbDomain: null,
+      rebuildVariables: [],
+      updateVariables: [],
+    }
+    let detailPath: string | undefined
+
+    try {
+      await installKbMocks(page, state)
+      detailPath = await createKnowledgeBase(page, manageUrl, state)
+      const kbId = kbIdFrom(detailPath)
       await openKnowledgeGraphPanel(page, manageUrl, detailPath)
 
+      // The focus topic of an earlier build is reported, never re-entered.
       await expect(
         page.locator('input[data-cy="kb-knowledge-graph-focus-topic"]')
       ).toHaveCount(0)
       await expect(
         page.getByTestId('kb-knowledge-graph-focus-topic')
       ).toBeVisible()
-      const domainSelect = page.getByTestId('kb-knowledge-graph-domain')
-      // The default is the explicit finance v1 pair, never the first catalog entry.
-      await expect(domainSelect).toBeEnabled()
-      await expect(domainSelect).toContainText(EN_DOMAIN_LABELS.finance)
-      await expectDomainOptions(page, EN_DOMAIN_LABELS)
-      // The generation language is an explicit control that defaults to German
-      // and is never derived from the interface locale.
-      const languageSelect = page.getByTestId(
-        'kb-knowledge-graph-domain-language'
-      )
-      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.German)
 
-      await selectDomain(page, EN_DOMAIN_LABELS.business)
-      const categories = page.getByTestId(
-        'kb-knowledge-graph-domain-categories'
-      )
-      await expect(categories).toBeVisible()
-      await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
-      await expect(categories).toContainText(BUSINESS_CATEGORIES[1])
-
-      // Switching the generation language switches the categories the build
-      // will use, without touching the interface language.
-      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.English)
-      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.English)
-      await expect(categories).toContainText(BUSINESS_EN_CATEGORIES[0])
-      await expect(categories).toContainText(BUSINESS_EN_CATEGORIES[1])
-      await expect(categories).not.toContainText(BUSINESS_CATEGORIES[0])
-
-      // The generation language is only visible through the control and the
-      // category names it resolves, so the gallery keeps one capture of the
-      // non-default language.
-      await mkdir(galleryDirectory, { recursive: true })
-      await page.setViewportSize({ width: 1440, height: 1000 })
-      await page.screenshot({
-        path: fileURLToPath(
-          new URL('kb-domain-language-en-desktop.png', galleryDirectory)
-        ),
-        fullPage: true,
-      })
-
-      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.German)
-      await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
-
-      await mkdir(galleryDirectory, { recursive: true })
-      await page.setViewportSize({ width: 1440, height: 1000 })
-      await page.screenshot({
-        path: fileURLToPath(
-          new URL('kb-domain-en-desktop.png', galleryDirectory)
-        ),
-        fullPage: true,
-      })
-      await page.setViewportSize({ width: 420, height: 900 })
-      await page.screenshot({
-        path: fileURLToPath(
-          new URL('kb-domain-en-mobile.png', galleryDirectory)
-        ),
-        fullPage: true,
-      })
-      await page.setViewportSize({ width: 1920, height: 1080 })
+      // Without a build there is no domain to report and nothing to choose: the
+      // subject area and language live on the knowledge base, not here.
+      await expect(page.getByTestId('kb-knowledge-graph-domain')).toHaveCount(0)
+      await expect(
+        page.getByTestId('kb-knowledge-graph-domain-categories')
+      ).toHaveCount(0)
 
       const rebuild = page.getByTestId('kb-knowledge-graph-rebuild')
       await expect(rebuild).toBeEnabled()
       await rebuild.click()
       await expect.poll(() => state.rebuildVariables.length).toBe(1)
+      // The build reads the stored pair on the server, so the request carries
+      // only the knowledge base and the quality tier.
       expect(state.rebuildVariables[0]).toEqual({
         kbId,
         qualityTier: 'STANDARD',
-        domainPolicyId: 'business',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'German',
       })
 
-      expect(state.rebuildVariables.at(-1)).not.toHaveProperty('focusTopic')
-      // An explicitly chosen generation language is submitted with the pair.
-      await expect(rebuild).toBeEnabled()
-      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.English)
-      await rebuild.click()
-      await expect.poll(() => state.rebuildVariables.length).toBe(2)
-      expect(state.rebuildVariables[1]).toEqual({
-        kbId,
-        qualityTier: 'STANDARD',
-        domainPolicyId: 'business',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'English',
-      })
-      await expect(rebuild).toBeEnabled()
-      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.German)
-
-      // A pending build disables the control and swallows a duplicate submit.
+      // A pending build disables the tier and swallows a duplicate submit.
       let releaseRebuild = () => {}
       state.rebuildGate = new Promise<void>((resolve) => {
         releaseRebuild = resolve
       })
       await expect(rebuild).toBeEnabled()
       await rebuild.click()
-      await expect.poll(() => state.rebuildVariables.length).toBe(3)
-      await expect(domainSelect).toBeDisabled()
-      await expect(languageSelect).toBeDisabled()
+      await expect.poll(() => state.rebuildVariables.length).toBe(2)
+      await expect(
+        page.getByTestId('kb-knowledge-graph-quality-tier')
+      ).toBeDisabled()
       await expect(rebuild).toBeDisabled()
       await rebuild.dispatchEvent('click')
       await page.waitForTimeout(250)
-      expect(state.rebuildVariables.length).toBe(3)
+      expect(state.rebuildVariables.length).toBe(2)
       releaseRebuild()
       state.rebuildGate = undefined
 
-      // A separately published domain is reported without relabelling the attempt.
+      // A build reports the pair and the categories it recorded, both read from
+      // the build itself rather than looked up in the current catalog.
+      state.config = {
+        domainPolicyId: 'business',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+        domainCategories: domainCategoriesFor('business'),
+      }
+      await page.reload()
+      await expect(page.getByTestId('kb-knowledge-graph-domain')).toContainText(
+        EN_DOMAIN_LABELS.business
+      )
+      const categories = page.getByTestId(
+        'kb-knowledge-graph-domain-categories'
+      )
+      await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
+      await expect(categories).toContainText(BUSINESS_CATEGORIES[1])
+
+      // A failed or superseded attempt must not relabel the graph in service.
       state.config = {
         publishedBuildId: 'synthetic-published-build',
         domainPolicyId: 'business',
@@ -543,8 +732,8 @@ test.describe('Knowledge base domain selection', () => {
       await expect(publishedDomain).toContainText(EN_DOMAIN_LABELS.finance)
 
       state.config = {
-        domainPolicyId: 'finance',
         publishedBuildId: 'synthetic-published-build',
+        domainPolicyId: 'finance',
         domainPolicyVersion: 1,
         domainPolicyLanguage: 'German',
         publishedDomainPolicyId: 'finance',
@@ -572,281 +761,78 @@ test.describe('Knowledge base domain selection', () => {
       await expect(publishedDomain).toBeVisible()
       await expect(publishedDomain).toContainText(EN_DOMAIN_LABELS.finance)
     } finally {
-      await deleteKnowledgeBase(page, manageUrl, kbName)
+      await deleteKnowledgeBase(page, manageUrl, state.kbName)
     }
   })
 
-  test('restores the stored pair, keeps it on a catalog refresh and blocks a retired pair', async ({
+  test('hides the controls while the capability gate is closed without blocking a rebuild', async ({
     loginLecturer,
     page,
   }) => {
     await loginLecturer()
 
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
-    const kbName = `Domain restore ${Date.now()}`
     const state: DomainMockState = {
-      capabilityEnabled: true,
-      options: domainCatalog(DOMAIN_IDS),
-      config: {
-        domainPolicyId: 'business',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'German',
-        domainCategories: domainCategoriesFor('business'),
-      },
-      rebuildVariables: [],
-    }
-    let detailPath: string | undefined
-
-    try {
-      await installKnowledgeGraphMocks(page, state)
-      detailPath = await createKnowledgeBase(page, manageUrl, kbName)
-      await openKnowledgeGraphPanel(page, manageUrl, detailPath)
-
-      const domainSelect = page.getByTestId('kb-knowledge-graph-domain')
-      const categories = page.getByTestId(
-        'kb-knowledge-graph-domain-categories'
-      )
-      await expect(domainSelect).toContainText(EN_DOMAIN_LABELS.business)
-      await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
-
-      // Retained versions remain distinguishable and do not upgrade selection.
-      state.options = [
-        ...domainCatalog(DOMAIN_IDS),
-        syntheticDomainOption('business', 2),
-      ]
-      await page.reload()
-      await expect(domainSelect).toContainText('(v1)')
-      await domainSelect.click()
-      await expect(
-        page.getByRole('option', {
-          name: `${EN_DOMAIN_LABELS.business} (v1)`,
-          exact: true,
-        })
-      ).toBeVisible()
-      await expect(
-        page.getByRole('option', {
-          name: `${EN_DOMAIN_LABELS.business} (v2)`,
-          exact: true,
-        })
-      ).toBeVisible()
-      await page.keyboard.press('Escape')
-
-      // The retained pair disappears from the catalog after a refresh.
-      state.options = domainCatalog(
-        DOMAIN_IDS.filter((id) => id !== 'business')
-      )
-      await page.reload()
-      await expect(
-        page.getByTestId('kb-knowledge-graph-domain-unsupported')
-      ).toBeVisible()
-      await expect(domainSelect).not.toContainText(EN_DOMAIN_LABELS.business)
-      await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
-      await expect(
-        page.getByTestId('kb-knowledge-graph-rebuild')
-      ).toBeDisabled()
-
-      // A retained pair the catalog keeps only in English cannot serve the
-      // retained German generation language, so it stays blocked until an
-      // explicit valid choice.
-      state.options = [
-        ...domainCatalog(DOMAIN_IDS.filter((id) => id !== 'business')),
-        syntheticDomainOption('business', 1, ['English']),
-      ]
-      await page.reload()
-      await expect(
-        page.getByTestId('kb-knowledge-graph-domain-unsupported')
-      ).toBeVisible()
-      await expect(domainSelect).toContainText(EN_DOMAIN_LABELS.business)
-      await expect(categories).toContainText(BUSINESS_CATEGORIES[0])
-      await expect(
-        page.getByTestId('kb-knowledge-graph-rebuild')
-      ).toBeDisabled()
-
-      // A newer version of the same id must not replace the retained pair.
-      state.options = [
-        ...domainCatalog(DOMAIN_IDS.filter((id) => id !== 'business')),
-        syntheticDomainOption('business', 2),
-      ]
-      await page.reload()
-      await expect(
-        page.getByTestId('kb-knowledge-graph-domain-unsupported')
-      ).toBeVisible()
-      await expect(
-        page.getByTestId('kb-knowledge-graph-rebuild')
-      ).toBeDisabled()
-
-      // Only an explicit valid choice unblocks the rebuild.
-      await selectDomain(page, EN_DOMAIN_LABELS.business)
-      const rebuild = page.getByTestId('kb-knowledge-graph-rebuild')
-      await expect(rebuild).toBeEnabled()
-      await rebuild.click()
-      await expect.poll(() => state.rebuildVariables.length).toBe(1)
-      expect(state.rebuildVariables[0]).toMatchObject({
-        domainPolicyId: 'business',
-        domainPolicyVersion: 2,
-        domainPolicyLanguage: 'German',
-      })
-    } finally {
-      await deleteKnowledgeBase(page, manageUrl, kbName)
-    }
-  })
-
-  test('restores the stored generation language and submits it with the pair', async ({
-    loginLecturer,
-    page,
-  }) => {
-    await loginLecturer()
-
-    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
-    const kbName = `Domain language ${Date.now()}`
-    const state: DomainMockState = {
-      capabilityEnabled: true,
-      options: domainCatalog(DOMAIN_IDS, ['German', 'English']),
-      config: {
-        domainPolicyId: 'business',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'English',
-        domainCategories: domainCategoriesFor('business', 'English'),
-      },
-      rebuildVariables: [],
-    }
-    let detailPath: string | undefined
-
-    try {
-      await installKnowledgeGraphMocks(page, state)
-      detailPath = await createKnowledgeBase(page, manageUrl, kbName)
-      await openKnowledgeGraphPanel(page, manageUrl, detailPath)
-
-      const languageSelect = page.getByTestId(
-        'kb-knowledge-graph-domain-language'
-      )
-      // The stored build language wins over the German default and the English
-      // category set is shown for it.
-      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.English)
-      const categories = page.getByTestId(
-        'kb-knowledge-graph-domain-categories'
-      )
-      await expect(categories).toContainText(BUSINESS_EN_CATEGORIES[0])
-
-      // A catalog that no longer serves the stored language keeps the pair
-      // readable and blocks the rebuild until the lecturer picks one it serves.
-      state.options = domainCatalog(DOMAIN_IDS)
-      await page.reload()
-      await expect(languageSelect).toContainText(EN_LANGUAGE_LABELS.English)
-      await expect(
-        page.getByTestId('kb-knowledge-graph-domain-unsupported')
-      ).toBeVisible()
-      await expect(
-        page.getByTestId('kb-knowledge-graph-rebuild')
-      ).toBeDisabled()
-
-      // Picking a served language unblocks the rebuild and is submitted.
-      await selectDomainLanguage(page, EN_LANGUAGE_LABELS.German)
-      const rebuild = page.getByTestId('kb-knowledge-graph-rebuild')
-      await expect(rebuild).toBeEnabled()
-      await rebuild.click()
-      await expect.poll(() => state.rebuildVariables.length).toBe(1)
-      expect(state.rebuildVariables[0]).toMatchObject({
-        domainPolicyId: 'business',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'German',
-      })
-    } finally {
-      await deleteKnowledgeBase(page, manageUrl, kbName)
-    }
-  })
-
-  test('keeps the legacy path while the gate is closed and blocks a stored explicit domain', async ({
-    loginLecturer,
-    page,
-  }) => {
-    await loginLecturer()
-
-    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
-    const kbName = `Domain gate ${Date.now()}`
-    const state: DomainMockState = {
+      kbName: `Domain gate ${Date.now()}`,
       capabilityEnabled: false,
       options: [],
       config: {},
+      kbDomain: null,
       rebuildVariables: [],
+      updateVariables: [],
     }
     let detailPath: string | undefined
 
     try {
-      await installKnowledgeGraphMocks(page, state)
-      detailPath = await createKnowledgeBase(page, manageUrl, kbName)
-      await openKnowledgeGraphPanel(page, manageUrl, detailPath)
+      await installKbMocks(page, state)
+      detailPath = await createKnowledgeBase(page, manageUrl, state)
+      const kbId = kbIdFrom(detailPath)
 
-      // Without a stored domain the legacy finance label is shown read-only.
-      const domainControl = page.getByTestId('kb-knowledge-graph-domain')
-      await expect(domainControl).toContainText(EN_DOMAIN_LABELS.finance)
-      await expect(domainControl).not.toHaveRole('combobox')
+      // A deployment that cannot offer the catalog says nothing about a
+      // knowledge base that never recorded a choice.
+      await page.goto(`${manageUrl}${detailPath}`)
+      await expect(page.getByTestId('kb-metrics')).toBeVisible()
+      await expect(page.getByTestId('kb-domain-settings')).toHaveCount(0)
 
-      const rebuild = page.getByTestId('kb-knowledge-graph-rebuild')
-      await expect(rebuild).toBeEnabled()
-      await rebuild.click()
-      await expect.poll(() => state.rebuildVariables.length).toBe(1)
-      expect(state.rebuildVariables[0]).not.toHaveProperty('domainPolicyId')
-      expect(state.rebuildVariables[0]).not.toHaveProperty(
-        'domainPolicyVersion'
-      )
-      expect(state.rebuildVariables[0]).not.toHaveProperty(
-        'domainPolicyLanguage'
-      )
+      // A stored pair stays readable, without an edit control it cannot honor.
+      state.kbDomain = {
+        domainPolicyId: 'economics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      }
+      await page.reload()
+      await expect(
+        page.getByTestId('kb-domain-settings-subject-value')
+      ).toHaveText(EN_DOMAIN_LABELS.economics)
+      await expect(page.getByTestId('kb-domain-settings-edit')).toHaveCount(0)
 
-      // A stored explicit domain must not be silently replaced by the default.
+      // The build falls back to the provider default rather than refusing, so a
+      // closed gate never leaves a knowledge base that can neither be rebuilt
+      // nor reconfigured.
       state.config = {
         domainPolicyId: 'economics',
         domainPolicyVersion: 1,
         domainPolicyLanguage: 'German',
         domainCategories: domainCategoriesFor('economics'),
       }
-      await page.reload()
-      await expect(
-        page.getByTestId('kb-knowledge-graph-domain-unsupported')
-      ).toBeVisible()
-      await expect(domainControl).toContainText(EN_DOMAIN_LABELS.economics)
+      await openKnowledgeGraphPanel(page, manageUrl, detailPath)
+      await expect(page.getByTestId('kb-knowledge-graph-domain')).toContainText(
+        EN_DOMAIN_LABELS.economics
+      )
       await expect(
         page.getByTestId('kb-knowledge-graph-domain-categories')
       ).toContainText(ECONOMICS_CATEGORIES[0])
-      await expect(rebuild).toBeDisabled()
-      await rebuild.dispatchEvent('click')
-      await page.waitForTimeout(250)
-      expect(state.rebuildVariables.length).toBe(1)
 
-      // The interface locale changes the labels, not the German generation language.
-      state.capabilityEnabled = true
-      state.options = domainCatalog(DOMAIN_IDS)
-      state.config = {}
-      await page.goto(`${manageUrl}/de${detailPath}#knowledge-graph`)
-      await expect(page.getByTestId('kb-knowledge-graph-domain')).toBeVisible()
-      await expectDomainOptions(page, DE_DOMAIN_LABELS)
-      await selectDomain(page, DE_DOMAIN_LABELS.mathematics)
-      await page.getByTestId('kb-knowledge-graph-rebuild').click()
-      await expect.poll(() => state.rebuildVariables.length).toBe(2)
-      expect(state.rebuildVariables[1]).toMatchObject({
-        domainPolicyId: 'mathematics',
-        domainPolicyVersion: 1,
-        domainPolicyLanguage: 'German',
-      })
-
-      await mkdir(galleryDirectory, { recursive: true })
-      await page.setViewportSize({ width: 1440, height: 1000 })
-      await page.screenshot({
-        path: fileURLToPath(
-          new URL('kb-domain-de-desktop.png', galleryDirectory)
-        ),
-        fullPage: true,
-      })
-      await page.setViewportSize({ width: 420, height: 900 })
-      await page.screenshot({
-        path: fileURLToPath(
-          new URL('kb-domain-de-mobile.png', galleryDirectory)
-        ),
-        fullPage: true,
+      const rebuild = page.getByTestId('kb-knowledge-graph-rebuild')
+      await expect(rebuild).toBeEnabled()
+      await rebuild.click()
+      await expect.poll(() => state.rebuildVariables.length).toBe(1)
+      expect(state.rebuildVariables[0]).toEqual({
+        kbId,
+        qualityTier: 'STANDARD',
       })
     } finally {
-      await deleteKnowledgeBase(page, manageUrl, kbName)
+      await deleteKnowledgeBase(page, manageUrl, state.kbName)
     }
   })
 })
