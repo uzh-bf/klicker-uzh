@@ -1911,9 +1911,6 @@ importers:
 
   external/catalyst/packages/adaptive-persistence:
     dependencies:
-      '@klicker-uzh/adaptive-learning':
-        specifier: workspace:*
-        version: link:../adaptive-learning
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../../../packages/prisma
@@ -1926,6 +1923,10 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
+    devDependencies:
+      '@klicker-uzh/adaptive-learning':
+        specifier: workspace:*
+        version: link:../adaptive-learning
 
   external/catalyst/packages/adaptive-pwa-ui:
     dependencies:
