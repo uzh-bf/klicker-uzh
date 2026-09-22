@@ -31,15 +31,21 @@ function KnowledgeBaseFileDropzone({
   replaceResource,
   onUploadStateChange,
   onResourceCreated,
+  onUploadFinished,
 }: {
   kbId: string
   embedded?: boolean
   replaceResource?: { id: string; title: string }
   onUploadStateChange?: (uploading: boolean) => void
   onResourceCreated: () => Promise<unknown>
+  onUploadFinished?: (outcome: { succeeded: number; failed: number }) => void
 }) {
   const t = useTranslations()
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState<{
+    current: number
+    total: number
+  } | null>(null)
   const [replacementFile, setReplacementFile] = useState<File | null>(null)
   const [materialType, setMaterialType] = useState(
     KbResourceMaterialType.CourseContent
@@ -53,121 +59,159 @@ function KnowledgeBaseFileDropzone({
     onUploadStateChange?.(uploading)
   }, [onUploadStateChange, uploading])
 
-  const uploadFile = async (files: File[]) => {
-    const file = files[0]
-    if (!file || uploading) return
-
+  // Each file is transferred on its own so that one rejected or failed file
+  // leaves the others in the batch intact. Returns the message to report when
+  // this file did not reach the knowledge base.
+  const transferFile = async (file: File): Promise<string | null> => {
     const extension = file.name.split('.').pop()?.toLowerCase()
     const contentType = extension ? CONTENT_TYPES[extension] : undefined
     if (!contentType) {
-      toast({ type: 'error', message: t('kb.fileRejected') })
-      return
+      return t('kb.fileRejected')
     }
 
-    setUploading(true)
     try {
-      try {
-        const requestVariables = {
-          kbId,
-          fileName: file.name,
-          contentType,
-          sizeBytes: file.size,
-        }
-        const uploadReservation = replaceResource
-          ? (
-              await requestReplacement({
-                variables: {
-                  ...requestVariables,
-                  resourceId: replaceResource.id,
-                },
-              })
-            ).data?.requestKbFileReplacement
-          : (await requestUpload({ variables: requestVariables })).data
-              ?.requestKbFileUpload
-        if (!uploadReservation)
-          throw new Error('Upload reservation was not returned')
-
-        const { BlobServiceClient } = await import('@azure/storage-blob')
-        const serviceClient = new BlobServiceClient(
-          uploadReservation.uploadSasURL
-        )
-        const blockBlobClient = serviceClient
-          .getContainerClient(uploadReservation.containerName)
-          .getBlockBlobClient(uploadReservation.blobName)
-        await blockBlobClient.uploadData(file, {
-          blobHTTPHeaders: { blobContentType: contentType },
-        })
-
-        if (replaceResource) {
-          await confirmReplacement({
-            variables: {
-              kbId,
-              resourceId: replaceResource.id,
-              blobName: uploadReservation.blobName,
-              originalFilename: file.name,
-              mimeType: contentType,
-              sizeBytes: file.size,
-            },
-          })
-        } else {
-          await confirmUpload({
-            variables: {
-              kbId,
-              blobName: uploadReservation.blobName,
-              title: file.name,
-              originalFilename: file.name,
-              mimeType: contentType,
-              sizeBytes: file.size,
-              materialType,
-            },
-          })
-        }
-      } catch (error) {
-        console.error('Failed to upload KB file', error)
-        const code = getGraphQLErrorCode(error)
-        if (replaceResource && code === 'KB_INGESTION_QUEUE_FAILED') {
-          await refreshAfterMutation(
-            onResourceCreated,
-            'KB resources after replacement queue failure'
-          )
-          setReplacementFile(null)
-        }
-        let message = t('kb.fileUploadError')
-        switch (code) {
-          case 'KB_RESOURCE_LIMIT_REACHED':
-            message = t('kb.resourceLimitError')
-            break
-          case 'KB_STORAGE_LIMIT_REACHED':
-            message = t('kb.storageLimitError')
-            break
-          case 'KB_UPLOAD_TICKET_MISMATCH':
-            message = t('kb.uploadMismatchError')
-            break
-          case 'KB_INGESTION_QUEUE_FAILED':
-            message = t('kb.ingestResourceError')
-            break
-          case 'KB_INGESTION_DISABLED':
-            message = t('kb.ingestionDisabledError')
-            break
-        }
-        toast({ type: 'error', message })
-        return
+      const requestVariables = {
+        kbId,
+        fileName: file.name,
+        contentType,
+        sizeBytes: file.size,
       }
+      const uploadReservation = replaceResource
+        ? (
+            await requestReplacement({
+              variables: {
+                ...requestVariables,
+                resourceId: replaceResource.id,
+              },
+            })
+          ).data?.requestKbFileReplacement
+        : (await requestUpload({ variables: requestVariables })).data
+            ?.requestKbFileUpload
+      if (!uploadReservation)
+        throw new Error('Upload reservation was not returned')
 
-      await refreshAfterMutation(onResourceCreated, 'KB resources after upload')
-      if (!replaceResource) {
-        setMaterialType(KbResourceMaterialType.CourseContent)
+      const { BlobServiceClient } = await import('@azure/storage-blob')
+      const serviceClient = new BlobServiceClient(
+        uploadReservation.uploadSasURL
+      )
+      const blockBlobClient = serviceClient
+        .getContainerClient(uploadReservation.containerName)
+        .getBlockBlobClient(uploadReservation.blobName)
+      await blockBlobClient.uploadData(file, {
+        blobHTTPHeaders: { blobContentType: contentType },
+      })
+
+      if (replaceResource) {
+        await confirmReplacement({
+          variables: {
+            kbId,
+            resourceId: replaceResource.id,
+            blobName: uploadReservation.blobName,
+            originalFilename: file.name,
+            mimeType: contentType,
+            sizeBytes: file.size,
+          },
+        })
       } else {
+        await confirmUpload({
+          variables: {
+            kbId,
+            blobName: uploadReservation.blobName,
+            title: file.name,
+            originalFilename: file.name,
+            mimeType: contentType,
+            sizeBytes: file.size,
+            materialType,
+          },
+        })
+      }
+      return null
+    } catch (error) {
+      console.error('Failed to upload KB file', error)
+      const code = getGraphQLErrorCode(error)
+      if (replaceResource && code === 'KB_INGESTION_QUEUE_FAILED') {
+        await refreshAfterMutation(
+          onResourceCreated,
+          'KB resources after replacement queue failure'
+        )
         setReplacementFile(null)
       }
-      toast({
-        type: 'success',
-        message: replaceResource
-          ? t('kb.replaceFileSuccess')
-          : t('kb.fileUploadSuccess'),
-      })
+      switch (code) {
+        case 'KB_RESOURCE_LIMIT_REACHED':
+          return t('kb.resourceLimitError')
+        case 'KB_STORAGE_LIMIT_REACHED':
+          return t('kb.storageLimitError')
+        case 'KB_UPLOAD_TICKET_MISMATCH':
+          return t('kb.uploadMismatchError')
+        case 'KB_INGESTION_QUEUE_FAILED':
+          return t('kb.ingestResourceError')
+        case 'KB_INGESTION_DISABLED':
+          return t('kb.ingestionDisabledError')
+        default:
+          return t('kb.fileUploadError')
+      }
+    }
+  }
+
+  const uploadFiles = async (files: File[]) => {
+    if (files.length === 0 || uploading) return
+
+    setUploading(true)
+    const failed: { name: string; reason: string }[] = []
+    let succeeded = 0
+    try {
+      for (const [index, file] of files.entries()) {
+        setProgress({ current: index + 1, total: files.length })
+        const failure = await transferFile(file)
+        if (failure === null) {
+          succeeded += 1
+        } else {
+          failed.push({ name: file.name, reason: failure })
+          // A single file keeps its precise reason; a batch reports the names
+          // once the whole transfer is done.
+          if (files.length === 1) {
+            toast({ type: 'error', message: failure })
+          }
+        }
+      }
+
+      if (succeeded > 0) {
+        await refreshAfterMutation(
+          onResourceCreated,
+          'KB resources after upload'
+        )
+        if (!replaceResource) {
+          setMaterialType(KbResourceMaterialType.CourseContent)
+        } else {
+          setReplacementFile(null)
+        }
+      }
+
+      if (failed.length > 0 && files.length > 1) {
+        toast({
+          type: 'error',
+          message: t('kb.fileUploadBatchPartial', {
+            succeeded,
+            total: files.length,
+            files: failed.map(({ name }) => name).join(', '),
+            // Files that failed for the same reason report it once.
+            reason: [...new Set(failed.map(({ reason }) => reason))].join(' '),
+          }),
+        })
+      } else if (failed.length === 0) {
+        toast({
+          type: 'success',
+          message: replaceResource
+            ? t('kb.replaceFileSuccess')
+            : files.length > 1
+              ? t('kb.fileUploadBatchSuccess', { count: files.length })
+              : t('kb.fileUploadSuccess'),
+        })
+      }
     } finally {
+      setProgress(null)
       setUploading(false)
+      onUploadFinished?.({ succeeded, failed: failed.length })
     }
   }
 
@@ -175,17 +219,29 @@ function KnowledgeBaseFileDropzone({
     accept: ACCEPTED_FILES,
     disabled: uploading,
     maxSize: MAX_FILE_SIZE,
-    multiple: false,
+    multiple: !replaceResource,
     onDropAccepted: (files) => {
       if (replaceResource) {
         setReplacementFile(files[0] ?? null)
         return
       }
-      void uploadFile(files)
+      void uploadFiles(files)
     },
-    onDropRejected: () =>
-      toast({ type: 'error', message: t('kb.fileRejected') }),
+    onDropRejected: (rejections) => {
+      const names = rejections.map((rejection) => rejection.file.name)
+      toast({
+        type: 'error',
+        message:
+          names.length > 1
+            ? t('kb.filesRejected', { files: names.join(', ') })
+            : t('kb.fileRejected'),
+      })
+    },
   })
+
+  const dropPrompt = replaceResource
+    ? t('kb.fileDropPrompt')
+    : t('kb.filesDropPrompt')
 
   const content = (
     <>
@@ -228,7 +284,7 @@ function KnowledgeBaseFileDropzone({
       <div
         {...getRootProps({
           role: 'button',
-          'aria-label': t('kb.fileDropPrompt'),
+          'aria-label': dropPrompt,
           'aria-busy': uploading,
           'data-cy': 'kb-file-dropzone',
           className: `mt-4 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed px-4 py-6 text-center transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-100 ${
@@ -241,8 +297,13 @@ function KnowledgeBaseFileDropzone({
         <input {...getInputProps()} data-cy="kb-file-input" />
         <span className="font-medium" aria-live="polite">
           {uploading
-            ? t('kb.uploading')
-            : (replacementFile?.name ?? t('kb.fileDropPrompt'))}
+            ? progress && progress.total > 1
+              ? t('kb.uploadingProgress', {
+                  current: progress.current,
+                  total: progress.total,
+                })
+              : t('kb.uploading')
+            : (replacementFile?.name ?? dropPrompt)}
         </span>
         <span className="mt-1 text-xs text-slate-500">
           {t('kb.fileUploadFormats')}
@@ -250,7 +311,7 @@ function KnowledgeBaseFileDropzone({
       </div>
       {replaceResource && replacementFile ? (
         <Button
-          onClick={() => void uploadFile([replacementFile])}
+          onClick={() => void uploadFiles([replacementFile])}
           disabled={uploading}
           data={{ cy: 'confirm-kb-file-replacement' }}
           className={{ root: 'mt-4 w-full justify-center' }}
