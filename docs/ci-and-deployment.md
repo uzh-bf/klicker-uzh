@@ -451,6 +451,34 @@ pins in `v3-ai` would then reach production. When `v3-ai` is retired
 ([ADR-0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md)), the gate
 reports itself as not applicable and can be removed with the branch.
 
+## Doc Query scope-token ownership on `v3-ai`
+
+**`v3-ai` owns the KB-transport signer in a package, while `v3` still carries
+an app-local copy of the same module.** The chat transport signs a fresh ES256
+scope token for every Doc Query call. On `v3-ai` that signer lives in
+`packages/doc-query-client`, and
+`apps/chat/src/lib/server/docQueryScopeToken.ts` only re-exports it from there.
+`v3` has no such package, so the same module on that branch holds the
+implementation itself. Both branches import it by path through
+`apps/chat/src/services/mcpClients.ts`, so the module resolves either way and
+nothing in the build reports the difference.
+
+That split survives only while nothing edits the `v3` copy. Integration flows
+`v3` → `v3-ai`, so a later `v3` change to that module merges cleanly into
+`v3-ai`, with no conflict to review, and silently restores the app-local
+signer. The package keeps its tests and stops being used, so a package-side fix
+no longer reaches the transport.
+
+`check.yml` runs `.github/scripts/doc-query-token-ownership.cjs` on pushes to
+`v3-ai` and on pull requests whose base is `v3-ai`. It fails a candidate that
+edits `apps/chat/src/lib/server/docQueryScopeToken.ts` or
+`packages/doc-query-client` and leaves the module without the package
+re-export; a candidate that edits neither reports the state it inherited as a
+warning instead, like the deploy parity gate. The remedy is always the same:
+change `packages/doc-query-client/src/docQueryScopeToken.ts` and keep the chat
+module as the re-export. Bringing the package onto `v3` and making both
+branches re-export it would remove the divergence this gate watches for.
+
 ## Deployment values (facts, not procedures)
 
 - **stg** (`*.klicker.stg.df-app.ch`): `STG_SOURCE_BRANCH` selects the supported `v3*` branch that publishes staging candidates; it currently selects `v3-audit`. The release-ref design makes ArgoCD track `stg-release` and inject its resolved full commit SHA as the first-party image tag. Automatic promotion is active, so the selected source advances staging on every qualified candidate — see [Staging promotion](#staging-promotion) below.
