@@ -1703,6 +1703,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextPage: 'Nächste',
     },
     admin: {
+      chatbotRejectionReason: 'Grund für die Ablehnung',
+      chatbotRejectConsequence:
+        'Der Besitzer sieht diesen Grund und kann den Chatbot überarbeiten und erneut zur Freigabe einreichen.',
+      chatbotReject: 'Antrag ablehnen',
+      chatbotRejected:
+        '«{name}» wurde abgelehnt. Der Besitzer kann ihn überarbeiten und erneut einreichen.',
+      chatbotRejectionError:
+        'Die Ablehnung konnte nicht bestätigt werden. Aktualisieren Sie die Liste und prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
       chatbotAllTools: 'Alle Werkzeuge',
       chatbotDefaultReasoning: 'Alle vom Modell unterstützten Reasoning-Stufen',
       adminOnly: 'Diese Seite ist nur für Administratoren verfügbar.',

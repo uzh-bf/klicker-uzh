@@ -1695,6 +1695,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
       chatbotAllTools: 'All tools',
       chatbotDefaultReasoning: 'All reasoning levels supported by the model',
       adminOnly: 'This page is available to administrators only.',

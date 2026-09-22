@@ -27,7 +27,7 @@ for participant access through the established publication mutation.
 
 Manage page/components, GraphQL query/type/operation, EN+DE strings, targeted
 service tests and browser evidence. No Prisma migration, seed change, Hatchet
-work, gamification, budget administration, rejection UI or production write.
+work, gamification, budget administration or production write.
 Remove the CLI/test/README additions; retain its approval operation.
 
 ## Verification
@@ -49,3 +49,11 @@ user authorization; do not substitute an unauthorized startup.
   action, successful publication, empty queue, German strings, and non-admin denial.
 - Browser used the built backend after watch-mode compilation exhausted the local
   Docker VM memory; temporary runtime configuration is excluded from the PR.
+
+## Local approval and rejection follow-up
+
+Added a required-reason rejection form using the existing ADMIN mutation.
+Manage typechecking and Biome checks passed. Browser verification confirmed blank
+and whitespace-only reasons are blocked, rejection succeeds, feedback is saved,
+and approval still works. Checked the English desktop and German mobile layouts.
+Synthetic pending requests and beta enrollment remain local test data only.

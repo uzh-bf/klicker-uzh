@@ -3,12 +3,14 @@ import {
   ApproveChatbotPublicationDocument,
   ChatbotStatus,
   GetPendingChatbotPublicationsDocument,
+  RejectChatbotPublicationDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ChatbotPublicationDetails from './ChatbotPublicationDetails'
+import ChatbotRejectionForm from './ChatbotRejectionForm'
 
 function ChatbotPublicationQueue() {
   const t = useTranslations()
@@ -19,6 +21,12 @@ function ChatbotPublicationQueue() {
   const [approve, { loading: approving }] = useMutation(
     ApproveChatbotPublicationDocument
   )
+  const [reject, { loading: rejecting }] = useMutation(
+    RejectChatbotPublicationDocument
+  )
+  const [rejectionError, setRejectionError] = useState(false)
+  const [rejectedName, setRejectedName] = useState<string | null>(null)
+  const busy = loading || approving || rejecting
   const [approvalError, setApprovalError] = useState(false)
   const [publishedName, setPublishedName] = useState<string | null>(null)
   const pending =
@@ -28,6 +36,8 @@ function ChatbotPublicationQueue() {
 
   async function publish(id: string, name: string) {
     setApprovalError(false)
+    setRejectionError(false)
+    setRejectedName(null)
     setPublishedName(null)
     try {
       const result = await approve({ variables: { id } })
@@ -46,6 +56,26 @@ function ChatbotPublicationQueue() {
     await refetch().catch(() => undefined)
   }
 
+  async function rejectRequest(id: string, name: string, comment: string) {
+    setApprovalError(false)
+    setRejectionError(false)
+    setPublishedName(null)
+    setRejectedName(null)
+    try {
+      const result = await reject({ variables: { id, comment } })
+      if (
+        result.data?.rejectChatbotPublication?.id !== id ||
+        result.data.rejectChatbotPublication.status !== ChatbotStatus.Rejected
+      ) {
+        throw new Error('Rejection was not confirmed')
+      }
+      setRejectedName(name)
+    } catch {
+      setRejectionError(true)
+    }
+    await refetch().catch(() => undefined)
+  }
+
   return (
     <section className="space-y-4" data-cy="chatbot-publication-queue">
       <p className="text-sm text-gray-600">
@@ -57,7 +87,17 @@ function ChatbotPublicationQueue() {
             {t('manage.admin.chatbotPublished', { name: publishedName })}
           </UserNotification>
         ) : null}
+        {rejectedName ? (
+          <UserNotification type="success">
+            {t('manage.admin.chatbotRejected', { name: rejectedName })}
+          </UserNotification>
+        ) : null}
       </div>
+      {rejectionError ? (
+        <UserNotification type="error">
+          {t('manage.admin.chatbotRejectionError')}
+        </UserNotification>
+      ) : null}
       {approvalError ? (
         <UserNotification type="error">
           {t('manage.admin.chatbotApprovalError')}
@@ -67,7 +107,7 @@ function ChatbotPublicationQueue() {
         onClick={() => {
           void refetch().catch(() => undefined)
         }}
-        disabled={loading || approving}
+        disabled={busy}
         data={{ cy: 'refresh-chatbot-approvals' }}
       >
         <Button.Label>{t('manage.admin.chatbotRefresh')}</Button.Label>
@@ -119,9 +159,7 @@ function ChatbotPublicationQueue() {
                   </p>
                   <Button
                     primary
-                    disabled={
-                      loading || approving || !review.ownerPublishingEnabled
-                    }
+                    disabled={busy || !review.ownerPublishingEnabled}
                     loading={approving}
                     onClick={() => {
                       void publish(review.chatbot.id, review.chatbot.name)
@@ -133,6 +171,17 @@ function ChatbotPublicationQueue() {
                     </Button.Label>
                   </Button>
                 </div>
+                <ChatbotRejectionForm
+                  id={review.chatbot.id}
+                  disabled={busy}
+                  onReject={(comment) =>
+                    rejectRequest(
+                      review.chatbot.id,
+                      review.chatbot.name,
+                      comment
+                    )
+                  }
+                />
               </div>
             </details>
           ))}
