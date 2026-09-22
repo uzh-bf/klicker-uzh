@@ -1,21 +1,44 @@
 import pandas as pd
 import statistics
 
+from ..analytics_eligibility import (
+    AnalyticsEligibilityContext,
+    ensure_analytics_eligibility,
+    filter_dataframe_by_participants,
+    publish_analytics,
+)
 
-def compute_weekday_activity(db, course):
+
+def compute_weekday_activity(
+    db,
+    course,
+    eligibility: AnalyticsEligibilityContext | None = None,
+):
+    eligibility = ensure_analytics_eligibility(db, eligibility)
     course_id = course["id"]
+
+    eligible_participant_ids = tuple(
+        str(participation["participantId"])
+        for participation in course["participations"]
+        if str(participation["participantId"]) in eligibility.participant_ids
+    )
+    if not eligible_participant_ids:
+        return None
+
     course_start = course["startDate"].date()
     course_end = course["endDate"].date()
-    total_course_participants = len(course["participations"])
+    total_course_participants = len(eligible_participant_ids)
 
     # fetch all daily participant analytics entries for the course
     daily_analytics = db.participantanalytics.find_many(
         where={
             "type": "DAILY",
             "courseId": course_id,
+            "participantId": {"in": list(eligible_participant_ids)},
         },
     )
     df_daily = pd.DataFrame([daily.dict() for daily in daily_analytics])
+    df_daily = filter_dataframe_by_participants(df_daily, eligibility)
 
     if df_daily.empty:
         return None
@@ -65,33 +88,35 @@ def compute_weekday_activity(db, course):
     activity_saturday = single_weekday_activity(saturdays, df_daily)
     activity_sunday = single_weekday_activity(sundays, df_daily)
 
-    # save the result to the database
-    db.aggregatedcourseanalytics.upsert(
-        where={"courseId": course_id},
-        data={
-            "create": {
-                "courseParticipantCount": total_course_participants,
-                "activityMonday": activity_monday,
-                "activityTuesday": activity_tuesday,
-                "activityWednesday": activity_wednesday,
-                "activityThursday": activity_thursday,
-                "activityFriday": activity_friday,
-                "activitySaturday": activity_saturday,
-                "activitySunday": activity_sunday,
-                "course": {"connect": {"id": course_id}},
+    def write(transaction):
+        transaction.aggregatedcourseanalytics.upsert(
+            where={"courseId": course_id},
+            data={
+                "create": {
+                    "courseParticipantCount": total_course_participants,
+                    "activityMonday": activity_monday,
+                    "activityTuesday": activity_tuesday,
+                    "activityWednesday": activity_wednesday,
+                    "activityThursday": activity_thursday,
+                    "activityFriday": activity_friday,
+                    "activitySaturday": activity_saturday,
+                    "activitySunday": activity_sunday,
+                    "course": {"connect": {"id": course_id}},
+                },
+                "update": {
+                    "courseParticipantCount": total_course_participants,
+                    "activityMonday": activity_monday,
+                    "activityTuesday": activity_tuesday,
+                    "activityWednesday": activity_wednesday,
+                    "activityThursday": activity_thursday,
+                    "activityFriday": activity_friday,
+                    "activitySaturday": activity_saturday,
+                    "activitySunday": activity_sunday,
+                },
             },
-            "update": {
-                "courseParticipantCount": total_course_participants,
-                "activityMonday": activity_monday,
-                "activityTuesday": activity_tuesday,
-                "activityWednesday": activity_wednesday,
-                "activityThursday": activity_thursday,
-                "activityFriday": activity_friday,
-                "activitySaturday": activity_saturday,
-                "activitySunday": activity_sunday,
-            },
-        },
-    )
+        )
+
+    publish_analytics(db, eligibility, (course_id,), write)
 
 
 def single_weekday_activity(weekdays, df_daily):
