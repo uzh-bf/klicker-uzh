@@ -13,6 +13,7 @@ import {
   assertElementGenerationCostAccounted,
   createElementGenerationBuildWithSpend,
   releaseUnclaimedElementGenerationSpend,
+  reserveElementGenerationRetrySpend,
 } from './elementGenerationAccounting.js'
 import { completeElementGeneration } from './elementGenerationCompletion.js'
 import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
@@ -430,6 +431,12 @@ async function dispatchPreparingQuestionBuild(
         ),
     })
 
+  // A question retry reserves under the shared QUESTION_GENERATION spend
+  // class, which cannot identify a retry on its own. The reservation therefore
+  // marks the build in its stage until this dispatch consumes the mark and
+  // counts the retry.
+  const retryDispatch = build.stage === 'retry_dispatching'
+
   const updated = await ctx.prisma.elementGenerationBuild.updateMany({
     where: {
       id: build.id,
@@ -444,6 +451,7 @@ async function dispatchPreparingQuestionBuild(
       status: DB.ElementGenerationBuildStatus.DESIGNING,
       stage: 'design',
       startedAt: new Date(),
+      ...(retryDispatch ? { retryCount: { increment: 1 } } : {}),
     },
   })
   if (updated.count !== 1) {
@@ -551,6 +559,45 @@ export async function startQuestionGeneration(
   )
 }
 
+export async function retryQuestionGeneration(
+  buildId: string,
+  ctx: ContextWithUser
+) {
+  await assertQuestionGenerationPreviewAccess(ctx)
+  const runtime = requireRuntime(ctx)
+  const build = await findOwnedBuild(buildId, ctx)
+  assertElementGenerationCostAccounted(build)
+  if (
+    build.status !== DB.ElementGenerationBuildStatus.FAILED ||
+    build.errorRetryable !== true
+  ) {
+    return serviceError(
+      'INVALID_STAGE',
+      'Only a retryable failed question build can be retried'
+    )
+  }
+  const dispatchAttemptId = randomUUID()
+  const claimed = await reserveElementGenerationRetrySpend(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    dispatchAttemptId,
+    spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+    elementTypes: QUESTION_ELEMENT_TYPES,
+    expectedStatus: DB.ElementGenerationBuildStatus.FAILED,
+  })
+  if (!claimed) {
+    return serviceError(
+      'CONCURRENT_MODIFICATION',
+      'Question build was changed by another request'
+    )
+  }
+  return resumePreparingQuestionBuild(
+    await findOwnedBuild(build.id, ctx),
+    runtime,
+    ctx
+  )
+}
+
 async function synchronizeLeasedBuild(
   build: Awaited<ReturnType<typeof findOwnedBuild>>,
   runtime: QuestionGenerationRuntime,
@@ -624,7 +671,9 @@ async function synchronizeLeasedBuild(
             stage: 'failed',
             errorCode: `WORKFLOW_${run.status}`,
             errorMessage: 'Question-generation workflow did not complete',
-            errorRetryable: false,
+            errorRetryable: failedReasons
+              ? slotFailuresAreRetryable(failedReasons.slotFailures)
+              : false,
             completedAt: new Date(),
             ...(failedReasons
               ? {
@@ -758,7 +807,7 @@ async function synchronizeLeasedBuild(
             stage: 'failed',
             errorCode: 'WORKFLOW_FAILED',
             errorMessage: 'Question-generation workflow reported a failure',
-            errorRetryable: false,
+            errorRetryable: slotFailuresAreRetryable(result.slotFailures),
             completedAt: new Date(),
             lastSynchronizedAt: new Date(),
             // A partial run whose slots all failed arrives as a failed result
@@ -952,6 +1001,18 @@ async function synchronizeLeasedBuild(
       },
     })
   }
+}
+
+// A build whose slots all failed is only worth re-dispatching when the reasons
+// are the system's to fix. A user_input reason would repeat until the lecturer
+// changes the request, so it keeps the build terminal with no retry offered.
+function slotFailuresAreRetryable(
+  failures: ElementGenerationSlotFailure[]
+): boolean {
+  return (
+    failures.length > 0 &&
+    failures.every((failure) => failure.failureClass !== 'user_input')
+  )
 }
 
 // A run that the provider reports as failed or cancelled may still have

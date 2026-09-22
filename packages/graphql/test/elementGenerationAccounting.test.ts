@@ -15,6 +15,7 @@ import {
   isElementGenerationCostConfigured,
   releaseStaleClaimedElementGenerationSpend,
   releaseUnclaimedElementGenerationSpend,
+  reserveElementGenerationRetrySpend,
   reserveFlashcardRetrySpend,
   settleElementGenerationSpend,
 } from '../src/services/elementGenerationAccounting.js'
@@ -355,6 +356,84 @@ describe('element-generation cost accounting', () => {
         spendClass: KBGraphQuotaSpendClass.FLASHCARD_RETRY,
         costStatus: KBGraphCostStatus.RESERVED,
         estimatedCostMinorUnits: 10,
+      },
+    ])
+  })
+
+  it('returns a failed question build to dispatch under the shared generation class', async () => {
+    const initialDispatchAttemptId = randomUUID()
+    const { buildId } = await createElementGenerationBuildWithSpend(prisma, {
+      ownerId,
+      idempotencyKey: 'question-start',
+      spendClass: KBGraphQuotaSpendClass.QUESTION_GENERATION,
+      data: buildData({
+        idempotencyKey: 'question-start',
+        dispatchAttemptId: initialDispatchAttemptId,
+      }),
+      env: costEnv,
+      now: NOW,
+    })
+    await claimElementGenerationSpend(prisma, initialDispatchAttemptId, NOW)
+    await settleElementGenerationSpend(prisma, initialDispatchAttemptId, NOW)
+    await prisma.elementGenerationBuild.update({
+      where: { id: buildId },
+      data: {
+        status: ElementGenerationBuildStatus.FAILED,
+        stage: 'failed',
+        errorRetryable: true,
+        completedAt: new Date(NOW.getTime() + 60_000),
+      },
+    })
+
+    const retryDispatchAttemptId = randomUUID()
+    await expect(
+      reserveElementGenerationRetrySpend(prisma, {
+        buildId,
+        ownerId,
+        dispatchAttemptId: retryDispatchAttemptId,
+        spendClass: KBGraphQuotaSpendClass.QUESTION_GENERATION,
+        elementTypes: [ElementType.SC, ElementType.MC, ElementType.KPRIM],
+        expectedStatus: ElementGenerationBuildStatus.FAILED,
+        env: costEnv,
+        now: NOW,
+      })
+    ).resolves.toBe(true)
+    await expect(
+      prisma.elementGenerationBuild.findUniqueOrThrow({
+        where: { id: buildId },
+        select: {
+          status: true,
+          stage: true,
+          providerDispatchAttemptId: true,
+          completedAt: true,
+        },
+      })
+    ).resolves.toEqual({
+      status: ElementGenerationBuildStatus.PREPARING_INPUT,
+      stage: 'retry_dispatching',
+      providerDispatchAttemptId: retryDispatchAttemptId,
+      completedAt: null,
+    })
+    await expect(
+      prisma.elementGenerationSpend.findMany({
+        where: { buildId },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          spendClass: true,
+          costStatus: true,
+          estimatedCostMinorUnits: true,
+        },
+      })
+    ).resolves.toEqual([
+      {
+        spendClass: KBGraphQuotaSpendClass.QUESTION_GENERATION,
+        costStatus: KBGraphCostStatus.SETTLED,
+        estimatedCostMinorUnits: 40,
+      },
+      {
+        spendClass: KBGraphQuotaSpendClass.QUESTION_GENERATION,
+        costStatus: KBGraphCostStatus.RESERVED,
+        estimatedCostMinorUnits: 40,
       },
     ])
   })
