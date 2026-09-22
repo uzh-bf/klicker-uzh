@@ -38,6 +38,11 @@ describe('chatbot credit policy', () => {
     })
   })
 
+  // Chatbot creation writes the default straight to the database, but the
+  // owner-facing editor sends every save through this validator. A default
+  // the validator rejects would therefore be unsaveable: opening the credit
+  // controls and pressing save without changing anything would fail. Tuning
+  // the numbers is expected, so the constant is pinned as a valid policy.
   it('accepts the default chatbot credit policy unchanged', () => {
     expect(
       normalizeAndValidateCreditPolicy(DEFAULT_CHATBOT_CREDIT_POLICY)
