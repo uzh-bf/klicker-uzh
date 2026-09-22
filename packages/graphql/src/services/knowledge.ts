@@ -3004,6 +3004,41 @@ async function resolveRequestedKBGraphDomainSelection(
 }
 
 /**
+ * Resolves the selection a build runs with from the knowledge base itself. The
+ * knowledge base owns the choice, so a build never carries one in its request:
+ * every caller, including the batch scheduler, reads the same stored columns.
+ *
+ * A stored pair this deployment cannot honor falls back to the provider default
+ * instead of refusing the build. The capability gate means "the catalog shipped
+ * here is the one this pair was chosen against", so a deployment that ships a
+ * different catalog cannot honor the pair and has nothing better to offer than
+ * the default the graph provider already applies. Refusing instead would leave
+ * a lecturer with a graph they can neither rebuild nor reconfigure, because the
+ * same closed gate also hides the controls that would replace the pair.
+ */
+function resolveStoredKBGraphDomainSelection(
+  kb: {
+    domainPolicyId: string | null
+    domainPolicyVersion: number | null
+    domainPolicyLanguage: string | null
+  },
+  options: { capabilityEnabled: boolean }
+): KBGraphDomainSelection | null {
+  const resolution = resolveKBGraphDomainSelection(
+    {
+      domainPolicyId: kb.domainPolicyId,
+      domainPolicyVersion: kb.domainPolicyVersion,
+      language: kb.domainPolicyLanguage,
+    },
+    {
+      catalog: getDefaultKBGraphDomainCatalog(),
+      capabilityEnabled: options.capabilityEnabled,
+    }
+  )
+  return resolution.ok ? resolution.selection : null
+}
+
+/**
  * Normalizes a lecturer-supplied build focus. The focus is prompt guidance, so
  * a blank value is the same as no focus. It rides the same provider contract as
  * the explicit domain selection, so a deployment or actor this rollout does not
@@ -3330,16 +3365,10 @@ export async function rebuildKbKnowledgeGraph(
   {
     kbId,
     qualityTier: requestedQualityTier,
-    domainPolicyId,
-    domainPolicyVersion,
-    domainPolicyLanguage,
     focusTopic,
   }: {
     kbId: string
     qualityTier?: DB.KBGraphQualityTier | null
-    domainPolicyId?: string | null
-    domainPolicyVersion?: number | null
-    domainPolicyLanguage?: string | null
     focusTopic?: string | null
   },
   ctx: ContextWithUser
@@ -3347,16 +3376,9 @@ export async function rebuildKbKnowledgeGraph(
   const qualityTier = requestedQualityTier ?? DB.KBGraphQualityTier.STANDARD
   await assertManageAiEnabled(ctx)
   await assertKbGraphGenerationEnabled(ctx)
-  // Reject a partial, unknown, or unsupported explicit selection before any
-  // cost reservation exists, so a bad request cannot leave reserved money.
-  const requestedDomain = await resolveRequestedKBGraphDomainSelection(
-    {
-      domainPolicyId,
-      domainPolicyVersion,
-      language: domainPolicyLanguage,
-    },
-    ctx
-  )
+  // The capability is resolved before the transaction opens so the lock is not
+  // held across a feature-flag lookup.
+  const domainCapabilityEnabled = await isKBGraphDomainSelectionAdmitted(ctx)
   const requestedFocusTopic = await resolveRequestedKBGraphFocusTopic(
     focusTopic,
     ctx
@@ -3370,7 +3392,13 @@ export async function rebuildKbKnowledgeGraph(
         knowledgeGraphEnabled: true,
         activeGraphBuildId: true,
         publishedGraphBuildId: true,
+        domainPolicyId: true,
+        domainPolicyVersion: true,
+        domainPolicyLanguage: true,
       },
+    })
+    const storedDomain = resolveStoredKBGraphDomainSelection(kb, {
+      capabilityEnabled: domainCapabilityEnabled,
     })
 
     if (!kb.knowledgeGraphEnabled) {
@@ -3450,11 +3478,11 @@ export async function rebuildKbKnowledgeGraph(
     })
     // Only an explicit, validated selection is frozen onto the build; the
     // legacy path writes nothing so established provider defaults stay implicit.
-    const domainFields = requestedDomain
+    const domainFields = storedDomain
       ? {
-          domainPolicyId: requestedDomain.domainPolicyId,
-          domainPolicyVersion: requestedDomain.domainPolicyVersion,
-          domainPolicyLanguage: requestedDomain.language,
+          domainPolicyId: storedDomain.domainPolicyId,
+          domainPolicyVersion: storedDomain.domainPolicyVersion,
+          domainPolicyLanguage: storedDomain.language,
         }
       : {}
     const build = await prisma.kBGraphBuild.create({

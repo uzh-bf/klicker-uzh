@@ -2125,16 +2125,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphDomainInformatics: 'Informatics',
     graphDomainGeneralAcademic: 'General / Mixed',
     graphDomainCategoriesLabel: 'Generated categories',
-    graphDomainLanguageNote:
-      'The graph is generated in the selected language. The interface language does not change the categories.',
-    graphDomainLanguageLabel: 'Generation language',
     graphDomainLanguageSelectPlaceholder: 'Select a language',
-    graphDomainCurrentUnavailable:
-      'The selected domain {domain} (version {version}) is not available in this deployment. Choose a supported domain to build again.',
-    graphDomainLanguageUnavailable:
-      'The selected domain {domain} does not serve {language} in this deployment. Choose a supported generation language to build again.',
-    graphDomainRebuildBlocked:
-      'This knowledge base uses an explicit domain ({domain}, version {version}, {language}) that this deployment cannot reapply. Rebuilding is blocked until an explicit domain selection is available again.',
     graphDomainVersionUnknown: 'unknown',
     graphDomainPublished:
       'Served graph: {domain} (version {version}, {language})',

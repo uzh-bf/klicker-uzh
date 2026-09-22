@@ -29,13 +29,8 @@ import {
   DEFAULT_DOMAIN_GENERATION_LANGUAGE,
   DEFAULT_DOMAIN_POLICY_ID,
   DEFAULT_DOMAIN_POLICY_VERSION,
-  DOMAIN_GENERATION_LANGUAGES,
-  type DomainGenerationLanguage,
-  isDomainGenerationLanguage,
   isSameKbDomain,
-  kbDomainItems,
   kbDomainLabelForId,
-  kbDomainOptionValue,
   useKbDomainLabels,
 } from '../kbDomainSettings'
 
@@ -46,12 +41,6 @@ const KnowledgeGraphViewer = dynamic(
     ).then((module) => module.KnowledgeGraphViewer),
   { ssr: false }
 )
-
-type KnowledgeGraphDomainSelection = {
-  id: string
-  version: number | null
-  language: DomainGenerationLanguage
-}
 
 type GraphResponse =
   | GetKbKnowledgeGraphOverviewQuery['getKbKnowledgeGraphOverview']
@@ -274,9 +263,6 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
     KbGraphQualityTier.Standard
   )
-  const [userDomainSelection, setUserDomainSelection] = useState<
-    (KnowledgeGraphDomainSelection & { kbId: string }) | null
-  >(null)
   const [operationError, setOperationError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const { data, loading, error, refetch, startPolling, stopPolling } = useQuery(
@@ -330,97 +316,37 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     config?.remainingSemesterQuotaMinorUnits != null &&
     selectedEstimate > config.remainingSemesterQuotaMinorUnits
 
-  const domainCapabilityEnabled = domainConfig?.capabilityEnabled ?? false
   const domainOptions = domainConfig?.options ?? []
-  // An explicit selection is only ever restored, never upgraded or substituted:
-  // the persisted build metadata wins until the lecturer changes the control,
-  // and a retired id/version pair stays selected instead of moving to another
-  // version the catalog happens to keep.
-  const hasPersistedDomainSelection =
-    config?.domainPolicyId != null ||
-    config?.domainPolicyVersion != null ||
-    config?.domainPolicyLanguage != null
-  const persistedDomainSelection =
+  // The panel reports what a build ran with, never what the next one will use:
+  // the subject area and language live on the knowledge base and are edited in
+  // its settings, so nothing here is a control the lecturer can change.
+  const buildDomain =
     config?.domainPolicyId != null
       ? {
           id: config.domainPolicyId,
           version: config.domainPolicyVersion ?? null,
-          // A persisted triple always records its language; the default only
-          // covers rows a legacy deployment wrote before explicit languages.
-          language: isDomainGenerationLanguage(config.domainPolicyLanguage)
-            ? config.domainPolicyLanguage
-            : DEFAULT_DOMAIN_GENERATION_LANGUAGE,
+          language: config.domainPolicyLanguage ?? null,
         }
       : null
-  const currentUserDomainSelection =
-    userDomainSelection?.kbId === kbId ? userDomainSelection : null
-  const domainSelection: KnowledgeGraphDomainSelection =
-    currentUserDomainSelection ??
-      persistedDomainSelection ?? {
-        id: DEFAULT_DOMAIN_POLICY_ID,
-        version: DEFAULT_DOMAIN_POLICY_VERSION,
-        language: DEFAULT_DOMAIN_GENERATION_LANGUAGE,
-      }
-  const domainSelectedOption = domainOptions.find(
-    (option) =>
-      option.id === domainSelection.id &&
-      option.version === domainSelection.version
+  // The categories a build recorded describe that build. A retired pair must
+  // not borrow another catalog entry's categories, so they are read from the
+  // build itself rather than looked up again.
+  const domainCategoryNames = (config?.domainCategories ?? []).map(
+    (category) => category.name
   )
-  const domainSelectionSupported =
-    // A catalog option that keeps no categories in the selected generation
-    // language cannot produce this build and stays blocked.
-    domainCapabilityEnabled &&
-    (domainSelectedOption?.languages.some(
-      (option) => option.language === domainSelection.language
-    ) ??
-      false)
-  // A retired pair is reported from the persisted build metadata and must not
-  // borrow another option's categories, so only the untouched persisted
-  // selection falls back to the categories the build itself recorded.
-  const showingPersistedDomain =
-    currentUserDomainSelection == null && persistedDomainSelection != null
-  const domainCategoryNames =
-    domainSelectedOption?.languages
-      .find((option) => option.language === domainSelection.language)
-      ?.categories.map((category) => category.name) ??
-    (showingPersistedDomain
-      ? (config?.domainCategories ?? []).map((category) => category.name)
-      : [])
-  // A closed capability gate may not silently fall back to the provider default
-  // domain, so a stored explicit selection blocks the rebuild until the gate
-  // accepts an explicit replacement again.
-  const domainSubmitBlocked = domainCapabilityEnabled
-    ? !domainSelectionSupported
-    : hasPersistedDomainSelection
-  const showDomainDetails =
-    domainCapabilityEnabled ||
-    domainSubmitBlocked ||
-    domainCategoryNames.length > 0
 
   const domainLabelForId = (id: string) =>
     kbDomainLabelForId(id, domainOptions, translateDomainLabelKey)
-  const domainItems = kbDomainItems(domainOptions, translateDomainLabelKey)
-  const domainLanguageItems = DOMAIN_GENERATION_LANGUAGES.map((language) => ({
-    value: language,
-    label: translateDomainLanguage(language),
-  }))
-  // The language control keeps showing the stored choice even when the catalog
-  // cannot serve it. The submit gate and the status message carry the block, so
-  // the lecturer sees what is stored and replaces it explicitly.
-  const domainLanguageSelectValue = domainSelection.language
-  const domainSelectValue = domainSelectedOption
-    ? kbDomainOptionValue(domainSelectedOption)
-    : ''
 
   // A failed or superseded attempt must not relabel the graph that is actually
   // served, so the published build's own domain is reported separately. A
   // legacy published build records no triple, and by contract that served graph
   // was generated with the default Finance v1 in German; applying that default
   // only here leaves the stored null values meaning "no explicit domain".
-  const reportedDomain = {
-    id: config?.domainPolicyId ?? null,
-    version: config?.domainPolicyVersion ?? null,
-    language: config?.domainPolicyLanguage ?? null,
+  const reportedDomain = buildDomain ?? {
+    id: null,
+    version: null,
+    language: null,
   }
   const publishedDomain = {
     id:
@@ -443,29 +369,6 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     publishedDomain.id != null
       ? (domainLabelForId(publishedDomain.id) ?? publishedDomain.id)
       : null
-  // The blocked-domain message names the stored selection and each branch
-  // carries only the fields the lecturer needs to replace it.
-  const domainBlockedMessage = () => {
-    const domain = domainLabelForId(domainSelection.id) ?? domainSelection.id
-    if (domainCapabilityEnabled) {
-      if (domainSelectedOption !== undefined) {
-        return t('kb.graphDomainLanguageUnavailable', {
-          domain,
-          language: translateDomainLanguage(domainSelection.language),
-        })
-      }
-      return t('kb.graphDomainCurrentUnavailable', {
-        domain,
-        version: formatDomainVersion(domainSelection.version),
-      })
-    }
-    return t('kb.graphDomainRebuildBlocked', {
-      domain,
-      version: formatDomainVersion(persistedDomainSelection?.version ?? null),
-      language: translateDomainLanguage(reportedDomain.language),
-    })
-  }
-
   useEffect(() => {
     if (config?.qualityTier != null && !isActive) {
       setSelectedTier(config.qualityTier)
@@ -522,33 +425,16 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   }
 
   const handleRebuild = async () => {
-    if (
-      isRebuilding ||
-      isActive ||
-      !config?.isEnabled ||
-      insufficientQuota ||
-      domainSubmitBlocked
-    ) {
+    if (isRebuilding || isActive || !config?.isEnabled || insufficientQuota) {
       return
     }
 
     setOperationError(null)
-    // An omitted triple is the legacy path for a deployment whose capability
-    // gate is closed; only an enabled, supported selection is sent explicitly.
-    const domainVariables =
-      domainCapabilityEnabled && domainSelectedOption !== undefined
-        ? {
-            domainPolicyId: domainSelectedOption.id,
-            domainPolicyVersion: domainSelectedOption.version,
-            domainPolicyLanguage: domainSelection.language,
-          }
-        : {}
     try {
       const result = await rebuildGraph({
         variables: {
           kbId,
           qualityTier: selectedTier,
-          ...domainVariables,
         },
       })
       const buildId = result.data?.rebuildKbKnowledgeGraphWithDomain.buildId
@@ -679,73 +565,14 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   {t('kb.graphCostUnavailable')}
                 </p>
               ) : null}
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
-                {domainCapabilityEnabled ? (
-                  <>
-                    <SelectField
-                      label={t('kb.graphDomainLabel')}
-                      items={domainItems}
-                      value={domainSelectValue}
-                      placeholder={t('kb.graphDomainSelectPlaceholder')}
-                      onChange={(value) => {
-                        setOperationError(null)
-                        const option = domainOptions.find(
-                          (candidate) =>
-                            kbDomainOptionValue(candidate) === value
-                        )
-                        if (!option) return
-                        setUserDomainSelection({
-                          kbId,
-                          id: option.id,
-                          version: option.version,
-                          // The language is carried over unchanged. A domain
-                          // that cannot serve it leaves the rebuild blocked
-                          // until the lecturer picks a supported language,
-                          // instead of silently rewriting the stored choice.
-                          language: domainSelection.language,
-                        })
-                      }}
-                      disabled={
-                        isActive ||
-                        isRebuilding ||
-                        !config.isEnabled ||
-                        !config.costConfigurationReady
-                      }
-                      data={{ cy: 'kb-knowledge-graph-domain' }}
-                      className={{
-                        root: 'w-full',
-                        select: { trigger: 'w-full' },
-                      }}
-                    />
-                    <SelectField
-                      label={t('kb.graphDomainLanguageLabel')}
-                      items={domainLanguageItems}
-                      value={domainLanguageSelectValue}
-                      placeholder={t('kb.graphDomainLanguageSelectPlaceholder')}
-                      onChange={(value) => {
-                        setOperationError(null)
-                        if (!isDomainGenerationLanguage(value)) return
-                        setUserDomainSelection({
-                          kbId,
-                          id: domainSelection.id,
-                          version: domainSelection.version,
-                          language: value,
-                        })
-                      }}
-                      disabled={
-                        isActive ||
-                        isRebuilding ||
-                        !config.isEnabled ||
-                        !config.costConfigurationReady
-                      }
-                      data={{ cy: 'kb-knowledge-graph-domain-language' }}
-                      className={{
-                        root: 'w-full',
-                        select: { trigger: 'w-full' },
-                      }}
-                    />
-                  </>
-                ) : (
+              <div
+                className={`grid gap-3 sm:items-end ${
+                  buildDomain != null
+                    ? 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]'
+                    : 'sm:grid-cols-[minmax(0,1fr)_auto]'
+                }`}
+              >
+                {buildDomain != null ? (
                   <div
                     className="space-y-1"
                     data-cy="kb-knowledge-graph-domain"
@@ -754,13 +581,10 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                       {t('kb.graphDomainLabel')}
                     </span>
                     <p className="text-sm text-slate-600">
-                      {persistedDomainSelection
-                        ? (domainLabelForId(persistedDomainSelection.id) ??
-                          persistedDomainSelection.id)
-                        : t('kb.graphDomainFinance')}
+                      {domainLabelForId(buildDomain.id) ?? buildDomain.id}
                     </p>
                   </div>
-                )}
+                ) : null}
                 <SelectField
                   label={t('kb.graphQualityTierLabel')}
                   items={tierItems}
@@ -784,8 +608,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                     isActive ||
                     !config.isEnabled ||
                     !config.costConfigurationReady ||
-                    insufficientQuota ||
-                    domainSubmitBlocked
+                    insufficientQuota
                   }
                   onClick={() => void handleRebuild()}
                   data={{ cy: 'kb-knowledge-graph-rebuild' }}
@@ -811,37 +634,19 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
               <p className="mt-3 text-xs text-slate-500">
                 {t('kb.graphBuildCost', { amount: formattedSelectedEstimate })}
               </p>
-              {showDomainDetails ? (
-                <div className="mt-3 space-y-2">
-                  {domainCapabilityEnabled ? (
-                    <p className="text-xs text-slate-500">
-                      {t('kb.graphDomainLanguageNote')}
-                    </p>
-                  ) : null}
-                  {domainSubmitBlocked ? (
-                    <p
-                      className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950"
-                      role="status"
-                      data-cy="kb-knowledge-graph-domain-unsupported"
-                    >
-                      {domainBlockedMessage()}
-                    </p>
-                  ) : null}
-                  {domainCategoryNames.length > 0 ? (
-                    <div
-                      className="flex flex-wrap items-center gap-2"
-                      data-cy="kb-knowledge-graph-domain-categories"
-                    >
-                      <span className="text-xs font-semibold text-slate-600">
-                        {t('kb.graphDomainCategoriesLabel')}:
-                      </span>
-                      {domainCategoryNames.map((name) => (
-                        <Badge key={name} variant="outline">
-                          {name}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : null}
+              {domainCategoryNames.length > 0 ? (
+                <div
+                  className="mt-3 flex flex-wrap items-center gap-2"
+                  data-cy="kb-knowledge-graph-domain-categories"
+                >
+                  <span className="text-xs font-semibold text-slate-600">
+                    {t('kb.graphDomainCategoriesLabel')}:
+                  </span>
+                  {domainCategoryNames.map((name) => (
+                    <Badge key={name} variant="outline">
+                      {name}
+                    </Badge>
+                  ))}
                 </div>
               ) : null}
               {showPublishedDomain && publishedDomainLabel != null ? (
