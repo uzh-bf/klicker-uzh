@@ -78,7 +78,18 @@ const REVIEW_DISPATCH_RECOVERY_MILLISECONDS = 15_000
 // accepts it is live. Raise this constant once that release is deployed and
 // verified in the target environment; lower it again if the worker is rolled
 // back to a build without the field.
-export const QUESTION_PARTIAL_RESULTS_ENABLED = false
+//
+// Raised on 2026-09-22 after verifying the deployed staging question worker
+// (kg-content-generation ea3fa3fa, which contains the structured-slot-failure
+// release 59aad81): it accepts the field and reports the partial bank together
+// with one reason per unsupplied slot. Production is unaffected, because the
+// element-generation services are not part of v3; verify the production worker
+// release before the feature is promoted there.
+//
+// The flag is part of a build's canonical start-manifest hash, so raise it
+// while no build sits between dispatch and plan synchronization; such a build
+// would recompute a hash its worker never saw.
+export const QUESTION_PARTIAL_RESULTS_ENABLED = true
 
 const TERMINAL_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.COMPLETED,

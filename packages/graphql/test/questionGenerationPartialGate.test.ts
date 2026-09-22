@@ -33,16 +33,26 @@ function startPayloadInput() {
 }
 
 describe('question-generation partial-result rollout gate', () => {
-  it('keeps the partial-result capability disabled by default', () => {
-    expect(QUESTION_PARTIAL_RESULTS_ENABLED).toBe(false)
+  it('follows the rollout gate for the default start payload', () => {
+    const payload = questionWorkflowStartPayload(startPayloadInput())
+    const gated = questionWorkflowStartPayload(startPayloadInput(), {
+      allowPartialResults: QUESTION_PARTIAL_RESULTS_ENABLED,
+    })
+
+    expect(payload).toEqual(gated)
+    expect(Object.hasOwn(payload, 'allow_partial_results')).toBe(
+      QUESTION_PARTIAL_RESULTS_ENABLED
+    )
   })
 
-  it('omits the capability key entirely while the gate is closed', () => {
-    const payload = questionWorkflowStartPayload(startPayloadInput())
+  it('omits the capability key entirely for a strict build', () => {
+    const payload = questionWorkflowStartPayload(startPayloadInput(), {
+      allowPartialResults: false,
+    })
 
-    // The deployed worker rejects unknown start-payload fields, so the key
-    // must be absent, not merely false; an absent key is also what keeps the
-    // start-manifest hash of every legacy build byte-identical.
+    // The worker drops an absent key before it hashes, so the key must be
+    // absent, not merely false; that is also what keeps the start-manifest
+    // hash of every build dispatched before the gate was raised byte-identical.
     expect(Object.hasOwn(payload, 'allow_partial_results')).toBe(false)
     expect(Object.keys(payload).sort()).toEqual([
       'blueprint',
@@ -56,21 +66,25 @@ describe('question-generation partial-result rollout gate', () => {
     ])
   })
 
-  it('emits the capability and changes the start-manifest hash when overridden', () => {
-    const legacy = questionWorkflowStartPayload(startPayloadInput())
+  it('changes the start-manifest hash when the capability is emitted', () => {
+    const strict = questionWorkflowStartPayload(startPayloadInput(), {
+      allowPartialResults: false,
+    })
     const partial = questionWorkflowStartPayload(startPayloadInput(), {
       allowPartialResults: true,
     })
 
     expect(partial.allow_partial_results).toBe(true)
     expect(questionWorkflowStartManifestSha256(partial)).not.toBe(
-      questionWorkflowStartManifestSha256(legacy)
+      questionWorkflowStartManifestSha256(strict)
     )
   })
 
-  it('keeps the legacy start-manifest hash stable', () => {
+  it('keeps the legacy start-manifest hash stable for a strict build', () => {
     const input = startPayloadInput()
-    const payload = questionWorkflowStartPayload(input)
+    const payload = questionWorkflowStartPayload(input, {
+      allowPartialResults: false,
+    })
 
     // Regression guard for the provenance contract: the dispatched hash and
     // the hash recomputed during plan synchronization must keep matching the
@@ -110,9 +124,9 @@ describe('question-generation partial-result rollout gate', () => {
       .filter((name) => name.endsWith('.ts'))
       .map((name) => readFileSync(new URL(name, servicesDirectory), 'utf8'))
 
-    // The override exists for tests only. Any production caller that passed it
-    // would silently enable a capability the deployed worker rejects, so the
-    // absence of an enabling call site is the actual rollout guarantee.
+    // The override exists for tests only. A production caller that passed it
+    // would move the emission decision out of the constant that owns the
+    // rollout, so the absence of an enabling call site is the guarantee.
     expect(
       sources.filter((source) => source.includes('allowPartialResults: true'))
     ).toEqual([])
