@@ -194,22 +194,28 @@ describe('chat participant data-use route', () => {
     expect(rejected.status).toBe(400)
   })
 
-  test('rejects a malformed body as invalid input', async () => {
-    const malformed = new NextRequest(
-      `https://chat.test/api/chatbots/${CHATBOT_ID}/data-use`,
-      {
-        method: 'PATCH',
+  test('rejects a malformed body as invalid input on both writes', async () => {
+    const malformed = (method: string) =>
+      new NextRequest(`https://chat.test/api/chatbots/${CHATBOT_ID}/data-use`, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: '{not json',
-      }
-    )
+      })
 
-    const response = await PATCH(malformed, { params: params() })
-
-    expect(response.status).toBe(400)
-    expect(await response.json()).toEqual({
+    const patchResponse = await PATCH(malformed('PATCH'), { params: params() })
+    expect(patchResponse.status).toBe(400)
+    expect(await patchResponse.json()).toEqual({
       error: 'PARTICIPANT_DATA_USE_INVALID_INPUT',
     })
     expect(mocks.updateParticipantDataUseChoice).not.toHaveBeenCalled()
+
+    // The completion write has to answer the same way; a body that never was
+    // JSON is not a writer failure.
+    const postResponse = await POST(malformed('POST'), { params: params() })
+    expect(postResponse.status).toBe(400)
+    expect(await postResponse.json()).toEqual({
+      error: 'PARTICIPANT_DATA_USE_INVALID_INPUT',
+    })
+    expect(mocks.completeParticipantDataUse).not.toHaveBeenCalled()
   })
 })

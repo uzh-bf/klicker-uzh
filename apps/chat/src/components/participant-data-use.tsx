@@ -11,7 +11,7 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Settings2 } from 'lucide-react'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { authedFetch } from '../lib/client/authedFetch'
@@ -29,6 +29,24 @@ const choicesDataCy = {
 
 interface DataUseResponse {
   state: ChatDataUseState
+}
+
+/**
+ * Reload the persisted state through the same route the completion writes to.
+ * A stale revision can only be answered with the current revision and the
+ * choices that belong to it, so the caller decides what to do with a failure.
+ */
+async function fetchDataUseState(
+  chatbotId: string
+): Promise<ChatDataUseState | null> {
+  try {
+    const response = await authedFetch(`/api/chatbots/${chatbotId}/data-use`)
+    if (!response.ok) return null
+    const data = (await response.json()) as DataUseResponse
+    return data.state ?? null
+  } catch {
+    return null
+  }
 }
 
 interface ParticipantDataUseGateProps {
@@ -52,14 +70,15 @@ export function ParticipantDataUseGate({
 }: ParticipantDataUseGateProps) {
   const t = useTranslations()
   const router = useRouter()
+  const [currentState, setCurrentState] = useState(state)
   const [researchConsent, setResearchConsent] = useState<boolean | undefined>(
-    state.researchChoiceRecorded ? state.researchConsent : true
+    currentState.researchChoiceRecorded ? currentState.researchConsent : true
   )
   const [learningAnalyticsConsent, setLearningAnalyticsConsent] = useState<
     boolean | undefined
   >(
-    state.learningAnalyticsChoiceRecorded
-      ? state.learningAnalyticsConsent
+    currentState.learningAnalyticsChoiceRecorded
+      ? currentState.learningAnalyticsConsent
       : undefined
   )
   const [acknowledged, setAcknowledged] = useState(false)
@@ -87,7 +106,7 @@ export function ParticipantDataUseGate({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            expectedRevision: state.dataUseRevision,
+            expectedRevision: currentState.dataUseRevision,
             researchConsent,
             learningAnalyticsConsent,
             acknowledged: true,
@@ -96,12 +115,31 @@ export function ParticipantDataUseGate({
       )
 
       if (!response.ok) {
+        const isConflict = response.status === 409
         // A conflicting revision means another session recorded a decision
         // first. Reloading and clearing the local intent keeps this attempt
         // from pairing old choices with the newer revision.
-        setConflict(response.status === 409)
+        setConflict(isConflict)
         setFailed(true)
         setAcknowledged(false)
+        if (isConflict) {
+          // Only a reload that actually reaches the server leaves the step
+          // retryable; keeping the conflict flag makes a repeat attempt
+          // impossible rather than overwriting a newer decision.
+          const reloaded = await fetchDataUseState(chatbotId)
+          if (reloaded) {
+            setCurrentState(reloaded)
+            setResearchConsent(
+              reloaded.researchChoiceRecorded ? reloaded.researchConsent : true
+            )
+            setLearningAnalyticsConsent(
+              reloaded.learningAnalyticsChoiceRecorded
+                ? reloaded.learningAnalyticsConsent
+                : undefined
+            )
+            setConflict(false)
+          }
+        }
         router.refresh()
         return
       }
@@ -201,6 +239,7 @@ export function ParticipantDataUseSettings({
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [conflict, setConflict] = useState(false)
 
   useEffect(() => {
     if (!open || state) return
@@ -252,7 +291,18 @@ export function ParticipantDataUseSettings({
         }
       )
       if (!response.ok) {
+        const isConflict = response.status === 409
         setFailed(true)
+        setConflict(isConflict)
+        if (isConflict) {
+          // Retrying with the stale revision can only fail again, so adopt the
+          // revision the server just reported.
+          const reloaded = await fetchDataUseState(chatbotId)
+          if (reloaded) {
+            setState(reloaded)
+            setConflict(false)
+          }
+        }
         return
       }
       const data = (await response.json()) as DataUseResponse
@@ -312,7 +362,11 @@ export function ParticipantDataUseSettings({
             />
             {failed && (
               <UserNotification type="error">
-                {t('shared.generic.systemError')}
+                {t(
+                  conflict
+                    ? 'pwa.profile.dataUseConflict'
+                    : 'shared.generic.systemError'
+                )}
               </UserNotification>
             )}
           </div>

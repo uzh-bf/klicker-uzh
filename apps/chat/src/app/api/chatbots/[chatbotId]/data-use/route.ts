@@ -17,13 +17,14 @@ export const maxDuration = 60
  * The disclosure version is server-owned: a client states which decisions it
  * wants recorded, never which revision of the text it is acknowledging.
  */
-function dataUseErrorStatus(error: unknown): number {
-  const code =
-    error && typeof error === 'object'
-      ? (error as { extensions?: { code?: unknown } }).extensions?.code
-      : undefined
+function dataUseErrorCode(error: unknown) {
+  return error && typeof error === 'object'
+    ? (error as { extensions?: { code?: unknown } }).extensions?.code
+    : undefined
+}
 
-  switch (code) {
+function dataUseErrorStatus(error: unknown): number {
+  switch (dataUseErrorCode(error)) {
     case 'PARTICIPANT_DATA_USE_STALE_REVISION':
       return 409
     case 'PARTICIPANT_DATA_USE_INVALID_INPUT':
@@ -39,14 +40,19 @@ function dataUseErrorStatus(error: unknown): number {
 }
 
 function dataUseErrorBody(error: unknown) {
-  const code =
-    error && typeof error === 'object'
-      ? (error as { extensions?: { code?: unknown } }).extensions?.code
-      : undefined
+  const code = dataUseErrorCode(error)
   return {
     error:
       typeof code === 'string' ? code : 'PARTICIPANT_DATA_USE_WRITE_FAILED',
   }
+}
+
+/** A body the writer cannot accept is a client error, not a writer failure. */
+function invalidInputResponse() {
+  return NextResponse.json(
+    { error: 'PARTICIPANT_DATA_USE_INVALID_INPUT' },
+    { status: 400 }
+  )
 }
 
 /**
@@ -93,15 +99,26 @@ export async function POST(
     return authResult.response
   }
 
+  let payload: unknown
   try {
-    const body = await req.json()
+    payload = await req.json()
+  } catch {
+    return invalidInputResponse()
+  }
+
+  const body: Record<string, unknown> =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {}
+
+  try {
     const saved = await completeParticipantDataUse(
       {
-        expectedRevision: body?.expectedRevision,
+        expectedRevision: body.expectedRevision,
         disclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        researchConsent: body?.researchConsent,
-        learningAnalyticsConsent: body?.learningAnalyticsConsent,
-        acknowledged: body?.acknowledged,
+        researchConsent: body.researchConsent,
+        learningAnalyticsConsent: body.learningAnalyticsConsent,
+        acknowledged: body.acknowledged,
       },
       {
         prisma,
@@ -139,18 +156,12 @@ export async function PATCH(
     body = (await req.json()) as Record<string, unknown>
   } catch {
     // A truncated or non-JSON body is a client error, not a writer failure.
-    return NextResponse.json(
-      { error: 'PARTICIPANT_DATA_USE_INVALID_INPUT' },
-      { status: 400 }
-    )
+    return invalidInputResponse()
   }
 
   const purpose = body?.purpose
   if (purpose !== 'research' && purpose !== 'analytics') {
-    return NextResponse.json(
-      { error: 'PARTICIPANT_DATA_USE_INVALID_INPUT' },
-      { status: 400 }
-    )
+    return invalidInputResponse()
   }
 
   try {

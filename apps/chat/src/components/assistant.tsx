@@ -114,7 +114,11 @@ export function Assistant({
     setShowDisclaimerModal,
     handleAcceptDisclaimer,
     handleDeclineDisclaimer,
-  } = useDisclaimerGate(chatbot.id, participationRequired)
+  } = useDisclaimerGate(
+    chatbot.id,
+    participationRequired,
+    dataUseState.complete
+  )
 
   if (participationRequired) {
     return (
@@ -191,7 +195,11 @@ export function Assistant({
   )
 }
 
-function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
+function useDisclaimerGate(
+  chatbotId: string,
+  participationRequired: boolean,
+  dataUseComplete: boolean
+) {
   const [disclaimer, setDisclaimer] = useState<ChatbotDisclaimer | null>(null)
   const [disclaimerStatus, setDisclaimerStatus] =
     useState<DisclaimerStatus | null>(null)
@@ -227,14 +235,17 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
       }
     }
 
-    if (participationRequired) {
+    // Both blocking steps keep the gate from fetching: the disclaimer route
+    // denies an account that has not completed the data-use disclosure, so the
+    // request could only fail until the completion step is behind us.
+    if (participationRequired || !dataUseComplete) {
       setIsLoading(false)
       return
     }
 
     setIsLoading(true)
     void fetchDisclaimerInfo()
-  }, [chatbotId, participationRequired])
+  }, [chatbotId, participationRequired, dataUseComplete])
 
   const handleAcceptDisclaimer = async () => {
     if (!disclaimer) return
