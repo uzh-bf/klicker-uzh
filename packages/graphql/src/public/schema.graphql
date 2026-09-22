@@ -391,6 +391,7 @@ type AdaptivePracticeQuizAttemptState {
   completedAt: Date
   elapsedSeconds: Int
   maximumQuestions: Int!
+  nextAttemptAvailableAt: Date
   practiceQuizId: String!
   practiceQuizName: String!
   questionNumber: Int
