@@ -191,7 +191,7 @@ auth:
       memory: 192Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 512Mi
 
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
@@ -618,8 +618,6 @@ backendGraphql:
   appStudentDomain: pwa.klicker.stg.df-app.ch
   appControlDomain: control.klicker.stg.df-app.ch
   cookieDomain: .klicker.stg.df-app.ch
-  kbIngestionDisabled: false
-  kbGraphDisabled: false
 
   knowledgeGraph:
     host: 'stg-falkordb-aigeneric-falkordb-falkordb.stg-kb-falkordb-aigeneric.svc.cluster.local'
@@ -792,6 +790,15 @@ lti:
       - secretName: klicker-lti-tls
         hosts:
           - lti.klicker.stg.df-app.ch
+
+  # The chart default (200m CPU / 200Mi memory) over-reserves this service: its
+  # staging VPA sits at the clamp floor (15m CPU / 100Mi memory) while live usage
+  # is about 1m CPU and 63Mi memory. CPU matches the 50m used by every other
+  # staging app; the chart's 500Mi memory limit is retained.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
 
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.stg.df-app.ch'

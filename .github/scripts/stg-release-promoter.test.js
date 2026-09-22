@@ -794,6 +794,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
     assert.equal(result.valid, false, label)
     assert.match(result.reason, reason, label)
     assert.equal(result.attempts.length, 1, label)
+    assert.equal(result.pending, false, label)
   }
 
   const missingRuns = evidenceRuns(workflows)
@@ -815,6 +816,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
   assert.equal(missing.valid, false)
   assert.match(missing.reason, /no exact-SHA run/)
   assert.equal(missing.attempts.length, 2)
+  assert.equal(missing.pending, false)
 
   const runningJobs = successfulJobs(workflows)
   runningJobs[100] = workflowJobs({
@@ -2334,13 +2336,7 @@ test('does not use candidate files as executable workflow inputs', () => {
 })
 
 test('requires complete candidate CI before a release write', async (t) => {
-  for (const conclusion of [
-    'failure',
-    'cancelled',
-    'skipped',
-    'neutral',
-    null,
-  ]) {
+  for (const conclusion of ['failure', 'cancelled', 'skipped', 'neutral']) {
     const workflows = validWorkflows()
     const ciPath = REQUIRED_CI_WORKFLOWS[0].path
     const { github: base } = evidenceGithub({
@@ -2355,7 +2351,6 @@ test('requires complete candidate CI before a release write', async (t) => {
             id: 500,
             path: ciPath,
             conclusion,
-            status: conclusion === null ? 'in_progress' : 'completed',
           }),
         ],
       },
@@ -2391,6 +2386,106 @@ test('requires complete candidate CI before a release write', async (t) => {
     )
     assert.equal(refs.current(), CURRENT_SHA)
   }
+})
+
+// An early wake finds a required workflow that is still executing, and no
+// amount of waiting inside that wake is guaranteed to conclude it. The
+// candidate stays eligible: the unresolved state is reported without a release
+// write, and the workflow that is still running wakes the controller again when
+// it completes.
+test('defers a candidate whose required workflow is still running', async () => {
+  const workflows = validWorkflows()
+  const runningRuns = Object.fromEntries(
+    workflows.map((workflow, index) => [
+      workflow.path,
+      [
+        workflowRun({
+          candidateSha: CANDIDATE_SHA,
+          conclusion: null,
+          id: 100 + index,
+          path: workflow.path,
+          status: 'in_progress',
+        }),
+      ],
+    ])
+  )
+  const { github: buildGithub } = evidenceGithub({
+    jobs: successfulJobs(workflows),
+    runs: runningRuns,
+    workflows,
+  })
+  const delays = []
+  const pending = await collectBuildEvidence({
+    candidateSha: CANDIDATE_SHA,
+    context: reviewContext(),
+    github: buildGithub,
+    maxAttempts: 3,
+    retryDelayMs: 5,
+    sleep: async (delay) => delays.push(delay),
+    sourceBranch: 'v3',
+    workflows,
+  })
+  assert.equal(pending.valid, false)
+  assert.equal(pending.pending, true)
+  assert.equal(pending.attempts.length, 3)
+  assert.deepEqual(delays, [5, 5])
+  assert.deepEqual(
+    pending.failures.map(({ status }) => status),
+    ['running']
+  )
+
+  const ciPath = REQUIRED_CI_WORKFLOWS[0].path
+  const { github: base } = evidenceGithub({
+    definitions: fixtureDefinitions(),
+    jobs: successfulJobs(workflows),
+    runs: {
+      ...evidenceRuns(workflows),
+      [ciPath]: [
+        workflowRun({
+          candidateSha: CANDIDATE_SHA,
+          conclusion: null,
+          id: 500,
+          path: ciPath,
+          status: 'in_progress',
+        }),
+      ],
+    },
+    workflows,
+  })
+  const refs = refGithub(CURRENT_SHA)
+  const github = { ...base, rest: { ...base.rest, git: refs.github.rest.git } }
+  const outputs = {}
+  const deferred = await runPromotion({
+    context: reviewContext('workflow_dispatch', {
+      sha: CANDIDATE_SHA,
+      dry_run: false,
+      confirm_ref_update: MANUAL_CONFIRMATION,
+      expected_release_sha: CURRENT_SHA,
+      expected_controller_sha: NEXT_SHA,
+    }),
+    controllerSha: NEXT_SHA,
+    core: {
+      info: () => {},
+      setOutput: (name, value) => {
+        outputs[name] = value
+      },
+    },
+    expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+    getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+    getCiEvidence: fixtureCiEvidence,
+    getRegistryDigest: async () => {
+      throw new Error('must not resolve images')
+    },
+    getScanAdmission: fixtureScanAdmission,
+    github,
+    maxAttempts: 2,
+    sleep: async () => {},
+    sourceBranch: 'v3',
+  })
+  assert.equal(deferred.decision, 'deferred')
+  assert.equal(outputs.decision, 'deferred')
+  assert.deepEqual(deferred.pending, [{ path: ciPath, status: 'running' }])
+  assert.equal(refs.current(), CURRENT_SHA)
 })
 
 test('filters run identities before choosing newest evidence and rejects duplicate jobs', async () => {
