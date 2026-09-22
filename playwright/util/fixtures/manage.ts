@@ -130,10 +130,12 @@ export async function mockGrowthBookFeatureFlags(
   page: Page,
   {
     aiBeta = false,
+    aiAdvancedManagement = true,
     failRefresh = false,
     learningAnalytics = true,
   }: {
     aiBeta?: boolean
+    aiAdvancedManagement?: boolean
     failRefresh?: boolean
     learningAnalytics?: boolean
   } = {}
@@ -151,6 +153,7 @@ export async function mockGrowthBookFeatureFlags(
       body: JSON.stringify({
         features: {
           'ai-beta': { defaultValue: aiBeta },
+          'ai-advanced-management': { defaultValue: aiAdvancedManagement },
           'learning-analytics': { defaultValue: learningAnalytics },
         },
       }),
