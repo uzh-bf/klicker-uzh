@@ -456,7 +456,9 @@ async function assertKbQuotaAvailable(
  * upload ticket, URL resource, or ingestion attempt may start; an absent,
  * unregistered, or unusable evaluation refuses one rather than admitting work
  * the deployment cannot honor. Upload confirmation starts ingestion and is
- * gated here as well. Reads, deletion, cleanup and already queued
+ * gated here as well, but only where it creates the resource: repeating a
+ * confirmation that already succeeded returns the existing resource without
+ * consulting the rollout. Reads, deletion, cleanup and already queued
  * reconciliation stay available, and the general worker keeps its separate
  * startup gate.
  */
@@ -1691,7 +1693,6 @@ export async function confirmKbFileUpload(
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
-  await assertKbIngestionEnabled(ctx)
   const validated = validateKbFile({
     fileName: originalFilename,
     contentType: mimeType,
@@ -1730,6 +1731,13 @@ export async function confirmKbFileUpload(
     })
     return existingResource
   }
+
+  // Only genuinely new content is subject to the ingestion rollout. The
+  // repeated-confirmation return above stays reachable with the rollout
+  // closed so that a client retrying a call that already succeeded is
+  // answered with its resource instead of a refusal for work it is not
+  // asking to start.
+  await assertKbIngestionEnabled(ctx)
 
   const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
   const blobClient = containerClient.getBlobClient(blobName)

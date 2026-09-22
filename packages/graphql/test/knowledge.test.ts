@@ -1848,6 +1848,17 @@ describe('Integration tests for knowledge base CRUD', () => {
         resourceVersion: 1,
       })
     )
+
+    // Closing the rollout after a confirmation succeeded must not turn a
+    // client retry into a refusal: the resource exists and is already queued,
+    // so the retry is asking for nothing new.
+    await expect(
+      confirmKbFileUpload(
+        args,
+        withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
+      )
+    ).resolves.toMatchObject({ id: first.id })
+    expect(runNoWait).toHaveBeenCalledOnce()
   })
 
   it('leaves a confirmed upload queue-failed rather than stranded in QUEUED when dispatch is rejected', async () => {
