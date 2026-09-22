@@ -33,7 +33,7 @@ import schedule from 'node-schedule'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { computeRanks } from '../lib/util.js'
+import { computeRanks, temporaryLeaderboardEntryId } from '../lib/util.js'
 import {
   getPermissionBooleans,
   liveQuizCourseVisibilityFilter,
@@ -4099,7 +4099,7 @@ export async function getLiveQuizLeaderboard(
       .concat(
         quiz?.temporaryLeaderboard?.flatMap((entry) => {
           return {
-            id: Math.floor(Math.random() * 1000000000), // generate a random large number for temporary leaderboard entries
+            id: temporaryLeaderboardEntryId(entry.id),
             participantId: entry.id,
             username: participantProfilesVisible ? entry.username : 'Anonymous',
             avatar: participantProfilesVisible ? entry.avatar : null,

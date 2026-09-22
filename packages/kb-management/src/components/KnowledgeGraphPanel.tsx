@@ -201,7 +201,13 @@ function formatMinorUnits(
   })
 }
 
-function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
+function KnowledgeGraphPreview({
+  kbId,
+  servedBuildId,
+}: {
+  kbId: string
+  servedBuildId: string | null
+}) {
   const t = useTranslations()
   const apolloClient = useApolloClient()
   const dataSource = useMemo<KnowledgeGraphDataSource>(
@@ -243,7 +249,11 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
         }
       },
     }),
-    [apolloClient, kbId]
+    // The viewer reloads its graph when the data source identity changes, so the
+    // served build has to participate: otherwise a rebuild that publishes a new
+    // graph leaves the previous graph, legend and concept count on screen until
+    // the page is reloaded.
+    [apolloClient, kbId, servedBuildId]
   )
 
   return (
@@ -1060,7 +1070,10 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                   </p>
                 ) : null}
                 {hasPublishedGraph ? (
-                  <KnowledgeGraphPreview kbId={kbId} />
+                  <KnowledgeGraphPreview
+                    kbId={kbId}
+                    servedBuildId={config.publishedBuildId ?? null}
+                  />
                 ) : (
                   <div
                     className="rounded-lg border border-dashed border-slate-400 bg-slate-50 p-6 text-center text-sm text-slate-600"
