@@ -5036,9 +5036,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Learning modes cannot be edited in this chatbot status.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
-      chatbotSetupCredits: 'Credits',
-      chatbotSetupCreditsDescription:
-        'Per-participant limits and reset schedule',
       chatbotSetupReview: 'Review and submit',
       chatbotSetupReviewDescription:
         'Confirm saved details and request publication',
@@ -5051,8 +5048,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSetupDisclaimerDescriptionLong:
         'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
       chatbotSetupCreditsTitle: 'Participant credits',
-      chatbotSetupCreditsDescriptionLong:
-        'Configure the credit allowance each participant receives. Credit settings are locked while a revision is pending review.',
       chatbotCreditPolicyDescription:
         'Initial credits apply on first use. Recurring resets add credits up to the configured maximum.',
       chatbotCreditAmountRequired: 'Enter a credit amount.',

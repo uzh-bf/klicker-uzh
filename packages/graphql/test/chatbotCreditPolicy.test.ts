@@ -1,5 +1,6 @@
 import { CreditResetPeriod } from '@klicker-uzh/prisma/client'
 import {
+  DEFAULT_CHATBOT_CREDIT_POLICY,
   MAX_SIGNED_INT32,
   normalizeAndValidateCreditPolicy,
 } from '../src/services/chatbotCreditPolicy.js'
@@ -35,6 +36,12 @@ describe('chatbot credit policy', () => {
       creditResetAmount: 0,
       creditMaxCredits: 0,
     })
+  })
+
+  it('accepts the default chatbot credit policy unchanged', () => {
+    expect(
+      normalizeAndValidateCreditPolicy(DEFAULT_CHATBOT_CREDIT_POLICY)
+    ).toEqual(DEFAULT_CHATBOT_CREDIT_POLICY)
   })
 
   it.each([
