@@ -864,76 +864,85 @@ importers:
 
   apps/frontend-manage:
     dependencies:
-      '@apollo/client':
+      "@apollo/client":
         specifier: 3.13.8
         version: 3.13.8(@types/react@19.2.18)(graphql-ws@5.16.0(graphql@16.11.0))(graphql@16.11.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@azure/storage-blob':
+      "@azure/storage-blob":
         specifier: 12.25.0
         version: 12.25.0(supports-color@8.1.1)
-      '@ducanh2912/next-pwa':
+      "@ducanh2912/next-pwa":
         specifier: 10.2.9
         version: 10.2.9(@types/babel__core@7.20.5)(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(supports-color@8.1.1)(webpack@5.101.3(@swc/core@1.15.47(@swc/helpers@0.5.23))(esbuild@0.27.7)(uglify-js@3.19.3))
-      '@fortawesome/fontawesome-svg-core':
+      "@fortawesome/fontawesome-svg-core":
         specifier: 6.7.2
         version: 6.7.2
-      '@fortawesome/free-brands-svg-icons':
+      "@fortawesome/free-brands-svg-icons":
         specifier: 6.7.2
         version: 6.7.2
-      '@fortawesome/free-regular-svg-icons':
+      "@fortawesome/free-regular-svg-icons":
         specifier: 6.7.2
         version: 6.7.2
-      '@fortawesome/free-solid-svg-icons':
+      "@fortawesome/free-solid-svg-icons":
         specifier: 6.7.2
         version: 6.7.2
-      '@fortawesome/react-fontawesome':
+      "@fortawesome/react-fontawesome":
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
-      '@fullcalendar/daygrid':
+      "@fullcalendar/daygrid":
         specifier: 6.1.20
         version: 6.1.20(@fullcalendar/core@6.1.20)
-      '@fullcalendar/interaction':
+      "@fullcalendar/interaction":
         specifier: 6.1.20
         version: 6.1.20(@fullcalendar/core@6.1.20)
-      '@fullcalendar/react':
+      "@fullcalendar/react":
         specifier: 6.1.20
         version: 6.1.20(@fullcalendar/core@6.1.20)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@fullcalendar/timegrid':
+      "@fullcalendar/timegrid":
         specifier: 6.1.20
         version: 6.1.20(@fullcalendar/core@6.1.20)
-      '@klicker-uzh/feature-flags':
+      "@klicker-uzh/adaptive-i18n":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-i18n
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-learning
+      "@klicker-uzh/adaptive-manage-ui":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-manage-ui
+      "@klicker-uzh/feature-flags":
         specifier: workspace:*
         version: link:../../packages/feature-flags
-      '@klicker-uzh/graphql':
+      "@klicker-uzh/graphql":
         specifier: workspace:*
         version: link:../../packages/graphql
-      '@klicker-uzh/i18n':
+      "@klicker-uzh/i18n":
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@klicker-uzh/markdown':
+      "@klicker-uzh/markdown":
         specifier: workspace:*
         version: link:../../packages/markdown
-      '@klicker-uzh/next-config':
+      "@klicker-uzh/next-config":
         specifier: workspace:*
         version: link:../../packages/next-config
-      '@klicker-uzh/prisma':
+      "@klicker-uzh/prisma":
         specifier: workspace:*
         version: link:../../packages/prisma
-      '@klicker-uzh/shared-components':
+      "@klicker-uzh/shared-components":
         specifier: workspace:*
         version: link:../../packages/shared-components
-      '@klicker-uzh/types':
+      "@klicker-uzh/types":
         specifier: workspace:*
         version: link:../../packages/types
-      '@socialgouv/matomo-next':
+      "@socialgouv/matomo-next":
         specifier: 1.9.1
         version: 1.9.1(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))
-      '@tanstack/react-table':
+      "@tanstack/react-table":
         specifier: 8.20.5
         version: 8.20.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@uidotdev/usehooks':
+      "@uidotdev/usehooks":
         specifier: 2.4.1
         version: 2.4.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@uzh-bf/design-system':
+      "@uzh-bf/design-system":
         specifier: 4.1.8
         version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.26)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
       dayjs:
@@ -1045,40 +1054,40 @@ importers:
         specifier: 1.6.1
         version: 1.6.1
     devDependencies:
-      '@tailwindcss/container-queries':
+      "@tailwindcss/container-queries":
         specifier: ~0.1.1
         version: 0.1.1(tailwindcss@4.3.3)
-      '@tailwindcss/forms':
+      "@tailwindcss/forms":
         specifier: ~0.5.11
         version: 0.5.11(tailwindcss@4.3.3)
-      '@tailwindcss/postcss':
+      "@tailwindcss/postcss":
         specifier: ~4.3.3
         version: 4.3.3
-      '@tailwindcss/typography':
+      "@tailwindcss/typography":
         specifier: ~0.5.19
         version: 0.5.19(tailwindcss@4.3.3)
-      '@types/is-hotkey':
+      "@types/is-hotkey":
         specifier: ^0.1.10
         version: 0.1.10
-      '@types/js-cookie':
+      "@types/js-cookie":
         specifier: ^3.0.6
         version: 3.0.6
-      '@types/js-search':
+      "@types/js-search":
         specifier: ^1.4.4
         version: 1.4.4
-      '@types/lodash':
+      "@types/lodash":
         specifier: ^4.17.24
         version: 4.17.24
-      '@types/node':
+      "@types/node":
         specifier: ^24.10.1
         version: 24.12.4
-      '@types/react':
+      "@types/react":
         specifier: ^19.2.18
         version: 19.2.18
-      '@types/react-dom':
+      "@types/react-dom":
         specifier: ^19.2.5
         version: 19.2.5(@types/react@19.2.18)
-      '@types/react-tagcloud':
+      "@types/react-tagcloud":
         specifier: ^2.3.2
         version: 2.3.2
       cross-env:
@@ -1111,73 +1120,85 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.6.1)
 
   apps/frontend-pwa:
     dependencies:
-      '@apollo/client':
+      "@apollo/client":
         specifier: 3.13.8
         version: 3.13.8(@types/react@19.2.18)(graphql-ws@5.16.0(graphql@16.11.0))(graphql@16.11.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@bigheads/core':
+      "@bigheads/core":
         specifier: 0.3.3
         version: 0.3.3(react@19.2.8)
-      '@capacitor/android':
+      "@capacitor/android":
         specifier: 5.3.0
         version: 5.3.0(@capacitor/core@5.3.0)
-      '@capacitor/core':
+      "@capacitor/core":
         specifier: 5.3.0
         version: 5.3.0
-      '@capacitor/ios':
+      "@capacitor/ios":
         specifier: 5.3.0
         version: 5.3.0(@capacitor/core@5.3.0)
-      '@capacitor/push-notifications':
+      "@capacitor/push-notifications":
         specifier: 5.0.6
         version: 5.0.6(@capacitor/core@5.3.0)
-      '@ducanh2912/next-pwa':
+      "@ducanh2912/next-pwa":
         specifier: 10.2.9
         version: 10.2.9(@types/babel__core@7.20.5)(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(supports-color@8.1.1)(webpack@5.101.3(@swc/core@1.15.47(@swc/helpers@0.5.23))(esbuild@0.27.7)(uglify-js@3.19.3))
-      '@fortawesome/fontawesome-svg-core':
+      "@fortawesome/fontawesome-svg-core":
         specifier: 6.7.2
         version: 6.7.2
-      '@fortawesome/free-regular-svg-icons':
+      "@fortawesome/free-regular-svg-icons":
         specifier: 6.7.2
         version: 6.7.2
-      '@fortawesome/free-solid-svg-icons':
+      "@fortawesome/free-solid-svg-icons":
         specifier: 6.7.2
         version: 6.7.2
-      '@fortawesome/react-fontawesome':
+      "@fortawesome/react-fontawesome":
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
-      '@klicker-uzh/graphql':
+      "@klicker-uzh/adaptive-i18n":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-i18n
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-learning
+      "@klicker-uzh/adaptive-pwa-ui":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-pwa-ui
+      "@klicker-uzh/graphql":
         specifier: workspace:*
         version: link:../../packages/graphql
-      '@klicker-uzh/i18n':
+      "@klicker-uzh/i18n":
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@klicker-uzh/markdown':
+      "@klicker-uzh/markdown":
         specifier: workspace:*
         version: link:../../packages/markdown
-      '@klicker-uzh/next-config':
+      "@klicker-uzh/next-config":
         specifier: workspace:*
         version: link:../../packages/next-config
-      '@klicker-uzh/prisma':
+      "@klicker-uzh/prisma":
         specifier: workspace:*
         version: link:../../packages/prisma
-      '@klicker-uzh/shared-components':
+      "@klicker-uzh/shared-components":
         specifier: workspace:*
         version: link:../../packages/shared-components
-      '@klicker-uzh/types':
+      "@klicker-uzh/types":
         specifier: workspace:*
         version: link:../../packages/types
-      '@klicker-uzh/util':
+      "@klicker-uzh/util":
         specifier: workspace:*
         version: link:../../packages/util
-      '@socialgouv/matomo-next':
+      "@socialgouv/matomo-next":
         specifier: 1.9.1
         version: 1.9.1(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))
-      '@uidotdev/usehooks':
+      "@uidotdev/usehooks":
         specifier: 2.4.1
         version: 2.4.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@uzh-bf/design-system':
+      "@uzh-bf/design-system":
         specifier: 4.1.8
         version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.26)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
       body-parser:
@@ -1256,34 +1277,34 @@ importers:
         specifier: 1.6.1
         version: 1.6.1
     devDependencies:
-      '@capacitor/cli':
+      "@capacitor/cli":
         specifier: ~5.3.0
         version: 5.3.0(supports-color@8.1.1)
-      '@tailwindcss/forms':
+      "@tailwindcss/forms":
         specifier: ~0.5.11
         version: 0.5.11(tailwindcss@4.3.3)
-      '@tailwindcss/postcss':
+      "@tailwindcss/postcss":
         specifier: ~4.3.3
         version: 4.3.3
-      '@tailwindcss/typography':
+      "@tailwindcss/typography":
         specifier: ~0.5.19
         version: 0.5.19(tailwindcss@4.3.3)
-      '@types/body-parser':
+      "@types/body-parser":
         specifier: ^1.19.2
         version: 1.19.6
-      '@types/js-cookie':
+      "@types/js-cookie":
         specifier: ^3.0.6
         version: 3.0.6
-      '@types/node':
+      "@types/node":
         specifier: ^24.10.1
         version: 24.12.4
-      '@types/object-hash':
+      "@types/object-hash":
         specifier: ^3.0.2
         version: 3.0.6
-      '@types/react':
+      "@types/react":
         specifier: ^19.2.18
         version: 19.2.18
-      '@types/react-dom':
+      "@types/react-dom":
         specifier: ^19.2.5
         version: 19.2.5(@types/react@19.2.18)
       autoprefixer:
@@ -1741,46 +1762,55 @@ importers:
 
   packages/graphql:
     dependencies:
-      '@azure/service-bus':
+      "@azure/service-bus":
         specifier: 7.9.5
         version: 7.9.5(supports-color@8.1.1)
-      '@azure/storage-blob':
+      "@azure/storage-blob":
         specifier: 12.25.0
         version: 12.25.0(supports-color@8.1.1)
-      '@graphql-yoga/redis-event-target':
+      "@graphql-yoga/redis-event-target":
         specifier: 1.0.0
         version: 1.0.0(ioredis@5.4.1(supports-color@8.1.1))
-      '@hatchet-dev/typescript-sdk':
+      "@hatchet-dev/typescript-sdk":
         specifier: 1.9.4
         version: 1.9.4(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
-      '@klicker-uzh/feature-flags':
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-learning
+      "@klicker-uzh/adaptive-persistence":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-persistence
+      "@klicker-uzh/adaptive-server":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-server
+      "@klicker-uzh/feature-flags":
         specifier: workspace:*
         version: link:../feature-flags
-      '@klicker-uzh/grading':
+      "@klicker-uzh/grading":
         specifier: workspace:*
         version: link:../grading
-      '@klicker-uzh/prisma':
+      "@klicker-uzh/prisma":
         specifier: workspace:*
         version: link:../prisma
-      '@klicker-uzh/types':
+      "@klicker-uzh/types":
         specifier: workspace:*
         version: link:../types
-      '@klicker-uzh/util':
+      "@klicker-uzh/util":
         specifier: workspace:*
         version: link:../util
-      '@pothos/core':
+      "@pothos/core":
         specifier: 4.3.0
         version: 4.3.0(graphql@16.11.0)
-      '@pothos/plugin-directives':
+      "@pothos/plugin-directives":
         specifier: 4.1.0
         version: 4.1.0(graphql@16.11.0)
-      '@pothos/plugin-prisma':
+      "@pothos/plugin-prisma":
         specifier: 4.10.0
         version: 4.10.0(@pothos/core@4.3.0(graphql@16.11.0))(@prisma/client@7.8.0(prisma@7.8.0(@types/node@24.12.4)(@types/react@19.2.18)(magicast@0.3.5)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(graphql@16.11.0)(typescript@6.0.3)
-      '@pothos/plugin-scope-auth':
+      "@pothos/plugin-scope-auth":
         specifier: 4.1.6
         version: 4.1.6(@pothos/core@4.3.0(graphql@16.11.0))(graphql@16.11.0)
-      '@pothos/plugin-zod':
+      "@pothos/plugin-zod":
         specifier: 4.1.0
         version: 4.1.0(@pothos/core@4.3.0(graphql@16.11.0))(graphql@16.11.0)(zod@3.25.76)
       axios:
@@ -1844,70 +1874,70 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
-      '@graphql-codegen/cli':
+      "@graphql-codegen/cli":
         specifier: ~5.0.3
         version: 5.0.7(@parcel/watcher@2.4.1)(@types/node@24.12.4)(enquirer@2.4.1)(graphql@16.11.0)(supports-color@8.1.1)(typescript@6.0.3)
-      '@graphql-codegen/fragment-matcher':
+      "@graphql-codegen/fragment-matcher":
         specifier: ~5.0.2
         version: 5.0.2(graphql@16.11.0)
-      '@graphql-codegen/schema-ast':
+      "@graphql-codegen/schema-ast":
         specifier: ~4.1.0
         version: 4.1.0(graphql@16.11.0)
-      '@graphql-codegen/typed-document-node':
+      "@graphql-codegen/typed-document-node":
         specifier: ~5.0.10
         version: 5.0.15(graphql@16.11.0)
-      '@graphql-codegen/typescript':
+      "@graphql-codegen/typescript":
         specifier: ~4.1.0
         version: 4.1.6(graphql@16.11.0)
-      '@graphql-codegen/typescript-operations':
+      "@graphql-codegen/typescript-operations":
         specifier: ~4.3.0
         version: 4.3.1(graphql@16.11.0)
-      '@graphql-codegen/typescript-resolvers':
+      "@graphql-codegen/typescript-resolvers":
         specifier: ~4.3.0
         version: 4.3.0(graphql@16.11.0)
-      '@graphql-tools/utils':
+      "@graphql-tools/utils":
         specifier: ~10.5.5
         version: 10.5.6(graphql@16.11.0)
-      '@graphql-typed-document-node/core':
+      "@graphql-typed-document-node/core":
         specifier: ~3.2.0
         version: 3.2.0(graphql@16.11.0)
-      '@istanbuljs/nyc-config-typescript':
+      "@istanbuljs/nyc-config-typescript":
         specifier: ~1.0.2
         version: 1.0.2(nyc@17.1.0(supports-color@8.1.1))
-      '@klicker-uzh/hatchet':
+      "@klicker-uzh/hatchet":
         specifier: workspace:*
         version: link:../hatchet
-      '@parcel/watcher':
+      "@parcel/watcher":
         specifier: ~2.4.1
         version: 2.4.1
-      '@rollup/plugin-node-resolve':
+      "@rollup/plugin-node-resolve":
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
-      '@rollup/plugin-typescript':
+      "@rollup/plugin-typescript":
         specifier: ~12.1.4
         version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
-      '@types/bcryptjs':
+      "@types/bcryptjs":
         specifier: ^2.4.6
         version: 2.4.6
-      '@types/express':
+      "@types/express":
         specifier: ^4.17.23
         version: 4.17.23
-      '@types/node':
+      "@types/node":
         specifier: ^24.10.1
         version: 24.12.4
-      '@types/node-schedule':
+      "@types/node-schedule":
         specifier: ^2.1.7
         version: 2.1.8
-      '@types/nodemailer':
+      "@types/nodemailer":
         specifier: ^6.4.23
         version: 6.4.23
-      '@types/uuid':
+      "@types/uuid":
         specifier: ^10.0.0
         version: 10.0.0
-      '@types/validator':
+      "@types/validator":
         specifier: ^13.15.10
         version: 13.15.10
-      '@types/web-push':
+      "@types/web-push":
         specifier: ^3.6.3
         version: 3.6.4
       cli-progress:
@@ -2010,6 +2040,9 @@ importers:
 
   packages/i18n:
     dependencies:
+      "@klicker-uzh/adaptive-i18n":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-i18n
       next-intl:
         specifier: ^4.13.7
         version: 4.13.7(@swc/helpers@0.5.23)(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
@@ -2147,26 +2180,29 @@ importers:
 
   packages/prisma:
     dependencies:
-      '@prisma/adapter-pg':
+      "@prisma/adapter-pg":
         specifier: 7.8.0
         version: 7.8.0
-      '@prisma/client':
+      "@prisma/client":
         specifier: 7.8.0
         version: 7.8.0(prisma@7.8.0(@types/node@24.12.4)(@types/react@19.2.18)(magicast@0.3.5)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3)
       pg:
         specifier: 8.16.3
         version: 8.16.3
     devDependencies:
-      '@pothos/plugin-prisma':
+      "@klicker-uzh/adaptive-persistence":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-persistence
+      "@pothos/plugin-prisma":
         specifier: ~4.10.0
         version: 4.10.0(@pothos/core@4.3.0(graphql@16.11.0))(@prisma/client@7.8.0(prisma@7.8.0(@types/node@24.12.4)(@types/react@19.2.18)(magicast@0.3.5)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(graphql@16.11.0)(typescript@6.0.3)
-      '@rollup/plugin-node-resolve':
+      "@rollup/plugin-node-resolve":
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
-      '@rollup/plugin-typescript':
+      "@rollup/plugin-typescript":
         specifier: ~12.1.4
         version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
-      '@types/pg':
+      "@types/pg":
         specifier: ^8.15.5
         version: 8.15.5
       cross-env:
@@ -2202,46 +2238,52 @@ importers:
 
   packages/prisma-data:
     devDependencies:
-      '@klicker-uzh/prisma':
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-learning
+      "@klicker-uzh/adaptive-persistence":
+        specifier: workspace:*
+        version: link:../../external/catalyst/packages/adaptive-persistence
+      "@klicker-uzh/prisma":
         specifier: workspace:*
         version: link:../prisma
-      '@klicker-uzh/transactional':
+      "@klicker-uzh/transactional":
         specifier: workspace:*
         version: link:../transactional
-      '@klicker-uzh/types':
+      "@klicker-uzh/types":
         specifier: workspace:*
         version: link:../types
-      '@klicker-uzh/util':
+      "@klicker-uzh/util":
         specifier: workspace:*
         version: link:../util
-      '@pothos/plugin-prisma':
+      "@pothos/plugin-prisma":
         specifier: ~4.10.0
         version: 4.10.0(@pothos/core@4.3.0(graphql@16.11.0))(@prisma/client@7.8.0(prisma@7.8.0(@types/node@24.12.4)(@types/react@19.2.18)(magicast@0.3.5)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(graphql@16.11.0)(typescript@6.0.3)
-      '@prisma/adapter-pg':
+      "@prisma/adapter-pg":
         specifier: ~7.8.0
         version: 7.8.0
-      '@rollup/plugin-node-resolve':
+      "@rollup/plugin-node-resolve":
         specifier: ~15.3.1
         version: 15.3.1(rollup@4.34.9)
-      '@rollup/plugin-typescript':
+      "@rollup/plugin-typescript":
         specifier: ~12.1.4
         version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
-      '@types/bcryptjs':
+      "@types/bcryptjs":
         specifier: ^2.4.6
         version: 2.4.6
-      '@types/node':
+      "@types/node":
         specifier: ^24.10.1
         version: 24.12.4
-      '@types/pg':
+      "@types/pg":
         specifier: ^8.15.5
         version: 8.15.5
-      '@types/turndown':
+      "@types/turndown":
         specifier: ^5.0.6
         version: 5.0.6
-      '@types/uuid':
+      "@types/uuid":
         specifier: ^10.0.0
         version: 10.0.0
-      '@types/xml2js':
+      "@types/xml2js":
         specifier: ^0.4.14
         version: 0.4.14
       bcryptjs:
@@ -2584,21 +2626,27 @@ importers:
 
   playwright:
     devDependencies:
-      '@klicker-uzh/prisma':
+      "@klicker-uzh/adaptive-e2e":
+        specifier: workspace:*
+        version: link:../external/catalyst/packages/adaptive-e2e
+      "@klicker-uzh/prisma":
         specifier: workspace:*
         version: link:../packages/prisma
-      '@klicker-uzh/types':
+      "@klicker-uzh/types":
         specifier: workspace:*
         version: link:../packages/types
-      '@playwright/test':
+      "@playwright/test":
         specifier: ~1.58.0
         version: 1.58.2
-      '@types/bcryptjs':
+      "@types/bcryptjs":
         specifier: ^2.4.6
         version: 2.4.6
-      '@types/node':
+      "@types/node":
         specifier: ^24.10.1
         version: 24.12.4
+      axe-core:
+        specifier: ~4.11.4
+        version: 4.11.4
       bcryptjs:
         specifier: ~2.4.3
         version: 2.4.3
@@ -2608,6 +2656,221 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+  external/catalyst/packages/adaptive-e2e:
+    dependencies:
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../adaptive-learning
+      "@klicker-uzh/playwright":
+        specifier: workspace:*
+        version: link:../../../../playwright
+      "@klicker-uzh/prisma":
+        specifier: workspace:*
+        version: link:../../../../packages/prisma
+      "@playwright/test":
+        specifier: ^1.58.0
+        version: 1.58.2
+      axe-core:
+        specifier: ^4.11.4
+        version: 4.11.4
+  external/catalyst/packages/adaptive-i18n:
+    devDependencies:
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+  external/catalyst/packages/adaptive-learning:
+    devDependencies:
+      "@rollup/plugin-node-resolve":
+        specifier: ~15.3.1
+        version: 15.3.1(rollup@4.34.9)
+      "@rollup/plugin-typescript":
+        specifier: ~12.1.4
+        version: 12.1.4(rollup@4.34.9)(tslib@2.8.1)(typescript@6.0.3)
+      "@types/node":
+        specifier: ^24.10.1
+        version: 24.12.4
+      cross-env:
+        specifier: ~7.0.3
+        version: 7.0.3
+      npm-run-all:
+        specifier: ~4.1.5
+        version: 4.1.5
+      prettier:
+        specifier: ~3.3.3
+        version: 3.3.3
+      rollup:
+        specifier: ~4.34.9
+        version: 4.34.9
+      tslib:
+        specifier: ~2.8.1
+        version: 2.8.1
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.6.1)
+  external/catalyst/packages/adaptive-manage-ui:
+    dependencies:
+      "@apollo/client":
+        specifier: ^3.13.8
+        version: 3.13.8(@types/react@19.2.18)(graphql-ws@5.16.0(graphql@16.11.0))(graphql@16.11.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      "@fortawesome/free-solid-svg-icons":
+        specifier: ^6.7.2
+        version: 6.7.2
+      "@fortawesome/react-fontawesome":
+        specifier: ^0.2.2
+        version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../adaptive-learning
+      "@klicker-uzh/graphql":
+        specifier: workspace:*
+        version: link:../../../../packages/graphql
+      "@klicker-uzh/shared-components":
+        specifier: workspace:*
+        version: link:../../../../packages/shared-components
+      "@uzh-bf/design-system":
+        specifier: 4.1.8
+        version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.26)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
+      formik:
+        specifier: ^2.4.9
+        version: 2.4.9(@types/react@19.2.18)(react@19.2.8)
+      next:
+        specifier: ^16.3.4
+        version: 16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      next-intl:
+        specifier: ^4.13.7
+        version: 4.13.7(@swc/helpers@0.5.23)(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
+      recharts:
+        specifier: ^3.0.2
+        version: 3.0.2(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@18.3.1)(react@19.2.8)(redux@5.0.1)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.3.1
+      yup:
+        specifier: ^1.6.1
+        version: 1.6.1
+    devDependencies:
+      "@types/react":
+        specifier: ^19.2.18
+        version: 19.2.18
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.6.1)
+  external/catalyst/packages/adaptive-persistence:
+    dependencies:
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../adaptive-learning
+      "@klicker-uzh/prisma":
+        specifier: workspace:*
+        version: link:../../../../packages/prisma
+      "@klicker-uzh/prisma-data":
+        specifier: workspace:*
+        version: link:../../../../packages/prisma-data
+      "@klicker-uzh/util":
+        specifier: workspace:*
+        version: link:../../../../packages/util
+      pg:
+        specifier: ^8.16.3
+        version: 8.16.3
+  external/catalyst/packages/adaptive-pwa-ui:
+    dependencies:
+      "@apollo/client":
+        specifier: ^3.13.8
+        version: 3.13.8(@types/react@19.2.18)(graphql-ws@5.16.0(graphql@16.11.0))(graphql@16.11.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      "@fortawesome/free-solid-svg-icons":
+        specifier: ^6.7.2
+        version: 6.7.2
+      "@fortawesome/react-fontawesome":
+        specifier: ^0.2.2
+        version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8)
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../adaptive-learning
+      "@klicker-uzh/graphql":
+        specifier: workspace:*
+        version: link:../../../../packages/graphql
+      "@klicker-uzh/markdown":
+        specifier: workspace:*
+        version: link:../../../../packages/markdown
+      "@klicker-uzh/shared-components":
+        specifier: workspace:*
+        version: link:../../../../packages/shared-components
+      "@uzh-bf/design-system":
+        specifier: 4.1.8
+        version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.26)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
+      next:
+        specifier: ^16.3.4
+        version: 16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      next-intl:
+        specifier: ^4.13.7
+        version: 4.13.7(@swc/helpers@0.5.23)(next@16.3.4(@babel/core@7.28.3(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)(typescript@6.0.3)
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
+      recharts:
+        specifier: ^3.0.2
+        version: 3.0.2(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@18.3.1)(react@19.2.8)(redux@5.0.1)
+    devDependencies:
+      "@types/react":
+        specifier: ^19.2.18
+        version: 19.2.18
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+  external/catalyst/packages/adaptive-server:
+    dependencies:
+      "@azure/storage-blob":
+        specifier: ^12.25.0
+        version: 12.25.0(supports-color@8.1.1)
+      "@hatchet-dev/typescript-sdk":
+        specifier: ^1.9.4
+        version: 1.9.4(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../adaptive-learning
+      "@klicker-uzh/grading":
+        specifier: workspace:*
+        version: link:../../../../packages/grading
+      "@klicker-uzh/graphql":
+        specifier: workspace:*
+        version: link:../../../../packages/graphql
+      "@klicker-uzh/prisma":
+        specifier: workspace:*
+        version: link:../../../../packages/prisma
+      "@klicker-uzh/types":
+        specifier: workspace:*
+        version: link:../../../../packages/types
+      "@klicker-uzh/util":
+        specifier: workspace:*
+        version: link:../../../../packages/util
+      "@prisma/adapter-pg":
+        specifier: ^7.8.0
+        version: 7.8.0
+      graphql:
+        specifier: ^16.11.0
+        version: 16.11.0
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.6.1)
 
 packages:
 

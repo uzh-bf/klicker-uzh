@@ -1,4 +1,7 @@
-export default {
+import adaptive from '@klicker-uzh/adaptive-i18n/messages/de'
+import { mergeAdaptiveMessages } from './mergeAdaptiveMessages'
+
+const baseMessages = {
   chat: {
     common: {
       opensInNewTab: '(öffnet in neuem Tab)',
@@ -5010,3 +5013,5 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     },
   },
 }
+
+export default mergeAdaptiveMessages(baseMessages, adaptive)

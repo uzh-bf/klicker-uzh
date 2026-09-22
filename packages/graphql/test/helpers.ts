@@ -37,11 +37,11 @@ import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -150,6 +150,18 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    adaptiveEmpiricalValidation: hatchet.task({
+      name: 'adaptive-empirical-validation',
+      fn: async () => ({ validationId: 'test-validation-id' }),
+    }),
+    adaptiveCalibrationExport: hatchet.task({
+      name: 'adaptive-calibration-export',
+      fn: async () => ({ success: true }),
+    }),
+    adaptiveCalibrationExportCleanup: hatchet.task({
+      name: 'adaptive-calibration-export-cleanup',
+      fn: async () => ({ success: true }),
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({
@@ -384,9 +396,19 @@ export async function testCleanup(prisma: PrismaClient) {
   // delete all catalog collections (including top-level) and other objects from the database
   await prisma.catalogCollection.deleteMany()
   await prisma.answerCollection.deleteMany()
+  await prisma.adaptivePracticeQuizCohortSnapshot.deleteMany()
+  await prisma.adaptivePracticeQuizAttempt.deleteMany()
+
+  // Append-only psychometric records intentionally reject DELETE in
+  // production. Reset their scale root in test databases without weakening
+  // those guards; PostgreSQL truncates every dependent adaptive record too.
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "CompetenceTreeScaleVersion" RESTART IDENTITY CASCADE'
+  )
+  await prisma.practiceQuiz.deleteMany()
+  await prisma.competenceTree.deleteMany()
   await prisma.element.deleteMany()
   await prisma.liveQuiz.deleteMany()
-  await prisma.practiceQuiz.deleteMany()
   await prisma.microLearning.deleteMany()
   await prisma.groupActivity.deleteMany()
   await prisma.course.deleteMany()

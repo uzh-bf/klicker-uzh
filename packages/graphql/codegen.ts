@@ -5,7 +5,10 @@ import { schema } from './src/index.js'
 const config: CodegenConfig = {
   schema: printSchema(schema),
   // schema: 'src/graphql/schema.graphql',
-  documents: ['src/graphql/ops/**/*.graphql'],
+  documents: [
+    'src/graphql/ops/**/*.graphql',
+    '../../external/catalyst/packages/adaptive-server/src/graphql/ops/**/*.graphql',
+  ],
   generates: {
     './src/ops.ts': {
       // preset: 'client',

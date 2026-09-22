@@ -9,10 +9,10 @@ import {
   LeaveCourseLeaderboardDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import Leaderboard from '@klicker-uzh/shared-components/src/Leaderboard'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Podium } from '@klicker-uzh/shared-components/src/Podium'
-import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { addApolloState, initializeApollo } from '@lib/apollo'
 import getParticipantToken from '@lib/getParticipantToken'
 import useParticipantToken from '@lib/useParticipantToken'
@@ -28,20 +28,20 @@ import {
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { GetServerSidePropsContext } from 'next'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import nookies from 'nookies'
 import Rank1Img from 'public/rank1.svg'
 import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../../components/Layout'
 import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
 import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
+import Layout from '../../../components/Layout'
+import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
 import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
 
 interface Props {
   courseId: string
@@ -75,7 +75,7 @@ function CourseOverview({
   const { data, loading, error } = useQuery(GetCourseOverviewDataDocument, {
     variables: { courseId },
   })
-
+  const participation = data?.getCourseOverviewData?.participation
   const { data: dataLeaderboard, loading: loadingLeaderboard } = useQuery(
     GetStudentCourseLeaderboardDocument,
     {
@@ -105,8 +105,6 @@ function CourseOverview({
   })
 
   useEffect(() => {
-    const participation = data?.getCourseOverviewData?.participation
-
     // if assessment is enabled, switch to the assessment results tab automatically
     if (data?.getCourseOverviewData?.course?.isAssessmentEnabled) {
       setSelectedTab('assessment-results')
@@ -142,7 +140,6 @@ function CourseOverview({
   const {
     course,
     participant,
-    participation,
     groupLeaderboard,
     groupLeaderboardStatistics,
     inRandomGroupPool,

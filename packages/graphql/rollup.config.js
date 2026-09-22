@@ -2,6 +2,7 @@ import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
 import { defineConfig } from 'rollup'
 import copy from 'rollup-plugin-copy'
+import { catalystSource, isCatalystSource } from './catalyst-source-rollup.mjs'
 
 const config = defineConfig([
   {
@@ -24,6 +25,7 @@ const config = defineConfig([
     },
     plugins: [
       nodeResolve(),
+      catalystSource(),
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: process.env.NODE_ENV === 'test' ? 'instrumented' : 'src',
@@ -36,7 +38,9 @@ const config = defineConfig([
         targets: [{ src: 'src/public/*', dest: 'dist' }],
       }),
     ],
-    external: [/^@klicker-uzh\//, /node_modules/], // Exclude node_modules and workspace packages
+    external: (id) =>
+      !isCatalystSource(id) &&
+      (/^@klicker-uzh\//.test(id) || /node_modules/.test(id)), // Exclude node_modules and workspace packages
   },
 ])
 

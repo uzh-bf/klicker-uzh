@@ -4,6 +4,8 @@ import { assertPlaywrightHostBoundary } from '../util/playwright-host-policy.mjs
 assertPlaywrightHostBoundary()
 
 const isCI = !!process.env.CI
+const hostResolverRules = process.env.PLAYWRIGHT_HOST_RESOLVER_RULES
+const chromiumExecutablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
 
 // URL defaults mirror cypress.config.ts env block
 const baseURL =
@@ -54,7 +56,15 @@ export default defineConfig({
     navigationTimeout: 30_000,
     ignoreHTTPSErrors: true,
     launchOptions: {
-      args: ['--lang=en-US'],
+      ...(chromiumExecutablePath
+        ? { executablePath: chromiumExecutablePath }
+        : {}),
+      args: [
+        '--lang=en-US',
+        ...(hostResolverRules
+          ? [`--host-resolver-rules=${hostResolverRules}`]
+          : []),
+      ],
     },
     locale: 'en-US',
     viewport: { width: 1920, height: 1080 }, // macbook-16 equivalent

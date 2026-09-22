@@ -27,7 +27,7 @@ function Footer({ browserLink, className }: FooterProps): React.ReactElement {
         </div>
       )}
 
-      <p className="m-0 py-4 text-center text-xs leading-5 text-gray-400">
+      <p className="m-0 py-4 text-center text-xs leading-5 text-gray-600">
         &copy;
         {new Date().getFullYear()} DF Teaching Center, Department of Finance,
         University of Zurich. All rights reserved.

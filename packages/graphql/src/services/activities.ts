@@ -1,4 +1,3 @@
-import { ContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
@@ -6,6 +5,7 @@ import {
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
+import { ContextWithUser } from '@/lib/context.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
@@ -327,6 +327,20 @@ export async function getUserActivities(
     }),
     ctx.prisma.userActivities.count({ where: whereClause }),
   ])
+  const practiceQuizModes = new Map(
+    (
+      await ctx.prisma.practiceQuiz.findMany({
+        where: {
+          id: {
+            in: activitiesFromView
+              .filter(({ type }) => type === ActivityType.PRACTICE_QUIZ)
+              .map(({ id }) => id),
+          },
+        },
+        select: { id: true, mode: true },
+      })
+    ).map(({ id, mode }) => [id, mode])
+  )
 
   // map the fetched activities to the return type
   const activities = activitiesFromView.flatMap((activity) => {
@@ -353,6 +367,10 @@ export async function getUserActivities(
     return {
       ...activity,
       type: activity.type as ActivityType,
+      mode:
+        activity.type === ActivityType.PRACTICE_QUIZ
+          ? (practiceQuizModes.get(activity.id) ?? DB.PracticeQuizMode.STANDARD)
+          : null,
       derivedAccess: activity.derived,
       numSharedUsers: activity.numActivityPermissions,
       isOwner,
@@ -604,6 +622,7 @@ export async function applyActivityBatchOperations(
     ? await ctx.prisma.practiceQuiz.findMany({
         where: {
           id: { in: activityIds },
+          mode: DB.PracticeQuizMode.STANDARD,
           permissions: {
             some: {
               userId: ctx.user.sub,

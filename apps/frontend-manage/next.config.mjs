@@ -35,7 +35,12 @@ let nextConfig = {
 }
 
 nextConfig.transpilePackages = Array.from(
-  new Set([...(nextConfig.transpilePackages ?? []), 'formik'])
+  new Set([
+    ...(nextConfig.transpilePackages ?? []),
+    '@klicker-uzh/adaptive-manage-ui',
+    '@klicker-uzh/adaptive-i18n',
+    'formik',
+  ])
 )
 
 if (process.env.NODE_ENV === 'development') {

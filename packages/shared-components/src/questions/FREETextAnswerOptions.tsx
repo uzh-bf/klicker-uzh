@@ -9,6 +9,7 @@ export interface FREETextAnswerOptionsProps {
   maxLength?: number
   disabled: boolean
   elementIx: number
+  ariaLabel?: string
 }
 
 export function FREETextAnswerOptions({
@@ -18,6 +19,7 @@ export function FREETextAnswerOptions({
   value,
   disabled,
   elementIx,
+  ariaLabel,
 }: FREETextAnswerOptionsProps): React.ReactElement {
   const t = useTranslations()
 
@@ -25,6 +27,7 @@ export function FREETextAnswerOptions({
     <div className="flex flex-col gap-2">
       <TextareaField
         id="responseInput"
+        aria-label={ariaLabel}
         value={value}
         onChange={onChange}
         disabled={disabled}

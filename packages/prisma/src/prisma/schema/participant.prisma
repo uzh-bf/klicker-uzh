@@ -107,6 +107,8 @@ model Participant {
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
+  adaptiveAssessmentAttempts      AdaptiveAssessmentAttempt[]
+  adaptivePracticeQuizAttempts    AdaptivePracticeQuizAttempt[]
   verificationRecords             VerifiableCredential[]
 
   createdAt DateTime @default(now())
@@ -214,11 +216,14 @@ model Participation {
   subscriptions           PushSubscription[]
   completedMicroLearnings String[]
   bookmarkedElementStacks ElementStack[]
+  adaptiveAssessmentAttempts   AdaptiveAssessmentAttempt[]
+  adaptivePracticeQuizAttempts AdaptivePracticeQuizAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, participantId])
+  @@unique([id, participantId, courseId], map: "participation_identity_key")
 }
 
 model GroupAssignmentPoolEntry {

@@ -1,5 +1,12 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
+  createElementAutosavePayload,
+  isElementAutosavePayload,
+  restoreElementAutosave,
+  updateElementAutosaveFormValues,
+} from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/elementAutosave.ts'
+import { refreshElementListBestEffort } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/elementSubmission.ts'
+import {
   CreateAnswerCollectionDocument,
   ElementType,
   FlagOutdatedElementInstancesDocument,
@@ -17,7 +24,7 @@ import {
 import { ELEMENT_CREATION_AUTOSAVE_KEY } from '@lib/elementCreationRecovery'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import ElementEditForm from './ElementEditForm'
 import {
   createInlineCaseStudyCollection,
@@ -64,14 +71,28 @@ function ElementEditModal({
   const isDuplication = mode === ElementEditMode.DUPLICATE
   const [updateInstances, setUpdateInstances] = useState(true)
   const [includeTemplateUpdates, setIncludeTemplateUpdates] = useState(false)
+  const autoSaveKey =
+    typeof elementId === 'undefined' || isDuplication
+      ? ELEMENT_CREATION_AUTOSAVE_KEY
+      : `autosave-element-${elementId}`
+  const [storedAutoSave, setStoredAutoSave] = useLocalStorage<unknown>(
+    autoSaveKey,
+    undefined
+  )
+  const autoSavePayload = useMemo(
+    () => restoreElementAutosave(storedAutoSave),
+    [storedAutoSave]
+  )
 
-  const [autoSavedElement, setAutoSavedElement] =
-    useLocalStorage<ElementFormTypes>(
-      typeof elementId === 'undefined' || isDuplication
-        ? ELEMENT_CREATION_AUTOSAVE_KEY
-        : `autosave-element-${elementId}`,
-      undefined
-    )
+  useEffect(() => {
+    if (
+      autoSavePayload &&
+      storedAutoSave !== undefined &&
+      !isElementAutosavePayload(storedAutoSave)
+    ) {
+      setStoredAutoSave(autoSavePayload)
+    }
+  }, [autoSavePayload, setStoredAutoSave, storedAutoSave])
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
     GetSingleElementDocument,
@@ -115,15 +136,74 @@ function ElementEditModal({
     isDuplication,
   })
 
-  // only update the form values on initial rendering in creation or edit mode (not in duplication mode)
-  // (otherwise, saving the question will directly trigger another save)
+  const shouldRestoreAutoSave =
+    !isDuplication ||
+    (autoSavePayload !== null && autoSavePayload.pendingMapping !== null)
+
   const formikInitialValues = useMemo(() => {
     if (!initialValues) {
       return undefined
     }
-    return isDuplication ? initialValues : (autoSavedElement ?? initialValues)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, isDuplication, initialValues])
+    return shouldRestoreAutoSave
+      ? (autoSavePayload?.formValues ?? initialValues)
+      : initialValues
+  }, [autoSavePayload, initialValues, shouldRestoreAutoSave])
+
+  const formAutoSavePayload = useMemo(() => {
+    if (!formikInitialValues) {
+      return undefined
+    }
+
+    return shouldRestoreAutoSave && autoSavePayload
+      ? autoSavePayload
+      : createElementAutosavePayload(formikInitialValues)
+  }, [autoSavePayload, formikInitialValues, shouldRestoreAutoSave])
+
+  const setAutoSavedElement = useCallback<
+    React.Dispatch<React.SetStateAction<ElementFormTypes>>
+  >(
+    (nextFormValues) => {
+      setStoredAutoSave((currentStoredValue: unknown) => {
+        const currentPayload =
+          restoreElementAutosave(currentStoredValue) ?? formAutoSavePayload
+        if (!currentPayload) {
+          return currentStoredValue
+        }
+
+        const formValues =
+          typeof nextFormValues === 'function'
+            ? nextFormValues(currentPayload.formValues)
+            : nextFormValues
+        return updateElementAutosaveFormValues(currentPayload, formValues)
+      })
+    },
+    [formAutoSavePayload, setStoredAutoSave]
+  )
+
+  const handleSuccess = () => {
+    const { editElementId, contextActivityId, contextActivityType, ...query } =
+      router.query
+
+    if (contextActivityId && contextActivityType) {
+      router.push(
+        {
+          pathname: '/activities',
+          query: {
+            ...query,
+            openActivityDetailsId: contextActivityId,
+            openActivityDetailsType: contextActivityType,
+          },
+        },
+        undefined,
+        { shallow: true }
+      )
+    } else {
+      handleSetIsOpen(false)
+      router.push({ pathname: '/', query }, undefined, { shallow: true })
+    }
+
+    triggerSuccessToast()
+  }
 
   return (
     <ElementEditForm
@@ -137,6 +217,8 @@ function ElementEditModal({
         Object.keys(formikInitialValues).length === 0
       }
       initialValues={formikInitialValues}
+      autoSavePayload={formAutoSavePayload}
+      onAutoSavePayloadChange={setStoredAutoSave}
       onClose={async () => {
         // close the modal
         handleSetIsOpen(false)
@@ -157,271 +239,246 @@ function ElementEditModal({
       setUpdateInstances={setUpdateInstances}
       includeTemplateUpdates={includeTemplateUpdates}
       setIncludeTemplateUpdates={setIncludeTemplateUpdates}
-      onSubmitElement={async (values) => {
-        try {
-          switch (values.type) {
-            case ElementType.Content: {
-              const args = prepareContentArgs({
-                elementId,
-                isDuplication,
-                values,
-              })
-
-              const result = await manipulateContentElement({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
-
-              const data = result.data?.manipulateContentElement
-              if (data?.__typename !== 'ContentElement' || !data.id) {
-                return false
-              }
-
-              break
+      onSubmitElement={async (values, pendingMapping, creationRequestId) => {
+        const submissionElementId = elementId
+        const submissionIsDuplication = isDuplication
+        const initialCompetenceTreeAssignment = pendingMapping
+          ? {
+              treeId: pendingMapping.treeId,
+              ...pendingMapping.assignment,
             }
+          : undefined
+        const adaptiveCreationRequestId = initialCompetenceTreeAssignment
+          ? creationRequestId
+          : undefined
+        let savedElementId: number | null = null
 
-            case ElementType.Flashcard: {
-              const args = prepareFlashcardArgs({
-                elementId,
-                isDuplication,
-                values,
-              })
-
-              const result = await manipulateFlashcardElement({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
-
-              const data = result.data?.manipulateFlashcardElement
-              if (data?.__typename !== 'FlashcardElement' || !data.id) {
-                return false
-              }
-
-              break
-            }
-
-            case ElementType.Sc:
-            case ElementType.Mc:
-            case ElementType.Kprim: {
-              const args = prepareChoicesArgs({
-                elementId,
-                isDuplication,
-                values,
-              })
-
-              const result = await manipulateChoicesQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
-
-              const data = result.data?.manipulateChoicesQuestion
-              if (data?.__typename !== 'ChoicesElement' || !data.id) {
-                return false
-              }
-
-              break
-            }
-
-            case ElementType.Numerical: {
-              const args = prepareNumericalArgs({
-                elementId,
-                isDuplication,
-                values,
-              })
-
-              const result = await manipulateNumericalQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
-
-              const data = result.data?.manipulateNumericalQuestion
-              if (data?.__typename !== 'NumericalElement' || !data.id) {
-                return false
-              }
-
-              break
-            }
-
-            case ElementType.FreeText: {
-              const args = prepareFreeTextArgs({
-                elementId,
-                isDuplication,
-                values,
-              })
-
-              const result = await manipulateFreeTextQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
-
-              const data = result.data?.manipulateFreeTextQuestion
-              if (data?.__typename !== 'FreeTextElement' || !data.id) {
-                return false
-              }
-
-              break
-            }
-
-            case ElementType.Selection: {
-              // if the items for the selection question were defined inline, create a new answer collection from them
-              const innerValues =
-                values.options.itemSelectionMode === 'new'
-                  ? await createInlineSelectionCollection({
-                      values,
-                      createAnswerCollection,
-                    })
-                  : undefined
-
-              // if the creation was not successful, return early
-              if (
-                values.options.itemSelectionMode === 'new' &&
-                (innerValues === null || typeof innerValues === 'undefined')
-              ) {
-                return false
-              }
-
-              const args = prepareSelectionArgs({
-                elementId,
-                isDuplication,
-                values:
-                  values.options.itemSelectionMode === 'new'
-                    ? innerValues!
-                    : values,
-              })
-
-              const result = await manipulateSelectionQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
-
-              const data = result.data?.manipulateSelectionQuestion
-              if (data?.__typename !== 'SelectionElement' || !data.id) {
-                return false
-              }
-
-              break
-            }
-
-            case ElementType.CaseStudy: {
-              // if the items for the case study question were defined inline, create a new answer collection from them
-              const innerValues =
-                values.options.itemSelectionMode === 'new'
-                  ? await createInlineCaseStudyCollection({
-                      values,
-                      createAnswerCollection,
-                    })
-                  : undefined
-
-              // if the creation was not successful, return early
-              if (
-                values.options.itemSelectionMode === 'new' &&
-                (innerValues === null || typeof innerValues === 'undefined')
-              ) {
-                return false
-              }
-
-              const args = prepareCaseStudyArgs({
-                elementId,
-                isDuplication,
-                values:
-                  values.options.itemSelectionMode === 'new'
-                    ? innerValues!
-                    : values,
-              })
-
-              const result = await manipulateCaseStudyQuestion({
-                variables: args,
-                refetchQueries: [{ query: GetUserTagsDocument }],
-              })
-              await refetchElements()
-
-              const data = result.data?.manipulateCaseStudyQuestion
-              if (data?.__typename !== 'CaseStudyElement' || !data.id) {
-                return false
-              }
-
-              break
-            }
-
-            default:
-              break
-          }
-
-          if (
-            mode === ElementEditMode.EDIT &&
-            updateInstances &&
-            elementId !== null &&
-            typeof elementId !== 'undefined'
-          ) {
-            await updateElementInstances({
-              variables: {
-                elementId: elementId,
-                includeTemplates: includeTemplateUpdates,
-              },
+        switch (values.type) {
+          case ElementType.Content: {
+            const args = prepareContentArgs({
+              elementId: submissionElementId,
+              isDuplication: submissionIsDuplication,
+              values,
             })
-          } else if (
-            mode === ElementEditMode.EDIT &&
-            !updateInstances &&
-            elementId !== null &&
-            typeof elementId !== 'undefined'
-          ) {
-            await flagOutdatedElementInstances({ variables: { elementId } })
+
+            const result = await manipulateContentElement({
+              variables: args,
+              refetchQueries: [{ query: GetUserTagsDocument }],
+            })
+            const data = result.data?.manipulateContentElement
+            if (data?.__typename !== 'ContentElement' || !data.id) {
+              return null
+            }
+
+            savedElementId = data.id
+            break
           }
 
-          return true
-        } catch (err) {
-          console.error('Error submitting element:', err)
-          return false
+          case ElementType.Flashcard: {
+            const args = prepareFlashcardArgs({
+              elementId: submissionElementId,
+              isDuplication: submissionIsDuplication,
+              values,
+            })
+
+            const result = await manipulateFlashcardElement({
+              variables: args,
+              refetchQueries: [{ query: GetUserTagsDocument }],
+            })
+            const data = result.data?.manipulateFlashcardElement
+            if (data?.__typename !== 'FlashcardElement' || !data.id) {
+              return null
+            }
+
+            savedElementId = data.id
+            break
+          }
+
+          case ElementType.Sc:
+          case ElementType.Mc:
+          case ElementType.Kprim: {
+            const args = prepareChoicesArgs({
+              elementId: submissionElementId,
+              isDuplication: submissionIsDuplication,
+              values,
+            })
+
+            const result = await manipulateChoicesQuestion({
+              variables: {
+                ...args,
+                initialCompetenceTreeAssignment,
+                creationRequestId: adaptiveCreationRequestId,
+              },
+              refetchQueries: [{ query: GetUserTagsDocument }],
+            })
+            const data = result.data?.manipulateChoicesQuestion
+            if (data?.__typename !== 'ChoicesElement' || !data.id) {
+              return null
+            }
+
+            savedElementId = data.id
+            break
+          }
+
+          case ElementType.Numerical: {
+            const args = prepareNumericalArgs({
+              elementId: submissionElementId,
+              isDuplication: submissionIsDuplication,
+              values,
+            })
+
+            const result = await manipulateNumericalQuestion({
+              variables: {
+                ...args,
+                initialCompetenceTreeAssignment,
+                creationRequestId: adaptiveCreationRequestId,
+              },
+              refetchQueries: [{ query: GetUserTagsDocument }],
+            })
+            const data = result.data?.manipulateNumericalQuestion
+            if (data?.__typename !== 'NumericalElement' || !data.id) {
+              return null
+            }
+
+            savedElementId = data.id
+            break
+          }
+
+          case ElementType.FreeText: {
+            const args = prepareFreeTextArgs({
+              elementId: submissionElementId,
+              isDuplication: submissionIsDuplication,
+              values,
+            })
+
+            const result = await manipulateFreeTextQuestion({
+              variables: {
+                ...args,
+                initialCompetenceTreeAssignment,
+                creationRequestId: adaptiveCreationRequestId,
+              },
+              refetchQueries: [{ query: GetUserTagsDocument }],
+            })
+            const data = result.data?.manipulateFreeTextQuestion
+            if (data?.__typename !== 'FreeTextElement' || !data.id) {
+              return null
+            }
+
+            savedElementId = data.id
+            break
+          }
+
+          case ElementType.Selection: {
+            // if the items for the selection question were defined inline, create a new answer collection from them
+            const innerValues =
+              values.options.itemSelectionMode === 'new'
+                ? await createInlineSelectionCollection({
+                    values,
+                    createAnswerCollection,
+                  })
+                : undefined
+
+            // if the creation was not successful, return early
+            if (
+              values.options.itemSelectionMode === 'new' &&
+              (innerValues === null || typeof innerValues === 'undefined')
+            ) {
+              return null
+            }
+
+            const args = prepareSelectionArgs({
+              elementId: submissionElementId,
+              isDuplication: submissionIsDuplication,
+              values:
+                values.options.itemSelectionMode === 'new'
+                  ? innerValues!
+                  : values,
+            })
+
+            const result = await manipulateSelectionQuestion({
+              variables: args,
+              refetchQueries: [{ query: GetUserTagsDocument }],
+            })
+            const data = result.data?.manipulateSelectionQuestion
+            if (data?.__typename !== 'SelectionElement' || !data.id) {
+              return null
+            }
+
+            savedElementId = data.id
+            break
+          }
+
+          case ElementType.CaseStudy: {
+            // if the items for the case study question were defined inline, create a new answer collection from them
+            const innerValues =
+              values.options.itemSelectionMode === 'new'
+                ? await createInlineCaseStudyCollection({
+                    values,
+                    createAnswerCollection,
+                  })
+                : undefined
+
+            // if the creation was not successful, return early
+            if (
+              values.options.itemSelectionMode === 'new' &&
+              (innerValues === null || typeof innerValues === 'undefined')
+            ) {
+              return null
+            }
+
+            const args = prepareCaseStudyArgs({
+              elementId: submissionElementId,
+              isDuplication: submissionIsDuplication,
+              values:
+                values.options.itemSelectionMode === 'new'
+                  ? innerValues!
+                  : values,
+            })
+
+            const result = await manipulateCaseStudyQuestion({
+              variables: args,
+              refetchQueries: [{ query: GetUserTagsDocument }],
+            })
+            const data = result.data?.manipulateCaseStudyQuestion
+            if (data?.__typename !== 'CaseStudyElement' || !data.id) {
+              return null
+            }
+
+            savedElementId = data.id
+            break
+          }
+
+          default:
+            return null
         }
+
+        if (
+          mode === ElementEditMode.EDIT &&
+          updateInstances &&
+          elementId !== null &&
+          typeof elementId !== 'undefined'
+        ) {
+          await updateElementInstances({
+            variables: {
+              elementId: elementId,
+              includeTemplates: includeTemplateUpdates,
+            },
+          })
+        } else if (
+          mode === ElementEditMode.EDIT &&
+          !updateInstances &&
+          elementId !== null &&
+          typeof elementId !== 'undefined'
+        ) {
+          await flagOutdatedElementInstances({ variables: { elementId } })
+        }
+
+        refreshElementListBestEffort(refetchElements)
+        return savedElementId
       }}
       onSuccess={() => {
-        // remove local storage entry
-        if (autoSavedElement) {
-          localStorage.removeItem(
-            typeof elementId === 'undefined' || isDuplication
-              ? ELEMENT_CREATION_AUTOSAVE_KEY
-              : `autosave-element-${elementId}`
-          )
-        }
-
-        // extract query parameters
-        const {
-          editElementId,
-          contextActivityId,
-          contextActivityType,
-          ...query
-        } = router.query
-
-        if (contextActivityId && contextActivityType) {
-          // if the element is edited in the context of an activity, re-open the corresponding activity details
-          router.push(
-            {
-              pathname: '/activities',
-              query: {
-                ...query,
-                openActivityDetailsId: contextActivityId,
-                openActivityDetailsType: contextActivityType,
-              },
-            },
-            undefined,
-            { shallow: true }
-          )
-        } else {
-          // close modal
-          handleSetIsOpen(false)
-
-          // unset the edit element id
-          router.push({ pathname: '/', query }, undefined, { shallow: true })
-        }
-
-        // trigger success toast
-        triggerSuccessToast()
+        setStoredAutoSave(null)
+        handleSuccess()
       }}
       setAutoSavedElement={setAutoSavedElement}
     />

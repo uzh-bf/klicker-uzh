@@ -26,7 +26,8 @@
     "rollup-plugin-copy": "~3.5.0",
     "rollup-plugin-delete": "~2.1.0",
     "tsx": "~4.19.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@klicker-uzh/adaptive-persistence": "workspace:*"
   },
   "scripts": {
     "build": "run-s --npm-path pnpm generate build:ts",
@@ -68,7 +69,9 @@
     "prisma:studio:prod": "../../util/_run_with_infisical.sh --env prd pnpm run prisma:studio:raw",
     "prisma:studio:qa": "../../util/_run_with_infisical.sh --env stg pnpm run prisma:studio:raw",
     "prisma:studio:raw": "prisma studio",
-    "test:disposable": "tsx --test test/disposableDatabase.test.ts test/disposable-prisma.test.ts"
+    "test:disposable": "tsx --test test/disposableDatabase.test.ts test/disposable-prisma.test.ts",
+    "verify:adaptive-irt-v2-migration": "tsx src/scripts/verifyAdaptiveIrtV2Migration.ts",
+    "verify:adaptive-migration": "tsx src/scripts/verifyAdaptivePhase10Migration.ts"
   },
   "engines": {
     "node": "=24"

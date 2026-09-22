@@ -82,6 +82,10 @@ packages/graphql/.env.tmp.*
 playwright/playwright-report/
 playwright/test-results/
 
+# Generated adaptive-learning simulation evidence (the concise summary is tracked).
+packages/adaptive-learning/reports/simulation-report.json
+packages/adaptive-learning/.simulation-build/
+
 # One-off course data pulls (contain real participant data — never commit).
 # Course-award seed payloads, comparison sheets, and state dumps all live in
 # _local/, so a new round cannot leak data by picking an unignored filename.
@@ -99,3 +103,7 @@ evaluation/config.local.json
 # Local agent-tool state (session plans, tool permissions) — machine-specific
 .commandcode/
 .zcode/
+
+packages/prisma/src/prisma/.adaptive-schema/
+
+apps/analytics/prisma/.adaptive-schema/

@@ -11,7 +11,6 @@ import {
   faSquareCheck as faSquareCheckRegular,
 } from '@fortawesome/free-regular-svg-icons'
 import {
-  IconDefinition,
   fa1,
   fa2,
   fa3,
@@ -28,6 +27,7 @@ import {
   faCircleQuestion as faQuestionSolid,
   faSquareCheck as faSquareCheckSolid,
   faUserTie,
+  IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   ElementStatus,
@@ -362,7 +362,11 @@ function FilterList({
       </Accordion>
 
       <div className="mt-2">
+        <label className="sr-only" htmlFor="show-archive-switch">
+          {t('manage.questionPool.showArchived')}
+        </label>
         <Switch
+          id="show-archive-switch"
           size="sm"
           label={t('manage.questionPool.showArchived')}
           checked={isArchiveActive}

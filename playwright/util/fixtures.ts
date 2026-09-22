@@ -1,4 +1,4 @@
-import { test as base, BrowserContext, Page } from '@playwright/test'
+import { test as base, BrowserContext, expect, Page } from '@playwright/test'
 import {
   disableAnimations,
   setSessionCookieForUrl,
@@ -59,7 +59,7 @@ async function setSessionCookie(
     targetUrl: target,
     tokenData,
   })
-  await page.goto(target)
+  await page.goto(target, { waitUntil: 'commit' })
   // Clear storage after navigating so we are on the same origin (avoids
   // SecurityError on about:blank or cross-origin pages).
   await page.evaluate(() => {
@@ -89,7 +89,7 @@ type KlickerUZHFixtures = {
   ) => Promise<void>
 
   /** Lecturer with full Catalyst access (mirrors cy.loginLecturer) */
-  loginLecturer: () => Promise<void>
+  loginLecturer: (redirectUrl?: string) => Promise<void>
 
   /** Lecturer scoped to the Control app */
   loginLecturerControl: () => Promise<void>
@@ -172,15 +172,19 @@ export const test = base.extend<KlickerUZHFixtures>({
   },
 
   loginLecturer: async ({ loginFactory }, use) => {
-    await use(async () => {
-      await loginFactory({
-        email: LECTURER_EMAIL,
-        sub: USER_ID_TEST,
-        role: 'ADMIN',
-        scope: 'ACCOUNT_OWNER',
-        catalystInstitutional: true,
-        catalystIndividual: true,
-      })
+    await use(async (redirectUrl?: string) => {
+      await loginFactory(
+        {
+          email: LECTURER_EMAIL,
+          sub: USER_ID_TEST,
+          role: 'ADMIN',
+          scope: 'ACCOUNT_OWNER',
+          catalystInstitutional: true,
+          catalystIndividual: true,
+        },
+        undefined,
+        redirectUrl
+      )
     })
   },
 
@@ -286,7 +290,8 @@ export const test = base.extend<KlickerUZHFixtures>({
       await page.context().clearCookies()
 
       const loginUrl = process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
-      await page.goto(loginUrl)
+      await page.goto(loginUrl, { waitUntil: 'domcontentloaded' })
+      await expect(page.getByTestId('login-logo')).toBeVisible()
       await page.evaluate(() => {
         try {
           localStorage.clear()
@@ -305,6 +310,7 @@ export const test = base.extend<KlickerUZHFixtures>({
         .getByTestId('password-field')
         .fill(process.env.STUDENT_PASSWORD ?? STUDENT_PASSWORD)
       await page.getByTestId('submit-login').click()
+      await expect(page.getByTestId('homepage')).toBeVisible()
     })
   },
 
