@@ -177,6 +177,29 @@ the largest correctness risk in the chatbot program.
   ruleset is `strict: false`, the branch does not need refreshing, only the
   checks at this head. The only residual `fail` row belongs to a superseded,
   cancelled generation. The final AI review was triggered at this head.
+- 2026-09-22, C4 confirmed merged: #6228 landed as `864ce068bd` with both
+  parents (`2c1533f5d2`, `f719d6790e`), so `ffcd3297c2` and the rest of
+  `v3`'s history are ancestors of `v3-ai`. The silent-revert hazard was then
+  measured instead of assumed: `git merge-tree --write-tree origin/v3-ai
+  origin/v3` keeps the re-export and conflicts only in six devcontainer and
+  workspace paths that concurrent `v3` work introduced, none of them part of
+  this debt.
+- 2026-09-22, the structural fix was delivered as draft PR #6263
+  (`enhance(ci): guard the Doc Query scope-token ownership on v3-ai`, head
+  `19ac9549eb`) on `rs/doc-query-token-ownership-guard`. It adds
+  `.github/scripts/doc-query-token-ownership.cjs`, its contract test, a
+  `check.yml` step beside the parity gate, and a section in
+  `docs/ci-and-deployment.md`.
+- 2026-09-22, C5 closed as delivered at the user's decision. The branch's only
+  PR (#5818) was already closed, and `rs/citation-links-v3-ai` is deleted
+  locally and on `origin`.
+- 2026-09-22, trial cleanup executed: the worktrees `parity-dry-run`,
+  `deploy-promote-v3ai-chart`, `rs-doc-query-scope-auth-ai` and
+  `rs/citation-links-v3-ai` were removed after each was confirmed clean, and
+  the local branches `rs/trial-c2-v3ai`, `rs/trial-c2b-promotion`,
+  `rs/trial-6197-source-only`, `rs/trial-c4-sync` and
+  `rs/trial-c4-post6197` were deleted. `trees/c4-sync` and its merged
+  branch remain.
 
 ## Known failure mode and merge order
 
@@ -364,7 +387,7 @@ Merged 2026-09-21 as `864ce068bd`. The merge kept both parents
 `v3`'s own commit rather than an older sync point. The re-export survived the
 merge, and `v3-ai` has since carried `171c3e96cb` on top.
 
-### Structural-split hazard (needs a decision)
+### Structural-split hazard (decided 2026-09-22: a CI guard)
 
 C4's resolution does not stick on its own. The transport files legitimately
 differ between the branches (`v3` inline, `v3-ai` package-owned), and a
@@ -402,7 +425,14 @@ Options, cheapest first:
    the package to the mainline and belongs with the multi-tenant Doc Query
    work rather than this debt closure.
 
-### C5 — Citation normalizer PR (gated; proposed: close as already delivered)
+Decided 2026-09-22: option 2. The gate is delivered as draft PR #6263. It
+asserts only that the module re-exports the package signer, so it fails the
+`check` context when a sync restores the app-local copy and never runs on
+`v3`, where the app-local implementation stays correct until the package
+moves to the mainline. Option 3 remains the architectural fix and is not part
+of this debt.
+
+### C5 — Citation normalizer PR (closed 2026-09-22 as already delivered)
 
 Do: rebase `802d25d5d5` onto current `v3-ai` (single commit, two files),
 open a new PR replacing closed #5818, run checks, merge. The change consumes
@@ -420,8 +450,8 @@ their tests are already present on both `v3` and `v3-ai`;
 `/api/ingestion/resources/` cases. The branch is 473 insertions and 34
 deletions stale against `v3-ai` in `apps/chat/src/lib/sources/`, so replaying
 it would remove merged work, and a trial rebase conflicts in both of its
-files. Proposed disposition: close C5 as delivered, drop the branch, and keep
-the evidence in
+files. Closed 2026-09-22 as delivered, at the user's decision: the branch is
+deleted locally and on `origin`, and the evidence stays in
 `project/_local/evidence/2026-09-21-chat-citation-transport-c1-receipt.md`.
 
 ### C6 — Promotion and activation (gated)
@@ -472,6 +502,8 @@ visible in logs; rollback path is the previous image tag plus chart values.
 
 ## Authority
 
-This document plans only. Each merge (C2, C3, C5), the promotion and
-activation (C6), and any production verification touching live courses (C7
-PRD) requires its own approval at execution time.
+This document plans only. Each merge, the promotion and activation (C6), and
+any production verification touching live courses (C7 PRD) requires its own
+approval at execution time. C2, C2b, C3, C4 and C5 are complete. The
+ownership guard is a draft PR awaiting review, and the trial worktree and
+branch cleanup authorized on 2026-09-22 is executed.
