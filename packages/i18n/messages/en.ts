@@ -2140,6 +2140,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'Served graph: {domain} (version {version}, {language})',
     graphDomainLanguageGerman: 'German',
     graphDomainLanguageEnglish: 'English',
+    domainSettingsTitle: 'Subject area and language',
+    domainSettingsDescription:
+      'Used whenever a knowledge graph is prepared for this knowledge base. Graphs that already exist keep the subject area and language they were built with.',
+    domainSubjectLabel: 'Subject area',
+    domainLanguageLabel: 'Content language',
+    domainSettingsNotSet: 'Not set',
+    domainSettingsSaveError:
+      'The subject area and language could not be saved. Please try again.',
+    domainLanguageUnsupported:
+      '{domain} is not available in {language}. Choose another subject area or another language.',
     ingestionDisabledError:
       'Adding new content to knowledge bases is temporarily disabled.',
   },
