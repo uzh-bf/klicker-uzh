@@ -394,6 +394,7 @@ describe('element-generation cost accounting', () => {
         spendClass: KBGraphQuotaSpendClass.QUESTION_GENERATION,
         elementTypes: [ElementType.SC, ElementType.MC, ElementType.KPRIM],
         expectedStatus: ElementGenerationBuildStatus.FAILED,
+        clearCompletedAt: true,
         env: costEnv,
         now: NOW,
       })
