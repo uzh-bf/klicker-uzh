@@ -76,7 +76,13 @@ overrides:
   # pins postcss 8.4.31, and styled-components 6.1.19 pins postcss 8.4.49.
   'glob@>=10.2.0 <10.5.0': 10.5.0
   'next@>=15.0.0 <15.5.24': 15.5.24
-  'postcss@>=8.0.0 <8.5.18': 8.5.18
+  # The @uzh-bf/design-system peer-context hash includes postcss. The frontends
+  # declare postcss ~8.5.26 while packages/* inherit next's 8.5.18, so the apps
+  # and packages/kb-management each installed their own design-system copy. The
+  # built bundle inlines sonner, so a toast raised from the package reached a
+  # store no mounted <Toaster> renders. Consolidate the patch line up to 8.5.26
+  # so every importer resolves one copy; this also covers the lift above.
+  'postcss@>=8.0.0 <8.5.26': 8.5.26
   # prisma 7.8.0 pins mysql2 3.15.3 and ltijs-sequelize asks for ^2.2.5.
   'mysql2@<3.22.0': 3.22.0
   # express 4.21.2 pins path-to-regexp 0.1.12.
