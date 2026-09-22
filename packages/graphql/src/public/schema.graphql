@@ -2300,6 +2300,9 @@ scalar Json
 type KB {
   createdAt: Date!
   description: String
+  domainPolicyId: String
+  domainPolicyLanguage: String
+  domainPolicyVersion: Int
   id: ID!
   metrics: KBMetrics
   name: String!
@@ -2780,7 +2783,7 @@ type Mutation {
   createCourse(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
-  createKb(description: String, name: String!): KB!
+  createKb(description: String, domainPolicyId: String, domainPolicyLanguage: String, domainPolicyVersion: Int, name: String!): KB!
   createKbUrlResource(kbId: ID!, materialType: KBResourceMaterialType, title: String!, url: String!): KBResource!
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
@@ -2934,6 +2937,7 @@ type Mutation {
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
   updateGeneratedElementDraft(input: UpdateGeneratedElementDraftInput!): GeneratedElementDraft!
+  updateKb(description: String, domainPolicyId: String, domainPolicyLanguage: String, domainPolicyVersion: Int, id: ID!, name: String): KB!
   updateKbResourceMaterialType(id: ID!, materialType: KBResourceMaterialType!): KBResource!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
@@ -3482,7 +3486,7 @@ type Query {
   getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
   getKbImportedSources(after: String, first: Int, kbId: ID!): KBImportedSourceConnection!
   getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
-  getKbKnowledgeGraphDomainConfig(kbId: ID!): KBKnowledgeGraphDomainConfig!
+  getKbKnowledgeGraphDomainConfig(kbId: ID): KBKnowledgeGraphDomainConfig!
   getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
   getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!
   getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!

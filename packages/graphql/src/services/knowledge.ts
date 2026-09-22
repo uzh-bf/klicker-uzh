@@ -1307,9 +1307,15 @@ export async function createKb(
   {
     name,
     description,
+    domainPolicyId,
+    domainPolicyVersion,
+    domainPolicyLanguage,
   }: {
     name: string
     description?: string | null
+    domainPolicyId?: string | null
+    domainPolicyVersion?: number | null
+    domainPolicyLanguage?: string | null
   },
   ctx: ContextWithUser
 ) {
@@ -1318,13 +1324,86 @@ export async function createKb(
   if (!normalizedName) {
     throw new GraphQLError('KB name is required')
   }
+  // A suggested subject and language reach the server only because the
+  // lecturer accepted them, so an omitted selection stays absent rather than
+  // being filled in here.
+  const domain = await resolveRequestedKBGraphDomainSelection(
+    {
+      domainPolicyId,
+      domainPolicyVersion,
+      language: domainPolicyLanguage,
+    },
+    ctx
+  )
 
   return ctx.prisma.kB.create({
     data: {
       name: normalizedName,
       description,
       ownerId: ctx.user.sub,
+      domainPolicyId: domain?.domainPolicyId ?? null,
+      domainPolicyVersion: domain?.domainPolicyVersion ?? null,
+      domainPolicyLanguage: domain?.language ?? null,
     },
+  })
+}
+
+/**
+ * Owner-scoped edit of the settings a lecturer controls on a knowledge base.
+ * An omitted argument leaves its field alone, so a caller that only renames the
+ * knowledge base cannot drop its subject area. A graph build snapshots the
+ * subject and language it ran with, so changing them here leaves every existing
+ * build, published chatbot and generated question exactly as it was.
+ */
+export async function updateKb(
+  {
+    id,
+    name,
+    description,
+    domainPolicyId,
+    domainPolicyVersion,
+    domainPolicyLanguage,
+  }: {
+    id: string
+    name?: string | null
+    description?: string | null
+    domainPolicyId?: string | null
+    domainPolicyVersion?: number | null
+    domainPolicyLanguage?: string | null
+  },
+  ctx: ContextWithUser
+) {
+  await assertManageAiEnabled(ctx)
+  const normalizedName = name === undefined ? undefined : (name ?? '').trim()
+  if (normalizedName !== undefined && !normalizedName) {
+    throw new GraphQLError('KB name is required')
+  }
+  // Reject an unsupported or half-specified selection before the row is locked.
+  const domain = await resolveRequestedKBGraphDomainSelection(
+    {
+      domainPolicyId,
+      domainPolicyVersion,
+      language: domainPolicyLanguage,
+    },
+    ctx
+  )
+
+  return ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+    return prisma.kB.update({
+      where: { id },
+      data: {
+        ...(normalizedName !== undefined ? { name: normalizedName } : {}),
+        ...(description !== undefined ? { description } : {}),
+        ...(domain
+          ? {
+              domainPolicyId: domain.domainPolicyId,
+              domainPolicyVersion: domain.domainPolicyVersion,
+              domainPolicyLanguage: domain.language,
+            }
+          : {}),
+      },
+    })
   })
 }
 
@@ -2854,11 +2933,16 @@ async function isKBGraphDomainSelectionAdmitted(
  * client never offers a selection this deployment or this actor would reject.
  */
 export async function getKbKnowledgeGraphDomainConfig(
-  { kbId }: { kbId: string },
+  { kbId }: { kbId?: string | null },
   ctx: ContextWithUser
 ): Promise<KbGraphDomainConfig> {
   await assertManageAiEnabled(ctx)
-  await getOwnedKbOrThrow(ctx, kbId)
+  // Knowledge-base creation offers the same subjects before a knowledge base
+  // exists, so an omitted id asks what this deployment supports at all rather
+  // than what one knowledge base may use.
+  if (kbId) {
+    await getOwnedKbOrThrow(ctx, kbId)
+  }
   const catalog = getDefaultKBGraphDomainCatalog()
   const capabilityEnabled = await isKBGraphDomainSelectionAdmitted(ctx)
   return {

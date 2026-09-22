@@ -1,0 +1,14 @@
+query GetKbGraphDomainOptions {
+  getKbKnowledgeGraphDomainConfig {
+    capabilityEnabled
+    catalogRevision
+    options {
+      id
+      version
+      labelKey
+      languages {
+        language
+      }
+    }
+  }
+}
