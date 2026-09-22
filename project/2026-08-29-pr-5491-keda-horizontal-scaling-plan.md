@@ -1590,8 +1590,8 @@ questions.
 | A4 — Production rollout | Approve exact revisions, capacity artifact, values, alert ownership, load/observation window, and rollback transaction per profile | Promote assessment first, then regular live-response, burst, and general profiles | Park at `delivery_pending` if any revision, owner, rollback, or evidence layer is missing |
 
 | A5 — Temporary replica restore | Confirm the 72-hour window is over and approve restoring the normal production replica counts and rolling them out | Restore the HTTP services and response worker now, since the fleet CPU peak of 1.46 cores fits the normal counts. Restore the general worker after checking its queue wait and slot occupancy with the knowledge-graph tasks enabled | Keep the temporary counts if a named teaching event still needs them, with a new end date |
-| A6 — Spot infrastructure grant | Approve exact Argo `/spec/replicas` exceptions with `RespectIgnoreDifferences=true` for each burst Deployment, more `asyncspot` headroom or a separate HTTP spot pool, and staging Klicker on spot. These live in `df/df-cloud` | Copy the `app-video-processing` exception pattern; give HTTP bursts their own spot pool or raise the `asyncspot` maximum, because video processing fills the current node | Do not activate a burst Deployment until its exact exception is live |
-| A7 — Assessment pool sizing | Rule whether the reserved assessment pool keeps two always-on nodes at 22% CPU requested | Keep the reservation during exam periods; decide off-period minimums from the exam calendar | No change without an exam-owner ruling |
+| A6 — Spot infrastructure grant | Approve exact Argo `/spec/replicas` exceptions with `RespectIgnoreDifferences=true` for each burst Deployment, a higher `asyncspot` maximum, and staging Klicker on spot. These live in `df/df-cloud` | Ruled 2026-09-23: keep one shared `asyncspot` pool and raise its maximum when W12 needs capacity. Copy the `app-video-processing` exception pattern | Do not activate a burst Deployment until its exact exception is live |
+| A7 — Assessment pool sizing | Rule whether the reserved assessment pool keeps two always-on nodes at 22% CPU requested | Ruled 2026-09-23: keep the two reserved nodes for now. A later change may lower the minimum during semester breaks | No change without an exam-owner ruling |
 
 No gate permits assessment on spot. Changing that boundary conflicts with the
 current platform policy and requires a new architecture and risk decision, not
@@ -1653,12 +1653,16 @@ a values edit.
   W13 (staging on spot), gates A5–A7, and the `df/df-cloud` dependency.
 - **Rulings, same day:** The user agreed to the recommendations. A5 approves
   restoring PWA, GraphQL, response API, and the live response worker to 4 and
-  OLAT API and chat to 1; the general worker stays at 4. A6 is agreed in
-  principle; the choice between a higher `asyncspot` maximum and a separate
-  HTTP spot pool stays open until W12's chart slice exists. A7 has no ruling.
+  OLAT API and chat to 1; the general worker stays at 4. The user then
+  approved opening the companion restore PRs (#6278 against `v3`, #6279
+  against `v3-ai`); merging them is still a separate production approval.
+  A6 keeps one shared `asyncspot` pool, enlarged when W12 needs it, instead of
+  a separate HTTP spot pool. A7 keeps the two reserved assessment nodes for
+  now; a later change may lower the minimum during semester breaks.
 - **Next action:** Land the W11 restore as a `v3` and `v3-ai` companion pair,
   then the W11 request corrections. W12 chart work and W2 can proceed in
-  parallel; W12 activation waits for the A6 pool choice.
+  parallel; W12 activation waits for the exact Argo exceptions and a
+  larger `asyncspot` maximum in `df/df-cloud`.
 
 ### Roadmap extension — 2026-09-06, later
 
