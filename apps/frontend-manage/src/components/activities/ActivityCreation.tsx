@@ -11,6 +11,7 @@ import {
   GroupActivity,
   MicroLearning,
   PracticeQuiz,
+  PracticeQuizMode,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -26,6 +27,7 @@ export type ElementSelectCourse = {
   value: string
   isGamified: boolean
   isAssessmentEnabled: boolean
+  isAdaptiveLearningEnabled?: boolean
   isGroupCreationEnabled: boolean
   startDate: Date
   endDate: Date
@@ -129,6 +131,7 @@ function ActivityCreation({
             | 'name'
             | 'isGamificationEnabled'
             | 'isAssessmentEnabled'
+            | 'isAdaptiveLearningEnabled'
             | 'isGroupCreationEnabled'
             | 'startDate'
             | 'endDate'
@@ -140,6 +143,7 @@ function ActivityCreation({
           value: course.id,
           isGamified: course.isGamificationEnabled,
           isAssessmentEnabled: course.isAssessmentEnabled,
+          isAdaptiveLearningEnabled: course.isAdaptiveLearningEnabled,
           isGroupCreationEnabled: course.isGroupCreationEnabled,
           startDate: course.startDate,
           endDate: course.endDate,
@@ -195,6 +199,7 @@ function ActivityCreation({
         | 'course'
       > & {
         id?: string
+        mode?: PracticeQuizMode
         orderType?: string
         status?: PublicationStatus
         resetTimeDays?: number
@@ -214,6 +219,7 @@ function ActivityCreation({
       stacks: microData.stacks,
       pointsMultiplier: microData.pointsMultiplier,
       course: microData.course as Course,
+      mode: PracticeQuizMode.Standard,
     }
   }
 

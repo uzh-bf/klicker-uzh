@@ -3,7 +3,7 @@ import {
   getStoredAuthToken,
 } from '@klicker-uzh/util/client-auth'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 const PARTICIPANT_SESSION_STORAGE_KEY = 'participant_token'
 const PARTICIPANT_QUERY_KEY = 'participantToken'
@@ -29,6 +29,13 @@ export default function useParticipantToken({
   callback?: () => void
 }) {
   const router = useRouter()
+  const [installedParticipantToken, setInstalledParticipantToken] = useState<
+    string | null
+  >(null)
+  const requiresSessionToken =
+    typeof participantToken === 'string' && cookiesAvailable === false
+  const isParticipantTokenReady =
+    !requiresSessionToken || installedParticipantToken === participantToken
 
   useEffect(() => {
     if (typeof participantToken === 'string') {
@@ -53,17 +60,18 @@ export default function useParticipantToken({
             callback?.()
           }
         }
-      } else {
-        if (getStoredAuthToken(PARTICIPANT_SESSION_STORAGE_KEY)) {
-          if (!removeStoredParticipantToken()) return
+        setInstalledParticipantToken(participantToken)
+      } else if (getStoredAuthToken(PARTICIPANT_SESSION_STORAGE_KEY)) {
+        if (!removeStoredParticipantToken()) return
 
-          if (redirectTo) {
-            router.push(redirectTo)
-          } else {
-            callback?.()
-          }
+        if (redirectTo) {
+          router.push(redirectTo)
+        } else {
+          callback?.()
         }
       }
     }
   }, [participantToken, cookiesAvailable])
+
+  return isParticipantTokenReady
 }

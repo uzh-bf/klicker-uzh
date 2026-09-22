@@ -8,7 +8,7 @@
   "scripts": {
     "analytics:dev": "../../util/_run_with_infisical.sh --env dev nodemon --exec 'uv run python -m src.main' --watch src,prisma --ext py,prisma",
     "format": "uv run ruff format .",
-    "generate": "uv run prisma generate",
+    "generate": "node ../../util/compose-analytics-adaptive-schema.mjs && uv run prisma generate --schema prisma/.adaptive-schema",
     "lint": "uv run ruff check . && uv run ruff format --check .",
     "main": "../../util/_run_with_infisical.sh --env dev uv run python -m src.main",
     "script": "../../util/_run_with_infisical.sh --env dev uv run python -m",

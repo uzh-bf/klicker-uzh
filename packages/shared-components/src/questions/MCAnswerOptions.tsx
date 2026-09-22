@@ -72,6 +72,7 @@ export function MCAnswerOptions({
                 data={{
                   cy: `mc-${elementIx}-answer-option-${choice.ix}`,
                 }}
+                aria-pressed={Boolean(value?.[choice.ix])}
                 disabled={disabled}
               >
                 <Button.Label>

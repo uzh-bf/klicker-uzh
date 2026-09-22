@@ -1,6 +1,14 @@
 import { useQuery } from '@apollo/client'
 import { faMagnifyingGlass, faMessage } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { getAdaptiveSubmissionErrorKey } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/adaptiveSubmissionError.ts'
+import type { ElementAutosavePayload } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/elementAutosave.ts'
+import {
+  createElementAutosavePayload,
+  updateElementAutosaveFormValues,
+  updatePendingMapping,
+} from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/elementAutosave.ts'
+import type { PendingAdaptiveMapping } from '@klicker-uzh/adaptive-manage-ui/source/components/elements/manipulation/adaptive/types.ts'
 import {
   type ElementData,
   type ElementStatus,
@@ -32,6 +40,7 @@ import { twMerge } from 'tailwind-merge'
 import AnswerCollectionEditModal from '../../resources/answerCollections/AnswerCollectionEditModal'
 import ActivityLog from '../../sharing/ActivityLog'
 import AutoSaveMonitor from './AutoSaveMonitor'
+import AdaptiveElementMapping from './adaptive/AdaptiveElementMapping'
 import ElementContentInput from './ElementContentInput'
 import { ElementEditMode } from './ElementEditModal'
 import ElementExplanationField from './ElementExplanationField'
@@ -65,6 +74,8 @@ function ElementEditForm({
   elementId,
   loading,
   initialValues,
+  autoSavePayload,
+  onAutoSavePayloadChange,
   onSubmitElement,
   setAutoSavedElement,
   updateInstances,
@@ -98,9 +109,13 @@ function ElementEditForm({
   loading: boolean
   // form data props
   initialValues?: ElementFormTypes
+  autoSavePayload?: ElementAutosavePayload
+  onAutoSavePayloadChange?: (payload: ElementAutosavePayload | null) => void
   onSubmitElement: (
-    values: ElementFormTypes & { status: ElementStatus }
-  ) => Promise<boolean>
+    values: ElementFormTypes & { status: ElementStatus },
+    pendingMapping: PendingAdaptiveMapping | null,
+    creationRequestId: string
+  ) => Promise<number | boolean | null>
   setAutoSavedElement: Dispatch<SetStateAction<ElementFormTypes>>
   // instance update controls
   updateInstances: boolean
@@ -127,19 +142,27 @@ function ElementEditForm({
   const [activeTab, setActiveTab] = useState('preview')
   const [discardChangesOpen, setDiscardChangesOpen] = useState(false)
   const [secondaryActionLoading, setSecondaryActionLoading] = useState(false)
-  const formikRef = useRef<FormikProps<ElementFormTypes>>(null)
+  const [pendingMapping, setPendingMapping] =
+    useState<PendingAdaptiveMapping | null>(
+      autoSavePayload?.pendingMapping ?? null
+    )
+  const [adaptiveSubmissionError, setAdaptiveSubmissionError] = useState<
+    string | null
+  >(null)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
   const [elementDataTypename, setElementDataTypename] = useState<
     ElementData['__typename'] | undefined
   >()
+  const formikContextRef = useRef<FormikProps<ElementFormTypes>>(null)
   const formBodyRef = useRef<HTMLDivElement>(null)
   const formActionsRef = useRef<HTMLDivElement>(null)
   const [collectionModal, setCollectionModal] = useState<{
     open: boolean
     id?: number
   }>({ open: false, id: undefined })
+  const elementInputsDisabled = inputsDisabled
 
   const questionManipulationSchema = useValidationSchema({
     numberOfAnswerOptions: answerCollectionEntries.length,
@@ -155,60 +178,78 @@ function ElementEditForm({
   })
   const collections = data?.getAnswerCollectionsElements ?? []
 
-  const requestClose = useCallback(() => {
-    const formikContext = formikRef.current
+  // Dismissal arbiter for the normal library creation form: pristine dismissal
+  // closes immediately, a dirty draft is written to the recovery store and the
+  // modal closes only after the stored recovery payload exactly matches the current
+  // values and adaptive mapping, so a failed write never discards user input.
+  const handleCloseRequest = useCallback(
+    (
+      formikContext:
+        | { dirty: boolean; values: ElementFormTypes }
+        | null
+        | undefined
+    ) => {
+      if (discardChangesPrompt && (formikContext?.dirty || hasUnsavedChanges)) {
+        setDiscardChangesOpen(true)
+        return
+      }
 
-    if (discardChangesPrompt && (formikContext?.dirty || hasUnsavedChanges)) {
-      setDiscardChangesOpen(true)
-      return
-    }
+      if (!preserveDraftOnDismiss || !formikContext) {
+        onClose()
+        return
+      }
 
-    if (!preserveDraftOnDismiss || !formikContext) {
+      const { dirty, values } = formikContext
+      if (!dirty) {
+        onClose()
+        return
+      }
+
+      let serializedValues: string | undefined
+      let storedRaw: string | null | undefined
+      try {
+        if (autoSavePayload && onAutoSavePayloadChange) {
+          const payload = updatePendingMapping(
+            updateElementAutosaveFormValues(autoSavePayload, values),
+            pendingMapping
+          )
+          serializedValues = JSON.stringify(payload)
+          onAutoSavePayloadChange(payload)
+        } else {
+          serializedValues = JSON.stringify(values)
+          setAutoSavedElement(values)
+        }
+        storedRaw = localStorage.getItem(ELEMENT_CREATION_AUTOSAVE_KEY)
+      } catch {
+        storedRaw = undefined
+      }
+
+      if (
+        typeof serializedValues === 'undefined' ||
+        storedRaw !== serializedValues
+      ) {
+        toast({
+          type: 'error',
+          message: t('shared.generic.systemError'),
+          options: { duration: 6000 },
+        })
+        return
+      }
+
       onClose()
-      return
-    }
-
-    const { dirty, values } = formikContext
-    if (!dirty) {
-      onClose()
-      return
-    }
-
-    // Dismissal arbiter for the normal library creation form: pristine dismissal
-    // closes immediately, a dirty draft is written to the recovery store and the
-    // modal closes only after the raw store entry exactly matches the current
-    // values, so a failed write never discards user input.
-    let serializedValues: string | undefined
-    let storedRaw: string | null | undefined
-    try {
-      serializedValues = JSON.stringify(values)
-      setAutoSavedElement(values)
-      storedRaw = localStorage.getItem(ELEMENT_CREATION_AUTOSAVE_KEY)
-    } catch {
-      storedRaw = undefined
-    }
-
-    if (
-      typeof serializedValues === 'undefined' ||
-      storedRaw !== serializedValues
-    ) {
-      toast({
-        type: 'error',
-        message: t('shared.generic.systemError'),
-        options: { duration: 6000 },
-      })
-      return
-    }
-
-    onClose()
-  }, [
-    discardChangesPrompt,
-    hasUnsavedChanges,
-    onClose,
-    preserveDraftOnDismiss,
-    setAutoSavedElement,
-    t,
-  ])
+    },
+    [
+      autoSavePayload,
+      discardChangesPrompt,
+      hasUnsavedChanges,
+      onAutoSavePayloadChange,
+      pendingMapping,
+      onClose,
+      preserveDraftOnDismiss,
+      setAutoSavedElement,
+      t,
+    ]
+  )
 
   async function runSecondaryAction() {
     if (!secondaryAction || secondaryActionLoading) return
@@ -240,12 +281,12 @@ function ElementEditForm({
 
       event.preventDefault()
       event.stopPropagation()
-      requestClose()
+      handleCloseRequest(formikContextRef.current)
     }
 
     window.addEventListener('keydown', handleEscape, true)
     return () => window.removeEventListener('keydown', handleEscape, true)
-  }, [collectionModal.open, preserveDraftOnDismiss, requestClose])
+  }, [collectionModal.open, handleCloseRequest, preserveDraftOnDismiss])
 
   return (
     <>
@@ -255,7 +296,7 @@ function ElementEditForm({
         escapeDisabled
         loading={loading || (!isTemplate && !initialValues)}
         title={titleOverride ?? t(`manage.elements.${mode}Title`)}
-        onClose={requestClose}
+        onClose={() => handleCloseRequest(formikContextRef.current)}
         className={{
           title: 'text-xl',
           content: 'h-max pb-1 text-sm md:text-base 2xl:max-w-[1400px]',
@@ -265,18 +306,50 @@ function ElementEditForm({
       >
         {initialValues && (
           <Formik
-            innerRef={formikRef}
+            innerRef={formikContextRef}
             validateOnMount
             // enableReinitialize={!isTemplate && !initialValues}
             initialValues={initialValues}
             validationSchema={questionManipulationSchema}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitting(true)
-              const success = await onSubmitElement(values)
+              setAdaptiveSubmissionError(null)
+              const submissionPayload = updatePendingMapping(
+                updateElementAutosaveFormValues(
+                  autoSavePayload ?? createElementAutosavePayload(values),
+                  values
+                ),
+                pendingMapping
+              )
+              onAutoSavePayloadChange?.(submissionPayload)
+              let persistedElementId: number | boolean | null
+              try {
+                persistedElementId = await onSubmitElement(
+                  values,
+                  pendingMapping,
+                  submissionPayload.creationRequestId
+                )
+              } catch (error) {
+                const errorKey = pendingMapping
+                  ? getAdaptiveSubmissionErrorKey(error)
+                  : null
+                const message = errorKey
+                  ? t(
+                      `manage.elements.adaptiveMapping.assignmentErrors.${errorKey}`
+                    )
+                  : t('manage.elements.questionSavedFailed')
+                if (errorKey) setAdaptiveSubmissionError(message)
+                setSubmitting(false)
+                toast({
+                  type: 'error',
+                  message,
+                  options: { duration: 6000 },
+                })
+                return
+              }
 
-              // close modal, set success toast
-              setSubmitting(false)
-              if (!success) {
+              if (!persistedElementId) {
+                setSubmitting(false)
                 toast({
                   type: 'error',
                   message:
@@ -284,9 +357,11 @@ function ElementEditForm({
                     t('manage.elements.questionSavedFailed'),
                   options: { duration: 6000 },
                 })
-              } else {
-                onSuccess()
+                return
               }
+
+              setSubmitting(false)
+              onSuccess()
             }}
           >
             {({
@@ -294,6 +369,7 @@ function ElementEditForm({
               errors,
               isSubmitting,
               isValid,
+              dirty,
               setFieldValue,
               setFieldTouched,
               validateForm,
@@ -312,25 +388,59 @@ function ElementEditForm({
                   setElementDataTypename={setElementDataTypename}
                   validateForm={validateForm}
                 />
-                <div ref={formBodyRef} className="flex flex-row gap-12">
-                  <div className="flex-1">
+                <div
+                  ref={formBodyRef}
+                  className="flex min-w-0 flex-col gap-8 lg:flex-row lg:gap-12"
+                >
+                  <div className="min-w-0 flex-1">
                     <Form className="w-full" id="question-manipulation-form">
                       <ElementInformationFields
                         tagInput={tagInput}
                         isTemplate={isTemplate}
                         elementId={elementId}
-                        inputsDisabled={inputsDisabled}
+                        inputsDisabled={elementInputsDisabled}
                         mode={mode}
                         values={values}
                         isSubmitting={isSubmitting}
                       />
+                      {!isTemplate ? (
+                        <AdaptiveElementMapping
+                          elementId={elementId}
+                          elementType={values.type}
+                          choiceCount={
+                            values.type === ElementType.Sc ||
+                            values.type === ElementType.Mc ||
+                            values.type === ElementType.Kprim
+                              ? values.options.choices.length
+                              : undefined
+                          }
+                          editMode={mode === ElementEditMode.EDIT}
+                          inputsDisabled={inputsDisabled}
+                          formDirty={dirty}
+                          pendingMapping={pendingMapping}
+                          submissionError={adaptiveSubmissionError}
+                          onPendingMappingChange={(mapping) => {
+                            setAdaptiveSubmissionError(null)
+                            setPendingMapping(mapping)
+                            const payload = updatePendingMapping(
+                              updateElementAutosaveFormValues(
+                                autoSavePayload ??
+                                  createElementAutosavePayload(values),
+                                values
+                              ),
+                              mapping
+                            )
+                            onAutoSavePayloadChange?.(payload)
+                          }}
+                        />
+                      ) : null}
                       <ElementContentInput
-                        disabled={inputsDisabled}
+                        disabled={elementInputsDisabled}
                         values={values}
                         setFieldValue={setFieldValue}
                       />
                       <ElementExplanationField
-                        disabled={inputsDisabled}
+                        disabled={elementInputsDisabled}
                         values={values}
                         setFieldValue={setFieldValue}
                       />
@@ -342,7 +452,7 @@ function ElementEditForm({
                         values.type !== ElementType.Flashcard && (
                           <ElementformScoringSection
                             isTemplate={isTemplate}
-                            disabled={inputsDisabled}
+                            disabled={elementInputsDisabled}
                             values={values}
                             setFieldValue={setFieldValue}
                             isSubmitting={isSubmitting}
@@ -352,11 +462,11 @@ function ElementEditForm({
                       <div className="mt-4 flex flex-row gap-4">
                         <OptionsLabel type={values.type} />
                         <AnswerFeedbackSetting
-                          disabled={isTemplate || inputsDisabled}
+                          disabled={isTemplate || elementInputsDisabled}
                           values={values}
                         />
                         <DisplayModeSetting
-                          disabled={inputsDisabled}
+                          disabled={elementInputsDisabled}
                           type={values.type}
                         />
                       </div>
@@ -365,7 +475,7 @@ function ElementEditForm({
                       values.type === ElementType.Mc ||
                       values.type === ElementType.Kprim ? (
                         <ChoicesOptions
-                          inputsDisabled={inputsDisabled}
+                          inputsDisabled={elementInputsDisabled}
                           values={values}
                           setFieldValue={setFieldValue}
                         />
@@ -373,14 +483,14 @@ function ElementEditForm({
 
                       {values.type === ElementType.Numerical && (
                         <NumericalOptions
-                          inputsDisabled={inputsDisabled}
+                          inputsDisabled={elementInputsDisabled}
                           values={values}
                         />
                       )}
 
                       {values.type === ElementType.FreeText && (
                         <FreeTextOptions
-                          inputsDisabled={inputsDisabled}
+                          inputsDisabled={elementInputsDisabled}
                           values={values}
                         />
                       )}
@@ -391,7 +501,7 @@ function ElementEditForm({
                             mode === ElementEditMode.CREATE ||
                             mode === ElementEditMode.DUPLICATE
                           }
-                          inputsDisabled={inputsDisabled}
+                          inputsDisabled={elementInputsDisabled}
                           values={values}
                           collections={collections}
                           collectionsLoading={collectionsLoading}
@@ -415,7 +525,7 @@ function ElementEditForm({
                             mode === ElementEditMode.CREATE ||
                             mode === ElementEditMode.DUPLICATE
                           }
-                          inputsDisabled={inputsDisabled}
+                          inputsDisabled={elementInputsDisabled}
                           setFieldValue={setFieldValue}
                           setFieldTouched={setFieldTouched}
                           hasSampleSolution={values.options.hasSampleSolution}
@@ -441,7 +551,7 @@ function ElementEditForm({
                     )}
                   </div>
 
-                  {mode === ElementEditMode.EDIT && elementId ? (
+                  {mode === ElementEditMode.EDIT ? (
                     <Tabs
                       defaultValue="preview"
                       onValueChange={(value) => {
@@ -471,7 +581,10 @@ function ElementEditForm({
                           data: { cy: 'element-activity-tab' },
                         },
                       ]}
-                      className={{ root: 'w-full max-w-sm', list: 'w-sm' }}
+                      className={{
+                        root: 'w-full max-w-sm',
+                        list: 'sm:w-sm w-full',
+                      }}
                     >
                       <TabContent value="preview">
                         <StudentElementPreview
@@ -530,7 +643,9 @@ function ElementEditForm({
                   {!isTemplate && !inputsDisabled && (
                     <div className="flex flex-wrap gap-4">
                       <Button
-                        onClick={requestClose}
+                        onClick={() =>
+                          handleCloseRequest(formikContextRef.current)
+                        }
                         data={{ cy: 'close-element-modal-button' }}
                       >
                         {t('shared.generic.close')}
@@ -555,7 +670,10 @@ function ElementEditForm({
                       loading={isSubmitting}
                       data={{ cy: submitDataCy ?? 'save-new-question' }}
                     >
-                      {submitLabel ?? t('shared.generic.save')}
+                      {submitLabel ??
+                        (mode === ElementEditMode.CREATE && pendingMapping
+                          ? t('manage.elements.adaptiveMapping.createAndAssign')
+                          : t('shared.generic.save'))}
                     </Button>
                   )}
                 </div>

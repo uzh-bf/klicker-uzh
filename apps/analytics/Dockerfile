@@ -14,6 +14,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY apps/analytics/ .
 COPY packages/prisma/src/prisma/schema/*.prisma prisma/schema/
+COPY external/catalyst/packages/adaptive-persistence/src/prisma/schema/*.prisma prisma/schema/
 RUN rm prisma/schema/js.prisma prisma/schema/datasource.prisma
 COPY apps/analytics/prisma/schema/datasource.prisma prisma/schema/datasource.prisma
 

@@ -42,7 +42,7 @@ function CourseDeletionModal({
     })
   const [deleteDraftActivities, setDeleteDraftActivities] = useState(false)
   const [requestError, setRequestError] = useState<
-    'activeLiveQuiz' | 'generic' | null
+    'activeLiveQuiz' | 'retainedAdaptiveHistory' | 'generic' | null
   >(null)
   const t = useTranslations()
 
@@ -136,7 +136,9 @@ function CourseDeletionModal({
           setRequestError(
             code === 'COURSE_DELETION_ACTIVE_LIVE_QUIZ'
               ? 'activeLiveQuiz'
-              : 'generic'
+              : code === 'ADAPTIVE_COURSE_HISTORY_RETAINED'
+                ? 'retainedAdaptiveHistory'
+                : 'generic'
           )
         }
       }}
@@ -151,7 +153,9 @@ function CourseDeletionModal({
           message={
             requestError === 'activeLiveQuiz'
               ? t('manage.courseList.courseDeletionActiveLiveQuiz')
-              : t('shared.generic.error')
+              : requestError === 'retainedAdaptiveHistory'
+                ? t('manage.courseList.deletionErrors.retainedAdaptiveHistory')
+                : t('shared.generic.error')
           }
         />
       )}

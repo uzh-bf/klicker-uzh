@@ -811,6 +811,16 @@ export async function manipulateElement(
     })
   }
 
+  return formatManipulatedElement(element)
+}
+
+export function formatManipulatedElement<
+  T extends {
+    options: object
+    answerCollectionId: number | null
+    answerCollectionItems: Array<{ id: number }>
+  },
+>(element: T) {
   return {
     ...element,
     options: {
@@ -945,6 +955,43 @@ export async function manipulateElementWithAssessmentAudit(
     },
     { timeout: 60000 }
   )
+}
+
+export function getManipulatedElementCreationIdentity(
+  input: ElementManipulationInput
+) {
+  const validInputs = validateElementInputs({
+    id: input.id,
+    status: input.status,
+    type: input.type,
+    name: input.name,
+    content: input.content,
+    explanation: input.explanation,
+    basePoints: input.basePoints,
+    pointsMultiplier: input.pointsMultiplier,
+  })
+  const processedOptions = validateAndProcessElementOptions(
+    input.type,
+    input.options
+  )
+  if (!validInputs || processedOptions === null) return null
+
+  return {
+    status: input.status!,
+    type: input.type,
+    name: input.name!,
+    content: input.content!,
+    explanation: input.explanation ?? null,
+    basePoints:
+      input.type === DB.ElementType.CONTENT ||
+      input.type === DB.ElementType.FLASHCARD
+        ? false
+        : input.basePoints!,
+    pointsMultiplier: input.pointsMultiplier!,
+    options: JSON.parse(JSON.stringify(processedOptions)) as object,
+    tags: [...(input.tags ?? [])].sort(),
+    templateId: input.templateId ?? null,
+  }
 }
 
 export async function applyElementBatchOperations(

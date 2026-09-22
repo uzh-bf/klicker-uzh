@@ -111,6 +111,24 @@ export interface AssessmentResponseReceipt {
   hatchetEventId: string
 }
 
+export type AdaptiveEmpiricalValidationTaskInput = {
+  exportRequestId: string
+  configId: string
+  treeId: string
+  scaleVersionId: string
+  criterionArtifactKey: string
+  criterionArtifactChecksum: string
+  submittedById: string
+  bankFingerprint: string
+  configFingerprint: string
+  measurementVersion: 'IRT_V2_EAP_GRID_1'
+  estimatorImplementationVersion: 'IRT_V2_EAP_GRID_1'
+  classificationPolicyVersion: number
+  calibrationPolicyVersion: number
+  validationProtocolVersion: string
+  approvedProbabilityThreshold: number
+}
+
 // Shared contract for Hatchet task handler injections.
 // Payload of the `process-course-deletion` event. The request marker on the
 // course is the only persisted state; requester and options travel here.
@@ -130,6 +148,21 @@ export interface HatchetHandlers {
   ) => Promise<boolean>
   handleMonitorAssessmentAudit: (
     _input: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleAdaptiveEmpiricalValidation: (
+    input: AdaptiveEmpiricalValidationTaskInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<string>
+  handleAdaptiveCalibrationExport: (
+    { exportRequestId }: { exportRequestId: string },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleAdaptiveCalibrationExportCleanup: (
+    {},
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -228,6 +261,18 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  adaptiveEmpiricalValidation: TaskWorkflowDeclaration<
+    AdaptiveEmpiricalValidationTaskInput,
+    { validationId: string }
+  >
+  adaptiveCalibrationExport: TaskWorkflowDeclaration<
+    { exportRequestId: string },
+    { success: boolean }
+  >
+  adaptiveCalibrationExportCleanup: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
   ingestKBResource: TaskWorkflowDeclaration<
     IngestKBResourceInput,
     { success: boolean }

@@ -42,11 +42,13 @@ RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund
 
 # Prisma 7 keeps the datasource URL out of the schema: prisma.config.ts supplies it
 # from DATABASE_URL and points at the schema/migrations paths (relative to /app).
-COPY packages/prisma/prisma.config.ts ./prisma.config.ts
+COPY packages/prisma/prisma.migrator.config.ts ./prisma.config.ts
 
 # Only the schema folder is needed; it contains datasource + models + the migrations/
 # directory that `migrate deploy` applies. No generated client, no app code required.
 COPY packages/prisma/src/prisma/schema ./src/prisma/schema
+COPY external/catalyst/packages/adaptive-persistence/src/prisma/schema/*.prisma ./src/prisma/schema/
+COPY external/catalyst/packages/adaptive-persistence/src/prisma/schema/migrations ./src/prisma/schema/migrations
 
 RUN addgroup -S nodejs -g 1001 && adduser -S -G nodejs -u 1001 prisma
 USER prisma

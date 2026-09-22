@@ -20,7 +20,7 @@ export function guardedPrismaCommand(operation: string, args: string[]) {
       'diff',
       '--from-config-datasource',
       '--to-migrations',
-      'src/prisma/schema/migrations',
+      'src/prisma/.adaptive-schema/migrations',
     ],
   }
   const command = commands[operation]

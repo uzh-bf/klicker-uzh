@@ -2,3 +2,6 @@
 	path = evaluation/framework
 	url = https://gitlab.uzh.ch/ai-infrastructure/evaluation.git
 	update = none
+[submodule "catalyst"]
+	path = external/catalyst
+	url = git@github.com:uzh-bf/klicker-uzh-catalyst.git

@@ -2,6 +2,13 @@ packages:
   - apps/*
   - packages/*
   - playwright
+  - external/catalyst/packages/adaptive-learning
+  - external/catalyst/packages/adaptive-server
+  - external/catalyst/packages/adaptive-persistence
+  - external/catalyst/packages/adaptive-manage-ui
+  - external/catalyst/packages/adaptive-pwa-ui
+  - external/catalyst/packages/adaptive-i18n
+  - external/catalyst/packages/adaptive-e2e
 
 # Do not let pnpm repair stale links before the host launcher can control the
 # exact stop, install, and runtime-reconciliation order.

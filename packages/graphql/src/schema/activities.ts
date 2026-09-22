@@ -7,7 +7,11 @@ import builder from '../builder.js'
 import { ActivityType } from './analytics.js'
 import { Course, ICourse } from './course.js'
 import { ElementInstanceRef, IElementInstance } from './element.js'
-import { PublicationStatus, ReviewStatus } from './practiceQuiz.js'
+import {
+  PracticeQuizMode,
+  PublicationStatus,
+  ReviewStatus,
+} from './practiceQuiz.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 import { LocaleType } from './user.js'
 
@@ -91,6 +95,7 @@ export interface IActivityInfo {
 
   type: ActivityTypeEnum
   status: DB.PublicationStatus
+  mode?: DB.PracticeQuizMode | null
 
   courseId?: string | null
   courseName?: string | null
@@ -137,6 +142,7 @@ export const ActivityInfo = builder.objectType(ActivityInfoRef, {
 
     type: t.expose('type', { type: ActivityType }),
     status: t.expose('status', { type: PublicationStatus }),
+    mode: t.expose('mode', { type: PracticeQuizMode, nullable: true }),
 
     courseId: t.exposeString('courseId', { nullable: true }),
     courseName: t.exposeString('courseName', { nullable: true }),

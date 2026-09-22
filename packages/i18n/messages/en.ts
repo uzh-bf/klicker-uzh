@@ -1,4 +1,7 @@
-export default {
+import adaptive from '@klicker-uzh/adaptive-i18n/messages/en'
+import { mergeAdaptiveMessages } from './mergeAdaptiveMessages'
+
+const baseMessages = {
   chat: {
     graphPanel: {
       missingEndpoint: 'Unknown concept',
@@ -6036,3 +6039,5 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
   },
 }
+
+export default mergeAdaptiveMessages(baseMessages, adaptive)
