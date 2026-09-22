@@ -1056,7 +1056,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       publicationUseCase: 'Support students with a synthetic study aid.',
       expectedStudentCount: 40,
       creditInitialCredits: 25,
-      creditResetPeriod: 'WEEKLY',
+      // The form never offers the reset period, so this is the policy a newly
+      // created chatbot receives from the server.
+      creditResetPeriod: 'DAILY',
       creditResetAmount: 15,
       creditMaxCredits: 100,
     })
