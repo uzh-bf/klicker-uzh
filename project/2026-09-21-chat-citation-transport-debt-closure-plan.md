@@ -358,6 +358,12 @@ real `v3` merge commit `ffcd3297c2` and refreshed against the `v3-ai` release
 commit `fd81ae5204`. Six conflicts, same resolutions. The PR is no longer a
 draft; its description records the final state.
 
+Merged 2026-09-21 as `864ce068bd`. The merge kept both parents
+(`2c1533f5d2` on `v3-ai` and `f719d6790e`), so `ffcd3297c2` and the rest of
+`v3`'s history became ancestors of `v3-ai` and the next sync's merge base is
+`v3`'s own commit rather than an older sync point. The re-export survived the
+merge, and `v3-ai` has since carried `171c3e96cb` on top.
+
 ### Structural-split hazard (needs a decision)
 
 C4's resolution does not stick on its own. The transport files legitimately
@@ -366,6 +372,22 @@ sync resolution that keeps `ours` only holds for one merge. Once this
 consolidation is the common ancestor, the next `v3` → `v3-ai` sync sees
 `ours` unchanged, applies `base` → `theirs`, and silently adopts `v3`'s
 inline files, reverting the package-owned token without a conflict to review.
+
+Verified 2026-09-22 with `git merge-tree --write-tree origin/v3-ai origin/v3`
+at the merged ancestor: the next sync **keeps** the `v3-ai` re-export and
+raises no conflict on the transport paths. The mechanism is narrower than the
+paragraph above states. The merge base is `ffcd3297c2`, which already carries
+`v3`'s inline file, and `v3` has not touched that file since, so
+`base` → `theirs` is empty for it and `ours` wins. A silent revert
+therefore needs a future `v3`-side edit of
+`apps/chat/src/lib/server/docQueryScopeToken.ts` or
+`packages/doc-query-client`: that edit applies cleanly onto `v3-ai` and
+would restore an app-local copy, leaving the package token unused and later
+package fixes ineffective. The same probe shows the next sync is otherwise not
+clean: `.devcontainer/README.md`, `.devcontainer/docker-compose.yml`,
+`.devcontainer/post-start.sh`, `.devrouter.yml`, `package.json`, and
+`util/profile-resolver.sh` conflict, all from concurrent devcontainer work on
+`v3` and unrelated to this debt.
 
 Options, cheapest first:
 
