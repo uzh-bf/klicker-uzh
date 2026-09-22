@@ -24,11 +24,7 @@ module.exports = {
       'tutorials/element_updates_activities',
       'tutorials/chatbot',
     ],
-    'Lecturer - AI': [
-      'tutorials/ai_assistant',
-      'tutorials/course_ai_tutor',
-      'tutorials/knowledge_bases',
-    ],
+    'Lecturer - AI': ['tutorials/ai_assistant', 'tutorials/course_ai_tutor'],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
       // 'tutorials/direct_sharing',
