@@ -2169,6 +2169,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Ausgelieferter Graph: {domain} (Version {version}, {language})',
     graphDomainLanguageGerman: 'Deutsch',
     graphDomainLanguageEnglish: 'Englisch',
+    domainSettingsTitle: 'Fachgebiet und Sprache',
+    domainSettingsDescription:
+      'Wird für jede Aufbereitung eines Wissensgraphen dieser Wissensbasis verwendet. Bereits bestehende Graphen behalten das Fachgebiet und die Sprache, mit denen sie erstellt wurden.',
+    domainSubjectLabel: 'Fachgebiet',
+    domainLanguageLabel: 'Inhaltssprache',
+    domainSettingsNotSet: 'Nicht festgelegt',
+    domainSettingsSaveError:
+      'Fachgebiet und Sprache konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.',
+    domainLanguageUnsupported:
+      '{domain} ist nicht in {language} verfügbar. Wählen Sie ein anderes Fachgebiet oder eine andere Sprache.',
     ingestionDisabledError:
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
