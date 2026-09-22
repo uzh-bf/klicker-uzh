@@ -453,9 +453,12 @@ ref update:
   its current attempt are required; duplicate terminal jobs fail validation.
   Candidate pushes run GraphQL, unit, OLAT, both translation smoke jobs, and
   all eight Playwright shards. PR-only no-change selections cannot qualify a
-  staging candidate. Only missing or still-running evidence is retried, for a
-  bounded interval; skipped, failed, cancelled, or mismatched evidence fails
-  immediately.
+  staging candidate. Missing or still-running evidence is retried for a bounded
+  interval. Skipped, failed, cancelled, or mismatched evidence fails
+  immediately, while a required workflow that is still running when the
+  interval closes defers with a named reason: the controller wakes again when
+  that workflow completes, so an unfinished gate is not reported as a failure
+  it never proved.
 - Every expected runtime repository exposes the full candidate SHA tag with a
   complete digest. Each accepted OCI or Docker manifest response must be
   redirect-free, complete, and have raw body bytes whose SHA-256 equals its
