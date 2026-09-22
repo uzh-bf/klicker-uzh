@@ -132,7 +132,7 @@ function CourseAssessmentResults() {
           />
         </div>
         <div className="mt-11 w-1/2 pl-4">
-          {selectedParticipant ? (
+          {!!selectedParticipant ? (
             <Suspense>
               <CourseSingleStudentResults
                 courseId={router.query.id as string}

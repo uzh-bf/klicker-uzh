@@ -123,7 +123,7 @@ function AssessmentLiveQuiz() {
           />
         </div>
         <div className="mt-11 w-1/2 pl-4">
-          {selectedParticipant ? (
+          {!!selectedParticipant ? (
             <Suspense>
               <LiveQuizSingleStudentResults
                 liveQuizId={router.query.quizId as string}
