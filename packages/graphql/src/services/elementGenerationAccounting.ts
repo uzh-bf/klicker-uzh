@@ -225,8 +225,10 @@ export async function createElementGenerationBuildWithSpend(
 // reserves its own spend and returns the build to PREPARING_INPUT for the
 // synchronizer to dispatch again. The row lock plus the expected status and
 // element types keep a stale retry request from touching a build that already
-// moved on or belongs to another workflow, and clearing completedAt restores
-// the in-flight shape the build needs before its next terminal transition.
+// moved on or belongs to another workflow. Only a caller that re-dispatches a
+// terminal failure as a fresh in-flight run clears completedAt; the flashcard
+// retry keeps it, because its failure paths restore the recorded prior failure
+// that the lecturer was shown.
 export async function reserveElementGenerationRetrySpend(
   prisma: DB.PrismaClient,
   {
@@ -236,6 +238,7 @@ export async function reserveElementGenerationRetrySpend(
     spendClass,
     elementTypes,
     expectedStatus,
+    clearCompletedAt = false,
     env = process.env,
     now = new Date(),
   }: {
@@ -245,6 +248,7 @@ export async function reserveElementGenerationRetrySpend(
     spendClass: SpendClass
     elementTypes: DB.ElementType[]
     expectedStatus: DB.ElementGenerationBuildStatus
+    clearCompletedAt?: boolean
     env?: NodeJS.ProcessEnv
     now?: Date
   }
@@ -291,7 +295,7 @@ export async function reserveElementGenerationRetrySpend(
         providerDispatchAttemptId: dispatchAttemptId,
         providerEventId: null,
         providerWorkflowRunId: null,
-        completedAt: null,
+        ...(clearCompletedAt ? { completedAt: null } : {}),
       },
     })
     return true

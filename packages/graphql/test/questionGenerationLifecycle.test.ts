@@ -728,10 +728,13 @@ describe('question-generation retry lifecycle', () => {
   it('re-dispatches a failed build whose reasons the system can fix', async () => {
     let current = {
       ...failedBuild(),
+      status: DB.ElementGenerationBuildStatus
+        .FAILED as DB.ElementGenerationBuildStatus,
       errorRetryable: true,
       retryCount: 0,
       syncLeaseOwner: null as string | null,
       syncLeaseUntil: null as Date | null,
+      providerEventId: null as string | null,
     }
     vi.mocked(reserveElementGenerationRetrySpend).mockImplementationOnce(
       async (_prisma, input) => {

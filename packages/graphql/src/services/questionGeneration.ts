@@ -584,6 +584,7 @@ export async function retryQuestionGeneration(
     spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
     elementTypes: QUESTION_ELEMENT_TYPES,
     expectedStatus: DB.ElementGenerationBuildStatus.FAILED,
+    clearCompletedAt: true,
   })
   if (!claimed) {
     return serviceError(
