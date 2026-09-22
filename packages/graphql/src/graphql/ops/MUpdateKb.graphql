@@ -1,11 +1,13 @@
-mutation CreateKb(
-  $name: String!
+mutation UpdateKb(
+  $id: ID!
+  $name: String
   $description: String
   $domainPolicyId: String
   $domainPolicyVersion: Int
   $domainPolicyLanguage: String
 ) {
-  createKb(
+  updateKb(
+    id: $id
     name: $name
     description: $description
     domainPolicyId: $domainPolicyId
@@ -13,5 +15,10 @@ mutation CreateKb(
     domainPolicyLanguage: $domainPolicyLanguage
   ) {
     id
+    name
+    description
+    domainPolicyId
+    domainPolicyVersion
+    domainPolicyLanguage
   }
 }
