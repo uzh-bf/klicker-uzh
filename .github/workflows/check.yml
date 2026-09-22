@@ -122,7 +122,8 @@ jobs:
         # v3 sync merge are not re-scanned; range mode itself stays strict.
         run: |
           base=$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")
-          bash util/check-git-identity.sh range "${base}..${PR_HEAD_SHA}"
+          bash util/check-git-identity.sh range "${base}..${PR_HEAD_SHA}" \
+            --published-glob 'refs/remotes/origin/v3*'
 
       - name: Test Git identity guard
         run: node --test ./util/check-git-identity.test.mjs
@@ -161,6 +162,9 @@ jobs:
       - name: Check hosted pnpm cache policy
         run: node --test ./.github/scripts/hosted-pnpm-cache.test.cjs
 
+      - name: Check staging release contracts
+        run: node --test .github/scripts/stg-release-ref-promotion.test.cjs
+
       - name: Check CI queue policy
         run: |
           node --test \
@@ -184,7 +188,8 @@ jobs:
             .github/scripts/image-scan-receipt.test.cjs \
             .github/scripts/image-input-fingerprint.test.cjs \
             .github/scripts/release-image-manifest.test.cjs \
-            .github/scripts/deploy-parity.test.cjs
+            .github/scripts/deploy-parity.test.cjs \
+            .github/scripts/doc-query-token-ownership.test.cjs
 
       # The chart is what production consumes from this branch, and nothing
       # else renders it: a scheduling policy reaches a pod spec only when a
@@ -223,6 +228,28 @@ jobs:
             node ./.github/scripts/deploy-parity.cjs --other v3-ai
           fi
 
+      # 'v3-ai' owns the Doc Query scope-token signer in
+      # '@klicker-uzh/doc-query-client', while 'v3' still carries an app-local
+      # implementation of the same module. The sync direction is v3 -> v3-ai,
+      # so a v3-side edit of that module merges cleanly here and silently
+      # restores the app-local signer; the gate turns that into a failed check.
+      - name: Check Doc Query scope-token ownership on v3-ai
+        if: >-
+          (github.event_name == 'push' && github.ref_name == 'v3-ai') ||
+          (github.event_name == 'pull_request' && github.base_ref == 'v3-ai')
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        # A pull request is responsible only for the guarded paths it edits, so
+        # it passes its base and an already drifted module is reported instead
+        # of failing an unrelated change. A push to v3-ai validates the branch
+        # itself and keeps the strict candidate check.
+        run: |
+          if [ -n "$PR_BASE_SHA" ]; then
+            node ./.github/scripts/doc-query-token-ownership.cjs --base "$PR_BASE_SHA"
+          else
+            node ./.github/scripts/doc-query-token-ownership.cjs
+          fi
+
       - name: Check Playwright CI contracts
         run: |
           pnpm run check:playwright-ci
@@ -232,6 +259,9 @@ jobs:
 
       - name: Check Playwright host launcher
         run: pnpm run check:playwright-host
+
+      - name: Check local KB lifecycle contracts
+        run: pnpm run check:local-kb
 
       - name: Check Next.js development configuration and readiness
         run: |
@@ -272,11 +302,17 @@ jobs:
           steps.classify.outputs.codebase_check != 'bounded'
         run: pnpm run check:prisma-sync
 
+      - name: Check replica ownership contract
+        run: pnpm run check:klicker-replica-ownership
+
       - name: Check AGENTS.md command smoke
         run: pnpm run check:agents-md
 
       - name: Check removed engineering-wiki paths
         run: pnpm run check:removed-doc-artifacts
+
+      - name: Check KB ingestion staging render
+        run: pnpm run check:kb-ingestion-stg
 
       - name: Build packages for typecheck (turbo)
         if: >-

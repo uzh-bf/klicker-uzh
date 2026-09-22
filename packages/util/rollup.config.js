@@ -8,7 +8,17 @@ const config = defineConfig([
     // participantAccountDataUse is a runtime-dependency-free module that
     // browser bundles import directly; keep it as its own entry chunk so the
     // server barrel (with ioredis and other Node-only code) stays out.
-    input: ['src/index.ts', 'src/participantAccountDataUse.ts'],
+    input: [
+      'src/index.ts',
+      'src/auth.ts',
+      'src/citations.ts',
+      'src/clientAuth.ts',
+      'src/participantAccountDataUse.ts',
+      'src/publicUrl.ts',
+      'src/responseExampleDigest.ts',
+      'src/responseExampleEligibility.ts',
+      'src/responseExampleRuntime.ts',
+    ],
     output: {
       dir: 'dist',
       format: 'esm',

@@ -9,7 +9,6 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  ManageFeaturePreferencesDocument,
   type ManageUserProfileQuery,
   UserLoginScope,
   UserRole,
@@ -27,6 +26,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useManageAiCapability } from '../featureFlags/ManageFeatureFlagProvider'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<ManageUserProfileQuery['userProfile']>
@@ -42,8 +42,16 @@ function Header({
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const { state: aiCapability, betaEnabled } = useManageAiCapability()
+  const showBroaderAi =
+    aiCapability === 'enabled' || aiCapability === 'temporarilyUnavailable'
   const aiBetaEnabled = useFeatureFlag('ai-beta')
-  const { data: preferences } = useQuery(ManageFeaturePreferencesDocument)
+  const canAuthorChatbots =
+    aiBetaEnabled &&
+    betaEnabled &&
+    user?.catalyst === true &&
+    (userScope === UserLoginScope.FullAccess ||
+      userScope === UserLoginScope.AccountOwner)
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -66,21 +74,6 @@ function Header({
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(aiBetaEnabled &&
-    preferences?.userProfile?.betaEnabled === true &&
-    user?.catalyst === true &&
-    (userScope === UserLoginScope.FullAccess ||
-      userScope === UserLoginScope.AccountOwner)
-      ? [
-          {
-            key: 'chatbots-item',
-            type: 'link' as const,
-            label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
-            data: { cy: 'chatbots' },
-          },
-        ]
-      : []),
     {
       key: 'catalog-item',
       type: 'link' as const,
@@ -126,6 +119,41 @@ function Header({
         badge: 'bg-green-700 hover:bg-green-800',
       },
     },
+    ...(showBroaderAi
+      ? [
+          {
+            key: 'knowledge-bases-item',
+            disabled: aiCapability !== 'enabled',
+            type: 'link' as const,
+            label: t('kb.title'),
+            onClick: () => router.push('/resources/knowledgeBases'),
+            badge: t('manage.general.betaFeatures'),
+            data: { cy: 'knowledge-bases' },
+            className: {
+              label: 'bg-opacity-100',
+              text: 'mr-8',
+              badge: 'bg-green-700 hover:bg-green-800',
+            },
+          },
+        ]
+      : []),
+    ...(canAuthorChatbots
+      ? [
+          {
+            key: 'chatbots-item',
+            type: 'link' as const,
+            label: t('manage.resources.chatbots'),
+            onClick: () => router.push('/resources/chatbots'),
+            badge: t('manage.general.betaFeatures'),
+            data: { cy: 'chatbots' },
+            className: {
+              label: 'bg-opacity-100',
+              text: 'mr-8',
+              badge: 'bg-green-700 hover:bg-green-800',
+            },
+          },
+        ]
+      : []),
   ]
 
   const leftNavigation: NavigationItemProps[] = [
@@ -134,7 +162,8 @@ function Header({
       key: 'library-menubar-item',
       label: t('manage.general.library'),
       onClick: () => router.push('/'),
-      active: router.pathname == '/',
+      active:
+        router.pathname === '/' || router.pathname === '/elements/generate',
       data: { cy: 'library' },
     },
     {
@@ -142,7 +171,7 @@ function Header({
       key: 'activities-menubar-item',
       label: t('shared.generic.activities'),
       onClick: () => router.push('/activities'),
-      active: router.pathname == '/activities',
+      active: router.pathname === '/activities',
       data: { cy: 'activities' },
     },
     {
@@ -150,7 +179,7 @@ function Header({
       key: 'courses-menubar-item',
       label: t('manage.general.courses'),
       onClick: () => router.push('/courses'),
-      active: router.pathname == '/courses',
+      active: router.pathname === '/courses',
       data: { cy: 'courses' },
     },
 
@@ -160,11 +189,12 @@ function Header({
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
-        router.pathname == '/resources/answerCollections' ||
-        router.pathname === '/resources/chatbots' ||
+        router.pathname === '/resources/answerCollections' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||
-        router.pathname === '/resources/mediaLibrary',
+        router.pathname === '/resources/mediaLibrary' ||
+        router.pathname.startsWith('/resources/knowledgeBases') ||
+        router.pathname.startsWith('/resources/chatbots'),
       notification:
         pendingRequestData &&
         pendingRequestData.countCatalogSharingRequests !== 0,
@@ -299,11 +329,12 @@ function Header({
           type: 'link',
           label: t('shared.generic.logout'),
           onClick: () =>
-            router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout'),
+            router.push(`${process.env.NEXT_PUBLIC_AUTH_URL}/logout`),
           data: { cy: 'logout' },
         },
       ],
       className: {
+        label: 'hidden lg:block',
         content: 'mr-1',
       },
     },
@@ -312,7 +343,7 @@ function Header({
   return (
     <>
       <div
-        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
+        className="print:hidden! flex h-full w-full flex-row flex-wrap items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
         <div className="ml-4 flex flex-row items-center gap-1.5">
@@ -344,7 +375,7 @@ function Header({
         </div>
         <Navigation
           items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          className={{ root: '-gap-1 ml-auto flex h-10 flex-row shadow-none' }}
         />
       </div>
       {showSupportModal && (

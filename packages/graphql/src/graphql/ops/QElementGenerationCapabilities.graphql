@@ -1,0 +1,20 @@
+query ElementGenerationCapabilities {
+  elementGenerationCapabilities {
+    elementTypes
+    languages
+    bloomLevels
+    difficultyLevels
+    supportsIndividualRegeneration
+    configured
+    typeCapabilities {
+      elementType
+      reviewGates
+      supportsSourceScopes
+      supportsDifficulty
+      supportsBloomLevels
+      supportsFocusTopic
+      supportsRetry
+      supportsIncompletePublication
+    }
+  }
+}

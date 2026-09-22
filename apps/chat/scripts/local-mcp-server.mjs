@@ -38,6 +38,8 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       'Portfolio diversification spreads investments across assets, sectors, or regions. It can reduce idiosyncratic risk because a loss in one holding may be offset by gains in another. Diversification does not remove systematic market risk, and its benefit depends on the correlations between the holdings.',
+    continuation:
+      'Read diversification from the correlations, not from the number of holdings: two positions that move together add little risk reduction however many of them a portfolio holds.',
   },
   {
     title: 'Time value of money',
@@ -55,6 +57,8 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       'The time value of money means that a monetary amount available today is generally worth more than the same nominal amount available later. Present value discounts a future cash flow using an appropriate rate, while future value compounds a present amount over time.',
+    continuation:
+      'Discounting a stream of future cash flows is the same operation applied term by term; the present value of the stream is the sum of the individually discounted amounts.',
   },
   {
     title: 'Bond pricing',
@@ -72,6 +76,8 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       'A coupon bond is valued as the present value of its promised coupon payments and repayment of principal at maturity. Holding other factors constant, a rise in market yields lowers the price of an existing fixed-coupon bond, while a fall in yields raises its price.',
+    continuation:
+      'The same valuation logic covers unequal coupons, and the yield to maturity is the single rate that makes the discounted promised cash flows equal the observed price.',
   },
   {
     title: 'CAPM and required return',
@@ -89,6 +95,8 @@ const SYNTHETIC_DOCUMENTS = [
     ],
     content:
       "The CAPM links an asset's required return to the risk-free rate plus beta multiplied by the market risk premium. Beta measures the asset's sensitivity to systematic market movements; diversifiable, idiosyncratic risk is not rewarded by the model.",
+    continuation:
+      'Because only systematic risk is priced, an asset with high idiosyncratic volatility but a low beta can leave the required return almost unchanged.',
   },
 ]
 

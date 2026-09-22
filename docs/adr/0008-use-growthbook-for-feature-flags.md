@@ -1,6 +1,7 @@
 # 8. Use GrowthBook for shared feature flags
 
-- **Status:** Accepted — 2026-08-06
+- **Status:** Accepted — 2026-08-06; authorization constraint partially
+  superseded by [ADR 0038](./0038-backend-enforced-feature-entitlements.md)
 - **Deciders:** KlickerUZH maintainers
 
 ## Context
@@ -34,10 +35,13 @@ leak targeting context into one another.
 The shared actor attributes are stable Klicker id, actor type, and role. Each
 adapter owns the normalized deployment environment and adds it to evaluations.
 Email is excluded. Missing configuration, an invalid non-empty environment,
-and unavailable boolean definitions fail closed to false. Flags control rollout
-and presentation. A server-side flag may be a restrictive condition in an
-authorization gate, but it never replaces authentication, role, login-scope,
-ownership, or account-approval checks.
+and unavailable boolean definitions fail closed to false. At the time of this
+decision, flags controlled rollout and presentation only. ADR 0038 later
+permits a flag to become an additional backend-enforced feature entitlement;
+it still cannot replace authentication or resource authorization. A server-side
+flag may be a restrictive condition in an authorization gate, but it never
+replaces authentication, role, login-scope, ownership, or account-approval
+checks.
 
 Amendment, 2026-09-06: the approved beta authoring gate uses the database-owned
 `User.betaEnabled` preference, default `true`, as a trusted input to the
@@ -58,12 +62,14 @@ the preference; the enrollment capability returns unknown membership for weaker
 scopes without reading the preference. Catalyst is required to opt in, while full-access opt-out remains
 available without Catalyst.
 
-The database-owned `User.aiFeaturesEnabled`, default `false`, is the sole
-account approval gate for chatbot publication and model usage, even when budget
-enforcement is disabled. Beta preference and `ai-beta` rollout never grant
-that approval. Per-chatbot publication review and published participant access
-remain separate and unchanged. Token provisioning and validation belong to
-v3-ai, not this flag contract. See the
+The database-owned `User.aiFeaturesEnabled`, default `false`, remains the sole
+account approval gate for Knowledge Base access, question/graph generation,
+chatbot publication, and model usage, even when budget enforcement is
+disabled. Chatbot authoring is preapproval: the beta preference and `ai-beta`
+rollout may allow authoring without that approval, but neither grants it.
+Per-chatbot publication review and published participant access remain separate
+and unchanged. Token provisioning and validation belong to v3-ai, not this flag
+contract. See the
 [approved beta authoring plan](../../project/2026-09-05-v3-beta-authoring-gate-plan.md)
 and [the publication approval decision](./0020-two-tier-chatbot-approval.md).
 

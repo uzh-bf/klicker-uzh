@@ -11,8 +11,11 @@ import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as ElementGenerationService from '../services/elementGeneration.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import { getParticipantAccountDataUse } from '../services/participantAccountDataUse.js'
@@ -20,9 +23,11 @@ import * as ParticipantInvitationService from '../services/participantInvitation
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
+import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as TemplateService from '../services/templates.js'
+import * as AiFeatureGateService from '../lib/manageAiFeatureGate.js'
 import {
   ActivityDetails,
   CourseActivityList,
@@ -68,6 +73,11 @@ import {
   Tag,
   UserElementList,
 } from './element.js'
+import {
+  ElementGenerationBuildRef,
+  ElementGenerationCapabilitiesRef,
+  ElementGenerationSourceRef,
+} from './elementGeneration.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
@@ -77,6 +87,22 @@ import {
   GroupActivitySummary,
 } from './groupActivity.js'
 import {
+  KBKnowledgeGraphConfigType,
+  KBKnowledgeGraphDomainConfigType,
+  KnowledgeGraphResponseType,
+} from './kbKnowledgeGraph.js'
+import {
+  KB,
+  KBChatbotBinding,
+  KBConnection,
+  KBImportedSourceConnection,
+  KBIngestionRun,
+  KBIngestionStatus,
+  KBResourceConnection,
+  KBResourceMaterialType,
+  KBResourceType,
+} from './knowledge.js'
+import {
   Feedback,
   LiveQuiz,
   LiveQuizEmbeddingInfo,
@@ -84,6 +110,7 @@ import {
   LiveQuizSummary,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
+import { ManageAiCapabilityState } from './manageAi.js'
 import {
   Participant,
   ParticipantAccountDataUse,
@@ -105,11 +132,13 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
+  ChatbotAuthoringRevision,
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
   ChatModelCapability,
 } from './resource.js'
+import { ResponseExampleSet } from './responseExample.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -145,6 +174,10 @@ export const Query = builder.queryType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserFullAccess = {
+      ...asUser,
+      scope: DB.UserLoginScope.FULL_ACCESS,
+    }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
 
     return {
@@ -248,6 +281,12 @@ export const Query = builder.queryType({
         },
       }),
 
+      manageAiCapability: t.withAuth(asUser).field({
+        type: ManageAiCapabilityState,
+        resolve: async (_, __, ctx) => {
+          return await AiFeatureGateService.getManageAiCapability(ctx)
+        },
+      }),
       userProfile: t.withAuth(asUser).field({
         nullable: true,
         type: User,
@@ -282,6 +321,14 @@ export const Query = builder.queryType({
         type: [UserInfo],
         resolve: async (_, __, ctx) => {
           return await AccountService.getUsersPrivatePreview(ctx)
+        },
+      }),
+
+      getUsersAiFeatures: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: [UserInfo],
+        resolve: async (_, __, ctx) => {
+          return await AccountService.getUsersAiFeatures(ctx)
         },
       }),
 
@@ -1301,6 +1348,18 @@ export const Query = builder.queryType({
         },
       }),
 
+      studentMcpCoursePracticeQuiz: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PracticeQuiz,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getStudentMcpCoursePracticeQuiz(args, ctx)
+        },
+      }),
+
       getBookmarksPracticeQuiz: t.withAuth(asParticipant).field({
         nullable: true,
         type: ['Int'],
@@ -1470,6 +1529,167 @@ export const Query = builder.queryType({
         },
       }),
 
+      getUserKbsConnection: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBConnection,
+        args: {
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+          search: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getUserKbsConnection(args, ctx)
+        },
+      }),
+
+      getKb: t.withAuth(asUser).field({
+        nullable: false,
+        type: KB,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKb(args, ctx)
+        },
+      }),
+
+      getKbResources: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBResourceConnection,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+          search: t.arg.string({ required: false }),
+          type: t.arg({ type: KBResourceType, required: false }),
+          status: t.arg({ type: KBIngestionStatus, required: false }),
+          materialType: t.arg({
+            type: KBResourceMaterialType,
+            required: false,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbResourcesConnection(args, ctx)
+        },
+      }),
+
+      getKbImportedSources: t.withAuth(asUser).field({
+        nullable: false,
+        type: KBImportedSourceConnection,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          first: t.arg.int({ required: false }),
+          after: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbImportedSourcesConnection(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getKbChatbotBindings: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KBChatbotBinding],
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbChatbotBindings(args, ctx)
+        },
+      }),
+
+      getKbResourceIngestionRuns: t.withAuth(asUser).field({
+        nullable: false,
+        type: [KBIngestionRun],
+        args: { resourceId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbResourceIngestionRuns(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphConfig: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphConfigType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphConfig(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphDomainConfig: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphDomainConfigType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphDomainConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      getKbKnowledgeGraphOverview: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KnowledgeGraphResponseType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphOverview(args, ctx)
+        },
+      }),
+
+      searchKbKnowledgeGraph: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KnowledgeGraphResponseType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          query: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.searchKbKnowledgeGraph(args, ctx)
+        },
+      }),
+
+      getKbKnowledgeGraphNeighbors: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KnowledgeGraphResponseType,
+        args: {
+          kbId: t.arg.id({ required: true }),
+          nodeId: t.arg.id({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphNeighbors(args, ctx)
+        },
+      }),
+
+      elementGenerationCapabilities: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationCapabilitiesRef,
+        resolve: async (_, __, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.getElementGenerationCapabilities(ctx)
+          )
+        },
+      }),
+
+      elementGenerationSources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: [ElementGenerationSourceRef],
+        resolve: async (_, __, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.getElementGenerationSources(ctx)
+          )
+        },
+      }),
+
+      elementGenerationBuild: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, { id }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.getElementGenerationBuild(id, ctx)
+          )
+        },
+      }),
+
       getAnswerCollectionsElements: t.withAuth(asUser).field({
         nullable: true,
         type: [AnswerCollection],
@@ -1497,6 +1717,21 @@ export const Query = builder.queryType({
         },
       }),
 
+      getChatbotPendingRevision: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: ChatbotAuthoringRevision,
+        args: {
+          id: t.arg.string({ required: true }),
+          expectedRevisionVersion: t.arg.int({
+            required: false,
+            validate: { min: 0 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.getChatbotPendingRevision(args, ctx)
+        },
+      }),
+
       getChatbotPublishingCapability: t.withAuth(asChatbotAuthor).boolean({
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotPublishingCapability(ctx)
@@ -1511,6 +1746,20 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatAccountUsageService.getChatAccountUsage(args, ctx)
+        },
+      }),
+
+      getChatbotResponseExamples: t.withAuth(asUser).field({
+        nullable: true,
+        type: ResponseExampleSet,
+        args: {
+          chatbotId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ResponseExamplesService.getChatbotResponseExamples(
+            args,
+            ctx
+          )
         },
       }),
 
@@ -1529,8 +1778,8 @@ export const Query = builder.queryType({
       getChatModelRegistry: t.withAuth(asUser).field({
         nullable: false,
         type: [ChatModelCapability],
-        resolve: async () => {
-          return ChatbotsService.getChatModelRegistry()
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getManageChatModelRegistry(ctx)
         },
       }),
 

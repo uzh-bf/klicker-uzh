@@ -1,0 +1,164 @@
+name: Nightly manage-assistant eval (judge-based dimensions)
+
+# Runs the manage-assistant eval harness (evaluation/manage-assistant, see
+# its README) against a live, already-running apps/chat deployment. Unlike
+# every other workflow in this directory, this one deliberately does NOT
+# spin up Postgres/mcp-lecturer/chat service containers from scratch --
+# those apps are only ever built into Docker images and deployed elsewhere
+# in this repo's existing CI (see v3_chat-*.yml, v3_mcp-lecturer-*.yml),
+# never booted standalone inside a GitHub-hosted runner. This workflow
+# targets whichever reachable deployment the MANAGE_ASSISTANT_EVAL_* secrets
+# point at (e.g. a staging environment) -- it never provisions or tears down
+# any environment itself.
+#
+# Nightly + workflow_dispatch only, deliberately NOT on push/pull_request:
+# this exercises the judge-based E3 (grounding)/E4 (proposal quality)/E7
+# (degradation recovery) dimensions added on top of the judge-free E1/E5/E6
+# harness, spends real judge-model and app-model inference budget every run,
+# and is gated on a live external deployment being reachable -- none of
+# which belong on the PR hot path.
+#
+# Guard (skip cleanly, never fail red and never pass by vacuity, when the
+# judge is not configured): a separate `check-judge-secret` job fails
+# nothing and runs no tests -- it only inspects whether
+# MANAGE_ASSISTANT_EVAL_JUDGE_MODEL/_API_KEY are configured as repository
+# secrets and writes a job-summary explanation either way. The `eval` job
+# below only runs when both are present (`if: needs.check-judge-secret
+# .outputs.configured == 'true'`), so an unconfigured judge shows as a
+# cleanly SKIPPED job, not a failure and not a silent no-op. All secret
+# values are referenced by name only (`secrets.<NAME>`); none is ever
+# inlined here.
+#
+# Note the deliberate asymmetry between the two ways this workflow can end
+# up not measuring anything:
+#
+#   * judge not configured        -> clean SKIP (the guard job above). This is
+#                                    a known, declared state of the repo.
+#   * judge configured but the
+#     target is unreachable       -> hard FAILURE, via
+#                                    MANAGE_ASSISTANT_EVAL_REQUIRE_LIVE below.
+#
+# The harness's default local behavior is to skip cleanly (exit 0) when the
+# stack or DB is down, which is right for a developer but wrong here: it would
+# make a nightly that measured NOTHING report green, and a green safety gate
+# nobody can distinguish from "all dimensions passed" is worse than no gate.
+# `MANAGE_ASSISTANT_EVAL_REQUIRE_LIVE` inverts that default for this workflow
+# only (see tests/conftest.py).
+
+on:
+  schedule:
+    - cron: '34 3 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  check-judge-secret:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - name: Check whether the judge credential is configured
+        id: check
+        env:
+          JUDGE_MODEL: ${{ secrets.MANAGE_ASSISTANT_EVAL_JUDGE_MODEL }}
+          JUDGE_API_KEY: ${{ secrets.MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${JUDGE_MODEL}" ] && [ -n "${JUDGE_API_KEY}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Nightly manage-assistant eval: judge configured"
+              echo ""
+              echo "Both \`MANAGE_ASSISTANT_EVAL_JUDGE_MODEL\` and \`MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY\` are set -- proceeding to the live eval job."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Nightly manage-assistant eval: SKIPPED"
+              echo ""
+              echo "The judge model used to score E3 (grounding), E4 (proposal quality), and E7"
+              echo "(degradation recovery) is not configured, so the live eval job did not run --"
+              echo "this is a clean skip, not a failure."
+              echo ""
+              echo "Missing repository secret(s):"
+              if [ -z "${JUDGE_MODEL}" ]; then
+                echo "- \`MANAGE_ASSISTANT_EVAL_JUDGE_MODEL\`"
+              fi
+              if [ -z "${JUDGE_API_KEY}" ]; then
+                echo "- \`MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY\`"
+              fi
+              echo ""
+              echo "See evaluation/manage-assistant/README.md (\"Environment variables\") for the full list this harness reads, and src/manage_assistant_eval/judge.py for why these two specifically gate every judge-based check."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  eval:
+    needs: check-judge-secret
+    if: needs.check-judge-secret.outputs.configured == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          working-directory: evaluation/manage-assistant
+          python-version: '3.12'
+          enable-cache: true
+
+      - name: Install harness dependencies
+        working-directory: evaluation/manage-assistant
+        run: uv sync --locked
+
+      # Idempotent: creates the E6 indirect-injection collaborator fixtures
+      # if they don't already exist on the target DB, no-ops otherwise (see
+      # README "Seeding"). Safe to run every night.
+      # PYTHONPATH=src is required, not decorative: pyproject.toml sets
+      # `[tool.uv] package = false`, so the src/ layout is never installed into
+      # the venv, and its `pythonpath = ["src"]` lives under
+      # `[tool.pytest.ini_options]` -- which pytest honors and a bare
+      # `python -m` does not. Without this the step dies on
+      # `ModuleNotFoundError: No module named 'manage_assistant_eval'`.
+      - name: Seed E6 indirect-injection fixtures
+        working-directory: evaluation/manage-assistant
+        run: PYTHONPATH=src uv run python -m manage_assistant_eval.seed --seed
+        env:
+          DATABASE_URL: ${{ secrets.MANAGE_ASSISTANT_EVAL_DATABASE_URL }}
+          KLICKER_LECTURER_SUB: ${{ secrets.MANAGE_ASSISTANT_EVAL_LECTURER_SUB }}
+
+      # Runs the FULL suite (E1/E5/E6, judge-free, plus the new E3/E4/E7
+      # judge-based dimensions) -- not just the new dimensions -- so a
+      # nightly regression in the older judge-free checks is caught too.
+      - name: Run manage-assistant eval suite
+        working-directory: evaluation/manage-assistant
+        run: uv run pytest -v
+        env:
+          # Turns "target unreachable" and "zero cases recorded" from a clean
+          # skip into a failure, so this job can never go green without having
+          # actually measured the dimensions. See this file's header.
+          MANAGE_ASSISTANT_EVAL_REQUIRE_LIVE: '1'
+          KLICKER_CHAT_BASE_URL: ${{ secrets.MANAGE_ASSISTANT_EVAL_CHAT_BASE_URL }}
+          APP_SECRET: ${{ secrets.MANAGE_ASSISTANT_EVAL_APP_SECRET }}
+          DATABASE_URL: ${{ secrets.MANAGE_ASSISTANT_EVAL_DATABASE_URL }}
+          KLICKER_LECTURER_SUB: ${{ secrets.MANAGE_ASSISTANT_EVAL_LECTURER_SUB }}
+          MANAGE_ASSISTANT_EVAL_JUDGE_MODEL: ${{ secrets.MANAGE_ASSISTANT_EVAL_JUDGE_MODEL }}
+          MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY: ${{ secrets.MANAGE_ASSISTANT_EVAL_JUDGE_API_KEY }}
+          MANAGE_ASSISTANT_EVAL_JUDGE_API_BASE: ${{ secrets.MANAGE_ASSISTANT_EVAL_JUDGE_API_BASE }}
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Nightly manage-assistant eval: ran"
+            echo ""
+            echo "Result: \`${{ job.status }}\`. Full per-dimension score summary (E1/E3/E4/E5/E6/E7) is in the \"Run manage-assistant eval suite\" step log above (\`ResultCollector.print_summary\`)."
+          } >> "$GITHUB_STEP_SUMMARY"

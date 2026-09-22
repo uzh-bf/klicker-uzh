@@ -1,0 +1,8 @@
+mutation AttachKbToChatbot($kbId: ID!, $chatbotId: ID!) {
+  attachKbToChatbot(kbId: $kbId, chatbotId: $chatbotId) {
+    chatbotId
+    chatbotName
+    enabledKbId
+    enabledKbName
+  }
+}

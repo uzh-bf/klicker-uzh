@@ -336,6 +336,21 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/arm64
+          # Public build-time configuration for the web images (auth, chat,
+          # frontend-control, frontend-manage and frontend-pwa, which also
+          # builds the assessment image). These Dockerfiles are the only ones
+          # that declare the arguments and a Dockerfile that does not declare
+          # one ignores it, so the values ride along with every build leg.
+          # All web targets are independent-stage, so they all build here. The
+          # workflow publishes from branches only, so the environment stays
+          # staging. An empty eLearning origin allowlist makes the embedded
+          # chat treat every context message as untrusted and answer without
+          # page context.
+          build-args: |
+            NEXT_PUBLIC_ENV=staging
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}
           # A publication reads and writes only the trusted namespace of the
           # current epoch; a pull request reads and writes only the untrusted
           # one. See the workflow header for the freshness contract.

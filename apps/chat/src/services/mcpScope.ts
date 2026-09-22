@@ -1,14 +1,16 @@
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 
 export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
-export const DOC_QUERY_SCOPE_TOKEN_HEADER = 'X-Doc-Query-Scope-Token'
-export const DOC_QUERY_SCOPED_ROUTE_PATH = '/mcp/klicker/kb'
-
-const DOC_QUERY_SCOPED_ROUTE_ENV = {
-  serverId: 'DOC_QUERY_SCOPED_MCP_SERVER_ID',
-  legacyUrl: 'DOC_QUERY_SCOPED_MCP_LEGACY_URL',
-  url: 'DOC_QUERY_SCOPED_MCP_URL',
-} as const
+export const DOC_QUERY_TOOL_NAME = `${DOC_QUERY_MCP_SERVER_NAME}_doc_query`
+// The shared doc-query client owns the transport-security allowlist and the
+// scope-token header so the chat and graphql workloads cannot drift apart.
+export {
+  assertDocQueryTransportSecurity,
+  createDocQueryScopedFetch,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  type DocQueryScopedFetch,
+  resolveDocQueryScopedRoute,
+} from '@klicker-uzh/doc-query-client'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -28,7 +30,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function requiredScopeError(): never {
-  throw new RequiredMCPUnavailableError()
+  // Scope binding and isolation failures must never be softened into a
+  // page-only answer, so they carry the fail-closed reason.
+  throw new RequiredMCPUnavailableError('scope_violation')
 }
 
 type ResolvedMcpScope = {
@@ -93,9 +97,6 @@ function resolveDocQueryParameters(value: unknown): ResolvedDocQueryParameters {
       representation: 'kb_id',
     }
   }
-  if (!Array.isArray(parameters.kb_ids) || parameters.kb_ids.length < 2) {
-    requiredScopeError()
-  }
   return {
     kbIds: normalizeDocQueryKbIds(parameters.kb_ids),
     representation: 'kb_ids',
@@ -114,115 +115,6 @@ export function assertDocQueryRequestScope(
   ) {
     requiredScopeError()
   }
-}
-
-function isInternalTransportHost(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  if (
-    host === 'localhost' ||
-    host === '::1' ||
-    host.endsWith('.svc') ||
-    host.endsWith('.internal') ||
-    host.endsWith('.local')
-  ) {
-    return true
-  }
-  const parts = host.split('.')
-  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) {
-    return false
-  }
-  const [first, second] = parts.map((part) => Number(part))
-  return (
-    first === 10 ||
-    first === 127 ||
-    (first === 172 && second >= 16 && second <= 31) ||
-    (first === 192 && second === 168)
-  )
-}
-
-/**
- * Doc Query credentials must not traverse a public network in cleartext.
- * Plain HTTP is accepted only for clearly internal endpoints such as
- * loopback, cluster-local, or RFC1918 addresses; every other target must
- * use HTTPS before any credential header is attached.
- */
-export function assertDocQueryTransportSecurity(rawUrl: string): void {
-  let url: URL
-  try {
-    url = new URL(rawUrl)
-  } catch {
-    throw new Error('Doc Query transport URL is invalid')
-  }
-  if (url.protocol === 'https:') return
-  if (url.protocol === 'http:' && isInternalTransportHost(url.hostname)) {
-    return
-  }
-  throw new Error('Doc Query transport requires HTTPS')
-}
-
-function canonicalEndpointUrl(value: unknown): URL {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    requiredScopeError()
-  }
-
-  let url: URL
-  try {
-    url = new URL(value.trim())
-  } catch {
-    requiredScopeError()
-  }
-
-  // Credentials are attached to an exact, unambiguous destination only.
-  if (url.username || url.password || url.search || url.hash) {
-    requiredScopeError()
-  }
-
-  return url
-}
-
-/**
- * Resolves the deployment-controlled destination of the scoped KB route.
- * Attendance of all three variables activates scope-only transport
- * authentication; a partial or inconsistent configuration fails closed
- * before any credential is minted. The stored knowledge-base URL is only a
- * binding check, so a database URL edit cannot redirect a scope token.
- */
-export function resolveDocQueryScopedRoute(server: {
-  id?: unknown
-  name?: unknown
-  url?: unknown
-  isActive?: unknown
-}): URL | undefined {
-  if (!isRecord(server) || server.name !== DOC_QUERY_MCP_SERVER_NAME) {
-    return undefined
-  }
-
-  const configured = {
-    serverId: process.env[DOC_QUERY_SCOPED_ROUTE_ENV.serverId]?.trim() ?? '',
-    legacyUrl: process.env[DOC_QUERY_SCOPED_ROUTE_ENV.legacyUrl]?.trim() ?? '',
-    url: process.env[DOC_QUERY_SCOPED_ROUTE_ENV.url]?.trim() ?? '',
-  }
-  const present = Object.values(configured).filter(
-    (value) => value.length > 0
-  ).length
-
-  if (present === 0) return undefined
-  if (present !== Object.keys(configured).length) requiredScopeError()
-
-  if (server.isActive === false) requiredScopeError()
-  if (server.id !== configured.serverId) requiredScopeError()
-
-  const boundRowUrl = canonicalEndpointUrl(server.url)
-  const expectedRowUrl = canonicalEndpointUrl(configured.legacyUrl)
-  if (boundRowUrl.href !== expectedRowUrl.href) requiredScopeError()
-
-  const targetUrl = canonicalEndpointUrl(configured.url)
-  if (targetUrl.origin !== expectedRowUrl.origin) requiredScopeError()
-  if (targetUrl.pathname !== DOC_QUERY_SCOPED_ROUTE_PATH) requiredScopeError()
-
-  assertDocQueryTransportSecurity(targetUrl.href)
-
-  return targetUrl
 }
 
 function resolveKbConfiguration(
@@ -359,4 +251,38 @@ export function resolveMcpScope(
   )
 
   return [...kbConfigurations[0].kbIds]
+}
+
+export function resolveMcpScopeSessionId({
+  requestedThreadId,
+  owningThreadId,
+  fallbackId,
+}: {
+  requestedThreadId?: string | null
+  owningThreadId?: string
+  fallbackId: string
+}): string | null {
+  if (requestedThreadId && requestedThreadId !== owningThreadId) {
+    return null
+  }
+
+  return owningThreadId ?? fallbackId
+}
+
+export function canLoadMCPServer(
+  server: { name: string; authType: string },
+  context: {
+    chatbotId?: string
+    participantId?: string
+    kbIds?: readonly string[]
+    sessionId?: string
+  }
+): boolean {
+  const authType = server.authType.toLowerCase()
+
+  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+    return Boolean(context.kbIds?.length) && Boolean(context.sessionId)
+  }
+
+  return authType !== 'scope_token'
 }

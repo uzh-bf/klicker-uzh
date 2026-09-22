@@ -22,8 +22,17 @@ export * from './email.js'
 // export everything from the auth helpers module
 export * from './auth.js'
 
+// export everything from the client auth helpers module
+export * from './clientAuth.js'
+
 // export everything from the crypto module
 export * from './crypto.js'
+
+// export everything from the KB webhook module
+export * from './kbWebhook.js'
+
+// export Blob Storage endpoint resolution
+export * from './blobStorage.js'
 
 // export everything from the identity module
 export * from './identity.js'
@@ -37,4 +46,6 @@ export * from './chatModelRegistry.js'
 // export standard chatbot mode configuration validation and normalization
 export * from './chatbotStandardModeConfig.js'
 
+// export everything from the eLearning chat handoff module
+export * from './elearningChatHandoff.js'
 export * from './participantAccountDataUse.js'

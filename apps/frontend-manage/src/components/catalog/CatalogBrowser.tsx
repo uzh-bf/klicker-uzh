@@ -37,7 +37,7 @@ function CatalogBrowser({
   }
 
   return (
-    <div className="h-full">
+    <div className="min-h-full shrink-0">
       <PendingSharingRequests />
       <ObjectImport
         collectionName={metaData?.getCatalogCollectionInfo?.name}

@@ -2,16 +2,19 @@ import { useTranslations } from 'next-intl'
 import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
+import { authedFetch } from '../lib/client/authedFetch'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
+import { useChatContextStore } from '../stores/chatContextStore'
 import {
   useChatStore,
   type ExtendedThreadMessageLike,
   type ThreadRunOutcome,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { requestFreshElearningChatContext } from './useEmbeddedChatContext'
 
 type GenerateChatResponseOptions = {
   allowRegeneration?: boolean
@@ -38,6 +41,7 @@ export function useChatResponse(
   selectedReasoningEffort: ReasoningEffort
 ) {
   const { chatbotId } = useParams<{ chatbotId: string }>()
+  const chatContext = useChatContextStore((state) => state.context)
   const t = useTranslations()
 
   const loadCredits = useSettingsStore((state) => state.loadCredits)
@@ -191,9 +195,23 @@ export function useChatResponse(
           ]
         }
 
+        // A new embedded eLearning question re-requests the page snapshot from
+        // the host: the launch snapshot can expire or describe a page the
+        // student has left, and a completion change arrives without navigation.
+        // Edits and regenerations keep the server-side historical context.
+        const isBranchOrRegeneration = Boolean(
+          options.allowRegeneration ||
+            resolvedTriggerMessage?.attachmentSourceMessageId
+        )
+        const requestChatContext =
+          !isBranchOrRegeneration &&
+          (chatContext?.source === 'elearning' || chatContext == null)
+            ? await requestFreshElearningChatContext()
+            : chatContext
+
         // send request to API with streaming enabled
         const handoffSource = readHandoffSource()
-        const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
+        const response = await authedFetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: abortController.signal,
@@ -217,7 +235,12 @@ export function useChatResponse(
             selectedModel,
             selectedMode,
             reasoningEffort: selectedReasoningEffort,
+            chatContext: requestChatContext ?? undefined,
             parentId: parentId || undefined,
+            // A branch (edit) keeps the original question's learning context
+            // instead of the page that happens to be live now.
+            sourceMessageId:
+              resolvedTriggerMessage?.attachmentSourceMessageId || undefined,
             assistantMessageId,
             ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
             ...(handoffSource ? { handoffSource } : {}),
@@ -831,6 +854,7 @@ export function useChatResponse(
       selectedMode,
       selectedReasoningEffort,
       chatbotId,
+      chatContext,
       loadCredits,
       t,
     ]

@@ -10,6 +10,7 @@ KLICKER_PROFILE_AUTH_ROOT='--filter=@klicker-uzh/auth'
 KLICKER_PROFILE_MANAGE_ROOT='--filter=@klicker-uzh/frontend-manage'
 KLICKER_PROFILE_PWA_ROOT='--filter=@klicker-uzh/frontend-pwa'
 KLICKER_PROFILE_CHAT_ROOT='--filter=@klicker-uzh/chat'
+KLICKER_PROFILE_MCP_LECTURER_ROOT='--filter=@klicker-uzh/mcp-lecturer'
 KLICKER_PROFILE_CONTROL_ROOT='--filter=@klicker-uzh/frontend-control'
 KLICKER_PROFILE_RESPONSE_ROOT='--filter=@klicker-uzh/response-api'
 KLICKER_PROFILE_WORKER_GENERAL_ROOT='--filter=@klicker-uzh/hatchet-worker-general'
@@ -20,6 +21,13 @@ _profile_components() {
   local -a components=()
 
   [ -n "$remaining" ] || return 2
+  # Fresh isolated setup prepares the container before the database is seeded.
+  # It must select no application processes and cannot combine with app profiles.
+  if [ "$remaining" = local-kb-setup ]; then
+    [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" = 1 ] || return 2
+    printf '%s\n' local-kb-setup
+    return 0
+  fi
   while true; do
     if [[ "$remaining" == *,* ]]; then
       component="${remaining%%,*}"
@@ -33,7 +41,7 @@ _profile_components() {
     component="${component#"${component%%[![:space:]]*}"}"
     component="${component%"${component##*[![:space:]]}"}"
     case "$component" in
-      full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|eduid) ;;
+      standard|full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|workers|eduid) ;;
       *) return 2 ;;
     esac
     components+=("$component")
@@ -55,11 +63,14 @@ profile_wants() {
   for component in $components; do
     case "${component}" in
       full) return 0 ;;
+      standard) [ "$marker" != klicker-local-mcp ] && return 0 ;;
       # 'playwright' mirrors the maximal routed app set from .devrouter.yml:
       # every app, but neither workers nor optional processes.
       playwright) [ "$marker" = klicker-dev ] && return 0 ;;
       manage|pwa|chat) [ "$marker" = klicker-dev ] && return 0 ;;
-      live-quiz)
+      # Worker selections start the dev process and require both worker
+      # runtimes; live-quiz adds application routes, workers does not.
+      live-quiz|workers)
         case "$marker" in
           klicker-dev|klicker-workers) return 0 ;;
         esac
@@ -67,7 +78,7 @@ profile_wants() {
       mcp) [ "$marker" = klicker-local-mcp ] && return 0 ;;
       # `eduid` only routes the local Edu-ID OIDC mock, so it starts no
       # managed process of its own and adds nothing to a merged selection.
-      ai|email|eduid) ;;
+      ai|email|local-kb-setup|eduid) ;;
       *) return 2 ;;
     esac
   done
@@ -78,6 +89,7 @@ profile_wants() {
 # 'full' starts every routed app plus both workers (turbo default: no filter).
 profile_turbo_filters() {
   local filters="" component components status
+  local wants_chat=false wants_manage=false
   profile_wants klicker-dev
   status=$?
   [ "$status" -eq 2 ] && return 2
@@ -85,20 +97,35 @@ profile_turbo_filters() {
   components="$(_profile_components)" || return 2
   for component in $components; do
     case "${component}" in
-      full) return 0 ;;
+      standard|full) return 0 ;;
       playwright)
         filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT} ${KLICKER_PROFILE_PWA_ROOT} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_CONTROL_ROOT} ${KLICKER_PROFILE_RESPONSE_ROOT}"
         ;;
-      manage) filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT}" ;;
+      manage)
+        filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT}"
+        wants_manage=true
+        ;;
       pwa) filters="${filters} ${KLICKER_PROFILE_PWA_ROOT}" ;;
-      chat) filters="${filters} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_PWA_ROOT}" ;;
+      chat)
+        filters="${filters} ${KLICKER_PROFILE_CHAT_ROOT} ${KLICKER_PROFILE_PWA_ROOT}"
+        wants_chat=true
+        ;;
       live-quiz)
         filters="${filters} ${KLICKER_PROFILE_PWA_ROOT} ${KLICKER_PROFILE_CONTROL_ROOT} ${KLICKER_PROFILE_RESPONSE_ROOT} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
+        ;;
+      # Worker-only selections carry no application routes or readiness probes.
+      # Both worker roots match the klicker-workers contract that post-start
+      # verifies by waiting for both worker runtimes to become live.
+      workers)
+        filters="${filters} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
         ;;
       mcp|ai|email|eduid) ;;
       *) return 2 ;;
     esac
   done
+  if [ "$wants_chat" = true ] && [ "$wants_manage" = true ]; then
+    filters="${filters} ${KLICKER_PROFILE_MCP_LECTURER_ROOT}"
+  fi
   printf '%s %s %s\n' "${KLICKER_PROFILE_BACKEND_ROOT}" "${KLICKER_PROFILE_AUTH_ROOT}" "${filters}" \
     | tr ' ' '\n' | awk 'NF && !seen[$0]++' | paste -sd' ' -
 }
@@ -106,6 +133,7 @@ profile_turbo_filters() {
 # profile_readiness_apps: runtime apps whose semantic readiness must be proven.
 profile_readiness_apps() {
   local apps="" component components status
+  local wants_chat=false wants_manage=false
   profile_wants klicker-dev
   status=$?
   [ "$status" -eq 2 ] && return 2
@@ -113,15 +141,24 @@ profile_readiness_apps() {
   components="$(_profile_components)" || return 2
   for component in $components; do
     case "${component}" in
-      full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
+      standard|full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
       playwright) apps="${apps} chat frontend-control frontend-manage frontend-pwa response-api" ;;
-      manage) apps="${apps} frontend-manage" ;;
+      manage)
+        apps="${apps} frontend-manage"
+        wants_manage=true
+        ;;
       pwa) apps="${apps} frontend-pwa" ;;
-      chat) apps="${apps} chat frontend-pwa" ;;
+      chat)
+        apps="${apps} chat frontend-pwa"
+        wants_chat=true
+        ;;
       live-quiz) apps="${apps} frontend-control frontend-pwa response-api" ;;
-      mcp|ai|email|eduid) ;;
+      mcp|ai|email|workers|eduid) ;;
       *) return 2 ;;
     esac
   done
+  if [ "$wants_chat" = true ] && [ "$wants_manage" = true ]; then
+    apps="${apps} mcp-lecturer"
+  fi
   printf 'auth %s\n' "$apps" | tr ' ' '\n' | awk 'NF && !seen[$0]++' | paste -sd' ' -
 }

@@ -292,6 +292,7 @@ export const TemplateElementManipulationInput =
       name: t.string({ required: false }),
       content: t.string({ required: false }),
       explanation: t.string({ required: false }),
+      difficultyLevel: t.int({ required: false }),
       choicesOptions: t.field({ type: OptionsChoicesInput, required: false }),
       numericalOptions: t.field({
         type: OptionsNumericalInput,
@@ -742,6 +743,7 @@ const sharedElementProps = (t: any) => ({
   type: t.expose('type', { type: ElementType }),
   content: t.exposeString('content'),
   explanation: t.exposeString('explanation', { nullable: true }),
+  difficultyLevel: t.exposeInt('difficultyLevel', { nullable: true }),
   basePoints: t.exposeBoolean('basePoints'),
   pointsMultiplier: t.exposeInt('pointsMultiplier'),
 
