@@ -4907,7 +4907,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
       chatbotWorkspaceBehaviorDescription:
-        'Choose learning modes, framing, and the model policy used by this chatbot.',
+        'Choose the learning modes and framing used by this chatbot.',
       chatbotWorkspaceDisclaimerDescription:
         'Edit the participant-facing introduction and review the fixed institutional sections.',
       chatbotWorkspaceKnowledgeDescription:
@@ -4996,7 +4996,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
       chatbotSetupEdit: 'Edit',
       chatbotSetupPublicationNote:
-        'Participant credit settings are saved separately and shown here for review. Publication details are submitted with your request and can be edited until you submit.',
+        'Publication details are submitted with your request and can be edited until you submit.',
       chatbotDiscardChangesConfirmation:
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:
