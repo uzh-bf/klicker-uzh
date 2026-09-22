@@ -7,7 +7,7 @@
   ],
   "initializeCommand": "bash .devcontainer/initialize.sh",
   "forwardPorts": [
-    3000, 3001, 3002, 3003, 3004, 3010, 3030, 4000, 7078, 8025, 8888, 5432
+    3000, 3001, 3002, 3003, 3004, 3010, 3030, 4000, 7078, 8025, 8090, 8888, 5432
   ],
   "service": "app",
   "workspaceFolder": "/workspaces/klicker-uzh",
@@ -20,7 +20,8 @@
     "redis_cache",
     "mailhog",
     "hatchet",
-    "litellm"
+    "litellm",
+    "oidc"
   ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "waitFor": "postCreateCommand",
