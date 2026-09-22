@@ -2243,11 +2243,10 @@ export const Mutation = builder.mutationType({
         args: {
           kbId: t.arg.id({ required: true }),
           qualityTier: t.arg({ type: KBGraphQualityTier, required: false }),
-          // An omitted triple is the legacy path, so one mutation can serve a
-          // deployment whose capability gate is closed.
-          domainPolicyId: t.arg.id({ required: false }),
-          domainPolicyVersion: t.arg.int({ required: false }),
-          domainPolicyLanguage: t.arg.string({ required: false }),
+          // The subject area and language belong to the knowledge base, so the
+          // build reads them there rather than accepting them per request. This
+          // mutation still differs from the plain rebuild by reporting the
+          // domain the resulting build runs with.
           focusTopic: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
