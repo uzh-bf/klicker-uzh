@@ -55,6 +55,15 @@ function invalidInputResponse() {
   )
 }
 
+/** Both writers answer a failed write the same way; only the log differs. */
+function dataUseWriteErrorResponse(error: unknown, failureMessage: string) {
+  const status = dataUseErrorStatus(error)
+  if (status === 500) {
+    console.error(failureMessage, error)
+  }
+  return NextResponse.json(dataUseErrorBody(error), { status })
+}
+
 /**
  * Read the participant's data-use state. This route stays reachable while the
  * account is incomplete, because it is the surface that completes it.
@@ -130,11 +139,10 @@ export async function POST(
       state: await loadChatDataUseState(saved.id),
     })
   } catch (error) {
-    const status = dataUseErrorStatus(error)
-    if (status === 500) {
-      console.error('Failed to complete participant data use in chat:', error)
-    }
-    return NextResponse.json(dataUseErrorBody(error), { status })
+    return dataUseWriteErrorResponse(
+      error,
+      'Failed to complete participant data use in chat:'
+    )
   }
 }
 
@@ -182,10 +190,9 @@ export async function PATCH(
       state: await loadChatDataUseState(saved.id),
     })
   } catch (error) {
-    const status = dataUseErrorStatus(error)
-    if (status === 500) {
-      console.error('Failed to update participant data use in chat:', error)
-    }
-    return NextResponse.json(dataUseErrorBody(error), { status })
+    return dataUseWriteErrorResponse(
+      error,
+      'Failed to update participant data use in chat:'
+    )
   }
 }

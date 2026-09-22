@@ -31,6 +31,10 @@ interface DataUseResponse {
   state: ChatDataUseState
 }
 
+function dataUseEndpoint(chatbotId: string) {
+  return `/api/chatbots/${chatbotId}/data-use`
+}
+
 /**
  * Reload the persisted state through the same route the completion writes to.
  * A stale revision can only be answered with the current revision and the
@@ -40,7 +44,7 @@ async function fetchDataUseState(
   chatbotId: string
 ): Promise<ChatDataUseState | null> {
   try {
-    const response = await authedFetch(`/api/chatbots/${chatbotId}/data-use`)
+    const response = await authedFetch(dataUseEndpoint(chatbotId))
     if (!response.ok) return null
     const data = (await response.json()) as DataUseResponse
     return data.state ?? null
@@ -100,19 +104,16 @@ export function ParticipantDataUseGate({
     setSaving(true)
     setFailed(false)
     try {
-      const response = await authedFetch(
-        `/api/chatbots/${chatbotId}/data-use`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            expectedRevision: currentState.dataUseRevision,
-            researchConsent,
-            learningAnalyticsConsent,
-            acknowledged: true,
-          }),
-        }
-      )
+      const response = await authedFetch(dataUseEndpoint(chatbotId), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          expectedRevision: currentState.dataUseRevision,
+          researchConsent,
+          learningAnalyticsConsent,
+          acknowledged: true,
+        }),
+      })
 
       if (!response.ok) {
         const isConflict = response.status === 409
@@ -123,9 +124,6 @@ export function ParticipantDataUseGate({
         setFailed(true)
         setAcknowledged(false)
         if (isConflict) {
-          // Only a reload that actually reaches the server leaves the step
-          // retryable; keeping the conflict flag makes a repeat attempt
-          // impossible rather than overwriting a newer decision.
           const reloaded = await fetchDataUseState(chatbotId)
           if (reloaded) {
             setCurrentState(reloaded)
@@ -137,8 +135,13 @@ export function ParticipantDataUseGate({
                 ? reloaded.learningAnalyticsConsent
                 : undefined
             )
-            setConflict(false)
+            setFailed(false)
           }
+          // The server rejects a stale revision, so a repeat attempt can never
+          // overwrite the newer decision. Leaving the step blocked when the
+          // reload itself failed would only strand the participant; a retry
+          // reloads the reported revision again.
+          setConflict(false)
         }
         router.refresh()
         return
@@ -242,12 +245,12 @@ export function ParticipantDataUseSettings({
   const [conflict, setConflict] = useState(false)
 
   useEffect(() => {
-    if (!open || state) return
+    if (!open) return
 
     let active = true
     setLoading(true)
     setFailed(false)
-    authedFetch(`/api/chatbots/${chatbotId}/data-use`)
+    authedFetch(dataUseEndpoint(chatbotId))
       .then(async (response) => {
         if (!active) return
         if (!response.ok) {
@@ -267,7 +270,7 @@ export function ParticipantDataUseSettings({
     return () => {
       active = false
     }
-  }, [open, state, chatbotId])
+  }, [open, chatbotId])
 
   async function updateChoice(
     purpose: 'research' | 'analytics',
@@ -278,18 +281,15 @@ export function ParticipantDataUseSettings({
     setSaving(true)
     setFailed(false)
     try {
-      const response = await authedFetch(
-        `/api/chatbots/${chatbotId}/data-use`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            purpose,
-            consent,
-            expectedRevision: state.dataUseRevision,
-          }),
-        }
-      )
+      const response = await authedFetch(dataUseEndpoint(chatbotId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purpose,
+          consent,
+          expectedRevision: state.dataUseRevision,
+        }),
+      })
       if (!response.ok) {
         const isConflict = response.status === 409
         setFailed(true)
