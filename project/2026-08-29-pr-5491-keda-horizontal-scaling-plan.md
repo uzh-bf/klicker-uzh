@@ -1439,9 +1439,11 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   shows no Pending Pods and no OOM kills for seven days.
 - **Test obligation:** No new test. Existing render and ownership checks cover
   the values change.
-- **Commit:** One values PR for the replica restore. One values PR for the
-  request corrections, with the evidence table in its description. Production
-  tracks `v3`, so each needs its own `v3-ai` → `v3` promotion PR.
+- **Commit:** One values change for the replica restore and one for the
+  request corrections, with the evidence table in the description. Each
+  change is a companion pair: a PR against `v3`, which production renders,
+  and an identical PR against `v3-ai`, merged together. The deploy-parity
+  check fails any `v3` PR whose `deploy/` differs from `v3-ai`.
 - **Problem:** The temporary 72-hour replica increase is still live two weeks
   later. CPU requests reserve about 4.2 cores for a fleet that peaks at 1.46.
   The MCP servers request 50Mi against targets above 130Mi. Production
@@ -1460,8 +1462,8 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   (4) Leave assessment requests unchanged; the reserved pool is sized by A7.
 - **Check:** Render and ownership checks; read back live requests, Pending
   Pods, OOM kills, and per-pool requested capacity after rollout.
-- **Working context:** New branches off `v3-ai`, for example
-  `rs/prd-replica-restore` and `rs/prd-request-rightsizing`.
+- **Working context:** Companion branches off `v3` and `v3-ai`, for example
+  `rs/prd-replica-restore` and `rs/prd-replica-restore-v3ai`.
 - **Authority and terminal:** A5 authorizes the production replica restore and
   its rollout. The request PR follows standing implementation delivery;
   production rollout of it needs its own deployment approval. Terminal is the
@@ -1649,8 +1651,14 @@ a values edit.
   at 1.46 of 4.2 requested cores. The MCP servers under-request memory.
 - **Plan change:** Added W11 (capacity baseline), W12 (HTTP spot burst tier),
   W13 (staging on spot), gates A5–A7, and the `df/df-cloud` dependency.
-- **Next action:** A5 ruling on the replica restore, then W11. W12 chart work
-  and W2 can proceed in parallel; W12 activation waits for A6.
+- **Rulings, same day:** The user agreed to the recommendations. A5 approves
+  restoring PWA, GraphQL, response API, and the live response worker to 4 and
+  OLAT API and chat to 1; the general worker stays at 4. A6 is agreed in
+  principle; the choice between a higher `asyncspot` maximum and a separate
+  HTTP spot pool stays open until W12's chart slice exists. A7 has no ruling.
+- **Next action:** Land the W11 restore as a `v3` and `v3-ai` companion pair,
+  then the W11 request corrections. W12 chart work and W2 can proceed in
+  parallel; W12 activation waits for the A6 pool choice.
 
 ### Roadmap extension — 2026-09-06, later
 
