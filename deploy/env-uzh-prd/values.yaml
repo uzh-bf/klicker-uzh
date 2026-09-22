@@ -79,7 +79,7 @@ hatchet:
               app.kubernetes.io/component: hatchet-worker-general
 
     responseProcessor:
-      replicaCount: 6
+      replicaCount: 4
       podDisruptionBudget:
         minAvailable: 2
       priorityClassName: production-workload
@@ -235,7 +235,7 @@ chat:
     enabled: false
     environment: 'production'
 
-  replicaCount: 2
+  replicaCount: 1
 
   automaticModels:
     primaryId: auto
@@ -478,7 +478,7 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 6
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -666,7 +666,7 @@ backendGraphql:
       flashcardRetryMinorUnits: '1'
       pricingVersion: 'prd-elements-v1'
 
-  replicaCount: 6
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -735,7 +735,7 @@ backendGraphql:
 olatApi:
   priorityClassName: production-workload
 
-  replicaCount: 2
+  replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
@@ -838,7 +838,7 @@ responseApi:
 
   priorityClassName: production-workload
 
-  replicaCount: 6
+  replicaCount: 4
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
