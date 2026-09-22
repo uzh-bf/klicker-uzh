@@ -92,12 +92,7 @@ export function ParticipantDataUseGate({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
-    if (
-      !acknowledged ||
-      learningAnalyticsConsent === undefined ||
-      saving ||
-      conflict
-    ) {
+    if (!acknowledged || learningAnalyticsConsent === undefined || saving) {
       return
     }
 
@@ -118,10 +113,9 @@ export function ParticipantDataUseGate({
       if (!response.ok) {
         const isConflict = response.status === 409
         // A conflicting revision means another session recorded a decision
-        // first. Reloading and clearing the local intent keeps this attempt
-        // from pairing old choices with the newer revision.
-        setConflict(isConflict)
-        setFailed(true)
+        // first, so the local choices are dropped and the acknowledgement is
+        // cleared: a repeat attempt must never pair old intent with the newer
+        // revision the server reports.
         setAcknowledged(false)
         if (isConflict) {
           const reloaded = await fetchDataUseState(chatbotId)
@@ -135,13 +129,19 @@ export function ParticipantDataUseGate({
                 ? reloaded.learningAnalyticsConsent
                 : undefined
             )
+            setConflict(false)
             setFailed(false)
+          } else {
+            // The stored revision is still unknown, so report the stale page
+            // instead of a system error. The submit stays available: every
+            // retry reloads the reported revision first, and the server
+            // rejects a stale revision anyway.
+            setConflict(true)
+            setFailed(true)
           }
-          // The server rejects a stale revision, so a repeat attempt can never
-          // overwrite the newer decision. Leaving the step blocked when the
-          // reload itself failed would only strand the participant; a retry
-          // reloads the reported revision again.
+        } else {
           setConflict(false)
+          setFailed(true)
         }
         router.refresh()
         return
@@ -291,18 +291,22 @@ export function ParticipantDataUseSettings({
         }),
       })
       if (!response.ok) {
-        const isConflict = response.status === 409
-        setFailed(true)
-        setConflict(isConflict)
-        if (isConflict) {
+        if (response.status === 409) {
           // Retrying with the stale revision can only fail again, so adopt the
-          // revision the server just reported.
+          // revision the server just reported instead of reporting a failure.
           const reloaded = await fetchDataUseState(chatbotId)
           if (reloaded) {
             setState(reloaded)
             setConflict(false)
+            setFailed(false)
+            return
           }
+          setConflict(true)
+          setFailed(true)
+          return
         }
+        setConflict(false)
+        setFailed(true)
         return
       }
       const data = (await response.json()) as DataUseResponse
