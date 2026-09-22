@@ -1,0 +1,94 @@
+---
+title: Knowledge Bases and AI-Assisted Element Generation
+---
+
+Knowledge Bases let you organize teaching materials for AI-supported workflows.
+You can use an indexed knowledge base and its published knowledge graph to
+create draft Klicker elements. Review every generated element before keeping
+it in your library.
+
+## How do I create and prepare a Knowledge Base?
+
+1. Open **Resources** and select **Knowledge Bases**.
+2. Select **Create knowledge base**, enter a name and, if useful, a
+   description, and select **Create**.
+3. In the new knowledge base, select **Add resource** and choose **Document**
+   or **Website**.
+4. For a document, upload a PDF, TXT, or Markdown file. For a website, enter
+   its title and URL. Choose the appropriate material category when prompted.
+5. Select **Ingest all** and confirm with **Start ingestion**. You can also
+   ingest an individual resource from its actions.
+
+New resources move through **Added**, **Queued**, **Processing**, and
+**Succeeded**. While a resource is being prepared, **Available to AI** may
+still show **Not available yet**. Use the resource only after the latest
+ingestion is **Succeeded** and the serving status shows **Current version**.
+The resource then appears under **Indexed sources**. Ingestion runs in the
+background, so you can leave the page and return later.
+
+## How do I build and inspect the knowledge graph?
+
+1. Open the **Knowledge graph** section of a prepared knowledge base and
+   enable the graph.
+2. Choose a **Domain**, **Generation language**, and **Build quality**. The
+   quality option affects the estimated cost and the detail of the build.
+3. Review the displayed estimated cost and quota information, then select
+   **Build graph**. During the background build, the estimated amount is
+   reserved. After completion, the interface shows the actual cost and usage.
+   For updated material, use **Rebuild graph** after reviewing the current
+   estimate.
+4. Wait for the background build to finish. A successful build is published
+   and can be opened from the knowledge base.
+
+The graph view supports concept search, zoom, fit-to-view, and layout reset.
+Select a concept to inspect its details and select a relationship to see its
+description and connected concepts. The graph is a navigation and evidence
+view; generated content still needs your review.
+
+## How do I generate Klicker elements?
+
+Open the published graph and select **Generate Klicker elements**. Configure
+the generation as follows:
+
+- Choose an element type, such as **Single choice**, **Multiple choice**,
+  **KPRIM**, or **Flashcard**, when available.
+- Set the number of elements between **1** and **20**.
+- Use the graph's generation language and choose a difficulty from **D1** to
+  **D5** when the selected element type supports it.
+- Optionally enter a **Focus topic** and add **Learning objectives**.
+- Select one or more **Bloom** or cognitive levels. At least one level must
+  remain selected.
+
+Before generation continues, review the **generation design**. Check how the
+requested elements are distributed across modules and learning objectives,
+and inspect the evidence distribution. Select **Approve and continue** only
+when the design matches your intended coverage.
+
+Next, review the **element plan**. Check each planned prompt, cognitive level,
+difficulty, and source coverage. This plan is a draft: the final titles and
+questions may be refined during generation while preserving the approved
+intent and evidence. Approve it only when the planned set is suitable.
+
+After approval, generation continues in the background. The generation page
+shows the current stage, the number of generated elements, and progress. You
+can leave the page and return to the generation when it is complete.
+
+## How do I review generated elements?
+
+Generated content is a draft for teacher review. For every element, inspect:
+
+- the title and question;
+- every answer choice and the marked correct answer or answers;
+- the explanation and answer feedback;
+- the learning design, including Bloom level and difficulty;
+- the original source and cited page or page range, where available.
+
+Open an element to review or edit its content. Select **Keep element** only
+after the wording, answer key, feedback, learning design, and source support
+are acceptable. Select **Discard** for an element you do not want to use.
+Discarded elements can be returned to review with **Restore** where that
+action is available.
+
+Kept elements are saved as ordinary elements and appear in the **Library**.
+This is the end of the AI-assisted generation workflow; review the saved
+element in the Library before using it elsewhere.
