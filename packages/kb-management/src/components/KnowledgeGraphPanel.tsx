@@ -25,6 +25,19 @@ import { useRouter } from 'next/router'
 import { useFormatter, useTranslations } from 'next-intl'
 // biome-ignore lint/correctness/noUnusedImports: this package uses the classic JSX transform.
 import React, { useEffect, useMemo, useState } from 'react'
+import {
+  DEFAULT_DOMAIN_GENERATION_LANGUAGE,
+  DEFAULT_DOMAIN_POLICY_ID,
+  DEFAULT_DOMAIN_POLICY_VERSION,
+  DOMAIN_GENERATION_LANGUAGES,
+  type DomainGenerationLanguage,
+  isDomainGenerationLanguage,
+  isSameKbDomain,
+  kbDomainItems,
+  kbDomainLabelForId,
+  kbDomainOptionValue,
+  useKbDomainLabels,
+} from '../kbDomainSettings'
 
 const KnowledgeGraphViewer = dynamic(
   () =>
@@ -34,28 +47,10 @@ const KnowledgeGraphViewer = dynamic(
   { ssr: false }
 )
 
-const DEFAULT_DOMAIN_POLICY_ID = 'finance'
-const DEFAULT_DOMAIN_POLICY_VERSION = 1
-// The generation language is an explicit part of the domain selection, so it is
-// never derived from the interface locale. German stays the default for builds
-// that predate an explicit language.
-const DEFAULT_DOMAIN_GENERATION_LANGUAGE = 'German'
-const DOMAIN_GENERATION_LANGUAGES = ['German', 'English'] as const
-type DomainGenerationLanguage = (typeof DOMAIN_GENERATION_LANGUAGES)[number]
-
 type KnowledgeGraphDomainSelection = {
   id: string
   version: number | null
   language: DomainGenerationLanguage
-}
-
-function isDomainGenerationLanguage(
-  language: string | null | undefined
-): language is DomainGenerationLanguage {
-  return (
-    language != null &&
-    (DOMAIN_GENERATION_LANGUAGES as readonly string[]).includes(language)
-  )
 }
 
 type GraphResponse =
@@ -269,6 +264,11 @@ function KnowledgeGraphPreview({
 
 function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const t = useTranslations()
+  const {
+    labelForKey: translateDomainLabelKey,
+    languageLabel: translateDomainLanguage,
+    versionLabel: formatDomainVersion,
+  } = useKbDomainLabels()
   const format = useFormatter()
   const router = useRouter()
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
@@ -332,8 +332,6 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
 
   const domainCapabilityEnabled = domainConfig?.capabilityEnabled ?? false
   const domainOptions = domainConfig?.options ?? []
-  const domainOptionValue = (option: { id: string; version: number }) =>
-    `${option.id}@${option.version}`
   // An explicit selection is only ever restored, never upgraded or substituted:
   // the persisted build metadata wins until the lecturer changes the control,
   // and a retired id/version pair stays selected instead of moving to another
@@ -399,54 +397,9 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     domainSubmitBlocked ||
     domainCategoryNames.length > 0
 
-  const translateDomainLabelKey = (labelKey: string): string | null => {
-    switch (labelKey) {
-      case 'finance':
-        return t('kb.graphDomainFinance')
-      case 'economics':
-        return t('kb.graphDomainEconomics')
-      case 'business':
-        return t('kb.graphDomainBusiness')
-      case 'mathematics':
-        return t('kb.graphDomainMathematics')
-      case 'informatics':
-        return t('kb.graphDomainInformatics')
-      case 'general-academic':
-        return t('kb.graphDomainGeneralAcademic')
-      default:
-        return null
-    }
-  }
-  const domainOptionLabel = (option: { id: string; labelKey: string }) =>
-    translateDomainLabelKey(option.labelKey) ?? option.id
-  const domainLabelForId = (id: string) => {
-    const option = domainOptions.find((candidate) => candidate.id === id)
-    // A stored contract domain keeps its label even when the catalog no longer
-    // offers the pair, so a closed gate or a retired version still reads as a
-    // domain instead of an internal id.
-    return option ? domainOptionLabel(option) : translateDomainLabelKey(id)
-  }
-  const formatDomainVersion = (version: number | null) =>
-    version == null ? t('kb.graphDomainVersionUnknown') : String(version)
-  const translateDomainLanguage = (language: string | null) => {
-    switch (language) {
-      case 'German':
-        return t('kb.graphDomainLanguageGerman')
-      case 'English':
-        return t('kb.graphDomainLanguageEnglish')
-      default:
-        return '—'
-    }
-  }
-  const domainItems = domainOptions.map((option) => ({
-    value: domainOptionValue(option),
-    label: domainOptions.some(
-      (candidate) =>
-        candidate.id === option.id && candidate.version !== option.version
-    )
-      ? `${domainOptionLabel(option)} (v${option.version})`
-      : domainOptionLabel(option),
-  }))
+  const domainLabelForId = (id: string) =>
+    kbDomainLabelForId(id, domainOptions, translateDomainLabelKey)
+  const domainItems = kbDomainItems(domainOptions, translateDomainLabelKey)
   const domainLanguageItems = DOMAIN_GENERATION_LANGUAGES.map((language) => ({
     value: language,
     label: translateDomainLanguage(language),
@@ -456,7 +409,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   // the lecturer sees what is stored and replaces it explicitly.
   const domainLanguageSelectValue = domainSelection.language
   const domainSelectValue = domainSelectedOption
-    ? domainOptionValue(domainSelectedOption)
+    ? kbDomainOptionValue(domainSelectedOption)
     : ''
 
   // A failed or superseded attempt must not relabel the graph that is actually
@@ -464,11 +417,6 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   // legacy published build records no triple, and by contract that served graph
   // was generated with the default Finance v1 in German; applying that default
   // only here leaves the stored null values meaning "no explicit domain".
-  const legacyDomain = {
-    id: DEFAULT_DOMAIN_POLICY_ID,
-    version: DEFAULT_DOMAIN_POLICY_VERSION,
-    language: DEFAULT_DOMAIN_GENERATION_LANGUAGE,
-  }
   const reportedDomain = {
     id: config?.domainPolicyId ?? null,
     version: config?.domainPolicyVersion ?? null,
@@ -477,33 +425,20 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const publishedDomain = {
     id:
       config?.publishedDomainPolicyId ??
-      (hasPublishedGraph ? legacyDomain.id : null),
+      (hasPublishedGraph ? DEFAULT_DOMAIN_POLICY_ID : null),
     version:
       config?.publishedDomainPolicyVersion ??
-      (hasPublishedGraph ? legacyDomain.version : null),
+      (hasPublishedGraph ? DEFAULT_DOMAIN_POLICY_VERSION : null),
     language:
       config?.publishedDomainPolicyLanguage ??
-      (hasPublishedGraph ? legacyDomain.language : null),
+      (hasPublishedGraph ? DEFAULT_DOMAIN_GENERATION_LANGUAGE : null),
   }
   // Both sides take the effective legacy default, so two legacy builds that
   // serve the same domain are not reported as different.
-  const effectiveDomain = (domain: {
-    id: string | null
-    version: number | null
-    language: string | null
-  }) => ({
-    id: domain.id ?? legacyDomain.id,
-    version: domain.version ?? legacyDomain.version,
-    language: domain.language ?? legacyDomain.language,
-  })
-  const effectivePublishedDomain = effectiveDomain(publishedDomain)
-  const effectiveReportedDomain = effectiveDomain(reportedDomain)
   const showPublishedDomain =
     hasPublishedGraph &&
     publishedDomain.id != null &&
-    (effectivePublishedDomain.id !== effectiveReportedDomain.id ||
-      effectivePublishedDomain.version !== effectiveReportedDomain.version ||
-      effectivePublishedDomain.language !== effectiveReportedDomain.language)
+    !isSameKbDomain(publishedDomain, reportedDomain)
   const publishedDomainLabel =
     publishedDomain.id != null
       ? (domainLabelForId(publishedDomain.id) ?? publishedDomain.id)
@@ -755,7 +690,8 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
                       onChange={(value) => {
                         setOperationError(null)
                         const option = domainOptions.find(
-                          (candidate) => domainOptionValue(candidate) === value
+                          (candidate) =>
+                            kbDomainOptionValue(candidate) === value
                         )
                         if (!option) return
                         setUserDomainSelection({

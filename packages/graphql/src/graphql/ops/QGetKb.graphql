@@ -3,6 +3,9 @@ query GetKb($id: ID!) {
     id
     name
     description
+    domainPolicyId
+    domainPolicyVersion
+    domainPolicyLanguage
     metrics {
       visibleResourceCount
       visibleSizeBytes

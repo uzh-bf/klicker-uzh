@@ -1,9 +1,19 @@
-import { useMutation } from '@apollo/client'
-import { CreateKbDocument } from '@klicker-uzh/graphql/dist/ops'
+import { useMutation, useQuery } from '@apollo/client'
+import {
+  CreateKbDocument,
+  GetKbGraphDomainOptionsDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import { Modal, TextareaField, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
+import {
+  isKbDomainSelectionSupported,
+  suggestedKbDomain,
+} from '../kbDomainSettings'
 import { refreshAfterMutation } from '../refreshAfterMutation'
+import KnowledgeBaseDomainFields, {
+  type KbDomainFieldsValue,
+} from './KnowledgeBaseDomainFields'
 
 function CreateKnowledgeBaseModal({
   onClose,
@@ -15,17 +25,41 @@ function CreateKnowledgeBaseModal({
   const t = useTranslations()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [domain, setDomain] = useState<KbDomainFieldsValue | null>(null)
   const [createKb, { loading }] = useMutation(CreateKbDocument)
+  const { data: domainData } = useQuery(GetKbGraphDomainOptionsDocument)
+
+  const domainConfig = domainData?.getKbKnowledgeGraphDomainConfig
+  // A closed capability gate rejects an explicit selection outright, so the
+  // controls stay away and the knowledge base is created without one.
+  const domainOptions = domainConfig?.capabilityEnabled
+    ? domainConfig.options
+    : []
+  const domainSelectable = domainOptions.length > 0
+  // The suggestion stands in until the lecturer touches a control, so the form
+  // opens on a usable pair without an effect that could race the catalog query.
+  const domainValue = domain ?? suggestedKbDomain(domainOptions)
+  const domainSupported =
+    domainValue != null &&
+    isKbDomainSelectionSupported(domainOptions, domainValue)
+  const canCreate =
+    name.trim().length > 0 && (!domainSelectable || domainSupported)
 
   const handleCreate = async () => {
     const trimmedName = name.trim()
-    if (!trimmedName || loading) return
+    if (!canCreate || loading) return
 
     try {
       await createKb({
         variables: {
           name: trimmedName,
           description: description.trim() || null,
+          // Only an accepted, serviceable selection is sent. Everything else
+          // leaves the columns empty, which means "no explicit selection" and
+          // keeps the provider default in charge of the first build.
+          domainPolicyId: domainSupported ? domainValue.id : null,
+          domainPolicyVersion: domainSupported ? domainValue.version : null,
+          domainPolicyLanguage: domainSupported ? domainValue.language : null,
         },
       })
     } catch (error) {
@@ -45,7 +79,7 @@ function CreateKnowledgeBaseModal({
       onClose={onClose}
       title={t('kb.create')}
       primaryLabel={t('shared.generic.create')}
-      primaryDisabled={!name.trim()}
+      primaryDisabled={!canCreate}
       primaryLoading={loading}
       onPrimaryAction={handleCreate}
       secondaryLabel={t('shared.generic.cancel')}
@@ -78,6 +112,20 @@ function CreateKnowledgeBaseModal({
           rows={4}
           data={{ cy: 'knowledge-base-description' }}
         />
+        {domainSelectable && domainValue != null ? (
+          <div data-cy="knowledge-base-domain-fields">
+            <KnowledgeBaseDomainFields
+              options={domainOptions}
+              value={domainValue}
+              onChange={setDomain}
+              disabled={loading}
+              dataCyPrefix="knowledge-base-domain"
+            />
+            <p className="mt-2 text-xs text-slate-500">
+              {t('kb.domainSettingsDescription')}
+            </p>
+          </div>
+        ) : null}
       </div>
     </Modal>
   )
