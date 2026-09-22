@@ -12,6 +12,7 @@ import { getKbImportedSourcesConnection } from '../src/services/knowledge.js'
 const KB_ID = '11111111-1111-4111-8111-111111111111'
 const OWNER_ID = '22222222-2222-4222-8222-222222222222'
 const MANAGED_RESOURCE_ID = '33333333-3333-4333-8333-333333333333'
+const MANAGED_INGESTED_AT = new Date('2026-09-21T14:44:00.000Z')
 const MCP_URL = 'http://localhost:1417/mcp'
 const MCP_SERVER_ID = 'mcp-1'
 const SCOPED_MCP_URL = 'http://localhost:1417/mcp/klicker/kb'
@@ -144,7 +145,12 @@ function createContext({
           async ({ where }: { where: { id: { in: string[] } } }) =>
             managedResourceIds
               .filter((id) => where.id.in.includes(id))
-              .map((id) => ({ id }))
+              .map((id) => ({
+                id,
+                type: 'BLOB',
+                sourceUrl: null,
+                ingestedAt: MANAGED_INGESTED_AT,
+              }))
         ),
       },
     },
@@ -658,7 +664,40 @@ describe('getKbImportedSourcesConnection', () => {
     // The lookup is bounded to the UUID-shaped ids that actually appeared.
     expect(context.prisma.kBResource.findMany).toHaveBeenCalledWith({
       where: { kbId: KB_ID, id: { in: [MANAGED_RESOURCE_ID] } },
-      select: { id: true },
+      select: {
+        id: true,
+        type: true,
+        sourceUrl: true,
+        ingestedAt: true,
+      },
+    })
+  })
+
+  it('recognizes legacy managed blobs from their ingestion gateway URL', async () => {
+    const factory = createClientFactory([
+      textResult(
+        envelope({
+          sources: [
+            documentSource({
+              external_resource_id: null,
+              source_url: `http://backend.stg.svc.cluster.local:3000/api/ingestion/resources/${MANAGED_RESOURCE_ID}/versions/1`,
+              ingested_at: null,
+            }),
+          ],
+        })
+      ),
+    ])
+
+    const connection = await getKbImportedSourcesConnection(
+      { kbId: KB_ID },
+      createContext({ managedResourceIds: [MANAGED_RESOURCE_ID] }),
+      createDeps(factory)
+    )
+
+    expect(connection.items[0]).toMatchObject({
+      origin: 'MANAGED',
+      sourceUrl: null,
+      ingestedAt: MANAGED_INGESTED_AT,
     })
   })
 

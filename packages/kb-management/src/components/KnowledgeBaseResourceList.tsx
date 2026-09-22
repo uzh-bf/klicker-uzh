@@ -789,11 +789,13 @@ function KnowledgeBaseResourceList({
   kbId,
   refreshKey,
   onMetricsChanged,
+  onIngestionSettled,
   onAddResource,
 }: {
   kbId: string
   refreshKey: number
   onMetricsChanged: () => Promise<unknown>
+  onIngestionSettled: () => void
   onAddResource: (trigger: HTMLElement) => void
 }) {
   const t = useTranslations()
@@ -821,6 +823,7 @@ function KnowledgeBaseResourceList({
     Record<string, number>
   >({})
   const pollInFlightRef = useRef(false)
+  const wasPollingRef = useRef(false)
   const loadMoreInFlightRef = useRef(false)
   const refreshAfterLoadMoreRef = useRef(false)
   const pollTickRef = useRef(0)
@@ -1085,6 +1088,15 @@ function KnowledgeBaseResourceList({
             // so page 0's connection (always fetched) always carries it.
             totalCount:
               page0Connection?.totalCount ?? previous.getKbResources.totalCount,
+            needsIngestionCount:
+              page0Connection?.needsIngestionCount ??
+              previous.getKbResources.needsIngestionCount,
+            failedIngestionCount:
+              page0Connection?.failedIngestionCount ??
+              previous.getKbResources.failedIngestionCount,
+            inProgressCount:
+              page0Connection?.inProgressCount ??
+              previous.getKbResources.inProgressCount,
             // pageInfo describes the window after whichever page it came
             // from -- taking it from page 0 would corrupt loadMore's
             // endCursor unless page 0 is also the tail page, so only take
@@ -1146,6 +1158,12 @@ function KnowledgeBaseResourceList({
       pollInFlightRef.current = false
     }
   }, [polling, pollActivePages, refreshLoadedResources])
+
+  useEffect(() => {
+    const wasPolling = wasPollingRef.current
+    wasPollingRef.current = polling
+    if (wasPolling && !polling) onIngestionSettled()
+  }, [onIngestionSettled, polling])
 
   // These values are intentionally effect triggers: the reset clears state
   // that belongs to the previous query context without otherwise reading them.
