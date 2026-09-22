@@ -1126,3 +1126,15 @@ migrator:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
     pullPolicy: IfNotPresent
+
+# Modern Klicker KB retrieval authenticates with a fresh five-minute ES256
+# scope token on the dedicated Doc Query route instead of the shared transport
+# bearer. All three values move together: the chart refuses to render a partial
+# triple, and scope mode ignores the stored credential for this server. The
+# server id and legacy URL are this environment's existing KB MCP server row, so
+# a database edit cannot redirect a scope token.
+docQuery:
+  scopedMcp:
+    serverId: 'e05030e6-d799-4e9b-91c7-da2e074d14a8'
+    legacyUrl: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+    url: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker/kb'
