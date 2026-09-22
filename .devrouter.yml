@@ -32,9 +32,19 @@ managedRuntime:
     baseServices: [postgres, hatchet]
     # Optional capabilities selected per profile. The three Redis clients are
     # selected by every application profile because backend startup eagerly
-    # creates all three. LiteLLM and MailHog are opt-in capabilities.
+    # creates all three. LiteLLM, MailHog and the local Edu-ID OIDC mock are
+    # opt-in capabilities: an application profile never selects them, `full`
+    # (the default) selects everything registered, and `eduid` selects the
+    # mock alone for a selective selection.
+    #
+    # The mock stays out of the application profiles deliberately. CI plans
+    # those profile unions against playwright/runtime-contract.yml, whose
+    # closed schema demands a literal binding for every selected app and
+    # managed service; the mock is a Compose-only proxy app that the hosted
+    # Playwright runtime cannot provision. `eduid` keeps the devcontainer-only
+    # capability out of that planning surface without weakening the contract.
     profileServices:
-      [redis_exec, redis_assessment, redis_cache, litellm, mailhog]
+      [redis_exec, redis_assessment, redis_cache, litellm, mailhog, oidc]
   processes: [klicker-dev, klicker-local-mcp]
 profiles:
   # lecturer UI work: manage + its API and auth dependencies
@@ -67,6 +77,12 @@ profiles:
     readiness: [chat, pwa, manage, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
+  # local Edu-ID replacement, devcontainer-only: add `,eduid` to a selective
+  # selection to route the OIDC mock. The default `full` selection already
+  # includes it. See .devcontainer/README.md.
+  eduid:
+    apps: [oidc]
+    devcontainerServices: [oidc]
   # pure capabilities: no routes, no app process
   ai:
     apps: []
@@ -158,3 +174,14 @@ apps:
     protocol: http
     runtime: proxy
     upstream: ${WORKSPACE}-app:3004
+
+  # local Edu-ID replacement: the OIDC mock shares the app container's network
+  # namespace, so devrouter reaches it on devnet as ${WORKSPACE}-app:8090. The
+  # auth app uses this host as its OIDC issuer, which makes the SWITCH redirect
+  # URI allow-list irrelevant in dev. Linked worktrees get the namespaced host
+  # (oidc.klicker.<workspace>.localhost) like every other app.
+  - name: oidc
+    host: oidc.klicker.localhost
+    protocol: http
+    runtime: proxy
+    upstream: ${WORKSPACE}-app:8090
