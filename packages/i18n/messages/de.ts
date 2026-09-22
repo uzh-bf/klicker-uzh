@@ -1892,11 +1892,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     fileUploadTitle: 'Datei hochladen',
     fileUploadDescription: 'Fügen Sie Kursmaterial von Ihrem Computer hinzu.',
     fileDropPrompt: 'Datei hier ablegen oder zum Auswählen klicken',
+    filesDropPrompt: 'Dateien hier ablegen oder zum Auswählen klicken',
     fileUploadFormats: 'PDF, TXT oder MD · maximal 25 MB',
     uploading: 'Wird hochgeladen…',
+    uploadingProgress: 'Datei {current} von {total} wird hochgeladen…',
     fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
+    fileUploadBatchSuccess:
+      '{count} Dateien wurden zur Wissensdatenbank hinzugefügt.',
+    fileUploadBatchPartial:
+      '{succeeded} von {total} Dateien wurden hinzugefügt. Fehlgeschlagen: {files} ({reason})',
     fileUploadError: 'Die Datei konnte nicht hochgeladen werden.',
     fileRejected: 'Wählen Sie eine unterstützte Datei mit maximal 25 MB.',
+    filesRejected:
+      'Diese Dateien wurden übersprungen: {files}. Verwenden Sie PDF-, TXT- oder MD-Dateien mit maximal 25 MB.',
     replaceFile: 'Datei ersetzen',
     replaceFileTitle: 'Datei ersetzen',
     replaceAndIngest: 'Ersetzen und verarbeiten',

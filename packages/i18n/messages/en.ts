@@ -1877,11 +1877,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileUploadTitle: 'Upload a file',
     fileUploadDescription: 'Add course material from your computer.',
     fileDropPrompt: 'Drop a file here or click to choose one',
+    filesDropPrompt: 'Drop files here or click to choose them',
     fileUploadFormats: 'PDF, TXT or MD · maximum 25 MB',
     uploading: 'Uploading…',
+    uploadingProgress: 'Uploading file {current} of {total}…',
     fileUploadSuccess: 'File added to the knowledge base.',
+    fileUploadBatchSuccess: '{count} files added to the knowledge base.',
+    fileUploadBatchPartial:
+      '{succeeded} of {total} files were added. These failed: {files} ({reason})',
     fileUploadError: 'The file could not be uploaded.',
     fileRejected: 'Choose a supported file of no more than 25 MB.',
+    filesRejected:
+      'These files were skipped: {files}. Use PDF, TXT or MD files of no more than 25 MB.',
     replaceFile: 'Replace file',
     replaceFileTitle: 'Replace file',
     replaceAndIngest: 'Replace and ingest',
