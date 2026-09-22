@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.81...v3.4.0-alpha.82) (2026-09-22)
+
+
+### Features
+
+* **prisma:** enforce MCP bearer rotation custody ([3ab30bb](https://github.com/uzh-bf/klicker-uzh/commit/3ab30bb329cf9bb1b7d026e3de4a902b18a459d8))
+
+
+### Bug Fixes
+
+* **chat:** fall back to the account session when a stale embed session targets another chatbot ([#6230](https://github.com/uzh-bf/klicker-uzh/issues/6230)) ([d447a18](https://github.com/uzh-bf/klicker-uzh/commit/d447a18094563bcc916678cf406be2db9bc5dbd3))
+* **chat:** use scope tokens for KB transport authentication ([0c08f23](https://github.com/uzh-bf/klicker-uzh/commit/0c08f2377e492e399891bb7722cf4f4f5ffb3809))
+* **chat:** use scope tokens for KB transport authentication ([#6197](https://github.com/uzh-bf/klicker-uzh/issues/6197)) ([ffcd329](https://github.com/uzh-bf/klicker-uzh/commit/ffcd3297c2f49f9694e8da207670142a575f8b68))
+* **deploy:** correct staging auth limit and lti request sizing ([#6235](https://github.com/uzh-bf/klicker-uzh/issues/6235)) ([1b19cea](https://github.com/uzh-bf/klicker-uzh/commit/1b19cea803201b4c9fb79be4f2253db7bf0e6f46))
+* **deploy:** raise the staging auth memory limit to 512Mi ([e148022](https://github.com/uzh-bf/klicker-uzh/commit/e148022c15b6e979c11ffbc55b095b0fd7250ace))
+* **kb:** accept a missing published build id in the graph preview ([#6246](https://github.com/uzh-bf/klicker-uzh/issues/6246)) ([171c3e9](https://github.com/uzh-bf/klicker-uzh/commit/171c3e96cbdefdcccc860f6facd962f523c8d864))
+* **kb:** release graph reservations held by unmetered terminal results ([#6238](https://github.com/uzh-bf/klicker-uzh/issues/6238)) ([2c1533f](https://github.com/uzh-bf/klicker-uzh/commit/2c1533f5d208fa5a6df52ed0a34c85b2f2239464))
+* **kb:** reload the served graph preview when a rebuild publishes ([#6237](https://github.com/uzh-bf/klicker-uzh/issues/6237)) ([5eaf18c](https://github.com/uzh-bf/klicker-uzh/commit/5eaf18ccbebfe19c188604ea0e0c13bc1a49de71))
+
+
+### Other
+
+* **chat:** await scoped cancellation arrival ([45997b0](https://github.com/uzh-bf/klicker-uzh/commit/45997b0523942c5d4304d9db597fefb87e2b3b2a))
+
+
+### Documentation
+
+* **project:** record final DPO staging acceptance evidence ([#6217](https://github.com/uzh-bf/klicker-uzh/issues/6217)) ([542dafe](https://github.com/uzh-bf/klicker-uzh/commit/542dafe88bff612effc396c42e8c6f7341dc9b4c))
+* **skills:** document multi-KB prepared corpus imports ([#6207](https://github.com/uzh-bf/klicker-uzh/issues/6207)) ([a14b067](https://github.com/uzh-bf/klicker-uzh/commit/a14b067cdbb00b0bbf9612bf1abbd65da3c5f25e))
+
+
+### Enhancements
+
+* **chat:** reuse the imported scope signing key ([71c194a](https://github.com/uzh-bf/klicker-uzh/commit/71c194aede348357200d887e77b0f5677e9ca1cc))
+* **deploy:** bind production KB retrieval to the scoped Doc Query route (v3-ai parity) ([#6262](https://github.com/uzh-bf/klicker-uzh/issues/6262)) ([c4e1d54](https://github.com/uzh-bf/klicker-uzh/commit/c4e1d54139dcfeb5e19e0b98c0a9dca430362fe8))
+* **shared-components:** redesign leaderboard with animations ([#5792](https://github.com/uzh-bf/klicker-uzh/issues/5792)) ([0a7d125](https://github.com/uzh-bf/klicker-uzh/commit/0a7d12597c76bf4abeb329034da6ac92caa1e5fe))
+
 ## [3.4.0-alpha.81](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.80...v3.4.0-alpha.81) (2026-09-21)
 
 
