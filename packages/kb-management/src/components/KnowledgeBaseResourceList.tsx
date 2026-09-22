@@ -862,7 +862,7 @@ function KnowledgeBaseResourceList({
   const resources = connection?.items ?? []
   const loadedResourceCountRef = useRef(resources.length)
   loadedResourceCountRef.current = resources.length
-  const polling = resources.some(isActiveResource)
+  const polling = (connection?.inProgressCount ?? 0) > 0
   const loadingMore = networkStatus === NetworkStatus.fetchMore
   const inspectorResource = useMemo(
     () => resources.find(({ id }) => id === inspectorId) ?? null,

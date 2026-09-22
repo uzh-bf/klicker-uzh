@@ -172,7 +172,23 @@ function getManagedResourceCandidateId(source: KbImportedSourceItem) {
   if (!source.sourceUrl) return null
 
   try {
-    const pathname = new URL(source.sourceUrl).pathname
+    const sourceUrl = new URL(source.sourceUrl)
+    const configuredGatewayUrl = process.env.KB_SOURCE_GATEWAY_URL?.trim()
+    if (!configuredGatewayUrl) return null
+    const gatewayUrl = new URL(configuredGatewayUrl)
+    if (
+      (gatewayUrl.protocol !== 'http:' && gatewayUrl.protocol !== 'https:') ||
+      gatewayUrl.username ||
+      gatewayUrl.password ||
+      gatewayUrl.pathname !== '/' ||
+      gatewayUrl.search ||
+      gatewayUrl.hash ||
+      sourceUrl.origin !== gatewayUrl.origin
+    ) {
+      return null
+    }
+
+    const pathname = sourceUrl.pathname
     const match = pathname.match(
       /^\/api\/ingestion\/resources\/([^/]+)\/versions\/\d+\/?$/
     )
