@@ -40,6 +40,13 @@ const PROMOTION_REF_API = `heads/${PROMOTION_REF_NAME}`
 const SOURCE_BRANCH_VARIABLE = 'STG_SOURCE_BRANCH'
 const PROMOTION_ENABLED_VARIABLE = 'STG_RELEASE_PROMOTION_ENABLED'
 const MANUAL_CONFIRMATION = 'stg-release'
+// The controller wakes once per trigger workflow completing, so an early wake
+// routinely finds a required workflow that is still executing. These bounds
+// cover the gap between a completion event and readable jobs and artifacts, and
+// let a workflow that finishes inside the window be promoted by the same wake.
+// A gate that is still unfinished when the window closes defers instead of
+// failing: only a concluded non-success is a candidate failure, and the
+// still-running workflow wakes the controller again when it completes.
 const DEFAULT_MAX_ATTEMPTS = 6
 const DEFAULT_RETRY_DELAY_MS = 20_000
 const DEFAULT_POST_PUSH_READBACK_ATTEMPTS = 3
@@ -1042,6 +1049,12 @@ function isRetryableEvidenceStatus(status) {
   return status === 'missing' || status === 'running'
 }
 
+// A required workflow in a retryable state is retried inside one wake, because
+// the completion event can precede the jobs and artifacts it just produced. A
+// workflow that is still running once the window closes is pending rather than
+// failed: nothing has concluded, and its own completion wakes the controller
+// again. Evidence that is absent after the same window stays a hard failure,
+// because a required workflow with no run at all will not resolve by waiting.
 async function collectBuildEvidence({
   github,
   context,
@@ -1090,6 +1103,9 @@ async function collectBuildEvidence({
       return {
         attempts,
         failures,
+        pending:
+          retryable &&
+          failures.every((failure) => failure.status === 'running'),
         reason: failures
           .map(({ path, reason }) => `${path} (${reason})`)
           .join(', '),
@@ -2032,6 +2048,26 @@ function setOutput(core, name, value) {
   if (typeof core?.setOutput === 'function') core.setOutput(name, value)
 }
 
+// A candidate whose required evidence has not concluded is neither promoted nor
+// failed. Every required workflow wakes this controller when it completes, so
+// the unresolved state is reported and the evidence is re-read on that wake
+// instead of being counted as a failure the run cannot prove.
+function deferUnfinishedGate({ core, inputs, evidence, gate }) {
+  const unfinished = evidence.failures
+    .map(({ path, reason }) => `${path} (${reason})`)
+    .join(', ')
+  core?.info?.(
+    `Deferring staging release promotion: ${gate} is not concluded yet: ${unfinished}`
+  )
+  setOutput(core, 'decision', 'deferred')
+  return {
+    ...inputs,
+    decision: 'deferred',
+    pending: evidence.failures.map(({ path, status }) => ({ path, status })),
+    skipped: true,
+  }
+}
+
 async function resolveInputs({
   context,
   sourceBranch,
@@ -2196,6 +2232,14 @@ async function runPromotion({
     sleep,
   })
   if (!evidence.valid) {
+    if (evidence.pending) {
+      return deferUnfinishedGate({
+        core,
+        evidence,
+        gate: 'staging build evidence',
+        inputs,
+      })
+    }
     throw new Error(`staging build evidence is incomplete: ${evidence.reason}`)
   }
   const ciEvidence = await collectBuildEvidence({
@@ -2209,6 +2253,14 @@ async function runPromotion({
     sleep,
   })
   if (!ciEvidence.valid) {
+    if (ciEvidence.pending) {
+      return deferUnfinishedGate({
+        core,
+        evidence: ciEvidence,
+        gate: 'staging CI evidence',
+        inputs,
+      })
+    }
     throw new Error(`staging CI evidence is incomplete: ${ciEvidence.reason}`)
   }
   for (const workflow of ciEvidence.workflows) {
