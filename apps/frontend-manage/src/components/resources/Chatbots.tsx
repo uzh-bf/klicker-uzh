@@ -40,10 +40,11 @@ function Chatbots() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
-  // GrowthBook reports every flag as off until evaluation settles, so an
-  // ordinary lecturer's session must never be treated as advanced during that
-  // window. useFeatureFlag already returns false when evaluation is
-  // unavailable altogether, so readiness is the only extra condition.
+  // GrowthBook reports every flag as off until evaluation settles, so reading
+  // the flag before then would paint the ordinary surface and swap to the
+  // advanced one a moment later. useFeatureFlag already returns false when
+  // evaluation is unavailable altogether, so readiness is the only extra
+  // condition.
   const flagsReady = useFeatureFlagsReady()
   const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
   const advancedManagement = flagsReady && advancedManagementEnabled
