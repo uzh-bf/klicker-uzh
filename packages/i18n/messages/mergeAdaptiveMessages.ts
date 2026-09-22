@@ -23,8 +23,7 @@ export function mergeAdaptiveMessages<
   Patch extends MessageObject,
 >(base: Base, patch: Patch): DeepMerge<Base, Patch> {
   const result: MessageObject = { ...base }
-  for (const key of Object.keys(patch)) {
-    const next = patch[key]
+  for (const [key, next] of Object.entries(patch)) {
     const prior = result[key]
     result[key] =
       typeof prior === 'object' && typeof next === 'object'
