@@ -2769,9 +2769,6 @@ importers:
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@8.1.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.6.1)
   external/catalyst/packages/adaptive-persistence:
     dependencies:
-      "@klicker-uzh/adaptive-learning":
-        specifier: workspace:*
-        version: link:../adaptive-learning
       "@klicker-uzh/prisma":
         specifier: workspace:*
         version: link:../../../../packages/prisma
@@ -2784,6 +2781,10 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
+    devDependencies:
+      "@klicker-uzh/adaptive-learning":
+        specifier: workspace:*
+        version: link:../adaptive-learning
   external/catalyst/packages/adaptive-pwa-ui:
     dependencies:
       "@apollo/client":
