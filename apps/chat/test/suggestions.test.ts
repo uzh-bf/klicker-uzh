@@ -28,10 +28,9 @@ describe('thread suggestions', () => {
     expect(suggestionIds).not.toContain('examPrep')
   })
 
-  test('falls back to Tutor starters for unknown chatbot modes', () => {
-    expect(getThreadSuggestions('custom-mode')).toEqual(
-      getThreadSuggestions('tutor')
-    )
+  test('offers no starters for chatbot-defined modes', () => {
+    expect(getThreadSuggestions('custom-mode')).toEqual([])
+    expect(getThreadSuggestions('ethik-rollenspiel')).toEqual([])
   })
 
   test('accepts only server-resolved mode description records', () => {

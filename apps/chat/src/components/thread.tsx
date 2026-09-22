@@ -758,6 +758,11 @@ const ThreadWelcomeSuggestions: FC<{
       prompt: t(`chat.suggestions.${suggestion.id}Prompt`),
     }))
 
+  // Modes without starters (every chatbot-defined mode key) render no
+  // section at all: a heading and editing hint above an empty grid would
+  // promise cards that are not there.
+  if (items.length === 0) return null
+
   return (
     <section
       aria-label={t('chat.suggestions.sectionLabel')}
