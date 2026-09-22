@@ -52,6 +52,13 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # The participant data-use state the response gate reads lives in
+            # the shared backend database.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: DATABASE_URL
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global
@@ -139,6 +146,13 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Assessment responses are gated against the same participant
+            # data-use state as regular responses.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.fullname" . }}-secret-backend-graphql
+                  key: DATABASE_URL
           envFrom:
             - configMapRef:
                 name: {{ include "chart.fullname" . }}-config-global
