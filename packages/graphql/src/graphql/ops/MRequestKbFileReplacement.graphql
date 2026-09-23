@@ -4,6 +4,8 @@ mutation RequestKbFileReplacement(
   $fileName: String!
   $contentType: String!
   $sizeBytes: Int!
+  $rightsConfirmed: Boolean!
+  $personalDataConfirmed: Boolean!
 ) {
   requestKbFileReplacement(
     kbId: $kbId
@@ -11,6 +13,8 @@ mutation RequestKbFileReplacement(
     fileName: $fileName
     contentType: $contentType
     sizeBytes: $sizeBytes
+    rightsConfirmed: $rightsConfirmed
+    personalDataConfirmed: $personalDataConfirmed
   ) {
     uploadSasURL
     containerName

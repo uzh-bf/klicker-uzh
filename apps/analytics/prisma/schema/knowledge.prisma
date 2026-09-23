@@ -156,6 +156,13 @@ model KBResource {
   errorCode                  String?
   ingestionOperation         KBIngestionOperation @default(UPSERT)
 
+  // Material-transfer attestation of the transfer that created or last
+  // replaced this resource, retained with the durable record because the
+  // upload reservation that carried it is deleted on confirmation.
+  transferAttestationVersion String?
+  rightsConfirmedAt          DateTime?
+  personalDataConfirmedAt    DateTime?
+
   deletedAt   DateTime?
   deletedBy   User?     @relation("KBResourceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
   deletedById String?   @db.Uuid
@@ -540,6 +547,14 @@ model KBUploadTicket {
   replacementResource     KBResource? @relation("KBUploadTicketReplacementResource", fields: [replacementResourceId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   replacementResourceId   String?     @db.Uuid
   expectedResourceVersion Int?
+
+  // Attestation captured with the transfer request. The final confirmation
+  // only transfers the reservation when the attestation still matches the
+  // current notice, so a reservation made under earlier wording cannot be
+  // confirmed.
+  transferAttestationVersion String?
+  rightsConfirmedAt          DateTime?
+  personalDataConfirmedAt    DateTime?
 
   createdAt DateTime @default(now())
 

@@ -3,12 +3,16 @@ mutation RequestKbFileUpload(
   $fileName: String!
   $contentType: String!
   $sizeBytes: Int!
+  $rightsConfirmed: Boolean!
+  $personalDataConfirmed: Boolean!
 ) {
   requestKbFileUpload(
     kbId: $kbId
     fileName: $fileName
     contentType: $contentType
     sizeBytes: $sizeBytes
+    rightsConfirmed: $rightsConfirmed
+    personalDataConfirmed: $personalDataConfirmed
   ) {
     uploadSasURL
     containerName

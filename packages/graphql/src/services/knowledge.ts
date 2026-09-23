@@ -35,7 +35,11 @@ import {
   MAX_KB_TOTAL_SIZE_BYTES,
   resolveKBStorageLimitBytes,
 } from '@klicker-uzh/types'
-import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
+import {
+  getBlobStorageAccountUrl,
+  isKbTransferAttestationCurrent,
+  KB_TRANSFER_ATTESTATION_VERSION,
+} from '@klicker-uzh/util'
 import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
@@ -383,6 +387,53 @@ function normalizeKbResourceMaterialType(
   materialType: DB.KBResourceMaterialType | null | undefined
 ) {
   return materialType ?? DB.KBResourceMaterialType.UNCLASSIFIED
+}
+
+/**
+ * Material destined for a knowledge base is answered from and therefore needs
+ * a transfer that the actor confirmed. Both confirmations are required before
+ * any upload reservation, replacement reservation, or URL fetch is created.
+ */
+function assertKbTransferAttestation({
+  rightsConfirmed,
+  personalDataConfirmed,
+}: {
+  rightsConfirmed: boolean
+  personalDataConfirmed: boolean
+}) {
+  if (!rightsConfirmed || !personalDataConfirmed) {
+    throw new GraphQLError(
+      'KB material transfer requires the rights and personal-data confirmations',
+      { extensions: { code: 'KB_TRANSFER_ATTESTATION_REQUIRED' } }
+    )
+  }
+}
+
+function kbTransferAttestationData() {
+  const confirmedAt = new Date()
+  return {
+    transferAttestationVersion: KB_TRANSFER_ATTESTATION_VERSION,
+    rightsConfirmedAt: confirmedAt,
+    personalDataConfirmedAt: confirmedAt,
+  }
+}
+
+/**
+ * Refuses a reservation whose confirmations are missing or were given under
+ * earlier wording. Without this check a reservation could be created before
+ * the notice existed and still be confirmed afterwards.
+ */
+function assertCurrentKbTransferAttestation(state: {
+  transferAttestationVersion: string | null
+  rightsConfirmedAt: Date | null
+  personalDataConfirmedAt: Date | null
+}) {
+  if (!isKbTransferAttestationCurrent(state)) {
+    throw new GraphQLError(
+      'KB material transfer requires the rights and personal-data confirmations',
+      { extensions: { code: 'KB_TRANSFER_ATTESTATION_REQUIRED' } }
+    )
+  }
 }
 
 async function getKbQuotaUsage(
@@ -1540,16 +1591,21 @@ export async function requestKbFileUpload(
     fileName,
     contentType,
     sizeBytes,
+    rightsConfirmed,
+    personalDataConfirmed,
   }: {
     kbId: string
     fileName: string
     contentType: string
     sizeBytes: number
+    rightsConfirmed: boolean
+    personalDataConfirmed: boolean
   },
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
+  assertKbTransferAttestation({ rightsConfirmed, personalDataConfirmed })
   await getOwnedKbOrThrow(ctx, kbId)
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
   const { accountUrl, containerClient, credential } = getKbBlobContainer(
@@ -1574,6 +1630,7 @@ export async function requestKbFileUpload(
         blobName,
         sizeBytes,
         expiresAt: expiresOn,
+        ...kbTransferAttestationData(),
       },
     })
   })
@@ -1769,13 +1826,20 @@ export async function confirmKbFileUpload(
         replacementResourceId: null,
         expiresAt: { gt: new Date() },
       },
-      select: { id: true, sizeBytes: true },
+      select: {
+        id: true,
+        sizeBytes: true,
+        transferAttestationVersion: true,
+        rightsConfirmedAt: true,
+        personalDataConfirmedAt: true,
+      },
     })
     if (!ticket || (ticket.sizeBytes !== 0 && ticket.sizeBytes !== sizeBytes)) {
       throw new GraphQLError('KB upload ticket is invalid', {
         extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
       })
     }
+    assertCurrentKbTransferAttestation(ticket)
     if (ticket.sizeBytes === 0) {
       await assertKbQuotaAvailable(prisma, { kbId, sizeBytes })
     }
@@ -1793,6 +1857,9 @@ export async function confirmKbFileUpload(
         blobName,
         blobHref: `${accountUrl}/${containerClient.containerName}/${blobName}`,
         status: DB.KBResourceStatus.ADDED,
+        transferAttestationVersion: ticket.transferAttestationVersion,
+        rightsConfirmedAt: ticket.rightsConfirmedAt,
+        personalDataConfirmedAt: ticket.personalDataConfirmedAt,
       },
     })
     await prisma.kBUploadTicket.delete({ where: { id: ticket.id } })
@@ -1807,17 +1874,22 @@ export async function requestKbFileReplacement(
     fileName,
     contentType,
     sizeBytes,
+    rightsConfirmed,
+    personalDataConfirmed,
   }: {
     kbId: string
     resourceId: string
     fileName: string
     contentType: string
     sizeBytes: number
+    rightsConfirmed: boolean
+    personalDataConfirmed: boolean
   },
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
+  assertKbTransferAttestation({ rightsConfirmed, personalDataConfirmed })
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
   const { accountUrl, containerClient, credential } = getKbBlobContainer(
     ctx.user.sub
@@ -1843,6 +1915,7 @@ export async function requestKbFileReplacement(
         expiresAt: expiresOn,
         replacementResourceId: resource.id,
         expectedResourceVersion: resource.resourceVersion,
+        ...kbTransferAttestationData(),
       },
     })
   })
@@ -1930,13 +2003,19 @@ export async function confirmKbFileReplacement(
       expiresAt: { gt: new Date() },
       kb: { ownerId: ctx.user.sub, deletedAt: null },
     },
-    select: { id: true },
+    select: {
+      id: true,
+      transferAttestationVersion: true,
+      rightsConfirmedAt: true,
+      personalDataConfirmedAt: true,
+    },
   })
   if (!ticket) {
     throw new GraphQLError('KB upload ticket is invalid', {
       extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
     })
   }
+  assertCurrentKbTransferAttestation(ticket)
 
   const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
   const blobClient = containerClient.getBlobClient(blobName)
@@ -1976,6 +2055,7 @@ export async function confirmKbFileReplacement(
         extensions: { code: 'KB_UPLOAD_TICKET_MISMATCH' },
       })
     }
+    assertCurrentKbTransferAttestation(currentTicket)
 
     const resourceVersion = resource.resourceVersion + 1
     const claim = await prisma.kBResource.updateMany({
@@ -2001,6 +2081,9 @@ export async function confirmKbFileReplacement(
         contentSha256: null,
         externalOperationId: null,
         externalOperationStartedAt: null,
+        transferAttestationVersion: currentTicket.transferAttestationVersion,
+        rightsConfirmedAt: currentTicket.rightsConfirmedAt,
+        personalDataConfirmedAt: currentTicket.personalDataConfirmedAt,
       },
     })
     if (claim.count !== 1) {
@@ -2070,16 +2153,21 @@ export async function createKbUrlResource(
     url,
     title,
     materialType,
+    rightsConfirmed,
+    personalDataConfirmed,
   }: {
     kbId: string
     url: string
     title: string
     materialType?: DB.KBResourceMaterialType | null
+    rightsConfirmed: boolean
+    personalDataConfirmed: boolean
   },
   ctx: ContextWithUser
 ) {
   await assertManageAiEnabled(ctx)
   await assertKbIngestionEnabled(ctx)
+  assertKbTransferAttestation({ rightsConfirmed, personalDataConfirmed })
   await getOwnedKbOrThrow(ctx, kbId)
 
   let sourceUrl: string
@@ -2104,6 +2192,7 @@ export async function createKbUrlResource(
         title: validateKbResourceTitle(title),
         sourceUrl,
         status: DB.KBResourceStatus.ADDED,
+        ...kbTransferAttestationData(),
       },
     })
   })
