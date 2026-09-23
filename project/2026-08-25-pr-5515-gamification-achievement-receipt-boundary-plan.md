@@ -490,3 +490,8 @@ merge the PR, deploy, or clean up the retained worktree or runtime records.
 2026-08-29: superseded — W6 delivered at exact head `285d58895` (push, PR
 update, and exact-head CI passed); see the roadmap Progress entry for W6
 closure. Merge remains a separate, withheld action.
+
+2026-09-23: The W6 scope remains delivered, but PR #5515 is not merge-ready.
+The 2026-09-09 readiness audit found five confirmed blockers and one that the
+repository cannot settle; the branch now conflicts with `v3` in nine files. The
+roadmap's Merge blockers section owns the current state and the next decision.
