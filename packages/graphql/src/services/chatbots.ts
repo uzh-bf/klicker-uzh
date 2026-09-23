@@ -1717,6 +1717,72 @@ export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
   return user.aiFeaturesEnabled
 }
 
+export async function getPendingChatbotPublications(ctx: ContextWithUser) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbots = await ctx.prisma.chatbot.findMany({
+    where: {
+      status: { not: DB.ChatbotStatus.PAUSED },
+      OR: [
+        { revisionStatus: DB.ChatbotStatus.PENDING_APPROVAL },
+        {
+          status: DB.ChatbotStatus.PENDING_APPROVAL,
+          revisionStatus: null,
+          revisionVersion: 0,
+          draftConfig: { equals: Prisma.AnyNull },
+        },
+      ],
+    },
+    orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+    select: {
+      ...chatbotOwnerSelect,
+      owner: {
+        select: { shortname: true, email: true, aiFeaturesEnabled: true },
+      },
+      course: { select: { id: true, name: true } },
+      disclaimer: { select: { title: true, introText: true } },
+      mcpConfigurations: {
+        select: {
+          chatMode: true,
+          isEnabled: true,
+          priority: true,
+          allowedTools: true,
+          mcpServer: {
+            select: { id: true, name: true, isActive: true },
+          },
+        },
+      },
+    },
+  })
+
+  return chatbots.map(
+    ({ owner, disclaimer, mcpConfigurations, ...chatbot }) => ({
+      ownerShortname: owner.shortname,
+      ownerEmail: owner.email,
+      ownerPublishingEnabled: owner.aiFeaturesEnabled,
+      disclaimerTitle: disclaimer?.title ?? null,
+      disclaimerIntroText: disclaimer?.introText ?? null,
+      chatbot: shapeChatbotResponse(chatbot),
+      tools: mcpConfigurations.map((config) => ({
+        serverName: config.mcpServer.name,
+        chatMode: config.chatMode,
+        enabled: config.isEnabled && config.mcpServer.isActive,
+        // Empty/null allow-lists allow all tools in the existing MCP client.
+        // Unknown shapes stay null so review never mislabels them as unrestricted.
+        allowedTools:
+          config.allowedTools == null
+            ? []
+            : Array.isArray(config.allowedTools) &&
+                config.allowedTools.every((tool) => typeof tool === 'string')
+              ? (config.allowedTools as string[])
+              : null,
+      })),
+    })
+  )
+}
+
 export async function getChatbotsInfo(ctx: ContextWithUser) {
   if (!(await isFeatureFlagEnabled(ctx, 'ai-beta'))) return null
 
