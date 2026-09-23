@@ -422,6 +422,17 @@ frontendPWA:
     maxReplicas: 10
     targetCPUUtilizationPercentage: 70
 
+  # Optional HPA-scaled PWA tier on spot nodes, added next to the static
+  # baseline replicas. It requires the baseline HPA to stay disabled and ignores
+  # the nodeSelector, affinity and tolerations below.
+  burst:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+    # Kept below the roughly 30-second spot eviction notice.
+    terminationGracePeriodSeconds: 25
+
   nodeSelector: {}
 
   tolerations: []
