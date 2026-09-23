@@ -3428,6 +3428,11 @@ function validateGraphBuildSnapshotResource(
  */
 export const KB_GRAPH_PREPARATION_QUALITY_TIER = DB.KBGraphQualityTier.STANDARD
 
+const KB_GRAPH_QUALITY_TIER_RANK: Record<DB.KBGraphQualityTier, number> = {
+  [DB.KBGraphQualityTier.STANDARD]: 0,
+  [DB.KBGraphQualityTier.HIGH]: 1,
+}
+
 /**
  * Everything a graph build represents: the frozen domain triple, the quality
  * tier and the source-only `sourceContentDigest`. The domain triple is the
@@ -3500,29 +3505,44 @@ export interface KBGraphPreparationStatus {
 /**
  * The due check shared by build admission and generation readiness. A
  * preparation is pending when no graph is published, when the published build
- * froze a different domain, language or tier than the KB now asks for, or when
- * the serving sources moved on. Without a timing policy a pending preparation
- * is due immediately.
+ * froze a different domain or language or a lower tier than the KB asks for,
+ * or when the serving sources moved on. Without a timing policy a pending
+ * preparation is due immediately.
  */
 export function getKBGraphPreparationStatus({
   desired,
   published,
+  domainSelectionAvailable = true,
   timing,
 }: {
   desired: KBGraphPreparationIdentity
   published: KBGraphPreparationIdentity | null
+  /**
+   * Whether a build could honor a domain choice right now. When the rollout or
+   * catalog configuration is closed, a published graph's frozen domain still
+   * counts as current, so an unavailable capability never triggers rebuilds
+   * with provider defaults.
+   */
+  domainSelectionAvailable?: boolean
   timing?: KBGraphPreparationTiming
 }): KBGraphPreparationStatus {
   const desiredFingerprint = getKBGraphPreparationFingerprint(desired)
+  const domainChanged =
+    domainSelectionAvailable &&
+    published !== null &&
+    (published.domainPolicyId !== desired.domainPolicyId ||
+      published.domainPolicyVersion !== desired.domainPolicyVersion ||
+      published.domainPolicyLanguage !== desired.domainPolicyLanguage)
+  // A published graph at a higher tier than requested already satisfies the
+  // request; only a lower tier is a settings change.
+  const tierBelowDesired =
+    published !== null &&
+    KB_GRAPH_QUALITY_TIER_RANK[published.qualityTier] <
+      KB_GRAPH_QUALITY_TIER_RANK[desired.qualityTier]
   let reason: KBGraphPreparationPendingReason | null = null
   if (!published) {
     reason = 'NO_PUBLISHED_GRAPH'
-  } else if (
-    published.domainPolicyId !== desired.domainPolicyId ||
-    published.domainPolicyVersion !== desired.domainPolicyVersion ||
-    published.domainPolicyLanguage !== desired.domainPolicyLanguage ||
-    published.qualityTier !== desired.qualityTier
-  ) {
+  } else if (domainChanged || tierBelowDesired) {
     reason = 'SETTINGS_CHANGED'
   } else if (published.sourceContentDigest !== desired.sourceContentDigest) {
     reason = 'SOURCES_CHANGED'
@@ -3733,6 +3753,11 @@ async function admitKBGraphBuildTrigger(
   )
   if (
     !owner ||
+    !isFeatureFlagEnabledForAccount(
+      deps.featureFlags,
+      owner,
+      'kb-auto-graph-preparation'
+    ) ||
     !isFeatureFlagEnabledForAccount(deps.featureFlags, owner, 'kb-graph-builds')
   ) {
     throwKbGraphGenerationDisabled()
@@ -3903,6 +3928,7 @@ export async function startKbKnowledgeGraphBuild(
           sourceContentDigest,
         },
         published: publishedBuild,
+        domainSelectionAvailable: domainCapabilityEnabled,
       })
       if (!preparation.pending) {
         return {

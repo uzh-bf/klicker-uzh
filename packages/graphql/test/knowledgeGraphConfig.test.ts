@@ -230,9 +230,9 @@ describe('KB graph preparation due check', () => {
       'SETTINGS_CHANGED',
     ],
     [
-      'the tier changed',
-      { ...preparedIdentity, qualityTier: KBGraphQualityTier.HIGH },
+      'a higher tier is desired',
       preparedIdentity,
+      { ...preparedIdentity, qualityTier: KBGraphQualityTier.HIGH },
       'SETTINGS_CHANGED',
     ],
     [
@@ -245,6 +245,34 @@ describe('KB graph preparation due check', () => {
     const status = getKBGraphPreparationStatus({ desired, published })
 
     expect(status).toMatchObject({ pending: true, due: true, reason })
+  })
+
+  it.each([
+    [
+      'the published tier is higher than desired',
+      { ...preparedIdentity, qualityTier: KBGraphQualityTier.HIGH },
+      preparedIdentity,
+      true,
+    ],
+    [
+      'domain selection is unavailable',
+      preparedIdentity,
+      {
+        ...preparedIdentity,
+        domainPolicyId: null,
+        domainPolicyVersion: null,
+        domainPolicyLanguage: null,
+      },
+      false,
+    ],
+  ] as const)('is current when %s', (_, published, desired, available) => {
+    const status = getKBGraphPreparationStatus({
+      desired,
+      published,
+      domainSelectionAvailable: available,
+    })
+
+    expect(status).toMatchObject({ pending: false, reason: null })
   })
 
   it('is current for an unchanged preparation and fingerprints settings', () => {
@@ -427,7 +455,7 @@ describe('system-triggered KB graph builds', () => {
       aiFeaturesEnabled: true,
       betaEnabled: true,
     },
-    enabledFlags = ['kb-graph-builds'],
+    enabledFlags = ['kb-auto-graph-preparation', 'kb-graph-builds'],
     kbDomain = {
       domainPolicyId: 'mathematics',
       domainPolicyVersion: 1,
@@ -515,7 +543,12 @@ describe('system-triggered KB graph builds', () => {
     ],
     [
       'an owner outside the graph build rollout',
-      { enabledFlags: [] },
+      { enabledFlags: ['kb-auto-graph-preparation'] },
+      'KB_GRAPH_DISABLED',
+    ],
+    [
+      'an owner outside automatic preparation',
+      { enabledFlags: ['kb-graph-builds'] },
       'KB_GRAPH_DISABLED',
     ],
   ])('refuses %s before touching the KB', async (_, options, code) => {
@@ -552,7 +585,11 @@ describe('system-triggered KB graph builds', () => {
     process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
       getDefaultKBGraphDomainCatalog().revision
     const { deps, create } = createDeps({
-      enabledFlags: ['kb-graph-builds', 'kb-graph-domain-selection'],
+      enabledFlags: [
+        'kb-auto-graph-preparation',
+        'kb-graph-builds',
+        'kb-graph-domain-selection',
+      ],
       publishedDomain: {
         domainPolicyId: 'mathematics',
         domainPolicyVersion: 1,
