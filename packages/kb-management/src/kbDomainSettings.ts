@@ -23,6 +23,24 @@ export type KbDomainTriple = {
   language: string | null
 }
 
+/**
+ * The generation language that matches a course language, or undefined when
+ * the course uses a language the knowledge graph cannot generate in. A caller
+ * then keeps the ordinary proposal instead of coercing to the nearest one.
+ */
+export function domainGenerationLanguageForLocale(
+  locale: string | null | undefined
+): DomainGenerationLanguage | undefined {
+  switch (locale) {
+    case 'en':
+      return 'English'
+    case 'de':
+      return 'German'
+    default:
+      return undefined
+  }
+}
+
 export function isDomainGenerationLanguage(
   language: string | null | undefined
 ): language is DomainGenerationLanguage {
@@ -192,10 +210,13 @@ export function isKbDomainSelectionSupported(
  * catalog wherever it is still offered, because it is what every build that
  * predates explicit selection ran with; otherwise the catalog's own first entry
  * stands in, so a deployment shipping a different catalog still opens on a
- * usable pair instead of an empty control.
+ * usable pair instead of an empty control. A proposed language, such as the
+ * language of the course a knowledge base is created for, wins whenever the
+ * suggested subject can generate in it.
  */
 export function suggestedKbDomain(
-  options: readonly KbDomainOption[]
+  options: readonly KbDomainOption[],
+  proposedLanguage?: DomainGenerationLanguage
 ): { id: string; version: number; language: DomainGenerationLanguage } | null {
   const finance = options
     .filter((option) => option.id === DEFAULT_DOMAIN_POLICY_ID)
@@ -206,6 +227,16 @@ export function suggestedKbDomain(
     )
   const preferred = finance ?? options.at(0)
   if (!preferred) return null
+  if (
+    proposedLanguage &&
+    kbDomainOptionServesLanguage(preferred, proposedLanguage)
+  ) {
+    return {
+      id: preferred.id,
+      version: preferred.version,
+      language: proposedLanguage,
+    }
+  }
   const language = kbDomainOptionServesLanguage(
     preferred,
     DEFAULT_DOMAIN_GENERATION_LANGUAGE

@@ -1,18 +1,20 @@
 import type { ParsedUrlQuery } from 'node:querystring'
-import { useQuery } from '@apollo/client'
+import { useMutation, useQuery } from '@apollo/client'
 import {
   useFeatureFlag,
   useFeatureFlagsReady,
 } from '@klicker-uzh/feature-flags/react'
 import {
+  AttachKbToChatbotDocument,
   type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
   GetChatModelRegistryDocument,
+  GetKbDocument,
   GetUserCoursesDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, H2, Select } from '@uzh-bf/design-system'
+import { Button, H2, Select, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -64,6 +66,27 @@ function Chatbots() {
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
     fetchPolicy: 'cache-first',
   })
+  // A knowledge base page links here with `createForKb` to create a chatbot
+  // that uses it. The id is kept in state because workspace navigation drops
+  // the parameter from the URL, and only a knowledge base the lecturer owns
+  // opens the creation flow; an unknown id is ignored.
+  const requestedCreateForKbId =
+    typeof router.query?.createForKb === 'string'
+      ? router.query.createForKb
+      : undefined
+  const [createForKbId, setCreateForKbId] = useState<string | undefined>()
+  useEffect(() => {
+    if (requestedCreateForKbId) setCreateForKbId(requestedCreateForKbId)
+  }, [requestedCreateForKbId])
+  const { data: createForKbData } = useQuery(GetKbDocument, {
+    variables: { id: createForKbId ?? '' },
+    skip: !createForKbId,
+  })
+  const kbForNewChatbot =
+    createForKbId && createForKbData?.getKb.id === createForKbId
+      ? createForKbData.getKb
+      : undefined
+  const [attachKb] = useMutation(AttachKbToChatbotDocument)
   const {
     data: publishingCapabilityData,
     loading: publishingCapabilityLoading,
@@ -120,6 +143,7 @@ function Chatbots() {
       } else {
         delete query.step
       }
+      delete query.createForKb
       return query
     },
     [router.query]
@@ -213,16 +237,17 @@ function Chatbots() {
 
   const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
 
-  const selectCreatedChatbot = (chatbotId: string) => {
+  const selectCreatedChatbot = (
+    chatbotId: string,
+    view: ChatbotWorkspaceView = 'disclaimer'
+  ) => {
     runInternalNavigation(() => {
       // The creation refetch may already have mounted the new draft and
       // reported its unsaved disclaimer. Preserve that editor state.
       return router.push(
         {
           pathname: router.pathname,
-          query: buildWorkspaceQuery(chatbotId, {
-            view: 'disclaimer',
-          }),
+          query: buildWorkspaceQuery(chatbotId, { view }),
         },
         undefined,
         { shallow: true }
@@ -233,6 +258,50 @@ function Chatbots() {
   const openCreateModal = () => {
     if (!confirmNavigation()) return
     setCreateModalOpen(true)
+  }
+
+  const closeCreateModal = () => {
+    setCreateModalOpen(false)
+    setCreateForKbId(undefined)
+    if (!requestedCreateForKbId) return
+    const query = { ...router.query }
+    delete query.createForKb
+    runInternalNavigation(() =>
+      router.replace({ pathname: router.pathname, query }, undefined, {
+        shallow: true,
+      })
+    )
+  }
+
+  const handleChatbotCreated = async (chatbotId: string) => {
+    const kbId = kbForNewChatbot?.id
+    // Clearing both triggers closes the modal before the connection runs, so
+    // the form cannot create a second chatbot meanwhile.
+    setCreateModalOpen(false)
+    setCreateForKbId(undefined)
+    if (!kbId) {
+      selectCreatedChatbot(chatbotId)
+      return
+    }
+
+    try {
+      await attachKb({
+        variables: { kbId, chatbotId },
+        refetchQueries: [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }],
+        awaitRefetchQueries: true,
+      })
+    } catch (error) {
+      console.error('Failed to attach KB to the new chatbot', error)
+      toast({
+        type: 'error',
+        message: t(
+          'manage.resources.chatbotKnowledgeBaseChatbotCreatedNotConnected'
+        ),
+      })
+    }
+    // The Knowledge view shows the connection, or offers to connect the
+    // knowledge base again when the attempt failed.
+    selectCreatedChatbot(chatbotId, 'knowledge')
   }
 
   return (
@@ -302,14 +371,12 @@ function Chatbots() {
           />
         </main>
       </div>
-      {createModalOpen ? (
+      {createModalOpen || (kbForNewChatbot && courseData) ? (
         <ChatbotCreateModal
           courses={ownedCourses}
-          onClose={() => setCreateModalOpen(false)}
-          onCreated={(chatbotId) => {
-            setCreateModalOpen(false)
-            selectCreatedChatbot(chatbotId)
-          }}
+          requireCourseChoice={kbForNewChatbot != null}
+          onClose={closeCreateModal}
+          onCreated={handleChatbotCreated}
         />
       ) : null}
     </div>

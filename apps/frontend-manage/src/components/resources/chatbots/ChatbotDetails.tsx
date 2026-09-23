@@ -921,8 +921,10 @@ function ChatbotDetails({
               )}
             </div>
             <ChatbotKnowledgeBaseSetup
+              key={chatbot.id}
               chatbotId={chatbot.id}
               chatbotStatus={chatbot.status}
+              courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
               connectedKnowledgeBase={enabledKnowledgeBases[0]}
             />
             <div className="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4">
