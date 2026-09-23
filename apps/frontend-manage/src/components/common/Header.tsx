@@ -60,6 +60,13 @@ function Header({
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
+      key: 'competence-trees-item',
+      type: 'link' as const,
+      label: t('manage.resources.competenceTrees'),
+      onClick: () => router.push('/resources/competenceTrees'),
+      data: { cy: 'competence-trees' },
+    },
+    {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),
@@ -134,7 +141,7 @@ function Header({
       key: 'library-menubar-item',
       label: t('manage.general.library'),
       onClick: () => router.push('/'),
-      active: router.pathname == '/',
+      active: router.pathname === '/',
       data: { cy: 'library' },
     },
     {
@@ -142,7 +149,7 @@ function Header({
       key: 'activities-menubar-item',
       label: t('shared.generic.activities'),
       onClick: () => router.push('/activities'),
-      active: router.pathname == '/activities',
+      active: router.pathname === '/activities',
       data: { cy: 'activities' },
     },
     {
@@ -150,7 +157,7 @@ function Header({
       key: 'courses-menubar-item',
       label: t('manage.general.courses'),
       onClick: () => router.push('/courses'),
-      active: router.pathname == '/courses',
+      active: router.pathname === '/courses',
       data: { cy: 'courses' },
     },
 
@@ -160,7 +167,8 @@ function Header({
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
-        router.pathname == '/resources/answerCollections' ||
+        router.pathname.startsWith('/resources/competenceTrees') ||
+        router.pathname === '/resources/answerCollections' ||
         router.pathname === '/resources/chatbots' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||

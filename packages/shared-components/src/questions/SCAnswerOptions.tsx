@@ -69,13 +69,14 @@ export function SCAnswerOptions({
                 onClick={() =>
                   onChange(
                     Object.fromEntries(
-                      choices.map((_, i) => [i, i === choice.ix])
+                      choices.map(({ ix }) => [ix, ix === choice.ix])
                     )
                   )
                 }
                 data={{
                   cy: `sc-${elementIx}-answer-option-${choice.ix}`,
                 }}
+                aria-pressed={Boolean(value?.[choice.ix])}
                 disabled={disabled}
               >
                 <Button.Label>

@@ -6,6 +6,7 @@ import {
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
 import type {
+  AdaptiveEmpiricalValidationTaskInput,
   CourseDeletionEvent,
   HatchetHandlers,
   PreparedHatchetTasks,
@@ -98,6 +99,50 @@ export function prepareHatchetTasks({
     },
   })
   // #endregion
+
+  const adaptiveEmpiricalValidation = hatchet.task({
+    name: 'adaptive-empirical-validation',
+    retries: 2,
+    fn: async (
+      input: AdaptiveEmpiricalValidationTaskInput,
+      executionContext
+    ) => {
+      const validationId = await handlers.handleAdaptiveEmpiricalValidation(
+        input,
+        globalContext,
+        executionContext
+      )
+      return { validationId }
+    },
+  })
+  const adaptiveCalibrationExport = hatchet.task({
+    name: 'adaptive-calibration-export',
+    retries: 3,
+    fn: async (
+      { exportRequestId }: { exportRequestId: string },
+      executionContext
+    ) => {
+      const success = await handlers.handleAdaptiveCalibrationExport(
+        { exportRequestId },
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+  const adaptiveCalibrationExportCleanup = hatchet.task({
+    name: 'adaptive-calibration-export-cleanup',
+    retries: 3,
+    onCrons: ['15 0 * * *'],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleAdaptiveCalibrationExportCleanup(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
 
   // ! ACTIVITY PUBLICATION TASKS
   // #region
@@ -392,6 +437,9 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    adaptiveEmpiricalValidation,
+    adaptiveCalibrationExport,
+    adaptiveCalibrationExportCleanup,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

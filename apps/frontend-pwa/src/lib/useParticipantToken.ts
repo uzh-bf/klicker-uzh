@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function useParticipantToken({
   participantToken,
@@ -13,11 +13,18 @@ export default function useParticipantToken({
   callback?: () => void
 }) {
   const router = useRouter()
+  const [installedParticipantToken, setInstalledParticipantToken] = useState<
+    string | null
+  >(null)
+  const requiresSessionToken =
+    typeof participantToken === 'string' && cookiesAvailable === false
+  const isParticipantTokenReady =
+    !requiresSessionToken || installedParticipantToken === participantToken
 
   useEffect(() => {
     if (typeof participantToken === 'string') {
       if (!cookiesAvailable) {
-        if (!sessionStorage.getItem('participant_token')) {
+        if (sessionStorage.getItem('participant_token') !== participantToken) {
           sessionStorage.setItem('participant_token', participantToken)
 
           if (redirectTo) {
@@ -31,6 +38,7 @@ export default function useParticipantToken({
             callback?.()
           }
         }
+        setInstalledParticipantToken(participantToken)
       } else {
         if (sessionStorage.getItem('participant_token')) {
           sessionStorage.removeItem('participant_token')
@@ -44,4 +52,6 @@ export default function useParticipantToken({
       }
     }
   }, [participantToken, cookiesAvailable])
+
+  return isParticipantTokenReady
 }

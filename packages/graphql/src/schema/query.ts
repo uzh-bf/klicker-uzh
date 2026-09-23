@@ -1,3 +1,4 @@
+import { adaptiveQueryFields } from '@klicker-uzh/adaptive-server/schema/adaptiveQueryFields'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
@@ -29,6 +30,17 @@ import {
   UserActivityList,
 } from './activities.js'
 import {
+  AdaptivePracticeQuizConfigInput,
+  AdaptivePracticeQuizPreviewType,
+  AdaptivePracticeQuizSetupPreviewType,
+  PracticeQuizPublicationPreviewType,
+} from './adaptivePracticeQuiz.js'
+import {
+  AdaptiveCohortResultsRef,
+  AdaptivePracticeQuizAttemptStateRef,
+  AdaptiveStudentResultRef,
+} from './adaptivePracticeQuizRuntime.js'
+import {
   ActivityType,
   CourseActivityAnalytics,
   CoursePerformanceAnalytics,
@@ -45,6 +57,18 @@ import {
   StudentAssessmentResults,
 } from './assessment.js'
 import { asChatbotAuthor } from './authScopes.js'
+import {
+  CompetenceTree,
+  CompetenceTreeCatalogOwnership,
+  CompetenceTreeCatalogPageType,
+  CompetenceTreeInput,
+  CompetenceTreeSummaryType,
+  CompetenceTreeValidationResultType,
+} from './competenceTree.js'
+import {
+  AdaptiveCalibrationExportRequestRef,
+  CompetenceTreeCalibrationRef,
+} from './competenceTreeCalibration.js'
 import {
   AssessmentParticipant,
   Course,
@@ -179,6 +203,24 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await ParticipantService.getPublicParticipantProfile(args, ctx)
         },
+      }),
+      ...adaptiveQueryFields(t, {
+        AdaptivePracticeQuizConfigInput,
+        AdaptivePracticeQuizPreviewType,
+        AdaptivePracticeQuizSetupPreviewType,
+        PracticeQuizPublicationPreviewType,
+        AdaptiveCohortResultsRef,
+        AdaptivePracticeQuizAttemptStateRef,
+        AdaptiveStudentResultRef,
+        CompetenceTree,
+        CompetenceTreeCatalogOwnership,
+        CompetenceTreeCatalogPageType,
+        CompetenceTreeInput,
+        CompetenceTreeSummaryType,
+        CompetenceTreeValidationResultType,
+        AdaptiveCalibrationExportRequestRef,
+        CompetenceTreeCalibrationRef,
+        withPermission,
       }),
 
       controlCourse: t.withAuth(asUser).field({

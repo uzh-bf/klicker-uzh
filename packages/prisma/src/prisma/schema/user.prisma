@@ -136,6 +136,20 @@ model User {
   chatAccountUsages          ChatAccountUsage[]
   chatbotDisclaimers         ChatbotDisclaimer[]
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
+  adaptiveAssessments             AdaptiveAssessment[]
+  competenceTrees                 CompetenceTree[]
+  linkedCompetenceTreeCourses     CompetenceTreeCourse[]                    @relation("CompetenceTreeCourseLinkedBy")
+  adaptiveScaleVersionsCreated    CompetenceTreeScaleVersion[]              @relation("CompetenceTreeScaleVersionCreatedBy")
+  adaptiveScaleApprovalsSubmitted CompetenceTreeScaleApproval[]             @relation("CompetenceTreeScaleApprovalSubmittedBy")
+  adaptiveScaleApprovals          CompetenceTreeScaleApproval[]             @relation("CompetenceTreeScaleApprovalReviewer")
+  adaptiveScaleLinksCreated       CompetenceTreeScaleLink[]                 @relation("CompetenceTreeScaleLinkCreatedBy")
+  adaptiveScaleLinksReviewed      CompetenceTreeScaleLink[]                 @relation("CompetenceTreeScaleLinkReviewedBy")
+  adaptiveCalibrationsCreated     AdaptiveItemCalibration[]                 @relation("AdaptiveItemCalibrationCreatedBy")
+  adaptiveCalibrationsApproved    AdaptiveItemCalibration[]                 @relation("AdaptiveItemCalibrationApprovedBy")
+  adaptivePublications            PracticeQuizAdaptivePublication[]         @relation("PracticeQuizAdaptivePublicationPublishedBy")
+  adaptiveExportRequests          AdaptiveCalibrationExportRequest[]        @relation("AdaptiveCalibrationExportRequestedBy")
+  adaptiveValidationsSubmitted    AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationSubmittedBy")
+  adaptiveValidationsApproved     AdaptivePracticeQuizEmpiricalValidation[] @relation("AdaptiveEmpiricalValidationApprovedBy")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")
   adminUserGroups           UserGroup[]         @relation("UserGroupAdmins")

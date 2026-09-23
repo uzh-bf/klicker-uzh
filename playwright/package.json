@@ -7,9 +7,11 @@
     "@playwright/test": "~1.58.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^24.10.1",
+    "axe-core": "~4.11.4",
     "bcryptjs": "~2.4.3",
     "jose": "~5.9.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@klicker-uzh/adaptive-e2e": "workspace:*"
   },
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",
@@ -30,5 +32,9 @@
   "volta": {
     "extends": "../package.json"
   },
-  "type": "module"
+  "type": "module",
+  "exports": {
+    "./adaptive-host/global-setup": "./global-setup.ts",
+    "./adaptive-host/util/*": "./util/*.ts"
+  }
 }

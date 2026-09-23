@@ -6,6 +6,7 @@ import { useQuery } from '@apollo/client'
 import { faRepeat } from '@fortawesome/free-solid-svg-icons'
 import {
   GetPracticeQuizDocument,
+  PracticeQuizMode,
   PublicationStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
@@ -24,6 +25,9 @@ import Footer from '../../../../components/common/Footer'
 import Layout, {
   LAYOUT_SCROLL_CONTAINER_ID,
 } from '../../../../components/Layout'
+import AdaptivePracticeQuiz, {
+  AdaptivePracticeQuizProgress,
+} from '../../../../components/practiceQuiz/adaptive/AdaptivePracticeQuiz'
 import {
   EMBED_RESIZE_MESSAGE_TYPE,
   EMBED_RESIZE_VERSION,
@@ -47,6 +51,17 @@ import {
   type PracticeQuizProgressState,
   summarizePracticeQuizCompletion,
 } from '../../../../components/practiceQuiz/progress'
+
+const EMBED_READY_MESSAGE_TYPE = 'klicker:quiz-ready'
+
+function getEmbeddingOrigin() {
+  try {
+    const origin = new URL(document.referrer).origin
+    return origin === 'null' ? null : origin
+  } catch {
+    return null
+  }
+}
 
 function PracticeQuizPage({
   courseId,
@@ -105,17 +120,25 @@ function PracticeQuizPage({
     typeof window !== 'undefined' &&
     'ResizeObserver' in window
   const autoResize = embeddedAutoResize && resizeHeightValid
+  const [adaptiveProgress, setAdaptiveProgress] =
+    useState<AdaptivePracticeQuizProgress | null>(null)
 
-  useParticipantToken({
+  const isParticipantTokenReady = useParticipantToken({
     participantToken,
     cookiesAvailable,
   })
 
   const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
     variables: { id },
+    skip: !isParticipantTokenReady,
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first',
   })
 
-  const totalSteps = data?.practiceQuiz?.stacks?.length ?? 0
+  const isAdaptive = data?.practiceQuiz?.mode === PracticeQuizMode.Adaptive
+  const totalSteps = isAdaptive
+    ? (data?.practiceQuiz?.adaptiveMaximumQuestions ?? 0)
+    : (data?.practiceQuiz?.stacks?.length ?? 0)
 
   useEffect(() => {
     if (!embedded) return
@@ -152,6 +175,17 @@ function PracticeQuizPage({
     }
 
     window.addEventListener('message', handleMessage)
+
+    const embeddingOrigin = getEmbeddingOrigin()
+    if (window.parent !== window && embeddingOrigin) {
+      window.parent.postMessage(
+        {
+          type: EMBED_READY_MESSAGE_TYPE,
+          version: QUIZ_STATE_VERSION,
+        },
+        embeddingOrigin
+      )
+    }
 
     return () => {
       window.removeEventListener('message', handleMessage)
@@ -233,7 +267,7 @@ function PracticeQuizPage({
   }, [embeddedAutoResize, parentOrigin])
 
   useEffect(() => {
-    if (!embedded || !data?.practiceQuiz) return
+    if (!embedded || !data?.practiceQuiz || isAdaptive) return
 
     const stackIds = data.practiceQuiz.stacks?.map((stack) => stack.id) ?? []
     const progressState = readStoredProgressState(id)
@@ -243,12 +277,13 @@ function PracticeQuizPage({
     )
     setResumeIx(findFirstUnansweredStack(progressState, stackIds))
     setCompletionLoaded(true)
-  }, [embedded, id, data?.practiceQuiz])
+  }, [embedded, id, data?.practiceQuiz, isAdaptive])
 
   useEffect(() => {
     if (
+      isAdaptive ||
       !hostNavigationRequested ||
-      !completionLoaded ||
+      (!isAdaptive && !completionLoaded) ||
       isCompleted ||
       currentIx >= 0 ||
       totalSteps === 0
@@ -259,6 +294,7 @@ function PracticeQuizPage({
     setHostNavigationState({ phase: 'answering', canAdvance: false })
     setCurrentIx(Math.min(resumeIx, totalSteps - 1))
   }, [
+    isAdaptive,
     completionLoaded,
     currentIx,
     hostNavigationRequested,
@@ -268,10 +304,10 @@ function PracticeQuizPage({
   ])
 
   useEffect(() => {
-    if (currentIx >= 0) {
+    if (!isAdaptive && currentIx >= 0) {
       setIsCompleted(false)
     }
-  }, [currentIx])
+  }, [currentIx, isAdaptive])
 
   useEffect(() => {
     if (
@@ -279,18 +315,24 @@ function PracticeQuizPage({
       !parentOrigin ||
       loading ||
       !data?.practiceQuiz ||
-      !completionLoaded
+      (isAdaptive ? !adaptiveProgress : !completionLoaded)
     ) {
       return
     }
 
-    const payload = buildQuizStatePayload({
-      currentIx,
-      isCompleted,
-      totalSteps,
-      hostNavigation: hostNavigationActive,
-      hostNavigationState,
-    })
+    const payload =
+      isAdaptive && adaptiveProgress
+        ? {
+            version: QUIZ_STATE_VERSION,
+            ...adaptiveProgress,
+          }
+        : buildQuizStatePayload({
+            currentIx,
+            isCompleted,
+            totalSteps,
+            hostNavigation: hostNavigationActive,
+            hostNavigationState,
+          })
 
     window.parent.postMessage(
       {
@@ -310,9 +352,11 @@ function PracticeQuizPage({
     hostNavigationActive,
     hostNavigationState,
     completionLoaded,
+    isAdaptive,
+    adaptiveProgress,
   ])
 
-  if (loading)
+  if (!isParticipantTokenReady || loading)
     return (
       <Layout embedded={embedded} embeddedAutoResize={autoResize}>
         <Loader />
@@ -341,7 +385,7 @@ function PracticeQuizPage({
   // show notification with activity start date
   if (
     data.practiceQuiz.status === PublicationStatus.Scheduled &&
-    !data.practiceQuiz.isOwner
+    !data.practiceQuiz.isPreview
   ) {
     return (
       <Layout
@@ -376,7 +420,21 @@ function PracticeQuizPage({
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >
-      {focusedEmbedRequested && isCompleted ? (
+      {isAdaptive ? (
+        <AdaptivePracticeQuiz
+          key={data.practiceQuiz.id}
+          practiceQuizId={data.practiceQuiz.id}
+          name={data.practiceQuiz.name}
+          displayName={data.practiceQuiz.displayName}
+          description={data.practiceQuiz.description}
+          maximumQuestions={
+            data.practiceQuiz.adaptiveMaximumQuestions ?? totalSteps
+          }
+          previewOnly={data.practiceQuiz.isPreview ?? undefined}
+          embedded={embedded}
+          onProgressChange={setAdaptiveProgress}
+        />
+      ) : focusedEmbedRequested && isCompleted ? (
         <div className="pb-20">
           <FocusedEmbedCompletedPanel
             quizId={id}
@@ -409,7 +467,7 @@ function PracticeQuizPage({
               : () =>
                   router.push(`/course/${courseId}/practiceQuizzes/overview`)
           }
-          previewOnly={data.practiceQuiz.isOwner ?? undefined}
+          previewOnly={data.practiceQuiz.isPreview ?? undefined}
         />
       )}
       {!embedded && (

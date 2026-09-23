@@ -26,6 +26,8 @@ model Course {
   isGamificationEnabled  Boolean @default(true)
   isGroupCreationEnabled Boolean @default(true)
   isAssessmentEnabled    Boolean @default(false)
+  isAdaptiveLearningEnabled            Boolean @default(false)
+  isAdaptiveLearningCalibrationEnabled Boolean @default(false)
 
   groupDeadlineDate         DateTime
   preferredGroupSize        Int      @default(3)
@@ -58,6 +60,9 @@ model Course {
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
+  adaptiveAssessments          AdaptiveAssessment[]
+  adaptivePracticeQuizAttempts AdaptivePracticeQuizAttempt[] @relation("AdaptivePracticeQuizAttemptCourse")
+  competenceTreeLinks          CompetenceTreeCourse[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

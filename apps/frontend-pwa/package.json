@@ -15,6 +15,7 @@
     "@fortawesome/free-regular-svg-icons": "6.7.2",
     "@fortawesome/free-solid-svg-icons": "6.7.2",
     "@fortawesome/react-fontawesome": "0.2.2",
+    "@klicker-uzh/adaptive-learning": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
@@ -50,7 +51,9 @@
     "remeda": "2.15.0",
     "sharp": "0.35.4",
     "tailwind-merge": "3.3.1",
-    "yup": "1.6.1"
+    "yup": "1.6.1",
+    "@klicker-uzh/adaptive-pwa-ui": "workspace:*",
+    "@klicker-uzh/adaptive-i18n": "workspace:*"
   },
   "devDependencies": {
     "@capacitor/cli": "~5.3.0",

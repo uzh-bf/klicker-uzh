@@ -13,6 +13,7 @@
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@hatchet-dev/typescript-sdk": "1.9.4",
     "@klicker-uzh/feature-flags": "workspace:*",
+    "@klicker-uzh/adaptive-learning": "workspace:*",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
@@ -41,7 +42,9 @@
     "unique-names-generator": "4.7.1",
     "uuid": "10.0.0",
     "validator": "13.15.22",
-    "zod": "3.25.76"
+    "zod": "3.25.76",
+    "@klicker-uzh/adaptive-server": "workspace:*",
+    "@klicker-uzh/adaptive-persistence": "workspace:*"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "~5.0.3",
@@ -117,5 +120,19 @@
   "volta": {
     "extends": "../../package.json"
   },
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dist/ops": {
+      "types": "./dist/ops.d.ts",
+      "default": "./dist/ops.js"
+    },
+    "./adaptive-context-types": "./src/lib/context.ts",
+    "./adaptive-element-host-types": "./src/services/elements.ts",
+    "./adaptive-schema-host-types": "./src/adaptive-schema-host-types.ts",
+    "./*": "./*"
+  }
 }

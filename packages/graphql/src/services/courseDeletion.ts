@@ -1,3 +1,4 @@
+import { prepareAdaptiveCourseDeletion } from '@klicker-uzh/adaptive-server/services/adaptiveCourseDeletion'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { CourseDeletionEvent, HatchetHandlers } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
@@ -36,6 +37,7 @@ export async function requestCourseDeletion(
   ctx: ContextWithUser
 ): Promise<CourseDeletionRequest> {
   const request = await ctx.prisma.$transaction(async (prisma) => {
+    await prepareAdaptiveCourseDeletion({ courseId: id }, prisma)
     const course = await prisma.course.findUnique({
       where: { id, isAssessmentEnabled: false },
       include: {
