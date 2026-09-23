@@ -3,10 +3,11 @@
 ## Goal
 
 Provide a draft, independently reviewable operator script in `packages/graphql`
-for the fixed `klicker-elements-6` workbook, targeting current `v3` without the
+for the fixed Klicker Excel template, targeting current `v3` without the
 import/export PR stack. Import all seven element tabs (SC, MC, Kprim, Numerical,
-Free text, Content, Flashcards), up to 500 rows. The version identifies the template format, not one
-filled workbook. Selection and Case Study remain outside Excel support.
+Free text, Content, Flashcards), up to 500 rows. Worksheet names, headers, and
+field rules establish compatibility; a version marker is not required. Selection
+and Case Study remain outside Excel support.
 
 ## Contract
 
@@ -66,3 +67,10 @@ review before publication. No external executor: repository opt-in is absent.
 - Independent follow-up review found a missing meaningful-text check; required
   fields consisting only of HTML line breaks now fail, matching template-domain
   validation. Added regression coverage without rewriting authored text.
+- Removed version-marker enforcement at the user's request. Compatibility uses
+  element-sheet structure and field validation. Instructions is optional, and
+  its marker may be blank or arbitrary text. Existing private run bindings and
+  transaction-lock identifiers remain stable for operator-run compatibility.
+- Marker-removal verification: 23 parser/planner/database tests pass on a fresh
+  marked disposable PostgreSQL database; script and GraphQL package typechecks
+  and scoped formatting checks pass. No user-library or production writes.

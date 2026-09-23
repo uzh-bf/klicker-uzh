@@ -13,7 +13,6 @@ import {
 } from '../src/scripts/elementWorkbook/database.js'
 import {
   ELEMENT_WORKBOOK_HEADERS,
-  ELEMENT_WORKBOOK_VERSION,
   parseElementWorkbook,
   type WorkbookElement,
 } from '../src/scripts/elementWorkbook/parse.js'
@@ -148,7 +147,7 @@ describe.skipIf(process.env.RUN_ELEMENT_WORKBOOK_DB_TESTS !== 'true')(
       const id = await owner()
       const workbook = new ExcelJS.Workbook()
       workbook.addWorksheet('Instructions').getCell('A1').value =
-        ELEMENT_WORKBOOK_VERSION
+        'Klicker Excel template'
       for (const [name, headers] of Object.entries(ELEMENT_WORKBOOK_HEADERS))
         workbook.addWorksheet(name).getRow(6).values = [...headers]
       const row = (
@@ -290,7 +289,7 @@ describe.skipIf(process.env.RUN_ELEMENT_WORKBOOK_DB_TESTS !== 'true')(
       const id = await owner()
       const workbook = new ExcelJS.Workbook()
       workbook.addWorksheet('Instructions').getCell('A1').value =
-        ELEMENT_WORKBOOK_VERSION
+        'Klicker Excel template'
       for (const [name, headers] of Object.entries(ELEMENT_WORKBOOK_HEADERS)) {
         const sheet = workbook.addWorksheet(name)
         sheet.getRow(6).values = [...headers]

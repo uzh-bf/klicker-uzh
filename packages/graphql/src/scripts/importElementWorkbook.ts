@@ -11,7 +11,7 @@ import {
 } from './elementWorkbook/parse.js'
 import { comparisonCsv, digest } from './elementWorkbook/plan.js'
 
-const help = `Import all seven element types in the Klicker Excel v6 template (no media fetching).
+const help = `Import all seven element types in the Klicker Excel template (no media fetching).
   pnpm exec tsx src/scripts/importElementWorkbook.ts --file /absolute/input.xlsx --validate-only
   pnpm exec tsx src/scripts/importElementWorkbook.ts --file /absolute/input.xlsx --owner <UUID> --state-dir /private/run
 

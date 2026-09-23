@@ -1,7 +1,6 @@
 import { parse } from 'csv-parse/sync'
 import ExcelJS from 'exceljs'
 
-export const ELEMENT_WORKBOOK_VERSION = 'klicker-elements-6'
 export const MAX_ELEMENT_WORKBOOK_BYTES = 5 * 1024 * 1024
 export const MAX_ELEMENT_WORKBOOK_ELEMENTS = 500
 export const ELEMENT_WORKBOOK_HEADER_ROW = 6
@@ -792,11 +791,6 @@ export async function parseElementWorkbook(
   } catch {
     fail('INVALID_WORKBOOK')
   }
-  if (
-    workbook.getWorksheet('Instructions')?.getCell('A1').value !==
-    ELEMENT_WORKBOOK_VERSION
-  )
-    fail('UNSUPPORTED_TEMPLATE_VERSION', 'Instructions', 1, 1)
   let workbookCells = 0
   for (const sheet of workbook.worksheets) {
     if (

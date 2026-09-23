@@ -1,15 +1,16 @@
 # Import the Klicker Excel template
 
 This standalone operator script imports **all seven element tabs** in the Klicker
-Excel template into an existing lecturer's library. `klicker-elements-6` is the
-template format version, not a particular workbook or a restriction to MC/Flashcards.
+Excel template into an existing lecturer's library. Compatibility is determined
+by the worksheet names, column headers, and field rules; no version marker is required.
 It lives in the GraphQL package and uses Prisma directly; it does not call a
 GraphQL API and does not depend on the import/export PR stack.
 
 ## Workbook contract
 
-- Keep all eight tabs, `Instructions!A1` version, row 6 headers, and row 8 data
-  start unchanged. Any combination of the seven element tabs may contain data.
+- Keep the seven element tabs, row 6 headers, and row 8 data start unchanged.
+  Any combination of element tabs may contain data. The Instructions sheet is
+  optional; its A1 marker may be absent or contain any text.
 - At most 500 elements total and 5 MiB per file. SC and MC support ten answer slots;
   gaps are accepted and populated answers keep their order. Every populated answer
   needs a correctness value when sample solutions are enabled. Feedback needs
@@ -36,8 +37,8 @@ GraphQL API and does not depend on the import/export PR stack.
 | Flashcards      | Front and back; no solution or scoring fields.                                                                                                  |
 
 Every type supports tags. Selection and Case Study are not part of the Excel
-template and are not imported by this script. Versions other than v6 are rejected
-explicitly to prevent misinterpreting a changed column layout.
+template and are not imported by this script. Incompatible column layouts still
+fail validation even if a workbook contains a familiar version marker.
 
 ## Run
 

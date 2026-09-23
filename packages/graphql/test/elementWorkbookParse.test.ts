@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   ELEMENT_WORKBOOK_DATA_ROW,
   ELEMENT_WORKBOOK_HEADERS,
-  ELEMENT_WORKBOOK_VERSION,
   type MultipleChoiceOptions,
   parseElementWorkbook,
 } from '../src/scripts/elementWorkbook/parse.js'
@@ -11,7 +10,7 @@ import {
 async function workbookBuffer(populate?: (workbook: ExcelJS.Workbook) => void) {
   const workbook = new ExcelJS.Workbook()
   workbook.addWorksheet('Instructions').getCell('A1').value =
-    ELEMENT_WORKBOOK_VERSION
+    'Klicker Excel template'
   for (const [name, headers] of Object.entries(ELEMENT_WORKBOOK_HEADERS)) {
     const sheet = workbook.addWorksheet(name)
     headers.forEach((header, index) => {
@@ -83,7 +82,7 @@ describe('parseElementWorkbook', () => {
     }
   })
 
-  it('parses v6 multiple choice and flashcards while preserving placeholders and tag CSV', async () => {
+  it('parses multiple choice and flashcards while preserving placeholders and tag CSV', async () => {
     const buffer = await workbookBuffer((workbook) => {
       setRow(
         workbook,
@@ -138,15 +137,38 @@ describe('parseElementWorkbook', () => {
     ])
   })
 
-  it('requires the exact version and visible headers', async () => {
-    const wrongVersion = await workbookBuffer((workbook) => {
-      workbook.getWorksheet('Instructions')!.getCell('A1').value =
-        'klicker-elements-5'
+  it.each([
+    null,
+    'klicker-elements-6',
+    'klicker-elements-5',
+    'My teaching material',
+  ])('ignores the Instructions marker %s when the data layout is valid', async (marker) => {
+    const buffer = await workbookBuffer((workbook) => {
+      workbook.getWorksheet('Instructions')!.getCell('A1').value = marker
+      setRow(workbook, 'Flashcards', {
+        Name: 'Card',
+        Front: 'Front',
+        Back: 'Back',
+      })
     })
-    await expect(parseElementWorkbook(wrongVersion)).rejects.toThrow(
-      'UNSUPPORTED_TEMPLATE_VERSION at Instructions!A1'
-    )
+    await expect(parseElementWorkbook(buffer)).resolves.toEqual([
+      expect.objectContaining({
+        type: 'FLASHCARD',
+        content: 'Front',
+        explanation: 'Back',
+      }),
+    ])
+  })
 
+  it('accepts the data tabs without an Instructions sheet', async () => {
+    const buffer = await workbookBuffer((workbook) => {
+      workbook.removeWorksheet(workbook.getWorksheet('Instructions')!.id)
+      setRow(workbook, 'Multiple choice', multipleChoiceRow())
+    })
+    await expect(parseElementWorkbook(buffer)).resolves.toHaveLength(1)
+  })
+
+  it('requires the visible headers and rejects unknown columns', async () => {
     const wrongHeader = await workbookBuffer((workbook) => {
       workbook.getWorksheet('Multiple choice')!.getCell('A6').value = 'Title'
     })
@@ -162,7 +184,7 @@ describe('parseElementWorkbook', () => {
     )
   })
 
-  it('parses every v6 element type', async () => {
+  it('parses every template element type', async () => {
     const buffer = await workbookBuffer((workbook) => {
       setRow(workbook, 'Single choice', {
         Name: 'SC',
@@ -222,7 +244,7 @@ describe('parseElementWorkbook', () => {
     )
   })
 
-  it('rejects invalid v6 element rules and unknown sheets', async () => {
+  it('rejects invalid template element rules and unknown sheets', async () => {
     const invalidSingleChoice = await workbookBuffer((workbook) => {
       setRow(workbook, 'Single choice', {
         Name: 'SC',
