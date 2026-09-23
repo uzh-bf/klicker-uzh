@@ -24,7 +24,7 @@ regular nodes (W4).
 | W3a–W3c — Platform, capacity, and observability | Planned; the 2026-09-23 review supplies live pool and usage evidence for W3b | Secret projection, exact Argo ownership, versioned capacity, metrics, and alerts |
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 | W10 — Chat and MCP multi-replica readiness | Source scan only; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
-| W11 — Production capacity baseline | Request corrections merged 2026-09-23 ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)) and live in production | Restore the temporary replicas under A5 ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) |
+| W11 — Production capacity baseline | Request corrections ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)) and replica restore ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) merged 2026-09-23 and live in production | Chat to 3 replicas ([#6291](https://github.com/uzh-bf/klicker-uzh/pull/6291), [#6292](https://github.com/uzh-bf/klicker-uzh/pull/6292)); general-worker restore after queue evidence; the seven-day read |
 | W12 — HTTP spot burst tier | Added 2026-09-23; elearning pattern exists but is not deployed | Chart support, PWA pilot in staging, then GraphQL and response API |
 | W13 — Staging capacity on spot | Added 2026-09-23 | Move staging Klicker workloads onto `asyncspot` under A6 |
 
@@ -1451,7 +1451,8 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   its build and monitor tasks run on the general worker. That restore
   therefore needs queue evidence as well as CPU evidence.
 - **Do:** (1) Restore PWA, GraphQL, response API, and the response worker to
-  4, and OLAT API and chat to 1. Restore the general worker to 2 only after
+  4, and OLAT API and chat to 1 (the user later ruled chat to 3 for
+  redundancy). Restore the general worker to 2 only after
   its Hatchet queue wait and slot occupancy with the knowledge-graph tasks
   fit two workers. (2) Set each
   non-assessment CPU request to about twice its 14-day per-Pod p99, rounded up
@@ -1678,12 +1679,26 @@ a values edit.
   no container restarts. The readiness-probe failures in the events came from
   containers still starting. The Pods in `Error` state are 10 hours to almost 6 days
   old and predate the rollout.
-- **Next action:** The restore pair #6278/#6279 still merges cleanly onto
-  both bases. Before it merges, update both branches so CI and the parity
-  check run against the new requests. Merging it needs its own production
-  approval. W12 chart work and W2 can proceed in parallel; W12 activation
-  waits for the exact Argo exceptions and a larger `asyncspot` maximum in
-  `df/df-cloud`.
+- **Restore pair merged, same day:** The user merged #6279 into `v3-ai` and
+  #6278 into `v3` (`b4f9db90c0`), with the roadmap PR #6277. `deploy/` is
+  identical on both branches. Argo CD synced the commit, and a read-only
+  check found PWA, GraphQL, the response API, and the live response worker at
+  4 Ready replicas and OLAT API and chat at 1, with the corrected requests,
+  no Pending Pods, no OOM kills, and no restarts. The `apps` pool still had 4
+  nodes right after the rollout; a later read confirms whether the cluster
+  autoscaler removes one.
+- **Chat ruling and staging read, same day:** The user ruled that production
+  chat needs more than one replica, about three. Chat keeps no cross-request
+  state, so it is open as a companion pair (#6292 against `v3`, #6291 against
+  `v3-ai`) that raises it to 3 and adds a chat PDB with `maxUnavailable: 1`.
+  W10's drain contract still decides whether a stream survives a restart.
+  Staging runs every Klicker service at 1 replica with no HPA or
+  ScaledObject, and its Argo application is Synced and Healthy.
+- **Next action:** Merge the chat pair after CI and its production approval,
+  then take the seven-day W11 read. W12 chart support proceeds as its own
+  companion pair, because the deploy-parity check requires `deploy/` to match
+  on `v3` and `v3-ai`; its activation waits for the exact Argo exceptions and
+  a larger `asyncspot` maximum in `df/df-cloud`.
 
 ### Roadmap extension — 2026-09-06, later
 
