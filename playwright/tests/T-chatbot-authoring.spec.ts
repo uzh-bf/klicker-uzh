@@ -70,6 +70,10 @@ async function createChatbot(
   await selectOption(page, '[data-cy="create-chatbot-course"]', 'Testkurs')
   await page.getByTestId('submit-create-chatbot').click()
   await expect(page.getByTestId(`chatbot-${name}`)).toBeVisible()
+  // A new chatbot continues into its materials and points to the student
+  // information that publication still requires.
+  await expect(page.getByTestId('chatbot-knowledge')).toBeVisible()
+  await page.getByTestId('chatbot-knowledge-open-disclaimer').click()
   await expect(page.getByTestId('chatbot-setup-disclaimer')).toBeVisible()
   await expect(page.getByTestId('chatbot-disclaimer-title')).not.toHaveValue('')
   await expect(
@@ -432,19 +436,15 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect.poll(() => createOperationCount).toBe(1)
     await expect
       .poll(() => new URL(page.url()).searchParams.get('view'))
-      .toBe('disclaimer')
+      .toBe('knowledge')
     await expect
       .poll(() => new URL(page.url()).searchParams.get('step'))
       .toBeNull()
     await expect(
-      page.getByTestId('chatbot-disclaimer-suggested-unsaved')
+      page.getByTestId('chatbot-knowledge-next-disclaimer')
     ).toBeVisible()
 
     const chatbotId = new URL(page.url()).searchParams.get('chatbotId')
-    page.once('dialog', (dialog) => {
-      expect(dialog.type()).toBe('beforeunload')
-      void dialog.accept()
-    })
     await page.goto(
       `${process.env.URL_MANAGE ?? URL_MANAGE}/resources/chatbots?chatbotId=${chatbotId}&view=invalid&step=invalid`
     )
@@ -1188,6 +1188,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       creditResetAmount: 10,
     })
     await navigateToSetupStep(page, 'review')
+    // The approved version keeps serving students while the revision waits.
+    await expect(
+      page.getByTestId('chatbot-publication-visibility-note')
+    ).toHaveAttribute('data-published', 'true')
     await page.getByTestId('withdraw-chatbot-revision').click()
     await expect
       .poll(async () => {

@@ -118,7 +118,13 @@ function createReaderContext(knowledgeBases: MockKnowledgeBaseBinding[]) {
           ownerId: USER_ID,
           deletedAt: null,
         })),
+        findMany: vi.fn(async () => []),
       },
+      // The chatbot reader aggregates material readiness for the attached
+      // knowledge bases; an empty aggregate keeps the projection under test.
+      kBResource: { groupBy: vi.fn(async () => []) },
+      kBUploadTicket: { groupBy: vi.fn(async () => []) },
+      kBChatbot: { groupBy: vi.fn(async () => []) },
       chatbot: { findMany: chatbotFindMany },
       chatUsageCredits: { groupBy: vi.fn(async () => []) },
       chatThread: { groupBy: vi.fn(async () => []) },
@@ -214,6 +220,7 @@ describe('Chatbot knowledge-base reader compatibility', () => {
       {
         chatbotId: '00000000-0000-4000-8000-000000000003',
         chatbotName: 'Reader test chatbot',
+        chatbotStatus: 'DRAFT',
         enabledKbs: expected,
         enabledKbId: legacyId,
         enabledKbName: legacyName,
