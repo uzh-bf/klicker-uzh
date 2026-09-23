@@ -102,49 +102,12 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-pwa.yaml") . | sha256sum }}
-        release: {{ .Chart.AppVersion }}
-      {{- with .Values.frontendPWA.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- include "chart.frontendPWAPodAnnotations" . | nindent 8 }}
       labels:
         {{- include "chart.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: frontend-pwa
     spec:
-      priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.frontendPWA.priorityClassName }}
-      {{- with .Values.frontendPWA.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      securityContext:
-        {{- toYaml .Values.frontendPWA.podSecurityContext | nindent 8 }}
-      containers:
-        - name: frontend-pwa
-          securityContext:
-            {{- toYaml .Values.frontendPWA.securityContext | nindent 12 }}
-          image: "{{ .Values.frontendPWA.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendPWA.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.frontendPWA.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: 3000
-              protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-global
-            - configMapRef:
-                name: {{ include "chart.fullname" . }}-config-frontend-pwa
-            - secretRef:
-                name: {{ include "chart.fullname" . }}-secret-frontend-pwa
-          livenessProbe:
-            httpGet:
-              path: /login
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /login
-              port: http
-          resources:
-            {{- toYaml .Values.frontendPWA.resources | nindent 12 }}
+      {{- include "chart.frontendPWAPodSpec" . | nindent 6 }}
       {{- with .Values.frontendPWA.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -157,6 +120,77 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- if .Values.frontendPWA.burst.enabled }}
+{{- $burst := .Values.frontendPWA.burst }}
+{{- if .Values.frontendPWA.autoscaling.enabled }}
+{{- fail "frontendPWA.burst.enabled cannot be combined with frontendPWA.autoscaling.enabled" }}
+{{- end }}
+{{- if le (int $burst.targetCPUUtilizationPercentage) 0 }}
+{{- fail "frontendPWA.burst.targetCPUUtilizationPercentage must be greater than zero when the burst tier is enabled" }}
+{{- end }}
+{{- if lt (int $burst.minReplicas) 1 }}
+{{- fail "frontendPWA.burst.minReplicas must be at least 1 when the burst tier is enabled" }}
+{{- end }}
+{{- if lt (int $burst.maxReplicas) (int $burst.minReplicas) }}
+{{- fail "frontendPWA.burst.maxReplicas must be greater than or equal to frontendPWA.burst.minReplicas" }}
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}-frontend-pwa-burst
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend-pwa
+    klicker.uzh.ch/tier: burst
+spec:
+  revisionHistoryLimit: 5
+  {{- with .Values.frontendPWA.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  # The tier label keeps baseline pods out of this selector; the baseline
+  # selector cannot gain the label because selectors are immutable, so it also
+  # matches burst pods. The shared component label lets the PWA Service and
+  # disruption budget cover both tiers.
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend-pwa
+      klicker.uzh.ch/tier: burst
+  template:
+    metadata:
+      annotations:
+        {{- include "chart.frontendPWAPodAnnotations" . | nindent 8 }}
+      labels:
+        {{- include "chart.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend-pwa
+        klicker.uzh.ch/tier: burst
+    spec:
+      {{- include "chart.frontendPWAPodSpec" . | nindent 6 }}
+      terminationGracePeriodSeconds: {{ $burst.terminationGracePeriodSeconds }}
+      # Burst pods run only on spot nodes. The baseline node scheduling values
+      # are not inherited because they could place burst pods on regular
+      # capacity or omit the spot taint tolerations.
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.azure.com/scalesetpriority
+                    operator: In
+                    values:
+                      - spot
+      tolerations:
+        - key: asyncspot
+          operator: Equal
+          value: reserved
+          effect: NoSchedule
+        - key: kubernetes.azure.com/scalesetpriority
+          operator: Equal
+          value: spot
+          effect: NoSchedule
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
