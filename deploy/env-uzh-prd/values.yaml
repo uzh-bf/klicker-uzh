@@ -45,7 +45,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.81
+        tag: v3.4.0-alpha.83
       resources:
         requests:
           cpu: 50m
@@ -86,7 +86,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.81
+        tag: v3.4.0-alpha.83
       resources:
         requests:
           cpu: 50m
@@ -127,7 +127,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.81
+        tag: v3.4.0-alpha.83
       resources:
         requests:
           cpu: 50m
@@ -194,7 +194,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   ingress:
     annotations:
@@ -344,7 +344,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   ingress:
     annotations:
@@ -412,7 +412,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   strategy:
     type: RollingUpdate
@@ -462,7 +462,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   strategy:
     type: RollingUpdate
@@ -499,7 +499,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   ingress:
     className: haproxy
@@ -552,7 +552,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   ingress:
     className: haproxy
@@ -590,7 +590,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   affinity:
     podAntiAffinity:
@@ -687,7 +687,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -740,7 +740,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   affinity:
     podAntiAffinity:
@@ -810,7 +810,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
 
   ingress:
     className: haproxy
@@ -842,7 +842,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.81
+    tag: v3.4.0-alpha.83
     pullPolicy: IfNotPresent
 
   affinity:
@@ -932,7 +932,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.81
+      tag: v3.4.0-alpha.83
 
     ingress:
       className: haproxy
@@ -1007,7 +1007,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.81
+      tag: v3.4.0-alpha.83
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1083,7 +1083,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.81
+      tag: v3.4.0-alpha.83
 
     ingress:
       className: haproxy
@@ -1126,3 +1126,15 @@ migrator:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
     pullPolicy: IfNotPresent
+
+# Modern Klicker KB retrieval authenticates with a fresh five-minute ES256
+# scope token on the dedicated Doc Query route instead of the shared transport
+# bearer. All three values move together: the chart refuses to render a partial
+# triple, and scope mode ignores the stored credential for this server. The
+# server id and legacy URL are this environment's existing KB MCP server row, so
+# a database edit cannot redirect a scope token.
+docQuery:
+  scopedMcp:
+    serverId: 'e05030e6-d799-4e9b-91c7-da2e074d14a8'
+    legacyUrl: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+    url: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker/kb'
