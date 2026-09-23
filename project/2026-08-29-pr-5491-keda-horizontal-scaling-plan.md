@@ -24,7 +24,7 @@ regular nodes (W4).
 | W3a–W3c — Platform, capacity, and observability | Planned; the 2026-09-23 review supplies live pool and usage evidence for W3b | Secret projection, exact Argo ownership, versioned capacity, metrics, and alerts |
 | W4 — Assessment staging pilot and later packages | Not activated | Close the named evidence and authority gates before staging, spot, or production claims |
 | W10 — Chat and MCP multi-replica readiness | Source scan only; no implementation | Prove or replace the stateful MCP transport, add a chat drain contract, then feed W9 |
-| W11 — Production capacity baseline | Added 2026-09-23 from Goldilocks and Prometheus evidence | Restore the temporary replicas under A5, then right-size CPU and fix memory under-requests |
+| W11 — Production capacity baseline | Request corrections merged 2026-09-23 ([#6283](https://github.com/uzh-bf/klicker-uzh/pull/6283), [#6284](https://github.com/uzh-bf/klicker-uzh/pull/6284)) and live in production | Restore the temporary replicas under A5 ([#6278](https://github.com/uzh-bf/klicker-uzh/pull/6278), [#6279](https://github.com/uzh-bf/klicker-uzh/pull/6279)) |
 | W12 — HTTP spot burst tier | Added 2026-09-23; elearning pattern exists but is not deployed | Chart support, PWA pilot in staging, then GraphQL and response API |
 | W13 — Staging capacity on spot | Added 2026-09-23 | Move staging Klicker workloads onto `asyncspot` under A6 |
 
@@ -1671,7 +1671,16 @@ a values edit.
   still covers twice the p99 projected at the restored replica counts, so the
   two pairs can merge in either order. Whichever merges second needs its
   branch updated, because both edit the production values file.
-- **Next action:** Merge each W11 pair after CI and its own production
+- **Request pair merged, same day:** The user merged #6283 into `v3-ai` and
+  #6284 into `v3` (`bd5cc8a186`). Argo CD synced `app-klicker` to that commit
+  and reports it Healthy. A read-only check afterwards found every Deployment
+  fully rolled out with the new requests, no Pending Pods, no OOM kills, and
+  no container restarts. The readiness-probe failures in the events came from
+  containers still starting. The Pods in `Error` state are 10 hours to almost 6 days
+  old and predate the rollout.
+- **Next action:** The restore pair #6278/#6279 still merges cleanly onto
+  both bases. Before it merges, update both branches so CI and the parity
+  check run against the new requests. Merging it needs its own production
   approval. W12 chart work and W2 can proceed in parallel; W12 activation
   waits for the exact Argo exceptions and a larger `asyncspot` maximum in
   `df/df-cloud`.
