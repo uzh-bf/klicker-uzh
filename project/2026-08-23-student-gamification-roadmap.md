@@ -7,7 +7,9 @@
 - Status: implemented through W6 but **not merge-ready**. The 2026-09-09
   production-readiness audit of PR #5515 returned `not-ready`: five confirmed
   merge blockers and one that the repository cannot settle. See
-  [Merge blockers](#merge-blockers). Merge, ClickUp reconciliation,
+  [Merge blockers](#merge-blockers). The user approved
+  [W7](#w7--merge-blocker-closure-for-pr-5515) on 2026-09-23 to close the
+  repository-owned blockers. Merge, ClickUp reconciliation,
   deployment, cleanup, and live-data actions remain separate authority
   boundaries.
 - Repository: `uzh-bf/klicker-uzh`
@@ -97,8 +99,9 @@ W-item is currently ordered. Further gamification continuation (for example
 streak XP and multipliers) stays explicitly deferred in this roadmap.
 
 The 2026-09-09 readiness audit found that the branch cannot merge as it stands;
-[Merge blockers](#merge-blockers) lists what must change first. Choosing the
-package that closes them is a roadmap-shape decision that has not yet been made.
+[Merge blockers](#merge-blockers) lists what must change first. The user
+approved [W7](#w7--merge-blocker-closure-for-pr-5515) on 2026-09-23 as the
+package that closes the repository-owned rows.
 
 ### Merge blockers
 
@@ -114,6 +117,11 @@ rechecked on 2026-09-23.
 | An interrupted run of `20260823120000_add_study_streak_state` blocks every later migration deploy to that environment | Confirmed by reproduction with Prisma 7.8.0: `P3018`, then `P3009` | One statement per migration file, each concurrent index build preceded by `DROP INDEX CONCURRENTLY IF EXISTS`, plus a recovery runbook |
 | Required checks are not green | Confirmed. GitGuardian fails on a synthetic CI database password that `v3` also contains; `final-ai-review` is pending | A GitGuardian dashboard disposition, then a new `/final-review` at the integrated head |
 | The migrate hook may not cover the assessment backend's database | Unverifiable from the repository | A cluster-authorized operator compares digests (never values) of `DATABASE_URL` in the graphql and assessment backend Secrets |
+
+W7 settles the first four rows in the repository. The GitGuardian disposition
+and the Secret digest comparison stay user and operator actions. The staging
+check on tracking starts follows a staging rollout, which W7 does not
+authorize.
 
 The report also records 24 major and 22 minor findings. These include missing
 error reporting, metrics, and tracing in the backend, which leaves both
@@ -592,6 +600,38 @@ fixtures/spec, screenshots, and wiki pages.
   policy, streak or leaderboard behavior, public receipt indicators, new
   receipt tables, runtime raw SQL, ClickUp changes, and deployment.
 
+## W7 — Merge-blocker closure for PR #5515
+
+- **Problem** — The 2026-09-09 readiness audit found four blockers that the
+  repository can close. The branch no longer merges into `v3`. The likely
+  conflict resolution silently drops the streak rollout initialization. The
+  streak migration can block every later deploy after one interrupted index
+  build. The PR description states a startup order that the merge reverses.
+- **Priority** — P1. The package cannot merge until these are closed.
+- **Do** — Execute
+  [the W7 plan](2026-09-23-pr-5515-w7-merge-blockers-plan.md):
+  1. Merge `origin/v3` with the documented hand-merge. Keep `v3`'s migration
+     runner and blocking startup, and register the streak rollout once.
+  2. Add a test that the production migration registry contains the rollout.
+  3. Split the streak migration so each concurrent index build has its own
+     file, guarded by `DROP INDEX CONCURRENTLY IF EXISTS`. Add a recovery
+     runbook and prove it with a disposable-Postgres drill.
+  4. Reconcile the docs and skill text, then rewrite the PR description.
+  5. Post `/final-review` at the integrated head.
+- **Check** — The plan's slice acceptance checks, the drill evidence,
+  package-owned exact-head CI and the `/final-review` result.
+- **Authority and terminal** — The user approved W7 on 2026-09-23. It covers
+  the merge commit, local commits, non-force pushes to the PR branch, the PR
+  body rewrite and the `/final-review` comment. The terminal state is a pushed
+  head with package-owned CI green and a dispositioned `/final-review`. Merge,
+  force-push, GitGuardian, the operator Secret check, ClickUp, staging and
+  production remain separate authority boundaries.
+- **Depends on / GATED on** — Depends on the W6 branch tip `a5644ae16b` and
+  remote `v3` at `bd5cc8a186`. No product decision gate is open.
+- **Out of scope** — The 24 major and 22 minor audit findings, which remain
+  named merge conditions. This includes measuring the index builds against
+  the 600-second hook deadline and merging the two receipt migrations.
+
 ## Package validation and operation
 
 Technical and product validation ships with the implementation:
@@ -1033,3 +1073,9 @@ Append entries; do not rewrite history.
   to not merge-ready. No W-item was added: choosing the package that closes the
   blockers is a roadmap-shape decision awaiting approval. This reconciliation
   committed the readiness report next to this roadmap.
+- 2026-09-23 — The user approved W7 as the package that closes the
+  repository-owned merge blockers. W7 is defined above, and
+  [its plan](2026-09-23-pr-5515-w7-merge-blockers-plan.md) carries the hand-merge
+  table, slices and drill. This replaces the earlier note that the package
+  choice awaited approval. Remote `v3` was re-fetched and is unchanged at
+  `bd5cc8a186`.
