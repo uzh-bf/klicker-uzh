@@ -1,6 +1,6 @@
 # Three-day capacity increase and resource sizing
 
-Status: **temporary replicas restored on 2026-09-23**, except
+Status: **temporary replicas restored**, except
 `hatchet.workers.general`, which stays at 4 until its queue wait and slot
 occupancy with the production knowledge-graph tasks show that 2 replicas
 suffice. The memory-request corrections below remain in effect.
