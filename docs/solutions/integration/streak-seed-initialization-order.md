@@ -42,12 +42,14 @@ not in the response records.
 
 ## Solution
 
-`apps/backend-docker/src/migration.ts:initializeActiveStudyStreaks` is reused by
-a second one-time repair migration. It covers active participations in enabled,
-non-assessment courses that are still within their course end date, and only
-fills null timestamps. `packages/prisma-data/src/data/seedTEST.ts:seedTest`
-initializes the same field when creating Testkurs participations and repairs
-existing active seeded rows with a Prisma `updateMany`.
+`packages/prisma-data/src/data/seedTEST.ts:seedTest` initializes
+`studyStreakTrackingStartedAt` when it creates Testkurs participations. It also
+repairs existing active seeded rows with a Prisma `updateMany`. The one-time
+runtime rollout `apps/backend-docker/src/migration.ts:initializeActiveStudyStreaks`
+fills the same null timestamps for active participations in enabled,
+non-assessment courses that are still within their course end date. Once its
+record exists it never runs again, so the seed alone covers a seed that runs
+after the rollout.
 
 Both paths use the current time as the tracking boundary. They therefore start a
 new run without historical backfill and preserve any existing streak state.
@@ -61,8 +63,8 @@ the existing PWA reads show the resulting one-day streak.
 
 ## Prevention
 
-The repair migration covers databases where the original boot migration has
-already been recorded. The seed update covers the opposite ordering, where the
-development seed runs after backend startup. The focused GraphQL streak tests,
-the local migration count check, and the browser flow from zero through five
-responses now exercise the affected boundary.
+The seed update covers the ordering where the development seed runs after the
+runtime rollout has been recorded, so no separate repair migration is needed.
+The focused GraphQL streak tests, the backend registry test for the rollout
+entry, and the browser flow from zero through five responses exercise the
+affected boundary.
