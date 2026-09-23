@@ -1455,15 +1455,18 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
   its Hatchet queue wait and slot occupancy with the knowledge-graph tasks
   fit two workers. (2) Set each
   non-assessment CPU request to about twice its 14-day per-Pod p99, rounded up
-  to 25m steps with a 25m floor. Keep GraphQL and PWA at 100m because their
+  to 25m steps with a 25m floor. Per-Pod p99 means the p99 of the busiest
+  Pod at each step, not the highest p99 among Pod names. Keep GraphQL and PWA at 100m because their
   peaks reach 562m and 156m. Lower production `lti` from 200m to 50m as
   staging did in #6232. (3) Raise `mcp-lecturer` and `mcp-student` memory
   requests to at least their targets and their limits above the upper bound.
   (4) Leave assessment requests unchanged; the reserved pool is sized by A7.
 - **Check:** Render and ownership checks; read back live requests, Pending
   Pods, OOM kills, and per-pool requested capacity after rollout.
-- **Working context:** Companion branches off `v3` and `v3-ai`, for example
-  `rs/prd-replica-restore` and `rs/prd-replica-restore-v3ai`.
+- **Working context:** Companion branches off `v3` and `v3-ai`:
+  `rs/prd-replica-restore` and `rs/prd-replica-restore-v3ai` (#6278, #6279)
+  for the restore, and `rs/prd-request-rightsizing` and
+  `rs/prd-request-rightsizing-v3ai` (#6284, #6283) for the requests.
 - **Authority and terminal:** A5 authorizes the production replica restore and
   its rollout. The request PR follows standing implementation delivery;
   production rollout of it needs its own deployment approval. Terminal is the
@@ -1659,10 +1662,19 @@ a values edit.
   A6 keeps one shared `asyncspot` pool, enlarged when W12 needs it, instead of
   a separate HTTP spot pool. A7 keeps the two reserved assessment nodes for
   now; a later change may lower the minimum during semester breaks.
-- **Next action:** Land the W11 restore as a `v3` and `v3-ai` companion pair,
-  then the W11 request corrections. W12 chart work and W2 can proceed in
-  parallel; W12 activation waits for the exact Argo exceptions and a
-  larger `asyncspot` maximum in `df/df-cloud`.
+- **Order change, same day:** The user deferred merging the restore pair and
+  asked for the request corrections to proceed first. They are open as a
+  second companion pair (#6284 against `v3`, #6283 against `v3-ai`). The CPU
+  rule uses the 14-day p99 of the busiest Pod at each 5-minute step; a p99
+  over every Pod name overstates services that rolled during the window,
+  because a short-lived Pod's p99 is its startup burst. Every lowered request
+  still covers twice the p99 projected at the restored replica counts, so the
+  two pairs can merge in either order. Whichever merges second needs its
+  branch updated, because both edit the production values file.
+- **Next action:** Merge each W11 pair after CI and its own production
+  approval. W12 chart work and W2 can proceed in parallel; W12 activation
+  waits for the exact Argo exceptions and a larger `asyncspot` maximum in
+  `df/df-cloud`.
 
 ### Roadmap extension — 2026-09-06, later
 
