@@ -20,13 +20,18 @@ function CreateKnowledgeBaseModal({
   onCreated,
 }: {
   onClose: () => void
-  onCreated: () => Promise<unknown>
+  onCreated: (kb: { id: string }) => Promise<unknown>
 }) {
   const t = useTranslations()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [domain, setDomain] = useState<KbDomainFieldsValue | null>(null)
-  const [createKb, { loading }] = useMutation(CreateKbDocument)
+  const [createKb, { loading: creating }] = useMutation(CreateKbDocument)
+  // The caller's follow-up (for example connecting the new knowledge base to a
+  // chatbot) runs after the create mutation settles, so the form stays busy
+  // until it finishes and cannot submit a second knowledge base.
+  const [finishing, setFinishing] = useState(false)
+  const loading = creating || finishing
   const { data: domainData } = useQuery(GetKbGraphDomainOptionsDocument)
 
   const domainConfig = domainData?.getKbKnowledgeGraphDomainConfig
@@ -49,8 +54,9 @@ function CreateKnowledgeBaseModal({
     const trimmedName = name.trim()
     if (!canCreate || loading) return
 
+    let created: { id: string } | undefined
     try {
-      await createKb({
+      const result = await createKb({
         variables: {
           name: trimmedName,
           description: description.trim() || null,
@@ -62,13 +68,25 @@ function CreateKnowledgeBaseModal({
           domainPolicyLanguage: domainSupported ? domainValue.language : null,
         },
       })
+      created = result.data?.createKb
     } catch (error) {
       console.error('Failed to create knowledge base', error)
       toast({ type: 'error', message: t('kb.createError') })
       return
     }
 
-    await refreshAfterMutation(onCreated, 'knowledge bases after creation')
+    if (!created) {
+      toast({ type: 'error', message: t('kb.createError') })
+      return
+    }
+
+    const createdKb = created
+    setFinishing(true)
+    await refreshAfterMutation(
+      () => onCreated(createdKb),
+      'knowledge bases after creation'
+    )
+    setFinishing(false)
     toast({ type: 'success', message: t('kb.createSuccess') })
     onClose()
   }

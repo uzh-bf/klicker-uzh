@@ -4926,6 +4926,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The chatbot can still be used without course-material retrieval.',
       chatbotKnowledgeManagementLink:
         'Manage documents, ingestion, and knowledge-base readiness in Knowledge Bases.',
+      chatbotKnowledgeBaseSelectPlaceholder: 'Choose a knowledge base',
+      chatbotKnowledgeBaseConnect: 'Connect',
+      chatbotKnowledgeBaseReplace: 'Replace',
+      chatbotKnowledgeBaseDisconnect: 'Disconnect',
+      chatbotKnowledgeBaseReplacementWarning:
+        'This chatbot currently uses “{kbName}”. Connecting another knowledge base replaces it.',
+      chatbotKnowledgeBaseLiveChangeNote:
+        'This chatbot is published. Connecting, replacing or disconnecting a knowledge base takes effect for participants immediately and is not part of the draft changes awaiting review.',
+      chatbotKnowledgeBaseListError:
+        'Your knowledge bases could not be loaded.',
+      chatbotKnowledgeBaseConnectSuccess: 'Knowledge base connected.',
+      chatbotKnowledgeBaseConnectError:
+        'The knowledge base could not be connected.',
+      chatbotKnowledgeBaseDisconnectSuccess: 'Knowledge base disconnected.',
+      chatbotKnowledgeBaseDisconnectError:
+        'The knowledge base could not be disconnected.',
+      chatbotKnowledgeBaseCreatedNotConnected:
+        'The knowledge base was created but could not be connected. Select it in the list to try again.',
+      backToChatbot: 'Back to chatbot {name}',
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',
