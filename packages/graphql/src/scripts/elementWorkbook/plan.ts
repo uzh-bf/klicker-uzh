@@ -27,7 +27,7 @@ type IdentityInput = Pick<
 /** Titles, tags, review state, and internal choice ids are not teaching content. */
 export function elementIdentity(element: IdentityInput): string | null {
   let options: unknown = {}
-  if (element.type === 'MC') {
+  if (['SC', 'MC', 'KPRIM'].includes(element.type)) {
     const input = element.options as Record<string, unknown> | null
     if (!input || !Array.isArray(input.choices)) return null
     const hasSampleSolution = input.hasSampleSolution === true
@@ -53,6 +53,60 @@ export function elementIdentity(element: IdentityInput): string | null {
           ...(hasSampleSolution ? { correct: choice.correct } : {}),
           ...(hasAnswerFeedbacks ? { feedback: choice.feedback ?? '' } : {}),
         })),
+    }
+  } else if (element.type === 'NUMERICAL' || element.type === 'FREE_TEXT') {
+    const input = element.options as Record<string, unknown> | null
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return null
+    const hasSampleSolution = input.hasSampleSolution === true
+    const restrictions = input.restrictions as Record<string, unknown> | null
+    if (element.type === 'FREE_TEXT') {
+      if (
+        hasSampleSolution &&
+        (!Array.isArray(input.solutions) ||
+          input.solutions.some((value) => typeof value !== 'string'))
+      )
+        return null
+      options = {
+        hasSampleSolution,
+        restrictions: { maxLength: restrictions?.maxLength ?? null },
+        solutions: hasSampleSolution
+          ? [...new Set(input.solutions as string[])].sort()
+          : [],
+      }
+    } else {
+      const bounds = (value: unknown) => {
+        const record = value as Record<string, unknown> | null
+        return { min: record?.min ?? null, max: record?.max ?? null }
+      }
+      const exact = input.exactSolutions ?? []
+      const ranges = input.solutionRanges ?? []
+      if (
+        hasSampleSolution &&
+        (!Array.isArray(exact) ||
+          exact.some(
+            (value) => typeof value !== 'number' || !Number.isFinite(value)
+          ) ||
+          !Array.isArray(ranges) ||
+          ranges.some((value) => !value || typeof value !== 'object'))
+      )
+        return null
+      options = {
+        hasSampleSolution,
+        unit: input.unit ?? '',
+        accuracy: input.accuracy ?? null,
+        placeholder: input.placeholder ?? '',
+        restrictions: bounds(restrictions),
+        exactSolutions: hasSampleSolution
+          ? [...new Set(exact as number[])].sort((a, b) => a - b)
+          : [],
+        solutionRanges: hasSampleSolution
+          ? [
+              ...new Set(
+                (ranges as unknown[]).map((value) => canonical(bounds(value)))
+              ),
+            ].sort()
+          : [],
+      }
     }
   }
   return digest({

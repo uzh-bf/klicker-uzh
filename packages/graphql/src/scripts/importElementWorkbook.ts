@@ -11,7 +11,7 @@ import {
 } from './elementWorkbook/parse.js'
 import { comparisonCsv, digest } from './elementWorkbook/plan.js'
 
-const help = `Import fixed Klicker Excel v6 MC/Flashcards (no media fetching).
+const help = `Import all seven element types in the Klicker Excel v6 template (no media fetching).
   pnpm exec tsx src/scripts/importElementWorkbook.ts --file /absolute/input.xlsx --validate-only
   pnpm exec tsx src/scripts/importElementWorkbook.ts --file /absolute/input.xlsx --owner <UUID> --state-dir /private/run
 
@@ -48,8 +48,11 @@ async function main() {
     throw new ElementImportError('Workbook exceeds the 5 MiB limit')
   const bytes = await readFile(resolve(values.file))
   const elements = await parseElementWorkbook(bytes)
+  const counts = new Map<string, number>()
+  for (const element of elements)
+    counts.set(element.type, (counts.get(element.type) ?? 0) + 1)
   console.log(
-    `Validated ${elements.length} elements: ${elements.filter((e) => e.type === 'MC').length} MC, ${elements.filter((e) => e.type === 'FLASHCARD').length} flashcards.`
+    `Validated ${elements.length} elements: ${[...counts].map(([type, count]) => `${count} ${type}`).join(', ') || 'no data rows'}.`
   )
   if (values['validate-only']) return
   if (

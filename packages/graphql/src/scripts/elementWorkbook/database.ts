@@ -50,7 +50,21 @@ export async function readImportState(
   let cursor: number | undefined
   for (;;) {
     const batch = await tx.element.findMany({
-      where: { ownerId, type: { in: ['MC', 'FLASHCARD'] }, isDeleted: false },
+      where: {
+        ownerId,
+        type: {
+          in: [
+            'SC',
+            'MC',
+            'KPRIM',
+            'NUMERICAL',
+            'FREE_TEXT',
+            'CONTENT',
+            'FLASHCARD',
+          ],
+        },
+        isDeleted: false,
+      },
       orderBy: { id: 'asc' },
       take: 1000,
       ...(cursor === undefined ? {} : { cursor: { id: cursor }, skip: 1 }),
@@ -61,7 +75,7 @@ export async function readImportState(
         id: element.id,
         identity: elementIdentity({
           ...element,
-          type: element.type as 'MC' | 'FLASHCARD',
+          type: element.type as WorkbookElement['type'],
         }),
       })
       rows.push({ id: element.id, hash: digest(element) })

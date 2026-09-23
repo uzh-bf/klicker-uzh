@@ -51,6 +51,38 @@ function multipleChoiceRow(overrides: Record<string, ExcelJS.CellValue> = {}) {
 }
 
 describe('parseElementWorkbook', () => {
+  it('rejects required fields that only contain rendered line breaks', async () => {
+    for (const [sheet, values] of [
+      ['Content', { Name: 'Content', Content: '<br> <BR />' }],
+      ['Flashcards', { Name: 'Card', Front: 'Front', Back: '<br />' }],
+      ['Multiple choice', multipleChoiceRow({ 'Answer 1': '<br>' })],
+      [
+        'Multiple choice',
+        multipleChoiceRow({
+          'Answer feedback?': 'Yes',
+          'Feedback 1': '<br>',
+          'Feedback 2': '-',
+        }),
+      ],
+      [
+        'Free text',
+        {
+          Name: 'Text',
+          Question: 'Question',
+          'Sample solution?': 'Yes',
+          'Accepted answer 1': '<br>',
+        },
+      ],
+    ] as const) {
+      const buffer = await workbookBuffer((workbook) =>
+        setRow(workbook, sheet, values)
+      )
+      await expect(parseElementWorkbook(buffer)).rejects.toThrow(
+        'REQUIRED_VALUE'
+      )
+    }
+  })
+
   it('parses v6 multiple choice and flashcards while preserving placeholders and tag CSV', async () => {
     const buffer = await workbookBuffer((workbook) => {
       setRow(
@@ -130,12 +162,146 @@ describe('parseElementWorkbook', () => {
     )
   })
 
-  it('accepts empty unsupported tabs but rejects populated unsupported or unknown sheets', async () => {
-    const populatedUnsupported = await workbookBuffer((workbook) => {
-      setRow(workbook, 'Content', { Name: 'Unsupported', Content: 'Text' })
+  it('parses every v6 element type', async () => {
+    const buffer = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Single choice', {
+        Name: 'SC',
+        Question: 'Question',
+        'Sample solution?': 'Yes',
+        'Answer 1': 'Correct',
+        'Correct 1?': 'Yes',
+      })
+      setRow(workbook, 'Multiple choice', multipleChoiceRow())
+      setRow(workbook, 'Kprim', {
+        Name: 'Kprim',
+        Question: 'Question',
+        'Sample solution?': 'Yes',
+        'Statement 1': 'One',
+        'Statement 1 true?': 'No',
+        'Statement 2': 'Two',
+        'Statement 2 true?': 'No',
+        'Statement 3': 'Three',
+        'Statement 3 true?': 'No',
+        'Statement 4': 'Four',
+        'Statement 4 true?': 'No',
+      })
+      setRow(workbook, 'Numerical', {
+        Name: 'Numerical',
+        Question: 'Question',
+        'Sample solution?': 'Yes',
+        'Solution type': 'EXACT',
+        'Accepted answer 1': 42,
+        'Minimum allowed': 0,
+        'Maximum allowed': 100,
+        'Decimal places': 0,
+      })
+      setRow(workbook, 'Free text', {
+        Name: 'Free text',
+        Question: 'Question',
+        'Sample solution?': 'Yes',
+        'Accepted answer 1': 'Answer',
+        'Maximum answer length': 12,
+      })
+      setRow(workbook, 'Content', { Name: 'Content', Content: 'Content' })
+      setRow(workbook, 'Flashcards', {
+        Name: 'Flashcard',
+        Front: 'Front',
+        Back: 'Back',
+      })
     })
-    await expect(parseElementWorkbook(populatedUnsupported)).rejects.toThrow(
-      'UNSUPPORTED_POPULATED_SHEET at Content!A8'
+    await expect(parseElementWorkbook(buffer)).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'SC' }),
+        expect.objectContaining({ type: 'MC' }),
+        expect.objectContaining({ type: 'KPRIM' }),
+        expect.objectContaining({ type: 'NUMERICAL' }),
+        expect.objectContaining({ type: 'FREE_TEXT' }),
+        expect.objectContaining({ type: 'CONTENT', basePoints: false }),
+        expect.objectContaining({ type: 'FLASHCARD', basePoints: false }),
+      ])
+    )
+  })
+
+  it('rejects invalid v6 element rules and unknown sheets', async () => {
+    const invalidSingleChoice = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Single choice', {
+        Name: 'SC',
+        Question: 'Question',
+        'Sample solution?': 'Yes',
+        'Answer 1': 'One',
+        'Correct 1?': 'Yes',
+        'Answer 2': 'Two',
+        'Correct 2?': 'Yes',
+      })
+    })
+    await expect(parseElementWorkbook(invalidSingleChoice)).rejects.toThrow(
+      'SC_ONE_CORRECT'
+    )
+
+    const missingKprim = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Kprim', { Name: 'Kprim', Question: 'Question' })
+    })
+    await expect(parseElementWorkbook(missingKprim)).rejects.toThrow(
+      'KPRIM_FOUR_ANSWERS'
+    )
+
+    const ambiguousNumerical = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Numerical', {
+        Name: 'Numerical',
+        Question: 'Question',
+        'Sample solution?': 'Yes',
+        'Solution type': 'EXACT',
+        'Accepted answer 1': 1,
+        'Range minimum 1': 0,
+      })
+    })
+    await expect(parseElementWorkbook(ambiguousNumerical)).rejects.toThrow(
+      'AMBIGUOUS_SOLUTION'
+    )
+
+    const disabledFreeText = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Free text', {
+        Name: 'Free text',
+        Question: 'Question',
+        'Accepted answer 1': 'Answer',
+      })
+    })
+    await expect(parseElementWorkbook(disabledFreeText)).rejects.toThrow(
+      'DISABLED_SOLUTION_DATA'
+    )
+
+    const invalidBounds = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Numerical', {
+        Name: 'Numerical',
+        Question: 'Question',
+        'Minimum allowed': 2,
+        'Maximum allowed': 1,
+      })
+    })
+    await expect(parseElementWorkbook(invalidBounds)).rejects.toThrow(
+      'INVALID_VALUE'
+    )
+
+    const invalidAccuracy = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Numerical', {
+        Name: 'Numerical',
+        Question: 'Question',
+        'Decimal places': 101,
+      })
+    })
+    await expect(parseElementWorkbook(invalidAccuracy)).rejects.toThrow(
+      'INVALID_NUMBER'
+    )
+
+    const invalidMaxLength = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Free text', {
+        Name: 'Free text',
+        Question: 'Question',
+        'Maximum answer length': 0,
+      })
+    })
+    await expect(parseElementWorkbook(invalidMaxLength)).rejects.toThrow(
+      'INVALID_NUMBER'
     )
 
     const unknownSheet = await workbookBuffer((workbook) => {
@@ -143,6 +309,37 @@ describe('parseElementWorkbook', () => {
     })
     await expect(parseElementWorkbook(unknownSheet)).rejects.toThrow(
       'UNEXPECTED_WORKSHEET'
+    )
+  })
+
+  it('uses canonical no-sample defaults for numerical and free-text rows', async () => {
+    const buffer = await workbookBuffer((workbook) => {
+      setRow(workbook, 'Numerical', { Name: 'Numerical', Question: 'Question' })
+      setRow(workbook, 'Free text', { Name: 'Free text', Question: 'Question' })
+    })
+    await expect(parseElementWorkbook(buffer)).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'NUMERICAL',
+          basePoints: true,
+          pointsMultiplier: 1,
+          options: {
+            hasSampleSolution: false,
+            unit: '',
+            placeholder: '',
+            restrictions: {},
+          },
+        }),
+        expect.objectContaining({
+          type: 'FREE_TEXT',
+          basePoints: true,
+          pointsMultiplier: 1,
+          options: {
+            hasSampleSolution: false,
+            restrictions: {},
+          },
+        }),
+      ])
     )
   })
 
@@ -247,6 +444,31 @@ describe('parseElementWorkbook', () => {
       value: 'Answer 10',
       correct: true,
       feedback: '-',
+    })
+  })
+
+  it('accepts gapped choice slots and compacts their indexes', async () => {
+    const buffer = await workbookBuffer((workbook) => {
+      setRow(
+        workbook,
+        'Multiple choice',
+        multipleChoiceRow({
+          'Answer 2': '',
+          'Correct 2?': '',
+          'Answer 3': 'Third slot',
+          'Correct 3?': 'No',
+        })
+      )
+    })
+    const [element] = await parseElementWorkbook(buffer)
+    expect(element).toMatchObject({
+      type: 'MC',
+      options: {
+        choices: [
+          { ix: 0, value: 'Yes', correct: true },
+          { ix: 1, value: 'Third slot', correct: false },
+        ],
+      },
     })
   })
 

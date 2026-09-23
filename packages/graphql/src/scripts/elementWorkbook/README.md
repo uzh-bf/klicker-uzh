@@ -1,17 +1,18 @@
-# Import the fixed v6 element workbook
+# Import the Klicker Excel template
 
-This standalone operator script imports the **Multiple choice** and **Flashcards**
-tabs of the `klicker-elements-6` Excel workbook into an existing lecturer's library.
+This standalone operator script imports **all seven element tabs** in the Klicker
+Excel template into an existing lecturer's library. `klicker-elements-6` is the
+template format version, not a particular workbook or a restriction to MC/Flashcards.
 It lives in the GraphQL package and uses Prisma directly; it does not call a
 GraphQL API and does not depend on the import/export PR stack.
 
 ## Workbook contract
 
 - Keep all eight tabs, `Instructions!A1` version, row 6 headers, and row 8 data
-  start unchanged. The five other element tabs must contain no data rows.
-- At most 500 elements total and 5 MiB per file. MC supports ten answer slots;
-  use consecutive slots. Every populated answer needs a correctness value when
-  sample solutions are enabled, with at least one correct answer. Feedback needs
+  start unchanged. Any combination of the seven element tabs may contain data.
+- At most 500 elements total and 5 MiB per file. SC and MC support ten answer slots;
+  gaps are accepted and populated answers keep their order. Every populated answer
+  needs a correctness value when sample solutions are enabled. Feedback needs
   a sample solution and feedback for each answer; `-` is accepted as literal text.
 - General explanations stay in Explanation. Individual answer feedback stays in
   Feedback 1–10. Flashcard Front maps to content and Back maps to explanation.
@@ -20,9 +21,23 @@ GraphQL API and does not depend on the import/export PR stack.
   Existing owner-scoped tags are reused; missing tags are created atomically.
 - Text, Markdown, line breaks, and image placeholders remain literal. Nothing
   downloads or uploads images, replaces placeholders, or moves front/back text.
-- Unknown headers, populated unsupported tabs, formulas, hyperlinks, embedded
+- Unknown headers or tabs, formulas, hyperlinks, embedded
   images, and macro content are rejected. Empty supported tabs are allowed.
   Do not use this importer for untrusted or personally identifying source data.
+
+| Tab             | Supported fields and rules                                                                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single choice   | Up to ten answers; exactly one correct answer when a sample solution is enabled.                                                                |
+| Multiple choice | Up to ten answers; at least one correct answer when a sample solution is enabled.                                                               |
+| Kprim           | Exactly four statements; each has its own true/false flag. All four may be false.                                                               |
+| Numerical       | Up to six exact answers or ranges; optional unit, decimal places, input hint, and minimum/maximum restrictions. Solution modes cannot be mixed. |
+| Free text       | Up to six accepted answers and an optional maximum answer length.                                                                               |
+| Content         | Content and optional explanation; no solution or scoring fields.                                                                                |
+| Flashcards      | Front and back; no solution or scoring fields.                                                                                                  |
+
+Every type supports tags. Selection and Case Study are not part of the Excel
+template and are not imported by this script. Versions other than v6 are rejected
+explicitly to prevent misinterpreting a changed column layout.
 
 ## Run
 
@@ -59,8 +74,10 @@ Exact teaching-content matches in the owner's non-deleted library (including
 archived elements), or earlier workbook rows, are skipped. The comparison CSV
 identifies each source sheet, row, title, action, and matching element ID/row.
 Titles, tags, status, and internal choice IDs do not affect the comparison;
-question text, explanations, ordered answers, enabled solutions/feedback, layout,
-and scoring do. Skipped elements are not renamed or given additional tags.
+question text, explanations, ordered choices, enabled solutions/feedback, layout,
+scoring, and type-specific restrictions/settings do. Accepted text/numerical
+solutions are compared as sets. Skipped elements are not renamed or given
+additional tags.
 
 The before dump binds the file hash, owner, database target, planned actions, and
 hashes of existing library/tag state. No existing teaching content is dumped.

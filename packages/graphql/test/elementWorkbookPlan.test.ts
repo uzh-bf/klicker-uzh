@@ -21,6 +21,96 @@ const card: WorkbookElement = {
 }
 
 describe('element workbook planning', () => {
+  it('includes every type-specific option in duplicate identity', () => {
+    const numerical: WorkbookElement = {
+      ...card,
+      type: 'NUMERICAL',
+      basePoints: true,
+      options: {
+        hasSampleSolution: true,
+        exactSolutions: [42],
+        accuracy: 2,
+        unit: 'm',
+        placeholder: 'Distance',
+        restrictions: { min: 0, max: 100 },
+      },
+    }
+    const text: WorkbookElement = {
+      ...card,
+      type: 'FREE_TEXT',
+      basePoints: true,
+      options: {
+        hasSampleSolution: true,
+        solutions: ['red', 'blue'],
+        restrictions: { maxLength: 10 },
+      },
+    }
+    const numericalIdentity = elementIdentity(numerical)
+    for (const changed of [
+      { exactSolutions: [43] },
+      { accuracy: 3 },
+      { unit: 'cm' },
+      { placeholder: 'Length' },
+      { restrictions: { min: 1, max: 100 } },
+      { exactSolutions: [], solutionRanges: [{ min: 40, max: 44 }] },
+    ])
+      expect(
+        elementIdentity({
+          ...numerical,
+          options: { ...numerical.options, ...changed },
+        })
+      ).not.toBe(numericalIdentity)
+    expect(
+      elementIdentity({
+        ...text,
+        options: { ...text.options, solutions: ['blue', 'red'] },
+      })
+    ).toBe(elementIdentity(text))
+    expect(
+      elementIdentity({
+        ...text,
+        options: { ...text.options, solutions: ['green'] },
+      })
+    ).not.toBe(elementIdentity(text))
+    expect(
+      elementIdentity({
+        ...text,
+        options: { ...text.options, restrictions: { maxLength: 20 } },
+      })
+    ).not.toBe(elementIdentity(text))
+    expect(elementIdentity({ ...card, type: 'CONTENT' })).not.toBe(
+      elementIdentity(card)
+    )
+    for (const type of ['SC', 'KPRIM'] as const) {
+      const choice = {
+        ...card,
+        type,
+        options: {
+          hasSampleSolution: true,
+          choices: [{ ix: 0, value: 'A', correct: true }],
+        },
+      }
+      expect(
+        elementIdentity({
+          ...choice,
+          options: {
+            ...choice.options,
+            choices: [{ ix: 0, value: 'B', correct: true }],
+          },
+        })
+      ).not.toBe(elementIdentity(choice))
+      expect(
+        elementIdentity({
+          ...choice,
+          options: {
+            ...choice.options,
+            choices: [{ ix: 0, value: 'A', correct: false }],
+          },
+        })
+      ).not.toBe(elementIdentity(choice))
+    }
+  })
+
   it('skips library and workbook duplicates without changing tags or titles', () => {
     const second = { ...card, row: 9, name: 'Other title', tags: ['Other tag'] }
     expect(planImport([card, second], []).map((d) => d.action)).toEqual([

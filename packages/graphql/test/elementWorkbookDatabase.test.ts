@@ -14,6 +14,7 @@ import {
 import {
   ELEMENT_WORKBOOK_HEADERS,
   ELEMENT_WORKBOOK_VERSION,
+  parseElementWorkbook,
   type WorkbookElement,
 } from '../src/scripts/elementWorkbook/parse.js'
 
@@ -141,6 +142,148 @@ describe.skipIf(process.env.RUN_ELEMENT_WORKBOOK_DB_TESTS !== 'true')(
       ).rejects.toThrow()
       expect(await prisma.element.count({ where: { ownerId: id } })).toBe(0)
       expect(await prisma.tag.count({ where: { ownerId: id } })).toBe(1)
+    })
+
+    it('round-trips every template type and both numerical solution modes', async () => {
+      const id = await owner()
+      const workbook = new ExcelJS.Workbook()
+      workbook.addWorksheet('Instructions').getCell('A1').value =
+        ELEMENT_WORKBOOK_VERSION
+      for (const [name, headers] of Object.entries(ELEMENT_WORKBOOK_HEADERS))
+        workbook.addWorksheet(name).getRow(6).values = [...headers]
+      const row = (
+        sheet: keyof typeof ELEMENT_WORKBOOK_HEADERS,
+        values: Record<string, ExcelJS.CellValue>,
+        rowNumber = 8
+      ) => {
+        const headers: readonly string[] = ELEMENT_WORKBOOK_HEADERS[sheet]
+        for (const [key, value] of Object.entries({
+          Name: `${sheet} ${rowNumber}`,
+          Tags: 'Shared;New tag',
+          ...values,
+        })) {
+          const column = headers.indexOf(key) + 1
+          if (!column)
+            throw new Error(`Unknown synthetic fixture header: ${key}`)
+          workbook.getWorksheet(sheet)!.getCell(rowNumber, column).value = value
+        }
+      }
+      row('Single choice', {
+        Question: 'SC',
+        'Sample solution?': 'Yes',
+        'Answer 1': 'A',
+        'Correct 1?': 'Yes',
+        'Answer 3': 'C',
+        'Correct 3?': 'No',
+      })
+      row('Multiple choice', {
+        Question: 'MC',
+        'Sample solution?': 'Yes',
+        'Answer 1': 'A',
+        'Correct 1?': 'Yes',
+        'Answer 2': 'B',
+        'Correct 2?': 'Yes',
+      })
+      row('Kprim', {
+        Question: 'Kprim',
+        'Sample solution?': 'Yes',
+        ...Object.fromEntries(
+          Array.from({ length: 4 }, (_, i) => [
+            [`Statement ${i + 1}`, `Statement ${i + 1}`],
+            [`Statement ${i + 1} true?`, 'No'],
+          ]).flat()
+        ),
+      })
+      row('Numerical', {
+        Question: 'Exact number',
+        'Sample solution?': 'Yes',
+        'Solution type': 'EXACT',
+        'Accepted answer 1': 42,
+        Unit: 'm',
+        'Decimal places': 2,
+        'Input hint': 'Distance',
+        'Minimum allowed': 0,
+        'Maximum allowed': 100,
+      })
+      row(
+        'Numerical',
+        {
+          Question: 'Number range',
+          'Sample solution?': 'Yes',
+          'Solution type': 'RANGE',
+          'Range minimum 1': 10,
+          'Range maximum 1': 20,
+          'Range minimum 3': 30,
+        },
+        9
+      )
+      row('Free text', {
+        Question: 'A color',
+        'Sample solution?': 'Yes',
+        'Accepted answer 1': 'red',
+        'Accepted answer 3': 'blue',
+        'Maximum answer length': 10,
+      })
+      row('Content', {
+        Content: 'Content [Bildplatzhalter: content.png]',
+        Explanation: 'Content explanation',
+      })
+      row('Flashcards', { Front: 'Front', Back: 'Back' })
+      const elements = await parseElementWorkbook(
+        Buffer.from(await workbook.xlsx.writeBuffer())
+      )
+      expect(new Set(elements.map((element) => element.type)).size).toBe(7)
+      expect(elements).toHaveLength(8)
+      const preview = await previewImport(prisma, id, elements)
+      const result = await executeImport(
+        prisma,
+        id,
+        elements,
+        preview,
+        'all-types'
+      )
+      expect(result.verified).toBe(8)
+      for (const [index, created] of result.created.entries()) {
+        const saved = await prisma.element.findUniqueOrThrow({
+          where: { id: created.id },
+          include: { tags: true, permissions: true },
+        })
+        const source = elements[index]!
+        expect(saved).toMatchObject({
+          type: source.type,
+          content: source.content,
+          explanation: source.explanation,
+          basePoints: source.basePoints,
+          pointsMultiplier: source.pointsMultiplier,
+          options: JSON.parse(JSON.stringify(source.options)),
+          status: 'REVIEW',
+        })
+        expect(saved.tags.map((tag) => tag.name).sort()).toEqual([
+          'New tag',
+          'Shared',
+        ])
+        expect(saved.permissions).toHaveLength(1)
+        expect(saved.permissions[0]).toMatchObject({
+          userId: id,
+          permissionLevel: 'OWNER',
+        })
+      }
+      const renamed = elements.map((element) => ({
+        ...element,
+        name: 'Renamed',
+      }))
+      const repeated = await previewImport(prisma, id, renamed)
+      expect(
+        repeated.decisions.every(
+          (decision) => decision.action === 'SKIP_EXISTING'
+        )
+      ).toBe(true)
+      expect(
+        (await executeImport(prisma, id, renamed, repeated, 'repeat-all'))
+          .verified
+      ).toBe(0)
+      expect(await prisma.element.count({ where: { ownerId: id } })).toBe(8)
+      expect(await prisma.tag.count({ where: { ownerId: id } })).toBe(2)
     })
 
     it('requires a dry run, completes the CLI, and refuses a completed run', async () => {

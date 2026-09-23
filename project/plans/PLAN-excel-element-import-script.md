@@ -4,8 +4,9 @@
 
 Provide a draft, independently reviewable operator script in `packages/graphql`
 for the fixed `klicker-elements-6` workbook, targeting current `v3` without the
-import/export PR stack. Import populated Multiple choice and Flashcards tabs,
-up to 500 rows; reject populated unsupported tabs rather than discard them.
+import/export PR stack. Import all seven element tabs (SC, MC, Kprim, Numerical,
+Free text, Content, Flashcards), up to 500 rows. The version identifies the template format, not one
+filled workbook. Selection and Case Study remain outside Excel support.
 
 ## Contract
 
@@ -54,3 +55,14 @@ review before publication. No external executor: repository opt-in is absent.
   scenarios are not exercised. Root check:all fails on container Git recognition;
   the GraphQL dependency build emits dist but does not exit and was stopped.
   No production or user-library imports executed. No real data included in Git.
+- Scope correction: support every element type in the existing Excel template,
+  not only the two populated tabs in the prepared workbook. Extend parsing,
+  existing-library lookup, identity comparison, CLI counts, documentation, and
+  synthetic round-trip tests. Preserve the independent PR and safe-write protocol.
+- Expanded verification: 18 targeted tests pass, including parser-to-database
+  round trips for every template type and both numerical solution modes, options
+  readback, and duplicate skipping on re-import. Both GraphQL typechecks pass;
+  the original 470-element workbook still validates offline without changes.
+- Independent follow-up review found a missing meaningful-text check; required
+  fields consisting only of HTML line breaks now fail, matching template-domain
+  validation. Added regression coverage without rewriting authored text.

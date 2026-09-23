@@ -15,6 +15,9 @@ const MAX_CELL_TEXT_LENGTH = 32_767
 const MAX_EXPANDED_BYTES = 20 * 1024 * 1024
 const MAX_ZIP_ENTRIES = 250
 const MAX_TAGS = 50
+const MAX_POINTS_MULTIPLIER = 4
+const MAX_NUMERICAL_VALUE = 1e30
+const MAX_NUMERICAL_ACCURACY = 100
 
 const choiceFields = [
   'Name',
@@ -104,32 +107,60 @@ export const ELEMENT_WORKBOOK_HEADERS = {
   Flashcards: flashcardFields,
 } as const
 
-type Choice = {
+export type Choice = {
   ix: number
   value: string
   correct?: boolean
   feedback?: string
 }
 
-export type MultipleChoiceOptions = {
+export type ChoicesOptions = {
   displayMode: 'LIST' | 'GRID'
   hasSampleSolution: boolean
   hasAnswerFeedbacks: boolean
   choices: Choice[]
 }
 
-export type WorkbookElement = {
+export type MultipleChoiceOptions = ChoicesOptions
+
+export type NumericalOptions = {
+  hasSampleSolution: boolean
+  unit: string
+  accuracy?: number
+  placeholder: string
+  restrictions: { min?: number; max?: number }
+  exactSolutions?: number[]
+  solutionRanges?: Array<{ min?: number; max?: number }>
+}
+
+export type FreeTextOptions = {
+  hasSampleSolution: boolean
+  restrictions: { maxLength?: number }
+  solutions?: string[]
+}
+
+type WorkbookElementBase = {
   sheet: string
   row: number
   name: string
   content: string
   explanation: string | null
-  type: 'MC' | 'FLASHCARD'
   basePoints: boolean
   pointsMultiplier: number
-  options: MultipleChoiceOptions | Record<string, never>
   tags: string[]
 }
+
+export type WorkbookElement =
+  | (WorkbookElementBase & {
+      type: 'SC' | 'MC' | 'KPRIM'
+      options: ChoicesOptions
+    })
+  | (WorkbookElementBase & { type: 'NUMERICAL'; options: NumericalOptions })
+  | (WorkbookElementBase & { type: 'FREE_TEXT'; options: FreeTextOptions })
+  | (WorkbookElementBase & {
+      type: 'CONTENT' | 'FLASHCARD'
+      options: Record<string, never>
+    })
 
 export class ElementWorkbookParseError extends Error {
   constructor(
@@ -271,7 +302,9 @@ function booleanValue(
 }
 
 function required(value: string, sheet: string, row: number, column: number) {
-  if (!value.trim()) fail('REQUIRED_VALUE', sheet, row, column)
+  const trimmed = value.trim()
+  if (!trimmed || /^(?:<br\s*\/?>\s*)+$/iu.test(trimmed))
+    fail('REQUIRED_VALUE', sheet, row, column)
   return value
 }
 
@@ -359,33 +392,125 @@ function validateSheet(
   return sheet
 }
 
-function parseMultipleChoice(
+function parseFlashcard(
   sheet: ExcelJS.Worksheet,
   row: number
 ): WorkbookElement {
-  const values = rowValues(sheet, row, choiceFields)
+  const values = rowValues(sheet, row, flashcardFields)
   if (!values.some(Boolean)) fail('INVALID_ROW', sheet.name, row, 1)
-  const hasSampleSolution = booleanValue(values[2]!, sheet.name, row, 3, false)
-  const hasAnswerFeedbacks = booleanValue(
-    values[27]!,
+  return {
+    sheet: sheet.name,
+    row,
+    name: nameValue(values[0]!, sheet.name, row),
+    content: required(values[1]!, sheet.name, row, 2),
+    explanation: required(values[2]!, sheet.name, row, 3),
+    type: 'FLASHCARD',
+    basePoints: false,
+    pointsMultiplier: 1,
+    options: {},
+    tags: parseTags(values[3]!, sheet.name, row, 4),
+  }
+}
+
+function headerColumn(headers: readonly string[], header: string) {
+  const column = headers.indexOf(header) + 1
+  if (!column) throw new Error('Invalid parser header configuration')
+  return column
+}
+
+function rawNumber(
+  sheet: ExcelJS.Worksheet,
+  row: number,
+  column: number,
+  fallback?: number
+) {
+  const value = sheet.getRow(row).getCell(column).value
+  if (isEmpty(value)) return fallback
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    fail('INVALID_NUMBER', sheet.name, row, column)
+  return value
+}
+
+function commonScoredValues(
+  sheet: ExcelJS.Worksheet,
+  row: number,
+  headers: readonly string[],
+  values: string[]
+) {
+  const baseColumn = headerColumn(headers, 'Participation points')
+  const multiplierColumn = headerColumn(headers, 'Points multiplier')
+  const displayColumn = headers.indexOf('Answer layout') + 1
+  const pointsMultiplier = rawNumber(sheet, row, multiplierColumn, 1)!
+  if (
+    !Number.isInteger(pointsMultiplier) ||
+    pointsMultiplier < 1 ||
+    pointsMultiplier > MAX_POINTS_MULTIPLIER
+  )
+    fail('INVALID_MULTIPLIER', sheet.name, row, multiplierColumn)
+  const displayMode = displayColumn
+    ? values[displayColumn - 1] || 'LIST'
+    : undefined
+  if (displayMode && displayMode !== 'LIST' && displayMode !== 'GRID')
+    fail('INVALID_DISPLAY_MODE', sheet.name, row, displayColumn)
+  return {
+    basePoints: booleanValue(
+      values[baseColumn - 1]!,
+      sheet.name,
+      row,
+      baseColumn,
+      true
+    ),
+    pointsMultiplier,
+    displayMode: displayMode as 'LIST' | 'GRID' | undefined,
+  }
+}
+
+function parseChoices(
+  sheet: ExcelJS.Worksheet,
+  row: number,
+  type: 'SC' | 'MC' | 'KPRIM'
+): WorkbookElement {
+  const headers =
+    type === 'SC'
+      ? ELEMENT_WORKBOOK_HEADERS['Single choice']
+      : type === 'MC'
+        ? ELEMENT_WORKBOOK_HEADERS['Multiple choice']
+        : ELEMENT_WORKBOOK_HEADERS.Kprim
+  const values = rowValues(sheet, row, headers)
+  const answerPrefix = type === 'KPRIM' ? 'Statement' : 'Answer'
+  const slots = type === 'KPRIM' ? 4 : 10
+  const sampleColumn = headerColumn(headers, 'Sample solution?')
+  const feedbackFlagColumn = headerColumn(headers, 'Answer feedback?')
+  const hasSampleSolution = booleanValue(
+    values[sampleColumn - 1]!,
     sheet.name,
     row,
-    28,
+    sampleColumn,
+    false
+  )
+  const hasAnswerFeedbacks = booleanValue(
+    values[feedbackFlagColumn - 1]!,
+    sheet.name,
+    row,
+    feedbackFlagColumn,
     false
   )
   if (hasAnswerFeedbacks && !hasSampleSolution)
-    fail('DISABLED_SOLUTION_DATA', sheet.name, row, 28)
+    fail('DISABLED_SOLUTION_DATA', sheet.name, row, feedbackFlagColumn)
   const choices: Choice[] = []
-  let gap = false
-  for (let slot = 1; slot <= 10; slot++) {
-    const answerColumn = 4 + (slot - 1) * 2
-    const correctColumn = answerColumn + 1
-    const feedbackColumn = 29 + slot - 1
+  for (let slot = 1; slot <= slots; slot++) {
+    const answerColumn = headerColumn(headers, `${answerPrefix} ${slot}`)
+    const correctColumn = headerColumn(
+      headers,
+      type === 'KPRIM' ? `Statement ${slot} true?` : `Correct ${slot}?`
+    )
+    const feedbackColumn = headerColumn(headers, `Feedback ${slot}`)
     const answer = values[answerColumn - 1]!
     const correct = values[correctColumn - 1]!
     const feedback = values[feedbackColumn - 1]!
     if (!answer) {
-      gap = true
+      if (type === 'KPRIM')
+        fail('KPRIM_FOUR_ANSWERS', sheet.name, row, answerColumn)
       if (correct || feedback)
         fail(
           'ORPHAN_CHOICE_DATA',
@@ -395,11 +520,12 @@ function parseMultipleChoice(
         )
       continue
     }
-    if (gap) fail('NON_CONTIGUOUS_CHOICES', sheet.name, row, answerColumn)
     if (!hasSampleSolution && correct)
       fail('DISABLED_SOLUTION_DATA', sheet.name, row, correctColumn)
     if (!hasAnswerFeedbacks && feedback)
       fail('DISABLED_SOLUTION_DATA', sheet.name, row, feedbackColumn)
+    if (hasSampleSolution && !correct)
+      fail('REQUIRED_VALUE', sheet.name, row, correctColumn)
     choices.push({
       ix: choices.length,
       value: required(answer, sheet.name, row, answerColumn),
@@ -418,50 +544,235 @@ function parseMultipleChoice(
         ? { feedback: required(feedback, sheet.name, row, feedbackColumn) }
         : {}),
     })
-    if (hasSampleSolution && !correct)
-      fail('REQUIRED_VALUE', sheet.name, row, correctColumn)
   }
   if (!choices.length) fail('REQUIRED_VALUE', sheet.name, row, 4)
-  if (hasSampleSolution && !choices.some((choice) => choice.correct))
-    fail('MC_CORRECT_REQUIRED', sheet.name, row, 5)
-  const multiplierText = values[25]!
-  const pointsMultiplier = multiplierText ? Number(multiplierText) : 1
-  if (
-    !Number.isInteger(pointsMultiplier) ||
-    pointsMultiplier <= 0 ||
-    pointsMultiplier > 2_147_483_647
-  )
-    fail('INVALID_MULTIPLIER', sheet.name, row, 26)
-  const displayMode = values[26] || 'LIST'
-  if (displayMode !== 'LIST' && displayMode !== 'GRID')
-    fail('INVALID_DISPLAY_MODE', sheet.name, row, 27)
+  const correctCount = choices.filter((choice) => choice.correct).length
+  if (hasSampleSolution && type === 'SC' && correctCount !== 1)
+    fail('SC_ONE_CORRECT', sheet.name, row, headerColumn(headers, 'Correct 1?'))
+  if (hasSampleSolution && type === 'MC' && correctCount === 0)
+    fail(
+      'MC_CORRECT_REQUIRED',
+      sheet.name,
+      row,
+      headerColumn(headers, 'Correct 1?')
+    )
+  const common = commonScoredValues(sheet, row, headers, values)
   return {
     sheet: sheet.name,
     row,
     name: nameValue(values[0]!, sheet.name, row),
     content: required(values[1]!, sheet.name, row, 2),
-    explanation: values[23] || null,
-    type: 'MC',
-    basePoints: booleanValue(values[24]!, sheet.name, row, 25, true),
-    pointsMultiplier,
-    options: { hasSampleSolution, hasAnswerFeedbacks, displayMode, choices },
-    tags: parseTags(values.at(-1)!, sheet.name, row, choiceFields.length),
+    explanation: values[headerColumn(headers, 'Explanation') - 1] || null,
+    type,
+    basePoints: common.basePoints,
+    pointsMultiplier: common.pointsMultiplier,
+    options: {
+      displayMode: common.displayMode!,
+      hasSampleSolution,
+      hasAnswerFeedbacks,
+      choices,
+    },
+    tags: parseTags(
+      values[headerColumn(headers, 'Tags') - 1]!,
+      sheet.name,
+      row,
+      headerColumn(headers, 'Tags')
+    ),
   }
 }
 
-function parseFlashcard(
-  sheet: ExcelJS.Worksheet,
-  row: number
-): WorkbookElement {
-  const values = rowValues(sheet, row, flashcardFields)
-  if (!values.some(Boolean)) fail('INVALID_ROW', sheet.name, row, 1)
+function parseFreeText(sheet: ExcelJS.Worksheet, row: number): WorkbookElement {
+  const headers = ELEMENT_WORKBOOK_HEADERS['Free text']
+  const values = rowValues(sheet, row, headers)
+  const sampleColumn = headerColumn(headers, 'Sample solution?')
+  const hasSampleSolution = booleanValue(
+    values[sampleColumn - 1]!,
+    sheet.name,
+    row,
+    sampleColumn,
+    false
+  )
+  const maxColumn = headerColumn(headers, 'Maximum answer length')
+  const maxLength = rawNumber(sheet, row, maxColumn)
+  if (
+    maxLength !== undefined &&
+    (!Number.isInteger(maxLength) || maxLength <= 0)
+  )
+    fail('INVALID_NUMBER', sheet.name, row, maxColumn)
+  const solutions: string[] = []
+  for (let slot = 1; slot <= 6; slot++) {
+    const column = headerColumn(headers, `Accepted answer ${slot}`)
+    const value = values[column - 1]!
+    if (!value) continue
+    if (!hasSampleSolution)
+      fail('DISABLED_SOLUTION_DATA', sheet.name, row, column)
+    if (maxLength !== undefined && value.trim().length > maxLength)
+      fail('INVALID_VALUE', sheet.name, row, column)
+    solutions.push(required(value, sheet.name, row, column))
+  }
+  if (hasSampleSolution && !solutions.length)
+    fail(
+      'REQUIRED_VALUE',
+      sheet.name,
+      row,
+      headerColumn(headers, 'Accepted answer 1')
+    )
+  const common = commonScoredValues(sheet, row, headers, values)
   return {
     sheet: sheet.name,
     row,
     name: nameValue(values[0]!, sheet.name, row),
     content: required(values[1]!, sheet.name, row, 2),
-    explanation: required(values[2]!, sheet.name, row, 3),
-    type: 'FLASHCARD',
+    explanation: values[headerColumn(headers, 'Explanation') - 1] || null,
+    type: 'FREE_TEXT',
+    basePoints: common.basePoints,
+    pointsMultiplier: common.pointsMultiplier,
+    options: {
+      hasSampleSolution,
+      restrictions: maxLength === undefined ? {} : { maxLength },
+      ...(hasSampleSolution ? { solutions } : {}),
+    },
+    tags: parseTags(values.at(-1)!, sheet.name, row, headers.length),
+  }
+}
+
+function parseNumerical(
+  sheet: ExcelJS.Worksheet,
+  row: number
+): WorkbookElement {
+  const headers = ELEMENT_WORKBOOK_HEADERS.Numerical
+  const values = rowValues(sheet, row, headers)
+  const sampleColumn = headerColumn(headers, 'Sample solution?')
+  const modeColumn = headerColumn(headers, 'Solution type')
+  const hasSampleSolution = booleanValue(
+    values[sampleColumn - 1]!,
+    sheet.name,
+    row,
+    sampleColumn,
+    false
+  )
+  const mode = values[modeColumn - 1]!
+  const solutionColumns = Array.from({ length: 6 }, (_, index) =>
+    headerColumn(headers, `Accepted answer ${index + 1}`)
+  )
+  const rangeColumns = Array.from(
+    { length: 6 },
+    (_, index) =>
+      [
+        headerColumn(headers, `Range minimum ${index + 1}`),
+        headerColumn(headers, `Range maximum ${index + 1}`),
+      ] as const
+  )
+  if (!hasSampleSolution) {
+    if (mode) fail('DISABLED_SOLUTION_DATA', sheet.name, row, modeColumn)
+    for (const column of [...solutionColumns, ...rangeColumns.flat()])
+      if (!isEmpty(sheet.getRow(row).getCell(column).value))
+        fail('DISABLED_SOLUTION_DATA', sheet.name, row, column)
+  } else if (mode !== 'EXACT' && mode !== 'RANGE') {
+    fail('INVALID_VALUE', sheet.name, row, modeColumn)
+  }
+  const minColumn = headerColumn(headers, 'Minimum allowed')
+  const maxColumn = headerColumn(headers, 'Maximum allowed')
+  const min = rawNumber(sheet, row, minColumn)
+  const max = rawNumber(sheet, row, maxColumn)
+  for (const [value, column] of [
+    [min, minColumn],
+    [max, maxColumn],
+  ] as const)
+    if (value !== undefined && Math.abs(value) > MAX_NUMERICAL_VALUE)
+      fail('INVALID_NUMBER', sheet.name, row, column)
+  if (min !== undefined && max !== undefined && min > max)
+    fail('INVALID_VALUE', sheet.name, row, maxColumn)
+  const bounded = (column: number) => {
+    const value = rawNumber(sheet, row, column)
+    if (value === undefined) return undefined
+    if (
+      Math.abs(value) > MAX_NUMERICAL_VALUE ||
+      (min !== undefined && value < min) ||
+      (max !== undefined && value > max)
+    )
+      fail('INVALID_NUMBER', sheet.name, row, column)
+    return value
+  }
+  let exactSolutions: number[] | undefined
+  let solutionRanges: Array<{ min?: number; max?: number }> | undefined
+  if (mode === 'EXACT') {
+    for (const columns of rangeColumns)
+      for (const column of columns)
+        if (!isEmpty(sheet.getRow(row).getCell(column).value))
+          fail('AMBIGUOUS_SOLUTION', sheet.name, row, column)
+    exactSolutions = solutionColumns
+      .map(bounded)
+      .filter((value): value is number => value !== undefined)
+  } else if (mode === 'RANGE') {
+    for (const column of solutionColumns)
+      if (!isEmpty(sheet.getRow(row).getCell(column).value))
+        fail('AMBIGUOUS_SOLUTION', sheet.name, row, column)
+    solutionRanges = rangeColumns.flatMap(([minColumn, maxColumn]) => {
+      const rangeMin = bounded(minColumn)
+      const rangeMax = bounded(maxColumn)
+      if (rangeMin === undefined && rangeMax === undefined) return []
+      if (
+        rangeMin !== undefined &&
+        rangeMax !== undefined &&
+        rangeMin > rangeMax
+      )
+        fail('INVALID_VALUE', sheet.name, row, maxColumn)
+      return [{ min: rangeMin, max: rangeMax }]
+    })
+  }
+  if (hasSampleSolution && !(exactSolutions?.length || solutionRanges?.length))
+    fail(
+      'REQUIRED_VALUE',
+      sheet.name,
+      row,
+      mode === 'RANGE' ? rangeColumns[0]![0] : solutionColumns[0]!
+    )
+  const accuracyColumn = headerColumn(headers, 'Decimal places')
+  const accuracy = rawNumber(sheet, row, accuracyColumn)
+  if (
+    accuracy !== undefined &&
+    (!Number.isInteger(accuracy) ||
+      accuracy < 0 ||
+      accuracy > MAX_NUMERICAL_ACCURACY)
+  )
+    fail('INVALID_NUMBER', sheet.name, row, accuracyColumn)
+  const common = commonScoredValues(sheet, row, headers, values)
+  return {
+    sheet: sheet.name,
+    row,
+    name: nameValue(values[0]!, sheet.name, row),
+    content: required(values[1]!, sheet.name, row, 2),
+    explanation: values[headerColumn(headers, 'Explanation') - 1] || null,
+    type: 'NUMERICAL',
+    basePoints: common.basePoints,
+    pointsMultiplier: common.pointsMultiplier,
+    options: {
+      hasSampleSolution,
+      unit: values[headerColumn(headers, 'Unit') - 1] || '',
+      ...(accuracy === undefined ? {} : { accuracy }),
+      placeholder: values[headerColumn(headers, 'Input hint') - 1] || '',
+      restrictions: {
+        ...(min === undefined ? {} : { min }),
+        ...(max === undefined ? {} : { max }),
+      },
+      ...(exactSolutions === undefined ? {} : { exactSolutions }),
+      ...(solutionRanges === undefined ? {} : { solutionRanges }),
+    },
+    tags: parseTags(values.at(-1)!, sheet.name, row, headers.length),
+  }
+}
+
+function parseContent(sheet: ExcelJS.Worksheet, row: number): WorkbookElement {
+  const headers = ELEMENT_WORKBOOK_HEADERS.Content
+  const values = rowValues(sheet, row, headers)
+  return {
+    sheet: sheet.name,
+    row,
+    name: nameValue(values[0]!, sheet.name, row),
+    content: required(values[1]!, sheet.name, row, 2),
+    explanation: values[2] || null,
+    type: 'CONTENT',
     basePoints: false,
     pointsMultiplier: 1,
     options: {},
@@ -524,10 +835,29 @@ export async function parseElementWorkbook(
     for (let row = ELEMENT_WORKBOOK_DATA_ROW; row <= sheet.rowCount; row++) {
       const values = rowValues(sheet, row, ELEMENT_WORKBOOK_HEADERS[name])
       if (!values.some(Boolean)) continue
-      if (name === 'Multiple choice')
-        elements.push(parseMultipleChoice(sheet, row))
-      else if (name === 'Flashcards') elements.push(parseFlashcard(sheet, row))
-      else fail('UNSUPPORTED_POPULATED_SHEET', sheet.name, row, 1)
+      switch (name) {
+        case 'Single choice':
+          elements.push(parseChoices(sheet, row, 'SC'))
+          break
+        case 'Multiple choice':
+          elements.push(parseChoices(sheet, row, 'MC'))
+          break
+        case 'Kprim':
+          elements.push(parseChoices(sheet, row, 'KPRIM'))
+          break
+        case 'Numerical':
+          elements.push(parseNumerical(sheet, row))
+          break
+        case 'Free text':
+          elements.push(parseFreeText(sheet, row))
+          break
+        case 'Content':
+          elements.push(parseContent(sheet, row))
+          break
+        case 'Flashcards':
+          elements.push(parseFlashcard(sheet, row))
+          break
+      }
       if (elements.length > MAX_ELEMENT_WORKBOOK_ELEMENTS)
         fail('WORKBOOK_TOO_LARGE', sheet.name, row, 1)
     }
