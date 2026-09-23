@@ -1,6 +1,9 @@
 # Three-day capacity increase and resource sizing
 
-Status: **draft; capacity and release validation required before deployment**.
+Status: **temporary replicas restored**, except
+`hatchet.workers.general`, which stays at 4 until its queue wait and slot
+occupancy with the production knowledge-graph tasks show that 2 replicas
+suffice. The memory-request corrections below remain in effect.
 The temporary replica plan provides additional capacity for a 72-hour
 usage window. Replica counts are a capacity precaution, not a demonstrated
 throughput guarantee. Resource-request corrections are intended to remain after
