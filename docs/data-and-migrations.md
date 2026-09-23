@@ -58,8 +58,8 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
-- Separately, the backend runs a **homegrown runtime data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes; don't confuse it with `prisma migrate deploy`. The HTTP server starts first, then `startRuntimeMigrations` launches the runner without awaiting it. A slow, unavailable, or failed database migration therefore neither delays nor terminates API startup. Transient Prisma connection failures (`P1001`, `P1002`, `P1017`, or `P2024`) receive up to three bounded attempts before the runner fails open; message matching remains a fallback for adapter errors without a Prisma code. An unrecorded failure is retried on the next restart. Idempotent entries may run concurrently and then race only on the migration record. Non-idempotent entries create that record first inside the same Prisma transaction as the data change, using its primary key to serialize replicas without raw SQL. The streak rollout and repair entries are explicitly idempotent Prisma `updateMany` operations. They initialize tracking only for active leaderboard participations in already-enabled, non-assessment courses whose `endDate` is on or after the current tracking-day start and whose `studyStreakTrackingStartedAt` is still null. They do not backfill earlier responses. The development `Testkurs` seed also initializes new and existing active participations because the seed can run after the runtime migration has already been recorded.
-- The generated streak-state migration was customized before application so its two response-table indexes use `CREATE INDEX CONCURRENTLY`. PostgreSQL Prisma migrations are not transaction-wrapped by default; keep this migration outside a manual `BEGIN`/`COMMIT` block because concurrent index creation cannot run inside a transaction.
+- Separately, the backend runs a **homegrown runtime data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes; don't confuse it with `prisma migrate deploy`. Startup awaits the runner before the HTTP server starts listening, so keep entries short. If the runner fails, the backend logs the error and starts in a degraded state, and an unrecorded entry retries on the next restart. Transient database errors, classified by Prisma or driver error code first and by message as a fallback, receive up to three attempts with exponential backoff. Entries marked `isIdempotent` run without a transaction and tolerate a concurrent insert of their migration record. Other entries run in one transaction that first takes a transaction-scoped advisory lock on the entry id, so a second replica waits and then skips the recorded entry. The streak rollout entry is an idempotent Prisma `updateMany`. It initializes tracking only for active leaderboard participations in already-enabled, non-assessment courses whose `endDate` is on or after the current tracking-day start and whose `studyStreakTrackingStartedAt` is still null. It does not backfill earlier responses. The development `Testkurs` seed also initializes new and existing active participations because the seed can run after the runtime migration has already been recorded. Remove an entry once every environment has applied it.
+- The study-streak schema change ships as three migrations. `20260823120000_add_study_streak_state` adds the seven `Participation` columns in one `ALTER TABLE` statement. `20260823120001_add_question_response_streak_index` and `20260823120002_add_question_response_detail_streak_index` each build one response-table index. Each index migration is a single `CREATE INDEX CONCURRENTLY` statement. A `DROP INDEX CONCURRENTLY` guard cannot share the file: Prisma then sends the whole file as one transaction, which fails. PostgreSQL Prisma migrations are not transaction-wrapped by default; keep these files outside a manual `BEGIN`/`COMMIT` block because concurrent index statements cannot run inside a transaction. Do not use `CREATE INDEX CONCURRENTLY IF NOT EXISTS`: an invalid index satisfies the name check, so the build would be skipped silently.
 
 ### Deployment migrations
 
@@ -82,10 +82,45 @@ Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a
 
 1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — with the default values, both successful and failed Jobs are kept until the next sync (`hook-delete-policy: BeforeHookCreation`, no TTL by default). Keeping successful jobs prevents an upstream ArgoCD finalizer race from deadlocking the sync (see the [df-cloud incident analysis](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/blob/stg/docs/solutions/integration/argocd-hook-job-finalizer-update.md)). Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
 2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
-3. **A SQL failure leaves the DB partially migrated.** Prisma marks the migration failed and every later run stops with `P3009` until it is resolved. `prisma migrate resolve` only rewrites that bookkeeping — it does **not** undo DDL the failed migration already committed. Inspect the schema, undo the partial DDL by hand, then `prisma:resolve:prod` with `--rolled-back` (re-apply later) or `--applied` (you finished it manually).
+3. **A SQL failure leaves the DB partially migrated.** Prisma marks the migration failed and every later run stops with `P3009` until it is resolved. `prisma migrate resolve` only rewrites that bookkeeping — it does **not** undo DDL the failed migration already committed. Inspect the schema, undo the partial DDL by hand, then `prisma:resolve:prod` with `--rolled-back` (re-apply later) or `--applied` (you finished it manually). For an interrupted concurrent index build, follow [Interrupted concurrent index build](#interrupted-concurrent-index-build) instead.
 4. **Killed mid-migration is the same case.** The CLI ignores `SIGTERM`, so hitting `activeDeadlineSeconds: 600`, evicting the pod, or terminating the sync escalates to `SIGKILL` and leaves exactly the partial state above. An orphaned backend can also hold the advisory lock briefly; a later run then reports a connection-ish error that is really lock contention.
 5. **Need to ship an app-only hotfix while the DB is wedged?** Set `migrator.enabled: false`, sync, then re-enable it — track the re-enable, since a silently disabled hook is the failure mode this whole feature exists to prevent.
 6. **A migration that applied but shouldn't have** has no automatic undo: rolling the app image back leaves the schema ahead. That is why migrations must be expand-contract — roll _forward_ with a compensating migration. This repo documents no point-in-time restore procedure and the hook creates no restore point; whatever backup the managed Postgres provides is the only fallback, and recovering through it is a database-team operation, not a deploy step.
+
+#### Interrupted concurrent index build
+
+A killed or failed `CREATE INDEX CONCURRENTLY` does not roll back. It leaves an invalid index with the target name, and Prisma records the migration as failed. Diagnose read-only first:
+
+```sql
+SELECT migration_name, started_at
+FROM _prisma_migrations
+WHERE finished_at IS NULL AND rolled_back_at IS NULL;
+
+SELECT c.relname, i.indisvalid
+FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+WHERE c.relname IN (
+  'QuestionResponse_participationId_lastAnsweredAt_idx',
+  'QuestionResponseDetail_participationId_createdAt_idx'
+);
+```
+
+The first query names the failed migration. The second shows `indisvalid = false` for an index that an interrupted build left behind.
+
+For an index-only migration (`20260823120001_add_question_response_streak_index` or `20260823120002_add_question_response_detail_streak_index`), first check `pg_stat_activity` for a leftover `CREATE INDEX CONCURRENTLY` session from the killed run and end it with `pg_terminate_backend`; the drop otherwise waits behind it. Then drop the invalid index as its own statement:
+
+```sql
+DROP INDEX CONCURRENTLY IF EXISTS "<index name>";
+```
+
+This does not block response writes. Do not use a plain `DROP INDEX`, which takes an `ACCESS EXCLUSIVE` lock on the response table. Then mark the migration rolled back and re-sync:
+
+```bash
+pnpm --filter @klicker-uzh/prisma prisma:resolve:prod --rolled-back <migration name>
+```
+
+The next hook run re-applies the migration and builds the index again.
+
+The `ALTER TABLE` migration `20260823120000_add_study_streak_state` is a single atomic statement. Check which of the seven `studyStreak*` columns exist on `Participation`. Use `--applied` when all seven exist and `--rolled-back` when none do.
 
 Long DDL runs unattended against the live database with no `lock_timeout`: a statement waiting on an `ACCESS EXCLUSIVE` lock queues application queries behind it until the deadline. Review lock-heavy migrations before release.
 
