@@ -26,6 +26,10 @@ export const FEATURE_FLAG_DEFAULTS = {
   'kb-graph-builds': false,
   'kb-graph-domain-selection': false,
   'question-focus-topic': false,
+  // Admits the owner of a knowledge base to scheduled graph preparation, so
+  // the platform prepares graphs without a lecturer request. Each automatic
+  // build still passes the owner's AI entitlement and `kb-graph-builds`.
+  'kb-auto-graph-preparation': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
