@@ -23,12 +23,25 @@ AI-generated answers can be wrong or incomplete. Review answers and source refer
 
 1. Open **Resources → Chatbots** and select **Create chatbot**. Enter a **Name**, an optional **Description**, and the **Course**, then select **Create draft and continue**. The linked course is fixed after creation.
 2. In **Chatbot basics**, review the identity and save your changes. In **Learning modes**, choose **Tutor**, **Explainer**, or **Quizzer**, add a **Chatbot framing** if useful, and select **Save learning modes**. Keep **Tutor** or **Explainer** enabled.
-3. Open the prepared knowledge base. Expand **Connected chatbots**, choose the chatbot from **Chatbot**, and select **Connect chatbot**. A chatbot can use one knowledge base at a time; if another one is connected, the action is **Replace knowledge base**. Connect only resources that have a current version and are **Available to AI**.
-4. Return to the chatbot and open **Knowledge**. Under **Knowledge graph**, choose whether to enable **Show the participant concept map** and **Use graph connections for document search**, then select **Save knowledge graph settings**. The connected knowledge graph must be published first. These settings are staged with the revision and apply after approval; graph connections provide additional search hints while answers still refer to document passages.
-5. Complete the **Participant disclaimer** by entering its title and introduction, then save it. A complete disclaimer is required before requesting publication.
-6. In **Model & Reasoning Settings**, choose whether to **Let participants choose the model**. If disabled, choose the **Selected model** and **Reasoning effort**. If enabled, choose the **Allowed models** and permitted reasoning efforts, then select **Save model settings**. Review any configured tools shown under **Usage** and change them only when the page provides a control.
-7. Under **Participant credits**, set **Initial credits**, **Reset period**, **Reset amount**, and **Max credits**, then save the participant credit settings. A credit policy is required for publication.
-8. Open **Review and submit**, provide the **Use case** and **Expected student count**, and select **Request publication**. The request is reviewed before publication. A saved draft or pending revision is not active; only a revision with **Published** status is active. If a request is rejected, make the requested changes and select **Resubmit for approval**.
+3. Open the chatbot's **Knowledge** tab. The **Knowledge** tab shows the active knowledge base, but it does not attach a knowledge base directly. Follow the **Knowledge base** link to manage the connection.
+
+   ![Chatbot Knowledge tab without a connected knowledge base](/img/chatbot/knowledge-tab-unconnected.png)
+
+4. In Knowledge Bases, open or select the intended knowledge base. Expand **Connected chatbots**, select the chatbot under **Chatbot**, and select **Connect chatbot**. If another knowledge base is already connected, the action is **Replace knowledge base**. A chatbot can use one active knowledge base at a time. Connect only a knowledge base with a current version that is **Available to AI**. Connecting a knowledge base does not publish the chatbot.
+
+   ![Connected chatbots control before the chatbot is connected](/img/chatbot/knowledge-base-connected-chatbots-before.png)
+
+5. Confirm that the chatbot appears under **Using this knowledge base**, then return to the chatbot's **Knowledge** tab and verify that the knowledge base name appears under **Knowledge base**.
+
+   ![Connected chatbots control after the chatbot is connected](/img/chatbot/knowledge-base-connected-chatbots-after.png)
+
+   ![Chatbot Knowledge tab with the connected knowledge base](/img/chatbot/knowledge-tab-connected.png)
+
+6. Under **Knowledge graph**, choose whether to enable **Show the participant concept map** and **Use graph connections for document search**, then select **Save knowledge graph settings**. The connected knowledge graph must be published first. These settings are staged with the revision and apply after approval; graph connections provide additional search hints while answers still refer to document passages.
+7. Complete the **Participant disclaimer** by entering its title and introduction, then save it. A complete disclaimer is required before requesting publication.
+8. In **Model & Reasoning Settings**, choose whether to **Let participants choose the model**. If disabled, choose the **Selected model** and **Reasoning effort**. If enabled, choose the **Allowed models** and permitted reasoning efforts, then select **Save model settings**. Review any configured tools shown under **Usage** and change them only when the page provides a control.
+9. Under **Participant credits**, set **Initial credits**, **Reset period**, **Reset amount**, and **Max credits**, then save the participant credit settings. A credit policy is required for publication.
+10. Open **Review and submit**, provide the **Use case** and **Expected student count**, and select **Request publication**. The request is reviewed before publication. A saved draft or pending revision is not active; only a revision with **Published** status is active. If a request is rejected, make the requested changes and select **Resubmit for approval**.
 
 ## How do I verify the published chatbot?
 
