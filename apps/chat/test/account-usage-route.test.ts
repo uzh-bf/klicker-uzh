@@ -108,6 +108,8 @@ vi.mock('@/src/services/credits', () => ({
 
 vi.mock('@/src/services/accountUsage', () => {
   return {
+    CHAT_MODEL_UNAVAILABLE_ADVANCED: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    CHAT_MODEL_UNAVAILABLE_BASE: 'CHAT_MODEL_UNAVAILABLE_BASE',
     CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
     ChatTurnConflictError: mocks.ChatTurnConflictError,
     claimChatTurn: mocks.claimChatTurn,
@@ -215,7 +217,7 @@ function chatbot(overrides: Record<string, unknown> = {}) {
   return {
     id: 'chatbot-1',
     ownerId: 'owner-1',
-    owner: { aiFeaturesEnabled: true },
+    owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: 'cost-center-1' },
     course: { displayName: 'Test Course' },
     systemPrompts: { tutor: { prompt: 'Use course material.' } },
     mcpConfigurations: [],
@@ -690,7 +692,13 @@ describe('account usage chat route', () => {
 
   test('allows participant model use when an approved owner opts out of beta', async () => {
     mocks.chatbotFindUnique.mockResolvedValue(
-      chatbot({ owner: { aiFeaturesEnabled: true, betaEnabled: false } })
+      chatbot({
+        owner: {
+          aiFeaturesEnabled: true,
+          betaEnabled: false,
+          aiChatbotCostCenter: 'cost-center-1',
+        },
+      })
     )
 
     const response = await POST(createRequest(), {
@@ -861,6 +869,69 @@ describe('account usage chat route', () => {
     expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
     )
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('refuses an advanced model without a cost center while enforcement is off', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(createRequest({ selectedModel: 'gpt-4.1' }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.threadFindFirst).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('refuses the automatic default without a cost center while enforcement is off', async () => {
+    vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        modelSelection: false,
+        allowedModelIds: ['auto', 'gpt-5.6-luna'],
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat model usage is unavailable',
+      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    })
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('keeps the base model open without a cost center while enforcement is off', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.chatbotFindUnique.mockResolvedValue(
+      chatbot({
+        owner: { aiFeaturesEnabled: true, aiChatbotCostCenter: null },
+      })
+    )
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
