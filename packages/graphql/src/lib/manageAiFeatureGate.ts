@@ -1,6 +1,7 @@
 import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
 import { GraphQLError } from 'graphql'
-import type { ContextWithUser } from './context.js'
+import type { ContextWithUser, FeatureFlagEvaluator } from './context.js'
+import type { FeatureFlagAccount } from './featureFlags.js'
 
 export type ManageAiCapabilityState =
   | 'enabled'
@@ -24,14 +25,11 @@ export async function isManageAiEnabled(
   return (await getManageAiCapability(ctx)) === 'enabled'
 }
 
-export async function getManageAiCapability(
-  ctx: ContextWithUser
-): Promise<ManageAiCapabilityState> {
-  const account = await ctx.prisma.user.findUnique({
-    select: { aiFeaturesEnabled: true, betaEnabled: true },
-    where: { id: ctx.user.sub },
-  })
-
+function decideManageAiCapability(
+  featureFlags: FeatureFlagEvaluator | undefined,
+  account: { aiFeaturesEnabled: boolean; betaEnabled: boolean } | null,
+  attributes: FeatureFlagAttributes
+): ManageAiCapabilityState {
   // The database entitlement is the immediate per-account stop. Do not ask
   // GrowthBook for an answer when the account is not entitled, so an outage
   // cannot make a denied account appear temporarily unavailable.
@@ -41,8 +39,8 @@ export async function getManageAiCapability(
 
   try {
     return (
-      ctx.featureFlags?.getAiBetaDecision({
-        ...manageAiFeatureFlagAttributes(ctx.user),
+      featureFlags?.getAiBetaDecision({
+        ...attributes,
         betaEnabled: account.betaEnabled,
       }) ?? 'temporarilyUnavailable'
     )
@@ -54,10 +52,47 @@ export async function getManageAiCapability(
   }
 }
 
-export async function assertManageAiEnabled(
+export async function getManageAiCapability(
   ctx: ContextWithUser
-): Promise<void> {
-  const capability = await getManageAiCapability(ctx)
+): Promise<ManageAiCapabilityState> {
+  const account = await ctx.prisma.user.findUnique({
+    select: { aiFeaturesEnabled: true, betaEnabled: true },
+    where: { id: ctx.user.sub },
+  })
+
+  return decideManageAiCapability(
+    ctx.featureFlags,
+    account,
+    manageAiFeatureFlagAttributes(ctx.user)
+  )
+}
+
+/**
+ * The same AI entitlement for a stored account that no request session
+ * represents, such as the owner a trusted worker prepares work for. Rollout
+ * attributes come from the account row instead of session claims.
+ */
+export function getAccountManageAiCapability(
+  featureFlags: FeatureFlagEvaluator | undefined,
+  account: (FeatureFlagAccount & { aiFeaturesEnabled: boolean }) | null
+): ManageAiCapabilityState {
+  return decideManageAiCapability(
+    featureFlags,
+    account,
+    account
+      ? {
+          actorType: 'user',
+          catalyst: account.catalystInstitutional || account.catalystIndividual,
+          id: account.id,
+          role: account.role,
+        }
+      : { actorType: 'user' }
+  )
+}
+
+export function assertManageAiCapability(
+  capability: ManageAiCapabilityState
+): void {
   if (capability === 'enabled') return
 
   if (capability === 'temporarilyUnavailable') {
@@ -69,4 +104,10 @@ export async function assertManageAiEnabled(
   throw new GraphQLError('AI beta access is required', {
     extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
   })
+}
+
+export async function assertManageAiEnabled(
+  ctx: ContextWithUser
+): Promise<void> {
+  assertManageAiCapability(await getManageAiCapability(ctx))
 }

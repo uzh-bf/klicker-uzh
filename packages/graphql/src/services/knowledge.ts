@@ -40,9 +40,16 @@ import { normalizePublicHttpUrl } from '@klicker-uzh/util/public-url'
 import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
-import type { ContextWithUser } from '../lib/context.js'
-import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
-import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
+import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  isFeatureFlagEnabled,
+  isFeatureFlagEnabledForAccount,
+} from '../lib/featureFlags.js'
+import {
+  assertManageAiCapability,
+  assertManageAiEnabled,
+  getAccountManageAiCapability,
+} from '../lib/manageAiFeatureGate.js'
 import {
   fetchKbSourceInventory,
   type KbSourceInventoryDeps,
@@ -481,10 +488,14 @@ async function assertKbIngestionEnabled(ctx: ContextWithUser) {
  */
 async function assertKbGraphGenerationEnabled(ctx: ContextWithUser) {
   if (!(await isFeatureFlagEnabled(ctx, 'kb-graph-builds'))) {
-    throw new GraphQLError('KB graph generation is currently disabled', {
-      extensions: { code: 'KB_GRAPH_DISABLED' },
-    })
+    throwKbGraphGenerationDisabled()
   }
+}
+
+function throwKbGraphGenerationDisabled(): never {
+  throw new GraphQLError('KB graph generation is currently disabled', {
+    extensions: { code: 'KB_GRAPH_DISABLED' },
+  })
 }
 
 async function getOwnedKbOrThrow(ctx: ContextWithUser, id: string) {
@@ -3411,30 +3422,371 @@ function validateGraphBuildSnapshotResource(
   return resource.activeContentSha256
 }
 
-export async function rebuildKbKnowledgeGraph(
-  {
-    kbId,
-    qualityTier: requestedQualityTier,
-    focusTopic,
-  }: {
-    kbId: string
-    qualityTier?: DB.KBGraphQualityTier | null
-    focusTopic?: string | null
-  },
-  ctx: ContextWithUser
-): Promise<KBKnowledgeGraphConfig> {
-  const qualityTier = requestedQualityTier ?? DB.KBGraphQualityTier.STANDARD
-  await assertManageAiEnabled(ctx)
-  await assertKbGraphGenerationEnabled(ctx)
-  // The capability is resolved before the transaction opens so the lock is not
-  // held across a feature-flag lookup.
-  const domainCapabilityEnabled = await isKBGraphDomainSelectionAdmitted(ctx)
-  const requestedFocusTopic = await resolveRequestedKBGraphFocusTopic(
-    focusTopic,
-    ctx
+/**
+ * Quality tier of automatic graph preparation. Scheduled builds always use it;
+ * the higher tier and provider tuning stay an explicit interactive choice.
+ */
+export const KB_GRAPH_PREPARATION_QUALITY_TIER = DB.KBGraphQualityTier.STANDARD
+
+/**
+ * Everything a graph build represents: the frozen domain triple, the quality
+ * tier and the source-only `sourceContentDigest`. The domain triple is the
+ * selection a build would actually freeze, so a deployment or rollout that
+ * cannot honor the stored KB choice yields the legacy all-null triple.
+ */
+export interface KBGraphPreparationIdentity {
+  domainPolicyId: string | null
+  domainPolicyVersion: number | null
+  domainPolicyLanguage: string | null
+  qualityTier: DB.KBGraphQualityTier
+  sourceContentDigest: string
+}
+
+/**
+ * Stable identity of a desired or published preparation. It extends the
+ * source-only digest with the settings that change what a build produces, so
+ * a language change alone produces a different fingerprint.
+ */
+export function getKBGraphPreparationFingerprint(
+  identity: KBGraphPreparationIdentity
+): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify([
+        'kb-graph-preparation/v1',
+        identity.sourceContentDigest,
+        identity.domainPolicyId,
+        identity.domainPolicyVersion,
+        identity.domainPolicyLanguage,
+        identity.qualityTier,
+      ])
+    )
+    .digest('hex')
+}
+
+export type KBGraphPreparationPendingReason =
+  | 'NO_PUBLISHED_GRAPH'
+  | 'SETTINGS_CHANGED'
+  | 'SOURCES_CHANGED'
+
+/**
+ * Timing policy of scheduled preparation. The quiet period coalesces bursts of
+ * changes, the maximum deferral bounds how long continuous changes can keep
+ * postponing a pending preparation, and the backoff spaces failed attempts.
+ */
+export interface KBGraphPreparationTiming {
+  now: Date
+  /** Latest serving-source or settings change. */
+  lastChangeAt: Date | null
+  quietPeriodMs: number
+  /** When the currently unmet preparation first became pending. */
+  pendingSinceAt: Date | null
+  maxDeferralMs: number
+  lastFailedAt: Date | null
+  backoffMs: number
+}
+
+export interface KBGraphPreparationStatus {
+  /** The published graph does not represent the desired preparation. */
+  pending: boolean
+  /** Pending, and the timing policy (when supplied) admits a build now. */
+  due: boolean
+  reason: KBGraphPreparationPendingReason | null
+  desiredFingerprint: string
+  /** Earliest time a pending preparation becomes due; null when due or current. */
+  deferredUntil: Date | null
+}
+
+/**
+ * The due check shared by build admission and generation readiness. A
+ * preparation is pending when no graph is published, when the published build
+ * froze a different domain, language or tier than the KB now asks for, or when
+ * the serving sources moved on. Without a timing policy a pending preparation
+ * is due immediately.
+ */
+export function getKBGraphPreparationStatus({
+  desired,
+  published,
+  timing,
+}: {
+  desired: KBGraphPreparationIdentity
+  published: KBGraphPreparationIdentity | null
+  timing?: KBGraphPreparationTiming
+}): KBGraphPreparationStatus {
+  const desiredFingerprint = getKBGraphPreparationFingerprint(desired)
+  let reason: KBGraphPreparationPendingReason | null = null
+  if (!published) {
+    reason = 'NO_PUBLISHED_GRAPH'
+  } else if (
+    published.domainPolicyId !== desired.domainPolicyId ||
+    published.domainPolicyVersion !== desired.domainPolicyVersion ||
+    published.domainPolicyLanguage !== desired.domainPolicyLanguage ||
+    published.qualityTier !== desired.qualityTier
+  ) {
+    reason = 'SETTINGS_CHANGED'
+  } else if (published.sourceContentDigest !== desired.sourceContentDigest) {
+    reason = 'SOURCES_CHANGED'
+  }
+
+  if (reason === null) {
+    return {
+      pending: false,
+      due: false,
+      reason,
+      desiredFingerprint,
+      deferredUntil: null,
+    }
+  }
+  if (!timing) {
+    return {
+      pending: true,
+      due: true,
+      reason,
+      desiredFingerprint,
+      deferredUntil: null,
+    }
+  }
+
+  const now = timing.now.getTime()
+  const waits: number[] = []
+  const deferralExhausted =
+    timing.pendingSinceAt !== null &&
+    timing.pendingSinceAt.getTime() + timing.maxDeferralMs <= now
+  if (timing.lastChangeAt && !deferralExhausted) {
+    waits.push(timing.lastChangeAt.getTime() + timing.quietPeriodMs)
+  }
+  // The age bound only overrides the quiet period; a failed attempt always
+  // waits out its backoff so a failing build is never retried in a loop.
+  if (timing.lastFailedAt) {
+    waits.push(timing.lastFailedAt.getTime() + timing.backoffMs)
+  }
+  const readyAt = Math.max(now, ...waits)
+  return {
+    pending: true,
+    due: readyAt <= now,
+    reason,
+    desiredFingerprint,
+    deferredUntil: readyAt <= now ? null : new Date(readyAt),
+  }
+}
+
+export type KBQuestionPreparationState =
+  | 'WAITING_FOR_MATERIALS'
+  | 'QUEUED'
+  | 'PROCESSING'
+  | 'READY'
+  | 'DELAYED'
+  | 'NEEDS_ATTENTION'
+  | 'UNAVAILABLE'
+  | 'NO_ELIGIBLE_MATERIALS'
+
+export interface KBQuestionPreparationInput {
+  /**
+   * AI entitlement, `kb-graph-builds`, the per-KB opt-in and the cost
+   * configuration all admit a new build for the owner.
+   */
+  buildAdmitted: boolean
+  /** Scheduled preparation admits this KB, so no lecturer action is needed. */
+  automaticPreparationAdmitted: boolean
+  /** Course-content resources only; administrative material never counts. */
+  courseContent: { serving: number; processing: number; failed: number }
+  /**
+   * Build holding the KB's single slot while it is still queued or running,
+   * the same filter build admission applies; any other slot holder is null.
+   */
+  activeBuild: {
+    status:
+      | typeof DB.KBGraphBuildStatus.QUEUED
+      | typeof DB.KBGraphBuildStatus.PROCESSING
+  } | null
+  /** The published build carries a bundle question generation can use. */
+  publishedGraphReady: boolean
+  preparation: Pick<KBGraphPreparationStatus, 'pending' | 'reason'>
+  /** Start of the currently unmet preparation, kept through retries. */
+  pendingSinceAt: Date | null
+  now: Date
+  delayedAfterMs: number
+}
+
+export interface KBQuestionPreparation {
+  state: KBQuestionPreparationState
+  pendingReason: KBGraphPreparationPendingReason | null
+}
+
+/**
+ * Generation readiness of a KB, derived from the resource and build ledgers
+ * rather than persisted. Queued or processing is reported only while a build
+ * holds the slot or scheduled preparation will admit one, and a preparation
+ * pending longer than the delay window reports delayed instead.
+ */
+export function deriveKBQuestionPreparation(
+  input: KBQuestionPreparationInput
+): KBQuestionPreparation {
+  const pendingReason = input.preparation.pending
+    ? input.preparation.reason
+    : null
+  const result = (state: KBQuestionPreparationState) => ({
+    state,
+    pendingReason,
+  })
+  const isOverdue =
+    input.pendingSinceAt !== null &&
+    input.now.getTime() - input.pendingSinceAt.getTime() > input.delayedAfterMs
+  const inFlight = (state: 'QUEUED' | 'PROCESSING') =>
+    result(isOverdue ? 'DELAYED' : state)
+
+  // An accepted build keeps running when admission later closes.
+  if (input.activeBuild) {
+    return inFlight(
+      input.activeBuild.status === DB.KBGraphBuildStatus.QUEUED
+        ? 'QUEUED'
+        : 'PROCESSING'
+    )
+  }
+
+  const { serving, processing, failed } = input.courseContent
+  if (serving + processing + failed === 0) {
+    return result('NO_ELIGIBLE_MATERIALS')
+  }
+  if (!input.preparation.pending) {
+    // A current graph without a usable bundle cannot be repaired by waiting.
+    return result(input.publishedGraphReady ? 'READY' : 'NEEDS_ATTENTION')
+  }
+  if (!input.buildAdmitted || !input.automaticPreparationAdmitted) {
+    return result('UNAVAILABLE')
+  }
+  if (serving === 0) {
+    return result(
+      processing === 0 ? 'NEEDS_ATTENTION' : 'WAITING_FOR_MATERIALS'
+    )
+  }
+  return inFlight('QUEUED')
+}
+
+/**
+ * Who starts a graph build. An interactive trigger acts as the signed-in
+ * lecturer and may choose the tier and focus. A system trigger is a trusted
+ * scheduler acting for the KB owner named explicitly; it carries no session,
+ * always uses the fixed preparation recipe, and passes the owner's own
+ * entitlement and rollout.
+ */
+export type KBGraphBuildTrigger =
+  | {
+      kind: 'user'
+      ctx: ContextWithUser
+      qualityTier?: DB.KBGraphQualityTier | null
+      focusTopic?: string | null
+    }
+  | { kind: 'system'; ownerId: string }
+
+export type KBGraphBuildServiceContext = Pick<
+  Context,
+  'prisma' | 'tasks' | 'featureFlags'
+>
+
+type KBGraphBuildAdmission = {
+  ownerId: string
+  qualityTier: DB.KBGraphQualityTier
+  focusTopic: string | null
+  domainCapabilityEnabled: boolean
+}
+
+/**
+ * Admission decided before the KB lock is taken, so no lock is held across a
+ * feature-flag lookup: AI entitlement, then `kb-graph-builds`, then the
+ * domain-selection capability and focus the build may use.
+ */
+async function admitKBGraphBuildTrigger(
+  trigger: KBGraphBuildTrigger,
+  deps: KBGraphBuildServiceContext
+): Promise<KBGraphBuildAdmission> {
+  if (trigger.kind === 'user') {
+    const { ctx } = trigger
+    await assertManageAiEnabled(ctx)
+    await assertKbGraphGenerationEnabled(ctx)
+    const domainCapabilityEnabled = await isKBGraphDomainSelectionAdmitted(ctx)
+    const focusTopic = await resolveRequestedKBGraphFocusTopic(
+      trigger.focusTopic,
+      ctx
+    )
+    return {
+      ownerId: ctx.user.sub,
+      qualityTier: trigger.qualityTier ?? DB.KBGraphQualityTier.STANDARD,
+      focusTopic,
+      domainCapabilityEnabled,
+    }
+  }
+
+  const owner = await deps.prisma.user.findUnique({
+    where: { id: trigger.ownerId },
+    select: {
+      id: true,
+      role: true,
+      catalystInstitutional: true,
+      catalystIndividual: true,
+      aiFeaturesEnabled: true,
+      betaEnabled: true,
+    },
+  })
+  assertManageAiCapability(
+    getAccountManageAiCapability(deps.featureFlags, owner)
   )
-  const result = await ctx.prisma.$transaction(async (prisma) => {
-    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+  if (
+    !owner ||
+    !isFeatureFlagEnabledForAccount(deps.featureFlags, owner, 'kb-graph-builds')
+  ) {
+    throwKbGraphGenerationDisabled()
+  }
+  const catalog = getDefaultKBGraphDomainCatalog()
+  return {
+    ownerId: owner.id,
+    qualityTier: KB_GRAPH_PREPARATION_QUALITY_TIER,
+    focusTopic: null,
+    domainCapabilityEnabled:
+      isKBGraphDomainCapabilityEnabled(catalog.revision, process.env) &&
+      isFeatureFlagEnabledForAccount(
+        deps.featureFlags,
+        owner,
+        'kb-graph-domain-selection'
+      ),
+  }
+}
+
+export type KBGraphBuildStart = {
+  /**
+   * QUEUED dispatched a new build, ALREADY_ACTIVE returned the build holding
+   * the slot, and NOT_DUE means a system trigger found the published graph
+   * already matching the desired preparation and reserved nothing.
+   */
+  outcome: 'QUEUED' | 'ALREADY_ACTIVE' | 'NOT_DUE'
+  kb: {
+    id: string
+    knowledgeGraphEnabled: boolean
+    activeGraphBuildId: string | null
+    publishedGraphBuildId: string | null
+  }
+  build: DB.Prisma.KBGraphBuildGetPayload<{
+    select: typeof KB_GRAPH_BUILD_CONFIG_SELECT
+  }> | null
+}
+
+/**
+ * Starts a graph build for one KB. Admission order: AI entitlement,
+ * `kb-graph-builds`, the per-KB opt-in, serving course-content sources, the
+ * cost configuration and quota reservation, then a compare-and-swap on the
+ * KB's single build slot. A system trigger additionally skips a KB whose
+ * published graph already matches the desired preparation, so unchanged
+ * inputs never reserve cost.
+ */
+export async function startKbKnowledgeGraphBuild(
+  { kbId }: { kbId: string },
+  trigger: KBGraphBuildTrigger,
+  deps: KBGraphBuildServiceContext
+): Promise<KBGraphBuildStart> {
+  const { ownerId, qualityTier, focusTopic, domainCapabilityEnabled } =
+    await admitKBGraphBuildTrigger(trigger, deps)
+  const result = await deps.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ownerId)
     const kb = await prisma.kB.findUniqueOrThrow({
       where: { id: kbId },
       select: {
@@ -3467,7 +3819,12 @@ export async function rebuildKbKnowledgeGraph(
         (activeBuild.status === DB.KBGraphBuildStatus.QUEUED ||
           activeBuild.status === DB.KBGraphBuildStatus.PROCESSING)
       ) {
-        return { kb, build: activeBuild, queueBuildId: null }
+        return {
+          outcome: 'ALREADY_ACTIVE' as const,
+          kb,
+          build: activeBuild,
+          queueBuildId: null,
+        }
       }
       if (activeBuild?.errorCode === 'KB_GRAPH_DISPATCH_AMBIGUOUS') {
         throw new GraphQLError(
@@ -3520,10 +3877,46 @@ export async function rebuildKbKnowledgeGraph(
         contentSha256,
       }))
     )
+    if (trigger.kind === 'system') {
+      const publishedBuild = kb.publishedGraphBuildId
+        ? await prisma.kBGraphBuild.findFirst({
+            where: {
+              id: kb.publishedGraphBuildId,
+              kbId,
+              status: DB.KBGraphBuildStatus.SUCCEEDED,
+            },
+            select: {
+              domainPolicyId: true,
+              domainPolicyVersion: true,
+              domainPolicyLanguage: true,
+              qualityTier: true,
+              sourceContentDigest: true,
+            },
+          })
+        : null
+      const preparation = getKBGraphPreparationStatus({
+        desired: {
+          domainPolicyId: storedDomain?.domainPolicyId ?? null,
+          domainPolicyVersion: storedDomain?.domainPolicyVersion ?? null,
+          domainPolicyLanguage: storedDomain?.language ?? null,
+          qualityTier,
+          sourceContentDigest,
+        },
+        published: publishedBuild,
+      })
+      if (!preparation.pending) {
+        return {
+          outcome: 'NOT_DUE' as const,
+          kb,
+          build: null,
+          queueBuildId: null,
+        }
+      }
+    }
     const buildId = randomUUID()
     const graphBundleCoordinates = getKBGraphBundleCoordinates(buildId)
     const reservation = await reserveKBGraphCost(prisma, {
-      ownerId: ctx.user.sub,
+      ownerId,
       qualityTier,
     })
     // Only an explicit, validated selection is frozen onto the build; the
@@ -3539,10 +3932,10 @@ export async function rebuildKbKnowledgeGraph(
       data: {
         id: buildId,
         kbId,
-        requestedById: ctx.user.sub,
+        requestedById: ownerId,
         qualityTier,
         ...domainFields,
-        focusTopic: requestedFocusTopic,
+        focusTopic,
         sourceContentDigest,
         graphName: getKnowledgeGraphName(kbId, buildId),
         graphmlBlobName: getKBGraphArtifactBlobName(buildId),
@@ -3575,6 +3968,7 @@ export async function rebuildKbKnowledgeGraph(
       throw new Error('KB graph build slot could not be claimed')
     }
     return {
+      outcome: 'QUEUED' as const,
       kb: { ...kb, activeGraphBuildId: buildId },
       build,
       queueBuildId: buildId,
@@ -3583,10 +3977,10 @@ export async function rebuildKbKnowledgeGraph(
 
   if (result.queueBuildId) {
     try {
-      await ctx.tasks.buildKBGraph.runNoWait({ buildId: result.queueBuildId })
+      await deps.tasks.buildKBGraph.runNoWait({ buildId: result.queueBuildId })
     } catch {
       const finishedAt = new Date()
-      await ctx.prisma.$transaction(async (prisma) => {
+      await deps.prisma.$transaction(async (prisma) => {
         const failed = await prisma.kBGraphBuild.updateMany({
           where: {
             id: result.queueBuildId!,
@@ -3614,8 +4008,29 @@ export async function rebuildKbKnowledgeGraph(
     }
   }
 
+  return { outcome: result.outcome, kb: result.kb, build: result.build }
+}
+
+export async function rebuildKbKnowledgeGraph(
+  {
+    kbId,
+    qualityTier,
+    focusTopic,
+  }: {
+    kbId: string
+    qualityTier?: DB.KBGraphQualityTier | null
+    focusTopic?: string | null
+  },
+  ctx: ContextWithUser
+): Promise<KBKnowledgeGraphConfig> {
+  const result = await startKbKnowledgeGraphBuild(
+    { kbId },
+    { kind: 'user', ctx, qualityTier, focusTopic },
+    ctx
+  )
+
   const isStale =
-    result.build.status === DB.KBGraphBuildStatus.SUCCEEDED
+    result.build?.status === DB.KBGraphBuildStatus.SUCCEEDED
       ? result.build.sourceContentDigest !==
         (await computeKBContentDigest(ctx.prisma, kbId))
       : false

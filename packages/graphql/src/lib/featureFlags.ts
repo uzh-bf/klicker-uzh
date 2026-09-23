@@ -1,6 +1,7 @@
 import type { FeatureFlagKey } from '@klicker-uzh/feature-flags'
+import type { UserRole } from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
-import type { ContextWithUser } from './context.js'
+import type { ContextWithUser, FeatureFlagEvaluator } from './context.js'
 
 type FeatureFlagAccessContext = Pick<
   ContextWithUser,
@@ -43,6 +44,41 @@ export async function isFeatureFlagEnabled(
         betaEnabled: betaEnabled === true,
       }) ?? false
     )
+  } catch {
+    console.warn(
+      `[feature-flags] Evaluation failed for "${key}"; denying access`
+    )
+    return false
+  }
+}
+
+export interface FeatureFlagAccount {
+  id: string
+  role: UserRole
+  catalystInstitutional: boolean
+  catalystIndividual: boolean
+  betaEnabled: boolean
+}
+
+// Evaluates a flag for a stored account that no request session represents,
+// such as the knowledge-base owner a trusted worker prepares work for. The
+// attributes come from the account row, and evaluation fails closed exactly
+// like the session path.
+export function isFeatureFlagEnabledForAccount(
+  featureFlags: FeatureFlagEvaluator | undefined,
+  account: FeatureFlagAccount,
+  key: FeatureFlagKey
+): boolean {
+  try {
+    if (!featureFlags) return false
+    if (key === 'ai-beta' && account.betaEnabled !== true) return false
+    return featureFlags.isEnabled(key, {
+      id: account.id,
+      actorType: 'user',
+      catalyst: account.catalystInstitutional || account.catalystIndividual,
+      role: account.role,
+      betaEnabled: account.betaEnabled === true,
+    })
   } catch {
     console.warn(
       `[feature-flags] Evaluation failed for "${key}"; denying access`
