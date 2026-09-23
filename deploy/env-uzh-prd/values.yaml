@@ -89,7 +89,7 @@ hatchet:
         tag: v3.4.0-alpha.82
       resources:
         requests:
-          cpu: 50m
+          cpu: 25m
           memory: 192Mi
         limits:
           memory: 512Mi
@@ -218,7 +218,7 @@ auth:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 192Mi
     limits:
       memory: 512Mi
@@ -420,9 +420,9 @@ mcpStudent:
   resources:
     requests:
       cpu: 25m
-      memory: 50Mi
+      memory: 160Mi
     limits:
-      memory: 200Mi
+      memory: 320Mi
 
 mcpLecturer:
   priorityClassName: production-workload
@@ -470,9 +470,9 @@ mcpLecturer:
   resources:
     requests:
       cpu: 25m
-      memory: 50Mi
+      memory: 160Mi
     limits:
-      memory: 200Mi
+      memory: 320Mi
 
 frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
@@ -576,7 +576,7 @@ frontendManage:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 256Mi
     limits:
       memory: 512Mi
@@ -627,7 +627,7 @@ frontendControl:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 96Mi
     limits:
       memory: 512Mi
@@ -777,7 +777,7 @@ olatApi:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 128Mi
     limits:
       memory: 512Mi
@@ -828,7 +828,7 @@ lti:
 
   resources:
     requests:
-      cpu: 200m
+      cpu: 50m
       memory: 200Mi
     limits:
       memory: 1Gi
@@ -880,7 +880,7 @@ responseApi:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 96Mi
     limits:
       memory: 512Mi
