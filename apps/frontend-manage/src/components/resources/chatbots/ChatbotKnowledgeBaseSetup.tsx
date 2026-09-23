@@ -3,10 +3,14 @@ import {
   AttachKbToChatbotDocument,
   ChatbotStatus,
   DetachKbFromChatbotDocument,
+  GetUserCoursesDocument,
   GetUserKbsDocument,
   QGetChatbotsInfoWithKnowledgeBasesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { CreateKnowledgeBaseModal } from '@klicker-uzh/kb-management'
+import {
+  CreateKnowledgeBaseModal,
+  domainGenerationLanguageForLocale,
+} from '@klicker-uzh/kb-management'
 import {
   Button,
   SelectField,
@@ -25,10 +29,12 @@ const refetchQueries = [{ query: QGetChatbotsInfoWithKnowledgeBasesDocument }]
 function ChatbotKnowledgeBaseSetup({
   chatbotId,
   chatbotStatus,
+  courseIds,
   connectedKnowledgeBase,
 }: {
   chatbotId: string
   chatbotStatus: ChatbotStatus
+  courseIds: string[]
   connectedKnowledgeBase?: { id: string; name: string }
 }) {
   const t = useTranslations()
@@ -36,9 +42,28 @@ function ChatbotKnowledgeBaseSetup({
   const apolloClient = useApolloClient()
   const [selectedKbId, setSelectedKbId] = useState<string | undefined>()
   const [createOpen, setCreateOpen] = useState(false)
+  // A knowledge base created here whose connection failed. It stays listed and
+  // selected so the lecturer can retry the connection instead of creating a
+  // second knowledge base.
+  const [unconnectedKb, setUnconnectedKb] = useState<
+    { id: string; name: string } | undefined
+  >()
   const { data, error, refetch } = useQuery(GetUserKbsDocument, {
     variables: { first: KB_LIST_PAGE_SIZE },
   })
+  const { data: courseData } = useQuery(GetUserCoursesDocument, {
+    fetchPolicy: 'cache-first',
+  })
+  // A knowledge base created for this chatbot is proposed in the language of
+  // the chatbot's course. Courses that disagree, or a language the knowledge
+  // graph cannot generate in, leave the ordinary proposal in place.
+  const courseLanguages = new Set(
+    (courseData?.userCourses ?? [])
+      .filter(({ id }) => courseIds.includes(id))
+      .map(({ language }) => domainGenerationLanguageForLocale(language))
+  )
+  const proposedLanguage =
+    courseLanguages.size === 1 ? [...courseLanguages][0] : undefined
   const [attachKb, { loading: attaching }] = useMutation(
     AttachKbToChatbotDocument
   )
@@ -48,13 +73,14 @@ function ChatbotKnowledgeBaseSetup({
   const mutating = attaching || detaching
 
   const knowledgeBases = data?.getUserKbsConnection.items ?? []
-  // The connected knowledge base stays selectable even when it falls outside
-  // the first page of the lecturer's list.
+  // The connected knowledge base and one just created here stay selectable even
+  // when they fall outside the first page of the lecturer's list.
   const selectItems = [
-    ...(connectedKnowledgeBase &&
-    !knowledgeBases.some(({ id }) => id === connectedKnowledgeBase.id)
-      ? [connectedKnowledgeBase]
-      : []),
+    ...[connectedKnowledgeBase, unconnectedKb].filter(
+      (knowledgeBase): knowledgeBase is { id: string; name: string } =>
+        knowledgeBase != null &&
+        !knowledgeBases.some(({ id }) => id === knowledgeBase.id)
+    ),
     ...knowledgeBases,
   ].map((knowledgeBase) => ({
     value: knowledgeBase.id,
@@ -65,6 +91,10 @@ function ChatbotKnowledgeBaseSetup({
     connectedKnowledgeBase != null &&
     selectedValue != null &&
     selectedValue !== connectedKnowledgeBase.id
+  const retrying =
+    unconnectedKb != null &&
+    selectedValue === unconnectedKb.id &&
+    selectedValue !== connectedKnowledgeBase?.id
   const canConnect =
     selectedValue != null &&
     selectedValue !== connectedKnowledgeBase?.id &&
@@ -92,6 +122,7 @@ function ChatbotKnowledgeBaseSetup({
     }
 
     setSelectedKbId(undefined)
+    setUnconnectedKb(undefined)
     toast({
       type: 'success',
       message: t('manage.resources.chatbotKnowledgeBaseConnectSuccess'),
@@ -122,19 +153,16 @@ function ChatbotKnowledgeBaseSetup({
     })
   }
 
-  const handleCreated = async ({ id }: { id: string }) => {
+  const handleCreated = async (createdKb: { id: string; name: string }) => {
+    const { id } = createdKb
     // Every cached page of the lecturer's knowledge-base lists now misses the
     // new entry, including the list on the knowledge-base overview page.
     apolloClient.cache.evict({ fieldName: 'getUserKbsConnection' })
     apolloClient.cache.gc()
 
     if (!(await attach(id))) {
-      // The knowledge base exists now, so retrying means selecting it here
-      // rather than creating another one.
-      toast({
-        type: 'error',
-        message: t('manage.resources.chatbotKnowledgeBaseCreatedNotConnected'),
-      })
+      setUnconnectedKb(createdKb)
+      setSelectedKbId(id)
       await refetch()
       return
     }
@@ -183,9 +211,11 @@ function ChatbotKnowledgeBaseSetup({
           data={{ cy: 'chatbot-kb-connect' }}
         >
           <Button.Label>
-            {replacing
-              ? t('manage.resources.chatbotKnowledgeBaseReplace')
-              : t('manage.resources.chatbotKnowledgeBaseConnect')}
+            {retrying
+              ? t('manage.resources.chatbotKnowledgeBaseRetryConnection')
+              : replacing
+                ? t('manage.resources.chatbotKnowledgeBaseReplace')
+                : t('manage.resources.chatbotKnowledgeBaseConnect')}
           </Button.Label>
         </Button>
         {connectedKnowledgeBase ? (
@@ -207,6 +237,16 @@ function ChatbotKnowledgeBaseSetup({
           <Button.Label>{t('kb.create')}</Button.Label>
         </Button>
       </div>
+      {unconnectedKb ? (
+        <UserNotification
+          type="error"
+          message={t(
+            'manage.resources.chatbotKnowledgeBaseCreatedNotConnected',
+            { kbName: unconnectedKb.name }
+          )}
+          data={{ cy: 'chatbot-kb-created-not-connected' }}
+        />
+      ) : null}
       {replacing ? (
         <UserNotification
           type="warning"
@@ -223,6 +263,7 @@ function ChatbotKnowledgeBaseSetup({
         <CreateKnowledgeBaseModal
           onClose={() => setCreateOpen(false)}
           onCreated={handleCreated}
+          proposedLanguage={proposedLanguage}
         />
       ) : null}
     </div>

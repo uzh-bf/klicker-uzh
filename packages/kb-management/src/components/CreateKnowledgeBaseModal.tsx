@@ -7,6 +7,7 @@ import { Modal, TextareaField, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import {
+  type DomainGenerationLanguage,
   isKbDomainSelectionSupported,
   suggestedKbDomain,
 } from '../kbDomainSettings'
@@ -18,9 +19,14 @@ import KnowledgeBaseDomainFields, {
 function CreateKnowledgeBaseModal({
   onClose,
   onCreated,
+  proposedLanguage,
 }: {
   onClose: () => void
-  onCreated: (kb: { id: string }) => Promise<unknown>
+  onCreated: (kb: { id: string; name: string }) => Promise<unknown>
+  // The content language to suggest instead of the ordinary default, for
+  // example the language of the course whose chatbot the knowledge base is
+  // created for. It applies only where the suggested subject serves it.
+  proposedLanguage?: DomainGenerationLanguage
 }) {
   const t = useTranslations()
   const [name, setName] = useState('')
@@ -43,7 +49,8 @@ function CreateKnowledgeBaseModal({
   const domainSelectable = domainOptions.length > 0
   // The suggestion stands in until the lecturer touches a control, so the form
   // opens on a usable pair without an effect that could race the catalog query.
-  const domainValue = domain ?? suggestedKbDomain(domainOptions)
+  const domainValue =
+    domain ?? suggestedKbDomain(domainOptions, proposedLanguage)
   const domainSupported =
     domainValue != null &&
     isKbDomainSelectionSupported(domainOptions, domainValue)
@@ -54,7 +61,7 @@ function CreateKnowledgeBaseModal({
     const trimmedName = name.trim()
     if (!canCreate || loading) return
 
-    let created: { id: string } | undefined
+    let created: { id: string; name: string } | undefined
     try {
       const result = await createKb({
         variables: {
@@ -69,6 +76,8 @@ function CreateKnowledgeBaseModal({
         },
       })
       created = result.data?.createKb
+        ? { id: result.data.createKb.id, name: trimmedName }
+        : undefined
     } catch (error) {
       console.error('Failed to create knowledge base', error)
       toast({ type: 'error', message: t('kb.createError') })

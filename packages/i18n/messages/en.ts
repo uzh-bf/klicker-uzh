@@ -4943,7 +4943,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotKnowledgeBaseDisconnectError:
         'The knowledge base could not be disconnected.',
       chatbotKnowledgeBaseCreatedNotConnected:
-        'The knowledge base was created but could not be connected. Select it in the list to try again.',
+        'The knowledge base “{kbName}” was created but could not be connected to this chatbot. Retry the connection to use it here.',
+      chatbotKnowledgeBaseRetryConnection: 'Retry connection',
+      chatbotKnowledgeBaseCreateChatbot:
+        'Create chatbot using this knowledge base',
+      chatbotKnowledgeBaseChatbotCreatedNotConnected:
+        'The chatbot was created but the knowledge base could not be connected. Connect it in the chatbot’s Knowledge view.',
       backToChatbot: 'Back to chatbot {name}',
       chatbotTechnicalDetails: 'Technical details',
       chatbotTechnicalId: 'ID',
