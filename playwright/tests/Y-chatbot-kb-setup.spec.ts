@@ -108,6 +108,41 @@ test.describe('Chatbot knowledge base setup', () => {
     )
   })
 
+  test('creates a chatbot that uses the knowledge base from the knowledge base page', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const kb = await prisma.kB.create({
+      data: { name: KB_NAME, ownerId: USER_ID_TEST },
+    })
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+
+    await page.goto(`${manageUrl}/resources/knowledgeBases/${kb.id}`)
+    await page.getByTestId('kb-chatbot-settings').locator('summary').click()
+    await page.getByTestId('kb-create-chatbot').click()
+
+    const chatbotNameField = page.getByTestId('create-chatbot-name')
+    await expect(chatbotNameField).toBeVisible()
+    await chatbotNameField.fill(CHATBOT_NAME)
+    await selectOption(page, '[data-cy="create-chatbot-course"]', 'Testkurs')
+    await page.getByTestId('submit-create-chatbot').click()
+
+    // The new chatbot opens on its Knowledge view with the knowledge base
+    // already connected, and the creation request is not repeated on reload.
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+    const url = new URL(page.url())
+    expect(url.searchParams.get('view')).toBe('knowledge')
+    expect(url.searchParams.get('createForKb')).toBeNull()
+
+    await page.reload()
+    await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
+      KB_NAME
+    )
+    await expect(chatbotNameField).toHaveCount(0)
+  })
+
   test('offers no way back for a chatbot the lecturer does not own', async ({
     page,
   }) => {
