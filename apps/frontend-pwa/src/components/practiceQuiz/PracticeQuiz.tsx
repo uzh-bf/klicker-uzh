@@ -1,20 +1,25 @@
 import { useQuery } from '@apollo/client'
 import {
-  Course,
+  type Course,
   GetBookmarksPracticeQuizDocument,
-  PracticeQuiz as PracticeQuizType,
+  type PracticeQuiz as PracticeQuizType,
   SelfDocument,
   StackFeedbackStatus,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
+import type { EmbedQuizNavigationState } from './embed'
 import PracticeQuizOverview from './PracticeQuizOverview'
+import {
+  findFirstUnansweredStack,
+  type PracticeQuizProgressState,
+} from './progress'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -28,9 +33,11 @@ export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
 }
 
 export function resetPracticeQuizLocalStorage(id: string) {
+  const progressKey = `pq-${id}`
+  const stackPrefix = `qi-${id}-`
   const localStorageKeys = Object.keys(localStorage)
   localStorageKeys.forEach((key) => {
-    if (key.includes(id)) {
+    if (key === progressKey || key.startsWith(stackPrefix)) {
       localStorage.removeItem(key)
     }
   })
@@ -44,7 +51,12 @@ interface PracticeQuizProps {
   onAllStacksCompletion?: () => void
   showResetLocalStorage?: boolean
   embedded?: boolean
+  focusedPresentation?: boolean
   previewOnly?: boolean
+  hostNavigation?: boolean
+  hostNavigationRequested?: boolean
+  hostAdvanceRequest?: number
+  onHostNavigationStateChange?: (state: EmbedQuizNavigationState) => void
 }
 
 function PracticeQuiz({
@@ -55,10 +67,16 @@ function PracticeQuiz({
   onAllStacksCompletion,
   showResetLocalStorage = false,
   embedded = false,
+  focusedPresentation = false,
   previewOnly = false,
+  hostNavigation = false,
+  hostNavigationRequested = false,
+  hostAdvanceRequest = 0,
+  onHostNavigationStateChange,
 }: PracticeQuizProps) {
   const router = useRouter()
   const t = useTranslations()
+  const focusedEmbed = embedded && focusedPresentation
   const currentStack = quiz.stacks?.[currentIx]
   const { data: dataParticipant } = useQuery(SelfDocument, {
     skip: previewOnly,
@@ -74,27 +92,25 @@ function PracticeQuiz({
     router.push(`/`)
   }
 
-  const [progressState, setProgressState] = useLocalStorage<
-    Record<
-      string,
-      {
-        status: StackFeedbackStatus
-        score?: number | null
-      }
-    >
-  >(
-    `pq-${quiz.id}`,
-    quiz.stacks?.reduce(
-      (acc, stack) => ({
-        ...acc,
-        [stack.id]: {
-          status: 'unanswered',
+  const [progressState, setProgressState] =
+    useLocalStorage<PracticeQuizProgressState>(
+      `pq-${quiz.id}`,
+      quiz.stacks?.reduce<PracticeQuizProgressState>((acc, stack) => {
+        acc[stack.id] = {
+          status: StackFeedbackStatus.Unanswered,
           score: null,
-        },
-      }),
-      {}
+        }
+        return acc
+      }, {})
     )
-  )
+
+  const navigableUntilIx =
+    embedded && hostNavigationRequested
+      ? findFirstUnansweredStack(
+          progressState,
+          quiz.stacks?.map((stack) => stack.id) ?? []
+        )
+      : undefined
 
   const { data: bookmarksData } = useQuery(GetBookmarksPracticeQuizDocument, {
     variables: {
@@ -112,8 +128,10 @@ function PracticeQuiz({
     <div className="flex-1">
       <div
         className={twMerge(
-          'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
-          !embedded ? 'md:border' : ''
+          focusedEmbed
+            ? 'w-full space-y-3 px-1 pt-2 pb-20 sm:px-2'
+            : 'w-full space-y-4 md:mx-auto md:mb-4 md:max-w-6xl md:rounded md:p-8 md:pt-6',
+          !embedded && 'md:border'
         )}
       >
         <StepProgressWithScoring
@@ -135,8 +153,10 @@ function PracticeQuiz({
           }
           currentIx={currentIx}
           setCurrentIx={setCurrentIx}
+          navigableUntilIx={navigableUntilIx}
+          readOnly={hostNavigation}
           resetLocalStorage={
-            showResetLocalStorage
+            showResetLocalStorage && !hostNavigation
               ? () => {
                   resetPracticeQuizLocalStorage(quiz.id)
                   window.location.reload()
@@ -145,7 +165,7 @@ function PracticeQuiz({
           }
         />
 
-        {previewOnly && (
+        {previewOnly && !focusedEmbed && (
           <PreviewMessage
             activityType={t('shared.generic.practiceQuiz')}
             name={quiz.name}
@@ -153,7 +173,7 @@ function PracticeQuiz({
           />
         )}
 
-        {currentIx === -1 && (
+        {currentIx === -1 && !focusedEmbed && (
           <PracticeQuizOverview
             displayName={quiz.displayName}
             description={quiz.description ?? undefined}
@@ -192,6 +212,10 @@ function PracticeQuiz({
             onAllStacksCompletion={handleAllStacksCompletion}
             bookmarks={bookmarksData?.getBookmarksPracticeQuiz}
             previewOnly={previewOnly}
+            focusedPresentation={focusedEmbed}
+            hostNavigation={hostNavigation}
+            hostAdvanceRequest={hostAdvanceRequest}
+            onHostNavigationStateChange={onHostNavigationStateChange}
           />
         )}
       </div>

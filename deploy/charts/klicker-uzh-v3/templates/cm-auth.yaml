@@ -6,3 +6,4 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 data:
+  NEXTAUTH_URL: {{ .Values.global.appOrigins.auth | quote }}

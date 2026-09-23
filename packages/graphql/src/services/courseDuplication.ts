@@ -632,16 +632,42 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
     }
 
     if (isTerminalCourseDuplicationStatus(pendingJob.status)) {
-      if (pendingJob.status === 'COMPLETED') {
-        await releaseCourseDuplicationSourceLock(redis, pendingJob)
-      }
+      // A worker may have persisted FAILED and crashed before releasing the
+      // source lock. Always reconcile the lock when a retry observes a
+      // terminal job so a failed duplication cannot block future attempts.
+      await releaseCourseDuplicationSourceLock(redis, pendingJob)
       return true
     }
 
     if (!pendingJob.args) {
-      executionCtx.logger.warn(
-        `Course duplication job ${jobId} has no stored arguments; cannot process.`
+      executionCtx.logger.error(
+        `Course duplication job ${jobId} has no stored arguments; marking it as failed.`
       )
+
+      try {
+        await updateCourseDuplicationJob(redis, pendingJob, {
+          status: 'FAILED',
+          errorType: 'generic',
+          errorMessage: 'Course duplication failed.',
+        })
+      } catch (statusUpdateError) {
+        executionCtx.logger.error(
+          `Failed to mark course duplication job ${jobId} as FAILED: ${getErrorMessage(statusUpdateError)}`
+        )
+        try {
+          await releaseCourseDuplicationSourceLock(redis, pendingJob)
+        } catch (releaseError) {
+          executionCtx.logger.error(
+            `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
+          )
+        }
+
+        // Keep the Hatchet attempt retryable when Redis could not persist the
+        // terminal status. Returning success here would leave the job visible
+        // as RUNNING until the long stale-job sweep.
+        throw statusUpdateError
+      }
+
       return false
     }
     const duplicationArgs = pendingJob.args
@@ -660,29 +686,30 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       throw new Error('Course duplication job is already being processed')
     }
 
-    await renewCourseDuplicationHeartbeat(redis, jobId)
-
-    const processLockRenewal = setInterval(() => {
-      void renewCourseDuplicationProcessLock(
-        redis,
-        processLockKey,
-        processLockValue
-      ).catch((error) => {
-        executionCtx.logger.warn(
-          `Course duplication job ${jobId} process lock renewal failed: ${getErrorMessage(error)}`
-        )
-      })
-      void renewCourseDuplicationHeartbeat(redis, jobId).catch((error) => {
-        executionCtx.logger.warn(
-          `Course duplication job ${jobId} heartbeat renewal failed: ${getErrorMessage(error)}`
-        )
-      })
-    }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
-
     let job = pendingJob
     let committedCourseId: string | null = null
+    let processLockRenewal: ReturnType<typeof setInterval> | undefined
 
     try {
+      await renewCourseDuplicationHeartbeat(redis, jobId)
+
+      processLockRenewal = setInterval(() => {
+        void renewCourseDuplicationProcessLock(
+          redis,
+          processLockKey,
+          processLockValue
+        ).catch((error) => {
+          executionCtx.logger.warn(
+            `Course duplication job ${jobId} process lock renewal failed: ${getErrorMessage(error)}`
+          )
+        })
+        void renewCourseDuplicationHeartbeat(redis, jobId).catch((error) => {
+          executionCtx.logger.warn(
+            `Course duplication job ${jobId} heartbeat renewal failed: ${getErrorMessage(error)}`
+          )
+        })
+      }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
+
       const existingCourse = await globalCtx.prisma.course.findUnique({
         where: { id: job.id },
         select: { id: true },
@@ -767,11 +794,15 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
             `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
           )
         }
+
+        // Let Hatchet retry a transient Redis failure instead of reporting a
+        // successful worker run while the job remains non-terminal.
+        throw statusUpdateError
       }
 
       return false
     } finally {
-      clearInterval(processLockRenewal)
+      if (processLockRenewal) clearInterval(processLockRenewal)
       await releaseCourseDuplicationLockValue(
         redis,
         processLockKey,
@@ -843,6 +874,37 @@ function getPermissionTargetObjectId(
   if ('practiceQuizId' in target) return target.practiceQuizId
   if ('microLearningId' in target) return target.microLearningId
   return target.groupActivityId
+}
+
+// build the compound unique selector for a direct permission on the given
+// target object and user, used to upsert permissions (one per object and user)
+function getPermissionTargetUserUnique(
+  target: CourseDuplicationPermissionTarget,
+  userId: string
+):
+  | { courseId_userId: { courseId: string; userId: string } }
+  | { liveQuizId_userId: { liveQuizId: string; userId: string } }
+  | { practiceQuizId_userId: { practiceQuizId: string; userId: string } }
+  | { microLearningId_userId: { microLearningId: string; userId: string } }
+  | { groupActivityId_userId: { groupActivityId: string; userId: string } } {
+  if ('courseId' in target)
+    return { courseId_userId: { courseId: target.courseId, userId } }
+  if ('liveQuizId' in target)
+    return { liveQuizId_userId: { liveQuizId: target.liveQuizId, userId } }
+  if ('practiceQuizId' in target)
+    return {
+      practiceQuizId_userId: { practiceQuizId: target.practiceQuizId, userId },
+    }
+  if ('microLearningId' in target)
+    return {
+      microLearningId_userId: {
+        microLearningId: target.microLearningId,
+        userId,
+      },
+    }
+  return {
+    groupActivityId_userId: { groupActivityId: target.groupActivityId, userId },
+  }
 }
 
 const courseDuplicationInclude = {
@@ -1001,33 +1063,37 @@ async function copyCourseDuplicationDirectPermissions({
   }
 }
 
-async function grantDuplicatedCourseAccessToSourceOwner({
-  sourceCourseId,
+// a source owner keeps ADMIN access on the copied object, since ownership is
+// carried by an owner column on the source object rather than a permission row
+// and would otherwise be lost during duplication
+async function grantDuplicatedAccessToSourceOwner({
+  sourceObjectType,
+  sourceObjectId,
+  targetObjectType,
+  target,
   sourceOwnerId,
-  targetCourseId,
   ctx,
   prisma,
 }: {
-  sourceCourseId: string
+  sourceObjectType: DB.ObjectType
+  sourceObjectId: string
+  targetObjectType: DB.ObjectType
+  target: CourseDuplicationPermissionTarget
   sourceOwnerId: string
-  targetCourseId: string
   ctx: ContextWithUser
   prisma: PrismaTransactionClient
 }) {
   if (sourceOwnerId === ctx.user.sub) return
 
+  const targetObjectId = getPermissionTargetObjectId(target)
+
   const copiedPermission = await prisma.permission.upsert({
-    where: {
-      courseId_userId: {
-        courseId: targetCourseId,
-        userId: sourceOwnerId,
-      },
-    },
+    where: getPermissionTargetUserUnique(target, sourceOwnerId),
     create: {
       permissionLevel: DB.PermissionLevel.ADMIN,
       propagation: false,
-      courseId: targetCourseId,
       userId: sourceOwnerId,
+      ...target,
     },
     update: {
       permissionLevel: DB.PermissionLevel.ADMIN,
@@ -1038,11 +1104,11 @@ async function grantDuplicatedCourseAccessToSourceOwner({
   await prisma.auditLogEntry.create({
     data: {
       type: DB.AuditLogType.PERMISSION_GRANTED,
-      objectType: DB.ObjectType.COURSE,
-      objectId: targetCourseId,
+      objectType: targetObjectType,
+      objectId: targetObjectId,
       sourceUserId: ctx.user.sub,
       targetUserId: sourceOwnerId,
-      message: `Source course owner ${sourceOwnerId} kept ADMIN access during course duplication from COURSE (ID ${sourceCourseId}) to COURSE (ID ${targetCourseId}) by user ${ctx.user.sub}.`,
+      message: `Source ${sourceObjectType} owner ${sourceOwnerId} kept ADMIN access during course duplication from ${sourceObjectType} (ID ${sourceObjectId}) to ${targetObjectType} (ID ${targetObjectId}) by user ${ctx.user.sub}.`,
     },
   })
 
@@ -1323,7 +1389,11 @@ async function duplicateSelectedCourseActivities({
 }
 
 async function copyMappedActivityPermissions<
-  TSourceActivity extends { id: string; directPermissions: DB.Permission[] },
+  TSourceActivity extends {
+    id: string
+    ownerId: string
+    directPermissions: DB.Permission[]
+  },
 >({
   sourceActivities,
   copiedIdBySourceId,
@@ -1345,12 +1415,24 @@ async function copyMappedActivityPermissions<
     const copiedActivityId = copiedIdBySourceId.get(sourceActivity.id)
     if (!copiedActivityId) continue
 
+    const target = targetFromId(copiedActivityId)
+
     await copyCourseDuplicationDirectPermissions({
       sourcePermissions: sourceActivity.directPermissions,
       sourceObjectType,
       sourceObjectId: sourceActivity.id,
       targetObjectType,
-      target: targetFromId(copiedActivityId),
+      target,
+      ctx,
+      prisma,
+    })
+
+    await grantDuplicatedAccessToSourceOwner({
+      sourceObjectType,
+      sourceObjectId: sourceActivity.id,
+      targetObjectType,
+      target,
+      sourceOwnerId: sourceActivity.ownerId,
       ctx,
       prisma,
     })
@@ -1710,10 +1792,12 @@ export async function duplicateCourse(
         prisma,
       })
 
-      await grantDuplicatedCourseAccessToSourceOwner({
-        sourceCourseId: oldCourse.id,
+      await grantDuplicatedAccessToSourceOwner({
+        sourceObjectType: DB.ObjectType.COURSE,
+        sourceObjectId: oldCourse.id,
+        targetObjectType: DB.ObjectType.COURSE,
+        target: { courseId: newCourse.id },
         sourceOwnerId: oldCourse.ownerId,
-        targetCourseId: newCourse.id,
         ctx,
         prisma,
       })

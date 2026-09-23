@@ -10,6 +10,7 @@ import { prisma as prismaBase } from '@klicker-uzh/prisma'
 // import '@sentry/tracing'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
+import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
@@ -17,9 +18,20 @@ import { Redis } from 'ioredis'
 import { EventEmitter } from 'node:events'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
-import { startRuntimeMigrations } from './migration.js'
+import { parseRefreshInterval } from './featureFlags.js'
+import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
+
+const featureFlags = new NodeFeatureFlagClient({
+  apiHost: process.env.GROWTHBOOK_API_HOST,
+  clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
+  environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
+  refreshIntervalMs: parseRefreshInterval(
+    process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
+  ),
+})
+process.once('exit', () => featureFlags.destroy())
 
 let prisma = prismaBase
 
@@ -108,6 +120,30 @@ const pubSub = createPubSub({ eventTarget })
 // #region
 getChatModelRegistry()
 
+try {
+  await migrate(prisma)
+} catch (error) {
+  // Runtime migrations must not prevent the server from starting: a failed
+  // data migration leaves the affected feature degraded but the API usable.
+  // The migration record is absent so the next restart retries it.
+  console.error(
+    'Runtime migrations failed; starting server in degraded state:',
+    error
+  )
+}
+
+// Fail-closed feature flag evaluation must be ready before serving.
+const initialized = await featureFlags.initialize()
+const featureFlagStatus = featureFlags.getStatus()
+if (initialized) {
+  console.log('[feature-flags] Backend evaluator ready.', featureFlagStatus)
+} else {
+  console.warn(
+    '[feature-flags] Backend evaluator unavailable; false fallbacks are active.',
+    featureFlagStatus
+  )
+}
+
 // initialize tasks to be able to call / schedule them inside service functions
 const tasks = prepareHatchetTasks({
   hatchet: hatchetClient,
@@ -132,6 +168,7 @@ const { app, yogaApp } = prepareApp({
   emitter,
   hatchet: hatchetClient,
   tasks,
+  featureFlags,
 })
 
 // Validate required environment variables at startup
@@ -158,6 +195,7 @@ const server = app.listen(3000, () => {
         pubSub,
         emitter,
         tasks,
+        featureFlags,
       }),
       execute: (args: any) => args.rootValue.execute(args),
       subscribe: (args: any) => args.rootValue.subscribe(args),
@@ -189,7 +227,5 @@ const server = app.listen(3000, () => {
     },
     wsServer as Parameters<typeof useServer>[1]
   )
-
-  startRuntimeMigrations(prisma)
 })
 // #endregion

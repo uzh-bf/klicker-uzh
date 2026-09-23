@@ -1,11 +1,11 @@
 import {
   GraduationCap,
   Lightbulb,
+  ListChecks,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react'
 import type { useTranslations } from 'next-intl'
-import { DEFAULT_MODE_DESCRIPTIONS } from './mode-descriptions'
 
 // Presentation metadata for the chatbot mode keys exposed via `systemPrompts`.
 // Modes are configured per chatbot, so only the well-known keys get a dedicated
@@ -14,6 +14,7 @@ import { DEFAULT_MODE_DESCRIPTIONS } from './mode-descriptions'
 const MODE_ICONS = {
   tutor: GraduationCap,
   explainer: Lightbulb,
+  quizzer: ListChecks,
 } as const
 
 export type KnownMode = keyof typeof MODE_ICONS
@@ -22,54 +23,45 @@ export function isKnownMode(mode: string): mode is KnownMode {
   return Object.prototype.hasOwnProperty.call(MODE_ICONS, mode)
 }
 
-export function hasConfiguredModeDescriptions(systemPrompts: unknown): boolean {
-  return !!(
-    systemPrompts &&
-    typeof systemPrompts === 'object' &&
-    !Array.isArray(systemPrompts) &&
-    Object.keys(systemPrompts).length > 0
-  )
-}
+export function parseModeOptions(
+  value: unknown
+): Record<string, string> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
-export function resolveModeDescriptions(
-  systemPrompts: unknown
-): Record<string, string> {
+  const entries = Object.entries(value)
   if (
-    !systemPrompts ||
-    typeof systemPrompts !== 'object' ||
-    Array.isArray(systemPrompts)
+    entries.some(
+      ([mode, description]) =>
+        mode.trim().length === 0 || typeof description !== 'string'
+    )
   ) {
-    return { ...DEFAULT_MODE_DESCRIPTIONS }
+    return null
   }
-
-  const descriptions = Object.fromEntries(
-    Object.entries(systemPrompts).map(([mode, value]) => {
-      const modeConfig =
-        value && typeof value === 'object' && !Array.isArray(value)
-          ? (value as Record<string, unknown>)
-          : null
-
-      return [
-        mode,
-        typeof modeConfig?.description === 'string'
-          ? modeConfig.description
-          : '',
-      ]
-    })
-  )
-
-  return Object.keys(descriptions).length > 0
-    ? descriptions
-    : { ...DEFAULT_MODE_DESCRIPTIONS }
+  return Object.fromEntries(entries) as Record<string, string>
 }
 
 export function resolveSelectedMode(
   modeOptions: Record<string, string>,
   selectedMode: string
 ): string {
+  const firstMode = Object.keys(modeOptions)[0]
+  if (!firstMode) return ''
+
   return Object.prototype.hasOwnProperty.call(modeOptions, selectedMode)
     ? selectedMode
-    : (Object.keys(modeOptions)[0] ?? selectedMode)
+    : firstMode
+}
+
+export function hasAvailableChatMode(
+  modeOptions: Record<string, string>
+): boolean {
+  return Object.keys(modeOptions).length > 0
+}
+
+export function getComposerSubmitMode(
+  hasAvailableMode: boolean
+): 'enter' | 'none' {
+  return hasAvailableMode ? 'enter' : 'none'
 }
 
 export function getModeDescription(

@@ -7,7 +7,7 @@ expected_tools_by_profile:
 
 ## Risk-Free Asset and Tangency Portfolio Shares
 
-If the composition of the tangency portfolio is already known, risk aversion determines only how much total wealth is invested in that tangency portfolio.
+If the composition of the tangency portfolio is already known, risk aversion determines how much total wealth is invested in it. Risk aversion alone is not enough for a numerical answer: the tangency portfolio's expected return, variance, and the risk-free rate are also required.
 
 Use:
 
@@ -15,7 +15,7 @@ $$
 \lambda^* = \frac{\mu(R_T) - R_f}{\psi \sigma_T^2}
 $$
 
-With $\psi = 5.6$. Here $\lambda^*$ is the total share invested in the tangency portfolio, $\mu(R_T)$ is the expected return of the tangency portfolio, $R_f$ is the risk-free rate, and $\sigma_T^2$ is the variance of the tangency portfolio.
+With $\psi=5.6$, substitute the other three inputs into this expression. Use the variance $\sigma_T^2$, not the standard deviation $\sigma_T$.
 
 The share in the risk-free asset is:
 
@@ -23,11 +23,10 @@ $$
 1 - \lambda^*
 $$
 
-The relative weights inside the tangency portfolio stay the same as before. Risk aversion only scales the total risky position up or down.
+The relative weights inside the tangency portfolio stay unchanged. If $0<\lambda^*<1$, the remaining wealth is invested risk-free. If $\lambda^*>1$ and borrowing is allowed, $1-\lambda^*<0$ represents borrowing at the risk-free rate.
 
 Which of $\mu(R_T)$, $R_f$, and $\sigma_T^2$ have you already calculated, so that you can substitute them into the formula for $\lambda^*$?
 
 ## Sources
 
-- Financial Economics script FS26, Chapter 2.5, utility-maximizing portfolios, p. 38
-- FinEco FS26 Guide, Chapter 2, portfolio optimization and risk aversion, pp. 10–18
+- Financial Economics script FS26, Section 2.5, utility-maximizing complete portfolios, Equations 2.28–2.30

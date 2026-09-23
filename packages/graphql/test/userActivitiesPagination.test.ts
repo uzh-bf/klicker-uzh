@@ -7,7 +7,10 @@ describe('getUserActivities pagination', () => {
   const findMany = vi.fn().mockResolvedValue([])
   const count = vi.fn().mockResolvedValue(0)
   const context = {
-    prisma: { userActivities: { findMany, count } },
+    prisma: {
+      userActivities: { findMany, count },
+      course: { findMany: vi.fn().mockResolvedValue([]) },
+    },
     user: { sub: 'user-id' },
   } as unknown as ContextWithUser
   const baseArguments = {

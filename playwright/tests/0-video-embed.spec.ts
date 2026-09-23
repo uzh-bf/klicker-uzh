@@ -10,6 +10,7 @@ import { openStudentLiveQuiz } from '../util/workflow.js'
 
 const YOUTUBE_ID = 'dQw4w9WgXcQ'
 const KALTURA_ID = '0_ipqc15ga'
+const ASPECT_RATIO_TOLERANCE = 0.1
 const YOUTUBE_EMBED = `https://www.youtube.com/embed/${YOUTUBE_ID}`
 const KALTURA_EMBED =
   `https://api.cast.switch.ch/p/106/embedPlaykitJs/uiconf_id/23449004/partner_id/106` +
@@ -39,6 +40,18 @@ const VIDEO_MARKDOWN = [
 async function blockPlayers(page: Page) {
   await page.route('https://www.youtube.com/**', (route) => route.abort())
   await page.route('https://api.cast.switch.ch/**', (route) => route.abort())
+}
+
+async function expectVideoAspectRatio(
+  page: Page,
+  player: ReturnType<Page['locator']>
+) {
+  const box = await player.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.width).toBeGreaterThan(0)
+  expect(box!.height).toBeGreaterThan(0)
+  const ratio = box!.width / box!.height
+  expect(Math.abs(ratio - 16 / 9)).toBeLessThanOrEqual(ASPECT_RATIO_TOLERANCE)
 }
 
 test.describe('Markdown video embeds', () => {
@@ -97,6 +110,8 @@ test.describe('Markdown video embeds', () => {
       scrollWidth: element.scrollWidth,
     }))
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth)
+    await expectVideoAspectRatio(page, players.nth(0))
+    await expectVideoAspectRatio(page, players.nth(1))
   })
 
   test('renders both providers without horizontal overflow in the mobile PWA', async ({
@@ -143,6 +158,8 @@ test.describe('Markdown video embeds', () => {
           document.documentElement.clientWidth
       )
       expect(overflow).toBeLessThanOrEqual(0)
+      await expectVideoAspectRatio(page, players.nth(0))
+      await expectVideoAspectRatio(page, players.nth(1))
     } finally {
       if (liveQuizId) {
         await deleteLiveQuiz(liveQuizId)

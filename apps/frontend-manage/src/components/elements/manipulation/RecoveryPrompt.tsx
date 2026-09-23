@@ -7,10 +7,12 @@ function RecoveryPrompt({
   onRecovery,
   onDiscard,
   editMode = false,
+  message,
 }: {
   onRecovery: () => void
   onDiscard: () => void
   editMode?: boolean
+  message?: string
 }) {
   const t = useTranslations()
 
@@ -44,9 +46,10 @@ function RecoveryPrompt({
       <UserNotification
         type="warning"
         message={
-          editMode
+          message ??
+          (editMode
             ? t('manage.elements.temporaryStorageEditing')
-            : t('manage.elements.temporaryStorageCreation')
+            : t('manage.elements.temporaryStorageCreation'))
         }
         className={{ root: 'mt-2 text-base' }}
       />

@@ -11,8 +11,15 @@ import {
 } from '@assistant-ui/react-markdown'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { type FC, memo, useCallback, useState } from 'react'
+import {
+  type ComponentProps,
+  type FC,
+  memo,
+  useCallback,
+  useState,
+} from 'react'
 import rehypeKatex from 'rehype-katex'
+import 'katex/contrib/mhchem'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 
@@ -31,7 +38,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 // Stable module-scope reference: recreating this array on every render would
 // defeat `MarkdownTextPrimitive`'s own memoization of the parsed tree.
 const remarkPlugins = [remarkGfm, remarkMath, remarkCitationMarkers]
-const rehypePlugins = [rehypeKatex]
+const rehypePlugins: NonNullable<
+  ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
+> = [[rehypeKatex, { trust: false }]]
 
 const MarkdownTextImpl = () => {
   const { text, status } = useMessagePartText()
@@ -170,7 +179,7 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, href, ...props }) => {
+  a: ({ className, children, href, ...props }) => {
     const citationIndex = parseCitationHref(href)
     if (citationIndex !== null) return <CitationChip index={citationIndex} />
 
@@ -184,7 +193,9 @@ const defaultComponents = memoizeMarkdownComponents({
         rel="noopener noreferrer"
         href={href}
         {...props}
-      />
+      >
+        {children}
+      </a>
     )
   },
   // Styled as a soft amber info callout (e.g. a model-emitted "Hinweis" note),

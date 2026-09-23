@@ -55,7 +55,6 @@ const expectedDefaultCosts = {
   auto: { input: 1, output: 5 },
   'gpt-5.6-luna': { input: 0.2, output: 1.2 },
   'gpt-4.1': { input: 2, output: 8 },
-  'gpt-4.1-mini': { input: 0.4, output: 1.6 },
 }
 
 const expectedDeployedCosts = {
@@ -64,14 +63,22 @@ const expectedDeployedCosts = {
   'gpt-4.1': { input: 2, output: 8 },
   'gpt-5.1': { input: 1.25, output: 10 },
   'gpt-5.4': { input: 2.5, output: 15 },
-  'gpt-5.5': { input: 5, output: 30 },
-  'gpt-4.1-mini': { input: 0.4, output: 1.6 },
 }
 
 const chatModels: ParityModel[] = DEFAULT_MODEL_REGISTRY
 const backendModels: ParityModel[] = DEFAULT_CHAT_MODEL_REGISTRY
 
 describe('default chat model registry parity', () => {
+  test('retired GPT-4.1 Mini is absent from active registries', () => {
+    expect([...byId(chatModels).keys()]).not.toContain('gpt-4.1-mini')
+    expect([...byId(backendModels).keys()]).not.toContain('gpt-4.1-mini')
+  })
+
+  test('retired GPT-5.5 is absent from active registries', () => {
+    expect([...byId(chatModels).keys()]).not.toContain('gpt-5.5')
+    expect([...byId(backendModels).keys()]).not.toContain('gpt-5.5')
+  })
+
   test('both registries expose the same model ids', () => {
     expect([...byId(backendModels).keys()].sort()).toEqual(
       [...byId(chatModels).keys()].sort()
@@ -187,6 +194,26 @@ describe('default chat model registry parity', () => {
       )
     }
   })
+
+  test('both consumers reject invalid Auto registry policy', () => {
+    const withoutAuto = chatModels.filter((model) => model.id !== 'auto')
+    const autoFallback = chatModels.map((model) =>
+      model.id === 'auto' ? { ...model, fallback: true } : model
+    )
+    const autoReasoning = chatModels.map((model) =>
+      model.id === 'auto' ? { ...model, supportsReasoning: true } : model
+    )
+    const autoBase = chatModels.map((model) =>
+      model.id === 'auto' ? { ...model, usageClass: 'BASE' as const } : model
+    )
+
+    for (const parseRegistry of [parseChatRegistry, parseBackendRegistry]) {
+      expect(() => parseRegistry(withoutAuto)).toThrow(/auto.*exactly once/i)
+      expect(() => parseRegistry(autoFallback)).toThrow(/auto.*fallback/i)
+      expect(() => parseRegistry(autoReasoning)).toThrow(/auto.*reasoning/i)
+      expect(() => parseRegistry(autoBase)).toThrow(/auto.*ADVANCED/i)
+    }
+  })
 })
 
 function loadDeployedRegistries() {
@@ -223,6 +250,19 @@ describe('deployed chat model registry parity (values.yaml)', () => {
     for (const { chat, backend } of deployed) {
       expect(chat.length).toBeGreaterThan(0)
       expect(backend.length).toBeGreaterThan(0)
+    }
+  })
+
+  test('retired GPT-5.5 is absent from both deployment registries', () => {
+    for (const { name, chat, backend } of deployed) {
+      expect(
+        chat.map((model) => model.id),
+        name
+      ).not.toContain('gpt-5.5')
+      expect(
+        backend.map((model) => model.id),
+        name
+      ).not.toContain('gpt-5.5')
     }
   })
 

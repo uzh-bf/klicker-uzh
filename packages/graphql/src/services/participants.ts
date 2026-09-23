@@ -9,6 +9,10 @@ import { prop, sortBy } from 'remeda'
 import isEmail from 'validator/lib/isEmail.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import {
+  type ParticipantDataUseFields,
+  participantDataUseSelect,
+} from '../lib/learningAnalytics.js'
+import {
   getStudyStreakResponsesRemainingTodayForParticipations,
   reconcileStudyStreak,
   type StudyStreakStatusParticipation,
@@ -37,7 +41,12 @@ export async function getSelf(
       where: { id: ctx.user.sub },
       include: {
         participations: liveQuiz?.courseId
-          ? { where: { courseId: liveQuiz.courseId } }
+          ? {
+              where: {
+                courseId: liveQuiz.courseId,
+                course: { deletionRequestedAt: null },
+              },
+            }
           : { take: 0 }, // make sure that no participations are fetched if courseid is not set
         accounts: {
           where: { ssoType: 'uzh' },
@@ -252,9 +261,12 @@ export async function getParticipations(
     where: { id: ctx.user.sub },
     include: {
       participations: {
-        where: assessmentOnly
-          ? { course: { isAssessmentEnabled: true } }
-          : undefined,
+        where: {
+          course: {
+            deletionRequestedAt: null,
+            ...(assessmentOnly ? { isAssessmentEnabled: true } : {}),
+          },
+        },
         include: {
           subscriptions: endpoint ? { where: { endpoint } } : undefined,
           course: {
@@ -309,13 +321,26 @@ export async function getParticipation(
     { courseId, participantId: ctx.user.sub }
   )
 
-  const participation = await ctx.prisma.participation.findUnique({
+  const participation = await ctx.prisma.participation.findFirst({
     where: {
-      courseId_participantId: { courseId, participantId: ctx.user.sub },
+      courseId,
+      participantId: ctx.user.sub,
+      course: { deletionRequestedAt: null },
     },
   })
 
   return participation
+}
+
+export async function getParticipantDataUse(
+  ctx: ContextWithUser
+): Promise<ParticipantDataUseFields | null> {
+  if (ctx.user.role !== DB.UserRole.PARTICIPANT) return null
+
+  return ctx.prisma.participant.findUnique({
+    where: { id: ctx.user.sub },
+    select: participantDataUseSelect,
+  })
 }
 
 // interface RegisterParticipantFromLTIArgs {
@@ -590,12 +615,11 @@ export async function getBookmarkedElementStacks(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const participation = await ctx.prisma.participation.findUnique({
+  const participation = await ctx.prisma.participation.findFirst({
     where: {
-      courseId_participantId: {
-        courseId,
-        participantId: ctx.user.sub,
-      },
+      courseId,
+      participantId: ctx.user.sub,
+      course: { deletionRequestedAt: null },
     },
     include: {
       bookmarkedElementStacks: {
@@ -926,6 +950,7 @@ export async function getPracticeCourses(ctx: ContextWithUser) {
   const participations = await ctx.prisma.participation.findMany({
     where: {
       participantId: ctx.user.sub,
+      course: { deletionRequestedAt: null },
     },
     include: {
       course: {
@@ -951,6 +976,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
   const participations = await ctx.prisma.participation.findMany({
     where: {
       participantId: ctx.user.sub,
+      course: { deletionRequestedAt: null },
     },
     include: {
       course: {
@@ -1314,6 +1340,7 @@ export async function getCourseStudentTimelines(ctx: ContextWithUser) {
     },
     include: {
       participations: {
+        where: { course: { deletionRequestedAt: null } },
         include: {
           timelineEntries: {
             where: {

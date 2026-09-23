@@ -1,12 +1,16 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { liveQuizCourseVisibilityFilter } from './activities.js'
 
 export async function getFeedbacks(
   { quizId }: { quizId: string },
   ctx: Context
 ) {
   const quiz = await ctx.prisma.liveQuiz.findUnique({
-    where: { id: quizId },
+    where: {
+      id: quizId,
+      ...liveQuizCourseVisibilityFilter,
+    },
     include: {
       feedbacks: {
         include: { responses: { orderBy: { createdAt: 'desc' } } },

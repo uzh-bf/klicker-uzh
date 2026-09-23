@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
+import * as BetaEnrollmentService from '../services/betaEnrollment.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
@@ -14,6 +15,7 @@ import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import { getParticipantAccountDataUse } from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -42,6 +44,7 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import { asChatbotAuthor } from './authScopes.js'
 import {
   AssessmentParticipant,
   Course,
@@ -83,6 +86,7 @@ import {
 import { MicroLearning } from './microLearning.js'
 import {
   Participant,
+  ParticipantAccountDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
@@ -104,6 +108,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
+  ChatbotPublicationReview,
   ChatModelCapability,
 } from './resource.js'
 import {
@@ -124,7 +129,14 @@ import {
   ActivityTemplateMetadata,
   TemplateElementInformation,
 } from './template.js'
-import { MediaFile, User, UserInfo, UserLogin, UserLoginScope } from './user.js'
+import {
+  BetaEnrollmentCapability,
+  MediaFile,
+  User,
+  UserInfo,
+  UserLogin,
+  UserLoginScope,
+} from './user.js'
 
 // shortcut notations
 const checkAccess = SharingService.checkAccess
@@ -142,6 +154,12 @@ export const Query = builder.queryType({
         type: Participant,
         args: { liveQuizId: t.arg.string({ required: false }) },
         resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
+      }),
+
+      selfAccountDataUse: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantAccountDataUse,
+        resolve: (_, _args, ctx) => getParticipantAccountDataUse(ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
@@ -250,6 +268,13 @@ export const Query = builder.queryType({
         type: UserLoginScope,
         resolve: (_, __, ctx) => {
           return ctx.user.scope
+        },
+      }),
+
+      betaEnrollment: t.withAuth(asUser).field({
+        type: BetaEnrollmentCapability,
+        resolve: async (_, __, ctx) => {
+          return await BetaEnrollmentService.getBetaEnrollment({}, ctx)
         },
       }),
 
@@ -1465,11 +1490,23 @@ export const Query = builder.queryType({
         },
       }),
 
+      getPendingChatbotPublications: t.withAuth(asAdmin).field({
+        type: [ChatbotPublicationReview],
+        resolve: (_, _args, ctx) =>
+          ChatbotsService.getPendingChatbotPublications(ctx),
+      }),
+
       getChatbotsInfo: t.withAuth(asUser).field({
         nullable: true,
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatbotPublishingCapability: t.withAuth(asChatbotAuthor).boolean({
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getChatbotPublishingCapability(ctx)
         },
       }),
 

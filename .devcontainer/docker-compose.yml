@@ -4,15 +4,16 @@
 # project directory (.devcontainer) avoids relative-path ambiguity. (GOTCHAS #13)
 #
 # The primary checkout adds the localhost overlay through `devrouter ensure`:
-# - postgres on db.klicker.localhost -> host port 5432
+# - postgres on db.klicker.localhost -> router port 5432, ephemeral direct port
 # - mailhog UI -> host port 8025
 # - hatchet dashboard -> host port 8888
-# - all web applications published on localhost ports (3000-3010, 3030, 7078)
+# - all web applications published on localhost ports (3000-3010, 3030, 7078,
+#   8090 for the local Edu-ID OIDC mock)
 #
 # Linked worktrees use `docker-compose.devrouter.yml` for namespaced aliases,
 # routes, and the same-path Git common-directory mount.
 services:
-  # --- main database (klicker-prod + shadow/lti/qa/hatchet DBs via init.sql) ---
+  # --- main database (disposable test DBs plus dump-support DBs via init SQL) ---
   postgres:
     image: postgres:15
     environment:
@@ -28,8 +29,10 @@ services:
       default: {}
       devnet: {}
     volumes:
-      # init.sql creates shadow + lti + qa + hatchet DBs and roles.
+      # init.sql retains the legacy database for separate operator workflows;
+      # apps use only the marked databases created by the disposable bootstrap.
       - ../util/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./disposable-test-init.sql:/docker-entrypoint-initdb.d/20-disposable-test-init.sql:ro
       - pgdata:/var/lib/postgresql/data
 
   # --- redis: live-quiz exec, assessment exec, page cache + pub/sub ---
@@ -49,6 +52,58 @@ services:
   mailhog:
     image: mailhog/mailhog:latest
     networks: [default]
+
+  # --- local Edu-ID replacement (OIDC mock) ---
+  # SWITCH edu-ID registers redirect URIs per client, so the real provider can
+  # never accept a linked-worktree callback (https://auth.klicker.<workspace>.localhost/...)
+  # and the dev client is unusable outside the primary checkout. This mock
+  # accepts any redirect_uri and needs no SWITCH credentials.
+  #
+  # It shares the app container's network namespace, so the issuer URL is
+  # identical whether it is reached by the host browser (authorize) or by the
+  # auth app server (discovery/token/jwks); devrouter routes
+  # https://oidc.klicker[.<workspace>].localhost -> ${WORKSPACE}-app:8090.
+  # post-start.sh points EDUID_WELL_KNOWN at that issuer and maps the host to
+  # Traefik inside this container.
+  #
+  # Dev-only: the real provider stays in charge whenever a deployment supplies
+  # a real EDUID_CLIENT_SECRET, because only the devcontainer sets these values.
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.11
+    network_mode: service:app
+    depends_on:
+      - app
+    environment:
+      SERVER_PORT: '8090'
+      # interactiveLogin=false -> one click, no login form. The constant `sub`
+      # keeps one local participant across restarts; a changing sub would orphan
+      # the linked ParticipantAccount and create duplicate participants. The
+      # email matches the seeded testusers so the SSO link can resolve to a real
+      # assessment participant (see the prisma-data dev link helper).
+      JSON_CONFIG: >-
+        {
+          "interactiveLogin": false,
+          "tokenCallbacks": [
+            {
+              "issuerId": "default",
+              "requestMappings": [
+                {
+                  "requestParam": "grant_type",
+                  "match": "*",
+                  "claims": {
+                    "sub": "local-eduid-dev",
+                    "email": "testuser2@test.uzh.ch",
+                    "email_verified": true,
+                    "given_name": "Test",
+                    "family_name": "Student",
+                    "swissEduPersonUniqueID": "local-eduid-dev",
+                    "swissEduPersonMatriculationNumber": "13-123-456"
+                  }
+                }
+              ]
+            }
+          ]
+        }
 
   # --- Hatchet workflow engine (gRPC :7077, http :8888). Reached at hatchet:7077
   # by the app via compose DNS. SERVER_GRPC_BROADCAST_ADDRESS is set to the compose
@@ -97,19 +152,16 @@ services:
       devnet: {}
     volumes:
       - ..:/workspaces/klicker-uzh:cached
-      # Named volume shadows host node_modules so Linux-native binaries (Prisma
-      # engines, esbuild, sharp) aren't clobbered. pnpm hoists native packages
-      # into the root node_modules/.pnpm. (GOTCHAS #6)
-      - node_modules_root:/workspaces/klicker-uzh/node_modules
-      # These package-level links are host-visible unless they are masked too.
-      # Keep the host Playwright runner and its workspace dependencies on Darwin
-      # while the devcontainer retains independent Linux dependency links.
-      - node_modules_playwright:/workspaces/klicker-uzh/playwright/node_modules
-      - node_modules_prisma:/workspaces/klicker-uzh/packages/prisma/node_modules
-      - node_modules_types:/workspaces/klicker-uzh/packages/types/node_modules
+      # Root and package dependency mounts come from docker-compose.dependencies.yml.
       # Machine-local, content-addressed package cache shared by every worktree.
-      # node_modules remains isolated in the project-scoped volume above.
+      # node_modules remains isolated in the generated project-scoped volumes.
       - pnpm_store:/pnpm/.pnpm-store
+      # The workspace bind mount and the store volume are different devices
+      # inside the container, so pnpm can fall back from the configured store
+      # to <workspace>/.pnpm-store during installs. Mounting the same shared
+      # volume at that fallback path keeps such installs off the host bind
+      # mount while still sharing content across every worktree.
+      - pnpm_store:/workspaces/klicker-uzh/.pnpm-store
       # Hatchet client token automatically minted by hatchet-lite-dev to /config/authdisabled-token
       - hatchet_lite_config:/config:ro
       # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
@@ -150,10 +202,6 @@ services:
 
 volumes:
   pgdata:
-  node_modules_root:
-  node_modules_playwright:
-  node_modules_prisma:
-  node_modules_types:
   pnpm_store:
     external: true
     name: klicker-uzh-pnpm-store-v1

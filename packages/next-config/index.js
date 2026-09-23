@@ -6,6 +6,7 @@ const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 function getNextBaseConfig({
   BLOB_STORAGE_ACCOUNT_URL,
   includeI18n = true,
+  pagesRouterOnly = false,
   NODE_ENV,
   NEXT_PUBLIC_ENV,
 }) {
@@ -15,6 +16,12 @@ function getNextBaseConfig({
   const blobStorageHostname = getHostname(BLOB_STORAGE_ACCOUNT_URL)
 
   return {
+    // Pages-only apps need no cross-router filter. Its initial Turbopack
+    // update can let an older development route scan overwrite a newer one.
+    // Remove the opt-in when an app starts using App Router routes.
+    ...(pagesRouterOnly && NODE_ENV === 'development'
+      ? { experimental: { clientRouterFilter: false } }
+      : {}),
     // Allow any *.localhost dev host (primary `<app>.klicker.localhost` and
     // worktree `<app>.klicker.<workspace>.localhost`) to reach Next dev
     // resources (HMR, fonts). Next 16 blocks cross-origin dev requests by
@@ -23,6 +30,11 @@ function getNextBaseConfig({
     // and never finish hydrating. Dev-only; not applied in production.
     allowedDevOrigins:
       NODE_ENV === 'development' ? ['**.localhost'] : undefined,
+    // The dev-mode indicator portal overlays the page and can intercept
+    // browser-test clicks (its bounds cover the viewport even when the
+    // indicator itself is idle), so disable it where the Playwright suite
+    // runs. Error overlays are unaffected.
+    devIndicators: NODE_ENV === 'development' ? false : undefined,
     outputFileTracingRoot: monorepoRoot,
     productionBrowserSourceMaps: isStaging,
     turbopack: {

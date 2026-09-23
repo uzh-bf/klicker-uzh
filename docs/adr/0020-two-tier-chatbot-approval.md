@@ -8,23 +8,28 @@ publication approval, and usage-class semantics remain in force.
 
 ## Context
 
-The tutoring chatbot public beta lets any lecturer request access via a form
-(use case, expected student count, cost center). Chatbot usage is billable, so
-uncontrolled go-live is not acceptable; at the same time, a per-change approval
-queue would make the operating team the bottleneck for every configuration
-tweak and kill the beta feedback loop.
+The tutoring chatbot is billable, so uncontrolled go-live is not acceptable; at
+the same time, a per-change approval queue would make the operating team the
+bottleneck for every configuration tweak and kill the beta feedback loop.
 
 ## Decision
 
 Approval is two-tier and both tiers are account- or artifact-level, never
 per-edit:
 
-1. **Account AI capability**: the team approves a lecturer's account and cost
-   center once and enables a feature flag. This single AI usage authorization
-   covers both base and advanced model usage; it is not split by model or
-   model class. Lecturers with Catalyst can already see and use the chatbot
-   creation and configuration features beforehand; the flag gates publication,
-   not creation.
+1. **Account AI approval**: `User.aiFeaturesEnabled`, default `false`, is the
+   sole account-level approval gate for chatbot publication and model usage.
+   Operations enables it after approving the account and cost center. The gate
+   covers both base and advanced model usage; it is not split by model or model
+   class, and it remains authoritative when account-budget enforcement is
+   disabled. Beta preference and the `ai-beta` rollout never grant this
+   approval. Chatbot authoring remains separately restricted by the
+   server-evaluated `ai-beta` rollout, Catalyst, existing login-scope and
+   ownership checks, as recorded in
+   [ADR 0008 — shared feature flags](./0008-use-growthbook-for-feature-flags.md).
+   An eligible lecturer may create and configure chatbots when authoring is
+   allowed, but publication and model usage still require
+   `aiFeaturesEnabled`.
 2. **Per-chatbot publication**: each chatbot is created and configured
    self-service in a non-published state. In Phase 0, the owning lecturer can
    manage and configure it, but no use or preview path exists. A later
@@ -49,10 +54,12 @@ per-model approval.
 Usage is tracked in two explicit model classes. Registry entries are classified
 as `BASE` or `ADVANCED`. GPT-5.6 Luna is the only `BASE` model and the
 participant-credit fallback. Every other current registry entry, including
-`Auto`, is `ADVANCED`. Participant-credit fallbacks stay within the selected
-class, and the service never silently switches classes when a class is
-exhausted. This is distinct from provider-level LiteLLM fallbacks, which do not
-change the selected registry entry or its usage class.
+`Auto`, is `ADVANCED`. Exhausting participant credits intentionally replaces
+the selected entry with Luna and therefore meters that effective turn as
+`BASE`, independently of the chatbot allow-list. Account-budget exhaustion
+remains class-specific and never switches classes. Provider-level LiteLLM
+fallbacks remain separate: they do not change the selected registry entry or
+its usage class.
 
 Registry costs use Azure Global Standard short-context USD prices per one
 million input and output tokens, verified on 2026-08-24. The registry cannot
@@ -82,6 +89,9 @@ usage credits remain a separate legacy allowance and cannot cause cross-class
 fallbacks. At migration cutover, new account counters start at zero; historical
 messages and participant credits remain legacy analytics.
 
+Token provisioning and validation are outside this approval contract and belong
+to the v3-ai workflow.
+
 ## Consequences
 
 - The team reviews each publication request before the bot meets students, at
@@ -96,8 +106,9 @@ messages and participant credits remain legacy analytics.
   production declarations.
 - Base and advanced budgets are visible as separate usage lanes, while the
   teaching center's base contribution and internal settlement remain hidden.
-- Class-specific exhaustion does not disable the other class or trigger a
-  silent cross-class switch. Participant clients receive only the stable
-  availability and exhaustion contract, never cost-center or funding details.
+- Class-specific account-budget exhaustion does not disable the other class or
+  trigger a cross-class switch. Zero participant credits are the deliberate
+  exception: the effective turn uses and is metered as base Luna. Participant
+  clients never receive cost-center or funding details.
 - Draft-config machinery for live bots is deliberately deferred until editing
   live bots proves painful.

@@ -9,9 +9,14 @@ export default {
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
-      tutorDescription: 'Get patient, step-by-step help with your questions.',
+      tutorDescription:
+        'Get step-by-step guidance with focused questions, hints, and feedback.',
       explainer: 'Explainer',
-      explainerDescription: 'Get clear explanations of difficult concepts.',
+      explainerDescription:
+        'Get direct explanations with definitions and course-based examples.',
+      quizzer: 'Quizzer',
+      quizzerDescription:
+        'Practise with exam-style course questions, one at a time, with formative feedback.',
     },
     settingsPanel: {
       title: 'Settings',
@@ -27,10 +32,11 @@ export default {
         'Uses fewer credits and remains available when your credits run out.',
       autoSelectionInfo:
         'KlickerUZH chooses a suitable model for each message.',
+      fixedModelInfo: 'Your lecturer fixed this model for all participants.',
       usingPrimaryModel:
-        'The standard model is used while credits are available.',
+        'The automatic choice is used while credits are available.',
       usingFallbackModel:
-        'No credits remain. Some models may no longer be available.',
+        'No credits remain. GPT-5.6 Luna may be used as the credit fallback.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -189,6 +195,12 @@ export default {
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
         'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+      startPracticeQuiz: 'Start a practice quiz',
+      startPracticeQuizPrompt:
+        'Start a practice quiz based on the course materials. Choose a suitable topic and ask me one question at a time.',
+      practiceWeakSpot: 'Practise a weak spot',
+      practiceWeakSpotPrompt:
+        'Help me practise a topic I find difficult. First ask which topic, then give me one exam-style question at a time based on the course materials.',
     },
     message: {
       creditsUsed:
@@ -210,6 +222,8 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      modeUnavailable:
+        'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
       stop: 'Stop response',
       disclaimerHint:
@@ -234,6 +248,14 @@ export default {
       showMore:
         '{count, plural, one {Show more (# more line)} other {Show more (# more lines)}}',
       docQueryQueryLabel: 'Search query',
+      unnamedSource: 'Unnamed source',
+      originUnavailable: 'Original source URL unavailable',
+      chunkUnavailable: 'Chunk content unavailable',
+      resultUnavailable: 'Search details unavailable',
+      openSource: 'Open source',
+      showFullChunk: 'Show full passage',
+      moreChunks: 'Show more passages ({count} remaining)',
+      moreSources: 'Show more sources ({count} remaining)',
       docQuerySourcesHint: 'The results appear as sources below the answer.',
     },
     tools: {
@@ -245,6 +267,8 @@ export default {
     },
     sources: {
       title: 'Sources',
+      cited: 'Cited in this answer',
+      otherRetrieved: 'Other retrieved material ({count})',
       page: 'p. {page}',
       video: 'Video',
       image: 'Image',
@@ -292,6 +316,7 @@ export default {
     },
     DRAFT: {
       statusLabel: 'Draft',
+      statusDescription: 'Manual status: unfinished and still being prepared.',
     },
     SCHEDULED: {
       statusLabel: 'Scheduled',
@@ -314,57 +339,78 @@ export default {
     },
     REVIEW: {
       statusLabel: 'Review',
+      statusDescription: 'Manual status: review requested.',
     },
     READY: {
       statusLabel: 'Ready',
+      statusDescription:
+        'Manual status: considered reusable; the default for new elements.',
     },
     SC: {
       short: 'SC',
       typeLabel: 'Single Choice (SC)',
+      description:
+        'Students select exactly one of the provided answer options.',
       text: 'Please select a single option.',
       richtext: 'Please select a <b>single</b> option.',
     },
     MC: {
       short: 'MC',
       typeLabel: 'Multiple Choice (MC)',
+      description:
+        'Students select one or more of the provided answer options.',
       text: 'Please select one or more options.',
       richtext: 'Please select <b>one or more</b> options.',
     },
     KPRIM: {
       short: 'KP',
       typeLabel: 'Kprim (KP)',
+      description:
+        'Students mark each of exactly four statements as correct or incorrect.',
       text: 'Evaluate the statements for correctness.',
       richtext: 'Evaluate the statements for <b>correctness</b>.',
     },
     FREE_TEXT: {
       short: 'FT',
       typeLabel: 'Free Text (FT)',
+      description:
+        'Students answer by typing free text, optionally restricted by a maximum length.',
       text: 'Please enter your answer.',
       richtext: 'Please enter your <b>answer</b>.',
     },
     NUMERICAL: {
       short: 'NR',
       typeLabel: 'Numerical (NR)',
+      description:
+        'Students answer by typing a number, optionally restricted by range, precision and unit.',
       text: 'Please enter a number.',
       richtext: 'Please enter a <b>number</b>.',
     },
     CONTENT: {
       short: 'CT',
       typeLabel: 'Content (CT)',
+      description:
+        'Presents additional information to students, without a question.',
     },
     FLASHCARD: {
       short: 'FC',
       typeLabel: 'Flashcard (FC)',
+      description:
+        'Students practice content by heart and self-assess whether they remembered it.',
     },
     SELECTION: {
       short: 'SE',
       typeLabel: 'Selection (SE)',
+      description:
+        'Students select a specific number of items from an answer collection.',
       text: 'Please select the correct answer from the list.',
       richtext: 'Please select the <b>correct answer</b> from the list.',
     },
     CASE_STUDY: {
       short: 'CS',
       typeLabel: 'Case Study (CS)',
+      description:
+        'Students evaluate items against criteria within one or more case scenarios.',
       text: 'Please evaluate all options with respect to the given criteria.',
       richtext:
         'Please evaluate all options with respect to the given criteria.',
@@ -728,6 +774,8 @@ export default {
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
         'Select this setting to include a LaTeX formula centered on a separate line.',
+      undo: 'Undo the last formatting change.',
+      redo: 'Redo the last formatting change.',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
@@ -752,6 +800,9 @@ export default {
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
+      entryAriaLabel: 'Rank {rank}: {name}, {points} points',
+      selfPositionDivider: 'your position',
+      podiumEmpty: 'No entries on the podium yet',
     },
     error: {
       '404': '404 Page not found',
@@ -777,6 +828,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
     loginInfo:
       'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
+    sessionCheckFailed:
+      'Your login could not be verified because the service is temporarily unavailable. Please try again in a moment.',
+    sessionCheckRetry: 'Try again',
+    restart: {
+      title: 'Login',
+      info: 'Your login attempt could not be continued. Please choose how you would like to log in again.',
+      errorInfo:
+        'The login provider reported an error. Please choose how you would like to log in again.',
+      studentLogin: 'Student login (assessment)',
+      lecturerLogin: 'Lecturer login',
+    },
   },
   pwa: {
     general: {
@@ -821,6 +883,13 @@ export default {
       activeLiveQuizzesInCourse: 'Active live quizzes in {name}',
       noPracticeQuizzesActive: 'No practice quizzes active.',
       activePracticeQuizzesInCourse: 'Active practice quizzes in {name}',
+      practicePoolPromotionTitle: 'Practice with spaced repetition',
+      practicePoolPromotionDescription:
+        'Up to 25 question sets from all practice quizzes. Your previous answers can influence the order.',
+      startPracticePool: 'Start Practice Pool',
+      practicePoolRoundComplete:
+        'Round completed! Start another round to continue practicing. Your previous answers can influence the selection of question sets.',
+      individualPracticeQuizzes: 'Individual practice quizzes',
       noMicroLearningsActive: 'No microlearnings active.',
       activeMicroLearningsInCourse: 'Active microlearnings in {name}',
       joinLeaderboardNotice: `
@@ -891,6 +960,65 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      signup: {
+        accountTitle: 'Your account',
+        emailLabel: 'E-mail',
+        usernameHint:
+          'Your username is shown when you join a course leaderboard.',
+        assessmentTitle: 'Enable assessment access',
+        assessmentSubmit: 'Enable access',
+        assessmentDataCollectionNotice:
+          'We store your account data and the identity information provided by Switch edu-ID as well as data from courses and activities: such as answers and inputs in activities, assessments, points, and feedback.\n\nIn an assessment, identity information such as your matriculation number as well as detailed logs of your answer attempts and interactions (audit logs) are added.',
+        assessmentDataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.\n\nIn an assessment, authorised lecturers and assessment staff additionally receive your identity, answer details, and results for grading and follow-up. Other participants cannot see this assessment data.',
+        assessmentDataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. In an assessment, they additionally support grading and traceability. Your choice in the account settings applies to research and Learning Analytics. It does not affect points, grades, or assessment access.',
+        assessmentDataStorageNotice:
+          'Account data and answers are stored for the lifetime of your account. You cannot delete your assessment account and its data yourself: they remain available for traceability and during the applicable appeal and retention periods. Afterwards, they are deleted or anonymised. [Details in the privacy policy](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'I have read the [KlickerUZH privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of use](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. I have acknowledged the additional information about assessment data, inspection, and retention.',
+        accessTitle: 'Your access',
+        accessNoPassword: 'You do not need a password or any further input.',
+        dataUseTitle: 'Data use and settings',
+        dataCollectionTitle: 'What data do you collect about me?',
+        dataCollectionNotice:
+          'We store your account data and data from your courses and activities, such as answers and inputs in activities, their assessment, points, and feedback.',
+        dataSharingTitle: 'Who can see my data?',
+        dataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.',
+        dataUsageTitle: 'How is my data used?',
+        dataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. Your choice in the account settings applies to research and Learning Analytics.',
+        dataStorageTitle: 'How long is my data stored?',
+        dataStorageNotice:
+          'Your account data and answers are stored while your account exists. Data may be retained until legal or contractual retention periods expire. Afterwards, they are deleted or changed so that they can no longer be linked to any person. You can request deletion of your account and your data.',
+        acknowledgement:
+          'I have read the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of service](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. Research and Learning Analytics are voluntary.',
+        researchConsentTitle: 'Data for research',
+        researchConsentDescription:
+          'Your usage and learning data may be used without personal identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentDescriptionAssessment:
+          'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentBadgeAllowed: 'Allowed',
+        researchConsentBadgeRefused: 'Refused',
+        researchConsentBadgeUnanswered: 'Not answered',
+        researchConsentYes: 'Allow',
+        researchConsentNo: 'Object',
+        researchConsentControlLabel: 'Use for research:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/learning_analytics)',
+        learningAnalyticsDecisionRequired: 'Decision required',
+        learningAnalyticsConsentYes: 'Yes, participate',
+        learningAnalyticsConsentYesDescription:
+          'Private insights and protected group reports.',
+        learningAnalyticsConsentNo: 'No, do not participate',
+        learningAnalyticsConsentNoDescription:
+          'Courses, points, and chat work as usual.',
+        submit: 'Create account',
+        acknowledgementRequired: 'Please confirm your choices.',
+        dataUseChoiceRequired: 'Please choose yes or no.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1077,7 +1205,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       microLearningEndedToast:
         'Microlearning "{activityName}" ended, no more submissions are possible.',
       coursePracticeArea:
-        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetitions, batches of 25 questions are selected according to our spaced repetition logic and based on your previous answers.',
+        'This is the practice pool for the course {courseName}. Here you have access to the content from all practice quizzes combined. For targeted repetition, up to 25 question sets are selected according to our spaced repetition logic. Your previous answers can influence the order.',
     },
     joinCourse: {
       title: 'Join Course "{name}"',
@@ -1230,6 +1358,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can opt out at any time in your settings. Your data will then be excluded from future research exports.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      dataUseConflict:
+        'This page is out of date. Reload it before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsWithdrawalTitle:
+        'Stop participating in Learning Analytics?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -1536,6 +1691,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       status: 'Status',
       searchPlaceholder: 'Search...',
       sortBy: 'Sort by...',
+      sortOrderAscending: 'Sort ascending',
+      sortOrderDescending: 'Sort descending',
       catalystRequired:
         'Requires catalyst access. For more information, see <link></link>.',
       elementPreview: 'Element Preview: {element}',
@@ -1558,6 +1715,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
+      chatbotAllTools: 'All tools',
+      chatbotDefaultReasoning: 'All reasoning levels supported by the model',
+      adminOnly: 'This page is available to administrators only.',
+      chatbotApprovals: 'Chatbot approvals',
+      chatbotApprovalsDescription:
+        'Review pending publication requests. Open a chatbot to check its configuration before approving participant access.',
+      chatbotOwner: 'Owner',
+      chatbotAccountApproval: 'Account publishing permission',
+      chatbotAccountApproved: 'Approved',
+      chatbotAccountNotApproved: 'Not approved',
+      chatbotConnectedTools: 'Connected tools',
+      chatbotNoConnectedTools: 'No connected tools.',
+      chatbotRefresh: 'Refresh requests',
+      chatbotQueueEmpty: 'No chatbots are awaiting approval.',
+      chatbotQueueError:
+        'Could not load publication requests. Refresh to try again.',
+      chatbotOwnerBlocked:
+        'The owner is not currently approved for chatbot publishing. Account approval is required before this chatbot can be published.',
+      chatbotApproveConsequence:
+        'Approving publishes this chatbot immediately for participants in its course. Account usage budgets remain unchanged.',
+      chatbotApprove: 'Approve and publish',
+      chatbotPublished: '“{name}” has been published.',
+      chatbotApprovalError:
+        'Publication could not be confirmed. The request list has been refreshed; check the current status before trying again.',
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
@@ -1919,6 +2108,32 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     settings: {
       advancedModelUsage: 'Advanced model usage',
       baseModelUsage: 'Base model usage',
+      betaFeaturesDescription:
+        'Beta features include chatbot creation. Your beta preference is enabled by default and can be turned off here. Feature availability and approval for AI usage are managed separately. Beta features may be unstable, change without notice, or be unsuitable for important work.',
+      betaFeaturesSignupClosed:
+        'New beta enrollment is currently closed. You can still discover beta features here.',
+      betaFeaturesEnrollmentRestricted:
+        'Enrollment cannot be changed with this account or login. New enrollment requires Catalyst and full account access.',
+      betaFeaturesConvergedOff: 'Beta access is no longer active.',
+      betaFeaturesConvergedOn: 'Beta access is now active.',
+      betaFeaturesEnrollment: 'Beta enrollment',
+      betaFeaturesEnrollmentTooltip:
+        'This optional setting controls whether your account is enrolled in the beta cohort.',
+      betaFeaturesError:
+        'Your beta enrollment could not be saved. Your current enrollment state was not changed. Please try again.',
+      betaFeaturesRefreshFailure:
+        'Your beta preference was saved, but the displayed settings could not be refreshed. Reload the page to see the current state.',
+      betaFeaturesRefreshing:
+        'Your beta preference was saved. Refreshing the displayed settings.',
+      betaFeaturesSaved:
+        'Your beta preference was saved. Available features still depend on rollout and any required approval.',
+      betaFeaturesPending:
+        'Saving your beta enrollment. Your current setting will remain unchanged until the save completes.',
+      betaFeaturesTitle: 'Beta features',
+      chatbotBetaAccessRequired:
+        'Chatbot creation is a beta feature. It requires AI beta access, Catalyst, and full account access. You can find beta enrollment in your account settings.',
+      betaFeaturesUnavailable:
+        'Your beta preference cannot be displayed or changed right now. No preference has been assumed.',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
       chatAccountUsageBoundaryDescription:
@@ -1994,15 +2209,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     questionPool: {
       createLiveQuiz: 'Create live quiz',
+      createLiveQuizDescription: 'Engage participants live during a session.',
       createMicrolearning: 'Create microlearning',
+      createMicrolearningDescription:
+        'Schedule short learning activities over a defined period.',
       createPracticeQuiz: 'Create practice quiz',
+      createPracticeQuizDescription:
+        'Let participants review content independently at their own pace.',
       createGroupTask: 'Create group activity',
+      createGroupTaskDescription: 'Let groups collaborate on a shared task.',
+      createElementaryLabel: 'Elements',
+      createActivitiesLabel: 'Activities',
       createElement: 'Create Element',
+      emptyStateTitle: 'Create your first element',
+      emptyStateDescription:
+        'Elements are reusable questions and content for your activities. Create one to get started.',
+      clearSearch: 'Clear search',
+      elementsLoadError: 'The elements could not be loaded.',
+      retry: 'Retry',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',
+      moreActions: 'More actions for {name}',
       elementTypes: 'Element Types',
       elementStatus: 'Status',
+      filterApplied: 'Filter applied',
       tags: 'Tags',
       selectOrType: 'Select or Type...',
       untagged: 'Untagged',
@@ -2067,12 +2298,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       batchOperationsElements: 'Elements - Batch Operations',
       batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'Review the selected elements below. Then choose the actions to apply.',
       batchElementName: 'Element',
-      batchElementPermission: 'Your permission',
-      batchUpdateStatus: 'Element update eligibility',
+      batchElementPermission: 'Permission',
+      batchUpdateStatus: 'Changes',
       batchUpdateStatusInactive: 'No element update configured',
-      batchSharingStatus: 'Element sharing eligibility',
+      batchSharingStatus: 'Sharing',
       actionApplies: 'Action applies',
       batchSharingApplies: 'Sharing applies',
       modifyStatus: 'Modify status',
@@ -2133,8 +2364,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       updateActivitiesBatchInfo:
         'Choose here if the modifications made to the selected elements should also be applied to all activities in draft and scheduled state. Optionally, you can also include activity templates with this element in the update.',
       activityUpdates: 'Activity updates',
-      draftScheduledActivities: 'Draft and scheduled activities',
-      templateUpdates: 'Activity template updates',
+      batchUpdateInstancesConsequence:
+        'Also apply these changes to draft and scheduled activities',
+      batchUpdateTemplateInstancesConsequence: 'Also update activity templates',
       batchOperationSuccess: 'Your batch operation was successfully applied.',
       batchOperationPartialSuccess:
         'Only a part of your batch operation could be applied successfully. Please check the affected elements and your permissions.',
@@ -2178,6 +2410,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyElement: 'Modify Element',
       useElementInActivities: 'Use Element in Activities',
       elementType: 'Element type',
+      elementTypeImmutableNotice:
+        'The element type cannot be changed after creation. You can duplicate the element to create a different type.',
       selectQuestionType: 'Select question type',
       selectQuestionStatus: 'Select status',
       questionStatus: 'Status',
@@ -2359,6 +2593,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     },
     activityWizard: {
       activityName: 'Please enter a name for your activity.',
+      confirmCancelTitle: 'Discard changes to this activity creation?',
+      confirmCancelBody:
+        'You have entered data that has not been saved yet. Discarding will permanently remove the data you entered in this wizard.',
+      confirmCancelEditTitle: 'Discard changes to this activity?',
+      confirmCancelEditBody:
+        'You have entered changes that have not been saved yet. Discarding will permanently remove the changes you made in this activity.',
+      confirmCancelDiscard: 'Discard',
+      confirmCancelKeepEditing: 'Keep editing',
+      continueToDescription: 'Continue to description',
+      continueToSettings: 'Continue to settings',
+      continueToQuestions: 'Continue to questions',
+      temporaryStorageCreation:
+        'The activity creation process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
+      temporaryStorageEditing:
+        'The activity editing process was interrupted without saving. Choose whether to recover the last automatic backup or discard this information.',
       activityDisplayName:
         'Please enter a valid display name for your activity.',
       considerFormErrors: 'Please check the form for error messages.',
@@ -2392,12 +2641,17 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       timeLimitTooltip: 'Time limit for block {blockIx} in seconds',
       newBlock: 'New block',
       newStack: 'New stack',
-      newBlockSelected: 'Add 1 block with {count} elements',
-      newStackSelected: 'Add 1 stack with {count} elements',
+      newBlockSelected:
+        '{count, plural, one {Add 1 block with # element} other {Add 1 block with # elements}}',
+      newStackSelected:
+        '{count, plural, one {Add 1 stack with # element} other {Add 1 stack with # elements}}',
       pasteSelection: 'Add {count} questions',
-      pasteSelectionElements: 'Add {count} elements',
-      pasteSingleElementsBlock: 'Add {count} blocks with 1 element',
-      pasteSingleElementsStack: 'Add {count} stacks with 1 element',
+      pasteSelectionElements:
+        '{count, plural, one {Add # element} other {Add # elements}}',
+      pasteSingleElementsBlock:
+        '{count, plural, one {Add # block with 1 element} other {Add # blocks with 1 element each}}',
+      pasteSingleElementsStack:
+        '{count, plural, one {Add # stack with 1 element} other {Add # stacks with 1 element each}}',
       pinProtected: 'PIN protection',
       pinProtectedTooltip:
         'When enabled, the system automatically generates a PIN that students must enter when joining the quiz.',
@@ -3222,8 +3476,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
       changeAvailabilityDateGroupActivities:
         'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
-      courseDatesForCourseDuplicationTooltip:
-        'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
+      courseDuplicationStartDateTooltip:
+        'Select a start date for the duplicated course. The end date is calculated automatically using the original course duration.',
+      courseDuplicationEndDateTooltip:
+        'The end date is calculated automatically using the original course duration and cannot be changed here. You can change the dates for the duplicated course afterwards.',
       fixedDateInterval:
         'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
@@ -3241,6 +3497,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseCopySuffix: 'Copy',
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
+      courseDuplicationDatesRequired:
+        'Select a start date before duplicating the course.',
       courseDuplicationFailed: 'Failed to duplicate course.',
       courseDuplicationAlreadyInProgress:
         'This course is already being duplicated.',
@@ -3299,6 +3557,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
+      startDatePastTooltip:
+        'The start date is in the past and cannot be changed.',
       endDate: 'End date',
       endDateTooltip:
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',
@@ -3345,6 +3605,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       archiveOnlyPastCourses:
         'Only courses with an end date in the past can be archived.',
       noDeletionAssessment: 'Courses in assessment mode cannot be deleted.',
+      courseDeletionActiveLiveQuiz:
+        'This course cannot be deleted while it contains a published live quiz. Please end or unpublish the live quiz first.',
       archiveCourse: 'Archive course',
       unarchiveCourse: 'Unarchive course',
       confirmCourseArchive:
@@ -3399,10 +3661,19 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       joinCourse: 'Join course',
       viewCourse: 'View Course',
       viewActivities: 'View Activities',
+      openLibrary: 'Open library',
+      noNotificationEmail: 'Not set',
       executeActivities: 'Execute Activities',
       modifyCourseSettings: 'Modify Course Settings',
       modifyContainedActivities: 'Modify Activities in Course',
       manageParticipantGroups: 'Manage Participant Groups',
+      leaderboardSummary: 'Compare participant points for the selected period.',
+      leaderboardInclusionHelp: 'Who appears in the leaderboard?',
+      leaderboardInclusion:
+        'Participants without points are included in the entire-course and rolling leaderboards.',
+      leaderboardExportHelp: 'About CSV export',
+      leaderboardExportDescription:
+        'The CSV export includes participant email addresses in addition to usernames.',
       deleteCourse: 'Delete Course',
       removeCourse: 'Remove Course',
       confirmCourseRemoval:
@@ -3468,7 +3739,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       copyAccessLink: 'Copy Access Link',
       copyLTIAccessLink: 'Copy LTI Link',
       liveQuizList: 'Live Quiz List',
-      practiceQuizList: 'Practice Quiz List',
+      practiceQuizList: 'Practice Pool & Practice Quizzes',
       microLearningList: 'Microlearning List',
       linkAccessCopied:
         'The link for accessing the item has been copied to the clipboard.',
@@ -3479,7 +3750,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       linkLTILeaderboardLabel: 'Leaderboard',
       linkLTIDocsLabel: 'Documentation',
       linkLTILiveQuizzesLabel: 'Live Quizzes',
-      linkLTIPracticeQuizzesLabel: 'Practice Quizzes',
+      linkLTIPracticeQuizzesLabel: 'Practice Pool & Practice Quizzes',
       linkLTIMicroLearningsLabel: 'Microlearnings',
       linkLTIAccountManagement: 'Account Management',
       editMicrolearning: 'Edit Microlearning',
@@ -3733,7 +4004,175 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbots: 'Chatbots',
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
+      createChatbot: 'Create chatbot',
+      createChatbotAndContinue: 'Create draft and continue',
+      createChatbotShort: 'New',
+      createChatbotDescription:
+        'Create a course-bound draft chatbot and configure it before requesting publication.',
+      chatbotMobileSelector: 'Current chatbot',
+      chatbotWorkspaceNavigation: 'Chatbot workspace',
+      chatbotWorkspaceOverview: 'Overview',
+      chatbotWorkspaceSetup: 'Setup',
+      chatbotWorkspaceAdvanced: 'Advanced',
+      chatbotWorkspaceUsage: 'Usage & integrations',
+      chatbotWorkspaceOverviewDescription:
+        'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
+      chatbotSetupTitle: 'Set up your chatbot',
+      chatbotSetupDescription:
+        'Use the sections below to complete and save your chatbot setup before requesting publication.',
+      chatbotSetupBasics: 'Basics',
+      chatbotSetupBasicsDescription: 'Name, course, and description',
+      chatbotSetupModes: 'Learning modes',
+      chatbotSetupModesDescription:
+        'Choose which standard modes participants can use',
+      chatbotSetupModesTitle: 'Learning modes',
+      chatbotSetupModesDescriptionLong:
+        'Choose the standard modes that should be available to participants. Tutor and Explainer are available without course-material retrieval; Quizzer is shown only when its required capability is available.',
+      chatbotModeTutor: 'Tutor',
+      chatbotModeTutorDescription:
+        'Guides participants with questions, hints, and formative feedback.',
+      chatbotModeExplainer: 'Explainer',
+      chatbotModeExplainerDescription:
+        'Explains course concepts directly with definitions and grounded examples.',
+      chatbotModeQuizzer: 'Quizzer',
+      chatbotModeQuizzerDescription:
+        'Practises exam-style course questions one at a time with formative feedback.',
+      chatbotModeInvariant: 'Keep Tutor or Explainer enabled.',
+      chatbotModeQuizzerCapabilityNote:
+        'Quizzer may still be hidden when its course-material capability is unavailable.',
+      chatbotModeEnabled: 'Enabled',
+      chatbotModeDisabled: 'Disabled',
+      chatbotFraming: 'Chatbot framing',
+      chatbotFramingDescription:
+        'Briefly describe the course, audience, or intended focus. This context is used in the standard learning modes.',
+      chatbotFramingPlaceholder:
+        'For example: First-year organic chemistry for medical students.',
+      chatbotFramingTooLong:
+        'Chatbot framing must be 200 characters or fewer when edited.',
+      chatbotModesSave: 'Save learning modes',
+      chatbotModesSaving: 'Saving…',
+      chatbotModesSaveSuccess: 'Learning modes saved.',
+      chatbotModesSaveError: 'Could not save learning modes. Please try again.',
+      chatbotModesReadonly:
+        'Learning modes cannot be edited in this chatbot status.',
+      chatbotSetupDisclaimer: 'Disclaimer',
+      chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
+      chatbotSetupReview: 'Review and submit',
+      chatbotSetupReviewDescription:
+        'Confirm saved details and request publication',
+      chatbotSetupBasicsTitle: 'Chatbot basics',
+      chatbotSetupBasicsDescriptionLong:
+        'Give the chatbot a clear name and description. Save this section when you are ready. The linked course is fixed after creation.',
+      chatbotSetupSave: 'Save changes',
+      chatbotSetupSaving: 'Saving…',
+      chatbotSetupDisclaimerTitle: 'Participant disclaimer',
+      chatbotSetupDisclaimerDescriptionLong:
+        'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
+      chatbotSetupReviewTitle: 'Review and submit',
+      chatbotSetupReviewDescriptionLong:
+        'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
+      chatbotSetupEdit: 'Edit',
+      chatbotSetupPublicationNote:
+        'Publication details are submitted with your request and are not saved separately. You can edit them until you submit.',
+      chatbotDiscardChangesConfirmation:
+        'Discard your unsaved chatbot changes?',
+      chatbotNavigationPending:
+        'Please wait until the current chatbot change has finished saving.',
+      chatbotCreatedAt: 'Created',
+      chatbotUpdatedAt: 'Last updated',
+      chatbotName: 'Name',
+      chatbotDescription: 'Description',
+      chatbotCourse: 'Course',
+      chatbotCourseRequired: 'Select a course.',
+      chatbotNoOwnedCourses:
+        'You need to own at least one course before creating a chatbot.',
+      chatbotNameRequired: 'Enter a chatbot name.',
+      chatbotCreateError: 'Could not create the chatbot. Please try again.',
+      chatbotErrorNotEditable: 'This chatbot can no longer be edited.',
+      chatbotErrorEditConflict:
+        'This chatbot changed elsewhere. Reload and try again.',
+      chatbotErrorDisclaimerConflict:
+        'The disclaimer changed elsewhere. Reload and try again.',
+      chatbotErrorBadUserInput: 'Check the chatbot details and try again.',
+      chatbotErrorForbidden:
+        'You do not have permission to change this chatbot.',
+      chatbotPublication: 'Publication request',
+      chatbotPublicationDescription:
+        'Provide the information needed for the team to review this chatbot before publication.',
+      chatbotPublicationUseCase: 'Use case',
+      chatbotPublicationUseCaseRequired: 'Describe the intended use case.',
+      chatbotPublicationUseCaseTooLong:
+        'The use case must be 2,000 characters or fewer.',
+      chatbotPublicationUseCaseInvalid:
+        'The use case must be between 1 and 2,000 characters long.',
+      chatbotPublicationExpectedStudentCount: 'Expected student count',
+      chatbotPublicationExpectedStudentCountRequired:
+        'Enter the expected student count.',
+      chatbotPublicationExpectedStudentCountInvalid:
+        'Enter a positive whole number for the expected student count.',
+      chatbotPublicationProposedCredits: 'Proposed credits',
+      chatbotPublicationProposedCreditsRequired: 'Enter the proposed credits.',
+      chatbotPublicationProposedCreditsInvalid:
+        'Enter a positive whole number for the proposed credits.',
+      requestChatbotPublication: 'Request publication',
+      resubmitChatbotPublication: 'Resubmit for approval',
+      chatbotPublicationSubmitted: 'Publication request submitted for review.',
+      chatbotPublicationRequestError:
+        'Could not submit the publication request. Please try again.',
+      chatbotPublicationDisclaimerRequired:
+        'Save a complete disclaimer before requesting publication.',
+      chatbotPublicationUnsavedSetup:
+        'Save or wait for changes in Basics, Learning modes, and Disclaimer before requesting publication.',
+      chatbotPublicationAuthorizationChecking:
+        'Checking whether this account can request publication...',
+      chatbotPublicationAuthorizationUnavailable:
+        'The account publication approval could not be checked. Try again later.',
+      chatbotPublicationUnauthorized:
+        'This account is not approved to request chatbot publication.',
+      chatbotPublicationPending:
+        'This chatbot is awaiting publication review. Its publication details are locked until the review is complete.',
+      chatbotPublicationPaused:
+        'Publication is paused for this chatbot. Its publication details are locked while it is paused.',
+      chatbotPublicationReadonly:
+        'Publication details cannot be edited in this status.',
+      chatbotPublicationPublished:
+        'This chatbot is published. Its publication details are read-only.',
+      chatbotPublicationPublishedAt: 'Published on {date}.',
+      chatbotPublicationReviewComment: 'Review comment:',
       chatbotDetails: 'Chatbot Details',
+      chatbotMetadata: 'Chatbot Metadata',
+      chatbotCourseReadonly: 'The course cannot be changed after creation.',
+      saveChatbotMetadata: 'Save metadata',
+      chatbotMetadataSaveSuccess: 'Chatbot metadata saved.',
+      chatbotMetadataSaveError:
+        'Could not save chatbot metadata. Please try again.',
+      chatbotMetadataReadonly:
+        'Metadata cannot be edited while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
+      chatbotDisclaimerReadonly:
+        'The disclaimer cannot be edited after publication or while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerTitle: 'Disclaimer title',
+      chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
+      chatbotDisclaimerTitleTooLong:
+        'The disclaimer title must be 160 characters or fewer.',
+      chatbotDisclaimerIntro: 'Disclaimer introduction',
+      chatbotDisclaimerIntroRequired: 'Enter a disclaimer introduction.',
+      chatbotDisclaimerIntroTooLong:
+        'The disclaimer introduction must be 10,000 characters or fewer.',
+      chatbotDisclaimerIntroEditorPlaceholder:
+        'Explain what participants should know before using this chatbot.',
+      saveChatbotDisclaimer: 'Save disclaimer',
+      chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
+      chatbotDisclaimerSaveError:
+        'Could not save the chatbot disclaimer. Please try again.',
+      chatbotDisclaimerPreview: 'Participant disclaimer preview',
+      chatbotDisclaimerPreviewDescription:
+        'This preview includes the platform text that participants will see.',
+      chatbotDisclaimerTitlePlaceholder: 'Your disclaimer title',
+      chatbotDisclaimerIntroPlaceholder:
+        'Add an introduction to show participants here.',
+      chatbotModelSettingsReadonly:
+        'Model settings cannot be edited while the chatbot is awaiting review or paused.',
       overview: 'Overview',
       chatbotId: 'Chatbot ID',
       avatarUrl: 'Avatar URL',
@@ -3753,17 +4192,23 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       creditResetPeriod: 'Reset period',
       creditResetAmount: 'Reset amount',
       creditMaxCredits: 'Max credits',
-      modelSelection: 'Model selection',
+      modelSelection: 'Let participants choose the model',
       modelSelectionEnabled: 'Enabled',
       modelSelectionDisabled: 'Disabled',
       modelSelectionEnabledDescription:
-        'Participants can choose among the allowed models.',
+        'On: participants can choose one of the explicitly selected models.',
       modelSelectionDisabledDescription:
-        'Model selection is automatic and based on credit availability.',
+        'Off: the chatbot uses exactly one model selected by the lecturer.',
+      modelSelectionFixedDescription:
+        'Participants use this model. New chatbots start with Auto.',
+      modelSelectionParticipantDescription:
+        'Participants can choose among these models. Select at least one.',
+      selectedModel: 'Selected model',
       allowedModels: 'Allowed models',
       allowedModelsAll: 'All',
       chatbotModelSettings: 'Model & Reasoning Settings',
       reasoningEffortsByModel: 'Reasoning efforts by model',
+      reasoningEffort: 'Reasoning effort',
       singleReasoningEffortFixed: 'Fixed by model: {effort}',
       chatbotModelSettingsSave: 'Save model settings',
       chatbotModelSettingsSaving: 'Saving...',

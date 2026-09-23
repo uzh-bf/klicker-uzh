@@ -83,6 +83,32 @@ must use seeded or synthetic content only.
 
 ## Why This Matters
 
+A healthy local MCP endpoint does not prove that Chat can use it. The legacy
+seed had no transport authentication or required knowledge-base scope, while
+Chat's Doc Query client expects bearer authentication and an ES256 scope token.
+Keep that production client unchanged when diagnosing the local fixture.
+
+The managed MCP startup now uses
+[local-mcp-bootstrap.mjs](../../../apps/chat/scripts/local-mcp-bootstrap.mjs)
+to rotate ephemeral credentials and restart both Chat and the fixture together.
+Its seed repair accepts only the exact synthetic owner, course and two mode
+bindings. An ownership conflict stops startup instead of replacing another
+configuration. Plaintext credentials remain in the local process environment;
+the database stores only the encrypted transport token. The local shared
+process environment is not an isolation boundary between apps.
+
+After Playwright cleanup, startup can recreate the fixture's synthetic course,
+draft chatbot and two mode bindings when all are absent. The exact local server
+and seeded lecturer must still match. Partial parent state is rejected; repair
+never overwrites an existing course or chatbot. Restoration and credential
+rotation share one transaction, so a failure leaves the previous data intact.
+
+Use the completed tool call, final answer, source card and reload persistence
+as integration evidence. The deterministic fixture has no public origin URL,
+so its source card cannot prove that a linked website or PDF is accessible.
+That requires a separate linked-source canary; source-normalizer tests alone
+prove URL preservation, not reachability or staging retrieval quality.
+
 The LiteLLM configuration resolves every OpenAI-compatible model and embedding
 route through `UPSTREAM_OPENAI_BASE_URL` and `UPSTREAM_OPENAI_API_KEY`
 ([config.yaml](../../../util/litellm/config.yaml)). A route-level 200 or

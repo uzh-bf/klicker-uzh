@@ -2,22 +2,32 @@ import { useMutation } from '@apollo/client'
 import {
   CreateMicroLearningDocument,
   EditMicroLearningDocument,
-  Element,
+  type Element,
   ElementType,
-  MicroLearning,
+  type MicroLearning,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  resolveActivityWizardMode,
+  useActivityWizardRecovery,
+} from '@lib/activityWizardRecovery'
 import useCoursesGamificationSplit from '@lib/hooks/useCoursesGamificationSplit'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { FormikProps } from 'formik'
+import type { FormikProps } from 'formik'
 import { findIndex } from 'lodash'
 import { useTranslations } from 'next-intl'
-import { Dispatch, SetStateAction, useCallback, useRef, useState } from 'react'
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useRef,
+  useState,
+} from 'react'
 import * as yup from 'yup'
-import { ElementSelectCourse } from '../../ActivityCreation'
+import type { ElementSelectCourse } from '../../ActivityCreation'
 import CompletionStep from '../CompletionStep'
 import StackCreationStep from '../StackCreationStep'
-import WizardLayout, { MicroLearningFormValues } from '../WizardLayout'
+import WizardLayout, { type MicroLearningFormValues } from '../WizardLayout'
 import MicroLearningDescriptionStep from './MicroLearningDescriptionStep'
 import MicroLearningInformationStep from './MicroLearningInformationStep'
 import MicroLearningSettingsStep from './MicroLearningSettingsStep'
@@ -59,6 +69,7 @@ interface MicroLearningWizardProps {
   initialValues?: MicroLearning
   selection: Record<number, Element>
   resetSelection: () => void
+  restoreSelection: (selection: Record<number, Element>) => void
   closeWizard: () => void
   editMode: boolean
   duplicationMode: boolean
@@ -70,6 +81,7 @@ function MicroLearningWizard({
   initialValues,
   selection,
   resetSelection,
+  restoreSelection,
   closeWizard,
   editMode,
   duplicationMode,
@@ -266,6 +278,18 @@ function MicroLearningWizard({
     courseId: initialValues?.course?.id ?? formDefaultValues.courseId,
   })
 
+  const { recoveryProps, closeWizardAndClearSnapshot } =
+    useActivityWizardRecovery({
+      snapshot: {
+        mode: resolveActivityWizardMode({ editMode, duplicationMode }),
+        activityType: 'MICRO_LEARNING',
+        sourceId: initialValues?.id ? String(initialValues.id) : undefined,
+      },
+      form: { data: formData, ref: formRef, setData: setFormData },
+      elements: { selected: selection, restore: restoreSelection },
+      lifecycle: { isCompleted: isWizardCompleted, close: closeWizard },
+    })
+
   const [createMicroLearning, { data: creationData }] = useMutation(
     CreateMicroLearningDocument
   )
@@ -320,6 +344,7 @@ function MicroLearningWizard({
       disabledFrom={findIndex(stepValidity, (valid) => !valid) + 1}
       workflowItems={workflowItems}
       isCompleted={isWizardCompleted}
+      {...recoveryProps}
       completionStep={
         <CompletionStep
           completionSuccessMessage={(elementName) => (
@@ -349,7 +374,7 @@ function MicroLearningWizard({
           }}
           resetForm={() => setFormData(formDefaultValues)}
           setStepNumber={setActiveStep}
-          onCloseWizard={closeWizard}
+          onCloseWizard={closeWizardAndClearSnapshot}
         />
       }
       steps={[
@@ -371,7 +396,7 @@ function MicroLearningWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep + 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <MicroLearningDescriptionStep
           key="micro-learning-description-step"
@@ -391,7 +416,7 @@ function MicroLearningWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <MicroLearningSettingsStep
           key="micro-learning-settings-step"
@@ -414,7 +439,7 @@ function MicroLearningWizard({
             setFormData((prev) => ({ ...prev, ...newValues }))
             setActiveStep((currentStep) => currentStep - 1)
           }}
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
         <StackCreationStep
           key="stack-creation-step"
@@ -436,7 +461,7 @@ function MicroLearningWizard({
           onSubmit={(newValues: MicroLearningFormValues) =>
             handleSubmit({ ...formData, ...newValues })
           }
-          closeWizard={closeWizard}
+          closeWizard={closeWizardAndClearSnapshot}
         />,
       ]}
       saveFormData={() => {

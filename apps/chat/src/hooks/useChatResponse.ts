@@ -3,6 +3,7 @@ import { useParams } from 'next/navigation'
 import { useCallback, useRef } from 'react'
 import { hasAllImageAttachmentsHydrated } from '../lib/attachments/attachmentState'
 import { type ReasoningEffort } from '../lib/config/reasoning'
+import { readHandoffSource } from '../lib/handoff'
 import { normalizeLiveToolOutput } from '../lib/toolOutput'
 import { generateId } from '../lib/utils/chatUtils'
 import {
@@ -11,6 +12,10 @@ import {
   type ThreadRunOutcome,
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
+
+type GenerateChatResponseOptions = {
+  allowRegeneration?: boolean
+}
 
 /**
  * Hook for handling streaming chat responses from the backend.
@@ -55,7 +60,11 @@ export function useChatResponse(
    * @param threadId - ID of the current chat thread
    */
   const generateChatResponse = useCallback(
-    async (messagesToSend: ExtendedThreadMessageLike[], threadId: string) => {
+    async (
+      messagesToSend: ExtendedThreadMessageLike[],
+      threadId: string,
+      options: GenerateChatResponseOptions = {}
+    ) => {
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
@@ -183,6 +192,7 @@ export function useChatResponse(
         }
 
         // send request to API with streaming enabled
+        const handoffSource = readHandoffSource()
         const response = await fetch(`/api/chatbots/${chatbotId}/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -209,6 +219,8 @@ export function useChatResponse(
             reasoningEffort: selectedReasoningEffort,
             parentId: parentId || undefined,
             assistantMessageId,
+            ...(options.allowRegeneration ? { allowRegeneration: true } : {}),
+            ...(handoffSource ? { handoffSource } : {}),
             images: (resolvedTriggerMessage?.imageAttachments ?? [])
               .filter(
                 (

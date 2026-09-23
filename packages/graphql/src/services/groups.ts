@@ -784,7 +784,9 @@ export async function getParticipantGroups(
     where: { id: ctx.user.sub },
     include: {
       participantGroups: {
-        where: { course: { id: courseId } },
+        where: {
+          course: { id: courseId, deletionRequestedAt: null },
+        },
         include: {
           messages: {
             orderBy: { createdAt: 'desc' },
@@ -1230,6 +1232,7 @@ export async function getGroupActivityDetails(
         ],
       },
       isDeleted: false,
+      course: { deletionRequestedAt: null },
     },
     include: {
       course: true,
@@ -1574,7 +1577,11 @@ export async function getGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id, isDeleted: false },
+    where: {
+      id,
+      isDeleted: false,
+      course: { deletionRequestedAt: null },
+    },
     include: {
       course: true,
       clues: true,
@@ -2105,6 +2112,7 @@ export async function getCourseGroupActivities(
   const course = await ctx.prisma.course.findUnique({
     where: {
       id: courseId,
+      deletionRequestedAt: null,
       participations: { some: { participantId: ctx.user.sub } },
     },
     include: {
@@ -2139,6 +2147,7 @@ export async function getGroupActivityInstances(
       groupActivity: {
         course: {
           id: courseId,
+          deletionRequestedAt: null,
         },
       },
       group: {
@@ -2194,7 +2203,7 @@ export async function getGroupActivitySummary(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: { activityInstances: true },
   })
 
@@ -2219,7 +2228,7 @@ export async function getGradingGroupActivity(
   ctx: ContextWithUser
 ) {
   const groupActivity = await ctx.prisma.groupActivity.findUnique({
-    where: { id },
+    where: { id, course: { deletionRequestedAt: null } },
     include: {
       stacks: { include: { elements: { orderBy: { order: 'asc' } } } },
       activityInstances: {
@@ -2494,7 +2503,7 @@ export async function getCourseGroups(
   ctx: ContextWithUser
 ) {
   const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: courseId, deletionRequestedAt: null },
     include: {
       participantGroups: {
         include: {

@@ -4,10 +4,22 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '@klicker-uzh/util'
 import type { GraphQLObjectType } from 'graphql'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
+
+// Root participant fields require complete account data-use state; refusing
+// both optional purposes is a valid completed state.
+const completedParticipantDataUse = {
+  dataUseAcknowledgedAt: new Date(),
+  dataUseAcknowledgedVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  researchConsentChoiceAt: new Date(),
+  researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+  learningAnalyticsChoiceAt: new Date(),
+  learningAnalyticsDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+}
 
 const fixtureIds = {
   achievementIds: [] as number[],
@@ -53,6 +65,7 @@ async function createFixture() {
       data: {
         username: `receipt-owner-${suffix}`,
         password: 'not-used',
+        ...completedParticipantDataUse,
       },
       select: { id: true },
     }),
@@ -60,6 +73,7 @@ async function createFixture() {
       data: {
         username: `receipt-other-${suffix}`,
         password: 'not-used',
+        ...completedParticipantDataUse,
       },
       select: { id: true },
     }),

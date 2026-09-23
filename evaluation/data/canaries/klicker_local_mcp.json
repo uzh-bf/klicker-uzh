@@ -1,0 +1,7 @@
+{
+  "source": "canary",
+  "question": "Use the local MCP tool to test the integration. Search for `portfolio diversification` and tell me the exact marker it returns.",
+  "mode": "tutor",
+  "expectedTool": "KB_doc_query",
+  "maxStreamBytes": 1000000
+}

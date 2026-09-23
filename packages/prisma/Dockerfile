@@ -11,7 +11,14 @@
 #
 # Prisma version MUST stay in sync with `packages/prisma` devDependency `prisma`.
 # Base image pinned to match apps/backend-docker/Dockerfile for reproducibility.
-FROM node:24.16.0-alpine
+FROM node:24.21.0-alpine
+
+# See apps/backend-docker/Dockerfile: the pinned Node tag ships Alpine packages
+# and an npm whose vendored dependency tree carry fixable HIGH/CRITICAL
+# advisories, and "apk add" cannot upgrade a package the base image already
+# installed.
+RUN apk upgrade --no-cache \
+ && npm i -g --ignore-scripts npm@11.19.1
 
 # Prisma engine binaries on Alpine (musl) need libc6-compat + openssl.
 RUN apk add --no-cache libc6-compat openssl
@@ -19,7 +26,19 @@ RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 # Install runs @prisma/engines postinstall → downloads the schema (migration) engine.
-RUN npm install prisma@7.8.0
+#
+# Prisma 7.8.0 depends on mysql2 3.15.3 and @prisma/config on deepmerge-ts 7.1.5,
+# both below their published advisory fixes, and no Prisma release carries the
+# fixed versions yet. npm overrides pin them for this standalone install, so the
+# overrides file is written before the install runs.
+RUN printf '%s\n' \
+      '{"private":true,"overrides":{"mysql2":"3.22.0","deepmerge-ts":"8.0.0"}}' \
+      > package.json
+
+# The pin stays on its own `RUN npm install prisma@` line because
+# util/check-prisma-sync.sh reads it from there and fails when it drifts from the
+# packages/prisma devDependency.
+RUN npm install prisma@7.8.0 --no-package-lock --no-audit --no-fund
 
 # Prisma 7 keeps the datasource URL out of the schema: prisma.config.ts supplies it
 # from DATABASE_URL and points at the schema/migrations paths (relative to /app).

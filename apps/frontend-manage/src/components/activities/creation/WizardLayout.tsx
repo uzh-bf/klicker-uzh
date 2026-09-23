@@ -5,6 +5,8 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2, Workflow } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { createContext, useContext } from 'react'
+import RecoveryPrompt from '../../elements/manipulation/RecoveryPrompt'
 
 export type GroupActivityClueFormValues = {
   name: string
@@ -110,6 +112,18 @@ export type CreationFormValues =
   | PracticeQuizFormValues
   | GroupActivityFormValues
 
+// Close-guard context: lets the shared cancel button know whether the wizard
+// holds unsaved data. The completion screen forces the guard clean so the
+// post-submit cancel never asks for confirmation over already-saved data.
+const WizardCloseGuardContext = createContext<{
+  isDirty: () => boolean
+  forceClean: boolean
+}>({ isDirty: () => false, forceClean: false })
+
+export function useWizardCloseGuard() {
+  return useContext(WizardCloseGuardContext)
+}
+
 interface WizardLayoutProps {
   title: string
   editMode: boolean
@@ -125,6 +139,10 @@ interface WizardLayoutProps {
   steps: React.ReactElement[]
   isCompleted: boolean
   saveFormData: () => void
+  isDirty: () => boolean
+  recoveryAvailable?: boolean
+  onRecover?: () => void
+  onDiscardRecovery?: () => void
 }
 
 function WizardLayout({
@@ -138,37 +156,56 @@ function WizardLayout({
   steps,
   isCompleted,
   saveFormData,
+  isDirty,
+  recoveryAvailable = false,
+  onRecover,
+  onDiscardRecovery,
 }: WizardLayoutProps) {
   const t = useTranslations()
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className="flex h-6 flex-row items-end gap-8">
-        <H2 className={{ root: 'm-0 flex flex-none items-end' }}>
-          {editMode
-            ? t('manage.elements.editElement', { element: title })
-            : t('manage.elements.createElement', { element: title })}
-        </H2>
-        <Workflow
-          minimal
-          showTooltipSymbols
-          items={workflowItems}
-          onClick={(_, ix) => {
-            saveFormData()
-            setActiveStep(ix)
-          }}
-          activeIx={activeStep}
-          disabledFrom={disabledFrom}
-          className={{
-            item: 'hidden first:rounded-l-md last:rounded-r-md md:flex',
-          }}
-        />
-      </div>
+      <WizardCloseGuardContext.Provider
+        value={{ isDirty, forceClean: isCompleted }}
+      >
+        <div className="flex h-6 flex-row items-end gap-8">
+          <H2 className={{ root: 'm-0 flex flex-none items-end' }}>
+            {editMode
+              ? t('manage.elements.editElement', { element: title })
+              : t('manage.elements.createElement', { element: title })}
+          </H2>
+          <Workflow
+            minimal
+            showTooltipSymbols
+            items={workflowItems}
+            onClick={(_, ix) => {
+              saveFormData()
+              setActiveStep(ix)
+            }}
+            activeIx={activeStep}
+            disabledFrom={disabledFrom}
+            className={{
+              item: 'hidden first:rounded-l-md last:rounded-r-md md:flex',
+            }}
+          />
+        </div>
 
-      <div className="flex h-full w-full flex-1 flex-col justify-between gap-1 pt-4">
-        {!isCompleted && steps[activeStep]}
-        {isCompleted && completionStep}
-      </div>
+        <div className="flex h-full w-full flex-1 flex-col justify-between gap-1 pt-4">
+          {!isCompleted && steps[activeStep]}
+          {isCompleted && completionStep}
+        </div>
+        {recoveryAvailable && (
+          <RecoveryPrompt
+            onRecovery={() => onRecover?.()}
+            onDiscard={() => onDiscardRecovery?.()}
+            message={t(
+              editMode
+                ? 'manage.activityWizard.temporaryStorageEditing'
+                : 'manage.activityWizard.temporaryStorageCreation'
+            )}
+          />
+        )}
+      </WizardCloseGuardContext.Provider>
     </div>
   )
 }

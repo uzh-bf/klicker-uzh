@@ -1,7 +1,10 @@
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@klicker-uzh/prisma/client'
+import {
+  createDisposableTestPrismaClient,
+  requireDisposableDatabase,
+} from '@klicker-uzh/prisma'
+import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import bcrypt from 'bcryptjs'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
@@ -95,8 +98,7 @@ const testDescribe = isDisposableDatabase(DATABASE_URL)
   : describe.skip
 
 testDescribe('seed demo participants', () => {
-  const adapter = new PrismaPg({ connectionString: DATABASE_URL })
-  const prisma = new PrismaClient({ adapter })
+  let prisma: PrismaClient
   let ownerId = ''
   let fixtureInitialized = false
   const courseIds = new Map<string, string>()
@@ -113,6 +115,7 @@ testDescribe('seed demo participants', () => {
   }
 
   const cleanupCreatedParticipants = async () => {
+    await requireDisposableDatabase(prisma)
     if (createdParticipantIds.size === 0) return
 
     await prisma.participant.deleteMany({
@@ -122,6 +125,7 @@ testDescribe('seed demo participants', () => {
   }
 
   beforeAll(async () => {
+    prisma = await createDisposableTestPrismaClient(DATABASE_URL!)
     const [existingOwnerCount, existingParticipantCount] = await Promise.all([
       prisma.user.count({ where: { shortname: 'klick' } }),
       prisma.participant.count({ where: { username: { in: USERNAMES } } }),
@@ -168,10 +172,13 @@ testDescribe('seed demo participants', () => {
   })
 
   afterEach(async () => {
+    if (!prisma) return
     await rememberCreatedParticipants()
   })
 
   afterAll(async () => {
+    if (!prisma) return
+    await requireDisposableDatabase(prisma)
     if (fixtureInitialized) {
       await rememberCreatedParticipants()
       await cleanupCreatedParticipants()

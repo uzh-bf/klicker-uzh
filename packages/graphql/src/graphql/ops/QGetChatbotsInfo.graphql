@@ -5,6 +5,10 @@ query GetChatbotsInfo {
     description
     avatar
     status
+    publicationUseCase
+    expectedStudentCount
+    reviewComment
+    publishedAt
     modelSelection
     allowedModelIds
     allowedReasoningEffortsByModel {
@@ -33,6 +37,7 @@ query GetChatbotsInfo {
       id
       name
       title
+      introText
       acceptedCount
       declinedCount
       pendingCount

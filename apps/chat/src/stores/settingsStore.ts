@@ -1,12 +1,9 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
-import {
-  hasConfiguredModeDescriptions,
-  resolveModeDescriptions,
-  resolveSelectedMode,
-} from '../lib/config/modes'
+import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
 export interface ModeOption {
@@ -18,6 +15,9 @@ const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
 let creditsRequestGeneration = 0
 let creditsLoadedChatbotId: string | null = null
 let modeOptionsRequestGeneration = 0
+const SAFE_FALLBACK_MODE_OPTIONS = {
+  tutor: DEFAULT_MODE_DESCRIPTIONS.tutor,
+}
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -72,7 +72,6 @@ interface SettingsState {
   modelOptions: ModelOption[]
   modeOptions: Record<string, string>
   modeOptionsChatbotId: string | null
-  modeOptionsAreFallback: boolean
 
   // Actions
   setSelectedModel: (model: ModelID) => void
@@ -80,8 +79,7 @@ interface SettingsState {
   setSelectedReasoningEffort: (effort: ReasoningEffort) => void
   loadModeOptions: (
     chatbotId: string,
-    initialModeOptions?: Record<string, string>,
-    initialModeOptionsAreFallback?: boolean
+    initialModeOptions?: Record<string, string>
   ) => Promise<void>
   loadCredits: (chatbotId: string) => Promise<void>
   decrementCredits: (amount: number) => void
@@ -104,7 +102,6 @@ export const useSettingsStore = create<SettingsState>()(
       modelSelectionEnabled: false,
       modeOptions: {},
       modeOptionsChatbotId: null,
-      modeOptionsAreFallback: true,
 
       // available options
       modelOptions: [],
@@ -140,23 +137,26 @@ export const useSettingsStore = create<SettingsState>()(
 
       loadModeOptions: async (
         chatbotId: string,
-        initialModeOptions?: Record<string, string>,
-        initialModeOptionsAreFallback = false
+        initialModeOptions?: Record<string, string>
       ) => {
         const requestGeneration = ++modeOptionsRequestGeneration
-        const hasInitialModeOptions = !!(
-          initialModeOptions && Object.keys(initialModeOptions).length > 0
-        )
+        const hasInitialModeOptions = initialModeOptions !== undefined
         const fallbackModeOptions = hasInitialModeOptions
           ? initialModeOptions
-          : resolveModeDescriptions(null)
-        const fallbackModeOptionsAreFallback = hasInitialModeOptions
-          ? initialModeOptionsAreFallback
-          : true
+          : SAFE_FALLBACK_MODE_OPTIONS
+        const applyFallbackModeOptions = () =>
+          set((state) => ({
+            modeOptions: fallbackModeOptions,
+            modeOptionsChatbotId: chatbotId,
+            selectedMode: resolveSelectedMode(
+              fallbackModeOptions,
+              state.selectedMode
+            ),
+            modelSelectionEnabled: false,
+          }))
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
-          modeOptionsAreFallback: true,
           modelSelectionEnabled: false,
         })
 
@@ -167,34 +167,23 @@ export const useSettingsStore = create<SettingsState>()(
 
           if (!response.ok) {
             console.warn(
-              'No valid mode options found, falling back to defaults.'
+              'No valid mode options found, falling back to initial or default mode options.'
             )
-            set((state) => ({
-              modeOptions: fallbackModeOptions,
-              modeOptionsChatbotId: chatbotId,
-              modeOptionsAreFallback: fallbackModeOptionsAreFallback,
-              selectedMode: resolveSelectedMode(
-                fallbackModeOptions,
-                state.selectedMode
-              ),
-              modelSelectionEnabled: false,
-            }))
+            applyFallbackModeOptions()
             return
           }
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
 
-          const resolvedModeOptions = resolveModeDescriptions(
-            responseData.systemPrompts
-          )
+          const resolvedModeOptions = parseModeOptions(responseData.modeOptions)
+          if (!resolvedModeOptions) {
+            throw new Error('Invalid mode options response')
+          }
 
           set((state) => {
             return {
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
-              modeOptionsAreFallback: !hasConfiguredModeDescriptions(
-                responseData.systemPrompts
-              ),
               modelSelectionEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,
@@ -206,16 +195,7 @@ export const useSettingsStore = create<SettingsState>()(
           console.error('Error fetching mode options:', error)
           if (requestGeneration !== modeOptionsRequestGeneration) return
 
-          set((state) => ({
-            modeOptions: fallbackModeOptions,
-            modeOptionsChatbotId: chatbotId,
-            modeOptionsAreFallback: fallbackModeOptionsAreFallback,
-            selectedMode: resolveSelectedMode(
-              fallbackModeOptions,
-              state.selectedMode
-            ),
-            modelSelectionEnabled: false,
-          }))
+          applyFallbackModeOptions()
         }
       },
 

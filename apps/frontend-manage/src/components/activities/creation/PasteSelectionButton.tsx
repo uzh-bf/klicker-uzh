@@ -55,7 +55,7 @@ function PasteSelectionButton({
         })
         resetSelection?.()
       }}
-      data={{ cy: 'paste-selected-questions' }}
+      data={{ cy: 'add-selection-to-existing-container' }}
     >
       <Button.Icon icon={faBars} />
       <Button.Label>

@@ -257,6 +257,11 @@ async function openActivityEditView(
   await page.waitForTimeout(1000)
 }
 
+async function discardActivityEdit(page: Page) {
+  await page.getByTestId('cancel-activity-creation').click()
+  await page.getByTestId('discard-activity-creation').click()
+}
+
 async function expectUpdateButtons(
   page: Page,
   {
@@ -608,7 +613,7 @@ test.describe('Create different types of elements (with and without sample solut
         'update-element-2-block-1',
       ],
     })
-    await page.getByTestId('cancel-activity-creation').click()
+    await discardActivityEdit(page)
 
     for (const [type, name] of [
       ['PRACTICE_QUIZ', data.instanceUpdates.practiceQuizName],
@@ -638,7 +643,7 @@ test.describe('Create different types of elements (with and without sample solut
           'update-element-2-stack-1',
         ],
       })
-      await page.getByTestId('cancel-activity-creation').click()
+      await discardActivityEdit(page)
     }
 
     await openActivityEditView(page, {
@@ -669,7 +674,7 @@ test.describe('Create different types of elements (with and without sample solut
         'update-element-5-stack-0',
       ],
     })
-    await page.getByTestId('cancel-activity-creation').click()
+    await discardActivityEdit(page)
   })
 
   test('Update the multiple choice question and update all outdated instances in all activities', async ({

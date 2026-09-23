@@ -68,6 +68,23 @@ export const CourseDuplicationStatus = builder.objectType(
   }
 )
 
+export interface ICourseDeletionRequestPayload {
+  courseId: string
+}
+
+export const CourseDeletionRequestPayloadRef =
+  builder.objectRef<ICourseDeletionRequestPayload>(
+    'CourseDeletionRequestPayload'
+  )
+export const CourseDeletionRequestPayload = builder.objectType(
+  CourseDeletionRequestPayloadRef,
+  {
+    fields: (t) => ({
+      courseId: t.exposeID('courseId'),
+    }),
+  }
+)
+
 export interface ICourse extends DB.Course {
   numOfParticipants?: number
   numOfParticipantGroups?: number

@@ -1,5 +1,6 @@
 import { ElementStatus } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import optionLabel from './optionLabel'
 
 function useStatusOptions() {
   const t = useTranslations()
@@ -7,7 +8,12 @@ function useStatusOptions() {
   return [
     {
       value: ElementStatus.Draft,
-      label: t(`shared.${ElementStatus.Draft}.statusLabel`),
+      label: optionLabel(
+        t(`shared.${ElementStatus.Draft}.statusLabel`),
+        t(`shared.${ElementStatus.Draft}.statusDescription`)
+      ),
+      shortLabel: t(`shared.${ElementStatus.Draft}.statusLabel`),
+      description: t(`shared.${ElementStatus.Draft}.statusDescription`),
       data: {
         cy: `select-question-status-${t(
           `shared.${ElementStatus.Draft}.statusLabel`
@@ -16,7 +22,12 @@ function useStatusOptions() {
     },
     {
       value: ElementStatus.Review,
-      label: t(`shared.${ElementStatus.Review}.statusLabel`),
+      label: optionLabel(
+        t(`shared.${ElementStatus.Review}.statusLabel`),
+        t(`shared.${ElementStatus.Review}.statusDescription`)
+      ),
+      shortLabel: t(`shared.${ElementStatus.Review}.statusLabel`),
+      description: t(`shared.${ElementStatus.Review}.statusDescription`),
       data: {
         cy: `select-question-status-${t(
           `shared.${ElementStatus.Review}.statusLabel`
@@ -25,7 +36,12 @@ function useStatusOptions() {
     },
     {
       value: ElementStatus.Ready,
-      label: t(`shared.${ElementStatus.Ready}.statusLabel`),
+      label: optionLabel(
+        t(`shared.${ElementStatus.Ready}.statusLabel`),
+        t(`shared.${ElementStatus.Ready}.statusDescription`)
+      ),
+      shortLabel: t(`shared.${ElementStatus.Ready}.statusLabel`),
+      description: t(`shared.${ElementStatus.Ready}.statusDescription`),
       data: {
         cy: `select-question-status-${t(
           `shared.${ElementStatus.Ready}.statusLabel`

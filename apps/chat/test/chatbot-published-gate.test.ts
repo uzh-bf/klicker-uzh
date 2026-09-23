@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
+  participationFindUnique: vi.fn(),
+  jwtVerify: vi.fn(),
 }))
 
 vi.mock('@klicker-uzh/prisma', () => ({
@@ -9,10 +11,20 @@ vi.mock('@klicker-uzh/prisma', () => ({
     chatbot: {
       findUnique: mocks.findUnique,
     },
+    participation: {
+      findUnique: mocks.participationFindUnique,
+    },
   },
 }))
 
-import { getChatbotOr404 } from '../src/lib/server/apiGuards'
+vi.mock('jose', () => ({
+  jwtVerify: mocks.jwtVerify,
+}))
+
+import {
+  getChatbotOr404,
+  withChatbotTokenAuth,
+} from '../src/lib/server/apiGuards'
 
 // A syntactically valid UUID so the guard proceeds to the DB lookup.
 const VALID_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -20,6 +32,8 @@ const VALID_ID = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
 describe('getChatbotOr404 publication gate', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.jwtVerify.mockResolvedValue({ payload: { sub: 'participant-1' } })
+    mocks.participationFindUnique.mockResolvedValue({ isActive: false })
   })
 
   test('returns the chatbot when it is PUBLISHED', async () => {
@@ -102,5 +116,71 @@ describe('getChatbotOr404 publication gate', () => {
       expect(result.response.status).toBe(404)
     }
     expect(mocks.findUnique).not.toHaveBeenCalled()
+  })
+
+  test('authorizes an inactive participation because isActive is not access control', async () => {
+    mocks.findUnique.mockResolvedValue({
+      courseId: 'course-1',
+      status: 'PUBLISHED',
+    })
+
+    const result = await withChatbotTokenAuth('valid-token', VALID_ID)
+
+    expect(result).toMatchObject({
+      participantId: 'participant-1',
+      chatbot: { courseId: 'course-1' },
+    })
+    expect(mocks.participationFindUnique).toHaveBeenCalledWith({
+      where: {
+        courseId_participantId: {
+          courseId: 'course-1',
+          participantId: 'participant-1',
+        },
+      },
+      select: { id: true },
+    })
+  })
+
+  test('rejects a participant without a participation row', async () => {
+    mocks.findUnique.mockResolvedValue({
+      courseId: 'course-1',
+      status: 'PUBLISHED',
+    })
+    mocks.participationFindUnique.mockResolvedValue(null)
+
+    const result = await withChatbotTokenAuth('valid-token', VALID_ID)
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(403)
+    }
+  })
+
+  test('rejects a missing participant token before database access', async () => {
+    const result = await withChatbotTokenAuth(undefined, VALID_ID)
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(401)
+    }
+    expect(mocks.findUnique).not.toHaveBeenCalled()
+    expect(mocks.participationFindUnique).not.toHaveBeenCalled()
+  })
+
+  test('rejects an invalid participant token before database access', async () => {
+    mocks.jwtVerify.mockRejectedValue(new Error('invalid token'))
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+
+    const result = await withChatbotTokenAuth('invalid-token', VALID_ID)
+
+    expect('response' in result).toBe(true)
+    if ('response' in result) {
+      expect(result.response.status).toBe(401)
+    }
+    expect(mocks.findUnique).not.toHaveBeenCalled()
+    expect(mocks.participationFindUnique).not.toHaveBeenCalled()
+    consoleError.mockRestore()
   })
 })

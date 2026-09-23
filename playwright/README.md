@@ -23,6 +23,17 @@ Run from a host shell at the repository root. The launcher starts or reconciles
 the exact devrouter workspace, resolves its namespaced routes and database, and
 keeps the Playwright process and browser binaries on the host.
 
+Install Devrouter on the host; it is not a workspace dependency. The launcher
+ignores `node_modules` executable directories, reports the selected absolute
+path and version, and rejects a CLI older than `.devrouter.yml` before runtime
+reconciliation. When multiple global installations exist, set
+`KLICKER_DEVROUTER_BIN` to the intended executable's absolute path. It never
+installs or upgrades the host CLI automatically.
+
+CI installs its reviewed Devrouter release separately for read-only profile
+planning. It continues to run Playwright in the official container without
+starting Devrouter infrastructure.
+
 ```bash
 # run all Chromium tests
 pnpm playwright:host -- --project=chromium
@@ -37,6 +48,24 @@ pnpm playwright:host -- --print-env
 Direct local `playwright test` calls fail before database cleanup. Never run
 Playwright or install its browsers inside the devcontainer. GitHub Actions keeps
 using the official Playwright container directly.
+
+## Fast local iterations
+
+Explicit spec paths automatically select the union of their entries in
+`profiles.json`. Broad runs and filters that cannot be resolved safely use the
+`playwright` runtime profile, which excludes optional AI and email services.
+Override inference with `--runtime-profile` before Playwright arguments.
+Applying a profile reconciles the runtime downward: services outside the
+selected profile (for example LiteLLM, MailHog or the local MCP process) are
+stopped, so pass `--runtime-profile` explicitly when you need them running.
+
+Use one worker per runtime: specs share seeded identities and database-wide resets.
+Concurrent shards require separate worktrees and complete isolated runtimes,
+including PostgreSQL, Redis, Hatchet and report directories. A second browser
+worker or a cloned database alone does not provide that isolation.
+
+Normal runs clean and seed the synthetic database. `--preserve-database` is only
+for debugging an existing baseline; it is not clean-run acceptance evidence.
 
 ## Useful commands
 

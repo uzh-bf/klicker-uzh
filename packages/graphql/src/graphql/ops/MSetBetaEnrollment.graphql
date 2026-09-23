@@ -1,0 +1,7 @@
+mutation SetBetaEnrollment($enabled: Boolean!) {
+  setBetaEnrollment(enabled: $enabled) {
+    mayChange
+    membership
+    signupAvailable
+  }
+}
