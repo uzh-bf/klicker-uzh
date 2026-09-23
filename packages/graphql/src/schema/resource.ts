@@ -613,3 +613,47 @@ export const Chatbot = ChatbotRef.implement({
 })
 
 // #endregion
+
+interface IChatbotPublicationTool {
+  serverName: string
+  chatMode: string
+  enabled: boolean
+  allowedTools: string[] | null
+}
+
+const ChatbotPublicationTool = builder
+  .objectRef<IChatbotPublicationTool>('ChatbotPublicationTool')
+  .implement({
+    fields: (t) => ({
+      serverName: t.exposeString('serverName'),
+      chatMode: t.exposeString('chatMode'),
+      enabled: t.exposeBoolean('enabled'),
+      allowedTools: t.exposeStringList('allowedTools', { nullable: true }),
+    }),
+  })
+
+// Review-only owner information is reachable through the ADMIN query, never
+// through the owner-facing Chatbot type or participant-facing projections.
+export const ChatbotPublicationReview = builder
+  .objectRef<{
+    chatbot: IChatbot
+    tools: IChatbotPublicationTool[]
+    ownerShortname: string
+    ownerEmail: string
+    ownerPublishingEnabled: boolean
+    disclaimerTitle: string | null
+    disclaimerIntroText: string | null
+  }>('ChatbotPublicationReview')
+  .implement({
+    fields: (t) => ({
+      chatbot: t.expose('chatbot', { type: Chatbot }),
+      tools: t.expose('tools', { type: [ChatbotPublicationTool] }),
+      ownerShortname: t.exposeString('ownerShortname'),
+      ownerEmail: t.exposeString('ownerEmail'),
+      ownerPublishingEnabled: t.exposeBoolean('ownerPublishingEnabled'),
+      disclaimerTitle: t.exposeString('disclaimerTitle', { nullable: true }),
+      disclaimerIntroText: t.exposeString('disclaimerIntroText', {
+        nullable: true,
+      }),
+    }),
+  })
