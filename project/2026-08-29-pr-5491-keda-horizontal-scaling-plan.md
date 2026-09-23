@@ -53,8 +53,10 @@ Figures are aggregates for Klicker workloads; they contain no participant data.
 
 Klicker uses no autoscaling or spot capacity in either cluster. The production
 values set every `autoscaling.enabled` to `false`. The temporary replica
-increase from `deploy/scaling-plan-2026-09.md` has been live since about
-2026-09-08, well past its 72-hour window, and has no restore commit.
+increase from
+`project/2026-09-08-capacity-increase-and-resource-sizing-plan.md` has been
+live since about 2026-09-08, well past its 72-hour window, and has no restore
+commit.
 
 Retail prices in Switzerland North are about $159.9 per month for an on-demand
 D4ps_v6 node and $29.5 for the same node on spot. Each regular node that
@@ -1433,7 +1435,7 @@ replica-ownership package W0 and the dependent worker-runtime package W1.
 - **Route:** `main` drafts the values change from the 2026-09-23 evidence;
   `executor` may apply the bounded values edit once the numbers are approved.
 - **Acceptance:** Production replicas return to the normal counts in
-  `deploy/scaling-plan-2026-09.md`. CPU requests follow the rule below. The
+  `project/2026-09-08-capacity-increase-and-resource-sizing-plan.md`. CPU requests follow the rule below. The
   MCP memory requests and limits cover their VPA upper bounds. The rendered
   chart passes the replica-ownership check and Helm lint. A follow-up read
   shows no Pending Pods and no OOM kills for seven days.
