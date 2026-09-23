@@ -1703,6 +1703,38 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextPage: 'Nächste',
     },
     admin: {
+      chatbotRejectionReason: 'Grund für die Ablehnung',
+      chatbotRejectConsequence:
+        'Der Besitzer sieht diesen Grund und kann den Chatbot überarbeiten und erneut zur Freigabe einreichen.',
+      chatbotReject: 'Antrag ablehnen',
+      chatbotRejected:
+        '«{name}» wurde abgelehnt. Der Besitzer kann ihn überarbeiten und erneut einreichen.',
+      chatbotRejectionError:
+        'Die Ablehnung konnte nicht bestätigt werden. Aktualisieren Sie die Liste und prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
+      chatbotAllTools: 'Alle Werkzeuge',
+      chatbotDefaultReasoning: 'Alle vom Modell unterstützten Reasoning-Stufen',
+      adminOnly: 'Diese Seite ist nur für Administratoren verfügbar.',
+      chatbotApprovals: 'Chatbot-Freigaben',
+      chatbotApprovalsDescription:
+        'Prüfen Sie ausstehende Veröffentlichungsanträge. Öffnen Sie einen Chatbot, um seine Konfiguration vor der Freigabe für Teilnehmende zu prüfen.',
+      chatbotOwner: 'Besitzer',
+      chatbotAccountApproval: 'Veröffentlichungsberechtigung des Kontos',
+      chatbotAccountApproved: 'Freigegeben',
+      chatbotAccountNotApproved: 'Nicht freigegeben',
+      chatbotConnectedTools: 'Verbundene Werkzeuge',
+      chatbotNoConnectedTools: 'Keine verbundenen Werkzeuge.',
+      chatbotRefresh: 'Anträge aktualisieren',
+      chatbotQueueEmpty: 'Keine Chatbots warten auf eine Freigabe.',
+      chatbotQueueError:
+        'Veröffentlichungsanträge konnten nicht geladen werden. Aktualisieren Sie die Liste, um es erneut zu versuchen.',
+      chatbotOwnerBlocked:
+        'Der Besitzer ist derzeit nicht zur Veröffentlichung von Chatbots berechtigt. Das Konto muss zuerst freigegeben werden.',
+      chatbotApproveConsequence:
+        'Die Freigabe veröffentlicht diesen Chatbot sofort für Teilnehmende seines Kurses. Die Nutzungsbudgets des Kontos bleiben unverändert.',
+      chatbotApprove: 'Freigeben und veröffentlichen',
+      chatbotPublished: '«{name}» wurde veröffentlicht.',
+      chatbotApprovalError:
+        'Die Veröffentlichung konnte nicht bestätigt werden. Die Antragsliste wurde aktualisiert; prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
       pageName: 'Admin-Panel',
       privatePreviewAvailability: 'Verfügbarkeit: Private Features',
       privatePreviewDescription:

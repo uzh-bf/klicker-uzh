@@ -794,6 +794,23 @@ type ChatbotPublic {
   name: String!
 }
 
+type ChatbotPublicationReview {
+  chatbot: Chatbot!
+  disclaimerIntroText: String
+  disclaimerTitle: String
+  ownerEmail: String!
+  ownerPublishingEnabled: Boolean!
+  ownerShortname: String!
+  tools: [ChatbotPublicationTool!]!
+}
+
+type ChatbotPublicationTool {
+  allowedTools: [String!]
+  chatMode: String!
+  enabled: Boolean!
+  serverName: String!
+}
+
 type ChatbotReasoningConfig {
   efforts: [String!]!
   modelId: String!
@@ -2719,6 +2736,7 @@ type Query {
   getObjectPermissions(objectId: String!, objectType: ObjectType!): PermissionsList
   getOutdatedElementInstances(instanceIds: [Int!]!): [ElementInstanceVersionInfo!]
   getParticipation(courseId: String!): Participation
+  getPendingChatbotPublications: [ChatbotPublicationReview!]!
   getPracticeCourses: [Course!]
   getPracticeQuizEvaluation(id: String!): ActivityEvaluation
   getPracticeQuizList: [CourseOverview!]
