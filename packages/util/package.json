@@ -84,6 +84,10 @@
     "./response-example-runtime": {
       "types": "./dist/responseExampleRuntime.d.ts",
       "default": "./dist/responseExampleRuntime.js"
+    },
+    "./chatbot-custom-mode-limits": {
+      "types": "./dist/chatbotCustomModeLimits.d.ts",
+      "default": "./dist/chatbotCustomModeLimits.js"
     }
   },
   "type": "module"

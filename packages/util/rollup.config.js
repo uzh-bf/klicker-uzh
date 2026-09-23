@@ -18,6 +18,7 @@ const config = defineConfig([
       'src/responseExampleDigest.ts',
       'src/responseExampleEligibility.ts',
       'src/responseExampleRuntime.ts',
+      'src/chatbotCustomModeLimits.ts',
     ],
     output: {
       dir: 'dist',
