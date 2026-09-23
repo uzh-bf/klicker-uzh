@@ -76,6 +76,39 @@ describe('KB knowledge graph config', () => {
     expect(result.elementGenerationReady).toBe(true)
   })
 
+  it.each([
+    { direction: 'raised', grantedLimit: 900, effectiveLimit: 1000 },
+    { direction: 'equal', grantedLimit: 1000, effectiveLimit: 1000 },
+    { direction: 'lowered', grantedLimit: 1200, effectiveLimit: 1200 },
+  ])('stays ready and reports the effective limit when the configured quota is $direction', ({
+    grantedLimit,
+    effectiveLimit,
+  }) => {
+    const costConfiguration = getKBGraphCostConfiguration(costEnv)
+    const result = getKBGraphBuildConfig(
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        knowledgeGraphEnabled: true,
+        activeGraphBuildId: null,
+        publishedGraphBuildId: build.id,
+      },
+      build,
+      false,
+      {
+        currency: 'CHF',
+        limitMinorUnits: grantedLimit,
+        reservedMinorUnits: 100,
+        settledMinorUnits: 50,
+      },
+      costConfiguration,
+      true
+    )
+
+    expect(result.costConfigurationReady).toBe(true)
+    expect(result.semesterQuotaMinorUnits).toBe(effectiveLimit)
+    expect(result.remainingSemesterQuotaMinorUnits).toBe(effectiveLimit - 150)
+  })
+
   it('reports a legacy all-null build without any domain selection', () => {
     const costConfiguration = getKBGraphCostConfiguration(costEnv)
     const result = getKBGraphBuildConfig(
