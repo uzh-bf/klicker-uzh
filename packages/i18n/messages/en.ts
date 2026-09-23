@@ -1855,6 +1855,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       '{count, plural, =0 {No knowledge bases} one {# knowledge base} other {# knowledge bases}}',
     catalogMetrics:
       '{resources, plural, one {# resource} other {# resources}} · {chatbots, plural, one {# connected chatbot} other {# connected chatbots}}',
+    catalogDomain: 'Subject area: {domain} · Language: {language}',
+    materialsReadinessNone: 'Chatbot materials: none added yet',
+    materialsReadinessAvailable:
+      'Chatbot materials: {available} of {total} available',
+    materialsReadinessProcessing: '{count} processing',
+    materialsReadinessFailed: '{count} failed',
     loadMore: 'Load more knowledge bases',
     notFound: 'The knowledge base could not be found.',
     detailFallbackTitle: 'Knowledge base',
@@ -2053,6 +2059,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     noLinkedChatbots: 'No chatbot is using this knowledge base.',
     chatbotReplacementWarning:
       'This chatbot currently uses “{kbName}”. Connecting it here replaces that knowledge base.',
+    chatbotLiveChangeWarning:
+      'This chatbot is published. Connecting it here changes its materials for students immediately, without review.',
+    linkedChatbotLiveNote:
+      'Published: disconnecting takes effect for students immediately.',
     chatbotAttachSuccess: 'Chatbot connected to the knowledge base.',
     chatbotAttachError: 'The chatbot could not be connected.',
     chatbotDetachSuccess: 'Chatbot disconnected from the knowledge base.',
@@ -4924,6 +4934,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'One active knowledge base is currently supported here.',
       chatbotKnowledgeEmptyDescription:
         'The chatbot can still be used without course-material retrieval.',
+      chatbotKnowledgeNextDisclaimer:
+        'Next, review and save the student information under Disclaimer. It is required before you can request publication.',
+      chatbotKnowledgeOpenDisclaimer: 'Open Disclaimer',
       chatbotKnowledgeManagementLink:
         'Manage documents, ingestion, and knowledge-base readiness in Knowledge Bases.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Choose a knowledge base',
@@ -5075,6 +5088,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotPublication: 'Publication request',
       chatbotPublicationDescription:
         'Provide the information needed for the team to review this chatbot before publication.',
+      chatbotPublicationSavedNotVisible:
+        'Saved changes are not visible to students until publication is approved.',
+      chatbotPublicationPublishedStaysLive:
+        'The published version stays live for students while changes are saved, reviewed, rejected or withdrawn.',
       chatbotPublicationUseCase: 'Use case',
       chatbotPublicationUseCaseRequired: 'Describe the intended use case.',
       chatbotPublicationUseCaseTooLong:
@@ -5160,6 +5177,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       linkedCourses: 'Linked Courses',
       linkedCoursesList: 'Linked to: {courses}',
       noLinkedCourses: 'No courses linked yet.',
+      chatbotListKnowledgeBase: 'Materials: {kbName}',
+      chatbotListNoKnowledgeBase: 'No materials connected yet.',
       chatbotStatusDraft: 'Draft',
       chatbotStatusPendingApproval: 'Pending approval',
       chatbotStatusPublished: 'Published',

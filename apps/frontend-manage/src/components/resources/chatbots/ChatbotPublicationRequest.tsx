@@ -107,6 +107,32 @@ function ChatbotPublicationAuthorizationNotice({
   return null
 }
 
+/**
+ * Tells the lecturer whether students currently see anything. A published
+ * chatbot keeps serving its approved version while a revision is saved,
+ * reviewed, rejected or withdrawn; any other chatbot stays invisible until a
+ * publication request is approved.
+ */
+function ChatbotPublicationVisibilityNote({
+  published,
+}: {
+  published: boolean
+}) {
+  const t = useTranslations()
+
+  return (
+    <p
+      className="text-sm text-gray-600"
+      data-cy="chatbot-publication-visibility-note"
+      data-published={published}
+    >
+      {published
+        ? t('manage.resources.chatbotPublicationPublishedStaysLive')
+        : t('manage.resources.chatbotPublicationSavedNotVisible')}
+    </p>
+  )
+}
+
 function ChatbotPublicationReadOnly({ chatbot }: { chatbot: RevisionChatbot }) {
   const t = useTranslations()
   const revisionValues = getChatbotRevisionValues(chatbot)
@@ -232,6 +258,7 @@ function ChatbotPublicationRequest({
     chatbot.status === ChatbotStatus.Rejected ||
     revisionStatus === ChatbotStatus.Rejected
   const reviewComment = getChatbotRevisionReviewComment(chatbot)
+  const published = chatbot.status === ChatbotStatus.Published
 
   const reloadAfterConflict = async () => {
     await reloadRevision()
@@ -267,6 +294,7 @@ function ChatbotPublicationRequest({
     return (
       <div className="space-y-3" data-cy="chatbot-publication-request">
         <ChatbotPublicationReadOnly chatbot={chatbot} />
+        <ChatbotPublicationVisibilityNote published={published} />
         <Button
           type="button"
           loading={withdrawLoading}
@@ -380,6 +408,8 @@ function ChatbotPublicationRequest({
               {t('manage.resources.chatbotPublicationDescription')}
             </p>
           </div>
+
+          <ChatbotPublicationVisibilityNote published={published} />
 
           {rejected && reviewComment ? (
             <UserNotification type="error">

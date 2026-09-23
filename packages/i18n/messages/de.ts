@@ -1870,6 +1870,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       '{count, plural, =0 {Keine Wissensdatenbanken} one {# Wissensdatenbank} other {# Wissensdatenbanken}}',
     catalogMetrics:
       '{resources, plural, one {# Ressource} other {# Ressourcen}} · {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
+    catalogDomain: 'Fachgebiet: {domain} · Sprache: {language}',
+    materialsReadinessNone: 'Chatbot-Materialien: noch keine hinzugefügt',
+    materialsReadinessAvailable:
+      'Chatbot-Materialien: {available} von {total} verfügbar',
+    materialsReadinessProcessing: '{count} in Verarbeitung',
+    materialsReadinessFailed: '{count} fehlgeschlagen',
     loadMore: 'Weitere Wissensdatenbanken laden',
     notFound: 'Die Wissensdatenbank konnte nicht gefunden werden.',
     detailFallbackTitle: 'Wissensdatenbank',
@@ -2080,6 +2086,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     noLinkedChatbots: 'Kein Chatbot verwendet diese Wissensdatenbank.',
     chatbotReplacementWarning:
       'Dieser Chatbot verwendet derzeit „{kbName}“. Durch die Verknüpfung wird diese Wissensdatenbank ersetzt.',
+    chatbotLiveChangeWarning:
+      'Dieser Chatbot ist veröffentlicht. Eine Verknüpfung hier ändert seine Materialien für Studierende sofort und ohne Prüfung.',
+    linkedChatbotLiveNote:
+      'Veröffentlicht: Das Aufheben der Verknüpfung wirkt sich sofort auf Studierende aus.',
     chatbotAttachSuccess: 'Chatbot wurde mit der Wissensdatenbank verknüpft.',
     chatbotAttachError: 'Der Chatbot konnte nicht verknüpft werden.',
     chatbotDetachSuccess: 'Die Verknüpfung des Chatbots wurde aufgehoben.',
@@ -5029,6 +5039,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Hier wird derzeit eine aktive Wissensbasis unterstützt.',
       chatbotKnowledgeEmptyDescription:
         'Der Chatbot kann auch ohne Abruf von Kursmaterialien verwendet werden.',
+      chatbotKnowledgeNextDisclaimer:
+        'Prüfen und speichern Sie als Nächstes die Informationen für Studierende unter Disclaimer. Sie sind für eine Veröffentlichungsanfrage erforderlich.',
+      chatbotKnowledgeOpenDisclaimer: 'Disclaimer öffnen',
       chatbotKnowledgeManagementLink:
         'Verwalten Sie Dokumente, Verarbeitung und Bereitschaft der Wissensbasis unter Wissensbasen.',
       chatbotKnowledgeBaseSelectPlaceholder: 'Wissensdatenbank auswählen',
@@ -5189,6 +5202,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotPublication: 'Veröffentlichungsantrag',
       chatbotPublicationDescription:
         'Geben Sie die Informationen an, die das Team für die Prüfung dieses Chatbots vor der Veröffentlichung benötigt.',
+      chatbotPublicationSavedNotVisible:
+        'Gespeicherte Änderungen sind für Studierende erst sichtbar, wenn die Veröffentlichung freigegeben ist.',
+      chatbotPublicationPublishedStaysLive:
+        'Die veröffentlichte Version bleibt für Studierende aktiv, während Änderungen gespeichert, geprüft, abgelehnt oder zurückgezogen werden.',
       chatbotPublicationUseCase: 'Einsatzbereich',
       chatbotPublicationUseCaseRequired:
         'Bitte beschreiben Sie den vorgesehenen Einsatzbereich.',
@@ -5279,6 +5296,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkedCourses: 'Verknüpfte Kurse',
       linkedCoursesList: 'Verknüpft mit: {courses}',
       noLinkedCourses: 'Noch keine Kurse verknüpft.',
+      chatbotListKnowledgeBase: 'Materialien: {kbName}',
+      chatbotListNoKnowledgeBase: 'Noch keine Materialien verknüpft.',
       chatbotStatusDraft: 'Entwurf',
       chatbotStatusPendingApproval: 'Ausstehende Freigabe',
       chatbotStatusPublished: 'Veröffentlicht',
