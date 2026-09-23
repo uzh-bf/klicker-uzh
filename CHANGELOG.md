@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.83](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.82...v3.4.0-alpha.83) (2026-09-22)
+
+
+### Bug Fixes
+
+* **chat:** keep Tutor starters out of chatbot-defined modes ([#6275](https://github.com/uzh-bf/klicker-uzh/issues/6275)) ([9578d98](https://github.com/uzh-bf/klicker-uzh/commit/9578d98d1697b374c77ea1ad7b7f744eeae489ed))
+* **ci:** defer the staging promotion while a required workflow is still running ([#6242](https://github.com/uzh-bf/klicker-uzh/issues/6242)) ([66ba554](https://github.com/uzh-bf/klicker-uzh/commit/66ba55427d93edf29365a69ed9e383bda5ba010d))
+* **deploy:** correct staging auth limit and lti request sizing ([#6232](https://github.com/uzh-bf/klicker-uzh/issues/6232)) ([2520f69](https://github.com/uzh-bf/klicker-uzh/commit/2520f694164b6711c742dbe1e2ffac7db396a786))
+* **kb:** retire an already-removed graph without failing the sweep ([#6272](https://github.com/uzh-bf/klicker-uzh/issues/6272)) ([dba80bc](https://github.com/uzh-bf/klicker-uzh/commit/dba80bc43078ddac24b299c1da52305df5e56468))
+* **manage:** keep generated draft choices distinct in the review cache ([#6245](https://github.com/uzh-bf/klicker-uzh/issues/6245)) ([9ae0c18](https://github.com/uzh-bf/klicker-uzh/commit/9ae0c18ddc0d8d0808e71e18dfaf0b15a20424bd))
+
+
+### Other
+
+* **kb:** cover the unmetered reservation release sweep ([#6240](https://github.com/uzh-bf/klicker-uzh/issues/6240)) ([14a0b35](https://github.com/uzh-bf/klicker-uzh/commit/14a0b3540e7a9223a5da8a31f95126be089c0ab2))
+
+
+### Documentation
+
+* **project:** correct the W12a rollout status in the KG quality roadmap ([#6266](https://github.com/uzh-bf/klicker-uzh/issues/6266)) ([4ec8bfe](https://github.com/uzh-bf/klicker-uzh/commit/4ec8bfe183350a2a7227c11318de8b1d1464f4d2))
+* **project:** plan the chat citation and KB-transport debt closure ([#6225](https://github.com/uzh-bf/klicker-uzh/issues/6225)) ([b4a4d66](https://github.com/uzh-bf/klicker-uzh/commit/b4a4d669dca88fb68b8d101499cf371deb108697))
+* **project:** record the staging domain and language graph comparison ([#6234](https://github.com/uzh-bf/klicker-uzh/issues/6234)) ([0f9767a](https://github.com/uzh-bf/klicker-uzh/commit/0f9767a522a6380a5d70022989d1732581a4102c))
+
+
+### Enhancements
+
+* **ci:** guard the Doc Query scope-token ownership on v3-ai ([#6263](https://github.com/uzh-bf/klicker-uzh/issues/6263)) ([0e6fea4](https://github.com/uzh-bf/klicker-uzh/commit/0e6fea4e19657172fb6c7f415511fe4951f3a359))
+* **deploy:** bind production KB retrieval to the scoped Doc Query route ([#6251](https://github.com/uzh-bf/klicker-uzh/issues/6251)) ([107265c](https://github.com/uzh-bf/klicker-uzh/commit/107265cc48454ca44f84b73ab1a58b52d21840df))
+* **devcontainer:** add a local OIDC mock so Edu-ID login works in every checkout ([#5976](https://github.com/uzh-bf/klicker-uzh/issues/5976)) ([abbf785](https://github.com/uzh-bf/klicker-uzh/commit/abbf785082f9ffb05ef18bfb6d735efb6483264b))
+* **element-generation:** deliver partial question banks and retry recoverable builds ([#6268](https://github.com/uzh-bf/klicker-uzh/issues/6268)) ([dd716fb](https://github.com/uzh-bf/klicker-uzh/commit/dd716fbae16358f941cf5cbcf1513cf14cfa3edd))
+
 ## [3.4.0-alpha.82](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.81...v3.4.0-alpha.82) (2026-09-22)
 
 
