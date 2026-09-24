@@ -9,6 +9,7 @@ import {
   CHAT_BASE_MODEL_ID,
   getChatModelAutoPolicyIssues,
   getChatModelBasePolicyIssues,
+  getWritingCoachUnavailableReason,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
 } from '@klicker-uzh/util'
@@ -415,6 +416,9 @@ const chatbotOwnerSelect = {
   avatar: true,
   systemPrompts: true,
   standardModeConfig: true,
+  mcpConfigurations: {
+    select: { chatMode: true, isEnabled: true, parameters: true },
+  },
   draftConfig: true,
   modelSelection: true,
   allowedModelIds: true,
@@ -446,6 +450,15 @@ type ChatbotWithOwnerCourse = {
   avatar: string | null
   systemPrompts: unknown
   standardModeConfig: unknown
+  // Required: `shapeChatbotResponse` derives the Writing Coach unavailability
+  // reason from these rows, so a caller that forgets to spread
+  // `chatbotOwnerSelect` fails to compile instead of silently reporting the
+  // mode as available.
+  mcpConfigurations: {
+    chatMode: string
+    isEnabled: boolean
+    parameters: unknown
+  }[]
   modelSelection: boolean
   allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
@@ -523,6 +536,7 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 ) {
   const {
     systemPrompts,
+    mcpConfigurations,
     draftConfig: _draftConfig,
     ...chatbotWithoutSystemPrompts
   } = chatbot
@@ -530,6 +544,8 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(
 
   return {
     ...chatbotWithoutSystemPrompts,
+    writingCoachUnavailableReason:
+      getWritingCoachUnavailableReason(mcpConfigurations),
     standardModeConfig: normalizeChatbotStandardModeConfig(
       chatbot.standardModeConfig,
       systemPrompts
@@ -1251,13 +1267,6 @@ export async function saveChatbotRevision(
     ...(input.modelPolicy
       ? normalizeRevisionModelPolicy(input.modelPolicy)
       : {}),
-    ...(input.standardModeConfig
-      ? {
-          standardModeConfig: parseRevisionStandardModeConfig(
-            input.standardModeConfig
-          ),
-        }
-      : {}),
     ...(input.creditPolicy
       ? normalizeAndValidateCreditPolicy(input.creditPolicy)
       : {}),
@@ -1280,6 +1289,22 @@ export async function saveChatbotRevision(
 
     const current = getRevisionSnapshot(chatbot)
     let next = { ...current, ...patch }
+    // An older client omits writingCoachEnabled; keep the stored choice instead
+    // of silently disabling the mode.
+    if (input.standardModeConfig) {
+      next = {
+        ...next,
+        standardModeConfig: parseRevisionStandardModeConfig({
+          ...input.standardModeConfig,
+          writingCoachEnabled:
+            input.standardModeConfig.writingCoachEnabled ??
+            normalizeChatbotStandardModeConfig(
+              current.standardModeConfig,
+              chatbot.systemPrompts
+            ).writingCoachEnabled,
+        }),
+      }
+    }
     await assertGraphRetrievalTransition(
       ctx,
       chatbot.ownerId,
@@ -1800,6 +1825,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
           isEnabled: true,
           priority: true,
           allowedTools: true,
+          parameters: true,
           mcpServer: {
             select: {
               id: true,
