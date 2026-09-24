@@ -1,9 +1,11 @@
+import { Priority } from '@hatchet-dev/typescript-sdk'
 import {
   getDefaultKBGraphDomainCatalog,
   hashKBContentDigestEntries,
   KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV,
 } from '@klicker-uzh/knowledge-graph'
 import {
+  KBGraphBuildOrigin,
   KBGraphBuildStatus,
   KBGraphQualityTier,
   KBResourceType,
@@ -472,9 +474,13 @@ describe('system-triggered KB graph builds', () => {
     kbDomain?: Record<string, unknown>
     publishedDomain?: Record<string, unknown>
   } = {}) {
-    const create = vi.fn()
+    const create = vi.fn(async ({ data }: { data: { id: string } }) => ({
+      id: data.id,
+    }))
+    const quotaId = '99999999-9999-4999-8999-999999999999'
     const transaction = {
       $queryRaw: vi.fn().mockResolvedValueOnce([{ id: kbId }]),
+      $executeRaw: vi.fn(),
       kB: {
         findUniqueOrThrow: vi.fn().mockResolvedValue({
           id: kbId,
@@ -483,6 +489,22 @@ describe('system-triggered KB graph builds', () => {
           publishedGraphBuildId: publishedBuildId,
           ...kbDomain,
         }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      kBGraphQuota: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValueOnce({ id: quotaId })
+          .mockResolvedValueOnce({
+            id: quotaId,
+            ownerId,
+            semesterKey: costEnv.KB_GRAPH_SEMESTER_KEY,
+            currency: costEnv.KB_GRAPH_COST_CURRENCY,
+            limitMinorUnits: 1000,
+            reservedMinorUnits: 0,
+            settledMinorUnits: 0,
+          }),
+        update: vi.fn(),
       },
       kBResource: {
         findMany: vi.fn().mockResolvedValue([
@@ -601,5 +623,37 @@ describe('system-triggered KB graph builds', () => {
       extensions: { code: 'KB_GRAPH_COST_CONFIGURATION_MISSING' },
     })
     expect(create).not.toHaveBeenCalled()
+  })
+
+  it('records an admitted build as automatic and queues it at low priority', async () => {
+    Object.assign(process.env, costEnv)
+    process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
+      getDefaultKBGraphDomainCatalog().revision
+    const { deps, create } = createDeps({
+      enabledFlags: [
+        'kb-auto-graph-preparation',
+        'kb-graph-builds',
+        'kb-graph-domain-selection',
+      ],
+      publishedDomain: {
+        domainPolicyId: 'mathematics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'English',
+      },
+    })
+
+    await expect(start(deps)).resolves.toMatchObject({ outcome: 'QUEUED' })
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          origin: KBGraphBuildOrigin.SYSTEM,
+          requestedById: ownerId,
+        }),
+      })
+    )
+    expect(deps.tasks.buildKBGraph.runNoWait).toHaveBeenCalledWith(
+      { buildId: expect.any(String) },
+      { priority: Priority.LOW }
+    )
   })
 })
