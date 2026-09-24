@@ -260,6 +260,56 @@ export function deriveKBGraphPreparationTiming(
     candidate.lastResourceChangeAt,
     candidate.graphSettingsChangedAt,
   ])
+  const pendingSinceAt = deriveKBGraphPreparationPendingSince(
+    candidate,
+    reason,
+    now
+  )
+
+  let consecutiveFailures = 0
+  let lastFailedAt: Date | null = null
+  let newestAttempt = true
+  for (const build of candidate.recentBuilds) {
+    if (!sameKBGraphPreparationIdentity(build, desired)) continue
+    if (build.status !== DB.KBGraphBuildStatus.FAILED) break
+    if (newestAttempt) lastFailedAt = build.finishedAt ?? build.updatedAt
+    newestAttempt = false
+    consecutiveFailures += 1
+  }
+  const backoffMs = Math.min(
+    KB_GRAPH_PREPARATION_MAX_BACKOFF_MS,
+    config.failureBackoffMs * 2 ** Math.max(0, consecutiveFailures - 1)
+  )
+
+  return {
+    timing: {
+      now,
+      lastChangeAt,
+      quietPeriodMs: config.quietPeriodMs,
+      pendingSinceAt,
+      maxDeferralMs: config.maxDeferralMs,
+      lastFailedAt,
+      backoffMs,
+    },
+    consecutiveFailures,
+  }
+}
+
+/**
+ * When the currently unmet preparation first became pending, as described for
+ * `deriveKBGraphPreparationTiming`. It needs no schedule policy, so generation
+ * readiness reports the same pending age as the sweep without depending on the
+ * worker's configuration.
+ */
+export function deriveKBGraphPreparationPendingSince(
+  candidate: KBGraphPreparationCandidate,
+  reason: KBGraphPreparationPendingReason,
+  now: Date
+): Date {
+  const lastChangeAt = latest([
+    candidate.lastResourceChangeAt,
+    candidate.graphSettingsChangedAt,
+  ])
 
   const published = candidate.published
   const changeAnchors: Date[] = []
@@ -301,36 +351,7 @@ export function deriveKBGraphPreparationTiming(
     candidate.graphSettingsChangedAt,
     published?.createdAt ?? null,
   ])
-  const pendingSinceAt =
-    latest([earliest(changeAnchors) ?? lastChangeAt, notBefore]) ?? now
-
-  let consecutiveFailures = 0
-  let lastFailedAt: Date | null = null
-  let newestAttempt = true
-  for (const build of candidate.recentBuilds) {
-    if (!sameKBGraphPreparationIdentity(build, desired)) continue
-    if (build.status !== DB.KBGraphBuildStatus.FAILED) break
-    if (newestAttempt) lastFailedAt = build.finishedAt ?? build.updatedAt
-    newestAttempt = false
-    consecutiveFailures += 1
-  }
-  const backoffMs = Math.min(
-    KB_GRAPH_PREPARATION_MAX_BACKOFF_MS,
-    config.failureBackoffMs * 2 ** Math.max(0, consecutiveFailures - 1)
-  )
-
-  return {
-    timing: {
-      now,
-      lastChangeAt,
-      quietPeriodMs: config.quietPeriodMs,
-      pendingSinceAt,
-      maxDeferralMs: config.maxDeferralMs,
-      lastFailedAt,
-      backoffMs,
-    },
-    consecutiveFailures,
-  }
+  return latest([earliest(changeAnchors) ?? lastChangeAt, notBefore]) ?? now
 }
 
 /**
@@ -581,21 +602,23 @@ function skipReasonForStartError(error: unknown): KBGraphPreparationSkipReason {
   }
 }
 
+const SCHEDULED_CANDIDATE_WHERE = {
+  deletedAt: null,
+  // The per-KB opt-in is the operator hold for scheduled preparation.
+  knowledgeGraphEnabled: true,
+  domainPolicyId: { not: null },
+  domainPolicyVersion: { not: null },
+  domainPolicyLanguage: { not: null },
+  resources: { some: SERVING_COURSE_CONTENT_WHERE },
+} satisfies DB.Prisma.KBWhereInput
+
 async function loadCandidatePage(
   prisma: KBGraphBuildServiceContext['prisma'],
-  cursor: string | null
+  cursor: string | null,
+  where: DB.Prisma.KBWhereInput = SCHEDULED_CANDIDATE_WHERE
 ): Promise<KBGraphPreparationCandidate[]> {
   const kbs = await prisma.kB.findMany({
-    where: {
-      deletedAt: null,
-      // The per-KB opt-in is the operator hold for scheduled preparation.
-      knowledgeGraphEnabled: true,
-      domainPolicyId: { not: null },
-      domainPolicyVersion: { not: null },
-      domainPolicyLanguage: { not: null },
-      resources: { some: SERVING_COURSE_CONTENT_WHERE },
-      ...(cursor ? { id: { gt: cursor } } : {}),
-    },
+    where: cursor ? { AND: [where, { id: { gt: cursor } }] } : where,
     select: {
       id: true,
       ownerId: true,
@@ -831,6 +854,26 @@ async function loadCandidatePage(
       recentBuilds: kb.graphBuilds,
     }
   })
+}
+
+/**
+ * Preparation candidates of every KB matching `where`, whether or not
+ * scheduled preparation would consider them, read in the sweep's pages. Each
+ * page costs a fixed number of queries, so readiness for a list of KBs never
+ * issues per-KB reads.
+ */
+export async function loadKBGraphPreparationCandidates(
+  prisma: KBGraphBuildServiceContext['prisma'],
+  where: DB.Prisma.KBWhereInput
+): Promise<KBGraphPreparationCandidate[]> {
+  const candidates: KBGraphPreparationCandidate[] = []
+  let cursor: string | null = null
+  for (;;) {
+    const page = await loadCandidatePage(prisma, cursor, where)
+    candidates.push(...page)
+    if (page.length < KB_GRAPH_PREPARATION_PAGE_SIZE) return candidates
+    cursor = page[page.length - 1]!.kbId
+  }
 }
 
 /**
