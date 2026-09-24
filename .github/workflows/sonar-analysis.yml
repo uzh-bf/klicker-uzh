@@ -50,7 +50,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Check out the analyzed revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -153,7 +153,7 @@ jobs:
         if: >-
           always() && steps.coverage.outputs.decision == 'scan' &&
           steps.scan.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.coverage.outputs.receipt_name }}
           path: sonar-analysis-receipt.json
