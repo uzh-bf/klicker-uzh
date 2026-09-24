@@ -49,6 +49,7 @@ import {
 } from './docQuerySources.js'
 import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
+import { resolveKBGraphQuotaLimit } from './kbGraphQuota.js'
 import {
   getKBGraphRemainingQuota,
   releaseKBGraphCostReservation,
@@ -2918,14 +2919,23 @@ export function getKBGraphBuildConfig(
     domainPolicyLanguage: string | null
   } | null
 ): KBKnowledgeGraphConfig {
-  const quotaConfigurationMatches =
-    quota === null ||
-    (quota.currency === costConfiguration.currency &&
-      quota.limitMinorUnits === costConfiguration.semesterQuotaMinorUnits)
-  const costConfigurationReady =
-    costConfiguration.ready && quotaConfigurationMatches
+  const quotaCurrencyMatches =
+    quota === null || quota.currency === costConfiguration.currency
+  const costConfigurationReady = costConfiguration.ready && quotaCurrencyMatches
+  // Report the limit the next admission will apply, so a configured raise is
+  // visible before any build writes it to the ledger row.
+  const effectiveQuota =
+    quota !== null && quotaCurrencyMatches
+      ? {
+          ...quota,
+          limitMinorUnits: resolveKBGraphQuotaLimit(
+            quota.limitMinorUnits,
+            costConfiguration.semesterQuotaMinorUnits
+          ).limitMinorUnits,
+        }
+      : quota
   const remainingSemesterQuotaMinorUnits = getKBGraphRemainingQuota(
-    quota,
+    effectiveQuota,
     costConfiguration
   )
   const worstCaseRemainingMinorUnits =
@@ -2976,7 +2986,8 @@ export function getKBGraphBuildConfig(
     costStatus: build?.costStatus ?? null,
     semesterKey: costConfiguration.semesterKey,
     semesterQuotaMinorUnits:
-      quota?.limitMinorUnits ?? costConfiguration.semesterQuotaMinorUnits,
+      effectiveQuota?.limitMinorUnits ??
+      costConfiguration.semesterQuotaMinorUnits,
     semesterReservedMinorUnits: quota?.reservedMinorUnits ?? 0,
     semesterSettledMinorUnits: quota?.settledMinorUnits ?? 0,
     remainingSemesterQuotaMinorUnits,
