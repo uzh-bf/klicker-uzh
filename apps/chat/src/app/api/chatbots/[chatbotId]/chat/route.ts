@@ -70,6 +70,11 @@ import {
   hashSnippet,
   summarizeToolDiagnostics,
 } from '@/src/lib/server/toolDiagnostics'
+import {
+  readVideoFrame,
+  videoFrameStoreConfigured,
+} from '@/src/lib/server/videoFrameStore'
+import { withVideoFrameTool } from '@/src/lib/server/videoFrameTools'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
@@ -1264,6 +1269,10 @@ export async function POST(
         'eLearning thread answering without required retrieval tools',
         { requestId, chatbotId, selectedMode }
       )
+    }
+
+    if (scopedKbIds?.length && videoFrameStoreConfigured()) {
+      mcpTools = withVideoFrameTool(mcpTools, scopedKbIds, readVideoFrame)
     }
 
     let responseExampleSummary = ''

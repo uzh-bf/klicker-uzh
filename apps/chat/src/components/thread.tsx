@@ -102,6 +102,7 @@ import {
 } from './thread-welcome-capabilities'
 import { actionBarButtonClassName } from './ui/action-bar-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { VideoFramesSection } from './video-frames-section'
 
 // Re-exported for backward compatibility: callers (e.g. manage-assistant.tsx)
 // import this type from './thread' — the type itself now lives in
@@ -1892,6 +1893,7 @@ const AssistantMessage: FC<{
           value={messageSources}
         >
           <AssistantMessageParts />
+          {showSources && <VideoFramesSection />}
           {showSources && <SourcesSection />}
         </MessageSourcesProvider>
         <MessageMetadata includeCredits />
