@@ -13,7 +13,6 @@ import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   createKb,
-  createKbUrlResource,
   ingestAllKbResources,
   ingestKbResource,
 } from '../src/services/knowledge.js'
@@ -63,6 +62,24 @@ function withKbResourceSnapshotPause(
     },
   })
   return { ...ctx, prisma: prisma as unknown as PrismaClient }
+}
+
+/**
+ * Seeds a URL resource directly at its pre-ingestion ADDED status, bypassing
+ * the ordinary creation mutation's automatic ingestion start. This suite
+ * exercises `ingestKbResource`/`ingestAllKbResources` as the trigger under
+ * test, so fixtures must land in the state those manual entry points expect
+ * to act on rather than already being claimed by an automatic dispatch.
+ */
+function createAddedUrlResource(
+  prisma: PrismaClient,
+  kbId: string,
+  title: string,
+  url: string
+) {
+  return prisma.kBResource.create({
+    data: { kbId, type: KBResourceType.URL, title, sourceUrl: url },
+  })
 }
 
 describe('Integration tests for knowledge base ingestion', () => {
@@ -119,13 +136,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('queues an owned URL resource with a fresh attempt', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/course',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Lecture recording',
+      'https://video.example.com/course'
     )
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
@@ -167,13 +182,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('claims a new attempt while preserving active serving metadata', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/course',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Lecture recording',
+      'https://video.example.com/course'
     )
     const oldAttemptId = '1f9aa27b-ee62-4b52-9c76-5f9f024347fd'
     const ingestedAt = new Date('2026-07-19T12:00:00.000Z')
@@ -258,13 +271,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('denies foreign or already active resources without dispatching', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/course',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Lecture recording',
+      'https://video.example.com/course'
     )
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
@@ -285,13 +296,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('claims a resource once when ingestion requests race', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/course',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Lecture recording',
+      'https://video.example.com/course'
     )
     const runNoWait = vi
       .spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait')
@@ -406,13 +415,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('records a failed attempt when Hatchet queue dispatch fails', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/course',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Lecture recording',
+      'https://video.example.com/course'
     )
     const oldAttemptId = '3b894217-e5dc-4d39-a94d-b21b08f4725e'
     const oldIngestedAt = new Date('2026-07-18T09:00:00.000Z')
@@ -471,13 +478,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('does not roll back a resource that advanced after dispatch began', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/course',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Lecture recording',
+      'https://video.example.com/course'
     )
     vi.spyOn(userOneCtx.tasks.ingestKBResource, 'runNoWait').mockImplementation(
       async () => {
@@ -499,13 +504,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('does not let a stale dispatch failure roll back a newer queued attempt', async () => {
     const created = await createKb({ name: 'Finance notes' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Lecture recording',
-        url: 'https://video.example.com/course',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Lecture recording',
+      'https://video.example.com/course'
     )
     const newerAttemptId = '7adf2e60-82b8-436a-90bd-ae6eb142385a'
     const newerStartedAt = new Date('2026-07-20T08:30:00.000Z')
@@ -544,13 +547,11 @@ describe('Integration tests for knowledge base ingestion', () => {
     const created = await createKb({ name: 'Bulk ingestion' }, userOneCtx)
     const resources = await Promise.all(
       ['added', 'failed', 'current', 'processing', 'stale'].map((name) =>
-        createKbUrlResource(
-          {
-            kbId: created.id,
-            title: name,
-            url: `https://example.com/${name}`,
-          },
-          userOneCtx
+        createAddedUrlResource(
+          prisma,
+          created.id,
+          name,
+          `https://example.com/${name}`
         )
       )
     )
@@ -677,13 +678,11 @@ describe('Integration tests for knowledge base ingestion', () => {
 
   it('does not downgrade a newer provider-served revision', async () => {
     const created = await createKb({ name: 'Provider refresh' }, userOneCtx)
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Provider refresh',
-        url: 'https://example.com/provider-refresh',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Provider refresh',
+      'https://example.com/provider-refresh'
     )
     await prisma.kBResource.update({
       where: { id: resource.id },
@@ -717,13 +716,11 @@ describe('Integration tests for knowledge base ingestion', () => {
     )
     const resources = await Promise.all(
       ['first', 'second'].map((name) =>
-        createKbUrlResource(
-          {
-            kbId: created.id,
-            title: name,
-            url: `https://example.com/concurrent-${name}`,
-          },
-          userOneCtx
+        createAddedUrlResource(
+          prisma,
+          created.id,
+          name,
+          `https://example.com/concurrent-${name}`
         )
       )
     )
@@ -769,13 +766,11 @@ describe('Integration tests for knowledge base ingestion', () => {
       { name: 'Concurrent single-resource ingestion' },
       userOneCtx
     )
-    const resource = await createKbUrlResource(
-      {
-        kbId: created.id,
-        title: 'Concurrent resource',
-        url: 'https://example.com/concurrent-resource',
-      },
-      userOneCtx
+    const resource = await createAddedUrlResource(
+      prisma,
+      created.id,
+      'Concurrent resource',
+      'https://example.com/concurrent-resource'
     )
     const snapshotRead = createDeferred<void>()
     const releaseSnapshot = createDeferred<void>()
@@ -817,13 +812,11 @@ describe('Integration tests for knowledge base ingestion', () => {
     )
     const resources = await Promise.all(
       ['first', 'second'].map((name) =>
-        createKbUrlResource(
-          {
-            kbId: created.id,
-            title: name,
-            url: `https://example.com/${name}`,
-          },
-          userOneCtx
+        createAddedUrlResource(
+          prisma,
+          created.id,
+          name,
+          `https://example.com/${name}`
         )
       )
     )

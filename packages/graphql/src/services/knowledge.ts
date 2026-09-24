@@ -456,9 +456,12 @@ async function assertKbQuotaAvailable(
  * Admission for new ingestion work. The actor's rollout decides whether an
  * upload ticket, URL resource, or ingestion attempt may start; an absent,
  * unregistered, or unusable evaluation refuses one rather than admitting work
- * the deployment cannot honor. Reads, upload confirmation, deletion, cleanup
- * and already queued reconciliation stay available, and the general worker
- * keeps its separate startup gate.
+ * the deployment cannot honor. Upload confirmation starts ingestion and is
+ * gated here as well, but only where it creates the resource: repeating a
+ * confirmation that already succeeded returns the existing resource without
+ * consulting the rollout. Reads, deletion, cleanup and already queued
+ * reconciliation stay available, and the general worker keeps its separate
+ * startup gate.
  */
 async function assertKbIngestionEnabled(ctx: ContextWithUser) {
   if (!(await isFeatureFlagEnabled(ctx, 'kb-ingestion'))) {
@@ -1730,6 +1733,13 @@ export async function confirmKbFileUpload(
     return existingResource
   }
 
+  // Only genuinely new content is subject to the ingestion rollout. The
+  // repeated-confirmation return above stays reachable with the rollout
+  // closed so that a client retrying a call that already succeeded is
+  // answered with its resource instead of a refusal for work it is not
+  // asking to start.
+  await assertKbIngestionEnabled(ctx)
+
   const { accountUrl, containerClient } = getKbBlobContainer(ctx.user.sub)
   const blobClient = containerClient.getBlobClient(blobName)
   if (!(await blobClient.exists())) {
@@ -1745,7 +1755,8 @@ export async function confirmKbFileUpload(
     throw new GraphQLError('KB blob metadata is invalid')
   }
 
-  return ctx.prisma.$transaction(async (prisma) => {
+  const ingestionAttemptId = randomUUID()
+  const result = await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     const racedResource = await prisma.kBResource.findFirst({
       where: { id: blobId, deletedAt: null },
@@ -1759,7 +1770,7 @@ export async function confirmKbFileUpload(
         mimeType: validated.contentType,
         sizeBytes,
       })
-      return racedResource
+      return { resource: racedResource, payload: null }
     }
 
     const ticket = await prisma.kBUploadTicket.findFirst({
@@ -1793,12 +1804,48 @@ export async function confirmKbFileUpload(
         sizeBytes,
         blobName,
         blobHref: `${accountUrl}/${containerClient.containerName}/${blobName}`,
-        status: DB.KBResourceStatus.ADDED,
+        status: DB.KBResourceStatus.QUEUED,
+        ingestionAttemptId,
+        resourceVersion: 1,
+        ingestionOperation: DB.KBIngestionOperation.UPSERT,
+      },
+    })
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: ingestionAttemptId,
+        resourceId: resource.id,
+        operation: DB.KBIngestionOperation.UPSERT,
+        resourceVersion: 1,
       },
     })
     await prisma.kBUploadTicket.delete({ where: { id: ticket.id } })
-    return resource
+    return {
+      resource,
+      payload: buildKbIngestionPayload(
+        resource,
+        ingestionAttemptId,
+        1,
+        ctx.user.sub
+      ),
+    }
   })
+
+  if (result.payload) {
+    try {
+      await ctx.tasks.ingestKBResource.runNoWait(result.payload)
+    } catch {
+      await markKbIngestionQueueFailure(
+        ctx,
+        result.resource.id,
+        ingestionAttemptId
+      )
+      throw new GraphQLError('KB ingestion could not be queued', {
+        extensions: { code: 'KB_INGESTION_QUEUE_FAILED' },
+      })
+    }
+  }
+
+  return result.resource
 }
 
 export async function requestKbFileReplacement(
@@ -2090,24 +2137,60 @@ export async function createKbUrlResource(
     throw new GraphQLError('KB resource URL is invalid')
   }
 
-  return ctx.prisma.$transaction(async (prisma) => {
+  const ingestionAttemptId = randomUUID()
+  const result = await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await assertKbQuotaAvailable(prisma, {
       kbId,
       resourceCount: 1,
       sizeBytes: MAX_KB_FILE_SIZE_BYTES,
     })
-    return prisma.kBResource.create({
+    const resource = await prisma.kBResource.create({
       data: {
         kbId,
         type: DB.KBResourceType.URL,
         materialType: normalizeKbResourceMaterialType(materialType),
         title: validateKbResourceTitle(title),
         sourceUrl,
-        status: DB.KBResourceStatus.ADDED,
+        status: DB.KBResourceStatus.QUEUED,
+        ingestionAttemptId,
+        resourceVersion: 1,
+        ingestionOperation: DB.KBIngestionOperation.UPSERT,
       },
     })
+    await prisma.kBIngestionRun.create({
+      data: {
+        id: ingestionAttemptId,
+        resourceId: resource.id,
+        operation: DB.KBIngestionOperation.UPSERT,
+        resourceVersion: 1,
+      },
+    })
+    return {
+      resource,
+      payload: buildKbIngestionPayload(
+        resource,
+        ingestionAttemptId,
+        1,
+        ctx.user.sub
+      ),
+    }
   })
+
+  try {
+    await ctx.tasks.ingestKBResource.runNoWait(result.payload)
+  } catch {
+    await markKbIngestionQueueFailure(
+      ctx,
+      result.resource.id,
+      ingestionAttemptId
+    )
+    throw new GraphQLError('KB ingestion could not be queued', {
+      extensions: { code: 'KB_INGESTION_QUEUE_FAILED' },
+    })
+  }
+
+  return result.resource
 }
 
 export async function updateKbResourceMaterialType(
