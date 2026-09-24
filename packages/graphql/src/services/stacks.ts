@@ -11,6 +11,7 @@ import {
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import type {
   CaseStudyElementData,
   CaseStudySolutionsObject,
@@ -2069,11 +2070,11 @@ function computeAwardedPointsAndXP({
   xpAwarded: number
   newXpFrom: Date
 } {
-  const participationActive = participation?.isActive ?? false
+  const hasParticipation = participation !== null
 
   // award points and xp based on the previous response being outside the timeframe
   if (existingResponse) {
-    // update points (only if participation is active)
+    // update points for registered course participants
     const pointsOutsideTimeframe =
       !existingResponse.lastAwardedAt ||
       dayjs(existingResponse.lastAwardedAt).isBefore(
@@ -2087,7 +2088,7 @@ function computeAwardedPointsAndXP({
     let lastAwardedAt: Date | undefined
     let newPointsFrom: Date | undefined
 
-    if (participationActive) {
+    if (hasParticipation) {
       pointsAwarded = pointsOutsideTimeframe ? score : 0
       lastAwardedAt =
         pointsOutsideTimeframe || !existingResponse.lastAwardedAt
@@ -2131,9 +2132,9 @@ function computeAwardedPointsAndXP({
     }
   }
 
-  // no previous response exists -> award points and xp based on the current response and if participation is active
-  const lastAwardedAt = participationActive ? new Date() : undefined
-  const newPointsFrom = participationActive
+  // no previous response exists -> award points and xp based on the current response and if participation exists
+  const lastAwardedAt = hasParticipation ? new Date() : undefined
+  const newPointsFrom = hasParticipation
     ? dayjs(lastAwardedAt)
         .add(
           instance?.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
@@ -2146,7 +2147,7 @@ function computeAwardedPointsAndXP({
     .toDate()
 
   return {
-    pointsAwarded: participationActive ? score : null,
+    pointsAwarded: hasParticipation ? score : null,
     newPointsFrom,
     lastAwardedAt,
     xpAwarded: xp,
@@ -2618,6 +2619,21 @@ export async function respondToQuestion(
   ctx: Context
 ) {
   const result = await ctx.prisma.$transaction(async (prisma) => {
+    if (participation && ctx.user?.role === DB.UserRole.PARTICIPANT) {
+      // Join and scoring take the participation lock before creating a balance.
+      await prisma.$queryRaw(Prisma.sql`
+        SELECT "id" FROM "Participation" WHERE "id" = ${participation.id} FOR UPDATE
+      `)
+      await prisma.$queryRaw(
+        Prisma.sql`
+          SELECT "id"
+          FROM "ElementInstance"
+          WHERE "id" = ${id}
+          FOR UPDATE
+        `
+      )
+    }
+
     const existingInstance = await getValidateElementInstance({
       prisma,
       id,
@@ -2827,8 +2843,8 @@ export async function respondToQuestion(
         })
       }
 
-      // create or increment the leaderboard entry, if the participant has an active participation in the course
-      // active participation has already been checked during computation of pointsAwarded
+      // create or increment the leaderboard entry, if the participant has a participation in the course
+      // participation existence has already been checked during computation of pointsAwarded
       if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
         await updateLeaderboardOnQuestionResponse({
           prisma,
