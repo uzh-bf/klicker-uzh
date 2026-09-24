@@ -2832,9 +2832,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         remove: 'Entfernen',
         start: 'Elemente generieren',
         starting: 'Wird gestartet…',
-        noSources: 'Kein veröffentlichter Wissensgraph verfügbar',
+        sourceNotReady: 'Noch nicht bereit für die Fragengenerierung',
+        requestedSourceMissing:
+          'Die angeforderte Wissensbasis ist nicht verfügbar. Wählen Sie unten eine Ihrer Wissensbasen.',
+        noSources: 'Keine Wissensbasis verfügbar',
         noSourcesHelp:
-          'Erstellen Sie eine Wissensbasis und veröffentlichen Sie ihren Wissensgraphen, bevor Sie Elemente generieren.',
+          'Erstellen Sie eine Wissensbasis und fügen Sie Kursmaterial hinzu, bevor Sie Elemente generieren.',
       },
       elementTypes: {
         SC: {
@@ -3157,6 +3160,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Die Generierung konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
         withCode:
           'Der Vorgang ist fehlgeschlagen ({code}). Versuchen Sie es erneut.',
+        basisChanged:
+          'Das vorbereitete Material dieser Wissensbasis hat sich geändert. Prüfen Sie die aktualisierte Quelle und starten Sie erneut.',
       },
     },
     questionPool: {
