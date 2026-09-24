@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "assessment-export-manifest/1",
+  "status": "synthetic-prototype",
+  "generatedAt": "2026-09-04T12:00:00.000Z",
+  "privacyClassification": "directly-identifiable-personal-data",
+  "purpose": "assessment-delivery-grading-and-required-follow-up",
+  "locale": "de",
+  "csv": {
+    "encoding": "utf-8-bom",
+    "delimiter": ";",
+    "excelSeparatorHint": true,
+    "fieldsQuoted": true
+  },
+  "sourceModels": [
+    "Participation",
+    "Participant",
+    "ParticipantAccount",
+    "LiveQuizResponse",
+    "AppliedPointCorrection"
+  ],
+  "fieldSources": {
+    "participantEmail": "ParticipantAccount.ssoEmail with Participant.email fallback",
+    "assessmentGivenName": "Participation.assessmentGivenName",
+    "assessmentSurname": "Participation.assessmentSurname",
+    "assessmentMatriculationNumber": "Participation.assessmentMatriculationNumber",
+    "basePoints": "sum of LiveQuizResponse.basePoints",
+    "correctnessPoints": "sum of LiveQuizResponse.correctnessPoints",
+    "bonusPoints": "sum of LiveQuizResponse.bonusPoints",
+    "totalPoints": "basePoints + correctnessPoints + bonusPoints"
+  },
+  "artifactLogging": {
+    "proposedBackendArtifact": true,
+    "currentManageDownloadIsBrowserGenerated": true,
+    "note": "The exact-artifact checksum is a proposed backend control. The current Manage download does not produce this manifest."
+  },
+  "rowCount": 3,
+  "files": [
+    {
+      "name": "assessment-results.csv",
+      "rowCount": 3,
+      "bytes": 431,
+      "sha256": "e10c4b89ad305811202f0e39c3012d9ed44e673c125eb63ca6db65553883bd2b"
+    }
+  ]
+}

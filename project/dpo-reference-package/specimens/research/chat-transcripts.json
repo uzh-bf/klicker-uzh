@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "research-chat-transcript/1",
+  "privacy": {
+    "classification": "pseudonymised-personal-data",
+    "warning": "Identifiers are project-specific pseudonyms. Message text is unchanged and may contain information entered by participants. This export is not anonymous."
+  },
+  "sourceModels": [
+    "Chatbot",
+    "ChatThread",
+    "ChatMessage",
+    "ChatAttachment"
+  ],
+  "excludedFields": [
+    "Chatbot.openaiApiKey",
+    "ChatbotMCPServer.authSecret",
+    "ChatAttachment.imageBase64",
+    "ChatAttachment.imagePreviewBase64",
+    "ChatMessage.lifecycleAttemptId"
+  ],
+  "chatbots": [
+    {
+      "chatbotPseudonym": "chatbot_projectA_001",
+      "name": "Synthetischer Lernchatbot",
+      "threads": [
+        {
+          "threadPseudonym": "thread_projectA_001",
+          "participantPseudonym": "person_projectA_001",
+          "title": "Synthetische Frage zur Zinsrechnung",
+          "createdAt": "2026-04-14T10:00:00.000Z",
+          "updatedAt": "2026-04-14T10:01:00.000Z",
+          "messages": [
+            {
+              "messagePseudonym": "message_projectA_001",
+              "parentMessagePseudonym": null,
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Wie berechne ich den Zinseszins in diesem Beispiel?"
+                }
+              ],
+              "chatMode": "tutor",
+              "modelId": "example-model",
+              "reasoningEffort": null,
+              "reasoningContent": null,
+              "creditsUsed": null,
+              "lifecycleStatus": "COMPLETED",
+              "rating": null,
+              "createdAt": "2026-04-14T10:00:00.000Z",
+              "updatedAt": "2026-04-14T10:00:00.000Z",
+              "attachments": []
+            },
+            {
+              "messagePseudonym": "message_projectA_002",
+              "parentMessagePseudonym": "message_projectA_001",
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Welche Werte für Kapital, Zinssatz und Laufzeit kennst du schon?"
+                }
+              ],
+              "chatMode": "tutor",
+              "modelId": "example-model",
+              "reasoningEffort": "medium",
+              "reasoningContent": null,
+              "creditsUsed": "0.200000",
+              "lifecycleStatus": "COMPLETED",
+              "rating": "UP",
+              "createdAt": "2026-04-14T10:01:00.000Z",
+              "updatedAt": "2026-04-14T10:01:00.000Z",
+              "attachments": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
