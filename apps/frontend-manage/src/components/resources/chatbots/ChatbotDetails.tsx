@@ -170,6 +170,7 @@ function ChatbotDetails({
   chatbot,
   modelRegistry,
   loading,
+  advancedManagement,
   view,
   step,
   onNavigate,
@@ -181,6 +182,7 @@ function ChatbotDetails({
   chatbot?: RevisionChatbot
   modelRegistry: ChatModelCapability[]
   loading: boolean
+  advancedManagement: boolean
   view: ChatbotWorkspaceView
   step?: ChatbotSetupStep
   onNavigate: (
@@ -852,6 +854,7 @@ function ChatbotDetails({
             <ChatbotAuthoring
               key={`${chatbot.id}:overview`}
               chatbot={chatbot}
+              advancedManagement={advancedManagement}
               step={step ?? 'basics'}
               sections={['basics', 'review']}
               publishingAuthorized={publishingAuthorized}
@@ -928,68 +931,35 @@ function ChatbotDetails({
                 {t('manage.resources.knowledgeBase')}
               </Link>
             </div>
-            <div
-              className="space-y-4 border-t border-gray-200 pt-4"
-              data-cy="chatbot-knowledge-graph-policy"
-            >
-              <div>
-                <div className="text-sm font-medium text-gray-700">
-                  {t('manage.resources.knowledgeGraphPolicy')}
+            {advancedManagement && (
+              // Concept-map visibility and graph-retrieval tuning assume the
+              // reader understands how the knowledge graph is built and
+              // queried, which an ordinary lecturer does not need to reason
+              // about to run a chatbot.
+              <div
+                className="space-y-4 border-t border-gray-200 pt-4"
+                data-cy="chatbot-knowledge-graph-policy"
+              >
+                <div>
+                  <div className="text-sm font-medium text-gray-700">
+                    {t('manage.resources.knowledgeGraphPolicy')}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {t('manage.resources.knowledgeGraphPolicyDescription')}
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500">
-                  {t('manage.resources.knowledgeGraphPolicyDescription')}
-                </p>
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  <label
-                    htmlFor="chatbot-knowledge-graph-visible-switch"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    {t('manage.resources.knowledgeGraphVisible')}
-                  </label>
-                  <Switch
-                    id="chatbot-knowledge-graph-visible-switch"
-                    checked={knowledgeGraphPolicy.visible}
-                    disabled={
-                      isSaving || !modelSettingsEditable || revisionPending
-                    }
-                    onCheckedChange={(checked) => {
-                      setKnowledgeGraphSaveSuccess(false)
-                      setKnowledgeGraphSaveError(null)
-                      clearRevisionConflict()
-                      setKnowledgeGraphPolicy((current) => ({
-                        ...current,
-                        visible: checked,
-                      }))
-                    }}
-                    data={{ cy: 'chatbot-knowledge-graph-visible-switch' }}
-                  />
-                </div>
-                <div className="text-xs text-gray-500">
-                  {knowledgeGraphPolicy.visible
-                    ? t(
-                        'manage.resources.knowledgeGraphVisibleEnabledDescription'
-                      )
-                    : t(
-                        'manage.resources.knowledgeGraphVisibleDisabledDescription'
-                      )}
-                </div>
-              </div>
-
-              {graphRetrievalAvailable && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-3">
                     <label
-                      htmlFor="chatbot-knowledge-graph-retrieval-switch"
+                      htmlFor="chatbot-knowledge-graph-visible-switch"
                       className="text-sm font-medium text-gray-700"
                     >
-                      {t('manage.resources.knowledgeGraphRetrieval')}
+                      {t('manage.resources.knowledgeGraphVisible')}
                     </label>
                     <Switch
-                      id="chatbot-knowledge-graph-retrieval-switch"
-                      checked={knowledgeGraphPolicy.retrievalEnabled}
+                      id="chatbot-knowledge-graph-visible-switch"
+                      checked={knowledgeGraphPolicy.visible}
                       disabled={
                         isSaving || !modelSettingsEditable || revisionPending
                       }
@@ -999,87 +969,133 @@ function ChatbotDetails({
                         clearRevisionConflict()
                         setKnowledgeGraphPolicy((current) => ({
                           ...current,
-                          retrievalEnabled: checked,
+                          visible: checked,
                         }))
                       }}
-                      data={{ cy: 'chatbot-knowledge-graph-retrieval-switch' }}
+                      data={{ cy: 'chatbot-knowledge-graph-visible-switch' }}
                     />
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                    {knowledgeGraphPolicy.visible
+                      ? t(
+                          'manage.resources.knowledgeGraphVisibleEnabledDescription'
+                        )
+                      : t(
+                          'manage.resources.knowledgeGraphVisibleDisabledDescription'
+                        )}
                   </div>
                 </div>
-              )}
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  onClick={handleSaveKnowledgeGraphPolicy}
-                  disabled={
-                    isSaving ||
-                    !modelSettingsEditable ||
-                    revisionPending ||
-                    !knowledgeGraphDirty
-                  }
-                  data={{ cy: 'chatbot-knowledge-graph-save' }}
-                >
-                  <Button.Label>
-                    {isSaving
-                      ? t('manage.resources.chatbotModelSettingsSaving')
-                      : t('manage.resources.knowledgeGraphSave')}
-                  </Button.Label>
-                </Button>
-                {knowledgeGraphSaveSuccess && (
-                  <span className="text-xs text-green-700">
-                    {t('manage.resources.knowledgeGraphSaveSuccess')}
-                  </span>
+                {graphRetrievalAvailable && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="chatbot-knowledge-graph-retrieval-switch"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        {t('manage.resources.knowledgeGraphRetrieval')}
+                      </label>
+                      <Switch
+                        id="chatbot-knowledge-graph-retrieval-switch"
+                        checked={knowledgeGraphPolicy.retrievalEnabled}
+                        disabled={
+                          isSaving || !modelSettingsEditable || revisionPending
+                        }
+                        onCheckedChange={(checked) => {
+                          setKnowledgeGraphSaveSuccess(false)
+                          setKnowledgeGraphSaveError(null)
+                          clearRevisionConflict()
+                          setKnowledgeGraphPolicy((current) => ({
+                            ...current,
+                            retrievalEnabled: checked,
+                          }))
+                        }}
+                        data={{
+                          cy: 'chatbot-knowledge-graph-retrieval-switch',
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {t('manage.resources.knowledgeGraphRetrievalDescription')}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    onClick={handleSaveKnowledgeGraphPolicy}
+                    disabled={
+                      isSaving ||
+                      !modelSettingsEditable ||
+                      revisionPending ||
+                      !knowledgeGraphDirty
+                    }
+                    data={{ cy: 'chatbot-knowledge-graph-save' }}
+                  >
+                    <Button.Label>
+                      {isSaving
+                        ? t('manage.resources.chatbotModelSettingsSaving')
+                        : t('manage.resources.knowledgeGraphSave')}
+                    </Button.Label>
+                  </Button>
+                  {knowledgeGraphSaveSuccess && (
+                    <span className="text-xs text-green-700">
+                      {t('manage.resources.knowledgeGraphSaveSuccess')}
+                    </span>
+                  )}
+                </div>
+
+                {revisionConflict ? (
+                  <ChatbotRevisionConflictNotice
+                    message={t('manage.resources.chatbotRevisionConflict')}
+                    onReload={() => void reloadAfterConflict()}
+                    reloading={revisionReloading}
+                    testId="chatbot-revision-reload-knowledge-graph"
+                  />
+                ) : null}
+
+                {knowledgeGraphSaveError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                    {knowledgeGraphSaveError}
+                  </div>
                 )}
               </div>
-
-              {revisionConflict ? (
-                <ChatbotRevisionConflictNotice
-                  message={t('manage.resources.chatbotRevisionConflict')}
-                  onReload={() => void reloadAfterConflict()}
-                  reloading={revisionReloading}
-                  testId="chatbot-revision-reload-knowledge-graph"
-                />
-              ) : null}
-
-              {knowledgeGraphSaveError && (
-                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
-                  {knowledgeGraphSaveError}
-                </div>
-              )}
-            </div>
-            <Accordion
-              type="single"
-              collapsible
-              className="border-t border-gray-200 pt-4"
-              data-cy="chatbot-knowledge-secondary"
-            >
-              <AccordionItem
-                value="response-examples"
-                className="rounded-lg border border-gray-200 px-4"
-                data-cy="chatbot-response-examples-item"
+            )}
+            {advancedManagement && (
+              // Curated response examples train reviewers to judge answer
+              // quality against the chatbot's own knowledge base, a task an
+              // ordinary lecturer does not perform.
+              <Accordion
+                type="single"
+                collapsible
+                className="border-t border-gray-200 pt-4"
+                data-cy="chatbot-knowledge-secondary"
               >
-                <AccordionTrigger
-                  className="py-3 hover:no-underline"
-                  data-cy="chatbot-response-examples-trigger"
+                <AccordionItem
+                  value="response-examples"
+                  className="rounded-lg border border-gray-200 px-4"
+                  data-cy="chatbot-response-examples-item"
                 >
-                  <span className="flex flex-col gap-1 text-left">
-                    <span>{t('manage.resources.responseExamples')}</span>
-                    <span className="text-sm font-normal text-gray-600">
-                      {t('manage.resources.responseExamplesDescription')}
+                  <AccordionTrigger
+                    className="py-3 hover:no-underline"
+                    data-cy="chatbot-response-examples-trigger"
+                  >
+                    <span className="flex flex-col gap-1 text-left">
+                      <span>{t('manage.resources.responseExamples')}</span>
+                      <span className="text-sm font-normal text-gray-600">
+                        {t('manage.resources.responseExamplesDescription')}
+                      </span>
                     </span>
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent forceMount>
-                  <ChatbotResponseExampleReview
-                    key={chatbot.id}
-                    chatbotId={chatbot.id}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                  </AccordionTrigger>
+                  <AccordionContent forceMount>
+                    <ChatbotResponseExampleReview
+                      key={chatbot.id}
+                      chatbotId={chatbot.id}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
           </section>
         ) : null}
 
@@ -1087,6 +1103,7 @@ function ChatbotDetails({
           <ChatbotAuthoring
             key={`${chatbot.id}:behavior`}
             chatbot={chatbot}
+            advancedManagement={advancedManagement}
             step="modes"
             sections={['modes']}
             publishingAuthorized={publishingAuthorized}
@@ -1108,6 +1125,7 @@ function ChatbotDetails({
           <ChatbotAuthoring
             key={`${chatbot.id}:disclaimer`}
             chatbot={chatbot}
+            advancedManagement={advancedManagement}
             step="disclaimer"
             sections={['disclaimer']}
             publishingAuthorized={publishingAuthorized}
@@ -1175,120 +1193,130 @@ function ChatbotDetails({
               </div>
             </div>
 
-            <ChatbotCreditPolicy
-              chatbot={chatbot}
-              publicationPending={false}
-              onNavigationStateChange={setAuthoringNavigationState}
-              onRevisionConflict={markRevisionConflict}
-            />
-            {revisionConflict ? (
-              <ChatbotRevisionConflictNotice
-                message={t('manage.resources.chatbotRevisionConflict')}
-                onReload={() => void reloadAfterConflict()}
-                reloading={revisionReloading}
-                testId="chatbot-revision-reload-credits"
-              />
-            ) : null}
+            {advancedManagement && (
+              // The credit editor changes the live participant-facing quota,
+              // an operational lever an ordinary lecturer should not tune.
+              <>
+                <ChatbotCreditPolicy
+                  chatbot={chatbot}
+                  publicationPending={false}
+                  onNavigationStateChange={setAuthoringNavigationState}
+                  onRevisionConflict={markRevisionConflict}
+                />
+                {revisionConflict ? (
+                  <ChatbotRevisionConflictNotice
+                    message={t('manage.resources.chatbotRevisionConflict')}
+                    onReload={() => void reloadAfterConflict()}
+                    reloading={revisionReloading}
+                    testId="chatbot-revision-reload-credits"
+                  />
+                ) : null}
+              </>
+            )}
 
-            <div>
-              <div className="mb-2 text-sm font-medium text-gray-700">
-                {t('manage.resources.usageSummary')}
+            {advancedManagement && (
+              // Thread/message counters and reset history are usage
+              // analytics for tuning credit policy, not day-to-day teaching.
+              <div>
+                <div className="mb-2 text-sm font-medium text-gray-700">
+                  {t('manage.resources.usageSummary')}
+                </div>
+                <div className="overflow-hidden rounded-lg border shadow-sm">
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="w-1/3 bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageThreads')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {usageSummary?.threadCount ?? 0}
+                        </td>
+                      </tr>
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageMessages')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {usageSummary?.messageCount ?? 0}
+                        </td>
+                      </tr>
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageParticipants')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {usageSummary?.participantCount ?? 0}
+                        </td>
+                      </tr>
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageLastActivity')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {lastActivityLabel}
+                        </td>
+                      </tr>
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageTotalCredits')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {formatNumber(usageSummary?.totalCredits)}
+                        </td>
+                      </tr>
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageCurrentCredits')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {formatNumber(usageSummary?.currentCredits)}
+                        </td>
+                      </tr>
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageTotalResets')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {usageSummary?.totalResets ?? 0}
+                        </td>
+                      </tr>
+                      <tr className="divide-x divide-gray-200">
+                        <th
+                          scope="row"
+                          className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
+                        >
+                          {t('manage.resources.usageLastReset')}
+                        </th>
+                        <td className="px-4 py-2 text-gray-900">
+                          {lastResetLabel}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <div className="overflow-hidden rounded-lg border shadow-sm">
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="w-1/3 bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageThreads')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {usageSummary?.threadCount ?? 0}
-                      </td>
-                    </tr>
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageMessages')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {usageSummary?.messageCount ?? 0}
-                      </td>
-                    </tr>
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageParticipants')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {usageSummary?.participantCount ?? 0}
-                      </td>
-                    </tr>
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageLastActivity')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {lastActivityLabel}
-                      </td>
-                    </tr>
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageTotalCredits')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {formatNumber(usageSummary?.totalCredits)}
-                      </td>
-                    </tr>
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageCurrentCredits')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {formatNumber(usageSummary?.currentCredits)}
-                      </td>
-                    </tr>
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageTotalResets')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {usageSummary?.totalResets ?? 0}
-                      </td>
-                    </tr>
-                    <tr className="divide-x divide-gray-200">
-                      <th
-                        scope="row"
-                        className="bg-gray-50 px-4 py-2 text-left font-medium text-gray-500"
-                      >
-                        {t('manage.resources.usageLastReset')}
-                      </th>
-                      <td className="px-4 py-2 text-gray-900">
-                        {lastResetLabel}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            )}
 
             {chatbot.disclaimerSummary && (
               <div>
@@ -1320,8 +1348,11 @@ function ChatbotDetails({
               </div>
             )}
 
-            {chatbot.mcpConfigurations &&
+            {advancedManagement &&
+              chatbot.mcpConfigurations &&
               chatbot.mcpConfigurations.length > 0 && (
+                // MCP wiring exposes server/tool plumbing that only the
+                // chatbot's technical operator needs to audit.
                 <Accordion
                   type="single"
                   collapsible
@@ -1423,297 +1454,313 @@ function ChatbotDetails({
 
         {view === 'behavior' ? (
           <div className="space-y-6" data-cy="chatbot-behavior-model">
-            <div>
-              <div className="mb-2 text-sm font-medium text-gray-700">
-                {t('manage.resources.chatbotModelSettings')}
-              </div>
-              <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="chatbot-model-selection-switch"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      {t('manage.resources.modelSelection')}
-                    </label>
-                    <Switch
-                      id="chatbot-model-selection-switch"
-                      checked={modelSelectionEnabled}
-                      disabled={
-                        isSaving || !modelSettingsEditable || revisionPending
-                      }
-                      onCheckedChange={handleModelSelectionChange}
-                      data={{ cy: 'chatbot-model-selection-switch' }}
-                    />
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {modelSelectionEnabled
-                      ? t('manage.resources.modelSelectionEnabledDescription')
-                      : t('manage.resources.modelSelectionDisabledDescription')}
-                  </div>
+            {advancedManagement && (
+              // Model routing and reasoning-effort tuning require
+              // understanding provider capabilities and cost tradeoffs
+              // that fall outside ordinary lecturing.
+              <div>
+                <div className="mb-2 text-sm font-medium text-gray-700">
+                  {t('manage.resources.chatbotModelSettings')}
                 </div>
+                <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="chatbot-model-selection-switch"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        {t('manage.resources.modelSelection')}
+                      </label>
+                      <Switch
+                        id="chatbot-model-selection-switch"
+                        checked={modelSelectionEnabled}
+                        disabled={
+                          isSaving || !modelSettingsEditable || revisionPending
+                        }
+                        onCheckedChange={handleModelSelectionChange}
+                        data={{ cy: 'chatbot-model-selection-switch' }}
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {modelSelectionEnabled
+                        ? t('manage.resources.modelSelectionEnabledDescription')
+                        : t(
+                            'manage.resources.modelSelectionDisabledDescription'
+                          )}
+                    </div>
+                  </div>
 
-                {!modelSelectionEnabled ? (
-                  <div className="space-y-2 border-t pt-4">
-                    <label
-                      htmlFor="chatbot-fixed-model"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      {t('manage.resources.selectedModel')}
-                    </label>
-                    <p className="text-xs text-gray-500">
-                      {t('manage.resources.modelSelectionFixedDescription')}
-                    </p>
-                    <Select
-                      id="chatbot-fixed-model"
-                      data={{ cy: 'chatbot-fixed-model' }}
-                      value={fixedModelId}
+                  {!modelSelectionEnabled ? (
+                    <div className="space-y-2 border-t pt-4">
+                      <label
+                        htmlFor="chatbot-fixed-model"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        {t('manage.resources.selectedModel')}
+                      </label>
+                      <p className="text-xs text-gray-500">
+                        {t('manage.resources.modelSelectionFixedDescription')}
+                      </p>
+                      <Select
+                        id="chatbot-fixed-model"
+                        data={{ cy: 'chatbot-fixed-model' }}
+                        value={fixedModelId}
+                        disabled={
+                          isSaving || !modelSettingsEditable || revisionPending
+                        }
+                        items={modelRegistry.map((model) => ({
+                          value: model.id,
+                          label: model.name,
+                          tooltip: model.description,
+                        }))}
+                        onChange={handleFixedModelChange}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2 border-t pt-4">
+                      <div className="text-sm font-medium text-gray-700">
+                        {t('manage.resources.allowedModels')}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {t(
+                          'manage.resources.modelSelectionParticipantDescription'
+                        )}
+                      </p>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        {modelRegistry.map((model) => {
+                          const checked = allowedModelIds.includes(model.id)
+                          const isLastSelected =
+                            checked && allowedModelIds.length === 1
+                          return (
+                            <div
+                              key={`allowed-model-${model.id}`}
+                              className={twMerge(
+                                'rounded-md border px-3 py-2 text-sm',
+                                checked
+                                  ? 'border-blue-300 bg-blue-50 text-blue-900'
+                                  : 'border-gray-200 text-gray-700'
+                              )}
+                            >
+                              <Checkbox
+                                id={`chatbot-model-${model.id}`}
+                                checked={checked}
+                                disabled={
+                                  isSaving ||
+                                  !modelSettingsEditable ||
+                                  revisionPending ||
+                                  isLastSelected
+                                }
+                                aria-label={model.name}
+                                data={{ cy: `chatbot-model-${model.id}` }}
+                                onCheck={() =>
+                                  handleAllowedModelToggle(model.id, !checked)
+                                }
+                                label={
+                                  <span className="flex flex-col">
+                                    <span className="font-medium">
+                                      {model.name}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      {model.description}
+                                    </span>
+                                  </span>
+                                }
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedReasoningModels.length > 0 && (
+                    <div className="space-y-3 border-t pt-4">
+                      <div className="text-sm font-medium text-gray-700">
+                        {t('manage.resources.reasoningEffortsByModel')}
+                      </div>
+
+                      <div className="space-y-3">
+                        {selectedReasoningModels.map((model) => {
+                          const supportedEfforts =
+                            model.supportedReasoningEfforts
+                          const configuredEfforts = orderEffortsBy(
+                            reasoningConfig[model.id] ?? supportedEfforts,
+                            supportedEfforts
+                          )
+                          const selectedEffort =
+                            !modelSelectionEnabled &&
+                            configuredEfforts.includes('medium')
+                              ? 'medium'
+                              : (configuredEfforts[0] ?? supportedEfforts[0])
+
+                          return (
+                            <div
+                              key={`reasoning-model-${model.id}`}
+                              className="rounded-md border border-gray-200 bg-gray-50 p-3"
+                            >
+                              <div className="mb-2 text-sm font-semibold text-gray-800">
+                                {model.name}
+                              </div>
+
+                              {!modelSelectionEnabled ? (
+                                <div className="space-y-2">
+                                  <label
+                                    htmlFor={`chatbot-reasoning-select-${model.id}`}
+                                    className="text-xs text-gray-600"
+                                  >
+                                    {t('manage.resources.reasoningEffort')}
+                                  </label>
+                                  <Select
+                                    id={`chatbot-reasoning-select-${model.id}`}
+                                    data={{
+                                      cy: `chatbot-reasoning-${model.id}`,
+                                    }}
+                                    value={selectedEffort}
+                                    disabled={
+                                      isSaving ||
+                                      !modelSettingsEditable ||
+                                      revisionPending
+                                    }
+                                    items={supportedEfforts.map((effort) => ({
+                                      value: effort,
+                                      label: effort,
+                                    }))}
+                                    onChange={(effort) =>
+                                      handleReasoningEffortChange(
+                                        model.id,
+                                        effort
+                                      )
+                                    }
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {supportedEfforts.map((effort) => {
+                                    const checked =
+                                      configuredEfforts.includes(effort)
+                                    const canToggleOff =
+                                      configuredEfforts.length > 1
+                                    return (
+                                      <div
+                                        key={`reasoning-effort-${model.id}-${effort}`}
+                                        className={twMerge(
+                                          'flex items-center gap-2 rounded-full border px-3 py-1 text-xs',
+                                          checked
+                                            ? 'border-blue-300 bg-blue-50 text-blue-900'
+                                            : 'border-gray-300 text-gray-700',
+                                          !checked && !canToggleOff
+                                            ? 'opacity-60'
+                                            : ''
+                                        )}
+                                      >
+                                        <Checkbox
+                                          checked={checked}
+                                          disabled={
+                                            isSaving ||
+                                            !modelSettingsEditable ||
+                                            revisionPending ||
+                                            (checked && !canToggleOff)
+                                          }
+                                          aria-label={`${model.name}: ${effort}`}
+                                          data={{
+                                            cy: `chatbot-reasoning-${model.id}-${effort}`,
+                                          }}
+                                          onCheck={() =>
+                                            handleReasoningEffortToggle(
+                                              model.id,
+                                              effort,
+                                              !checked
+                                            )
+                                          }
+                                          label={<span>{effort}</span>}
+                                        />
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 border-t pt-4">
+                    <Button
+                      onClick={handleSaveModelSettings}
                       disabled={
                         isSaving || !modelSettingsEditable || revisionPending
                       }
-                      items={modelRegistry.map((model) => ({
-                        value: model.id,
-                        label: model.name,
-                        tooltip: model.description,
-                      }))}
-                      onChange={handleFixedModelChange}
+                      data={{ cy: 'chatbot-model-settings-save' }}
+                    >
+                      <Button.Label>
+                        {isSaving
+                          ? t('manage.resources.chatbotModelSettingsSaving')
+                          : t('manage.resources.chatbotModelSettingsSave')}
+                      </Button.Label>
+                    </Button>
+                    {saveSuccess && (
+                      <span className="text-xs text-green-700">
+                        {t('manage.resources.chatbotModelSettingsSaveSuccess')}
+                      </span>
+                    )}
+                  </div>
+
+                  {!modelSettingsEditable ? (
+                    <UserNotification>
+                      {t('manage.resources.chatbotModelSettingsReadonly')}
+                    </UserNotification>
+                  ) : null}
+
+                  {revisionConflict ? (
+                    <ChatbotRevisionConflictNotice
+                      message={t('manage.resources.chatbotRevisionConflict')}
+                      onReload={() => void reloadAfterConflict()}
+                      reloading={revisionReloading}
+                      testId="chatbot-revision-reload-model-policy"
                     />
-                  </div>
-                ) : (
-                  <div className="space-y-2 border-t pt-4">
-                    <div className="text-sm font-medium text-gray-700">
-                      {t('manage.resources.allowedModels')}
+                  ) : null}
+
+                  {saveError && (
+                    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                      {saveError}
                     </div>
-                    <p className="text-xs text-gray-500">
-                      {t(
-                        'manage.resources.modelSelectionParticipantDescription'
-                      )}
-                    </p>
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {modelRegistry.map((model) => {
-                        const checked = allowedModelIds.includes(model.id)
-                        const isLastSelected =
-                          checked && allowedModelIds.length === 1
-                        return (
-                          <div
-                            key={`allowed-model-${model.id}`}
-                            className={twMerge(
-                              'rounded-md border px-3 py-2 text-sm',
-                              checked
-                                ? 'border-blue-300 bg-blue-50 text-blue-900'
-                                : 'border-gray-200 text-gray-700'
-                            )}
-                          >
-                            <Checkbox
-                              id={`chatbot-model-${model.id}`}
-                              checked={checked}
-                              disabled={
-                                isSaving ||
-                                !modelSettingsEditable ||
-                                revisionPending ||
-                                isLastSelected
-                              }
-                              aria-label={model.name}
-                              data={{ cy: `chatbot-model-${model.id}` }}
-                              onCheck={() =>
-                                handleAllowedModelToggle(model.id, !checked)
-                              }
-                              label={
-                                <span className="flex flex-col">
-                                  <span className="font-medium">
-                                    {model.name}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {model.description}
-                                  </span>
-                                </span>
-                              }
-                            />
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {selectedReasoningModels.length > 0 && (
-                  <div className="space-y-3 border-t pt-4">
-                    <div className="text-sm font-medium text-gray-700">
-                      {t('manage.resources.reasoningEffortsByModel')}
-                    </div>
-
-                    <div className="space-y-3">
-                      {selectedReasoningModels.map((model) => {
-                        const supportedEfforts = model.supportedReasoningEfforts
-                        const configuredEfforts = orderEffortsBy(
-                          reasoningConfig[model.id] ?? supportedEfforts,
-                          supportedEfforts
-                        )
-                        const selectedEffort =
-                          !modelSelectionEnabled &&
-                          configuredEfforts.includes('medium')
-                            ? 'medium'
-                            : (configuredEfforts[0] ?? supportedEfforts[0])
-
-                        return (
-                          <div
-                            key={`reasoning-model-${model.id}`}
-                            className="rounded-md border border-gray-200 bg-gray-50 p-3"
-                          >
-                            <div className="mb-2 text-sm font-semibold text-gray-800">
-                              {model.name}
-                            </div>
-
-                            {!modelSelectionEnabled ? (
-                              <div className="space-y-2">
-                                <label
-                                  htmlFor={`chatbot-reasoning-select-${model.id}`}
-                                  className="text-xs text-gray-600"
-                                >
-                                  {t('manage.resources.reasoningEffort')}
-                                </label>
-                                <Select
-                                  id={`chatbot-reasoning-select-${model.id}`}
-                                  data={{
-                                    cy: `chatbot-reasoning-${model.id}`,
-                                  }}
-                                  value={selectedEffort}
-                                  disabled={
-                                    isSaving ||
-                                    !modelSettingsEditable ||
-                                    revisionPending
-                                  }
-                                  items={supportedEfforts.map((effort) => ({
-                                    value: effort,
-                                    label: effort,
-                                  }))}
-                                  onChange={(effort) =>
-                                    handleReasoningEffortChange(
-                                      model.id,
-                                      effort
-                                    )
-                                  }
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex flex-wrap gap-2">
-                                {supportedEfforts.map((effort) => {
-                                  const checked =
-                                    configuredEfforts.includes(effort)
-                                  const canToggleOff =
-                                    configuredEfforts.length > 1
-                                  return (
-                                    <div
-                                      key={`reasoning-effort-${model.id}-${effort}`}
-                                      className={twMerge(
-                                        'flex items-center gap-2 rounded-full border px-3 py-1 text-xs',
-                                        checked
-                                          ? 'border-blue-300 bg-blue-50 text-blue-900'
-                                          : 'border-gray-300 text-gray-700',
-                                        !checked && !canToggleOff
-                                          ? 'opacity-60'
-                                          : ''
-                                      )}
-                                    >
-                                      <Checkbox
-                                        checked={checked}
-                                        disabled={
-                                          isSaving ||
-                                          !modelSettingsEditable ||
-                                          revisionPending ||
-                                          (checked && !canToggleOff)
-                                        }
-                                        aria-label={`${model.name}: ${effort}`}
-                                        data={{
-                                          cy: `chatbot-reasoning-${model.id}-${effort}`,
-                                        }}
-                                        onCheck={() =>
-                                          handleReasoningEffortToggle(
-                                            model.id,
-                                            effort,
-                                            !checked
-                                          )
-                                        }
-                                        label={<span>{effort}</span>}
-                                      />
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 border-t pt-4">
-                  <Button
-                    onClick={handleSaveModelSettings}
-                    disabled={
-                      isSaving || !modelSettingsEditable || revisionPending
-                    }
-                    data={{ cy: 'chatbot-model-settings-save' }}
-                  >
-                    <Button.Label>
-                      {isSaving
-                        ? t('manage.resources.chatbotModelSettingsSaving')
-                        : t('manage.resources.chatbotModelSettingsSave')}
-                    </Button.Label>
-                  </Button>
-                  {saveSuccess && (
-                    <span className="text-xs text-green-700">
-                      {t('manage.resources.chatbotModelSettingsSaveSuccess')}
-                    </span>
                   )}
                 </div>
-
-                {!modelSettingsEditable ? (
-                  <UserNotification>
-                    {t('manage.resources.chatbotModelSettingsReadonly')}
-                  </UserNotification>
-                ) : null}
-
-                {revisionConflict ? (
-                  <ChatbotRevisionConflictNotice
-                    message={t('manage.resources.chatbotRevisionConflict')}
-                    onReload={() => void reloadAfterConflict()}
-                    reloading={revisionReloading}
-                    testId="chatbot-revision-reload-model-policy"
-                  />
-                ) : null}
-
-                {saveError && (
-                  <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
-                    {saveError}
-                  </div>
-                )}
               </div>
-            </div>
+            )}
 
             <div className="mt-8 flex flex-wrap gap-4 border-t pt-4 text-xs text-gray-500">
-              <div>
-                {t('manage.resources.modelSelection')}:{' '}
-                {modelSelectionEnabled
-                  ? t('manage.resources.modelSelectionEnabled')
-                  : t('manage.resources.modelSelectionDisabled')}
-              </div>
-              <div>•</div>
-              <div>
-                {t('manage.resources.allowedModels')}:{' '}
-                {modelSelectionEnabled
-                  ? allowedModelIds
-                      .map(
-                        (modelId) =>
-                          modelRegistry.find((model) => model.id === modelId)
-                            ?.name ?? modelId
-                      )
-                      .join(', ')
-                  : (modelRegistry.find((model) => model.id === fixedModelId)
-                      ?.name ?? fixedModelId)}
-              </div>
-              <div>•</div>
+              {advancedManagement && (
+                // Restates the model policy next to the timestamps below so
+                // it stays readable without reopening the settings above.
+                <>
+                  <div>
+                    {t('manage.resources.modelSelection')}:{' '}
+                    {modelSelectionEnabled
+                      ? t('manage.resources.modelSelectionEnabled')
+                      : t('manage.resources.modelSelectionDisabled')}
+                  </div>
+                  <div>•</div>
+                  <div>
+                    {t('manage.resources.allowedModels')}:{' '}
+                    {modelSelectionEnabled
+                      ? allowedModelIds
+                          .map(
+                            (modelId) =>
+                              modelRegistry.find(
+                                (model) => model.id === modelId
+                              )?.name ?? modelId
+                          )
+                          .join(', ')
+                      : (modelRegistry.find(
+                          (model) => model.id === fixedModelId
+                        )?.name ?? fixedModelId)}
+                  </div>
+                  <div>•</div>
+                </>
+              )}
               <div>
                 {t('shared.generic.createdAt', {
                   date: createdAtLabel,

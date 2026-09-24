@@ -1,6 +1,10 @@
 import type { ParsedUrlQuery } from 'node:querystring'
 import { useQuery } from '@apollo/client'
 import {
+  useFeatureFlag,
+  useFeatureFlagsReady,
+} from '@klicker-uzh/feature-flags/react'
+import {
   type Chatbot,
   type ChatModelCapability,
   GetChatbotPublishingCapabilityDocument,
@@ -36,6 +40,14 @@ function Chatbots() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [navigationState, setNavigationState] =
     useState<ChatbotNavigationState>(cleanNavigationState)
+  // GrowthBook reports every flag as off until evaluation settles, so reading
+  // the flag before then would paint the ordinary surface and swap to the
+  // advanced one a moment later. useFeatureFlag already returns false when
+  // evaluation is unavailable altogether, so readiness is the only extra
+  // condition.
+  const flagsReady = useFeatureFlagsReady()
+  const advancedManagementEnabled = useFeatureFlag('ai-advanced-management')
+  const advancedManagement = flagsReady && advancedManagementEnabled
   const { data, loading } = useQuery(
     QGetChatbotsInfoWithKnowledgeBasesDocument,
     {
@@ -46,6 +58,7 @@ function Chatbots() {
     GetChatModelRegistryDocument,
     {
       fetchPolicy: 'cache-first',
+      skip: !advancedManagement,
     }
   )
   const { data: courseData } = useQuery(GetUserCoursesDocument, {
@@ -62,6 +75,10 @@ function Chatbots() {
   const chatbots = data?.getChatbotsInfo ?? []
   const modelRegistry: ChatModelCapability[] =
     modelRegistryData?.getChatModelRegistry ?? []
+  // Holding the details pane until flag evaluation settles avoids painting the
+  // ordinary surface first and swapping to the advanced one a moment later,
+  // which would remount the authoring forms and discard unsaved edits.
+  const detailsLoading = loading || modelRegistryLoading || !flagsReady
   const selectedId =
     typeof router.query?.chatbotId === 'string'
       ? router.query.chatbotId
@@ -271,7 +288,8 @@ function Chatbots() {
           <ChatbotDetails
             chatbot={selectedChatbot}
             modelRegistry={modelRegistry}
-            loading={loading || modelRegistryLoading}
+            loading={detailsLoading}
+            advancedManagement={advancedManagement}
             view={workspaceState.view}
             step={workspaceState.step}
             onNavigate={navigateWorkspace}

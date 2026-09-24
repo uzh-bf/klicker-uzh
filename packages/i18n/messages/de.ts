@@ -5043,7 +5043,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotWorkspaceOverviewDescription:
         'Prüfen Sie den Chatbot-Status und verwenden Sie die Bereiche, um die Einrichtung zu bearbeiten oder Betriebsinformationen einzusehen.',
       chatbotWorkspaceBehaviorDescription:
-        'Wählen Sie Lernmodi, Rahmung und die Modellrichtlinie für diesen Chatbot.',
+        'Wählen Sie die Lernmodi und die Rahmung für diesen Chatbot.',
       chatbotWorkspaceDisclaimerDescription:
         'Bearbeiten Sie die Einleitung für Teilnehmende und prüfen Sie die festen institutionellen Abschnitte.',
       chatbotWorkspaceKnowledgeDescription:
@@ -5101,9 +5101,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Lernmodi können in diesem Chatbot-Status nicht bearbeitet werden.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Einleitung für Teilnehmende',
-      chatbotSetupCredits: 'Credits',
-      chatbotSetupCreditsDescription:
-        'Limiten und Zurücksetzungsintervall pro teilnehmende Person',
       chatbotSetupReview: 'Prüfen und einreichen',
       chatbotSetupReviewDescription:
         'Gespeicherte Angaben prüfen und Veröffentlichung beantragen',
@@ -5116,8 +5113,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotSetupDisclaimerDescriptionLong:
         'Erklären Sie, was Teilnehmende vor der Nutzung dieses Chatbots wissen sollten. Speichern Sie diesen Bereich, um die Vorschau für Teilnehmende zu aktualisieren. Die Vorschau enthält den festen Plattformtext.',
       chatbotSetupCreditsTitle: 'Credits für Teilnehmende',
-      chatbotSetupCreditsDescriptionLong:
-        'Konfigurieren Sie die Credits, die jede teilnehmende Person erhält. Die Einstellungen sind gesperrt, solange eine Revision geprüft wird.',
       chatbotCreditPolicyDescription:
         'Start-Credits gelten bei der ersten Nutzung. Wiederkehrende Zurücksetzungen fügen Credits bis zum festgelegten Maximum hinzu.',
       chatbotCreditAmountRequired: 'Bitte geben Sie eine Credit-Menge ein.',
@@ -5140,7 +5135,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Prüfen Sie die gespeicherte Einrichtung und geben Sie die Informationen für die Prüfung Ihres Veröffentlichungsantrags an. Für Änderungen können Sie die anderen Bereiche öffnen.',
       chatbotSetupEdit: 'Bearbeiten',
       chatbotSetupPublicationNote:
-        'Die Credit-Einstellungen für Teilnehmende werden separat gespeichert und hier zur Prüfung angezeigt. Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und können bis zum Einreichen bearbeitet werden.',
+        'Die Veröffentlichungsangaben werden mit dem Antrag eingereicht und können bis zum Einreichen bearbeitet werden.',
       chatbotDiscardChangesConfirmation:
         'Möchten Sie Ihre ungespeicherten Chatbot-Änderungen verwerfen?',
       chatbotNavigationPending:

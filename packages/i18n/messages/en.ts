@@ -4939,7 +4939,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotWorkspaceOverviewDescription:
         'Review the chatbot status and use the workspace sections to update its setup or inspect operational details.',
       chatbotWorkspaceBehaviorDescription:
-        'Choose learning modes, framing, and the model policy used by this chatbot.',
+        'Choose the learning modes and framing used by this chatbot.',
       chatbotWorkspaceDisclaimerDescription:
         'Edit the participant-facing introduction and review the fixed institutional sections.',
       chatbotWorkspaceKnowledgeDescription:
@@ -4996,9 +4996,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Learning modes cannot be edited in this chatbot status.',
       chatbotSetupDisclaimer: 'Disclaimer',
       chatbotSetupDisclaimerDescription: 'Participant-facing introduction',
-      chatbotSetupCredits: 'Credits',
-      chatbotSetupCreditsDescription:
-        'Per-participant limits and reset schedule',
       chatbotSetupReview: 'Review and submit',
       chatbotSetupReviewDescription:
         'Confirm saved details and request publication',
@@ -5011,8 +5008,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotSetupDisclaimerDescriptionLong:
         'Explain what participants should know before using this chatbot. Save this section to update the participant-facing preview. The preview includes the fixed platform text.',
       chatbotSetupCreditsTitle: 'Participant credits',
-      chatbotSetupCreditsDescriptionLong:
-        'Configure the credit allowance each participant receives. Credit settings are locked while a revision is pending review.',
       chatbotCreditPolicyDescription:
         'Initial credits apply on first use. Recurring resets add credits up to the configured maximum.',
       chatbotCreditAmountRequired: 'Enter a credit amount.',
@@ -5033,7 +5028,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Check the saved setup and provide the information the team needs to review your publication request. You can open the other sections to make changes.',
       chatbotSetupEdit: 'Edit',
       chatbotSetupPublicationNote:
-        'Participant credit settings are saved separately and shown here for review. Publication details are submitted with your request and can be edited until you submit.',
+        'Publication details are submitted with your request and can be edited until you submit.',
       chatbotDiscardChangesConfirmation:
         'Discard your unsaved chatbot changes?',
       chatbotNavigationPending:
