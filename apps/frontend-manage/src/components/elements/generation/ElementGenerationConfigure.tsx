@@ -331,11 +331,17 @@ export default function ElementGenerationConfigure({
         setSubmissionError(t('errors.basisChanged'))
         // Show the refreshed basis for review; nothing is started with it
         // until the lecturer submits again.
-        const refreshed = await sourcesQuery.refetch().catch(() => undefined)
-        const source = refreshed?.data.elementGenerationSources.find(
-          (candidate) => candidate.kbId === selectedSource.kbId
-        )
-        setSourceScopes(scopeValues(source?.basis?.sources ?? []))
+        try {
+          const refreshed = await sourcesQuery.refetch()
+          const source = refreshed.data.elementGenerationSources.find(
+            (candidate) => candidate.kbId === selectedSource.kbId
+          )
+          setSourceScopes(scopeValues(source?.basis?.sources ?? []))
+        } catch {
+          // Keep the current scopes rather than clearing them without a
+          // refreshed basis to show in their place.
+          setSubmissionError(t('errors.load'))
+        }
         return
       }
       setSubmissionError(
