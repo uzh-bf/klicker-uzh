@@ -21,6 +21,17 @@ tags:
 
 A `Bearer` authorization header is always the final fallback (assessment live-quiz mode depends on it — marked `DO NOT TOUCH` in the source). Whatever token is found is verified with `verifyJWT(token, APP_SECRET)`; failure just yields an unauthenticated context, not an error. Consequence for local setups: apps and backend must share `APP_SECRET`, and cookie domains must match the origin the backend expects — this is why the Traefik `*.klicker.com` path mirrors production more faithfully than raw localhost.
 
+## Assessment course entry links
+
+The PWA course overview, join page and live-quiz overview use the public
+`GetCourseAssessmentMode` operation before participant-token or LTI handling.
+Assessment courses redirect temporarily to `APP_ORIGIN_ASSESSMENT_PWA`, preserving
+the route, locale and query parameters, even when no quiz is running. The target
+host is compared exactly to prevent loops. Live-quiz assessment redirects reuse
+the same URL helper; an unauthenticated PWA request first reaches the assessment
+quiz route so that the assessment app decides whether login is needed. These
+redirects do not grant participation or bypass assessment login/PIN checks.
+
 ## Lecturer login (`apps/auth`)
 
 NextAuth (Auth.js) with `@auth/prisma-adapter`, JWT session strategy with a custom `encode` (so the backend can verify the same token), configured in `apps/auth/src/pages/api/auth/[...nextauth].ts`. Two provider groups:
