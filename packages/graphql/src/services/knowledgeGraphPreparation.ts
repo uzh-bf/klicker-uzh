@@ -26,6 +26,9 @@ import {
 const MINUTE_MS = 60_000
 const KB_GRAPH_PREPARATION_PAGE_SIZE = 100
 const KB_GRAPH_PREPARATION_MAX_PAGES = 20
+// Build history read per KB; failures of other preparations may sit in between
+// failures of the one that is currently desired.
+const KB_GRAPH_PREPARATION_RECENT_BUILDS = 20
 // Consecutive failures double the backoff up to this ceiling.
 const KB_GRAPH_PREPARATION_MAX_BACKOFF_MS = 24 * 60 * MINUTE_MS
 
@@ -121,7 +124,7 @@ export type KBGraphPreparationSkipReason =
   | 'CURRENT'
   | 'QUIET_PERIOD'
   | 'BACKOFF'
-  /** Repeated failures on unchanged sources; operations must look first. */
+  /** Repeated failures of the unchanged desired preparation; operations must look first. */
   | 'FAILURE_LIMIT'
   | 'QUOTA_HEADROOM'
   /** The reservation itself was refused by the owner's semester quota. */
@@ -141,7 +144,8 @@ export type KBGraphPreparationSkipReason =
 export interface KBGraphPreparationCandidate {
   kbId: string
   ownerId: string
-  kbUpdatedAt: Date
+  /** Last subject, language or opt-in change; the KB is eligible from here. */
+  graphSettingsChangedAt: Date
   domainPolicyId: string | null
   domainPolicyVersion: number | null
   domainPolicyLanguage: string | null
@@ -150,7 +154,12 @@ export interface KBGraphPreparationCandidate {
     id: string
     activeContentSha256: string
     createdAt: Date
-    updatedAt: Date
+    /**
+     * Creation of the earliest ingestion attempt for the serving version,
+     * preferring attempts that recorded the serving digest. Unlike the
+     * resource's `updatedAt`, later ingestion writes never move it.
+     */
+    servingVersionRequestedAt: Date | null
   }>
   /** Latest update of any resource of the KB, deleted or administrative ones included. */
   lastResourceChangeAt: Date | null
@@ -158,14 +167,23 @@ export interface KBGraphPreparationCandidate {
     status: DB.KBGraphBuildStatus
     errorCode: string | null
   } | null
-  published: (KBGraphPreparationIdentity & { createdAt: Date }) | null
-  /** Newest builds first, at least `maxConsecutiveFailures` of them when present. */
-  recentBuilds: Array<{
-    status: DB.KBGraphBuildStatus
-    sourceContentDigest: string
-    finishedAt: Date | null
-    updatedAt: Date
-  }>
+  published:
+    | (KBGraphPreparationIdentity & {
+        createdAt: Date
+        /** The published build's source snapshot. */
+        sources: Array<{ resourceId: string; contentSha256: string }>
+      })
+    | null
+  /** Snapshot resources of the published build that were deleted since. */
+  deletedPublishedSources: Array<{ resourceId: string; deletedAt: Date }>
+  /** Newest builds first, at most `KB_GRAPH_PREPARATION_RECENT_BUILDS`. */
+  recentBuilds: Array<
+    KBGraphPreparationIdentity & {
+      status: DB.KBGraphBuildStatus
+      finishedAt: Date | null
+      updatedAt: Date
+    }
+  >
 }
 
 export type KBGraphPreparationClassification =
@@ -191,65 +209,111 @@ function latest(dates: Array<Date | null>): Date | null {
   )
 }
 
+function sameKBGraphPreparationIdentity(
+  a: KBGraphPreparationIdentity,
+  b: KBGraphPreparationIdentity
+): boolean {
+  return (
+    a.sourceContentDigest === b.sourceContentDigest &&
+    a.domainPolicyId === b.domainPolicyId &&
+    a.domainPolicyVersion === b.domainPolicyVersion &&
+    a.domainPolicyLanguage === b.domainPolicyLanguage &&
+    a.qualityTier === b.qualityTier
+  )
+}
+
 /**
  * Timing inputs of the due check, derived from row timestamps because no
- * change history is stored. Resource `updatedAt` stands in for serving
- * changes and the KB's `updatedAt` for settings changes; both also move for
- * unrelated edits, so the quiet period errs towards waiting longer, and the
- * age bound still guarantees progress.
+ * change history is stored.
+ *
+ * The quiet period runs from the latest resource `updatedAt` or settings
+ * change. Ingestion writes also move `updatedAt`, so the quiet period errs
+ * towards waiting longer.
+ *
+ * The maximum deferral runs from `pendingSinceAt`, which is built only from
+ * timestamps that later writes never move: when the serving version of a new
+ * or changed source was first requested, when a snapshot source was deleted,
+ * and when the settings last changed. It is never earlier than the published
+ * build or than the moment the KB became eligible, so material that predates
+ * the opt-in or the subject choice still waits out a quiet period. Only when
+ * no such timestamp identifies the change (a source reclassified or already
+ * hard-deleted) does it fall back to the latest change.
+ *
+ * Failures count only for builds of exactly the desired preparation, so a
+ * subject, language or source change always gets a fresh attempt.
  */
 export function deriveKBGraphPreparationTiming(
   candidate: KBGraphPreparationCandidate,
   {
     reason,
-    desiredSourceContentDigest,
+    desired,
     config,
     now,
   }: {
     reason: KBGraphPreparationPendingReason
-    desiredSourceContentDigest: string
+    desired: KBGraphPreparationIdentity
     config: KBGraphPreparationScheduleConfig
     now: Date
   }
 ): { timing: KBGraphPreparationTiming; consecutiveFailures: number } {
-  const settingsChangeAt =
-    reason === 'SETTINGS_CHANGED' ? candidate.kbUpdatedAt : null
   const lastChangeAt = latest([
     candidate.lastResourceChangeAt,
-    settingsChangeAt,
+    candidate.graphSettingsChangedAt,
   ])
 
-  let pendingSinceAt: Date | null
-  if (!candidate.published) {
-    pendingSinceAt = earliest(
-      candidate.servingResources.map((resource) => resource.createdAt)
-    )
+  const published = candidate.published
+  const changeAnchors: Date[] = []
+  if (!published) {
+    for (const resource of candidate.servingResources) {
+      changeAnchors.push(
+        resource.servingVersionRequestedAt ?? resource.createdAt
+      )
+    }
   } else {
-    const snapshotAt = candidate.published.createdAt
-    pendingSinceAt = earliest(
-      [
-        ...candidate.servingResources.map((resource) => resource.updatedAt),
-        ...(settingsChangeAt ? [settingsChangeAt] : []),
-      ].filter((date) => date > snapshotAt)
+    const snapshot = new Map(
+      published.sources.map((source) => [
+        source.resourceId,
+        source.contentSha256,
+      ])
     )
+    const servingIds = new Set<string>()
+    for (const resource of candidate.servingResources) {
+      servingIds.add(resource.id)
+      const snapshotSha256 = snapshot.get(resource.id)
+      if (snapshotSha256 === resource.activeContentSha256) continue
+      // A source new to the graph cannot have been requested before it was
+      // created; a replaced one has no immutable timestamp without its attempt.
+      const requestedAt =
+        resource.servingVersionRequestedAt ??
+        (snapshotSha256 === undefined ? resource.createdAt : null)
+      if (requestedAt) changeAnchors.push(requestedAt)
+    }
+    for (const source of candidate.deletedPublishedSources) {
+      if (!servingIds.has(source.resourceId)) {
+        changeAnchors.push(source.deletedAt)
+      }
+    }
+    if (reason === 'SETTINGS_CHANGED') {
+      changeAnchors.push(candidate.graphSettingsChangedAt)
+    }
   }
-  pendingSinceAt ??= lastChangeAt ?? now
+  const notBefore = latest([
+    candidate.graphSettingsChangedAt,
+    published?.createdAt ?? null,
+  ])
+  const pendingSinceAt =
+    latest([earliest(changeAnchors) ?? lastChangeAt, notBefore]) ?? now
 
   let consecutiveFailures = 0
+  let lastFailedAt: Date | null = null
+  let newestAttempt = true
   for (const build of candidate.recentBuilds) {
-    if (
-      build.status !== DB.KBGraphBuildStatus.FAILED ||
-      build.sourceContentDigest !== desiredSourceContentDigest
-    ) {
-      break
-    }
+    if (!sameKBGraphPreparationIdentity(build, desired)) continue
+    if (build.status !== DB.KBGraphBuildStatus.FAILED) break
+    if (newestAttempt) lastFailedAt = build.finishedAt ?? build.updatedAt
+    newestAttempt = false
     consecutiveFailures += 1
   }
-  const newestBuild = candidate.recentBuilds[0]
-  const lastFailedAt =
-    newestBuild?.status === DB.KBGraphBuildStatus.FAILED
-      ? (newestBuild.finishedAt ?? newestBuild.updatedAt)
-      : null
   const backoffMs = Math.min(
     KB_GRAPH_PREPARATION_MAX_BACKOFF_MS,
     config.failureBackoffMs * 2 ** Math.max(0, consecutiveFailures - 1)
@@ -271,9 +335,13 @@ export function deriveKBGraphPreparationTiming(
 
 /**
  * Decides whether one KB is due for scheduled preparation, or why not. The
- * system trigger repeats the admission and due checks under the KB lock, so
- * a stale classification can never start a second build or spend on a
- * current graph.
+ * classification is read without locks and may be stale. The system trigger
+ * rechecks the owner's entitlement and rollout flags, then under the KB lock
+ * the opt-in, that the stored subject and language resolve, the build slot
+ * and a pending dispatch review, the serving course content, and whether the
+ * published graph still differs from the desired preparation. It does not
+ * recheck the quiet period, backoff, failure limit or quota headroom; the
+ * quota reservation and the slot compare-and-swap still bound what it spends.
  */
 export function classifyKBGraphPreparationCandidate(
   candidate: KBGraphPreparationCandidate,
@@ -327,7 +395,7 @@ export function classifyKBGraphPreparationCandidate(
     candidate,
     {
       reason: pending.reason,
-      desiredSourceContentDigest: desired.sourceContentDigest,
+      desired,
       config,
       now,
     }
@@ -515,8 +583,7 @@ function skipReasonForStartError(error: unknown): KBGraphPreparationSkipReason {
 
 async function loadCandidatePage(
   prisma: KBGraphBuildServiceContext['prisma'],
-  cursor: string | null,
-  config: KBGraphPreparationScheduleConfig
+  cursor: string | null
 ): Promise<KBGraphPreparationCandidate[]> {
   const kbs = await prisma.kB.findMany({
     where: {
@@ -532,7 +599,7 @@ async function loadCandidatePage(
     select: {
       id: true,
       ownerId: true,
-      updatedAt: true,
+      graphSettingsChangedAt: true,
       activeGraphBuildId: true,
       publishedGraphBuildId: true,
       domainPolicyId: true,
@@ -543,8 +610,8 @@ async function loadCandidatePage(
         select: {
           id: true,
           activeContentSha256: true,
+          activeResourceVersion: true,
           createdAt: true,
-          updatedAt: true,
         },
         orderBy: { id: 'asc' },
       },
@@ -555,12 +622,16 @@ async function loadCandidatePage(
           id: true,
           status: true,
           errorCode: true,
+          qualityTier: true,
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
           sourceContentDigest: true,
           finishedAt: true,
           updatedAt: true,
         },
         orderBy: { createdAt: 'desc' },
-        take: config.maxConsecutiveFailures,
+        take: KB_GRAPH_PREPARATION_RECENT_BUILDS,
       },
     },
     orderBy: { id: 'asc' },
@@ -594,11 +665,116 @@ async function loadCandidatePage(
     _max: { updatedAt: true },
   })
   const publishedById = new Map(
-    publishedBuilds.map((build) => [build.id, build])
+    publishedBuilds
+      .filter((build) =>
+        kbs.some(
+          (kb) => kb.id === build.kbId && kb.publishedGraphBuildId === build.id
+        )
+      )
+      .map((build) => [build.id, build])
   )
   const lastChangeByKb = new Map(
     resourceChanges.map((row) => [row.kbId, row._max.updatedAt ?? null])
   )
+
+  const snapshotRows = await prisma.kBGraphBuildSource.findMany({
+    where: { buildId: { in: [...publishedById.keys()] } },
+    select: { buildId: true, resourceId: true, contentSha256: true },
+  })
+  const snapshotByBuild = new Map<
+    string,
+    Array<{ resourceId: string; contentSha256: string }>
+  >()
+  for (const row of snapshotRows) {
+    const sources = snapshotByBuild.get(row.buildId) ?? []
+    sources.push({
+      resourceId: row.resourceId,
+      contentSha256: row.contentSha256,
+    })
+    snapshotByBuild.set(row.buildId, sources)
+  }
+
+  // Only sources whose serving content is not in the published snapshot need
+  // an immutable change timestamp.
+  const changedVersions: Array<{
+    resourceId: string
+    resourceVersion: number
+  }> = []
+  const deletedCandidateIds: string[] = []
+  for (const kb of kbs) {
+    const snapshot = kb.publishedGraphBuildId
+      ? snapshotByBuild.get(kb.publishedGraphBuildId)
+      : undefined
+    const snapshotSha256 = new Map(
+      (snapshot ?? []).map((source) => [
+        source.resourceId,
+        source.contentSha256,
+      ])
+    )
+    for (const resource of kb.resources) {
+      if (
+        resource.activeResourceVersion !== null &&
+        snapshotSha256.get(resource.id) !== resource.activeContentSha256
+      ) {
+        changedVersions.push({
+          resourceId: resource.id,
+          resourceVersion: resource.activeResourceVersion,
+        })
+      }
+    }
+    const servingIds = new Set(kb.resources.map((resource) => resource.id))
+    for (const source of snapshot ?? []) {
+      if (!servingIds.has(source.resourceId)) {
+        deletedCandidateIds.push(source.resourceId)
+      }
+    }
+  }
+  const attemptRows =
+    changedVersions.length > 0
+      ? await prisma.kBIngestionRun.groupBy({
+          by: ['resourceId', 'resourceVersion', 'contentSha256'],
+          where: {
+            operation: DB.KBIngestionOperation.UPSERT,
+            OR: changedVersions,
+          },
+          _min: { createdAt: true },
+        })
+      : []
+  const deletedSources =
+    deletedCandidateIds.length > 0
+      ? await prisma.kBResource.findMany({
+          where: {
+            kbId: { in: kbIds },
+            id: { in: deletedCandidateIds },
+            deletedAt: { not: null },
+          },
+          select: { id: true, kbId: true, deletedAt: true },
+        })
+      : []
+
+  const attemptsByVersion = new Map<string, typeof attemptRows>()
+  for (const row of attemptRows) {
+    const key = `${row.resourceId}:${row.resourceVersion}`
+    attemptsByVersion.set(key, [...(attemptsByVersion.get(key) ?? []), row])
+  }
+  const servingVersionRequestedAt = (resource: {
+    id: string
+    activeResourceVersion: number | null
+    activeContentSha256: string | null
+  }): Date | null => {
+    const attempts =
+      attemptsByVersion.get(
+        `${resource.id}:${resource.activeResourceVersion}`
+      ) ?? []
+    const matching = attempts.filter(
+      (row) => row.contentSha256 === resource.activeContentSha256
+    )
+    return earliest(
+      (matching.length > 0 ? matching : attempts).flatMap((row) =>
+        row._min.createdAt ? [row._min.createdAt] : []
+      )
+    )
+  }
 
   return kbs.map((kb) => {
     const published = kb.publishedGraphBuildId
@@ -610,14 +786,21 @@ async function loadCandidatePage(
     return {
       kbId: kb.id,
       ownerId: kb.ownerId,
-      kbUpdatedAt: kb.updatedAt,
+      graphSettingsChangedAt: kb.graphSettingsChangedAt,
       domainPolicyId: kb.domainPolicyId,
       domainPolicyVersion: kb.domainPolicyVersion,
       domainPolicyLanguage: kb.domainPolicyLanguage,
       servingResources: kb.resources.flatMap((resource) =>
         resource.activeContentSha256 === null
           ? []
-          : [{ ...resource, activeContentSha256: resource.activeContentSha256 }]
+          : [
+              {
+                id: resource.id,
+                activeContentSha256: resource.activeContentSha256,
+                createdAt: resource.createdAt,
+                servingVersionRequestedAt: servingVersionRequestedAt(resource),
+              },
+            ]
       ),
       lastResourceChangeAt: lastChangeByKb.get(kb.id) ?? null,
       // An unknown slot holder is treated as active so it is never raced.
@@ -627,17 +810,24 @@ async function loadCandidatePage(
             errorCode: null,
           })
         : null,
-      published:
-        published && published.kbId === kb.id
-          ? {
-              createdAt: published.createdAt,
-              qualityTier: published.qualityTier,
-              domainPolicyId: published.domainPolicyId,
-              domainPolicyVersion: published.domainPolicyVersion,
-              domainPolicyLanguage: published.domainPolicyLanguage,
-              sourceContentDigest: published.sourceContentDigest,
-            }
-          : null,
+      published: published
+        ? {
+            createdAt: published.createdAt,
+            qualityTier: published.qualityTier,
+            domainPolicyId: published.domainPolicyId,
+            domainPolicyVersion: published.domainPolicyVersion,
+            domainPolicyLanguage: published.domainPolicyLanguage,
+            sourceContentDigest: published.sourceContentDigest,
+            sources: snapshotByBuild.get(published.id) ?? [],
+          }
+        : null,
+      deletedPublishedSources: published
+        ? deletedSources.flatMap((source) =>
+            source.kbId === kb.id && source.deletedAt
+              ? [{ resourceId: source.id, deletedAt: source.deletedAt }]
+              : []
+          )
+        : [],
       recentBuilds: kb.graphBuilds,
     }
   })
@@ -724,7 +914,7 @@ export async function sweepKbGraphPreparation(
   let oldestPendingSinceAt: Date | null = null
   let cursor: string | null = null
   for (let page = 0; page < KB_GRAPH_PREPARATION_MAX_PAGES; page += 1) {
-    const candidates = await loadCandidatePage(deps.prisma, cursor, config)
+    const candidates = await loadCandidatePage(deps.prisma, cursor)
     if (candidates.length === 0) break
     cursor = candidates[candidates.length - 1]!.kbId
 
@@ -833,9 +1023,7 @@ export async function sweepKbGraphPreparation(
           ),
         })
       } else {
-        skipped[
-          result.outcome === 'ALREADY_ACTIVE' ? 'ALREADY_ACTIVE' : 'CURRENT'
-        ] += 1
+        skipped[result.outcome === 'NOT_DUE' ? 'CURRENT' : result.outcome] += 1
       }
     } catch (error) {
       const reason = skipReasonForStartError(error)

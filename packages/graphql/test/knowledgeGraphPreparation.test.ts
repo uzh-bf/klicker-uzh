@@ -41,8 +41,9 @@ const resource = {
   id: '11111111-1111-4111-8111-111111111111',
   activeContentSha256: 'a'.repeat(64),
   createdAt: minutesAgo(3000),
-  updatedAt: minutesAgo(3000),
+  servingVersionRequestedAt: minutesAgo(3000),
 }
+const maxDeferralMinutes = config.maxDeferralMs / MINUTE
 const currentDigest = hashKBContentDigestEntries([
   { resourceId: resource.id, contentSha256: resource.activeContentSha256 },
 ])
@@ -53,32 +54,42 @@ function candidate(
   return {
     kbId: '22222222-2222-4222-8222-222222222222',
     ownerId: '33333333-3333-4333-8333-333333333333',
-    kbUpdatedAt: minutesAgo(5000),
+    graphSettingsChangedAt: minutesAgo(5000),
     ...domain,
     servingResources: [resource],
-    lastResourceChangeAt: resource.updatedAt,
+    lastResourceChangeAt: minutesAgo(3000),
     activeBuild: null,
     published: {
       ...domain,
       qualityTier: KBGraphQualityTier.STANDARD,
       sourceContentDigest: 'older-digest',
       createdAt: minutesAgo(4000),
+      sources: [],
     },
+    deletedPublishedSources: [],
     recentBuilds: [],
     ...overrides,
   }
 }
 
-const failed = (minutes: number, sourceContentDigest = currentDigest) => ({
+const failed = (
+  minutes: number,
+  identity: { sourceContentDigest?: string; domainPolicyLanguage?: string } = {}
+) => ({
+  ...domain,
+  qualityTier: KBGraphQualityTier.STANDARD,
+  sourceContentDigest: currentDigest,
+  ...identity,
   status: KBGraphBuildStatus.FAILED,
-  sourceContentDigest,
   finishedAt: minutesAgo(minutes),
   updatedAt: minutesAgo(minutes),
 })
 
 describe('scheduled graph preparation due check', () => {
   const recentlyChanged = {
-    servingResources: [{ ...resource, updatedAt: minutesAgo(10) }],
+    servingResources: [
+      { ...resource, servingVersionRequestedAt: minutesAgo(10) },
+    ],
     lastResourceChangeAt: minutesAgo(10),
   }
 
@@ -92,6 +103,7 @@ describe('scheduled graph preparation due check', () => {
           qualityTier: KBGraphQualityTier.STANDARD,
           sourceContentDigest: currentDigest,
           createdAt: minutesAgo(4000),
+          sources: [],
         },
       },
       admittedOwner,
@@ -104,17 +116,33 @@ describe('scheduled graph preparation due check', () => {
       'QUIET_PERIOD',
     ],
     [
-      'continuous changes pending longer than the age bound',
+      'a source rewritten continuously since before the age bound',
       {
         servingResources: [
-          { ...resource, updatedAt: minutesAgo(10) },
           {
             ...resource,
-            id: '44444444-4444-4444-8444-444444444444',
-            updatedAt: minutesAgo(config.maxDeferralMs / MINUTE + 1),
+            servingVersionRequestedAt: minutesAgo(maxDeferralMinutes + 1),
           },
         ],
-        lastResourceChangeAt: minutesAgo(10),
+        lastResourceChangeAt: minutesAgo(5),
+      },
+      admittedOwner,
+      'due',
+    ],
+    [
+      'old material on a KB that just became eligible',
+      {
+        published: null,
+        graphSettingsChangedAt: minutesAgo(10),
+      },
+      admittedOwner,
+      'QUIET_PERIOD',
+    ],
+    [
+      'old material once the new KB settings have settled',
+      {
+        published: null,
+        graphSettingsChangedAt: minutesAgo(50),
       },
       admittedOwner,
       'due',
@@ -132,7 +160,7 @@ describe('scheduled graph preparation due check', () => {
       'BACKOFF',
     ],
     [
-      'repeated failures on unchanged sources',
+      'repeated failures of the unchanged preparation',
       { recentBuilds: [failed(3000), failed(4000), failed(5000)] },
       admittedOwner,
       'FAILURE_LIMIT',
@@ -141,9 +169,21 @@ describe('scheduled graph preparation due check', () => {
       'earlier failures on different sources',
       {
         recentBuilds: [
-          failed(3000, 'other'),
-          failed(4000, 'other'),
-          failed(5000, 'other'),
+          failed(3000, { sourceContentDigest: 'other' }),
+          failed(4000, { sourceContentDigest: 'other' }),
+          failed(5000, { sourceContentDigest: 'other' }),
+        ],
+      },
+      admittedOwner,
+      'due',
+    ],
+    [
+      'recent failures before a language change',
+      {
+        recentBuilds: [
+          failed(30, { domainPolicyLanguage: 'English' }),
+          failed(3000, { domainPolicyLanguage: 'English' }),
+          failed(4000, { domainPolicyLanguage: 'English' }),
         ],
       },
       admittedOwner,
@@ -297,8 +337,17 @@ describe('scheduled graph preparation sweep', () => {
     }
   })
 
-  function createDeps({ activeBuilds = 0 }: { activeBuilds?: number } = {}) {
+  function createDeps({
+    activeBuilds = 0,
+    servingVersionRequestedAt = minutesAgo(3000),
+    lastResourceChangeAt = minutesAgo(3000),
+  }: {
+    activeBuilds?: number
+    servingVersionRequestedAt?: Date
+    lastResourceChangeAt?: Date
+  } = {}) {
     const kb = candidate()
+    const publishedBuildId = '55555555-5555-4555-8555-555555555555'
     const prisma = {
       kB: {
         findMany: vi.fn(async ({ where }: { where: { id?: unknown } }) =>
@@ -308,11 +357,18 @@ describe('scheduled graph preparation sweep', () => {
                 {
                   id: kb.kbId,
                   ownerId: kb.ownerId,
-                  updatedAt: kb.kbUpdatedAt,
+                  graphSettingsChangedAt: kb.graphSettingsChangedAt,
                   activeGraphBuildId: null,
-                  publishedGraphBuildId: null,
+                  publishedGraphBuildId: publishedBuildId,
                   ...domain,
-                  resources: kb.servingResources,
+                  resources: [
+                    {
+                      id: resource.id,
+                      activeContentSha256: resource.activeContentSha256,
+                      activeResourceVersion: 2,
+                      createdAt: resource.createdAt,
+                    },
+                  ],
                   graphBuilds: [],
                 },
               ]
@@ -320,9 +376,49 @@ describe('scheduled graph preparation sweep', () => {
       },
       kBGraphBuild: {
         count: vi.fn(async () => activeBuilds),
-        findMany: vi.fn(async () => []),
+        findMany: vi.fn(async () => [
+          {
+            id: publishedBuildId,
+            kbId: kb.kbId,
+            createdAt: minutesAgo(4000),
+            qualityTier: KBGraphQualityTier.STANDARD,
+            ...domain,
+            sourceContentDigest: 'older-digest',
+          },
+        ]),
       },
-      kBResource: { groupBy: vi.fn(async () => []) },
+      kBGraphBuildSource: {
+        findMany: vi.fn(async () => [
+          {
+            buildId: publishedBuildId,
+            resourceId: resource.id,
+            contentSha256: 'b'.repeat(64),
+          },
+        ]),
+      },
+      // Ingestion rewrites the resource row on every step, so its latest
+      // update can stay recent while the serving version is much older.
+      kBResource: {
+        groupBy: vi.fn(async () => [
+          { kbId: kb.kbId, _max: { updatedAt: lastResourceChangeAt } },
+        ]),
+      },
+      kBIngestionRun: {
+        groupBy: vi.fn(async () => [
+          {
+            resourceId: resource.id,
+            resourceVersion: 2,
+            contentSha256: resource.activeContentSha256,
+            _min: { createdAt: servingVersionRequestedAt },
+          },
+          {
+            resourceId: resource.id,
+            resourceVersion: 1,
+            contentSha256: 'b'.repeat(64),
+            _min: { createdAt: minutesAgo(6000) },
+          },
+        ]),
+      },
       user: {
         findMany: vi.fn(async () => [
           {
@@ -410,6 +506,38 @@ describe('scheduled graph preparation sweep', () => {
       admitted: 0,
       skipped: { CAPACITY: 1 },
     })
+  })
+
+  it.each([
+    ['requested before the age bound', maxDeferralMinutes + 1, 'due'],
+    ['requested inside the quiet period', 10, 'QUIET_PERIOD'],
+  ])('times a replaced source that ingestion keeps rewriting from when its serving version was %s', async (_, requestedMinutesAgo, expected) => {
+    const { deps } = createDeps({
+      servingVersionRequestedAt: minutesAgo(requestedMinutesAgo),
+      lastResourceChangeAt: minutesAgo(5),
+    })
+    const startBuild = vi.fn(
+      async (): Promise<KBGraphBuildStart> => ({
+        outcome: 'QUEUED',
+        kb: {
+          id: 'kb',
+          knowledgeGraphEnabled: true,
+          activeGraphBuildId: 'build',
+          publishedGraphBuildId: null,
+        },
+        build: null,
+      })
+    )
+
+    const summary = await sweepKbGraphPreparation({
+      ...deps,
+      env: costEnv,
+      now: () => now,
+      startBuild,
+    })
+
+    expect(summary.due === 1 ? 'due' : 'QUIET_PERIOD').toBe(expected)
+    expect(summary.skipped.QUIET_PERIOD).toBe(expected === 'due' ? 0 : 1)
   })
 
   it('admits nothing while the schedule is misconfigured', async () => {

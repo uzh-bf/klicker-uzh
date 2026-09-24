@@ -123,6 +123,11 @@ model KB {
   domainPolicyId       String?
   domainPolicyVersion  Int?
   domainPolicyLanguage String?
+  // Last change of the graph inputs a lecturer controls on the KB itself: the
+  // subject and language above, or turning the graph opt-in on. Scheduled
+  // graph preparation waits from here; `updatedAt` also moves for build-slot
+  // bookkeeping and cannot serve that purpose.
+  graphSettingsChangedAt DateTime @default(now())
 
   // graph generation is opt-in per KB; the lecturer-level preview flag is a separate gate
   knowledgeGraphEnabled Boolean @default(false)
