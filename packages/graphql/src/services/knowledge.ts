@@ -3662,6 +3662,12 @@ export interface KBQuestionPreparationInput {
   delayedAfterMs: number
 }
 
+/**
+ * Lecturers are told to check back within 24 hours; a preparation pending
+ * longer reports delayed instead of queued or processing.
+ */
+export const KB_QUESTION_PREPARATION_DELAYED_AFTER_MS = 24 * 60 * 60_000
+
 export interface KBQuestionPreparation {
   state: KBQuestionPreparationState
   pendingReason: KBGraphPreparationPendingReason | null

@@ -2793,9 +2793,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         remove: 'Remove',
         start: 'Generate elements',
         starting: 'Starting…',
-        noSources: 'No published knowledge graph available',
+        sourceNotReady: 'Not ready for question generation yet',
+        requestedSourceMissing:
+          'The requested knowledge base is unavailable. Choose one of your knowledge bases below.',
+        noSources: 'No knowledge base available',
         noSourcesHelp:
-          'Create a knowledge base and publish its knowledge graph before generating elements.',
+          'Create a knowledge base and add course material before generating elements.',
       },
       elementTypes: {
         SC: {
@@ -3105,6 +3108,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         buildLoad: 'This generation could not be loaded.',
         action: 'The generation could not be updated. Please try again.',
         withCode: 'The operation failed ({code}). Please try again.',
+        basisChanged:
+          'The prepared material of this knowledge base changed. Review the updated source and start again.',
       },
     },
     questionPool: {

@@ -1583,6 +1583,23 @@ type ElementGenerationPlanSummary {
   warnings: [ElementGenerationWarning!]!
 }
 
+enum ElementGenerationPreparationPendingReason {
+  NO_PUBLISHED_GRAPH
+  SETTINGS_CHANGED
+  SOURCES_CHANGED
+}
+
+enum ElementGenerationPreparationState {
+  DELAYED
+  NEEDS_ATTENTION
+  NO_ELIGIBLE_MATERIALS
+  PROCESSING
+  QUEUED
+  READY
+  UNAVAILABLE
+  WAITING_FOR_MATERIALS
+}
+
 type ElementGenerationReview {
   decision: ElementGenerationReviewDecision!
   gate: ElementGenerationReviewGate!
@@ -1626,12 +1643,19 @@ type ElementGenerationSlotFailure {
 }
 
 type ElementGenerationSource {
-  graphBuildId: ID!
-  indexedAt: Date!
-  isStale: Boolean!
+  basis: ElementGenerationSourceBasis
   kbId: ID!
   kbName: String!
+  preparationPendingReason: ElementGenerationPreparationPendingReason
+  preparationState: ElementGenerationPreparationState!
+}
+
+type ElementGenerationSourceBasis {
+  fingerprint: String!
+  graphBuildId: ID!
+  indexedAt: Date!
   language: ElementGenerationLanguage!
+  recentChangesExcluded: Boolean!
   sourceCount: Int!
   sources: [ElementGenerationSourceScope!]!
 }
@@ -3912,6 +3936,7 @@ input StackResponseInput {
 }
 
 input StartElementGenerationInput {
+  basisFingerprint: String!
   bloomLevels: [ElementGenerationBloomLevel!]
   difficultyPreset: ElementGenerationDifficultyPreset
   elementCount: Int!
@@ -3919,6 +3944,7 @@ input StartElementGenerationInput {
   focusTopic: String
   graphBuildId: ID!
   idempotencyKey: String!
+  kbId: ID!
   language: ElementGenerationLanguage!
   objectives: [ElementGenerationObjectiveInput!]
   sourceScopes: [ElementGenerationSourceScopeInput!]

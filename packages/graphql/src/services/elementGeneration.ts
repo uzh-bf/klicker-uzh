@@ -42,6 +42,7 @@ import {
 } from './questionGenerationDrafts.js'
 import { questionGenerationServiceError } from './questionGenerationErrors.js'
 import {
+  assertQuestionGenerationBasisCurrent,
   assertQuestionGenerationPreviewAccess,
   getQuestionGenerationSources,
 } from './questionGenerationGraph.js'
@@ -87,7 +88,10 @@ async function resolveRequestedQuestionFocusTopic(
 }
 
 export type StartElementGenerationInput = {
+  kbId: string
   graphBuildId: string
+  /** Preparation identity of `graphBuildId` as listed for `kbId`. */
+  basisFingerprint: string
   elementType: 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD'
   language: string
   elementCount: number
@@ -184,19 +188,21 @@ export async function startElementGeneration(
     input.focusTopic,
     ctx
   )
-  if (input.elementType === 'FLASHCARD') {
-    if (
-      input.difficultyPreset != null ||
+  if (
+    input.elementType === 'FLASHCARD' &&
+    (input.difficultyPreset != null ||
       (input.sourceScopes?.length ?? 0) > 0 ||
       (input.bloomLevels?.length ?? 0) > 0 ||
       input.objectives?.some((objective) => objective.bloomLevel != null) ||
-      focusTopic !== null
-    ) {
-      throw questionGenerationServiceError(
-        'CONFIGURATION_INVALID',
-        'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
-      )
-    }
+      focusTopic !== null)
+  ) {
+    throw questionGenerationServiceError(
+      'CONFIGURATION_INVALID',
+      'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
+    )
+  }
+  await assertQuestionGenerationBasisCurrent(input, ctx)
+  if (input.elementType === 'FLASHCARD') {
     return startFlashcardGeneration(
       {
         graphBuildId: input.graphBuildId,

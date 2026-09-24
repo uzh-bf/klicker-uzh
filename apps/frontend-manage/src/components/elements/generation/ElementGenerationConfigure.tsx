@@ -93,7 +93,7 @@ export default function ElementGenerationConfigure({
   const capabilitiesQuery = useQuery(ElementGenerationCapabilitiesDocument)
   const sourcesQuery = useQuery(ElementGenerationSourcesWithLanguageDocument)
   const [startGeneration] = useMutation(StartElementGenerationDocument)
-  const [graphBuildId, setGraphBuildId] = useState('')
+  const [selectedKbId, setSelectedKbId] = useState<string>()
   const [elementType, setElementType] = useState<GeneratableElementType>(
     GeneratableElementType.Sc
   )
@@ -128,22 +128,31 @@ export default function ElementGenerationConfigure({
       ),
     [capabilities]
   )
-  const selectedSource = sources.find(
-    (source) => source.graphBuildId === graphBuildId
-  )
-  const language = selectedSource?.language
+  const selectedSource = sources.find((source) => source.kbId === selectedKbId)
+  const basis = selectedSource?.basis
+  const language = basis?.language
+  // A requested KB that is not listed is missing or not the actor's; another
+  // KB is never selected in its place.
+  const requestedSourceMissing =
+    preselectedKbId !== undefined &&
+    selectedKbId === undefined &&
+    !sources.some((source) => source.kbId === preselectedKbId)
   const selectedCapability = capabilities?.typeCapabilities.find(
     (capability) => capability.elementType === elementType
   )
 
   useEffect(() => {
-    if (graphBuildId || sources.length === 0) return
+    if (selectedKbId !== undefined) return
+    // An explicitly requested KB is selected only when it is listed. Without a
+    // request, default to the first KB that can generate now, else the first.
     const source =
-      sources.find((candidate) => candidate.kbId === preselectedKbId) ??
-      sources[0]
-    setGraphBuildId(source.graphBuildId)
-    setSourceScopes(scopeValues(source.sources))
-  }, [graphBuildId, preselectedKbId, sources])
+      preselectedKbId !== undefined
+        ? sources.find((candidate) => candidate.kbId === preselectedKbId)
+        : (sources.find((candidate) => candidate.basis) ?? sources[0])
+    if (!source) return
+    setSelectedKbId(source.kbId)
+    setSourceScopes(scopeValues(source.basis?.sources ?? []))
+  }, [preselectedKbId, selectedKbId, sources])
 
   useEffect(() => {
     if (supportedTypes.length > 0 && !supportedTypes.includes(elementType)) {
@@ -192,13 +201,11 @@ export default function ElementGenerationConfigure({
     )
   }
 
-  function selectSource(nextGraphBuildId: string) {
-    const source = sources.find(
-      (candidate) => candidate.graphBuildId === nextGraphBuildId
-    )
+  function selectSource(nextKbId: string) {
+    const source = sources.find((candidate) => candidate.kbId === nextKbId)
     if (!source) return
-    setGraphBuildId(nextGraphBuildId)
-    setSourceScopes(scopeValues(source.sources))
+    setSelectedKbId(nextKbId)
+    setSourceScopes(scopeValues(source.basis?.sources ?? []))
   }
 
   function updateScope(index: number, update: Partial<SourceScopeValue>) {
@@ -214,13 +221,12 @@ export default function ElementGenerationConfigure({
     setValidationError(undefined)
     setSubmissionError(undefined)
 
-    if (
-      !selectedSource ||
-      !language ||
-      !capabilities?.languages.includes(language) ||
-      !selectedCapability
-    ) {
+    if (!selectedSource || !selectedCapability) {
       setValidationError(t('validation.sourceRequired'))
+      return
+    }
+    if (!basis || !language || !capabilities?.languages.includes(language)) {
+      setValidationError(t('configure.sourceNotReady'))
       return
     }
     if (
@@ -262,7 +268,9 @@ export default function ElementGenerationConfigure({
     }
 
     const input = {
-      graphBuildId,
+      kbId: selectedSource.kbId,
+      graphBuildId: basis.graphBuildId,
+      basisFingerprint: basis.fingerprint,
       elementType,
       language,
       elementCount,
@@ -319,6 +327,17 @@ export default function ElementGenerationConfigure({
       await onStarted(buildId)
     } catch (error) {
       const code = elementGenerationErrorCode(error)
+      if (code === 'KB_GRAPH_BASIS_CHANGED') {
+        setSubmissionError(t('errors.basisChanged'))
+        // Show the refreshed basis for review; nothing is started with it
+        // until the lecturer submits again.
+        const refreshed = await sourcesQuery.refetch().catch(() => undefined)
+        const source = refreshed?.data.elementGenerationSources.find(
+          (candidate) => candidate.kbId === selectedSource.kbId
+        )
+        setSourceScopes(scopeValues(source?.basis?.sources ?? []))
+        return
+      }
       setSubmissionError(
         code ? t('errors.withCode', { code }) : t('errors.start')
       )
@@ -344,12 +363,20 @@ export default function ElementGenerationConfigure({
             <p className="mt-1 text-sm text-slate-600">
               {t('configure.sourceHelp')}
             </p>
+            {requestedSourceMissing ? (
+              <UserNotification
+                type="warning"
+                message={t('configure.requestedSourceMissing')}
+                className={{ root: 'mt-4' }}
+                data={{ cy: 'element-generation-requested-source-missing' }}
+              />
+            ) : null}
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {sources.map((source) => {
-                const checked = graphBuildId === source.graphBuildId
+                const checked = selectedKbId === source.kbId
                 return (
                   <label
-                    key={source.graphBuildId}
+                    key={source.kbId}
                     className={`cursor-pointer rounded-lg border-2 p-4 transition-colors ${
                       checked
                         ? 'border-primary-100 bg-primary-20'
@@ -359,9 +386,9 @@ export default function ElementGenerationConfigure({
                     <span className="flex items-start gap-3">
                       <input
                         type="radio"
-                        name="graphBuildId"
+                        name="kbId"
                         checked={checked}
-                        onChange={() => selectSource(source.graphBuildId)}
+                        onChange={() => selectSource(source.kbId)}
                         className="accent-primary-100 mt-1 h-4 w-4"
                         data-cy={`element-generation-source-${source.kbId}`}
                       />
@@ -369,23 +396,32 @@ export default function ElementGenerationConfigure({
                         <span className="block break-words font-semibold text-slate-900">
                           {source.kbName}
                         </span>
-                        <span className="mt-1 block text-xs text-slate-600">
-                          {t('configure.sourceCount', {
-                            count: source.sourceCount,
-                          })}
-                        </span>
-                        <span className="mt-1 block text-xs text-slate-500">
-                          {t('configure.indexedAt', {
-                            date: format.dateTime(new Date(source.indexedAt), {
-                              dateStyle: 'medium',
-                            }),
-                          })}
-                        </span>
-                        {source.isStale ? (
-                          <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                            {t('configure.staleGraph')}
+                        {source.basis ? (
+                          <>
+                            <span className="mt-1 block text-xs text-slate-600">
+                              {t('configure.sourceCount', {
+                                count: source.basis.sourceCount,
+                              })}
+                            </span>
+                            <span className="mt-1 block text-xs text-slate-500">
+                              {t('configure.indexedAt', {
+                                date: format.dateTime(
+                                  new Date(source.basis.indexedAt),
+                                  { dateStyle: 'medium' }
+                                ),
+                              })}
+                            </span>
+                            {source.basis.recentChangesExcluded ? (
+                              <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                                {t('configure.staleGraph')}
+                              </span>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span className="mt-1 block text-xs text-slate-600">
+                            {t('configure.sourceNotReady')}
                           </span>
-                        ) : null}
+                        )}
                       </span>
                     </span>
                   </label>
@@ -393,13 +429,13 @@ export default function ElementGenerationConfigure({
               })}
             </div>
 
-            {selectedSource && selectedCapability?.supportsSourceScopes ? (
+            {basis && selectedCapability?.supportsSourceScopes ? (
               <fieldset className="mt-5 border-t border-slate-200 pt-5">
                 <legend className="font-semibold text-slate-900">
                   {t('configure.sourceDetails')}
                 </legend>
                 <div className="mt-3 space-y-3">
-                  {selectedSource.sources.map((source, index) => {
+                  {basis.sources.map((source, index) => {
                     const scope = sourceScopes[index]
                     if (!scope) return null
                     return (
@@ -769,7 +805,7 @@ export default function ElementGenerationConfigure({
               <dd className="font-medium text-slate-900">{elementCount}</dd>
             </div>
           </dl>
-          {selectedSource?.isStale ? (
+          {basis?.recentChangesExcluded ? (
             <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
               {t('configure.staleGraphHelp')}
             </p>
