@@ -2899,7 +2899,7 @@ type Mutation {
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   rebuildKbKnowledgeGraph(kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
-  rebuildKbKnowledgeGraphWithDomain(domainPolicyId: ID, domainPolicyLanguage: String, domainPolicyVersion: Int, focusTopic: String, kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
+  rebuildKbKnowledgeGraphWithDomain(focusTopic: String, kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
   rejectChatbotRevision(comment: String!, expectedRevisionVersion: Int!, id: String!): Chatbot
   rejectResponseExample(id: String!): ResponseExampleSet
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
