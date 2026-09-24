@@ -95,3 +95,55 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Frontend PWA pod annotations, shared by the baseline and burst Deployments.
+*/}}
+{{- define "chart.frontendPWAPodAnnotations" -}}
+checksum/config: {{ include (print $.Template.BasePath "/cm-frontend-pwa.yaml") . | sha256sum }}
+release: {{ .Chart.AppVersion }}
+{{- with .Values.frontendPWA.podAnnotations }}
+{{- toYaml . | nindent 0 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Frontend PWA pod spec without node scheduling, shared by the baseline and burst
+Deployments.
+*/}}
+{{- define "chart.frontendPWAPodSpec" -}}
+priorityClassName: {{ include "chart.fullname" . }}-{{ .Values.frontendPWA.priorityClassName }}
+{{- with .Values.frontendPWA.imagePullSecrets }}
+imagePullSecrets:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+securityContext:
+  {{- toYaml .Values.frontendPWA.podSecurityContext | nindent 2 }}
+containers:
+  - name: frontend-pwa
+    securityContext:
+      {{- toYaml .Values.frontendPWA.securityContext | nindent 6 }}
+    image: "{{ .Values.frontendPWA.image.repository }}:{{ .Values.global.imageTag | default .Values.frontendPWA.image.tag | default .Chart.AppVersion }}"
+    imagePullPolicy: {{ .Values.frontendPWA.image.pullPolicy }}
+    ports:
+      - name: http
+        containerPort: 3000
+        protocol: TCP
+    envFrom:
+      - configMapRef:
+          name: {{ include "chart.fullname" . }}-config-global
+      - configMapRef:
+          name: {{ include "chart.fullname" . }}-config-frontend-pwa
+      - secretRef:
+          name: {{ include "chart.fullname" . }}-secret-frontend-pwa
+    livenessProbe:
+      httpGet:
+        path: /login
+        port: http
+    readinessProbe:
+      httpGet:
+        path: /login
+        port: http
+    resources:
+      {{- toYaml .Values.frontendPWA.resources | nindent 6 }}
+{{- end }}
