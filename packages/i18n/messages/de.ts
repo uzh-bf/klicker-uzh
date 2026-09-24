@@ -5063,6 +5063,32 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Chatbot kann auch ohne Abruf von Kursmaterialien verwendet werden.',
       chatbotKnowledgeManagementLink:
         'Verwalten Sie Dokumente, Verarbeitung und Bereitschaft der Wissensbasis unter Wissensbasen.',
+      chatbotKnowledgeBaseSelectPlaceholder: 'Wissensdatenbank auswählen',
+      chatbotKnowledgeBaseConnect: 'Verknüpfen',
+      chatbotKnowledgeBaseReplace: 'Ersetzen',
+      chatbotKnowledgeBaseDisconnect: 'Verknüpfung aufheben',
+      chatbotKnowledgeBaseReplacementWarning:
+        'Dieser Chatbot verwendet derzeit „{kbName}“. Wenn Sie eine andere Wissensdatenbank verknüpfen, wird diese ersetzt.',
+      chatbotKnowledgeBaseLiveChangeNote:
+        'Dieser Chatbot ist veröffentlicht. Das Verknüpfen, Ersetzen oder Aufheben einer Wissensdatenbank wirkt sich sofort für Teilnehmende aus und ist nicht Teil der Entwurfsänderungen, die auf Prüfung warten.',
+      chatbotKnowledgeBaseListError:
+        'Ihre Wissensdatenbanken konnten nicht geladen werden.',
+      chatbotKnowledgeBaseConnectSuccess:
+        'Die Wissensdatenbank wurde verknüpft.',
+      chatbotKnowledgeBaseConnectError:
+        'Die Wissensdatenbank konnte nicht verknüpft werden.',
+      chatbotKnowledgeBaseDisconnectSuccess:
+        'Die Verknüpfung der Wissensdatenbank wurde aufgehoben.',
+      chatbotKnowledgeBaseDisconnectError:
+        'Die Verknüpfung der Wissensdatenbank konnte nicht aufgehoben werden.',
+      chatbotKnowledgeBaseCreatedNotConnected:
+        'Die Wissensdatenbank „{kbName}“ wurde erstellt, konnte aber nicht mit diesem Chatbot verknüpft werden. Versuchen Sie die Verknüpfung erneut, um sie hier zu verwenden.',
+      chatbotKnowledgeBaseRetryConnection: 'Verknüpfung erneut versuchen',
+      chatbotKnowledgeBaseCreateChatbot:
+        'Chatbot mit dieser Wissensdatenbank erstellen',
+      chatbotKnowledgeBaseChatbotCreatedNotConnected:
+        'Der Chatbot wurde erstellt, die Wissensdatenbank konnte aber nicht verknüpft werden. Verknüpfen Sie sie im Bereich „Wissensbasis“ des Chatbots.',
+      backToChatbot: 'Zurück zum Chatbot {name}',
       chatbotTechnicalDetails: 'Technische Details',
       chatbotTechnicalId: 'ID',
       chatbotTechnicalAvatar: 'Avatar',

@@ -7,6 +7,7 @@ import { Modal, TextareaField, TextField, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import React, { useState } from 'react'
 import {
+  type DomainGenerationLanguage,
   isKbDomainSelectionSupported,
   suggestedKbDomain,
 } from '../kbDomainSettings'
@@ -18,15 +19,25 @@ import KnowledgeBaseDomainFields, {
 function CreateKnowledgeBaseModal({
   onClose,
   onCreated,
+  proposedLanguage,
 }: {
   onClose: () => void
-  onCreated: () => Promise<unknown>
+  onCreated: (kb: { id: string; name: string }) => Promise<unknown>
+  // The content language to suggest instead of the ordinary default, for
+  // example the language of the course whose chatbot the knowledge base is
+  // created for. It applies only where the suggested subject serves it.
+  proposedLanguage?: DomainGenerationLanguage
 }) {
   const t = useTranslations()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [domain, setDomain] = useState<KbDomainFieldsValue | null>(null)
-  const [createKb, { loading }] = useMutation(CreateKbDocument)
+  const [createKb, { loading: creating }] = useMutation(CreateKbDocument)
+  // The caller's follow-up (for example connecting the new knowledge base to a
+  // chatbot) runs after the create mutation settles, so the form stays busy
+  // until it finishes and cannot submit a second knowledge base.
+  const [finishing, setFinishing] = useState(false)
+  const loading = creating || finishing
   const { data: domainData } = useQuery(GetKbGraphDomainOptionsDocument)
 
   const domainConfig = domainData?.getKbKnowledgeGraphDomainConfig
@@ -38,7 +49,8 @@ function CreateKnowledgeBaseModal({
   const domainSelectable = domainOptions.length > 0
   // The suggestion stands in until the lecturer touches a control, so the form
   // opens on a usable pair without an effect that could race the catalog query.
-  const domainValue = domain ?? suggestedKbDomain(domainOptions)
+  const domainValue =
+    domain ?? suggestedKbDomain(domainOptions, proposedLanguage)
   const domainSupported =
     domainValue != null &&
     isKbDomainSelectionSupported(domainOptions, domainValue)
@@ -49,8 +61,9 @@ function CreateKnowledgeBaseModal({
     const trimmedName = name.trim()
     if (!canCreate || loading) return
 
+    let created: { id: string; name: string } | undefined
     try {
-      await createKb({
+      const result = await createKb({
         variables: {
           name: trimmedName,
           description: description.trim() || null,
@@ -62,13 +75,27 @@ function CreateKnowledgeBaseModal({
           domainPolicyLanguage: domainSupported ? domainValue.language : null,
         },
       })
+      created = result.data?.createKb
+        ? { id: result.data.createKb.id, name: trimmedName }
+        : undefined
     } catch (error) {
       console.error('Failed to create knowledge base', error)
       toast({ type: 'error', message: t('kb.createError') })
       return
     }
 
-    await refreshAfterMutation(onCreated, 'knowledge bases after creation')
+    if (!created) {
+      toast({ type: 'error', message: t('kb.createError') })
+      return
+    }
+
+    const createdKb = created
+    setFinishing(true)
+    await refreshAfterMutation(
+      () => onCreated(createdKb),
+      'knowledge bases after creation'
+    )
+    setFinishing(false)
     toast({ type: 'success', message: t('kb.createSuccess') })
     onClose()
   }

@@ -34,6 +34,7 @@ import { twMerge } from 'tailwind-merge'
 import ChatbotAuthoring from './ChatbotAuthoring'
 import ChatbotCreditPolicy from './ChatbotCreditPolicy'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
+import ChatbotKnowledgeBaseSetup from './ChatbotKnowledgeBaseSetup'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
 import ChatbotWorkspaceNavigation from './ChatbotWorkspaceNavigation'
 import {
@@ -919,6 +920,13 @@ function ChatbotDetails({
                 </div>
               )}
             </div>
+            <ChatbotKnowledgeBaseSetup
+              key={chatbot.id}
+              chatbotId={chatbot.id}
+              chatbotStatus={chatbot.status}
+              courseIds={chatbot.courses?.map(({ id }) => id) ?? []}
+              connectedKnowledgeBase={enabledKnowledgeBases[0]}
+            />
             <div className="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4">
               <p className="text-sm text-gray-600">
                 {t('manage.resources.chatbotKnowledgeManagementLink')}
