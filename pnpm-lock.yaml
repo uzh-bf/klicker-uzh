@@ -387,6 +387,9 @@ importers:
       '@assistant-ui/react-markdown':
         specifier: 0.14.8
         version: 0.14.8(@assistant-ui/react@0.15.1(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(immer@10.1.1)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(redis@5.12.1(@opentelemetry/api@1.9.1))(use-sync-external-store@1.6.0(react@19.2.8)))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@azure/storage-blob':
+        specifier: 12.25.0
+        version: 12.25.0
       '@fortawesome/fontawesome-svg-core':
         specifier: 6.7.2
         version: 6.7.2

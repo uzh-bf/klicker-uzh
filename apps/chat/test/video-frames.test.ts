@@ -4,6 +4,10 @@ import { type ToolSet, tool } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { readVideoFrame } from '../src/lib/server/videoFrameStore'
+import {
+  readLocalVideo,
+  videoObjectKey,
+} from '../src/lib/server/videoPlaybackStore'
 import { withVideoFrameTool } from '../src/lib/server/videoFrameTools'
 import {
   selectedVideoFrames,
@@ -106,5 +110,19 @@ describe('video frame selection', () => {
     await expect(
       readVideoFrame({ ...candidate, manifest_sha256: 'a'.repeat(64) }, root)
     ).rejects.toThrow()
+  })
+
+  it('resolves the cited recording from the content-addressed video projection', async () => {
+    expect(videoObjectKey(candidate)).toContain(candidate.video_sha256)
+    const previous = process.env.CHAT_VIDEO_FRAME_STORE_PATH
+    process.env.CHAT_VIDEO_FRAME_STORE_PATH = root
+    try {
+      const { bytes, size } = await readLocalVideo(candidate)
+      expect(size).toBe(33688)
+      expect(bytes.subarray(4, 8).toString('ascii')).toBe('ftyp')
+    } finally {
+      if (previous === undefined) delete process.env.CHAT_VIDEO_FRAME_STORE_PATH
+      else process.env.CHAT_VIDEO_FRAME_STORE_PATH = previous
+    }
   })
 })

@@ -24,10 +24,12 @@ function timestamp(totalSeconds: number) {
 
 export function VideoFrameCard({
   frame,
-  src,
+  frameSrc,
+  videoSrc,
 }: {
   frame: VideoFrame
-  src: string
+  frameSrc: string
+  videoSrc: string
 }) {
   const t = useTranslations('chat.videoFrames')
   const [failed, setFailed] = useState(false)
@@ -56,16 +58,24 @@ export function VideoFrameCard({
           </button>
         </div>
       ) : (
-        <Image
+        <video
           key={attempt}
-          src={src}
-          alt={label}
-          width={frame.width_px}
-          height={frame.height_px}
-          unoptimized
+          controls
+          preload="metadata"
+          poster={frameSrc}
+          src={`${videoSrc}#t=${frame.start_sec},${frame.end_sec}`}
+          aria-label={label}
           onError={() => setFailed(true)}
           className="h-auto w-full object-contain"
-        />
+        >
+          <Image
+            src={frameSrc}
+            alt={label}
+            width={frame.width_px}
+            height={frame.height_px}
+            unoptimized
+          />
+        </video>
       )}
       <figcaption className="border-border border-t px-3 py-2 text-sm text-muted-foreground">
         {label}
@@ -88,7 +98,8 @@ export function VideoFramesSection() {
         <VideoFrameCard
           key={`${message.id}-${frame.asset_id}`}
           frame={frame}
-          src={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/frames/${frame.asset_id}`}
+          frameSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/frames/${frame.asset_id}`}
+          videoSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/videos/${frame.asset_id}`}
         />
       ))}
     </div>

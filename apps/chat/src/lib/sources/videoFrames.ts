@@ -25,11 +25,32 @@ export const videoFrameSchema = z
     kb_id: z.string().uuid(),
     external_resource_id: z.string().min(1).max(300),
     resource_version: z.number().int().positive(),
+    video_sha256: digest,
+    video_mime_type: z.enum([
+      'video/mp4',
+      'video/webm',
+      'video/x-m4v',
+      'video/quicktime',
+    ]),
+    video_extension: z.enum(['mp4', 'webm', 'm4v', 'mov']),
     title: z.string().min(1).max(300),
   })
   .refine((frame) => frame.end_sec >= frame.start_sec, {
     message: 'end_sec must not precede start_sec',
   })
+  .refine((frame) => frame.video_sha256 === frame.source_video_sha256, {
+    message: 'video asset must match the cited source video',
+  })
+  .refine(
+    (frame) =>
+      ({
+        mp4: 'video/mp4',
+        webm: 'video/webm',
+        m4v: 'video/x-m4v',
+        mov: 'video/quicktime',
+      })[frame.video_extension] === frame.video_mime_type,
+    { message: 'video format is inconsistent' }
+  )
   .refine(
     (frame) =>
       frame.timestamp_sec >= frame.start_sec &&
@@ -67,7 +88,14 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
     ).slice(0, 30)) {
       const chunk = record(rawChunk)
       const envelope = record(chunk?.video_frames)
-      if (!chunk || envelope?.version !== 1 || !Array.isArray(envelope.assets))
+      const video = record(envelope?.video)
+      if (
+        !chunk ||
+        envelope?.version !== 1 ||
+        !video ||
+        video.kind !== 'video' ||
+        !Array.isArray(envelope.assets)
+      )
         continue
       for (const rawAsset of envelope.assets.slice(0, 10)) {
         const asset = record(rawAsset)
@@ -75,6 +103,9 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
         const parsed = videoFrameSchema.safeParse({
           ...envelope,
           ...asset,
+          video_sha256: video.sha256,
+          video_mime_type: video.mime_type,
+          video_extension: video.extension,
           title: title.slice(0, 300),
         })
         if (!parsed.success) continue

@@ -3,8 +3,8 @@
   "summary": { "sources_returned": 1, "chunks_returned": 1 },
   "sources": [
     {
-      "reference": "https://synthetic.invalid/lecture-01.mp4#t=42,59",
-      "reference_type": "url",
+      "reference": "urn:video-ingestion:sha256:34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67#t=42,59",
+      "reference_type": "video",
       "source_type": "video",
       "video_name": "lecture-01.mp4",
       "display_name": "Synthetic learning-cycle lecture",
@@ -18,11 +18,17 @@
           "representative_frame_sec": 50,
           "video_frames": {
             "version": 1,
-            "manifest_sha256": "849d521eeb4c25d07f657ca14282f784b64bdeb9c080798ace6b1cdeb1957b87",
-            "source_video_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "manifest_sha256": "47aa57950e0f33709b06c7b9e312d47a14d1d5a1612451a272af867f3c05de8b",
+            "source_video_sha256": "34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67",
             "kb_id": "35a72f62-a714-45f1-8b18-2cf5681b0c75",
             "external_resource_id": "video-lecture:synthetic-001",
             "resource_version": 1,
+            "video": {
+              "sha256": "34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67",
+              "mime_type": "video/mp4",
+              "extension": "mp4",
+              "kind": "video"
+            },
             "assets": [
               {
                 "asset_id": "f1d7d1bb20d0b9996ff110fd93ede38d2914c03073f2f30c7dabdabfb263f1c7",
@@ -40,7 +46,7 @@
           }
         }
       ],
-      "source_url": "https://synthetic.invalid/lecture-01.mp4#t=42,59"
+      "source_url": "urn:video-ingestion:sha256:34f453033678a90c989939d9c845ffdb031d39c5869c2eb794d073d7047c9f67#t=42,59"
     }
   ]
 }
