@@ -89,12 +89,13 @@ function graphBuild(
 
 type Resource = { id: string; sha: string }
 
-function published(resources: Resource[]) {
+function published(resources: Resource[], buildId = 'synthetic-build') {
   const entries = resources.map((resource) => ({
     resourceId: resource.id,
     contentSha256: resource.sha,
   }))
   return {
+    buildId,
     domainPolicyId: null,
     domainPolicyVersion: null,
     domainPolicyLanguage: null,
@@ -111,10 +112,12 @@ function candidate(
     serving = [{ id: 'resource-a', sha: 'sha-resource-a' }],
     snapshot = serving,
     hasPublished = true,
+    buildId = 'synthetic-build',
   }: {
     serving?: Resource[]
     snapshot?: Resource[]
     hasPublished?: boolean
+    buildId?: string
   } = {}
 ): KBGraphPreparationCandidate {
   return {
@@ -132,7 +135,7 @@ function candidate(
     })),
     lastResourceChangeAt: PREPARED_AT,
     activeBuild: null,
-    published: hasPublished ? published(snapshot) : null,
+    published: hasPublished ? published(snapshot, buildId) : null,
     deletedPublishedSources: [],
     recentBuilds: [],
   }
@@ -317,6 +320,35 @@ describe('question generation source readiness', () => {
     })
   })
 
+  it('withdraws the basis when the published graph froze another language', () => {
+    const domain = {
+      domainPolicyId: 'finance',
+      domainPolicyVersion: 1,
+    }
+    const source = resolveQuestionGenerationSource(
+      inputs({
+        candidate: {
+          ...candidate('synthetic-kb'),
+          ...domain,
+          domainPolicyLanguage: 'English',
+          published: {
+            ...published([{ id: 'resource-a', sha: 'sha-resource-a' }]),
+            ...domain,
+            domainPolicyLanguage: 'German',
+          },
+        },
+        publishedBuild: graphBuild('German'),
+        admission: {
+          buildAdmitted: true,
+          automaticPreparationAdmitted: true,
+          domainCapabilityEnabled: true,
+        },
+      })
+    )
+    expect(source.preparationPendingReason).toBe('SETTINGS_CHANGED')
+    expect(source.basis).toBeNull()
+  })
+
   it('withdraws the basis once a snapshot source stops serving', () => {
     const source = resolveQuestionGenerationSource(
       inputs({
@@ -351,7 +383,7 @@ describe('question generation source listing and basis revalidation', () => {
       kb('kb-unready', 'Unready course', null),
     ])
     mocks.candidates.mockResolvedValue([
-      candidate('kb-ready'),
+      candidate('kb-ready', { buildId: 'build-ready' }),
       candidate('kb-unready', { hasPublished: false }),
     ])
     mocks.findBuilds.mockResolvedValue([
@@ -423,6 +455,80 @@ describe('question generation source listing and basis revalidation', () => {
     ).rejects.toMatchObject({ code: 'KB_GRAPH_BASIS_CHANGED' })
   })
 
+  it('rejects the basis once a new source means recent changes are excluded', async () => {
+    const [ready] = await getQuestionGenerationSources(ctx)
+    expect(ready?.basis?.recentChangesExcluded).toBe(false)
+    mocks.candidates.mockResolvedValue([
+      candidate('kb-ready', {
+        serving: [
+          { id: 'resource-a', sha: 'sha-resource-a' },
+          { id: 'resource-b', sha: 'sha-resource-b' },
+        ],
+        snapshot: [{ id: 'resource-a', sha: 'sha-resource-a' }],
+        buildId: 'build-ready',
+      }),
+    ])
+    await expect(
+      assertQuestionGenerationBasisCurrent(
+        {
+          kbId: 'kb-ready',
+          graphBuildId: 'build-ready',
+          basisFingerprint: ready?.basis?.fingerprint ?? '',
+        },
+        ctx
+      )
+    ).rejects.toMatchObject({ code: 'KB_GRAPH_BASIS_CHANGED' })
+  })
+
+  it('keeps accepting a basis that already excluded recent changes after another upload', async () => {
+    const resourceA = { id: 'resource-a', sha: 'sha-resource-a' }
+    const resourceB = { id: 'resource-b', sha: 'sha-resource-b' }
+    const resourceC = { id: 'resource-c', sha: 'sha-resource-c' }
+    mocks.candidates.mockResolvedValue([
+      candidate('kb-ready', {
+        serving: [resourceA, resourceB],
+        snapshot: [resourceA],
+        buildId: 'build-ready',
+      }),
+    ])
+    const [ready] = await getQuestionGenerationSources(ctx)
+    expect(ready?.basis?.recentChangesExcluded).toBe(true)
+    mocks.candidates.mockResolvedValue([
+      candidate('kb-ready', {
+        serving: [resourceA, resourceB, resourceC],
+        snapshot: [resourceA],
+        buildId: 'build-ready',
+      }),
+    ])
+    await expect(
+      assertQuestionGenerationBasisCurrent(
+        {
+          kbId: 'kb-ready',
+          graphBuildId: 'build-ready',
+          basisFingerprint: ready?.basis?.fingerprint ?? '',
+        },
+        ctx
+      )
+    ).resolves.toBeUndefined()
+  })
+
+  it('pairs each KB with the build its candidate snapshot belongs to', async () => {
+    // The KB row was read after a newer publication than the candidate saw.
+    mocks.findKnowledgeBases.mockResolvedValue([
+      kb('kb-ready', 'Ready course', 'build-newer'),
+    ])
+    mocks.candidates.mockResolvedValue([
+      candidate('kb-ready', { buildId: 'build-ready' }),
+    ])
+    const [ready] = await getQuestionGenerationSources(ctx)
+    expect(ready?.basis?.graphBuildId).toBe('build-ready')
+    expect(mocks.findBuilds).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['build-ready'] }, kbId: { in: ['kb-ready'] } },
+      })
+    )
+  })
+
   it('rejects a foreign or missing KB instead of falling back to another', async () => {
     const [ready] = await getQuestionGenerationSources(ctx)
     // The owner filter returns nothing for a KB the actor does not own.
@@ -451,6 +557,7 @@ describe('question generation source listing and basis revalidation', () => {
       candidate('kb-ready', {
         serving: [],
         snapshot: [{ id: 'resource-a', sha: 'sha-resource-a' }],
+        buildId: 'build-ready',
       }),
     ])
     await expect(

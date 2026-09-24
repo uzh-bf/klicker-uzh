@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import {
   getDefaultKBGraphDomainCatalog,
   getPublishedKnowledgeGraph,
@@ -69,9 +70,11 @@ export type QuestionGenerationGraph = {
 
 /**
  * The published graph a generation request for one KB may pin, with the
- * summary the lecturer confirms. `fingerprint` is the preparation identity of
- * that build; together with the build id it is the source basis a request
- * must carry back.
+ * summary the lecturer confirms. `fingerprint` covers the preparation identity
+ * of that build and whether recent changes are excluded from it; together with
+ * the build id it is the source basis a request must carry back. A request is
+ * therefore refused once the recent-changes notice the lecturer saw would
+ * differ, but not on each further upload while that notice stays the same.
  */
 export type QuestionGenerationSourceBasis = {
   graphBuildId: string
@@ -374,6 +377,7 @@ export function resolveQuestionGenerationSource({
   const snapshot = usableBuild
     ? questionGenerationSourceSnapshot(usableBuild.sources)
     : []
+  const recentChangesExcluded = preparation.reason === 'SOURCES_CHANGED'
 
   return {
     kbId: kb.id,
@@ -383,10 +387,18 @@ export function resolveQuestionGenerationSource({
     basis: basisEligible
       ? {
           graphBuildId: usableBuild.id,
-          fingerprint: getKBGraphPreparationFingerprint(published),
+          fingerprint: createHash('sha256')
+            .update(
+              JSON.stringify([
+                'question-generation-basis/v1',
+                getKBGraphPreparationFingerprint(published),
+                recentChangesExcluded,
+              ])
+            )
+            .digest('hex'),
           language,
           indexedAt: usableBuild.finishedAt ?? usableBuild.createdAt,
-          recentChangesExcluded: preparation.reason === 'SOURCES_CHANGED',
+          recentChangesExcluded,
           sourceCount: snapshot.length,
           sources: snapshot.map((source) => ({
             resourceId: source.resourceId,
@@ -427,7 +439,6 @@ async function loadQuestionGenerationSources(
         id: true,
         name: true,
         knowledgeGraphEnabled: true,
-        publishedGraphBuildId: true,
       },
       orderBy: { name: 'asc' },
     }),
@@ -443,11 +454,12 @@ async function loadQuestionGenerationSources(
   const candidatesById = new Map(
     candidates.map((candidate) => [candidate.kbId, candidate])
   )
-  const publishedIds = kbs.flatMap((kb) =>
-    kb.publishedGraphBuildId && candidatesById.get(kb.id)?.published
-      ? [kb.publishedGraphBuildId]
-      : []
-  )
+  // The candidate names the published build its snapshot belongs to, so a
+  // publication between the parallel reads cannot pair mismatched data.
+  const publishedIds = kbs.flatMap((kb) => {
+    const buildId = candidatesById.get(kb.id)?.published?.buildId
+    return buildId ? [buildId] : []
+  })
   const [publishedBuilds, resourceStatuses] = await Promise.all([
     ctx.prisma.kBGraphBuild.findMany({
       where: { id: { in: publishedIds }, kbId: { in: kbIds } },
@@ -506,10 +518,9 @@ async function loadQuestionGenerationSources(
     const candidate = candidatesById.get(kb.id)
     // A KB created between the two reads is listed on the next load.
     if (!candidate) return []
-    const publishedBuild =
-      (kb.publishedGraphBuildId &&
-        publishedById.get(kb.publishedGraphBuildId)) ||
-      null
+    const publishedBuild = candidate.published
+      ? (publishedById.get(candidate.published.buildId) ?? null)
+      : null
     return [
       resolveQuestionGenerationSource({
         kb,

@@ -169,6 +169,7 @@ export interface KBGraphPreparationCandidate {
   } | null
   published:
     | (KBGraphPreparationIdentity & {
+        buildId: string
         createdAt: Date
         /** The published build's source snapshot. */
         sources: Array<{ resourceId: string; contentSha256: string }>
@@ -835,6 +836,7 @@ async function loadCandidatePage(
         : null,
       published: published
         ? {
+            buildId: published.id,
             createdAt: published.createdAt,
             qualityTier: published.qualityTier,
             domainPolicyId: published.domainPolicyId,
