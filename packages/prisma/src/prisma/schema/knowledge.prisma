@@ -46,6 +46,13 @@ enum KBGraphQualityTier {
   HIGH
 }
 
+// Who started a graph build: a lecturer request or the platform's scheduled
+// graph preparation acting for the knowledge-base owner.
+enum KBGraphBuildOrigin {
+  USER
+  SYSTEM
+}
+
 enum KBGraphCostStatus {
   RESERVED
   SETTLED
@@ -213,6 +220,8 @@ model KBGraphBuild {
 
   status      KBGraphBuildStatus @default(QUEUED)
   qualityTier KBGraphQualityTier @default(STANDARD)
+  // Rows that predate scheduled preparation were all lecturer requests.
+  origin      KBGraphBuildOrigin @default(USER)
 
   // Frozen domain selection for this build: the provider catalog policy id and
   // version plus the requested language. All-null rows predate domain selection
