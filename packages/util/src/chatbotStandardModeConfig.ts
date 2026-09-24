@@ -8,6 +8,49 @@ export const CHATBOT_STANDARD_MODE_COURSE_NAME_MAX_LENGTH = 160
 export const CHATBOT_STANDARD_MODE_SUBJECT_DOMAIN_MAX_LENGTH = 160
 export const CHATBOT_STANDARD_MODE_SCOPE_NOTE_MAX_LENGTH = 1000
 
+/**
+ * Mode keys the standard-mode configuration governs. The chat runtime's prompt
+ * registry has to offer exactly these keys, and its test suite asserts that.
+ */
+export const CHATBOT_STANDARD_MODE_KEYS = [
+  'tutor',
+  'explainer',
+  'quizzer',
+] as const
+
+export type ChatbotStandardModeKey = (typeof CHATBOT_STANDARD_MODE_KEYS)[number]
+
+/**
+ * Standard modes that carry their own knowledge-base retrieval binding. Quizzer
+ * stays out because it inherits the Tutor binding under ADR 0021.
+ */
+export const CHATBOT_KB_RETRIEVAL_MODE_KEYS = ['tutor', 'explainer'] as const
+
+export function isChatbotStandardModeKey(
+  mode: string
+): mode is ChatbotStandardModeKey {
+  return (CHATBOT_STANDARD_MODE_KEYS as readonly string[]).includes(mode)
+}
+
+/**
+ * Mode keys that receive a required retrieval binding when an owner attaches a
+ * knowledge base: the standard retrieval modes plus every custom mode the
+ * chatbot declares. Availability is resolved per request, so the declared keys
+ * decide the row set rather than the current enabled flags, and a later re-enable
+ * still finds its grounding. Blank keys are skipped and custom keys keep their
+ * exact spelling, because that spelling is the mode key the runtime offers.
+ */
+export function resolveChatbotKbRetrievalModeKeys(
+  systemPrompts: unknown
+): string[] {
+  const prompts = isRecord(systemPrompts) ? systemPrompts : {}
+  const customModeKeys = Object.keys(prompts).filter(
+    (mode) => mode.trim().length > 0 && !isChatbotStandardModeKey(mode)
+  )
+
+  return [...CHATBOT_KB_RETRIEVAL_MODE_KEYS, ...customModeKeys]
+}
+
 const supportedLocales = new Set<Locale>(['en', 'de'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {

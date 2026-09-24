@@ -561,10 +561,13 @@ custom modes. A valid typed value owns all three standard-mode flags and must ke
 Explainer enabled; Quizzer is independent of that invariant. Tutor and Explainer do not require a
 knowledge base. A missing or malformed value derives all three flags from legacy `enabled: false`
 opt-outs and otherwise enables them, while a valid legacy value with only Tutor and Explainer flags
-derives Quizzer from its legacy opt-out/default. Custom-mode flags remain legacy-controlled. The
-resolver excludes modes that cannot satisfy
-the chatbot's required-MCP policy, and exposes Quizzer only with a provably restricted course
-`doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per MCP server,
+derives Quizzer from its legacy opt-out/default. Custom-mode flags remain
+legacy-controlled. The resolver never suppresses a mode chatbot-wide: a mode with
+no retrieval binding of its own stays offered, and a mode whose declared
+required binding is unavailable fails closed at request time instead of
+disappearing. Quizzer remains the capability-gated exception and appears only
+with a provably restricted course `doc_query` binding. Exact Quizzer
+configuration shadows Tutor inheritance per MCP server,
 including disabled exact rows; inherited optional bindings are narrowed to `doc_query`, while
 required single-tool aliases preserve their raw tool restriction and remain fail-closed. The
 layout, participant settings endpoint, chat request validation, and request-time MCP selection all
@@ -1153,7 +1156,10 @@ the chatbot MCP configuration: `{ "required": true, "toolAlias": "doc_query",
 configurations must contain at most one binding per stored mode, with one server
 ID and one normalized UUID across the chatbot. The selected effective mode must
 resolve exactly one matching binding; Quizzer may safely inherit Tutor's
-restricted `doc_query` binding under ADR 0021.
+restricted `doc_query` binding under ADR 0021. A selected mode with no enabled
+`KB` configuration is not a scope violation: it resolves no retrieval scope and
+serves without grounding. Scope isolation still requires one server ID and one
+normalized UUID across the chatbot's enabled `KB` configurations.
 Any malformed, missing, duplicate, conflicting, or misplaced `kb_id` fails as
 `503 REQUIRED_MCP_UNAVAILABLE` before provider or message work. A valid binding
 keeps the opaque bearer transport credential in `Authorization` and adds a
@@ -1163,6 +1169,17 @@ audience, key ID, and private key come from `DOC_QUERY_SCOPE_ISSUER`,
 `DOC_QUERY_SCOPE_AUDIENCE`, `DOC_QUERY_SCOPE_KID`, and
 `DOC_QUERY_SCOPE_PRIVATE_KEY`. Chatbots without an enabled `KB` binding and
 non-KB MCP servers retain their existing behavior.
+
+`attachKbToChatbot` keeps the stored retrieval rows aligned with the modes the
+chatbot actually declares. It upserts one required `doc_query` row per declared
+mode key — Tutor, Explainer, and each non-blank, non-standard `systemPrompts`
+key — disables enabled `KB` rows for modes outside that set except Quizzer, and
+never creates a Quizzer row. When the chatbot already has an enabled exact
+Quizzer row, re-attaching repoints it to the new knowledge base; a disabled
+Quizzer override is left untouched so an explicit opt-out survives. The shared
+standard-mode key list lives in `packages/util/src/chatbotStandardModeConfig.ts`
+and is asserted against the runtime prompt registry by a chat test, so the two
+cannot drift silently.
 
 - `resolveCitationSource` resolves each expanded `[n]` only for `1 <= n <= N`. Anything outside
   that range stays literal text in the answer — which is the intended failure mode, not a bug.

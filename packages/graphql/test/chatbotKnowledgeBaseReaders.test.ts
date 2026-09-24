@@ -58,7 +58,6 @@ function createMockChatbot(knowledgeBases: MockKnowledgeBaseBinding[]) {
     updatedAt: new Date('2026-09-10T08:00:00.000Z'),
     course: null,
     disclaimer: null,
-    mcpConfigurations: [],
     knowledgeBases,
   }
 }

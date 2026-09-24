@@ -1,8 +1,10 @@
 import { Locale } from '@klicker-uzh/prisma/client'
 import { describe, expect, it } from 'vitest'
 import {
+  isChatbotStandardModeKey,
   normalizeChatbotStandardModeConfig,
   parseChatbotStandardModeConfigInput,
+  resolveChatbotKbRetrievalModeKeys,
 } from '../src/chatbotStandardModeConfig.js'
 
 describe('chatbot standard mode configuration', () => {
@@ -139,5 +141,41 @@ describe('chatbot standard mode configuration', () => {
       explainerEnabled: true,
       quizzerEnabled: false,
     })
+  })
+
+  it('recognizes the standard modes case-sensitively', () => {
+    expect(isChatbotStandardModeKey('quizzer')).toBe(true)
+    expect(isChatbotStandardModeKey('Quizzer')).toBe(false)
+    expect(isChatbotStandardModeKey('case-interview')).toBe(false)
+  })
+
+  it('provisions the standard retrieval modes plus every declared custom mode', () => {
+    expect(resolveChatbotKbRetrievalModeKeys(null)).toEqual([
+      'tutor',
+      'explainer',
+    ])
+    expect(resolveChatbotKbRetrievalModeKeys('not an object')).toEqual([
+      'tutor',
+      'explainer',
+    ])
+    expect(
+      resolveChatbotKbRetrievalModeKeys({
+        tutor: { enabled: false },
+        explainer: {},
+        quizzer: {},
+        'case-interview': { description: 'Case interview' },
+        Case: {},
+      })
+    ).toEqual(['tutor', 'explainer', 'case-interview', 'Case'])
+  })
+
+  it('skips blank mode keys and keeps custom keys verbatim', () => {
+    expect(
+      resolveChatbotKbRetrievalModeKeys({
+        '': {},
+        '   ': {},
+        'Case interview': {},
+      })
+    ).toEqual(['tutor', 'explainer', 'Case interview'])
   })
 })

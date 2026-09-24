@@ -1794,22 +1794,6 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
       disclaimer: {
         select: { id: true, name: true, title: true, introText: true },
       },
-      mcpConfigurations: {
-        select: {
-          chatMode: true,
-          isEnabled: true,
-          priority: true,
-          allowedTools: true,
-          mcpServer: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              isActive: true,
-            },
-          },
-        },
-      },
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
@@ -1928,26 +1912,10 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
         }
       : null
 
-    const mcpConfigurations = chatbot.mcpConfigurations.map((config) => ({
-      serverId: config.mcpServer.id,
-      serverName: config.mcpServer.name,
-      serverDescription: config.mcpServer.description,
-      serverIsActive: config.mcpServer.isActive,
-      chatMode: config.chatMode,
-      isEnabled: config.isEnabled,
-      priority: config.priority,
-      allowedToolsCount: Array.isArray(config.allowedTools)
-        ? config.allowedTools.length
-        : config.allowedTools
-          ? 1
-          : 0,
-    }))
-
     return {
       ...shapeChatbotResponse(chatbot),
       usageSummary,
       disclaimerSummary,
-      mcpConfigurations,
       enabledKnowledgeBases: chatbot.knowledgeBases.map(({ kb }) => kb),
       enabledKnowledgeBase:
         chatbot.knowledgeBases.length === 1

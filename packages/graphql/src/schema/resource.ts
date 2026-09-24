@@ -582,6 +582,8 @@ export const Chatbot = ChatbotRef.implement({
     }),
     mcpConfigurations: t.field({
       type: [ChatbotMcpConfigurationSummaryRef],
+      deprecationReason:
+        'Retrieval bindings are internal plumbing and are no longer projected; this field always resolves to an empty list.',
       resolve: (chatbot) => chatbot.mcpConfigurations ?? [],
     }),
     enabledKnowledgeBase: t.field({
