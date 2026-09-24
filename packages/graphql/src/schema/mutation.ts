@@ -2032,9 +2032,28 @@ export const Mutation = builder.mutationType({
         args: {
           name: t.arg.string({ required: true }),
           description: t.arg.string({ required: false }),
+          domainPolicyId: t.arg.string({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.createKb(args, ctx)
+        },
+      }),
+
+      updateKb: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KB,
+        args: {
+          id: t.arg.id({ required: true }),
+          name: t.arg.string({ required: false }),
+          description: t.arg.string({ required: false }),
+          domainPolicyId: t.arg.string({ required: false }),
+          domainPolicyVersion: t.arg.int({ required: false }),
+          domainPolicyLanguage: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.updateKb(args, ctx)
         },
       }),
 
