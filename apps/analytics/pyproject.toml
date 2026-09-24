@@ -11,15 +11,15 @@ readme = "README.md"
 requires-python = ">=3.12,<4.0"
 dependencies = [
   "jinja2==3.1.6",
-  "pandas==2.2.2",
+  "pandas==3.0.5",
   "prisma==0.15.0",
-  "xlsxwriter==3.2.0",
+  "xlsxwriter==3.2.9",
 ]
 
 [dependency-groups]
 dev = [
-  "ipykernel==6.29.5",
-  "pyright==1.1.376",
+  "ipykernel==7.3.0",
+  "pyright==1.1.414",
   "ruff>=0.15.18",
 ]
 
