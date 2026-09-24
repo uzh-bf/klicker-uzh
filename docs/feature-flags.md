@@ -594,7 +594,7 @@ and ordinary retrieval on staging, then enable only a named evaluation cohort.
 
 ### Knowledge-base admission controls
 
-Four flags decide whether an actor may start new knowledge-base work. They are
+Five flags decide whether an actor may start new knowledge-base work. They are
 backend-enforced entitlements under [ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md):
 the capability queries advertise what the requesting actor's own evaluation
 allows, and every entry point re-evaluates the flag before it accepts work.
@@ -605,6 +605,7 @@ allows, and every entry point re-evaluates the flag before it accepts work.
 | `kb-graph-builds`           | Graph opt-in, rebuild and focus requests, before any cost reservation                       | `KB_GRAPH_DISABLED` on new requests only; a published graph keeps being served and an accepted build keeps running, settling and publishing |
 | `kb-graph-domain-selection` | Explicit domain selection and the graph build focus                                         | `KB_GRAPH_DOMAIN_CAPABILITY_DISABLED`; the capability handshake advertises no options                                                       |
 | `question-focus-topic`      | A per-batch question-generation focus                                                       | `CONFIGURATION_INVALID` for a requested focus, and `supportsFocusTopic: false` in the capability query                                      |
+| `kb-auto-graph-preparation` | Scheduled graph preparation for the KB owner, in addition to `kb-graph-builds`              | The worker sweep skips the owner's KBs before any reservation; lecturer requests and accepted builds are unaffected                         |
 
 These flags narrow existing provider contracts and never replace them. Explicit
 domain selection still requires `KB_GRAPH_DOMAIN_CATALOG_REVISION` to match the
@@ -629,4 +630,7 @@ own `temporarilyUnavailable` state for a GrowthBook outage. The two
 knowledge-base worker gates, `KB_INGESTION_WORKER_DISABLED` and the general
 worker's `KB_GRAPH_DISABLED`, remain deployment configuration: they stop this
 deployment's worker from registering or dispatching work at all, independently
-of any actor's rollout.
+of any actor's rollout. Scheduled graph preparation runs in the general worker,
+which evaluates the KB owner's flags with its own GrowthBook client from the
+shared `GROWTHBOOK_*` settings; while that client has no usable payload every
+owner is refused.
