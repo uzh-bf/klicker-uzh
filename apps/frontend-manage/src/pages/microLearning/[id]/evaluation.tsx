@@ -1,5 +1,8 @@
 import { useQuery } from '@apollo/client'
-import { GetMicroLearningEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ActivityType,
+  GetMicroLearningEvaluationDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -41,6 +44,7 @@ function MicroLearningEvaluation() {
       courseId={evaluation?.courseId}
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
+      activityType={ActivityType.MicroLearning}
       stacks={evaluation?.results ?? []}
     />
   )

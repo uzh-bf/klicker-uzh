@@ -61,8 +61,13 @@ function NREvaluation({
       autoSaveId="evaluation-nr"
       key={`panel-group-${instanceEvaluation.id}`}
       direction="horizontal"
+      className="min-w-0 max-md:grid! max-md:grid-cols-1 max-md:content-start max-md:overflow-auto!"
     >
-      <ResizablePanel defaultSize={80} minSize={50} className="px-4">
+      <ResizablePanel
+        defaultSize={80}
+        minSize={50}
+        className="min-w-0 px-4 max-md:min-h-80"
+      >
         <ElementChart
           chartType={chartType}
           instanceEvaluation={instanceEvaluation}
@@ -72,7 +77,7 @@ function NREvaluation({
           textSize={textSize}
         />
       </ResizablePanel>
-      <ResizableHandle withHandle />
+      <ResizableHandle withHandle className="max-md:hidden" />
       <ResizablePanel
         defaultSize={20}
         minSize={10}
@@ -80,7 +85,10 @@ function NREvaluation({
         collapsedSize={0}
         onCollapse={() => setIsCollapsed(true)}
         onExpand={() => setIsCollapsed(false)}
-        className={twMerge('gap-2 border-l px-4 py-2', textSize.text)}
+        className={twMerge(
+          'min-w-0 gap-2 border-t px-4 py-2 max-md:min-h-48 md:border-l md:border-t-0',
+          textSize.text
+        )}
       >
         {!isCollapsed && (
           <NRSidebar

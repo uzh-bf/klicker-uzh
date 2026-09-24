@@ -101,11 +101,21 @@ async function run() {
     for (const block of quiz.blocks) {
       // trigger block closure aggregation for assessment quizzes
       if (!DRY_RUN) {
+        if (!block.startedAt) {
+          throw new Error(
+            `Cannot schedule aggregation for block ${block.id} of quiz ${quiz.id}: missing startedAt`
+          )
+        }
         await tasks.aggregateLiveQuizBlockResultsAssessment.schedule(
           dayjs()
             .add(30 + blockCounter * 20, 'seconds')
             .toDate(),
-          { liveQuizId: quiz.id, blockId: block.id }
+          {
+            liveQuizId: quiz.id,
+            blockId: block.id,
+            blockExecution: block.execution,
+            blockStartedAt: block.startedAt.toISOString(),
+          }
         )
       }
       blockCounter++
