@@ -17,6 +17,7 @@ import {
   MAX_KB_SOURCE_SIZE_BYTES,
   MAX_KB_TOTAL_SIZE_BYTES,
 } from '@klicker-uzh/types'
+import { KB_TRANSFER_ATTESTATION_VERSION } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { EventEmitter } from 'events'
 import { readFileSync } from 'fs'
@@ -290,6 +291,34 @@ describe('Knowledge base GraphQL contract', () => {
         .find(({ name }) => name === 'materialType')
         ?.type.toString()
     ).toBe('KBResourceMaterialType!')
+  })
+
+  it('requires both transfer confirmations on every material-transfer mutation', () => {
+    const schema = buildSchema(
+      readFileSync(
+        new URL('../src/public/schema.graphql', import.meta.url),
+        'utf8'
+      )
+    )
+    const mutations = schema.getMutationType()?.getFields()
+
+    for (const name of [
+      'requestKbFileUpload',
+      'requestKbFileReplacement',
+      'createKbUrlResource',
+    ]) {
+      const args = mutations?.[name]?.args ?? []
+      expect(
+        args
+          .find((argument) => argument.name === 'rightsConfirmed')
+          ?.type.toString()
+      ).toBe('Boolean!')
+      expect(
+        args
+          .find((argument) => argument.name === 'personalDataConfirmed')
+          ?.type.toString()
+      ).toBe('Boolean!')
+    }
   })
 })
 
@@ -1354,6 +1383,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'malware.exe',
           contentType: 'application/octet-stream',
           sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1366,6 +1397,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           contentType:
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
           sizeBytes: 25 * 1024 * 1024 + 1,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1378,6 +1411,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           contentType:
             'application/vnd.openxmlformats-officedocument.presentationml.presentation',
           sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1389,6 +1424,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.md',
           contentType: 'text/plain',
           sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1400,6 +1437,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userTwoCtx
       )
@@ -1419,6 +1458,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -1478,6 +1519,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -1510,6 +1553,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'first.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       ),
@@ -1519,6 +1564,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'second.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       ),
@@ -1551,6 +1598,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'First',
           url: 'https://example.com/concurrent-first',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       ),
@@ -1559,6 +1608,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Second',
           url: 'https://example.com/concurrent-second',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       ),
@@ -1605,6 +1656,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1633,6 +1686,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'notes.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1653,6 +1708,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: atCap.id,
           title: 'One too many',
           url: 'https://example.com/one-too-many',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1674,6 +1731,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: underCap.id,
           title: 'Fits under cap',
           url: 'https://example.com/fits-under-cap',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1700,6 +1759,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -1711,6 +1772,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'extra.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -1749,6 +1812,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -1791,6 +1856,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -1837,6 +1904,9 @@ describe('Integration tests for knowledge base CRUD', () => {
         blobName,
         sizeBytes: 0,
         expiresAt: new Date(Date.now() + 60_000),
+        transferAttestationVersion: KB_TRANSFER_ATTESTATION_VERSION,
+        rightsConfirmedAt: new Date(),
+        personalDataConfirmedAt: new Date(),
       },
     })
 
@@ -1869,6 +1939,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -1948,6 +2020,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -1990,6 +2064,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2033,6 +2109,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2064,6 +2142,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2094,6 +2174,185 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toBe(0)
   })
 
+  it('refuses a material transfer without both confirmations', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const existing = await createKbUrlResource(
+      {
+        kbId: created.id,
+        title: 'Existing source',
+        url: 'https://example.com/existing',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
+      },
+      userOneCtx
+    )
+
+    const denial = {
+      extensions: { code: 'KB_TRANSFER_ATTESTATION_REQUIRED' },
+    }
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'notes.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1024,
+          rightsConfirmed: false,
+          personalDataConfirmed: true,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject(denial)
+    await expect(
+      requestKbFileUpload(
+        {
+          kbId: created.id,
+          fileName: 'notes.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 1024,
+          rightsConfirmed: true,
+          personalDataConfirmed: false,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject(denial)
+    await expect(
+      requestKbFileReplacement(
+        {
+          kbId: created.id,
+          resourceId: existing.id,
+          fileName: 'updated.pdf',
+          contentType: 'application/pdf',
+          sizeBytes: 2048,
+          rightsConfirmed: false,
+          personalDataConfirmed: false,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject(denial)
+    await expect(
+      createKbUrlResource(
+        {
+          kbId: created.id,
+          title: 'Denied source',
+          url: 'https://example.com/denied',
+          rightsConfirmed: true,
+          personalDataConfirmed: false,
+        },
+        userOneCtx
+      )
+    ).rejects.toMatchObject(denial)
+
+    // A denied transfer must not leave a reservation or a resource behind.
+    await expect(
+      prisma.kBUploadTicket.count({ where: { kbId: created.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.kBResource.count({ where: { kbId: created.id } })
+    ).resolves.toBe(1)
+    await expect(
+      prisma.kBResource.count({
+        where: { kbId: created.id, title: 'Denied source' },
+      })
+    ).resolves.toBe(0)
+  })
+
+  it('refuses to confirm a reservation whose confirmations are missing or outdated', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
+      },
+      userOneCtx
+    )
+    const args = {
+      kbId: created.id,
+      blobName: ticket.blobName,
+      title: 'Finance notes',
+      originalFilename: 'notes.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 1024,
+    }
+
+    // A reservation from before the notice carried no confirmations at all.
+    await prisma.kBUploadTicket.update({
+      where: { kbId_blobName: { kbId: created.id, blobName: ticket.blobName } },
+      data: {
+        transferAttestationVersion: null,
+        rightsConfirmedAt: null,
+        personalDataConfirmedAt: null,
+      },
+    })
+    await expect(confirmKbFileUpload(args, userOneCtx)).rejects.toMatchObject({
+      extensions: { code: 'KB_TRANSFER_ATTESTATION_REQUIRED' },
+    })
+
+    // Confirmations given under earlier wording cannot be reused either.
+    await prisma.kBUploadTicket.update({
+      where: { kbId_blobName: { kbId: created.id, blobName: ticket.blobName } },
+      data: { transferAttestationVersion: '2020-01-01' },
+    })
+    await expect(confirmKbFileUpload(args, userOneCtx)).rejects.toMatchObject({
+      extensions: { code: 'KB_TRANSFER_ATTESTATION_REQUIRED' },
+    })
+
+    await expect(
+      prisma.kBResource.count({ where: { kbId: created.id } })
+    ).resolves.toBe(0)
+    await expect(
+      prisma.kBUploadTicket.findUnique({
+        where: {
+          kbId_blobName: { kbId: created.id, blobName: ticket.blobName },
+        },
+      })
+    ).resolves.not.toBeNull()
+  })
+
+  it('records the confirmed transfer notice on the created resource', async () => {
+    const created = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const ticket = await requestKbFileUpload(
+      {
+        kbId: created.id,
+        fileName: 'notes.pdf',
+        contentType: 'application/pdf',
+        sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
+      },
+      userOneCtx
+    )
+    const resource = await confirmKbFileUpload(
+      {
+        kbId: created.id,
+        blobName: ticket.blobName,
+        title: 'Finance notes',
+        originalFilename: 'notes.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 1024,
+      },
+      userOneCtx
+    )
+
+    expect(resource.transferAttestationVersion).toBe(
+      KB_TRANSFER_ATTESTATION_VERSION
+    )
+    expect(resource.rightsConfirmedAt).toBeInstanceOf(Date)
+    expect(resource.personalDataConfirmedAt).toBeInstanceOf(Date)
+    // The ticket is consumed, so the resource is the durable record.
+    await expect(
+      prisma.kBUploadTicket.findUnique({
+        where: {
+          kbId_blobName: { kbId: created.id, blobName: ticket.blobName },
+        },
+      })
+    ).resolves.toBeNull()
+  })
+
   async function createReadyFileResource(kbId: string) {
     process.env.BLOB_STORAGE_ACCOUNT_URL =
       'https://blob.klicker.localhost/kbtestaccount'
@@ -2105,6 +2364,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'notes.pdf',
         contentType: 'application/pdf',
         sizeBytes: 1024,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2161,6 +2422,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2171,6 +2434,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'extra.pdf',
           contentType: 'application/pdf',
           sizeBytes: 1,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -2211,6 +2476,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2304,6 +2571,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'first.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       ),
@@ -2314,6 +2583,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'second.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       ),
@@ -2372,6 +2643,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2431,7 +2704,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       created.id
     )
     const urlResource = await createKbUrlResource(
-      { kbId: created.id, title: 'Website', url: 'https://example.com' },
+      {
+        kbId: created.id,
+        title: 'Website',
+        url: 'https://example.com',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
+      },
       userOneCtx
     )
     await expect(
@@ -2442,6 +2721,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'updated.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -2455,6 +2736,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           fileName: 'updated.pdf',
           contentType: 'application/pdf',
           sizeBytes: 2048,
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -2467,6 +2750,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         fileName: 'updated.pdf',
         contentType: 'application/pdf',
         sizeBytes: 2048,
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2499,13 +2784,25 @@ describe('Integration tests for knowledge base CRUD', () => {
 
     await expect(
       createKbUrlResource(
-        { kbId: created.id, title: 'Invalid', url: 'not-a-url' },
+        {
+          kbId: created.id,
+          title: 'Invalid',
+          url: 'not-a-url',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
+        },
         userOneCtx
       )
     ).rejects.toThrow('KB resource URL is invalid')
     await expect(
       createKbUrlResource(
-        { kbId: created.id, title: 'FTP', url: 'ftp://example.com/file' },
+        {
+          kbId: created.id,
+          title: 'FTP',
+          url: 'ftp://example.com/file',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
+        },
         userOneCtx
       )
     ).rejects.toThrow('KB resource URL is invalid')
@@ -2515,6 +2812,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Private',
           url: 'http://169.254.169.254/latest/meta-data',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -2525,6 +2824,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Credentials',
           url: 'https://user:password@example.com/file',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -2535,6 +2836,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: created.id,
           title: 'Foreign',
           url: 'https://example.com',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userTwoCtx
       )
@@ -2548,6 +2851,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/watch?id=123',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2584,6 +2889,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/watch?id=123',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -2625,6 +2932,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: created.id,
         title: 'Lecture recording',
         url: 'https://video.example.com/watch?id=123',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -3089,6 +3398,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: enlarged.id,
           title: 'Synthetic URL',
           url: 'https://example.com/capacity',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -3106,6 +3417,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: enlarged.id,
           title: 'Synthetic measured-capacity URL',
           url: 'https://example.com/measured-capacity',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -3120,6 +3433,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           kbId: enlarged.id,
           title: 'Synthetic URL',
           url: 'https://example.com/over-capacity',
+          rightsConfirmed: true,
+          personalDataConfirmed: true,
         },
         userOneCtx
       )
@@ -3330,6 +3645,8 @@ describe('Integration tests for knowledge base CRUD', () => {
             kbId: kb.id,
             title,
             url: `https://example.com/${title.toLowerCase()}`,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           userOneCtx
         )
@@ -3373,6 +3690,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         title: 'Safe',
         url: 'https://example.com/safe',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -3381,6 +3700,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: kb.id,
         title: 'Active',
         url: 'https://example.com/active',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userOneCtx
     )
@@ -3393,6 +3714,8 @@ describe('Integration tests for knowledge base CRUD', () => {
         kbId: foreignKb.id,
         title: 'Foreign',
         url: 'https://example.com/foreign',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
       },
       userTwoCtx
     )
@@ -3435,7 +3758,13 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => deleteKb({ id: kbId }, nonAiCtx),
       () =>
         createKbUrlResource(
-          { kbId, url: 'https://example.com/blocked', title: 'Blocked' },
+          {
+            kbId,
+            url: 'https://example.com/blocked',
+            title: 'Blocked',
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
+          },
           nonAiCtx
         ),
       () => deleteKbResource({ id: resourceId }, nonAiCtx),
@@ -3457,6 +3786,8 @@ describe('Integration tests for knowledge base CRUD', () => {
             fileName: 'blocked.pdf',
             contentType: 'application/pdf',
             sizeBytes: 1024,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           nonAiCtx
         ),
@@ -3498,7 +3829,13 @@ describe('Integration tests for knowledge base CRUD', () => {
   it('refuses new KB content dispatch for an actor the ingestion rollout does not admit', async () => {
     const kb = await createKb({ name: 'Denied ingestion KB' }, userOneCtx)
     const existingResource = await createKbUrlResource(
-      { kbId: kb.id, title: 'Existing', url: 'https://example.com/existing' },
+      {
+        kbId: kb.id,
+        title: 'Existing',
+        url: 'https://example.com/existing',
+        rightsConfirmed: true,
+        personalDataConfirmed: true,
+      },
       userOneCtx
     )
     const deniedCtx = withDeniedFeatureFlag(userOneCtx, 'kb-ingestion')
@@ -3510,6 +3847,8 @@ describe('Integration tests for knowledge base CRUD', () => {
             kbId: kb.id,
             title: 'Blocked',
             url: 'https://example.com/blocked',
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           deniedCtx
         ),
@@ -3520,6 +3859,8 @@ describe('Integration tests for knowledge base CRUD', () => {
             fileName: 'blocked.pdf',
             contentType: 'application/pdf',
             sizeBytes: 1024,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           deniedCtx
         ),
@@ -3531,6 +3872,8 @@ describe('Integration tests for knowledge base CRUD', () => {
             fileName: 'blocked.pdf',
             contentType: 'application/pdf',
             sizeBytes: 1024,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           deniedCtx
         ),
@@ -3597,6 +3940,8 @@ describe('Integration tests for knowledge base CRUD', () => {
                 : title === 'administrative'
                   ? KBResourceMaterialType.ADMINISTRATIVE
                   : undefined,
+            rightsConfirmed: true,
+            personalDataConfirmed: true,
           },
           userOneCtx
         )

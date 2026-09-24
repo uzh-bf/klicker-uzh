@@ -1882,6 +1882,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     fileUploadSuccess: 'File added to the knowledge base.',
     fileUploadError: 'The file could not be uploaded.',
     fileRejected: 'Choose a supported file of no more than 25 MB.',
+    materialConfirmationTitle: 'Review rights and personal data',
+    materialConfirmationDescription:
+      'Permission to store material in an LMS does not automatically cover its use in an AI knowledge base or in answers. Check license terms, source requirements, and restrictions on audience and duration. Ordinary author names and bibliographic details may remain; other personal data must not be included.',
+    rightsConfirmation:
+      'I am authorized to use this material in the AI knowledge base and in answers, and I will comply with the applicable usage terms and restrictions.',
+    personalDataConfirmation:
+      'I checked the selected material. It contains no personal data apart from ordinary author names and bibliographic details.',
+    materialConfirmationRequired:
+      'Confirm both statements to start the transfer.',
     replaceFile: 'Replace file',
     replaceFileTitle: 'Replace file',
     replaceAndIngest: 'Replace and ingest',
