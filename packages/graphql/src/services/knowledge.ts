@@ -1453,6 +1453,24 @@ export async function updateKb(
 
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+    const stored = domain
+      ? await prisma.kB.findUniqueOrThrow({
+          where: { id },
+          select: {
+            domainPolicyId: true,
+            domainPolicyVersion: true,
+            domainPolicyLanguage: true,
+          },
+        })
+      : null
+    // Resaving the same subject and language must not restart the wait of
+    // scheduled graph preparation.
+    const domainChanged =
+      domain !== null &&
+      stored !== null &&
+      (stored.domainPolicyId !== domain.domainPolicyId ||
+        stored.domainPolicyVersion !== domain.domainPolicyVersion ||
+        stored.domainPolicyLanguage !== domain.language)
     return prisma.kB.update({
       where: { id },
       data: {
@@ -1465,6 +1483,7 @@ export async function updateKb(
               domainPolicyLanguage: domain.language,
             }
           : {}),
+        ...(domainChanged ? { graphSettingsChangedAt: new Date() } : {}),
       },
     })
   })
@@ -3372,10 +3391,23 @@ export async function setKbKnowledgeGraphEnabled(
 
   await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
-    await prisma.kB.update({
-      where: { id: kbId },
-      data: { knowledgeGraphEnabled: enabled },
-    })
+    // Turning the opt-in on makes the KB eligible for scheduled preparation,
+    // which then waits a full quiet period from this moment.
+    const turnedOn = enabled
+      ? await prisma.kB.updateMany({
+          where: { id: kbId, knowledgeGraphEnabled: false },
+          data: {
+            knowledgeGraphEnabled: true,
+            graphSettingsChangedAt: new Date(),
+          },
+        })
+      : { count: 0 }
+    if (turnedOn.count === 0) {
+      await prisma.kB.update({
+        where: { id: kbId },
+        data: { knowledgeGraphEnabled: enabled },
+      })
+    }
   })
 
   return getKbKnowledgeGraphConfig({ kbId }, ctx)
@@ -3822,8 +3854,11 @@ export type KBGraphBuildStart = {
    * QUEUED dispatched a new build, ALREADY_ACTIVE returned the build holding
    * the slot, and NOT_DUE means a system trigger found the published graph
    * already matching the desired preparation and reserved nothing.
+   * UNSUPPORTED_SETTINGS means a system trigger found no explicit subject and
+   * language it can honor and reserved nothing: scheduled preparation never
+   * builds with provider defaults.
    */
-  outcome: 'QUEUED' | 'ALREADY_ACTIVE' | 'NOT_DUE'
+  outcome: 'QUEUED' | 'ALREADY_ACTIVE' | 'NOT_DUE' | 'UNSUPPORTED_SETTINGS'
   kb: {
     id: string
     knowledgeGraphEnabled: boolean
@@ -3839,9 +3874,10 @@ export type KBGraphBuildStart = {
  * Starts a graph build for one KB. Admission order: AI entitlement,
  * `kb-graph-builds`, the per-KB opt-in, serving course-content sources, the
  * cost configuration and quota reservation, then a compare-and-swap on the
- * KB's single build slot. A system trigger additionally skips a KB whose
- * published graph already matches the desired preparation, so unchanged
- * inputs never reserve cost.
+ * KB's single build slot. A system trigger additionally refuses a KB whose
+ * stored subject and language do not resolve to an explicit selection, and
+ * skips one whose published graph already matches the desired preparation,
+ * so neither provider defaults nor unchanged inputs ever reserve cost.
  */
 export async function startKbKnowledgeGraphBuild(
   { kbId }: { kbId: string },
@@ -3872,6 +3908,14 @@ export async function startKbKnowledgeGraphBuild(
       throw new GraphQLError('KB knowledge graph is not enabled', {
         extensions: { code: 'KB_GRAPH_NOT_ENABLED' },
       })
+    }
+    if (trigger.kind === 'system' && !storedDomain) {
+      return {
+        outcome: 'UNSUPPORTED_SETTINGS' as const,
+        kb,
+        build: null,
+        queueBuildId: null,
+      }
     }
 
     if (kb.activeGraphBuildId) {

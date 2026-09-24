@@ -550,7 +550,14 @@ describe('system-triggered KB graph builds', () => {
       featureFlags: { isEnabled, getAiBetaDecision, refresh: vi.fn() },
       tasks: { buildKBGraph: { runNoWait: vi.fn() } },
     } as unknown as KBGraphBuildServiceContext
-    return { deps, $transaction, isEnabled, getAiBetaDecision, create }
+    return {
+      deps,
+      $transaction,
+      isEnabled,
+      getAiBetaDecision,
+      create,
+      transaction,
+    }
   }
 
   const start = (deps: KBGraphBuildServiceContext) =>
@@ -592,15 +599,59 @@ describe('system-triggered KB graph builds', () => {
   })
 
   it('reserves nothing when the published graph already matches', async () => {
-    // With domain selection closed a build would freeze the legacy triple, so
-    // a legacy published graph is current even though the KB stores a choice.
-    const { deps, create } = createDeps()
+    process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
+      getDefaultKBGraphDomainCatalog().revision
+    const { deps, create } = createDeps({
+      enabledFlags: [
+        'kb-auto-graph-preparation',
+        'kb-graph-builds',
+        'kb-graph-domain-selection',
+      ],
+      publishedDomain: {
+        domainPolicyId: 'mathematics',
+        domainPolicyVersion: 1,
+        domainPolicyLanguage: 'German',
+      },
+    })
 
     await expect(start(deps)).resolves.toMatchObject({
       outcome: 'NOT_DUE',
       build: null,
     })
     expect(create).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['domain selection is closed for the owner', {}],
+    [
+      'the stored subject is not in the catalog',
+      {
+        enabledFlags: [
+          'kb-auto-graph-preparation',
+          'kb-graph-builds',
+          'kb-graph-domain-selection',
+        ],
+        kbDomain: {
+          domainPolicyId: 'unknown-subject',
+          domainPolicyVersion: 1,
+          domainPolicyLanguage: 'German',
+        },
+      },
+    ],
+  ])('never builds with provider defaults when %s', async (_, options) => {
+    Object.assign(process.env, costEnv)
+    process.env[KB_GRAPH_DOMAIN_CATALOG_REVISION_ENV] =
+      getDefaultKBGraphDomainCatalog().revision
+    const { deps, create, transaction } = createDeps(options)
+
+    await expect(start(deps)).resolves.toMatchObject({
+      outcome: 'UNSUPPORTED_SETTINGS',
+      build: null,
+    })
+    expect(transaction.kBGraphQuota.findUniqueOrThrow).not.toHaveBeenCalled()
+    expect(transaction.kB.updateMany).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+    expect(deps.tasks.buildKBGraph.runNoWait).not.toHaveBeenCalled()
   })
 
   it('admits a language change through the cost gate', async () => {
