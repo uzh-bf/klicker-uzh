@@ -106,6 +106,31 @@ test.describe('Chatbot knowledge base setup', () => {
     await expect(page.getByTestId('chatbot-enabled-knowledge-base')).toHaveText(
       KB_NAME
     )
+
+    // Both lists report how ready the connected material is for the chatbot.
+    await expect(
+      page
+        .getByTestId(`chatbot-${CHATBOT_NAME}`)
+        .getByTestId('kb-materials-readiness')
+    ).toBeVisible()
+    const prisma = await getPrisma()
+    const kb = await prisma.kB.findFirstOrThrow({
+      where: { ownerId: USER_ID_TEST, name: KB_NAME },
+    })
+    await page.goto(`${manageUrl}/resources/knowledgeBases`)
+    await expect(
+      page
+        .getByTestId(`knowledge-base-row-${kb.id}`)
+        .getByTestId('kb-materials-readiness')
+    ).toBeVisible()
+
+    // Saved changes of an unpublished chatbot are not visible to students.
+    await page.goto(
+      `${manageUrl}/resources/chatbots?chatbotId=${chatbotId}&view=overview&step=review`
+    )
+    await expect(
+      page.getByTestId('chatbot-publication-visibility-note')
+    ).toHaveAttribute('data-published', 'false')
   })
 
   test('creates a chatbot that uses the knowledge base from the knowledge base page', async ({

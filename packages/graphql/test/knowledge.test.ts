@@ -953,6 +953,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       {
         chatbotId: chatbot.id,
         chatbotName: chatbot.name,
+        chatbotStatus: chatbot.status,
         enabledKbId: kb.id,
         enabledKbName: kb.name,
         enabledKbs: [{ id: kb.id, name: kb.name }],
@@ -3337,11 +3338,16 @@ describe('Integration tests for knowledge base CRUD', () => {
           type: KBResourceType.BLOB,
           title: 'Visible file',
           sizeBytes: 100,
+          // A failed replacement keeps serving the previous revision.
+          status: KBResourceStatus.FAILED,
+          resourceVersion: 2,
+          activeResourceVersion: 1,
         },
         {
           kbId: kb.id,
           type: KBResourceType.URL,
           title: 'Visible URL',
+          status: KBResourceStatus.QUEUED,
         },
         {
           kbId: kb.id,
@@ -3350,6 +3356,8 @@ describe('Integration tests for knowledge base CRUD', () => {
           sizeBytes: 50,
           deletedAt: new Date(),
           deletedById: userOneCtx.user.sub,
+          status: KBResourceStatus.READY,
+          activeResourceVersion: 1,
         },
       ],
     })
@@ -3377,6 +3385,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 1,
       reservedSizeBytes: 25,
       linkedConsumerCount: 0,
+      servingResourceCount: 1,
+      processingResourceCount: 1,
+      failedResourceCount: 1,
     })
   })
 
@@ -3483,6 +3494,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 1,
       reservedSizeBytes: 10,
       linkedConsumerCount: 1,
+      servingResourceCount: 0,
+      processingResourceCount: 0,
+      failedResourceCount: 0,
     })
     expect(byId.get(kbB.id)?.metrics).toEqual({
       visibleResourceCount: 1,
@@ -3497,6 +3511,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 0,
       reservedSizeBytes: 0,
       linkedConsumerCount: 0,
+      servingResourceCount: 0,
+      processingResourceCount: 0,
+      failedResourceCount: 0,
     })
     expect(byId.get(kbC.id)?.metrics).toEqual({
       visibleResourceCount: 0,
@@ -3511,6 +3528,9 @@ describe('Integration tests for knowledge base CRUD', () => {
       reservedResourceCount: 1,
       reservedSizeBytes: 5,
       linkedConsumerCount: 0,
+      servingResourceCount: 0,
+      processingResourceCount: 0,
+      failedResourceCount: 0,
     })
 
     // cross-check the single-KB detail path against the multi-KB catalog

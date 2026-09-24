@@ -109,6 +109,9 @@ export interface KBMetrics {
   reservedResourceCount: number
   reservedSizeBytes: number
   linkedConsumerCount: number
+  servingResourceCount: number
+  processingResourceCount: number
+  failedResourceCount: number
 }
 
 export interface KBWithMetrics extends DB.KB {
@@ -631,6 +634,9 @@ function createKbMetrics({
   reservedResourceCount = 0,
   reservedSizeBytes = 0,
   linkedConsumerCount = 0,
+  servingResourceCount = 0,
+  processingResourceCount = 0,
+  failedResourceCount = 0,
 }: Partial<{
   storageLimitBytes: number
   visibleResourceCount: number
@@ -642,6 +648,9 @@ function createKbMetrics({
   reservedResourceCount: number
   reservedSizeBytes: number
   linkedConsumerCount: number
+  servingResourceCount: number
+  processingResourceCount: number
+  failedResourceCount: number
 }> = {}): KBMetrics {
   const quotaRetainedSizeBytes =
     retainedSizeBytes + retainedUnknownSizeCount * MAX_KB_FILE_SIZE_BYTES
@@ -661,10 +670,13 @@ function createKbMetrics({
     reservedResourceCount,
     reservedSizeBytes,
     linkedConsumerCount,
+    servingResourceCount,
+    processingResourceCount,
+    failedResourceCount,
   }
 }
 
-async function getKbMetricsMap(
+export async function getKbMetricsMap(
   prisma: DB.Prisma.TransactionClient | ContextWithUser['prisma'],
   kbIds: string[]
 ) {
@@ -679,6 +691,7 @@ async function getKbMetricsMap(
     createUploadTickets,
     linkedConsumers,
     knowledgeBases,
+    resourceStatuses,
   ] = await Promise.all([
     prisma.kBResource.groupBy({
       by: ['kbId'],
@@ -724,6 +737,14 @@ async function getKbMetricsMap(
       where: { id: { in: kbIds } },
       select: { id: true, storageLimitMiB: true },
     }),
+    // Counting the serving revision per status lets a resource whose
+    // replacement is still processing or has failed keep counting as
+    // retrievable through the revision it already serves.
+    prisma.kBResource.groupBy({
+      by: ['kbId', 'status'],
+      where: { kbId: { in: kbIds }, deletedAt: null },
+      _count: { _all: true, activeResourceVersion: true },
+    }),
   ])
 
   const storageLimitsByKb = new Map(
@@ -747,12 +768,35 @@ async function getKbMetricsMap(
   const consumersByKb = new Map(
     linkedConsumers.map((row) => [row.kbId, row._count._all])
   )
+  const readinessByKb = new Map<
+    string,
+    { serving: number; processing: number; failed: number }
+  >()
+  for (const row of resourceStatuses) {
+    const readiness = readinessByKb.get(row.kbId) ?? {
+      serving: 0,
+      processing: 0,
+      failed: 0,
+    }
+    readiness.serving += row._count.activeResourceVersion
+    if (
+      row.status === DB.KBResourceStatus.QUEUED ||
+      row.status === DB.KBResourceStatus.PROCESSING
+    ) {
+      readiness.processing += row._count._all
+    }
+    if (row.status === DB.KBResourceStatus.FAILED) {
+      readiness.failed += row._count._all
+    }
+    readinessByKb.set(row.kbId, readiness)
+  }
 
   return new Map(
     kbIds.map((kbId) => {
       const visible = visibleByKb.get(kbId)
       const retained = retainedByKb.get(kbId)
       const tickets = ticketsByKb.get(kbId)
+      const readiness = readinessByKb.get(kbId)
       return [
         kbId,
         createKbMetrics({
@@ -766,6 +810,9 @@ async function getKbMetricsMap(
           reservedResourceCount: createTicketsByKb.get(kbId),
           reservedSizeBytes: tickets?._sum.sizeBytes ?? 0,
           linkedConsumerCount: consumersByKb.get(kbId),
+          servingResourceCount: readiness?.serving,
+          processingResourceCount: readiness?.processing,
+          failedResourceCount: readiness?.failed,
         }),
       ]
     })
@@ -1157,6 +1204,7 @@ export async function getKbChatbotBindings(
     select: {
       id: true,
       name: true,
+      status: true,
       knowledgeBases: {
         where: { isEnabled: true, kb: { deletedAt: null } },
         select: {
@@ -1170,6 +1218,7 @@ export async function getKbChatbotBindings(
   return chatbots.map((chatbot) => ({
     chatbotId: chatbot.id,
     chatbotName: chatbot.name,
+    chatbotStatus: chatbot.status,
     enabledKbs: chatbot.knowledgeBases.map(({ kb }) => kb),
     enabledKbId:
       chatbot.knowledgeBases.length === 1
@@ -1236,7 +1285,7 @@ export async function attachKbToChatbot(
     const [chatbot, kb] = await Promise.all([
       prisma.chatbot.findUniqueOrThrow({
         where: { id: chatbotId },
-        select: { name: true },
+        select: { name: true, status: true },
       }),
       prisma.kB.findUniqueOrThrow({
         where: { id: kbId },
@@ -1246,6 +1295,7 @@ export async function attachKbToChatbot(
     return {
       chatbotId,
       chatbotName: chatbot.name,
+      chatbotStatus: chatbot.status,
       enabledKbId: kbId,
       enabledKbName: kb.name,
       enabledKbs: [{ id: kbId, name: kb.name }],

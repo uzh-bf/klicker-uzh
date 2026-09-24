@@ -237,17 +237,18 @@ function Chatbots() {
 
   const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
 
-  const selectCreatedChatbot = (
-    chatbotId: string,
-    view: ChatbotWorkspaceView = 'disclaimer'
-  ) => {
+  // A new chatbot continues into Materials; the Materials view then points to
+  // the student information that still has to be saved before publication.
+  const selectCreatedChatbot = (chatbotId: string) => {
     runInternalNavigation(() => {
-      // The creation refetch may already have mounted the new draft and
-      // reported its unsaved disclaimer. Preserve that editor state.
+      // The creation refetch may already have mounted the new draft with its
+      // unsaved suggested student information. Skipping the discard prompt
+      // loses nothing, because the suggestion is offered again whenever
+      // Student information opens.
       return router.push(
         {
           pathname: router.pathname,
-          query: buildWorkspaceQuery(chatbotId, { view }),
+          query: buildWorkspaceQuery(chatbotId, { view: 'knowledge' }),
         },
         undefined,
         { shallow: true }
@@ -301,7 +302,7 @@ function Chatbots() {
     }
     // The Knowledge view shows the connection, or offers to connect the
     // knowledge base again when the attempt failed.
-    selectCreatedChatbot(chatbotId, 'knowledge')
+    selectCreatedChatbot(chatbotId)
   }
 
   return (
