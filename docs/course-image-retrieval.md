@@ -1,6 +1,6 @@
 # Course image retrieval (draft integration)
 
-Chat can show original processor-exported PNG figures selected from the current request's scoped document-search results. The tool does not inspect image pixels. Search policy is unchanged; figures are optional and text-only answers remain valid.
+Chat can show original processor-exported PNG figures selected from the current request's scoped document-search results. The tool does not inspect image pixels. When image tools are available, the prompt asks for course evidence and permits useful figures proactively; figures remain optional and text-only requests must be respected.
 
 The doc-processing projection publishes content-addressed manifests, payloads and PNGs. Its per-page printed labels are optional: an unlabelled cover is never assigned a document-wide offset. Ingestion retains exact chunk page ranges and visual metadata; mcp-doc-query attaches resource identity. Chat validates the manifest, source, recipe, image occurrence, page labels and bytes before serving through an authenticated private route.
 
@@ -11,3 +11,11 @@ The image GET requires the participant's stored assistant message, current chatb
 Deploy processor, ingestion, query and Chat changes together. Publish the updated processor client before updating ingestion's SDK pin; no local editable SDK paths belong in deployment. Re-ingest existing documents to obtain bound figures and corrected labels. The raw uploaded-PDF job-output path carries references independently of the SDK.
 
 Focused synthetic unit tests cover descriptor, integrity and access checks. Full fresh-environment build/typecheck, Blob-backed lecturer upload-to-chat browser verification and withdrawal/replacement integration tests remain release gates. The private PDF demo and its old ten-trial results are not proof of this integration.
+
+## Inline placement and original captions
+
+The selection tool returns a `placement_marker` for a successfully validated asset. The model places that marker as its own paragraph beside the explanation; the renderer resolves it only against the saved selected-image parts. Unselected IDs do not grant image access. Legacy answers without placement markers retain the image section fallback. Rendering waits for the assistant message to finish because the image route authorizes persisted selections.
+
+Optional ordered `captions` carry original processor text, not model-generated descriptions. They appear under the figure and provide its alt text. Older descriptors without captions remain valid. The processor prefers explicit native links and conservatively recovers unique nearby numbered headings; ambiguous matches remain empty. Image storage resolves one known generation (e6/v3, e5/v3 or e4/v3) from the manifest, then reads every object from that same generation, preserving hash, occurrence and authorization checks.
+
+Work is paused in draft reviews. Local demo evidence includes inline placement, original and recovered captions, mobile display and reload. Production branches still require a fresh dependency-aligned build and a Blob-backed lecturer upload through the full lifecycle; this evidence does not replace those gates. No private PDF corpus or local runtime credentials belong in these PRs.

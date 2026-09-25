@@ -9,6 +9,7 @@ import {
   type CourseImage,
   selectedCourseImages,
 } from '@/src/lib/sources/courseImages'
+import { courseImagePlacements } from '@/src/lib/markdown/remarkCourseImages'
 import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import { useChatStore } from '@/src/stores/chatStore'
 
@@ -26,10 +27,11 @@ export function CourseImageCard({
     title: image.title,
     page: image.logical_page_number ?? image.physical_page_number,
   })
+  const caption = image.captions?.map((value) => value.text).join(' ')
   return (
     <figure
       data-cy="chat-course-image"
-      className="border-border my-3 overflow-hidden rounded-xl border bg-background"
+      className="my-5 overflow-hidden rounded-lg"
     >
       {failed ? (
         <div role="alert" className="p-4 text-sm">
@@ -49,7 +51,7 @@ export function CourseImageCard({
         <Image
           key={attempt}
           src={src}
-          alt={label}
+          alt={caption || label}
           width={image.width_px}
           height={image.height_px}
           unoptimized
@@ -57,10 +59,37 @@ export function CourseImageCard({
           className="h-auto w-full object-contain"
         />
       )}
-      <figcaption className="border-border border-t px-3 py-2 text-sm text-muted-foreground">
-        {label}
+      <figcaption className="mt-2 text-xs text-muted-foreground">
+        {image.captions?.map((entry, index) => (
+          <p key={`${entry.ref}-${index}`}>{entry.text}</p>
+        ))}
+        <p className={caption ? 'mt-1' : undefined}>{label}</p>
       </figcaption>
     </figure>
+  )
+}
+
+export function InlineCourseImage({ assetId }: { assetId: string }) {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const threadId = useChatStore((state) => state.activeThreadId)
+  const message = useAuiState((state) => state.message)
+  const image = selectedCourseImages(
+    message.content as readonly ChatSourcePart[]
+  ).find((candidate) => candidate.asset_id === assetId)
+  // The image endpoint authorizes against the persisted assistant message.
+  if (
+    !image ||
+    !chatbotId ||
+    !threadId ||
+    message.status?.type === 'running' ||
+    message.status?.type === 'requires-action'
+  )
+    return null
+  return (
+    <CourseImageCard
+      image={image}
+      src={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/images/${image.asset_id}`}
+    />
   )
 }
 
@@ -68,9 +97,14 @@ export function CourseImagesSection() {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const threadId = useChatStore((state) => state.activeThreadId)
   const message = useAuiState((state) => state.message)
+  const placements = new Set(
+    message.content.flatMap((part) =>
+      part.type === 'text' ? courseImagePlacements(part.text) : []
+    )
+  )
   const images = selectedCourseImages(
     message.content as readonly ChatSourcePart[]
-  )
+  ).filter((image) => !placements.has(image.asset_id))
   if (!chatbotId || !threadId || images.length === 0) return null
   return (
     <div>
