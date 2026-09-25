@@ -1,1 +1,14 @@
-{"applied_descriptions":0,"crop_manifest_sha256":"0a6ff8773936ba36fed5e81c28c72d15060dc5c6221d82806e7f0ce088b971ed","enrichment_sets":[],"extraction_options_hash":"e4ed649c96e3d48cac0c9257a13571ce0ba4b677afb0c0050a24702336d458bb","images":{"synthetic-course-diagram_images/page-002-image-001.png":"dfa7d8bb05115b375a53d8bcb91e1229f97b1040dbce421775908d622bea619b"},"native_document_sha256":"3bf188be646ae881a261280496fe373034b2a9d32f92f9efcd0f3f104e4a5854","payload_sha256":"e8271958a0c135d2fbd79e3cf6cfef2d55bb5f476bc0ea5f9cb8c4ec01b92eea","recipe_hash":"7c91fce0b3a88bac41f7d31ef15193c71458df05fce23949df9d76b6f4668ee2","recipe_version":5,"source_sha256":"8b8923b1867d9a764f8e4e3c09b8cef416403f32616ffe8c0f5001ae032ce83e"}
+{
+  "applied_descriptions": 0,
+  "crop_manifest_sha256": "0a6ff8773936ba36fed5e81c28c72d15060dc5c6221d82806e7f0ce088b971ed",
+  "enrichment_sets": [],
+  "extraction_options_hash": "e4ed649c96e3d48cac0c9257a13571ce0ba4b677afb0c0050a24702336d458bb",
+  "images": {
+    "synthetic-course-diagram_images/page-002-image-001.png": "dfa7d8bb05115b375a53d8bcb91e1229f97b1040dbce421775908d622bea619b"
+  },
+  "native_document_sha256": "3bf188be646ae881a261280496fe373034b2a9d32f92f9efcd0f3f104e4a5854",
+  "payload_sha256": "e8271958a0c135d2fbd79e3cf6cfef2d55bb5f476bc0ea5f9cb8c4ec01b92eea",
+  "recipe_hash": "7c91fce0b3a88bac41f7d31ef15193c71458df05fce23949df9d76b6f4668ee2",
+  "recipe_version": 5,
+  "source_sha256": "8b8923b1867d9a764f8e4e3c09b8cef416403f32616ffe8c0f5001ae032ce83e"
+}
