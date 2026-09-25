@@ -7,7 +7,19 @@ const FIXTURE_PREFIX = 'Synthetic question-generation review fixture'
 const BUILD_ID = 'b0000000-0000-4000-8000-000000000001'
 const ATTENTION_BUILD_ID = 'b0000000-0000-4000-8000-000000000002'
 const GATE_BUILD_ID = 'b0000000-0000-4000-8000-000000000003'
-const FIXTURE_BUILD_IDS = [BUILD_ID, ATTENTION_BUILD_ID, GATE_BUILD_ID]
+const FAILURE_BUILD_ID = 'b0000000-0000-4000-8000-000000000004'
+const PARTIAL_BUILD_ID = 'b0000000-0000-4000-8000-000000000005'
+const LEGACY_FAILURE_BUILD_ID = 'b0000000-0000-4000-8000-000000000006'
+const ZERO_PASSING_BUILD_ID = 'b0000000-0000-4000-8000-000000000007'
+const FIXTURE_BUILD_IDS = [
+  BUILD_ID,
+  ATTENTION_BUILD_ID,
+  GATE_BUILD_ID,
+  FAILURE_BUILD_ID,
+  PARTIAL_BUILD_ID,
+  LEGACY_FAILURE_BUILD_ID,
+  ZERO_PASSING_BUILD_ID,
+]
 
 const KB_ID = 'b0000000-0000-4000-8000-000000000010'
 const GRAPH_BUILD_ID = 'b0000000-0000-4000-8000-000000000011'
@@ -28,6 +40,84 @@ export type QuestionGenerationReviewFixture = {
     acceptedUnsaved: string
   }
   gateBuildId: string
+  // Failure-visibility surfaces. Each build is a settled question-generation
+  // build whose per-slot attention cards were persisted on the build summary,
+  // so the query serves them without a result manifest.
+  failureBuildId: string
+  partialBuildId: string
+  partialDeliveredDraftId: string
+  legacyFailureBuildId: string
+  zeroPassingBuildId: string
+}
+
+// One structured reason per unsupported slot. The set covers every failure
+// class the reviewing client renders plus one reason code this client does not
+// know, so the class-level fallback rendering is exercised by real data.
+type SlotFailureSeed = {
+  slotId: string
+  moduleId: string | null
+  objective: string | null
+  objectiveSource: 'provided' | 'neutral' | null
+  requestedLevel: string | null
+  evidenceTarget: string | null
+  reasonCode: string
+  failureClass: 'user_input' | 'self_repairable' | 'system'
+  detail: string | null
+  suggestions: string[]
+}
+
+function failureSlot(
+  slotId: string,
+  reasonCode: string,
+  failureClass: SlotFailureSeed['failureClass'],
+  overrides: Partial<SlotFailureSeed> = {}
+): SlotFailureSeed {
+  return {
+    slotId,
+    moduleId: 'MOD-01',
+    objective: 'Explain the synthetic source evidence.',
+    objectiveSource: 'provided',
+    requestedLevel: 'apply',
+    evidenceTarget: 'Synthetic evidence target',
+    reasonCode,
+    failureClass,
+    detail: null,
+    suggestions: [],
+    ...overrides,
+  }
+}
+
+// A plan summary that carries the attention cards. The persisted shape is the
+// full QuestionGenerationPlanSummary plus the optional slotFailures list the
+// build query serves, so the resolver's plan-summary view stays well formed.
+function planSummaryWithFailures(
+  questionCount: number,
+  questions: Array<{
+    sourceQuestionId: string
+    moduleId: string
+    objectiveId: string | null
+    stem: string
+    bloomLevel: string
+    targetDifficulty: number
+  }>,
+  slotFailures: SlotFailureSeed[]
+) {
+  return {
+    questionCount,
+    questions: questions.map((question) => ({
+      ...question,
+      sources: [
+        {
+          resourceId: URL_RESOURCE_ID,
+          sourceFile: `${URL_RESOURCE_ID}.md`,
+          pageFrom: 7,
+          pageTo: 7,
+        },
+      ],
+    })),
+    warnings: [],
+    slotFailures,
+  }
 }
 
 // One suggestion resolves to each seeded owner tag and one stays a proposal, so
@@ -59,7 +149,11 @@ async function deleteFixtureTags() {
 function questionChoices(type: 'SC' | 'MC' | 'KPRIM', index: number) {
   const count = type === 'SC' ? 2 : type === 'MC' ? 5 : 4
   return Array.from({ length: count }, (_, choiceIndex) => ({
-    id: `choice-${type}-${index}-${choiceIndex}`,
+    // The artifact parser identifies a choice by its question-scoped label, so
+    // the same ids repeat across the drafts of a build and between a draft's
+    // original and current view. The fixture mirrors that shape; globally
+    // unique ids would hide review-cache collisions from this suite.
+    id: String.fromCharCode(65 + choiceIndex),
     label: String.fromCharCode(65 + choiceIndex),
     text: `Synthetic ${type} choice ${choiceIndex + 1}`,
     correct: type === 'MC' ? choiceIndex < 2 : choiceIndex === 0,
@@ -111,6 +205,10 @@ function draftValues(type: 'SC' | 'MC' | 'KPRIM' | 'FLASHCARD', index: number) {
 
 function attentionDraftId(index: number) {
   return `b0000000-0000-4000-8000-${String(200 + index).padStart(12, '0')}`
+}
+
+function failureDraftId(index: number) {
+  return `b0000000-0000-4000-8000-${String(300 + index).padStart(12, '0')}`
 }
 
 function attentionDraft(index: number, qualityFlags: string[]) {
@@ -380,6 +478,182 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
     },
   })
 
+  // A failed run that reported reasons for every slot it could not supply. The
+  // three classes are covered plus one unknown reason code, so the client
+  // renders the class explanation for the code it does not know.
+  const failureBuildId = FAILURE_BUILD_ID
+  const failureReasonSeeds: SlotFailureSeed[] = [
+    failureSlot('q01', 'NO_SUPPORTING_DOCUMENTS', 'user_input', {
+      moduleId: 'MOD-01',
+      objective: 'Explain the synthetic source evidence.',
+      evidenceTarget: 'Controller responsibilities on page 12',
+      suggestions: [
+        'Portfolio diversification',
+        'Bond duration',
+        'Portfolio diversification',
+      ],
+    }),
+    failureSlot('q02', 'LEVEL_NOT_GROUNDABLE', 'self_repairable', {
+      moduleId: 'MOD-02',
+      objective: 'Apply the synthetic model to a new case.',
+      objectiveSource: 'neutral',
+      requestedLevel: 'evaluate',
+      evidenceTarget: 'Synthetic evaluation evidence',
+    }),
+    failureSlot('q03', 'SYSTEM_FAILURE', 'system', {
+      moduleId: 'MOD-02',
+      objective: 'Analyze the synthetic source evidence.',
+      requestedLevel: 'analyze',
+      evidenceTarget: null,
+      detail: 'Synthetic provider timeout while resolving evidence.',
+    }),
+    failureSlot('q04', 'FUTURE_WORKER_REASON', 'user_input', {
+      moduleId: 'MOD-03',
+      objective: 'Recall the synthetic definitions.',
+      requestedLevel: 'remember',
+      evidenceTarget: 'Synthetic definition list',
+      detail: 'Synthetic reason code from a newer worker release.',
+    }),
+  ]
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: failureBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-failure-reasons`,
+      configurationHash: 'synthetic-configuration-failure-reasons',
+      configuration: buildConfiguration(),
+      requestedElementCount: 4,
+      generatedElementCount: 0,
+      unresolvedElementCount: 4,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'WORKFLOW_FAILED',
+      errorMessage: 'Question-generation workflow reported a failure',
+      errorRetryable: false,
+      completedAt: new Date('2026-08-29T10:00:00.000Z'),
+      planSummary: planSummaryWithFailures(4, [], failureReasonSeeds),
+    },
+  })
+
+  // A partial run that delivered a passing subset and reported reasons for the
+  // slots it could not supply; the delivered draft stays reviewable.
+  const partialBuildId = PARTIAL_BUILD_ID
+  const partialDeliveredDraftId = failureDraftId(0)
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: partialBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-partial-delivery`,
+      configurationHash: 'synthetic-configuration-partial-delivery',
+      configuration: buildConfiguration(),
+      requestedElementCount: 4,
+      generatedElementCount: 1,
+      unresolvedElementCount: 3,
+      status: DB.ElementGenerationBuildStatus.INCOMPLETE,
+      stage: 'incomplete',
+      completedAt: new Date('2026-08-29T11:00:00.000Z'),
+      incompletePublishedAt: new Date('2026-08-29T11:00:00.000Z'),
+      drafts: {
+        create: [
+          {
+            ...attentionDraft(0, ['manual_review_required']),
+            id: partialDeliveredDraftId,
+          },
+        ],
+      },
+      planSummary: planSummaryWithFailures(
+        1,
+        [
+          {
+            sourceQuestionId: 'synthetic-partial-1',
+            moduleId: 'MOD-01',
+            objectiveId: null,
+            stem: 'Synthetic delivered partial prompt 1',
+            bloomLevel: 'understand',
+            targetDifficulty: 3,
+          },
+        ],
+        [
+          failureSlot('q02', 'NO_DISTINCT_EVIDENCE', 'self_repairable', {
+            moduleId: 'MOD-02',
+            requestedLevel: 'apply',
+          }),
+          failureSlot('q03', 'TOPIC_NOT_IN_MATERIAL', 'user_input', {
+            moduleId: 'MOD-02',
+            evidenceTarget: 'Synthetic uncovered topic',
+            suggestions: ['Bond duration'],
+          }),
+          failureSlot('q04', 'SYSTEM_FAILURE', 'system', {
+            moduleId: 'MOD-03',
+            detail: 'Synthetic upstream failure.',
+          }),
+        ]
+      ),
+    },
+  })
+
+  // A failed run without structured reasons: the distinct legacy surface.
+  const legacyFailureBuildId = LEGACY_FAILURE_BUILD_ID
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: legacyFailureBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-legacy-failure`,
+      configurationHash: 'synthetic-configuration-legacy-failure',
+      configuration: buildConfiguration(),
+      requestedElementCount: 4,
+      generatedElementCount: 0,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      stage: 'failed',
+      errorCode: 'WORKFLOW_FAILED',
+      errorMessage: 'Question-generation workflow did not complete',
+      errorRetryable: false,
+      completedAt: new Date('2026-08-29T12:00:00.000Z'),
+    },
+  })
+
+  // A partial run whose slots all failed: it settled with reasons and no
+  // drafts, so the reason surface replaces the empty review state.
+  const zeroPassingBuildId = ZERO_PASSING_BUILD_ID
+  await prisma.elementGenerationBuild.create({
+    data: {
+      id: zeroPassingBuildId,
+      ownerId: USER_ID_TEST,
+      sourceGraphBuildId: GRAPH_BUILD_ID,
+      elementType: 'SC',
+      idempotencyKey: `${FIXTURE_PREFIX}-zero-passing`,
+      configurationHash: 'synthetic-configuration-zero-passing',
+      configuration: buildConfiguration(),
+      requestedElementCount: 2,
+      generatedElementCount: 0,
+      unresolvedElementCount: 2,
+      status: DB.ElementGenerationBuildStatus.INCOMPLETE,
+      stage: 'incomplete',
+      completedAt: new Date('2026-08-29T13:00:00.000Z'),
+      planSummary: planSummaryWithFailures(
+        2,
+        [],
+        [
+          failureSlot('q01', 'GROUNDING_EXHAUSTED', 'self_repairable', {
+            moduleId: 'MOD-01',
+            requestedLevel: 'understand',
+          }),
+          failureSlot('q02', 'NO_SUPPORTING_DOCUMENTS', 'user_input', {
+            moduleId: 'MOD-02',
+            evidenceTarget: 'Synthetic missing evidence',
+            suggestions: ['Bond duration'],
+          }),
+        ]
+      ),
+    },
+  })
+
   return {
     primaryBuildId,
     tagIdByExistingName,
@@ -402,6 +676,11 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
       acceptedUnsaved: attentionDraftId(3),
     },
     gateBuildId,
+    failureBuildId,
+    partialBuildId,
+    partialDeliveredDraftId,
+    legacyFailureBuildId,
+    zeroPassingBuildId,
   }
 }
 

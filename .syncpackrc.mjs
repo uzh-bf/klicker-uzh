@@ -43,6 +43,32 @@ export default {
       packages: ['@klicker-uzh/monorepo'],
     },
     {
+      // The unqualified vitest overrides rewrite the lockfile specifiers to
+      // the exact pin, and verifyDepsBeforeRun compares spec strings, so the
+      // manifests must carry the exact release too (see #5924).
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['vitest', '@vitest/coverage-v8'],
+      packages: ['**'],
+    },
+    {
+      // Same class as the vitest pins above (#5924): the lodash override
+      // rewrites the lockfile specifier to the exact release, so a manifest
+      // carrying a range would fail the verifyDepsBeforeRun spec comparison.
+      range: '',
+      dependencies: ['lodash'],
+      packages: ['**'],
+    },
+    {
+      // The @babel/core override rewrites the lockfile specifier to the exact
+      // pin, and verifyDepsBeforeRun compares spec strings, so the manifest
+      // must carry the exact release too.
+      range: '',
+      dependencyTypes: ['dev'],
+      dependencies: ['@babel/core'],
+      packages: ['**'],
+    },
+    {
       range: '~',
       dependencyTypes: ['dev'],
       dependencies: ['!@types/**'],
@@ -86,6 +112,22 @@ export default {
       ],
       packages: ['@klicker-uzh/backend-docker'],
       isIgnored: true,
+    },
+    {
+      // mhchem JS, CSS and fonts must come from one katex build across all
+      // render surfaces; a split version silently breaks chemistry rendering.
+      // Docs keeps its policy-required tilde dev range, so only the exact
+      // production surfaces are compared here; the label names only what this
+      // rule actually enforces.
+      label: 'katex must be aligned across markdown, chat and frontend apps',
+      dependencies: ['katex'],
+      packages: [
+        '@klicker-uzh/markdown',
+        '@klicker-uzh/chat',
+        '@klicker-uzh/frontend-control',
+        '@klicker-uzh/frontend-manage',
+        '@klicker-uzh/frontend-pwa',
+      ],
     },
   ],
   sortAz: [

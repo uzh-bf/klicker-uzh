@@ -64,6 +64,7 @@ export default {
     },
     credits: {
       title: 'Available credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Every message uses credits — how many depends on the model and the length of the exchange.',
       resetAt: 'Refills on {date}.',
@@ -82,6 +83,9 @@ export default {
       logoAlt: 'Klicker Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
+    },
+    embedded: {
+      close: 'Close chat',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -228,6 +232,9 @@ export default {
       errorTitle: 'Chatbot unavailable',
       errorMessage:
         'We could not load this chatbot. Try again or return to KlickerUZH.',
+      accessDeniedTitle: 'No access to this chatbot',
+      accessDeniedMessage:
+        'Your account cannot open this chatbot. Return to KlickerUZH and open the chatbot from its course.',
       retry: 'Try again',
       openKlickerUzh: 'Open KlickerUZH',
     },
@@ -962,6 +969,9 @@ export default {
       rank: 'Rank',
       username: 'Username',
       email: 'Email',
+      entryAriaLabel: 'Rank {rank}: {name}, {points} points',
+      selfPositionDivider: 'your position',
+      podiumEmpty: 'No entries on the podium yet',
     },
     error: {
       '404': '404 Page not found',
@@ -987,6 +997,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/privacy_policy',
     loginInfo:
       'You do not need a management account to participate in activities or a course, only to create your own activities and courses.',
+    sessionCheckFailed:
+      'Your login could not be verified because the service is temporarily unavailable. Please try again in a moment.',
+    sessionCheckRetry: 'Try again',
+    restart: {
+      title: 'Login',
+      info: 'Your login attempt could not be continued. Please choose how you would like to log in again.',
+      errorInfo:
+        'The login provider reported an error. Please choose how you would like to log in again.',
+      studentLogin: 'Student login (assessment)',
+      lecturerLogin: 'Lecturer login',
+    },
   },
   pwa: {
     general: {
@@ -1105,6 +1126,65 @@ Your data will never be shared with other parties beside the above and will neve
         'Your account data, such as profile information, achievements, and experience points, as well as responses you give to questions in KlickerUZH, will be stored for the lifetime of your account. Your points and ranking on course activities and leaderboards will be stored for as long as you participate on the respective course leaderboard. You can request deletion of your data and account at any time.',
       confirmationMessage:
         'I agree to the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy) and [terms of service](https://www.klicker.uzh.ch/terms_of_service) and consent to the processing of my data as described therein. I am aware that I can participate in learning activities anonymously and without an account if I do not agree to these conditions.',
+      signup: {
+        accountTitle: 'Your account',
+        emailLabel: 'E-mail',
+        usernameHint:
+          'Your username is shown when you join a course leaderboard.',
+        assessmentTitle: 'Enable assessment access',
+        assessmentSubmit: 'Enable access',
+        assessmentDataCollectionNotice:
+          'We store your account data and the identity information provided by Switch edu-ID as well as data from courses and activities: such as answers and inputs in activities, assessments, points, and feedback.\n\nIn an assessment, identity information such as your matriculation number as well as detailed logs of your answer attempts and interactions (audit logs) are added.',
+        assessmentDataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.\n\nIn an assessment, authorised lecturers and assessment staff additionally receive your identity, answer details, and results for grading and follow-up. Other participants cannot see this assessment data.',
+        assessmentDataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. In an assessment, they additionally support grading and traceability. Your choice in the account settings applies to research and Learning Analytics. It does not affect points, grades, or assessment access.',
+        assessmentDataStorageNotice:
+          'Account data and answers are stored for the lifetime of your account. You cannot delete your assessment account and its data yourself: they remain available for traceability and during the applicable appeal and retention periods. Afterwards, they are deleted or anonymised. [Details in the privacy policy](https://www.klicker.uzh.ch/privacy_policy)',
+        assessmentAcknowledgement:
+          'I have read the [KlickerUZH privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of use](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. I have acknowledged the additional information about assessment data, inspection, and retention.',
+        accessTitle: 'Your access',
+        accessNoPassword: 'You do not need a password or any further input.',
+        dataUseTitle: 'Data use and settings',
+        dataCollectionTitle: 'What data do you collect about me?',
+        dataCollectionNotice:
+          'We store your account data and data from your courses and activities, such as answers and inputs in activities, their assessment, points, and feedback.',
+        dataSharingTitle: 'Who can see my data?',
+        dataSharingNotice:
+          'Lecturers and other authorised people see the information they need to run and evaluate the course. If you join a leaderboard, other participants see your username and leaderboard details. Learning Analytics shows lecturers only aggregated group values.',
+        dataUsageTitle: 'How is my data used?',
+        dataUsageNotice:
+          'Lecturers use the data collected from you to make teaching more interactive. We use your data to operate your account and to run and evaluate course activities. Your choice in the account settings applies to research and Learning Analytics.',
+        dataStorageTitle: 'How long is my data stored?',
+        dataStorageNotice:
+          'Your account data and answers are stored while your account exists. Data may be retained until legal or contractual retention periods expire. Afterwards, they are deleted or changed so that they can no longer be linked to any person. You can request deletion of your account and your data.',
+        acknowledgement:
+          'I have read the KlickerUZH [privacy policy](https://www.klicker.uzh.ch/privacy_policy), accept the [terms of service](https://www.klicker.uzh.ch/terms_of_service), and confirm my choices. Research and Learning Analytics are voluntary.',
+        researchConsentTitle: 'Data for research',
+        researchConsentDescription:
+          'Your usage and learning data may be used without personal identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentDescriptionAssessment:
+          'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can object at any time in your settings. Your data is then excluded from future research exports. [More about privacy](https://www.klicker.uzh.ch/privacy_policy)',
+        researchConsentBadgeAllowed: 'Allowed',
+        researchConsentBadgeRefused: 'Refused',
+        researchConsentBadgeUnanswered: 'Not answered',
+        researchConsentYes: 'Allow',
+        researchConsentNo: 'Object',
+        researchConsentControlLabel: 'Use for research:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Get personal insights into your learning. Lecturers see de-identified group reports. Participation is voluntary and can be changed at any time.\n\nLA records data only when it is active for your account and the course. When you turn it off, the affected LA data is deleted automatically. [More about Learning Analytics](https://www.klicker.uzh.ch/learning_analytics)',
+        learningAnalyticsDecisionRequired: 'Decision required',
+        learningAnalyticsConsentYes: 'Yes, participate',
+        learningAnalyticsConsentYesDescription:
+          'Private insights and protected group reports.',
+        learningAnalyticsConsentNo: 'No, do not participate',
+        learningAnalyticsConsentNoDescription:
+          'Courses, points, and chat work as usual.',
+        submit: 'Create account',
+        acknowledgementRequired: 'Please confirm your choices.',
+        dataUseChoiceRequired: 'Please choose yes or no.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1444,6 +1524,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Your usage and learning data may be used without direct identifiers for UZH research and teaching projects. You can opt out at any time in your settings. Your data will then be excluded from future research exports.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      dataUseConflict:
+        'This page is out of date. Reload it before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Get personal insights into your learning. Only you see your personal insights; lecturers see de-identified group reports. Participation is voluntary and can be changed at any time; course access and points remain unchanged. Learning Analytics collects data only while it is active for both your account and the course. When you turn it off, the relevant Learning Analytics data is automatically deleted.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsWithdrawalTitle:
+        'Stop participating in Learning Analytics?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Turn off Learning Analytics? Your personal LA data and insights will be deleted automatically. Your responses and points needed to run the course will remain.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -1822,23 +1929,24 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     selectAllPage: 'Select up to 50 available resources',
     selectResource: 'Select “{title}”',
     loadMoreResources: 'Load more resources',
-    importedSourcesTitle: 'Imported sources',
+    importedSourcesTitle: 'Indexed sources',
     importedSourceColumn: 'Source',
     importedSourcesNotice:
-      'Imported metadata for content that is already indexed in this knowledge base. Imported sources are excluded from knowledge graph builds and do not count toward the resource or storage limits.',
+      'Everything indexed in this knowledge base, whether you added it through the app or the course team imported it. App-managed resources count toward the resource and storage limits and are included in knowledge graph builds; manually imported sources are not.',
     importedSourcesIncomplete:
       'The list covers the most recently scanned sources. Older sources may not be listed yet.',
-    importedSourcesEmpty:
-      'No imported sources have been found for this knowledge base yet.',
-    importedSourcesLoadError: 'The imported sources could not be loaded.',
-    loadMoreImportedSources: 'Load more imported sources',
+    importedSourcesEmpty: 'No sources are indexed in this knowledge base yet.',
+    importedSourcesLoadError: 'The indexed sources could not be loaded.',
+    loadMoreImportedSources: 'Load more sources',
     importedSourcesLoadMoreError:
-      'The additional imported sources could not be loaded. Try again.',
+      'The additional sources could not be loaded. Try again.',
     importedObservedAt: 'Observed {date}',
     importedIngestedColumn: 'Ingested',
     importedObservedColumn: 'Observed',
     importedIngestionUnknown: 'Ingestion time not recorded',
     importedSourceGeneric: 'Source',
+    importedSourceManagedBadge: 'App-managed',
+    importedSourceImportedBadge: 'Manually imported',
     importedVideoNoFileHint:
       'Video content is indexed without storing the original file.',
     noResources: 'No resources have been added yet.',
@@ -1997,6 +2105,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       'This published graph does not include an element-generation bundle yet. Rebuild it to generate Klicker elements.',
     graphPreviewUnavailable:
       'Build and publish a graph before opening the lecturer viewer.',
+    graphDomainLabel: 'Domain',
+    graphDomainSelectPlaceholder: 'Select a domain',
+    graphFocusTopicLabel: 'Focus topic (optional)',
+    graphFocusTopicPlaceholder: 'e.g. Capital budgeting',
+    graphFocusTopicNote:
+      'Steers which material the extraction emphasizes. The focus is not a source: it cannot add facts, and the rest of the material keeps its coverage.',
+    graphDomainFinance: 'Finance',
+    graphDomainEconomics: 'Economics',
+    graphDomainBusiness: 'Business Administration',
+    graphDomainMathematics: 'Mathematics',
+    graphDomainInformatics: 'Informatics',
+    graphDomainGeneralAcademic: 'General / Mixed',
+    graphDomainCategoriesLabel: 'Generated categories',
+    graphDomainLanguageNote:
+      'The graph is generated in the selected language. The interface language does not change the categories.',
+    graphDomainLanguageLabel: 'Generation language',
+    graphDomainLanguageSelectPlaceholder: 'Select a language',
+    graphDomainCurrentUnavailable:
+      'The selected domain {domain} (version {version}) is not available in this deployment. Choose a supported domain to build again.',
+    graphDomainLanguageUnavailable:
+      'The selected domain {domain} does not serve {language} in this deployment. Choose a supported generation language to build again.',
+    graphDomainRebuildBlocked:
+      'This knowledge base uses an explicit domain ({domain}, version {version}, {language}) that this deployment cannot reapply. Rebuilding is blocked until an explicit domain selection is available again.',
+    graphDomainVersionUnknown: 'unknown',
+    graphDomainPublished:
+      'Served graph: {domain} (version {version}, {language})',
+    graphDomainLanguageGerman: 'German',
+    graphDomainLanguageEnglish: 'English',
     ingestionDisabledError:
       'Adding new content to knowledge bases is temporarily disabled.',
   },
@@ -2086,6 +2222,38 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       nextPage: 'Next',
     },
     admin: {
+      chatbotRejectionReason: 'Reason for rejection',
+      chatbotRejectConsequence:
+        'The owner will see this reason and can revise the chatbot before requesting approval again.',
+      chatbotReject: 'Reject request',
+      chatbotRejected:
+        '“{name}” was rejected. The owner can revise and resubmit it.',
+      chatbotRejectionError:
+        'Rejection could not be confirmed. Refresh the list and check the current status before trying again.',
+      chatbotAllTools: 'All tools',
+      chatbotDefaultReasoning: 'All reasoning levels supported by the model',
+      adminOnly: 'This page is available to administrators only.',
+      chatbotApprovals: 'Chatbot approvals',
+      chatbotApprovalsDescription:
+        'Review pending publication requests. Open a chatbot to check its configuration before approving participant access.',
+      chatbotOwner: 'Owner',
+      chatbotAccountApproval: 'Account publishing permission',
+      chatbotAccountApproved: 'Approved',
+      chatbotAccountNotApproved: 'Not approved',
+      chatbotConnectedTools: 'Connected tools',
+      chatbotNoConnectedTools: 'No connected tools.',
+      chatbotRefresh: 'Refresh requests',
+      chatbotQueueEmpty: 'No chatbots are awaiting approval.',
+      chatbotQueueError:
+        'Could not load publication requests. Refresh to try again.',
+      chatbotOwnerBlocked:
+        'The owner is not currently approved for chatbot publishing. Account approval is required before this chatbot can be published.',
+      chatbotApproveConsequence:
+        'Approving publishes this chatbot immediately for participants in its course. Account usage budgets remain unchanged.',
+      chatbotApprove: 'Approve and publish',
+      chatbotPublished: '“{name}” has been published.',
+      chatbotApprovalError:
+        'Publication could not be confirmed. The request list has been refreshed; check the current status before trying again.',
       pageName: 'Admin Panel',
       privatePreviewAvailability: 'Availability: Private Features',
       privatePreviewDescription:
@@ -2610,7 +2778,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'All types are generated as Klicker elements. Choose the format that best matches your learning goal.',
         bloomTitle: "Bloom's taxonomy",
         bloomHelp:
-          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments.',
+          'Select one or more cognitive levels. The steps progress from recalling knowledge to making evidence-based judgments. Higher levels need more detailed source material, so a level can still fail for thin material.',
         bloomLevel: 'Level {level}',
         bloomSelected: 'Selected',
         bloomSelect: 'Select level',
@@ -2620,6 +2788,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         difficulty: 'Difficulty level',
         difficultyHelp:
           'Choose the reasoning demand for all generated elements. Difficulty comes from the task, not from confusing wording.',
+        focusTopic: 'Focus topic',
+        focusTopicHelp:
+          'Optional. Narrows this batch to one topic while the knowledge graph stays complete.',
+        focusTopicPlaceholder: 'E.g. Portfolio diversification',
         objectives: 'Learning objectives',
         objectivesHelp: 'Optional guidance for the generated elements.',
         objectiveHint: 'Write observable, specific learning objectives.',
@@ -2730,6 +2902,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         FAILED: 'Failed',
         REJECTED: 'Rejected',
       },
+      failureClasses: {
+        user_input:
+          'This element could not be grounded in the selected material. Adjust the source scope or the learning objective and generate again.',
+        self_repairable:
+          'The workflow retried this element with alternative material but exhausted the usable evidence without grounding it.',
+        system:
+          'The generation service could not process this element, which is not caused by your input. Retry the generation; if the problem persists, contact support.',
+      },
+      failureClassLabels: {
+        user_input: 'Source material',
+        self_repairable: 'No alternative evidence',
+        system: 'System error',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'The selected sources contain no matching documents for this element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'The requested topic does not appear in the selected material.',
+        LEVEL_NOT_GROUNDABLE:
+          'The selected material does not support the requested cognitive level for this element.',
+        NO_DISTINCT_EVIDENCE:
+          'Several elements would rely on the same evidence, so this element was left out.',
+        GROUNDING_EXHAUSTED:
+          'The workflow used all usable evidence without producing a grounded element.',
+        SYSTEM_FAILURE:
+          'The generation service reported an internal failure for this element.',
+      },
       build: {
         title: '{type} generation',
         stage: 'Current stage: {stage}',
@@ -2752,6 +2951,20 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
           'I understand that the resulting set contains fewer elements than requested.',
         rejected: 'This generation was rejected during review.',
         noDrafts: 'The generation completed without reviewable elements.',
+        legacyFailure:
+          'This run failed before the workflow reported per-element reasons.',
+        failureReasonsTitle:
+          '{count, plural, one {# element is missing from this generation} other {# elements are missing from this generation}}',
+        failureReasonsHelp:
+          'The workflow reported why these elements could not be generated. The delivered elements are unaffected and stay in review.',
+        failureModule: 'Module',
+        failureObjective: 'Learning objective',
+        failureLevel: 'Bloom level',
+        failureEvidence: 'Required evidence',
+        failureSuggestions: 'Topics covered by your material',
+        failureRetryGuidance:
+          'This is a system-side problem. Retry the generation; if it persists, contact support.',
+        failureDiagnostics: 'Technical diagnostics',
       },
       gate: {
         eyebrow: 'Review gate',
@@ -2765,6 +2978,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         elementNumber: 'Element {number}',
         objectives: 'Learning objectives',
         noObjectives: 'No explicit learning objectives.',
+        generatedDefaultObjective: 'Generated default',
+        slotEvidence: 'Evidence per element',
+        noSlotEvidence: 'No evidence resolved',
+        concentrationTitle: 'Concentrated evidence',
+        concentrationNotice:
+          '{count, plural, one {# element} other {# elements}} in this module share the same evidence entities: {entities}.',
         difficulty: 'Difficulty {difficulty}',
         warnings: '{count, plural, one {# warning} other {# warnings}}',
         acknowledgeWarnings: 'I reviewed and acknowledge these warnings.',

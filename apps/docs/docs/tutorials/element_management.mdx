@@ -88,6 +88,65 @@ When creating a new element, the following fields are available:
   - List of all interactions of users with this element (creation / modifications / sharing operations / ...)
   - Support of comments to allow for detailed content reviews in combination with the element status
 
+### Chemistry formulae and units
+
+Use `\ce{...}` for chemical formulae and reaction equations, and `\pu{...}` for
+units. In the element editor, wrap an inline expression in double dollar signs:
+
+```text
+Water: $$\ce{H2O}$$. Concentration: $$\pu{1.5 mol L-1}$$.
+```
+
+The rendered expressions look like this:
+
+$$\ce{H2O}$$
+
+$$\pu{1.5 mol L-1}$$
+
+For a centered reaction, put the delimiters on separate lines:
+
+```text
+$$
+\ce{2 H2 + O2 -> 2 H2O}
+$$
+```
+
+$$
+\ce{2 H2 + O2 -> 2 H2O}
+$$
+
+This syntax renders notation, not molecular structure drawings. `chemfig`, full
+LaTeX documents, and biological diagrams are not supported by this feature.
+
+#### What the notation covers
+
+`\ce{...}` supports the common reaction notation: charges (`\ce{SO4^2-}`),
+isotopes (`\ce{^{227}_{90}Th+}`), states of matter
+(`\ce{2 H2(g) + O2(g) -> 2 H2O(l)}`), bonds (`\ce{C-C}`, `\ce{C=C}`,
+`\ce{C#C}`), the reaction arrows (`->`, `<=>`, `<->`), conditions written
+above an arrow (`\ce{N2 + 3 H2 ->[\text{Fe}] 2 NH3}`), the precipitate and gas
+markers (`\ce{AgCl v}`, `\ce{CO2 ^}`), stoichiometric fractions
+(`\ce{1/2 H2O}`), hydrates (`\ce{CuSO4.5H2O}`), and complex ions
+(`\ce{K4[Fe(CN)6]}`). `\pu{...}` covers units with exponents and
+degrees (`\pu{6.022e23 mol-1}`, `\pu{25 °C}`), and you can mix both with
+ordinary math in one expression: `$$M(\ce{H2O}) = 18.02 \pu{g/mol}$$`.
+
+Short sequences work as plain text: `\ce{ACGT}` for DNA, `\ce{ACGU}` for
+RNA, and `\ce{Ala-Gly-Ser}` for peptides. For the prime ends of a nucleic
+acid, use the unicode prime `′` or the command form — a bare apostrophe is not
+parsed:
+
+$$ce{5′-ATCG-3′}$$
+
+$$ce{5^{\prime}-ATCG-3^{\prime}}$$
+
+Two limitations are worth knowing. Delimiters matter: the expression only renders
+between double dollar signs, so `$\ce{H2O}$`, `\(\ce{H2O}\)`, and a bare
+`\ce{H2O}` all stay as plain text. And a command the renderer does not know,
+such as `\chemfig` or `\smiles`, is shown as red literal text rather than
+raising an error, so a red fragment in a preview means the command is
+unsupported.
+
 ## How can I modify an Element?
 
 ### Editing an Element

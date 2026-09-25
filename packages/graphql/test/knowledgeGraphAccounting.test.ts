@@ -5,6 +5,7 @@ import {
   KBGraphBuildStatus,
   KBGraphCostStatus,
   KBGraphQualityTier,
+  KBResourceMaterialType,
   KBResourceStatus,
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
@@ -219,6 +220,54 @@ describe('KB graph cost accounting', () => {
     })
   })
 
+  it('adopts a raised configured quota and keeps a granted quota when the configuration is lowered', async () => {
+    const reserveWithQuota = (semesterQuotaMinorUnits: string) =>
+      prisma.$transaction((tx) =>
+        reserveKBGraphCost(tx, {
+          ownerId,
+          qualityTier: KBGraphQualityTier.STANDARD,
+          env: {
+            ...costEnv,
+            KB_GRAPH_SEMESTER_QUOTA_MINOR_UNITS: semesterQuotaMinorUnits,
+          },
+          now: NOW,
+        })
+      )
+    const readQuota = () =>
+      prisma.kBGraphQuota.findUniqueOrThrow({
+        where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
+      })
+
+    await reserveWithQuota('100')
+    await expect(readQuota()).resolves.toMatchObject({
+      limitMinorUnits: 100,
+      reservedMinorUnits: 100,
+    })
+
+    // Raise: the next admission adopts the configured limit and fits within it.
+    await reserveWithQuota('300')
+    await expect(readQuota()).resolves.toMatchObject({
+      limitMinorUnits: 300,
+      reservedMinorUnits: 200,
+    })
+
+    // Lower: the granted limit stays and still admits the remaining headroom.
+    await reserveWithQuota('100')
+    await expect(readQuota()).resolves.toMatchObject({
+      limitMinorUnits: 300,
+      reservedMinorUnits: 300,
+    })
+
+    // Equal: the limit is unchanged and an exhausted quota still rejects.
+    await expect(reserveWithQuota('300')).rejects.toMatchObject({
+      extensions: { code: 'KB_GRAPH_QUOTA_EXCEEDED', remainingMinorUnits: 0 },
+    })
+    await expect(readQuota()).resolves.toMatchObject({
+      limitMinorUnits: 300,
+      reservedMinorUnits: 300,
+    })
+  })
+
   it('settles a valid result once and publishes only the validated build', async () => {
     const reservation = await prisma.$transaction((tx) =>
       reserveKBGraphCost(tx, {
@@ -371,6 +420,7 @@ describe('KB graph cost accounting', () => {
         type: KBResourceType.URL,
         title: 'Late success resource',
         sourceUrl: 'https://content.example.org/late.pdf',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
         activeContentSha256: LATE_CONTENT_SHA256,
@@ -430,6 +480,7 @@ describe('KB graph cost accounting', () => {
         type: KBResourceType.URL,
         title: 'Late currency mismatch resource',
         sourceUrl: 'https://content.example.org/currency.pdf',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
         activeContentSha256: LATE_CONTENT_SHA256,
@@ -489,6 +540,7 @@ describe('KB graph cost accounting', () => {
         type: KBResourceType.URL,
         title: 'Stale late success resource',
         sourceUrl: 'https://content.example.org/stale.pdf',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
         activeContentSha256: `${LATE_CONTENT_SHA256.slice(0, -1)}0`,
@@ -549,6 +601,7 @@ describe('KB graph cost accounting', () => {
         type: KBResourceType.URL,
         title: 'Superseded late success resource',
         sourceUrl: 'https://content.example.org/superseded.pdf',
+        materialType: KBResourceMaterialType.COURSE_CONTENT,
         status: KBResourceStatus.READY,
         activeResourceVersion: 1,
         activeContentSha256: LATE_CONTENT_SHA256,

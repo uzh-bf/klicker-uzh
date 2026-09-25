@@ -354,11 +354,20 @@ export const Thread: FC<ThreadProps> = ({
         // when the run becomes terminal; disabling resize-driven bottom
         // scrolling for that insertion prevents a large source grid from
         // jumping past the final answer.
+        //
+        // The viewport must not set scroll-smooth. The thread viewport
+        // auto-scroll hook re-issues scrollTo({ behavior: 'auto' }) on every
+        // content growth during a run, and CSS scroll-behavior makes that
+        // "auto" resolve to an animated scroll. Each streamed chunk therefore
+        // restarts the animation from the current position, so the viewport
+        // falls progressively further behind the growing answer instead of
+        // tracking it. Explicit smooth scrolling (citation jumps, history-rail
+        // navigation) is requested per call and is unaffected by this.
         autoScroll={isRunning}
         className={twMerge(
-          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:scroll-auto',
+          'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset',
           embedded
-            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-4 pt-2'
+            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-2 pt-2'
             : twMerge(
                 'overscroll-contain overflow-y-scroll px-2 pb-4 pt-2 sm:px-4 sm:pt-8',
                 showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
@@ -402,7 +411,7 @@ export const Thread: FC<ThreadProps> = ({
         className={twMerge(
           'z-10 flex w-full flex-col items-center justify-end',
           embedded
-            ? 'relative shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]'
+            ? 'relative shrink-0 px-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]'
             : 'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
@@ -749,6 +758,11 @@ const ThreadWelcomeSuggestions: FC<{
       prompt: t(`chat.suggestions.${suggestion.id}Prompt`),
     }))
 
+  // Modes without starters (every chatbot-defined mode key) render no
+  // section at all: a heading and editing hint above an empty grid would
+  // promise cards that are not there.
+  if (items.length === 0) return null
+
   return (
     <section
       aria-label={t('chat.suggestions.sectionLabel')}
@@ -913,7 +927,7 @@ const Composer: FC<{ maxImageAttachments: number }> = ({
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',
-              embedded ? 'max-h-20 py-2 text-sm leading-6' : 'max-h-40 py-4'
+              embedded ? 'max-h-20 py-1.5 text-sm leading-6' : 'max-h-40 py-4'
             )}
           />
           <ComposerAction />
@@ -934,7 +948,7 @@ const ComposerHint: FC = () => {
   return (
     <p
       data-cy="chat-composer-hint"
-      className="text-muted-foreground mt-1.5 w-full max-w-3xl px-2 text-center text-xs"
+      className="text-muted-foreground mt-1 w-full max-w-3xl px-2 text-center text-xs"
     >
       {t('chat.composer.disclaimerHint')}
     </p>
@@ -1432,14 +1446,17 @@ const UserMessage: FC = () => {
       data-cy="chat-user-message"
       data-history-rail-anchor={getHistoryRailMessageAnchor(message.id)}
       tabIndex={-1}
-      className="animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4"
+      className={twMerge(
+        'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring flex w-full max-w-[var(--thread-max-width)] flex-col items-end gap-y-1 py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
+        embedded && 'py-1 sm:py-1.5'
+      )}
     >
       <div
         data-cy="chat-user-message-content"
         className={twMerge(
           'bg-muted text-foreground break-words rounded-2xl px-5 py-2.5',
           embedded
-            ? 'max-w-[80%] text-sm leading-6'
+            ? 'max-w-[80%] px-3.5 py-1.5 text-sm leading-6'
             : 'max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >
@@ -1809,7 +1826,9 @@ const AssistantMessage: FC<{
       tabIndex={-1}
       className={twMerge(
         'animate-in fade-in slide-in-from-bottom-2 focus-visible:ring-ring relative grid w-full max-w-[var(--thread-max-width)] grid-rows-[auto_1fr] py-2 duration-300 motion-reduce:animate-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 sm:py-4',
-        embedded ? 'grid-cols-[auto_1fr] gap-x-2' : 'grid-cols-[auto_auto_1fr]'
+        embedded
+          ? 'grid-cols-[auto_1fr] gap-x-2 py-1 sm:py-1.5'
+          : 'grid-cols-[auto_auto_1fr]'
       )}
     >
       {embedded ? (
@@ -1862,7 +1881,7 @@ const AssistantMessage: FC<{
         className={twMerge(
           'text-foreground row-start-1 my-1.5 break-words leading-7',
           embedded
-            ? 'col-start-2 max-w-full text-sm leading-6'
+            ? 'col-start-2 my-0.5 max-w-full text-sm leading-6'
             : 'col-span-2 col-start-2 max-w-[calc(var(--thread-max-width)*0.8)]'
         )}
       >

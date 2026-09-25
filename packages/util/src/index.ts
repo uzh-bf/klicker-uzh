@@ -48,3 +48,4 @@ export * from './chatbotStandardModeConfig.js'
 
 // export everything from the eLearning chat handoff module
 export * from './elearningChatHandoff.js'
+export * from './participantAccountDataUse.js'

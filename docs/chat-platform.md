@@ -43,8 +43,9 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
   and rendering. The student chat renderer keeps its app-local plugin.
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` and contiguous
   `[n–m]` markers into citation links. A marker may also carry a _labelled_ page detail the model
-  added, such as `[1, p. 6–7]` or `[1, S. 8–18]`; the chip shows the number alone and the page belongs
-  to the source card. A bare `[1, 2]` is deliberately not a citation: in real course answers that
+  added, such as `[1, p. 6–7]` or `[1, S. 8–18]`; the chip shows the number alone, and
+  `extractCitedPages` reads that detail so the source card can show the pages the answer actually
+  cites. A bare `[1, 2]` is deliberately not a citation: in real course answers that
   shape is far more often a math coordinate such as `[0, 1]`.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
@@ -736,6 +737,22 @@ v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
 ## Lecturer authoring and publication contract
 
+Administrators review pending publication requests in Manage's `/admin` panel.
+The review query and approval mutation both enforce `ADMIN` at the schema and
+service boundaries, independently of author beta access. The queue contains
+pending revisions (including revisions of live chatbots) and version-zero legacy
+pending chatbots. It selects configuration, owner identity and publishing
+capability, course, proposed participant credits, and disclaimer/tool details;
+it does not read model credentials, MCP connection secrets or participant
+conversations. Approval makes the existing chatbot available to its course and
+rechecks the owner's live publishing capability. It does not grant account usage
+budgets. The admin review displays the saved revision's configuration and disclaimer
+when present, and submits its exact `revisionVersion` to `approveChatbotRevision`
+or `rejectChatbotRevision`. Rejection requires a reason and leaves a published
+chatbot's live configuration available. After either attempt the UI reloads the
+queue without retrying the mutation, since another admin or an uncertain response
+may have changed its state.
+
 The owner-facing GraphQL contract lives in
 `packages/graphql/src/services/chatbots.ts`. Catalyst or full-access lecturers
 can create a course-bound `DRAFT` chatbot before their account is authorized to
@@ -1045,8 +1062,8 @@ this order:
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
 6. fixed course-scope, evidence, tool/conversation privacy, safety, non-disclosure, and epistemic
    integrity policy from `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-7. fixed Markdown, inline/display mathematics, and fenced-code rules from
-   `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
+7. fixed Markdown, inline/display mathematics, chemistry and biology notation, and fenced-code
+   rules from `src/lib/server/outputFormatInstructions.ts:withOutputFormatContract`;
 8. the conditional citation policy when a `doc_query`-style tool is available; and
 9. the fixed conversation-language and Swiss Standard German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
@@ -1191,20 +1208,35 @@ untouched. The string-level contract is pinned by `test/citation-chip.test.ts`; 
 mechanism reintroduces orphaned chips or lone trailing periods at narrow widths.
 
 The line under a source's name is per-type, chosen by `getSourceSecondaryLine` in
-`src/lib/sources/sourceDisplay.ts` and shared by the card and the citation hover preview:
-documents display the publisher's labeled page (`p. 12` / `S. 12`) or labelled range (`p. 6–89`),
-then the retrieved physical page envelope, then a cleaned display URL; web links always lead with the
-display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type and any publisher page label.
+`src/lib/sources/sourceDisplay.ts` and shared by the card grid, the compact embedded row and the
+citation hover preview: documents display the page range the answer actually cites (`S. 6–7`) when
+the answer carries one, then a single publisher label (`p. 12` / `S. 12`), then a cleaned display
+URL; web links always lead with the display URL (host kept visible, scheme/`www.`/trailing slash
+stripped, middle-truncated); videos lead with a `12:34`-style position; images keep their type and
+any publisher page label.
 Physical PDF pages are used for outbound navigation: validated public URLs with
 a `.pdf` pathname receive a positive integer `#page=` position on cards and passage
-links, anchored at the lowest retrieved page. A single physical page is never shown as a label — it
-is a navigation position, not the number printed on the page — but the physical envelope of the
-retrieved chunks does stand in for a missing publisher label, because those payloads carry no other
-page information. `getPageEnvelope` (`src/lib/sources/normalizeSources.ts`) derives that envelope
-from every chunk of a source, not only the first: the payload has no relevance score or rank, so the
-lowest and highest retrieved page are a lossless summary of the retrieval. `labeledPageEnd` is only
-derived when every chunk label is a plain integer; any other label set keeps the first label alone.
+links, anchored at the lowest retrieved page. A card never shows a retrieved page span, and a single
+physical page never either: the physical page is a navigation position rather than the number printed
+on the page, and the span only reports how widely retrieval spread — one question about a 127-page
+script retrieves chunks across all of it — so displaying it would claim that spread as the passages the
+answer used. `getPageEnvelope` (`src/lib/sources/normalizeSources.ts`) derives that envelope from
+every chunk of a source, not only the first: the payload has no relevance score or rank, so the lowest
+and highest retrieved page are a lossless summary of the retrieval, and `getSourcePageRange` shows it
+only when every chunk agrees on one publisher label. `labeledPageEnd` is derived only when every
+chunk label is a plain integer and the extremes differ; any other label set keeps the first label
+alone.
+Cited pages are different from that envelope and win over it whenever the answer supplies them.
+`extractCitedPages` reads the labelled page detail of single-index markers, and `formatCitedPageRanges`
+renders only the smallest set of ranges covering exactly those pages: cited pages 2, 3 and 7 read
+`2–3, 7`, never the span `2–7`. A marker covering several sources carries no page detail and is
+ignored, and code fences and code spans are masked before the scan, so brackets inside code never
+count. `useMessageSources` (`src/hooks/useMessageSources.ts`) scans the answer's text parts and shares
+the result as `citedPageRanges` with the card grid, the compact `SourceRow` the embedded and narrow
+layouts use, and the hover preview. A source the answer cites without a page detail falls back to the
+single-label rule above, so it shows no page line at all when retrieval spread: only the answer knows
+which passages it drew on, and the citation contract asks it to name them rather than the retrieved
+span.
 Source identity deliberately stays keyed on the start page, so two `doc_query` calls returning
 overlapping chunks for one resource cannot split it into duplicate cards.
 Original URLs remain unchanged for source identity and group origins. doc_query video results now carry

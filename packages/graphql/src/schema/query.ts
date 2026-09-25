@@ -18,6 +18,7 @@ import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
+import { getParticipantAccountDataUse } from '../services/participantAccountDataUse.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
@@ -87,6 +88,7 @@ import {
 } from './groupActivity.js'
 import {
   KBKnowledgeGraphConfigType,
+  KBKnowledgeGraphDomainConfigType,
   KnowledgeGraphResponseType,
 } from './kbKnowledgeGraph.js'
 import {
@@ -111,6 +113,7 @@ import { MicroLearning } from './microLearning.js'
 import { ManageAiCapabilityState } from './manageAi.js'
 import {
   Participant,
+  ParticipantAccountDataUse,
   ParticipantGroup,
   ParticipantLearningData,
   ParticipantWithAchievements,
@@ -133,6 +136,7 @@ import {
   ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
+  ChatbotPublicationReview,
   ChatModelCapability,
 } from './resource.js'
 import { ResponseExampleSet } from './responseExample.js'
@@ -183,6 +187,12 @@ export const Query = builder.queryType({
         type: Participant,
         args: { liveQuizId: t.arg.string({ required: false }) },
         resolve: async (_, args, ctx) => ParticipantService.getSelf(args, ctx),
+      }),
+
+      selfAccountDataUse: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ParticipantAccountDataUse,
+        resolve: (_, _args, ctx) => getParticipantAccountDataUse(ctx),
       }),
 
       selfWithAchievements: t.withAuth(asParticipant).field({
@@ -1605,6 +1615,18 @@ export const Query = builder.queryType({
         },
       }),
 
+      getKbKnowledgeGraphDomainConfig: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: KBKnowledgeGraphDomainConfigType,
+        args: { kbId: t.arg.id({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await KnowledgeService.getKbKnowledgeGraphDomainConfig(
+            args,
+            ctx
+          )
+        },
+      }),
+
       getKbKnowledgeGraphOverview: t.withAuth(asUserFullAccess).field({
         nullable: false,
         type: KnowledgeGraphResponseType,
@@ -1686,6 +1708,12 @@ export const Query = builder.queryType({
         resolve: async (_, __, ctx) => {
           return await ResourcesService.getAnswerCollectionsInfo(ctx)
         },
+      }),
+
+      getPendingChatbotPublications: t.withAuth(asAdmin).field({
+        type: [ChatbotPublicationReview],
+        resolve: (_, _args, ctx) =>
+          ChatbotsService.getPendingChatbotPublications(ctx),
       }),
 
       getChatbotsInfo: t.withAuth(asUser).field({

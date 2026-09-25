@@ -65,6 +65,7 @@ export default {
     },
     credits: {
       title: 'Verfügbare Credits',
+      embeddedLabel: 'Credits: {percent}%',
       costHint:
         'Jede Nachricht verbraucht Credits — wie viele, hängt vom Modell und der Länge des Austauschs ab.',
       resetAt: 'Werden am {date} wieder aufgefüllt.',
@@ -83,6 +84,9 @@ export default {
       logoAlt: 'Klicker-Logo',
       copyright:
         '©{year} DF Teaching Center, Department of Finance, University of Zurich. Alle Rechte vorbehalten.',
+    },
+    embedded: {
+      close: 'Chat schliessen',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
@@ -234,6 +238,9 @@ export default {
       errorTitle: 'Chatbot nicht verfügbar',
       errorMessage:
         'Der Chatbot konnte nicht geladen werden. Versuche es erneut oder kehre zu KlickerUZH zurück.',
+      accessDeniedTitle: 'Kein Zugriff auf diesen Chatbot',
+      accessDeniedMessage:
+        'Dein Konto kann diesen Chatbot nicht öffnen. Kehre zu KlickerUZH zurück und öffne den Chatbot über seinen Kurs.',
       retry: 'Erneut versuchen',
       openKlickerUzh: 'KlickerUZH öffnen',
     },
@@ -974,6 +981,9 @@ export default {
       rank: 'Rang',
       username: 'Nutzername',
       email: 'E-Mail',
+      entryAriaLabel: 'Rang {rank}: {name}, {points} Punkte',
+      selfPositionDivider: 'deine Position',
+      podiumEmpty: 'Noch keine Einträge auf dem Podest',
     },
     error: {
       '404': '404 Seite nicht gefunden',
@@ -999,6 +1009,17 @@ export default {
     privacyUrl: 'https://www.klicker.uzh.ch/datenschutz',
     loginInfo:
       'Sie müssen sich nur hier einloggen, wenn Sie eigene Aktivitäten und Kurse erstellen möchten, nicht um an solchen teilzunehmen.',
+    sessionCheckFailed:
+      'Ihr Login konnte nicht überprüft werden, da der Dienst vorübergehend nicht verfügbar ist. Bitte versuchen Sie es in einem Moment erneut.',
+    sessionCheckRetry: 'Erneut versuchen',
+    restart: {
+      title: 'Login',
+      info: 'Der Login-Vorgang konnte nicht fortgesetzt werden. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      errorInfo:
+        'Der Login-Anbieter hat einen Fehler gemeldet. Bitte wählen Sie, wie Sie sich erneut anmelden möchten.',
+      studentLogin: 'Studenten-Login (Assessment)',
+      lecturerLogin: 'Dozenten-Login',
+    },
   },
   pwa: {
     general: {
@@ -1117,6 +1138,66 @@ Deine Daten werden niemals an weitere Parteien weitergegeben und nicht für komm
         'Deine Kontodaten, wie z.B. Profilinformationen, Erfolge und Erfahrungspunkte sowie Antworten, die du auf Fragen im KlickerUZH gibst, werden für die Lebenszeit Deines Kontos gespeichert. Deine Punkte und Platzierungen bei Kursaktivitäten und Bestenlisten werden so lange gespeichert, wie Du an der jeweiligen Kursrangliste teilnimmst. Du kannst jederzeit die Löschung Deiner Daten und Deines Kontos beantragen.',
       confirmationMessage:
         'Ich stimme den KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/privacy_policy) und [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) zu und erkläre mich mit der darin beschriebenen Verarbeitung meiner Daten einverstanden. Mir ist bewusst, dass ich anonym und ohne Konto an den Lernaktivitäten teilnehmen kann, wenn ich diesen Bedingungen nicht zustimme.',
+      signup: {
+        accountTitle: 'Dein Konto',
+        emailLabel: 'E-Mail',
+        usernameHint:
+          'Dein Benutzername wird angezeigt, wenn Du einer Kursrangliste beitrittst.',
+        assessmentTitle: 'Zugang zum Assessment freischalten',
+        assessmentSubmit: 'Zugang freischalten',
+        assessmentDataCollectionNotice:
+          'Wir speichern deine Kontodaten und die von Switch edu-ID übermittelten Identitätsangaben sowie Daten aus Kursen und Aktivitäten: etwa Antworten und Eingaben in Aktivitäten, Bewertungen, Punkte und Rückmeldungen.\n\nIm Assessment kommen Identitätsangaben wie deine Matrikelnummer sowie detaillierte Protokolle deiner Antwortversuche und Interaktionen (Audit Logs) hinzu.',
+        assessmentDataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt ihnen nur zusammengefasste Gruppenwerte.\n\nIm Assessment erhalten berechtigte Dozierende und Assessment-Mitarbeitende zusätzlich deine Identität, Antwortdetails und Ergebnisse zur Bewertung und Nachbearbeitung. Andere Teilnehmende sehen diese Assessment-Daten nicht.',
+        assessmentDataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Im Assessment dienen sie zusätzlich der Bewertung und Nachvollziehbarkeit. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen. Sie hat keinen Einfluss auf Punkte, Noten oder den Zugang zum Assessment.',
+        assessmentDataStorageNotice:
+          'Kontodaten und Antworten werden während der Lebensdauer deines Kontos gespeichert. Dein Assessment-Konto und die zugehörigen Daten kannst du nicht selbst löschen: Sie bleiben für die Nachvollziehbarkeit und während der geltenden Einsprache- und Aufbewahrungsfristen erhalten. Danach werden sie gelöscht oder anonymisiert. [Details in den Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz)',
+        assessmentAcknowledgement:
+          'Ich habe die [KlickerUZH Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Die zusätzlichen Hinweise zu Assessment-Daten, Einsicht und Aufbewahrung habe ich zur Kenntnis genommen.',
+        accessTitle: 'Dein Zugang',
+        accessNoPassword:
+          'Du brauchst kein Passwort und keine weiteren Eingaben.',
+        dataUseTitle: 'Datennutzung und Einstellungen',
+        dataCollectionTitle: 'Welche Daten werden über mich gesammelt?',
+        dataCollectionNotice:
+          'Wir speichern deine Kontodaten sowie Daten aus deinen Kursen und Aktivitäten, etwa Antworten und Eingaben in Aktivitäten, deren Bewertung, Punkte und Rückmeldungen.',
+        dataSharingTitle: 'Wer sieht meine Daten?',
+        dataSharingNotice:
+          'Dozierende und weitere berechtigte Personen sehen die Angaben, die sie für die Durchführung und Auswertung des Kurses benötigen. Bei einem Ranglistenbeitritt sehen andere Teilnehmende deinen Benutzernamen und deine Ranglistenangaben. Learning Analytics zeigt Dozierenden nur zusammengefasste Gruppenwerte.',
+        dataUsageTitle: 'Wofür werden meine Daten genutzt?',
+        dataUsageNotice:
+          'Dozierende nutzen deine erhobenen Daten, um die Lehre interaktiver zu gestalten. Wir verwenden deine Daten, um dein Konto zu betreiben und Kursaktivitäten durchzuführen und auszuwerten. Für Forschung und Learning Analytics gilt deine Auswahl in den Kontoeinstellungen.',
+        dataStorageTitle: 'Wie lange werden meine Daten gespeichert?',
+        dataStorageNotice:
+          'Deine Kontodaten und Antworten werden gespeichert, solange dein Konto besteht. Daten können bis zum Ablauf rechtlicher oder vertraglicher Aufbewahrungsfristen gespeichert bleiben. Danach werden sie gelöscht oder so verändert, dass sie keiner Person mehr zugeordnet werden können. Du kannst die Löschung deines Kontos und deiner Daten beantragen.',
+        acknowledgement:
+          'Ich habe die KlickerUZH [Datenschutzbestimmungen](https://www.klicker.uzh.ch/datenschutz) gelesen, akzeptiere die [Nutzungsbedingungen](https://www.klicker.uzh.ch/terms_of_service) und bestätige meine Auswahl. Forschung und Learning Analytics sind freiwillig.',
+        researchConsentTitle: 'Daten für Forschung',
+        researchConsentDescription:
+          'Deine Nutzungs- und Lerndaten dürfen ohne personenbezogene Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentDescriptionAssessment:
+          'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen. [Mehr zum Datenschutz](https://www.klicker.uzh.ch/datenschutz)',
+        researchConsentBadgeAllowed: 'Zugelassen',
+        researchConsentBadgeRefused: 'Widersprochen',
+        researchConsentBadgeUnanswered: 'Nicht beantwortet',
+        researchConsentYes: 'Zulassen',
+        researchConsentNo: 'Widersprechen',
+        researchConsentControlLabel: 'Nutzung für Forschung:',
+        learningAnalyticsConsentTitle: 'Learning Analytics',
+        learningAnalyticsConsentDescription:
+          'Erhalte persönliche Einblicke in dein Lernen. Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar.\n\nLA erfasst Daten nur, wenn es für dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden LA-Daten automatisch gelöscht. [Mehr zu Learning Analytics](https://www.klicker.uzh.ch/lernanalyse)',
+        learningAnalyticsDecisionRequired: 'Entscheidung erforderlich',
+        learningAnalyticsConsentYes: 'Ja, teilnehmen',
+        learningAnalyticsConsentYesDescription:
+          'Private Einblicke und geschützte Gruppenberichte.',
+        learningAnalyticsConsentNo: 'Nein, nicht teilnehmen',
+        learningAnalyticsConsentNoDescription:
+          'Kurse, Punkte und Chat funktionieren wie gewohnt.',
+        submit: 'Konto erstellen',
+        acknowledgementRequired: 'Bitte bestätige Deine Auswahl.',
+        dataUseChoiceRequired: 'Bitte wähle Ja oder Nein.',
+      },
     },
     studentDocs: {
       assessmentInstanceWarning:
@@ -1456,6 +1537,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createProfileFailed:
         'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
+      dataUseTitle: 'Forschung und Learning Analytics',
+      dataUseDescription:
+        'Diese Einstellungen gelten für Dein gesamtes KlickerUZH-Konto. Du kannst sie jederzeit ändern.',
+      dataUseLoadFailed:
+        'Deine Einstellungen zur Datennutzung konnten nicht geladen werden. Bitte versuche es erneut.',
+      researchConsentTitle: 'Forschung',
+      researchConsentDescription:
+        'Deine Nutzungs- und Lerndaten dürfen ohne direkte Identifikatoren für Forschungs- und Lehrprojekte der UZH verwendet werden. Du kannst jederzeit in den Einstellungen widersprechen. Deine Daten werden dann aus künftigen Forschungsexporten ausgeschlossen.',
+      researchConsentSaved: 'Deine Forschungseinstellung wurde gespeichert.',
+      researchConsentFailed:
+        'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      dataUseConflict:
+        'Diese Seite ist nicht mehr aktuell. Lade sie neu, bevor Du es erneut versuchst.',
+      learningAnalyticsConsentTitle: 'Learning Analytics',
+      learningAnalyticsConsentDescription:
+        'Erhalte persönliche Einblicke in Dein Lernen. Nur Du siehst Deine persönlichen Einblicke; Dozierende sehen de-identifizierte Gruppenberichte. Die Teilnahme ist freiwillig und jederzeit änderbar; Kurszugang und Punkte bleiben unverändert. Learning Analytics erfasst Daten nur, wenn es für Dein Konto und den Kurs aktiv ist. Beim Ausschalten werden die betreffenden Learning-Analytics-Daten automatisch gelöscht.',
+      learningAnalyticsConsentSaved:
+        'Deine Learning-Analytics-Einstellung wurde gespeichert.',
+      learningAnalyticsConsentFailed:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      learningAnalyticsWithdrawalTitle:
+        'Teilnahme an Learning Analytics beenden?',
+      learningAnalyticsWithdrawalConfirmation:
+        'Learning Analytics ausschalten? Deine persönlichen LA-Daten und Einblicke werden automatisch gelöscht. Deine Antworten und Punkte für den Kursbetrieb bleiben erhalten.',
+      dataUseCanonicalDataNotice:
+        'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
+      dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
       createProfile: 'Profil erstellen',
@@ -1839,24 +1947,26 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
     selectResource: '„{title}“ auswählen',
     loadMoreResources: 'Weitere Ressourcen laden',
-    importedSourcesTitle: 'Importierte Quellen',
+    importedSourcesTitle: 'Indexierte Quellen',
     importedSourceColumn: 'Quelle',
     importedSourcesNotice:
-      'Importierte Metadaten für Inhalte, die bereits in dieser Wissensdatenbank indexiert sind. Importierte Quellen werden nicht für Wissensgraphen verwendet und zählen nicht zu den Ressourcen- und Speicherlimits.',
+      'Alles, was in dieser Wissensdatenbank indexiert ist, unabhängig davon, ob Sie es über die Anwendung hinzugefügt haben oder das Kursteam es importiert hat. App-verwaltete Ressourcen zählen zu den Ressourcen- und Speicherlimits und fliessen in Wissensgraphen ein; manuell importierte Quellen nicht.',
     importedSourcesIncomplete:
       'Die Liste umfasst die zuletzt durchsuchten Quellen. Ältere Quellen sind möglicherweise noch nicht erfasst.',
     importedSourcesEmpty:
-      'Für diese Wissensdatenbank wurden noch keine importierten Quellen gefunden.',
+      'In dieser Wissensdatenbank sind noch keine Quellen indexiert.',
     importedSourcesLoadError:
-      'Die importierten Quellen konnten nicht geladen werden.',
-    loadMoreImportedSources: 'Weitere importierte Quellen laden',
+      'Die indexierten Quellen konnten nicht geladen werden.',
+    loadMoreImportedSources: 'Weitere Quellen laden',
     importedSourcesLoadMoreError:
-      'Die weiteren importierten Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
+      'Die weiteren Quellen konnten nicht geladen werden. Bitte erneut versuchen.',
     importedObservedAt: 'Beobachtet am {date}',
     importedIngestedColumn: 'Verarbeitet',
     importedObservedColumn: 'Beobachtet',
     importedIngestionUnknown: 'Verarbeitungszeit nicht erfasst',
     importedSourceGeneric: 'Quelle',
+    importedSourceManagedBadge: 'App-verwaltet',
+    importedSourceImportedBadge: 'Manuell importiert',
     importedVideoNoFileHint:
       'Videoinhalte werden ohne Speicherung der Originaldatei indexiert.',
     noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
@@ -2023,6 +2133,34 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Dieser veröffentlichte Graph enthält noch kein Paket zur Elementgenerierung. Erstellen Sie ihn neu, um Klicker-Elemente zu generieren.',
     graphPreviewUnavailable:
       'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
+    graphDomainLabel: 'Domäne',
+    graphDomainSelectPlaceholder: 'Domäne wählen',
+    graphFocusTopicLabel: 'Schwerpunktthema (optional)',
+    graphFocusTopicPlaceholder: 'z. B. Investitionsrechnung',
+    graphFocusTopicNote:
+      'Steuert, welches Material die Extraktion betont. Das Schwerpunktthema ist keine Quelle: es kann keine Fakten hinzufügen, und das übrige Material behält seine Abdeckung.',
+    graphDomainFinance: 'Finanzwirtschaft',
+    graphDomainEconomics: 'Volkswirtschaftslehre',
+    graphDomainBusiness: 'Betriebswirtschaftslehre',
+    graphDomainMathematics: 'Mathematik',
+    graphDomainInformatics: 'Informatik',
+    graphDomainGeneralAcademic: 'Allgemein / Gemischt',
+    graphDomainCategoriesLabel: 'Erzeugte Kategorien',
+    graphDomainLanguageNote:
+      'Der Graph wird in der gewählten Sprache erzeugt. Die Oberflächensprache ändert die Kategorien nicht.',
+    graphDomainLanguageLabel: 'Generierungssprache',
+    graphDomainLanguageSelectPlaceholder: 'Sprache wählen',
+    graphDomainCurrentUnavailable:
+      'Die gewählte Domäne {domain} (Version {version}) ist in dieser Installation nicht verfügbar. Wählen Sie eine unterstützte Domäne, um erneut aufzubauen.',
+    graphDomainLanguageUnavailable:
+      'Die gewählte Domäne {domain} bietet {language} in dieser Installation nicht an. Wählen Sie eine unterstützte Generierungssprache, um erneut aufzubauen.',
+    graphDomainRebuildBlocked:
+      'Diese Wissensdatenbank verwendet eine explizite Domäne ({domain}, Version {version}, {language}), die diese Installation nicht erneut anwenden kann. Ein Neuaufbau ist blockiert, bis eine explizite Domänenwahl wieder möglich ist.',
+    graphDomainVersionUnknown: 'unbekannt',
+    graphDomainPublished:
+      'Ausgelieferter Graph: {domain} (Version {version}, {language})',
+    graphDomainLanguageGerman: 'Deutsch',
+    graphDomainLanguageEnglish: 'Englisch',
     ingestionDisabledError:
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
@@ -2115,6 +2253,38 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       nextPage: 'Nächste',
     },
     admin: {
+      chatbotRejectionReason: 'Grund für die Ablehnung',
+      chatbotRejectConsequence:
+        'Der Besitzer sieht diesen Grund und kann den Chatbot überarbeiten und erneut zur Freigabe einreichen.',
+      chatbotReject: 'Antrag ablehnen',
+      chatbotRejected:
+        '«{name}» wurde abgelehnt. Der Besitzer kann ihn überarbeiten und erneut einreichen.',
+      chatbotRejectionError:
+        'Die Ablehnung konnte nicht bestätigt werden. Aktualisieren Sie die Liste und prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
+      chatbotAllTools: 'Alle Werkzeuge',
+      chatbotDefaultReasoning: 'Alle vom Modell unterstützten Reasoning-Stufen',
+      adminOnly: 'Diese Seite ist nur für Administratoren verfügbar.',
+      chatbotApprovals: 'Chatbot-Freigaben',
+      chatbotApprovalsDescription:
+        'Prüfen Sie ausstehende Veröffentlichungsanträge. Öffnen Sie einen Chatbot, um seine Konfiguration vor der Freigabe für Teilnehmende zu prüfen.',
+      chatbotOwner: 'Besitzer',
+      chatbotAccountApproval: 'Veröffentlichungsberechtigung des Kontos',
+      chatbotAccountApproved: 'Freigegeben',
+      chatbotAccountNotApproved: 'Nicht freigegeben',
+      chatbotConnectedTools: 'Verbundene Werkzeuge',
+      chatbotNoConnectedTools: 'Keine verbundenen Werkzeuge.',
+      chatbotRefresh: 'Anträge aktualisieren',
+      chatbotQueueEmpty: 'Keine Chatbots warten auf eine Freigabe.',
+      chatbotQueueError:
+        'Veröffentlichungsanträge konnten nicht geladen werden. Aktualisieren Sie die Liste, um es erneut zu versuchen.',
+      chatbotOwnerBlocked:
+        'Der Besitzer ist derzeit nicht zur Veröffentlichung von Chatbots berechtigt. Das Konto muss zuerst freigegeben werden.',
+      chatbotApproveConsequence:
+        'Die Freigabe veröffentlicht diesen Chatbot sofort für Teilnehmende seines Kurses. Die Nutzungsbudgets des Kontos bleiben unverändert.',
+      chatbotApprove: 'Freigeben und veröffentlichen',
+      chatbotPublished: '«{name}» wurde veröffentlicht.',
+      chatbotApprovalError:
+        'Die Veröffentlichung konnte nicht bestätigt werden. Die Antragsliste wurde aktualisiert; prüfen Sie den aktuellen Status vor einem erneuten Versuch.',
       pageName: 'Admin-Panel',
       privatePreviewAvailability: 'Verfügbarkeit: Private Features',
       privatePreviewDescription:
@@ -2646,7 +2816,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Alle Typen werden als Klicker-Elemente generiert. Wählen Sie das Format passend zum Lernziel.',
         bloomTitle: 'Blooms Taxonomie',
         bloomHelp:
-          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten.',
+          'Wählen Sie eine oder mehrere kognitive Stufen. Die Schritte reichen vom Erinnern bis zum begründeten Bewerten. Höhere Stufen benötigen detaillierteres Quellenmaterial, daher kann eine Stufe bei dünnem Material weiterhin fehlschlagen.',
         bloomLevel: 'Stufe {level}',
         bloomSelected: 'Ausgewählt',
         bloomSelect: 'Stufe auswählen',
@@ -2656,6 +2826,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         difficulty: 'Schwierigkeitsstufe',
         difficultyHelp:
           'Wählen Sie den Denkaufwand für alle generierten Elemente. Die Schwierigkeit entsteht durch die Aufgabe, nicht durch verwirrende Formulierungen.',
+        focusTopic: 'Fokusthema',
+        focusTopicHelp:
+          'Optional. Begrenzt diesen Durchlauf auf ein Thema, während der Wissensgraph vollständig bleibt.',
+        focusTopicPlaceholder: 'z. B. Portfolio-Diversifikation',
         objectives: 'Lernziele',
         objectivesHelp: 'Optionale Vorgaben für die generierten Elemente.',
         objectiveHint: 'Formulieren Sie beobachtbare, konkrete Lernziele.',
@@ -2771,6 +2945,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         FAILED: 'Fehlgeschlagen',
         REJECTED: 'Abgelehnt',
       },
+      failureClasses: {
+        user_input:
+          'Dieses Element konnte nicht im ausgewählten Material verankert werden. Passen Sie den Quellenbereich oder das Lernziel an und generieren Sie erneut.',
+        self_repairable:
+          'Der Workflow hat dieses Element mit alternativem Material erneut versucht, aber die nutzbare Evidenz ohne Verankerung ausgeschöpft.',
+        system:
+          'Der Generierungsdienst konnte dieses Element nicht verarbeiten; die Ursache liegt nicht bei Ihrer Eingabe. Starten Sie die Generierung erneut und wenden Sie sich bei anhaltenden Problemen an den Support.',
+      },
+      failureClassLabels: {
+        user_input: 'Quellenmaterial',
+        self_repairable: 'Keine alternative Evidenz',
+        system: 'Systemfehler',
+      },
+      reasons: {
+        NO_SUPPORTING_DOCUMENTS:
+          'Die ausgewählten Quellen enthalten keine passenden Dokumente für dieses Element.',
+        TOPIC_NOT_IN_MATERIAL:
+          'Das gewünschte Thema kommt im ausgewählten Material nicht vor.',
+        LEVEL_NOT_GROUNDABLE:
+          'Das ausgewählte Material trägt die gewünschte kognitive Stufe für dieses Element nicht.',
+        NO_DISTINCT_EVIDENCE:
+          'Mehrere Elemente würden auf dieselbe Evidenz zurückgreifen; dieses Element wurde deshalb weggelassen.',
+        GROUNDING_EXHAUSTED:
+          'Der Workflow hat die nutzbare Evidenz ausgeschöpft, ohne ein verankertes Element zu erzeugen.',
+        SYSTEM_FAILURE:
+          'Der Generierungsdienst hat für dieses Element einen internen Fehler gemeldet.',
+      },
       build: {
         title: 'Generierung: {type}',
         stage: 'Aktuelle Phase: {stage}',
@@ -2793,6 +2994,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
           'Ich verstehe, dass das Ergebnis weniger Elemente als angefordert enthält.',
         rejected: 'Diese Generierung wurde bei der Prüfung abgelehnt.',
         noDrafts: 'Die Generierung wurde ohne prüfbare Elemente abgeschlossen.',
+        legacyFailure:
+          'Dieser Lauf ist fehlgeschlagen, bevor der Workflow Begründungen pro Element geliefert hat.',
+        failureReasonsTitle:
+          '{count, plural, one {# Element fehlt in dieser Generierung} other {# Elemente fehlen in dieser Generierung}}',
+        failureReasonsHelp:
+          'Der Workflow hat begründet, warum diese Elemente nicht generiert werden konnten. Die gelieferten Elemente sind davon nicht betroffen und bleiben in Prüfung.',
+        failureModule: 'Modul',
+        failureObjective: 'Lernziel',
+        failureLevel: 'Bloom-Stufe',
+        failureEvidence: 'Benötigte Evidenz',
+        failureSuggestions: 'Im Material behandelte Themen',
+        failureRetryGuidance:
+          'Das deutet auf ein systemseitiges Problem hin. Starten Sie die Generierung erneut; bei wiederholtem Auftreten wenden Sie sich an den Support.',
+        failureDiagnostics: 'Technische Diagnose',
       },
       gate: {
         eyebrow: 'Prüfschritt',
@@ -2806,6 +3021,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         elementNumber: 'Element {number}',
         objectives: 'Lernziele',
         noObjectives: 'Keine expliziten Lernziele.',
+        generatedDefaultObjective: 'Generierter Standardwert',
+        slotEvidence: 'Evidenz pro Element',
+        noSlotEvidence: 'Keine Evidenz aufgelöst',
+        concentrationTitle: 'Konzentrierte Evidenz',
+        concentrationNotice:
+          '{count, plural, one {# Element} other {# Elemente}} in diesem Modul nutzen dieselben Evidenz-Entitäten: {entities}.',
         difficulty: 'Schwierigkeit {difficulty}',
         warnings: '{count, plural, one {# Warnung} other {# Warnungen}}',
         acknowledgeWarnings: 'Ich habe diese Warnungen geprüft und bestätigt.',

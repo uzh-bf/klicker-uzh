@@ -191,7 +191,7 @@ auth:
       memory: 192Mi
     limits:
       cpu: 200m
-      memory: 200Mi
+      memory: 512Mi
 
 chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
@@ -618,8 +618,6 @@ backendGraphql:
   appStudentDomain: pwa.klicker.stg.df-app.ch
   appControlDomain: control.klicker.stg.df-app.ch
   cookieDomain: .klicker.stg.df-app.ch
-  kbIngestionDisabled: false
-  kbGraphDisabled: false
 
   knowledgeGraph:
     host: 'stg-falkordb-aigeneric-falkordb-falkordb.stg-kb-falkordb-aigeneric.svc.cluster.local'
@@ -631,7 +629,11 @@ backendGraphql:
       standardEstimateMinorUnits: '100'
       highEstimateMinorUnits: '200'
       maxCostMinorUnits: '250'
-      semesterQuotaMinorUnits: '1000'
+      # Staging carries the full domain and language comparison plus element
+      # generation, so the 10.00 CHF semester budget does not cover a test
+      # cycle. The backend adopts a configured limit at or above an owner's
+      # granted ledger limit; a lower configured value never reduces it.
+      semesterQuotaMinorUnits: '5000'
       pricingVersion: 'stg-canary-v1'
       billingMode: 'SEMESTER_QUOTA'
       semesterKey: '2026-H2'
@@ -764,6 +766,14 @@ lti:
       authConfig:
         method: JWK_SET
         key: https://lms.uzh.ch/lti/keys
+    - url: https://lms.uzh.ch
+      name: OLAT UZH LMS (eLearning STG Finance I)
+      clientId: c4e30fd6-ba11-4618-bbf5-ad074241c5e6
+      authenticationEndpoint: https://lms.uzh.ch/lti/auth
+      accesstokenEndpoint: https://lms.uzh.ch/lti/token
+      authConfig:
+        method: JWK_SET
+        key: https://lms.uzh.ch/lti/keys
   cookieDomain: .klicker.stg.df-app.ch
 
   image:
@@ -784,6 +794,15 @@ lti:
       - secretName: klicker-lti-tls
         hosts:
           - lti.klicker.stg.df-app.ch
+
+  # The chart default (200m CPU / 200Mi memory) over-reserves this service: its
+  # staging VPA sits at the clamp floor (15m CPU / 100Mi memory) while live usage
+  # is about 1m CPU and 63Mi memory. CPU matches the 50m used by every other
+  # staging app; the chart's 500Mi memory limit is retained.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
 
 responseApi:
   corsAllowedOrigins: 'https://pwa.klicker.stg.df-app.ch'

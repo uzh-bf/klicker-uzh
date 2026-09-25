@@ -8,32 +8,15 @@ overrides:
   '@vitest/coverage-v8': 3.2.4
   vitest: 3.2.4
   axios@<=0.31.1: 0.32.0
-  fast-xml-parser@>=5.0.0 <5.7.0: 5.7.0
   glob@>=10.2.0 <10.5.0: 10.5.0
-  mysql2@<3.22.0: 3.22.0
   next@>=15.0.0 <15.5.24: 15.5.24
-  systeminformation@>=4.17.0 <=5.31.5: 5.31.6
-  axios@>=1.0.0 <1.18.0: 1.18.0
-  browserslist@>=4.0.0 <4.28.7: 4.28.7
-  fast-uri@>=3.0.0 <3.1.6: 3.1.6
-  form-data@>=4.0.0 <4.0.6: 4.0.6
-  nanoid@>=3.0.0 <3.3.18: 3.3.18
-  path-to-regexp@>=0.1.0 <0.1.13: 0.1.13
   postcss@>=8.0.0 <8.5.18: 8.5.18
-  protobufjs@>=7.0.0 <7.6.1: 7.6.1
-  sharp@>=0.34.0 <0.35.4: 0.35.4
-  validator@>=13.0.0 <13.15.22: 13.15.22
-  ws@>=8.18.0 <8.21.0: 8.21.0
-  '@grpc/grpc-js@>=1.13.0 <1.14.4': 1.14.4
+  mysql2@<3.22.0: 3.22.0
+  path-to-regexp@>=0.1.0 <0.1.13: 0.1.13
+  lodash@>=4.17.0 <4.18.1: 4.18.1
   deepmerge-ts@>=7.0.0 <8.0.0: 8.0.0
   nodemailer@>=6.0.0 <9.1.0: 9.1.0
   '@opentelemetry/propagator-jaeger@>=1.0.0 <2.9.0': 2.9.0
-  brace-expansion@>=1.0.0 <1.1.18: 1.1.18
-  brace-expansion@>=2.0.0 <2.1.4: 2.1.4
-  brace-expansion@>=5.0.0 <5.0.9: 5.0.9
-  ip-address@>=10.0.0 <10.3.1: 10.3.1
-  lodash@>=4.17.0 <4.18.1: 4.18.1
-  tmp@>=0.2.0 <0.2.7: 0.2.7
   '@babel/core@>=7.28.0 <7.29.0': 7.28.6
 
 packageExtensionsChecksum: sha256-s/ooLXnMhO2/8mE41K9oqC0IHe6a+O640oG3HJJvnNk=
@@ -220,6 +203,9 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.19.4)(yaml@2.9.0)
 
   apps/backend-docker:
     dependencies:
@@ -687,6 +673,9 @@ importers:
       docusaurus-plugin-matomo:
         specifier: ~0.0.8
         version: 0.0.8(@docusaurus/core@3.8.1(@docusaurus/faster@3.8.1(@docusaurus/types@3.8.1(@swc/core@1.13.5(@swc/helpers@0.5.23))(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@swc/helpers@0.5.23))(@mdx-js/react@3.1.1(@types/react@19.2.18)(react@19.2.8))(@rspack/core@1.5.1(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@swc/helpers@0.5.23))(@swc/core@1.13.5(@swc/helpers@0.5.23))(lightningcss@1.32.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))
+      katex:
+        specifier: ~0.16.22
+        version: 0.16.22
       lucide-react:
         specifier: ~0.522.0
         version: 0.522.0(react@19.2.8)
@@ -804,6 +793,9 @@ importers:
       js-cookie:
         specifier: 3.0.7
         version: 3.0.7
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       localforage:
         specifier: 1.10.0
         version: 1.10.0
@@ -1000,6 +992,9 @@ importers:
       js-search:
         specifier: 2.0.1
         version: 2.0.1
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       localforage:
         specifier: 1.10.0
         version: 1.10.0
@@ -1235,6 +1230,9 @@ importers:
       js-cookie:
         specifier: 3.0.7
         version: 3.0.7
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       localforage:
         specifier: 1.10.0
         version: 1.10.0
@@ -2290,6 +2288,9 @@ importers:
       '@uzh-bf/design-system':
         specifier: 4.1.8
         version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.8))(@tailwindcss/postcss@4.3.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.18)(react@19.2.8))(lucide-react@0.522.0(react@19.2.8))(postcss@8.5.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss-radix@4.0.2(tailwindcss@4.3.3))(tailwindcss@4.3.3)(tw-animate-css@1.3.7)(yup@1.6.1)
+      katex:
+        specifier: 0.16.22
+        version: 0.16.22
       next:
         specifier: ^16.3.4
         version: 16.3.4(@babel/core@7.28.6)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -2580,6 +2581,9 @@ importers:
       localforage:
         specifier: ^1.10.0
         version: 1.10.0
+      motion:
+        specifier: 13.1.1
+        version: 13.1.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       next:
         specifier: ^16.3.4
         version: 16.3.4(@babel/core@7.28.6)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(@types/node@24.12.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -4619,7 +4623,7 @@ packages:
     engines: {node: '>=12'}
     peerDependencies:
       jimp: '*'
-      sharp: 0.35.4
+      sharp: '*'
     peerDependenciesMeta:
       jimp:
         optional: true
@@ -13661,6 +13665,17 @@ packages:
   fraction.js@4.3.7:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
 
+  framer-motion@13.1.1:
+    resolution: {integrity: sha512-B/xn2TPS4f61cEBLFjiYlQFnBZUW1YVj/LM+C+N4OP8Rs95VLEI2ot/RlfBg111la/EiyECFaJJi/A3FWA8MUA==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
   fresh@0.5.2:
     resolution: {integrity: sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==}
     engines: {node: '>= 0.6'}
@@ -13981,7 +13996,7 @@ packages:
       crossws: ~0.3
       graphql: ^15.10.1 || ^16
       uWebSockets.js: ^20
-      ws: 8.21.0
+      ws: ^8
     peerDependenciesMeta:
       '@fastify/websocket':
         optional: true
@@ -14814,7 +14829,7 @@ packages:
   isomorphic-ws@5.0.0:
     resolution: {integrity: sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==}
     peerDependencies:
-      ws: 8.21.0
+      ws: '*'
 
   istanbul-lib-coverage@3.2.2:
     resolution: {integrity: sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg==}
@@ -16198,6 +16213,23 @@ packages:
   mongoose@7.8.9:
     resolution: {integrity: sha512-V3GBAJbmOAdzEP8murOvlg7q1szlbe4jTBRyW+JBHRduJBe7F9dk5eyqJDTuYrdBcOOWfLbr6AgXrDK7F0/o5A==}
     engines: {node: '>=14.20.1'}
+
+  motion-dom@13.1.1:
+    resolution: {integrity: sha512-XSf8VYWSB6G/0IY3rWVbyLcxWXtAVHkN1PQE2agTaCv3u8RGvbwu56TyyR/MNzBqqNavEBTZzErcxI1TxBrjcA==}
+
+  motion-utils@13.0.0:
+    resolution: {integrity: sha512-7DnN7TmbLcYXcG4RVadXIihWlyuM9afoUww8Y5Agg431kGKiuL2/OMyP4mJ5wLz+pvN3t5ySClLOaVXJ+wekRQ==}
+
+  motion@13.1.1:
+    resolution: {integrity: sha512-WNZoK6xiF+kkTqkZ5K7FDDh6A8BG4i5Hc7KXtW8gtTxkpJFds+hIOrDaQGKjQj/AE/i4hJqAaUHEqp/Qo02y6Q==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   mpath@0.9.0:
     resolution: {integrity: sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==}
@@ -20076,7 +20108,7 @@ packages:
     resolution: {integrity: sha512-UQ+MSxlhRm1bzjhU+DcuXfjFO1FzNtqhK5+9Yvlp90ItDLk5vT932A0rFu619nf7RVS+Y/VeaUW1jaRDqZ8VJw==}
     hasBin: true
     peerDependencies:
-      browserslist: 4.28.7
+      browserslist: '>= 4.21.0'
 
   update-notifier@6.0.2:
     resolution: {integrity: sha512-EDxhTEVPZZRLWYcJ4ZXjGFN0oP7qYvbXWzEgRm/Yql4dHX5wDbvh89YHP6PK1lzZJYrMtXUuZZz8XGK+U6U1og==}
@@ -34132,6 +34164,15 @@ snapshots:
 
   fraction.js@4.3.7: {}
 
+  framer-motion@13.1.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+    dependencies:
+      motion-dom: 13.1.1
+      motion-utils: 13.0.0
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+
   fresh@0.5.2: {}
 
   fresh@2.0.0: {}
@@ -37288,6 +37329,20 @@ snapshots:
       - mongodb-client-encryption
       - snappy
       - supports-color
+
+  motion-dom@13.1.1:
+    dependencies:
+      motion-utils: 13.0.0
+
+  motion-utils@13.0.0: {}
+
+  motion@13.1.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+    dependencies:
+      framer-motion: 13.1.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      tslib: 2.8.1
+    optionalDependencies:
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
 
   mpath@0.9.0: {}
 
