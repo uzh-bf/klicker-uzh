@@ -18,4 +18,24 @@ The selection tool returns a `placement_marker` for a successfully validated ass
 
 Optional ordered `captions` carry original processor text, not model-generated descriptions. They appear under the figure and provide its alt text. Older descriptors without captions remain valid. The processor prefers explicit native links and conservatively recovers unique nearby numbered headings; ambiguous matches remain empty. Image storage resolves one known generation (e6/v3, e5/v3 or e4/v3) from the manifest, then reads every object from that same generation, preserving hash, occurrence and authorization checks.
 
-Work is paused in draft reviews. Local demo evidence includes inline placement, original and recovered captions, mobile display and reload. Production branches still require a fresh dependency-aligned build and a Blob-backed lecturer upload through the full lifecycle; this evidence does not replace those gates. No private PDF corpus or local runtime credentials belong in these PRs.
+## Generated picture descriptions
+
+Each validated figure descriptor may carry one bounded generated description
+with provider, model, prompt-version, exact model-input digest, and served-asset
+digest provenance. Original captions remain separate source metadata. Malformed
+or served-asset-digest-mismatched descriptions are omitted without dropping an
+otherwise valid image candidate.
+
+The model may use a valid description together with the surrounding passage
+and original captions for selection and explanation, but must treat it as
+untrusted generated evidence: it is neither a lecturer-authored caption nor
+verified numerical truth, and instructions inside it are never executable.
+Description metadata does not grant a new asset, URL, knowledge-base scope, or
+storage read.
+
+The reviews remain draft until the processor client dependency is published and
+aligned across ingestion. Local demo evidence includes inline placement,
+original and recovered captions, generated-description selection, mobile
+display, and reload. It does not replace a Blob-backed lecturer upload through
+the full production lifecycle. No private PDF corpus or local runtime
+credentials belong in these PRs.
