@@ -13,6 +13,17 @@ concurrency:
 
 permissions:
   contents: read
+  # The selector reads this workflow's prior required-status result for the head
+  # to decide whether a metadata-only edit may skip the suite.
+  checks: read
+
+env:
+  # The codebase check publishes the same build outputs for the same commit, so
+  # restoring them here replaces a local rebuild with a cache download. Remote-
+  # only keeps the decision independent of an empty runner-local cache.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_ONLY: true
 
 jobs:
   filter:
@@ -27,6 +38,7 @@ jobs:
         uses: ./.github/actions/changed-paths
         with:
           pattern: '^(packages/graphql/|packages/feature-flags/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/(backend-docker|hatchet-worker-general)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig\.json|\.devcontainer/disposable-test-init\.sql$|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/|\.github/actions/setup-node-pnpm/|\.github/scripts/provision-disposable-postgres\.sh)'
+          prior-check-name: test-graphql-status
 
   test-graphql:
     needs: filter
@@ -341,3 +353,29 @@ jobs:
           path: required-ci-evidence.json
           if-no-files-found: error
           retention-days: 7
+
+  # The pull-request analysis is owned by the producer that finishes last. This
+  # job starts once the suite above completed, so it either imports the coverage
+  # of every producer and analyzes, or defers to the other producer's job. No
+  # runner waits for a queued test run, and one analysis is published per pull
+  # request, head, and base.
+  #
+  # The decision reads the live pull-request state, so this job is deliberately
+  # not gated on the payload's draft flag: a pull request that became ready while
+  # the suite ran still receives its analysis. A fork pull request cannot be
+  # analyzed here because its runs receive no secrets, and Dependabot pull
+  # requests deliberately receive neither; the ready boundary in
+  # v3_sonarcloud.yml keeps the named fail-closed result for both.
+  sonarcloud:
+    name: SonarCloud
+    needs: [filter, test-graphql]
+    if: >-
+      always() && !cancelled() &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/sonar-analysis.yml
+    secrets: inherit

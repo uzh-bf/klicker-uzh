@@ -803,6 +803,46 @@ test.describe('Chatbot Messaging Interface', () => {
     await expect(assistantContent).toContainText('The formula is complete.')
   })
 
+  test('Streaming hides incomplete chemistry until its delimiter closes', async ({
+    page,
+  }) => {
+    const prefix = 'Reaction: '
+    const suffix = ' End.'
+    const formula = String.raw`\ce{2 H2 + O2 -> 2 H2O}`
+    await mockChatStream(page, {
+      textChunks: [prefix, `$${formula}`, `$${suffix}`],
+      chunkDelayMs: 80,
+      pauseAfterTextChunk: 2,
+    })
+    await visitChat(page)
+    await sendMessage(page, 'Show a reaction equation')
+
+    const content = page.getByTestId('chat-assistant-message-content')
+    await expect(content).toHaveText(prefix.trim())
+    await expect(content.locator('.katex-error')).toHaveCount(0)
+    const row = await page.getByTestId('chat-assistant-message').elementHandle()
+
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(content.locator('.katex')).toHaveCount(1)
+    await expect(content.locator('.katex-error')).toHaveCount(0)
+    await expect(content.locator('.katex-mathml math')).toHaveCount(1)
+    await expect(content).toContainText(suffix.trim())
+    await expect(content.locator('.katex-html')).not.toContainText('\\ce')
+    expect(
+      await row?.evaluate(
+        (element) =>
+          element ===
+          document.querySelector('[data-cy="chat-assistant-message"]')
+      )
+    ).toBe(true)
+  })
+
   test('Welcome message disappears after sending first message', async ({
     page,
   }) => {
@@ -3658,6 +3698,129 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.getByTestId('chat-composer-hint')).toBeVisible()
   })
 
+  // The compact row is the only source view the embedded eLearning chat has,
+  // so a page line that regressed there would never be seen in the surface
+  // that reported it. Both cases below fail on a row that reads the retrieval
+  // envelope: that is what printed "S. 2–127" for a one-question answer about a
+  // 127-page script, and what hid a cited page behind the span.
+  test('Embedded source rows show the cited page range instead of the retrieved span', async ({
+    page,
+  }) => {
+    const messageId = '6b1c2d3e-0013-4a91-8f6c-2b7d1e5a9c41'
+    const thread = await seedThread(participantId, {
+      title: 'Embedded cited page range',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Wo steht diese Passage im Skript?' },
+          ],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-embedded-cited-pages',
+              sources: [
+                {
+                  reference: 'FinanceI_Skript_HS26.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'FinanceI_Skript_HS26.pdf',
+                  chunks: [
+                    {
+                      content: 'Synthetic passage on the first retrieved page',
+                      page_number: 2,
+                      labeled_page_number: '2',
+                    },
+                    {
+                      content: 'Synthetic passage on the last retrieved page',
+                      page_number: 127,
+                      labeled_page_number: '127',
+                    },
+                  ],
+                },
+              ],
+            }),
+            { type: 'text', text: 'Die Passage steht im Skript [1, S. 6–7].' },
+          ],
+        },
+      ],
+    })
+
+    await page.goto(
+      `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}?embed=true`,
+      { waitUntil: 'domcontentloaded' }
+    )
+
+    const section = page.getByTestId('chat-sources-section')
+    await expect(section).toBeVisible()
+    // Embedded renders rows, so no card grid may stand in for them here.
+    await expect(section.getByTestId('chat-source-card')).toHaveCount(0)
+
+    const cited = section.getByTestId('chat-cited-sources')
+    await expect(cited).toContainText('FinanceI_Skript_HS26.pdf')
+    await expect(cited).toContainText('p. 6–7')
+    await expect(cited).not.toContainText('2–127')
+  })
+
+  test('Embedded source rows show no page line for a source cited without one', async ({
+    page,
+  }) => {
+    const messageId = '6c1d2e3f-0014-4b02-9a73-3c8e2f6b1d52'
+    const thread = await seedThread(participantId, {
+      title: 'Embedded retrieved span',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Fasse das Skript kurz zusammen.' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-embedded-retrieved-span',
+              sources: [
+                {
+                  reference: 'FinanceI_Skript_HS26.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'FinanceI_Skript_HS26.pdf',
+                  chunks: [
+                    {
+                      content: 'Synthetic passage on the first retrieved page',
+                      page_number: 2,
+                      labeled_page_number: '2',
+                    },
+                    {
+                      content: 'Synthetic passage on the last retrieved page',
+                      page_number: 127,
+                      labeled_page_number: '127',
+                    },
+                  ],
+                },
+              ],
+            }),
+            { type: 'text', text: 'Das Skript behandelt mehrere Themen [1].' },
+          ],
+        },
+      ],
+    })
+
+    await page.goto(
+      `${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}?embed=true`,
+      { waitUntil: 'domcontentloaded' }
+    )
+
+    const cited = page
+      .getByTestId('chat-sources-section')
+      .getByTestId('chat-cited-sources')
+    await expect(cited).toContainText('FinanceI_Skript_HS26.pdf')
+    await expect(cited).not.toContainText('p. ')
+  })
+
   test('Mobile header and sources stay clear of the expanded composer', async ({
     page,
   }, testInfo) => {
@@ -3719,8 +3882,9 @@ test.describe('Chatbot Source Citations', () => {
 
     const viewport = page.getByTestId('chat-thread-viewport')
 
-    // Scroll instantly (bypassing the viewport's scroll-smooth behavior) so
-    // the measurement reads the settled position, not mid-animation.
+    // Scroll instantly (rather than relying on any scroll-behavior the
+    // viewport may set) so the measurement reads the settled position, not
+    // mid-animation.
     await viewport.evaluate((element) => {
       element.style.scrollBehavior = 'auto'
       element.scrollTop = element.scrollHeight

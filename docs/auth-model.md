@@ -2,7 +2,7 @@
 type: Auth Model
 title: Auth Model
 description: Login flows for lecturers and participants, origin-based cookie selection in the backend, JWT scopes, and LTI launch rules.
-timestamp: '2026-08-04'
+timestamp: '2026-09-19'
 tags:
   - backend
   - auth
@@ -25,7 +25,7 @@ A `Bearer` authorization header is always the final fallback (assessment live-qu
 
 NextAuth (Auth.js) with `@auth/prisma-adapter`, JWT session strategy with a custom `encode` (so the backend can verify the same token), configured in `apps/auth/src/pages/api/auth/[...nextauth].ts`. Two provider groups:
 
-- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope is `openid email profile https://login.eduid.ch/authz/User.Read`, following the SWITCH integration guide (`profile` is what releases `given_name`/`family_name`, `User.Read` the `swissEduPerson*` and affiliation claims). Without Edu-ID credentials (typical local dev), this provider is absent — use delegated login.
+- **Edu-ID OIDC** (`EduIDLecturerProvider`) — only registered when `EDUID_CLIENT_SECRET` is set; scope is `openid email profile https://login.eduid.ch/authz/User.Read`, following the SWITCH integration guide (`profile` is what releases `given_name`/`family_name`, `User.Read` the `swissEduPerson*` and affiliation claims). The devcontainer supplies a synthetic `EDUID_CLIENT_SECRET` plus the local OIDC mock's issuer while its profile selection routes the mock (the default `full` profile, or `eduid` next to a selective one), so the provider is registered there too; in deployments without credentials the provider stays absent — use delegated login.
 - **Delegated login** (`CredentialsProvider`) — authenticates against `User.shortname` + a `UserLogin` record. Each `UserLogin` carries a `UserLoginScope` that ends up as `token.scope` in the JWT callback: the ladder `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY` is enforced field-by-field in the API layer ([three-layer auth](./graphql-api-layer.md)). Edu-ID logins get scope `EDUID`.
 
 Both edu-ID providers set `idToken: true`, which makes NextAuth build the profile from the ID token alone and never call the UserInfo endpoint. Whether a given attribute reaches the ID token is a per-claim setting in the AAI Resource Registry, not something this repository controls, and edu-ID does not advertise `claims_parameter_supported`, so the `claims` request parameter in the provider config is not honoured — the requested scopes plus the Resource Registry settings decide everything. Set `EDUID_FETCH_USERINFO=true` to additionally call UserInfo and merge its claims over the ID token ones, which makes the Resource Registry's ID-token settings irrelevant; the flag defaults to off.
@@ -106,6 +106,48 @@ Current hardening boundaries:
 
 An external MCP integration therefore needs a separately approved authentication design: OAuth discovery and protected-resource metadata, audience-bound access tokens, external client registration/consent, delegated scope mapping, dedicated signing keys, ingress and network policy, and audit/rate-limit decisions.
 
+## Participant account completion
+
+A valid participant JWT establishes identity, but does not establish that the
+account has completed the current data-use disclosure. The shared
+`isParticipantDataUseComplete` predicate requires the current acknowledgement
+version and separately recorded research and Learning Analytics choices.
+The registered `participantAccountGate` Pothos plugin checks persisted state
+before protected GraphQL root fields and runs after the scope-auth plugin, so a
+field's own authorization error always wins. Its explicit support-field list
+keeps login, self-state, completion and account support accessible while locked.
+Lecturer and temporary-participant roles retain their separate authorization.
+The PWA redirects incomplete participants to `/account/data-use` when an API
+call answers with `PARTICIPANT_DATA_USE_COMPLETION_REQUIRED`, storing the return
+destination through `participantDataUseReturn`, which accepts local destinations
+and removes launch credentials.
+
+Account creation and completion record the acknowledgement and independent
+choices through the revisioned data-use service. Creation, completion, and
+settings all submit the disclosure version bundled with the displayed
+disclosure text together with the expected revision; a page whose bundled
+version no longer matches the server-required version must reload before it
+can save. Research starts allowed on the creation form, whereas Learning
+Analytics requires an explicit answer. These UI defaults do not backfill legacy
+accounts. Analytics withdrawal atomically records the new choice, its audit
+event, and a durable cleanup request in one transaction. Executing that
+cleanup as an ongoing consent-aware processing workflow is a later layer. The
+first release therefore blocks legacy analytics derivation and reads, and its
+launch requires stopping in-flight old collectors and completing any necessary
+retained-data reconciliation. A successful settings response confirms the
+persisted choice and cleanup request, not completed deletion. The canonical
+writer is available through the server-only GraphQL package entry
+`dist/participant-data-use`; its context contains only Prisma and verified
+participant identity/role, so chat can reuse the same transactions without
+constructing a GraphQL request context.
+
+Assessment completion uses the same four disclosure sections with additional
+identity, answer, audit-log, access and retention information. In the assessment
+backend (`ASSESSMENT_MODE=true`), `deleteParticipantAccount` rejects self-deletion
+before reading or deleting records or clearing the login cookie. The profile UI
+also hides the action, but that is not the enforcement boundary. This restriction
+does not implement expiry of retention periods or an operator deletion workflow.
+
 ## Login return targets
 
 Manage and PWA login pages treat return targets as untrusted input:
@@ -117,9 +159,29 @@ Manage and PWA login pages treat return targets as untrusted input:
 
 The chat login-required page validates its own return target against `NEXT_PUBLIC_CHAT_URL` before passing an absolute URL to the PWA (`apps/chat/src/app/noLogin/page.tsx:getChatRedirectUrl`). That page always routes through `NEXT_PUBLIC_PWA_URL/login`, so a chat target never reaches the assessment build.
 
-**The PWA-side sanitizer is not the only gate.** The auth app independently validates the `/student` `redirectTo` against `AUTH_STUDENT_ALLOWED_HOSTS` and returns `400 Invalid redirect URL` for anything outside it (`apps/auth/src/middleware.ts`). That second gate is what keeps the request-`Host` fallback above safe, and it is also what a `400` from `/student` means: the target origin is missing from that env var (`assessment.klicker.stg.df-app.ch` on stg, `assessment.klicker.uzh.ch` on prd).
+**The PWA-side sanitizer is not the only gate.** The auth app independently validates the `/student` `redirectTo` against `AUTH_STUDENT_ALLOWED_HOSTS` and returns `400 Invalid redirect URL` for anything outside it (the auth proxy at `apps/auth/src/proxy.ts` — Next.js 16 renamed the `middleware.ts` convention to `proxy.ts`). Targets must additionally be free of embedded URL credentials. The proxy, server-rendered student page and NextAuth handler share the secure-cookie deployment policy: HTTPS `NEXTAUTH_URL` requires HTTPS targets, with `AUTH_SECURE_COOKIES` as the explicit override. A production-compiled HTTP test deployment therefore follows its configured transport rather than the compiler's `NODE_ENV`. That second gate keeps the request-`Host` fallback above safe; a `400` from `/student` can mean the target host is missing from the allowlist (`assessment.klicker.stg.df-app.ch` on stg, `assessment.klicker.uzh.ch` on prd). The student page resolves its destination on the server using the same configured hosts, preserving allowed paths and queries through sign-in and existing-session navigation.
 
 The auth app's NextAuth redirect callbacks accept relative paths and absolute URLs on the auth app's own origin. Cross-origin targets remain restricted to the configured student and lecturer hosts. This preserves internal handoffs such as `/discourse_handoff` when NextAuth supplies the callback as an absolute URL (`apps/auth/src/pages/api/auth/[...nextauth].ts`).
+
+## Audience dispatch in the auth service
+
+**The invariant: a login attempt's intended account audience cannot change between initiation and callback.** The auth service serves two audiences (participant, lecturer) through one NextAuth catch-all route, and which configuration handles a request is decided strictly, not heuristically (`apps/auth/src/lib/dispatch.ts`):
+
+- **OAuth callbacks** resolve their audience only from the audience-namespaced state cookies. NextAuth signs every temporary OAuth cookie (state, PKCE verifier, nonce) as an A256GCM JWE whose HKDF key is derived from `(APP_SECRET, cookie name)`; the auth app delegates salt-bearing JWT calls to that library implementation and keeps the salt-free HS256 session contract for the backend (`apps/auth/src/lib/jwt.ts`). Because the salt is the cookie name, a participant-issued state cookie is undecryptable under the lecturer cookie name. A callback resolves only when exactly one candidate cookie decrypts, names the expected provider, and equals the single returned `state` parameter; anything else — missing, expired, duplicated, malformed, ambiguous — redirects to the neutral `/restart` page with no account handling. There is no lecturer default.
+- **Initiation** (sign-in/sign-out) reads the explicit `participant=true` query parameter; delegated credentials sign-in is a fixed lecturer route, and contradictory inputs are rejected. Generic actions (`session`, `csrf`, `providers`) keep the lecturer configuration.
+- **Callback-supplied audience/target query parameters are stripped** before NextAuth runs, so a query can never replace verified transaction context.
+
+The temporary OAuth cookies are namespaced per audience (`__Secure-next-auth.participant.state`, `__Secure-next-auth.lecturer.state`, …) via `apps/auth/src/lib/authCookies.ts`, so overlapping participant and lecturer attempts in one browser cannot overwrite each other's state, PKCE verifier, or return destination (each audience also has its own `callback-url` cookie). The persistent session cookies keep their contract names (`next-auth.session-token`, `next-auth.participant-session-token`); the former short-lived `klicker_student_redirect_to` / `klicker_lecturer_redirect_to` proxy cookies are gone and carry no authority.
+
+A verified participant callback resolves its destination from that stored `callback-url` value before NextAuth initializes the callback, with the assessment root as the server-selected default, so a missing or invalid stored destination cannot silently continue to the auth homepage. A failure inside NextAuth after the audience is verified (token-exchange error, invalid PKCE material) is answered with a redirect to `/restart?audience=participant`, which offers only the student entry point so the retry cannot drift into lecturer account handling (`apps/auth/src/lib/errorRecovery.ts`).
+
+Provider-returned errors also resolve state before choosing recovery. Verified participants retain participant recovery; unverified attempts and lecturer errors use the neutral restart page, without token exchange or account handling. Only bounded error codes enter participant recovery URLs; provider error text is excluded from telemetry. The restart page resolves its audience on the server, so participant recovery never includes a lecturer button in its initial HTML, even before JavaScript hydrates.
+
+This is the Phase 1 boundary: failures cannot silently switch account audience, but temporary cookies still hold one attempt per audience. Concurrent attempts for the same audience can supersede state or return destinations and require a restart. Phase 2 adds per-attempt storage, destination binding and atomic consumption for independently completing concurrent attempts; it is not needed to remove the ten-second routing-cookie failure.
+
+**Participant session lookup has a fixed endpoint**: `GET /api/student-session` always interprets the request with the participant configuration, requires a valid `PARTICIPANT` principal, never accepts a manager session, and responds `Cache-Control: no-store` (`apps/auth/src/pages/api/student-session.ts`). Expected invalidity — no cookie, an unverifiable or expired token, no matching participant row — answers `200` with `participant: null`; a lookup that fails for infrastructure reasons answers `503` with `session_lookup_unavailable` and `Retry-After`, which the assessment login UI turns into a retry action instead of presenting a student with a valid session as signed out. The assessment login UI uses the matching `useStudentSession()` hook instead of the generic `useSession()`, whose configuration depends on dispatch. Participant-scoped logout posts to `/api/auth/signout?participant=true`; a lecturer logout never clears the participant session and vice versa. A failed participant redirect falls back to the assessment root, never to manage or the auth homepage; unknown-context failures land on `/restart`, which offers explicit student and lecturer restart choices.
+
+Auth telemetry (`apps/auth/src/lib/telemetry.ts`) emits one JSON line per auth event with request id, action, resolved audience and outcome category — never state, code, token or cookie values, and destinations reduced to their host.
 
 ## Where authorization happens
 

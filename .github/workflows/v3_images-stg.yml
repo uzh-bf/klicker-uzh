@@ -1,0 +1,764 @@
+name: Build staging images
+
+# One workflow replaces the thirteen per-image staging publications and the
+# separate Build Fallback reporter. It resolves the changed-image selection
+# inside the run instead of through per-image path filters, so a single run
+# covers every affected image, and its terminal job owns the required
+# 'build-images-status' context together with the 'required-ci-evidence'
+# artifact the staging promotion controller admits.
+#
+# The image inventory is trusted controller input:
+# .github/scripts/staging-image-targets.json is read from the same revision as
+# this workflow, and the promotion controller validates the candidate against
+# its own copy of that inventory before it promotes anything.
+#
+# A publication and a pull request use different BuildKit registry caches. A
+# pull request reads and writes only the untrusted namespace, which no
+# publication reads, so no unreviewed revision can seed a published image. A
+# publication reads and writes only the trusted namespace of the current epoch:
+# it reuses the install and build layers the branch has already produced, while
+# the 'apk upgrade' base layer of every image is rebuilt at least once per epoch
+# instead of aging indefinitely behind a permanent cache hit. The previous
+# epoch is deliberately not imported, and nothing here replaces the fixable
+# HIGH/CRITICAL admission the scan job still enforces on the pushed digest.
+on:
+  push:
+    branches:
+      - 'v3'
+      - 'v3*'
+  pull_request:
+    branches:
+      - 'v3'
+      - 'v3*'
+    # "edited" re-evaluates the selection when a pull request is retargeted;
+    # ready_for_review recomputes the required context against the builds that
+    # the ready boundary restores.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      after-migrator-build: ${{ steps.plan.outputs.after-migrator-build }}
+      after-migrator-matrix: ${{ steps.plan.outputs.after-migrator-matrix }}
+      amd-build: ${{ steps.plan.outputs.amd-build }}
+      amd-job-names: ${{ steps.plan.outputs.amd-job-names }}
+      amd-matrix: ${{ steps.plan.outputs.amd-matrix }}
+      build: ${{ steps.plan.outputs.build }}
+      build-job-names: ${{ steps.plan.outputs.build-job-names }}
+      cache-epoch: ${{ steps.cache_epoch.outputs.epoch }}
+      changed-file-count: ${{ steps.plan.outputs.changed-file-count }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      migrator-build: ${{ steps.plan.outputs.migrator-build }}
+      migrator-matrix: ${{ steps.plan.outputs.migrator-matrix }}
+      mode: ${{ steps.plan.outputs.mode }}
+      reason: ${{ steps.plan.outputs.reason }}
+      scan-build: ${{ steps.plan.outputs.scan-build }}
+      scan-job-names: ${{ steps.plan.outputs.scan-job-names }}
+      scan-matrix: ${{ steps.plan.outputs.scan-matrix }}
+      selected: ${{ steps.plan.outputs.selected }}
+      state: ${{ steps.plan.outputs.state }}
+      unavailable: ${{ steps.plan.outputs.unavailable }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The trusted cache namespace is scoped to one epoch so a publication can
+      # reuse install and build layers within the epoch but can never inherit
+      # the base packages of an older one. See the workflow header.
+      - name: Resolve the trusted cache epoch
+        id: cache_epoch
+        run: |
+          set -euo pipefail
+          epoch="$(date -u +%G-W%V)"
+          printf 'epoch=%s\n' "$epoch" >> "$GITHUB_OUTPUT"
+          printf 'Publication image cache epoch: %s\n' "$epoch" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Determine changed files
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CHANGED_FILES_PATH: ${{ runner.temp }}/changed-files.txt
+        run: |
+          set -uo pipefail
+          rm -f "$CHANGED_FILES_PATH"
+          # Fetch the immutable event endpoints and their ancestry without
+          # replacing the merge-tree checkout used by the reporting scripts.
+          fetch_args=(--no-tags)
+          if [ "$(git rev-parse --is-shallow-repository)" = 'true' ]; then
+            fetch_args+=(--unshallow)
+          fi
+          if ! git fetch "${fetch_args[@]}" origin "$BASE_SHA" "$HEAD_SHA"; then
+            echo "::error::unable to fetch pull-request comparison ancestry"
+            exit 1
+          fi
+          # Publisher path filters use the PR head's changes since the merge
+          # base. Base-only changes must not require undispatched publishers.
+          if ! merge_base=$(git merge-base --all "$BASE_SHA" "$HEAD_SHA") ||
+            [[ -z "$merge_base" || "$merge_base" == *$'\n'* ]]; then
+            echo "::error::pull-request comparison requires one unambiguous merge base"
+            exit 1
+          fi
+          if ! git diff --name-only "$merge_base" "$HEAD_SHA" \
+            > "$CHANGED_FILES_PATH"; then
+            rm -f "$CHANGED_FILES_PATH"
+            echo "::error::unable to establish pull-request merge-base comparison"
+            exit 1
+          fi
+          echo "changed files: event head compared with event merge base"
+
+      - name: Resolve the affected staging images
+        id: plan
+        env:
+          CHANGED_FILES_PATH: ${{ runner.temp }}/changed-files.txt
+          EVENT_NAME: ${{ github.event_name }}
+          PULL_REQUEST_DRAFT: ${{ github.event.pull_request.draft }}
+        run: node .github/scripts/staging-image-plan.cjs
+
+  build-migrator:
+    needs: plan
+    if: >-
+      needs.plan.outputs.migrator-build == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.draft == false)
+    name: ${{ matrix.jobName }}
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.migrator-matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run util/sync-schema.sh
+        if: matrix.syncSchema
+        run: util/sync-schema.sh
+
+      - name: Prepare the staging environment
+        if: matrix.prep != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.prep }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve input fingerprint reuse
+        id: fingerprint
+        if: github.event_name != 'pull_request' && matrix.reuse == true
+        uses: ./.github/actions/staging-image-input-fingerprint
+        with:
+          fingerprint-output: ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+          image: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          reuse-record: ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+          sha: ${{ github.sha }}
+          target: ${{ matrix.id }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
+
+      - name: Build and push Docker image
+        id: build
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/arm64
+          # A publication reads and writes only the trusted namespace of the
+          # current epoch; a pull request reads and writes only the untrusted
+          # one. See the workflow header for the freshness contract.
+          cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
+          cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
+          labels: ${{ steps.meta.outputs.labels }}
+      # A publication that built an image publishes its input fingerprint under
+      # the fingerprint tag, which is what lets a later commit with the same
+      # inputs adopt this digest instead of rebuilding it.
+      - name: Publish the input fingerprint tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          matrix.reuse == true &&
+          steps.publish_guard.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          MODE: write
+          TAG: ${{ steps.fingerprint.outputs.tag }}
+        shell: bash
+        run: .github/scripts/stg-image-reuse-guard.sh
+
+      # Only a push publishes, so only a push produces a digest; the scan that
+      # consumes it is likewise limited to publish events.
+      - name: Record the published digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
+          DIGEST_PATH: ${{ runner.temp }}/digest.txt
+        run: |
+          set -euo pipefail
+          if [ -z "$DIGEST" ]; then
+            echo "::error::the build produced no digest, so nothing immutable can be scanned"
+            exit 1
+          fi
+          printf '%s\n' "$DIGEST" > "$DIGEST_PATH"
+
+      - name: Upload the published digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: build-digest-${{ matrix.id }}
+          # The fingerprint record travels with the digest so the promotion
+          # controller can bind a reused digest to its input identity.
+          path: |
+            ${{ runner.temp }}/digest.txt
+            ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+            ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+
+  build:
+    needs: plan
+    if: >-
+      needs.plan.outputs.build == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.draft == false)
+    name: ${{ matrix.jobName }}
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run util/sync-schema.sh
+        if: matrix.syncSchema
+        run: util/sync-schema.sh
+
+      - name: Prepare the staging environment
+        if: matrix.prep != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.prep }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve input fingerprint reuse
+        id: fingerprint
+        if: github.event_name != 'pull_request' && matrix.reuse == true
+        uses: ./.github/actions/staging-image-input-fingerprint
+        with:
+          fingerprint-output: ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+          image: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          reuse-record: ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+          sha: ${{ github.sha }}
+          target: ${{ matrix.id }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
+
+      - name: Build and push Docker image
+        id: build
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/arm64
+          # Public build-time configuration for the web images (auth, chat,
+          # frontend-control, frontend-manage and frontend-pwa, which also
+          # builds the assessment image). These Dockerfiles are the only ones
+          # that declare the arguments and a Dockerfile that does not declare
+          # one ignores it, so the values ride along with every build leg.
+          # All web targets are independent-stage, so they all build here. The
+          # workflow publishes from branches only, so the environment stays
+          # staging. An empty eLearning origin allowlist makes the embedded
+          # chat treat every context message as untrusted and answer without
+          # page context.
+          build-args: |
+            NEXT_PUBLIC_ENV=staging
+            NEXT_PUBLIC_GROWTHBOOK_API_HOST=${{ vars.NEXT_PUBLIC_GROWTHBOOK_API_HOST_STG }}
+            NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY=${{ vars.NEXT_PUBLIC_GROWTHBOOK_CLIENT_KEY_STG }}
+            NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS=${{ vars.NEXT_PUBLIC_ELEARNING_EMBED_ORIGINS_STG }}
+          # A publication reads and writes only the trusted namespace of the
+          # current epoch; a pull request reads and writes only the untrusted
+          # one. See the workflow header for the freshness contract.
+          cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
+          cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
+          labels: ${{ steps.meta.outputs.labels }}
+      # A publication that built an image publishes its input fingerprint under
+      # the fingerprint tag, which is what lets a later commit with the same
+      # inputs adopt this digest instead of rebuilding it.
+      - name: Publish the input fingerprint tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          matrix.reuse == true &&
+          steps.publish_guard.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          MODE: write
+          TAG: ${{ steps.fingerprint.outputs.tag }}
+        shell: bash
+        run: .github/scripts/stg-image-reuse-guard.sh
+
+      # Only a push publishes, so only a push produces a digest; the scan that
+      # consumes it is likewise limited to publish events.
+      - name: Record the published digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
+          DIGEST_PATH: ${{ runner.temp }}/digest.txt
+        run: |
+          set -euo pipefail
+          if [ -z "$DIGEST" ]; then
+            echo "::error::the build produced no digest, so nothing immutable can be scanned"
+            exit 1
+          fi
+          printf '%s\n' "$DIGEST" > "$DIGEST_PATH"
+
+      - name: Upload the published digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: build-digest-${{ matrix.id }}
+          # The fingerprint record travels with the digest so the promotion
+          # controller can bind a reused digest to its input identity.
+          path: |
+            ${{ runner.temp }}/digest.txt
+            ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+            ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+
+  build-after-migrator:
+    needs: [plan, build-migrator]
+    if: >-
+      needs.plan.outputs.after-migrator-build == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.draft == false)
+    name: ${{ matrix.jobName }}
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.after-migrator-matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run util/sync-schema.sh
+        if: matrix.syncSchema
+        run: util/sync-schema.sh
+
+      - name: Prepare the staging environment
+        if: matrix.prep != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.prep }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve input fingerprint reuse
+        id: fingerprint
+        if: github.event_name != 'pull_request' && matrix.reuse == true
+        uses: ./.github/actions/staging-image-input-fingerprint
+        with:
+          fingerprint-output: ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+          image: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          reuse-record: ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+          sha: ${{ github.sha }}
+          target: ${{ matrix.id }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
+
+      - name: Build and push Docker image
+        id: build
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/arm64
+          # A publication reads and writes only the trusted namespace of the
+          # current epoch; a pull request reads and writes only the untrusted
+          # one. See the workflow header for the freshness contract.
+          cache-from: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache', github.repository, matrix.image) || '' }}
+          cache-to: ${{ github.event_name == 'push' && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2},mode=max', github.repository, matrix.image, needs.plan.outputs.cache-epoch) || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache,mode=max', github.repository, matrix.image) || '' }}
+          labels: ${{ steps.meta.outputs.labels }}
+      # A publication that built an image publishes its input fingerprint under
+      # the fingerprint tag, which is what lets a later commit with the same
+      # inputs adopt this digest instead of rebuilding it.
+      - name: Publish the input fingerprint tag
+        if: >-
+          github.event_name != 'pull_request' &&
+          matrix.reuse == true &&
+          steps.publish_guard.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ format('{0}/{1}/{2}-arm', 'ghcr.io', github.repository, matrix.image) }}
+          MODE: write
+          TAG: ${{ steps.fingerprint.outputs.tag }}
+        shell: bash
+        run: .github/scripts/stg-image-reuse-guard.sh
+
+      # Only a push publishes, so only a push produces a digest; the scan that
+      # consumes it is likewise limited to publish events.
+      - name: Record the published digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.publish_guard.outputs.digest || steps.build.outputs.digest }}
+          DIGEST_PATH: ${{ runner.temp }}/digest.txt
+        run: |
+          set -euo pipefail
+          if [ -z "$DIGEST" ]; then
+            echo "::error::the build produced no digest, so nothing immutable can be scanned"
+            exit 1
+          fi
+          printf '%s\n' "$DIGEST" > "$DIGEST_PATH"
+
+      - name: Upload the published digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: build-digest-${{ matrix.id }}
+          # The fingerprint record travels with the digest so the promotion
+          # controller can bind a reused digest to its input identity.
+          path: |
+            ${{ runner.temp }}/digest.txt
+            ${{ runner.temp }}/image-input-fingerprint-${{ matrix.id }}.json
+            ${{ runner.temp }}/image-reuse-${{ matrix.id }}.json
+
+  # The AMD64 legs publish the non-runtime images the integration branches
+  # need. They run natively on the hosted x64 runner rather than through QEMU,
+  # and they are gated on the same full-SHA tag guard as their ARM64 sibling.
+  build-amd:
+    needs: plan
+    if: >-
+      needs.plan.outputs.amd-build == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.draft == false)
+    name: ${{ matrix.jobName }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.amd-matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ format('{0}/{1}/{2}-amd', 'ghcr.io', github.repository, matrix.image) }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=raw,value=${{ github.sha }}
+
+      - name: Check full-SHA image tag
+        id: publish_guard
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE: ${{ format('{0}/{1}/{2}-amd', 'ghcr.io', github.repository, matrix.image) }}
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: .github/scripts/stg-image-publish-guard.sh
+
+      - name: Build and push Docker image
+        if: github.event_name == 'pull_request' || steps.publish_guard.outputs.publish == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # Scans the exact digest its build published. Only a push publishes an image,
+  # so the job is limited to non-pull-request events. The digest arrives through
+  # an artifact rather than a matrix job output, because a matrix job reports
+  # only the outputs of its last completed leg.
+  scan:
+    needs: [plan, build-migrator, build, build-after-migrator]
+    if: >-
+      needs.plan.outputs.scan-build == 'true' &&
+      github.event_name != 'pull_request'
+    name: ${{ matrix.jobName }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    env:
+      # Both arm images publish a single-platform index whose only child is
+      # linux/arm64. Trivy derives an unspecified --platform from the scanner
+      # it happens to run as, which selected linux/amd64 on this runner and
+      # failed with "no child with platform linux/amd64 in index". The platform
+      # is part of the scan contract the receipt records below.
+      TRIVY_PLATFORM: linux/arm64
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.scan-matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download the published digest
+        uses: actions/download-artifact@v4
+        with:
+          name: build-digest-${{ matrix.id }}
+          path: ${{ runner.temp }}/digest
+
+      - name: Require the digest from the build job
+        env:
+          DIGEST_PATH: ${{ runner.temp }}/digest/digest.txt
+        run: |
+          set -euo pipefail
+          if [ ! -s "$DIGEST_PATH" ]; then
+            echo "::error::the scan leg received no image digest, so there is nothing immutable to scan."
+            exit 1
+          fi
+          printf 'DIGEST=%s\n' "$(cat "$DIGEST_PATH")" >> "$GITHUB_ENV"
+
+      - name: Log into registry
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan the pushed image for vulnerabilities
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ format('{0}/{1}/{2}-arm@{3}', 'ghcr.io', github.repository, matrix.image, env.DIGEST) }}
+          format: json
+          # ignore-unfixed keeps its false default so the report also shows
+          # unfixed findings; the policy step below decides the exit code.
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+          output: image-scan-${{ matrix.jobBase }}-arm-findings.json
+          timeout: 10m
+
+      - name: Generate a CycloneDX SBOM
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: image
+          image-ref: ${{ format('{0}/{1}/{2}-arm@{3}', 'ghcr.io', github.repository, matrix.image, env.DIGEST) }}
+          # Without an explicit scanners input Trivy builds the SBOM from the
+          # image packages and adds no vulnerability findings to it.
+          format: cyclonedx
+          exit-code: '0'
+          output: image-scan-${{ matrix.jobBase }}-arm-sbom.cdx.json
+          timeout: 10m
+
+      # The engine version and action ref below must stay identical to the two
+      # scan steps above; the receipt records what actually scanned the image.
+      - name: Write the scan receipt
+        run: |
+          node .github/scripts/image-scan-receipt.cjs receipt \
+            --output image-scan-${{ matrix.jobBase }}-arm-receipt.json \
+            --image "${{ format('{0}/{1}/{2}-arm@{3}', 'ghcr.io', github.repository, matrix.image, env.DIGEST) }}" \
+            --digest "$DIGEST" \
+            --architecture linux/arm64 \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --git-sha "$GITHUB_SHA" \
+            --engine-version v0.74.0 \
+            --action-ref aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 \
+            --findings image-scan-${{ matrix.jobBase }}-arm-findings.json \
+            --sbom image-scan-${{ matrix.jobBase }}-arm-sbom.cdx.json
+
+      - name: Upload the scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-scan-${{ matrix.jobBase }}-arm
+          path: |
+            image-scan-${{ matrix.jobBase }}-arm-findings.json
+            image-scan-${{ matrix.jobBase }}-arm-sbom.cdx.json
+            image-scan-${{ matrix.jobBase }}-arm-receipt.json
+          if-no-files-found: warn
+
+      - name: Enforce the fixable HIGH/CRITICAL policy
+        run: |
+          node .github/scripts/image-scan-receipt.cjs check \
+            --report image-scan-${{ matrix.jobBase }}-arm-findings.json
+
+  # The single required status context for affected image builds. It is reported
+  # for every v3 / v3-* pull request and push without a path filter, so the
+  # required check can never be satisfied by a workflow-level path skip. It
+  # requires every actually affected image build to succeed in this run and
+  # passes only a validated no-change selection. Draft pull requests defer their
+  # image builds, so a draft evaluation passes without polling and marks the
+  # evidence as a draft skip; marking the pull request ready fires
+  # ready_for_review on the unchanged head, restores the deferred builds, and
+  # this required context recomputes against them.
+  build-images-status:
+    needs:
+      - plan
+      - build
+      - build-after-migrator
+      - build-amd
+      - build-migrator
+      - scan
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Report affected image build status
+        if: ${{ !cancelled() }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          BUILD_STATUS_EVIDENCE_PATH: ${{ runner.temp }}/required-ci-evidence.json
+          PLAN_AMD_JOB_NAMES: ${{ needs.plan.outputs.amd-job-names }}
+          PLAN_BUILD_JOB_NAMES: ${{ needs.plan.outputs.build-job-names }}
+          PLAN_CHANGED_FILE_COUNT: ${{ needs.plan.outputs.changed-file-count }}
+          PLAN_MODE: ${{ needs.plan.outputs.mode }}
+          PLAN_REASON: ${{ needs.plan.outputs.reason }}
+          PLAN_RESULT: ${{ needs.plan.result }}
+          PLAN_SCAN_JOB_NAMES: ${{ needs.plan.outputs.scan-job-names }}
+          PLAN_SELECTED: ${{ needs.plan.outputs.selected }}
+          PLAN_STATE: ${{ needs.plan.outputs.state }}
+          PLAN_UNAVAILABLE: ${{ needs.plan.outputs.unavailable }}
+        with:
+          script: |
+            const {
+              evaluateStagingImageStatus,
+            } = require('./.github/scripts/staging-image-status.cjs')
+            await evaluateStagingImageStatus({ github, context, core })
+
+      - name: Upload build status evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          name: required-ci-evidence
+          path: ${{ runner.temp }}/required-ci-evidence.json

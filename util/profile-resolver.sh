@@ -41,7 +41,7 @@ _profile_components() {
     component="${component#"${component%%[![:space:]]*}"}"
     component="${component%"${component##*[![:space:]]}"}"
     case "$component" in
-      standard|full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|workers) ;;
+      standard|full|playwright|manage|pwa|chat|live-quiz|mcp|ai|email|workers|eduid) ;;
       *) return 2 ;;
     esac
     components+=("$component")
@@ -76,7 +76,9 @@ profile_wants() {
         esac
         ;;
       mcp) [ "$marker" = klicker-local-mcp ] && return 0 ;;
-      ai|email|local-kb-setup) ;;
+      # `eduid` only routes the local Edu-ID OIDC mock, so it starts no
+      # managed process of its own and adds nothing to a merged selection.
+      ai|email|local-kb-setup|eduid) ;;
       *) return 2 ;;
     esac
   done
@@ -117,7 +119,7 @@ profile_turbo_filters() {
       workers)
         filters="${filters} ${KLICKER_PROFILE_WORKER_GENERAL_ROOT} ${KLICKER_PROFILE_WORKER_RESPONSE_ROOT}"
         ;;
-      mcp|ai|email) ;;
+      mcp|ai|email|eduid) ;;
       *) return 2 ;;
     esac
   done
@@ -151,7 +153,7 @@ profile_readiness_apps() {
         wants_chat=true
         ;;
       live-quiz) apps="${apps} frontend-control frontend-pwa response-api" ;;
-      mcp|ai|email|workers) ;;
+      mcp|ai|email|workers|eduid) ;;
       *) return 2 ;;
     esac
   done

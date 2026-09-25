@@ -44,6 +44,14 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   // so a new package like packages/audit/dist is covered without editing a list.
   assert.match(sources[2], /^\s+packages\/\*\/dist$/m)
   assert.doesNotMatch(sources[2], /packages\/[^/*\s]+\/dist/)
+  // The build graph is resolved from the plan before anything installs, and a
+  // resolver failure keeps the complete graph instead of the shards' subset.
+  assert.match(sources[2], /playwright-build-graph\.cjs/)
+  assert.match(
+    sources[2],
+    /- name: Resolve the minimum build graph[\s\S]*?continue-on-error: true/
+  )
+  assert.match(sources[2], /if \[ "\$PLAYWRIGHT_BUILD_GRAPH" = 'bounded' \]/)
   assert.match(sources[3], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[3], /ref: \$\{\{ job\.workflow_sha \}\}/)
 
@@ -223,6 +231,7 @@ function runStatusReporter(t, overrides = {}) {
         SHOULD_RUN: 'true',
         SHARD_MATRIX: JSON.stringify(fullShardMatrix()),
         IS_PULL_REQUEST: 'true',
+        IS_DRAFT: 'false',
         ...overrides,
       },
       encoding: 'utf8',
@@ -251,12 +260,48 @@ function runStatusReporter(t, overrides = {}) {
   }
 }
 
-test('status reporter accepts one full plan for drafts and ready and rejects anything less', (t) => {
-  // A draft runs the same full plan as a ready pull request, so both pass.
+test('status reporter accepts the trusted plan for drafts and a full plan for ready', (t) => {
+  // A draft may attest the plan the trusted envelope selected for it.
   const draft = runStatusReporter(t, { IS_DRAFT: 'true' })
   assert.equal(draft.status, 0, draft.output)
   assert.equal(draft.metadata.execution_result, 'success')
   assert.equal(draft.metadata.mode, 'full')
+  assert.equal(draft.metadata.is_draft, 'true')
+
+  const draftPartial = runStatusReporter(t, {
+    IS_DRAFT: 'true',
+    MODE: 'selected',
+    SHARD_MATRIX: JSON.stringify({
+      include: [{ shardIndex: 1, shardTotal: 1 }],
+    }),
+  })
+  assert.equal(draftPartial.status, 0, draftPartial.output)
+  assert.equal(draftPartial.metadata.mode, 'selected')
+
+  // A narrowed plan spreads its selected specs over its own shard count, so
+  // every shard reports that emitted count rather than the canonical eight.
+  const draftNarrowed = runStatusReporter(t, {
+    IS_DRAFT: 'true',
+    MODE: 'selected',
+    SHARD_MATRIX: JSON.stringify({
+      include: [
+        { shardIndex: 1, shardTotal: 3 },
+        { shardIndex: 2, shardTotal: 3 },
+        { shardIndex: 3, shardTotal: 3 },
+      ],
+    }),
+  })
+  assert.equal(draftNarrowed.status, 0, draftNarrowed.output)
+  assert.equal(draftNarrowed.metadata.mode, 'selected')
+
+  const draftSkipped = runStatusReporter(t, {
+    IS_DRAFT: 'true',
+    MODE: 'skip',
+    SHOULD_RUN: 'false',
+    SHARD_MATRIX: JSON.stringify({ include: [] }),
+  })
+  assert.equal(draftSkipped.status, 0, draftSkipped.output)
+  assert.equal(draftSkipped.metadata.mode, 'skip')
 
   const ready = runStatusReporter(t)
   assert.equal(ready.status, 0, ready.output)
@@ -264,6 +309,36 @@ test('status reporter accepts one full plan for drafts and ready and rejects any
   assert.equal(ready.metadata.mode, 'full')
   assert.equal(ready.metadata.should_run, 'true')
   assert.deepEqual(JSON.parse(ready.metadata.shard_matrix), fullShardMatrix())
+
+  // A ready pull request may narrow its plan only through the bounded change
+  // class the trusted classifier proved for the same diff: the documentation
+  // class skips, and the CI class runs the bounded smoke selection.
+  const boundedReady = [
+    {
+      name: 'documentation-and-planning',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
+      },
+    },
+    {
+      name: 'ci-orchestration',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+        ENVELOPE_CLASS: 'ci-orchestration',
+      },
+    },
+  ]
+  for (const { name, overrides } of boundedReady) {
+    const bounded = runStatusReporter(t, overrides)
+    assert.equal(bounded.status, 0, `${name}: ${bounded.output}`)
+    assert.equal(bounded.metadata.envelope_class, name)
+  }
 
   const rejected = [
     {
@@ -292,6 +367,114 @@ test('status reporter accepts one full plan for drafts and ready and rejects any
         SHARD_MATRIX: JSON.stringify({
           include: fullShardMatrix().include.slice(0, 4),
         }),
+      },
+    },
+    {
+      name: 'ready partial plan without an attested class',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+      },
+    },
+    {
+      name: 'ready skipped plan without an attested class',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+      },
+    },
+    {
+      // The class and the plan it would justify are one pair: a documentation
+      // class never selects specs, and a CI class never skips the smoke run.
+      name: 'ready plan narrowed by the wrong bounded class',
+      overrides: {
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
+      },
+    },
+    {
+      name: 'ready skip attested by the CI class',
+      overrides: {
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'ci-orchestration',
+      },
+    },
+    {
+      // Push validation is a deployment-candidate path and is never bounded.
+      name: 'push plan narrowed by a bounded class',
+      overrides: {
+        IS_PULL_REQUEST: 'false',
+        MODE: 'skip',
+        SHOULD_RUN: 'false',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+        ENVELOPE_CLASS: 'documentation-and-planning',
+      },
+    },
+    {
+      name: 'push partial plan',
+      overrides: {
+        IS_PULL_REQUEST: 'false',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 1 }],
+        }),
+      },
+    },
+    {
+      name: 'draft partial plan without shards',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
+      },
+    },
+    {
+      name: 'draft partial plan with duplicate shards',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [
+            { shardIndex: 2, shardTotal: 2 },
+            { shardIndex: 2, shardTotal: 2 },
+          ],
+        }),
+      },
+    },
+    {
+      name: 'draft partial plan with an inflated shard total',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'selected',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 8 }],
+        }),
+      },
+    },
+    {
+      name: 'draft full plan with a partial matrix',
+      overrides: {
+        IS_DRAFT: 'true',
+        SHARD_MATRIX: JSON.stringify({
+          include: [{ shardIndex: 1, shardTotal: 8 }],
+        }),
+      },
+    },
+    {
+      name: 'draft skip that still selects tests',
+      overrides: {
+        IS_DRAFT: 'true',
+        MODE: 'skip',
+        SHOULD_RUN: 'true',
+        SHARD_MATRIX: JSON.stringify({ include: [] }),
       },
     },
   ]

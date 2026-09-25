@@ -1,4 +1,6 @@
-import type { Page } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+import bcrypt from 'bcryptjs'
+import { PARTICIPANT_DATA_USE_DISCLOSURE_VERSION } from '../../packages/util/src/participantAccountDataUse.js'
 import { getPrisma } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
@@ -23,6 +25,19 @@ import {
 
 function getStudentLoginUrl() {
   return process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
+}
+
+// Apollo sends mutations as POST bodies and persisted-query reads as GET
+// requests carrying the operation name in the query string, so both have to
+// be read to identify an operation at the network layer.
+function getGraphQLOperationName(request: Request) {
+  if (request.method() === 'POST') {
+    const postData = request.postData()
+    return postData
+      ? (JSON.parse(postData) as { operationName?: string }).operationName
+      : undefined
+  }
+  return new URL(request.url()).searchParams.get('operationName') ?? undefined
 }
 
 async function signInStudentFromReturnTarget(page: Page, target: string) {
@@ -102,6 +117,38 @@ async function interceptInitialSettings(
   })
 }
 
+// A browser-owned response queue controls completion order without another
+// request changing the generation under test. No real session is created.
+async function resolveStudentLookup(
+  page: Page,
+  index: number,
+  status: number,
+  authenticated: boolean
+) {
+  await page.evaluate(
+    async ({ index, status, authenticated }) => {
+      const state = window as typeof window & {
+        sessionLookups: Array<(response: Response) => void>
+      }
+      state.sessionLookups[index](
+        new Response(
+          JSON.stringify({
+            participant: authenticated
+              ? { id: 'synthetic', email: 'synthetic@example.org' }
+              : null,
+          }),
+          { status }
+        )
+      )
+      // Fetch/body microtasks settle before the next rendering opportunity.
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+    },
+    { index, status, authenticated }
+  )
+}
+
 test('CLEANUP', cleanupTest)
 
 test.describe('Login / Logout workflows for lecturer and students', () => {
@@ -113,6 +160,70 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       usernameOrEmail: STUDENT_USERNAME,
       password: STUDENT_PASSWORD,
     })
+  })
+
+  // -------------------------------------------------------------------------
+  // Student: normal signup records both optional refusals; saving stays
+  // disabled until the explicit learning-analytics choice and acknowledgement
+  // -------------------------------------------------------------------------
+  test('Signup requires learning analytics choice and acknowledgement', async ({
+    page,
+  }) => {
+    const prisma = await getPrisma()
+    const username = `su${Date.now().toString(36).slice(-8)}`
+
+    try {
+      await page.context().clearCookies()
+      await page.goto('/createAccount')
+
+      await page.getByTestId('email-field').fill(`${username}@test.uzh.ch`)
+      await page.getByTestId('username-field-account-creation').fill(username)
+      await page.getByTestId('password-field').fill('signupPassword123!')
+      await page
+        .getByTestId('password-repetition-field')
+        .fill('signupPassword123!')
+
+      const submit = page.getByTestId('create-profile-button')
+      // The learning-analytics choice starts unanswered and the acknowledgement
+      // is unchecked, so saving is blocked until both are provided.
+      await expect(submit).toBeDisabled()
+
+      await expect(page.getByTestId('research-consent-no')).toBeHidden()
+      await page.getByTestId('research-consent-toggle').click()
+      await page.getByTestId('research-consent-no').click()
+      await expect(submit).toBeDisabled()
+
+      await page.getByTestId('learning-analytics-consent-no').click()
+      await expect(submit).toBeDisabled()
+
+      await page.getByTestId('tos-checkbox').click()
+      await expect(submit).toBeEnabled()
+      await submit.click()
+
+      await expect(page).toHaveURL(/newAccount=true/)
+
+      const participant = await prisma.participant.findUniqueOrThrow({
+        where: { username },
+        select: {
+          researchConsent: true,
+          learningAnalyticsConsent: true,
+          researchConsentChoiceAt: true,
+          learningAnalyticsChoiceAt: true,
+          dataUseAcknowledgedAt: true,
+          dataUseAcknowledgedVersion: true,
+        },
+      })
+      expect(participant.researchConsent).toBe(false)
+      expect(participant.learningAnalyticsConsent).toBe(false)
+      expect(participant.researchConsentChoiceAt).toBeInstanceOf(Date)
+      expect(participant.learningAnalyticsChoiceAt).toBeInstanceOf(Date)
+      expect(participant.dataUseAcknowledgedAt).toBeInstanceOf(Date)
+      expect(participant.dataUseAcknowledgedVersion).toBe(
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
+      )
+    } finally {
+      await prisma.participant.deleteMany({ where: { username } })
+    }
   })
 
   test('Reject external return target after student sign in', async ({
@@ -149,6 +260,62 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
   })
 
   // -------------------------------------------------------------------------
+  // Student: stale session lookup responses
+  // -------------------------------------------------------------------------
+  // The session lookup runs on hydration, on window focus and after logout; an
+  // older response that arrives late must never overwrite a newer result.
+  for (const status of [200, 503]) {
+    test(`A stale ${status} response must not overwrite the signed-out session lookup`, async ({
+      page,
+    }) => {
+      const authUrl = process.env.URL_AUTH ?? URL_AUTH
+      await page.addInitScript(() => {
+        const state = window as typeof window & {
+          sessionLookups: Array<(response: Response) => void>
+        }
+        state.sessionLookups = []
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          const url = input instanceof Request ? input.url : String(input)
+          if (url.includes('/api/student-session'))
+            return new Promise<Response>((resolve) =>
+              state.sessionLookups.push(resolve)
+            )
+          if (url.includes('/api/auth/csrf'))
+            return new Response(JSON.stringify({ csrfToken: 'synthetic' }))
+          if (url.includes('/api/auth/signout')) return new Response('{}')
+          return originalFetch(input, init)
+        }
+      })
+      await page.goto(`${authUrl}/student`)
+      await page.waitForFunction(
+        () => (window as any).sessionLookups.length === 1
+      )
+      await resolveStudentLookup(page, 0, 200, true)
+      await expect(page.getByTestId('student-open-app-button')).toBeVisible()
+
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+      await page.waitForFunction(
+        () => (window as any).sessionLookups.length === 2
+      )
+      await page.getByTestId('student-logout-button').click()
+      await page.waitForFunction(
+        () => (window as any).sessionLookups.length === 3
+      )
+      await resolveStudentLookup(page, 2, 200, false)
+      await expect(page.getByTestId('student-eduid-login-button')).toBeVisible()
+
+      await resolveStudentLookup(page, 1, status, status === 200)
+
+      await expect(page.getByTestId('student-eduid-login-button')).toBeVisible()
+      await expect(page.getByTestId('student-open-app-button')).toHaveCount(0)
+      await expect(
+        page.getByTestId('student-session-retry-button')
+      ).toHaveCount(0)
+    })
+  }
+
+  // -------------------------------------------------------------------------
   // Student: mobile viewport
   // -------------------------------------------------------------------------
   test('Sign in to student account on mobile', async ({
@@ -179,9 +346,268 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
     })
   })
 
+  test('Participant data-use choices are independent and persist', async ({
+    page,
+    loginStudent,
+  }) => {
+    await loginStudent()
+    await expect(page.getByTestId('homepage')).toBeVisible()
+    await page.getByTestId('header-avatar').click()
+    await page.getByTestId('participant-profile-login').click()
+    await page.getByTestId('edit-profile').click()
+
+    const researchConsent = page.getByTestId('participant-research-consent')
+    const learningAnalyticsConsent = page.getByTestId(
+      'participant-learning-analytics-consent'
+    )
+
+    await expect(researchConsent).toBeVisible()
+    await expect(learningAnalyticsConsent).toBeVisible()
+
+    try {
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+
+      let failedResearchSaves = 0
+      await page.route('**/api/graphql', async (route) => {
+        const request = route.request()
+        const operationName = getGraphQLOperationName(request)
+
+        if (
+          request.method() === 'POST' &&
+          operationName === 'SetResearchConsent'
+        ) {
+          failedResearchSaves += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { setResearchConsent: null },
+              errors: [{ message: 'Synthetic save failure' }],
+            }),
+          })
+          return
+        }
+
+        await route.continue()
+      })
+
+      await researchConsent.click()
+      await expect.poll(() => failedResearchSaves).toBe(1)
+      await expect(researchConsent).toBeEnabled()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+      await page.unroute('**/api/graphql')
+
+      await researchConsent.click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+      await page.reload()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+
+      await researchConsent.click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toBeEnabled()
+      await learningAnalyticsConsent.click()
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+
+      await page.reload()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+
+      await page.getByTestId('header-avatar').click()
+      await page.getByTestId('participant-profile-login').click()
+      await page.getByTestId('edit-profile').click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+    } finally {
+      await page.unroute('**/api/graphql')
+      await page.reload()
+
+      // Leave the shared test account at the fail-closed baseline.
+      for (const consentSwitch of [researchConsent, learningAnalyticsConsent]) {
+        if ((await consentSwitch.getAttribute('aria-checked')) === 'true') {
+          await consentSwitch.click()
+          if (consentSwitch === learningAnalyticsConsent) {
+            await page
+              .getByTestId('confirm-learning-analytics-withdrawal')
+              .click()
+          }
+          await expect(consentSwitch).toHaveAttribute('aria-checked', 'false')
+        }
+      }
+    }
+  })
+
+  // -------------------------------------------------------------------------
+  // Student: two-tab completion retry must not overwrite a newer decision
+  // -------------------------------------------------------------------------
+  test('Two-tab completion retry cannot overwrite a newer decision', async ({
+    page,
+    browser,
+    loginStudentPassword,
+  }) => {
+    const prisma = await getPrisma()
+    const username = 'dpo' + Date.now().toString(36).slice(-8)
+    const password = process.env.STUDENT_PASSWORD ?? STUDENT_PASSWORD
+    // The glob is anchored at the end, so it must allow the query string that
+    // carries the operation name of a persisted-query read.
+    const graphqlRoute = '**/api/graphql**'
+    const completionOperation = 'CompleteParticipantDataUse'
+    const dataUseQueryOperation = 'GetParticipantAccountDataUse'
+
+    // A dedicated participant without acknowledgement or recorded choices,
+    // so the account-completion gate routes the first request to the form.
+    await prisma.participant.create({
+      data: {
+        username,
+        email: `${username}@test.uzh.ch`,
+        password: await bcrypt.hash(password, 12),
+      },
+    })
+
+    const secondContext = await browser.newContext({
+      ignoreHTTPSErrors: true,
+    })
+    const secondPage = await secondContext.newPage()
+    const dataCy = (id: string) => `[data-cy="${id}"]`
+
+    // Hold tab A's post-failure refetch until tab B has committed, so the
+    // ordering is deterministic instead of racy.
+    let releaseRefetch: () => void = () => {}
+    const refetchGate = new Promise<void>((resolve) => {
+      releaseRefetch = resolve
+    })
+
+    try {
+      await loginStudentPassword(username)
+      await expect(page).toHaveURL(/\/account\/data-use$/)
+
+      let failedCompletions = 0
+      await page.route(graphqlRoute, async (route) => {
+        const operationName = getGraphQLOperationName(route.request())
+
+        // The completion request fails with a generic (non-conflict) error,
+        // which previously left the local intent and acknowledgement intact.
+        // Only this first attempt fails; the deliberate retry after the
+        // reload must reach the API.
+        if (operationName === completionOperation && failedCompletions === 0) {
+          failedCompletions += 1
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { completeParticipantDataUse: null },
+              errors: [{ message: 'Synthetic network failure' }],
+            }),
+          })
+          return
+        }
+
+        // The failure path refetches the persisted state. Delay that read
+        // until tab B has advanced the revision.
+        if (operationName === dataUseQueryOperation && failedCompletions > 0) {
+          await refetchGate
+        }
+
+        await route.continue()
+      })
+
+      // Tab A selects Learning Analytics = yes and submits.
+      await page.getByTestId('account-data-use-analytics-true').click()
+      await page.getByTestId('account-data-use-acknowledged').click()
+      await expect(page.getByTestId('account-data-use-submit')).toBeEnabled()
+      await page.getByTestId('account-data-use-submit').click()
+      await expect.poll(() => failedCompletions).toBe(1)
+
+      // Tab B completes with both refusals and advances the revision.
+      await secondPage.goto(process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN)
+      await secondPage.locator(dataCy('username-field')).fill(username)
+      await secondPage.locator(dataCy('password-field')).fill(password)
+      await secondPage.locator(dataCy('submit-login')).click()
+      await expect(secondPage).toHaveURL(/\/account\/data-use$/)
+
+      await secondPage
+        .locator(dataCy('account-data-use-research-toggle'))
+        .click()
+      await secondPage
+        .locator(dataCy('account-data-use-research-false'))
+        .click()
+      await secondPage
+        .locator(dataCy('account-data-use-analytics-false'))
+        .click()
+      await secondPage.locator(dataCy('account-data-use-acknowledged')).click()
+      await secondPage.locator(dataCy('account-data-use-submit')).click()
+      await expect(secondPage).not.toHaveURL(/\/account\/data-use$/)
+
+      const afterSecondTab = await prisma.participant.findUniqueOrThrow({
+        where: { username },
+        select: {
+          researchConsent: true,
+          learningAnalyticsConsent: true,
+          dataUseRevision: true,
+        },
+      })
+      expect(afterSecondTab.researchConsent).toBe(false)
+      expect(afterSecondTab.learningAnalyticsConsent).toBe(false)
+      expect(afterSecondTab.dataUseRevision).toBeGreaterThan(0)
+
+      // Let tab A's refetch resolve. It reloads tab B's newer decision and
+      // drops the local intent and acknowledgement, so a retry cannot show the
+      // stale choice or silently overwrite tab B.
+      releaseRefetch()
+      await expect(
+        page.getByTestId('account-data-use-analytics-false')
+      ).toHaveAttribute('aria-checked', 'true')
+      await expect(page.getByTestId('account-data-use-submit')).toBeDisabled()
+      await expect(
+        page.getByTestId('account-data-use-acknowledged')
+      ).toHaveAttribute('aria-checked', 'false')
+
+      // A deliberate re-acknowledgement then commits the reloaded choices.
+      await page.getByTestId('account-data-use-acknowledged').click()
+      await expect(page.getByTestId('account-data-use-submit')).toBeEnabled()
+      await page.getByTestId('account-data-use-submit').click()
+      await expect(page).not.toHaveURL(/\/account\/data-use$/)
+
+      const finalState = await prisma.participant.findUniqueOrThrow({
+        where: { username },
+        select: { researchConsent: true, learningAnalyticsConsent: true },
+      })
+      expect(finalState.researchConsent).toBe(false)
+      expect(finalState.learningAnalyticsConsent).toBe(false)
+    } finally {
+      releaseRefetch()
+      await page.unroute(graphqlRoute)
+      await secondContext.close()
+      await prisma.participant.deleteMany({ where: { username } })
+    }
+  })
+
   // -------------------------------------------------------------------------
   // Student: password change and revert
-  // -------------------------------------------------------------------------
   test('Sign in into student account and modifies the password', async ({
     page,
     useStudentContext,

@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict')
 const { execFileSync } = require('node:child_process')
+const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -7,12 +8,25 @@ const test = require('node:test')
 
 const {
   FIXTURE_STAGING_WORKFLOWS,
+  FIXTURE_REUSE_TARGET_IDS,
+  FIXTURE_TARGET_IDS,
+  FIXTURE_WORKFLOW_PATH,
   fixtureDefinitions,
+  fixtureJobNames,
   registryManifestResponse,
   transientReadbackFailure,
+  publicationArtifacts,
+  publicationFingerprint,
   workflowJobs,
   workflowRun,
 } = require('./stg-release-promoter-fixtures')
+const {
+  buildJobName,
+  imageName,
+  scanJobName,
+  targetById,
+} = require('./staging-image-targets.cjs')
+const { fingerprintTag } = require('./image-input-fingerprint.cjs')
 const {
   readCiEvidence,
   resolveInputs,
@@ -20,15 +34,19 @@ const {
   REQUIRED_CI_WORKFLOWS,
   MANUAL_CONFIRMATION,
   PROMOTION_REF,
+  STAGING_IMAGE_TARGETS,
+  STAGING_TARGET_IDS,
   STAGING_WORKFLOWS,
   STAGING_WORKFLOW_PATHS,
   checksumReceipt,
   collectBuildEvidence,
   compareAndSwapReleaseRef,
   fetchRegistryDigest,
+  fetchImageRevision,
   getSourceBranch,
   planReleaseRef,
   pushReleaseRefWithLease,
+  resolveCandidateTargetIds,
   resolveStableRegistryDigests,
   runPromotion,
   validateCandidateAncestry,
@@ -40,8 +58,23 @@ const CANDIDATE_SHA = 'a'.repeat(40)
 const CURRENT_SHA = 'b'.repeat(40)
 const NEXT_SHA = 'c'.repeat(40)
 
+// The admitted scan receipts of the fixture targets. The release manifest binds
+// a scanned target to the receipt that judged its digest, so the stub names the
+// exact jobs the trusted inventory scans.
 async function fixtureScanAdmission() {
-  return { attempts: [{ attempt: 1, failures: [] }], entries: [], valid: true }
+  const entries = FIXTURE_TARGET_IDS.filter(
+    (targetId) => targetById(targetId)?.scan === true
+  ).map((targetId) => ({
+    buildJob: buildJobName(targetById(targetId)),
+    digest: `sha256:${'4'.repeat(64)}`,
+    image:
+      'ghcr.io/' + REPOSITORY + '/' + imageName(targetById(targetId)) + '-arm',
+    ok: true,
+    reason: 'scanned',
+    scanJob: scanJobName(targetById(targetId)),
+    workflowPath: FIXTURE_WORKFLOW_PATH,
+  }))
+  return { attempts: [{ attempt: 1, failures: [] }], entries, valid: true }
 }
 
 async function fixtureCiEvidence({ run }) {
@@ -82,8 +115,18 @@ function reviewContext(eventName = 'workflow_dispatch', inputs = {}) {
   }
 }
 
-function validWorkflows() {
+// The fixture candidate builds three targets, so every validation call binds
+// that same set against the real consolidated workflow text.
+function validateFixture({ definitions, ...rest }) {
   return validateStagingWorkflows({
+    definitions,
+    targetIds: FIXTURE_TARGET_IDS,
+    ...rest,
+  })
+}
+
+function validWorkflows() {
+  return validateFixture({
     definitions: fixtureDefinitions(),
     expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
     repository: REPOSITORY,
@@ -112,6 +155,7 @@ function evidenceGithub({
   runs = evidenceRuns(workflows),
   jobs = {},
   comparisons = {},
+  publication = publicationArtifacts(),
 }) {
   const ciRuns = Object.fromEntries(
     REQUIRED_CI_WORKFLOWS.map((w, i) => [
@@ -152,7 +196,17 @@ function evidenceGithub({
   const github = {
     rest: {
       actions: {
+        downloadArtifact: async ({ artifact_id }) => ({
+          data: publication.archives.get(artifact_id),
+        }),
         listJobsForWorkflowRunAttempt: jobEndpoint,
+        listWorkflowRunArtifacts: async ({ run_id }) => ({
+          data: {
+            artifacts: publication.artifacts.filter(
+              (artifact) => artifact.run_id === run_id
+            ),
+          },
+        }),
         listWorkflowRuns: runEndpoint,
       },
       repos: {
@@ -184,7 +238,12 @@ function evidenceGithub({
     },
     paginate: async (endpoint, params) => {
       const response = await endpoint(params)
-      return response.data.workflow_runs ?? response.data.jobs ?? []
+      return (
+        response.data.workflow_runs ??
+        response.data.jobs ??
+        response.data.artifacts ??
+        []
+      )
     },
   }
   return { github, jobEndpoint, runEndpoint }
@@ -198,10 +257,8 @@ function successfulJobs(workflows) {
         runId,
         workflowJobs({
           candidateSha: CANDIDATE_SHA,
-          includeMigrator: workflow.jobs.some(
-            (job) => job.id === 'build-migrator-arm'
-          ),
           path: workflow.path,
+          targetIds: FIXTURE_TARGET_IDS,
         }),
       ]
     })
@@ -278,290 +335,296 @@ test('requires the trusted workflow to resolve the selected source branch', () =
   assert.throws(() => getSourceBranch('main'), /approved push triggers/)
 })
 
-test('validates the candidate workflow set and only inventories active ARM publishers', () => {
+test('validates the consolidated candidate workflow and derives the publisher inventory', () => {
   const workflows = validWorkflows()
+  assert.equal(workflows.length, 1)
+  assert.equal(workflows[0].path, FIXTURE_WORKFLOW_PATH)
+  assert.equal(workflows[0].name, 'Build staging images')
+  // Only the ARM64 publisher jobs carry a promotable image; the scan and AMD64
+  // legs are required to succeed but publish nothing the controller promotes.
   assert.deepEqual(
-    workflows.map((workflow) => workflow.jobs.map((job) => job.id)),
-    [['build-arm'], ['build-arm', 'build-migrator-arm'], ['build-arm']]
+    workflows[0].jobs.map((job) => job.id),
+    [
+      'build-arm-auth',
+      'build-arm-backend-docker',
+      'build-arm-backend-docker-migrator',
+    ]
   )
-  assert.equal(
-    workflows.some((workflow) =>
-      workflow.jobs.some((job) => job.id === 'build-amd')
-    ),
-    false
+  assert.deepEqual(workflows[0].requiredJobIds, [
+    'build-arm-auth',
+    'build-arm-backend-docker',
+    'build-arm-backend-docker-migrator',
+    'scan-arm-backend-docker',
+    'scan-arm-backend-docker-migrator',
+  ])
+  assert.deepEqual(
+    workflows[0].jobs.map((job) => job.image),
+    [
+      'ghcr.io/uzh-bf/klicker-uzh/auth-arm',
+      'ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm',
+      'ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm',
+    ]
   )
-  assert.equal(
-    workflows.every((workflow) => workflow.name.endsWith('(stg)')),
-    true
+})
+
+test('a candidate that still publishes per-image workflows fails closed', () => {
+  const legacy = fixtureDefinitions()
+  legacy.push({
+    content: 'name: Build Docker image for auth (stg)\n',
+    path: '.github/workflows/v3_auth-stg.yml',
+  })
+  assert.throws(
+    () =>
+      validateFixture({
+        definitions: legacy,
+        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+        repository: REPOSITORY,
+        sourceBranch: 'v3',
+      }),
+    /must carry exactly one staging workflow/
+  )
+})
+
+test('only the controlled set of integration-only targets may be absent', () => {
+  const optionalIds = STAGING_IMAGE_TARGETS.filter(
+    (target) => target.optional === true
+  ).map((target) => target.id)
+  assert.ok(optionalIds.length > 0, 'no optional target is declared')
+
+  assert.deepEqual(resolveCandidateTargetIds([]), STAGING_TARGET_IDS)
+  // An optional target may be absent: the integration lines carry those apps and
+  // 'v3' does not.
+  const withoutOptional = resolveCandidateTargetIds(optionalIds)
+  for (const optionalId of optionalIds) {
+    assert.equal(withoutOptional.includes(optionalId), false)
+  }
+  assert.equal(withoutOptional.includes('auth-arm'), true)
+
+  // A required target may never be absent.
+  const requiredId = STAGING_TARGET_IDS.find((id) => !optionalIds.includes(id))
+  assert.throws(
+    () => resolveCandidateTargetIds([requiredId]),
+    /missing the required staging image target/
+  )
+  assert.throws(
+    () => resolveCandidateTargetIds(['not-a-target']),
+    /unknown staging image target/
   )
 })
 
 test('admits inventoried scan jobs without treating them as publishers', () => {
-  const definitions = fixtureDefinitions()
-  assert.match(definitions[1].content, /^  scan-arm:$/m)
-  assert.match(definitions[1].content, /^  scan-migrator-arm:$/m)
-
+  // The scan legs are required jobs but never publishers.
   const workflows = validWorkflows()
-  assert.deepEqual(
-    workflows[1].jobs.map((job) => job.id),
-    ['build-arm', 'build-migrator-arm']
+  assert.equal(
+    workflows[0].jobs.some((job) => job.id.startsWith('scan-')),
+    false
   )
-
-  const disabledScan = fixtureDefinitions()
-  disabledScan[1].content = disabledScan[1].content.replace(
-    "  scan-arm:\n    if: github.event_name != 'pull_request'",
-    '  scan-arm:\n    if: ${{ false }}'
+  assert.equal(
+    workflows[0].requiredJobIds.some((id) => id.startsWith('scan-')),
+    true
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: disabledScan,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /active ARM job inventory changed/
-  )
-
-  const extraArm = fixtureDefinitions()
-  extraArm[1].content +=
-    '  publish-extra-arm:\n    runs-on: ubuntu-24.04-arm\n    steps:\n      - uses: actions/checkout@v3\n'
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: extraArm,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /active ARM job inventory changed/
-  )
-
-  const misplacedScan = fixtureDefinitions()
-  misplacedScan[0].content +=
-    "  scan-arm:\n    if: github.event_name != 'pull_request'\n    runs-on: ubuntu-24.04-arm\n    steps:\n      - uses: actions/checkout@v3\n"
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: misplacedScan,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /active ARM job inventory changed/
-  )
-
-  const floatingScan = fixtureDefinitions()
-  floatingScan[1].content = floatingScan[1].content.replace(
-    '        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8',
-    '        uses: aquasecurity/trivy-action@v0.36.0'
-  )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: floatingScan,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /scan-arm does not pin one trivy action revision/
-  )
-
+  // A scan leg that stops enforcing the policy blocks the candidate even though
+  // it publishes nothing the controller promotes.
   const uncheckedScan = fixtureDefinitions()
-  uncheckedScan[1].content = uncheckedScan[1].content.replace(
-    '          node .github/scripts/image-scan-receipt.cjs check\n',
-    ''
+  uncheckedScan[0].content = uncheckedScan[0].content.replace(
+    'node .github/scripts/image-scan-receipt.cjs check',
+    'node .github/scripts/other.cjs check'
   )
   assert.throws(
     () =>
-      validateStagingWorkflows({
+      validateFixture({
         definitions: uncheckedScan,
         expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
         repository: REPOSITORY,
         sourceBranch: 'v3',
       }),
-    /scan-arm does not enforce the scan policy/
+    /does not enforce the scan policy/
   )
 })
 
+// Every workflow-level property the old per-image validator enforced is still
+// enforced against the consolidated file, so a candidate cannot weaken the
+// publication pipeline by editing the one workflow it now owns.
 test('rejects unsafe workflow publication changes', () => {
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: fixtureDefinitions({ pushBranches: ["'v3'"] }),
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /approved push triggers/
-  )
-
-  const filteredPush = fixtureDefinitions()
-  filteredPush[0].content = filteredPush[0].content.replace(
-    "      - 'v3*'\n  pull_request:",
-    "      - 'v3*'\n    paths:\n      - 'apps/auth/**'\n  pull_request:"
-  )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: filteredPush,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /approved push triggers/
-  )
-
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: fixtureDefinitions({ fullShaTag: false }),
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /full source SHA tag/
-  )
-
-  const prefixedSha = fixtureDefinitions()
-  prefixedSha[0].content = prefixedSha[0].content.replace(
-    'type=raw,value=${{ github.sha }}',
-    'type=sha,format=long'
-  )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: prefixedSha,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /full source SHA tag/
-  )
-
-  const definitions = fixtureDefinitions()
-  definitions[0].content = definitions[0].content.replace(
-    'if: ${{ false }}',
-    'if: github.event.pull_request.draft == false'
-  )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
+  const reject = (label, definitions, pattern) => {
+    const targetIds = FIXTURE_TARGET_IDS
+    try {
+      validateFixture({
         definitions,
         expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
         repository: REPOSITORY,
         sourceBranch: 'v3',
-      }),
-    /must remain disabled/
-  )
+        targetIds,
+      })
+    } catch (error) {
+      assert.match(error.message, pattern, label)
+      return
+    }
+    assert.fail(label + ' was accepted')
+  }
+  const mutateAll = (pairs) => {
+    const definitions = fixtureDefinitions()
+    for (const [from, to] of pairs) {
+      assert.ok(
+        definitions[0].content.includes(from),
+        'fixture no longer contains the text to replace: ' + from
+      )
+      // Every occurrence, so a mutant that removes a required guardrail removes
+      // it from every leg instead of leaving a matching sibling behind.
+      definitions[0].content = definitions[0].content.split(from).join(to)
+    }
+    return definitions
+  }
+  const mutate = (from, to) => mutateAll([[from, to]])
 
-  const misleadingDisabledStep = fixtureDefinitions()
-  misleadingDisabledStep[0].content = misleadingDisabledStep[0].content
-    .replace(
-      '  build-amd:\n    if: ${{ false }}',
-      "  build-amd:\n    if: github.event_name != 'pull_request'"
-    )
-    .replace(
-      '      - uses: docker/metadata-action@v4\n',
-      '      - if: ${{ false }}\n        uses: docker/metadata-action@v4\n'
-    )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: misleadingDisabledStep,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /must remain disabled/
+  reject(
+    'narrowed push triggers',
+    fixtureDefinitions({ pushBranches: ["'v3'"] }),
+    /approved push triggers/
   )
-
-  const fakePublisherText = fixtureDefinitions()
-  fakePublisherText[0].content = fakePublisherText[0].content.replace(
-    `      - uses: docker/build-push-action@v5
-        with:
-          push: \${{ github.event_name != 'pull_request' }}
-          tags: \${{ steps.meta.outputs.tags }}`,
-    `      - name: Fake publisher text
-        run: |
-          uses: docker/build-push-action@v5
-          push: \${{ github.event_name != 'pull_request' }}
-          tags: \${{ steps.meta.outputs.tags }}`
+  reject(
+    'reduced pull-request types',
+    mutate(
+      'types: [opened, synchronize, reopened, edited, ready_for_review]',
+      'types: [opened]'
+    ),
+    /approved pull-request triggers/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: fakePublisherText,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /must use exactly one docker\/build-push-action/
+  reject(
+    'workflow-level path filter',
+    mutate(
+      '    types: [opened, synchronize, reopened, edited, ready_for_review]',
+      '    paths:\n      - apps/auth/**\n    types: [opened, synchronize, reopened, edited, ready_for_review]'
+    ),
+    /must not filter pull-request paths/
   )
-
-  const renamed = fixtureDefinitions()
-  renamed[0].content = renamed[0].content.replace(
-    'Build Docker image for auth (stg)',
-    'Build Docker image for renamed-auth (stg)'
+  reject(
+    'missing full-SHA tag',
+    fixtureDefinitions({ fullShaTag: false }),
+    /full source SHA tag/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: renamed,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
+  reject(
+    'renamed workflow',
+    mutate('Build staging images', 'Build staging images renamed'),
     /trusted workflow name/
   )
-
-  const retargeted = fixtureDefinitions()
-  retargeted[0].content = retargeted[0].content.replace(
-    '${{ github.repository }}/auth',
-    '${{ github.repository }}/other-auth'
+  reject(
+    'ungated publication',
+    mutate("steps.publish_guard.outputs.publish == 'true'", 'true'),
+    /publish guard/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: retargeted,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /runtime image inventory changed/
+  reject(
+    'removed fingerprint resolution',
+    mutate(
+      'uses: ./.github/actions/staging-image-input-fingerprint',
+      'uses: ./.github/actions/other-fingerprint'
+    ),
+    /does not resolve the input fingerprint/
   )
-
-  const noMigrator = fixtureDefinitions()
-  noMigrator[1].content = noMigrator[1].content.replace(
-    /^  build-migrator-arm:[\s\S]*?(?=^  build-migrator-amd:)/m,
-    ''
+  reject(
+    'removed fingerprint tag publication',
+    mutate(
+      '.github/scripts/stg-image-reuse-guard.sh',
+      '.github/scripts/other-reuse-guard.sh'
+    ),
+    /does not publish the resolved fingerprint tag/
   )
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: noMigrator,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /active ARM job inventory changed/
+  reject(
+    'fingerprint tag published without the reuse condition',
+    mutate('matrix.reuse == true', 'true'),
+    /reuse-capable publications/
   )
-
-  const extraPublisher = fixtureDefinitions()
-  extraPublisher[0].content += `  publish-extra:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker/build-push-action@v5
-`
-  assert.throws(
-    () =>
-      validateStagingWorkflows({
-        definitions: extraPublisher,
-        expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
-        repository: REPOSITORY,
-        sourceBranch: 'v3',
-      }),
-    /unexpected active image publisher/
+  reject(
+    'digest published without its input fingerprint',
+    mutate('image-input-fingerprint-', 'fingerprint-record-'),
+    /does not ship the input fingerprint with the digest/
+  )
+  reject(
+    'digest published without its reuse record',
+    mutate('runner.temp }}/image-reuse-', 'runner.temp }}/reuse-'),
+    /does not publish a reuse record with the digest/
+  )
+  reject(
+    'image published without its source revision label',
+    mutate('org.opencontainers.image.revision', 'org.example.revision'),
+    /does not label the image with its source revision/
+  )
+  // The reuse resolution has to run before the guard decides whether to build:
+  // it is the adoption that publishes the full-SHA tag the guard then finds.
+  reject(
+    'reuse resolved after the publish guard',
+    mutateAll([
+      ['id: fingerprint', 'id: reuse-resolution'],
+      ['id: publish_guard', 'id: fingerprint'],
+      ['id: reuse-resolution', 'id: publish_guard'],
+    ]),
+    /resolves the publish guard before the reuse resolution/
+  )
+  reject(
+    'removed publish guard script',
+    mutate(
+      '.github/scripts/stg-image-publish-guard.sh',
+      '.github/scripts/other-guard.sh'
+    ),
+    /full-SHA tag before publishing/
+  )
+  reject(
+    'floating scanner revision',
+    mutate(
+      'aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8',
+      'aquasecurity/trivy-action@v0.36.0'
+    ),
+    /pin exactly one trivy action revision/
+  )
+  reject(
+    'removed scan policy',
+    mutate(
+      'node .github/scripts/image-scan-receipt.cjs check',
+      'node .github/scripts/other.cjs check'
+    ),
+    /does not enforce the scan policy/
+  )
+  reject(
+    'ARM build no longer defers drafts',
+    mutate('github.event.pull_request.draft == false', 'true'),
+    /does not defer draft builds/
+  )
+  reject(
+    'publication reading the pull-request cache',
+    mutate(
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted-{2}'",
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache'"
+    ),
+    /trusted epoch cache/
+  )
+  reject(
+    'pull request reaching the trusted cache',
+    mutate(
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache'",
+      "format('type=registry,ref=ghcr.io/{0}/{1}-arm:buildcache-trusted'"
+    ),
+    /trusted epoch cache/
+  )
+  reject(
+    'publication with the shared cache disabled',
+    mutate(
+      '          cache-from: ',
+      '          no-cache: true\n          cache-from: '
+    ),
+    /disables the shared build cache/
+  )
+  reject(
+    'retargeted matrix image',
+    mutate('matrix.image', 'matrix.imageName'),
+    /derive the image from the matrix/
+  )
+  reject(
+    'status job no longer reports',
+    mutate(
+      '    if: always()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10',
+      '    if: success()\n    runs-on: ubuntu-latest\n    timeout-minutes: 10'
+    ),
+    /must report for every outcome/
   )
 })
 
@@ -731,6 +794,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
     assert.equal(result.valid, false, label)
     assert.match(result.reason, reason, label)
     assert.equal(result.attempts.length, 1, label)
+    assert.equal(result.pending, false, label)
   }
 
   const missingRuns = evidenceRuns(workflows)
@@ -752,11 +816,12 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
   assert.equal(missing.valid, false)
   assert.match(missing.reason, /no exact-SHA run/)
   assert.equal(missing.attempts.length, 2)
+  assert.equal(missing.pending, false)
 
   const runningJobs = successfulJobs(workflows)
   runningJobs[100] = workflowJobs({
     candidateSha: CANDIDATE_SHA,
-    jobState: { 'build-arm': { status: 'in_progress' } },
+    jobState: { 'build-arm-auth': { status: 'in_progress' } },
     path: workflows[0].path,
   })
   const { github: runningGithub } = evidenceGithub({
@@ -771,7 +836,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
     sourceBranch: 'v3',
     maxAttempts: 1,
   })
-  assert.match(runningResult.reason, /build-arm is running/)
+  assert.match(runningResult.reason, /build-arm-auth is running/)
 
   const jobCases = [
     ['skipped', { conclusion: 'skipped' }],
@@ -783,7 +848,7 @@ test('fails closed for missing, skipped, failed, cancelled, and wrong evidence',
     const terminalJobs = successfulJobs(workflows)
     terminalJobs[100] = workflowJobs({
       candidateSha: CANDIDATE_SHA,
-      jobState: { 'build-arm': jobState },
+      jobState: { 'build-arm-auth': jobState },
       path: workflows[0].path,
     })
     const { github: terminalGithub } = evidenceGithub({
@@ -1027,6 +1092,202 @@ test('rejects untrusted or incomplete registry manifest responses', async () => 
       fetchImpl: async () => interrupted,
     }),
     /incomplete/
+  )
+})
+
+const ADOPTED_IMAGE = 'ghcr.io/uzh-bf/klicker-uzh/analytics-arm'
+
+function registryHeaders(values) {
+  const entries = new Map(
+    Object.entries(values).map(([name, value]) => [
+      String(name).toLowerCase(),
+      value,
+    ])
+  )
+  return { get: (name) => entries.get(String(name).toLowerCase()) ?? null }
+}
+
+function registryJsonResponse(body, contentType) {
+  const bytes = Buffer.from(JSON.stringify(body))
+  return {
+    arrayBuffer: async () => bytes,
+    headers: registryHeaders({ 'content-type': contentType }),
+    ok: true,
+    redirected: false,
+    status: 200,
+  }
+}
+
+function registryBytesResponse(bytes, contentType) {
+  return {
+    arrayBuffer: async () => bytes,
+    headers: registryHeaders({ 'content-type': contentType }),
+    ok: true,
+    redirected: false,
+    status: 200,
+  }
+}
+
+function registryBlobRedirectResponse(location) {
+  return {
+    headers: registryHeaders({ location }),
+    ok: false,
+    redirected: false,
+    status: 307,
+  }
+}
+
+// The adoption walk of one image: the public challenge, the pull token, the
+// index, and the platform manifest, followed by the caller's blob responses.
+function adoptedImageWalk({ configBytes, platformDigest, tail }) {
+  const requests = []
+  const responses = [
+    {
+      headers: registryHeaders({
+        'www-authenticate':
+          'Bearer realm="https://ghcr.io/token",service="ghcr.io",' +
+          'scope="repository:uzh-bf/klicker-uzh/analytics-arm:pull"',
+      }),
+      ok: false,
+      redirected: false,
+      status: 401,
+    },
+    {
+      headers: registryHeaders({}),
+      json: async () => ({ token: 'synthetic-registry-token' }),
+      ok: true,
+      redirected: false,
+      status: 200,
+    },
+    registryJsonResponse(
+      {
+        manifests: [
+          {
+            digest: platformDigest,
+            platform: { architecture: 'arm64', os: 'linux' },
+          },
+        ],
+      },
+      'application/vnd.oci.image.index.v1+json'
+    ),
+    registryJsonResponse(
+      {
+        config: {
+          digest: `sha256:${crypto.createHash('sha256').update(configBytes).digest('hex')}`,
+        },
+      },
+      'application/vnd.oci.image.manifest.v1+json'
+    ),
+    ...tail,
+  ]
+  return {
+    requests,
+    responses,
+    fetchImpl: async (url, options = {}) => {
+      requests.push({ options, url: String(url) })
+      const response = responses.shift()
+      assert.ok(response, `unexpected registry request ${url}`)
+      return response
+    },
+  }
+}
+
+const ADOPTED_REVISION = 'e'.repeat(40)
+const ADOPTED_PLATFORM_DIGEST = `sha256:${'1'.repeat(64)}`
+const ADOPTED_INDEX_DIGEST = `sha256:${'2'.repeat(64)}`
+
+function adoptedConfigBytes() {
+  return Buffer.from(
+    JSON.stringify({
+      config: {
+        Labels: { 'org.opencontainers.image.revision': ADOPTED_REVISION },
+      },
+    })
+  )
+}
+
+// A registry serves a blob through a redirect to its storage host, so the
+// promotion has to follow exactly that hop: without it no adopted image can be
+// bound to the revision label that produced it, and staging never promotes.
+test('follows one registry blob redirect to the host that serves an adopted digest', async () => {
+  const configBytes = adoptedConfigBytes()
+  const configDigest = `sha256:${crypto
+    .createHash('sha256')
+    .update(configBytes)
+    .digest('hex')}`
+  const storageUrl =
+    `https://pkg-containers.githubusercontent.com/ghcrblobs10/` +
+    `blobs/${configDigest}?sig=synthetic`
+  const { fetchImpl, requests, responses } = adoptedImageWalk({
+    configBytes,
+    platformDigest: ADOPTED_PLATFORM_DIGEST,
+    tail: [
+      registryBlobRedirectResponse(storageUrl),
+      registryBytesResponse(configBytes, 'application/octet-stream'),
+    ],
+  })
+
+  assert.equal(
+    await fetchImageRevision({
+      digest: ADOPTED_INDEX_DIGEST,
+      fetchImpl,
+      repository: ADOPTED_IMAGE,
+    }),
+    ADOPTED_REVISION
+  )
+  assert.equal(responses.length, 0)
+  assert.equal(requests.length, 6)
+  assert.equal(requests[0].options.redirect, 'error')
+  assert.match(requests[1].url, /^https:\/\/ghcr\.io\/token\?/)
+  assert.equal(requests[4].options.redirect, 'manual')
+  assert.equal(requests[5].url, storageUrl)
+  // The signed storage URL authorizes itself, so the pull token stays with the
+  // registry that issued it.
+  assert.equal(requests[5].options.headers, undefined)
+})
+
+test('rejects a registry blob redirect that leaves the storage host', async () => {
+  const configBytes = adoptedConfigBytes()
+  const { fetchImpl } = adoptedImageWalk({
+    configBytes,
+    platformDigest: ADOPTED_PLATFORM_DIGEST,
+    tail: [
+      registryBlobRedirectResponse(
+        'https://storage.example.invalid/blobs/analytics'
+      ),
+    ],
+  })
+
+  await assert.rejects(
+    fetchImageRevision({
+      digest: ADOPTED_INDEX_DIGEST,
+      fetchImpl,
+      repository: ADOPTED_IMAGE,
+    }),
+    /left its storage host/
+  )
+})
+
+test('rejects registry blob bytes that are not the requested digest', async () => {
+  const configBytes = adoptedConfigBytes()
+  const { fetchImpl } = adoptedImageWalk({
+    configBytes,
+    platformDigest: ADOPTED_PLATFORM_DIGEST,
+    tail: [
+      registryBytesResponse(
+        Buffer.from('{"config":{"Labels":{}}}'),
+        'application/vnd.oci.image.config.v1+json'
+      ),
+    ],
+  })
+
+  await assert.rejects(
+    fetchImageRevision({
+      digest: ADOPTED_INDEX_DIGEST,
+      fetchImpl,
+      repository: ADOPTED_IMAGE,
+    }),
+    /is not the requested digest/
   )
 })
 
@@ -1531,6 +1792,7 @@ test('writes receipts before rejecting uncertain or mismatched post-push readbac
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
         getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
@@ -1605,6 +1867,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
   try {
     const result = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
       getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
@@ -1642,6 +1905,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     }
     const rerun = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
       getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github: rerunGithub,
@@ -1669,6 +1933,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const automatic = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
       getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
@@ -1681,6 +1946,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
 
     const enabled = await runPromotion({
       getCiEvidence: fixtureCiEvidence,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
       getScanAdmission: fixtureScanAdmission,
       controllerSha: NEXT_SHA,
       github,
@@ -1716,6 +1982,7 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
         getScanAdmission: fixtureScanAdmission,
         controllerSha: NEXT_SHA,
         github,
@@ -1731,6 +1998,267 @@ test('keeps manual defaults dry-run and gates automatic writes', async () => {
       new RegExp(`confirm_ref_update=${MANUAL_CONFIRMATION}`)
     )
   }
+})
+
+// One dry-run promotion of the fixture candidate, wired with the registry
+// revision labels and the published records a test wants the controller to
+// read. The receipt is parsed before the temporary directory is removed, so the
+// assertions describe what the run actually wrote.
+async function fixturePromotion({
+  comparisons = {},
+  publication,
+  revisionOf,
+} = {}) {
+  const workflows = validWorkflows()
+  const { github: baseGithub } = evidenceGithub({
+    comparisons,
+    definitions: fixtureDefinitions(),
+    jobs: successfulJobs(workflows),
+    publication,
+    runs: evidenceRuns(workflows),
+  })
+  const refs = refGithub()
+  const github = {
+    ...baseGithub,
+    rest: { ...baseGithub.rest, git: refs.github.rest.git },
+  }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-promotion-'))
+  const receiptPath = path.join(directory, 'receipt.json')
+  try {
+    const result = await runPromotion({
+      candidateSha: CANDIDATE_SHA,
+      context: reviewContext('workflow_dispatch', {
+        dry_run: true,
+        sha: CANDIDATE_SHA,
+      }),
+      controllerSha: NEXT_SHA,
+      expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+      getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+      getCiEvidence: fixtureCiEvidence,
+      getImageRevision: revisionOf,
+      getRegistryDigest: async () => `sha256:${'4'.repeat(64)}`,
+      getScanAdmission: fixtureScanAdmission,
+      github,
+      maxAttempts: 1,
+      receiptPath,
+      checksumPath: path.join(directory, 'receipt.sha256'),
+      sourceBranch: 'v3',
+      summaryPath: path.join(directory, 'summary.md'),
+    })
+    return { receipt: JSON.parse(fs.readFileSync(receiptPath, 'utf8')), result }
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+test('a publication that adopted a qualified digest is promoted as reused', async () => {
+  const digest = `sha256:${'4'.repeat(64)}`
+  const sourceSha = 'd'.repeat(40)
+  const fingerprint = publicationFingerprint('backend-docker-arm')
+  const { receipt, result } = await fixturePromotion({
+    publication: publicationArtifacts({
+      adopted: { 'backend-docker-arm': digest },
+    }),
+    revisionOf: async () => sourceSha,
+  })
+
+  const entry = result.release_manifest.entries.find(
+    (candidate) => candidate.targetId === 'backend-docker-arm'
+  )
+  assert.equal(entry.digest, digest)
+  assert.equal(
+    entry.image,
+    `ghcr.io/${REPOSITORY}/backend-docker-arm@${digest}`
+  )
+  assert.deepEqual(entry.reusedFrom, {
+    digest,
+    fingerprint,
+    sourceSha,
+    tag: fingerprintTag(fingerprint),
+  })
+  // The provenance of an adopted image is the revision label it carries, not
+  // the run that built it: the receipt names the commit and nothing else.
+  assert.equal('runId' in entry.reusedFrom, false)
+  // Only a target the inventory marks reusable may be reported as reused.
+  assert.deepEqual(result.reuse, {
+    rebuilt: ['auth-arm', 'backend-docker-migrator-arm'],
+    reused: ['backend-docker-arm'],
+  })
+  assert.deepEqual(receipt.reuse, result.reuse)
+  assert.deepEqual(receipt.release_manifest, result.release_manifest)
+  assert.equal(receipt.schema_version, 'stg-release-promotion/v2')
+
+  // An image built from the candidate itself is a proven ancestor without a
+  // commit comparison, so a re-run of the same commit still reuses.
+  const self = await fixturePromotion({
+    publication: publicationArtifacts({
+      adopted: { 'backend-docker-arm': digest },
+    }),
+    revisionOf: async () => CANDIDATE_SHA,
+  })
+  assert.equal(
+    self.result.release_manifest.entries.find(
+      (candidate) => candidate.targetId === 'backend-docker-arm'
+    ).reusedFrom.sourceSha,
+    CANDIDATE_SHA
+  )
+  assert.deepEqual(self.result.reuse, result.reuse)
+})
+
+test('a reuse source that is not an ancestor of the candidate fails closed', async () => {
+  const digest = `sha256:${'4'.repeat(64)}`
+  const sourceSha = 'e'.repeat(40)
+  await assert.rejects(
+    fixturePromotion({
+      comparisons: {
+        [`${sourceSha}...${CANDIDATE_SHA}`]: { status: 'behind' },
+      },
+      publication: publicationArtifacts({
+        adopted: { 'backend-docker-arm': digest },
+      }),
+      revisionOf: async () => sourceSha,
+    }),
+    /release manifest rejected: backend-docker-arm:reuse-ancestry/
+  )
+})
+
+test('an adoption of a digest other than the published one fails closed', async () => {
+  const adopted = `sha256:${'5'.repeat(64)}`
+  await assert.rejects(
+    fixturePromotion({
+      publication: publicationArtifacts({
+        adopted: { 'backend-docker-arm': adopted },
+      }),
+      revisionOf: async () => CANDIDATE_SHA,
+    }),
+    /backend-docker-arm adopted sha256:5{64} but published sha256:4{64}/
+  )
+})
+
+test('only the records of reuse-capable targets are read', async () => {
+  // 'auth-arm' is fingerprinted nowhere in the trusted inventory, so a
+  // publication that ships a record for it is ignored rather than trusted.
+  const { result } = await fixturePromotion({
+    publication: publicationArtifacts({
+      adopted: { 'auth-arm': `sha256:${'4'.repeat(64)}` },
+      targetIds: [...FIXTURE_REUSE_TARGET_IDS, 'auth-arm'],
+    }),
+    revisionOf: async () => CANDIDATE_SHA,
+  })
+  const entry = result.release_manifest.entries.find(
+    (candidate) => candidate.targetId === 'auth-arm'
+  )
+  assert.equal(entry.fingerprint, null)
+  assert.equal(entry.reusedFrom, null)
+  assert.deepEqual(result.reuse.reused, [])
+})
+
+test('an incomplete publication record fails closed', async (t) => {
+  const cases = [
+    {
+      label: 'no input fingerprint',
+      options: { omit: ['image-input-fingerprint-backend-docker-arm.json'] },
+      reason: /published no input fingerprint with its staging digest/,
+    },
+    {
+      label: 'no reuse record',
+      options: { omit: ['image-reuse-backend-docker-arm.json'] },
+      reason: /published no reuse record with its digest/,
+    },
+  ]
+  for (const fixture of cases) {
+    await t.test(fixture.label, async () => {
+      await assert.rejects(
+        fixturePromotion({
+          publication: publicationArtifacts(fixture.options),
+        }),
+        fixture.reason
+      )
+    })
+  }
+})
+
+test('a record that contradicts the trusted inventory fails closed', async (t) => {
+  const targetId = 'backend-docker-arm'
+  const fingerprint = publicationFingerprint(targetId)
+  const tag = fingerprintTag(fingerprint)
+  const fingerprintMember = 'image-input-fingerprint-' + targetId + '.json'
+  const reuseMember = 'image-reuse-' + targetId + '.json'
+  const cases = [
+    {
+      label: 'fingerprint of another target',
+      member: fingerprintMember,
+      record: { fingerprint, reuseEligible: true, tag, target: 'auth-arm' },
+      reason: /published a fingerprint for another target/,
+    },
+    {
+      label: 'fingerprint that is not canonical',
+      member: fingerprintMember,
+      record: {
+        fingerprint: 'latest',
+        reuseEligible: true,
+        tag,
+        target: targetId,
+      },
+      reason: /published no canonical input fingerprint/,
+    },
+    {
+      label: 'fingerprint under another tag',
+      member: fingerprintMember,
+      record: {
+        fingerprint,
+        reuseEligible: true,
+        tag: 'fp-' + '0'.repeat(64),
+        target: targetId,
+      },
+      reason: /published a fingerprint under another tag/,
+    },
+    {
+      label: 'target that is not reusable in its own record',
+      member: fingerprintMember,
+      record: { fingerprint, reuseEligible: false, tag, target: targetId },
+      reason: /is reusable in the trusted inventory but not in its own/,
+    },
+    {
+      label: 'reuse record of another schema',
+      member: reuseMember,
+      record: { adopted: false, digest: '', schemaVersion: 2, tag },
+      reason: /published a reuse record of another schema/,
+    },
+    {
+      label: 'adoption without a digest',
+      member: reuseMember,
+      record: { adopted: true, digest: '', schemaVersion: 1, tag },
+      reason: /adopted an image without a digest/,
+    },
+  ]
+  for (const fixture of cases) {
+    await t.test(fixture.label, async () => {
+      await assert.rejects(
+        fixturePromotion({
+          publication: publicationArtifacts({
+            override: { [fixture.member]: JSON.stringify(fixture.record) },
+          }),
+        }),
+        fixture.reason
+      )
+    })
+  }
+})
+
+test('a publication must ship exactly one digest artifact per reusable target', async () => {
+  const publication = publicationArtifacts()
+  await assert.rejects(
+    fixturePromotion({
+      publication: {
+        artifacts: publication.artifacts.filter(
+          (artifact) => artifact.name !== 'build-digest-backend-docker-arm'
+        ),
+        archives: publication.archives,
+      },
+    }),
+    /backend-docker-arm published 0 build-digest-backend-docker-arm artifacts/
+  )
 })
 
 test('uses only trusted controller checkout and has no commit or PR commands', () => {
@@ -1757,20 +2285,22 @@ test('uses only trusted controller checkout and has no commit or PR commands', (
   assert.match(workflow, /github-token: \$\{\{ github\.token \}\}/)
   assert.match(workflow, /gitToken: process\.env\.STG_PROMOTE_TOKEN/)
   assert.match(workflow, /secrets\.STG_PROMOTE_TOKEN/)
-  assert.match(workflow, /^  contents: read$/m)
+  assert.match(workflow, /^ {2}contents: read$/m)
 
-  const workflowRunNames = [
-    ...workflow.matchAll(/^      - '([^']+ \(stg\))'$/gm),
-  ].map((match) => match[1])
+  // The controller watches the one consolidated producer instead of the fifteen
+  // per-image workflows it replaced.
+  const stagingProducers = [...workflow.matchAll(/^ {6}- '(Build .+)'$/gm)].map(
+    (match) => match[1]
+  )
   assert.deepEqual(
-    workflowRunNames.sort(),
+    stagingProducers.sort(),
     STAGING_WORKFLOWS.map((entry) => entry.name).sort()
   )
 
   const permissions = [
     ...workflow
-      .match(/\npermissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/)[1]
-      .matchAll(/^  ([a-z-]+): (read|write)$/gm),
+      .match(/\npermissions:\n((?: {2}[a-z-]+: (?:read|write)\n)+)/)[1]
+      .matchAll(/^ {2}([a-z-]+): (read|write)$/gm),
   ].map((match) => match[1])
   assert.deepEqual([...new Set(permissions)].sort(), ['actions', 'contents'])
 
@@ -1793,22 +2323,20 @@ test('does not use candidate files as executable workflow inputs', () => {
   assert.match(promoter, /ref: candidateSha/)
   assert.doesNotMatch(promoter, /require\([^)]*candidate/)
   assert.doesNotMatch(promoter, /eval\(|new Function\(/)
-  assert.equal(STAGING_WORKFLOW_PATHS.length, 15)
-  assert.equal(STAGING_WORKFLOWS.length, 15)
+  // One consolidated workflow replaces the fifteen per-image files, and the
+  // candidate tree never becomes an executable input: it is read as text and
+  // validated structurally.
+  assert.equal(STAGING_WORKFLOW_PATHS.length, 1)
+  assert.equal(STAGING_WORKFLOWS.length, 1)
   assert.deepEqual(
     STAGING_WORKFLOW_PATHS,
     STAGING_WORKFLOWS.map((workflow) => workflow.path)
   )
+  assert.deepEqual(STAGING_WORKFLOW_PATHS, [FIXTURE_WORKFLOW_PATH])
 })
 
 test('requires complete candidate CI before a release write', async (t) => {
-  for (const conclusion of [
-    'failure',
-    'cancelled',
-    'skipped',
-    'neutral',
-    null,
-  ]) {
+  for (const conclusion of ['failure', 'cancelled', 'skipped', 'neutral']) {
     const workflows = validWorkflows()
     const ciPath = REQUIRED_CI_WORKFLOWS[0].path
     const { github: base } = evidenceGithub({
@@ -1823,7 +2351,6 @@ test('requires complete candidate CI before a release write', async (t) => {
             id: 500,
             path: ciPath,
             conclusion,
-            status: conclusion === null ? 'in_progress' : 'completed',
           }),
         ],
       },
@@ -1836,6 +2363,7 @@ test('requires complete candidate CI before a release write', async (t) => {
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
         getScanAdmission: fixtureScanAdmission,
         github,
         context: reviewContext('workflow_dispatch', {
@@ -1858,6 +2386,106 @@ test('requires complete candidate CI before a release write', async (t) => {
     )
     assert.equal(refs.current(), CURRENT_SHA)
   }
+})
+
+// An early wake finds a required workflow that is still executing, and no
+// amount of waiting inside that wake is guaranteed to conclude it. The
+// candidate stays eligible: the unresolved state is reported without a release
+// write, and the workflow that is still running wakes the controller again when
+// it completes.
+test('defers a candidate whose required workflow is still running', async () => {
+  const workflows = validWorkflows()
+  const runningRuns = Object.fromEntries(
+    workflows.map((workflow, index) => [
+      workflow.path,
+      [
+        workflowRun({
+          candidateSha: CANDIDATE_SHA,
+          conclusion: null,
+          id: 100 + index,
+          path: workflow.path,
+          status: 'in_progress',
+        }),
+      ],
+    ])
+  )
+  const { github: buildGithub } = evidenceGithub({
+    jobs: successfulJobs(workflows),
+    runs: runningRuns,
+    workflows,
+  })
+  const delays = []
+  const pending = await collectBuildEvidence({
+    candidateSha: CANDIDATE_SHA,
+    context: reviewContext(),
+    github: buildGithub,
+    maxAttempts: 3,
+    retryDelayMs: 5,
+    sleep: async (delay) => delays.push(delay),
+    sourceBranch: 'v3',
+    workflows,
+  })
+  assert.equal(pending.valid, false)
+  assert.equal(pending.pending, true)
+  assert.equal(pending.attempts.length, 3)
+  assert.deepEqual(delays, [5, 5])
+  assert.deepEqual(
+    pending.failures.map(({ status }) => status),
+    ['running']
+  )
+
+  const ciPath = REQUIRED_CI_WORKFLOWS[0].path
+  const { github: base } = evidenceGithub({
+    definitions: fixtureDefinitions(),
+    jobs: successfulJobs(workflows),
+    runs: {
+      ...evidenceRuns(workflows),
+      [ciPath]: [
+        workflowRun({
+          candidateSha: CANDIDATE_SHA,
+          conclusion: null,
+          id: 500,
+          path: ciPath,
+          status: 'in_progress',
+        }),
+      ],
+    },
+    workflows,
+  })
+  const refs = refGithub(CURRENT_SHA)
+  const github = { ...base, rest: { ...base.rest, git: refs.github.rest.git } }
+  const outputs = {}
+  const deferred = await runPromotion({
+    context: reviewContext('workflow_dispatch', {
+      sha: CANDIDATE_SHA,
+      dry_run: false,
+      confirm_ref_update: MANUAL_CONFIRMATION,
+      expected_release_sha: CURRENT_SHA,
+      expected_controller_sha: NEXT_SHA,
+    }),
+    controllerSha: NEXT_SHA,
+    core: {
+      info: () => {},
+      setOutput: (name, value) => {
+        outputs[name] = value
+      },
+    },
+    expectedWorkflows: FIXTURE_STAGING_WORKFLOWS,
+    getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
+    getCiEvidence: fixtureCiEvidence,
+    getRegistryDigest: async () => {
+      throw new Error('must not resolve images')
+    },
+    getScanAdmission: fixtureScanAdmission,
+    github,
+    maxAttempts: 2,
+    sleep: async () => {},
+    sourceBranch: 'v3',
+  })
+  assert.equal(deferred.decision, 'deferred')
+  assert.equal(outputs.decision, 'deferred')
+  assert.deepEqual(deferred.pending, [{ path: ciPath, status: 'running' }])
+  assert.equal(refs.current(), CURRENT_SHA)
 })
 
 test('filters run identities before choosing newest evidence and rejects duplicate jobs', async () => {
@@ -1922,6 +2550,7 @@ test('rejects manual apply when controller or release changed after dry run', as
     await assert.rejects(
       runPromotion({
         getCiEvidence: fixtureCiEvidence,
+        getCandidateTargetIds: async () => FIXTURE_TARGET_IDS,
         getScanAdmission: fixtureScanAdmission,
         ...args,
         context: reviewContext('workflow_dispatch', {
@@ -2050,4 +2679,78 @@ test('default CI evidence reader decodes bounded archives and rejects ambiguous 
   artifacts.pop()
   artifacts[0].size_in_bytes = 1048577
   await assert.rejects(readCiEvidence(args), /ambiguous/)
+})
+
+// The Sonar job delegates to the reusable analysis workflow, so GitHub reports
+// the caller and callee names joined by " / ". Both names of the delegation are
+// still reported as separate jobs, and only the trusted one proves the
+// analysis. The old exact-name check read this expansion as a missing job and
+// blocked every promotion from the selected staging source branch.
+test('a required job that delegates to a reusable workflow is proved by its reported name', async () => {
+  const workflow = REQUIRED_CI_WORKFLOWS.find((w) =>
+    w.path.endsWith('/v3_sonarcloud.yml')
+  )
+  assert.ok(workflow, 'the Sonar workflow is a required CI workflow')
+  const runId = 500 + REQUIRED_CI_WORKFLOWS.indexOf(workflow)
+  const reported = (name, extra = {}) => ({
+    conclusion: 'success',
+    head_sha: CANDIDATE_SHA,
+    id: 9000 + name.length,
+    name,
+    status: 'completed',
+    ...extra,
+  })
+
+  const delegated = [reported('Classify'), reported('SonarCloud / SonarCloud')]
+  const { github } = evidenceGithub({
+    workflows: validWorkflows(),
+    jobs: { [runId]: delegated },
+  })
+  const accepted = await collectBuildEvidence({
+    github,
+    context: reviewContext(),
+    workflows: [workflow],
+    candidateSha: CANDIDATE_SHA,
+    sourceBranch: 'v3',
+    maxAttempts: 1,
+  })
+  assert.equal(accepted.valid, true, accepted.reason)
+  assert.ok(
+    accepted.workflows[0].observedJobs.some(
+      (job) => job.name === 'SonarCloud / SonarCloud'
+    )
+  )
+
+  // Fail-closed stays intact: an unrelated name is not the trusted job, and two
+  // reported names for one required identifier are still ambiguous.
+  for (const [label, jobs, reason] of [
+    [
+      'an unrelated job name',
+      [reported('Classify'), reported('SonarCloud Analysis')],
+      /SonarCloud is missing/,
+    ],
+    [
+      'the delegation reported twice',
+      [
+        reported('SonarCloud / SonarCloud'),
+        reported('SonarCloud / Other', { id: 9100 }),
+      ],
+      /SonarCloud is ambiguous/,
+    ],
+  ]) {
+    const { github: failing } = evidenceGithub({
+      workflows: validWorkflows(),
+      jobs: { [runId]: jobs },
+    })
+    const rejected = await collectBuildEvidence({
+      github: failing,
+      context: reviewContext(),
+      workflows: [workflow],
+      candidateSha: CANDIDATE_SHA,
+      sourceBranch: 'v3',
+      maxAttempts: 1,
+    })
+    assert.equal(rejected.valid, false, label)
+    assert.match(rejected.reason, reason, label)
+  }
 })

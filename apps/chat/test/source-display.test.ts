@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
+import { extractCitedPages } from '../src/lib/markdown/remarkCitationMarkers'
 import {
+  formatCitedPageRanges,
   formatTimestamp,
   getDisplayUrl,
   getSourcePageRange,
@@ -187,21 +189,23 @@ describe('getSourceSecondaryLine', () => {
     ).toBe('p. 12')
   })
 
-  test('documents show a publisher-labelled page range', () => {
+  // The retrieved envelope is a spread, not a location: printing it would put
+  // "S. 2–127" on the card of a one-question answer about a 127-page script.
+  test('documents never show a publisher-labelled retrieval span', () => {
     expect(
       getSourceSecondaryLine(
         source({
-          page: 6,
-          pageEnd: 89,
-          labeledPage: '6',
-          labeledPageEnd: '89',
+          page: 2,
+          pageEnd: 127,
+          labeledPage: '2',
+          labeledPageEnd: '127',
         }),
         t
       )
-    ).toBe('p. 6–89')
+    ).toBeNull()
   })
 
-  test('documents fall back to the physical range without any label', () => {
+  test('documents fall back to the url instead of the physical span', () => {
     expect(
       getSourceSecondaryLine(
         source({
@@ -211,10 +215,10 @@ describe('getSourceSecondaryLine', () => {
         }),
         t
       )
-    ).toBe('p. 6–89')
+    ).toBe('example.com/lecture-01.pdf')
   })
 
-  test('images can carry a page range as well', () => {
+  test('images keep their type label instead of the retrieval span', () => {
     expect(
       getSourceSecondaryLine(
         source({
@@ -226,7 +230,7 @@ describe('getSourceSecondaryLine', () => {
         }),
         t
       )
-    ).toBe('Image · p. 6–8')
+    ).toBe('Image')
   })
 
   test('documents without a page fall back to the url', () => {
@@ -276,19 +280,110 @@ describe('getSourceSecondaryLine', () => {
   test('is null when nothing is known', () => {
     expect(getSourceSecondaryLine(source(), t)).toBeNull()
   })
+
+  // The answer knows which pages it used; retrieval only knows which chunks
+  // came back, so a cited range wins over the retrieved envelope.
+  test('a cited range wins over the retrieved envelope', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 2,
+          pageEnd: 95,
+          labeledPage: '2',
+          labeledPageEnd: '95',
+        }),
+        t,
+        '6–7'
+      )
+    ).toBe('p. 6–7')
+  })
+
+  test('renders the smallest set of cited ranges', () => {
+    expect(
+      getSourceSecondaryLine(source({ page: 2, pageEnd: 95 }), t, '6–7, 12')
+    ).toBe('p. 6–7, 12')
+  })
+
+  test('shows no page when the answer cites none and retrieval spread', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 2,
+          pageEnd: 95,
+          labeledPage: '2',
+          labeledPageEnd: '95',
+        }),
+        t
+      )
+    ).toBeNull()
+  })
+
+  // Retrieval that returned exactly one page does name a location, so the line
+  // survives even when the answer itself carries no page detail.
+  test('keeps a single retrieved label when the answer cites no page', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({ page: 2, pageEnd: 2, labeledPage: '2' }),
+        t
+      )
+    ).toBe('p. 2')
+  })
+
+  test('a cited range also applies to media sources', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({ type: 'image', page: 2, pageEnd: 95 }),
+        t,
+        '6–7'
+      )
+    ).toBe('Image · p. 6–7')
+  })
+
+  // The seam a participant sees: the model's page detail in the answer decides
+  // the page line on the card, so a cited card never claims the span of every
+  // chunk retrieval happened to return.
+  test("the answer's page detail reaches the card line", () => {
+    const cited = extractCitedPages('Wie in [1, S. 6–7] beschrieben [2].')
+    expect(
+      getSourceSecondaryLine(
+        source({
+          page: 2,
+          pageEnd: 95,
+          labeledPage: '2',
+          labeledPageEnd: '95',
+        }),
+        t,
+        formatCitedPageRanges(cited.get(1) ?? [])
+      )
+    ).toBe('p. 6–7')
+  })
+})
+
+describe('formatCitedPageRanges', () => {
+  test('merges only consecutive pages into ranges', () => {
+    expect(formatCitedPageRanges([2, 3, 7])).toBe('2–3, 7')
+    expect(formatCitedPageRanges([12])).toBe('12')
+    expect(formatCitedPageRanges([5, 4, 3])).toBe('3–5')
+    expect(formatCitedPageRanges([1, 3, 5])).toBe('1, 3, 5')
+  })
+
+  test('ignores duplicates, non-integers and empty input', () => {
+    expect(formatCitedPageRanges([7, 7, Number.NaN])).toBe('7')
+    expect(formatCitedPageRanges([])).toBeUndefined()
+  })
 })
 
 describe('getSourcePageRange', () => {
-  test('prefers the labelled range over the physical envelope', () => {
+  test('drops a labelled span', () => {
     expect(
       getSourcePageRange(
         source({ page: 6, pageEnd: 89, labeledPage: '8', labeledPageEnd: '18' })
       )
-    ).toBe('8–18')
+    ).toBeUndefined()
   })
 
-  test('uses the physical envelope when no label exists', () => {
-    expect(getSourcePageRange(source({ page: 6, pageEnd: 89 }))).toBe('6–89')
+  test('drops the physical envelope', () => {
+    expect(getSourcePageRange(source({ page: 6, pageEnd: 89 }))).toBeUndefined()
   })
 
   test('keeps a single label single', () => {

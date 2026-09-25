@@ -15,6 +15,17 @@ concurrency:
 
 permissions:
   contents: read
+  # The selector reads this workflow's prior required-status result for the head
+  # to decide whether a metadata-only edit may skip the suite.
+  checks: read
+
+env:
+  # The codebase check publishes the same build outputs for the same commit, so
+  # restoring them here replaces a local rebuild with a cache download. Remote-
+  # only keeps the decision independent of an empty runner-local cache.
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  TURBO_REMOTE_ONLY: true
 
 jobs:
   filter:
@@ -28,7 +39,8 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/frontend-pwa/|apps/chat/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          pattern: '^(apps/auth/|apps/frontend-pwa/|apps/chat/|packages/feature-flags/|packages/grading/|packages/graphql/|packages/i18n/|packages/knowledge-graph/|packages/markdown/|packages/next-config/|packages/prisma/|packages/shared-components/|packages/types/|packages/util/|\.devcontainer/disposable-test-init\.sql$|\.github/scripts/provision-disposable-postgres\.sh$|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|turbo\.json$|tsconfig\.json$|\.github/workflows/test-unit\.yml$|\.github/scripts/ci-equivalent-run\.cjs$|\.github/actions/setup-node-pnpm/|\.github/actions/changed-paths/|\.github/scripts/required-ci-status\.cjs$)'
+          prior-check-name: test-unit-status
 
   test-unit:
     needs: filter
@@ -132,6 +144,23 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/frontend-pwa test:run
 
+      - name: Test auth unit and handler integration suites
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/auth test:run --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
+
+      - name: Build auth for production HTTP integration tests
+        id: build_auth
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm exec turbo run build --filter=@klicker-uzh/auth... --concurrency=4
+        env:
+          APP_SECRET: synthetic-auth-built-test-secret
+          APP_ORIGIN_AUTH: https://auth.example.test
+          NEXTAUTH_URL: https://auth.example.test
+
+      - name: Test built auth under HTTP and HTTPS deployment policies
+        if: ${{ !cancelled() && steps.build_auth.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/auth test:built
+
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/grading test --coverage --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
@@ -213,3 +242,29 @@ jobs:
           path: required-ci-evidence.json
           if-no-files-found: error
           retention-days: 7
+
+  # The pull-request analysis is owned by the producer that finishes last. This
+  # job starts once the suite above completed, so it either imports the coverage
+  # of every producer and analyzes, or defers to the other producer's job. No
+  # runner waits for a queued test run, and one analysis is published per pull
+  # request, head, and base.
+  #
+  # The decision reads the live pull-request state, so this job is deliberately
+  # not gated on the payload's draft flag: a pull request that became ready while
+  # the suite ran still receives its analysis. A fork pull request cannot be
+  # analyzed here because its runs receive no secrets, and Dependabot pull
+  # requests deliberately receive neither; the ready boundary in
+  # v3_sonarcloud.yml keeps the named fail-closed result for both.
+  sonarcloud:
+    name: SonarCloud
+    needs: [filter, test-unit]
+    if: >-
+      always() && !cancelled() &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/sonar-analysis.yml
+    secrets: inherit

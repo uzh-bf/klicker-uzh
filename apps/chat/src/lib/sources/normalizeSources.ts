@@ -31,6 +31,8 @@ export interface ChatSourcePart {
   toolName?: string
   result?: unknown
   isError?: boolean
+  /** Assistant text parts carry the answer Markdown, cited pages included. */
+  text?: string
 }
 
 interface SourceCandidate {

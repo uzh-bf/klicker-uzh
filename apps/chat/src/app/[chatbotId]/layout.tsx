@@ -1,6 +1,9 @@
 import { cookies, headers } from 'next/headers'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { Assistant } from '../../components/assistant'
+import { ChatRecoveryCard } from '../../components/chat-recovery-card'
 import {
   CHAT_SCOPED_TOKEN_HEADER,
   PWA_CHAT_EMBED_SESSION_COOKIE,
@@ -17,6 +20,36 @@ interface ChatLayoutProps {
   params: Promise<{ chatbotId: string }>
 }
 
+// An authorization failure on an existing chatbot renders an explicit
+// unavailable card instead of the not-found page: the bot exists, this session
+// just cannot use it, and that difference must stay visible for diagnosis.
+// Unresolvable sessions and missing, malformed or unpublished bots keep the
+// not-found response.
+async function renderAccessDenied() {
+  const t = await getTranslations()
+  const pwaBaseUrl = process.env.NEXT_PUBLIC_PWA_URL
+    ? process.env.NEXT_PUBLIC_PWA_URL.replace(/\/$/, '')
+    : 'https://pwa.klicker.uzh.ch'
+
+  return (
+    <ChatRecoveryCard
+      dataCy="chat-access-denied"
+      logoAlt={t('chat.sidebar.logoAlt')}
+      title={t('chat.recovery.accessDeniedTitle')}
+      message={t('chat.recovery.accessDeniedMessage')}
+    >
+      <Link
+        data-cy="chat-access-denied-home"
+        href={pwaBaseUrl}
+        className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        prefetch={false}
+      >
+        {t('chat.recovery.openKlickerUzh')}
+      </Link>
+    </ChatRecoveryCard>
+  )
+}
+
 export default async function ChatLayout({
   children,
   params,
@@ -24,22 +57,34 @@ export default async function ChatLayout({
   const { chatbotId } = await params
 
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()])
-  const identityResult = await resolveParticipantIdentity({
-    participantToken: cookieStore.get('participant_token')?.value,
-    chatGuestToken: cookieStore.get('chat_participant_token')?.value,
-    pwaEmbedToken: cookieStore.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
-    // Cookie-less transports (blocked third-party cookies) arrive in the
-    // reserved header the proxy sets. The value is re-verified here by
-    // signature, scope and chatbot/course binding before it can authorize.
-    scopedFallbackToken: headerStore.get(CHAT_SCOPED_TOKEN_HEADER) ?? undefined,
-  })
+  const identityResult = await resolveParticipantIdentity(
+    {
+      participantToken: cookieStore.get('participant_token')?.value,
+      chatGuestToken: cookieStore.get('chat_participant_token')?.value,
+      pwaEmbedToken: cookieStore.get(PWA_CHAT_EMBED_SESSION_COOKIE)?.value,
+      // Cookie-less transports (blocked third-party cookies) arrive in the
+      // reserved header the proxy sets. The value is re-verified here by
+      // signature, scope and chatbot/course binding before it can authorize.
+      scopedFallbackToken:
+        headerStore.get(CHAT_SCOPED_TOKEN_HEADER) ?? undefined,
+    },
+    {
+      targetChatbotId: chatbotId,
+    }
+  )
   if ('response' in identityResult) notFound()
 
   const authorizationResult = await authorizeIdentityForChatbot(
     identityResult,
     chatbotId
   )
-  if ('response' in authorizationResult) notFound()
+  if ('response' in authorizationResult) {
+    // The shared guard reports a missing, malformed or unpublished chatbot as
+    // a 404-shaped failure; only other statuses mean access was denied to a
+    // bot that exists.
+    if (authorizationResult.response.status === 404) notFound()
+    return renderAccessDenied()
+  }
 
   const chatbotResult = await getChatbotOr404(chatbotId, {
     id: true,
