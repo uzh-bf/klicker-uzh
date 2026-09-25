@@ -1,0 +1,47 @@
+{
+  "mode": "documents",
+  "summary": {
+    "sources_returned": 1,
+    "chunks_returned": 1
+  },
+  "sources": [
+    {
+      "reference": "https://synthetic.invalid/learning-cycle.pdf",
+      "reference_type": "url",
+      "source_type": "pdf",
+      "expert_id": "unknown",
+      "chunks": [
+        {
+          "chunk_id": "239ce89dedc58c035c59184cf333c622a7de228317fc95791a94f1597256a668",
+          "content": "## Learning through a simple cycle A fictional mini-lesson for testing retrieval of uploaded course materials. This document makes no claim about teaching effectiveness. ## Text retrieval control The text control marker is KLICKER-PDF-TEXT-731. The learning-cycle diagram is on physical page 2. Use Figure 1 when explaining the relationship between its three stages. ## Questions to ask the chatbot 1. Which page contains the learning-cycle diagram? 2. Show Figure 1 and explain its three stages. 3. What color is the return arrow, and where does it point? 4. Read the visual-only marker printed inside the diagram. The visual-only marker and arrow details are embedded in an image. They are deliberately absent from this PDF's selectable text layer. ## Figure 1: Learning cycle Follow the diagram from left to right, then examine the return arrow. Orange return a arrow: try the cycle again VISUAL-ONLY MARKER: ORANGE-OTTER-731 Figure 1. Original synthetic diagram for the course-material retrieval test. ![Image 1](synthetic-course-diagram_images/page-002-image-001.png) Figure 1 - A fictional t three-stage learning Cycle PRACTISE EXPLORE REFLECT Read one worked example Solve one new problem Explain the correction Orange return a arrow: try the cycle again VISUAL-ONLY MARKER: ORANGE-OTTER-731 The diagram, its labels, and its marker are one embedded raster image.",
+          "page_number": 1,
+          "labeled_page_number": "1",
+          "page_start": 1,
+          "page_end": 2,
+          "visual_assets": {
+            "source_content_hash": "8b8923b1867d9a764f8e4e3c09b8cef416403f32616ffe8c0f5001ae032ce83e",
+            "extraction_options_hash": "e4ed649c96e3d48cac0c9257a13571ce0ba4b677afb0c0050a24702336d458bb",
+            "assets": [
+              {
+                "asset_id": "828f827e5b63ea4b7b6eb01244e96ed6024698331f663b9763d15a832c4132c5",
+                "image_sha256": "dfa7d8bb05115b375a53d8bcb91e1229f97b1040dbce421775908d622bea619b",
+                "physical_page_number": 2,
+                "width_px": 1025,
+                "height_px": 608,
+                "mime_type": "image/png",
+                "kind": "figure"
+              }
+            ],
+            "manifest_sha256": "9629910654864852335118d0742a657536905950ba543b31bf56c708fc3a12e7",
+            "version": 1,
+            "kb_id": "35a72f62-a714-45f1-8b18-2cf5681b0c75",
+            "external_resource_id": "22222222-2222-4222-8222-222222222222",
+            "resource_version": 1
+          }
+        }
+      ],
+      "source_url": "https://synthetic.invalid/learning-cycle.pdf",
+      "title": "Synthetic learning cycle"
+    }
+  ]
+}

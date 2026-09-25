@@ -372,6 +372,9 @@ importers:
 
   apps/chat:
     dependencies:
+      '@azure/storage-blob':
+        specifier: 12.25.0
+        version: 12.25.0
       '@ai-sdk/mcp':
         specifier: 2.0.25
         version: 2.0.25(zod@3.25.76)
