@@ -150,6 +150,18 @@ describe('course image selection', () => {
       expect(parsed[0]?.description).toBeUndefined()
     }
   })
+  it('omits malformed optional captions without dropping the asset', () => {
+    for (const captions of [
+      [{ ref: 'not-a-pointer', text: 'Malformed reference' }],
+      [{ ref: '#/texts/12', text: '' }],
+    ]) {
+      const malformed = structuredClone(fixture)
+      malformed.sources[0].chunks[0].visual_assets.assets[0].captions = captions
+      const parsed = courseImageCandidates(malformed)
+      expect(parsed).toHaveLength(1)
+      expect(parsed[0]?.captions).toBeUndefined()
+    }
+  })
   it('rejects failed, unbound and out-of-range evidence', () => {
     expect(
       courseImageCandidates({

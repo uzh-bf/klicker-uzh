@@ -44,7 +44,11 @@ const courseImageWireSchema = z.object({
   height_px: z.number().int().positive().max(20000),
   mime_type: z.literal('image/png'),
   kind: z.literal('figure'),
-  captions: z.array(courseImageCaptionSchema).max(16).optional(),
+  captions: z
+    .array(courseImageCaptionSchema)
+    .max(16)
+    .optional()
+    .catch(undefined),
   description: z.unknown().optional(),
   source_content_hash: digest,
   extraction_options_hash: digest,
