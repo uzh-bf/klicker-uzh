@@ -4,11 +4,19 @@ import {
   type Prisma,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { decodeJWT } from '@klicker-uzh/util'
+import {
+  decodeJWT,
+  isParticipantDataUseComplete,
+  participantAccountDataUseSelect,
+} from '@klicker-uzh/util'
 import { extractBearerToken } from '@klicker-uzh/util/auth'
 import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  type ChatDataUseState,
+  PARTICIPANT_DATA_USE_COMPLETION_REQUIRED,
+} from '@/src/lib/dataUse'
 import {
   PWA_CHAT_EMBED_SESSION_COOKIE,
   PWA_CHAT_EMBED_SESSION_SCOPE,
@@ -20,7 +28,63 @@ import {
 } from '@/src/lib/server/ltiGuest'
 import { verifyPwaEmbedSessionToken } from '@/src/lib/server/pwaEmbed'
 
-export type { AuthMode }
+export type { AuthMode, ChatDataUseState }
+/**
+ * Error code shared with the response API and the PWA: the account has not
+ * acknowledged the current data-use disclosure, so attributed data must not be
+ * collected for it yet.
+ */
+export { PARTICIPANT_DATA_USE_COMPLETION_REQUIRED }
+
+/**
+ * Read the participant's stored data-use decisions. Guests whose chat persona
+ * is a persisted participant account reach the same row as registered
+ * participants, which is why the chat onboarding has to cover both.
+ */
+export async function loadChatDataUseState(
+  participantId: string
+): Promise<ChatDataUseState | null> {
+  const participant = await prisma.participant.findUnique({
+    where: { id: participantId },
+    select: {
+      ...participantAccountDataUseSelect,
+      researchConsent: true,
+      learningAnalyticsConsent: true,
+      dataUseRevision: true,
+    },
+  })
+  if (!participant) return null
+
+  return {
+    complete: isParticipantDataUseComplete(participant),
+    dataUseRevision: participant.dataUseRevision,
+    researchConsent: participant.researchConsent,
+    researchChoiceRecorded: participant.researchConsentChoiceAt !== null,
+    learningAnalyticsConsent: participant.learningAnalyticsConsent,
+    learningAnalyticsChoiceRecorded:
+      participant.learningAnalyticsChoiceAt !== null,
+  }
+}
+
+/**
+ * Account-completion gate for every attributed chat route. A chatbot answers
+ * on behalf of the participant and stores the exchange on their account, so the
+ * acknowledgement and both purpose choices have to exist before the first turn
+ * is accepted.
+ */
+export async function requireCompletedDataUse(
+  participantId: string
+): Promise<{ ok: true } | { response: NextResponse }> {
+  const state = await loadChatDataUseState(participantId)
+  if (state?.complete) return { ok: true }
+
+  return {
+    response: NextResponse.json(
+      { error: PARTICIPANT_DATA_USE_COMPLETION_REQUIRED },
+      { status: 403 }
+    ),
+  }
+}
 
 export interface ParticipantIdentity {
   participantId: string
@@ -410,7 +474,8 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
 
 export async function withChatbotAuth(
   req: NextRequest,
-  chatbotId: string
+  chatbotId: string,
+  options?: ChatAuthorizationOptions
 ): Promise<
   | {
       participantId: string
@@ -427,7 +492,16 @@ export async function withChatbotAuth(
     return participantResult
   }
 
-  return authorizeIdentityForChatbot(participantResult, chatbotId)
+  return authorizeIdentityForChatbot(participantResult, chatbotId, options)
+}
+
+export interface ChatAuthorizationOptions {
+  /**
+   * The completion screen and its own API have to stay reachable while the
+   * account is still incomplete, otherwise the participant could never supply
+   * the missing acknowledgement.
+   */
+  allowIncompleteDataUse?: boolean
 }
 
 /**
@@ -435,10 +509,15 @@ export async function withChatbotAuth(
  * existence, scoped-token binding to this exact chatbot and course, and course
  * participation. Both the API routes and the page render call this, so every
  * transport reaches the same decision.
+ *
+ * Every attributed route additionally requires a completed data-use
+ * disclosure, because the chatbot stores the exchange on the participant's
+ * account and answers on their behalf.
  */
 export async function authorizeIdentityForChatbot(
   participantResult: ParticipantIdentity,
-  chatbotId: string
+  chatbotId: string,
+  options?: ChatAuthorizationOptions
 ): Promise<
   | {
       participantId: string
@@ -479,6 +558,13 @@ export async function authorizeIdentityForChatbot(
   )
   if ('response' in participationResult) {
     return participationResult
+  }
+
+  if (!options?.allowIncompleteDataUse) {
+    const dataUseResult = await requireCompletedDataUse(participantId)
+    if ('response' in dataUseResult) {
+      return dataUseResult
+    }
   }
 
   return {

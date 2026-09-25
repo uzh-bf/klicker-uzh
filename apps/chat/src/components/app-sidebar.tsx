@@ -19,6 +19,7 @@ import type * as React from 'react'
 import { useChatStore } from '@/src/stores/chatStore'
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import { CreditsFooter } from './credits-footer'
+import { ParticipantDataUseSettings } from './participant-data-use'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -105,6 +106,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarRail aria-label={t('chat.sidebar.toggleSidebar')} />
       <SidebarFooter className="p-0">
+        <ParticipantDataUseSettings chatbotId={chatbotId} />
         <SettingsPanel />
         <CreditsFooter />
         <SidebarMenu>

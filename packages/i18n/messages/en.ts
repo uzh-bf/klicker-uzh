@@ -30,6 +30,18 @@ export default {
       quizzerDescription:
         'Practise with exam-style course questions, one at a time, with formative feedback.',
     },
+    dataUse: {
+      accountTitle: 'Data use for your account',
+      guestTitle: 'Guest account and data use',
+      accountIntro:
+        'The chatbot answers on your behalf and stores the conversation on your KlickerUZH account. The [privacy policy](https://www.klicker.uzh.ch/privacy_policy) describes what is stored. Below you confirm the two optional purposes; you can change both later in the chat settings.',
+      guestIntro:
+        'Chatting without signing in creates a guest KlickerUZH account. It holds no personal information and no password, but the conversation, your choices, and the related usage data are stored on it. The [privacy policy](https://www.klicker.uzh.ch/privacy_policy) describes what is stored. Below you record the same two optional purposes, which you can change later in the chat settings.',
+      settingsTitle: 'Data use',
+      settingsIntro:
+        'Change the optional purposes for your KlickerUZH account. Research and Learning Analytics are voluntary, and an objection applies to their future use.',
+      settingsLoading: 'Loading your data use settings…',
+    },
     settingsPanel: {
       title: 'Settings',
       aiModelLabel: 'AI Model',

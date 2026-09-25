@@ -11,6 +11,7 @@ import {
 import {
   authorizeIdentityForChatbot,
   getChatbotOr404,
+  loadChatDataUseState,
   resolveParticipantIdentity,
 } from '../../lib/server/apiGuards'
 import { resolveEffectiveChatModeOptions } from '../../lib/server/effectiveChatModes'
@@ -76,7 +77,11 @@ export default async function ChatLayout({
 
   const authorizationResult = await authorizeIdentityForChatbot(
     identityResult,
-    chatbotId
+    chatbotId,
+    // The layout has to stay reachable for an incomplete account: rendering
+    // the completion step is the only way the participant can supply it. The
+    // attributed routes enforce the completed state themselves.
+    { allowIncompleteDataUse: true }
   )
   if ('response' in authorizationResult) {
     // The shared guard reports a missing, malformed or unpublished chatbot as
@@ -107,6 +112,11 @@ export default async function ChatLayout({
   if ('response' in chatbotResult) notFound()
   const { chatbot } = chatbotResult
 
+  const dataUseState = await loadChatDataUseState(
+    authorizationResult.participantId
+  )
+  if (!dataUseState) notFound()
+
   const initialModeOptions = resolveEffectiveChatModeOptions(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations,
@@ -123,6 +133,8 @@ export default async function ChatLayout({
         }}
         initialModeOptions={initialModeOptions}
         knowledgeGraphVisible={chatbot.knowledgeGraphVisible}
+        dataUseState={dataUseState}
+        isGuest={authorizationResult.authMode === 'anonymous'}
       />
       {children}
     </>

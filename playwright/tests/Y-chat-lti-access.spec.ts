@@ -55,9 +55,19 @@ async function chatCookie(page: Page, name: string) {
 async function expectChatbotReached(page: Page) {
   await expect(page).toHaveURL(new RegExp(CHATBOT_ID), { timeout: 20_000 })
 
+  const dataUseSubmit = page.getByTestId('chat-data-use-submit')
   const accept = page.getByTestId('chat-disclaimer-accept')
   const composer = page.getByTestId('chat-composer')
   await expect(async () => {
+    // Chat answers on behalf of a persisted participant account, so an
+    // identity without a recorded disclosure meets the data-use notice before
+    // the chatbot disclaimer. Every guest persona and every synthetic account
+    // this spec creates starts in that state.
+    if (await dataUseSubmit.isVisible()) {
+      await page.getByTestId('chat-data-use-analytics-false').click()
+      await page.getByTestId('chat-data-use-acknowledged').click()
+      await dataUseSubmit.click()
+    }
     if (await accept.isVisible()) await accept.click()
     await expect(composer).toBeVisible({ timeout: 5_000 })
   }).toPass({ timeout: 30_000 })
