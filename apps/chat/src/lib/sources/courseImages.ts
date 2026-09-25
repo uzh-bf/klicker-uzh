@@ -14,7 +14,28 @@ const courseImageCaptionSchema = z.object({
     .max(512),
   text: z.string().min(1).max(2000),
 })
-export const courseImageSchema = z.object({
+const boundedCleanString = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .refine(
+      (value) => value === value.trim() && !value.includes('\0'),
+      'expected trimmed text without NUL'
+    )
+const courseImageDescriptionSchema = z.object({
+  version: z.literal(1),
+  text: boundedCleanString(4000),
+  provenance: z.object({
+    kind: z.literal('generated'),
+    provider: boundedCleanString(200),
+    model: boundedCleanString(200),
+    prompt_version: z.number().int().positive(),
+    image_sha256: digest,
+    asset_image_sha256: digest,
+  }),
+})
+const courseImageWireSchema = z.object({
   asset_id: digest,
   image_sha256: digest,
   physical_page_number: z.number().int().positive(),
@@ -28,6 +49,7 @@ export const courseImageSchema = z.object({
     .max(16)
     .optional()
     .catch(undefined),
+  description: z.unknown().optional(),
   source_content_hash: digest,
   extraction_options_hash: digest,
   manifest_sha256: digest,
@@ -35,6 +57,19 @@ export const courseImageSchema = z.object({
   external_resource_id: z.string().uuid(),
   resource_version: z.number().int().positive(),
   title: z.string().min(1).max(300),
+})
+export const courseImageSchema = courseImageWireSchema.transform((image) => {
+  const parsedDescription = courseImageDescriptionSchema.safeParse(
+    image.description
+  )
+  const { description: _description, ...base } = image
+  return {
+    ...base,
+    ...(parsedDescription.success &&
+    parsedDescription.data.provenance.asset_image_sha256 === image.image_sha256
+      ? { description: parsedDescription.data }
+      : {}),
+  }
 })
 export type CourseImage = z.infer<typeof courseImageSchema>
 
