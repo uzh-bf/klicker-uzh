@@ -1,4 +1,4 @@
-import { cp, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { type ToolSet, tool } from 'ai'
@@ -110,6 +110,18 @@ describe('course image selection', () => {
     const legacy = structuredClone(fixture)
     delete legacy.sources[0].chunks[0].visual_assets.assets[0].captions
     expect(courseImageCandidates(legacy)[0]?.captions).toBeUndefined()
+  })
+  it('omits malformed optional captions without dropping the asset', () => {
+    for (const captions of [
+      [{ ref: 'not-a-pointer', text: 'Malformed reference' }],
+      [{ ref: '#/texts/12', text: '' }],
+    ]) {
+      const malformed = structuredClone(fixture)
+      malformed.sources[0].chunks[0].visual_assets.assets[0].captions = captions
+      const parsed = courseImageCandidates(malformed)
+      expect(parsed).toHaveLength(1)
+      expect(parsed[0]?.captions).toBeUndefined()
+    }
   })
   it('rejects failed, unbound and out-of-range evidence', () => {
     expect(

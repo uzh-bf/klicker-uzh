@@ -23,7 +23,11 @@ export const courseImageSchema = z.object({
   height_px: z.number().int().positive().max(20000),
   mime_type: z.literal('image/png'),
   kind: z.literal('figure'),
-  captions: z.array(courseImageCaptionSchema).max(16).optional(),
+  captions: z
+    .array(courseImageCaptionSchema)
+    .max(16)
+    .optional()
+    .catch(undefined),
   source_content_hash: digest,
   extraction_options_hash: digest,
   manifest_sha256: digest,
