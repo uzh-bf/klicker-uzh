@@ -17,6 +17,7 @@ import {
   buildKBIngestionSource,
   createKBIngestionApiClient,
   getKBIngestionProjectId,
+  getKBIngestionTimeoutSeconds,
   getKBSourceGatewayOrigin,
   type KBIngestionApiClient,
   type KBIngestionSource,
@@ -26,6 +27,9 @@ import {
 const KB_INGESTION_POLL_CONCURRENCY = 8
 const KB_INGESTION_POLL_LIMIT = 32
 const KB_INGESTION_CALLBACK_GRACE_MS = 5 * 60_000
+const KB_INGESTION_TIMEOUT_ERROR_CODE = 'KB_INGESTION_TIMEOUT'
+const KB_INGESTION_TIMEOUT_MESSAGE =
+  'The ingestion operation did not finish in time.'
 
 export type KBIngestionLogger = {
   info?: (
@@ -720,11 +724,80 @@ function mapOperationStatus(
   }
 }
 
+// A signed callback or the ingestion service's own reclaim settles an
+// operation normally. This is the product-side fallback for an operation the
+// provider never reports as terminal: the resource is shown as failed instead
+// of staying in "Processing" forever. The correlation guards match the
+// reconciliation update, so the first writer wins and a late callback cannot
+// produce a second terminal state.
+async function failTimedOutIngestion({
+  resource,
+  prisma,
+  now,
+}: {
+  resource: {
+    id: string
+    ingestionAttemptId: string
+    resourceVersion: number
+    contentSha256: string | null
+    externalOperationId: string
+    ingestionOperation: KBIngestionOperation
+  }
+  prisma: KBIngestionPrisma
+  now: Date
+}): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const resourceUpdate = await tx.kBResource.updateMany({
+      where: {
+        id: resource.id,
+        ingestionAttemptId: resource.ingestionAttemptId,
+        resourceVersion: resource.resourceVersion,
+        contentSha256: resource.contentSha256,
+        externalOperationId: resource.externalOperationId,
+        ingestionOperation: resource.ingestionOperation,
+        status: {
+          in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBResourceStatus.FAILED,
+        statusMessage: KB_INGESTION_TIMEOUT_MESSAGE,
+        errorCode: KB_INGESTION_TIMEOUT_ERROR_CODE,
+      },
+    })
+    if (resourceUpdate.count !== 1) {
+      return
+    }
+    const runUpdate = await tx.kBIngestionRun.updateMany({
+      where: {
+        id: resource.ingestionAttemptId,
+        resourceId: resource.id,
+        operation: resource.ingestionOperation,
+        resourceVersion: resource.resourceVersion,
+        status: {
+          in: [KBIngestionStatus.QUEUED, KBIngestionStatus.PROCESSING],
+        },
+      },
+      data: {
+        status: KBIngestionStatus.FAILED,
+        statusMessage: KB_INGESTION_TIMEOUT_MESSAGE,
+        errorCode: KB_INGESTION_TIMEOUT_ERROR_CODE,
+        finishedAt: now,
+      },
+    })
+    if (runUpdate.count !== 1) {
+      throw new Error('KB ingestion operation state could not be correlated')
+    }
+  })
+}
+
 async function reconcileResource({
   resource,
   client,
   prisma,
   env,
+  now,
+  timeoutMilliseconds,
   logger,
 }: {
   resource: {
@@ -734,14 +807,22 @@ async function reconcileResource({
     resourceVersion: number
     contentSha256: string | null
     externalOperationId: string | null
+    externalOperationStartedAt: Date | null
     ingestionOperation: KBIngestionOperation
   }
   client: KBIngestionApiClient
   prisma: KBIngestionPrisma
   env: NodeJS.ProcessEnv
+  now: Date
+  timeoutMilliseconds: number
   logger?: KBIngestionLogger
 }) {
-  const { ingestionAttemptId, contentSha256, externalOperationId } = resource
+  const {
+    ingestionAttemptId,
+    contentSha256,
+    externalOperationId,
+    externalOperationStartedAt,
+  } = resource
   const ingestionOperation =
     resource.ingestionOperation ?? KBIngestionOperation.UPSERT
   if (
@@ -789,6 +870,37 @@ async function reconcileResource({
       await logErrorBestEffort(
         logger,
         'KB ingestion observed digest correlation failed',
+        identifiers
+      )
+      return
+    }
+
+    // Only the two non-terminal provider states can time out. A succeeded
+    // replacement whose serving cutover is still pending is deliberately left
+    // to the next reconciliation.
+    if (
+      (operation.status === 'accepted' || operation.status === 'running') &&
+      externalOperationStartedAt !== null &&
+      now.getTime() - externalOperationStartedAt.getTime() > timeoutMilliseconds
+    ) {
+      await failTimedOutIngestion({
+        resource: {
+          id: resource.id,
+          ingestionAttemptId,
+          resourceVersion: resource.resourceVersion,
+          contentSha256:
+            ingestionOperation === KBIngestionOperation.DELETE
+              ? null
+              : contentSha256,
+          externalOperationId,
+          ingestionOperation,
+        },
+        prisma,
+        now,
+      })
+      await logInfoBestEffort(
+        logger,
+        'KB ingestion operation timed out',
         identifiers
       )
       return
@@ -891,6 +1003,7 @@ export async function monitorActiveKBIngestions(
 ): Promise<void> {
   const env = dependencies.env ?? process.env
   const now = dependencies.now?.() ?? new Date()
+  const timeoutMilliseconds = getKBIngestionTimeoutSeconds(env) * 1000
   const activeWhere = {
     status: {
       in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
@@ -943,6 +1056,7 @@ export async function monitorActiveKBIngestions(
       resourceVersion: true,
       contentSha256: true,
       externalOperationId: true,
+      externalOperationStartedAt: true,
       ingestionOperation: true,
     },
   }
@@ -975,6 +1089,8 @@ export async function monitorActiveKBIngestions(
             client,
             prisma: dependencies.prisma,
             env,
+            now,
+            timeoutMilliseconds,
             logger: dependencies.logger,
           })
         )

@@ -8,6 +8,7 @@ import type {
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
 import { manipulateElement } from './elements.js'
@@ -30,6 +31,7 @@ import {
 } from './generatedQuestionTags.js'
 import {
   getQuestionGenerationBuild,
+  retryQuestionGeneration,
   reviewQuestionGenerationDesign,
   reviewQuestionGenerationPlan,
   saveGeneratedQuestions,
@@ -56,10 +58,34 @@ function isQuestionElementType(
 ): elementType is 'SC' | 'MC' | 'KPRIM' {
   return QUESTION_TYPES.has(elementType)
 }
-const TERMINAL_EDITABLE_STATUSES = [
+const TERMINAL_EDITABLE_STATUSES: DB.ElementGenerationBuildStatus[] = [
   DB.ElementGenerationBuildStatus.COMPLETED,
   DB.ElementGenerationBuildStatus.INCOMPLETE,
 ]
+
+/**
+ * Normalizes a lecturer-supplied generation focus. The focus narrows exactly
+ * one generation batch to a topic; a blank value is the same as no focus. A
+ * deployment or actor whose rollout does not admit the capability refuses a
+ * focus it cannot honor instead of recording guidance that the provider would
+ * drop.
+ */
+async function resolveRequestedQuestionFocusTopic(
+  focusTopic: string | null | undefined,
+  ctx: ContextWithUser
+): Promise<string | null> {
+  const normalized = focusTopic?.trim()
+  if (!normalized) {
+    return null
+  }
+  if (!(await isFeatureFlagEnabled(ctx, 'question-focus-topic'))) {
+    throw questionGenerationServiceError(
+      'CONFIGURATION_INVALID',
+      'This deployment does not support question focus topics'
+    )
+  }
+  return normalized
+}
 
 export type StartElementGenerationInput = {
   graphBuildId: string
@@ -77,6 +103,7 @@ export type StartElementGenerationInput = {
     bloomLevel?: string | null
   }> | null
   bloomLevels?: string[] | null
+  focusTopic?: string | null
   idempotencyKey: string
 }
 
@@ -154,16 +181,21 @@ export async function startElementGeneration(
   input: StartElementGenerationInput,
   ctx: ContextWithUser
 ) {
+  const focusTopic = await resolveRequestedQuestionFocusTopic(
+    input.focusTopic,
+    ctx
+  )
   if (input.elementType === 'FLASHCARD') {
     if (
       input.difficultyPreset != null ||
       (input.sourceScopes?.length ?? 0) > 0 ||
       (input.bloomLevels?.length ?? 0) > 0 ||
-      input.objectives?.some((objective) => objective.bloomLevel != null)
+      input.objectives?.some((objective) => objective.bloomLevel != null) ||
+      focusTopic !== null
     ) {
       throw questionGenerationServiceError(
         'CONFIGURATION_INVALID',
-        'Flashcard generation does not support difficulty, Bloom, or source scoping'
+        'Flashcard generation does not support difficulty, Bloom, source scoping, or a focus topic'
       )
     }
     return startFlashcardGeneration(
@@ -188,6 +220,7 @@ export async function startElementGeneration(
       sourceScopes: input.sourceScopes,
       objectives: input.objectives,
       bloomLevels: input.bloomLevels,
+      focusTopic,
     },
     ctx
   )
@@ -226,10 +259,13 @@ export async function retryElementGeneration(
   ctx: ContextWithUser
 ) {
   const elementType = await ownedBuildType(buildId, ctx)
-  if (elementType !== DB.ElementType.FLASHCARD) {
-    return serviceError('This element-generation workflow is not retryable')
+  if (elementType === DB.ElementType.FLASHCARD) {
+    return retryFlashcardGeneration(buildId, ctx)
   }
-  return retryFlashcardGeneration(buildId, ctx)
+  if (QUESTION_TYPES.has(elementType)) {
+    return retryQuestionGeneration(buildId, ctx)
+  }
+  return serviceError('This element-generation workflow is not retryable')
 }
 
 export async function publishIncompleteElementGeneration(
@@ -511,11 +547,7 @@ export async function keepGeneratedElementDraft(
         'Generated element draft not found'
       )
     }
-    const validStatuses: DB.ElementGenerationBuildStatus[] =
-      draft.elementType === DB.ElementType.FLASHCARD
-        ? TERMINAL_EDITABLE_STATUSES
-        : [DB.ElementGenerationBuildStatus.COMPLETED]
-    if (!validStatuses.includes(draft.build.status)) {
+    if (!TERMINAL_EDITABLE_STATUSES.includes(draft.build.status)) {
       throw questionGenerationServiceError(
         'INVALID_STAGE',
         'Generated elements can only be kept after terminal publication'
@@ -793,6 +825,10 @@ export async function getElementGenerationSources(ctx: ContextWithUser) {
 
 export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
   await assertQuestionGenerationPreviewAccess(ctx)
+  const focusTopicEnabled = await isFeatureFlagEnabled(
+    ctx,
+    'question-focus-topic'
+  )
   return {
     elementTypes: [...ELEMENT_GENERATION_CAPABILITIES.elementTypes],
     languages: [...ELEMENT_GENERATION_CAPABILITIES.languages],
@@ -807,7 +843,10 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
         supportsSourceScopes: elementType !== 'FLASHCARD',
         supportsDifficulty: elementType !== 'FLASHCARD',
         supportsBloomLevels: elementType !== 'FLASHCARD',
-        supportsRetry: elementType === 'FLASHCARD',
+        supportsFocusTopic: elementType !== 'FLASHCARD' && focusTopicEnabled,
+        // Questions retry a failed build whose reasons the system can resolve;
+        // errorRetryable decides whether the retry is offered for one build.
+        supportsRetry: true,
         supportsIncompletePublication: elementType === 'FLASHCARD',
       })
     ),

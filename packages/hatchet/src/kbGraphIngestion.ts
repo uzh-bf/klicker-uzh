@@ -1,16 +1,25 @@
-import { getKnowledgeGraphName } from '@klicker-uzh/knowledge-graph'
 import {
+  getDefaultKBGraphDomainCatalog,
+  getKnowledgeGraphName,
+  isKBGraphDomainCapabilityEnabled,
+  KB_GRAPH_DOMAIN_ERROR_CODES,
+  type KBGraphDomainSelectionRejectionReason,
+  type KBGraphDomainSelectionResolution,
+  resolveKBGraphDomainSelection,
+} from '@klicker-uzh/knowledge-graph'
+import {
+  type KBGraphBuildSource,
   KBGraphBuildStatus,
   KBGraphCostStatus,
-  type KBGraphBuildSource,
   type Prisma,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import type { BuildKBGraphInput } from '@klicker-uzh/types'
 import {
-  KB_GRAPH_BUILD_METADATA_KEY,
-  KB_GRAPH_KB_METADATA_KEY,
   cancelExternalKBGraphRunBestEffort,
+  type ExternalKBGraphClient,
+  type ExternalKBGraphPayload,
+  type ExternalKBGraphRequestOptions,
   getExternalKBGraphClient,
   getExternalKBGraphConfig,
   getKBGraphArtifactBlobName,
@@ -18,11 +27,10 @@ import {
   getKBGraphQualityConfig,
   getKBGraphSourceUrl,
   getKBGraphTimeoutSeconds,
-  recoverExternalKBGraphRun,
-  type ExternalKBGraphClient,
-  type ExternalKBGraphPayload,
+  KB_GRAPH_BUILD_METADATA_KEY,
+  KB_GRAPH_KB_METADATA_KEY,
   type KBGraphLogger,
-  type ExternalKBGraphRequestOptions,
+  recoverExternalKBGraphRun,
 } from './kbGraphIngestionApi.js'
 
 const KB_GRAPH_MONITOR_BATCH_SIZE = 32
@@ -48,6 +56,24 @@ const KB_GRAPH_DISPATCH_FAILED_CODE = 'KB_GRAPH_DISPATCH_FAILED'
 // goes on to spend. Only a claim older than the window is treated as abandoned.
 const KB_GRAPH_DISPATCH_CLAIM_GRACE_MS = 15 * 60 * 1000
 
+// A build whose provider run finished but whose terminal result could not be
+// metered keeps its reservation parked for review. The hold is bounded: after
+// this window the platform absorbs the provider cost instead of leaving the
+// lecturer's semester quota reduced for a graph that was never served, and the
+// build keeps its failure code as the record of why nothing was charged.
+const KB_GRAPH_COST_HOLD_RELEASE_MS = 24 * 60 * 60 * 1000
+
+// Terminal results that arrived but could not become metered spend. The dispatch
+// sweep owns the ambiguous-dispatch hold, and a result parked after cleanup
+// belongs to the build that already replaced it, so neither code is listed here.
+export const KB_GRAPH_UNMETERED_RESULT_CODES = [
+  'KB_GRAPH_RESULT_CONTRACT_INVALID',
+  'KB_GRAPH_RESULT_IDENTITY_INVALID',
+  'KB_GRAPH_RESULT_METERING_MISSING',
+  'KB_GRAPH_RESULT_METERING_OVERFLOW',
+  'KB_GRAPH_RESULT_CURRENCY_MISMATCH',
+] as const
+
 type KBGraphPrisma = Pick<
   PrismaClient,
   | '$queryRaw'
@@ -65,6 +91,10 @@ type KBGraphDispatchRecord = {
   graphName: string
   graphmlBlobName: string | null
   qualityTier: Parameters<typeof getKBGraphQualityConfig>[0]
+  domainPolicyId: string | null
+  domainPolicyVersion: number | null
+  domainPolicyLanguage: string | null
+  focusTopic: string | null
   createdAt: Date
   kb: {
     ownerId: string
@@ -170,7 +200,7 @@ async function releaseKBGraphReservationInTransaction(
   // dispatch also has to unwind a hold that was already parked for review, once
   // the provider has confirmed that no run of that build id ever existed.
   releasableCostStatuses: KBGraphCostStatus[] = [KBGraphCostStatus.RESERVED]
-): Promise<void> {
+): Promise<boolean> {
   const build = await prisma.kBGraphBuild.findUnique({
     where: { id: buildId },
     select: {
@@ -185,7 +215,7 @@ async function releaseKBGraphReservationInTransaction(
     !releasableCostStatuses.includes(build.costStatus) ||
     build.estimatedCostMinorUnits === null
   ) {
-    return
+    return false
   }
 
   if (build.quotaId) {
@@ -203,7 +233,7 @@ async function releaseKBGraphReservationInTransaction(
     },
     data: { costStatus: KBGraphCostStatus.RELEASED },
   })
-  if (updated.count !== 1 || !build.quotaId) return
+  if (updated.count !== 1 || !build.quotaId) return updated.count === 1
 
   const quotaUpdated = await prisma.kBGraphQuota.updateMany({
     where: {
@@ -217,6 +247,8 @@ async function releaseKBGraphReservationInTransaction(
   if (quotaUpdated.count !== 1) {
     throw new Error('KB graph quota reservation could not be released')
   }
+
+  return true
 }
 
 function getGraphMonitorBatchOffset(total: number, now: Date) {
@@ -404,6 +436,84 @@ function getDispatchGateFailure(
   return null
 }
 
+function kbGraphDomainRejectionMessage(
+  reason: KBGraphDomainSelectionRejectionReason
+): string {
+  switch (reason) {
+    case 'INCOMPLETE':
+      return 'The KB graph build has an incomplete domain selection and requires review.'
+    case 'CAPABILITY_DISABLED':
+      return 'This deployment does not support the domain selection frozen on the KB graph build.'
+    case 'UNKNOWN_POLICY':
+      return 'The domain policy frozen on the KB graph build is not part of this deployment catalog.'
+    case 'UNSUPPORTED_VERSION':
+      return 'The domain policy version frozen on the KB graph build is not supported.'
+    case 'UNSUPPORTED_LANGUAGE':
+      return 'The domain language frozen on the KB graph build is not provided by its policy.'
+  }
+}
+
+/**
+ * Re-resolves the provider inputs frozen at rebuild time against the catalog and
+ * capability gate this worker is running with. Dispatch happens in a separate
+ * process from the lecturer request, so a rollout that narrowed the catalog or
+ * disabled the gate must fail the build here, before the provider call spends
+ * reservation money on a policy it cannot honor or silently drops a recorded
+ * focus.
+ */
+function getProviderContractGateFailure(
+  build: Pick<
+    KBGraphDispatchRecord,
+    | 'domainPolicyId'
+    | 'domainPolicyVersion'
+    | 'domainPolicyLanguage'
+    | 'focusTopic'
+  >,
+  env: NodeJS.ProcessEnv
+): { statusMessage: string; errorCode: string } | null {
+  const catalog = getDefaultKBGraphDomainCatalog()
+  const capabilityEnabled = isKBGraphDomainCapabilityEnabled(
+    catalog.revision,
+    env
+  )
+  // A focus travels on the same provider contract the capability gate
+  // advertises, so a rollout that closed the gate must fail the build here
+  // rather than record a focus the provider never applied.
+  if (build.focusTopic != null && !capabilityEnabled) {
+    return {
+      statusMessage:
+        'This deployment does not support the focus topic frozen on the KB graph build.',
+      errorCode: KB_GRAPH_DOMAIN_ERROR_CODES.CAPABILITY_DISABLED,
+    }
+  }
+  if (
+    build.domainPolicyId == null &&
+    build.domainPolicyVersion == null &&
+    build.domainPolicyLanguage == null
+  ) {
+    return null
+  }
+  const resolution: KBGraphDomainSelectionResolution =
+    resolveKBGraphDomainSelection(
+      {
+        domainPolicyId: build.domainPolicyId,
+        domainPolicyVersion: build.domainPolicyVersion,
+        language: build.domainPolicyLanguage,
+      },
+      {
+        catalog,
+        capabilityEnabled,
+      }
+    )
+  if (resolution.ok) {
+    return null
+  }
+  return {
+    statusMessage: kbGraphDomainRejectionMessage(resolution.reason),
+    errorCode: KB_GRAPH_DOMAIN_ERROR_CODES[resolution.reason],
+  }
+}
+
 async function failKBGraphBuildBeforeDispatch(
   prisma: KBGraphPrisma,
   {
@@ -499,7 +609,7 @@ export function buildExternalKBGraphPayload(
   }
 
   const quality = getKBGraphQualityConfig(build.qualityTier, env)
-  return {
+  const payload: ExternalKBGraphPayload = {
     course_id: build.id,
     storage_name: build.id,
     sources: build.sources.map((source, index) => ({
@@ -523,6 +633,26 @@ export function buildExternalKBGraphPayload(
       graphml_blob_name: build.graphmlBlobName,
     },
   }
+  // The dispatch gate has already re-validated the frozen selection, so a
+  // complete triple here is a supported policy. The legacy all-null build adds
+  // no keys and keeps the provider manifest byte-identical.
+  if (
+    build.domainPolicyId != null &&
+    build.domainPolicyVersion != null &&
+    build.domainPolicyLanguage != null
+  ) {
+    payload.domain_policy = {
+      template_id: build.domainPolicyId,
+      template_version: build.domainPolicyVersion,
+    }
+    payload.language = build.domainPolicyLanguage
+  }
+  // A focus is prompt guidance the provider applies on top of the policy, so it
+  // is dispatched independently of an explicit domain selection.
+  if (build.focusTopic != null) {
+    payload.focus_topic = build.focusTopic
+  }
+  return payload
 }
 
 function validateBuildIdentity(build: KBGraphDispatchRecord): void {
@@ -692,6 +822,10 @@ export async function dispatchKBGraphBuild(
       graphName: true,
       graphmlBlobName: true,
       qualityTier: true,
+      domainPolicyId: true,
+      domainPolicyVersion: true,
+      domainPolicyLanguage: true,
+      focusTopic: true,
       status: true,
       externalOperationId: true,
       dispatchClaimedAt: true,
@@ -764,7 +898,9 @@ export async function dispatchKBGraphBuild(
     return undefined
   }
   if (isUnstartedActiveBuild(build)) {
-    const gateFailure = getDispatchGateFailure(build, env)
+    const gateFailure =
+      getDispatchGateFailure(build, env) ??
+      getProviderContractGateFailure(build, env)
     if (gateFailure) {
       await failKBGraphBuildBeforeDispatch(
         dependencies.prisma,
@@ -787,6 +923,10 @@ export async function dispatchKBGraphBuild(
     graphName: build.graphName,
     graphmlBlobName: build.graphmlBlobName,
     qualityTier: build.qualityTier,
+    domainPolicyId: build.domainPolicyId,
+    domainPolicyVersion: build.domainPolicyVersion,
+    domainPolicyLanguage: build.domainPolicyLanguage,
+    focusTopic: build.focusTopic,
     createdAt: build.createdAt,
     kb: {
       ownerId: build.kb.ownerId,
@@ -849,6 +989,10 @@ export async function dispatchKBGraphBuild(
           semesterKey: true,
           costStatus: true,
           quotaId: true,
+          domainPolicyId: true,
+          domainPolicyVersion: true,
+          domainPolicyLanguage: true,
+          focusTopic: true,
           quota: {
             select: {
               id: true,
@@ -869,7 +1013,12 @@ export async function dispatchKBGraphBuild(
           },
         },
       })
-      const gateFailure = current ? getDispatchGateFailure(current, env) : null
+      // The provider effect is immediately below this point, so the frozen
+      // provider inputs are validated here for the last time.
+      const gateFailure = current
+        ? (getDispatchGateFailure(current, env) ??
+          getProviderContractGateFailure(current, env))
+        : null
       if (!current || !isUnstartedActiveBuild(current) || gateFailure) {
         if (current && isUnstartedActiveBuild(current) && gateFailure) {
           await failKBGraphBuildBeforeDispatch(
@@ -1186,6 +1335,12 @@ export async function monitorActiveKBGraphBuilds(
     { ...dependencies, providerOperationTimeoutMs },
     sweepNow
   )
+  // A held cost reservation has neither an active status nor a timeout, so this
+  // sweep also has to run before the early return.
+  await releaseUnmeteredKBGraphReservations(
+    { prisma: dependencies.prisma, logger: dependencies.logger },
+    sweepNow
+  )
 
   if (builds.length === 0 && timedOutBuilds.length === 0) {
     return
@@ -1348,6 +1503,60 @@ export async function recheckAmbiguousKBGraphDispatches(
       now: () => sweepNow,
     })
   })
+}
+
+/**
+ * Releases the reservations of builds whose provider run finished but whose
+ * terminal result could not be metered. The lecturer never received the graph
+ * the reservation paid for, so after the review window the platform absorbs the
+ * provider cost instead of parking spend against a semester quota forever. Every
+ * release keeps the build's failure code and is logged for the operator.
+ */
+export async function releaseUnmeteredKBGraphReservations(
+  dependencies: Pick<MonitorKBGraphBuildsDependencies, 'prisma' | 'logger'>,
+  sweepNow: Date
+): Promise<number> {
+  const unmeteredWhere = {
+    costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+    errorCode: { in: [...KB_GRAPH_UNMETERED_RESULT_CODES] },
+    estimatedCostMinorUnits: { not: null },
+    // Without a quota row the hold reduced no quota, so there is nothing to
+    // unwind and the review flag stays as the operator's record.
+    quotaId: { not: null },
+    finishedAt: {
+      lte: new Date(sweepNow.getTime() - KB_GRAPH_COST_HOLD_RELEASE_MS),
+    },
+  } satisfies Prisma.KBGraphBuildWhereInput
+  const heldCount = await dependencies.prisma.kBGraphBuild.count({
+    where: unmeteredWhere,
+  })
+  const heldOffset = getGraphMonitorBatchOffset(heldCount, sweepNow)
+  const heldBuilds = await dependencies.prisma.kBGraphBuild.findMany({
+    where: unmeteredWhere,
+    select: { id: true, kbId: true },
+    orderBy: { finishedAt: 'asc' },
+    ...(heldOffset > 0 ? { skip: heldOffset } : {}),
+    take: KB_GRAPH_MONITOR_BATCH_SIZE,
+  })
+
+  let releasedCount = 0
+  for (const build of heldBuilds) {
+    const released = await dependencies.prisma.$transaction((tx) =>
+      releaseKBGraphReservationInTransaction(tx, build.id, [
+        KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      ])
+    )
+    if (!released) continue
+
+    releasedCount += 1
+    await logInfoBestEffort(
+      dependencies.logger,
+      'KB graph reservation released after an unmetered terminal result',
+      { buildId: build.id, kbId: build.kbId }
+    )
+  }
+
+  return releasedCount
 }
 
 export async function markKBGraphBuildDispatchFailed(

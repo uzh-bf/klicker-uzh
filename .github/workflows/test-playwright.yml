@@ -23,8 +23,9 @@ on:
 
 jobs:
   # A closed pull request cancels its in-flight execution through the shared
-  # group without an API token. A draft conversion must not cancel, because a
-  # draft runs the same full suite.
+  # group without an API token. A draft conversion must not cancel: the running
+  # plan stays valid evidence, and the next event selects the plan its own pull
+  # request state requires.
   cancel-closed-pr:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     concurrency:
@@ -38,8 +39,10 @@ jobs:
         run: ':'
 
   # The called workflow is the only execution envelope. It recomputes the route
-  # and selector state from the immutable event payload. Drafts run the same
-  # full plan as ready pull requests, so the caller never gates on draft state.
+  # and selector state from the immutable event payload. Drafts run the plan
+  # that route selects: the full candidate suite by default, or the change-based
+  # plan when the smart-draft control is enabled, so the caller never gates on
+  # draft state.
   # The open-state guard keeps lifecycle events on a merged or closed pull
   # request (for example a post-merge title edit) from launching new execution.
   test-playwright-execution:
@@ -81,17 +84,21 @@ jobs:
           EXECUTION_RESULT: ${{ needs.test-playwright-execution.result }}
           ROUTE: ${{ needs.test-playwright-execution.outputs.route }}
           MODE: ${{ needs.test-playwright-execution.outputs.mode }}
+          ENVELOPE_CLASS: ${{ needs.test-playwright-execution.outputs.envelope_class }}
           SHOULD_RUN: ${{ needs.test-playwright-execution.outputs.should_run }}
           SHARD_MATRIX: ${{ needs.test-playwright-execution.outputs.shard_matrix }}
           IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          IS_DRAFT: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
         run: |
           set -euo pipefail
           {
             printf 'route=%s\n' "${ROUTE:-unknown}"
             printf 'mode=%s\n' "${MODE:-unknown}"
+            printf 'envelope_class=%s\n' "${ENVELOPE_CLASS:-unknown}"
             printf 'should_run=%s\n' "${SHOULD_RUN:-unknown}"
             printf 'shard_matrix=%s\n' "${SHARD_MATRIX:-unknown}"
             printf 'is_pull_request=%s\n' "${IS_PULL_REQUEST:-unknown}"
+            printf 'is_draft=%s\n' "${IS_DRAFT:-unknown}"
             printf 'duplicate_run_id=%s\n' "${DUPLICATE_RUN_ID:-}"
             printf 'execution_result=%s\n' "$EXECUTION_RESULT"
           } > playwright-run-metadata.txt
@@ -101,6 +108,7 @@ jobs:
             echo
             echo "- Route: \`${ROUTE:-unknown}\`"
             echo "- Mode: \`${MODE:-unknown}\`"
+            echo "- Change class: \`${ENVELOPE_CLASS:-unknown}\`"
             echo "- Tests selected: \`${SHOULD_RUN:-unknown}\`"
             echo "- Envelope result: \`$EXECUTION_RESULT\`"
             if [ -n "${DUPLICATE_RUN_ID:-}" ]; then
@@ -134,18 +142,52 @@ jobs:
             exit 1
           fi
 
-          # Every push and every pull request, draft or ready, must attest the
-          # complete trusted eight-shard execution plan; no selector result may
-          # skip it.
-          if [ "$MODE" != 'full' ]; then
-            echo 'Playwright execution did not use full mode.'
-            exit 1
+          # Every push and every ready pull request must attest the complete
+          # trusted eight-shard plan. A draft may attest the narrower plan the
+          # trusted envelope selected for it: a partial shard set or a skip,
+          # both of which the reusable workflow publishes together with its
+          # reasons. A ready pull request may narrow its plan only through a
+          # bounded change class the trusted classifier proved for the same
+          # diff: a documentation class may skip, and a CI class may run the
+          # bounded smoke selection. Nothing else may pass required CI, and a
+          # push is never bounded.
+          if [ "$IS_PULL_REQUEST" = 'true' ] && [ "${IS_DRAFT:-}" = 'true' ]; then
+            case "$MODE" in
+              full | selected | skip) ;;
+              *)
+                echo 'Draft execution reported a plan mode the envelope cannot select.'
+                exit 1
+                ;;
+            esac
+          elif [ "$MODE" != 'full' ]; then
+            # Push validation is a deployment-candidate path and is never
+            # narrowed, whatever class the envelope reports for the push diff.
+            if [ "$IS_PULL_REQUEST" != 'true' ]; then
+              echo 'Playwright execution did not use full mode.'
+              exit 1
+            fi
+            case "$MODE:${ENVELOPE_CLASS:-}" in
+              skip:documentation-and-planning | selected:ci-orchestration) ;;
+              *)
+                echo 'Playwright execution did not use full mode.'
+                exit 1
+                ;;
+            esac
           fi
-          if [ "$SHOULD_RUN" != 'true' ]; then
-            echo 'Playwright execution did not select Playwright.'
-            exit 1
+
+          if [ "$MODE" = 'skip' ]; then
+            if [ "$SHOULD_RUN" != 'false' ]; then
+              echo 'A skipped Playwright plan must not select tests.'
+              exit 1
+            fi
+          else
+            if [ "$SHOULD_RUN" != 'true' ]; then
+              echo 'Playwright execution did not select Playwright.'
+              exit 1
+            fi
           fi
-          if ! node <<'NODE'
+
+          if [ "$MODE" != 'skip' ] && ! MODE="$MODE" node <<'NODE'
           const raw = process.env.SHARD_MATRIX ?? ''
           let matrix
           try {
@@ -154,13 +196,20 @@ jobs:
             process.exit(1)
           }
 
+          // A draft may run a subset of the canonical eight shards; a full
+          // plan always runs all eight. Both must be well-formed and unique.
+          // A narrowed plan reports its own shard count as every shard's
+          // shardTotal, so that value is validated against the emitted count
+          // rather than the canonical eight.
+          const requiredShards = process.env.MODE === 'full' ? 8 : 0
           const shards = matrix?.include
+          const shardCount = Array.isArray(shards) ? shards.length : 0
           const complete =
             matrix !== null &&
             !Array.isArray(matrix) &&
             Object.keys(matrix).length === 1 &&
             Array.isArray(shards) &&
-            shards.length === 8 &&
+            (requiredShards === 0 ? shards.length > 0 : shards.length === 8) &&
             shards.every(
               (shard) =>
                 shard !== null &&
@@ -168,14 +217,17 @@ jobs:
                 !Array.isArray(shard) &&
                 Object.keys(shard).length === 2 &&
                 Number.isInteger(shard.shardIndex) &&
-                shard.shardIndex >= 1 && shard.shardIndex <= 8 &&
-                shard.shardTotal === 8
+                Number.isInteger(shard.shardTotal) &&
+                shard.shardIndex >= 1 &&
+                shard.shardIndex <= shardCount &&
+                shard.shardTotal === shardCount
             ) &&
-            new Set(shards.map((shard) => shard.shardIndex)).size === 8
+            new Set(shards.map((shard) => shard.shardIndex)).size ===
+              shards.length
           process.exit(complete ? 0 : 1)
           NODE
           then
-            echo 'Playwright execution did not expose the complete eight-shard matrix.'
+            echo 'Playwright execution did not expose a trusted shard matrix.'
             exit 1
           fi
 

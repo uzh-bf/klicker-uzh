@@ -19,6 +19,7 @@ import {
   useState,
 } from 'react'
 import rehypeKatex from 'rehype-katex'
+import 'katex/contrib/mhchem'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 
@@ -44,7 +45,9 @@ const remarkPlugins = [
   remarkCitationMarkers,
   remarkCourseImages,
 ]
-const rehypePlugins = [rehypeKatex]
+const rehypePlugins: NonNullable<
+  ComponentProps<typeof MarkdownTextPrimitive>['rehypePlugins']
+> = [[rehypeKatex, { trust: false }]]
 
 const MarkdownTextImpl = () => {
   const { text, status } = useMessagePartText()

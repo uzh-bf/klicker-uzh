@@ -45,7 +45,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.77
+        tag: v3.4.0-alpha.83
       resources:
         requests:
           cpu: 50m
@@ -79,17 +79,17 @@ hatchet:
               app.kubernetes.io/component: hatchet-worker-general
 
     responseProcessor:
-      replicaCount: 6
+      replicaCount: 4
       podDisruptionBudget:
         minAvailable: 2
       priorityClassName: production-workload
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.77
+        tag: v3.4.0-alpha.83
       resources:
         requests:
-          cpu: 50m
+          cpu: 25m
           memory: 192Mi
         limits:
           memory: 512Mi
@@ -127,7 +127,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.77
+        tag: v3.4.0-alpha.83
       resources:
         requests:
           cpu: 50m
@@ -194,7 +194,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   ingress:
     annotations:
@@ -218,7 +218,7 @@ auth:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 192Mi
     limits:
       memory: 512Mi
@@ -235,7 +235,7 @@ chat:
     enabled: false
     environment: 'production'
 
-  replicaCount: 2
+  replicaCount: 3
 
   automaticModels:
     primaryId: auto
@@ -344,7 +344,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   ingress:
     annotations:
@@ -411,8 +411,8 @@ mcpStudent:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.61
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.83
 
   strategy:
     type: RollingUpdate
@@ -420,9 +420,9 @@ mcpStudent:
   resources:
     requests:
       cpu: 25m
-      memory: 50Mi
+      memory: 160Mi
     limits:
-      memory: 200Mi
+      memory: 320Mi
 
 mcpLecturer:
   priorityClassName: production-workload
@@ -461,8 +461,8 @@ mcpLecturer:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
-    pullPolicy: Always
-    tag: v3.4.0-alpha.61
+    pullPolicy: IfNotPresent
+    tag: v3.4.0-alpha.83
 
   strategy:
     type: RollingUpdate
@@ -470,15 +470,15 @@ mcpLecturer:
   resources:
     requests:
       cpu: 25m
-      memory: 50Mi
+      memory: 160Mi
     limits:
-      memory: 200Mi
+      memory: 320Mi
 
 frontendPWA:
   allowedFrameAncestors: 'https://*.klicker.uzh.ch https://lms.uzh.ch https://*.olat.uzh.ch https://elearning.klicker.uzh.ch https://ius.zone https://*.df-app.ch https://moodle.fernuni.ch https://*.localhost'
   priorityClassName: production-workload
 
-  replicaCount: 6
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -499,7 +499,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   ingress:
     className: haproxy
@@ -552,7 +552,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   ingress:
     className: haproxy
@@ -576,7 +576,7 @@ frontendManage:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 256Mi
     limits:
       memory: 512Mi
@@ -590,7 +590,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   affinity:
     podAntiAffinity:
@@ -627,7 +627,7 @@ frontendControl:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 96Mi
     limits:
       memory: 512Mi
@@ -666,7 +666,7 @@ backendGraphql:
       flashcardRetryMinorUnits: '1'
       pricingVersion: 'prd-elements-v1'
 
-  replicaCount: 6
+  replicaCount: 4
 
   autoscaling:
     enabled: false
@@ -687,7 +687,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -699,7 +699,6 @@ backendGraphql:
   appStudentDomain: pwa.klicker.uzh.ch
   appControlDomain: control.klicker.uzh.ch
   cookieDomain: .klicker.uzh.ch
-  # kbIngestionDisabled: true # interim kill switch — set to true to refuse new KB ingestion during an incident
 
   ingress:
     className: haproxy
@@ -736,12 +735,12 @@ backendGraphql:
 olatApi:
   priorityClassName: production-workload
 
-  replicaCount: 2
+  replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   affinity:
     podAntiAffinity:
@@ -778,7 +777,7 @@ olatApi:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 128Mi
     limits:
       memory: 512Mi
@@ -811,7 +810,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
 
   ingress:
     className: haproxy
@@ -829,7 +828,7 @@ lti:
 
   resources:
     requests:
-      cpu: 200m
+      cpu: 50m
       memory: 200Mi
     limits:
       memory: 1Gi
@@ -839,11 +838,11 @@ responseApi:
 
   priorityClassName: production-workload
 
-  replicaCount: 6
+  replicaCount: 4
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.77
+    tag: v3.4.0-alpha.83
     pullPolicy: IfNotPresent
 
   affinity:
@@ -881,7 +880,7 @@ responseApi:
 
   resources:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 96Mi
     limits:
       memory: 512Mi
@@ -901,7 +900,7 @@ assessment:
                   - key: app.kubernetes.io/component
                     operator: In
                     values:
-                      - frontend-pwa-assessment
+                      - frontend-assessment
               topologyKey: kubernetes.io/hostname
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -917,13 +916,13 @@ assessment:
         whenUnsatisfiable: ScheduleAnyway
         labelSelector:
           matchLabels:
-            app.kubernetes.io/component: frontend-pwa-assessment
+            app.kubernetes.io/component: frontend-assessment
       - maxSkew: 1
         topologyKey: kubernetes.io/hostname
         whenUnsatisfiable: ScheduleAnyway
         labelSelector:
           matchLabels:
-            app.kubernetes.io/component: frontend-pwa-assessment
+            app.kubernetes.io/component: frontend-assessment
     tolerations:
       - key: klickerasm
         operator: Equal
@@ -933,7 +932,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.77
+      tag: v3.4.0-alpha.83
 
     ingress:
       className: haproxy
@@ -1008,7 +1007,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.77
+      tag: v3.4.0-alpha.83
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1084,7 +1083,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.77
+      tag: v3.4.0-alpha.83
 
     ingress:
       className: haproxy
@@ -1127,3 +1126,15 @@ migrator:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
     pullPolicy: IfNotPresent
+
+# Modern Klicker KB retrieval authenticates with a fresh five-minute ES256
+# scope token on the dedicated Doc Query route instead of the shared transport
+# bearer. All three values move together: the chart refuses to render a partial
+# triple, and scope mode ignores the stored credential for this server. The
+# server id and legacy URL are this environment's existing KB MCP server row, so
+# a database edit cannot redirect a scope token.
+docQuery:
+  scopedMcp:
+    serverId: 'e05030e6-d799-4e9b-91c7-da2e074d14a8'
+    legacyUrl: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+    url: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker/kb'

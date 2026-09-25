@@ -10,11 +10,13 @@ import type {
 } from '@klicker-uzh/types'
 import {
   allocateQuestionGenerationDifficulty,
+  NEUTRAL_OBJECTIVE_SOURCE,
   QUESTION_GENERATION_CAPABILITIES,
 } from '@klicker-uzh/types'
 
 const MAX_OBJECTIVES = 20
 const MAX_OBJECTIVE_LENGTH = 500
+const MAX_FOCUS_TOPIC_LENGTH = 300
 
 const GERMAN_BLOOM_LABELS: Record<QuestionGenerationBloomLevel, string> = {
   remember: 'Erinnern',
@@ -39,6 +41,7 @@ export type QuestionGenerationConfigurationInput = {
     bloomLevel?: string | null
   }> | null
   bloomLevels?: string[] | null
+  focusTopic?: string | null
 }
 
 export type NormalizedQuestionGenerationConfiguration = {
@@ -129,6 +132,24 @@ function neutralObjective(
   return `Assess the selected knowledge-base material at the ${bloomLevel} cognitive level.`
 }
 
+function normalizeFocusTopic(value: string | null | undefined): string | null {
+  const text = value?.trim() ?? ''
+  if (!text) {
+    return null
+  }
+  if (text.length > MAX_FOCUS_TOPIC_LENGTH) {
+    return configurationError(
+      `A focus topic may contain at most ${MAX_FOCUS_TOPIC_LENGTH} characters`
+    )
+  }
+  if (/[\u0000-\u001f]/.test(text)) {
+    return configurationError(
+      'A focus topic must not contain control characters'
+    )
+  }
+  return text
+}
+
 function normalizeObjectives(
   values: QuestionGenerationConfigurationInput['objectives'],
   language: QuestionGenerationLanguage,
@@ -146,6 +167,7 @@ function normalizeObjectives(
       id: `OBJ-${String(index + 1).padStart(2, '0')}`,
       text: neutralObjective(language, bloomLevel),
       bloomLevel,
+      objectiveSource: NEUTRAL_OBJECTIVE_SOURCE,
     }))
   }
 
@@ -168,6 +190,7 @@ function normalizeObjectives(
       id: `OBJ-${String(index + 1).padStart(2, '0')}`,
       text,
       bloomLevel,
+      objectiveSource: 'provided' as const,
     }
   })
 }
@@ -290,6 +313,7 @@ export function normalizeQuestionGenerationConfiguration(
       bloomLevels
     ),
     bloomLevels,
+    focusTopic: normalizeFocusTopic(input.focusTopic),
   }
   const canonical = JSON.stringify(configuration)
 

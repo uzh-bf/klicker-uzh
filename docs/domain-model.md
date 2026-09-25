@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-09-02'
+timestamp: '2026-09-07'
 tags:
   - backend
   - prisma
@@ -26,6 +26,56 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. The existence of the `Participation` row is the course-membership check used by participant chatbot discovery, participant chatbot access regardless of `isActive` (`apps/chat/src/lib/server/apiGuards.ts:requireParticipation`), and student MCP practice access. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment and practice access.
+
+### Participant data-use choices
+
+Research and learning-analytics choices are participant-global current state on
+`Participant`, not course-scoped history. `researchConsent` and
+`learningAnalyticsConsent` both default to `false`; their choice timestamps and
+disclosure-version fields describe the current decision. Every completion and
+choice change is also appended to `ParticipantDataUseEvent`, an audit row per
+participant and revision; an immutability trigger blocks updates, deletes, and
+truncation, and analytics withdrawal requests reference the revision that
+recorded them.
+
+`researchConsent = true` allows a future research export to include all stored
+canonical data for that participant; `false` excludes all of it. Returning to
+`true` makes all stored canonical data eligible for future exports again.
+`learningAnalyticsConsent = true` allows eligible individual learning analytics
+to include all stored activity history after a course has been recomputed
+strictly after the current choice; `false` excludes individual learning
+analytics. The privacy policy also makes Learning Analytics voluntary at course
+level, but no course-level activation setting exists in this schema yet;
+`Course.areAnalyticsValid` records only whether previously computed data are
+still valid and must not be reused as that setting. The course-level choice is
+owned by a later layer.
+
+An analytics withdrawal request is created only on a true-to-false transition.
+The migration initializes existing accounts with
+`learningAnalyticsConsent = false` and records no choice, so legacy analytics
+data for an account whose first recorded choice is false is not represented by
+any withdrawal request. Consuming the queue is therefore not, by itself, a
+legacy-data cleanup strategy. Before the consent release, the legacy Python
+analytics package and all four GraphQL analytics reads are contained. Running
+old collectors must be stopped, and any retained derived data requiring deletion
+must be reconciled before users receive the updated policy promises. Full
+consent-aware processing remains a later layer; `true` alone does not activate
+it. Operational answers, points and assessment records are not LA derivatives.
+
+`Participation` remains the course-membership row and keeps its existing
+leaderboard meaning. It carries no research or learning-analytics choice or
+history, and participants have no per-course data-use choice in this schema.
+
+The public Prisma schema is the sole authority for these models. Catalyst must
+pin the exact immutable public commit and digest it consumes; a moving branch,
+dirty tree, or generated Analytics mirror is not provenance. The stored fields
+alone do not enable export, computation, or workflow dispatch.
+
+Chatbot and live-quiz analytics rows reference their owning `Chatbot` or
+`LiveQuiz` instead of storing a second, independently writable `courseId`.
+Course-scoped analytics joins through that owner, which keeps course ownership
+consistent by construction. Participant live-quiz point totals retain the
+canonical fractional `REAL` values.
 
 ### Assessment participant invitations
 
@@ -125,7 +175,7 @@ The KB is the source of truth for two derived representations: a Milvus index fo
 
 Ownership follows three explicit system boundaries. Klicker owns KB product state, authorization, graph lifecycle, graph quota enforcement, and the lecturer/student experience. Catalyst owns graph generation, FalkorDB operation, the GraphML archive, graph-quality evaluation, and KG-system end-to-end tests. AI infrastructure owns data-ingestion, doc-processing, and pgvector. Catalyst consumes those provider contracts but does not import their code or control their operational lifecycle. This boundary is recorded in [ADR 0011](./adr/0011-catalyst-owns-knowledge-graph-runtime.md).
 
-Knowledge graphs are optional per KB. A lecturer-level public-beta feature flag grants permission to enable the capability, but it changes no KB by itself. A lecturer with that permission explicitly opts individual KBs into graph generation; student graph access requires both that opt-in and a successfully published graph. The backend kill switch `KB_GRAPH_DISABLED=true` blocks new opt-ins and dispatches while leaving existing read and cleanup paths available.
+Knowledge graphs are optional per KB. A lecturer-level public-beta feature flag grants permission to enable the capability, but it changes no KB by itself. A lecturer with that permission explicitly opts individual KBs into graph generation; student graph access requires both that opt-in and a successfully published graph. The backend admits new opt-ins and rebuilds through the per-actor `kb-graph-builds` rollout, while leaving existing read and cleanup paths available; the general worker keeps its own `KB_GRAPH_DISABLED` deployment switch for dispatch.
 
 The two representations have independent lifecycles. Milvus ingestion remains resource-scoped and determines ordinary RAG readiness. FalkorDB generation is an expensive, KB-wide operation performed by an external graph-generation system outside this repository, and it consumes the processed documents ingestion already produced rather than the original blobs and URLs. Because each build spends the lecturer's own AI budget, builds are never scheduled: only an explicit request from a user with KB-edit permission starts one. The worker rechecks the global switch, KB opt-in, and reservation before the external effect; an already accepted external run is still reconciled if a gate changes afterward. A graph build failure does not block or regress the Milvus representation.
 
@@ -143,7 +193,7 @@ Version identity is the build ledger, not a separate version table. `KBGraphBuil
 
 Graph quota, AI credentials, and billing are separate concerns. Klicker enforces a non-sensitive per-lecturer, per-semester monetary quota and a per-build maximum in integer minor units, with persisted usage counters bounded to the database integer range. `KBGraphQuota` is locked while a reservation is created or settled; graph builds record `RESERVED`, `SETTLED`, `RELEASED`, or `NEEDS_HUMAN_REVIEW` so duplicate terminal delivery cannot double-charge. Before graph dispatch it reserves the estimated maximum cost and durably claims the provider-dispatch phase; an accepted run whose id cannot be correlated retains its reservation for human review and is not externally retried. Catalyst later reports actual metered cost against the build id and Klicker settles the reservation idempotently. A valid non-success result with metering settles actual usage without publishing, while an unmetered non-success releases only an ordinary reservation. A malformed, mismatched, over-reserved, overflowed, or unmetered success result holds the reservation for human review and never publishes. After a timeout, a matching late success can reclaim and publish only when no newer build exists and the current active-resource digest still matches; stale or superseded late results settle usage without publication. Cleanup claims also fence successful late results, so an artifact that is already being deleted cannot be resurrected as published. Automatic release only closes an ordinary `RESERVED` build; a later valid callback may reconcile a held build once before cleanup, while another malformed or failed result remains held.
 
-Element generation spends from that same lecturer-semester quota. Each initial question/flashcard dispatch and each flashcard retry reserves one configured fixed price in a separate `ElementGenerationSpend`; the provider dispatch UUID is the idempotency key. Klicker validates deterministic coordinates first, claims the spend immediately before the provider call, and settles it only after acceptance or exact-run recovery. A definite failure before the claim releases it. An uncertain claimed outcome retains the reservation and fences redispatch while the provider index becomes consistent; after a 15-minute grace, only a definitive empty exact-attempt lookup releases the hold. Review and incomplete-publication events add no spend. The lecturer config keeps persisted quota currency separate from historical graph-build cost and reports quota currency/limit drift as unavailable. This accounting contract is recorded in [ADR 0013](./adr/0013-klicker-reserves-and-settles-graph-cost.md). For UZH-issued credentials, sensitive lecturer-to-cost-account information stays outside the Klicker database and is maintained manually in a spreadsheet for the beta. BYOK lecturers are billed by their own provider, while Klicker quota controls still apply. AI-provider credentials are a reusable platform concern shared by every AI feature, not part of the knowledge-graph model. Consumer applications retain only opaque handles and safe status; the generic custody and runtime-resolution design remains a separate work item.
+Element generation spends from that same lecturer-semester quota. Each initial question/flashcard dispatch and each flashcard retry reserves one configured fixed price in a separate `ElementGenerationSpend`; the provider dispatch UUID is the idempotency key. Klicker validates deterministic coordinates first, claims the spend immediately before the provider call, and settles it only after acceptance or exact-run recovery. A definite failure before the claim releases it. An uncertain claimed outcome retains the reservation and fences redispatch while the provider index becomes consistent; after a 15-minute grace, only a definitive empty exact-attempt lookup releases the hold. Review and incomplete-publication events add no spend. The lecturer config keeps persisted quota currency separate from historical graph-build cost and reports quota-currency drift as unavailable. A configured semester limit at or above the granted limit takes effect at the next admission; a lower configured limit never shrinks a granted quota, which only a deliberate administrative row change can lower. This accounting contract is recorded in [ADR 0013](./adr/0013-klicker-reserves-and-settles-graph-cost.md). For UZH-issued credentials, sensitive lecturer-to-cost-account information stays outside the Klicker database and is maintained manually in a spreadsheet for the beta. BYOK lecturers are billed by their own provider, while Klicker quota controls still apply. AI-provider credentials are a reusable platform concern shared by every AI feature, not part of the knowledge-graph model. Consumer applications retain only opaque handles and safe status; the generic custody and runtime-resolution design remains a separate work item.
 
 The lecturer sees the cost boundary before spending: estimated maximum cost, remaining semester quota, and worst-case resulting balance. The client disables a build whose selected estimate exceeds the displayed remaining quota, while the reservation remains authoritative and returns the current remaining amount if a concurrent spend causes a rejection. Both cases show the estimate and remaining quota as one actionable explanation. After Catalyst settles the build, the lecturer sees actual usage and cost. BYOK is identified as provider-billed; UZH-issued usage is identified as semester-billed.
 
@@ -197,7 +247,7 @@ requester lost ADMIN/OWNER permission in the meantime.
 **Copies share Elements with the source — only the instances are new.** The manage frontend starts duplication through `startCourseDuplication`, which stores a Redis-backed job status, emits the `process-course-duplication` Hatchet event, and returns the job id immediately. The frontend persists that id in `localStorage`, polls `courseDuplicationStatuses`, and shows a success notification with an explicit action to open the copied course when the job reaches `COMPLETED`; it never navigates automatically. Failed, missing, or stale jobs are removed from the active notification UI. The worker still calls `packages/graphql/src/services/courseDuplication.ts:duplicateCourse`, which runs the actual copy in **one interactive transaction** (10 min timeout): afterwards either the full copy exists or nothing does. The legacy `createCourse(sourceCourseId: …)` path still routes directly to `duplicateCourse` for compatibility. Pre-checks that would otherwise produce a partial copy throw a `GraphQLError` with `extensions.code = COURSE_DUPLICATION_PARTIAL_FAILURE`, which the manage frontend maps to a dedicated toast (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:getCourseDuplicationErrorMessage`).
 
 - **Permission contract (fail-closed):** course-level ADMIN (checked, then re-checked after `recomputeDerivedPermissions`), ADMIN on every selected activity, and ADMIN/OWNER **derived** permission on the Element behind every selected instance (`courseDuplication.ts:assertCourseDuplicationActivityAccess`, `courseDuplication.ts:assertCourseDuplicationInstanceAccess`). Any missing permission aborts the whole duplication.
-- **Copied:** selected activities, including live-quiz random selection and ElementStack titles and descriptions (through the existing `manipulate*` services with a transaction client — creation invariants are not re-implemented), direct permissions of the course and of each copied activity (minus the duplicator's own row), `competencyTreeId`, `authType`, gamification/assessment flags. Every copied permission writes an `AuditLogEntry`. If a non-owner ADMIN duplicates, the source owner is granted ADMIN on the copy (`courseDuplication.ts:grantDuplicatedCourseAccessToSourceOwner`); the duplicator becomes OWNER.
+- **Copied:** selected activities, including live-quiz random selection and ElementStack titles and descriptions (through the existing `manipulate*` services with a transaction client — creation invariants are not re-implemented), direct permissions of the course and of each copied activity (minus the duplicator's own row), `competencyTreeId`, `authType`, gamification/assessment flags. Every copied permission writes an `AuditLogEntry`. Ownership lives in each object's owner column rather than a permission row, so the duplicator becomes OWNER of the copy and any other source owner (course and each activity) is granted direct ADMIN on the copy when they differ from the duplicator (`courseDuplication.ts:grantDuplicatedAccessToSourceOwner`).
 - **Not copied:** participants/participations, groups, results, leaderboards, responses. Copies land in DRAFT with zeroed `results`/`anonymousResults` and fresh `instanceStatistics` (`packages/util/src/elements.ts:getActivityInstanceConnectOrCreate`, duplication branch). Live-quiz PINs are regenerated, never reused; a SSO course's `pinCode` is nulled.
 - **Shared elements:** duplicated instances connect to the **same `Element` rows** and keep the source instance's `elementData` snapshot (same item version the previous cohort saw, even if the Element moved on — `areInstancesOutdated` flags the drift). Element edits reach both courses only through the instance-update flow.
 - **Date shifting:** The duplication dialog requires a new start date; the end date is derived from the original course duration and cannot be edited in the dialog. MicroLearning/GroupActivity schedules shift by the local calendar-day delta between old and new course start while preserving the Europe/Zurich wall-clock time across DST changes (`courseDuplication.ts:getCourseStartDayDelta`, `courseDuplication.ts:applyCourseStartDelta`). The dialog initially derives the group creation deadline from its original offset to the course start, then lets the lecturer override it before creating the copy (`apps/frontend-manage/src/components/courses/modals/CourseDuplicationModal.tsx:FormikNativeDateInput`).

@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/grading",
-  "version": "3.4.0-alpha.76",
+  "version": "3.4.0-alpha.83",
   "license": "AGPL-3.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
     "rollup": "~4.34.9",
     "ts-node": "~10.9.2",
     "typescript": "~6.0.3",
-    "vitest": "~3.2.4"
+    "vitest": "3.2.4"
   },
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
