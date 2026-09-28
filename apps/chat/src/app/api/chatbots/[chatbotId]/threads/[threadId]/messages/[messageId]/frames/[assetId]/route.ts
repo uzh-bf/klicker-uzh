@@ -69,7 +69,11 @@ export async function GET(
         'Content-Disposition': 'inline',
       },
     })
-  } catch {
+  } catch (error) {
+    console.warn('[chat] video frame unavailable', {
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : 'unknown',
+    })
     return missing()
   }
 }

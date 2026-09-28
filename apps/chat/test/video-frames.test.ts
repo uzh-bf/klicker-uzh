@@ -90,6 +90,10 @@ describe('video frame selection', () => {
       await call(tools, 'show_video_frame', { asset_id: candidate.asset_id })
     ).toEqual({ status: 'selected', frame: candidate })
     expect(read).toHaveBeenCalledTimes(1)
+    expect(
+      await call(tools, 'show_video_frame', { asset_id: candidate.asset_id })
+    ).toEqual({ status: 'selected', frame: candidate })
+    expect(read).toHaveBeenCalledTimes(1)
 
     const other = withVideoFrameTool(searchTools(), [], read)
     await call(other, 'KB_doc_query', { query: 'diagram in lecture' })
@@ -151,6 +155,17 @@ describe('video frame selection', () => {
         sources
       )
     ).toBeUndefined()
+  })
+
+  it('normalizes the video title exactly like document sources', () => {
+    const titled = structuredClone(fixture)
+    titled.sources[0].title = '  Lecture recording  '
+    expect(videoFrameCandidates(titled)[0]?.title).toBe('Lecture recording')
+
+    delete titled.sources[0].title
+    delete titled.sources[0].display_name
+    titled.sources[0].file_name = 'lecture-01.mp4'
+    expect(videoFrameCandidates(titled)[0]?.title).toBe('lecture-01.mp4')
   })
 
   it('resolves the authoritative JPEG occurrence and verifies its hash', async () => {
@@ -232,7 +247,8 @@ describe('video frame selection', () => {
     const previous = process.env.CHAT_VIDEO_FRAME_STORE_PATH
     process.env.CHAT_VIDEO_FRAME_STORE_PATH = root
     try {
-      const { bytes, size } = await readLocalVideo(candidate)
+      const { filename, size } = await readLocalVideo(candidate)
+      const bytes = await readFile(filename)
       expect(size).toBe(33688)
       expect(bytes.subarray(4, 8).toString('ascii')).toBe('ftyp')
     } finally {

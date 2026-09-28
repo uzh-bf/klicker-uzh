@@ -247,7 +247,7 @@ const ChatStoppedPart: FC = () => {
 
 export const AssistantMessageParts: FC = () => {
   const content = useAuiState((state) => state.message.content)
-  const sourceParts = content as unknown as readonly ChatSourcePart[]
+  const sourceParts = content as readonly ChatSourcePart[]
   const videoFrames = selectedVideoFrames(sourceParts)
   const firstText = content.find((part) => part.type === 'text')
 
@@ -291,7 +291,7 @@ export const AssistantMessageParts: FC = () => {
             return (
               <MarkdownText
                 afterFirstParagraph={
-                  part.text === firstText?.text && videoFrames.length > 0 ? (
+                  part === firstText && videoFrames.length > 0 ? (
                     <>
                       {videoFrames.map((frame) => (
                         <InlineVideoFrame key={frame.asset_id} frame={frame} />

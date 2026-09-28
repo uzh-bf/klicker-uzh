@@ -1,4 +1,4 @@
-import { readFile, realpath, stat } from 'node:fs/promises'
+import { realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type { VideoFrame } from '@/src/lib/sources/videoFrames'
 
@@ -23,10 +23,11 @@ export async function signedVideoPlaybackUrl(frame: VideoFrame) {
   } = await import('@azure/storage-blob')
   const credential = new StorageSharedKeyCredential(account, accessKey)
   const now = Date.now()
+  const blobName = videoObjectKey(frame)
   const query = generateBlobSASQueryParameters(
     {
       containerName: container,
-      blobName: videoObjectKey(frame),
+      blobName,
       permissions: BlobSASPermissions.parse('r'),
       startsOn: new Date(now - 60_000),
       expiresOn: new Date(now + 10 * 60_000),
@@ -35,7 +36,7 @@ export async function signedVideoPlaybackUrl(frame: VideoFrame) {
     },
     credential
   ).toString()
-  return `https://${account}.blob.core.windows.net/${encodeURIComponent(container)}/${videoObjectKey(frame)}?${query}`
+  return `https://${account}.blob.core.windows.net/${encodeURIComponent(container)}/${blobName}?${query}`
 }
 
 /** Local fixture adapter used by the checked-in chatbot demo. */
@@ -47,5 +48,5 @@ export async function readLocalVideo(frame: VideoFrame) {
   if (!filename.startsWith(base + path.sep))
     throw new Error('Invalid video path')
   const info = await stat(filename)
-  return { bytes: await readFile(filename), size: info.size }
+  return { filename, size: info.size }
 }

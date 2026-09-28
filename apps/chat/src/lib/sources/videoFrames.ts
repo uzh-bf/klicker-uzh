@@ -7,7 +7,17 @@ import {
 import type { ChatSource } from './types'
 
 export const VIDEO_FRAME_TOOL = 'show_video_frame'
+const MAX_VIDEO_FRAME_CANDIDATES = 30
+const MAX_VIDEO_FRAMES_PER_RESPONSE = 3
 const digest = z.string().regex(/^[a-f0-9]{64}$/)
+const VIDEO_FORMATS = {
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  m4v: 'video/x-m4v',
+  mov: 'video/quicktime',
+} as const
+const videoExtension = z.enum(Object.keys(VIDEO_FORMATS) as [keyof typeof VIDEO_FORMATS, ...(keyof typeof VIDEO_FORMATS)[]])
+const videoMimeType = z.enum(Object.values(VIDEO_FORMATS) as [(typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS], ...((typeof VIDEO_FORMATS)[keyof typeof VIDEO_FORMATS])[]])
 
 export const videoFrameSchema = z
   .object({
@@ -27,14 +37,9 @@ export const videoFrameSchema = z
     external_resource_id: z.string().min(1).max(300),
     resource_version: z.number().int().positive(),
     video_sha256: digest,
-    video_mime_type: z.enum([
-      'video/mp4',
-      'video/webm',
-      'video/x-m4v',
-      'video/quicktime',
-    ]),
-    video_extension: z.enum(['mp4', 'webm', 'm4v', 'mov']),
-    title: z.string().min(1).max(300),
+    video_mime_type: videoMimeType,
+    video_extension: videoExtension,
+    title: z.string().min(1),
   })
   .refine((frame) => frame.end_sec >= frame.start_sec, {
     message: 'end_sec must not precede start_sec',
@@ -44,12 +49,7 @@ export const videoFrameSchema = z
   })
   .refine(
     (frame) =>
-      ({
-        mp4: 'video/mp4',
-        webm: 'video/webm',
-        m4v: 'video/x-m4v',
-        mov: 'video/quicktime',
-      })[frame.video_extension] === frame.video_mime_type,
+      VIDEO_FORMATS[frame.video_extension] === frame.video_mime_type,
     { message: 'video format is inconsistent' }
   )
   .refine(
@@ -79,10 +79,10 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
     const source = record(rawSource)
     if (!source || String(source.source_type).toLowerCase() !== 'video')
       continue
-    const title = [source.title, source.display_name, source.video_name].find(
-      (value) => typeof value === 'string' && value.length > 0
-    )
-    if (typeof title !== 'string') continue
+    const title = [source.title, source.display_name, source.file_name]
+      .map((value) => (typeof value === 'string' ? value.trim() : undefined))
+      .find((value) => value !== undefined && value.length > 0)
+    if (!title) continue
     for (const rawChunk of (Array.isArray(source.chunks)
       ? source.chunks
       : []
@@ -107,10 +107,16 @@ export function videoFrameCandidates(raw: unknown): VideoFrame[] {
           video_sha256: video.sha256,
           video_mime_type: video.mime_type,
           video_extension: video.extension,
-          title: title.slice(0, 300),
+          title,
         })
-        if (!parsed.success) continue
-        if (found.size < 30) found.set(parsed.data.asset_id, parsed.data)
+        if (!parsed.success) {
+          console.warn('[chat] ignoring invalid video frame metadata', {
+            issues: parsed.error.issues.map((issue) => issue.path.join('.')),
+          })
+          continue
+        }
+        if (found.size < MAX_VIDEO_FRAME_CANDIDATES)
+          found.set(parsed.data.asset_id, parsed.data)
       }
     }
   }
@@ -123,7 +129,8 @@ export function selectedVideoFrames(
   const found = new Map<string, VideoFrame>()
   for (const part of parts) {
     const frame = selectedVideoFrame(part)
-    if (frame && found.size < 3) found.set(frame.asset_id, frame)
+    if (frame && found.size < MAX_VIDEO_FRAMES_PER_RESPONSE)
+      found.set(frame.asset_id, frame)
   }
   return [...found.values()]
 }
@@ -140,7 +147,11 @@ export function selectedVideoFrame(
   const result = record(part.result)
   if (result?.status !== 'selected') return undefined
   const parsed = videoFrameSchema.safeParse(result.frame)
-  return parsed.success ? parsed.data : undefined
+  if (parsed.success) return parsed.data
+  console.warn('[chat] ignoring invalid selected video frame', {
+    issues: parsed.error.issues.map((issue) => issue.path.join('.')),
+  })
+  return undefined
 }
 
 export function sourceForVideoFrame(

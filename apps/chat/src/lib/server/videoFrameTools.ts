@@ -7,6 +7,9 @@ import {
   videoFrameCandidates,
 } from '@/src/lib/sources/videoFrames'
 
+const MAX_VIDEO_FRAME_CANDIDATES = 30
+const MAX_VIDEO_FRAMES_PER_RESPONSE = 3
+
 /** Request-local registry. Only frames returned by this turn's scoped search are selectable. */
 export function withVideoFrameTool(
   tools: ToolSet,
@@ -24,7 +27,10 @@ export function withVideoFrameTool(
       execute: async (input, options) => {
         const result = await execute(input, options)
         for (const frame of videoFrameCandidates(result)) {
-          if (kbIds.includes(frame.kb_id) && candidates.size < 30)
+          if (
+            kbIds.includes(frame.kb_id) &&
+            candidates.size < MAX_VIDEO_FRAME_CANDIDATES
+          )
             candidates.set(frame.asset_id, frame)
         }
         return result
@@ -37,12 +43,21 @@ export function withVideoFrameTool(
     inputSchema: z.object({ asset_id: z.string().regex(/^[a-f0-9]{64}$/) }),
     execute: async ({ asset_id }) => {
       const frame = candidates.get(asset_id)
-      if (!frame || (!selected.has(asset_id) && selected.size >= 3))
+      if (!frame) return { status: 'unavailable' as const }
+      if (selected.has(asset_id))
+        return { status: 'selected' as const, frame }
+      if (selected.size >= MAX_VIDEO_FRAMES_PER_RESPONSE)
         return { status: 'unavailable' as const }
       selected.add(asset_id)
       try {
         await readFrame(frame)
-      } catch {
+      } catch (error) {
+        console.warn('[chat] video frame selection unavailable', {
+          assetId: asset_id,
+          errorType:
+            error instanceof Error ? error.constructor.name : typeof error,
+          errorMessage: error instanceof Error ? error.message : 'unknown',
+        })
         selected.delete(asset_id)
         return { status: 'unavailable' as const }
       }

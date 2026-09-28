@@ -5,9 +5,7 @@ import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
-import type { ChatSourcePart } from '@/src/lib/sources/normalizeSources'
 import {
-  selectedVideoFrames,
   sourceForVideoFrame,
   type VideoFrame,
 } from '@/src/lib/sources/videoFrames'
@@ -102,27 +100,5 @@ export function InlineVideoFrame({ frame }: { frame: VideoFrame }) {
       frameSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/frames/${frame.asset_id}`}
       videoSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${messageId}/videos/${frame.asset_id}`}
     />
-  )
-}
-
-export function VideoFramesSection() {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const threadId = useChatStore((state) => state.activeThreadId)
-  const message = useAuiState((state) => state.message)
-  const frames = selectedVideoFrames(
-    message.content as readonly ChatSourcePart[]
-  )
-  if (!chatbotId || !threadId || frames.length === 0) return null
-  return (
-    <div>
-      {frames.map((frame) => (
-        <VideoFrameCard
-          key={`${message.id}-${frame.asset_id}`}
-          frame={frame}
-          frameSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/frames/${frame.asset_id}`}
-          videoSrc={`/api/chatbots/${chatbotId}/threads/${threadId}/messages/${message.id}/videos/${frame.asset_id}`}
-        />
-      ))}
-    </div>
   )
 }

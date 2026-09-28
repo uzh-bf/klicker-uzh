@@ -1,3 +1,5 @@
+import { createReadStream } from 'node:fs'
+import { Readable } from 'node:stream'
 import { prisma } from '@klicker-uzh/prisma'
 import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
@@ -66,7 +68,7 @@ export async function GET(
     const directUrl = await signedVideoPlaybackUrl(frame)
     if (directUrl) return NextResponse.redirect(directUrl, 307)
 
-    const { bytes, size } = await readLocalVideo(frame)
+    const { filename, size } = await readLocalVideo(frame)
     const match = /^bytes=(\d+)-(\d*)$/.exec(req.headers.get('range') ?? '')
     const start = match ? Number(match[1]) : 0
     const requestedEnd = match?.[2] ? Number(match[2]) : size - 1
@@ -82,14 +84,15 @@ export async function GET(
         status: 416,
         headers: { ...headers, 'Content-Range': `bytes */${size}` },
       })
-    const body = bytes.subarray(start, end + 1)
-    return new NextResponse(new Uint8Array(body), {
+    const contentLength = end - start + 1
+    const body = Readable.toWeb(createReadStream(filename, { start, end }))
+    return new NextResponse(body as ReadableStream, {
       status: match ? 206 : 200,
       headers: {
         ...headers,
         'Accept-Ranges': 'bytes',
         'Content-Type': frame.video_mime_type,
-        'Content-Length': String(body.length),
+        'Content-Length': String(contentLength),
         ...(match ? { 'Content-Range': `bytes ${start}-${end}/${size}` } : {}),
       },
     })

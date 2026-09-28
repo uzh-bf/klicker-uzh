@@ -1,11 +1,27 @@
 import { createHash } from 'node:crypto'
 import { readFile, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { z } from 'zod'
 import type { VideoFrame } from '@/src/lib/sources/videoFrames'
 
 const DIGEST = /^[a-f0-9]{64}$/
 const MAX_MANIFEST_BYTES = 2_000_000
 const MAX_FRAME_BYTES = 15_000_000
+const manifestSchema = z.object({
+  schema_version: z.literal('video_frame_assets.v1'),
+  source_video_sha256: z.string().regex(DIGEST),
+  assets: z.array(
+    z.object({
+      asset_id: z.string().regex(DIGEST),
+      frame_sha256: z.string().regex(DIGEST),
+      visual_state_id: z.string(),
+      timestamp_sec: z.number(),
+      width_px: z.number(),
+      height_px: z.number(),
+      mime_type: z.string(),
+    })
+  ),
+})
 
 type VideoFrameStoreEnvironment = Partial<
   Pick<
@@ -115,17 +131,19 @@ export async function readVideoFrame(
   root = process.env.CHAT_VIDEO_FRAME_STORE_PATH,
   blobReader = readBlobObject
 ): Promise<Buffer> {
-  const manifest = JSON.parse(
-    (
-      await readObject(
-        root,
-        'manifests',
-        frame.manifest_sha256,
-        'json',
-        MAX_MANIFEST_BYTES,
-        blobReader
-      )
-    ).toString()
+  const manifest = manifestSchema.parse(
+    JSON.parse(
+      (
+        await readObject(
+          root,
+          'manifests',
+          frame.manifest_sha256,
+          'json',
+          MAX_MANIFEST_BYTES,
+          blobReader
+        )
+      ).toString()
+    )
   )
   if (
     manifest.schema_version !== 'video_frame_assets.v1' ||
@@ -133,9 +151,8 @@ export async function readVideoFrame(
   )
     throw new Error('Video frame manifest mismatch')
   if (
-    !Array.isArray(manifest.assets) ||
     !manifest.assets.some(
-      (asset: Record<string, unknown>) =>
+      (asset) =>
         asset.asset_id === frame.asset_id &&
         asset.frame_sha256 === frame.frame_sha256 &&
         asset.visual_state_id === frame.visual_state_id &&
