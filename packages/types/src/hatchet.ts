@@ -81,10 +81,41 @@ export type BuildKBGraphInput = JsonObject & {
   buildId: string
 }
 
+export type HatchetLoggingContext = {
+  requestId?: string
+  correlationId?: string
+}
+
+// Type alias (not interface) so the command satisfies the JsonObject
+// constraint of the Hatchet logging wrapper generics.
+export type AssessmentResponseCommand<TResponse = unknown> = {
+  submissionId: string
+  correlationId: string
+  participantId: string
+  liveQuizId: string
+  instanceId: string
+  /** Execution from the server-signed assessment correlation token. */
+  blockExecution: number
+  response: TResponse
+  responseTimestamp: number
+  receivedAt: string
+  transportAttemptedAt: string
+  /** Additive diagnostic envelope consumed by the Hatchet logging bridge. */
+  loggingContext?: HatchetLoggingContext
+}
+
+export interface AssessmentResponseReceipt {
+  status: 'response_submitted'
+  submissionId: string
+  responseTimestamp: number
+  hatchetEventId: string
+}
+
 // Shared contract for Hatchet task handler injections.
 // Payload of the `process-course-deletion` event. The request marker on the
 // course is the only persisted state; requester and options travel here.
 export type CourseDeletionEvent = {
+  loggingContext?: HatchetLoggingContext
   courseId: string
   deletionRequestedAt: string
   requestedById: string
@@ -92,6 +123,16 @@ export type CourseDeletionEvent = {
 }
 
 export interface HatchetHandlers {
+  handleDispatchAssessmentAuditOutbox: (
+    _input: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleMonitorAssessmentAudit: (
+    _input: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -133,7 +174,10 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handlePublishScheduledLiveQuiz: (
-    { liveQuizId }: { liveQuizId: string },
+    {
+      liveQuizId,
+      initiatedByUserId,
+    }: { liveQuizId: string; initiatedByUserId?: string },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -163,7 +207,10 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<boolean>
   handleProcessCourseDuplication: (
-    { jobId }: { jobId: string },
+    {
+      jobId,
+      loggingContext,
+    }: { jobId: string; loggingContext?: HatchetLoggingContext },
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -190,53 +237,64 @@ export interface PreparedHatchetTasks {
     { success: boolean }
   >
   buildKBGraph: TaskWorkflowDeclaration<BuildKBGraphInput, { success: boolean }>
-  createAuditLogEntry: TaskWorkflowDeclaration<
-    {
-      message: Record<string, string | undefined> & {
-        correlationId?: string
-        info: string
-      }
-    },
+  dispatchAssessmentAuditOutbox: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { success: boolean }
+  >
+  monitorAssessmentAudit: TaskWorkflowDeclaration<
+    Record<string, never>,
     { success: boolean }
   >
   publishScheduledMicroLearning: TaskWorkflowDeclaration<
-    { microLearningId: string },
+    { microLearningId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   publishScheduledPracticeQuiz: TaskWorkflowDeclaration<
-    { practiceQuizId: string },
+    { practiceQuizId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   publishScheduledGroupActivity: TaskWorkflowDeclaration<
-    { groupActivityId: string },
+    { groupActivityId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   publishScheduledLiveQuiz: TaskWorkflowDeclaration<
-    { liveQuizId: string },
+    {
+      liveQuizId: string
+      initiatedByUserId?: string
+      loggingContext?: HatchetLoggingContext
+    },
     { success: boolean }
   >
   endExpiredMicroLearning: TaskWorkflowDeclaration<
-    { microLearningId: string },
+    { microLearningId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   endExpiredGroupActivity: TaskWorkflowDeclaration<
-    { groupActivityId: string },
+    { groupActivityId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   aggregateLiveQuizBlockResultsStandard: TaskWorkflowDeclaration<
-    { liveQuizId: string; blockId: number },
+    {
+      liveQuizId: string
+      blockId: number
+      loggingContext?: HatchetLoggingContext
+    },
     { success: boolean }
   >
   aggregateLiveQuizBlockResultsAssessment: TaskWorkflowDeclaration<
-    { liveQuizId: string; blockId: number },
+    {
+      liveQuizId: string
+      blockId: number
+      loggingContext?: HatchetLoggingContext
+    },
     { success: boolean }
   >
   processCourseDuplication: TaskWorkflowDeclaration<
-    { jobId: string },
+    { jobId: string; loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   sweepStaleCourseDuplications: TaskWorkflowDeclaration<
-    Record<string, never>,
+    { loggingContext?: HatchetLoggingContext },
     { success: boolean }
   >
   processCourseDeletion: TaskWorkflowDeclaration<

@@ -28,7 +28,12 @@ const config = defineConfig([
       typescript({
         tsconfig: './tsconfig.json',
         rootDir: 'src',
-        include: ['{,**/}*.(cts|mts|ts|tsx|json)'],
+        filterRoot: '.',
+        include: ['src/**/*.ts'],
+        compilerOptions: {
+          incremental: false,
+          tsBuildInfoFile: undefined,
+        },
       }),
     ],
     external: [/@klicker-uzh*/, /node_modules/],

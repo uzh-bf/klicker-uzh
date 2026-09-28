@@ -1,3 +1,5 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { toSafeError } from '@klicker-uzh/logging/node'
 import { prisma } from '@klicker-uzh/prisma'
 import {
   LiveQuiz,
@@ -9,6 +11,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import { pick } from 'remeda'
 import { fileURLToPath } from 'url'
+import { logger } from './logger.js'
 import { ActivityOlatConfigurationKey, ActivityType } from './types.js'
 
 export async function getCourses(provider: string, providerAccountId: string) {
@@ -43,7 +46,9 @@ export async function getCourses(provider: string, providerAccountId: string) {
   }))
 }
 
-async function loadActivityTypes(): Promise<ActivityType[]> {
+async function loadActivityTypes(
+  log: AppLogger = logger
+): Promise<ActivityType[]> {
   try {
     const __filename = fileURLToPath(import.meta.url)
     const __dirname = path.dirname(__filename)
@@ -51,14 +56,21 @@ async function loadActivityTypes(): Promise<ActivityType[]> {
     const data = await fs.readFile(dataPath, 'utf-8')
     const activityTypes: ActivityType[] = JSON.parse(data)
     return activityTypes
-  } catch (error) {
-    console.error('Error reading data:', error)
-    process.exit(1)
+  } catch {
+    log.error(
+      {
+        event: 'dependency.read_failed',
+        dependency: 'activity_types',
+        err: toSafeError('Failed to read activity types'),
+      },
+      'Failed to read activity types'
+    )
+    throw new Error('Failed to read activity types')
   }
 }
 
-export async function getActivityTypes() {
-  const activityTypes = await loadActivityTypes()
+export async function getActivityTypes(log?: AppLogger) {
+  const activityTypes = await loadActivityTypes(log)
 
   // filter out fields
   return activityTypes.map((activityType) => ({
@@ -74,9 +86,10 @@ export async function getActivityTypes() {
 export async function getCourseActivityTypes(
   provider: string,
   providerAccountId: string,
-  courseID: string
+  courseID: string,
+  log?: AppLogger
 ) {
-  const activityTypes = await loadActivityTypes()
+  const activityTypes = await loadActivityTypes(log)
   const account = await prisma.account.findUnique({
     where: {
       provider_providerAccountId: {

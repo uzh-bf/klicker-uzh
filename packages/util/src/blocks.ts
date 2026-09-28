@@ -3,16 +3,16 @@ import {
   gradeQuestionNumerical,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
-import {
-  type CaseStudyCaseSolution,
-  type ElementResultsCaseStudy,
-  type ElementResultsChoices,
-  type ElementResultsContent,
-  type ElementResultsFlashcard,
-  type ElementResultsOpen,
-  type ElementResultsSelection,
+import type {
+  CaseStudyCaseSolution,
+  ElementResultsCaseStudy,
+  ElementResultsChoices,
+  ElementResultsContent,
+  ElementResultsFlashcard,
+  ElementResultsOpen,
+  ElementResultsSelection,
 } from '@klicker-uzh/types'
-import { Redis } from 'ioredis'
+import type { Redis } from 'ioredis'
 import { omitBy } from 'remeda'
 import { getInitialInstanceResults } from './elements.js'
 
@@ -331,6 +331,7 @@ export async function updateLiveQuizBlockResultsFromCache({
   redisAssessmentExec,
   updateResults,
   updateLeaderboards,
+  transaction,
 }: {
   quizId: string
   blockId: number
@@ -339,6 +340,9 @@ export async function updateLiveQuizBlockResultsFromCache({
   redisAssessmentExec: Redis
   updateResults: boolean
   updateLeaderboards: boolean
+  transaction?: <T>(
+    write: (tx: Pick<DB.Prisma.TransactionClient, 'liveQuiz'>) => Promise<T>
+  ) => Promise<T>
 }) {
   const quiz = await prisma.liveQuiz.findUnique({
     where: { id: quizId },
@@ -499,115 +503,123 @@ export async function updateLiveQuizBlockResultsFromCache({
       })
     }
 
-    const updatedQuiz = await prisma.liveQuiz.update({
-      where: { id: quizId },
-      data: {
-        activeBlock: { disconnect: true },
-        blocks: {
-          update: {
-            where: { id: blockId },
-            data: {
-              status: DB.ElementBlockStatus.EXECUTED,
-              closedAt: new Date(),
-              ...(updateResults
-                ? {
-                    elements: {
-                      update: Object.entries(instanceResults).map(
-                        ([id, instanceResult]) => ({
-                          where: { id: Number(id) },
-                          // update the anonymous results for regular live quizzes and the normal results for assessment live quizzes
-                          data: {
-                            anonymousResults: quiz.isAssessmentEnabled
-                              ? undefined
-                              : instanceResult.anonymousResults,
-                            results: quiz.isAssessmentEnabled
-                              ? instanceResult.anonymousResults
-                              : undefined,
-                          },
-                        })
-                      ),
-                    },
-                  }
-                : {}),
+    const updateQuiz = (
+      client: Pick<DB.Prisma.TransactionClient, 'liveQuiz'>
+    ) =>
+      client.liveQuiz.update({
+        where: { id: quizId },
+        data: {
+          activeBlock: { disconnect: true },
+          blocks: {
+            update: {
+              where: { id: blockId },
+              data: {
+                status: DB.ElementBlockStatus.EXECUTED,
+                closedAt: new Date(),
+                ...(updateResults
+                  ? {
+                      elements: {
+                        update: Object.entries(instanceResults).map(
+                          ([id, instanceResult]) => ({
+                            where: { id: Number(id) },
+                            // update the anonymous results for regular live quizzes and the normal results for assessment live quizzes
+                            data: {
+                              anonymousResults: quiz.isAssessmentEnabled
+                                ? undefined
+                                : instanceResult.anonymousResults,
+                              results: quiz.isAssessmentEnabled
+                                ? instanceResult.anonymousResults
+                                : undefined,
+                            },
+                          })
+                        ),
+                      },
+                    }
+                  : {}),
+              },
             },
           },
-        },
-        leaderboard:
-          quiz.isGamificationEnabled && updateLeaderboards
-            ? {
-                upsert: regularParticipantLeaderboard.map(
-                  ({ participantId, score }) => ({
-                    where: {
-                      type_participantId_liveQuizId: {
-                        type: DB.LeaderboardType.SESSION,
-                        participantId,
-                        liveQuizId: quizId,
+          leaderboard:
+            quiz.isGamificationEnabled && updateLeaderboards
+              ? {
+                  upsert: regularParticipantLeaderboard.map(
+                    ({ participantId, score }) => ({
+                      where: {
+                        type_participantId_liveQuizId: {
+                          type: DB.LeaderboardType.SESSION,
+                          participantId,
+                          liveQuizId: quizId,
+                        },
                       },
-                    },
-                    create: {
-                      type: DB.LeaderboardType.SESSION,
-                      participant: { connect: { id: participantId } },
-                      score,
-                      sessionParticipation: quiz.courseId
-                        ? {
-                            connectOrCreate: {
-                              where: {
-                                courseId_participantId: {
-                                  courseId: quiz.courseId,
-                                  participantId,
+                      create: {
+                        type: DB.LeaderboardType.SESSION,
+                        participant: { connect: { id: participantId } },
+                        score,
+                        sessionParticipation: quiz.courseId
+                          ? {
+                              connectOrCreate: {
+                                where: {
+                                  courseId_participantId: {
+                                    courseId: quiz.courseId,
+                                    participantId,
+                                  },
+                                },
+                                create: {
+                                  course: { connect: { id: quiz.courseId! } },
+                                  participant: {
+                                    connect: { id: participantId },
+                                  },
                                 },
                               },
-                              create: {
-                                course: { connect: { id: quiz.courseId! } },
-                                participant: { connect: { id: participantId } },
-                              },
-                            },
-                          }
-                        : undefined,
-                    },
-                    update: { score },
-                  })
-                ),
-              }
-            : undefined,
-        temporaryLeaderboard:
-          quiz.isGamificationEnabled && updateLeaderboards
-            ? {
-                upsert: [
-                  ...temporaryParticipantLeaderboard,
-                  ...existingTemporaryLB,
-                ].map(
-                  ({
-                    participantId,
-                    participantUsername,
-                    participantAvatar,
-                    score,
-                  }) => ({
-                    where: {
-                      id_quizId: {
-                        id: participantId,
-                        quizId,
+                            }
+                          : undefined,
                       },
-                    },
-                    create: {
-                      id: participantId,
-                      username: participantUsername ?? '', // fallback should never be used
-                      avatar: participantAvatar ?? undefined,
+                      update: { score },
+                    })
+                  ),
+                }
+              : undefined,
+          temporaryLeaderboard:
+            quiz.isGamificationEnabled && updateLeaderboards
+              ? {
+                  upsert: [
+                    ...temporaryParticipantLeaderboard,
+                    ...existingTemporaryLB,
+                  ].map(
+                    ({
+                      participantId,
+                      participantUsername,
+                      participantAvatar,
                       score,
-                    },
-                    update: { score },
-                  })
-                ),
-              }
-            : undefined,
-      },
-      include: {
-        blocks: {
-          include: { elements: { orderBy: { order: 'asc' } } },
-          orderBy: { order: 'asc' },
+                    }) => ({
+                      where: {
+                        id_quizId: {
+                          id: participantId,
+                          quizId,
+                        },
+                      },
+                      create: {
+                        id: participantId,
+                        username: participantUsername ?? '', // fallback should never be used
+                        avatar: participantAvatar ?? undefined,
+                        score,
+                      },
+                      update: { score },
+                    })
+                  ),
+                }
+              : undefined,
         },
-      },
-    })
+        include: {
+          blocks: {
+            include: { elements: { orderBy: { order: 'asc' } } },
+            orderBy: { order: 'asc' },
+          },
+        },
+      })
+    const updatedQuiz = transaction
+      ? await transaction(updateQuiz)
+      : await updateQuiz(prisma)
 
     return { updatedQuiz, activeInstanceIds }
   } catch (e) {

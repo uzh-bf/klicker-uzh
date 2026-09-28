@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { createLogger } from '@klicker-uzh/logging/node'
 import {
   createDisposableTestPrismaClient,
   requireDisposableDatabase,
@@ -129,6 +130,7 @@ async function fixture() {
     ),
   }
   const ctx = {
+    log: createLogger({ service: 'graphql-test', level: 'silent' }),
     prisma,
     user: { sub: ownerId },
     elementGenerationRuntime: runtime,

@@ -1,5 +1,7 @@
 import { EventEmitter } from 'node:events'
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { createLogger } from '@klicker-uzh/logging/node'
+import { resolveRequestContext } from '@klicker-uzh/logging/request'
 import { prisma, requireDisposableDatabase } from '@klicker-uzh/prisma'
 import {
   type AnswerCollection,
@@ -38,11 +40,11 @@ import { createPubSub, Repeater } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
+import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
-import { handleProcessCourseDeletion } from '@/services/courseDeletion.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -178,19 +180,13 @@ export async function testInitialization(
         return { success: true }
       },
     }),
-    createAuditLogEntry: hatchet.task({
-      name: 'create-audit-log-entry',
-      fn: async ({
-        message,
-      }: {
-        message: Record<string, string | undefined> & {
-          correlationId?: string
-          info: string
-        }
-      }) => {
-        console.info('Audit log triggered', message)
-        return { success: true }
-      },
+    dispatchAssessmentAuditOutbox: hatchet.task({
+      name: 'dispatch-assessment-audit-outbox-test',
+      fn: async () => ({ success: true }),
+    }),
+    monitorAssessmentAudit: hatchet.task({
+      name: 'monitor-assessment-audit-test',
+      fn: async () => ({ success: true }),
     }),
     publishScheduledMicroLearning: hatchet.task({
       name: 'publish-scheduled-micro-learning',
@@ -236,9 +232,15 @@ export async function testInitialization(
     }),
     publishScheduledLiveQuiz: hatchet.task({
       name: 'publish-scheduled-live-quiz',
-      fn: async ({ liveQuizId }: { liveQuizId: string }, executionCtx) => {
+      fn: async (
+        {
+          liveQuizId,
+          initiatedByUserId,
+        }: { liveQuizId: string; initiatedByUserId?: string },
+        executionCtx
+      ) => {
         const success = await handlePublishScheduledLiveQuiz(
-          { liveQuizId },
+          { liveQuizId, initiatedByUserId },
           hatchetCtx,
           executionCtx
         )
@@ -317,14 +319,25 @@ export async function testInitialization(
     }),
     processCourseDuplication: hatchet.task({
       name: 'process-course-duplication',
-      fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
-        const success = await handleProcessCourseDuplication(
-          { jobId },
-          hatchetCtx,
+      fn: vi.fn(
+        async (
+          {
+            jobId,
+            loggingContext,
+          }: {
+            jobId: string
+            loggingContext?: { requestId?: string; correlationId?: string }
+          },
           executionCtx
-        )
-        return { success }
-      }),
+        ) => {
+          const success = await handleProcessCourseDuplication(
+            { jobId, loggingContext },
+            hatchetCtx,
+            executionCtx
+          )
+          return { success }
+        }
+      ),
     }),
     sweepStaleCourseDuplications: hatchet.task({
       name: 'sweep-stale-course-duplications',
@@ -384,6 +397,11 @@ export async function testInitialization(
       publish: vi.fn(),
       subscribe: vi.fn().mockReturnValue(new Repeater(() => {})),
     } as ContextWithUser['pubSub'],
+    requestContext: resolveRequestContext({
+      requestId: 'graphql-test-request',
+      correlationId: 'graphql-test-correlation',
+    }),
+    log: createLogger({ service: 'graphql-test', environment: 'test' }),
     req: {} as any,
     res: {} as any,
   }

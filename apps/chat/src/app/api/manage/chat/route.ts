@@ -1,4 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai'
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { convertToModelMessages, isStepCount, streamText } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
@@ -12,6 +13,7 @@ import {
   tryAcquireManageChatRequest,
   validateManageChatRequest,
 } from '@/src/lib/server/manageChatRequest'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import { MANAGE_ASSISTANT_CAPABILITY_HEADER } from '@/src/services/manageAssistantCapabilities'
 import {
@@ -68,7 +70,7 @@ function createManageAssistantModel(deploymentId: string) {
   })(deploymentId)
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest, log: AppLogger) {
   const manageUser = await getAuthenticatedManageUser()
   if (!manageUser) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -174,7 +176,10 @@ export async function POST(req: NextRequest) {
       undefined,
       requestSignal
     ).catch((error) => {
-      console.warn('Failed to load lecturer MCP tools:', error)
+      log.warn(
+        { event: 'chat.manage.mcp.unavailable' },
+        'Failed to load lecturer MCP tools'
+      )
       return noLecturerMcpTools
     })
     const selectedModel = selectManageAssistantModel(getChatModelRegistry())
@@ -208,7 +213,10 @@ export async function POST(req: NextRequest) {
         tools: lecturerMcp.tools,
         onAbort: closeTools,
         onError: async (error) => {
-          console.error('Manage assistant stream failed:', error)
+          log.error(
+            { event: 'chat.manage.stream.failed' },
+            'Manage assistant stream failed'
+          )
           await closeTools()
         },
         onFinish: closeTools,
@@ -228,7 +236,10 @@ export async function POST(req: NextRequest) {
       )
     } catch (error) {
       await closeTools()
-      console.error('Manage assistant request failed:', error)
+      log.error(
+        { event: 'chat.manage.request.failed' },
+        'Manage assistant request failed'
+      )
       return NextResponse.json(
         { error: 'Manage assistant request failed' },
         { status: 500 }
@@ -239,4 +250,10 @@ export async function POST(req: NextRequest) {
       releaseRequest()
     }
   }
+}
+
+export function POST(req: NextRequest) {
+  return withRouteLogging(req, '/api/manage/chat', (log) =>
+    handlePOST(req, log)
+  )
 }

@@ -47,7 +47,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3-ai
+        tag: v3-audit
       resources:
         requests:
           cpu: 50m
@@ -77,7 +77,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-ai
+        tag: v3-audit
       resources:
         requests:
           cpu: 50m
@@ -108,7 +108,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3-ai
+        tag: v3-audit
       resources:
         requests:
           cpu: 50m
@@ -142,6 +142,35 @@ hatchet:
           value: reserved
           effect: NoSchedule
 
+assessmentAudit:
+  # Enabled for staging assessment testing. These values render into ConfigMaps,
+  # not ExternalSecrets; do not duplicate them in Infisical.
+  enabled: true
+  environment: stg
+  # Cover all assessment live quizzes once audit is enabled; no pilot allowlist.
+  rollout: all
+  # Set from df-cloud outputs auditTableEndpoint and auditBlobEndpoint.
+  # Do not use the legacy audit account or URLs containing SAS credentials.
+  tableEndpoint: https://stgklickerevidenceaohwr.table.core.windows.net/
+  blobEndpoint: https://stgklickerevidenceaohwr.blob.core.windows.net/
+  worker:
+    serviceAccountName: stg-audit-dispatcher
+    priorityClassName: staging-workload
+    image:
+      repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
+      pullPolicy: Always
+      tag: v3-audit
+    resources:
+      requests:
+        cpu: 50m
+        memory: 320Mi
+      limits:
+        memory: 512Mi
+  monitoring:
+    enabled: false
+    deliveredUnsealedCapacityBytes: 0
+    deliveredUnsealedGrowthBytesPerWeek: 0
+
 auth:
   priorityClassName: staging-workload
   podAnnotations:
@@ -165,7 +194,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     annotations:
@@ -317,7 +346,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     annotations:
@@ -371,7 +400,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   strategy:
     type: RollingUpdate
@@ -408,7 +437,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   strategy:
     type: RollingUpdate
@@ -448,7 +477,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     className: haproxy
@@ -501,7 +530,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     className: haproxy
@@ -539,7 +568,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   affinity:
     podAntiAffinity:
@@ -606,7 +635,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -624,6 +653,9 @@ backendGraphql:
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
+    # Explicit domain selection stays unavailable until this equals the
+    # revision of the catalog shipped by the deployed backend and workers.
+    domainCatalogRevision: 'kg-domains-v1-793deb4279a163c357bd976868bee17606d6a352f9596a7b961dc4c200f65e72'
     cost:
       currency: 'CHF'
       standardEstimateMinorUnits: '100'
@@ -692,7 +724,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   affinity:
     podAntiAffinity:
@@ -779,7 +811,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3-ai
+    tag: v3-audit
 
   ingress:
     className: haproxy
@@ -816,7 +848,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3-ai
+    tag: v3-audit
     pullPolicy: Always
 
   affinity:
@@ -893,7 +925,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3-ai
+      tag: v3-audit
 
     ingress:
       className: haproxy
@@ -955,7 +987,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3-ai
+      tag: v3-audit
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -988,10 +1020,9 @@ assessment:
     resources:
       requests:
         cpu: 50m
-        memory: 50Mi
+        memory: 384Mi
       limits:
-        cpu: 200m
-        memory: 200Mi
+        memory: 1Gi
 
   responseApi:
     corsAllowedOrigins: 'https://assessment.klicker.stg.df-app.ch'
@@ -1031,7 +1062,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3-ai
+      tag: v3-audit
 
     ingress:
       className: haproxy
@@ -1065,3 +1096,15 @@ migrator:
   priorityClassName: staging-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
+
+# Modern Klicker KB retrieval authenticates with a fresh five-minute ES256
+# scope token on the dedicated Doc Query route instead of the shared transport
+# bearer. All three values move together: the chart refuses to render a partial
+# triple, and scope mode ignores the stored credential for this server. The
+# server id and legacy URL are this environment's existing KB MCP server row, so
+# a database edit cannot redirect a scope token.
+docQuery:
+  scopedMcp:
+    serverId: '4b21b497-5adb-4a50-a59b-ce3694816743'
+    legacyUrl: 'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker'
+    url: 'http://mcp-doc-query.stg-doc-query.svc.cluster.local:1417/mcp/klicker/kb'

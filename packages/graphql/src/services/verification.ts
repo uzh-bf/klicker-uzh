@@ -1,3 +1,4 @@
+import { runInAuditTransaction } from '@klicker-uzh/audit'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   AssessmentReportPublicSnapshot,
@@ -5,6 +6,10 @@ import type {
 } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import {
+  assessmentAuditUserOperation,
+  emitCoveredCourseAssessmentAuditEvents,
+} from './assessmentAuditProducers.js'
 import {
   hashAssessmentReportSnapshot,
   parseAssessmentReportSnapshot,
@@ -17,7 +22,10 @@ const courseAssessmentReportRecordSelect = {
   id: true,
   token: true,
   courseId: true,
+  participantId: true,
   subjectEmail: true,
+  snapshotVersion: true,
+  snapshotHash: true,
   status: true,
   issuedAt: true,
   revokedAt: true,
@@ -193,6 +201,10 @@ export async function revokeAssessmentReport(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
+  const auditOperation = assessmentAuditUserOperation({
+    userId: ctx.user.sub,
+    requiredPermission: 'ADMIN',
+  })
   requireFullAccess(ctx)
 
   const record = await ctx.prisma.verifiableCredential.findFirst({
@@ -226,24 +238,44 @@ export async function revokeAssessmentReport(
 
   if (record.status !== DB.CredentialStatus.ACTIVE) return record
 
-  const revokedAt = new Date()
-  const result = await ctx.prisma.verifiableCredential.updateMany({
-    where: { id, status: DB.CredentialStatus.ACTIVE },
-    data: {
-      status: DB.CredentialStatus.REVOKED,
-      revokedAt,
-      revokedById: ctx.user.sub,
-    },
-  })
-  if (result.count === 0) {
-    return await ctx.prisma.verifiableCredential.findUniqueOrThrow({
-      where: { id },
-      select: courseAssessmentReportRecordSelect,
+  return runInAuditTransaction(ctx.prisma, async (tx, auditTx) => {
+    const result = await tx.verifiableCredential.updateMany({
+      where: { id, status: DB.CredentialStatus.ACTIVE },
+      data: {
+        status: DB.CredentialStatus.REVOKED,
+        revokedAt: auditOperation.occurredAt,
+        revokedById: ctx.user.sub,
+      },
     })
-  }
-  return {
-    ...record,
-    status: DB.CredentialStatus.REVOKED,
-    revokedAt,
-  }
+    if (result.count === 0) {
+      return tx.verifiableCredential.findUniqueOrThrow({
+        where: { id },
+        select: courseAssessmentReportRecordSelect,
+      })
+    }
+    await emitCoveredCourseAssessmentAuditEvents({
+      tx,
+      auditTx,
+      courseId: record.courseId,
+      operation: auditOperation,
+      drafts: [
+        {
+          eventType: 'ASSESSMENT_REPORT_REVOKED',
+          producerOperationId: `${auditOperation.correlationId}:report:${record.id}:revoked`,
+          scope: { participantId: record.participantId },
+          payload: {
+            reportId: record.id,
+            version: record.snapshotVersion,
+            snapshotHash: record.snapshotHash,
+            reasonCode: 'COURSE_ADMIN_REVOKED_REPORT',
+          },
+        },
+      ],
+    })
+    return {
+      ...record,
+      status: DB.CredentialStatus.REVOKED,
+      revokedAt: auditOperation.occurredAt,
+    }
+  })
 }

@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   after: vi.fn(),
   afterCallback: null as (() => unknown) | null,
+  log: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   chatbotFindUnique: vi.fn(),
@@ -51,6 +57,16 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
+}))
+
+vi.mock('@/src/lib/server/logger', () => ({
+  logger: {
+    child: () => mocks.log,
+    debug: mocks.log.debug,
+    info: mocks.log.info,
+    warn: mocks.log.warn,
+    error: mocks.log.error,
+  },
 }))
 
 vi.mock('@/src/services/disclaimers', () => ({
@@ -577,9 +593,9 @@ describe('account usage chat route', () => {
     expect(streamCallbacks()).not.toHaveProperty(
       'tools.search_response_examples'
     )
-    expect(console.warn).toHaveBeenCalledWith(
-      'Response-example skill loading failed; continuing without response examples',
-      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    expect(mocks.log.warn).toHaveBeenCalledWith(
+      { event: 'chat.response_examples.unavailable', outcome: 'load_failed' },
+      'Continuing without response examples'
     )
   })
 
@@ -659,9 +675,12 @@ describe('account usage chat route', () => {
         },
       })
     )
-    expect(console.warn).toHaveBeenCalledWith(
-      'Response-example skill name conflicts with an existing tool; continuing without response examples',
-      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    expect(mocks.log.warn).toHaveBeenCalledWith(
+      {
+        event: 'chat.response_examples.unavailable',
+        outcome: 'tool_name_conflict',
+      },
+      'Continuing without response examples'
     )
   })
 
@@ -678,11 +697,15 @@ describe('account usage chat route', () => {
     })
     expect(response.status).toBe(403)
     expect((await response.json()).code).toBe('AI_FEATURES_DISABLED')
-    expect(console.warn).toHaveBeenCalledWith(expect.any(String), {
-      requestId: expect.any(String),
-      phase: 'admission.accountApproval',
-      code: 'AI_FEATURES_DISABLED',
-    })
+    expect(mocks.log.warn).toHaveBeenCalledWith(
+      {
+        event: 'chat.admission.denied',
+        requestId: expect.any(String),
+        phase: 'admission.accountApproval',
+        code: 'AI_FEATURES_DISABLED',
+      },
+      'Chat admission denied'
+    )
     expect(mocks.streamText).not.toHaveBeenCalled()
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()

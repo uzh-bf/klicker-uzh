@@ -1,17 +1,20 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
+import { type NextRequest, NextResponse } from 'next/server'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { ThreadService } from '@/src/services/threads'
-import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * Updates the title of a specific thread for the authenticated participant.
  * Used when user renames a thread or system auto-generates titles.
  */
-export async function PUT(
+async function handlePUT(
   req: NextRequest,
-  { params }: { params: Promise<{ chatbotId: string; threadId: string }> }
+  { params }: { params: Promise<{ chatbotId: string; threadId: string }> },
+  log: AppLogger
 ) {
   const { chatbotId, threadId } = await params
-  const authResult = await withChatbotAuth(req, chatbotId)
+  const authResult = await withChatbotAuth(req, chatbotId, log)
   if ('response' in authResult) {
     return authResult.response
   }
@@ -35,11 +38,23 @@ export async function PUT(
       message: 'Thread title updated',
       thread: updatedThread,
     })
-  } catch (error) {
-    console.error('Failed to update thread title:', error)
+  } catch {
     return NextResponse.json(
       { error: 'Failed to update thread title' },
       { status: 500 }
     )
   }
+}
+
+export function PUT(
+  req: NextRequest,
+  context: {
+    params: Promise<{ chatbotId: string; threadId: string }>
+  }
+) {
+  return withRouteLogging(
+    req,
+    '/api/chatbots/:chatbotId/threads/:threadId/title',
+    (log) => handlePUT(req, context, log)
+  )
 }

@@ -53,6 +53,9 @@ if [ "${KLICKER_LOCAL_KB_RUNTIME_ONLY:-0}" != 1 ] && [ -n "${LOCAL_KB_SIGNER_ENV
 fi
 set +a
 
+# Keep the endpoint path at the runtime URL boundary, including primary checkouts.
+export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.localhost/AddResponse
+
 if [ "${LOCAL_MCP_BOOTSTRAPPED:-}" = 1 ]; then
   # The mock process group uses only the explicitly provisioned mock database.
   . "$ROOT/util/profile-resolver.sh"

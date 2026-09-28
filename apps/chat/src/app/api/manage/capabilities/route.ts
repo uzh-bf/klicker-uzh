@@ -1,6 +1,8 @@
+import type { AppLogger } from '@klicker-uzh/logging/node'
 import { type NextRequest, NextResponse } from 'next/server'
 import { getManageAiCapability } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
+import { withRouteLogging } from '@/src/lib/server/requestLogging'
 import { loadLecturerMcpTools } from '@/src/services/lecturerMcp'
 import type { ManageAssistantCapabilityState } from '@/src/services/manageAssistantCapabilities'
 import { createRateLimiter } from '@/src/services/rateLimiter'
@@ -29,7 +31,7 @@ function capabilityResponse(
   )
 }
 
-export async function GET(req: NextRequest) {
+async function handleGET(req: NextRequest, log: AppLogger) {
   const manageUser = await getAuthenticatedManageUser()
   if (!manageUser) return capabilityResponse('unavailable', 401)
 
@@ -65,7 +67,16 @@ export async function GET(req: NextRequest) {
     void lecturerMcp.close()
     return response
   } catch {
-    console.warn('Manage assistant capability preflight is unavailable')
+    log.warn(
+      { event: 'chat.manage.capability.unavailable' },
+      'Manage assistant capability preflight is unavailable'
+    )
     return capabilityResponse('unavailable', 503)
   }
+}
+
+export function GET(req: NextRequest) {
+  return withRouteLogging(req, '/api/manage/capabilities', (log) =>
+    handleGET(req, log)
+  )
 }
