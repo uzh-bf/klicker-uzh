@@ -292,6 +292,25 @@ persistence. Disagreement between streamed and saved credits stops the run. `eva
 synthetic English/German scenarios and behavioral rubrics. These rubrics need
 assessment of meaning; exact response wording is not a test contract.
 
+For the revised fixture and numerical checks, use
+`evaluation/data/trajectories/tutor-attribution-v2.json` with its
+`tutor-attribution-v2-numeric.json` sidecar. The sidecar binds numerical
+obligations to case IDs and one-based assessment turns without changing the
+strict trajectory schema. Annotate claims from visible responses, convert their
+units, then call `compareTutorNumericClaim` from
+`apps/chat/scripts/tutor-numeric-reference.mjs` with the formula, explicit
+inputs, numeric claim and the sidecar's absolute tolerance. Rates are decimal
+fractions and cash flows use annual periods. Missing claims remain unassessed;
+a numerical match alone does not establish correct assistance attribution.
+`studentAnswerCorrect` describes the literal learner claim; `null` means its
+correctness is not fixed, for example when copying a live reply.
+`requiredAnswer` requires an assessable assistant judgment of that result. An
+explicit confirmation of the learner's numeric answer can supply this evidence
+without repeating the number; silence or unrelated feedback cannot. Optional
+claims are still checked when made. Keep numerical comparisons separate from
+semantic rubric judgments. Freeze the
+corpus, numerical obligations, materials and both prompt variants before calls.
+
 Run the script on the host against the exact routed synthetic runtime. Supply
 `KLICKER_EVAL_API_ORIGIN`, `KLICKER_EVAL_CHAT_ORIGIN`,
 `KLICKER_EVAL_PARTICIPANT_USERNAME`, and `KLICKER_EVAL_PARTICIPANT_PASSWORD` through

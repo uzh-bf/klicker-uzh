@@ -166,7 +166,6 @@ not a visible UI change; no screenshot-gallery product delta is introduced.
 - Required terminal: reviewed draft PR with results and explicit limitations,
   reported exact-head CI, and exact task runtime stopped with data retained.
 
-
 ## Iteration 2: approved continuation
 
 ### Approval summary
@@ -230,4 +229,27 @@ If the direct-route candidate passes, perform real Auto/browser checks for both 
 
 ### Progress
 
-Planner approved round 2 after corrections to soft-credit/browser accounting, the frozen numerical sidecar and zero-failure gate, and slice/test ownership. Slice 1 source preparation is complete: bilingual fixtures, a numerical reference and four added contract tests are written. Static fixture coverage passes 21 positive queries, eight unrelated negative queries and all 12 prior corpus openers; source/matcher hashes match the recorded artifact. This proves finite keyword coverage only, not live model retrieval or citations. Node syntax and Biome checks pass for the numerical files (seven pre-existing informational findings in the test file). Required container tests have not run. No candidate, fresh reserved inputs or model calls have been generated. Git metadata writes are denied. Managed startup failed with `Could not prove lifecycle worker incarnation`; route inspection explicitly reports `ps spawn failed (EPERM)`. All seven exact task containers remain stopped; fresh route verification is unavailable. Resume with container checks, then slice review/commit, candidate freeze and separate reserved authorship before comparison. Required reviews, commits, experiment and draft update remain pending.
+- Slice 1 complete: commit `f1ce9eb729` adds bilingual fixtures, the numerical
+  reference and four tests. All 34 focused container tests pass, repository
+  checks pass (35 tasks), and root build passes (23/23). Static fixture matrix:
+  21 positive queries, eight unrelated negatives, all 12 prior corpus openers.
+  Simplifier and slice reviewer returned no findings requiring changes.
+- Host permissions restored: task fetch and exact managed startup succeeded.
+  The first real canary failed with `chat_stream_error`; the application logged
+  upstream HTTP 401, and the recreated LiteLLM had no injected upstream key.
+  Ledger: one submission, zero completed turns, zero accounted credits,
+  `uncertain=true`. No retry or further model calls; provider cost is unknown.
+- Candidate frozen before separate corpus authorship, source baseline retained.
+  Offline corpus and numerical sidecar are committed at `90a5a33829`: 12 cases,
+  32 turns, 17 obligations over 13 numerical assessment turns. Schema, group
+  counts and independent arithmetic checks pass. Main corrected false assistance
+  premises before corpus freeze; candidate stayed unchanged. Prior checks remain
+  valid despite upstream auth.
+  The comparison is incomplete, with 0/128 planned turns. No semantic pass rate
+  or candidate-quality conclusion is possible.
+- Remaining delivery: commit the incomplete-result report, integrated final
+  review, ordinary task-branch push,
+  draft PR update. Exact runtime shutdown is verified: seven containers exited,
+  matching source mount and zero task routes. A further model attempt
+  requires restored runtime injection plus an explicit retry-experiment
+  decision; preserve the stopped ledger. Ready/merge/deployment remain excluded.
